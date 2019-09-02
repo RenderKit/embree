@@ -28,6 +28,7 @@
 #define BVH_LEAF_N_MIN          4
 #define BVH_LEAF_N_MAX          4
 
+#define DBG_BUILD(x)
 
 namespace embree
 {
@@ -434,7 +435,7 @@ namespace embree
       if (subgroupLocalID == 0)
 	{
 	  node_offset = globals.alloc_node_mem(sizeof(gpu::BVHNodeN));
-	  out << "node offset " << node_offset << cl::sycl::endl;
+	  DBG_BUILD(out << "node offset " << node_offset << cl::sycl::endl);
 	}
       node_offset = subgroup.broadcast<uint>(node_offset,0); 
 
@@ -445,11 +446,13 @@ namespace embree
   
       if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
 	node.initBVHNodeN(subgroupLocalID);	      
-      
-      if (subgroupLocalID == 0)
-	{
-	  out << node << cl::sycl::endl;
-	}
+
+      DBG_BUILD(
+		if (subgroupLocalID == 0)
+		  {
+		    out << node << cl::sycl::endl;
+		  }
+		);
       return node_offset;      
     }
         

@@ -254,8 +254,10 @@ namespace embree
 	sindex--;      
 	current = stack[sindex];
 
-	if (subgroupLocalID == 0)
-	  out << "sindex = " << sindex << " current " << current << cl::sycl::endl;
+	DBG_BUILD(
+	    if (subgroupLocalID == 0)
+	      out << "sindex = " << sindex << " current " << current << cl::sycl::endl;
+	    );
 	
 	gpu::BinMapping binMapping;
 
@@ -268,7 +270,7 @@ namespace embree
 	    if (subgroup.get_local_id() == 0)
 	      {
 		const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1));
-		out << "leaf_offset " << leaf_offset << cl::sycl::endl;
+		DBG_BUILD(out << "leaf_offset " << leaf_offset << cl::sycl::endl);
 		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);
 	      }
 	  }
@@ -285,10 +287,7 @@ namespace embree
 	    
 	    split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end,out);
 
-#if 1
-	    if (subgroup.get_local_id() == 0)
-	      out << "split " << split << cl::sycl::endl;
-#endif
+	    DBG_BUILD(if (subgroup.get_local_id() == 0) out << "split " << split << cl::sycl::endl);
 	    
 	    serial_partition_index(subgroup,primref,binMapping,current,split,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1,out);
 	    
@@ -319,8 +318,7 @@ namespace embree
 		serial_find_split(subgroup,brecord,primref,binMapping,binInfo,primref_index0,primref_index1,out);
 		split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,brecord.start,brecord.end,out);
 
-		if (subgroup.get_local_id() == 0)
-		  out << "split " << split << cl::sycl::endl;
+		DBG_BUILD(if (subgroup.get_local_id() == 0) out << "split " << split << cl::sycl::endl);
 		
 		serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1,out);		    
 		numChildren++;		
@@ -522,8 +520,10 @@ namespace embree
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      record->init(0,numPrimitives,globals->centroidBounds);
 		      globals->numBuildRecords = 1;
-		      out << "geometryBounds: " << globals->geometryBounds << cl::sycl::endl;
-		      out << "centroiBounds : " << globals->centroidBounds << cl::sycl::endl;
+		      DBG_BUILD(
+				out << "geometryBounds: " << globals->geometryBounds << cl::sycl::endl;
+				out << "centroiBounds : " << globals->centroidBounds << cl::sycl::endl;
+			  );
 		    });
 		});
 	      try {
