@@ -67,6 +67,9 @@ using cl::sycl::int3;
 using cl::sycl::uint4;
 using cl::sycl::uint4;
 using cl::sycl::uint3;
+using cl::sycl::uchar8;
+using cl::sycl::uchar4;
+using cl::sycl::uchar3;
 
 namespace embree
 {

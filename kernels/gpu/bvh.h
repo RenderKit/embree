@@ -161,15 +161,15 @@ namespace embree
 	float4 decode_scale = diff / (float4)(QUANT_MAX);
 	
 	decode_scale = float4(decode_scale.x() == 0.0f ? 2.0f*FLT_MIN : decode_scale.x(),
-					decode_scale.y() == 0.0f ? 2.0f*FLT_MIN : decode_scale.y(),
-					decode_scale.z() == 0.0f ? 2.0f*FLT_MIN : decode_scale.z(),
-					0.0f);
+			      decode_scale.y() == 0.0f ? 2.0f*FLT_MIN : decode_scale.y(),
+			      decode_scale.z() == 0.0f ? 2.0f*FLT_MIN : decode_scale.z(),
+			      0.0f);
 	  
 	float4 encode_scale = (float4)(QUANT_MAX) / diff;
 	encode_scale = float4(diff.x() > 0.0f ? diff.x() : 0.0f,
-					diff.y() > 0.0f ? diff.y() : 0.0f,
-					diff.z() > 0.0f ? diff.z() : 0.0f,
-					0.0f);
+			      diff.y() > 0.0f ? diff.y() : 0.0f,
+			      diff.z() > 0.0f ? diff.z() : 0.0f,
+			      0.0f);
 	
 	if (subgroupLocalID < BVH_NODE_N)
 	{
@@ -181,41 +181,38 @@ namespace embree
 	  
 	  float4 lowerf = floor((lower - minF)*encode_scale);
 	  float4 upperf =  ceil((upper - minF)*encode_scale);
-	  
-  #if 0
-	  int4 ilower = max(convert_int4_rtn(),cl::sycl::int4(QUANT_MIN));
-	  int4 iupper = min(convert_int4_rtp(ceil ((upper - minF)*encode_scale)),cl::sycl::int4(QUANT_MAX));
 
-
-	  int4 ilower = max(bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
+	  int4 ilower = max(lowerf.convert<int,cl::sycl::rounding_mode::rtn>(),int4(QUANT_MIN));
+	  int4 iupper = min(upperf.convert<int,cl::sycl::rounding_mode::rtp>(),int4(QUANT_MAX));
 
 	  /* lower/upper correction */
-	  int4 m_lower_correction = (fma(convert_float4_rtn(ilower),decode_scale,minF)) > lower;
-	  int4 m_upper_correction = (fma(convert_float4_rtp(iupper),decode_scale,minF)) < upper;
-	  ilower = max((m_lower_correction ? ilower-1 : ilower),QUANT_MIN);
-	  iupper = min((m_upper_correction ? iupper+1 : iupper),QUANT_MAX);
+	  int4 m_lower_correction = (cl::sycl::fma(ilower.convert<float,cl::sycl::rounding_mode::rtn>(),decode_scale,minF)) > lower;
+	  int4 m_upper_correction = (cl::sycl::fma(iupper.convert<float,cl::sycl::rounding_mode::rtp>(),decode_scale,minF)) < upper;
 
-	  //printf("ilower %d iupper %d \n",ilower,iupper);
+	  //ilower = max((m_lower_correction ? ilower-1 : ilower),QUANT_MIN);
+	  //iupper = min((m_upper_correction ? iupper+1 : iupper),QUANT_MAX);
 	  
-	  /* disable invalid lanes */
-	  ilower = m_valid ? ilower : (int4)QUANT_MAX;
-	  iupper = m_valid ? iupper : (int4)QUANT_MIN;
+	  ilower = max(cl::sycl::select(ilower,ilower-1,m_lower_correction),QUANT_MIN);
+	  iupper = min(cl::sycl::select(iupper,iupper+1,m_upper_correction),QUANT_MAX);	  
 
-	  uchar4 clower = convert_uchar4(ilower);
-	  uchar4 cupper = convert_uchar4(iupper);
+	  /* disable invalid lanes */	  
+	  //ilower = m_valid ? ilower : (int4)QUANT_MAX;
+	  //iupper = m_valid ? iupper : (int4)QUANT_MIN;
 
-	  //printf("final ilower %d iupper %d \n",ilower,iupper);
+	  ilower = cl::sycl::select((int4)QUANT_MAX,ilower,m_valid);
+	  iupper = cl::sycl::select((int4)QUANT_MIN,iupper,m_valid);
+	  uchar4 clower = ilower.convert<cl::sycl::uchar,cl::sycl::rounding_mode::rtz>();
+	  uchar4 cupper = iupper.convert<cl::sycl::uchar,cl::sycl::rounding_mode::rtz>();
 	  
-	  qnode->offset[subgroupLocalID] = offset;
-	  qnode->bounds_xy[subgroupLocalID].lower_x = clower.x;
-	  qnode->bounds_xy[subgroupLocalID].lower_y = clower.y;
-	  qnode->bounds_z [subgroupLocalID].lower_z = clower.z;
-	  qnode->bounds_xy[subgroupLocalID].upper_x = cupper.x;
-	  qnode->bounds_xy[subgroupLocalID].upper_y = cupper.y;
-	  qnode->bounds_z [subgroupLocalID].upper_z = cupper.z;	  
-	  qnode->org   = minF;
-	  qnode->scale = decode_scale;	  
-#endif	  
+	  node.offset[subgroupLocalID] = -1;
+	  node.bounds_xy[subgroupLocalID].lower_x = clower.x();
+	  node.bounds_xy[subgroupLocalID].lower_y = clower.y();
+	  node.bounds_z [subgroupLocalID].lower_z = clower.z();
+	  node.bounds_xy[subgroupLocalID].upper_x = cupper.x();
+	  node.bounds_xy[subgroupLocalID].upper_y = cupper.y();
+	  node.bounds_z [subgroupLocalID].upper_z = cupper.z();	  
+	  node.org   = minF;
+	  node.scale = decode_scale;	  
 	}
       }
     };
