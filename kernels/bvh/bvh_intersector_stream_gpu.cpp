@@ -29,7 +29,7 @@ extern int ctz(int t);
 #endif
 
 #define STACK_ENTRIES 64
-#define DBG(x) 
+#define DBG(x) x
 
 #if defined(ENABLE_RAY_STATS)
 #define RAY_STATS(x) x
@@ -70,7 +70,8 @@ namespace embree
       return offset & (~63);
     }
 
-    inline float intersectQuad1(const gpu::Quad1 *const quad1,
+    inline float intersectQuad1(const cl::sycl::intel::sub_group &sg,
+				const gpu::Quad1 *const quad1,
 				const uint numQuads,
 				const cl::sycl::float3 &org,
 				const cl::sycl::float3 &dir,
@@ -80,6 +81,9 @@ namespace embree
 				const unsigned int slotID,
 				const cl::sycl::stream &out)
     {
+      const uint subgroupLocalID = sg.get_local_id()[0];
+      const uint subgroupSize    = sg.get_local_range().size();
+      
       float new_tfar = tfar;
       const uint quadID = slotID >> 1;  
       if (slotID < numQuads*2)
@@ -122,8 +126,13 @@ namespace embree
 	  int m_hit = u >= 0.0f && v >= 0.0f && u+v <= 1.0f;
 
 	  //if (m_hit == 0) return; // early out
-	  m_hit &= tnear <= t && t < tfar; // den != 0.0f &&
+	  m_hit &= (tnear <= t) && (t < tfar); // den != 0.0f &&
 	  //printf("m_hit %d u %f v %f \n",m_hit,u,v);
+
+	  for (uint i=0;i<subgroupSize;i++)
+	     if (i == subgroupLocalID)
+	       out << "i " << i << " t " << t << cl::sycl::endl;
+	  
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
@@ -160,7 +169,8 @@ namespace embree
       float hit_tfar    = rayhit.ray.tfar;
 
       DBG(
-	  out << "org " << org << " dir " << dir << " tnear " << tnear << " tfar " << tfar << cl::sycl::endl;
+	  if (subgroupLocalID == 0)
+	    out << "org " << org << " dir " << dir << " tnear " << tnear << " tfar " << tfar << cl::sycl::endl;
 	  );
       
       const unsigned int maskX = cl::sycl::select(1,0,(uint)(dir.x() >= 0.0f));
@@ -308,10 +318,14 @@ namespace embree
 	  const unsigned int leafOffset = getLeafOffset(cur);    
 
 	  const gpu::Quad1 *const quads = (struct gpu::Quad1 *)(bvh_base + leafOffset);
-	  hit_tfar = intersectQuad1(quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID,out);
+	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID,out);
     
 	  //const float old_tfar = tfar;
 	  tfar = sg.reduce<float,cl::sycl::intel::minimum>(hit_tfar);
+
+	  // for (uint i=0;i<subgroupSize;i++)
+	  //   if (i == subgroupLocalID)
+	  //     out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
 	  
 	}
 
@@ -356,7 +370,9 @@ namespace embree
       //for (size_t i=0;i<10;i++)
       // std::cout << i << " " << inputRays[i] << std::endl;
 
-
+      PRINT(sizeof(gpu::RTCRayHitGPU));
+      PRINT(sizeof(RTCRayHit));
+      
       numRays = 1;
       
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
