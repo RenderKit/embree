@@ -579,7 +579,7 @@ namespace embree
 #endif
 
 	    gpu::Quad1 *quad1 = (gpu::Quad1 *)(bvh_mem + globals->leaf_mem_allocator_start);
-	    PRINT(globals->leaf_mem_allocator_start);
+
 	    for (size_t i=0;i<numPrimitives;i++)
 	      {
 		const uint index = primref_index[i];

@@ -163,7 +163,7 @@ namespace embree
       local_hit.init();
 
       const uint subgroupLocalID = sg.get_local_id()[0];
-      //const uint subgroupSize    = sg.get_local_range().size();
+      DBG(const uint subgroupSize    = sg.get_local_range().size());
 
       const float3 org(rayhit.ray.org[0],rayhit.ray.org[1],rayhit.ray.org[2]);
       const float3 dir(rayhit.ray.dir[0],rayhit.ray.dir[1],rayhit.ray.dir[2]);
@@ -392,35 +392,38 @@ namespace embree
 #if defined(EMBREE_DPCPP_SUPPORT)
       gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
       void *bvh_mem = (void*)(size_t)(bvh->root);
-      
+
+      DBG(
+	  PRINT( sizeof(gpu::RTCRayHitGPU) );
+	  PRINT( sizeof(RTCRayHit) );	  
+	  );
       assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );
       
-      //numRays = 16;
+      DBG(numRays = 1);
       
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 
-      //for (size_t i=0;i<16;i++)
-	{
-      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+      {
+	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
-	  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-	  const cl::sycl::nd_range<1> nd_range(numRays*cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));		  
-	  cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
-	      const uint groupID   = item.get_group(0);
-	      cl::sycl::intel::sub_group sg = item.get_sub_group();	      
-	      traceRayBVH16(sg,inputRays[groupID],bvh_mem,out);	      
-	    });		  
-	});
-      try {
-	gpu_queue.wait_and_throw();
-      } catch (cl::sycl::exception const& e) {
-	std::cout << "Caught synchronous SYCL exception:\n"
-		  << e.what() << std::endl;
-      }
+	    cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+	    const cl::sycl::nd_range<1> nd_range(numRays*cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));		  
+	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
+		const uint groupID   = item.get_group(0);
+		cl::sycl::intel::sub_group sg = item.get_sub_group();	      
+		traceRayBVH16(sg,inputRays[groupID],bvh_mem,out);	      
+	      });		  
+	  });
+	try {
+	  gpu_queue.wait_and_throw();
+	} catch (cl::sycl::exception const& e) {
+	  std::cout << "Caught synchronous SYCL exception:\n"
+		    << e.what() << std::endl;
 	}
+      }
 
-	//exit(0);
+      DBG(exit(0));
 #endif      
     }
 
