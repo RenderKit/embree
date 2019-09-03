@@ -171,45 +171,32 @@ namespace embree
       const unsigned int maskY = cselect((uint)(dir.y() >= 0.0f),0,1);
       const unsigned int maskZ = cselect((uint)(dir.z() >= 0.0f),0,1);
 
-      const float3 new_dir(cselect((int)(dir.x() != 0.0f),(float)dir.x(),1E-18f),
-			   cselect((int)(dir.y() != 0.0f),(float)dir.y(),1E-18f),
-			   cselect((int)(dir.z() != 0.0f),(float)dir.z(),1E-18f));
-
-      //const float3 inv_dir(cl::sycl::recip(new_dir.x()),cl::sycl::recip(new_dir.y()),cl::sycl::recip(new_dir.z())); // FIXME
-      
-      const float3 inv_dir( cl::sycl::native::recip((float)new_dir.x()),
-			    cl::sycl::native::recip((float)new_dir.y()),
-			    cl::sycl::native::recip((float)new_dir.z()));
+      const float3 new_dir = cselect(dir != 0.0f, dir, float3(1E-18f));
+      const float3 inv_dir = cl::sycl::native::recip(new_dir);
 
       //const float3 inv_dir_org = -inv_dir * org; // FIXME
 
       const float3 inv_dir_org(-(float)inv_dir.x() * (float)org.x(),-(float)inv_dir.y() * (float)org.y(),-(float)inv_dir.z() * (float)org.z());
-      
-      // for (uint i=0;i<subgroupSize;i++)
-      // 	if (i == subgroupLocalID)
-      // 	  out << "new_dir " << new_dir << " inv_dir " << inv_dir << " inv_dir_org " << inv_dir_org << cl::sycl::endl;
-      
+            
       const unsigned int max_uint  = 0xffffffff;  
       const unsigned int mask_uint = 0xfffffff0;
 
       const char *const bvh_base = (char*)bvh_mem;
       stack_offset[0] = max_uint; // sentinel
       stack_dist[0]   = -(float)INFINITY;
-      stack_offset[1] = sizeof(struct gpu::BVHBase); // single node after bvh start //*(global uint*)(bvh); // root noderef stored at the beginning of the bvh
+      stack_offset[1] = sizeof(struct gpu::BVHBase); // single node after bvh start 
       stack_dist[1]   = -(float)INFINITY;
-
-      // if (0 == subgroupLocalID)
-      // 	{
-      // 	  out << "sizes " << sizeof(float3) << " " << sizeof(gpu::AABB3f) << " " <<  sizeof(gpu::BVHBase) << cl::sycl::endl;
-      // 	  out << ((gpu::BVHNodeN *)bvh_base)[0] << cl::sycl::endl;
-      // 	}
 
       unsigned int sindex = 2; 
 
       while(1)
 	{ 
 	  sindex--;
-       
+
+#if STACK_CULLING  == 1    
+	  if (stack_dist[sindex] > tfar) continue;
+#endif
+	  
 	  unsigned int cur = stack_offset[sindex]; 
 
 	  while((cur & BVH_LEAF_MASK) == 0) 
@@ -253,16 +240,16 @@ namespace embree
 	      const float lower_z = cselect(maskZ,_upper_z,_lower_z);
 	      const float upper_z = cselect(maskZ,_lower_z,_upper_z);	     
 	      
-	      const float lowerX = cl::sycl::fma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
-	      const float upperX = cl::sycl::fma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());
-	      const float lowerY = cl::sycl::fma((float)inv_dir.y(), lower_y, (float)inv_dir_org.y());
-	      const float upperY = cl::sycl::fma((float)inv_dir.y(), upper_y, (float)inv_dir_org.y());
-	      const float lowerZ = cl::sycl::fma((float)inv_dir.z(), lower_z, (float)inv_dir_org.z());
-	      const float upperZ = cl::sycl::fma((float)inv_dir.z(), upper_z, (float)inv_dir_org.z());
+	      const float lowerX = cfma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
+	      const float upperX = cfma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());
+	      const float lowerY = cfma((float)inv_dir.y(), lower_y, (float)inv_dir_org.y());
+	      const float upperY = cfma((float)inv_dir.y(), upper_y, (float)inv_dir_org.y());
+	      const float lowerZ = cfma((float)inv_dir.z(), lower_z, (float)inv_dir_org.z());
+	      const float upperZ = cfma((float)inv_dir.z(), upper_z, (float)inv_dir_org.z());
 
 	      const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
-	      const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar) );
-	      const uint valid = islessequal(fnear,ffar);	  // final valid mask
+	      const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
+	      const uint valid = islessequal(fnear,ffar);	 
 	      uint mask = intel_sub_group_ballot(valid);  
 
 	      DBG(
@@ -274,7 +261,13 @@ namespace embree
 	      
 	      if (mask == 0)
 		{
-		  sindex--;	   
+#if STACK_CULLING  == 1
+		  do { 
+		    sindex--;
+		  } while (stack_dist[sindex] > tfar);
+#else		  
+		  sindex--;
+#endif		  
 		  cur = stack_offset[sindex];
 		  continue;
 		}
@@ -293,7 +286,7 @@ namespace embree
 	      
 	      if (popc == 1) continue; // single hit only
 	      int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
-	      t = valid ? t : max_uint;                     // invalid slots set to MIN_INT, as we sort descending;	
+	      t = valid ? t : max_uint; // invalid slots set to MIN_INT, as we sort descending;	
 
 	      
 	      for (uint i=0;i<popc-1;i++)

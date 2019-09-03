@@ -232,11 +232,16 @@ extern "C" void device_render (int* pixels,
 	}      
     });
 
+  double t0 = getSeconds();
+
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   context.flags = RTC_INTERSECT_CONTEXT_FLAG_GPU;
   rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],numRays,sizeof(Ray));
-  
+
+  double t1 = getSeconds();
+  std::cout << (float)numRays * 0.000001f / (t1 - t0) << " mrays/s" << std::endl;
+
   /* shade stream of rays */
   parallel_for(size_t(0),size_t(height),[&](const range<size_t>& rangeY) {
       for (size_t y=rangeY.begin(); y<rangeY.end(); y++)

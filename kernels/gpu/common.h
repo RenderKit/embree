@@ -74,10 +74,19 @@ using cl::sycl::uchar8;
 using cl::sycl::uchar4;
 using cl::sycl::uchar3;
 
+using cl::sycl::fmax;
+using cl::sycl::fmin;
+
 template<typename T, typename M>
   inline T cselect(const M &mask, const T &a, const T &b)
 {
   return cl::sycl::select(b,a,mask);
+}
+
+template<typename T>
+  inline T cfma(const T &a, const T &b, const T &c)
+{
+  return cl::sycl::fma(a,b,c);
 }
 
 namespace embree
