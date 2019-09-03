@@ -236,9 +236,6 @@ extern "C" void device_render (int* pixels,
   rtcInitIntersectContext(&context);
   context.flags = RTC_INTERSECT_CONTEXT_FLAG_GPU;
   rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],numRays,sizeof(Ray));
-
-  PRINT(rays[0]);
-  exit(0);
   
   /* shade stream of rays */
   parallel_for(size_t(0),size_t(height),[&](const range<size_t>& rangeY) {
