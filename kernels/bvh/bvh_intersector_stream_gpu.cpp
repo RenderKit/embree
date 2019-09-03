@@ -81,6 +81,8 @@ namespace embree
 				const unsigned int slotID,
 				const cl::sycl::stream &out)
     {
+      sg.barrier();
+      
       DBG(
 	  const uint subgroupLocalID = sg.get_local_id()[0];
 	  const uint subgroupSize    = sg.get_local_range().size();
@@ -95,40 +97,41 @@ namespace embree
 	  const uint primID = gpu::as_uint((float)_v0.w());
 	  // const float3 v1 = as_float3(quad1[quadID].v1);
 	  // const float3 v2 = as_float3(quad1[quadID].v3);
+#if 0	  
 	  const float8 vv = *(cl::sycl::float8*)&quad1[quadID].v1;
 	  const float4 _v1 = vv.lo();
-	  const uint geomID = gpu::as_uint((float)vv.s3());
+	  const uint geomID = gpu::as_uint((float)_v1.w());
 	  const float4 _v2 = vv.hi();
-
+#else
+	  const float4 _v1 = quad1[quadID].v1;
+	  const uint geomID = gpu::as_uint((float)_v1.w());	  
+	  const float4 _v2 = quad1[quadID].v3;	  
+#endif	  
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();
 	  const float3 v2 = _v2.xyz();
 
-	  DBG(
-	      if (slotID == 0)
-		{
-		  out << "v0 " << v0 << " v1 " << v1 << " v2 " << v2 << cl::sycl::endl;
-		});
 	  
+	      
 	  const float3 e1 = v0 - v1;
 	  const float3 e2 = v2 - v0;
 	  //printf("slotID %d v0 %f v1 %f v2 %f e1 %f e2 %f \n",slotID, v0,v1,v2,e1,e2);
       
-	  const float3 tri_Ng = cross(e1,e2);
+	  const float3 tri_Ng = cl::sycl::cross(e1,e2);
 
 
-	  const float den = dot(tri_Ng,dir);   			   
+	  const float den = cl::sycl::dot(tri_Ng,dir);   			   
 	  const float inv_den = cl::sycl::native::recip(den); // should be fast on GEN, don't think we need the sign trick
 	  /* moeller-trumbore test */
 	  const float3 tri_v0_org = v0 - org;
 	  const float3 R = cl::sycl::cross(dir,tri_v0_org);
 	  const float u = cl::sycl::dot(R,e2) * inv_den;
 	  const float v = cl::sycl::dot(R,e1) * inv_den;
-	  float t = dot(tri_v0_org,tri_Ng) * inv_den; 
-	  int m_hit = u >= 0.0f && v >= 0.0f && u+v <= 1.0f;
+	  float t = cl::sycl::dot(tri_v0_org,tri_Ng) * inv_den; 
+	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
 
 	  //if (m_hit == 0) return; // early out
-	  m_hit &= (tnear <= t) && (t < tfar); // den != 0.0f &&
+	  m_hit &= (tnear <= t) & (t < tfar); // den != 0.0f &&
 	  //printf("m_hit %d u %f v %f \n",m_hit,u,v);
 
 	  DBG(
@@ -136,7 +139,14 @@ namespace embree
 		if (i == subgroupLocalID)
 		  out << "i " << i << " t " << t << " m_hit " << m_hit << cl::sycl::endl;
 	      );
-	  
+#if 0
+	      if (slotID == 6)
+		{
+		  out << "v0 " << v0 << " v1 " << v1 << " v2 " << v2 << cl::sycl::endl;
+		  out << "R " << R << " tri_Ng " << tri_Ng << " den " << den << " inv_den " << inv_den << " mhit " << m_hit << " u " << u << " v " << v << " t " << t << cl::sycl::endl;
+		  
+		}
+#endif	  
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
@@ -146,9 +156,23 @@ namespace embree
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;
-	      hit.geomID = geomID;
+	      hit.geomID = geomID;	      
 	    }
+	  else
+	    {
+	      if (slotID == 6)
+		{
+		  out << "ptr " << (size_t)&quad1[quadID] << " sizeof " << sizeof(gpu::Quad1) << cl::sycl::endl;
+		  
+		  out << "R " << R << " e1 " << e1 << " e2 " << e2 << " cl::sycl::dot(R,e2) " << cl::sycl::dot(R,e2) << cl::sycl::endl;
+		  out << " mhit " << m_hit << " u " << u << " v " << v << " t " << t  << cl::sycl::endl;
+		  
+		}
+	      
+	    }
+	  
 	}
+      sg.barrier();      
       return new_tfar;
     }
     
@@ -163,7 +187,7 @@ namespace embree
       local_hit.init();
 
       const uint subgroupLocalID = sg.get_local_id()[0];
-      DBG(const uint subgroupSize    = sg.get_local_range().size());
+      const uint subgroupSize    = sg.get_local_range().size();
 
       const float3 org(rayhit.ray.org[0],rayhit.ray.org[1],rayhit.ray.org[2]);
       const float3 dir(rayhit.ray.dir[0],rayhit.ray.dir[1],rayhit.ray.dir[2]);
@@ -275,11 +299,11 @@ namespace embree
 	      const uint valid = islessequal(fnear,ffar);	  // final valid mask
 	      uint mask = intel_sub_group_ballot(valid);  
 
-	      DBG(
+	      //DBG(
 		  for (uint i=0;i<subgroupSize;i++)
 		    if (i == subgroupLocalID)
 		      out << "i " << i << " offset " << offset << " valid " << valid << " fnear " << fnear << " ffar " << ffar << cl::sycl::endl;
-		  );
+		  //  );
 
 	      
 	      if (mask == 0)
@@ -332,12 +356,12 @@ namespace embree
 	      
 	    }
 
-	  DBG(
+	  //DBG(
 	      if (0 == subgroupLocalID)
 		{
 		  out << "leaf " << cur << cl::sycl::endl;
 		}
-	      );
+	      //  );
 	  
 	  if (cur == max_uint) break; // sentinel reached -> exit
 
@@ -346,7 +370,11 @@ namespace embree
 
 	  const gpu::Quad1 *const quads = (struct gpu::Quad1 *)(bvh_base + leafOffset);
 	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID,out);
-    
+
+	  for (uint i=0;i<subgroupSize;i++)
+	    if (i == subgroupLocalID)
+	      out << "hit_tfar " << hit_tfar << cl::sycl::endl;
+	  
 	  //const float old_tfar = tfar;
 	  tfar = sg.reduce<float,cl::sycl::intel::minimum>(hit_tfar);
 
@@ -356,11 +384,11 @@ namespace embree
 	  
 	}
 
-      DBG(
+      //DBG(
 	  for (uint i=0;i<subgroupSize;i++)
 	    if (i == subgroupLocalID)
 	      out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
-	  );
+	  //);
 
 	  
       const uint index = ctz(intel_sub_group_ballot(tfar == hit_tfar));
@@ -371,7 +399,6 @@ namespace embree
 	    rayhit.ray.tfar = tfar;
 	    DBG(out << "rayhit.ray.tfar " << rayhit.ray.tfar << " rayhit.hit " << rayhit.hit << cl::sycl::endl);
 	  }
-      
     }
 #endif
 
@@ -399,7 +426,7 @@ namespace embree
 	  );
       assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );
       
-      DBG(numRays = 1);
+      numRays = 1;
       
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
