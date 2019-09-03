@@ -94,8 +94,8 @@ namespace embree
 
       shader(SHADER_DEFAULT),
 
-      width(512),
-      height(512),
+      width(1024),
+      height(1024),
       pixels(nullptr),
 
       outputImageFilename(""),
@@ -106,8 +106,8 @@ namespace embree
       interactive(true),
       fullscreen(false),
 
-      window_width(512),
-      window_height(512),
+      window_width(1024),
+      window_height(1024),
       window(nullptr),
 
       time0(getSeconds()),
