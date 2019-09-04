@@ -334,7 +334,7 @@ namespace embree
 	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem,out);
 
 	    /* set parent pointer in child build records */
-	    struct gpu::BVHNodeN *node = (struct gpu::BVHNodeN*)(bvh_mem + node_offset);
+	    struct gpu::QBVHNodeN *node = (struct gpu::QBVHNodeN*)(bvh_mem + node_offset);
 	    if (subgroupLocalID < numChildren)
 		children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
 
@@ -345,6 +345,184 @@ namespace embree
 	  }
       }			      
   }
+
+
+  inline bool outsideAABBTest(gpu::AABB &big, gpu::AABB &small)
+  {
+    int4 b0 = small.lower < big.lower;
+    int4 b1 = small.upper > big.upper;
+    int4 b = b0 | b1;
+    return b.x() | b.y() | b.z();
+  }
+
+  
+  inline void printBVHStats(gpu::Globals *globals, char *bvh_mem, const cl::sycl::stream &out)
+  {
+    struct StatStack
+    {
+      gpu::AABB aabb;
+      uint node;
+      float area;
+      uint depth;
+      uint tmp;
+    };
+    
+    StatStack stack[BVH_MAX_STACK_ENTRIES];
+
+    
+    
+    float sah_nodes  = 0.0f;
+    
+    float sah_leaves = 0.0f;
+    uint leaves = 0;
+    uint inner_nodes = 0;
+    uint mixed_inner_nodes = 0;
+    uint max_depth = 0;
+    uint leaf_items = 0;
+    uint inner_nodes_valid_children = 0;
+    
+    gpu::AABB root_aabb = ((struct gpu::QBVHNodeN*)(bvh_mem + sizeof(gpu::BVHBase)))->getBounds();
+    out << root_aabb << cl::sycl::endl;
+
+    
+    const float root_area = root_aabb.halfarea();
+    
+    uint sindex = 1;
+    stack[0].node = sizeof(gpu::BVHBase);
+    stack[0].area = root_area;
+    stack[0].aabb = root_aabb;
+    stack[0].depth = 1;
+    
+      while(sindex)
+	{
+	  sindex--;
+	  uint current            = stack[sindex].node;	
+	  float current_area      = stack[sindex].area;
+	  gpu::AABB current_aabb  = stack[sindex].aabb;
+	  uint current_depth      = stack[sindex].depth;
+
+	  max_depth = max(max_depth,current_depth);
+	
+	  if (current & BVH_LEAF_MASK)
+	    {
+	      unsigned int prims = gpu::getNumLeafPrims(current);	    
+	      unsigned int prims_offset = gpu::getLeafOffset(current);
+	      leaf_items += prims;
+	      sah_leaves += current_area;
+	      leaves++;
+
+	      if (prims > BVH_LEAF_N_MAX)
+		out << "too many items in leaf " << prims << cl::sycl::endl;	      
+	    
+	      gpu::AABB leafAABB;
+	      leafAABB.init();
+
+	      gpu::Quad1 *quads = (gpu::Quad1 *)(bvh_mem + prims_offset);
+	    
+	      for (uint i=0;i<prims;i++)
+		{
+		  gpu::AABB quadAABB = quads[i].getBounds();
+		  leafAABB.extend(quadAABB);
+		}
+#if 0	    
+	      if (outsideAABBTest(current_aabb,leafAABB))
+		{
+		  out << "leaf error: current " << current << " depth " << current_depth << cl::sycl::endl;
+		  out << "current_aabb: " << current_aabb << cl::sycl::endl;
+		  out << "leaf bounds:  " << leafAABB << cl::sycl::endl;
+		}
+#endif	      
+	    }
+	  else
+	    {
+	      inner_nodes++;
+	      sah_nodes += current_area;
+	      gpu::QBVHNodeN *nodeN = (gpu::QBVHNodeN*)(bvh_mem + current);
+	      uint children = 0;
+	      for (uint i=0;i<BVH_NODE_N;i++)
+		{
+		  if (nodeN->offset[i] == (unsigned int)-1) break;
+		  children++;
+		}
+	    
+	      uint leavesInNode = 0;
+	      for (uint i=0;i<BVH_NODE_N;i++)
+		{
+		  if (nodeN->offset[i] == (unsigned int)-1) break;
+		  inner_nodes_valid_children++;
+		
+		  gpu::AABB aabb = nodeN->getBounds(i);
+		  const float area = aabb.halfarea();
+
+		  if (aabb.lower.x() == (float)(INFINITY))
+		    {
+		      out << "aabb inf error " << i << " current " << current << " nodeN " << children << cl::sycl::endl;
+		      break;
+		    }
+		
+		  if (nodeN->offset[i] > globals->totalAllocatedMem || (int)nodeN->offset[i] < 0)
+		    {
+		      out << "offset error " << i << " nodeN->offset[i] " << nodeN->offset[i] << cl::sycl::endl;
+		      break;
+		    }
+				
+		  stack[sindex].node = current + nodeN->offset[i];
+		  stack[sindex].area = area;
+		  stack[sindex].aabb = aabb;
+		  stack[sindex].depth = current_depth + 1;
+
+		  if (stack[sindex].node & BVH_LEAF_MASK)
+		    leavesInNode++;
+
+		  sindex++;
+		}
+	      if (leavesInNode >0 && leavesInNode != children)
+		mixed_inner_nodes++;
+	    }
+	}
+      sah_nodes  *= 1.0f / root_area;
+      sah_leaves *= 1.0f / root_area;
+      float sah = sah_nodes + sah_leaves;
+      float node_util = 100.0f * (float)inner_nodes_valid_children / (inner_nodes * BVH_NODE_N);
+      float leaf_util = 100.0f * (float)leaf_items / (leaves * BVH_LEAF_N_MAX);
+
+      out << "BVH_NODE_N " << BVH_NODE_N << " BVH_LEAF_N_MIN " << BVH_LEAF_N_MIN <<  " BVH_LEAF_N_MAX " << BVH_LEAF_N_MAX << cl::sycl::endl;
+      out << "allocators: node " << globals->node_mem_allocator_start << " -> " << globals->node_mem_allocator_cur
+	  << " ; leaf " << globals->leaf_mem_allocator_start << " -> " << globals->leaf_mem_allocator_cur
+	  << " max allocated memory " << globals->totalAllocatedMem << cl::sycl::endl;
+      
+      out << "inner_nodes " << inner_nodes
+	  << " leaves " << leaves
+	  << " mixed_inner_nodes " << mixed_inner_nodes
+	  << " sah " << sah
+	  << " sah_nodes  " << sah_nodes
+	  << " sah_leaves " << sah_leaves
+	  << " max_depth " << max_depth
+	  << " leaf_items " << leaf_items
+	  << " node_util " << node_util << "%"
+	  << " leaf_util " << leaf_util << "%"
+	  << " ( " << (float)leaf_items / leaves << ")"
+	  << cl::sycl::endl;
+    
+      uint node_mem        = globals->node_mem_allocator_cur-globals->node_mem_allocator_start;
+      uint max_node_mem    = globals->leaf_mem_allocator_start;
+      float node_mem_ratio = 100.0f * (float)node_mem / max_node_mem;
+    
+      uint leaf_mem        = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
+      uint max_leaf_mem    = globals->totalAllocatedMem      - globals->leaf_mem_allocator_start;
+      float leaf_mem_ratio = 100.0f * (float)leaf_mem / max_leaf_mem;
+		      
+      uint total_mem        = node_mem + leaf_mem;
+      float total_mem_ratio = 100.0f * (float)total_mem / globals->totalAllocatedMem;
+      
+      out << "used node memory " << node_mem << " (" << node_mem_ratio
+	  << "%) / used leaf memory " << leaf_mem << " (" << leaf_mem_ratio
+	  << "%) / total memory used " << total_mem << " (" << total_mem_ratio
+	  << "%) / total memory allocated " << globals->totalAllocatedMem << cl::sycl::endl;
+  }
+
+
+
 #endif
 
   namespace isa
@@ -437,7 +615,7 @@ namespace embree
 	    /* --- estimate size of the BVH --- */
 	    unsigned int totalSize       = 64 + numPrimitives * 2 * 64;
 	    unsigned int node_data_start = sizeof(gpu::BVHBase);
-	    unsigned int leaf_data_start = numPrimitives * 64;
+	    unsigned int leaf_data_start = totalSize - numPrimitives * 64;
 
 	    /* --- allocate buffers --- */
 
@@ -463,6 +641,7 @@ namespace embree
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cgh.single_task<class init_first_kernel>([=]() {
 		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
+		      globals->leaf_mem_allocator_cur += sizeof(gpu::Quad1)*numPrimitives;
 		    });
 		});
 	      try {
@@ -599,28 +778,40 @@ namespace embree
 			      geomID,
 			      primID,
 			      primID);
-		
-		// PRINT(mesh);
-		// PRINT(v0);
-		// PRINT(v1);
-		// PRINT(v2);
-		
 	      }
+
+	    
+            /* call BVH builder */
+            NodeRef root = NodeRef((size_t)bvh_mem);
+	    // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+
+#endif	    
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+
+	    /* print BVH stats */
+	    {
+	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+		  cgh.single_task<class printStats>([=]() {
+		      printBVHStats(globals,bvh_mem,out);
+		    });
+
+		});
+	      try {
+		gpu_queue.wait_and_throw();
+	      } catch (cl::sycl::exception const& e) {
+		std::cout << "Caught synchronous SYCL exception:\n"
+			  << e.what() << std::endl;
+	      }	      
+	    }
 
 	    /* --- deallocate temporary data structures --- */
 	    cl::sycl::free(aabb         ,deviceGPU->getContext());
 	    cl::sycl::free(primref_index,deviceGPU->getContext());
 	    cl::sycl::free(globals      ,deviceGPU->getContext());
 
-	    
-            /* call BVH builder */
-            NodeRef root = NodeRef((size_t)bvh_mem); // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-
-#endif	    
-            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
-
 	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
-
+	    
 #if PROFILE
           });
 #endif

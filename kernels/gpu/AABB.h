@@ -161,7 +161,10 @@ namespace embree
 	result.upper.w() = 0.0f;	
 	return result;	
       }
-            
+
+      inline float     area() { return gpu::area(size()); }
+      inline float halfarea() { return gpu::halfarea(size()); }      
+	
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB& aabb) {

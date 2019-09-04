@@ -24,7 +24,6 @@
 #include "../gpu/geometry.h"
 #endif
 
-#define STACK_ENTRIES 64
 #define DBG(x) 
 
 #if defined(ENABLE_RAY_STATS)
@@ -56,15 +55,6 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-    inline unsigned int getNumLeafPrims(unsigned int offset)
-    {
-      return (offset & 0x7)+1;
-    }
-
-    inline unsigned int getLeafOffset(unsigned int offset)
-    {
-      return offset & (~63);
-    }
 
     inline float dot3(const float3 &a,
 		      const float3 &b)
@@ -145,8 +135,8 @@ namespace embree
 
     [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayHitGPU &rayhit, void *bvh_mem, const cl::sycl::stream &out)
     {
-      unsigned int stack_offset[STACK_ENTRIES]; 
-      float        stack_dist[STACK_ENTRIES];  
+      unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
+      float        stack_dist[BVH_MAX_STACK_ENTRIES];  
 
       // === init local hit ===
       gpu::RTCHitGPU local_hit;
@@ -318,8 +308,8 @@ namespace embree
 	  
 	  if (cur == max_uint) break; // sentinel reached -> exit
 
-	  const unsigned int numPrims = getNumLeafPrims(cur);
-	  const unsigned int leafOffset = getLeafOffset(cur);    
+	  const unsigned int numPrims = gpu::getNumLeafPrims(cur);
+	  const unsigned int leafOffset = gpu::getLeafOffset(cur);    
 
 	  const gpu::Quad1 *const quads = (struct gpu::Quad1 *)(bvh_base + leafOffset);
 	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID,out);

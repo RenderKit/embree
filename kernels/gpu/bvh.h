@@ -28,6 +28,9 @@
 #define BVH_NODE_N          16
 #define BVH_NODE_N_LOG       4
 
+#define BVH_MAX_STACK_ENTRIES 64
+
+
 /* ====== QUANTIZATION config ====== */
 
 #define QUANT_BITS            8
@@ -154,6 +157,19 @@ namespace embree
 	aabb.upper = cl::sycl::fma(upperf,scale,org);
 	return aabb;
       }
+
+      inline AABB getBounds()
+      {
+	AABB aabb;
+	aabb.init();
+	for (uint i=0;i<BVH_NODE_N;i++)
+	  {
+	    if (offset[i] == -1) break;
+	    aabb.extend(getBounds(i));
+	  }
+	return aabb;
+      }
+
       
       inline static void init(cl::sycl::intel::sub_group &sg,
 			      QBVHNodeN &node,			      
@@ -241,6 +257,16 @@ namespace embree
 	      << cl::sycl::endl;
 	}      
       return out; 
+    }
+
+    inline unsigned int getNumLeafPrims(unsigned int offset)
+    {
+      return (offset & 0x7)+1;
+    }
+
+    inline unsigned int getLeafOffset(unsigned int offset)
+    {
+      return offset & (~63);
     }
 
   };

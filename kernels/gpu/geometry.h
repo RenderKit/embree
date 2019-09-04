@@ -17,6 +17,7 @@
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 #include "common.h"
+#include "AABB.h"
 
 namespace embree
 {
@@ -32,15 +33,15 @@ namespace embree
 
     struct Quad1
     {
-      float4 v0,v2,v1,v3; //v1v3 loaded once
+      float4 v0,v2,v1,v3; //v1v3 loaded once using float8
 
-      void init(const float4 &_v0,
-		const float4 &_v1,
-		const float4 &_v2,
-		const float4 &_v3,
-		const uint geomID,
-		const uint primID0,
-		const uint primID1)
+      inline void init(const float4 &_v0,
+		       const float4 &_v1,
+		       const float4 &_v2,
+		       const float4 &_v3,
+		       const uint geomID,
+		       const uint primID0,
+		       const uint primID1)
       {
 	v0 = _v0;
 	v1 = _v1;
@@ -51,6 +52,18 @@ namespace embree
 	v2.w() = as_float(primID1);
 	v3.w() = 0.0f;
       }
+
+      inline AABB getBounds()
+      {
+	AABB aabb;
+	aabb.init();
+	aabb.extend(v0);
+	aabb.extend(v1);
+	aabb.extend(v2);
+	aabb.extend(v3);
+	return aabb;
+      }
+      
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const Quad1& quad) {

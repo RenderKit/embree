@@ -429,12 +429,11 @@ namespace embree
     inline uint createNode(cl::sycl::intel::sub_group &subgroup, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem, const cl::sycl::stream &out)
     {
       const uint subgroupLocalID = subgroup.get_local_id()[0];
-      //const uint subgroupSize    = subgroup.get_local_range().size();
 
       uint node_offset = 0;
       if (subgroupLocalID == 0)
 	{
-	  node_offset = globals.alloc_node_mem(sizeof(gpu::BVHNodeN));
+	  node_offset = globals.alloc_node_mem(sizeof(gpu::QBVHNodeN));
 	  DBG_BUILD(out << "node offset " << node_offset << cl::sycl::endl);
 	}
       node_offset = subgroup.broadcast<uint>(node_offset,0); 
@@ -444,11 +443,9 @@ namespace embree
       gpu::QBVHNodeN::init(subgroup,node,childrenAABB,numChildren,out);
 #else      
       gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_mem + node_offset);
-
       if (subgroupLocalID < numChildren)
 	node.setBVHNodeN(childrenAABB[subgroupLocalID],subgroupLocalID);
-  
-      if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
+      else if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
 	node.initBVHNodeN(subgroupLocalID);	      
 #endif
       DBG_BUILD(
