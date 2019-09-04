@@ -487,11 +487,12 @@ namespace embree
        const uint ee = compare_exchange(sg,dd,shuffle8mirror[slotID],selGo8[slotID],ascending);
        const uint ff = compare_exchange(sg,ee,shuffle4rotate[slotID],selGo4[slotID],ascending);
        const uint gg = compare_exchange(sg,ff,shuffle2mirror[slotID],selGo2[slotID],ascending);
-       const uint hh = compare_exchange(sg,aa,shuffle16mirror[slotID],selGo16[slotID],ascending);
-       const uint ii = compare_exchange(sg,bb,shuffle8rotate[slotID],selGo8[slotID],ascending);
-       const uint jj = compare_exchange(sg,cc,shuffle4rotate[slotID],selGo4[slotID],ascending);
-       const uint kk = compare_exchange(sg,dd,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       const uint hh = compare_exchange(sg,gg,shuffle16mirror[slotID],selGo16[slotID],ascending);
+       const uint ii = compare_exchange(sg,hh,shuffle8rotate[slotID],selGo8[slotID],ascending);
+       const uint jj = compare_exchange(sg,ii,shuffle4rotate[slotID],selGo4[slotID],ascending);
+       const uint kk = compare_exchange(sg,jj,shuffle2mirror[slotID],selGo2[slotID],ascending);
        return kk;
+       
      }
 
      inline uint sort8(const cl::sycl::intel::sub_group &sg, const uint aa, const bool ascending)
