@@ -325,11 +325,14 @@ namespace embree
 	      }
 
 	    /* sort children based on range size */
-	    //const float _sortID = childrenAABB[subgroupLocalID].upper.w();
-	    //const uint sortID = gpu::as_uint(_sortID);
-	    //const uint numPrimsIDs = cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
-	    const uint IDs = subgroupLocalID; //sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
-
+#if 0	    
+	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
+	    const uint sortID = gpu::as_uint(_sortID);
+	    const uint numPrimsIDs = cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
+	    const uint IDs = gpu::sortBVHChildrenIDs(subgroup,numPrimsIDs) & (BVH_NODE_N-1);
+#else	    
+	    const uint IDs = subgroupLocalID; 
+#endif
 	    /* create bvh node */
 	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem,out);
 

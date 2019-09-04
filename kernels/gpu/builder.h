@@ -456,7 +456,77 @@ namespace embree
 		);
       return node_offset;      
     }
-        
+
+
+     const uint shuffle2mirror[16]  = { 1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14 };
+     const uint shuffle4mirror[16]  = { 3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12 };
+     const uint shuffle4rotate[16]  = { 2,3,0,1,6,7,4,5,10,11,8,9,14,15,12,13 };
+     const uint shuffle8mirror[16]  = { 7,6,5,4,3,2,1,0,15,14,13,12,11,10,9,8 };
+     const uint shuffle8rotate[16]  = { 4,5,6,7,0,1,2,3,12,13,14,15,8,9,10,11 };
+     const uint shuffle16mirror[16] = { 15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0 };
+
+     const uint selGo2[16]  = { 0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1 };
+     const uint selGo4[16]  = { 0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1 };
+     const uint selGo8[16]  = { 0,0,0,0,1,1,1,1,0,0,0,0,1,1,1,1 };
+     const uint selGo16[16] = { 0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1 };
+     
+     inline uint compare_exchange(const cl::sycl::intel::sub_group &sg, const uint a0, const uint shuffleMask, const uint selectMask, const bool ascending)
+     {
+       const uint a1 = sg.shuffle(a0,shuffleMask);
+       const uint a_min = min(a0,a1);
+       const uint a_max = max(a0,a1);
+       return cl::sycl::select(ascending ? a_min : a_max,ascending ? a_max : a_min,selectMask);
+     }
+
+     inline uint sort16(const cl::sycl::intel::sub_group &sg, const uint aa, const bool ascending)
+     { 
+       const uint slotID = sg.get_local_id()[0];		
+       const uint bb = compare_exchange(sg,aa,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       const uint cc = compare_exchange(sg,bb,shuffle4mirror[slotID],selGo4[slotID],ascending);
+       const uint dd = compare_exchange(sg,cc,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       const uint ee = compare_exchange(sg,dd,shuffle8mirror[slotID],selGo8[slotID],ascending);
+       const uint ff = compare_exchange(sg,ee,shuffle4rotate[slotID],selGo4[slotID],ascending);
+       const uint gg = compare_exchange(sg,ff,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       const uint hh = compare_exchange(sg,aa,shuffle16mirror[slotID],selGo16[slotID],ascending);
+       const uint ii = compare_exchange(sg,bb,shuffle8rotate[slotID],selGo8[slotID],ascending);
+       const uint jj = compare_exchange(sg,cc,shuffle4rotate[slotID],selGo4[slotID],ascending);
+       const uint kk = compare_exchange(sg,dd,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       return kk;
+     }
+
+     inline uint sort8(const cl::sycl::intel::sub_group &sg, const uint aa, const bool ascending)
+     {
+       const uint slotID = sg.get_local_id()[0];		
+       const uint bb = compare_exchange(sg,aa,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       const uint cc = compare_exchange(sg,bb,shuffle4mirror[slotID],selGo4[slotID],ascending);
+       const uint dd = compare_exchange(sg,cc,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       const uint ee = compare_exchange(sg,dd,shuffle8mirror[slotID],selGo8[slotID],ascending);
+       const uint ff = compare_exchange(sg,ee,shuffle4rotate[slotID],selGo4[slotID],ascending);
+       const uint gg = compare_exchange(sg,ff,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       return gg;
+     }
+
+     inline uint sort4(const cl::sycl::intel::sub_group &sg, const uint aa, const bool ascending)
+     {
+       const uint slotID = sg.get_local_id()[0];		
+       const uint bb = compare_exchange(sg,aa,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       const uint cc = compare_exchange(sg,bb,shuffle4mirror[slotID],selGo4[slotID],ascending);
+       const uint dd = compare_exchange(sg,cc,shuffle2mirror[slotID],selGo2[slotID],ascending);
+       return dd;
+     }
+
+     inline uint sortBVHChildrenIDs(const cl::sycl::intel::sub_group &sg, uint input)
+     {
+#if BVH_NODE_N == 16
+       return sort16(sg, input,false);
+#elif BVH_NODE_N == 8
+       return sort8(sg, input,false);
+#else
+       return sort4(sg, input,false);  
+#endif
+     }
+
+    
   };
 };
 

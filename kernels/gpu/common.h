@@ -139,7 +139,28 @@ namespace embree
       {
 	return __builtin_bit_cast(float,t);
       }
-     
+
+    inline uint bitInterleave(const uint4 in)
+    {
+      uint x = in.x(), y = in.y(), z = in.z();
+      x = (x | (x << 16)) & 0x030000FF;
+      x = (x | (x <<  8)) & 0x0300F00F;
+      x = (x | (x <<  4)) & 0x030C30C3;
+      x = (x | (x <<  2)) & 0x09249249;
+
+      y = (y | (y << 16)) & 0x030000FF;
+      y = (y | (y <<  8)) & 0x0300F00F;
+      y = (y | (y <<  4)) & 0x030C30C3;
+      y = (y | (y <<  2)) & 0x09249249;
+
+      z = (z | (z << 16)) & 0x030000FF;
+      z = (z | (z <<  8)) & 0x0300F00F;
+      z = (z | (z <<  4)) & 0x030C30C3;
+      z = (z | (z <<  2)) & 0x09249249;
+
+      return x | (y << 1) | (z << 2);
+    }
+    
   };
 };
 
