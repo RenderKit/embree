@@ -164,6 +164,8 @@ def runConfig(config):
     elif (compiler == "ICC15"):
       conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
       env.append("module load intel/2015")
+    elif (compiler.startswith("ICC"):
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/"+compiler[3:]+"-osx/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/"+compiler[3:]+"-osx/bin/icc")
     elif (compiler == "GCC"):
       conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
     elif (compiler == "CLANG"):

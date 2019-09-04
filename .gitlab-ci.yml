@@ -18,7 +18,12 @@
 # Continuous Test
 ####################################################################
 
-continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
+continuous-macosx-x64-RelWithDebInfo-ICC2019.4-ISPC1.9.2-AVX2-TBB2019.2:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC2019.4 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
+  tags:   [mac]
+  only:   [pushes]
+
+.continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [win7, v120]
   only:   [pushes]
@@ -28,23 +33,23 @@ continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
 #  tags:   [win7, v140]
 #  only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2:
+.continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2 maxinstancelevelcount:8"
   tags:   [win7, v141]
   only:   [pushes]
  
-continuous-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2:
+.continuous-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [mac, clang]
   only:   [pushes]
 
-continuous-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX512SKX-TBB2019.2:
+.continuous-linux-skx-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX512SKX-TBB2019.2:
   image: embreedocker/centos:6.0
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:2 maxinstancelevelcount:4"
   tags:   [docker, skx]
   only:   [pushes]
 
-continuous-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX512SKX-TBB2019.2:
+.continuous-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX512SKX-TBB2019.2:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:2"
   tags:   [docker, skx]
@@ -56,31 +61,31 @@ continuous-linux-skx-x64-RelWithDebInfo-CLANG4-ISPC1.9.2-AVX512SKX-TBB2019.2:
 #  tags:   [docker-knl]
 #  only:   [pushes]
   
-continuous-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
+.continuous-linux-x64-RelWithDebInfo-CLANG5-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5 ispc:ispc1.9.2 isa:AVX2 tasking:INT intensity:1 addrsanitizer:ON"
   tags:   [docker]
   only:   [pushes]
 
-continuous-ubuntu17.10-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-NAMESPACE:
+.continuous-ubuntu17.10-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-NAMESPACE:
   image: embreedocker/ubuntu:17.10
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree"
   tags:   [docker]
   only:   [pushes]
 
-continuous-centos7.4-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
+.continuous-centos7.4-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB:
   image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB intensity:1"
   tags:   [docker]
   only:   [pushes]
 
-continuous-fedora27-x64-RelWithDebInfo-GCC-ISPC-AVX512SKX-TBB:
+.continuous-fedora27-x64-RelWithDebInfo-GCC-ISPC-AVX512SKX-TBB:
   image: embreedocker/fedora:27
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [docker, skx]
   only:   [pushes]
 
-continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-KLOCKWORK:
+.continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-KLOCKWORK:
   image: embree-kw-centos7
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB klocwork:ON intensity:0"
   tags:   [kw-scan-docker]
@@ -165,9 +170,9 @@ nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
 #  tags:   [mac, icc15]
 #  only:   [schedules]
 
-nightly-macosx-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4"
-  tags:   [mac, icc16]
+nightly-macosx-x64-RelWithDebInfo-ICC2019.4-ISPC1.9.2-AVX2-TBB2019.2:
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC2019.4 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4"
+  tags:   [mac]
   only:   [schedules]
 
 
@@ -495,9 +500,9 @@ release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
     when:  always
     expire_in: 2 mos
 
-release-macosx-x64-Release-ICC16-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2019.2 intensity:4 package:ZIP"
-  tags:   [mac, icc16]
+release-macosx-x64-Release-ICC2019.4-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2019.2 intensity:4 package:ZIP"
+  tags:   [mac]
   only:   [web]
   artifacts:
     name: "$CI_JOB_NAME"
@@ -505,9 +510,9 @@ release-macosx-x64-Release-ICC16-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
-release-macosx-x64-Release-ICC16-ISPC1.9.2-TBB-PACKAGE-PKG:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC16 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
-  tags:   [mac, icc16]
+release-macosx-x64-Release-ICC2019.4-ISPC1.9.2-TBB-PACKAGE-PKG:
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
+  tags:   [mac]
   only:   [web]
   artifacts:
     name: "$CI_JOB_NAME"
