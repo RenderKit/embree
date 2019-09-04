@@ -43,7 +43,7 @@ IF (WIN32)
   )
   IF (EMBREE_SIGN_FILE)
     ADD_CUSTOM_COMMAND(TARGET tutorial POST_BUILD
-      COMMAND ${EMBREE_SIGN_FILE} $<TARGET_FILE:tutorial>/glfw3.dll
+      COMMAND ${EMBREE_SIGN_FILE} $<TARGET_FILE_DIR:tutorial>/glfw3.dll
       COMMENT "Signing GLFW DLL" VERBATIM
     )
   ENDIF()
