@@ -265,16 +265,94 @@ namespace embree
     {
       AABB3f aabb3f;
       aabb3f.lower = aabb.lower.xyz();
-      aabb3f.upper = aabb.upper.xyz();
-      
-      aabb3f.lower.x() = aabb.lower.x();
-      aabb3f.lower.y() = aabb.lower.y();
-      aabb3f.lower.z() = aabb.lower.z();      
-      aabb3f.upper.x() = aabb.upper.x();
-      aabb3f.upper.y() = aabb.upper.y();
-      aabb3f.upper.z() = aabb.upper.z();
+      aabb3f.upper = aabb.upper.xyz();      
       return aabb3f;
     }
+
+
+    [[cl::intel_reqd_sub_group_size(BINS)]] inline float left_to_right_area16(const cl::sycl::intel::sub_group &sg, const AABB3f &low)
+      {
+	struct AABB3f low_prefix = low.sub_group_scan_exclusive_min_max(sg);
+	return low_prefix.halfArea();
+      }
+
+    [[cl::intel_reqd_sub_group_size(BINS)]] inline uint left_to_right_counts16(const cl::sycl::intel::sub_group &sg, uint low)
+      {
+	return sg.exclusive_scan<uint,cl::sycl::intel::plus>(low);
+      }
+
+
+    [[cl::intel_reqd_sub_group_size(BINS)]] inline float right_to_left_area16(const cl::sycl::intel::sub_group &sg, const AABB3f &low)
+      {
+	const uint subgroupLocalID = sg.get_local_id()[0];
+	const uint subgroupSize    = sg.get_local_range().size();	
+	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
+	AABB3f low_reverse         = low.sub_group_shuffle(sg,ID);
+	AABB3f low_prefix          = low_reverse.sub_group_scan_inclusive_min_max(sg);
+	const float low_area       = sg.shuffle<float>(low_prefix.halfArea(),ID);
+	return low_area;
+      }
+
+    [[cl::intel_reqd_sub_group_size(BINS)]] inline uint right_to_left_counts16(const cl::sycl::intel::sub_group &sg, uint low)
+      {
+	const uint subgroupLocalID = sg.get_local_id()[0];
+	const uint subgroupSize    = sg.get_local_range().size();	
+	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
+	const uint low_reverse     = sg.shuffle<uint>(low,ID);
+	const uint low_prefix      = sg.inclusive_scan<float,cl::sycl::intel::plus>(low_reverse);
+	return sg.shuffle<uint>(low_prefix,ID);
+      }
+
+    [[cl::intel_reqd_sub_group_size(BINS)]] inline float2 left_to_right_area32(const cl::sycl::intel::sub_group &sg, const AABB3f &low, const AABB3f &high)
+      {
+	AABB3f low_prefix = low.sub_group_scan_exclusive_min_max(sg);
+	AABB3f low_reduce = low.sub_group_reduce(sg);	      	      
+	AABB3f high_prefix = high.sub_group_scan_exclusive_min_max(sg);
+	high_prefix.extend(low_reduce);
+	const float low_area = low_prefix.halfArea();
+	const float high_area = high_prefix.halfArea();
+	return float2(low_area,high_area);
+      }
+    
+    [[cl::intel_reqd_sub_group_size(BINS)]] inline uint2 left_to_right_counts32(const cl::sycl::intel::sub_group &sg, uint low, uint high)
+      {
+	const uint low_prefix  = sg.exclusive_scan<uint,cl::sycl::intel::plus>(low);
+	const uint low_reduce  = sg.reduce<uint,cl::sycl::intel::plus>(low);
+	const uint high_prefix = sg.exclusive_scan<uint,cl::sycl::intel::plus>(high);
+	return uint2(low_prefix,low_reduce+high_prefix);
+
+      }
+        
+    [[cl::intel_reqd_sub_group_size(BINS)]] inline float2 right_to_left_area32(const cl::sycl::intel::sub_group &sg, const AABB3f &low, const AABB3f &high)
+      {
+	const uint subgroupLocalID = sg.get_local_id()[0];
+	const uint subgroupSize    = sg.get_local_range().size();	
+	const uint ID              = subgroupSize - 1 - subgroupLocalID;  	
+	AABB3f low_reverse         = high.sub_group_shuffle(sg,ID);
+	AABB3f high_reverse        = low.sub_group_shuffle(sg,ID);
+	AABB3f low_prefix          = low_reverse.sub_group_scan_inclusive_min_max(sg);
+	AABB3f low_reduce          = low_reverse.sub_group_reduce(sg);	      	      
+	AABB3f high_prefix         = high_reverse.sub_group_scan_inclusive_min_max(sg);
+	high_prefix.extend(low_reduce);
+	const float low_area       = sg.shuffle<float>(high_prefix.halfArea(),ID);
+	const float high_area      = sg.shuffle<float>( low_prefix.halfArea(),ID);
+	return float2(low_area,high_area);
+	
+      }
+    
+    [[cl::intel_reqd_sub_group_size(BINS)]] inline uint2 right_to_left_counts32(const cl::sycl::intel::sub_group &sg, uint low, uint high)
+      {
+	const uint subgroupLocalID = sg.get_local_id()[0];
+	const uint subgroupSize    = sg.get_local_range().size();	
+	const uint ID              = subgroupSize - 1 - subgroupLocalID;  	
+	const uint low_reverse  = sg.shuffle<uint>(high,ID);
+	const uint high_reverse = sg.shuffle<uint>(low,ID);  
+	const uint low_prefix  = sg.inclusive_scan<uint,cl::sycl::intel::plus>(low_reverse);
+	const uint low_reduce  = sg.reduce<uint,cl::sycl::intel::plus>(low_reverse);
+	const uint high_prefix = sg.inclusive_scan<uint,cl::sycl::intel::plus>(high_reverse) + low_reduce;
+	return uint2(sg.shuffle<uint>(high_prefix,ID),sg.shuffle<uint>(low_prefix,ID));
+	
+      }
     
     struct BinInfo {
       AABB3f boundsX[BINS];
@@ -293,7 +371,7 @@ namespace embree
 	  }	
       }
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void init(const cl::sycl::intel::sub_group &subgroup)
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline void init(const cl::sycl::intel::sub_group &subgroup)
       {
 	for (uint i=subgroup.get_local_id()[0];i<BINS;i+=subgroup.get_local_range().size())
 	  {
@@ -305,40 +383,7 @@ namespace embree
       }
 
 
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float left_to_right_area16(const cl::sycl::intel::sub_group &sg, const AABB3f &low)
-      {
-	struct AABB3f low_prefix = low.sub_group_scan_exclusive_min_max(sg);
-	return low_prefix.halfArea();
-      }
-
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint left_to_right_counts16(const cl::sycl::intel::sub_group &sg, uint low)
-      {
-	return sg.exclusive_scan<uint,cl::sycl::intel::plus>(low);
-      }
-
-
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline float right_to_left_area16(const cl::sycl::intel::sub_group &sg, const AABB3f &low)
-      {
-	const uint subgroupLocalID = sg.get_local_id()[0];
-	const uint subgroupSize    = sg.get_local_range().size();	
-	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
-	AABB3f low_reverse         = low.sub_group_shuffle(sg,ID);
-	AABB3f low_prefix          = low_reverse.sub_group_scan_inclusive_min_max(sg);
-	const float low_area       = sg.shuffle<float>(low_prefix.halfArea(),ID);
-	return low_area;
-      }
-
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint right_to_left_counts16(const cl::sycl::intel::sub_group &sg, uint low)
-      {
-	const uint subgroupLocalID = sg.get_local_id()[0];
-	const uint subgroupSize    = sg.get_local_range().size();	
-	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
-	const uint low_reverse     = sg.shuffle<uint>(low,ID);
-	const uint low_prefix      = sg.inclusive_scan<float,cl::sycl::intel::plus>(low_reverse);
-	return sg.shuffle<uint>(low_prefix,ID);
-      }
-
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline ulong getBestSplit(cl::sycl::intel::sub_group &sg, const float3 sah, uint ID, const float4 scale, const ulong defaultSplit)
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline ulong getBestSplit(cl::sycl::intel::sub_group &sg, const float3 sah, uint ID, const float4 scale, const ulong defaultSplit)
       {
 	ulong splitX = (((ulong)as_uint((float)sah.x())) << 32) | ((uint)ID << 2) | 0;
 	ulong splitY = (((ulong)as_uint((float)sah.y())) << 32) | ((uint)ID << 2) | 1;
@@ -355,7 +400,7 @@ namespace embree
       }
 
       
-      [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
       {
 	const uint subgroupLocalID = sg.get_local_id()[0];		
 	const AABB3f &bX      = boundsX[subgroupLocalID];
@@ -405,6 +450,41 @@ namespace embree
       AABB3f boundsY[BINS*2];
       AABB3f boundsZ[BINS*2];
       uint3 counts[BINS*2];
+
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline void init(const cl::sycl::intel::sub_group &subgroup)
+      {
+	for (uint i=subgroup.get_local_id()[0];i<BINS*2;i+=subgroup.get_local_range().size())
+	  {
+	    boundsX[i].init();
+	    boundsY[i].init();
+	    boundsZ[i].init();
+	    counts[i] = (uint3)(0);
+	  }
+      }
+      
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit32(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
+      {
+#if 0	
+	const uint subgroupLocalID = sg.get_local_id()[0];		
+	const AABB3f &bX      = boundsX[subgroupLocalID];
+	const float lr_areaX  = left_to_right_area16(sg,bX);	
+	const float rl_areaX  = right_to_left_area16(sg,bX);
+	const AABB3f &bY      = boundsY[subgroupLocalID];
+	const float lr_areaY  = left_to_right_area16(sg,bY);
+	const float rl_areaY  = right_to_left_area16(sg,bY);
+	const AABB3f &bZ      = boundsZ[subgroupLocalID];
+	const float lr_areaZ  = left_to_right_area16(sg,bZ);
+	const float rl_areaZ  = right_to_left_area16(sg,bZ);
+	const uint3 &c = counts[subgroupLocalID];
+	const uint lr_countsX = left_to_right_counts16(sg,c.x());
+	const uint rl_countsX = right_to_left_counts16(sg,c.x());
+	const uint lr_countsY = left_to_right_counts16(sg,c.y());
+	const uint rl_countsY = right_to_left_counts16(sg,c.y());  
+	const uint lr_countsZ = left_to_right_counts16(sg,c.z());
+	const uint rl_countsZ = right_to_left_counts16(sg,c.z());
+#endif	
+      }
+      
     };
 
     inline uint encodeOffset(char *bvh_mem, uint *parent, uint global_child_offset)

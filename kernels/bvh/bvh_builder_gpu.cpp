@@ -202,7 +202,6 @@ namespace embree
     if (subgroupLocalID == 0)
       {
 	uint pos =  l - primref_index0;  // single lane needs to compute "pos"
-	//out << "pos = " << pos << cl::sycl::endl;
 	
 	outLeft.init(start,pos,leftCentroid);
 	outRight.init(pos,end,rightCentroid);
@@ -351,9 +350,20 @@ namespace embree
 
 
   /* ======================================== */  
-  /* === build bvh for single buildrecord === */
   /* ======================================== */
-  
+
+
+  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void parallel_find_split(cl::sycl::nd_item<1> &item,
+										const gpu::BuildRecord &record,
+										const gpu::AABB *const primref,
+										gpu::BinMapping &binMapping,
+										gpu::BinInfo2 &binInfo2,
+										uint *primref_index0,
+										uint *primref_index1,
+										const cl::sycl::stream &out)
+  {
+    
+  }
      
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_parallel_breadth_first(cl::sycl::nd_item<1> &item,
 											     cl::sycl::intel::sub_group &subgroup,
@@ -372,6 +382,20 @@ namespace embree
 											     const cl::sycl::stream &out)
   {
     const uint items = input_record.size();
+    const uint localID   = item.get_local_id(0);
+    const uint localSize = item.get_local_range().size();
+    if (localID == 0)
+      out << "items " << items << cl::sycl::endl;
+
+    gpu::BinMapping binMapping;
+    
+    binMapping.init(local_current.centroidBounds,2*BINS);
+    
+    parallel_find_split(item,local_current,primref,binMapping,binInfo2,primref_index0,primref_index1,out);
+	    
+    //split = binInfo.reduceBinsAndComputeBestSplit32(subgroup,binMapping.scale,current.start,current.end,out);
+
+    
 #if 0    
     local_current = records[recordID];
 
