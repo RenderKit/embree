@@ -324,7 +324,7 @@ namespace embree
 	      }
 
 	    /* sort children based on range size */
-#if 0	    
+#if 1
 	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
 	    const uint sortID = gpu::as_uint(_sortID);
 	    const uint numPrimsIDs = cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
@@ -341,7 +341,6 @@ namespace embree
 		children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
 
 	    /* update parent pointer */
-	    out << "current.parent " << current.parent << cl::sycl::endl;
 	    if (current.parent != nullptr)
 	      *current.parent = gpu::encodeOffset(bvh_mem,current.parent,node_offset);
 

@@ -175,12 +175,13 @@ namespace embree
 			      QBVHNodeN &node,			      
 			      AABB *childrenAABB,
 			      uint numChildren,
+			      const uint ID,
 			      const cl::sycl::stream &out)
       {
 	AABB child;
 	const uint subgroupLocalID = sg.get_local_id()[0];
 	if (subgroupLocalID < numChildren)
-	  child = childrenAABB[subgroupLocalID];
+	  child = childrenAABB[ID];
 	else
 	  child.init();
 	AABB aabb = child.sub_group_reduce(sg);

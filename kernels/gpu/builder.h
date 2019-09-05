@@ -563,22 +563,8 @@ namespace embree
 	}
       node_offset = subgroup.broadcast<uint>(node_offset,0); 
 
-#if 1
       gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_mem + node_offset);
-      gpu::QBVHNodeN::init(subgroup,node,childrenAABB,numChildren,out);
-#else      
-      gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_mem + node_offset);
-      if (subgroupLocalID < numChildren)
-	node.setBVHNodeN(childrenAABB[subgroupLocalID],subgroupLocalID);
-      else if (subgroupLocalID >= numChildren && subgroupLocalID < BVH_NODE_N)
-	node.initBVHNodeN(subgroupLocalID);	      
-#endif
-      DBG_BUILD(
-		if (subgroupLocalID == 0)
-		  {
-		    out << node << cl::sycl::endl;
-		  }
-		);
+      gpu::QBVHNodeN::init(subgroup,node,childrenAABB,numChildren,ID,out);
       return node_offset;      
     }
 
