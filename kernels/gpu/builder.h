@@ -519,7 +519,7 @@ namespace embree
   
 	const uint3 counts_low  = counts[subgroupLocalID              ];
 	const uint3 counts_high = counts[subgroupLocalID+subgroup_size];
-
+	
 	const uint2 lr_countsX = left_to_right_counts32(sg,counts_low.x(),counts_high.x());
 	const uint2 rl_countsX = right_to_left_counts32(sg,counts_low.x(),counts_high.x());
 	const uint2 lr_countsY = left_to_right_counts32(sg,counts_low.y(),counts_high.y());

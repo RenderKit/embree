@@ -339,7 +339,7 @@ namespace embree
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void parallel_find_split(cl::sycl::nd_item<1> &item,
 										const gpu::BuildRecord &record,
 										const gpu::AABB *const primref,
-										gpu::Split *bestSplit,										
+										gpu::Split &bestSplit,										
 										gpu::BinMapping &binMapping,
 										gpu::BinInfo2 &binInfo2,
 										uint *primref_index0,
@@ -374,50 +374,132 @@ namespace embree
 
     /* find best split */
     if (subgroupID == 0)
-	*bestSplit = binInfo2.reduceBinsAndComputeBestSplit32(sg,binMapping.scale,startID,endID,out);
+	bestSplit = binInfo2.reduceBinsAndComputeBestSplit32(sg,binMapping.scale,startID,endID,out);
 
-    item.barrier(cl::sycl::access::fence_space::local_space);
-    
-#if 0
-    const uint localID    = get_local_id(0);
-    const uint localSize  = get_local_size(0);
-    const uint subgroupID = get_sub_group_id();
-  
-    const uint startID    = record->start;
-    const uint endID      = record->end;
-
-    struct BinMapping binMapping;
-    initBinMapping(&binMapping,&record->centroidBounds,BINS);
-
-    /* init bininfo */
-    parallel_initBinInfo(binInfo);
-
-    barrier(CLK_LOCAL_MEM_FENCE); 
-
-    
-    for (uint t=startID + localID;t<endID;t+=local_size)
-      {
-	const uint index = primref_index0[t];
-	primref_index1[t] = index;      
-	atomicUpdateLocalBinInfo(&binMapping,binInfo,&primref[index]);
-      }
-
-    barrier(CLK_LOCAL_MEM_FENCE); 
-  
-    /* find best dimension */
-
-    if (subgroupID == 0)
-      {
-	*bestSplit = reduceBinsAndComputeBestSplit16(binInfo,binMapping.scale,startID,endID);
-
-      }
-    barrier(CLK_LOCAL_MEM_FENCE);
-#endif
+    item.barrier(cl::sycl::access::fence_space::local_space);    
   }
-     
+
+  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void parallel_partition_index(cl::sycl::nd_item<1> &item,
+										     const gpu::BuildRecord &record,
+										     const gpu::AABB *const primref,
+										     gpu::Split &bestSplit,										     
+										     gpu::BinMapping &binMapping,										     
+										     gpu::BuildRecord &leftChild,
+										     gpu::BuildRecord &leftRight,
+										     gpu::AABB &leftAABB,
+										     gpu::AABB &rightAABB,
+										     uint *primref_index0,
+										     uint *primref_index1,
+										     uint *atomicCountLeft,
+										     uint *atomicCountRight,										     
+										     const cl::sycl::stream &out)
+  {
+#if 0
+    const uint localID         = get_local_id(0);
+    const uint local_size      = get_local_size(0);
+    const uint subgroupID      = get_sub_group_id();
+    const uint numSubGroups    = get_num_sub_groups();
+    const uint subgroup_size   = get_sub_group_size();  
+    const uint subgroupLocalID = get_sub_group_local_id();
+  
+    const uint begin = record->start;
+    const uint end   = record->end;
+    const uint size  = end - begin;
+  
+    struct Split split = *inSplit;
+
+    /* init bin bounds */
+    if (localID == 0)
+      {
+	initBuildRecord(outLeft,begin,end);
+	initBuildRecord(outRight,begin,end);
+	initAABB(outGeometryBoundsLeft);
+	initAABB(outGeometryBoundsRight);
+	*atomicCountLeft  = 0;
+	*atomicCountRight = 0;
+      }
+  
+    barrier(CLK_LOCAL_MEM_FENCE); // remove ?
+  
+
+    struct BuildRecord left;
+    struct BuildRecord right;
+    initBuildRecord(&left,begin,end);
+    initBuildRecord(&right,begin,end);
+
+    struct AABB leftAABB;
+    struct AABB rightAABB;
+    initAABB(&leftAABB);
+    initAABB(&rightAABB);
+      
+    const int startID = begin + ((subgroupID+0)*size/numSubGroups);
+    const int endID   = begin + ((subgroupID+1)*size/numSubGroups);
+  
+    for (uint i=startID + subgroupLocalID;i<endID;i+=subgroup_size)
+      {
+	const uint index       = primref_index1[i];
+	const uint isLeft      = is_left(binMapping, &split,&primref[index]) ? 1 : 0;
+	const uint isRight     = 1 - isLeft;
+	const uint countLeft   = sub_group_reduce_add(isLeft );
+	const uint countRight  = sub_group_reduce_add(isRight);
+	const uint prefixLeft  = sub_group_scan_exclusive_add(isLeft);
+	const uint prefixRight = sub_group_scan_exclusive_add(isRight);
+
+	uint offsetLeft  = subgroupLocalID == 0 ? atomic_add(atomicCountLeft,  countLeft) : 0;
+	offsetLeft = sub_group_broadcast(offsetLeft,0);
+	uint offsetRight = subgroupLocalID == 0 ? atomic_add(atomicCountRight,countRight) : 0;
+	offsetRight = sub_group_broadcast(offsetRight,0);
+
+	if (isLeft)
+	  {
+	    extendBuildRecord(&left,&primref[index]);
+	    extendAABBlu(&leftAABB,primref[index].lower,primref[index].upper);
+	    primref_index0[begin + offsetLeft + prefixLeft] = index;
+	  }
+	else
+	  {
+	    extendBuildRecord(&right,&primref[index]);
+	    extendAABBlu(&rightAABB,primref[index].lower,primref[index].upper);
+	    primref_index0[end - (offsetRight+countRight) + prefixRight] = index;
+	  }             
+      }
+    left.centroidBounds  = subgroupReduceAABB(&left.centroidBounds);
+    right.centroidBounds = subgroupReduceAABB(&right.centroidBounds);
+    leftAABB  = subgroupReduceAABB(&leftAABB);
+    rightAABB = subgroupReduceAABB(&rightAABB);
+
+  
+    atomicUpdateLocalAABB(&outLeft->centroidBounds ,left.centroidBounds.lower ,left.centroidBounds.upper);
+    atomicUpdateLocalAABB(&outRight->centroidBounds,right.centroidBounds.lower,right.centroidBounds.upper);
+
+    atomicUpdateLocalAABB(outGeometryBoundsLeft ,leftAABB.lower ,leftAABB.upper);
+    atomicUpdateLocalAABB(outGeometryBoundsRight,rightAABB.lower,rightAABB.upper);
+
+  
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    if (localID == 0)
+      {
+	uint pos = begin + *atomicCountLeft;  // single first thread needs to compute "pos"
+	outLeft->end    = pos;
+	outRight->start = pos;
+
+	outGeometryBoundsLeft->lower.w = 0.0f;
+	outGeometryBoundsRight->lower.w = 0.0f;
+      
+	outGeometryBoundsLeft->upper.w = as_float(getNumPrims(outLeft));
+	outGeometryBoundsRight->upper.w = as_float(getNumPrims(outRight));
+
+      }
+  
+    barrier(CLK_LOCAL_MEM_FENCE);
+    
+#endif    
+  }
+  
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_parallel_breadth_first(cl::sycl::nd_item<1> &item,
 											     cl::sycl::intel::sub_group &subgroup,
-											     gpu::BuildRecord &input_record,
+											     gpu::BuildRecord &record,
 											     gpu::Globals &globals,
 											     char *bvh_mem,
 											     const gpu::AABB *const primref,
@@ -432,23 +514,28 @@ namespace embree
 											     uint *atomicCountRight,											     
 											     const cl::sycl::stream &out)
   {
-    const uint items = input_record.size();
+    const uint items = record.size();
     const uint localID   = item.get_local_id(0);
     const uint localSize = item.get_local_range().size();
     if (localID == 0)
-      out << "items " << items << cl::sycl::endl;
+      {
+	out << "items " << items << cl::sycl::endl;
+	out << record << cl::sycl::endl;
+      }
 
-    gpu::BinMapping binMapping;
+    local_current = record;
     
-    binMapping.init(local_current.centroidBounds,2*BINS);
+    item.barrier(cl::sycl::access::fence_space::global_and_local);
     
-    parallel_find_split(item,local_current,primref,&bestSplit,binMapping,binInfo2,primref_index0,primref_index1,out);
+    gpu::BinMapping binMapping;    
+    binMapping.init(record.centroidBounds,2*BINS);
+    
+    parallel_find_split(item,local_current,primref,bestSplit,binMapping,binInfo2,primref_index0,primref_index1,out);
 
     if (localID == 0)
       out << bestSplit << cl::sycl::endl;
     
-    //split = binInfo.reduceBinsAndComputeBestSplit32(subgroup,binMapping.scale,current.start,current.end,out);
-
+    parallel_partition_index(item,local_current,primref,bestSplit,binMapping,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
     
 #if 0    
     local_current = records[recordID];
@@ -945,15 +1032,16 @@ namespace embree
 		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>((int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));
 		  
 		  /* local variables */
-		  cl::sycl::accessor< gpu::BinInfo2    , 0, sycl_read_write, sycl_local> binInfo2(cgh);
+		  cl::sycl::accessor< gpu::BinInfo2   , 0, sycl_read_write, sycl_local> binInfo2(cgh);
 		  cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> local_current(cgh);
 		  cl::sycl::accessor< gpu::AABB       , 1, sycl_read_write, sycl_local> childrenAABB(cl::sycl::range<1>(BVH_NODE_N+1),cgh);
 		  cl::sycl::accessor< gpu::BuildRecord, 1, sycl_read_write, sycl_local> children(cl::sycl::range<1>(BVH_NODE_N+1),cgh);
-		  cl::sycl::accessor< gpu::Split    , 0, sycl_read_write, sycl_local> bestSplit(cgh);		  
-		  cl::sycl::accessor< uint    , 0, sycl_read_write, sycl_local> atomicCountLeft(cgh);
-		  cl::sycl::accessor< uint    , 0, sycl_read_write, sycl_local> atomicCountRight(cgh);
+		  cl::sycl::accessor< gpu::Split      , 0, sycl_read_write, sycl_local> bestSplit(cgh);		  
+		  cl::sycl::accessor< uint            , 0, sycl_read_write, sycl_local> atomicCountLeft(cgh);
+		  cl::sycl::accessor< uint            , 0, sycl_read_write, sycl_local> atomicCountRight(cgh);
 		  		  		  		  
 		  cgh.parallel_for<class parallel_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
+		      const uint localID   = item.get_local_id(0);		      
 		      const uint groupID   = item.get_group(0);
 		      const uint numGroups = item.get_group_range(0);
 		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();		      
@@ -963,6 +1051,7 @@ namespace embree
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
 		      const uint numRecords = globals->numBuildRecords;
+		      
 		      bvh_build_parallel_breadth_first(item,subgroup,record[0],*globals,bvh_mem,primref,primref_index0,primref_index1,bestSplit,binInfo2,local_current,childrenAABB.get_pointer(),children.get_pointer(),atomicCountLeft.get_pointer(),atomicCountRight.get_pointer(),out);
 
 		    });		  
