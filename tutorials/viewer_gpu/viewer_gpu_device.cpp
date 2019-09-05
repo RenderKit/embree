@@ -151,6 +151,13 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
     }
   };
 
+  class CPUDeviceSelector : public cl::sycl::device_selector {
+  public:
+    int operator()(const cl::sycl::device &Device) const override {
+      return Device.is_cpu() ? 1 : -1;
+    }
+  };
+
 // === create exception handler ===
   
   auto exception_handler = [] (cl::sycl::exception_list exceptions) {
@@ -175,13 +182,16 @@ extern "C" void device_init (char* cfg)
 #if defined(EMBREE_DPCPP_SUPPORT)
   {
     using namespace cl::sycl;
-    
-    NEOGPUDeviceSelector selector;
 
     try {
-      gpu_queue   = new queue(selector, exception_handler);
+      if (getenv("EMBREE_USE_CPU")) {
+        gpu_queue  = new queue(CPUDeviceSelector(), exception_handler);
+        gpu_device = new device(CPUDeviceSelector());
+      } else {
+        gpu_queue = new queue(NEOGPUDeviceSelector(), exception_handler);
+        gpu_device = new device(NEOGPUDeviceSelector());
+      }
       assert(gpu_queue);
-      gpu_device  = new device(selector);
       assert(gpu_device);
     } catch (cl::sycl::invalid_parameter_error &E) {
       std::cout << E.what() << std::endl;
