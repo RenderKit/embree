@@ -396,6 +396,24 @@ namespace embree
 	  }
       }
 
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline void atomicUpdate( const gpu::BinMapping &binMapping, const gpu::AABB &primref,const cl::sycl::stream &out)
+      {
+	const float4 p = primref.centroid2();
+	const float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
+	const cl::sycl::uint4 i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
+  
+	gpu::AABB3f bounds = convert_AABB3f(primref);
+
+	bounds.atomic_merge_local(boundsX[i.x()]);
+	bounds.atomic_merge_local(boundsY[i.y()]);
+	bounds.atomic_merge_local(boundsZ[i.z()]);
+
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.x()] + 0,1);
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.y()] + 1,1);
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.z()] + 2,1);        
+      }
+      
+
       
       [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
       {
@@ -457,6 +475,23 @@ namespace embree
 	    boundsZ[i].init();
 	    counts[i] = (uint3)(0);
 	  }
+      }
+
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline void atomicUpdate( const gpu::BinMapping &binMapping, const gpu::AABB &primref,const cl::sycl::stream &out)
+      {
+	const float4 p = primref.centroid2();
+	const float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
+	const cl::sycl::uint4 i = bin4.convert<cl::sycl::uint,cl::sycl::rounding_mode::rtz>();
+  
+	gpu::AABB3f bounds = convert_AABB3f(primref);
+
+	bounds.atomic_merge_local(boundsX[i.x()]);
+	bounds.atomic_merge_local(boundsY[i.y()]);
+	bounds.atomic_merge_local(boundsZ[i.z()]);
+
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.x()] + 0,1);
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.y()] + 1,1);
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.z()] + 2,1);        
       }
       
       [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit32(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
