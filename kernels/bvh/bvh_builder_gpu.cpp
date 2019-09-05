@@ -97,8 +97,8 @@ namespace embree
 										   gpu::BuildRecord &outRight,
 										   gpu::AABB &outGeometryBoundsLeft,
 										   gpu::AABB &outGeometryBoundsRight,
-										   uint *primref_index0,
-										   uint *primref_index1,
+										   uint *const primref_index0,
+										   const uint *const primref_index1,
 										   const cl::sycl::stream &out)
   {
     const uint subgroupLocalID = sg.get_local_id()[0];
@@ -145,7 +145,6 @@ namespace embree
 	    r[subgroupLocalID] = index;	  
 	  }      
       }
-  
     else
       {
 	for (uint i=start + subgroupLocalID;i<end;i+=subgroupSize)
@@ -155,7 +154,7 @@ namespace embree
 	    const uint isRight     = 1 - isLeft;
 	    const uint countLeft   = sg.reduce<uint,cl::sycl::intel::plus>(isLeft );
 	    const uint countRight  = sg.reduce<uint,cl::sycl::intel::plus>(isRight);
-	    const uint prefixLeft  = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isLeft);
+	    const uint prefixLeft  = sg.reduce<uint,cl::sycl::intel::plus>(isLeft);
 	    const uint prefixRight = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isRight);
           
 	    r -= countRight;
@@ -221,9 +220,6 @@ namespace embree
 									     const cl::sycl::stream &out)
   {
     const uint subgroupLocalID = subgroup.get_local_id()[0];
-    //const uint subgroupSize    = subgroup.get_local_range().size();
-
-    
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;
 
     uint sindex = 1;
@@ -342,8 +338,8 @@ namespace embree
 										gpu::Split &bestSplit,										
 										gpu::BinMapping &binMapping,
 										gpu::BinInfo2 &binInfo2,
-										uint *primref_index0,
-										uint *primref_index1,
+										const uint *const primref_index0,
+										uint *const primref_index1,
 										const cl::sycl::stream &out)
   {
     const uint localID   = item.get_local_id(0);
@@ -384,89 +380,97 @@ namespace embree
 										     const gpu::AABB *const primref,
 										     gpu::Split &bestSplit,										     
 										     gpu::BinMapping &binMapping,										     
-										     gpu::BuildRecord &leftChild,
-										     gpu::BuildRecord &leftRight,
-										     gpu::AABB &leftAABB,
-										     gpu::AABB &rightAABB,
-										     uint *primref_index0,
-										     uint *primref_index1,
+										     gpu::BuildRecord &outLeft,
+										     gpu::BuildRecord &outRight,
+										     gpu::AABB &outGeometryBoundsLeft,
+										     gpu::AABB &outGeometryBoundsRight,
+										     uint *const primref_index0,
+										     const uint *const primref_index1,
 										     uint *atomicCountLeft,
 										     uint *atomicCountRight,										     
 										     const cl::sycl::stream &out)
   {
-#if 0
-    const uint localID         = get_local_id(0);
-    const uint local_size      = get_local_size(0);
-    const uint subgroupID      = get_sub_group_id();
-    const uint numSubGroups    = get_num_sub_groups();
-    const uint subgroup_size   = get_sub_group_size();  
-    const uint subgroupLocalID = get_sub_group_local_id();
-  
-    const uint begin = record->start;
-    const uint end   = record->end;
-    const uint size  = end - begin;
-  
-    struct Split split = *inSplit;
+    const uint localID   = item.get_local_id(0);
+    const uint localSize = item.get_local_range().size();
 
-    /* init bin bounds */
+    cl::sycl::intel::sub_group sg = item.get_sub_group();
+    const uint subgroupID      = sg.get_group_id()[0];
+    const uint subgroupLocalID = sg.get_local_id()[0];
+    const uint subgroupSize    = sg.get_local_range().size();
+    const uint numSubGroups    = sg.get_group_range();
+
+    const uint begin = record.start;
+    const uint end   = record.end;
+    const uint size  = end - begin;
+
     if (localID == 0)
       {
-	initBuildRecord(outLeft,begin,end);
-	initBuildRecord(outRight,begin,end);
-	initAABB(outGeometryBoundsLeft);
-	initAABB(outGeometryBoundsRight);
+	out << "numSubGroups " << numSubGroups << cl::sycl::endl;	
+	outLeft.init(begin,end);
+	outRight.init(begin,end);
+	outGeometryBoundsLeft.init(); // FIXME: unnecessary?
+	outGeometryBoundsRight.init();
 	*atomicCountLeft  = 0;
-	*atomicCountRight = 0;
+	*atomicCountRight = 0;	
       }
-  
-    barrier(CLK_LOCAL_MEM_FENCE); // remove ?
-  
 
-    struct BuildRecord left;
-    struct BuildRecord right;
-    initBuildRecord(&left,begin,end);
-    initBuildRecord(&right,begin,end);
+    item.barrier(cl::sycl::access::fence_space::local_space);
 
-    struct AABB leftAABB;
-    struct AABB rightAABB;
-    initAABB(&leftAABB);
-    initAABB(&rightAABB);
+    const gpu::Split split = bestSplit;
+    
+    gpu::BuildRecord left;
+    gpu::BuildRecord right;
+    left.init(begin,end);
+    right.init(begin,end);
+
+    gpu::AABB leftAABB;
+    gpu::AABB rightAABB;
+    leftAABB.init();
+    rightAABB.init();
       
-    const int startID = begin + ((subgroupID+0)*size/numSubGroups);
-    const int endID   = begin + ((subgroupID+1)*size/numSubGroups);
+    const uint startID = begin + ((subgroupID+0)*size/numSubGroups);
+    const uint endID   = begin + ((subgroupID+1)*size/numSubGroups);
   
-    for (uint i=startID + subgroupLocalID;i<endID;i+=subgroup_size)
+    for (uint i=startID + subgroupLocalID;i<endID;i+=subgroupSize)
       {
 	const uint index       = primref_index1[i];
-	const uint isLeft      = is_left(binMapping, &split,&primref[index]) ? 1 : 0;
+	const uint isLeft      = is_left(binMapping, split,primref[index]) ? 1 : 0;
 	const uint isRight     = 1 - isLeft;
-	const uint countLeft   = sub_group_reduce_add(isLeft );
-	const uint countRight  = sub_group_reduce_add(isRight);
-	const uint prefixLeft  = sub_group_scan_exclusive_add(isLeft);
-	const uint prefixRight = sub_group_scan_exclusive_add(isRight);
+	const uint countLeft   = sg.reduce<uint,cl::sycl::intel::plus>(isLeft );
+	const uint countRight  = sg.reduce<uint,cl::sycl::intel::plus>(isRight);
+	const uint prefixLeft  = sg.reduce<uint,cl::sycl::intel::plus>(isLeft);
+	const uint prefixRight = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isRight);
 
-	uint offsetLeft  = subgroupLocalID == 0 ? atomic_add(atomicCountLeft,  countLeft) : 0;
-	offsetLeft = sub_group_broadcast(offsetLeft,0);
-	uint offsetRight = subgroupLocalID == 0 ? atomic_add(atomicCountRight,countRight) : 0;
-	offsetRight = sub_group_broadcast(offsetRight,0);
+	uint offsetLeft  = subgroupLocalID == 0 ? gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>(atomicCountLeft,  countLeft) : 0;
+	offsetLeft = sg.broadcast<uint>(offsetLeft,0);
+	uint offsetRight = subgroupLocalID == 0 ? gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>(atomicCountRight,countRight) : 0;
+	offsetRight = sg.broadcast<uint>(offsetRight,0);
 
+	const gpu::AABB &pref = primref[index];
 	if (isLeft)
 	  {
-	    extendBuildRecord(&left,&primref[index]);
-	    extendAABBlu(&leftAABB,primref[index].lower,primref[index].upper);
+	    left.extend(pref);
+	    leftAABB.extend(pref);
 	    primref_index0[begin + offsetLeft + prefixLeft] = index;
 	  }
 	else
 	  {
-	    extendBuildRecord(&right,&primref[index]);
-	    extendAABBlu(&rightAABB,primref[index].lower,primref[index].upper);
+	    right.extend(pref);
+	    rightAABB.extend(pref);
 	    primref_index0[end - (offsetRight+countRight) + prefixRight] = index;
 	  }             
       }
-    left.centroidBounds  = subgroupReduceAABB(&left.centroidBounds);
-    right.centroidBounds = subgroupReduceAABB(&right.centroidBounds);
-    leftAABB  = subgroupReduceAABB(&leftAABB);
-    rightAABB = subgroupReduceAABB(&rightAABB);
+    left.centroidBounds  = left.centroidBounds.sub_group_reduce(sg);
+    right.centroidBounds = right.centroidBounds.sub_group_reduce(sg);
+    leftAABB  = leftAABB.sub_group_reduce(sg);
+    rightAABB = rightAABB.sub_group_reduce(sg);
+
+    cl::sycl::multi_ptr<gpu::AABB,cl::sycl::access::address_space::local_space> ptr(&outLeft.centroidBounds);
+    
+    //left.centroidBounds.atomic_merge_local(*ptr);
+    //right.centroidBounds.atomic_merge_local(outRight.centroidBounds);
+    
+#if 0
 
   
     atomicUpdateLocalAABB(&outLeft->centroidBounds ,left.centroidBounds.lower ,left.centroidBounds.upper);

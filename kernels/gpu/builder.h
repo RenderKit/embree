@@ -188,7 +188,7 @@ namespace embree
       }
       
 
-      inline void extend(AABB &primref)
+      inline void extend(const AABB &primref)
       {
 	centroidBounds.extend(primref.centroid2());
       }
