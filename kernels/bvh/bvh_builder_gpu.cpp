@@ -648,7 +648,7 @@ namespace embree
 	  << " leaf_items " << leaf_items
 	  << " node_util " << node_util << "%"
 	  << " leaf_util " << leaf_util << "%"
-	  << " ( " << (float)leaf_items / leaves << ")"
+	  << " (" << (float)leaf_items / leaves << " out of " << BVH_LEAF_N_MAX << ")"
 	  << cl::sycl::endl;
     
       uint node_mem        = globals->node_mem_allocator_cur-globals->node_mem_allocator_start;
