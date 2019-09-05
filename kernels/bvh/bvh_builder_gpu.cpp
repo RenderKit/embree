@@ -341,7 +341,9 @@ namespace embree
 		children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
 
 	    /* update parent pointer */
-	    *current.parent = gpu::encodeOffset(bvh_mem,current.parent,node_offset);
+	    out << "current.parent " << current.parent << cl::sycl::endl;
+	    if (current.parent != nullptr)
+	      *current.parent = gpu::encodeOffset(bvh_mem,current.parent,node_offset);
 
 	    sindex += numChildren;
 	  }
