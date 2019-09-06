@@ -28,7 +28,7 @@
 #define BVH_LEAF_N_MIN          4
 #define BVH_LEAF_N_MAX          4
 
-#define DBG_BUILD(x)
+#define DBG_BUILD(x) 
 
 namespace embree
 {
