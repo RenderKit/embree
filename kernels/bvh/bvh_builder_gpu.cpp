@@ -380,10 +380,10 @@ namespace embree
 										     const gpu::AABB *const primref,
 										     gpu::Split &bestSplit,										     
 										     gpu::BinMapping &binMapping,										     
-										     gpu::BuildRecord &outLeft,
-										     gpu::BuildRecord &outRight,
-										     gpu::AABB &outGeometryBoundsLeft,
-										     gpu::AABB &outGeometryBoundsRight,
+										     gpu::BuildRecord *outLeft,
+										     gpu::BuildRecord *outRight,
+										     gpu::AABB *outGeometryBoundsLeft,
+										     gpu::AABB *outGeometryBoundsRight,
 										     uint *const primref_index0,
 										     const uint *const primref_index1,
 										     uint *atomicCountLeft,
@@ -406,10 +406,10 @@ namespace embree
     if (localID == 0)
       {
 	out << "numSubGroups " << numSubGroups << cl::sycl::endl;	
-	outLeft.init(begin,end);
-	outRight.init(begin,end);
-	outGeometryBoundsLeft.init(); // FIXME: unnecessary?
-	outGeometryBoundsRight.init();
+	outLeft->init(begin,end);
+	outRight->init(begin,end);
+	outGeometryBoundsLeft->init(); // FIXME: unnecessary?
+	outGeometryBoundsRight->init();
 	*atomicCountLeft  = 0;
 	*atomicCountRight = 0;	
       }
@@ -465,40 +465,29 @@ namespace embree
     leftAABB  = leftAABB.sub_group_reduce(sg);
     rightAABB = rightAABB.sub_group_reduce(sg);
 
-    cl::sycl::multi_ptr<gpu::AABB,cl::sycl::access::address_space::local_space> ptr(&outLeft.centroidBounds);
-    
-    //left.centroidBounds.atomic_merge_local(*ptr);
-    //right.centroidBounds.atomic_merge_local(outRight.centroidBounds);
-    
-#if 0
+#if 0    
+    left.centroidBounds.atomic_merge_local(outLeft->centroidBounds);
+    right.centroidBounds.atomic_merge_local(outRight->centroidBounds);
 
-  
-    atomicUpdateLocalAABB(&outLeft->centroidBounds ,left.centroidBounds.lower ,left.centroidBounds.upper);
-    atomicUpdateLocalAABB(&outRight->centroidBounds,right.centroidBounds.lower,right.centroidBounds.upper);
+    leftAABB.atomic_merge_local(*outGeometryBoundsLeft);
+    rightAABB.atomic_merge_local(*outGeometryBoundsRight);
+#endif
 
-    atomicUpdateLocalAABB(outGeometryBoundsLeft ,leftAABB.lower ,leftAABB.upper);
-    atomicUpdateLocalAABB(outGeometryBoundsRight,rightAABB.lower,rightAABB.upper);
-
-  
-    barrier(CLK_LOCAL_MEM_FENCE);
+    item.barrier(cl::sycl::access::fence_space::local_space);
 
     if (localID == 0)
       {
-	uint pos = begin + *atomicCountLeft;  // single first thread needs to compute "pos"
+	const uint pos = begin + *atomicCountLeft;  // single first thread needs to compute "pos"
 	outLeft->end    = pos;
 	outRight->start = pos;
-
-	outGeometryBoundsLeft->lower.w = 0.0f;
-	outGeometryBoundsRight->lower.w = 0.0f;
-      
-	outGeometryBoundsLeft->upper.w = as_float(getNumPrims(outLeft));
-	outGeometryBoundsRight->upper.w = as_float(getNumPrims(outRight));
+	outGeometryBoundsLeft->lower.w() = 0.0f;
+	outGeometryBoundsLeft->upper.w() = gpu::as_float(outLeft->size());	
+	outGeometryBoundsRight->lower.w() = 0.0f;      
+	outGeometryBoundsRight->upper.w() =  gpu::as_float(outRight->size());
 
       }
-  
-    barrier(CLK_LOCAL_MEM_FENCE);
     
-#endif    
+    item.barrier(cl::sycl::access::fence_space::local_space);    
   }
   
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_parallel_breadth_first(cl::sycl::nd_item<1> &item,
@@ -512,10 +501,10 @@ namespace embree
 											     gpu::Split &bestSplit,
 											     gpu::BinInfo2 &binInfo2,
 											     gpu::BuildRecord &local_current,
-											     gpu::AABB childrenAABB[BVH_NODE_N+1],
-											     gpu::BuildRecord children[BVH_NODE_N+1],
+											     gpu::AABB *childrenAABB,
+											     gpu::BuildRecord *children,
 											     uint *atomicCountLeft,
-											     uint *atomicCountRight,											     
+											     uint *atomicCountRight,
 											     const cl::sycl::stream &out)
   {
     const uint items = record.size();
@@ -539,7 +528,7 @@ namespace embree
     if (localID == 0)
       out << bestSplit << cl::sycl::endl;
     
-    parallel_partition_index(item,local_current,primref,bestSplit,binMapping,children[0],children[1],childrenAABB[0],childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
+    //parallel_partition_index(item,local_current,primref,bestSplit,binMapping,&children[0],&children[1],&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
     
 #if 0    
     local_current = records[recordID];
@@ -1027,7 +1016,7 @@ namespace embree
 	      }
 	    }
 
-
+#if 0
 	    /* --- parallel thread breadth first build --- */
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
@@ -1067,8 +1056,9 @@ namespace embree
 			  << e.what() << std::endl;
 	      }
 	    }
-	    
 
+#endif	    
+	    
 	    /* --- single HW thread recursive build --- */
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
