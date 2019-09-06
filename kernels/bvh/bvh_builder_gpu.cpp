@@ -528,7 +528,7 @@ namespace embree
     if (localID == 0)
       out << bestSplit << cl::sycl::endl;
     
-    //parallel_partition_index(item,local_current,primref,bestSplit,binMapping,&children[0],&children[1],&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
+    parallel_partition_index(item,local_current,primref,bestSplit,binMapping,&children[0],&children[1],&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
     
 #if 0    
     local_current = records[recordID];
@@ -1016,7 +1016,6 @@ namespace embree
 	      }
 	    }
 
-#if 0
 	    /* --- parallel thread breadth first build --- */
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
@@ -1056,8 +1055,6 @@ namespace embree
 			  << e.what() << std::endl;
 	      }
 	    }
-
-#endif	    
 	    
 	    /* --- single HW thread recursive build --- */
 	    {
