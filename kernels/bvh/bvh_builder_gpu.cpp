@@ -154,7 +154,7 @@ namespace embree
 	    const uint isRight     = 1 - isLeft;
 	    const uint countLeft   = sg.reduce<uint,cl::sycl::intel::plus>(isLeft );
 	    const uint countRight  = sg.reduce<uint,cl::sycl::intel::plus>(isRight);
-	    const uint prefixLeft  = sg.reduce<uint,cl::sycl::intel::plus>(isLeft);
+	    const uint prefixLeft  = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isLeft);	    
 	    const uint prefixRight = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isRight);
           
 	    r -= countRight;
