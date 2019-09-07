@@ -31,8 +31,9 @@
 
 #define PROFILE 0
 #define PROFILE_RUNS 20
+#define ENABLE_BREADTH_FIRST_PHASE 1
 
-#define BUILD_CHECKS 0
+#define BUILD_CHECKS 1
 
 namespace embree
 {
@@ -407,7 +408,7 @@ namespace embree
 
     if (localID == 0)
       {
-	out << "numSubGroups " << numSubGroups << cl::sycl::endl;	
+	//out << "numSubGroups " << numSubGroups << cl::sycl::endl;	
 	outLeft->init(begin,end);
 	outRight->init(begin,end);
 	outGeometryBoundsLeft->init(); // FIXME: unnecessary?
@@ -512,7 +513,7 @@ namespace embree
     
     item.barrier(cl::sycl::access::fence_space::local_space);    
   }
-  
+
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_parallel_breadth_first(cl::sycl::nd_item<1> &item,
 											     cl::sycl::intel::sub_group &subgroup,
 											     gpu::BuildRecord &record,
@@ -530,6 +531,9 @@ namespace embree
 											     uint *atomicCountRight,
 											     const cl::sycl::stream &out)
   {
+    const uint subtreeThreshold = 8;
+    const uint cfg_minLeafSize = BVH_LEAF_N_MIN;    
+    
     const uint items = record.size();
     const uint localID   = item.get_local_id(0);
     const uint localSize = item.get_local_range().size();
@@ -542,16 +546,58 @@ namespace embree
     local_current = record;
     
     item.barrier(cl::sycl::access::fence_space::global_and_local);
-    
-    gpu::BinMapping binMapping;    
-    binMapping.init(record.centroidBounds,2*BINS);
-    
-    parallel_find_split(item,local_current,primref,bestSplit,binMapping,binInfo2,primref_index0,primref_index1,out);
 
-    if (localID == 0)
-      out << bestSplit << cl::sycl::endl;
+    if (local_current.size() >= subtreeThreshold)
+      {
+	gpu::BinMapping binMapping;    
+	binMapping.init(record.centroidBounds,2*BINS);    
+	parallel_find_split(item,local_current,primref,bestSplit,binMapping,binInfo2,primref_index0,primref_index1,out);
+
+	if (localID == 0)
+	  out << "bestSplit " << bestSplit << cl::sycl::endl;
     
-    parallel_partition_index(item,local_current,primref,bestSplit,binMapping,&children[0],&children[1],&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
+	parallel_partition_index(item,local_current,primref,bestSplit,binMapping,&children[0],&children[1],&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
+
+	/*! create a leaf node when threshold reached or SAH tells us to stop */
+	uint numChildren = 2;
+	while (numChildren < BVH_NODE_N)
+	  {
+	    /*! find best child to split */
+	    float bestArea = -(float)INFINITY;
+	    int bestChild = -1;
+	    for (int i=0; i<numChildren; i++)
+	      {
+		/* ignore leaves as they cannot get split */
+		if (children[i].size() <= cfg_minLeafSize) continue;
+
+		/* find child with largest surface area */
+		if (childrenAABB[i].halfArea() > bestArea) {
+		  bestChild = i;
+		  bestArea = childrenAABB[i].halfArea();
+		}
+	      }
+	    if (bestChild == -1) break;
+
+	    /* perform best found split */
+	    gpu::BuildRecord &brecord = children[bestChild];
+	    gpu::BuildRecord &lrecord = children[numChildren+0];
+	    gpu::BuildRecord &rrecord = children[numChildren+1];	
+	  
+	    binMapping.init(brecord.centroidBounds,2*BINS);
+	    parallel_find_split(item,brecord,primref,bestSplit,binMapping,binInfo2,primref_index0,primref_index1,out);
+	    if (localID == 0)
+	      out << "numChildren " << numChildren << " bestSplit " << bestSplit << cl::sycl::endl;
+	    
+	    parallel_partition_index(item,brecord,primref,bestSplit,binMapping,&lrecord,&rrecord,&childrenAABB[numChildren+0],&childrenAABB[numChildren+1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
+	    brecord = rrecord;
+	    childrenAABB[bestChild] = childrenAABB[numChildren+1];
+	    
+	    item.barrier(cl::sycl::access::fence_space::global_and_local);
+	  
+	    numChildren++;
+	  }
+
+      }
     
 #if 0    
     local_current = records[recordID];
@@ -713,7 +759,7 @@ namespace embree
     out << root_aabb << cl::sycl::endl;
 
     
-    const float root_area = root_aabb.halfarea();
+    const float root_area = root_aabb.halfArea();
     
     uint sindex = 1;
     stack[0].node = sizeof(gpu::BVHBase);
@@ -780,7 +826,7 @@ namespace embree
 		  inner_nodes_valid_children++;
 		
 		  gpu::AABB aabb = nodeN->getBounds(i);
-		  const float area = aabb.halfarea();
+		  const float area = aabb.halfArea();
 
 		  if (aabb.lower.x() == (float)(INFINITY))
 		    {
@@ -1040,6 +1086,7 @@ namespace embree
 	    }
 
 	    /* --- parallel thread breadth first build --- */
+#if ENABLE_BREADTH_FIRST_PHASE == 1	    
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
@@ -1078,6 +1125,7 @@ namespace embree
 			  << e.what() << std::endl;
 	      }
 	    }
+#endif	    
 	    
 	    /* --- single HW thread recursive build --- */
 	    {

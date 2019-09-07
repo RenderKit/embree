@@ -163,7 +163,7 @@ namespace embree
       }
 
       inline float     area() { return gpu::area(size()); }
-      inline float halfarea() { return gpu::halfarea(size()); }      
+      inline float halfArea() { return gpu::halfarea(size()); }      
 	
     };
 
