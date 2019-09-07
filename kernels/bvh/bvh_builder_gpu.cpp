@@ -32,7 +32,7 @@
 #define PROFILE 0
 #define PROFILE_RUNS 20
 #define ENABLE_BREADTH_FIRST_PHASE 1
-
+#define ENABLE_SINGLE_THREAD_SERIAL_BUILD 1
 #define BUILD_CHECKS 1
 
 namespace embree
@@ -516,7 +516,8 @@ namespace embree
 
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void bvh_build_parallel_breadth_first(cl::sycl::nd_item<1> &item,
 											     cl::sycl::intel::sub_group &subgroup,
-											     gpu::BuildRecord &record,
+											     gpu::BuildRecord *records,
+											     const uint recordID,
 											     gpu::Globals &globals,
 											     char *bvh_mem,
 											     const gpu::AABB *const primref,
@@ -534,9 +535,16 @@ namespace embree
     const uint subtreeThreshold = 8;
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;    
     
-    const uint items = record.size();
+    cl::sycl::intel::sub_group sg = item.get_sub_group();    
     const uint localID   = item.get_local_id(0);
     const uint localSize = item.get_local_range().size();
+    const uint numGroups = item.get_group_range(0);    
+    const uint subgroupID      = sg.get_group_id()[0];
+    const uint subgroupLocalID = sg.get_local_id()[0];
+    
+    gpu::BuildRecord &record = records[recordID];
+    const uint items = record.size();
+    
     if (localID == 0)
       {
 	out << "items " << items << cl::sycl::endl;
@@ -597,127 +605,60 @@ namespace embree
 	    numChildren++;
 	  }
 
-      }
-    
-#if 0    
-    local_current = records[recordID];
-
-    barrier(CLK_LOCAL_MEM_FENCE | CLK_GLOBAL_MEM_FENCE);
-
-    const uint items = getNumPrims(&local_current);
-      
-    /* ignore small buildrecords */
-    if (items >= subtreeThreshold)
-      {
-	local struct BuildRecord *current = &local_current;
-	  
-	/*! find best split */
-#if ENABLE_32BINS_IN_BREADTH_FIRST_PHASE == 0	  
-	parallel_find_split(primref,&local_current,&split,&binInfo,primref_index0,primref_index1);
-#else
-	parallel_find_split32(primref,&local_current,&split,&binInfo,primref_index0,primref_index1);
-#endif	  
-
-	/*! create a leaf node when threshold reached or SAH tells us to stop */
-	uint numChildren = 2;
-
-	/*! find best split */
-	struct BinMapping binMapping;
-	initBinMapping(&binMapping,&local_current.centroidBounds,bins);	  
-	  
-	parallel_partition_index(primref,&binMapping,&local_current,&split,&children[0],&children[1],&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1,&atomicCountLeft,&atomicCountRight);
-	  
-	while (numChildren < BVH_NODE_N)
-	  {
-	    /*! find best child to split */
-	    float bestArea = -(float)INFINITY;
-	    int bestChild = -1;
-	    for (int i=0; i<numChildren; i++)
-	      {
-		/* ignore leaves as they cannot get split */
-		if (getNumPrims(&children[i]) <= cfg_minLeafSize) continue;
-
-		/* find child with largest surface area */
-		if (halfArea(&childrenAABB[i]) > bestArea) {
-		  bestChild = i;
-		  bestArea = halfArea(&childrenAABB[i]);
-		}
-	      }
-	    if (bestChild == -1) break;
-
-	    /* perform best found split */
-	    local struct BuildRecord *brecord = &children[bestChild];
-	    local struct BuildRecord *lrecord = &children[numChildren+0];
-	    local struct BuildRecord *rrecord = &children[numChildren+1];	
-	  
-#if ENABLE_32BINS_IN_BREADTH_FIRST_PHASE == 0	  	      
-	    parallel_find_split(primref,brecord,&split,&binInfo,primref_index0,primref_index1);
-#else
-	    parallel_find_split32(primref,brecord,&split,&binInfo,primref_index0,primref_index1);	      
-#endif
-	      
-	    initBinMapping(&binMapping,&brecord->centroidBounds,bins);
-	      
-	    parallel_partition_index(primref,&binMapping,brecord,&split,lrecord,rrecord,&childrenAABB[numChildren+0],&childrenAABB[numChildren+1],primref_index0,primref_index1,&atomicCountLeft,&atomicCountRight);
-
-	    *brecord = *rrecord;
-	    childrenAABB[bestChild] = childrenAABB[numChildren+1];
-	    
-	    barrier(CLK_LOCAL_MEM_FENCE);
-	  
-	    numChildren++;
-	  }
-
 	if (localID <= 16 && subgroupID == 0)
 	  {
-	    /* sort children based on rnage size */
-	    const uint numPrimsIDs = select((uint)0,(as_uint(childrenAABB[subgroupLocalID].upper.w) << BVH_NODE_N_LOG) | subgroupLocalID, subgroupLocalID < numChildren);
-#if 0
-	    const uint IDs = subgroupLocalID;
-#else
-	    const uint IDs = sortBVHChildrenIDs(numPrimsIDs) & (BVH_NODE_N-1);
-#endif
-
-	      
-	    uint node_offset = subgroup_createNode(globals,IDs,childrenAABB,numChildren,bvh_mem);
-	    /* set parent pointer in child build records */
-	    global struct BVHNodeN *node = (global struct BVHNodeN*)(bvh_mem + node_offset);
-	    if (subgroupLocalID < numChildren)
-	      {
-		children[IDs].parent = ((global uint *)&node->offset) + subgroupLocalID;
-	      }
-
+	    /* sort children based on size */
+	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
+	    const uint sortID = gpu::as_uint(_sortID);
+	    const uint numPrimsIDs = cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
+	    const uint IDs = gpu::sortBVHChildrenIDs(subgroup,numPrimsIDs) & (BVH_NODE_N-1);
 	    /* update parent pointer*/
 
-	      
-	    /* write out child buildrecords to memory */
-	  
+	    /* create bvh node */
+	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem,out);
+
+	    /* set parent pointer in child build records */
+	    struct gpu::QBVHNodeN *node = (struct gpu::QBVHNodeN*)(bvh_mem + node_offset);
+	    if (subgroupLocalID < numChildren)
+		children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
+	    
+	    /* write out child buildrecords to memory */	  
 	    if (localID == 0)
 	      {
-		*local_current.parent = encodeOffset(bvh_mem,local_current.parent,node_offset);
-		uint global_records_offset = atomic_add(&globals->numBuildRecords_extended,numChildren-1);
+		out << "numChildren " << numChildren << cl::sycl::endl;
+		/* update parent pointer */
+		if (local_current.parent != nullptr)
+		  *local_current.parent = gpu::encodeOffset(bvh_mem,local_current.parent,node_offset);
 
-		//printf("parent %p \n",local_current.parent-(global uint *)bvh_mem);
-		    
+		uint global_records_offset = gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&globals.numBuildRecords_extended,numChildren-1);
+
+		out << "global_records_offset " << global_records_offset << cl::sycl::endl;
+		
 		records[recordID] = children[0];
-		//printf("ID %d children %d \n",recordID,numChildren);
-		//printBuildRecord(&records[recordID]);
 		  
 		for (uint i=1;i<numChildren;i++)
-		  {
-		    //printf("ID %d children %d \n",globals->numBuildRecords + global_records_offset+i-1,numChildren);	
-		    records[globals->numBuildRecords + global_records_offset+i-1] = children[i];
-		    //printf("globals->numBuildRecords + global_records_offset+i-1 %d \n",globals->numBuildRecords + global_records_offset+i-1);
-		    //printBuildRecord(&records[globals->numBuildRecords + global_records_offset+i-1]);
-		    //printBuildRecord(&children[i]);
-
-		  }
-		  
-		
+		  records[globals.numBuildRecords + global_records_offset+i-1] = children[i];				
 	      }
 	  }
+	item.barrier(cl::sycl::access::fence_space::global_and_local);	
       }
-#endif  
+
+  /* last active HW thread ? */
+  if (localID == 0)
+  {
+    const uint sync = gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&globals.sync, 1);
+    if (sync + 1 == numGroups)
+    {
+      globals.sync = 0;
+      /* set final number of buildrecords */
+      globals.numBuildRecords += globals.numBuildRecords_extended;
+      globals.numBuildRecords_extended = 0;
+      out << "globals.numBuildRecords " << globals.numBuildRecords << cl::sycl::endl;
+      for (uint i=0;i<globals.numBuildRecords;i++)
+	out << i << " -> " << records[i] << cl::sycl::endl;
+    }
+  }
+    
   }
   
 
@@ -1110,11 +1051,11 @@ namespace embree
 		      gpu::AABB *primref     = aabb;
 		      uint *primref_index0   = primref_index + 0;
 		      uint *primref_index1   = primref_index + globals->numPrimitives;		      
-		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
+		      gpu::BuildRecord *records = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
 		      const uint numRecords = globals->numBuildRecords;
 		      
-		      bvh_build_parallel_breadth_first(item,subgroup,record[0],*globals,bvh_mem,primref,primref_index0,primref_index1,bestSplit,binInfo2,local_current,childrenAABB.get_pointer(),children.get_pointer(),atomicCountLeft.get_pointer(),atomicCountRight.get_pointer(),out);
+		      bvh_build_parallel_breadth_first(item,subgroup,records,0,*globals,bvh_mem,primref,primref_index0,primref_index1,bestSplit,binInfo2,local_current,childrenAABB.get_pointer(),children.get_pointer(),atomicCountLeft.get_pointer(),atomicCountRight.get_pointer(),out);
 
 		    });		  
 		});
@@ -1125,14 +1066,20 @@ namespace embree
 			  << e.what() << std::endl;
 	      }
 	    }
+	    //exit(0);
 #endif	    
 	    
 	    /* --- single HW thread recursive build --- */
+#if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
+	    const uint numParallelRecords = 1;
+#else
+	    const uint numParallelRecords = globals->numBuildRecords;	    
+#endif	    
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));
+		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(numParallelRecords * BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));
 		  
 		  /* local variables */
 		  cl::sycl::accessor< gpu::BinInfo    , 0, sycl_read_write, sycl_local> binInfo(cgh);
@@ -1152,8 +1099,11 @@ namespace embree
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
 		      const uint numRecords = globals->numBuildRecords;
-		      
+#if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1		      
 		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
+#else
+			recordID = groupID;
+#endif			
 			bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);
 		    });		  
 		});
