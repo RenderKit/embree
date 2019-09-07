@@ -30,6 +30,10 @@ namespace embree
       
       AABB3f() = default;
 
+      AABB3f(const AABB3f &aabb) : lower(aabb.lower),upper(aabb.upper) {} 
+
+      AABB3f(const float3 &v) : lower(v),upper(v) {}
+      
       inline void init()
       {
 	const float pos_inf =  INFINITY;

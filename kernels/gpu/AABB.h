@@ -30,7 +30,7 @@ namespace embree
 
       AABB() = default;
 
-      AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} // enabling this causes a compile error ???
+      AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} 
 
       AABB(const float4 &v) : lower(v),upper(v) {}
       
@@ -70,7 +70,7 @@ namespace embree
 	return upper + lower;
       }
 
-      inline void atomic_merge_global(GLOBAL AABB &dest) const
+      inline void atomic_merge_global(AABB &dest) const
       {
 	atomic_min(((volatile GLOBAL float *)&dest) + 0,lower.x());
 	atomic_min(((volatile GLOBAL float *)&dest) + 1,lower.y());
@@ -81,7 +81,7 @@ namespace embree
 	atomic_max(((volatile GLOBAL float *)&dest) + 6,upper.z());	
       }
 
-      inline void atomic_merge_local(GLOBAL AABB &dest) const
+      inline void atomic_merge_local(AABB &dest) const
       {
 	atomic_min(((volatile LOCAL float *)&dest) + 0,lower.x());
 	atomic_min(((volatile LOCAL float *)&dest) + 1,lower.y());
