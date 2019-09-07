@@ -604,6 +604,30 @@ namespace embree
     }
 
 
+    inline bool checkPrimRefBounds(const BuildRecord &record, const AABB &geometryBounds, const AABB &primref)
+    {
+      const float4 centroid2 = primref.lower+primref.upper;
+
+      if (centroid2.x() < record.centroidBounds.lower.x()) return false;
+      if (centroid2.y() < record.centroidBounds.lower.y()) return false;
+      if (centroid2.z() < record.centroidBounds.lower.z()) return false;
+
+      if (centroid2.x() > record.centroidBounds.upper.x()) return false;
+      if (centroid2.y() > record.centroidBounds.upper.y()) return false;
+      if (centroid2.z() > record.centroidBounds.upper.z()) return false;
+
+      if (primref.lower.x() < geometryBounds.lower.x()) return false;
+      if (primref.lower.y() < geometryBounds.lower.y()) return false;
+      if (primref.lower.z() < geometryBounds.lower.z()) return false;
+
+      if (primref.upper.x() > geometryBounds.upper.x()) return false;
+      if (primref.upper.y() > geometryBounds.upper.y()) return false;
+      if (primref.upper.z() > geometryBounds.upper.z()) return false;
+ 
+      return true;  
+    }
+    
+
      const uint shuffle2mirror[16]  = { 1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14 };
      const uint shuffle4mirror[16]  = { 3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12 };
      const uint shuffle4rotate[16]  = { 2,3,0,1,6,7,4,5,10,11,8,9,14,15,12,13 };

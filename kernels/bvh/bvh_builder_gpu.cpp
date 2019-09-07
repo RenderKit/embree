@@ -32,6 +32,8 @@
 #define PROFILE 0
 #define PROFILE_RUNS 20
 
+#define BUILD_CHECKS 0
+
 namespace embree
 {
 #if defined(EMBREE_DPCPP_SUPPORT)
@@ -473,6 +475,7 @@ namespace embree
 
     item.barrier(cl::sycl::access::fence_space::local_space);
 
+#if BUILD_CHECKS == 1    
     if (localID == 0)
       {
 	const uint pos = begin + *atomicCountLeft;  // single first thread needs to compute "pos"
@@ -483,7 +486,29 @@ namespace embree
 	outGeometryBoundsRight->lower.w() = 0.0f;      
 	outGeometryBoundsRight->upper.w() =  gpu::as_float(outRight->size());
 
+	if (outLeft->end <= begin) out << "pos begin error" << cl::sycl::endl;
+	if (outLeft->end >  end  ) out << "pos end error" << cl::sycl::endl;
+      
+	for (uint i=outLeft->start;i<outLeft->end;i++)
+	  {
+	    const uint index = primref_index0[i];
+	    //printf("left %d -> %d \n",i,index);
+	    if (!is_left(binMapping, split,primref[index]))
+	      out << "check left " << i << cl::sycl::endl;
+	    if (!gpu::checkPrimRefBounds(*outLeft,*outGeometryBoundsLeft, primref[index]))
+	      out << "check prim ref bounds left " << i << cl::sycl::endl; 
+	  }  
+	for (uint i=outRight->start;i<outRight->end;i++)
+	  {
+	    const uint index =  primref_index0[i];
+	    //printf("right %d -> %d \n",i,index);	      
+	    if (is_left(binMapping, split,primref[index]))
+	      out << "check right " << i << cl::sycl::endl;	    
+	    if (!gpu::checkPrimRefBounds(*outRight,*outGeometryBoundsRight,primref[index]))
+	      out << "check prim ref bounds right " << i << cl::sycl::endl;
+	  }	
       }
+#endif    
     
     item.barrier(cl::sycl::access::fence_space::local_space);    
   }
