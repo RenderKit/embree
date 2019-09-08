@@ -32,7 +32,8 @@
 #define PROFILE 0
 #define PROFILE_RUNS 20
 #define ENABLE_BREADTH_FIRST_PHASE 1
-#define ENABLE_SINGLE_THREAD_SERIAL_BUILD 1
+#define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
+#define ENABLE_STATS 1
 #define BUILD_CHECKS 1
 
 namespace embree
@@ -349,8 +350,6 @@ namespace embree
     const uint localSize = item.get_local_range().size();
     cl::sycl::intel::sub_group sg = item.get_sub_group();
     const uint subgroupID      = sg.get_group_id()[0];
-    const uint subgroupLocalID = sg.get_local_id()[0];
-    const uint subgroupSize    = sg.get_local_range().size();
 
     const uint startID    = record.start;
     const uint endID      = record.end;
@@ -394,7 +393,6 @@ namespace embree
 										     const cl::sycl::stream &out)
   {
     const uint localID   = item.get_local_id(0);
-    const uint localSize = item.get_local_range().size();
 
     cl::sycl::intel::sub_group sg = item.get_sub_group();
     const uint subgroupID      = sg.get_group_id()[0];
@@ -408,7 +406,6 @@ namespace embree
 
     if (localID == 0)
       {
-	//out << "numSubGroups " << numSubGroups << cl::sycl::endl;	
 	outLeft->init(begin,end);
 	outRight->init(begin,end);
 	outGeometryBoundsLeft->init(); // FIXME: unnecessary?
@@ -530,26 +527,26 @@ namespace embree
 											     gpu::BuildRecord *children,
 											     uint *atomicCountLeft,
 											     uint *atomicCountRight,
+											     const uint subtreeThreshold,
 											     const cl::sycl::stream &out)
   {
-    const uint subtreeThreshold = 8;
     const uint cfg_minLeafSize = BVH_LEAF_N_MIN;    
     
     cl::sycl::intel::sub_group sg = item.get_sub_group();    
     const uint localID   = item.get_local_id(0);
-    const uint localSize = item.get_local_range().size();
     const uint numGroups = item.get_group_range(0);    
     const uint subgroupID      = sg.get_group_id()[0];
     const uint subgroupLocalID = sg.get_local_id()[0];
     
     gpu::BuildRecord &record = records[recordID];
     const uint items = record.size();
-    
-    if (localID == 0)
-      {
-	out << "items " << items << cl::sycl::endl;
-	out << record << cl::sycl::endl;
-      }
+
+    DBG_BUILD(
+	      if (localID == 0)
+		{
+		  out << "items " << items << cl::sycl::endl;
+		  out << record << cl::sycl::endl;
+		});
 
     local_current = record;
     
@@ -561,8 +558,10 @@ namespace embree
 	binMapping.init(record.centroidBounds,2*BINS);    
 	parallel_find_split(item,local_current,primref,bestSplit,binMapping,binInfo2,primref_index0,primref_index1,out);
 
-	if (localID == 0)
-	  out << "bestSplit " << bestSplit << cl::sycl::endl;
+	DBG_BUILD(
+		  if (localID == 0)
+		    out << "bestSplit " << bestSplit << cl::sycl::endl;
+		  );
     
 	parallel_partition_index(item,local_current,primref,bestSplit,binMapping,&children[0],&children[1],&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
 
@@ -593,8 +592,11 @@ namespace embree
 	  
 	    binMapping.init(brecord.centroidBounds,2*BINS);
 	    parallel_find_split(item,brecord,primref,bestSplit,binMapping,binInfo2,primref_index0,primref_index1,out);
-	    if (localID == 0)
-	      out << "numChildren " << numChildren << " bestSplit " << bestSplit << cl::sycl::endl;
+
+	    DBG_BUILD(
+		      if (localID == 0)
+			out << "numChildren " << numChildren << " bestSplit " << bestSplit << cl::sycl::endl;
+		      );
 	    
 	    parallel_partition_index(item,brecord,primref,bestSplit,binMapping,&lrecord,&rrecord,&childrenAABB[numChildren+0],&childrenAABB[numChildren+1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
 	    brecord = rrecord;
@@ -620,19 +622,20 @@ namespace embree
 	    /* set parent pointer in child build records */
 	    struct gpu::QBVHNodeN *node = (struct gpu::QBVHNodeN*)(bvh_mem + node_offset);
 	    if (subgroupLocalID < numChildren)
-		children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
+	      children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
 	    
 	    /* write out child buildrecords to memory */	  
 	    if (localID == 0)
 	      {
-		out << "numChildren " << numChildren << cl::sycl::endl;
+		DBG_BUILD(out << "numChildren " << numChildren << cl::sycl::endl);
+		
 		/* update parent pointer */
 		if (local_current.parent != nullptr)
 		  *local_current.parent = gpu::encodeOffset(bvh_mem,local_current.parent,node_offset);
 
 		uint global_records_offset = gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&globals.numBuildRecords_extended,numChildren-1);
 
-		out << "global_records_offset " << global_records_offset << cl::sycl::endl;
+		DBG_BUILD(out << "global_records_offset " << global_records_offset << cl::sycl::endl);
 		
 		records[recordID] = children[0];
 		  
@@ -643,22 +646,23 @@ namespace embree
 	item.barrier(cl::sycl::access::fence_space::global_and_local);	
       }
 
-  /* last active HW thread ? */
-  if (localID == 0)
-  {
-    const uint sync = gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&globals.sync, 1);
-    if (sync + 1 == numGroups)
-    {
-      globals.sync = 0;
-      /* set final number of buildrecords */
-      globals.numBuildRecords += globals.numBuildRecords_extended;
-      globals.numBuildRecords_extended = 0;
-      out << "globals.numBuildRecords " << globals.numBuildRecords << cl::sycl::endl;
-      for (uint i=0;i<globals.numBuildRecords;i++)
-	out << i << " -> " << records[i] << cl::sycl::endl;
-    }
-  }
-    
+    /* last active HW thread ? */
+    if (localID == 0)
+      {
+	const uint sync = gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&globals.sync, 1);
+	if (sync + 1 == numGroups)
+	  {
+	    globals.sync = 0;
+	    /* set final number of buildrecords */
+	    globals.numBuildRecords += globals.numBuildRecords_extended;
+	    globals.numBuildRecords_extended = 0;
+	    DBG_BUILD(
+		      out << "globals.numBuildRecords " << globals.numBuildRecords << cl::sycl::endl;
+		      for (uint i=0;i<globals.numBuildRecords;i++)
+			out << i << " -> " << records[i] << cl::sycl::endl;
+		      );
+	  }
+      }
   }
   
 
@@ -681,10 +685,10 @@ namespace embree
       uint depth;
       uint tmp;
     };
-    
-    StatStack stack[BVH_MAX_STACK_ENTRIES];
 
+    out << "BVH STATS:" << cl::sycl::endl;
     
+    StatStack stack[BVH_MAX_STACK_ENTRIES];    
     
     float sah_nodes  = 0.0f;
     
@@ -697,9 +701,6 @@ namespace embree
     uint inner_nodes_valid_children = 0;
     
     gpu::AABB root_aabb = ((struct gpu::QBVHNodeN*)(bvh_mem + sizeof(gpu::BVHBase)))->getBounds();
-    out << root_aabb << cl::sycl::endl;
-
-    
     const float root_area = root_aabb.halfArea();
     
     uint sindex = 1;
@@ -1027,12 +1028,18 @@ namespace embree
 	    }
 
 	    /* --- parallel thread breadth first build --- */
-#if ENABLE_BREADTH_FIRST_PHASE == 1	    
+#if ENABLE_BREADTH_FIRST_PHASE == 1
+	    double t1 = getSeconds();
+	    
+	    uint old_numBuildRecords = 0;
+	    while(old_numBuildRecords != globals->numBuildRecords)
 	    {
+	      old_numBuildRecords = globals->numBuildRecords;	      
+	      const uint subtreeThreshold = 128;	      
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>((int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));
+		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(globals->numBuildRecords*(int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));
 		  
 		  /* local variables */
 		  cl::sycl::accessor< gpu::BinInfo2   , 0, sycl_read_write, sycl_local> binInfo2(cgh);
@@ -1053,10 +1060,9 @@ namespace embree
 		      uint *primref_index1   = primref_index + globals->numPrimitives;		      
 		      gpu::BuildRecord *records = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
-		      const uint numRecords = globals->numBuildRecords;
+		      DBG_BUILD(if (localID == 0) out << "groupID " << groupID << " numGroups " << numGroups << cl::sycl::endl);
 		      
-		      bvh_build_parallel_breadth_first(item,subgroup,records,0,*globals,bvh_mem,primref,primref_index0,primref_index1,bestSplit,binInfo2,local_current,childrenAABB.get_pointer(),children.get_pointer(),atomicCountLeft.get_pointer(),atomicCountRight.get_pointer(),out);
-
+		      bvh_build_parallel_breadth_first(item,subgroup,records,groupID,*globals,bvh_mem,primref,primref_index0,primref_index1,bestSplit,binInfo2,local_current,childrenAABB.get_pointer(),children.get_pointer(),atomicCountLeft.get_pointer(),atomicCountRight.get_pointer(),subtreeThreshold,out);
 		    });		  
 		});
 	      try {
@@ -1065,11 +1071,16 @@ namespace embree
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
 	      }
+	      PRINT(globals->numBuildRecords);	      
 	    }
-	    //exit(0);
+
+	    double t2 = getSeconds();
+	    std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;
 #endif	    
 	    
 	    /* --- single HW thread recursive build --- */
+	    t1 = getSeconds();
+	    
 #if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
 	    const uint numParallelRecords = 1;
 #else
@@ -1090,7 +1101,6 @@ namespace embree
 		  		  		  
 		  cgh.parallel_for<class serial_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		      const uint groupID   = item.get_group(0);
-		      const uint numGroups = item.get_group_range(0);
 		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();
 		      
 		      gpu::AABB *primref     = aabb;
@@ -1098,11 +1108,12 @@ namespace embree
 		      uint *primref_index1   = primref_index + globals->numPrimitives;		      
 		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      
-		      const uint numRecords = globals->numBuildRecords;
-#if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1		      
+#if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
+		      const uint numRecords = globals->numBuildRecords;		      
+		      const uint numGroups = item.get_group_range(0);		      
 		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
 #else
-			recordID = groupID;
+			const uint recordID = groupID;
 #endif			
 			bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);
 		    });		  
@@ -1115,12 +1126,9 @@ namespace embree
 	      }
 	    }
 
+	    t2 = getSeconds();
+	    std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
 	    /* --- convert primrefs to primitives --- */
-#if 0	    
-	    for (size_t i=0;i<numPrimitives;i++)
-	      std::cout << "i " << i << " index " << primref_index[i] << " aabb[primref_index[i]] " << ((PrimRef*)aabb)[primref_index[i]] << std::endl;
-#endif
-
 	    gpu::Quad1 *quad1 = (gpu::Quad1 *)(bvh_mem + globals->leaf_mem_allocator_start);
 
 	    for (size_t i=0;i<numPrimitives;i++)
@@ -1153,6 +1161,7 @@ namespace embree
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
 
 	    /* print BVH stats */
+#if ENABLE_STATS == 1	    
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
@@ -1168,6 +1177,7 @@ namespace embree
 			  << e.what() << std::endl;
 	      }	      
 	    }
+#endif	    
 
 	    /* --- deallocate temporary data structures --- */
 	    cl::sycl::free(aabb         ,deviceGPU->getContext());
