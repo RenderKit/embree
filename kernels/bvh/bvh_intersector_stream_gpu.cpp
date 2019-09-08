@@ -14,8 +14,6 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "node_intersector_packet_stream.h"
-#include "node_intersector_frustum.h"
 #include "bvh_traverser_stream.h"
 
 #if defined(EMBREE_DPCPP_SUPPORT)
@@ -191,44 +189,28 @@ namespace embree
 
 	  while((cur & BVH_LEAF_MASK) == 0) 
 	    {
-#if 1
-	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);	      
+	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);
+	      uint  offset          = node.offset[subgroupLocalID];	      	      
 	      const float3 org      = node.org.xyz();
 	      const float3 scale    = node.scale.xyz();
 	      const uchar3 ilower(node.bounds_xy[subgroupLocalID].lower_x,node.bounds_xy[subgroupLocalID].lower_y,node.bounds_z[subgroupLocalID].lower_z);
 	      const uchar3 iupper(node.bounds_xy[subgroupLocalID].upper_x,node.bounds_xy[subgroupLocalID].upper_y,node.bounds_z[subgroupLocalID].upper_z);	      
 	      const float3 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
 	      const float3 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
-	      const float3 _lower  = fma(lowerf,scale,org);
-	      const float3 _upper  = fma(upperf,scale,org);
-	      const float _lower_x = _lower.x();
-	      const float _upper_x = _upper.x();
-	      const float _lower_y = _lower.y();
-	      const float _upper_y = _upper.y();
-	      const float _lower_z = _lower.z();
-	      const float _upper_z = _upper.z();
-#else	      
-	      const gpu::BVHNodeN &node = *(gpu::BVHNodeN*)(bvh_base + cur);	      
-	      const float _lower_x = node.lower_x[subgroupLocalID];
-	      const float _lower_y = node.lower_y[subgroupLocalID];
-	      const float _lower_z = node.lower_z[subgroupLocalID];
-	      const float _upper_x = node.upper_x[subgroupLocalID];
-	      const float _upper_y = node.upper_y[subgroupLocalID];
-	      const float _upper_z = node.upper_z[subgroupLocalID];
-#endif
-	      uint  offset   = node.offset[subgroupLocalID];	      
+	      const float3 _lower  = cfma(lowerf,scale,org);
+	      const float3 _upper  = cfma(upperf,scale,org);
 	      DBG(
 		  if (0 == subgroupLocalID)
 		    {
 		      out << node << cl::sycl::endl;
 		    });
 
-	      const float lower_x = cselect(maskX,_upper_x,_lower_x);
-	      const float upper_x = cselect(maskX,_lower_x,_upper_x);
-	      const float lower_y = cselect(maskY,_upper_y,_lower_y);
-	      const float upper_y = cselect(maskY,_lower_y,_upper_y);
-	      const float lower_z = cselect(maskZ,_upper_z,_lower_z);
-	      const float upper_z = cselect(maskZ,_lower_z,_upper_z);	     
+	      const float lower_x = cselect(maskX,(float)_upper.x(),(float)_lower.x());
+	      const float upper_x = cselect(maskX,(float)_lower.x(),(float)_upper.x());
+	      const float lower_y = cselect(maskY,(float)_upper.y(),(float)_lower.y());
+	      const float upper_y = cselect(maskY,(float)_lower.y(),(float)_upper.y());
+	      const float lower_z = cselect(maskZ,(float)_upper.z(),(float)_lower.z());
+	      const float upper_z = cselect(maskZ,(float)_lower.z(),(float)_upper.z());	     
 	      
 	      const float lowerX = cfma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
 	      const float upperX = cfma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());

@@ -34,7 +34,7 @@
 #define ENABLE_BREADTH_FIRST_PHASE 1
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
 #define ENABLE_STATS 1
-#define BUILD_CHECKS 1
+#define BUILD_CHECKS 0
 
 namespace embree
 {
