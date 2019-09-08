@@ -396,7 +396,7 @@ namespace embree
 	  }
       }
 
-      [[cl::intel_reqd_sub_group_size(BINS)]] inline void atomicUpdate( const gpu::BinMapping &binMapping, const gpu::AABB &primref,const cl::sycl::stream &out)
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline void atomicUpdate( const gpu::BinMapping &binMapping, const gpu::AABB &primref)
       {
 	const float4 p = primref.centroid2();
 	const float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
@@ -415,7 +415,7 @@ namespace embree
       
 
       
-      [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit16(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID)
       {
 	const uint subgroupLocalID = sg.get_local_id()[0];		
 	const AABB3f &bX      = boundsX[subgroupLocalID];
@@ -494,7 +494,7 @@ namespace embree
 	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.z()] + 2,1);        
       }
       
-      [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit32(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID,const cl::sycl::stream &out)
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit32(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID)
       {
 	const uint subgroupLocalID = sg.get_local_id()[0];		
 	const uint subgroup_size   = BINS;  

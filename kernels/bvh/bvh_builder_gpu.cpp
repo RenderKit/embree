@@ -52,8 +52,7 @@ namespace embree
 									      gpu::BinMapping &binMapping,
 									      gpu::BinInfo &binInfo,
 									      uint *primref_index0,
-									      uint *primref_index1,
-									      const cl::sycl::stream &out)
+									      uint *primref_index1)
   {
     const uint startID = record.start;
     const uint endID   = record.end;
@@ -68,7 +67,7 @@ namespace embree
 	const uint index = primref_index0[t];
 	
 	primref_index1[t] = index;	
-	binInfo.atomicUpdate(binMapping,primref[index],out);      
+	binInfo.atomicUpdate(binMapping,primref[index]);      
       }
   }
 
@@ -264,9 +263,9 @@ namespace embree
 	    
 	    binMapping.init(current.centroidBounds,BINS);
 	    
-	    serial_find_split(subgroup,current,primref,binMapping,binInfo,primref_index0,primref_index1,out);
+	    serial_find_split(subgroup,current,primref,binMapping,binInfo,primref_index0,primref_index1);
 	    
-	    split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end,out);
+	    split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,current.start,current.end);
 
 	    DBG_BUILD(if (subgroup.get_local_id() == 0) out << "split " << split << cl::sycl::endl);
 	    
@@ -296,8 +295,8 @@ namespace embree
 		gpu::BuildRecord &rrecord = children[numChildren];	
 
 		binMapping.init(brecord.centroidBounds,BINS);
-		serial_find_split(subgroup,brecord,primref,binMapping,binInfo,primref_index0,primref_index1,out);
-		split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,brecord.start,brecord.end,out);
+		serial_find_split(subgroup,brecord,primref,binMapping,binInfo,primref_index0,primref_index1);
+		split = binInfo.reduceBinsAndComputeBestSplit16(subgroup,binMapping.scale,brecord.start,brecord.end);
 
 		DBG_BUILD(if (subgroup.get_local_id() == 0) out << "split " << split << cl::sycl::endl);
 		
@@ -372,7 +371,7 @@ namespace embree
 
     /* find best split */
     if (subgroupID == 0)
-	bestSplit = binInfo2.reduceBinsAndComputeBestSplit32(sg,binMapping.scale,startID,endID,out);
+	bestSplit = binInfo2.reduceBinsAndComputeBestSplit32(sg,binMapping.scale,startID,endID);
 
     item.barrier(cl::sycl::access::fence_space::local_space);    
   }
@@ -473,7 +472,6 @@ namespace embree
 
     item.barrier(cl::sycl::access::fence_space::local_space);
 
-#if BUILD_CHECKS == 1    
     if (localID == 0)
       {
 	const uint pos = begin + *atomicCountLeft;  // single first thread needs to compute "pos"
@@ -484,6 +482,7 @@ namespace embree
 	outGeometryBoundsRight->lower.w() = 0.0f;      
 	outGeometryBoundsRight->upper.w() =  gpu::as_float(outRight->size());
 
+#if BUILD_CHECKS == 1    	
 	if (outLeft->end <= begin) out << "pos begin error" << cl::sycl::endl;
 	if (outLeft->end >  end  ) out << "pos end error" << cl::sycl::endl;
       
@@ -504,9 +503,9 @@ namespace embree
 	      out << "check right " << i << cl::sycl::endl;	    
 	    if (!gpu::checkPrimRefBounds(*outRight,*outGeometryBoundsRight,primref[index]))
 	      out << "check prim ref bounds right " << i << cl::sycl::endl;
-	  }	
+	  }
+#endif    	
       }
-#endif    
     
     item.barrier(cl::sycl::access::fence_space::local_space);    
   }
@@ -539,9 +538,9 @@ namespace embree
     const uint subgroupLocalID = sg.get_local_id()[0];
     
     gpu::BuildRecord &record = records[recordID];
-    const uint items = record.size();
 
     DBG_BUILD(
+	      const uint items = record.size();	      
 	      if (localID == 0)
 		{
 		  out << "items " << items << cl::sycl::endl;
@@ -1035,7 +1034,7 @@ namespace embree
 	    while(old_numBuildRecords != globals->numBuildRecords)
 	    {
 	      old_numBuildRecords = globals->numBuildRecords;	      
-	      const uint subtreeThreshold = 128;	      
+	      const uint subtreeThreshold = 512;	      
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
@@ -1051,17 +1050,14 @@ namespace embree
 		  cl::sycl::accessor< uint            , 0, sycl_read_write, sycl_local> atomicCountRight(cgh);
 		  		  		  		  
 		  cgh.parallel_for<class parallel_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
-		      const uint localID   = item.get_local_id(0);		      
 		      const uint groupID   = item.get_group(0);
-		      const uint numGroups = item.get_group_range(0);
+		      //const uint numGroups = item.get_group_range(0);
 		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();		      
 		      gpu::AABB *primref     = aabb;
 		      uint *primref_index0   = primref_index + 0;
 		      uint *primref_index1   = primref_index + globals->numPrimitives;		      
 		      gpu::BuildRecord *records = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
-		      
-		      DBG_BUILD(if (localID == 0) out << "groupID " << groupID << " numGroups " << numGroups << cl::sycl::endl);
-		      
+		      		      
 		      bvh_build_parallel_breadth_first(item,subgroup,records,groupID,*globals,bvh_mem,primref,primref_index0,primref_index1,bestSplit,binInfo2,local_current,childrenAABB.get_pointer(),children.get_pointer(),atomicCountLeft.get_pointer(),atomicCountRight.get_pointer(),subtreeThreshold,out);
 		    });		  
 		});
@@ -1071,7 +1067,7 @@ namespace embree
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
 	      }
-	      PRINT(globals->numBuildRecords);	      
+	      DBG_BUILD(PRINT(globals->numBuildRecords));	      
 	    }
 
 	    double t2 = getSeconds();
