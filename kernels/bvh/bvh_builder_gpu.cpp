@@ -1067,7 +1067,7 @@ namespace embree
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
 	      }
-	      DBG_BUILD(PRINT(globals->numBuildRecords));	      
+	      PRINT(globals->numBuildRecords);	      
 	    }
 
 	    double t2 = getSeconds();

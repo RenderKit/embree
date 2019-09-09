@@ -73,8 +73,7 @@ namespace embree
 				const float &tnear,
 				const float &tfar,
 				gpu::RTCHitGPU &hit,
-				const unsigned int slotID,
-				const cl::sycl::stream &out)
+				const unsigned int slotID)
     {
       DBG(
 	  const uint subgroupLocalID = sg.get_local_id()[0];
@@ -85,12 +84,23 @@ namespace embree
       const uint quadID = slotID >> 1;  
       if (slotID < numQuads*2)
 	{
+#if 0
+	  const float8 vv = *(cl::sycl::float8*)&quad1[quadID].v0;
+	  const float4 _vv0 = vv.lo();
+	  const float4 _vv1 = vv.hi();
+	  const float4 _v0 = (slotID % 2) == 0 ? _vv0 : _vv1; //cselect(uint4((uint)((slotID % 2) == 0)),_vv0,_vv1);
+	  const uint primID = gpu::as_uint((float)_vv0.w());	  
+#else	  
 	  const float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
 	  const uint primID = gpu::as_uint((float)_v0.w());
-	  const float8 vv = *(cl::sycl::float8*)&quad1[quadID].v1;
-	  const float4 _v1 = vv.lo();
+#endif
+	  //const float8 _v1v2 = *(cl::sycl::float8*)&quad1[quadID].v1;
+	  //const float4 _v1 = _v1v2.lo();
+	  //const float4 _v2 = _v1v2.hi();
+	  const float4 _v1 = quad1[quadID].v1;
+	  const float4 _v2 = quad1[quadID].v3;
 	  const uint geomID = gpu::as_uint((float)_v1.w());
-	  const float4 _v2 = vv.hi();
+	    
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();
 	  const float3 v2 = _v2.xyz();
@@ -110,11 +120,6 @@ namespace embree
 	  //if (m_hit == 0) return; // early out
 	  m_hit &= (tnear <= t) & (t < tfar); // den != 0.0f &&
 
-	  DBG(
-	      for (uint i=0;i<subgroupSize;i++)
-		if (i == subgroupLocalID)
-		  out << "i " << i << " t " << t << " m_hit " << m_hit << cl::sycl::endl;
-	      );
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
@@ -131,7 +136,7 @@ namespace embree
     }
     
 
-    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayHitGPU &rayhit, void *bvh_mem, const cl::sycl::stream &out)
+    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, const cl::sycl::stream &out)
     {
       unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
       float        stack_dist[BVH_MAX_STACK_ENTRIES];  
@@ -140,15 +145,15 @@ namespace embree
       gpu::RTCHitGPU local_hit;
       local_hit.init();
 
-      const uint subgroupLocalID = sg.get_local_id()[0];
-      DBG(const uint subgroupSize    = sg.get_local_range().size());
+      const uint subgroupLocalID  = sg.get_local_id()[0];
+      DBG(const uint subgroupSize = sg.get_local_range().size());
 
-      const float3 org(rayhit.ray.org[0],rayhit.ray.org[1],rayhit.ray.org[2]);
-      const float3 dir(rayhit.ray.dir[0],rayhit.ray.dir[1],rayhit.ray.dir[2]);
+      const float3 org(ray.org[0],ray.org[1],ray.org[2]);
+      const float3 dir(ray.dir[0],ray.dir[1],ray.dir[2]);
             
-      const float tnear = rayhit.ray.tnear;
-      float tfar        = rayhit.ray.tfar;
-      float hit_tfar    = rayhit.ray.tfar;
+      const float tnear = ray.tnear;
+      float tfar        = ray.tfar;
+      float hit_tfar    = ray.tfar;
 
       DBG(
 	  if (subgroupLocalID == 0)
@@ -190,15 +195,28 @@ namespace embree
 	  while((cur & BVH_LEAF_MASK) == 0) 
 	    {
 	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);
+#if 0	      
 	      uint  offset          = node.offset[subgroupLocalID];	      	      
 	      const float3 org      = node.org.xyz();
 	      const float3 scale    = node.scale.xyz();
+#else
+	      cl::sycl::multi_ptr<uint,cl::sycl::access::address_space::global_space> node_ptr((uint*)(bvh_base + cur));
+	      const uint2 block0 = sg.load<2,uint>(node_ptr);
+	      uint offset = (uint)block0.x();
+	      const float3 org(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 0)),
+			       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 1)),
+			       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 2)));
+	      const float3 scale(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 4)),
+				 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 5)),
+				 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 6)));	      
+#endif	      
 	      const uchar3 ilower(node.bounds_xy[subgroupLocalID].lower_x,node.bounds_xy[subgroupLocalID].lower_y,node.bounds_z[subgroupLocalID].lower_z);
 	      const uchar3 iupper(node.bounds_xy[subgroupLocalID].upper_x,node.bounds_xy[subgroupLocalID].upper_y,node.bounds_z[subgroupLocalID].upper_z);	      
 	      const float3 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
 	      const float3 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
 	      const float3 _lower  = cfma(lowerf,scale,org);
 	      const float3 _upper  = cfma(upperf,scale,org);
+
 	      DBG(
 		  if (0 == subgroupLocalID)
 		    {
@@ -233,7 +251,7 @@ namespace embree
 	      
 	      if (mask == 0)
 		{
-#if STACK_CULLING  == 1
+#if STACK_CULLING == 1
 		  do { 
 		    sindex--;
 		  } while (stack_dist[sindex] > tfar);
@@ -246,7 +264,7 @@ namespace embree
 
 	      offset += cur; /* relative encoding */
 	      const uint popc = cl::sycl::popcount(mask); 
-	      cur = sg.broadcast<uint>(offset, ctz(mask));
+	      cur = sg.broadcast<uint>(offset, cl::sycl::intel::ctz(mask));
 	      
 
 	      DBG(
@@ -293,8 +311,8 @@ namespace embree
 	  const unsigned int numPrims = gpu::getNumLeafPrims(cur);
 	  const unsigned int leafOffset = gpu::getLeafOffset(cur);    
 
-	  const gpu::Quad1 *const quads = (struct gpu::Quad1 *)(bvh_base + leafOffset);
-	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID,out);
+	  const gpu::Quad1 *const quads = (gpu::Quad1 *)(bvh_base + leafOffset);
+	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
 
 	  DBG(
 	      for (uint i=0;i<subgroupSize;i++)
@@ -312,12 +330,12 @@ namespace embree
 	  );
 
 	  
-      const uint index = ctz(intel_sub_group_ballot(tfar == hit_tfar));
+      const uint index = cl::sycl::intel::ctz(intel_sub_group_ballot(tfar == hit_tfar));
       if (subgroupLocalID == index)
 	if (local_hit.primID != -1)
 	  {	 
-	    rayhit.hit = local_hit;
-	    rayhit.ray.tfar = tfar;
+	    hit = local_hit;
+	    ray.tfar = tfar;
 	    DBG(out << "rayhit.ray.tfar " << rayhit.ray.tfar << " rayhit.hit " << rayhit.hit << cl::sycl::endl);
 	  }
     }
@@ -359,8 +377,8 @@ namespace embree
 	    const cl::sycl::nd_range<1> nd_range(numRays*cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));		  
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint groupID   = item.get_group(0);
-		cl::sycl::intel::sub_group sg = item.get_sub_group();	      
-		traceRayBVH16(sg,inputRays[groupID],bvh_mem,out);	      
+		cl::sycl::intel::sub_group sg = item.get_sub_group();
+		traceRayBVH16(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);	      
 	      });		  
 	  });
 	try {
