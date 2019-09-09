@@ -75,32 +75,16 @@ namespace embree
 				gpu::RTCHitGPU &hit,
 				const unsigned int slotID)
     {
-      DBG(
-	  const uint subgroupLocalID = sg.get_local_id()[0];
-	  const uint subgroupSize    = sg.get_local_range().size();
-	  );
-      
       float new_tfar = tfar;
       const uint quadID = slotID >> 1;  
       if (slotID < numQuads*2)
 	{
-#if 0
-	  const float8 vv = *(cl::sycl::float8*)&quad1[quadID].v0;
-	  const float4 _vv0 = vv.lo();
-	  const float4 _vv1 = vv.hi();
-	  const float4 _v0 = (slotID % 2) == 0 ? _vv0 : _vv1; //cselect(uint4((uint)((slotID % 2) == 0)),_vv0,_vv1);
-	  const uint primID = gpu::as_uint((float)_vv0.w());	  
-#else	  
-	  const float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
+	  //const float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
+	  const float4 _v0 = cselect((int)((slotID % 2) == 0),quad1[quadID].v0,quad1[quadID].v2);
 	  const uint primID = gpu::as_uint((float)_v0.w());
-#endif
-	  //const float8 _v1v2 = *(cl::sycl::float8*)&quad1[quadID].v1;
-	  //const float4 _v1 = _v1v2.lo();
-	  //const float4 _v2 = _v1v2.hi();
 	  const float4 _v1 = quad1[quadID].v1;
 	  const float4 _v2 = quad1[quadID].v3;
-	  const uint geomID = gpu::as_uint((float)_v1.w());
-	    
+	  const uint geomID = gpu::as_uint((float)_v1.w());	    
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();
 	  const float3 v2 = _v2.xyz();
@@ -116,7 +100,6 @@ namespace embree
 	  const float v = dot3(R,e1) * inv_den;
 	  float t = dot3(tri_v0_org,tri_Ng) * inv_den; 
 	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
-
 	  //if (m_hit == 0) return; // early out
 	  m_hit &= (tnear <= t) & (t < tfar); // den != 0.0f &&
 
@@ -171,8 +154,8 @@ namespace embree
 
       const float3 inv_dir_org(-(float)inv_dir.x() * (float)org.x(),-(float)inv_dir.y() * (float)org.y(),-(float)inv_dir.z() * (float)org.z());
             
-      const unsigned int max_uint  = 0xffffffff;  
-      const unsigned int mask_uint = 0xfffffff0;
+      const uint max_uint  = 0xffffffff;  
+      const uint mask_uint = 0xfffffff0;
 
       const char *const bvh_base = (char*)bvh_mem;
       stack_offset[0] = max_uint; // sentinel
@@ -216,12 +199,6 @@ namespace embree
 	      const float3 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
 	      const float3 _lower  = cfma(lowerf,scale,org);
 	      const float3 _upper  = cfma(upperf,scale,org);
-
-	      DBG(
-		  if (0 == subgroupLocalID)
-		    {
-		      out << node << cl::sycl::endl;
-		    });
 
 	      const float lower_x = cselect(maskX,(float)_upper.x(),(float)_lower.x());
 	      const float upper_x = cselect(maskX,(float)_lower.x(),(float)_upper.x());
@@ -308,8 +285,8 @@ namespace embree
 	  
 	  if (cur == max_uint) break; // sentinel reached -> exit
 
-	  const unsigned int numPrims = gpu::getNumLeafPrims(cur);
-	  const unsigned int leafOffset = gpu::getLeafOffset(cur);    
+	  const uint numPrims = gpu::getNumLeafPrims(cur);
+	  const uint leafOffset = gpu::getLeafOffset(cur);    
 
 	  const gpu::Quad1 *const quads = (gpu::Quad1 *)(bvh_base + leafOffset);
 	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
@@ -336,7 +313,7 @@ namespace embree
 	  {	 
 	    hit = local_hit;
 	    ray.tfar = tfar;
-	    DBG(out << "rayhit.ray.tfar " << rayhit.ray.tfar << " rayhit.hit " << rayhit.hit << cl::sycl::endl);
+	    DBG(out << "ray.tfar " << ray.tfar << " hit " << hit << cl::sycl::endl);
 	  }
     }
 #endif

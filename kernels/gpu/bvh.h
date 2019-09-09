@@ -47,14 +47,14 @@ namespace embree
     {
       AABB3f bounds; 
       unsigned long rootNodeOffset; 
-      unsigned int nodeDataStart;
-      unsigned int nodeDataCur;
-      unsigned int leafDataStart;
-      unsigned int leafDataCur;
-      unsigned int proceduralDataStart;
-      unsigned int proceduralDataCur;
-      /* unsigned int backPointerDataStart; */
-      /* unsigned int backPointerDataEnd; */
+      uint nodeDataStart;
+      uint nodeDataCur;
+      uint leafDataStart;
+      uint leafDataCur;
+      uint proceduralDataStart;
+      uint proceduralDataCur;
+      /* uint backPointerDataStart; */
+      /* uint backPointerDataEnd; */
     };
 
     /* ======================================================================== */
@@ -260,12 +260,12 @@ namespace embree
       return out; 
     }
 
-    inline unsigned int getNumLeafPrims(unsigned int offset)
+    inline uint getNumLeafPrims(const uint offset)
     {
       return (offset & 0x7)+1;
     }
 
-    inline unsigned int getLeafOffset(unsigned int offset)
+    inline uint getLeafOffset(const uint offset)
     {
       return offset & (~63);
     }
