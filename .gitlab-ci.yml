@@ -18,6 +18,7 @@
 # Continuous Test
 ####################################################################
 
+
 continuous-macosx-x64-RelWithDebInfo-ICC2019.4-ISPC1.9.2-AVX2-TBB2019.2:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC2019.4 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [mac]
