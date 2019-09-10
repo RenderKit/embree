@@ -472,7 +472,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX2-TBB2019.2-INSTANCE:
 ####################################################################
 
 release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC12 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:1 package:ZIP"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC12 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -482,7 +482,7 @@ release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-windows-x64-Release-ICC17-VC14-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:1 package:ZIP"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -492,7 +492,7 @@ release-windows-x64-Release-ICC17-VC14-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:1 package:MSI"
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:MSI"
   tags:   [win7, icc17]
   only:   [web]
   artifacts:
@@ -502,7 +502,7 @@ release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
     expire_in: 2 mos
 
 release-macosx-x64-Release-ICC2019.4-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2019.2 intensity:1 package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2019.2 intensity:4 package:ZIP"
   tags:   [mac]
   only:   [web]
   artifacts:
@@ -512,7 +512,7 @@ release-macosx-x64-Release-ICC2019.4-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-macosx-x64-Release-ICC2019.4-ISPC1.9.2-TBB-PACKAGE-PKG:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:1 package:PKG"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
   tags:   [mac]
   only:   [web]
   artifacts:
@@ -523,7 +523,7 @@ release-macosx-x64-Release-ICC2019.4-ISPC1.9.2-TBB-PACKAGE-PKG:
 
 release-linux-x64-Release-ICC2017.1-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC2017.1 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2019.2 intensity:1 package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2017.1 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
   tags:   [docker]
   only:   [web]
   artifacts:
@@ -534,7 +534,7 @@ release-linux-x64-Release-ICC2017.1-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
 
 release-linux-x64-Release-ICC2017.1-ISPC1.9.2-TBB-PACKAGE-RPM:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC2017.1 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB intensity:1 package:RPM"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2017.1 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB intensity:4 package:RPM"
   tags:   [docker]
   only:   [web]
   artifacts:
