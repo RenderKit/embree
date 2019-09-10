@@ -25,6 +25,26 @@ extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
 
+#define HIT_LIST_LENGTH 16
+
+/* extended ray structure that gathers all hits along the ray */
+struct RayExt
+{
+  RayExt ()
+    : N_hits(0) {}
+  
+  // we remember up to 16 hits to ignore duplicate hits
+  unsigned int N_hits;
+  unsigned int hit_geomIDs[HIT_LIST_LENGTH];
+  unsigned int hit_primIDs[HIT_LIST_LENGTH];
+};
+  
+struct IntersectContext
+{
+  RTCIntersectContext context;
+  RayExt rayext;
+};
+
 /* scene data */
 RTCScene g_scene = nullptr;
 
@@ -38,13 +58,17 @@ void device_key_pressed_handler(int key)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+  rtcSetSceneFlags(scene_out, rtcGetSceneFlags(scene_out) | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
     for (unsigned int i=0; i<scene_in->numGeometries; i++) {
       ISPCGeometry* geometry = g_ispc_scene->geometries[i];
-      if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
+      if (geometry->type == GROUP) {
+        rtcSetSceneFlags(geometry->scene, rtcGetSceneFlags(geometry->scene) | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
+        rtcCommitScene(geometry->scene);
+      }
     }
   }
 
@@ -52,28 +76,46 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
+/* Filter callback function */
+void filterFunction(const struct RTCFilterFunctionNArguments* args)
+{
+  assert(*args->valid == -1);
+  IntersectContext* context = (IntersectContext*) args->context;
+  RayExt& rayext = context->rayext;
+  RTCHit* hit = (RTCHit*) args->hit;
+  assert(args->N == 1);
+  args->valid[0] = 0; // ignore all hits
+    
+  if (rayext.N_hits > 16) return;
+
+  rayext.hit_geomIDs[rayext.N_hits] = hit->geomID;
+  rayext.hit_primIDs[rayext.N_hits] = hit->primID;
+  rayext.N_hits++;
+}
+
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
+  RayExt rayext;
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
   /* intersect ray with scene */
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-  context.flags = g_iflags_coherent;
-  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
+  IntersectContext context;
+  rtcInitIntersectContext(&context.context);
+  context.context.filter = filterFunction;
+  rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
-  /* shade background black */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-    return Vec3fa(0.0f);
+  /* calculate random sequence based on hit geomIDs and primIDs */
+  RandomSampler sampler = { 0 };
+  for (size_t i=0; i<context.rayext.N_hits; i++) {
+    sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hit_geomIDs[i]);
+    sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hit_primIDs[i]);
   }
+  sampler.s = MurmurHash3_finalize(sampler.s);
 
-  /* shade all rays that hit something */
-  RandomSampler sampler;
-  RandomSampler_init(sampler, (int)ray.geomID, (int)ray.primID, 0);
-
+  /* map geomID/primID sequence to color */
   Vec3fa color;
   color.x = RandomSampler_getFloat(sampler);
   color.y = RandomSampler_getFloat(sampler);
