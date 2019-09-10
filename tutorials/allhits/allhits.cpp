@@ -18,10 +18,19 @@
 
 namespace embree
 {
+  extern "C" {
+    int g_num_hits = 4;
+  }
+  
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE) {}
+      : SceneLoadingTutorialApplication("allhits",FEATURE_RTCORE)
+    {
+      registerOption("num_hits", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_num_hits = cin->getInt();
+        }, "--num_hits <int>: sets number of hits to accumulate maximally in each trace ray call");
+    }
     
     void postParseCommandLine() 
     {
@@ -30,6 +39,12 @@ namespace embree
         FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }
+    }
+
+    void drawGUI()
+    {
+      ImGui::Text("num hits");
+      ImGui::DragInt("",&g_num_hits,1.0f,0,16);
     }
   };
 }

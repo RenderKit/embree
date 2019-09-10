@@ -24,6 +24,7 @@ namespace embree {
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
+extern "C" int g_num_hits;
 
 #define MAX_HITS 16*1024
 
@@ -127,8 +128,8 @@ void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
   rayext.hits[rayext.end++] = RayExt::Hit(ray->tfar,hit->primID,hit->geomID);
 }
 
-/* Filter callback function that gathers first 4 hits */
-void gather4Hits(const struct RTCFilterFunctionNArguments* args)
+/* Filter callback function that gathers first N hits */
+void gatherNHits(const struct RTCFilterFunctionNArguments* args)
 {
   assert(*args->valid == -1);
   IntersectContext* context = (IntersectContext*) args->context;
@@ -149,7 +150,7 @@ void gather4Hits(const struct RTCFilterFunctionNArguments* args)
     if (nhit < rayext.hits[i])
       std::swap(nhit,rayext.hits[i]);
 
-  if (rayext.size() < 4)
+  if (rayext.size() < g_num_hits)
     rayext.hits[rayext.end++] = nhit;
   else {
     ray->tfar = rayext.hits[rayext.end-1].t;
@@ -160,45 +161,42 @@ void gather4Hits(const struct RTCFilterFunctionNArguments* args)
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
+  IntersectContext context;
+  rtcInitIntersectContext(&context.context);
+   
   /* initialize ray */
-  RayExt rayext;
-  rayext.hits[0] = RayExt::Hit(neg_inf);
-  rayext.hits[1] = RayExt::Hit(neg_inf);
-  rayext.hits[2] = RayExt::Hit(neg_inf);
-  rayext.hits[3] = RayExt::Hit(neg_inf);
-  
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
-#if 1
-  /* intersect ray with scene */
-  IntersectContext context;
-  rtcInitIntersectContext(&context.context);
-  context.context.filter = gatherAllHits;
-  rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
-
-  std::sort(&rayext.hits[rayext.begin],&rayext.hits[rayext.end]);
-
-#else
-
-  /* intersect ray with scene */
-  IntersectContext context;
-  rtcInitIntersectContext(&context.context);
-  context.context.filter = gather4Hits;
-
-  do {
-    context.rayext.begin = context.rayext.end;
+  if (g_num_hits == 0)
+  {
+    context.context.filter = gatherAllHits;
     rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
-  } while (context.rayext.size() != 0);
-  
-  context.rayext.begin = 0;
+    std::sort(&context.rayext.hits[context.rayext.begin],&context.rayext.hits[context.rayext.end]);
+  }
 
-#endif
+  else
+  {
+    context.context.filter = gatherNHits;
+      
+    do {
+      context.rayext.begin = context.rayext.end;
+      
+      for (size_t i=0; i<g_num_hits; i++)
+        if (context.rayext.begin+i < MAX_HITS)
+          context.rayext.hits[context.rayext.begin+i] = RayExt::Hit(neg_inf);
+    
+      rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
+      RayStats_addRay(stats);
+      
+    } while (context.rayext.size() != 0);
+    
+    context.rayext.begin = 0;
+  }
 
   /* calculate random sequence based on hit geomIDs and primIDs */
   RandomSampler sampler = { 0 };
-  for (size_t i=0; i<context.rayext.end; i++) {
+  for (size_t i=context.rayext.begin; i<context.rayext.end; i++) {
     sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hits[i].geomID);
     sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hits[i].primID);
   }
