@@ -55,6 +55,16 @@ struct RayExt
       }
       return a.t < b.t;
     }
+
+    __forceinline friend bool operator ==(Hit& a, Hit& b) {
+      return a.t == b.t && a.primID == b.primID && a.geomID == b.geomID;
+    }
+
+    __forceinline friend bool operator <= (Hit& a, Hit& b)
+    {
+      if (a == b) return true;
+      else return a < b;
+    }
     
     float t;
     unsigned int primID;
@@ -132,7 +142,7 @@ void gather4Hits(const struct RTCFilterFunctionNArguments* args)
 
   RayExt::Hit nhit(ray->tfar,hit->primID,hit->geomID);
 
-  if (rayext.begin > 0 && nhit < rayext.hits[rayext.begin-1])
+  if (rayext.begin > 0 && nhit <= rayext.hits[rayext.begin-1])
     return;
 
   for (size_t i=rayext.begin; i<rayext.end; i++)
@@ -159,13 +169,15 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
-#if 0
+#if 1
   /* intersect ray with scene */
   IntersectContext context;
   rtcInitIntersectContext(&context.context);
   context.context.filter = gatherAllHits;
   rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
   RayStats_addRay(stats);
+
+  std::sort(&rayext.hits[rayext.begin],&rayext.hits[rayext.end]);
 
 #else
 
@@ -174,11 +186,11 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcInitIntersectContext(&context.context);
   context.context.filter = gather4Hits;
 
-  //do {
+  do {
     context.rayext.begin = context.rayext.end;
     rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
-    //} while (context.rayext.size() == 0);
+  } while (context.rayext.size() != 0);
   
   context.rayext.begin = 0;
 
