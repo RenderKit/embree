@@ -25,7 +25,7 @@ extern "C" ISPCScene* g_ispc_scene;
 extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
 
-#define HIT_LIST_LENGTH 16
+#define MAX_HITS 16*1024
 
 /* extended ray structure that gathers all hits along the ray */
 struct RayExt
@@ -35,8 +35,18 @@ struct RayExt
   
   // we remember up to 16 hits to ignore duplicate hits
   unsigned int N_hits;
-  unsigned int hit_geomIDs[HIT_LIST_LENGTH];
-  unsigned int hit_primIDs[HIT_LIST_LENGTH];
+  struct Hit
+  {
+    Hit() {}
+
+    Hit (float t, unsigned int primID, unsigned int geomID)
+      : t(t), primID(primID), geomID(geomID) {}
+    
+    float t;
+    unsigned int primID;
+    unsigned int geomID;
+  };
+  Hit hits[MAX_HITS];
 };
   
 struct IntersectContext
@@ -76,21 +86,21 @@ RTCScene convertScene(ISPCScene* scene_in)
   return scene_out;
 }
 
-/* Filter callback function */
-void filterFunction(const struct RTCFilterFunctionNArguments* args)
+/* Filter callback function that gathers all hits */
+void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
 {
   assert(*args->valid == -1);
   IntersectContext* context = (IntersectContext*) args->context;
   RayExt& rayext = context->rayext;
+  RTCRay* ray = (RTCRay*) args->ray;
   RTCHit* hit = (RTCHit*) args->hit;
   assert(args->N == 1);
   args->valid[0] = 0; // ignore all hits
     
-  if (rayext.N_hits > 16) return;
+  if (rayext.N_hits > MAX_HITS) return;
 
-  rayext.hit_geomIDs[rayext.N_hits] = hit->geomID;
-  rayext.hit_primIDs[rayext.N_hits] = hit->primID;
-  rayext.N_hits++;
+  /* add hit to list */
+  rayext.hits[rayext.N_hits++] = RayExt::Hit(ray->tfar,hit->primID,hit->geomID);
 }
 
 /* task that renders a single screen tile */
@@ -103,15 +113,15 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   /* intersect ray with scene */
   IntersectContext context;
   rtcInitIntersectContext(&context.context);
-  context.context.filter = filterFunction;
+  context.context.filter = gatherAllHits;
   rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* calculate random sequence based on hit geomIDs and primIDs */
   RandomSampler sampler = { 0 };
   for (size_t i=0; i<context.rayext.N_hits; i++) {
-    sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hit_geomIDs[i]);
-    sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hit_primIDs[i]);
+    sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hits[i].geomID);
+    sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hits[i].primID);
   }
   sampler.s = MurmurHash3_finalize(sampler.s);
 
