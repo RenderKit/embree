@@ -141,6 +141,10 @@ void gather4Hits(const struct RTCFilterFunctionNArguments* args)
 
   if (rayext.size() < 4)
     rayext.hits[rayext.end++] = nhit;
+  else {
+    ray->tfar = rayext.hits[rayext.end-1].t;
+    args->valid[0] = -1; // accept hit
+  }
 }
 
 /* task that renders a single screen tile */
