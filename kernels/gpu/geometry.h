@@ -47,10 +47,10 @@ namespace embree
 	v1 = _v1;
 	v2 = _v2;
 	v3 = _v3;
-	v1.w() = as_float(geomID);
 	v0.w() = as_float(primID0);
-	v2.w() = as_float(primID1);
-	v3.w() = 0.0f;
+	v2.w() = as_float(primID1);	
+	v1.w() = as_float(geomID);
+	v3.w() = 0.0f;	
       }
 
       inline AABB getBounds()

@@ -81,7 +81,9 @@ namespace embree
       const uint quadID = slotID >> 1;  
       if (slotID < numQuads*2)
 	{
-	  const float4 _v0 = cselect((int)((slotID % 2) == 0),quad1[quadID].v0,quad1[quadID].v2);
+	  //const float4 _v0 = cselect((int)((slotID % 2) == 0),quad1[quadID].v0,quad1[quadID].v2);	  
+	  const float4 *const _v0_ptr = (float4*)&quad1[quadID];
+	  const float4 _v0 = _v0_ptr[slotID & 1];
 	  const uint primID = gpu::as_uint((float)_v0.w());
 	  const float4 _v1 = quad1[quadID].v1;
 	  const float4 _v2 = quad1[quadID].v3;
@@ -89,6 +91,7 @@ namespace embree
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();
 	  const float3 v2 = _v2.xyz();
+
 	  /* moeller-trumbore test */	  
 	  const float3 e1 = v0 - v1;
 	  const float3 e2 = v2 - v0;
@@ -222,8 +225,8 @@ namespace embree
 
 	      const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
 	      const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
-	      const uint valid = fnear <= ffar;	 
-	      uint mask = intel_sub_group_ballot(valid);  
+	      const uint valid = (fnear <= ffar) & (offset != -1); //((uchar)ilower.x() <= (uchar)iupper.x());	 
+	      const uint mask = intel_sub_group_ballot(valid);  
 
 	      DBG(
 		  for (uint i=0;i<subgroupSize;i++)
@@ -248,15 +251,7 @@ namespace embree
 	      offset += cur; /* relative encoding */
 	      const uint popc = cl::sycl::popcount(mask); 
 	      cur = sg.broadcast<uint>(offset, cl::sycl::intel::ctz(mask));
-	      
-
-	      DBG(
-		  if (0 == subgroupLocalID)
-		    {
-		      out << "cur " << cur << " mask " << mask << " popc " << popc << cl::sycl::endl;
-		    }
-		  );
-	      
+	      	      
 	      if (popc == 1) continue; // single hit only
 	      int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
 	      t = valid ? t : max_uint; // invalid slots set to MIN_INT, as we sort descending;	
@@ -268,26 +263,12 @@ namespace embree
 		  t = (t == t_max) ? max_uint : t;
 		  const uint index = t_max & (~mask_uint);
 		  stack_offset[sindex] = sg.broadcast<uint> (offset,index);
-
-		  DBG(
-		      if (0 == subgroupLocalID)
-			{
-			  out << "t " << t << " t_max " << t_max << " index " << index << " stack_offset[sindex] " << stack_offset[sindex] << cl::sycl::endl;
-			});
-
 		  stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
 		  sindex++;
 		}
 	      const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
 	      cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
 	    }
-
-	  DBG(
-	      if (0 == subgroupLocalID)
-		{
-		  out << "leaf " << cur << cl::sycl::endl;
-		}
-	      );
 	  
 	  if (cur == max_uint) break; // sentinel reached -> exit
 
@@ -295,14 +276,7 @@ namespace embree
 	  const uint leafOffset = gpu::getLeafOffset(cur);    
 
 	  const gpu::Quad1 *const quads = (gpu::Quad1 *)(bvh_base + leafOffset);
-	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
-
-	  DBG(
-	      for (uint i=0;i<subgroupSize;i++)
-		if (i == subgroupLocalID)
-		  out << "hit_tfar " << hit_tfar << cl::sycl::endl;
-	      );
-	  
+	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);	  
 	  tfar = sg.reduce<float,cl::sycl::intel::minimum>(hit_tfar);	  
 	}
 
