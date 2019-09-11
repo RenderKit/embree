@@ -836,8 +836,6 @@ namespace embree
 	  << "%) / total memory allocated " << globals->totalAllocatedMem << cl::sycl::endl;
   }
 
-
-
 #endif
 
   namespace isa
