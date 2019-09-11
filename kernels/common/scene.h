@@ -390,8 +390,10 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,true>() const { return worldMB.numSubdivPatches; }
   template<> __forceinline size_t Scene::getNumPrimitives<UserGeometry,false>() const { return world.numUserGeometries; }
   template<> __forceinline size_t Scene::getNumPrimitives<UserGeometry,true>() const { return worldMB.numUserGeometries; }
-  template<> __forceinline size_t Scene::getNumPrimitives<Instance,false>() const { return world.numInstancesCheap+world.numInstancesExpensive; }
-  template<> __forceinline size_t Scene::getNumPrimitives<Instance,true>() const { return worldMB.numInstancesCheap+worldMB.numInstancesExpensive; }
+  template<> __forceinline size_t Scene::getNumPrimitives<Instance,false>() const { return world.numInstancesCheap; }
+  template<> __forceinline size_t Scene::getNumPrimitives<Instance,true>() const { return worldMB.numInstancesCheap; }
+  template<> __forceinline size_t Scene::getNumPrimitives<InstanceExpensive,false>() const { return world.numInstancesExpensive; }
+  template<> __forceinline size_t Scene::getNumPrimitives<InstanceExpensive,true>() const { return worldMB.numInstancesExpensive; }
   template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,false>() const { return world.numGrids; }
   template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,true>() const { return worldMB.numGrids; }
 }
