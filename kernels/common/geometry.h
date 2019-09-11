@@ -66,8 +66,9 @@ namespace embree
       GTY_ORIENTED_DISC_POINT = 27,
       
       GTY_USER_GEOMETRY = 29,
-      GTY_INSTANCE = 30,
-      GTY_END = 31,
+      GTY_INSTANCE_CHEAP = 30,
+      GTY_INSTANCE_EXPENSIVE = 31,
+      GTY_END = 32,
 
       GTY_BASIS_LINEAR = 0,
       GTY_BASIS_BEZIER = 4,
@@ -124,7 +125,8 @@ namespace embree
       MTY_GRID_MESH = 1 << GTY_GRID_MESH,
       MTY_SUBDIV_MESH = 1 << GTY_SUBDIV_MESH,
       MTY_USER_GEOMETRY = 1 << GTY_USER_GEOMETRY,
-      MTY_INSTANCE = 1 << GTY_INSTANCE,
+      MTY_INSTANCE_CHEAP = 1 << GTY_INSTANCE_CHEAP,
+      MTY_INSTANCE_EXPENSIVE = 1 << GTY_INSTANCE_EXPENSIVE,
     };
 
     static const char* gtype_names[GTY_END];
