@@ -948,9 +948,12 @@ namespace embree
 	    assert(globals);
 	    
 	    /* copy primrefs for now */
+
+	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
+		for (size_t j=r.begin(); j<r.end(); j++)
+		  ((PrimRef*)aabb)[j] = prims[j];	      
+	      });
 	    
-	    for (size_t i=0;i<numPrimitives;i++)
-	      ((PrimRef*)aabb)[i] = prims[i];
 	    	    
 	    /* --- init globals --- */
 	    {
@@ -1067,7 +1070,7 @@ namespace embree
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
 	      }
-	      PRINT(globals->numBuildRecords);	      
+	      //PRINT(globals->numBuildRecords);	      
 	    }
 
 	    double t2 = getSeconds();
@@ -1127,30 +1130,33 @@ namespace embree
 	    /* --- convert primrefs to primitives --- */
 	    gpu::Quad1 *quad1 = (gpu::Quad1 *)(bvh_mem + globals->leaf_mem_allocator_start);
 
-	    for (size_t i=0;i<numPrimitives;i++)
-	      {
-		const uint index = primref_index[i];
-		const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
-		const uint primID = gpu::as_uint((float)aabb[index].upper.w());
-		//std::cout << " i " << i << " index " << index << " geomID " << geomID << " primID " << primID << std::endl;
-		TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
-		const TriangleMesh::Triangle &tri = mesh->triangle(primID);
-		const Vec3fa v0 = mesh->vertex(tri.v[0]);
-		const Vec3fa v1 = mesh->vertex(tri.v[1]);
-		const Vec3fa v2 = mesh->vertex(tri.v[2]);
+	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
+		for (size_t i=r.begin(); i<r.end(); i++)
+		  {
+		    const uint index = primref_index[i];
+		    const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
+		    const uint primID = gpu::as_uint((float)aabb[index].upper.w());
+		    TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
+		    const TriangleMesh::Triangle &tri = mesh->triangle(primID);
+		    const Vec3fa v0 = mesh->vertex(tri.v[0]);
+		    const Vec3fa v1 = mesh->vertex(tri.v[1]);
+		    const Vec3fa v2 = mesh->vertex(tri.v[2]);
 
-		quad1[i].init(Vec3fa_to_float4(v0),
-			      Vec3fa_to_float4(v1),
-			      Vec3fa_to_float4(v2),
-			      Vec3fa_to_float4(v2),
-			      geomID,
-			      primID,
-			      primID);
-	      }
-
+		    quad1[i].init(Vec3fa_to_float4(v0),
+				  Vec3fa_to_float4(v1),
+				  Vec3fa_to_float4(v2),
+				  Vec3fa_to_float4(v2),
+				  geomID,
+				  primID,
+				  primID);
+		    
+		  }
+	      });
+	    
 	    
             /* call BVH builder */
             NodeRef root = NodeRef((size_t)bvh_mem);
+
 	    // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
 
 #endif	    
