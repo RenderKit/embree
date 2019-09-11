@@ -123,7 +123,7 @@ namespace embree
       void build()
       {
 	/* skip build for empty scene */
-        const size_t numPrimitives = scene->getNumPrimitives<Mesh,true>();
+        const size_t numPrimitives = scene->getNumPrimitives<typename Mesh::type_t,true>();
         if (numPrimitives == 0) { bvh->clear(); return; }
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
@@ -132,7 +132,7 @@ namespace embree
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
-            //const size_t numTimeSteps = scene->getNumTimeSteps<Mesh,true>();
+            //const size_t numTimeSteps = scene->getNumTimeSteps<typename Mesh::type_t,true>();
             //const size_t numTimeSegments = numTimeSteps-1; assert(numTimeSteps > 1);
 
             /*if (numTimeSegments == 1)
@@ -213,11 +213,11 @@ namespace embree
         /* build hierarchy */
         auto root =
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
-                                            RecalculatePrimRef<Mesh>(scene),
+                                            RecalculatePrimRef<typename Mesh::type_t>(scene),
                                             typename BVH::CreateAlloc(bvh),
                                             typename BVH::AlignedNodeMB4D::Create(),
                                             typename BVH::AlignedNodeMB4D::Set(),
-                                            CreateMSMBlurLeaf<N,Mesh,Primitive>(bvh),
+                                            CreateMSMBlurLeaf<N,typename Mesh::type_t,Primitive>(bvh),
                                             bvh->scene->progressInterface,
                                             settings);
 

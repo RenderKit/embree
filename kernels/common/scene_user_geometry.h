@@ -25,6 +25,7 @@ namespace embree
   {
     /*! type of this geometry */
     static const Geometry::GTypeMask geom_type = Geometry::MTY_USER_GEOMETRY;
+    using type_t = UserGeometry;
 
   public:
     UserGeometry (Device* device, unsigned int items = 0, unsigned int numTimeSteps = 1);
