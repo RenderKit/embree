@@ -526,6 +526,38 @@ namespace embree
 #endif
   }
 
+  void Scene::createInstanceExpensiveAccel()
+  {
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    //if (device->object_accel == "default") 
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->canUseAVX() && !isCompactAccel())
+        accels_add(device->bvh8_factory->BVH8InstanceExpensive(this,BVHFactory::BuildVariant::STATIC));
+      else
+#endif
+        accels_add(device->bvh4_factory->BVH4InstanceExpensive(this,BVHFactory::BuildVariant::STATIC));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
+#endif
+  }
+
+  void Scene::createInstanceExpensiveMBAccel()
+  {
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    //if (device->instance_accel_mb == "default")
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->canUseAVX() && !isCompactAccel())
+        accels_add(device->bvh8_factory->BVH8InstanceExpensiveMB(this));
+      else
+#endif
+        accels_add(device->bvh4_factory->BVH4InstanceExpensiveMB(this));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance mblur accel "+device->instance_accel_mb);
+#endif
+  }
+
   void Scene::createGridAccel()
   {
     BVHFactory::IntersectVariant ivariant = isRobustAccel() ? BVHFactory::IntersectVariant::ROBUST : BVHFactory::IntersectVariant::FAST;
@@ -652,6 +684,8 @@ namespace embree
       if (getNumPrimitives<UserGeometry,true>()) createUserGeometryMBAccel();
       if (getNumPrimitives<Instance,false>()) createInstanceAccel();
       if (getNumPrimitives<Instance,true>()) createInstanceMBAccel();
+      if (getNumPrimitives<InstanceExpensive,false>()) createInstanceExpensiveAccel();
+      if (getNumPrimitives<InstanceExpensive,true>()) createInstanceExpensiveMBAccel();
       
       flags_modified = false;
       enabled_geometry_types = new_enabled_geometry_types;

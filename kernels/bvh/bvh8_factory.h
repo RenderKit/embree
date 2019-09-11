@@ -51,6 +51,8 @@ namespace embree
 
     Accel* BVH8Instance(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH8InstanceMB(Scene* scene);
+    Accel* BVH8InstanceExpensive(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
+    Accel* BVH8InstanceExpensiveMB(Scene* scene);
 
     Accel* BVH8Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
     Accel* BVH8GridMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
@@ -281,6 +283,8 @@ namespace embree
 
     DEFINE_ISA_FUNCTION(Builder*,BVH8InstanceSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH8InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8InstanceExpensiveSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8InstanceExpensiveMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
     DEFINE_ISA_FUNCTION(Builder*,BVH8GridSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH8GridMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
