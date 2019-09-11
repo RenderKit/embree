@@ -61,22 +61,31 @@ constexpr cl::sycl::access::mode sycl_read_write = cl::sycl::access::mode::read_
 constexpr cl::sycl::access::mode sycl_read       = cl::sycl::access::mode::read;
 constexpr cl::sycl::access::mode sycl_write      = cl::sycl::access::mode::write;
 
+using cl::sycl::float16;
 using cl::sycl::float8;
 using cl::sycl::float4;
 using cl::sycl::float3;
 using cl::sycl::float2;
+using cl::sycl::int16;
 using cl::sycl::int8;
 using cl::sycl::int4;
 using cl::sycl::int3;
 using cl::sycl::int2;
+using cl::sycl::uint16;
 using cl::sycl::uint8;
 using cl::sycl::uint4;
 using cl::sycl::uint3;
 using cl::sycl::uint2;
+using cl::sycl::uchar16;
 using cl::sycl::uchar8;
 using cl::sycl::uchar4;
 using cl::sycl::uchar3;
 using cl::sycl::uchar2;
+using cl::sycl::ushort16;
+using cl::sycl::ushort8;
+using cl::sycl::ushort4;
+using cl::sycl::ushort3;
+using cl::sycl::ushort2;
 
 using cl::sycl::fmax;
 using cl::sycl::fmin;

@@ -65,6 +65,8 @@ namespace embree
 #endif      
     }
 
+    //const float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
+    
     inline float intersectQuad1(const cl::sycl::intel::sub_group &sg,
 				const gpu::Quad1 *const quad1,
 				const uint numQuads,
@@ -79,7 +81,6 @@ namespace embree
       const uint quadID = slotID >> 1;  
       if (slotID < numQuads*2)
 	{
-	  //const float4 _v0 = (slotID % 2) == 0 ? quad1[quadID].v0 : quad1[quadID].v2;
 	  const float4 _v0 = cselect((int)((slotID % 2) == 0),quad1[quadID].v0,quad1[quadID].v2);
 	  const uint primID = gpu::as_uint((float)_v0.w());
 	  const float4 _v1 = quad1[quadID].v1;
@@ -102,7 +103,6 @@ namespace embree
 	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
 	  //if (m_hit == 0) return; // early out
 	  m_hit &= (tnear <= t) & (t < tfar); // den != 0.0f &&
-
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
@@ -189,12 +189,26 @@ namespace embree
 	      const float3 org(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 0)),
 			       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 1)),
 			       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 2)));
+
 	      const float3 scale(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 4)),
 				 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 5)),
-				 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 6)));	      
-#endif	      
+				 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 6)));
+	      
+#endif
+
+#if 0
 	      const uchar3 ilower(node.bounds_xy[subgroupLocalID].lower_x,node.bounds_xy[subgroupLocalID].lower_y,node.bounds_z[subgroupLocalID].lower_z);
-	      const uchar3 iupper(node.bounds_xy[subgroupLocalID].upper_x,node.bounds_xy[subgroupLocalID].upper_y,node.bounds_z[subgroupLocalID].upper_z);	      
+	      const uchar3 iupper(node.bounds_xy[subgroupLocalID].upper_x,node.bounds_xy[subgroupLocalID].upper_y,node.bounds_z[subgroupLocalID].upper_z);
+#else
+
+	      cl::sycl::multi_ptr<ushort,cl::sycl::access::address_space::global_space> quant_ptr((ushort*)(bvh_base + cur + 64));
+	      const ushort8 block1 = sg.load<8,ushort>(quant_ptr);
+	      const cl::sycl::uchar16 block2 = block1.as<cl::sycl::uchar16>();
+
+	      const uchar3 ilower(node.bounds_xy[subgroupLocalID].lower_x,node.bounds_xy[subgroupLocalID].lower_y,node.bounds_z[subgroupLocalID].lower_z);
+	      const uchar3 iupper(node.bounds_xy[subgroupLocalID].upper_x,node.bounds_xy[subgroupLocalID].upper_y,node.bounds_z[subgroupLocalID].upper_z);
+	      
+#endif
 	      const float3 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
 	      const float3 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
 	      const float3 _lower  = cfma(lowerf,scale,org);
