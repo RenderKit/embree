@@ -308,10 +308,10 @@ namespace embree
     struct GeometryCounts 
     {
       __forceinline GeometryCounts()
-        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0), numInstances(0), numGrids(0), numPoints(0) {}
+        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0), numInstancesCheap(0), numInstancesExpensive(0),numGrids(0), numPoints(0) {}
 
       __forceinline size_t size() const {
-        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstances + numGrids + numPoints;
+        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numGrids + numPoints;
       }
 
       __forceinline unsigned int enabledGeometryTypesMask() const
@@ -322,9 +322,10 @@ namespace embree
         if (numBezierCurves+numLineSegments) mask |= 1 << 2;
         if (numSubdivPatches) mask |= 1 << 3;
         if (numUserGeometries) mask |= 1 << 4;
-        if (numInstances) mask |= 1 << 5;
-        if (numGrids) mask |= 1 << 6;
-        if (numPoints) mask |= 1 << 7;
+        if (numInstancesCheap) mask |= 1 << 5;
+        if (numInstancesExpensive) mask |= 1 << 6;
+        if (numGrids) mask |= 1 << 7;
+        if (numPoints) mask |= 1 << 8;
         return mask;
       }
 
@@ -334,7 +335,8 @@ namespace embree
       std::atomic<size_t> numLineSegments;          //!< number of enabled line segments
       std::atomic<size_t> numSubdivPatches;         //!< number of enabled subdivision patches
       std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
-      std::atomic<size_t> numInstances;             //!< number of enabled instances
+      std::atomic<size_t> numInstancesCheap;        //!< number of enabled cheap instances
+      std::atomic<size_t> numInstancesExpensive;    //!< number of enabled expensive instances
       std::atomic<size_t> numGrids;                 //!< number of enabled grid geometries
       std::atomic<size_t> numPoints;                //!< number of enabled points
     };
@@ -386,8 +388,8 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,true>() const { return worldMB.numSubdivPatches; }
   template<> __forceinline size_t Scene::getNumPrimitives<UserGeometry,false>() const { return world.numUserGeometries; }
   template<> __forceinline size_t Scene::getNumPrimitives<UserGeometry,true>() const { return worldMB.numUserGeometries; }
-  template<> __forceinline size_t Scene::getNumPrimitives<Instance,false>() const { return world.numInstances; }
-  template<> __forceinline size_t Scene::getNumPrimitives<Instance,true>() const { return worldMB.numInstances; }
+  template<> __forceinline size_t Scene::getNumPrimitives<Instance,false>() const { return world.numInstancesCheap+world.numInstancesExpensive; }
+  template<> __forceinline size_t Scene::getNumPrimitives<Instance,true>() const { return worldMB.numInstancesCheap+worldMB.numInstancesExpensive; }
   template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,false>() const { return world.numGrids; }
   template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,true>() const { return worldMB.numGrids; }
 }
