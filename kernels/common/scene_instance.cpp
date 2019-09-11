@@ -93,6 +93,13 @@ namespace embree
     if (object) object->refDec();
     object = scene.ptr;
     if (object) object->refInc();
+    auto numExpensiveGeo =  scene->getNumPrimitives<CurveGeometry, false>()
+                          + scene->getNumPrimitives<CurveGeometry, true>()
+                          + scene->getNumPrimitives<UserGeometry, false>()
+                          + scene->getNumPrimitives<UserGeometry, true>();
+    if (numExpensiveGeo > 0) {
+      this->gtype = GTY_INSTANCE_EXPENSIVE;
+    }
     Geometry::update();
   }
   
