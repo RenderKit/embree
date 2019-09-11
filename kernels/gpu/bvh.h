@@ -122,34 +122,31 @@ namespace embree
 
     struct QBVHNodeN
     {
+      /* special layout requires just two subgroup block loads for entire node */
+      
       uint   offset[BVH_NODE_N];
       float4 org;
       float4 scale;
 
-      /* special layout requires less block loads */
-      struct {  
-	cl::sycl::uchar lower_z;
-	cl::sycl::uchar upper_z;    
-      } bounds_z[BVH_NODE_N];
+      struct {
+	uchar lower;
+	uchar upper;
+      } bounds_x[BVH_NODE_N];
 
       struct {
-	cl::sycl::uchar lower_x;
-	cl::sycl::uchar upper_x;
-	cl::sycl::uchar lower_y;
-	cl::sycl::uchar upper_y;
-      } bounds_xy[BVH_NODE_N];
-      
-      /* uchar lower_x[BVH_NODE_N]; */
-      /* uchar upper_x[BVH_NODE_N]; */
-      /* uchar lower_y[BVH_NODE_N]; */
-      /* uchar upper_y[BVH_NODE_N]; */
-      /* uchar lower_z[BVH_NODE_N]; */
-      /* uchar upper_z[BVH_NODE_N]; */
+	uchar lower;
+	uchar upper;
+      } bounds_y[BVH_NODE_N];
 
+      struct {  
+	uchar lower;
+	uchar upper;    
+      } bounds_z[BVH_NODE_N];
+      
       inline AABB getBounds(const uint i)
       {
-	const uchar4 ilower(bounds_xy[i].lower_x,bounds_xy[i].lower_y,bounds_z[i].lower_z,0);
-	const uchar4 iupper(bounds_xy[i].upper_x,bounds_xy[i].upper_y,bounds_z[i].upper_z,0);	      
+	const uchar4 ilower(bounds_x[i].lower,bounds_y[i].lower,bounds_z[i].lower,0);
+	const uchar4 iupper(bounds_x[i].upper,bounds_y[i].upper,bounds_z[i].upper,0);	      
 	const float4 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
 	const float4 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();	
 	AABB aabb;
@@ -223,12 +220,12 @@ namespace embree
 	  iupper = cselect(m_valid,iupper,(int4)QUANT_MIN);
 	  
 	  node.offset[subgroupLocalID] = -1;
-	  node.bounds_xy[subgroupLocalID].lower_x = ilower.x();
-	  node.bounds_xy[subgroupLocalID].lower_y = ilower.y();
-	  node.bounds_z [subgroupLocalID].lower_z = ilower.z();
-	  node.bounds_xy[subgroupLocalID].upper_x = iupper.x();
-	  node.bounds_xy[subgroupLocalID].upper_y = iupper.y();
-	  node.bounds_z [subgroupLocalID].upper_z = iupper.z();	  
+	  node.bounds_x[subgroupLocalID].lower = ilower.x();
+	  node.bounds_y[subgroupLocalID].lower = ilower.y();
+	  node.bounds_z[subgroupLocalID].lower = ilower.z();
+	  node.bounds_x[subgroupLocalID].upper = iupper.x();
+	  node.bounds_y[subgroupLocalID].upper = iupper.y();
+	  node.bounds_z[subgroupLocalID].upper = iupper.z();	  
 	  node.org   = minF;
 	  node.scale = decode_scale;	  
 	}
@@ -249,12 +246,12 @@ namespace embree
       for (uint i=0;i<BVH_NODE_N;i++)
 	{
 	  out << " offset  " << node.offset[i]
-	      << " lower_x " << (int)node.bounds_xy[i].lower_x
-	      << " upper_x " << (int)node.bounds_xy[i].upper_x
-	      << " lower_y " << (int)node.bounds_xy[i].lower_y
-	      << " upper_y " << (int)node.bounds_xy[i].upper_y
-	      << " lower_z " << (int)node.bounds_z[i] .lower_z
-	      << " upper_z " << (int)node.bounds_z[i] .upper_z
+	      << " lower_x " << (int)node.bounds_x[i].lower
+	      << " upper_x " << (int)node.bounds_x[i].upper
+	      << " lower_y " << (int)node.bounds_y[i].lower
+	      << " upper_y " << (int)node.bounds_y[i].upper
+	      << " lower_z " << (int)node.bounds_z[i].lower
+	      << " upper_z " << (int)node.bounds_z[i].upper
 	      << cl::sycl::endl;
 	}      
       return out; 

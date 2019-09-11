@@ -177,8 +177,8 @@ namespace embree
 
 	  while((cur & BVH_LEAF_MASK) == 0) 
 	    {
-	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);
-#if 0	      
+#if 0
+	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);	      
 	      uint  offset          = node.offset[subgroupLocalID];	      	      
 	      const float3 org      = node.org.xyz();
 	      const float3 scale    = node.scale.xyz();
@@ -189,26 +189,18 @@ namespace embree
 	      const float3 org(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 0)),
 			       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 1)),
 			       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 2)));
-
 	      const float3 scale(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 4)),
 				 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 5)),
-				 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 6)));
-	      
+				 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 6)));	      
 #endif
-
-#if 0
-	      const uchar3 ilower(node.bounds_xy[subgroupLocalID].lower_x,node.bounds_xy[subgroupLocalID].lower_y,node.bounds_z[subgroupLocalID].lower_z);
-	      const uchar3 iupper(node.bounds_xy[subgroupLocalID].upper_x,node.bounds_xy[subgroupLocalID].upper_y,node.bounds_z[subgroupLocalID].upper_z);
-#else
 
 	      cl::sycl::multi_ptr<ushort,cl::sycl::access::address_space::global_space> quant_ptr((ushort*)(bvh_base + cur + 64));
-	      const ushort8 block1 = sg.load<8,ushort>(quant_ptr);
-	      const cl::sycl::uchar16 block2 = block1.as<cl::sycl::uchar16>();
+	      const ushort4 block1 = sg.load<4,ushort>(quant_ptr);
+	      const cl::sycl::uchar8 block2 = block1.as<cl::sycl::uchar8>();
 
-	      const uchar3 ilower(node.bounds_xy[subgroupLocalID].lower_x,node.bounds_xy[subgroupLocalID].lower_y,node.bounds_z[subgroupLocalID].lower_z);
-	      const uchar3 iupper(node.bounds_xy[subgroupLocalID].upper_x,node.bounds_xy[subgroupLocalID].upper_y,node.bounds_z[subgroupLocalID].upper_z);
-	      
-#endif
+	      const uchar3 ilower(block2.s2(),block2.s4(),block2.s6());
+	      const uchar3 iupper(block2.s3(),block2.s5(),block2.s7());
+
 	      const float3 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
 	      const float3 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
 	      const float3 _lower  = cfma(lowerf,scale,org);
@@ -230,7 +222,7 @@ namespace embree
 
 	      const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
 	      const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
-	      const uint valid = islessequal(fnear,ffar);	 
+	      const uint valid = fnear <= ffar;	 
 	      uint mask = intel_sub_group_ballot(valid);  
 
 	      DBG(

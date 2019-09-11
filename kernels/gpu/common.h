@@ -54,7 +54,6 @@ inline float atomic_max(volatile float *p, float val) { return val; };
 #endif
 
 extern "C" uint intel_sub_group_ballot(bool valid);
-//extern int ctz(int t);
 
 constexpr cl::sycl::access::target sycl_local    = cl::sycl::access::target::local;
 constexpr cl::sycl::access::mode sycl_read_write = cl::sycl::access::mode::read_write;
@@ -81,6 +80,7 @@ using cl::sycl::uchar8;
 using cl::sycl::uchar4;
 using cl::sycl::uchar3;
 using cl::sycl::uchar2;
+using cl::sycl::uchar;
 using cl::sycl::ushort16;
 using cl::sycl::ushort8;
 using cl::sycl::ushort4;
