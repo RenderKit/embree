@@ -91,28 +91,18 @@ namespace embree
           bvh->alloc.clear();
         }
 
-<<<<<<< HEAD
         const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
 
 	/* skip build for empty scene */
-=======
-	/* skip build for empty scene */
-        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<typename Mesh::type_t,false>();
->>>>>>> extend control over Mesh type selction for bvh builds
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();
           return;
         }
 
-<<<<<<< HEAD
         const unsigned int maxGeomID = mesh ? mesh->geomID : scene->getMaxGeomID<Mesh,false>();
 	const bool usePreSplits = scene->device->useSpatialPreSplits || (maxGeomID >= ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)));
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + (usePreSplits ? "BuilderFastSpatialPresplitSAH" : "BuilderFastSpatialSAH"));
-=======
-        const unsigned int maxGeomID = mesh ? mesh->geomID : scene->getMaxGeomID<typename Mesh::type_t,false>();
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
->>>>>>> extend control over Mesh type selction for bvh builds
 
         /* create primref array */
         const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));

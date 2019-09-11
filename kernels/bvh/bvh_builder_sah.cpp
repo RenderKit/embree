@@ -130,7 +130,7 @@ namespace embree
           bvh->alloc.unshare(prims);
 
 	/* skip build for empty scene */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<typename Mesh::type_t,false>();
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
@@ -233,7 +233,7 @@ namespace embree
         }
 
 	/* skip build for empty scene */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<typename Mesh::type_t,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
