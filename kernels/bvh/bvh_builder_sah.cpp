@@ -621,8 +621,10 @@ namespace embree
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
     Builder* BVH4InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1,mode); }
+    Builder* BVH4InstanceExpensiveSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,InstanceExpensive,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1,mode); }
 #if defined(__AVX__)
     Builder* BVH8InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1,mode); }
+    Builder* BVH8InstanceExpensiveSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,InstanceExpensive,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1,mode); }
 #endif
 #endif
 

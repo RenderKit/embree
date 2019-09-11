@@ -1213,6 +1213,22 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
+  Accel* BVH8Factory::BVH8InstanceExpensive(Scene* scene, BuildVariant bvariant)
+  {
+    BVH8* accel = new BVH8(InstancePrimitive::type,scene);
+    Accel::Intersectors intersectors = BVH8InstanceIntersectors(accel);
+    Builder* builder = BVH8InstanceExpensiveSceneBuilderSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
+  Accel* BVH8Factory::BVH8InstanceExpensiveMB(Scene* scene)
+  {
+    BVH8* accel = new BVH8(InstancePrimitive::type,scene);
+    Accel::Intersectors intersectors = BVH8InstanceMBIntersectors(accel);
+    Builder* builder = BVH8InstanceExpensiveMBSceneBuilderSAH(accel,scene,0);
+    return new AccelInstance(accel,builder,intersectors);
+  }
+
   Accel::Intersectors BVH8Factory::BVH8GridIntersectors(BVH8* bvh, IntersectVariant ivariant)
   {
     Accel::Intersectors intersectors;
