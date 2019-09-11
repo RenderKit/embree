@@ -103,7 +103,7 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      Mesh* mesh;
+      typename Mesh::type_t* mesh;
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
       bool primrefarrayalloc;
@@ -113,7 +113,7 @@ namespace embree
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0),
           settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {}
 
-      BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAH (BVH* bvh, typename Mesh::type_t* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
@@ -130,7 +130,7 @@ namespace embree
           bvh->alloc.unshare(prims);
 
 	/* skip build for empty scene */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<typename Mesh::type_t,false>();
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
@@ -213,14 +213,14 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      Mesh* mesh;
+      typename Mesh::type_t* mesh;
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
 
       BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
 
-      BVHNBuilderSAHQuantized (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderSAHQuantized (BVH* bvh, typename Mesh::type_t* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
@@ -233,7 +233,7 @@ namespace embree
         }
 
 	/* skip build for empty scene */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<typename Mesh::type_t,false>();
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();

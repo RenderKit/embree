@@ -26,6 +26,7 @@ namespace embree
   {
     /*! type of this geometry */
     static const Geometry::GTypeMask geom_type = Geometry::MTY_TRIANGLE_MESH;
+    using type_t = TriangleMesh;
 
     /*! triangle indices */
     struct Triangle 
