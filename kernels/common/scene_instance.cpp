@@ -38,13 +38,35 @@ namespace embree
   }
 
   void Instance::enabling () {
-    if (numTimeSteps == 1) scene->world.numInstances += numPrimitives;
-    else                   scene->worldMB.numInstances += numPrimitives;
+    if (numTimeSteps == 1) {
+      if (this->gtype == Geometry::GTY_INSTANCE_CHEAP) {
+        scene->world.numInstancesCheap += numPrimitives;
+      } else {
+        scene->world.numInstancesExpensive += numPrimitives;
+      }
+    } else {
+      if (this->gtype == Geometry::GTY_INSTANCE_EXPENSIVE) {
+        scene->worldMB.numInstancesCheap += numPrimitives;
+      } else {
+        scene->worldMB.numInstancesExpensive += numPrimitives;
+      }
+    }
   }
   
   void Instance::disabling() { 
-    if (numTimeSteps == 1) scene->world.numInstances -= numPrimitives;
-    else                   scene->worldMB.numInstances -= numPrimitives;
+    if (numTimeSteps == 1) {
+      if (this->gtype == Geometry::GTY_INSTANCE_CHEAP) {
+        scene->world.numInstancesCheap -= numPrimitives;
+      } else {
+        scene->world.numInstancesExpensive -= numPrimitives;
+      }
+    } else {
+      if (this->gtype == Geometry::GTY_INSTANCE_EXPENSIVE) {
+        scene->worldMB.numInstancesCheap -= numPrimitives;
+      } else {
+        scene->worldMB.numInstancesExpensive -= numPrimitives;
+      }
+    }
   }
   
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
