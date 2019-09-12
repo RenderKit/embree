@@ -76,6 +76,11 @@ namespace embree
         return *this;
       }
 
+      __forceinline allocator& getAlloc()
+      {
+	return alloc;
+      }
+
       /********************** Iterators  ****************************/
     
       __forceinline       iterator begin()       { return items; };

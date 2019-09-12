@@ -54,7 +54,6 @@ namespace embree
 #if defined(EMBREE_DPCPP_SUPPORT)
 	if (useUSM)
 	  {
-	    PING;
 	    pointer p = (pointer)cl::sycl::aligned_alloc(alignment,n*sizeof(value_type),*gpu_device,*gpu_context,cl::sycl::usm::alloc::shared);    
 	    assert(p);
 	    return p;	    
@@ -109,6 +108,8 @@ namespace embree
 				   cl::sycl::context *gpu_context)
       {
 	useUSM = true;
+	assert(gpu_device);
+	assert(gpu_context);	
 	this->gpu_device  = gpu_device;
 	this->gpu_context = gpu_context;	
       }

@@ -894,15 +894,18 @@ namespace embree
                 settings.primrefarrayalloc = inf;
             }
 
-            /* enable os_malloc for two level build */
-            if (mesh)
-              bvh->alloc.setOSallocation(true);
+            /* enable USM allocation for primrefs */
+#if defined(EMBREE_DPCPP_SUPPORT)
+	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
+	    prims.getAlloc().enableUSM(&deviceGPU->getDevice(),&deviceGPU->getContext());	    
+#endif	    
 
             /* initialize allocator */
             const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
             const size_t leaf_bytes = 64;
             bvh->alloc.init_estimate(node_bytes+leaf_bytes);
             settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
+
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ?
@@ -921,7 +924,6 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 	      
-	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
 	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
 	    const int maxWorkGroupSize = deviceGPU->getMaxWorkGroupSize();
 	    
@@ -932,9 +934,9 @@ namespace embree
 	    unsigned int node_data_start = sizeof(gpu::BVHBase);
 	    unsigned int leaf_data_start = totalSize - numPrimitives * 64;
 
-	    /* --- allocate buffers --- */
+	    /* --- allocate and set buffers --- */
 
-	    gpu::AABB *aabb = (gpu::AABB*)cl::sycl::aligned_alloc(64,sizeof(gpu::AABB)*numPrimitives,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
+	    gpu::AABB *aabb = (gpu::AABB*)prims.data();
 	    assert(aabb);
 
 	    char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
@@ -945,15 +947,7 @@ namespace embree
 
 	    gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
 	    assert(globals);
-	    
-	    /* copy primrefs for now */
-
-	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
-		for (size_t j=r.begin(); j<r.end(); j++)
-		  ((PrimRef*)aabb)[j] = prims[j];	      
-	      });
-	    
-	    	    
+	    	    	    
 	    /* --- init globals --- */
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
@@ -1053,7 +1047,6 @@ namespace embree
 		  		  		  		  
 		  cgh.parallel_for<class parallel_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		      const uint groupID   = item.get_group(0);
-		      //const uint numGroups = item.get_group_range(0);
 		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();		      
 		      gpu::AABB *primref     = aabb;
 		      uint *primref_index0   = primref_index + 0;
@@ -1161,6 +1154,8 @@ namespace embree
 #endif	    
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
 
+	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
+	    
 	    /* print BVH stats */
 #if ENABLE_STATS == 1	    
 	    {
@@ -1181,11 +1176,9 @@ namespace embree
 #endif	    
 
 	    /* --- deallocate temporary data structures --- */
-	    cl::sycl::free(aabb         ,deviceGPU->getContext());
 	    cl::sycl::free(primref_index,deviceGPU->getContext());
 	    cl::sycl::free(globals      ,deviceGPU->getContext());
 
-	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
 	    
 #if PROFILE
           });
