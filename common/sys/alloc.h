@@ -63,7 +63,7 @@ namespace embree
 
       __forceinline void destroy( pointer p ) {
         p->~T();
-      }
+      }      
     };
 
   /*! allocates pages directly from OS */

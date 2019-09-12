@@ -16,6 +16,13 @@
 
 #include "default.h"
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+#define CL_TARGET_OPENCL_VERSION 220
+#define SYCL_SIMPLE_SWIZZLES
+#include <CL/sycl.hpp>
+#include <CL/sycl/builtins.hpp>
+#endif
+
 namespace embree
 {
   /*! invokes the memory monitor callback */
@@ -36,7 +43,7 @@ namespace embree
       typedef std::ptrdiff_t difference_type;
       
       __forceinline aligned_monitored_allocator(MemoryMonitorInterface* device) 
-        : device(device), hugepages(false) {}
+        : device(device), hugepages(false), useUSM(false) {}
 
       __forceinline pointer allocate( size_type n ) 
       {
@@ -44,6 +51,15 @@ namespace embree
           assert(device);
           device->memoryMonitor(n*sizeof(T),false);
         }
+#if defined(EMBREE_DPCPP_SUPPORT)
+	if (useUSM)
+	  {
+	    PING;
+	    pointer p = (pointer)cl::sycl::aligned_alloc(alignment,n*sizeof(value_type),*gpu_device,*gpu_context,cl::sycl::usm::alloc::shared);    
+	    assert(p);
+	    return p;	    
+	  }
+#endif	
         if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
         {
           pointer p =  (pointer) os_malloc(n*sizeof(value_type),hugepages);
@@ -57,10 +73,19 @@ namespace embree
       {
         if (p)
         {
-          if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
-            os_free(p,n*sizeof(value_type),hugepages); 
-          else
-            alignedFree(p);
+#if defined(EMBREE_DPCPP_SUPPORT)
+	  if (useUSM)
+	    {
+	      cl::sycl::free(p,*gpu_context);
+	    }
+	  else
+#endif
+	  {
+	    if (n*sizeof(value_type) >= 14 * PAGE_SIZE_2M)
+	      os_free(p,n*sizeof(value_type),hugepages); 
+	    else
+	      alignedFree(p);
+	  }
         }
         else assert(n == 0);
 
@@ -78,9 +103,33 @@ namespace embree
         p->~T();
       }
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+
+      __forceinline void enableUSM(cl::sycl::device  *gpu_device,
+				   cl::sycl::context *gpu_context)
+      {
+	useUSM = true;
+	this->gpu_device  = gpu_device;
+	this->gpu_context = gpu_context;	
+      }
+
+      __forceinline void disableUSM()
+      {
+	useUSM = false;
+	gpu_device  = nullptr;
+	gpu_context = nullptr;	
+      }
+      
+#endif      
     private:
       MemoryMonitorInterface* device;
       bool hugepages;
+      bool useUSM;
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+      cl::sycl::device  *gpu_device;
+      cl::sycl::context *gpu_context;      
+#endif      
     };
 
   /*! monitored vector */

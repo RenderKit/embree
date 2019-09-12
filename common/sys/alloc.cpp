@@ -24,7 +24,7 @@
 ////////////////////////////////////////////////////////////////////////////////
   
 namespace embree
-{
+{  
   void* alignedMalloc(size_t size, size_t align) 
   {
     if (size == 0)
@@ -32,7 +32,6 @@ namespace embree
     
     assert((align & (align-1)) == 0);
     void* ptr = _mm_malloc(size,align);
-
     if (size != 0 && ptr == nullptr)
       throw std::bad_alloc();
     
