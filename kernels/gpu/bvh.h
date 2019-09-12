@@ -42,6 +42,10 @@ namespace embree
 {
   namespace gpu
   {
+
+    /* ======================================================================= */
+    /* ============================== BVH BASE =============================== */
+    /* ======================================================================= */
     
     struct BVHBase
     {
@@ -119,7 +123,12 @@ namespace embree
 	}      
       return out; 
     }
-
+    
+    
+    /* ======================================================================== */
+    /* ============================== QBVH NODE =============================== */
+    /* ======================================================================== */
+    
     struct QBVHNodeN
     {
       /* special layout requires just two subgroup block loads for entire node */
@@ -233,8 +242,8 @@ namespace embree
 	/* for (uint i=0;i<numChildren;i++) */
 	/*   if (i == subgroupLocalID) */
 	/*     out << childrenAABB[i] << " -> " << node.getBounds(i) << cl::sycl::endl; */
-
       }
+
     };
 
     
@@ -267,6 +276,73 @@ namespace embree
       return offset & (~63);
     }
 
+    /* =============================================================================== */
+    /* ============================== NODE INTERSECTION =============================== */
+    /* =============================================================================== */
+    struct NodeIntersectionData {
+      inline NodeIntersectionData(float dist, uint valid, uint offset) : dist(dist), valid(valid), offset(offset) {}      
+      float dist;
+      uint valid;
+      uint offset;
+    };
+
+    inline NodeIntersectionData intersectQBVHNodeN(const cl::sycl::intel::sub_group &sg,
+						   const QBVHNodeN &node,
+						   const uint3 &dir_mask,
+						   const float3 &inv_dir,
+						   const float3 &inv_dir_org,
+						   const float tnear,
+						   const float tfar)
+    {
+#if 0
+      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);	      
+      uint  offset          = node.offset[subgroupLocalID];	      	      
+      const float3 org      = node.org.xyz();
+      const float3 scale    = node.scale.xyz();
+#else
+      cl::sycl::multi_ptr<uint,cl::sycl::access::address_space::global_space> node_ptr((uint*)&node);
+      const uint2 block0 = sg.load<2,uint>(node_ptr);
+      uint offset = (uint)block0.x();
+      const float3 org(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 0)),
+		       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 1)),
+		       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 2)));
+      const float3 scale(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 4)),
+			 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 5)),
+			 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 6)));	      
+#endif
+
+      cl::sycl::multi_ptr<ushort,cl::sycl::access::address_space::global_space> quant_ptr((ushort*)&node + 32); // + 64 bytes
+      const ushort4 block1 = sg.load<4,ushort>(quant_ptr);
+      const cl::sycl::uchar8 block2 = block1.as<cl::sycl::uchar8>();
+
+      const uchar3 ilower(block2.s2(),block2.s4(),block2.s6());
+      const uchar3 iupper(block2.s3(),block2.s5(),block2.s7());
+
+      const float3 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
+      const float3 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
+      const float3 _lower  = cfma(lowerf,scale,org);
+      const float3 _upper  = cfma(upperf,scale,org);
+
+      const float lower_x = cselect((uint)dir_mask.x(),(float)_upper.x(),(float)_lower.x());
+      const float upper_x = cselect((uint)dir_mask.x(),(float)_lower.x(),(float)_upper.x());
+      const float lower_y = cselect((uint)dir_mask.y(),(float)_upper.y(),(float)_lower.y());
+      const float upper_y = cselect((uint)dir_mask.y(),(float)_lower.y(),(float)_upper.y());
+      const float lower_z = cselect((uint)dir_mask.z(),(float)_upper.z(),(float)_lower.z());
+      const float upper_z = cselect((uint)dir_mask.z(),(float)_lower.z(),(float)_upper.z());	     
+	      
+      const float lowerX = cfma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
+      const float upperX = cfma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());
+      const float lowerY = cfma((float)inv_dir.y(), lower_y, (float)inv_dir_org.y());
+      const float upperY = cfma((float)inv_dir.y(), upper_y, (float)inv_dir_org.y());
+      const float lowerZ = cfma((float)inv_dir.z(), lower_z, (float)inv_dir_org.z());
+      const float upperZ = cfma((float)inv_dir.z(), upper_z, (float)inv_dir_org.z());
+
+      const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
+      const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
+      const uint valid = (fnear <= ffar) & (offset != -1); //((uchar)ilower.x() <= (uchar)iupper.x());	       
+      return NodeIntersectionData(fnear, valid, offset);
+    }
+    
   };
 };
 
