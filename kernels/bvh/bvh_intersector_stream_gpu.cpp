@@ -173,9 +173,9 @@ namespace embree
 	  if (stack_dist[sindex] > tfar) continue;
 #endif
 	  
-	  unsigned int cur = stack_offset[sindex]; 
+	  gpu::NodeRef cur = stack_offset[sindex]; 
 
-	  while((cur & BVH_LEAF_MASK) == 0) 
+	  while(!cur.isLeaf()) 
 	    {
 	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);
 	      const gpu::NodeIntersectionData isec = intersectQBVHNodeN(sg,node,dir_mask,inv_dir,inv_dir_org,tnear,tfar);
@@ -220,8 +220,8 @@ namespace embree
 	  
 	  if (cur == max_uint) break; // sentinel reached -> exit
 
-	  const uint numPrims = gpu::getNumLeafPrims(cur);
-	  const uint leafOffset = gpu::getLeafOffset(cur);    
+	  const uint numPrims = cur.getNumLeafPrims();
+	  const uint leafOffset = cur.getLeafOffset();    
 
 	  const gpu::Quad1 *const quads = (gpu::Quad1 *)(bvh_base + leafOffset);
 	  hit_tfar = intersectQuad1(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);	  

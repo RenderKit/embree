@@ -61,6 +61,29 @@ namespace embree
       /* uint backPointerDataEnd; */
     };
 
+    /* ========================================================================== */
+    /* ============================== BVH NODEREF =============================== */
+    /* ========================================================================== */
+
+    struct NodeRef
+    {
+      __forceinline NodeRef () {}
+
+      __forceinline NodeRef (uint offset) : offset(offset) {}
+
+      __forceinline operator uint() const { return offset; }
+
+      __forceinline size_t isLeaf() const { return offset & BVH_LEAF_MASK; }
+      
+      __forceinline uint getNumLeafPrims() { return (offset & 0x7)+1; }      
+      __forceinline uint getLeafOffset()   { return offset & (~63); }
+      
+    private:
+      uint offset;
+    };
+
+
+    
     /* ======================================================================== */
     /* ============================== BVH NODES =============================== */
     /* ======================================================================== */
@@ -264,16 +287,6 @@ namespace embree
 	      << cl::sycl::endl;
 	}      
       return out; 
-    }
-
-    inline uint getNumLeafPrims(const uint offset)
-    {
-      return (offset & 0x7)+1;
-    }
-
-    inline uint getLeafOffset(const uint offset)
-    {
-      return offset & (~63);
     }
 
     /* =============================================================================== */
