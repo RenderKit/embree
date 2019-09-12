@@ -16,6 +16,7 @@
 
 #include "primitive.h"
 #include "triangle1v.h"
+#include "quad1v.h"
 
 namespace embree
 {
@@ -37,6 +38,25 @@ namespace embree
 
   size_t Triangle1v::Type::getBytes(const char* This) const {
     return sizeof(Triangle1v);
+  }
+
+  /********************** Quad1v **************************/
+  Quad1v::Type Quad1v::type;
+  
+  const char* Quad1v::Type::name () const {
+    return "quad1v";
+  }
+
+  size_t Quad1v::Type::sizeActive(const char* This) const {
+    return ((Quad1v*)This)->size();
+  }
+
+  size_t Quad1v::Type::sizeTotal(const char* This) const {
+    return 1;
+  }
+
+  size_t Quad1v::Type::getBytes(const char* This) const {
+    return sizeof(Quad1v);
   }
   
 }

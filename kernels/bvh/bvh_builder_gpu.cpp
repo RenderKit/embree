@@ -19,7 +19,7 @@
 #include "../builders/primrefgen.h"
 #include "../builders/splitter.h"
 #include "../geometry/triangle1v.h"
-#include "../geometry/quadv.h"
+#include "../geometry/quad1v.h"
 
 #include "../common/state.h"
 #include "../../common/algorithms/parallel_for_for.h"
@@ -868,10 +868,6 @@ namespace embree
           bvh->alloc.clear();
         }
 
-        /* if we use the primrefarray for allocations we have to take it back from the BVH */
-        if (settings.primrefarrayalloc != size_t(inf))
-          bvh->alloc.unshare(prims);
-
 	/* skip build for empty scene */
         const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
         if (numPrimitives == 0) {
@@ -879,7 +875,6 @@ namespace embree
           prims.clear();
           return;
         }
-
 
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
@@ -901,10 +896,11 @@ namespace embree
 #endif	    
 
             /* initialize allocator */
-            const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
-            const size_t leaf_bytes = 64;
-            bvh->alloc.init_estimate(node_bytes+leaf_bytes);
-            settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
+            //const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+            //const size_t leaf_bytes = 64;
+
+            //bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+            //settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
 
             prims.resize(numPrimitives); 
 
@@ -1184,12 +1180,8 @@ namespace embree
           });
 #endif
 
-        /* if we allocated using the primrefarray we have to keep it alive */
-        if (settings.primrefarrayalloc != size_t(inf))
-          bvh->alloc.share(prims);
-
         /* for static geometries we can do some cleanups */
-        else if (scene && scene->isStaticAccel()) {
+        if (scene && scene->isStaticAccel()) {
           bvh->shrink();
           prims.clear();
         }
@@ -1208,6 +1200,7 @@ namespace embree
     /************************************************************************************/
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
     Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }
+    
     //Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
 #endif
     

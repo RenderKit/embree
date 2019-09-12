@@ -180,7 +180,7 @@ namespace embree
       ThreadLocal alloc1;
     };
 
-    FastAllocator (Device* device, bool osAllocation) 
+    FastAllocator (Device* device, bool osAllocation, bool useUSM = false) 
       : device(device), slotMask(0), usedBlocks(nullptr), freeBlocks(nullptr), use_single_mode(false), defaultBlockSize(PAGE_SIZE), estimatedSize(0),
         growSize(PAGE_SIZE), maxGrowSize(maxAllocationSize), log2_grow_size_scale(0), bytesUsed(0), bytesFree(0), bytesWasted(0), atype(osAllocation ? OS_MALLOC : ALIGNED_MALLOC),
         primrefarray(device,0)
