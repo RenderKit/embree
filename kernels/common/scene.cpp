@@ -197,7 +197,9 @@ namespace embree
     else if (device->tri_accel == "qbvh8.triangle4i")     accels_add(device->bvh8_factory->BVH8QuantizedTriangle4i(this));
     else if (device->tri_accel == "qbvh8.triangle4")      accels_add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
 #endif
+#if defined(EMBREE_DPCPP_SUPPORT)	            
     else if (device->tri_accel == "bvhgpu.triangle1v")    accels_add(device->bvh_gpu_factory->BVHGPUTriangle1v(this));
+#endif    
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
 #endif
 

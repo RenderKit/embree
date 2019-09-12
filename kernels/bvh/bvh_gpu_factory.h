@@ -20,6 +20,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_DPCPP_SUPPORT)	    
+
   /*! BVHGPU instantiations */
   class BVHGPUFactory : public BVHFactory
   {
@@ -41,4 +43,6 @@ namespace embree
     DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUIntersectorStream);
 
   };
+#endif
+  
 }

@@ -22,6 +22,8 @@
 
 namespace embree
 {
+#if defined(EMBREE_DPCPP_SUPPORT)	    
+  
   DECLARE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_SYMBOL2(Accel::Intersector1,BVHGPUIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector4,BVHGPUIntersector4);
@@ -70,6 +72,6 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-
+#endif
 }
 

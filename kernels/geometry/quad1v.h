@@ -47,8 +47,8 @@ namespace embree
     __forceinline Quad1v() {}
 
     /* Construction from vertices and IDs */
-    __forceinline Quad1v(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, const unsigned int geomID, const unsigned int primID)
-      : v0(v0), v1(v1), v2(v2), geomId(geomID), primId(primID) {}
+    __forceinline Quad1v(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2, const Vec3f& v3, const unsigned int geomID, const unsigned int primID)
+      : v0(v0), v2(v2), v1(v1), geomId(geomID), v3(v3), primId(primID) {}
     
     /* Returns a mask that tells which quads are valid */
     __forceinline bool valid() const { return geomId != -1; }

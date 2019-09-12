@@ -918,6 +918,8 @@ namespace embree
 	      }
 	    PRINT(pinfo.size());
 
+	    NodeRef root(0);
+
 #if defined(EMBREE_DPCPP_SUPPORT)
 	      
 	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
@@ -1143,17 +1145,16 @@ namespace embree
 	    
 	    
             /* call BVH builder */
-            NodeRef root = NodeRef((size_t)bvh_mem);
+            root = NodeRef((size_t)bvh_mem);
 
 	    // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-
 #endif	    
             bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
 
 	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
 	    
 	    /* print BVH stats */
-#if ENABLE_STATS == 1	    
+#if defined(EMBREE_DPCPP_SUPPORT) && ENABLE_STATS == 1	    
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
@@ -1171,10 +1172,12 @@ namespace embree
 	    }
 #endif	    
 
+	    
 	    /* --- deallocate temporary data structures --- */
+#if defined(EMBREE_DPCPP_SUPPORT)	    
 	    cl::sycl::free(primref_index,deviceGPU->getContext());
 	    cl::sycl::free(globals      ,deviceGPU->getContext());
-
+#endif
 	    
 #if PROFILE
           });

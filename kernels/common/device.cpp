@@ -104,9 +104,11 @@ namespace embree
     bvh8_factory = make_unique(new BVH8Factory(enabled_builder_cpu_features, enabled_cpu_features));
 #endif
 
+#if defined(EMBREE_DPCPP_SUPPORT)	            
     /* register GPU algorithms */
     bvh_gpu_factory = make_unique(new BVHGPUFactory());
-
+#endif
+    
     /* setup tasking system */
     initTaskingSystem(numThreads);
 
