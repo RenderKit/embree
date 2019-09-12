@@ -19,7 +19,7 @@
 #include "../builders/primrefgen.h"
 #include "../builders/splitter.h"
 #include "../geometry/triangle1v.h"
-
+#include "../geometry/quadv.h"
 
 #include "../common/state.h"
 #include "../../common/algorithms/parallel_for_for.h"
@@ -711,7 +711,7 @@ namespace embree
       while(sindex)
 	{
 	  sindex--;
-	  uint current            = stack[sindex].node;	
+	  gpu::NodeRef current    = stack[sindex].node;	
 	  float current_area      = stack[sindex].area;
 	  gpu::AABB current_aabb  = stack[sindex].aabb;
 	  uint current_depth      = stack[sindex].depth;
@@ -720,8 +720,8 @@ namespace embree
 	
 	  if (current & BVH_LEAF_MASK)
 	    {
-	      unsigned int prims = gpu::getNumLeafPrims(current);	    
-	      unsigned int prims_offset = gpu::getLeafOffset(current);
+	      unsigned int prims = current.getNumLeafPrims();	    
+	      unsigned int prims_offset = current.getLeafOffset();
 	      leaf_items += prims;
 	      sah_leaves += current_area;
 	      leaves++;
@@ -771,7 +771,7 @@ namespace embree
 
 		  if (aabb.lower.x() == (float)(INFINITY))
 		    {
-		      out << "aabb inf error " << i << " current " << current << " nodeN " << children << cl::sycl::endl;
+		      out << "aabb inf error " << i << " current " << (uint)current << " nodeN " << children << cl::sycl::endl;
 		      break;
 		    }
 		
@@ -1208,6 +1208,7 @@ namespace embree
     /************************************************************************************/
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
     Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }
+    //Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
 #endif
     
   }
