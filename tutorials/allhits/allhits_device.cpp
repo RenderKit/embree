@@ -101,7 +101,7 @@ void device_key_pressed_handler(int key)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
-  rtcSetSceneFlags(scene_out, rtcGetSceneFlags(scene_out) | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
+  rtcSetSceneFlags(scene_out, rtcGetSceneFlags(scene_out) | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION | RTC_SCENE_FLAG_ROBUST);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
@@ -166,80 +166,97 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
   }
 }
 
-/* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+RayExt single_pass(Ray ray, RayStats& stats)
 {
   IntersectContext context;
   rtcInitIntersectContext(&context.context);
-   
+  
+  context.context.filter = gatherAllHits;
+  rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
+  RayStats_addRay(stats);
+  std::sort(&context.rayext.hits[context.rayext.begin],&context.rayext.hits[context.rayext.end]);
+
+  return context.rayext;
+}
+
+RayExt multi_pass(Ray ray, RayStats& stats)
+{
+  IntersectContext context;
+  rtcInitIntersectContext(&context.context);
+  
+  context.context.filter = gatherNHits;
+  
+  int iter = 0;
+  do {
+    
+    if (context.rayext.end)
+      ray.tnear() = context.rayext.hits[context.rayext.end-1].t;
+    
+    ray.tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    context.rayext.begin = context.rayext.end;
+    
+    for (size_t i=0; i<g_num_hits; i++)
+      if (context.rayext.begin+i < MAX_HITS)
+        context.rayext.hits[context.rayext.begin+i] = RayExt::Hit(neg_inf);
+    
+    rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
+    RayStats_addRay(stats);
+    iter++;
+    
+    /*PRINT(iter);
+      for (size_t i=0; i<context.rayext.end; i++)
+      {
+      PRINT2(i,context.rayext.hits[i]);
+      }*/
+    
+  } while (context.rayext.size() != 0);
+  
+  context.rayext.begin = 0;
+  
+  return context.rayext;
+}
+
+/* task that renders a single screen tile */
+Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+{
+  RayExt rayext;
+  
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
+  /* either gather hits in single pass or using multiple passes */
   if (g_num_hits == 0)
-  {
-    context.context.filter = gatherAllHits;
-    rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
-    RayStats_addRay(stats);
-    std::sort(&context.rayext.hits[context.rayext.begin],&context.rayext.hits[context.rayext.end]);
-  }
-
+    rayext = single_pass(ray,stats);
   else
-  {
-    context.context.filter = gatherNHits;
-
-    int iter = 0;
-    do {
-
-      if (context.rayext.end)
-        ray.tnear() = context.rayext.hits[context.rayext.end-1].t;
-      
-      ray.tfar = inf;
-      ray.geomID = RTC_INVALID_GEOMETRY_ID;
-      context.rayext.begin = context.rayext.end;
-            
-      for (size_t i=0; i<g_num_hits; i++)
-        if (context.rayext.begin+i < MAX_HITS)
-          context.rayext.hits[context.rayext.begin+i] = RayExt::Hit(neg_inf);
-
-      rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
-      RayStats_addRay(stats);
-      iter++;
-
-      /*PRINT(iter);
-      for (size_t i=0; i<context.rayext.end; i++)
-      {
-        PRINT2(i,context.rayext.hits[i]);
-        }*/
-
-    } while (context.rayext.size() != 0);
-    
-    context.rayext.begin = 0;
-  }
+    rayext = multi_pass(ray,stats);
 
   /* verify result with gathering all hits */
   if (g_verify)
   {
-    IntersectContext verify_context;
-    rtcInitIntersectContext(&verify_context.context);
-    verify_context.context.filter = gatherAllHits;
-    rtcIntersect1(g_scene,&verify_context.context,RTCRayHit_(ray));
-    std::sort(&verify_context.rayext.hits[verify_context.rayext.begin],&verify_context.rayext.hits[verify_context.rayext.end]);
-
-    if (verify_context.rayext.size() != context.rayext.size())
+    RayExt verify_rayext = single_pass(ray,stats);
+    
+    /*for (size_t i=verify_rayext.begin; i<verify_rayext.end; i++)
+      PRINT2(i,verify_rayext.hits[i]);
+    
+    for (size_t i=rayext.begin; i<rayext.end; i++)
+    PRINT2(i,rayext.hits[i]);*/
+    
+    if (verify_rayext.size() != rayext.size())
       throw std::runtime_error("different number of hits found");
-
-    for (size_t i=verify_context.rayext.begin; i<verify_context.rayext.end; i++)
+    
+    for (size_t i=verify_rayext.begin; i<verify_rayext.end; i++)
     {
-      if (verify_context.rayext.hits[i] != context.rayext.hits[i])
+      if (verify_rayext.hits[i] != rayext.hits[i])
         throw std::runtime_error("hits differ");
     }
   }
-
+  
   /* calculate random sequence based on hit geomIDs and primIDs */
   RandomSampler sampler = { 0 };
-  for (size_t i=context.rayext.begin; i<context.rayext.end; i++) {
-    sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hits[i].geomID);
-    sampler.s = MurmurHash3_mix(sampler.s, context.rayext.hits[i].primID);
+  for (size_t i=rayext.begin; i<rayext.end; i++) {
+    sampler.s = MurmurHash3_mix(sampler.s, rayext.hits[i].geomID);
+    sampler.s = MurmurHash3_mix(sampler.s, rayext.hits[i].primID);
   }
   sampler.s = MurmurHash3_finalize(sampler.s);
 
@@ -272,8 +289,6 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    //if (x != 256 || y != 256) continue;
-    //PRINT2(x,y);
     Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */

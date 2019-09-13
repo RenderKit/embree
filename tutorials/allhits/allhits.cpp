@@ -48,8 +48,8 @@ namespace embree
 
     void drawGUI()
     {
-      ImGui::Text("num hits");
-      ImGui::DragInt("",&g_num_hits,1.0f,0,16);
+      ImGui::DragInt("num_hits",&g_num_hits,1.0f,0,16);
+      ImGui::Checkbox("verify",&g_verify);
     }
   };
 }

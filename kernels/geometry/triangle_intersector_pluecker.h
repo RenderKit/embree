@@ -28,6 +28,8 @@
  *  numerically stable. The edge equations are watertight along the
  *  edge for neighboring triangles. */
 
+#define EXACT_DEPTH_TEST 1
+
 namespace embree
 {
   namespace isa
@@ -40,8 +42,13 @@ namespace embree
       
       __forceinline void finalize() 
       {
+#if EXACT_DEPTH_TEST
+        vt = T;
+#else
         const vfloat<M> rcpDen = rcp(den);
         vt = T * rcpDen;
+#endif
+       
         const vfloat<M> UVW = U+V+W;
         const vbool<M> invalid = abs(UVW) < min_rcp_input;
         const vfloat<M> rcpUVW = select(invalid,vfloat<M>(0.0f),rcp(UVW));
@@ -115,13 +122,18 @@ namespace embree
         /* calculate geometry normal and denominator */
         const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
         const vfloat<M> den = twice(dot(Ng,D));
+        
+        /* perform depth test */
+#if EXACT_DEPTH_TEST
+        const vfloat<M> T = rcp(den)*twice(dot(v0,Ng));
+        valid &= vfloat<M>(ray.tnear()) <= T & T <= vfloat<M>(ray.tfar);
+#else
         const vfloat<M> absDen = abs(den);
         const vfloat<M> sgnDen = signmsk(den);
-
-        /* perform depth test */
         const vfloat<M> T = twice(dot(v0,Ng));
         valid &= absDen*vfloat<M>(ray.tnear()) < (T^sgnDen);
         valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar);
+#endif
         if (unlikely(none(valid))) return false;
 
         /* avoid division by 0 */
