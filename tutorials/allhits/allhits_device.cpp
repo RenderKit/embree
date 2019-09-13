@@ -48,7 +48,7 @@ struct HitList
       : t(t), primID(primID), geomID(geomID), instID(instID) {}
 
     /* lexicographical order (t,instID,geomID,primID) */
-    __forceinline friend bool operator < (Hit& a, Hit& b)
+    __forceinline friend bool operator < (const Hit& a, const Hit& b)
     {
       if (a.t == b.t) {
         if (a.instID == b.instID) {
@@ -60,17 +60,17 @@ struct HitList
       return a.t < b.t;
     }
 
-    __forceinline friend bool operator ==(Hit& a, Hit& b) {
+    __forceinline friend bool operator == (const Hit& a, const Hit& b) {
       return a.t == b.t && a.primID == b.primID && a.geomID == b.geomID && a.instID == b.instID;
     }
 
-    __forceinline friend bool operator <= (Hit& a, Hit& b)
+    __forceinline friend bool operator <= (const Hit& a, const Hit& b)
     {
       if (a == b) return true;
       else return a < b;
     }
 
-    __forceinline friend bool operator != (Hit& a, Hit& b) {
+    __forceinline friend bool operator != (const Hit& a, const Hit& b) {
       return !(a == b);
     }
 
