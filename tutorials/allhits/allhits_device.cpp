@@ -205,12 +205,6 @@ void multi_pass(Ray ray, RayExt& rayext_o, RayStats& stats)
     RayStats_addRay(stats);
     iter++;
     
-    /*PRINT(iter);
-      for (size_t i=0; i<context.rayext.end; i++)
-      {
-      PRINT2(i,context.rayext.hits[i]);
-      }*/
-    
   } while (context.rayext.size() != 0);
   
   context.rayext.begin = 0;
@@ -233,12 +227,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   {
     RayExt verify_rayext;
     single_pass(ray,verify_rayext,stats);
-    
-    /*for (size_t i=verify_rayext.begin; i<verify_rayext.end; i++)
-      PRINT2(i,verify_rayext.hits[i]);
-    
-    for (size_t i=rayext.begin; i<rayext.end; i++)
-    PRINT2(i,rayext.hits[i]);*/
     
     if (verify_rayext.size() != rayext.size())
       throw std::runtime_error("different number of hits found");
