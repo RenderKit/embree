@@ -45,7 +45,7 @@ namespace embree
         scene->world.numInstancesExpensive += numPrimitives;
       }
     } else {
-      if (this->gtype == Geometry::GTY_INSTANCE_EXPENSIVE) {
+      if (this->gtype == Geometry::GTY_INSTANCE_CHEAP) {
         scene->worldMB.numInstancesCheap += numPrimitives;
       } else {
         scene->worldMB.numInstancesExpensive += numPrimitives;
@@ -61,7 +61,7 @@ namespace embree
         scene->world.numInstancesExpensive -= numPrimitives;
       }
     } else {
-      if (this->gtype == Geometry::GTY_INSTANCE_EXPENSIVE) {
+      if (this->gtype == Geometry::GTY_INSTANCE_CHEAP) {
         scene->worldMB.numInstancesCheap -= numPrimitives;
       } else {
         scene->worldMB.numInstancesExpensive -= numPrimitives;
