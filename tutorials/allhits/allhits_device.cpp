@@ -107,7 +107,7 @@ RTCScene g_scene = nullptr;
 RTCScene convertScene(ISPCScene* scene_in)
 {
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
-  rtcSetSceneFlags(scene_out, rtcGetSceneFlags(scene_out) | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION | RTC_SCENE_FLAG_ROBUST);
+  rtcSetSceneFlags(scene_out, rtcGetSceneFlags(scene_out) | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
