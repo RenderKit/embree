@@ -130,44 +130,24 @@ def runConfig(config):
       raise ValueError('unknown compiler: ' + compiler + '')
     
   elif OS == "linux":
-    if (compiler == "ICC19"):
-      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2019.0/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2019.0/bin/icc")
-    elif (compiler == "ICC18"):
-      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2018.0/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2018.0/bin/icc")
-    elif (compiler == "ICC17"):
-      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2017.1/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2017.1/bin/icc")
-    elif (compiler == "ICC16"):
-      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2016.3/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2016.3/bin/icc")
-    elif (compiler == "ICC15"):
-      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/2015.3/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/2015.3/bin/icc")
-    elif (compiler == "GCC"):
+    if (compiler == "GCC"):
       conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
-    elif (compiler == "CLANG5"):
-      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/clang/v5.0.0/bin/clang++ -D CMAKE_C_COMPILER=/NAS/packages/apps/clang/v5.0.0/bin/clang")
-    elif (compiler == "CLANG4"):
-      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/clang/v4.0.0/bin/clang++ -D CMAKE_C_COMPILER=/NAS/packages/apps/clang/v4.0.0/bin/clang")
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
+    elif (compiler.startswith("ICC")):
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/"+compiler[3:]+"/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/"+compiler[3:]+"/bin/icc")
+    elif (compiler.startswith("CLANG")):
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/clang/v"+compiler[5:]+"/bin/clang++ -D CMAKE_C_COMPILER=/NAS/packages/apps/clang/v"+compiler[5:]+"/bin/clang")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
     
   else:
-    if (compiler == "ICC18"):
-      conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
-      env.append("module load intel/2018")
-    elif (compiler == "ICC17"):
-      conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
-      env.append("module load intel/2017")
-    elif (compiler == "ICC16"):
-      conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
-      env.append("module load intel/2016")
-    elif (compiler == "ICC15"):
-      conf.append("-D CMAKE_CXX_COMPILER=icpc -D CMAKE_C_COMPILER=icc")
-      env.append("module load intel/2015")
-    elif (compiler == "GCC"):
+    if (compiler == "GCC"):
       conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
+    elif (compiler.startswith("ICC")):
+      conf.append("-D CMAKE_CXX_COMPILER=/NAS/packages/apps/intel/"+compiler[3:]+"-osx/bin/icpc -D CMAKE_C_COMPILER=/NAS/packages/apps/intel/"+compiler[3:]+"-osx/bin/icc")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
