@@ -84,8 +84,11 @@ struct RayExt
   
 struct IntersectContext
 {
+  IntersectContext(RayExt& rayext)
+    : rayext(rayext) {}
+  
   RTCIntersectContext context;
-  RayExt rayext;
+  RayExt& rayext;
 };
 
 /* scene data */
@@ -166,22 +169,20 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
   }
 }
 
-RayExt single_pass(Ray ray, RayStats& stats)
+void single_pass(Ray ray, RayExt& rayext_o, RayStats& stats)
 {
-  IntersectContext context;
+  IntersectContext context(rayext_o);
   rtcInitIntersectContext(&context.context);
   
   context.context.filter = gatherAllHits;
   rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
   RayStats_addRay(stats);
   std::sort(&context.rayext.hits[context.rayext.begin],&context.rayext.hits[context.rayext.end]);
-
-  return context.rayext;
 }
 
-RayExt multi_pass(Ray ray, RayStats& stats)
+void multi_pass(Ray ray, RayExt& rayext_o, RayStats& stats)
 {
-  IntersectContext context;
+  IntersectContext context(rayext_o);
   rtcInitIntersectContext(&context.context);
   
   context.context.filter = gatherNHits;
@@ -213,8 +214,6 @@ RayExt multi_pass(Ray ray, RayStats& stats)
   } while (context.rayext.size() != 0);
   
   context.rayext.begin = 0;
-  
-  return context.rayext;
 }
 
 /* task that renders a single screen tile */
@@ -226,15 +225,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
   /* either gather hits in single pass or using multiple passes */
-  if (g_num_hits == 0)
-    rayext = single_pass(ray,stats);
-  else
-    rayext = multi_pass(ray,stats);
+  if (g_num_hits == 0) single_pass(ray,rayext,stats);
+  else                 multi_pass(ray,rayext,stats);
 
   /* verify result with gathering all hits */
   if (g_verify)
   {
-    RayExt verify_rayext = single_pass(ray,stats);
+    RayExt verify_rayext;
+    single_pass(ray,verify_rayext,stats);
     
     /*for (size_t i=verify_rayext.begin; i<verify_rayext.end; i++)
       PRINT2(i,verify_rayext.hits[i]);
