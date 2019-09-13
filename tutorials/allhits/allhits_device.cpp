@@ -66,6 +66,10 @@ struct RayExt
       if (a == b) return true;
       else return a < b;
     }
+
+    friend std::ostream& operator<<(std::ostream& cout, const Hit& hit) {
+      return cout << "Hit { t = " << hit.t << ", geomID = " << hit.geomID << ", primID = " << hit.primID << " }";
+    }
     
     float t;
     unsigned int primID;
@@ -178,17 +182,31 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   else
   {
     context.context.filter = gatherNHits;
-      
+
+    int iter = 0;
     do {
-      context.rayext.begin = context.rayext.end;
+
+      if (context.rayext.end)
+        ray.tnear() = context.rayext.hits[context.rayext.end-1].t;
       
+      ray.tfar = inf;
+      ray.geomID = RTC_INVALID_GEOMETRY_ID;
+      context.rayext.begin = context.rayext.end;
+            
       for (size_t i=0; i<g_num_hits; i++)
         if (context.rayext.begin+i < MAX_HITS)
           context.rayext.hits[context.rayext.begin+i] = RayExt::Hit(neg_inf);
-    
+
       rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
       RayStats_addRay(stats);
-      
+      iter++;
+
+      /*PRINT(iter);
+      for (size_t i=0; i<context.rayext.end; i++)
+      {
+        PRINT2(i,context.rayext.hits[i]);
+        }*/
+
     } while (context.rayext.size() != 0);
     
     context.rayext.begin = 0;
@@ -231,6 +249,8 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
+    //if (x != 256 || y != 256) continue;
+    //PRINT2(x,y);
     Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
