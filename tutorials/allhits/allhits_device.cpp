@@ -94,13 +94,6 @@ struct IntersectContext
 /* scene data */
 RTCScene g_scene = nullptr;
 
-void device_key_pressed_handler(int key)
-{
-  //if (key == 110 /*n*/) g_use_smooth_normals = !g_use_smooth_normals;
-  //else
-  device_key_pressed_default(key);
-}
-
 RTCScene convertScene(ISPCScene* scene_in)
 {
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
@@ -302,7 +295,7 @@ extern "C" void device_init (char* cfg)
 {
   /* set start render mode */
   renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_handler;
+  key_pressed_handler = device_key_pressed_default;
 }
 
 /* called by the C++ code to render */
