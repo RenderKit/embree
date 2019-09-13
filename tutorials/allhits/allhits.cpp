@@ -20,6 +20,7 @@ namespace embree
 {
   extern "C" {
     int g_num_hits = 4;
+    bool g_verify = false;
   }
   
   struct Tutorial : public SceneLoadingTutorialApplication
@@ -30,6 +31,10 @@ namespace embree
       registerOption("num_hits", [] (Ref<ParseStream> cin, const FileName& path) {
           g_num_hits = cin->getInt();
         }, "--num_hits <int>: sets number of hits to accumulate maximally in each trace ray call");
+
+      registerOption("verify", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_verify = true;
+        }, "--verify: verifies result of collecting all hits");
     }
     
     void postParseCommandLine() 

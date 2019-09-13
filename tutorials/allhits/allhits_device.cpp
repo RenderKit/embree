@@ -22,9 +22,9 @@
 namespace embree {
 
 extern "C" ISPCScene* g_ispc_scene;
-extern "C" bool g_changed;
 extern "C" int g_instancing_mode;
 extern "C" int g_num_hits;
+extern "C" bool g_verify;
 
 #define MAX_HITS 16*1024
 
@@ -65,6 +65,10 @@ struct RayExt
     {
       if (a == b) return true;
       else return a < b;
+    }
+
+    __forceinline friend bool operator !=(Hit& a, Hit& b) {
+      return !(a == b);
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Hit& hit) {
@@ -210,6 +214,25 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     } while (context.rayext.size() != 0);
     
     context.rayext.begin = 0;
+  }
+
+  /* verify result with gathering all hits */
+  if (g_verify)
+  {
+    IntersectContext verify_context;
+    rtcInitIntersectContext(&verify_context.context);
+    verify_context.context.filter = gatherAllHits;
+    rtcIntersect1(g_scene,&verify_context.context,RTCRayHit_(ray));
+    std::sort(&verify_context.rayext.hits[verify_context.rayext.begin],&verify_context.rayext.hits[verify_context.rayext.end]);
+
+    if (verify_context.rayext.size() != context.rayext.size())
+      throw std::runtime_error("different number of hits found");
+
+    for (size_t i=verify_context.rayext.begin; i<verify_context.rayext.end; i++)
+    {
+      if (verify_context.rayext.hits[i] != context.rayext.hits[i])
+        throw std::runtime_error("hits differ");
+    }
   }
 
   /* calculate random sequence based on hit geomIDs and primIDs */
