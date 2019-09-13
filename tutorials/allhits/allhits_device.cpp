@@ -139,7 +139,7 @@ void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
   if (hits.end > MAX_HITS) return;
 
   /* add hit to list */
-  hits.hits[hits.end++] = HitList::Hit(ray->tfar,hit->primID,hit->geomID);
+  hits.hits[hits.end++] = HitList::Hit(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 }
 
 /* Filter callback function that gathers first N hits */
@@ -155,7 +155,7 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > MAX_HITS) return;
 
-  HitList::Hit nhit(ray->tfar,hit->instID[0],hit->primID,hit->geomID);
+  HitList::Hit nhit(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
   if (hits.begin > 0 && nhit <= hits.hits[hits.begin-1])
     return;

@@ -16,3 +16,11 @@
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(allhits)
+
+IF (EMBREE_TESTING_INTENSITY GREATER 1)
+  ADD_TEST(NAME allhits_crown_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 1 -o allhits_crown_1.tga)
+  ADD_TEST(NAME allhits_crown_2 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 2 -o allhits_crown_2.tga)
+  ADD_TEST(NAME allhits_crown_3 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 3 -o allhits_crown_3.tga)
+  ADD_TEST(NAME allhits_crown_4 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 4 -o allhits_crown_4.tga)
+ENDIF()
+
