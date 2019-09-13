@@ -1204,7 +1204,7 @@ namespace embree
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
     Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }
     
-    //Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
+    Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
 #endif
     
   }
