@@ -44,21 +44,24 @@ struct RayExt
   {
     Hit() {}
 
-    Hit (float t, unsigned int primID = 0xFFFFFFFF, unsigned int geomID = 0xFFFFFFFF)
-      : t(t), primID(primID), geomID(geomID) {}
+    Hit (float t, unsigned int primID = 0xFFFFFFFF, unsigned int geomID = 0xFFFFFFFF, unsigned int instID = 0xFFFFFFFF)
+      : t(t), primID(primID), geomID(geomID), instID(instID) {}
 
-    /* lexicographical order (t,geomID,primID) */
+    /* lexicographical order (t,instID,geomID,primID) */
     __forceinline friend bool operator < (Hit& a, Hit& b)
     {
       if (a.t == b.t) {
-        if (a.geomID == b.geomID) return a.primID < b.primID;
-        else                      return a.geomID < b.geomID;
+        if (a.instID == b.instID) {
+          if (a.geomID == b.geomID) return a.primID < b.primID;
+          else                      return a.geomID < b.geomID;
+        }
+        else return a.instID < b.instID;
       }
       return a.t < b.t;
     }
 
     __forceinline friend bool operator ==(Hit& a, Hit& b) {
-      return a.t == b.t && a.primID == b.primID && a.geomID == b.geomID;
+      return a.t == b.t && a.primID == b.primID && a.geomID == b.geomID && a.instID == b.instID;
     }
 
     __forceinline friend bool operator <= (Hit& a, Hit& b)
@@ -72,12 +75,13 @@ struct RayExt
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Hit& hit) {
-      return cout << "Hit { t = " << hit.t << ", geomID = " << hit.geomID << ", primID = " << hit.primID << " }";
+      return cout << "Hit { t = " << hit.t << ", instID = " << hit.instID << ", geomID = " << hit.geomID << ", primID = " << hit.primID << " }";
     }
     
     float t;
     unsigned int primID;
     unsigned int geomID;
+    unsigned int instID;
   };
   Hit hits[MAX_HITS];
 };
@@ -145,7 +149,7 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
     
   if (rayext.end > MAX_HITS) return;
 
-  RayExt::Hit nhit(ray->tfar,hit->primID,hit->geomID);
+  RayExt::Hit nhit(ray->tfar,hit->instID[0],hit->primID,hit->geomID);
 
   if (rayext.begin > 0 && nhit <= rayext.hits[rayext.begin-1])
     return;
@@ -188,6 +192,7 @@ void multi_pass(Ray ray, RayExt& rayext_o, RayStats& stats)
     
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
     context.rayext.begin = context.rayext.end;
     
     for (size_t i=0; i<g_num_hits; i++)
@@ -213,7 +218,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
   /* either gather hits in single pass or using multiple passes */
   if (g_num_hits == 0) single_pass(ray,rayext,stats);
-  else                 multi_pass(ray,rayext,stats);
+  else                 multi_pass (ray,rayext,stats);
 
   /* verify result with gathering all hits */
   if (g_verify)
@@ -234,6 +239,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   /* calculate random sequence based on hit geomIDs and primIDs */
   RandomSampler sampler = { 0 };
   for (size_t i=rayext.begin; i<rayext.end; i++) {
+    sampler.s = MurmurHash3_mix(sampler.s, rayext.hits[i].instID);
     sampler.s = MurmurHash3_mix(sampler.s, rayext.hits[i].geomID);
     sampler.s = MurmurHash3_mix(sampler.s, rayext.hits[i].primID);
   }
