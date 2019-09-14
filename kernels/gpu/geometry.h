@@ -24,14 +24,7 @@ namespace embree
   namespace gpu
   {
 
-    struct Triangle
-    {
-      unsigned int vtx[3];
-      //unsigned int primID;
-      //unsigned int geomID;
-    };
-
-    struct Quad1
+    struct Quad1v
     {
       float4 v0,v2,v1,v3; //v1v3 loaded once using float8
 
@@ -66,7 +59,7 @@ namespace embree
       
     };
 
-    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const Quad1& quad) {
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const Quad1v& quad) {
       return out << "v0 " << quad.v0
 		 << "v1 " << quad.v1
 		 << "v2 " << quad.v2
@@ -75,6 +68,45 @@ namespace embree
 		 << "primID0 " << gpu::as_int((float)quad.v0.w())
 		 << "primID1 " << gpu::as_int((float)quad.v2.w());	      
     }
+
+    struct Triangle1v
+    {
+      float4 v0,v1,v2; 
+
+      inline void init(const float4 &_v0,
+		       const float4 &_v1,
+		       const float4 &_v2,
+		       const uint geomID,
+		       const uint primID)
+      {
+	v0 = _v0;
+	v1 = _v1;
+	v2 = _v2;
+	v0.w() = as_float(primID);
+	v1.w() = as_float(geomID);
+	v2.w() = 0.0f;	
+      }
+
+      inline AABB getBounds()
+      {
+	AABB aabb;
+	aabb.init();
+	aabb.extend(v0);
+	aabb.extend(v1);
+	aabb.extend(v2);
+	return aabb;
+      }
+      
+    };
+
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const Triangle1v& tri) {
+      return out << "v0 " << tri.v0
+		 << "v1 " << tri.v1
+		 << "v2 " << tri.v2
+		 << "geomID " << gpu::as_int((float)tri.v1.w())
+		 << "primID " << gpu::as_int((float)tri.v0.w());
+    }
+    
 
   };
 };

@@ -249,7 +249,7 @@ namespace embree
 	  {
 	    if (subgroup.get_local_id() == 0)
 	      {
-		const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1));
+		const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1v));
 		DBG_BUILD(out << "leaf_offset " << leaf_offset << cl::sycl::endl);
 		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);
 	      }
@@ -732,7 +732,7 @@ namespace embree
 	      gpu::AABB leafAABB;
 	      leafAABB.init();
 
-	      gpu::Quad1 *quads = (gpu::Quad1 *)(bvh_mem + prims_offset);
+	      gpu::Quad1v *quads = (gpu::Quad1v *)(bvh_mem + prims_offset);
 	    
 	      for (uint i=0;i<prims;i++)
 		{
@@ -882,32 +882,21 @@ namespace embree
         profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
-            /* create primref array */
-            if (primrefarrayalloc) {
-              settings.primrefarrayalloc = numPrimitives/1000;
-              if (settings.primrefarrayalloc < 1000)
-                settings.primrefarrayalloc = inf;
-            }
-
             /* enable USM allocation for primrefs */
 #if defined(EMBREE_DPCPP_SUPPORT)
+	    assert(sizeof(gpu::Globals) == 4*64);
+	    assert(sizeof(gpu::Quad1v)  == 64);
+	    
 	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
 	    prims.getAlloc().enableUSM(&deviceGPU->getDevice(),&deviceGPU->getContext());	    
 #endif	    
 
-            /* initialize allocator */
-            //const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
-            //const size_t leaf_bytes = 64;
-
-            //bvh->alloc.init_estimate(node_bytes+leaf_bytes);
-            //settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
-
+            /* create primref array */	    
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ?
               createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
               createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
-
 	    	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
@@ -950,8 +939,8 @@ namespace embree
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cgh.single_task<class init_first_kernel>([=]() {
-		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize);
-		      globals->leaf_mem_allocator_cur += sizeof(gpu::Quad1)*numPrimitives;
+		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize,0,sizeof(gpu::Quad1v));
+		      globals->leaf_mem_allocator_cur += sizeof(gpu::Quad1v)*numPrimitives;
 		    });
 		});
 	      try {
@@ -1118,8 +1107,8 @@ namespace embree
 	    t2 = getSeconds();
 	    std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
 	    /* --- convert primrefs to primitives --- */
-	    gpu::Quad1 *quad1 = (gpu::Quad1 *)(bvh_mem + globals->leaf_mem_allocator_start);
-
+#if 1
+	    gpu::Quad1v *quad1v = (gpu::Quad1v *)(bvh_mem + globals->leaf_mem_allocator_start);
 	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
 		for (size_t i=r.begin(); i<r.end(); i++)
 		  {
@@ -1132,7 +1121,7 @@ namespace embree
 		    const Vec3fa v1 = mesh->vertex(tri.v[1]);
 		    const Vec3fa v2 = mesh->vertex(tri.v[2]);
 
-		    quad1[i].init(Vec3fa_to_float4(v0),
+		    quad1v[i].init(Vec3fa_to_float4(v0),
 				  Vec3fa_to_float4(v1),
 				  Vec3fa_to_float4(v2),
 				  Vec3fa_to_float4(v2),
@@ -1142,7 +1131,30 @@ namespace embree
 		    
 		  }
 	      });
+#else
+	    gpu::Triangle1v *tri1v = (gpu::Triangle1v *)(bvh_mem + globals->leaf_mem_allocator_start);
+	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
+		for (size_t i=r.begin(); i<r.end(); i++)
+		  {
+		    const uint index = primref_index[i];
+		    const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
+		    const uint primID = gpu::as_uint((float)aabb[index].upper.w());
+		    TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
+		    const TriangleMesh::Triangle &tri = mesh->triangle(primID);
+		    const Vec3fa v0 = mesh->vertex(tri.v[0]);
+		    const Vec3fa v1 = mesh->vertex(tri.v[1]);
+		    const Vec3fa v2 = mesh->vertex(tri.v[2]);
+
+		    tri1v[i].init(Vec3fa_to_float4(v0),
+				  Vec3fa_to_float4(v1),
+				  Vec3fa_to_float4(v2),
+				  geomID,
+				  primID);
+		    
+		  }
+	      });	    
 	    
+#endif	    
 	    
             /* call BVH builder */
             root = NodeRef((size_t)bvh_mem);

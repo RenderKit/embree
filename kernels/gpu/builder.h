@@ -49,10 +49,7 @@ namespace embree
       /* 3. cacheline */
       unsigned int leaf_mem_allocator_start;
       unsigned int leaf_mem_allocator_cur;
-      unsigned int procedural_mem_allocator_start;
-      unsigned int procedural_mem_allocator_cur;
-      unsigned int back_pointer_start;
-      unsigned int leaf_mem_pad[11];
+      unsigned int leaf_mem_pad[14];
 
       /* 4. cacheline */
       unsigned int numPrimitives;
@@ -69,45 +66,31 @@ namespace embree
       unsigned int sync;
       float probThreshold;
       unsigned int numGlobalBuildRecords;
-      unsigned int numGlobalBinaryNodes;
       unsigned int counter;
-
-      /* morton code builder state */
-      unsigned int shift;                // used by adaptive mc-builder
-      unsigned int shift_mask;           // used by adaptive mc-builder
-      unsigned int binary_hierarchy_root;
+      unsigned int unused[2];
 
       inline void init(char *bvh_mem,
 		       unsigned int _numPrimitives,
 		       unsigned int _node_data_start,
 		       unsigned int _leaf_data_start,
-		       unsigned int _procedural_data_start,
-		       unsigned int _back_pointer_start,
 		       unsigned int _totalBytes,
-		       unsigned int _leafPrimType,
-		       unsigned int _leafSize)
+		       unsigned int _leafPrimType = 0,
+		       unsigned int _leafSize = 64)
       {
 	struct BVHBase *base       = (struct BVHBase*)bvh_mem;
 	base->nodeDataStart        = _node_data_start/64;
 	base->nodeDataCur          = _node_data_start/64;
 	base->leafDataStart        = _leaf_data_start/64;
 	base->leafDataCur          = _leaf_data_start/64;
-	base->proceduralDataStart  = _procedural_data_start/64;
-	base->proceduralDataCur    = _procedural_data_start/64;
-	/* base->backPointerDataStart = _back_pointer_start/64; */ // FIXME
-	/* base->backPointerDataEnd   = _totalBytes/64; */
 	base->rootNodeOffset       = _node_data_start; // FIXME: should be set by builder
 
 	geometryBounds.init();
 	centroidBounds.init();
 
-	node_mem_allocator_cur         = _node_data_start;
-	node_mem_allocator_start       = _node_data_start;
-	leaf_mem_allocator_cur         = _leaf_data_start;
-	leaf_mem_allocator_start       = _leaf_data_start;
-	procedural_mem_allocator_cur   = _procedural_data_start;
-	procedural_mem_allocator_start = _procedural_data_start;
-	back_pointer_start             = _back_pointer_start;
+	node_mem_allocator_cur     = _node_data_start;
+	node_mem_allocator_start   = _node_data_start;
+	leaf_mem_allocator_cur     = _leaf_data_start;
+	leaf_mem_allocator_start   = _leaf_data_start;
 
 	numBuildRecords          = 0;
 	numBuildRecords_extended = 0;
@@ -122,15 +105,7 @@ namespace embree
 	numGlobalBuildRecords    = 0;
       }
 
-      inline void init(char *bvh_mem,
-		       unsigned int _numPrimitives,
-		       unsigned int _node_data_start,
-		       unsigned int _leaf_data_start,
-		       unsigned int _totalBytes)
-      {
-	init(bvh_mem,_numPrimitives,_node_data_start,_leaf_data_start,0,0,_totalBytes,0,64);
-      }
-      
+            
       inline void resetGlobalCounters()
       {
 	node_mem_allocator_cur = node_mem_allocator_start;
@@ -155,7 +130,7 @@ namespace embree
       }
       
     };
-
+    
     struct Range {
       unsigned int start, end;
     };
