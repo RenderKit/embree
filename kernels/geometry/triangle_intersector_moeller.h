@@ -19,8 +19,6 @@
 #include "triangle.h"
 #include "intersector_epilog.h"
 
-#define EXACT_DEPTH_TEST 1
-
 /*! This intersector implements a modified version of the Moeller
  *  Trumbore intersector from the paper "Fast, Minimum Storage
  *  Ray-Triangle Intersection". In contrast to the paper we
@@ -43,16 +41,10 @@ namespace embree
       
       __forceinline void finalize() 
       {
-#if EXACT_DEPTH_TEST
-        vt = T;
-        vu = U * absDen;
-        vv = V * absDen;
-#else
         const vfloat<M> rcpAbsDen = rcp(absDen);
         vt = T * rcpAbsDen;
         vu = U * rcpAbsDen;
         vv = V * rcpAbsDen;
-#endif
       }
 
       __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
@@ -96,34 +88,6 @@ namespace embree
         const Vec3vf<M> R = cross(C,D);
         const vfloat<M> den = dot(Vec3vf<M>(tri_Ng),D);
 
-#if EXACT_DEPTH_TEST
-
-        /* perform edge tests */
-        const vfloat<M> U = dot(R,Vec3vf<M>(tri_e2));
-        const vfloat<M> V = dot(R,Vec3vf<M>(tri_e1));
-        const vfloat<M> W = den-U-V;
-
-#if defined(EMBREE_BACKFACE_CULLING)
-        const vfloat<M> maxUVW = max(U,V,W);
-        valid &= maxUVW <= 0.0f;
-#else
-        const vfloat<M> minUVW = min(U,V,W);
-        const vfloat<M> maxUVW = max(U,V,W);
-        valid &= (minUVW >= 0.0f) | (maxUVW <= 0.0f);
-#endif
-        valid &= den != vfloat<M>(zero);
-        if (likely(none(valid))) return false;
-
-        /* perform depth test */
-        const vfloat<M> rcp_den = rcp(den);
-        const vfloat<M> T = rcp_den*dot(Vec3vf<M>(tri_Ng),C);
-        valid &= vfloat<M>(ray.tnear()) <= T & T <= vfloat<M>(ray.tfar);
-        if (likely(none(valid))) return false;  
-        
-        /* update hit information */
-        new (&hit) MoellerTrumboreHitM<M>(valid,U,V,T,rcp_den,tri_Ng);
-        
-#else
         const vfloat<M> absDen = abs(den);
         const vfloat<M> sgnDen = signmsk(den);
         
@@ -147,7 +111,7 @@ namespace embree
         
         /* update hit information */
         new (&hit) MoellerTrumboreHitM<M>(valid,U,V,T,absDen,tri_Ng);
-#endif
+
         return true;
       }
 
