@@ -35,8 +35,8 @@ namespace embree
     template<int M, typename UVMapper>
     struct PlueckerHitM
     {
-      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& W, const vfloat<M>& t, const vfloat<M>& den, const Vec3vf<M>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), W(W), den(den), mapUV(mapUV), vt(t), vNg(Ng) {}
+      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& W, const vfloat<M>& t, const Vec3vf<M>& Ng, const UVMapper& mapUV)
+        : U(U), V(V), W(W), mapUV(mapUV), vt(t), vNg(Ng) {}
       
       __forceinline void finalize() 
       {
@@ -56,7 +56,6 @@ namespace embree
       const vfloat<M> U;
       const vfloat<M> V;
       const vfloat<M> W;
-      const vfloat<M> den;
       const UVMapper& mapUV;
       
     public:
@@ -124,7 +123,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
 
         /* update hit information */
-        PlueckerHitM<M,UVMapper> hit(U,V,W,t,den,Ng,mapUV);
+        PlueckerHitM<M,UVMapper> hit(U,V,W,t,Ng,mapUV);
         return epilog(valid,hit);
       }
     };
@@ -263,21 +262,19 @@ namespace embree
         /* calculate geometry normal and denominator */
         const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
         const vfloat<M> den = twice(dot(Ng,D));
-        const vfloat<M> absDen = abs(den);
-        const vfloat<M> sgnDen = signmsk(den);
-
+        
         /* perform depth test */
         const vfloat<M> T = twice(dot(v0,Ng));
-        valid &= absDen*vfloat<M>(ray.tnear()[k]) < (T^sgnDen);
-        valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar[k]);
+        const vfloat<M> t = rcp(den)*T;
+        valid &= vfloat<M>(ray.tnear()[k]) <= t & t <= vfloat<M>(ray.tfar[k]);
         if (unlikely(none(valid))) return false;
 
         /* avoid division by 0 */
         valid &= den != vfloat<M>(zero);
         if (unlikely(none(valid))) return false;
 
-        /* calculate hit information */
-        PlueckerHitM<M,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
+        /* update hit information */
+        PlueckerHitM<M,UVMapper> hit(U,V,W,t,Ng,mapUV);
         return epilog(valid,hit);
       }
     };
