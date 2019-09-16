@@ -1112,51 +1112,41 @@ namespace embree
 	    t2 = getSeconds();
 	    std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
 	    /* --- convert primrefs to primitives --- */
-#if 0
-	    gpu::Quad1v *quad1v = (gpu::Quad1v *)(bvh_mem + globals->leaf_mem_allocator_start);
+
+	    // gpu::Quad1v *quad1v = (gpu::Quad1v *)(bvh_mem + globals->leaf_mem_allocator_start);
+	    // parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
+	    // 	for (size_t i=r.begin(); i<r.end(); i++)
+	    // 	  {
+	    // 	    const uint index = primref_index[i];
+	    // 	    const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
+	    // 	    const uint primID = gpu::as_uint((float)aabb[index].upper.w());
+	    // 	    TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
+	    // 	    const TriangleMesh::Triangle &tri = mesh->triangle(primID);
+	    // 	    const Vec3fa v0 = mesh->vertex(tri.v[0]);
+	    // 	    const Vec3fa v1 = mesh->vertex(tri.v[1]);
+	    // 	    const Vec3fa v2 = mesh->vertex(tri.v[2]);
+
+	    // 	    quad1v[i].init(Vec3fa_to_float4(v0),
+	    // 			   Vec3fa_to_float4(v1),
+	    // 			   Vec3fa_to_float4(v2),
+	    // 			   Vec3fa_to_float4(v2),
+	    // 			   geomID,
+	    // 			   primID,
+	    // 			   primID);		    
+	    // 	  }
+	    //   });
+
+	    Primitive *leaf_prims = (Primitive *)(bvh_mem + globals->leaf_mem_allocator_start);
 	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
 		for (size_t i=r.begin(); i<r.end(); i++)
 		  {
 		    const uint index = primref_index[i];
 		    const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
 		    const uint primID = gpu::as_uint((float)aabb[index].upper.w());
-		    TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
-		    const TriangleMesh::Triangle &tri = mesh->triangle(primID);
-		    const Vec3fa v0 = mesh->vertex(tri.v[0]);
-		    const Vec3fa v1 = mesh->vertex(tri.v[1]);
-		    const Vec3fa v2 = mesh->vertex(tri.v[2]);
-
-		    quad1v[i].init(Vec3fa_to_float4(v0),
-				   Vec3fa_to_float4(v1),
-				   Vec3fa_to_float4(v2),
-				   Vec3fa_to_float4(v2),
-				   geomID,
-				   primID,
-				   primID);		    
+		    leaf_prims[i].init(geomID,primID,scene);
 		  }
 	      });
-#else
-	    gpu::Triangle1v *tri1v = (gpu::Triangle1v *)(bvh_mem + globals->leaf_mem_allocator_start);
-	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
-		for (size_t i=r.begin(); i<r.end(); i++)
-		  {
-		    const uint index = primref_index[i];
-		    const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
-		    const uint primID = gpu::as_uint((float)aabb[index].upper.w());
-		    TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
-		    const TriangleMesh::Triangle &tri = mesh->triangle(primID);
-		    const Vec3fa v0 = mesh->vertex(tri.v[0]);
-		    const Vec3fa v1 = mesh->vertex(tri.v[1]);
-		    const Vec3fa v2 = mesh->vertex(tri.v[2]);
-
-		    tri1v[i].init(Vec3fa_to_float4(v0),
-				  Vec3fa_to_float4(v1),
-				  Vec3fa_to_float4(v2),
-				  geomID,
-				  primID);		    
-		  }
-	      });	    	    
-#endif	    
+	    
 	    
             /* call BVH builder */
             root = NodeRef((size_t)bvh_mem);

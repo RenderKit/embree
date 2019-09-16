@@ -17,6 +17,7 @@
 #pragma once
 
 #include "primitive.h"
+#include "../common/scene_quad_mesh.h"
 
 namespace embree
 {
@@ -102,7 +103,23 @@ namespace embree
       v3 = mesh->vertex(quad.v[3]);      
       return bounds();
     }
-   
+
+    __forceinline void init(unsigned int geomID,
+			    unsigned int primID,
+			    const Scene *const scene)
+    {
+      QuadMesh* mesh = (QuadMesh*)scene->get(geomID);
+      const QuadMesh::Quad &q = mesh->quad(primID);
+      v0 = mesh->vertex(q.v[0]);
+      v1 = mesh->vertex(q.v[1]);
+      v2 = mesh->vertex(q.v[2]);
+      v3 = mesh->vertex(q.v[2]);
+      unused0 = 0;
+      unused1 = 1;     
+      geomId  = geomID;
+      primId  = primID;      
+    }
+    
   public:
     Vec3f v0;             // 1st vertex of the quad
     unsigned int unused0; // unused

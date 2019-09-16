@@ -17,6 +17,7 @@
 #pragma once
 
 #include "primitive.h"
+#include "../common/scene_triangle_mesh.h"
 
 namespace embree
 {
@@ -100,7 +101,21 @@ namespace embree
       v2 = mesh->vertex(tri.v[2]);
       return bounds();
     }
-   
+
+    __forceinline void init(unsigned int geomID,
+			    unsigned int primID,
+			    const Scene *const scene)
+    {
+      TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
+      const TriangleMesh::Triangle &tri = mesh->triangle(primID);
+      v0 = mesh->vertex(tri.v[0]);
+      v1 = mesh->vertex(tri.v[1]);
+      v2 = mesh->vertex(tri.v[2]);
+      unused = 0;      
+      geomId  = geomID;
+      primId  = primID;      
+    }
+    
   public:
     Vec3f v0;            // 1st vertex of the triangle
     unsigned int unused; // unused
