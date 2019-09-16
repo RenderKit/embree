@@ -28,8 +28,6 @@
  *  numerically stable. The edge equations are watertight along the
  *  edge for neighboring triangles. */
 
-#define EXACT_DEPTH_TEST 1
-
 namespace embree
 {
   namespace isa
@@ -37,18 +35,11 @@ namespace embree
     template<int M, typename UVMapper>
     struct PlueckerHitM
     {
-      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& W, const vfloat<M>& T, const vfloat<M>& den, const Vec3vf<M>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), W(W), T(T), den(den), mapUV(mapUV), vNg(Ng) {}
+      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& W, const vfloat<M>& t, const vfloat<M>& den, const Vec3vf<M>& Ng, const UVMapper& mapUV)
+        : U(U), V(V), W(W), den(den), mapUV(mapUV), vt(t), vNg(Ng) {}
       
       __forceinline void finalize() 
       {
-#if EXACT_DEPTH_TEST
-        vt = T;
-#else
-        const vfloat<M> rcpDen = rcp(den);
-        vt = T * rcpDen;
-#endif
-       
         const vfloat<M> UVW = U+V+W;
         const vbool<M> invalid = abs(UVW) < min_rcp_input;
         const vfloat<M> rcpUVW = select(invalid,vfloat<M>(0.0f),rcp(UVW));
@@ -65,7 +56,6 @@ namespace embree
       const vfloat<M> U;
       const vfloat<M> V;
       const vfloat<M> W;
-      const vfloat<M> T;
       const vfloat<M> den;
       const UVMapper& mapUV;
       
@@ -124,16 +114,9 @@ namespace embree
         const vfloat<M> den = twice(dot(Ng,D));
         
         /* perform depth test */
-#if EXACT_DEPTH_TEST
-        const vfloat<M> T = rcp(den)*twice(dot(v0,Ng));
-        valid &= vfloat<M>(ray.tnear()) <= T & T <= vfloat<M>(ray.tfar);
-#else
-        const vfloat<M> absDen = abs(den);
-        const vfloat<M> sgnDen = signmsk(den);
         const vfloat<M> T = twice(dot(v0,Ng));
-        valid &= absDen*vfloat<M>(ray.tnear()) < (T^sgnDen);
-        valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar);
-#endif
+        const vfloat<M> t = rcp(den)*T;
+        valid &= vfloat<M>(ray.tnear()) <= t & t <= vfloat<M>(ray.tfar);
         if (unlikely(none(valid))) return false;
 
         /* avoid division by 0 */
@@ -141,7 +124,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
 
         /* update hit information */
-        PlueckerHitM<M,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
+        PlueckerHitM<M,UVMapper> hit(U,V,W,t,den,Ng,mapUV);
         return epilog(valid,hit);
       }
     };
