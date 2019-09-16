@@ -112,9 +112,6 @@ namespace embree
         const vfloat<M> T = twice(dot(v0,Ng));
         const vfloat<M> t = rcp(den)*T;
         valid &= vfloat<M>(ray.tnear()) <= t & t <= vfloat<M>(ray.tfar);
-        if (unlikely(none(valid))) return false;
-
-        /* avoid division by 0 */
         valid &= den != vfloat<M>(zero);
         if (unlikely(none(valid))) return false;
 
