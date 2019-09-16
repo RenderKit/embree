@@ -35,12 +35,11 @@ namespace embree
     template<int M, typename UVMapper>
     struct PlueckerHitM
     {
-      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& W, const vfloat<M>& t, const Vec3vf<M>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), W(W), mapUV(mapUV), vt(t), vNg(Ng) {}
+      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& UVW, const vfloat<M>& t, const Vec3vf<M>& Ng, const UVMapper& mapUV)
+        : U(U), V(V), UVW(UVW), mapUV(mapUV), vt(t), vNg(Ng) {}
       
       __forceinline void finalize() 
       {
-        const vfloat<M> UVW = U+V+W;
         const vbool<M> invalid = abs(UVW) < min_rcp_input;
         const vfloat<M> rcpUVW = select(invalid,vfloat<M>(0.0f),rcp(UVW));
         vu = U * rcpUVW;
@@ -55,7 +54,7 @@ namespace embree
     private:
       const vfloat<M> U;
       const vfloat<M> V;
-      const vfloat<M> W;
+      const vfloat<M> UVW;
       const UVMapper& mapUV;
       
     public:
@@ -120,7 +119,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
 
         /* update hit information */
-        PlueckerHitM<M,UVMapper> hit(U,V,W,t,Ng,mapUV);
+        PlueckerHitM<M,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
         return epilog(valid,hit);
       }
     };
@@ -268,7 +267,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
 
         /* update hit information */
-        PlueckerHitM<M,UVMapper> hit(U,V,W,t,Ng,mapUV);
+        PlueckerHitM<M,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
         return epilog(valid,hit);
       }
     };
