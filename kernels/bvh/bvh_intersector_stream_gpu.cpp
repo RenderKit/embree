@@ -276,7 +276,7 @@ namespace embree
 	  const uint numPrims = cur.getNumLeafPrims();
 	  const uint leafOffset = cur.getLeafOffset();    
 
-#if 1
+#if 0
 	  const gpu::Quad1v *const quads = (gpu::Quad1v *)(bvh_base + leafOffset);
 	  hit_tfar = intersectQuad1v(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
 #else

@@ -123,7 +123,7 @@ namespace embree
 
       inline uint alloc_leaf_mem(const uint size)
       {
-	const uint aligned_size = ((size+63)/64)*64; /* allocate in 64 bytes blocks */
+	const uint aligned_size = ((size+15)/16)*16; /* allocate in 16 bytes blocks */
 	cl::sycl::multi_ptr<unsigned int,cl::sycl::access::address_space::global_space> ptr(&leaf_mem_allocator_cur);
 	cl::sycl::atomic<unsigned int> counter(ptr);
 	return atomic_fetch_add(counter,aligned_size);
@@ -545,7 +545,8 @@ namespace embree
     inline uint encodeOffset(char *bvh_mem, uint *parent, uint global_child_offset)
     {
       ulong global_parent_offset = (ulong)parent - (ulong)bvh_mem;
-      global_parent_offset = global_parent_offset & (~(64-1));
+      // parent node address starts at least on 64 bytes boundary      
+      global_parent_offset = global_parent_offset & (~63); 
       uint relative_offset = global_child_offset - global_parent_offset;
       return relative_offset;
     }
@@ -553,7 +554,8 @@ namespace embree
     inline uint createLeaf(const Globals &globals,		 
 			   const uint start,
 			   const uint items,
-			   const uint stride)
+			   const uint stride,
+			   const cl::sycl::stream &out)
     {
       const uint offset = globals.leaf_mem_allocator_start + start * stride;
       const unsigned int final = offset | BVH_LEAF_MASK | (items-1);

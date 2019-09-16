@@ -23,9 +23,11 @@
 /* ====== BVH16 config ====== */
 
 #define BINS 16
-#define BVH_LEAF_MASK        8
-#define BVH_INVALID_NODE     3
-#define BVH_NODE_N          16
+
+#define BVH_LEAF_MASK_SHIFT  3
+#define BVH_LEAF_MASK        (1<<BVH_LEAF_MASK_SHIFT)
+#define BVH_LOWER_BITS_MASK  ((1<<(BVH_LEAF_MASK_SHIFT+1))-1)
+#define BVH_NODE_N           16
 #define BVH_NODE_N_LOG       4
 
 #define BVH_MAX_STACK_ENTRIES 64
@@ -75,8 +77,8 @@ namespace embree
 
       __forceinline size_t isLeaf() const { return offset & BVH_LEAF_MASK; }
       
-      __forceinline uint getNumLeafPrims() { return (offset & 0x7)+1; }      
-      __forceinline uint getLeafOffset()   { return offset & (~63); }
+      __forceinline uint getNumLeafPrims() { return (offset & (BVH_LEAF_MASK-1))+1; }      
+      __forceinline uint getLeafOffset()   { return offset & (~BVH_LOWER_BITS_MASK); }
       
     private:
       uint offset;

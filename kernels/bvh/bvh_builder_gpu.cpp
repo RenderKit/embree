@@ -249,9 +249,10 @@ namespace embree
 	  {
 	    if (subgroup.get_local_id() == 0)
 	      {
-		const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1v));
+		//const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1v));
+		const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Triangle1v),out);		
 		DBG_BUILD(out << "leaf_offset " << leaf_offset << cl::sycl::endl);
-		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);
+		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);		
 	      }
 	  }
 	else
@@ -717,7 +718,7 @@ namespace embree
 	  uint current_depth      = stack[sindex].depth;
 
 	  max_depth = max(max_depth,current_depth);
-	
+	  
 	  if (current & BVH_LEAF_MASK)
 	    {
 	      unsigned int prims = current.getNumLeafPrims();	    
@@ -728,7 +729,8 @@ namespace embree
 
 	      if (prims > BVH_LEAF_N_MAX)
 		out << "too many items in leaf " << prims << cl::sycl::endl;	      
-	    
+
+#if 0	    	      
 	      gpu::AABB leafAABB;
 	      leafAABB.init();
 
@@ -739,7 +741,6 @@ namespace embree
 		  gpu::AABB quadAABB = quads[i].getBounds();
 		  leafAABB.extend(quadAABB);
 		}
-#if 0	    
 	      if (outsideAABBTest(current_aabb,leafAABB))
 		{
 		  out << "leaf error: current " << current << " depth " << current_depth << cl::sycl::endl;
@@ -786,6 +787,8 @@ namespace embree
 		  stack[sindex].aabb = aabb;
 		  stack[sindex].depth = current_depth + 1;
 
+		  //out << "current " << (uint)current << " nodeN->offset[i] " << (uint)nodeN->offset[i] << " stack[sindex].node " << (uint)stack[sindex].node << cl::sycl::endl;
+		  
 		  if (stack[sindex].node & BVH_LEAF_MASK)
 		    leavesInNode++;
 
@@ -886,7 +889,7 @@ namespace embree
 #if defined(EMBREE_DPCPP_SUPPORT)
 	    assert(sizeof(gpu::Globals) == 4*64);
 	    assert(sizeof(gpu::Quad1v)  == 64);
-	    
+	    assert(sizeof(gpu::Triangle1v) == 48);
 	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
 	    prims.getAlloc().enableUSM(&deviceGPU->getDevice(),&deviceGPU->getContext());	    
 #endif	    
@@ -920,7 +923,7 @@ namespace embree
 	    unsigned int totalSize       = 64 + numPrimitives * 2 * 64;
 	    unsigned int node_data_start = sizeof(gpu::BVHBase);
 	    unsigned int leaf_data_start = totalSize - numPrimitives * 64;
-
+  
 	    /* --- allocate and set buffers --- */
 
 	    gpu::AABB *aabb = (gpu::AABB*)prims.data();
@@ -939,8 +942,8 @@ namespace embree
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cgh.single_task<class init_first_kernel>([=]() {
-		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize,0,sizeof(gpu::Quad1v));
-		      globals->leaf_mem_allocator_cur += sizeof(gpu::Quad1v)*numPrimitives;
+		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize,0,sizeof(gpu::Triangle1v));
+		      globals->leaf_mem_allocator_cur += sizeof(gpu::Triangle1v)*numPrimitives;
 		    });
 		});
 	      try {
@@ -1107,7 +1110,7 @@ namespace embree
 	    t2 = getSeconds();
 	    std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
 	    /* --- convert primrefs to primitives --- */
-#if 1
+#if 0
 	    gpu::Quad1v *quad1v = (gpu::Quad1v *)(bvh_mem + globals->leaf_mem_allocator_start);
 	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
 		for (size_t i=r.begin(); i<r.end(); i++)
@@ -1122,13 +1125,12 @@ namespace embree
 		    const Vec3fa v2 = mesh->vertex(tri.v[2]);
 
 		    quad1v[i].init(Vec3fa_to_float4(v0),
-				  Vec3fa_to_float4(v1),
-				  Vec3fa_to_float4(v2),
-				  Vec3fa_to_float4(v2),
-				  geomID,
-				  primID,
-				  primID);
-		    
+				   Vec3fa_to_float4(v1),
+				   Vec3fa_to_float4(v2),
+				   Vec3fa_to_float4(v2),
+				   geomID,
+				   primID,
+				   primID);		    
 		  }
 	      });
 #else
@@ -1149,11 +1151,9 @@ namespace embree
 				  Vec3fa_to_float4(v1),
 				  Vec3fa_to_float4(v2),
 				  geomID,
-				  primID);
-		    
+				  primID);		    
 		  }
-	      });	    
-	    
+	      });	    	    
 #endif	    
 	    
             /* call BVH builder */
@@ -1183,7 +1183,6 @@ namespace embree
 	      }	      
 	    }
 #endif	    
-
 	    
 	    /* --- deallocate temporary data structures --- */
 #if defined(EMBREE_DPCPP_SUPPORT)	    
