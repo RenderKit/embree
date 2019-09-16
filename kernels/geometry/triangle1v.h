@@ -102,12 +102,11 @@ namespace embree
     }
    
   public:
-    Vec3f v0;      // 1st vertex of the triangle
-    Vec3f v1;      // 2nd vertex of the triangle
-    Vec3f v2;      // 3rd vertex of the triangle
-
-  private:
-    unsigned int geomId; // geometry ID
+    Vec3f v0;            // 1st vertex of the triangle
+    unsigned int unused; // unused
+    Vec3f v1;            // 2nd vertex of the triangle
+    unsigned int geomId; // geometry ID    
+    Vec3f v2;            // 3rd vertex of the triangle
     unsigned int primId; // primitive ID
   };
 

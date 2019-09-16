@@ -105,13 +105,13 @@ namespace embree
    
   public:
     Vec3f v0;             // 1st vertex of the quad
-    unsigned int unused0; // primitive ID
+    unsigned int unused0; // unused
     Vec3f v2;             // 3rd vertex of the quad
-    unsigned int unused1; // primitive ID    
+    unsigned int unused1; // unused
     Vec3f v1;             // 2nd vertex of the quad
     unsigned int geomId;  // geometry ID    
     Vec3f v3;             // 4nd vertex of the quad    
-    unsigned int primId;
+    unsigned int primId;  // primitive ID
   };
 
   //typename Quad1v::Type Quad1v::type;
