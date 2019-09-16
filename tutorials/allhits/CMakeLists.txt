@@ -28,5 +28,7 @@ IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_TEST(NAME allhits_triangle_robust_crown_4 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 4 --rtcore scene_flags=robust -o allhits_triangle_robust_crown_4.tga)
   ADD_TEST(NAME allhits_quads_robust_crown_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --convert_triangles_to_quads --verify --num_hits 1 --rtcore scene_flags=robust -o allhits_quads_robust_crown_1.tga)
   ADD_TEST(NAME allhits_grids_robust_crown_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --convert_triangles_to_grids --verify --num_hits 1 --rtcore scene_flags=robust -o allhits_quads_robust_crown_1.tga)
+
+#  ADD_TEST(NAME allhits_flat_curve_robust_tighten_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/tighten/tighten.ecs --verify --num_hits 1 --rtcore scene_flags=robust -o tighten1.tga)
 ENDIF()
 
