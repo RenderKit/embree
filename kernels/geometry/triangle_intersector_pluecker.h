@@ -99,12 +99,9 @@ namespace embree
         const vfloat<M> UVW = U+V+W;
         const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
-        const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = maxUVW <= eps;
+        vbool<M> valid = max(U,V,W) <= eps;
 #else
-        const vfloat<M> minUVW = min(U,V,W);
-        const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = (minUVW >= -eps) | (maxUVW <= eps);
+        vbool<M> valid = (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
 #endif
         if (unlikely(none(valid))) return false;
 
@@ -250,12 +247,9 @@ namespace embree
         const vfloat<M> UVW = U+V+W;
         const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
-        const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = maxUVW <= eps;
+        vbool<M> valid = max(U,V,W) <= eps;
 #else
-        const vfloat<M> minUVW = min(U,V,W);
-        const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = (minUVW >= -eps) | (maxUVW <= eps);
+        vbool<M> valid = (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
 #endif
         if (unlikely(none(valid))) return false;
 
