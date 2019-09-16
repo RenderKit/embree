@@ -75,7 +75,7 @@ namespace embree
         const Vec3vf<M> c0     = center - ray_org;
         const vfloat<M> projC0 = dot(c0, ray_dir) * rd2;
 
-        valid &= (vfloat<M>(ray.tnear()) < projC0) & (projC0 <= vfloat<M>(ray.tfar));
+        valid &= (vfloat<M>(ray.tnear()) <= projC0) & (projC0 <= vfloat<M>(ray.tfar));
         if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
           valid &= projC0 > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius * pre.depth_scale;  // ignore self intersections
         if (unlikely(none(valid)))
@@ -111,7 +111,7 @@ namespace embree
 
         vfloat<M> t = dot(center - Vec3vf<M>(ray.org), Vec3vf<M>(normal)) / divisor;
 
-        valid &= (vfloat<M>(ray.tnear()) < t) & (t <= vfloat<M>(ray.tfar));
+        valid &= (vfloat<M>(ray.tnear()) <= t) & (t <= vfloat<M>(ray.tfar));
         if (unlikely(none(valid)))
           return false;
 
@@ -150,7 +150,7 @@ namespace embree
         const Vec3vf<M> c0     = center - ray_org;
         const vfloat<M> projC0 = dot(c0, ray_dir) * rd2;
 
-        valid &= (vfloat<M>(ray.tnear()[k]) < projC0) & (projC0 <= vfloat<M>(ray.tfar[k]));
+        valid &= (vfloat<M>(ray.tnear()[k]) <= projC0) & (projC0 <= vfloat<M>(ray.tfar[k]));
         if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
           valid &= projC0 > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius * pre.depth_scale[k];  // ignore self intersections
         if (unlikely(none(valid)))
@@ -189,7 +189,7 @@ namespace embree
 
         vfloat<M> t = dot(center - Vec3vf<M>(ray_org), Vec3vf<M>(normal)) / divisor;
 
-        valid &= (vfloat<M>(ray.tnear()[k]) < t) & (t <= vfloat<M>(ray.tfar[k]));
+        valid &= (vfloat<M>(ray.tnear()[k]) <= t) & (t <= vfloat<M>(ray.tfar[k]));
         if (unlikely(none(valid)))
           return false;
 
