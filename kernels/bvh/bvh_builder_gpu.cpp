@@ -919,7 +919,7 @@ namespace embree
 	    PRINT(maxWorkGroupSize);
 
 	    /* --- estimate size of the BVH --- */
-	    const uint leaf_primitive_size = sizeof(gpu::Triangle1v);
+	    const uint leaf_primitive_size = sizeof(Primitive);
 	    const uint node_size       = numPrimitives * sizeof(gpu::QBVHNodeN) / 2;
 	    const uint leaf_size       = numPrimitives * leaf_primitive_size;
 	    const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
@@ -940,7 +940,7 @@ namespace embree
 	    gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
 	    assert(globals);
 	    	    	    
-	    /* --- init globals --- */
+	    /* --- init globals (device) --- */
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cgh.single_task<class init_first_kernel>([=]() {
@@ -992,7 +992,7 @@ namespace embree
 	      }
 	    }
 
-	    /* --- init bvh sah builder --- */
+	    /* --- init bvh sah builder (device) --- */
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
@@ -1014,7 +1014,8 @@ namespace embree
 	      }
 	    }
 
-	    /* --- parallel thread breadth first build --- */
+	    /* --- parallel thread breadth first build (device) --- */
+
 #if ENABLE_BREADTH_FIRST_PHASE == 1
 	    double t1 = getSeconds();
 	    
@@ -1061,7 +1062,8 @@ namespace embree
 	    std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;
 #endif	    
 	    
-	    /* --- single HW thread recursive build --- */
+	    /* --- single HW thread recursive build (device) --- */
+	    
 	    t1 = getSeconds();
 	    
 #if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
@@ -1111,30 +1113,8 @@ namespace embree
 
 	    t2 = getSeconds();
 	    std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
-	    /* --- convert primrefs to primitives --- */
 
-	    // gpu::Quad1v *quad1v = (gpu::Quad1v *)(bvh_mem + globals->leaf_mem_allocator_start);
-	    // parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
-	    // 	for (size_t i=r.begin(); i<r.end(); i++)
-	    // 	  {
-	    // 	    const uint index = primref_index[i];
-	    // 	    const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
-	    // 	    const uint primID = gpu::as_uint((float)aabb[index].upper.w());
-	    // 	    TriangleMesh* mesh = (TriangleMesh*)scene->get(geomID);
-	    // 	    const TriangleMesh::Triangle &tri = mesh->triangle(primID);
-	    // 	    const Vec3fa v0 = mesh->vertex(tri.v[0]);
-	    // 	    const Vec3fa v1 = mesh->vertex(tri.v[1]);
-	    // 	    const Vec3fa v2 = mesh->vertex(tri.v[2]);
-
-	    // 	    quad1v[i].init(Vec3fa_to_float4(v0),
-	    // 			   Vec3fa_to_float4(v1),
-	    // 			   Vec3fa_to_float4(v2),
-	    // 			   Vec3fa_to_float4(v2),
-	    // 			   geomID,
-	    // 			   primID,
-	    // 			   primID);		    
-	    // 	  }
-	    //   });
+	    /* --- convert primrefs to primitives (host) --- */
 
 	    Primitive *leaf_prims = (Primitive *)(bvh_mem + globals->leaf_mem_allocator_start);
 	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
@@ -1205,8 +1185,7 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }
-    
+    Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
     Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
 #endif
     

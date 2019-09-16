@@ -40,7 +40,7 @@ namespace embree
   {
 
     /*! BVH ray stream GPU intersector */
-    class BVHNGPUIntersectorStream
+    class BVHNGPUTriangle1vIntersectorStream
     {
       typedef BVHN<4> BVH;
       typedef typename BVH::NodeRef NodeRef;
@@ -50,6 +50,18 @@ namespace embree
       static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
 
     };
+
+    class BVHNGPUQuad1vIntersectorStream
+    {
+      typedef BVHN<4> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+
+    public:
+      static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
+      static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
+
+    };
+    
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
@@ -305,7 +317,7 @@ namespace embree
     }
 #endif
 
-    void BVHNGPUIntersectorStream::intersect(Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)
+    void BVHNGPUTriangle1vIntersectorStream::intersect(Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;
       
@@ -357,14 +369,16 @@ namespace embree
 #endif      
     }
 
-    void BVHNGPUIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
-    {
-    }
+    void BVHNGPUTriangle1vIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context) {}
 
 
+    void BVHNGPUQuad1vIntersectorStream::intersect (Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context) {}
+    void BVHNGPUQuad1vIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context) {}
+    
+    
     /*! BVH ray GPU intersectors */
     
-    class BVHNGPUIntersector1
+    class BVHNGPUTriangle1vIntersector1
     {
     public:
       static void intersect (const Accel::Intersectors* This, RayHit& ray, IntersectContext* context);
@@ -372,50 +386,54 @@ namespace embree
       static bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context);
     };
     
-    void BVHNGPUIntersector1::intersect (const Accel::Intersectors* This, RayHit& ray, IntersectContext* context)
-
-    {
-      
-    }
-
-    void BVHNGPUIntersector1::occluded  (const Accel::Intersectors* This, Ray& ray, IntersectContext* context)
-
-    {
-      
-    }
+    void BVHNGPUTriangle1vIntersector1::intersect (const Accel::Intersectors* This, RayHit& ray, IntersectContext* context) {}
+    void BVHNGPUTriangle1vIntersector1::occluded  (const Accel::Intersectors* This, Ray& ray, IntersectContext* context) {}   
+    bool BVHNGPUTriangle1vIntersector1::pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context) { return false; }
     
-    bool BVHNGPUIntersector1::pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context)
-    {
-      return false;
-    }
-    
-
-
-
-    class BVHNGPUIntersector4
+    class BVHNGPUTriangle1vIntersector4
     {
     public:
       static void intersect(vint<4>* valid, Accel::Intersectors* This, RayHitK<4>& ray, IntersectContext* context);
       static void occluded (vint<4>* valid, Accel::Intersectors* This, RayK<4>& ray, IntersectContext* context);
     };
 
-    void BVHNGPUIntersector4::intersect(vint<4>* valid, Accel::Intersectors* This, RayHitK<4>& ray, IntersectContext* context)
+    void BVHNGPUTriangle1vIntersector4::intersect(vint<4>* valid, Accel::Intersectors* This, RayHitK<4>& ray, IntersectContext* context) {}    
+    void BVHNGPUTriangle1vIntersector4::occluded(vint<4>* valid, Accel::Intersectors* This, RayK<4>& ray, IntersectContext* context) {}
+
+
+    class BVHNGPUQuad1vIntersector1
     {
-      
-    }
+    public:
+      static void intersect (const Accel::Intersectors* This, RayHit& ray, IntersectContext* context);
+      static void occluded  (const Accel::Intersectors* This, Ray& ray, IntersectContext* context);
+      static bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context);
+    };
     
-    void BVHNGPUIntersector4::occluded(vint<4>* valid, Accel::Intersectors* This, RayK<4>& ray, IntersectContext* context)
+    void BVHNGPUQuad1vIntersector1::intersect (const Accel::Intersectors* This, RayHit& ray, IntersectContext* context) {}
+    void BVHNGPUQuad1vIntersector1::occluded  (const Accel::Intersectors* This, Ray& ray, IntersectContext* context) {}   
+    bool BVHNGPUQuad1vIntersector1::pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context) { return false; }
+    
+    class BVHNGPUQuad1vIntersector4
     {
-      
-    }
+    public:
+      static void intersect(vint<4>* valid, Accel::Intersectors* This, RayHitK<4>& ray, IntersectContext* context);
+      static void occluded (vint<4>* valid, Accel::Intersectors* This, RayK<4>& ray, IntersectContext* context);
+    };
+
+    void BVHNGPUQuad1vIntersector4::intersect(vint<4>* valid, Accel::Intersectors* This, RayHitK<4>& ray, IntersectContext* context) {}    
+    void BVHNGPUQuad1vIntersector4::occluded(vint<4>* valid, Accel::Intersectors* This, RayK<4>& ray, IntersectContext* context) {}
     
     ////////////////////////////////////////////////////////////////////////////////
     /// General BVHIntersectorStreamPacketFallback Intersector
     ////////////////////////////////////////////////////////////////////////////////
 
-    DEFINE_INTERSECTORN(BVHGPUIntersectorStream,BVHNGPUIntersectorStream);
-    DEFINE_INTERSECTOR1(BVHGPUIntersector1,BVHNGPUIntersector1);
-    DEFINE_INTERSECTOR4(BVHGPUIntersector4,BVHNGPUIntersector4);    
+    DEFINE_INTERSECTORN(BVHGPUTriangle1vIntersectorStream,BVHNGPUTriangle1vIntersectorStream);
+    DEFINE_INTERSECTOR1(BVHGPUTriangle1vIntersector1,BVHNGPUTriangle1vIntersector1);
+    DEFINE_INTERSECTOR4(BVHGPUTriangle1vIntersector4,BVHNGPUTriangle1vIntersector4);    
+
+    DEFINE_INTERSECTORN(BVHGPUQuad1vIntersectorStream,BVHNGPUQuad1vIntersectorStream);
+    DEFINE_INTERSECTOR1(BVHGPUQuad1vIntersector1,BVHNGPUQuad1vIntersector1);
+    DEFINE_INTERSECTOR4(BVHGPUQuad1vIntersector4,BVHNGPUQuad1vIntersector4);    
     
   };
 };

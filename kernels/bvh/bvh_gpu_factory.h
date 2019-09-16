@@ -31,16 +31,23 @@ namespace embree
   public:
     Accel* BVHGPUTriangle1v   (Scene* scene);
     Accel::Intersectors BVHGPUTriangle1vIntersectors(BVH4* bvh);
-			
+
+    Accel* BVHGPUQuad1v   (Scene* scene);
+    Accel::Intersectors BVHGPUQuad1vIntersectors(BVH4* bvh);
+
   private:
     void selectBuilders(int features);
     void selectIntersectors(int features);
 
   private:
+    DEFINE_ISA_FUNCTION(Builder*,BVHGPUQuad1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
-    DEFINE_SYMBOL2(Accel::Intersector1,BVHGPUIntersector1);
-    DEFINE_SYMBOL2(Accel::Intersector4,BVHGPUIntersector4);    
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUIntersectorStream);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVHGPUTriangle1vIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVHGPUTriangle1vIntersector4);    
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUTriangle1vIntersectorStream);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVHGPUQuad1vIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVHGPUQuad1vIntersector4);    
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUQuad1vIntersectorStream);
 
   };
 #endif
