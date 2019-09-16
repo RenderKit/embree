@@ -334,7 +334,6 @@ namespace embree
 		const uint groupID   = item.get_group(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		traceRayBVH16<gpu::Triangle1v>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);
-		out << inputRays[groupID].hit << cl::sycl::endl;
 	      });		  
 	  });
 	try {
