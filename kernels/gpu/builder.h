@@ -74,8 +74,8 @@ namespace embree
 		       unsigned int _node_data_start,
 		       unsigned int _leaf_data_start,
 		       unsigned int _totalBytes,
-		       unsigned int _leafPrimType = 0,
-		       unsigned int _leafSize = 64)
+		       unsigned int _leafPrimType,
+		       unsigned int _leafSize)
       {
 	struct BVHBase *base       = (struct BVHBase*)bvh_mem;
 	base->nodeDataStart        = _node_data_start/64;
@@ -553,11 +553,9 @@ namespace embree
 
     inline uint createLeaf(const Globals &globals,		 
 			   const uint start,
-			   const uint items,
-			   const uint stride,
-			   const cl::sycl::stream &out)
+			   const uint items)
     {
-      const uint offset = globals.leaf_mem_allocator_start + start * stride;
+      const uint offset = globals.leaf_mem_allocator_start + start * globals.leafSize;
       const unsigned int final = offset | BVH_LEAF_MASK | (items-1);
       return final;
     }

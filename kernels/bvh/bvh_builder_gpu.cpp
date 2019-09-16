@@ -249,8 +249,7 @@ namespace embree
 	  {
 	    if (subgroup.get_local_id() == 0)
 	      {
-		//const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Quad1v));
-		const uint leaf_offset = createLeaf(globals,current.start,items,sizeof(gpu::Triangle1v),out);		
+		const uint leaf_offset = createLeaf(globals,current.start,items);		
 		DBG_BUILD(out << "leaf_offset " << leaf_offset << cl::sycl::endl);
 		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);		
 	      }
@@ -722,7 +721,6 @@ namespace embree
 	  if (current & BVH_LEAF_MASK)
 	    {
 	      unsigned int prims = current.getNumLeafPrims();	    
-	      unsigned int prims_offset = current.getLeafOffset();
 	      leaf_items += prims;
 	      sah_leaves += current_area;
 	      leaves++;
@@ -730,7 +728,8 @@ namespace embree
 	      if (prims > BVH_LEAF_N_MAX)
 		out << "too many items in leaf " << prims << cl::sycl::endl;	      
 
-#if 0	    	      
+#if 0
+	      unsigned int prims_offset = current.getLeafOffset();	      
 	      gpu::AABB leafAABB;
 	      leafAABB.init();
 
@@ -920,10 +919,13 @@ namespace embree
 	    PRINT(maxWorkGroupSize);
 
 	    /* --- estimate size of the BVH --- */
-	    unsigned int totalSize       = 64 + numPrimitives * 2 * 64;
-	    unsigned int node_data_start = sizeof(gpu::BVHBase);
-	    unsigned int leaf_data_start = totalSize - numPrimitives * 64;
-  
+	    const uint leaf_primitive_size = sizeof(gpu::Triangle1v);
+	    const uint node_size       = numPrimitives * sizeof(gpu::QBVHNodeN) / 2;
+	    const uint leaf_size       = numPrimitives * leaf_primitive_size;
+	    const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
+	    const uint node_data_start = sizeof(gpu::BVHBase);
+	    const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
+	    
 	    /* --- allocate and set buffers --- */
 
 	    gpu::AABB *aabb = (gpu::AABB*)prims.data();
@@ -942,8 +944,8 @@ namespace embree
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cgh.single_task<class init_first_kernel>([=]() {
-		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize,0,sizeof(gpu::Triangle1v));
-		      globals->leaf_mem_allocator_cur += sizeof(gpu::Triangle1v)*numPrimitives;
+		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize,0,leaf_primitive_size);
+		      globals->leaf_mem_allocator_cur += leaf_primitive_size*numPrimitives;
 		    });
 		});
 	      try {
@@ -1182,7 +1184,7 @@ namespace embree
 			  << e.what() << std::endl;
 	      }	      
 	    }
-#endif	    
+#endif
 	    
 	    /* --- deallocate temporary data structures --- */
 #if defined(EMBREE_DPCPP_SUPPORT)	    
