@@ -77,15 +77,15 @@ namespace embree
 #endif      
     }
     
-    inline float intersectQuad1v(const cl::sycl::intel::sub_group &sg,
-				const gpu::Quad1v *const quad1v,
-				const uint numQuads,
-				const float3 &org,
-				const float3 &dir,
-				const float &tnear,
-				const float &tfar,
-				gpu::RTCHitGPU &hit,
-				const unsigned int slotID)
+    inline float intersectPrimitive1v(const cl::sycl::intel::sub_group &sg,
+				      const gpu::Quad1v *const quad1v,
+				      const uint numQuads,
+				      const float3 &org,
+				      const float3 &dir,
+				      const float &tnear,
+				      const float &tfar,
+				      gpu::RTCHitGPU &hit,
+				      const unsigned int slotID)
     {
       float new_tfar = tfar;
       const uint quadID = slotID >> 1;  
@@ -135,15 +135,15 @@ namespace embree
     }
 
 
-    inline float intersectTri1v(const cl::sycl::intel::sub_group &sg,
-				const gpu::Triangle1v *const tri1v,
-				const uint numTris,
-				const float3 &org,
-				const float3 &dir,
-				const float &tnear,
-				const float &tfar,
-				gpu::RTCHitGPU &hit,
-				const unsigned int slotID)
+    inline float intersectPrimitive1v(const cl::sycl::intel::sub_group &sg,
+				      const gpu::Triangle1v *const tri1v,
+				      const uint numTris,
+				      const float3 &org,
+				      const float3 &dir,
+				      const float &tnear,
+				      const float &tfar,
+				      gpu::RTCHitGPU &hit,
+				      const unsigned int slotID)
     {
       float new_tfar = tfar;
       if (slotID < numTris)
@@ -186,7 +186,7 @@ namespace embree
       return new_tfar;
     }
     
-
+    template<typename Primitive>
     [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, const cl::sycl::stream &out)
     {
       unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
@@ -288,13 +288,8 @@ namespace embree
 	  const uint numPrims = cur.getNumLeafPrims();
 	  const uint leafOffset = cur.getLeafOffset();    
 
-#if 0
-	  const gpu::Quad1v *const quads = (gpu::Quad1v *)(bvh_base + leafOffset);
-	  hit_tfar = intersectQuad1v(sg,quads, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
-#else
-	  const gpu::Triangle1v *const tris = (gpu::Triangle1v *)(bvh_base + leafOffset);
-	  hit_tfar = intersectTri1v(sg,tris, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);  
-#endif	  
+	  const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
+	  hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);  
 	  tfar = sg.reduce<float,cl::sycl::intel::minimum>(hit_tfar);	  
 	}
 
@@ -322,30 +317,15 @@ namespace embree
       BVH* __restrict__ bvh = (BVH*) This->ptr;
       
       if (bvh->root == BVH::emptyNode)
-	{
-	  PRINT(bvh);
-	  PRINT(bvh->root);
-	  PRINT("empty");
-	  exit(0);
-	  return;
-	}
-
+	return;
       
 #if defined(EMBREE_DPCPP_SUPPORT)
       gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
       void *bvh_mem = (void*)(size_t)(bvh->root);
-
-      DBG(
-	  PRINT( sizeof(gpu::RTCRayHitGPU) );
-	  PRINT( sizeof(RTCRayHit) );	  
-	  );
-      assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );
-      
-      DBG(numRays = 1);
-      
+      assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );      
+      DBG(numRays = 1);      
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
-
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
@@ -354,7 +334,7 @@ namespace embree
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint groupID   = item.get_group(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
-		traceRayBVH16(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);	      
+		traceRayBVH16<gpu::Triangle1v>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);	      
 	      });		  
 	  });
 	try {
@@ -364,7 +344,6 @@ namespace embree
 		    << e.what() << std::endl;
 	}
       }
-
       DBG(exit(0));
 #endif      
     }
