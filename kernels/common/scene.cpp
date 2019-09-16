@@ -320,6 +320,9 @@ namespace embree
     else if (device->quad_accel == "bvh8.quad4i")       accels_add(device->bvh8_factory->BVH8Quad4i(this));
     else if (device->quad_accel == "qbvh8.quad4i")      accels_add(device->bvh8_factory->BVH8QuantizedQuad4i(this));
 #endif
+#if defined(EMBREE_DPCPP_SUPPORT)	            
+    else if (device->quad_accel == "bvhgpu.quad1v")    accels_add(device->bvh_gpu_factory->BVHGPUQuad1v(this));
+#endif        
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
 #endif
   }

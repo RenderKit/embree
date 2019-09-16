@@ -909,7 +909,7 @@ namespace embree
 	      }
 	    PRINT(pinfo.size());
 
-	    NodeRef root(0);
+	    NodeRef root(BVH::emptyNode);
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 	      

@@ -33,17 +33,16 @@ namespace embree
 		       const float4 &_v2,
 		       const float4 &_v3,
 		       const uint geomID,
-		       const uint primID0,
-		       const uint primID1)
+		       const uint primID)
       {
 	v0 = _v0;
 	v1 = _v1;
 	v2 = _v2;
 	v3 = _v3;
-	v0.w() = as_float(primID0);
-	v2.w() = as_float(primID1);	
+	v0.w() = 0.0f;
+	v2.w() = 0.0f;	
 	v1.w() = as_float(geomID);
-	v3.w() = 0.0f;	
+	v3.w() = as_float(primID);
       }
 
       inline AABB getBounds()

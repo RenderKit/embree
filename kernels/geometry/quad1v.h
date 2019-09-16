@@ -113,9 +113,9 @@ namespace embree
       v0 = mesh->vertex(q.v[0]);
       v1 = mesh->vertex(q.v[1]);
       v2 = mesh->vertex(q.v[2]);
-      v3 = mesh->vertex(q.v[2]);
+      v3 = mesh->vertex(q.v[3]);
       unused0 = 0;
-      unused1 = 1;     
+      unused1 = 0;     
       geomId  = geomID;
       primId  = primID;      
     }

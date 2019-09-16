@@ -261,7 +261,7 @@ extern "C" void device_render (int* pixels,
 	      Ray& ray = rays[y*width+x];
 
 	      /* eyelight shading */
-	      Vec3fa color = Vec3fa(0.0f);
+	      Vec3fa color = Vec3fa(0.0f,0.0f,1.0f);
 	      if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
 #if SIMPLE_SHADING == 1
 		{

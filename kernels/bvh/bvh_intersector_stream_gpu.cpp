@@ -88,7 +88,8 @@ namespace embree
 				      const unsigned int slotID)
     {
       float new_tfar = tfar;
-      const uint quadID = slotID >> 1;  
+      const uint quadID = slotID >> 1;
+      
       if (slotID < numQuads*2)
 	{
 #if 0
@@ -97,10 +98,10 @@ namespace embree
 	  const float4 *const _v0_ptr = (float4*)&quad1v[quadID];
 	  const float4 _v0 = _v0_ptr[slotID & 1];
 #endif	  
-	  const uint primID = gpu::as_uint((float)_v0.w());
 	  const float4 _v1 = quad1v[quadID].v1;
 	  const float4 _v2 = quad1v[quadID].v3;
-	  const uint geomID = gpu::as_uint((float)_v1.w());	    
+	  const uint geomID = gpu::as_uint((float)_v1.w());
+	  const uint primID = gpu::as_uint((float)_v2.w());	  	  
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();
 	  const float3 v2 = _v2.xyz();
@@ -314,10 +315,8 @@ namespace embree
 
     void BVHNGPUTriangle1vIntersectorStream::intersect(Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)
     {
-      BVH* __restrict__ bvh = (BVH*) This->ptr;
-      
-      if (bvh->root == BVH::emptyNode)
-	return;
+      BVH* __restrict__ bvh = (BVH*) This->ptr;      
+      if (bvh->root == BVH::emptyNode) return;
       
 #if defined(EMBREE_DPCPP_SUPPORT)
       gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
@@ -334,7 +333,8 @@ namespace embree
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint groupID   = item.get_group(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
-		traceRayBVH16<gpu::Triangle1v>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);	      
+		traceRayBVH16<gpu::Triangle1v>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);
+		out << inputRays[groupID].hit << cl::sycl::endl;
 	      });		  
 	  });
 	try {
@@ -348,11 +348,48 @@ namespace embree
 #endif      
     }
 
-    void BVHNGPUTriangle1vIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context) {}
+    void BVHNGPUTriangle1vIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
+    {
+    }
 
 
-    void BVHNGPUQuad1vIntersectorStream::intersect (Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context) {}
-    void BVHNGPUQuad1vIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context) {}
+    void BVHNGPUQuad1vIntersectorStream::intersect (Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)
+    {
+      BVH* __restrict__ bvh = (BVH*) This->ptr;      
+      if (bvh->root == BVH::emptyNode) return;
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+      gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
+      void *bvh_mem = (void*)(size_t)(bvh->root);
+      assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );      
+      DBG(numRays = 1);      
+      DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
+      cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
+      {
+	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+
+	    cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+	    const cl::sycl::nd_range<1> nd_range(numRays*cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));		  
+	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
+		const uint groupID   = item.get_group(0);
+		cl::sycl::intel::sub_group sg = item.get_sub_group();
+		traceRayBVH16<gpu::Quad1v>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);	      
+	      });		  
+	  });
+	try {
+	  gpu_queue.wait_and_throw();
+	} catch (cl::sycl::exception const& e) {
+	  std::cout << "Caught synchronous SYCL exception:\n"
+		    << e.what() << std::endl;
+	}
+      }
+      DBG(exit(0));
+#endif            
+    }
+    
+    void BVHNGPUQuad1vIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
+    {
+    }
     
     
     /*! BVH ray GPU intersectors */

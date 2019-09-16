@@ -521,7 +521,7 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-  DeviceGPU::DeviceGPU(const char* cfg, void *device, void *queue) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v")).c_str() : cfg)
+  DeviceGPU::DeviceGPU(const char* cfg, void *device, void *queue) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v,quad_accel=bvhgpu.quad1v")).c_str() : cfg)
   {
 
     gpu_device  = (cl::sycl::device *)device;
