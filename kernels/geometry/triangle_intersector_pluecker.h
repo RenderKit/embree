@@ -124,14 +124,11 @@ namespace embree
     template<int K, typename UVMapper>
     struct PlueckerHitK
     {
-      __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& W, const vfloat<K>& T, const vfloat<K>& den, const Vec3vf<K>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), W(W), T(T), den(den), Ng(Ng), mapUV(mapUV) {}
+      __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& UVW, const vfloat<K>& t, const Vec3vf<K>& Ng, const UVMapper& mapUV)
+        : U(U), V(V), UVW(UVW), t(t), Ng(Ng), mapUV(mapUV) {}
       
       __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
       {
-        const vfloat<K> rcpDen = rcp(den);
-        const vfloat<K> t = T * rcpDen;
-        const vfloat<K> UVW = U+V+W;
         const vbool<K> invalid = abs(UVW) < min_rcp_input;
         const vfloat<K> rcpUVW = select(invalid,vfloat<K>(0.0f),rcp(UVW));
         vfloat<K> u = U * rcpUVW;
@@ -143,9 +140,8 @@ namespace embree
     private:
       const vfloat<K> U;
       const vfloat<K> V;
-      const vfloat<K> W;
-      const vfloat<K> T;
-      const vfloat<K> den;
+      const vfloat<K> UVW;
+      const vfloat<K> t;
       const Vec3vf<K> Ng;
       const UVMapper& mapUV;
     };
@@ -185,33 +181,25 @@ namespace embree
         const vfloat<K> UVW = U+V+W;
         const vfloat<K> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
-        const vfloat<K> maxUVW = max(U,V,W);
-        valid &= maxUVW <= eps;
+        valid &= max(U,V,W) <= eps;
 #else
-        const vfloat<K> minUVW = min(U,V,W);
-        const vfloat<K> maxUVW = max(U,V,W);
-        valid &= (minUVW >= -eps) | (maxUVW <= eps);
+        valid &= (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
 #endif
         if (unlikely(none(valid))) return false;
 
          /* calculate geometry normal and denominator */
         const Vec3vf<K> Ng = stable_triangle_normal(e0,e1,e2);
         const vfloat<K> den = twice(dot(Vec3vf<K>(Ng),D));
-        const vfloat<K> absDen = abs(den);
-        const vfloat<K> sgnDen = signmsk(den);
 
         /* perform depth test */
         const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
-        valid &= absDen*ray.tnear() < (T^sgnDen);
-        valid &= (T^sgnDen) <= absDen*ray.tfar;
-        if (unlikely(none(valid))) return false;
-
-        /* avoid division by 0 */
+        const vfloat<K> t = rcp(den)*T;
+        valid &= ray.tnear() <= t & t <= ray.tfar;
         valid &= den != vfloat<K>(zero);
         if (unlikely(none(valid))) return false;
-
+        
         /* calculate hit information */
-        PlueckerHitK<K,UVMapper> hit(U,V,W,T,den,Ng,mapUV);
+        PlueckerHitK<K,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
         return epilog(valid,hit);
       }
 
