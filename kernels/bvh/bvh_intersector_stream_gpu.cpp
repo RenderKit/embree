@@ -40,10 +40,12 @@ namespace embree
   {
 
     /*! BVH ray stream GPU intersector */
-    class BVHNGPUTriangle1vIntersectorStream
+
+    /*! BVH ray stream GPU intersector */
+    template<typename Primitive>
+    class BVHNGPUIntersectorStream
     {
       typedef BVHN<4> BVH;
-      typedef typename BVH::NodeRef NodeRef;
 
     public:
       static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
@@ -51,141 +53,29 @@ namespace embree
 
     };
 
-    class BVHNGPUQuad1vIntersectorStream
-    {
-      typedef BVHN<4> BVH;
-      typedef typename BVH::NodeRef NodeRef;
+    
+    // class BVHNGPUTriangle1vIntersectorStream
+    // {
+    //   typedef BVHN<4> BVH;
 
-    public:
-      static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
-      static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
+    // public:
+    //   static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
+    //   static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
 
-    };
+    // };
+
+    // class BVHNGPUQuad1vIntersectorStream
+    // {
+    //   typedef BVHN<4> BVH;
+
+    // public:
+    //   static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
+    //   static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
+
+    // };
     
 
-#if defined(EMBREE_DPCPP_SUPPORT)
-
-
-    inline float dot3(const float3 &a,
-		      const float3 &b)
-    {
-#if 0
-      // this is currently broken
-      return cl::sycl::dot(a,b);
-#else      
-      return a.x()*b.x() + a.y()*b.y() + a.z()*b.z();
-#endif      
-    }
-    
-    inline float intersectPrimitive1v(const cl::sycl::intel::sub_group &sg,
-				      const gpu::Quad1v *const quad1v,
-				      const uint numQuads,
-				      const float3 &org,
-				      const float3 &dir,
-				      const float &tnear,
-				      const float &tfar,
-				      gpu::RTCHitGPU &hit,
-				      const unsigned int slotID)
-    {
-      float new_tfar = tfar;
-      const uint quadID = slotID >> 1;
-      
-      if (slotID < numQuads*2)
-	{
-#if 0
-	  const float4 _v0 = cselect((int)((slotID % 2) == 0),quad1v[quadID].v0,quad1v[quadID].v2);
-#else	  
-	  const float4 *const _v0_ptr = (float4*)&quad1v[quadID];
-	  const float4 _v0 = _v0_ptr[slotID & 1];
-#endif	  
-	  const float4 _v1 = quad1v[quadID].v1;
-	  const float4 _v2 = quad1v[quadID].v3;
-	  const uint geomID = gpu::as_uint((float)_v1.w());
-	  const uint primID = gpu::as_uint((float)_v2.w());	  	  
-	  const float3 v0 = _v0.xyz();
-	  const float3 v1 = _v1.xyz();
-	  const float3 v2 = _v2.xyz();
-
-	  /* moeller-trumbore test */	  
-	  const float3 e1 = v0 - v1;
-	  const float3 e2 = v2 - v0;
-	  const float3 tri_Ng = cl::sycl::cross(e1,e2);
-	  const float den = dot3(tri_Ng,dir);   			   
-	  const float inv_den = cl::sycl::native::recip(den); 
-	  const float3 tri_v0_org = v0 - org;
-	  const float3 R = cl::sycl::cross(dir,tri_v0_org);
-	  const float u = dot3(R,e2) * inv_den;
-	  const float v = dot3(R,e1) * inv_den;
-	  float t = dot3(tri_v0_org,tri_Ng) * inv_den; 
-	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
-	  //if (m_hit == 0) return; // early out
-	  m_hit &= (tnear <= t) & (t < tfar); // den != 0.0f &&
-	  if (m_hit) 
-	    {
-	      new_tfar = t;
-	      hit.Ng[0]  = tri_Ng.x();
-	      hit.Ng[1]  = tri_Ng.y();
-	      hit.Ng[2]  = tri_Ng.z();	      
-	      hit.u      = u;
-	      hit.v      = v;
-	      hit.primID = primID;
-	      hit.geomID = geomID;	      
-	    }	  
-	}
-      return new_tfar;
-    }
-
-
-    inline float intersectPrimitive1v(const cl::sycl::intel::sub_group &sg,
-				      const gpu::Triangle1v *const tri1v,
-				      const uint numTris,
-				      const float3 &org,
-				      const float3 &dir,
-				      const float &tnear,
-				      const float &tfar,
-				      gpu::RTCHitGPU &hit,
-				      const unsigned int slotID)
-    {
-      float new_tfar = tfar;
-      if (slotID < numTris)
-	{
-	  const float4 _v0 = tri1v[slotID].v0;
-	  const float4 _v1 = tri1v[slotID].v1;
-	  const float4 _v2 = tri1v[slotID].v2;
-	  const uint primID = gpu::as_uint((float)_v0.w());	  
-	  const uint geomID = gpu::as_uint((float)_v1.w());	    
-	  const float3 v0 = _v0.xyz();
-	  const float3 v1 = _v1.xyz();
-	  const float3 v2 = _v2.xyz();
-
-	  /* moeller-trumbore test */	  
-	  const float3 e1 = v0 - v1;
-	  const float3 e2 = v2 - v0;
-	  const float3 tri_Ng = cl::sycl::cross(e1,e2);
-	  const float den = dot3(tri_Ng,dir);   			   
-	  const float inv_den = cl::sycl::native::recip(den); 
-	  const float3 tri_v0_org = v0 - org;
-	  const float3 R = cl::sycl::cross(dir,tri_v0_org);
-	  const float u = dot3(R,e2) * inv_den;
-	  const float v = dot3(R,e1) * inv_den;
-	  float t = dot3(tri_v0_org,tri_Ng) * inv_den; 
-	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
-	  //if (m_hit == 0) return; // early out
-	  m_hit &= (tnear <= t) & (t < tfar); // den != 0.0f &&
-	  if (m_hit) 
-	    {
-	      new_tfar = t;
-	      hit.Ng[0]  = tri_Ng.x();
-	      hit.Ng[1]  = tri_Ng.y();
-	      hit.Ng[2]  = tri_Ng.z();	      
-	      hit.u      = u;
-	      hit.v      = v;
-	      hit.primID = primID;
-	      hit.geomID = geomID;	      
-	    }	  
-	}
-      return new_tfar;
-    }
+#if defined(EMBREE_DPCPP_SUPPORT)   
     
     template<typename Primitive>
     [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, const cl::sycl::stream &out)
@@ -313,7 +203,8 @@ namespace embree
     }
 #endif
 
-    void BVHNGPUTriangle1vIntersectorStream::intersect(Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)
+    template<typename Primitive>    
+    void BVHNGPUIntersectorStream<Primitive>::intersect(Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;      
       if (bvh->root == BVH::emptyNode) return;
@@ -333,7 +224,7 @@ namespace embree
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint groupID   = item.get_group(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
-		traceRayBVH16<gpu::Triangle1v>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);
+		traceRayBVH16<Primitive>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);
 	      });		  
 	  });
 	try {
@@ -347,49 +238,20 @@ namespace embree
 #endif      
     }
 
-    void BVHNGPUTriangle1vIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
-    {
-    }
-
-
-    void BVHNGPUQuad1vIntersectorStream::intersect (Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)
+    template<typename Primitive>        
+    void BVHNGPUIntersectorStream<Primitive>::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
     {
       BVH* __restrict__ bvh = (BVH*) This->ptr;      
       if (bvh->root == BVH::emptyNode) return;
+      
+    }
 
 #if defined(EMBREE_DPCPP_SUPPORT)
-      gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
-      void *bvh_mem = (void*)(size_t)(bvh->root);
-      assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );      
-      DBG(numRays = 1);      
-      DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
-      cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
-      {
-	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
-	    cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-	    const cl::sycl::nd_range<1> nd_range(numRays*cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));		  
-	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
-		const uint groupID   = item.get_group(0);
-		cl::sycl::intel::sub_group sg = item.get_sub_group();
-		traceRayBVH16<gpu::Quad1v>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);	      
-	      });		  
-	  });
-	try {
-	  gpu_queue.wait_and_throw();
-	} catch (cl::sycl::exception const& e) {
-	  std::cout << "Caught synchronous SYCL exception:\n"
-		    << e.what() << std::endl;
-	}
-      }
-      DBG(exit(0));
-#endif            
-    }
-    
-    void BVHNGPUQuad1vIntersectorStream::occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context)
-    {
-    }
-    
+    typedef BVHNGPUIntersectorStream< gpu::Triangle1v > BVHNGPUTriangle1vIntersectorStream;
+    typedef BVHNGPUIntersectorStream< gpu::Quad1v     > BVHNGPUQuad1vIntersectorStream;
+        
+#endif
     
     /*! BVH ray GPU intersectors */
     
