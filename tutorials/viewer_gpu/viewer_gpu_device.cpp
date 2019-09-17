@@ -29,8 +29,9 @@ namespace embree {
 
 #define SIMPLE_SHADING 1
 
-extern "C" ISPCScene* g_ispc_scene;
-extern "C" int g_instancing_mode;
+  extern "C" ISPCScene* g_ispc_scene;
+  extern "C" int g_instancing_mode;
+
 
 /* scene data */
 RTCScene g_scene = nullptr;
@@ -170,8 +171,6 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
     }
   };
 
-cl::sycl::queue   *gpu_queue   = nullptr;
-cl::sycl::device  *gpu_device  = nullptr;
 
   inline cl::sycl::float3 Vec3fa_to_float3(const Vec3fa& v)
   {
@@ -182,6 +181,9 @@ cl::sycl::device  *gpu_device  = nullptr;
   {
     return v * cl::sycl::rsqrt(cl::sycl::dot(v,v));
   }
+
+  cl::sycl::queue   *gpu_queue = nullptr;
+  cl::sycl::device  *gpu_device = nullptr;
   
 #endif
 
@@ -230,16 +232,23 @@ extern "C" void device_render (int* pixels,
     rtcCommitScene (g_scene);
   }  
 #if defined(EMBREE_DPCPP_SUPPORT)
+
+  assert(gpu_device);
+  assert(gpu_queue);
   
   /* allocate stream of rays in USM */  
   const size_t numRays = width*height;
-  Ray *rays = (Ray*)cl::sycl::aligned_alloc(64,sizeof(Ray)*numRays,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
-  assert(rays);
-  assert(gpu_device);
-  assert(gpu_queue);
+  RTCRayHit *rtc_rays = (RTCRayHit*)cl::sycl::aligned_alloc(64,sizeof(RTCRayHit)*numRays,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
+  assert(rtc_rays);
 
+  /* allocate temporary USM frame buffer */  
+  const size_t numPixels = width*height;
+  int *fb = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*numPixels,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
+  assert(fb);
+  
+
+  /* generate primary ray stream */    
   {
-    RTCRayHit *rtc_rays = (RTCRayHit*)rays;
     using namespace cl::sycl;	
     const float3 cam_p  = Vec3fa_to_float3(camera.xfm.p);
     const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
@@ -264,6 +273,7 @@ extern "C" void device_render (int* pixels,
 	    rh.ray.dir_z = dir.z();
 	    rh.ray.time  = 0.0f;		
 	    rh.ray.tfar  = (float)INFINITY;
+	    rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
 	  });		  
       });
     try {
@@ -274,42 +284,59 @@ extern "C" void device_render (int* pixels,
     }
   }
 
+  /* trace ray stream */      
   double t0 = getSeconds();
 
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   context.flags = RTC_INTERSECT_CONTEXT_FLAG_GPU;
-  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],numRays,sizeof(Ray));
+  rtcIntersect1M(g_scene,&context,rtc_rays,numRays,sizeof(RTCRayHit));
 
   double t1 = getSeconds();
   std::cout << (float)numRays * 0.000001f / (t1 - t0) << " mrays/s" << std::endl;
 
   /* shade stream of rays */
-  parallel_for(size_t(0),size_t(height),[&](const range<size_t>& rangeY) {
-      for (size_t y=rangeY.begin(); y<rangeY.end(); y++)
-	{	   
-	  for (size_t x=0; x<width; x++)
-	    {
-	      Ray& ray = rays[y*width+x];
+  {
+    using namespace cl::sycl;	
+    cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(width,height),cl::sycl::range<2>(16,16));		  
+	cgh.parallel_for<class shade_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
+	    const uint x = item.get_global_id(0);
+	    const uint y = item.get_global_id(1);
+	    RTCRayHit &rh = rtc_rays[y*width+x];
 
-	      /* eyelight shading */
-	      Vec3fa color = Vec3fa(0.0f,0.0f,1.0f);
-	      if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-		{
-		  color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-		}
+	    const float3 dir(rh.ray.dir_x,rh.ray.dir_y,rh.ray.dir_z);
+	    const float3 Ng(rh.hit.Ng_x,rh.hit.Ng_y,rh.hit.Ng_z);
+	    
+	    /* eyelight shading */
+	    float3 color = float3(0.0f,0.0f,1.0f);
+	    if (rh.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+	      color = float3(cl::sycl::abs(dot(dir,normalize(Ng))));
 
-	      /* write color to framebuffer */
-	      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-	      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-	      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-	      pixels[y*width+x] = (b << 16) + (g << 8) + r;	      
-	    }
-	}      
-    });
+	    /* write color to framebuffer */
+	    const uint r = (uint) (255.0f * clamp((float)color.x(),0.0f,1.0f));
+	    const uint g = (uint) (255.0f * clamp((float)color.y(),0.0f,1.0f));
+	    const uint b = (uint) (255.0f * clamp((float)color.z(),0.0f,1.0f));
+	    fb[y*width+x] = (b << 16) + (g << 8) + r;	      
 
-  /* free stream of rays USM memory */  
-  cl::sycl::free(rays,gpu_queue->get_context());
+	  });		  
+      });
+    try {
+      gpu_queue->wait_and_throw();
+    } catch (cl::sycl::exception const& e) {
+      std::cout << "Caught synchronous SYCL exception:\n"
+		<< e.what() << std::endl;
+    }
+  }
+
+  /* copy to real framebuffer */
+  memcpy(pixels,fb,sizeof(int)*width*height);
+  
+  /* free USM allocated temporary framebuffer */  
+  cl::sycl::free(fb,gpu_queue->get_context());
+  
+  /* free USM allocated stream of rays */  
+  cl::sycl::free(rtc_rays,gpu_queue->get_context());
 
 #endif  
 }
