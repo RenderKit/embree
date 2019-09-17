@@ -42,7 +42,7 @@ namespace embree
 
   inline float4 Vec3fa_to_float4(const Vec3fa& v)
   {
-    return (float4){v.x,v.y,v.z,v.w};
+    return float4(v.x,v.y,v.z,v.w);
   }
   
   

@@ -32,15 +32,10 @@
 
 #define STACK_CULLING 1
 
-
-
 namespace embree
 {
   namespace isa
   {
-
-    /*! BVH ray stream GPU intersector */
-
     /*! BVH ray stream GPU intersector */
     template<typename Primitive>
     class BVHNGPUIntersectorStream
@@ -51,29 +46,7 @@ namespace embree
       static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
       static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
 
-    };
-
-    
-    // class BVHNGPUTriangle1vIntersectorStream
-    // {
-    //   typedef BVHN<4> BVH;
-
-    // public:
-    //   static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
-    //   static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
-
-    // };
-
-    // class BVHNGPUQuad1vIntersectorStream
-    // {
-    //   typedef BVHN<4> BVH;
-
-    // public:
-    //   static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
-    //   static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
-
-    // };
-    
+    };       
 
 #if defined(EMBREE_DPCPP_SUPPORT)   
     

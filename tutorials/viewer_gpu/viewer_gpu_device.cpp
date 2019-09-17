@@ -27,7 +27,6 @@
 
 namespace embree {
 
-#define OBJ_MATERIAL 1
 #define SIMPLE_SHADING 1
 
 extern "C" ISPCScene* g_ispc_scene;
@@ -174,6 +173,16 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 cl::sycl::queue   *gpu_queue   = nullptr;
 cl::sycl::device  *gpu_device  = nullptr;
 
+  inline cl::sycl::float3 Vec3fa_to_float3(const Vec3fa& v)
+  {
+    return cl::sycl::float3(v.x,v.y,v.z);
+  }
+
+  inline cl::sycl::float3 normalize(const cl::sycl::float3& v)
+  {
+    return v * cl::sycl::rsqrt(cl::sycl::dot(v,v));
+  }
+  
 #endif
 
 /* called by the C++ code for initialization */
@@ -210,10 +219,10 @@ extern "C" void device_init (char* cfg)
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
-                           const unsigned int width,
-                           const unsigned int height,
-                           const float time,
-                           const ISPCCamera& camera)
+			       const unsigned int width,
+			       const unsigned int height,
+			       const float time,
+			       const ISPCCamera& camera)
 {
   /* create scene */
   if (!g_scene) {
@@ -226,21 +235,44 @@ extern "C" void device_render (int* pixels,
   const size_t numRays = width*height;
   Ray *rays = (Ray*)cl::sycl::aligned_alloc(64,sizeof(Ray)*numRays,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
   assert(rays);
+  assert(gpu_device);
+  assert(gpu_queue);
 
-  
-  /* init stream of rays */  
-  parallel_for(size_t(0),size_t(height),[&](const range<size_t>& rangeY) {
-      for (size_t y=rangeY.begin(); y<rangeY.end(); y++)
-	{	   
-	  for (size_t x=0; x<width; x++)
-	    {
-	      Ray& ray = rays[y*width+x];
-	      ray.tnear() = 0.0f;
-	      ray.tfar    = (float)(inf);
-	      init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar);
-	    }
-	}      
-    });
+  {
+    RTCRayHit *rtc_rays = (RTCRayHit*)rays;
+    using namespace cl::sycl;	
+    const float3 cam_p  = Vec3fa_to_float3(camera.xfm.p);
+    const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
+    const float3 cam_vy = Vec3fa_to_float3(camera.xfm.l.vy);
+    const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
+    assert( (width % 16) == 0);
+    assert( (height % 16) == 0);	
+    cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(width,height),cl::sycl::range<2>(16,16));		  
+	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
+	    const uint x = item.get_global_id(0);
+	    const uint y = item.get_global_id(1);
+	    const float3 org = cam_p;
+	    const float3 dir = normalize((float)x*cam_vx + (float)y*cam_vy + cam_vz);
+	    RTCRayHit &rh = rtc_rays[y*width+x];
+	    rh.ray.org_x = org.x();
+	    rh.ray.org_y = org.y();
+	    rh.ray.org_z = org.z();
+	    rh.ray.tnear = 0.0f;
+	    rh.ray.dir_x = dir.x();
+	    rh.ray.dir_y = dir.y();
+	    rh.ray.dir_z = dir.z();
+	    rh.ray.time  = 0.0f;		
+	    rh.ray.tfar  = (float)INFINITY;
+	  });		  
+      });
+    try {
+      gpu_queue->wait_and_throw();
+    } catch (cl::sycl::exception const& e) {
+      std::cout << "Caught synchronous SYCL exception:\n"
+		<< e.what() << std::endl;
+    }
+  }
 
   double t0 = getSeconds();
 
@@ -263,43 +295,15 @@ extern "C" void device_render (int* pixels,
 	      /* eyelight shading */
 	      Vec3fa color = Vec3fa(0.0f,0.0f,1.0f);
 	      if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
-#if SIMPLE_SHADING == 1
 		{
-#if OBJ_MATERIAL == 1
-		  Vec3fa Kd = Vec3fa(0.5f);
-		  DifferentialGeometry dg;
-		  dg.geomID = ray.geomID;
-		  dg.primID = ray.primID;
-		  dg.u = ray.u;
-		  dg.v = ray.v;
-		  dg.P  = ray.org+ray.tfar*ray.dir;
-		  dg.Ng = ray.Ng;
-		  dg.Ns = ray.Ng;
-		  int materialID = postIntersect(ray,dg);
-		  dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
-		  dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
-      
-		  /* shade */
-		  if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
-		    ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
-		    Kd = Vec3fa(material->Kd);
-		  }
-      
-		  color = Kd*dot(neg(ray.dir),dg.Ns);
-#else
 		  color = Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-#endif
 		}
-#else
-	      color = ambientOcclusionShading(x,y,ray,g_stats[threadIndex]);
-#endif
 
 	      /* write color to framebuffer */
 	      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
 	      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
 	      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-	      pixels[y*width+x] = (b << 16) + (g << 8) + r;
-	      
+	      pixels[y*width+x] = (b << 16) + (g << 8) + r;	      
 	    }
 	}      
     });
