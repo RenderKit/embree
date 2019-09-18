@@ -1708,7 +1708,7 @@ RTC_NAMESPACE_BEGIN;
 
 RTC_NAMESPACE_END
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if 0 //defined(EMBREE_DPCPP_SUPPORT)
 
 namespace embree
 {

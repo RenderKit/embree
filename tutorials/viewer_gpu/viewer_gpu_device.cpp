@@ -293,7 +293,7 @@ extern "C" void device_render (int* pixels,
   }
 
   /* test function calls */
-#if 1  
+#if 0
   {
     using namespace cl::sycl;	
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
