@@ -273,6 +273,9 @@ extern "C" void device_render (int* pixels,
 	    rh.ray.time  = 0.0f;		
 	    rh.ray.tfar  = (float)INFINITY;
 	    rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+	    RTCIntersectContext ctx;
+	    RTCScene scene;
+
 	  });		  
       });
     try {

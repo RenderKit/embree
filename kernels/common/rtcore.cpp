@@ -1706,4 +1706,10 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
+  void rtcIntersectGPU(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit)
+  {
+    
+  }
+
+
 RTC_NAMESPACE_END

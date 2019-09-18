@@ -196,7 +196,7 @@ namespace embree
 	    const cl::sycl::nd_range<1> nd_range(numRays*cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));		  
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint groupID   = item.get_group(0);
-		cl::sycl::intel::sub_group sg = item.get_sub_group();
+		cl::sycl::intel::sub_group sg = item.get_sub_group();		
 		traceRayBVH16<Primitive>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);
 	      });		  
 	  });

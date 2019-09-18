@@ -33,7 +33,7 @@
 #define PROFILE_RUNS 20
 #define ENABLE_BREADTH_FIRST_PHASE 1
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
-#define ENABLE_STATS 1
+#define ENABLE_STATS 0
 #define BUILD_CHECKS 0
 
 namespace embree
@@ -689,8 +689,7 @@ namespace embree
     
     StatStack stack[BVH_MAX_STACK_ENTRIES];    
     
-    float sah_nodes  = 0.0f;
-    
+    float sah_nodes  = 0.0f;    
     float sah_leaves = 0.0f;
     uint leaves = 0;
     uint inner_nodes = 0;
@@ -708,95 +707,77 @@ namespace embree
     stack[0].aabb = root_aabb;
     stack[0].depth = 1;
     
-      while(sindex)
-	{
-	  sindex--;
-	  gpu::NodeRef current    = stack[sindex].node;	
-	  float current_area      = stack[sindex].area;
-	  gpu::AABB current_aabb  = stack[sindex].aabb;
-	  uint current_depth      = stack[sindex].depth;
+    while(sindex)
+      {
+	sindex--;
+	gpu::NodeRef current    = stack[sindex].node;	
+	float current_area      = stack[sindex].area;
+	gpu::AABB current_aabb  = stack[sindex].aabb;
+	uint current_depth      = stack[sindex].depth;
 
-	  max_depth = max(max_depth,current_depth);
+	max_depth = max(max_depth,current_depth);
 	  
-	  if (current & BVH_LEAF_MASK)
-	    {
-	      unsigned int prims = current.getNumLeafPrims();	    
-	      leaf_items += prims;
-	      sah_leaves += current_area;
-	      leaves++;
+	if (current & BVH_LEAF_MASK)
+	  {
+	    unsigned int prims = current.getNumLeafPrims();	    
+	    leaf_items += prims;
+	    sah_leaves += current_area;
+	    leaves++;
 
-	      if (prims > BVH_LEAF_N_MAX)
-		out << "too many items in leaf " << prims << cl::sycl::endl;	      
+	    if (prims > BVH_LEAF_N_MAX)
+	      out << "too many items in leaf " << prims << cl::sycl::endl;	      
 
-#if 0
-	      unsigned int prims_offset = current.getLeafOffset();	      
-	      gpu::AABB leafAABB;
-	      leafAABB.init();
-
-	      gpu::Quad1v *quads = (gpu::Quad1v *)(bvh_mem + prims_offset);
+	  }
+	else
+	  {
+	    inner_nodes++;
+	    sah_nodes += current_area;
+	    gpu::QBVHNodeN *nodeN = (gpu::QBVHNodeN*)(bvh_mem + current);
+	    uint children = 0;
+	    for (uint i=0;i<BVH_NODE_N;i++)
+	      {
+		if (nodeN->offset[i] == (unsigned int)-1) break;
+		children++;
+	      }
 	    
-	      for (uint i=0;i<prims;i++)
-		{
-		  gpu::AABB quadAABB = quads[i].getBounds();
-		  leafAABB.extend(quadAABB);
-		}
-	      if (outsideAABBTest(current_aabb,leafAABB))
-		{
-		  out << "leaf error: current " << current << " depth " << current_depth << cl::sycl::endl;
-		  out << "current_aabb: " << current_aabb << cl::sycl::endl;
-		  out << "leaf bounds:  " << leafAABB << cl::sycl::endl;
-		}
-#endif	      
-	    }
-	  else
-	    {
-	      inner_nodes++;
-	      sah_nodes += current_area;
-	      gpu::QBVHNodeN *nodeN = (gpu::QBVHNodeN*)(bvh_mem + current);
-	      uint children = 0;
-	      for (uint i=0;i<BVH_NODE_N;i++)
-		{
-		  if (nodeN->offset[i] == (unsigned int)-1) break;
-		  children++;
-		}
-	    
-	      uint leavesInNode = 0;
-	      for (uint i=0;i<BVH_NODE_N;i++)
-		{
-		  if (nodeN->offset[i] == (unsigned int)-1) break;
-		  inner_nodes_valid_children++;
+	    uint leavesInNode = 0;
+	    for (uint i=0;i<BVH_NODE_N;i++)
+	      {
+		if (nodeN->offset[i] == (unsigned int)-1) break;
+		inner_nodes_valid_children++;
 		
-		  gpu::AABB aabb = nodeN->getBounds(i);
-		  const float area = aabb.halfArea();
+		gpu::AABB aabb = nodeN->getBounds(i);
+		const float area = aabb.halfArea();
 
-		  if (aabb.lower.x() == (float)(INFINITY))
-		    {
-		      out << "aabb inf error " << i << " current " << (uint)current << " nodeN " << children << cl::sycl::endl;
-		      break;
-		    }
+		if (aabb.lower.x() == (float)(INFINITY))
+		  {
+		    out << "aabb inf error " << i << " current " << (uint)current << " nodeN " << children << cl::sycl::endl;
+		    break;
+		  }
 		
-		  if (nodeN->offset[i] > globals->totalAllocatedMem || (int)nodeN->offset[i] < 0)
-		    {
-		      out << "offset error " << i << " nodeN->offset[i] " << nodeN->offset[i] << cl::sycl::endl;
-		      break;
-		    }
+		if (nodeN->offset[i] > globals->totalAllocatedMem || (int)nodeN->offset[i] < 0)
+		  {
+		    out << "offset error " << i << " nodeN->offset[i] " << nodeN->offset[i] << cl::sycl::endl;
+		    break;
+		  }
 				
-		  stack[sindex].node = current + nodeN->offset[i];
-		  stack[sindex].area = area;
-		  stack[sindex].aabb = aabb;
-		  stack[sindex].depth = current_depth + 1;
+		stack[sindex].node = current + nodeN->offset[i];
+		stack[sindex].area = area;
+		stack[sindex].aabb = aabb;
+		stack[sindex].depth = current_depth + 1;
 
-		  //out << "current " << (uint)current << " nodeN->offset[i] " << (uint)nodeN->offset[i] << " stack[sindex].node " << (uint)stack[sindex].node << cl::sycl::endl;
+		//out << "current " << (uint)current << " nodeN->offset[i] " << (uint)nodeN->offset[i] << " stack[sindex].node " << (uint)stack[sindex].node << cl::sycl::endl;
 		  
-		  if (stack[sindex].node & BVH_LEAF_MASK)
-		    leavesInNode++;
+		if (stack[sindex].node & BVH_LEAF_MASK)
+		  leavesInNode++;
 
-		  sindex++;
-		}
-	      if (leavesInNode >0 && leavesInNode != children)
-		mixed_inner_nodes++;
-	    }
-	}
+		sindex++;
+	      }
+	    if (leavesInNode >0 && leavesInNode != children)
+	      mixed_inner_nodes++;
+	  }
+      }
+    
       sah_nodes  *= 1.0f / root_area;
       sah_leaves *= 1.0f / root_area;
       float sah = sah_nodes + sah_leaves;
@@ -1140,8 +1121,8 @@ namespace embree
 	    /* print BVH stats */
 #if defined(EMBREE_DPCPP_SUPPORT) && ENABLE_STATS == 1	    
 	    {
-	      cl::sycl::queue &cpu_queue = deviceGPU->getCPUQueue();
-	      cl::sycl::event queue_event = cpu_queue.submit([&](cl::sycl::handler &cgh) {
+	      cl::sycl::queue &print_queue = deviceGPU->getGPUQueue();
+	      cl::sycl::event queue_event = print_queue.submit([&](cl::sycl::handler &cgh) {
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
 		  cgh.single_task<class printStats>([=]() {
 		      printBVHStats(globals,bvh_mem,out);
@@ -1149,7 +1130,7 @@ namespace embree
 
 		});
 	      try {
-		cpu_queue.wait_and_throw();
+		print_queue.wait_and_throw();
 	      } catch (cl::sycl::exception const& e) {
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
