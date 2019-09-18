@@ -33,6 +33,15 @@ namespace embree
     }
   };
 
+#if 0 //defined(EMBREE_DPCPP_SUPPORT)
+
+  [[intel::device_indirectly_callable]] void rtcIntersectGPUTest(struct RTCRayHit* rayhit)
+  {
+    rayhit->hit.primID = 99;
+  }
+
+#endif
+  
 }
 
 int main(int argc, char** argv) {

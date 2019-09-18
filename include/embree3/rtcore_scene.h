@@ -157,10 +157,12 @@ inline RTCSceneFlags operator|(RTCSceneFlags a, RTCSceneFlags b) {
 
 #endif
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if 0 // defined(EMBREE_DPCPP_SUPPORT)
 
 /* Intersects a single ray with the scene. */
-void rtcIntersectGPU(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit);
+//void rtcIntersectGPU(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit);
+
+[[intel::device_indirectly_callable]] void rtcIntersectGPU(struct RTCRayHit* rayhit);
 
 #endif
 

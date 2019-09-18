@@ -1706,10 +1706,16 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
-  void rtcIntersectGPU(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit)
+RTC_NAMESPACE_END
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+
+namespace embree
+{
+  [[intel::device_indirectly_callable]] void rtcIntersectGPUTest(struct RTCRayHit* rayhit)
   {
-    
+    rayhit->hit.primID = 99;   
   }
 
-
-RTC_NAMESPACE_END
+}
+#endif
