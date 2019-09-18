@@ -188,7 +188,7 @@ namespace embree
       assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );      
       DBG(numRays = 1);      
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
-      cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
+      cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 

@@ -890,7 +890,7 @@ namespace embree
 	    assert(sizeof(gpu::Quad1v)  == 64);
 	    assert(sizeof(gpu::Triangle1v) == 48);
 	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
-	    prims.getAlloc().enableUSM(&deviceGPU->getDevice(),&deviceGPU->getContext());	    
+	    prims.getAlloc().enableUSM(&deviceGPU->getGPUDevice(),&deviceGPU->getGPUContext());	    
 #endif	    
 
             /* create primref array */	    
@@ -913,8 +913,8 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 	      
-	    cl::sycl::queue &gpu_queue = deviceGPU->getQueue();
-	    const int maxWorkGroupSize = deviceGPU->getMaxWorkGroupSize();
+	    cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
+	    const int maxWorkGroupSize = deviceGPU->getGPUMaxWorkGroupSize();
 	    
 	    PRINT(maxWorkGroupSize);
 
@@ -931,13 +931,13 @@ namespace embree
 	    gpu::AABB *aabb = (gpu::AABB*)prims.data();
 	    assert(aabb);
 
-	    char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
+	    char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	    assert(bvh_mem);
 
-	    uint *primref_index = (uint*)cl::sycl::aligned_alloc(64,sizeof(uint)*2*numPrimitives,deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
+	    uint *primref_index = (uint*)cl::sycl::aligned_alloc(64,sizeof(uint)*2*numPrimitives,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	    assert(primref_index);
 
-	    gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getDevice(),deviceGPU->getContext(),cl::sycl::usm::alloc::shared);
+	    gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	    assert(globals);
 	    	    	    
 	    /* --- init globals (device) --- */
@@ -1140,7 +1140,8 @@ namespace embree
 	    /* print BVH stats */
 #if defined(EMBREE_DPCPP_SUPPORT) && ENABLE_STATS == 1	    
 	    {
-	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+	      cl::sycl::queue &cpu_queue = deviceGPU->getCPUQueue();
+	      cl::sycl::event queue_event = cpu_queue.submit([&](cl::sycl::handler &cgh) {
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
 		  cgh.single_task<class printStats>([=]() {
 		      printBVHStats(globals,bvh_mem,out);
@@ -1148,7 +1149,7 @@ namespace embree
 
 		});
 	      try {
-		gpu_queue.wait_and_throw();
+		cpu_queue.wait_and_throw();
 	      } catch (cl::sycl::exception const& e) {
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
@@ -1158,8 +1159,8 @@ namespace embree
 	    
 	    /* --- deallocate temporary data structures --- */
 #if defined(EMBREE_DPCPP_SUPPORT)	    
-	    cl::sycl::free(primref_index,deviceGPU->getContext());
-	    cl::sycl::free(globals      ,deviceGPU->getContext());
+	    cl::sycl::free(primref_index,deviceGPU->getGPUContext());
+	    cl::sycl::free(globals      ,deviceGPU->getGPUContext());
 #endif
 	    
 #if PROFILE

@@ -119,17 +119,27 @@ namespace embree
   private:
     cl::sycl::queue   *gpu_queue;
     cl::sycl::device  *gpu_device;
-    cl::sycl::context gpu_context;
+    cl::sycl::context  gpu_context;
     
-    unsigned int maxWorkGroupSize;
-    unsigned int maxComputeUnits;
+    
+    unsigned int gpu_maxWorkGroupSize;
+    unsigned int gpu_maxComputeUnits;
+
+    cl::sycl::queue   *cpu_queue;
+    cl::sycl::device  *cpu_device;
+    cl::sycl::context  cpu_context;
+    
 
   public:
-    inline cl::sycl::queue   &getQueue()   { return *gpu_queue; }
-    inline cl::sycl::device  &getDevice()  { return *gpu_device; }        
-    inline cl::sycl::context &getContext() { return gpu_context; }    
+    inline cl::sycl::queue   &getGPUQueue()   { return *gpu_queue; }
+    inline cl::sycl::device  &getGPUDevice()  { return *gpu_device; }        
+    inline cl::sycl::context &getGPUContext() { return  gpu_context; }    
 
-    inline unsigned int getMaxWorkGroupSize() { return maxWorkGroupSize; }
+    inline cl::sycl::queue   &getCPUQueue()   { return *cpu_queue; }
+    inline cl::sycl::device  &getCPUDevice()  { return *cpu_device; }        
+    inline cl::sycl::context &getCPUContext() { return  cpu_context; }    
+    
+    inline unsigned int getGPUMaxWorkGroupSize() { return gpu_maxWorkGroupSize; }
   };
 
 #endif

@@ -145,8 +145,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
       using namespace cl::sycl::info;
 
       const std::string DeviceName = Device.get_info<device::name>();
-      const std::string DeviceVendor = Device.get_info<device::vendor>();
-
+      const std::string DeviceVendor = Device.get_info<device::vendor>();      
       return Device.is_gpu() && DeviceName.find("HD Graphics NEO") ? 1 : -1;
     }
   };

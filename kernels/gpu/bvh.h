@@ -223,9 +223,6 @@ namespace embree
 	decode_scale = cselect(decode_scale != 0.0f, decode_scale, float4(2.0f*FLT_MIN));
 	float4 encode_scale = (float4)((float)QUANT_MAX) / diff;
 	encode_scale = cselect(diff > 0.0f, encode_scale, float4(0.0f));
-
-	/* if (subgroupLocalID == 0) */
-	/*   out << aabb << " diff " << diff << " encode_scale " << encode_scale << cl::sycl::endl; */
 	
 	if (subgroupLocalID < BVH_NODE_N)
 	{
@@ -263,10 +260,6 @@ namespace embree
 	  node.org   = minF;
 	  node.scale = decode_scale;	  
 	}
-
-	/* for (uint i=0;i<numChildren;i++) */
-	/*   if (i == subgroupLocalID) */
-	/*     out << childrenAABB[i] << " -> " << node.getBounds(i) << cl::sycl::endl; */
       }
 
     };

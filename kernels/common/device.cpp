@@ -521,20 +521,58 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
+  class CPUDeviceSelector : public cl::sycl::device_selector {
+  public:
+    int operator()(const cl::sycl::device &Device) const override {
+      return Device.is_cpu() ? 1 : -1;
+    }
+  };
+
+  auto exception_handler = [] (cl::sycl::exception_list exceptions) {
+    for (std::exception_ptr const& e : exceptions) {
+      try {
+	std::rethrow_exception(e);
+      } catch(cl::sycl::exception const& e) {
+	std::cout << "Caught asynchronous SYCL exception:\n"
+	<< e.what() << std::endl;
+      }
+    }
+  };  
+  
   DeviceGPU::DeviceGPU(const char* cfg, void *device, void *queue) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v,quad_accel=bvhgpu.quad1v")).c_str() : cfg)
   {
-
+    assert(device);
+    assert(queue);
+    
     gpu_device  = (cl::sycl::device *)device;
     gpu_queue   = (cl::sycl::queue  *)queue;
-    gpu_context = getQueue().get_context();
+    gpu_context = gpu_queue->get_context();
       
     // Printing Device Information
-    maxWorkGroupSize = getDevice().get_info<cl::sycl::info::device::max_work_group_size>();
-    maxComputeUnits  = getDevice().get_info<cl::sycl::info::device::max_compute_units>();    
+    gpu_maxWorkGroupSize = getGPUDevice().get_info<cl::sycl::info::device::max_work_group_size>();
+    gpu_maxComputeUnits  = getGPUDevice().get_info<cl::sycl::info::device::max_compute_units>();    
     
-    std::cout << "Device: " << getDevice().get_info<cl::sycl::info::device::name>() << std::endl;
-    std::cout << "- Max Work Group Size : " << maxWorkGroupSize << std::endl;
-    std::cout << "- Max Compute Units   : " << maxComputeUnits  << std::endl;
+    std::cout << "GPU Device: " << getGPUDevice().get_info<cl::sycl::info::device::name>() << std::endl;
+    std::cout << "- Max Work Group Size : " << gpu_maxWorkGroupSize << std::endl;
+    std::cout << "- Max Compute Units   : " << gpu_maxComputeUnits  << std::endl;
+
+    try {
+        cpu_queue  = new cl::sycl::queue(CPUDeviceSelector(), exception_handler);
+        cpu_device = new cl::sycl::device(CPUDeviceSelector());
+	assert(cpu_queue);
+	assert(cpu_device);
+	cpu_context = cpu_queue->get_context();	
+    } catch (cl::sycl::invalid_parameter_error &E) {
+      std::cout << E.what() << std::endl;
+    }
+          
+    unsigned int cpu_maxWorkGroupSize = getCPUDevice().get_info<cl::sycl::info::device::max_work_group_size>();
+    unsigned int cpu_maxComputeUnits  = getCPUDevice().get_info<cl::sycl::info::device::max_compute_units>();    
+    
+    std::cout << "CPU Device: " << getCPUDevice().get_info<cl::sycl::info::device::name>() << std::endl;
+    std::cout << "- Max Work Group Size : " << cpu_maxWorkGroupSize << std::endl;
+    std::cout << "- Max Compute Units   : " << cpu_maxComputeUnits  << std::endl;
+    
 
   }
 
