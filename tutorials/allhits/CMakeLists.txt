@@ -31,7 +31,7 @@ IF (EMBREE_TESTING_INTENSITY GREATER 1)
   ALL_HITS_TEST(flat_curve_robust_tighten tighten/tighten.ecs 1)
   ALL_HITS_TEST(flat_curve_robust curves/hair0.ecs 1)
   ALL_HITS_TEST(round_curve_robust curves/hair0.ecs 1 --convert-flat-to-round-curves)
-  ALL_HITS_TEST(oriented_curve_robust curves/oriented_curve_0.ecs 1)
+  ALL_HITS_TEST(oriented_curve_robust curves/oriented_curve0.ecs 1)
   ALL_HITS_TEST(flat_linear_curve_robust curves/hair0.ecs 1 --convert-bezier-to-lines)
 ENDIF()
 

@@ -140,9 +140,6 @@ void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
 
   HitList::Hit h(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
-  /* ignore duplicated hits that can occur for tesselated primitives */
-  if (hits.end && h == hits.hits[hits.end-1]) return;
-
   /* add hit to list */
   hits.hits[hits.end++] = h;
 }
@@ -186,6 +183,17 @@ void single_pass(Ray ray, HitList& hits_o, RayStats& stats)
   rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
   RayStats_addRay(stats);
   std::sort(&context.hits.hits[context.hits.begin],&context.hits.hits[context.hits.end]);
+
+  /* ignore duplicated hits that can occur for tesselated primitives */
+  if (hits_o.size())
+  {
+    size_t i=0, j=1;
+    for (; j<hits_o.size(); j++) {
+      if (hits_o.hits[i] == hits_o.hits[j]) continue;
+      hits_o.hits[++i] = hits_o.hits[j];
+    }
+    hits_o.end = i+1;
+  }
 }
 
 void multi_pass(Ray ray, HitList& hits_o, RayStats& stats)
@@ -237,6 +245,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     HitList verify_hits;
     single_pass(ray,verify_hits,stats);
 
+    //std::cout << std::hexfloat;
     //for (size_t i=0; i<hits.size(); i++)
     //  PRINT2(i,hits.hits[i]);
      
