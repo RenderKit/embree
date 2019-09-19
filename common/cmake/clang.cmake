@@ -116,11 +116,15 @@ ELSE()
   ENDIF()
 
   IF (EMBREE_DPCPP_SUPPORT)
-   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -fsycl -fsycl-unnamed-lambda") # disable DPC++ warnings    
+   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr") # disable DPC++ warnings    
     
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEMBREE_DPCPP_SUPPORT")      # enable DPC++ code in Embree
     SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -lOpenCL -lsycl")     # link against DPC++ libs
-    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lOpenCL -lsycl -foffload-static-lib=../../libembree3.a")           # we do not need an executable stack
+    SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lOpenCL -lsycl")           # we do not need an executable stack
+    IF (EMBREE_STATIC_LIB)
+      SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -foffload-static-lib=../../libembree3.a")           # we do not need an executable stack      
+    ENDIF()
+    
   ENDIF(EMBREE_DPCPP_SUPPORT)
 
   SET(CMAKE_CXX_FLAGS_DEBUG "")

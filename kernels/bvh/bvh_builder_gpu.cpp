@@ -33,7 +33,7 @@
 #define PROFILE_RUNS 20
 #define ENABLE_BREADTH_FIRST_PHASE 1
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
-#define ENABLE_STATS 0
+#define ENABLE_STATS 1
 #define BUILD_CHECKS 0
 
 namespace embree
@@ -921,7 +921,6 @@ namespace embree
 	    gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	    assert(globals);
 
-	    PING;
 	    /* --- init globals (device) --- */
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
@@ -937,7 +936,6 @@ namespace embree
 			  << e.what() << std::endl;
 	      }
 	    }
-	    exit(0);
 	    
 	    const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));	    
 	    {	      
