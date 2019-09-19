@@ -138,8 +138,13 @@ void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > MAX_HITS) return;
 
+  HitList::Hit h(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
+
+  /* ignore duplicated hits that can occur for tesselated primitives */
+  if (hits.end && h == hits.hits[hits.end-1]) return;
+
   /* add hit to list */
-  hits.hits[hits.end++] = HitList::Hit(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
+  hits.hits[hits.end++] = h;
 }
 
 /* Filter callback function that gathers first N hits */
@@ -231,6 +236,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   {
     HitList verify_hits;
     single_pass(ray,verify_hits,stats);
+
+    //for (size_t i=0; i<hits.size(); i++)
+    //  PRINT2(i,hits.hits[i]);
+     
+    //for (size_t i=0; i<verify_hits.size(); i++)
+    //  PRINT2(i,verify_hits.hits[i]);
     
     if (verify_hits.size() != hits.size())
       throw std::runtime_error("different number of hits found");
