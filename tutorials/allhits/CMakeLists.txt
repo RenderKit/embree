@@ -17,22 +17,21 @@
 INCLUDE(tutorial)
 ADD_TUTORIAL(allhits)
 
+MACRO (ALL_HITS_TEST name model num_hits      )
+  ADD_TEST(NAME allhits_${name}_${num_hits} COMMAND allhits -c ${EMBREE_MODEL_DIR}/${model} -c ${EMBREE_MODEL_DIR}/${model} --verify --num_hits ${num_hits} --rtcore scene_flags=robust ${ARGN} -o test.tga)
+ENDMACRO ()
+
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
-#  ADD_TEST(NAME allhits_fast_crown_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 1 -o allhits_fast_crown_1.tga)
-#  ADD_TEST(NAME allhits_fast_crown_2 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 2 -o allhits_fast_crown_2.tga)
-#  ADD_TEST(NAME allhits_fast_crown_3 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 3 -o allhits_fast_crown_3.tga)
-#  ADD_TEST(NAME allhits_fast_crown_4 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 4 -o allhits_fast_crown_4.tga)
-  ADD_TEST(NAME allhits_triangle_robust_crown_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 1 --rtcore scene_flags=robust -o allhits_triangle_robust_crown_1.tga)
-  ADD_TEST(NAME allhits_triangle_robust_crown_2 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 2 --rtcore scene_flags=robust -o allhits_triangle_robust_crown_2.tga)
-  ADD_TEST(NAME allhits_triangle_robust_crown_3 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 3 --rtcore scene_flags=robust -o allhits_triangle_robust_crown_3.tga)
-  ADD_TEST(NAME allhits_triangle_robust_crown_4 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --verify --num_hits 4 --rtcore scene_flags=robust -o allhits_triangle_robust_crown_4.tga)
-  ADD_TEST(NAME allhits_quads_robust_crown_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --convert_triangles_to_quads --verify --num_hits 1 --rtcore scene_flags=robust -o allhits_quads_robust_crown_1.tga)
-  ADD_TEST(NAME allhits_grids_robust_crown_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/crown/crown.ecs --convert_triangles_to_grids --verify --num_hits 1 --rtcore scene_flags=robust -o allhits_quads_robust_crown_1.tga)
-
-  ADD_TEST(NAME allhits_flat_curve_robust_tighten_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/tighten/tighten.ecs --verify --num_hits 1 --rtcore scene_flags=robust -o tighten1.tga)
-
-  ADD_TEST(NAME allhits_flat_curve_robust_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/hair/hair.ecs --verify --num_hits 1 --rtcore scene_flags=robust -o flat_curve_robust.tga)
-  #ADD_TEST(NAME allhits_flat_curve_robust_1 COMMAND allhits -c ${EMBREE_MODEL_DIR}/hair/hair.ecs --verify --num_hits 1 --rtcore scene_flags=robust -o flat_curve_robust.tga)
-
+  ALL_HITS_TEST(triangle_robust_crown crown/crown.ecs 1)
+  ALL_HITS_TEST(triangle_robust_crown crown/crown.ecs 2)
+  ALL_HITS_TEST(triangle_robust_crown crown/crown.ecs 3)
+  ALL_HITS_TEST(triangle_robust_crown crown/crown.ecs 4)
+  ALL_HITS_TEST(quads_robust_crown crown/crown.ecs 1 --convert_triangles_to_quads)
+  ALL_HITS_TEST(grids_robust_crown crown/crown.ecs 1 --convert_triangles_to_grids)
+  ALL_HITS_TEST(flat_curve_robust_tighten tighten/tighten.ecs 1)
+  ALL_HITS_TEST(flat_curve_robust hair/hair.ecs 1)
+  ALL_HITS_TEST(round_curve_robust hair/hair.ecs 1 --convert-flat-to-round-curves)
+  ALL_HITS_TEST(oriented_curve_robust curves/oriented_curve_0.ecs 1)
+  ALL_HITS_TEST(flat_linear_curve_robust hair/hair.ecs 1 --convert-bezier-to-lines)
 ENDIF()
 
