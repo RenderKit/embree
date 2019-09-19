@@ -21,6 +21,7 @@ namespace embree
   extern "C" {
     int g_num_hits = 4;
     bool g_verify = false;
+    bool g_visualize_errors = false;
   }
   
   struct Tutorial : public SceneLoadingTutorialApplication
@@ -35,6 +36,10 @@ namespace embree
       registerOption("verify", [] (Ref<ParseStream> cin, const FileName& path) {
           g_verify = true;
         }, "--verify: verifies result of collecting all hits");
+
+      registerOption("visualize_errors", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_visualize_errors = true;
+        }, "--visualize_errors: visualizes pixels where collected hits are wrong");
     }
     
     void postParseCommandLine() 

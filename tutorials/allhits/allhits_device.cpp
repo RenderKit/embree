@@ -25,6 +25,7 @@ extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
 extern "C" int g_num_hits;
 extern "C" bool g_verify;
+extern "C" bool g_visualize_errors;
 
 #define MAX_HITS 16*1024
 
@@ -217,7 +218,7 @@ void multi_pass(Ray ray, HitList& hits_o, RayStats& stats)
     for (size_t i=0; i<g_num_hits; i++)
       if (context.hits.begin+i < MAX_HITS)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(neg_inf);
-    
+
     rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
     iter++;
@@ -230,6 +231,7 @@ void multi_pass(Ray ray, HitList& hits_o, RayStats& stats)
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
+  bool has_error = false;
   HitList hits;
   
   /* initialize ray */
@@ -240,7 +242,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   else                 multi_pass (ray,hits,stats);
 
   /* verify result with gathering all hits */
-  if (g_verify)
+  if (g_verify || g_visualize_errors)
   {
     HitList verify_hits;
     single_pass(ray,verify_hits,stats);
@@ -253,13 +255,17 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     //  PRINT2(i,verify_hits.hits[i]);
     
     if (verify_hits.size() != hits.size())
-      throw std::runtime_error("different number of hits found");
+      has_error = true;
     
     for (size_t i=verify_hits.begin; i<verify_hits.end; i++)
     {
       if (verify_hits.hits[i] != hits.hits[i])
-        throw std::runtime_error("hits differ");
+        has_error = true;
     }
+
+    if (!g_visualize_errors)
+      throw std::runtime_error("hits differ");
+      
   }
   
   /* calculate random sequence based on hit geomIDs and primIDs */
@@ -276,6 +282,15 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   color.x = RandomSampler_getFloat(sampler);
   color.y = RandomSampler_getFloat(sampler);
   color.z = RandomSampler_getFloat(sampler);
+
+  /* mark errors red */
+  if (g_visualize_errors)
+  {
+    color.x = color.y = color.z;
+    if (has_error)
+      color = Vec3fa(1,0,0);
+  }
+  
   return color;
 }
 
@@ -350,7 +365,8 @@ extern "C" void device_render (int* pixels,
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
+  });
+
   //rtcDebug();
 }
 
