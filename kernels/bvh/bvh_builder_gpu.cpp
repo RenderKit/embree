@@ -920,7 +920,8 @@ namespace embree
 
 	    gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	    assert(globals);
-	    	    	    
+
+	    PING;
 	    /* --- init globals (device) --- */
 	    {
 	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
@@ -936,6 +937,7 @@ namespace embree
 			  << e.what() << std::endl;
 	      }
 	    }
+	    exit(0);
 	    
 	    const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));	    
 	    {	      

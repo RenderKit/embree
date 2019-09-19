@@ -1708,7 +1708,10 @@ RTC_NAMESPACE_BEGIN;
 
 RTC_NAMESPACE_END
 
-#if 0 //defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_DPCPP_SUPPORT)
+#define CL_TARGET_OPENCL_VERSION 220
+#define SYCL_SIMPLE_SWIZZLES
+#include <CL/sycl.hpp>
 
 namespace embree
 {
