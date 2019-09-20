@@ -348,7 +348,7 @@ namespace embree
 
     template<int N, int K>
     __forceinline vbool<K> intersectNodeKMB4DRobust(const typename BVHN<N>::NodeRef ref, const size_t i,
-                                                   const TravRayKRobust<K>& ray, const vfloat<K>& time, vfloat<K>& dist)
+                                                    const TravRayKRobust<K>& ray, const vfloat<K>& time, vfloat<K>& dist)
     {
       const typename BVHN<N>::AlignedNodeMB* node = ref.alignedNodeMB();
 
@@ -384,9 +384,9 @@ namespace embree
     // Fast UnalignedNode intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
-    template<int N, int K>
+    template<int N, int K, bool robust>
     __forceinline vbool<K> intersectNodeK(const typename BVHN<N>::UnalignedNode* node, const size_t i,
-                                         const TravRayKFast<K>& ray, vfloat<K>& dist)
+                                          const TravRayK<K,robust>& ray, vfloat<K>& dist)
     {
       const AffineSpace3vf<K> naabb(Vec3f(node->naabb.l.vx.x[i], node->naabb.l.vx.y[i], node->naabb.l.vx.z[i]),
                                     Vec3f(node->naabb.l.vy.x[i], node->naabb.l.vy.y[i], node->naabb.l.vy.z[i]),
@@ -404,8 +404,12 @@ namespace embree
       const vfloat<K> lclipMaxY  = lclipMinY - nrdir.y;
       const vfloat<K> lclipMaxZ  = lclipMinZ - nrdir.z;
 
-      const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+      vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+      vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+      if (robust) {
+        lnearP = lnearP*vfloat<K>(1.0f-3.0f*float(ulp));
+        lfarP  = lfarP *vfloat<K>(1.0f+3.0f*float(ulp));
+      }
       const vbool<K> lhit    = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
       dist = lnearP;
       return lhit;
@@ -415,9 +419,9 @@ namespace embree
     // Fast UnalignedNodeMB intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
-    template<int N, int K>
+    template<int N, int K, bool robust>
     __forceinline vbool<K> intersectNodeK(const typename BVHN<N>::UnalignedNodeMB* node, const size_t i,
-                                         const TravRayKFast<K>& ray, const vfloat<K>& time, vfloat<K>& dist)
+                                          const TravRayK<K,robust>& ray, const vfloat<K>& time, vfloat<K>& dist)
     {
       const AffineSpace3vf<K> xfm(Vec3f(node->space0.l.vx.x[i], node->space0.l.vx.y[i], node->space0.l.vx.z[i]),
                                   Vec3f(node->space0.l.vy.x[i], node->space0.l.vy.y[i], node->space0.l.vy.z[i]),
@@ -442,8 +446,13 @@ namespace embree
       const vfloat<K> lclipMaxY  = (upper.y - org.y) * rdir.y;
       const vfloat<K> lclipMaxZ  = (upper.z - org.z) * rdir.z;
 
-      const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+      vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+      vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+      if (robust) {
+        lnearP = lnearP*vfloat<K>(1.0f-3.0f*float(ulp));
+        lfarP  = lfarP *vfloat<K>(1.0f+3.0f*float(ulp));
+      }
+        
       const vbool<K> lhit    = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
       dist = lnearP;
       return lhit;
@@ -677,12 +686,36 @@ namespace embree
     };
 
     template<int N, int K>
+    struct BVHNNodeIntersectorK<N, K, BVH_AN1_UN1, true>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, size_t i,
+                                          const TravRayKRobust<K>& ray, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        if (likely(node.isAlignedNode()))              vmask = intersectNodeKRobust<N,K>(node.alignedNode(), i, ray, dist);
+        else /*if (unlikely(node.isUnalignedNode()))*/ vmask = intersectNodeK<N,K>(node.unalignedNode(), i, ray, dist);
+        return true;
+      }
+    };
+
+    template<int N, int K>
     struct BVHNNodeIntersectorK<N, K, BVH_AN2_UN2, false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, size_t i,
                                           const TravRayKFast<K>& ray, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
       {
         if (likely(node.isAlignedNodeMB()))              vmask = intersectNodeK<N,K>(node.alignedNodeMB(), i, ray, time, dist);
+        else /*if (unlikely(node.isUnalignedNodeMB()))*/ vmask = intersectNodeK<N,K>(node.unalignedNodeMB(), i, ray, time, dist);
+        return true;
+      }
+    };
+
+    template<int N, int K>
+    struct BVHNNodeIntersectorK<N, K, BVH_AN2_UN2, true>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, size_t i,
+                                          const TravRayKRobust<K>& ray, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        if (likely(node.isAlignedNodeMB()))              vmask = intersectNodeKRobust<N,K>(node.alignedNodeMB(), i, ray, time, dist);
         else /*if (unlikely(node.isUnalignedNodeMB()))*/ vmask = intersectNodeK<N,K>(node.unalignedNodeMB(), i, ray, time, dist);
         return true;
       }
@@ -718,6 +751,22 @@ namespace embree
       {
         if (likely(node.isAlignedNodeMB() || node.isAlignedNodeMB4D())) {
           vmask &= intersectNodeKMB4D<N,K>(node, i, ray, time, dist);
+        } else /*if (unlikely(node.isUnalignedNodeMB()))*/ {
+          assert(node.isUnalignedNodeMB());
+          vmask &= intersectNodeK<N,K>(node.unalignedNodeMB(), i, ray, time, dist);
+        }
+        return true;
+      }
+    };
+
+    template<int N, int K>
+    struct BVHNNodeIntersectorK<N, K, BVH_AN2_AN4D_UN2, true>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, size_t i,
+                                          const TravRayKRobust<K>& ray, const vfloat<K>& time, vfloat<K>& dist, vbool<K>& vmask)
+      {
+        if (likely(node.isAlignedNodeMB() || node.isAlignedNodeMB4D())) {
+          vmask &= intersectNodeKMB4DRobust<N,K>(node, i, ray, time, dist);
         } else /*if (unlikely(node.isUnalignedNodeMB()))*/ {
           assert(node.isUnalignedNodeMB());
           vmask &= intersectNodeK<N,K>(node.unalignedNodeMB(), i, ray, time, dist);
