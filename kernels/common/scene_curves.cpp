@@ -409,6 +409,13 @@ namespace embree
 
   namespace isa
   {
+    BBox3fa enlarge_bounds(const BBox3fa& bounds)
+    {
+      const float size = reduce_max(max(abs(bounds.lower),abs(bounds.upper)));
+      assert(std::isfinite(size));
+      return enlarge(bounds,Vec3fa(4.0f*float(ulp)*size));
+    }
+    
     template<typename Curve3fa, typename Curve4f>
     struct CurveGeometryInterface : public CurveGeometry
     {
@@ -820,9 +827,9 @@ namespace embree
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(i,itime).accurateFlatBounds(tessellationRate);
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(i,itime).accurateRoundBounds();
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(i,itime).accurateBounds());
         default: return empty;
         }
       }
@@ -831,9 +838,9 @@ namespace embree
       __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).accurateFlatBounds(tessellationRate);
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(space,i,itime).accurateRoundBounds();
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(space,i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(space,i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(space,i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(space,i,itime).accurateBounds());
         default: return empty;
         }
       }
@@ -842,9 +849,9 @@ namespace embree
       __forceinline BBox3fa bounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate);
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds();
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(ofs,scale,space,i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(ofs,scale,space,i,itime).accurateBounds());
         default: return empty;
         }
       }
