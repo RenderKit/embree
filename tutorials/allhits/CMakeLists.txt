@@ -18,7 +18,7 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(allhits)
 
 MACRO (ALL_HITS_TEST name model num_hits      )
-  ADD_TEST(NAME allhits_${name}_${num_hits} COMMAND allhits -c ${EMBREE_MODEL_DIR}/${model} -c ${EMBREE_MODEL_DIR}/${model} --verify --num_hits ${num_hits} --rtcore scene_flags=robust ${ARGN} -o test.tga)
+  ADD_TEST(NAME allhits_${name}_${num_hits} COMMAND allhits -c ${EMBREE_MODEL_DIR}/${model} -c ${EMBREE_MODEL_DIR}/${model} --verify --num_hits ${num_hits} --rtcore scene_flags=robust ${ARGN} --shader default -o test.tga)
 ENDMACRO ()
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)
