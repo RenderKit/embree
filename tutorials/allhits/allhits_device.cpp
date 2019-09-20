@@ -263,11 +263,10 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
         has_error = true;
     }
 
-    if (!g_visualize_errors)
+    if (!g_visualize_errors && has_error)
       throw std::runtime_error("hits differ");
-      
   }
-  
+
   /* calculate random sequence based on hit geomIDs and primIDs */
   RandomSampler sampler = { 0 };
   for (size_t i=hits.begin; i<hits.end; i++) {
