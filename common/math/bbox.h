@@ -51,7 +51,7 @@ namespace embree
     __forceinline T size() const { return upper - lower; }
 
     /*! computes the center of the box */
-    __forceinline T center() const { return 0.5f*(lower+upper); }
+    __forceinline T center() const { return T(0.5)*(lower+upper); }
 
     /*! computes twice the center of the box */
     __forceinline T center2() const { return lower+upper; }
@@ -103,7 +103,7 @@ namespace embree
 
   /*! computes the center of the box */
   template<typename T> __forceinline const T center2(const BBox<T>& box) { return box.lower + box.upper; }
-  template<typename T> __forceinline const T center (const BBox<T>& box) { return T(0.5f)*center2(box); }
+  template<typename T> __forceinline const T center (const BBox<T>& box) { return T(0.5)*center2(box); }
 
   /*! computes the volume of a bounding box */
   __forceinline float volume    ( const BBox<Vec3fa>& b ) { return reduce_mul(b.size()); }
@@ -116,7 +116,7 @@ namespace embree
   template<typename T> __forceinline const T area( const BBox<Vec2<T> >& b ) { const Vec2<T> d = b.size(); return d.x*d.y; }
 
   template<typename T> __forceinline const T halfArea( const BBox<Vec3<T> >& b ) { return halfArea(b.size()); }
-  template<typename T> __forceinline const T     area( const BBox<Vec3<T> >& b ) { return 2.0f*halfArea(b); }
+  template<typename T> __forceinline const T     area( const BBox<Vec3<T> >& b ) { return T(2.0)*halfArea(b); }
 
   __forceinline float halfArea( const BBox<Vec3fa>& b ) { return halfArea(b.size()); }
   __forceinline float     area( const BBox<Vec3fa>& b ) { return 2.0f*halfArea(b); }
