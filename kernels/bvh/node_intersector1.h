@@ -869,9 +869,9 @@ namespace embree
       const vfloat4 lower_z = madd(node->dequantize<4>(ray.nearZ >> 2),scale_z,start_z);
       const vfloat4 upper_z = madd(node->dequantize<4>(ray.farZ  >> 2),scale_z,start_z);
 
-      const vfloat4 tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat4 tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat4 tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat4 tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat4 tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat4 tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat4 tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat4 tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat4 tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -957,9 +957,9 @@ namespace embree
       const vfloat8 lower_z = madd(node->dequantize<8>(ray.nearZ >> 2),scale_z,start_z);
       const vfloat8 upper_z = madd(node->dequantize<8>(ray.farZ  >> 2),scale_z,start_z);
 
-      const vfloat8 tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat8 tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat8 tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat8 tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat8 tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat8 tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat8 tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat8 tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat8 tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -1026,9 +1026,9 @@ namespace embree
       const vfloat16 lower_z = madd(vfloat16(node->dequantize<4>(ray.nearZ >> 2)),scale_z,start_z);
       const vfloat16 upper_z = madd(vfloat16(node->dequantize<4>(ray.farZ  >> 2)),scale_z,start_z);
 
-      const vfloat16 tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat16 tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat16 tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat16 tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat16 tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat16 tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat16 tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat16 tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat16 tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -1066,7 +1066,7 @@ namespace embree
       const vfloat16 bminmaxX  = node->dequantizeLowerUpperX(ray.permX);
       const vfloat16 bminmaxY  = node->dequantizeLowerUpperY(ray.permY);
       const vfloat16 bminmaxZ  = node->dequantizeLowerUpperZ(ray.permZ);
-      const vfloat16 tNearFarX = (bminmaxX - ray.org.x) * ray.rdir_far.x;
+      const vfloat16 tNearFarX = (bminmaxX - ray.org.x) * ray.rdir_far.x; // FIXME: this is not conservative !!!!!!!!!
       const vfloat16 tNearFarY = (bminmaxY - ray.org.y) * ray.rdir_far.y;
       const vfloat16 tNearFarZ = (bminmaxZ - ray.org.z) * ray.rdir_far.z;
       const vfloat16 tNear     = max(tNearFarX, tNearFarY, tNearFarZ, ray.tnear);
@@ -1135,9 +1135,9 @@ namespace embree
       const vfloat<N> upper_y   = node->dequantizeUpperY(time);
       const vfloat<N> lower_z   = node->dequantizeLowerZ(time);
       const vfloat<N> upper_z   = node->dequantizeUpperZ(time);     
-      const vfloat<N> tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat<N> tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat<N> tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat<N> tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat<N> tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat<N> tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat<N> tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat<N> tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat<N> tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -1208,9 +1208,9 @@ namespace embree
       const vfloat16 lower_z  = node->dequantizeLowerZ(time);
       const vfloat16 upper_z  = node->dequantizeUpperZ(time);     
 
-      const vfloat16 tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat16 tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat16 tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat16 tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat16 tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat16 tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat16 tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat16 tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat16 tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
