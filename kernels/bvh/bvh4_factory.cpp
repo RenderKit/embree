@@ -253,6 +253,8 @@ namespace embree
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceExpensiveSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceExpensiveMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   
   DECLARE_ISA_FUNCTION(Builder*,BVH4GridSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4GridMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -321,6 +323,8 @@ namespace embree
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4InstanceSceneBuilderSAH));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4InstanceMBSceneBuilderSAH));
+    IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4InstanceExpensiveSceneBuilderSAH));
+    IF_ENABLED_INSTANCE(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4InstanceExpensiveMBSceneBuilderSAH));
     
     IF_ENABLED_GRIDS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4GridSceneBuilderSAH));
     IF_ENABLED_GRIDS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4GridMBSceneBuilderSAH));
