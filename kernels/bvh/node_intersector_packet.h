@@ -190,9 +190,9 @@ namespace embree
       const vfloat<K> lclipMaxZ = (node->upper_z[i] - ray.org.z) * ray.rdir.z;
       const float round_up   = 1.0f+3.0f*float(ulp);
       const float round_down = 1.0f-3.0f*float(ulp);
-      const vfloat<K> lnearP = max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
-      const vbool<K> lhit   = round_down*max(lnearP, ray.tnear) <= round_up*min(lfarP, ray.tfar);
+      const vfloat<K> lnearP = round_down*max(max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY)), min(lclipMinZ, lclipMaxZ));
+      const vfloat<K> lfarP  = round_up  *min(min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY)), max(lclipMinZ, lclipMaxZ));
+      const vbool<K> lhit   = max(lnearP, ray.tnear) <= min(lfarP, ray.tfar);
       dist = lnearP;
       return lhit;
     }
@@ -281,18 +281,18 @@ namespace embree
 #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
       if (K == 16)
       {
-        const vfloat<K> lnearP = maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
-        const vfloat<K> lfarP  = mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
-        const vbool<K>  lhit   = round_down*maxi(lnearP, ray.tnear) <= round_up*mini(lfarP, ray.tfar);
+        const vfloat<K> lnearP = round_down*maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = round_up  *mini(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K>  lhit   = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
         dist = lnearP;
         return lhit;
       }
       else
 #endif
       {
-        const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
-        const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
-        const vbool<K>  lhit   = round_down*maxi(lnearP, ray.tnear) <= round_up*mini(lfarP, ray.tfar);
+        const vfloat<K> lnearP = round_down*maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = round_up  *mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
+        const vbool<K>  lhit   = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
         dist = lnearP;
         return lhit;
       }
@@ -366,11 +366,11 @@ namespace embree
       const vfloat<K> lclipMaxY = (vupper_y - ray.org.y) * ray.rdir.y;
       const vfloat<K> lclipMaxZ = (vupper_z - ray.org.z) * ray.rdir.z;
 
-      const vfloat<K> lnearP = maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
       const float round_up   = 1.0f+3.0f*float(ulp);
       const float round_down = 1.0f-3.0f*float(ulp);
-      vbool<K> lhit = round_down*maxi(lnearP, ray.tnear) <= round_up*mini(lfarP, ray.tfar);
+      const vfloat<K> lnearP = round_down*maxi(maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY)), mini(lclipMinZ, lclipMaxZ));
+      const vfloat<K> lfarP  = round_up  *mini(mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY)), maxi(lclipMinZ, lclipMaxZ));
+      vbool<K> lhit = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
 
       if (unlikely(ref.isAlignedNodeMB4D())) {
         const typename BVHN<N>::AlignedNodeMB4D* node1 = (const typename BVHN<N>::AlignedNodeMB4D*) node;
@@ -541,9 +541,9 @@ namespace embree
       const float round_up   = 1.0f+3.0f*float(ulp);
       const float round_down = 1.0f-3.0f*float(ulp);
 
-      const vfloat<K> lnearP = max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
-      const vfloat<K> lfarP  = min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
-      const vbool<K> lhit    = round_down*max(lnearP, ray.tnear) <= round_up*min(lfarP, ray.tfar);
+      const vfloat<K> lnearP = round_down*max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+      const vfloat<K> lfarP  = round_up  *min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+      const vbool<K> lhit    = max(lnearP, ray.tnear) <= min(lfarP, ray.tfar);
       dist = lnearP;
       return lhit;
       }
@@ -609,9 +609,9 @@ namespace embree
         const float round_up   = 1.0f+3.0f*float(ulp);
         const float round_down = 1.0f-3.0f*float(ulp);
 
-        const vfloat<K> lnearP = max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
-        const vfloat<K> lfarP  = min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
-        const vbool<K> lhit    = round_down*max(lnearP, ray.tnear) <= round_up*min(lfarP, ray.tfar);
+        const vfloat<K> lnearP = round_down*max(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
+        const vfloat<K> lfarP  = round_up  *min(max(lclipMinX, lclipMaxX), max(lclipMinY, lclipMaxY), max(lclipMinZ, lclipMaxZ));
+        const vbool<K> lhit    = max(lnearP, ray.tnear) <= min(lfarP, ray.tfar);
         dist = lnearP;
         return lhit;
       }
