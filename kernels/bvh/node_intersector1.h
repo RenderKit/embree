@@ -114,9 +114,11 @@ namespace embree
       __forceinline TravRayBase(const Vec3fa& ray_org, const Vec3fa& ray_dir)
         : org_xyz(ray_org), dir_xyz(ray_dir) 
       {
-        const float ulp3 = 1.0f+3.0f*float(ulp);
-        const Vec3fa ray_rdir_near = 1.0f/zero_fix(ray_dir);
-        const Vec3fa ray_rdir_far  = ray_rdir_near*ulp3;
+        const float round_down = 1.0f-3.0f*float(ulp);
+        const float round_up   = 1.0f+3.0f*float(ulp);
+        const Vec3fa ray_rdir = 1.0f/zero_fix(ray_dir);
+        const Vec3fa ray_rdir_near = round_down*ray_rdir;
+        const Vec3fa ray_rdir_far  = round_up  *ray_rdir;
         org = Vec3vf<N>(ray_org.x,ray_org.y,ray_org.z);
         dir = Vec3vf<N>(ray_dir.x,ray_dir.y,ray_dir.z);
         rdir_near = Vec3vf<N>(ray_rdir_near.x,ray_rdir_near.y,ray_rdir_near.z);
@@ -144,11 +146,12 @@ namespace embree
                                 const Vec3vf<K>& ray_rdir, const Vec3vi<K>& nearXYZ,
                                 size_t flip = sizeof(vfloat<N>))
       {
-        const float ulp3 = 1.0f+3.0f*float(ulp);
+        const vfloat<Nx> round_down = 1.0f-3.0f*float(ulp);
+        const vfloat<Nx> round_up   = 1.0f+3.0f*float(ulp);
         org  = Vec3vf<Nx>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
         dir  = Vec3vf<Nx>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-        rdir_near = Vec3vf<Nx>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-        rdir_far  = Vec3vf<Nx>(ray_rdir.x[k]*ulp3, ray_rdir.y[k]*ulp3, ray_rdir.z[k]*ulp3);
+        rdir_near = round_down*Vec3vf<Nx>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+        rdir_far  = round_up  *Vec3vf<Nx>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
 
 	nearX = nearXYZ.x[k];
 	nearY = nearXYZ.y[k];
