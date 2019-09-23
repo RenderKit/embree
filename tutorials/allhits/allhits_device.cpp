@@ -18,6 +18,7 @@
 #include "../common/core/differential_geometry.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include <algorithm>
 
 namespace embree {
 
