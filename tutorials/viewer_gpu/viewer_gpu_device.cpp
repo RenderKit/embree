@@ -166,6 +166,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
       } catch(cl::sycl::exception const& e) {
 	std::cout << "Caught asynchronous SYCL exception:\n"
 	<< e.what() << std::endl;
+	FATAL("OpenCL Exception");	
       }
     }
   };
@@ -205,6 +206,7 @@ extern "C" void device_init (char* cfg)
       assert(gpu_device);
     } catch (cl::sycl::invalid_parameter_error &E) {
       std::cout << E.what() << std::endl;
+      FATAL("OpenCL Exception");
     }
   }
   
@@ -220,9 +222,15 @@ extern "C" void device_init (char* cfg)
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-[[intel::device_indirectly_callable]] void rtcIntersectGPUTest(struct RTCRayHit* rayhit);
+  //[[intel::device_indirectly_callable]] void rtcIntersectGPUTest(struct RTCRayHit* rayhit);
 
 #endif
+
+template<typename T>
+__forceinline T wg_align(T x, unsigned int alignment)
+{
+  return ((x + alignment-1)/alignment)*alignment;
+}  
   
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -238,6 +246,9 @@ extern "C" void device_render (int* pixels,
   }  
 #if defined(EMBREE_DPCPP_SUPPORT)
 
+  const unsigned int wg_width  = wg_align(width,16);
+  const unsigned int wg_height = wg_align(height,16);
+  
   assert(gpu_device);
   assert(gpu_queue);
   
@@ -259,29 +270,30 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
     const float3 cam_vy = Vec3fa_to_float3(camera.xfm.l.vy);
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
-    assert( (width % 16) == 0);
-    assert( (height % 16) == 0);	
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
-	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(width,height),cl::sycl::range<2>(16,16));		  
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));		  
 	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
 	    const uint x = item.get_global_id(0);
 	    const uint y = item.get_global_id(1);
-	    const float3 org = cam_p;
-	    const float3 dir = normalize((float)x*cam_vx + (float)y*cam_vy + cam_vz);
-	    RTCRayHit &rh = rtc_rays[y*width+x];
-	    rh.ray.org_x = org.x();
-	    rh.ray.org_y = org.y();
-	    rh.ray.org_z = org.z();
-	    rh.ray.tnear = 0.0f;
-	    rh.ray.dir_x = dir.x();
-	    rh.ray.dir_y = dir.y();
-	    rh.ray.dir_z = dir.z();
-	    rh.ray.time  = 0.0f;		
-	    rh.ray.tfar  = (float)INFINITY;
-	    rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-	    //RTCIntersectContext ctx;
-	    //RTCScene scene;
-	    //rtcIntersectGPU(&rh);
+	    if (x < width && y < height)
+	      {
+		const float3 org = cam_p;
+		const float3 dir = normalize((float)x*cam_vx + (float)y*cam_vy + cam_vz);
+		RTCRayHit &rh = rtc_rays[y*width+x];
+		rh.ray.org_x = org.x();
+		rh.ray.org_y = org.y();
+		rh.ray.org_z = org.z();
+		rh.ray.tnear = 0.0f;
+		rh.ray.dir_x = dir.x();
+		rh.ray.dir_y = dir.y();
+		rh.ray.dir_z = dir.z();
+		rh.ray.time  = 0.0f;		
+		rh.ray.tfar  = (float)INFINITY;
+		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+		//RTCIntersectContext ctx;
+		//RTCScene scene;
+		//rtcIntersectGPU(&rh);
+	      }
 	  });		  
       });
     try {
@@ -289,9 +301,10 @@ extern "C" void device_render (int* pixels,
     } catch (cl::sycl::exception const& e) {
       std::cout << "Caught synchronous SYCL exception:\n"
 		<< e.what() << std::endl;
+      FATAL("OpenCL Exception");      
     }
   }
-
+  
   /* test function calls */
 #if 0
   {
@@ -311,6 +324,7 @@ extern "C" void device_render (int* pixels,
     } catch (cl::sycl::exception const& e) {
       std::cout << "Caught synchronous SYCL exception:\n"
 		<< e.what() << std::endl;
+      FATAL("OpenCL Exception");      
     }
     PRINT(rtc_rays[0].hit.primID);
   }  
@@ -331,26 +345,28 @@ extern "C" void device_render (int* pixels,
   {
     using namespace cl::sycl;	
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
-	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(width,height),cl::sycl::range<2>(16,16));		  
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));		  
 	cgh.parallel_for<class shade_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
 	    const uint x = item.get_global_id(0);
 	    const uint y = item.get_global_id(1);
-	    RTCRayHit &rh = rtc_rays[y*width+x];
+	    if (x < width && y < height)
+	      {
+		RTCRayHit &rh = rtc_rays[y*width+x];
 
-	    const float3 dir(rh.ray.dir_x,rh.ray.dir_y,rh.ray.dir_z);
-	    const float3 Ng(rh.hit.Ng_x,rh.hit.Ng_y,rh.hit.Ng_z);
+		const float3 dir(rh.ray.dir_x,rh.ray.dir_y,rh.ray.dir_z);
+		const float3 Ng(rh.hit.Ng_x,rh.hit.Ng_y,rh.hit.Ng_z);
 	    
-	    /* eyelight shading */
-	    float3 color = float3(0.0f,0.0f,1.0f);
-	    if (rh.hit.geomID != RTC_INVALID_GEOMETRY_ID)
-	      color = float3(cl::sycl::abs(dot(dir,normalize(Ng))));
+		/* eyelight shading */
+		float3 color = float3(0.0f,0.0f,1.0f);
+		if (rh.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+		  color = float3(cl::sycl::abs(dot(dir,normalize(Ng))));
 
-	    /* write color to framebuffer */
-	    const uint r = (uint) (255.0f * clamp((float)color.x(),0.0f,1.0f));
-	    const uint g = (uint) (255.0f * clamp((float)color.y(),0.0f,1.0f));
-	    const uint b = (uint) (255.0f * clamp((float)color.z(),0.0f,1.0f));
-	    fb[y*width+x] = (b << 16) + (g << 8) + r;	      
-
+		/* write color to framebuffer */
+		const uint r = (uint) (255.0f * clamp((float)color.x(),0.0f,1.0f));
+		const uint g = (uint) (255.0f * clamp((float)color.y(),0.0f,1.0f));
+		const uint b = (uint) (255.0f * clamp((float)color.z(),0.0f,1.0f));
+		fb[y*width+x] = (b << 16) + (g << 8) + r;	      
+	      }
 	  });		  
       });
     try {
@@ -358,6 +374,7 @@ extern "C" void device_render (int* pixels,
     } catch (cl::sycl::exception const& e) {
       std::cout << "Caught synchronous SYCL exception:\n"
 		<< e.what() << std::endl;
+      FATAL("OpenCL Exception");
     }
   }
 

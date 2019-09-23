@@ -934,6 +934,7 @@ namespace embree
 	      } catch (cl::sycl::exception const& e) {
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
+		FATAL("OpenCL Exception");     
 	      }
 	    }
 	    
@@ -970,6 +971,7 @@ namespace embree
 	      } catch (cl::sycl::exception const& e) {
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
+		FATAL("OpenCL Exception");     		
 	      }
 	    }
 
@@ -992,6 +994,7 @@ namespace embree
 	      } catch (cl::sycl::exception const& e) {
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
+		FATAL("OpenCL Exception");     		
 	      }
 	    }
 
@@ -1035,6 +1038,7 @@ namespace embree
 	      } catch (cl::sycl::exception const& e) {
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
+		FATAL("OpenCL Exception");     		
 	      }
 	      //PRINT(globals->numBuildRecords);	      
 	    }
@@ -1089,6 +1093,7 @@ namespace embree
 	      } catch (cl::sycl::exception const& e) {
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
+		FATAL("OpenCL Exception");     		
 	      }
 	    }
 
@@ -1119,8 +1124,8 @@ namespace embree
 	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
 	    
 	    /* print BVH stats */
-#if defined(EMBREE_DPCPP_SUPPORT) && ENABLE_STATS == 1	    
-	    {
+#if defined(EMBREE_DPCPP_SUPPORT) && ENABLE_STATS == 1
+	    {	      
 	      cl::sycl::queue &print_queue = deviceGPU->getGPUQueue();
 	      cl::sycl::event queue_event = print_queue.submit([&](cl::sycl::handler &cgh) {
 		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
@@ -1134,6 +1139,7 @@ namespace embree
 	      } catch (cl::sycl::exception const& e) {
 		std::cout << "Caught synchronous SYCL exception:\n"
 			  << e.what() << std::endl;
+		FATAL("OpenCL Exception");     		
 	      }	      
 	    }
 #endif

@@ -205,6 +205,7 @@ namespace embree
 	} catch (cl::sycl::exception const& e) {
 	  std::cout << "Caught synchronous SYCL exception:\n"
 		    << e.what() << std::endl;
+	  FATAL("OpenCL Exception");
 	}
       }
       DBG(exit(0));
