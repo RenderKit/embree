@@ -698,8 +698,10 @@ namespace embree
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
     Builder* BVH4InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1); }
+    Builder* BVH4InstanceExpensiveMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,InstanceExpensive,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1); }
 #if defined(__AVX__)
     Builder* BVH8InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1); }
+    Builder* BVH8InstanceExpensiveMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,InstanceExpensive,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1); }
 #endif
 #endif
 
