@@ -170,7 +170,9 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
 
   if (hits.size() < g_num_hits)
     hits.hits[hits.end++] = nhit;
-  else {
+
+  if (hits.size() == g_num_hits)
+  {
     ray->tfar = hits.hits[hits.end-1].t;
     args->valid[0] = -1; // accept hit
   }
@@ -315,6 +317,8 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
+    //if (x != 256 || y != 256) continue;
+    //PRINT2(x,y);
     Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
