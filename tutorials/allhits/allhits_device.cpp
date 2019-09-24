@@ -102,7 +102,7 @@ public:
 struct IntersectContext
 {
   IntersectContext(HitList& hits)
-    : max_next_hits(g_max_next_hits), hits(hits) {}
+    : hits(hits), max_next_hits(g_max_next_hits) {}
 
   RTCIntersectContext context;
   HitList& hits;
@@ -233,11 +233,11 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
   /* store farthest hit if place left and last is not opaque */
   if (hits.size() < context->max_next_hits)
   {
-    if (!hits.size() || hits.size() && !hits.hits[hits.end-1].opaque)
+    if (!hits.size() || (hits.size() && !hits.hits[hits.end-1].opaque))
       hits.hits[hits.end++] = nhit;
   }
 
-  if (hits.size() == context->max_next_hits || (hits.size() && hits.hits[hits.end-1].opaque))
+  if (hits.size() == context->max_next_hits || ((hits.size() && hits.hits[hits.end-1].opaque)))
   {
     ray->tfar = hits.hits[hits.end-1].t;
     args->valid[0] = -1; // accept hit
