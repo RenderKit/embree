@@ -159,6 +159,8 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > MAX_HITS) return;
 
+  //ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserData;
+  
   HitList::Hit nhit(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
   /* ignore already found hits */
