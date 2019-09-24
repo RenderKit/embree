@@ -72,6 +72,7 @@ namespace embree
     {
       ImGui::DragInt("max_next_hits",(int*)&g_max_next_hits,1.0f,0,16);
       ImGui::DragInt("max_total_hits",(int*)&g_max_total_hits,1.0f,0,128);
+      ImGui::DragFloat("curve_opacity",&g_curve_opacity,0.01f,0.0f,1.0f);
       ImGui::Checkbox("verify",&g_verify);
     }
   };
