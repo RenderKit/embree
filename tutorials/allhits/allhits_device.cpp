@@ -25,7 +25,7 @@ namespace embree {
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
-extern "C" bool g_all_hits;
+extern "C" bool g_single_pass;
 extern "C" int g_max_next_hits;
 extern "C" int g_max_total_hits;
 extern "C" bool g_verify;
@@ -376,7 +376,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
   /* either gather hits in single pass or using multiple passes */
-  if (g_all_hits)
+  if (g_single_pass)
     single_pass(ray,hits,stats);
   else if (g_curve_opacity >= 0.0f) 
     hair_pass(ray,hits,max_next_hits,mysampler,stats);

@@ -19,7 +19,7 @@
 namespace embree
 {
   extern "C" {
-    bool g_all_hits = false;
+    bool g_single_pass = false;
     int g_max_next_hits = 4;
     int g_max_total_hits = 128;
     bool g_verify = false;
@@ -32,9 +32,9 @@ namespace embree
     Tutorial()
       : SceneLoadingTutorialApplication("allhits",FEATURE_RTCORE)
     {
-      registerOption("all_hits", [] (Ref<ParseStream> cin, const FileName& path) {
-          g_all_hits = true;
-        }, "--all_hits: use special all hits kernel to gather all hits along ray");
+      registerOption("single_pass", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_single_pass = true;
+        }, "--single_pass: use special all hits kernel to gather all hits along ray");
 
       registerOption("max_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
           g_max_next_hits = cin->getInt();
