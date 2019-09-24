@@ -22,6 +22,7 @@ namespace embree
     int g_num_hits = 4;
     bool g_verify = false;
     bool g_visualize_errors = false;
+    float g_curve_opacity = -1.0f;
   }
   
   struct Tutorial : public SceneLoadingTutorialApplication
@@ -32,6 +33,10 @@ namespace embree
       registerOption("num_hits", [] (Ref<ParseStream> cin, const FileName& path) {
           g_num_hits = cin->getInt();
         }, "--num_hits <int>: sets number of hits to accumulate maximally in each trace ray call");
+
+       registerOption("curve_opacity", [] (Ref<ParseStream> cin, const FileName& path) {
+           g_curve_opacity = cin->getFloat();
+        }, "--curve_opacity <float>: sets the opacity to use for curves to terminate the ray");
 
       registerOption("verify", [] (Ref<ParseStream> cin, const FileName& path) {
           g_verify = true;

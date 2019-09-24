@@ -27,6 +27,7 @@ extern "C" int g_instancing_mode;
 extern "C" int g_num_hits;
 extern "C" bool g_verify;
 extern "C" bool g_visualize_errors;
+extern "C" float g_curve_opacity;
 
 #define MAX_HITS 16*1024
 
@@ -328,13 +329,12 @@ void hair_pass(Ray ray, HitList& hits_o, RandomSampler& sampler, RayStats& stats
       HitList::Hit& hit = context.hits.hits[i];
 
       bool opaque = hit.opaque;
-      if (RandomSampler_get1D(sampler) < 0.25f)
+      if (RandomSampler_get1D(sampler) < g_curve_opacity)
         opaque = true;
-
-      opaque = false;
         
       if (opaque) {
         context.hits.begin = 0;
+        context.hits.end = i+1;
         return;
       }
     }
@@ -347,6 +347,10 @@ void hair_pass(Ray ray, HitList& hits_o, RandomSampler& sampler, RayStats& stats
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
+  /* initialize sampler */
+  RandomSampler mysampler;
+  RandomSampler_init(mysampler, (int)x, (int)y, 0);
+  
   bool has_error = false;
   HitList hits;
   
@@ -354,8 +358,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
   /* either gather hits in single pass or using multiple passes */
-  if (g_num_hits == 0) single_pass(ray,hits,stats);
-  else                 multi_pass (ray,hits,stats);
+  if (g_num_hits == 0)
+    single_pass(ray,hits,stats);
+  else if (g_curve_opacity >= 0.0f)
+    hair_pass(ray,hits,mysampler,stats);
+  else
+    multi_pass (ray,hits,stats);
 
   /* verify result with gathering all hits */
   if (g_verify || g_visualize_errors)
