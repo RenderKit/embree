@@ -46,8 +46,8 @@ struct HitList
   {
     Hit() {}
 
-    Hit (float t, unsigned int primID = 0xFFFFFFFF, unsigned int geomID = 0xFFFFFFFF, unsigned int instID = 0xFFFFFFFF)
-      : t(t), primID(primID), geomID(geomID), instID(instID) {}
+    Hit (bool opaque, float t, unsigned int primID = 0xFFFFFFFF, unsigned int geomID = 0xFFFFFFFF, unsigned int instID = 0xFFFFFFFF)
+      : opaque(opaque), t(t), primID(primID), geomID(geomID), instID(instID) {}
 
     /* lexicographical order (t,instID,geomID,primID) */
     __forceinline friend bool operator < (const Hit& a, const Hit& b)
@@ -77,10 +77,11 @@ struct HitList
     }
 
     friend std::ostream& operator<<(std::ostream& cout, const Hit& hit) {
-      return cout << "Hit { t = " << hit.t << ", instID = " << hit.instID << ", geomID = " << hit.geomID << ", primID = " << hit.primID << " }";
+      return cout << "Hit { opaque = " << hit.opaque << ", t = " << hit.t << ", instID = " << hit.instID << ", geomID = " << hit.geomID << ", primID = " << hit.primID << " }";
     }
 
   public:
+    bool opaque;
     float t;
     unsigned int primID;
     unsigned int geomID;
@@ -140,7 +141,7 @@ void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > MAX_HITS) return;
 
-  HitList::Hit h(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
+  HitList::Hit h(false,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
   /* add hit to list */
   hits.hits[hits.end++] = h;
@@ -161,7 +162,7 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
 
   //ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserData;
   
-  HitList::Hit nhit(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
+  HitList::Hit nhit(false,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
   /* ignore already found hits */
   if (hits.begin > 0 && nhit <= hits.hits[hits.begin-1])
@@ -225,7 +226,7 @@ void multi_pass(Ray ray, HitList& hits_o, RayStats& stats)
     
     for (size_t i=0; i<g_num_hits; i++)
       if (context.hits.begin+i < MAX_HITS)
-        context.hits.hits[context.hits.begin+i] = HitList::Hit(neg_inf);
+        context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
     rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
