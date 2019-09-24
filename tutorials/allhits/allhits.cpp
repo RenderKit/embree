@@ -20,8 +20,8 @@ namespace embree
 {
   extern "C" {
     bool g_single_pass = false;
-    int g_max_next_hits = 4;
-    int g_max_total_hits = 128;
+    unsigned g_max_next_hits = 4;
+    unsigned g_max_total_hits = 128;
     bool g_verify = false;
     bool g_visualize_errors = false;
     float g_curve_opacity = -1.0f;
@@ -70,8 +70,8 @@ namespace embree
 
     void drawGUI()
     {
-      ImGui::DragInt("max_next_hits",&g_max_next_hits,1.0f,0,16);
-      ImGui::DragInt("max_total_hits",&g_max_total_hits,1.0f,0,128);
+      ImGui::DragInt("max_next_hits",(int*)&g_max_next_hits,1.0f,0,16);
+      ImGui::DragInt("max_total_hits",(int*)&g_max_total_hits,1.0f,0,128);
       ImGui::Checkbox("verify",&g_verify);
     }
   };

@@ -26,8 +26,8 @@ namespace embree {
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
 extern "C" bool g_single_pass;
-extern "C" int g_max_next_hits;
-extern "C" int g_max_total_hits;
+extern "C" unsigned g_max_next_hits;
+extern "C" unsigned g_max_total_hits;
 extern "C" bool g_verify;
 extern "C" bool g_visualize_errors;
 extern "C" float g_curve_opacity;
@@ -264,6 +264,9 @@ void single_pass(Ray ray, HitList& hits_o, RayStats& stats)
     }
     hits_o.end = i+1;
   }
+
+  /* drop hits in case we found too many */
+  hits_o.end = std::min(hits_o.end, g_max_total_hits);
 }
 
 void multi_pass(Ray ray, HitList& hits_o, int max_next_hits, RayStats& stats)
