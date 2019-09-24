@@ -19,6 +19,7 @@
 namespace embree
 {
   extern "C" {
+    bool g_all_hits = false;
     int g_num_hits = 4;
     bool g_verify = false;
     bool g_visualize_errors = false;
@@ -30,6 +31,10 @@ namespace embree
     Tutorial()
       : SceneLoadingTutorialApplication("allhits",FEATURE_RTCORE)
     {
+      registerOption("all_hits", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_all_hits = true;
+        }, "--all_hits: use special all hits kernel to gather all hits along ray");
+
       registerOption("num_hits", [] (Ref<ParseStream> cin, const FileName& path) {
           g_num_hits = cin->getInt();
         }, "--num_hits <int>: sets number of hits to accumulate maximally in each trace ray call");
