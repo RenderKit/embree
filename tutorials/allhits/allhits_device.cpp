@@ -161,13 +161,16 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
 
   HitList::Hit nhit(ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
+  /* ignore already found hits */
   if (hits.begin > 0 && nhit <= hits.hits[hits.begin-1])
     return;
 
+  /* insert new hit at proper location */
   for (size_t i=hits.begin; i<hits.end; i++)
     if (nhit < hits.hits[i])
       std::swap(nhit,hits.hits[i]);
 
+  /* store furthest hit if place left */
   if (hits.size() < g_num_hits)
     hits.hits[hits.end++] = nhit;
 
