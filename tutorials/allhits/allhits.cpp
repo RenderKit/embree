@@ -21,6 +21,7 @@ namespace embree
   extern "C" {
     bool g_all_hits = false;
     int g_max_next_hits = 4;
+    int g_max_total_hits = 128;
     bool g_verify = false;
     bool g_visualize_errors = false;
     float g_curve_opacity = -1.0f;
@@ -37,7 +38,13 @@ namespace embree
 
       registerOption("max_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
           g_max_next_hits = cin->getInt();
-        }, "--max_next_hits <int>: sets number of hits to accumulate maximally in each trace ray call");
+        }, "--max_next_hits <int>: sets maximal number of hits to accumulate in each pass");
+
+      registerOption("max_total_hits", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_max_total_hits = cin->getInt();
+          if (g_max_total_hits > 16*1024)
+            throw std::runtime_error("max_total_hits too large");
+        }, "--max_total_hits <int>: sets maximal number of hits to accumulate in total");
 
        registerOption("curve_opacity", [] (Ref<ParseStream> cin, const FileName& path) {
            g_curve_opacity = cin->getFloat();
@@ -64,6 +71,7 @@ namespace embree
     void drawGUI()
     {
       ImGui::DragInt("max_next_hits",&g_max_next_hits,1.0f,0,16);
+      ImGui::DragInt("max_total_hits",&g_max_total_hits,1.0f,0,128);
       ImGui::Checkbox("verify",&g_verify);
     }
   };

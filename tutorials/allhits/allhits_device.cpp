@@ -27,11 +27,12 @@ extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
 extern "C" bool g_all_hits;
 extern "C" int g_max_next_hits;
+extern "C" int g_max_total_hits;
 extern "C" bool g_verify;
 extern "C" bool g_visualize_errors;
 extern "C" float g_curve_opacity;
 
-#define MAX_HITS 16*1024
+#define MAX_TOTAL_HITS 16*1024
 
 /* extended ray structure that gathers all hits along the ray */
 struct HitList
@@ -94,7 +95,7 @@ struct HitList
 public:
   unsigned int begin;   // begin of hit list
   unsigned int end;     // end of hit list
-  Hit hits[MAX_HITS];   // array to store all found hits to
+  Hit hits[MAX_TOTAL_HITS];   // array to store all found hits to
 };
 
 /* we store the Hit list inside the intersection context to access it from the filter functions */
@@ -143,7 +144,7 @@ void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
   assert(args->N == 1);
   args->valid[0] = 0; // ignore all hits
     
-  if (hits.end > MAX_HITS) return;
+  if (hits.end > g_max_total_hits) return;
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
@@ -166,7 +167,7 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
   assert(args->N == 1);
   args->valid[0] = 0; // ignore all hits
     
-  if (hits.end > MAX_HITS) return;
+  if (hits.end > g_max_total_hits) return;
 
    /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
@@ -205,7 +206,7 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
   assert(args->N == 1);
   args->valid[0] = 0; // ignore all hits
     
-  if (hits.end > MAX_HITS) return;
+  if (hits.end > g_max_total_hits) return;
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
@@ -286,7 +287,7 @@ void multi_pass(Ray ray, HitList& hits_o, int max_next_hits, RayStats& stats)
     context.hits.begin = context.hits.end;
     
     for (size_t i=0; i<context.max_next_hits; i++)
-      if (context.hits.begin+i < MAX_HITS)
+      if (context.hits.begin+i < g_max_total_hits)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
     rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
@@ -326,7 +327,7 @@ void hair_pass(Ray ray, HitList& hits_o, int max_next_hits, RandomSampler& sampl
     context.hits.begin = context.hits.end;
     
     for (size_t i=0; i<context.max_next_hits; i++)
-      if (context.hits.begin+i < MAX_HITS)
+      if (context.hits.begin+i < g_max_total_hits)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
     rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
