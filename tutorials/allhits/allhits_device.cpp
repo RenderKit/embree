@@ -196,7 +196,7 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
   if (hits.end > MAX_HITS) return;
 
   /* check if geometry is opaque */
-  //ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
+  ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
   //bool opaque = geometry->type != CURVES;
   bool opaque = false;
   
@@ -211,10 +211,10 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
   {
     if (nhit < hits.hits[i]) {
       std::swap(nhit,hits.hits[i]);
-      /*if (nhit.opaque) {
+      if (nhit.opaque) {
         hits.end = i+1;
         break;
-        }*/
+      }
     }
   }
 
