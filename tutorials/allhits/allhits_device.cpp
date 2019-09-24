@@ -26,7 +26,7 @@ namespace embree {
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
 extern "C" bool g_all_hits;
-extern "C" int g_num_hits;
+extern "C" int g_max_next_hits;
 extern "C" bool g_verify;
 extern "C" bool g_visualize_errors;
 extern "C" float g_curve_opacity;
@@ -101,11 +101,11 @@ public:
 struct IntersectContext
 {
   IntersectContext(HitList& hits)
-    : max_hits(g_num_hits), hits(hits) {}
+    : max_next_hits(g_max_next_hits), hits(hits) {}
 
   RTCIntersectContext context;
   HitList& hits;
-  int max_hits;
+  int max_next_hits;
 };
 
 /* scene data */
@@ -184,10 +184,10 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
       std::swap(nhit,hits.hits[i]);
 
   /* store furthest hit if place left */
-  if (hits.size() < context->max_hits)
+  if (hits.size() < context->max_next_hits)
     hits.hits[hits.end++] = nhit;
 
-  if (hits.size() == context->max_hits)
+  if (hits.size() == context->max_next_hits)
   {
     ray->tfar = hits.hits[hits.end-1].t;
     args->valid[0] = -1; // accept hit
@@ -230,13 +230,13 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
   }
 
   /* store farthest hit if place left and last is not opaque */
-  if (hits.size() < context->max_hits)
+  if (hits.size() < context->max_next_hits)
   {
     if (!hits.size() || hits.size() && !hits.hits[hits.end-1].opaque)
       hits.hits[hits.end++] = nhit;
   }
 
-  if (hits.size() == context->max_hits || (hits.size() && hits.hits[hits.end-1].opaque))
+  if (hits.size() == context->max_next_hits || (hits.size() && hits.hits[hits.end-1].opaque))
   {
     ray->tfar = hits.hits[hits.end-1].t;
     args->valid[0] = -1; // accept hit
@@ -265,12 +265,12 @@ void single_pass(Ray ray, HitList& hits_o, RayStats& stats)
   }
 }
 
-void multi_pass(Ray ray, HitList& hits_o, int max_hits, RayStats& stats)
+void multi_pass(Ray ray, HitList& hits_o, int max_next_hits, RayStats& stats)
 {
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
 
-  context.max_hits = max_hits;
+  context.max_next_hits = max_next_hits;
   context.context.filter = gatherNHits;
   //context.context.filter = gatherNNonOpaqueHits;
   
@@ -285,7 +285,7 @@ void multi_pass(Ray ray, HitList& hits_o, int max_hits, RayStats& stats)
     ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
     context.hits.begin = context.hits.end;
     
-    for (size_t i=0; i<context.max_hits; i++)
+    for (size_t i=0; i<context.max_next_hits; i++)
       if (context.hits.begin+i < MAX_HITS)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
@@ -306,12 +306,12 @@ int* g_num_prev_hits = nullptr;
 unsigned int g_num_prev_hits_width = 0;
 unsigned int g_num_prev_hits_height = 0;
 
-void hair_pass(Ray ray, HitList& hits_o, int max_hits, RandomSampler& sampler, RayStats& stats)
+void hair_pass(Ray ray, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats)
 {
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
 
-  context.max_hits = max_hits;
+  context.max_next_hits = max_next_hits;
   context.context.filter = gatherNNonOpaqueHits;
   
   int iter = 0;
@@ -325,7 +325,7 @@ void hair_pass(Ray ray, HitList& hits_o, int max_hits, RandomSampler& sampler, R
     ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
     context.hits.begin = context.hits.end;
     
-    for (size_t i=0; i<context.max_hits; i++)
+    for (size_t i=0; i<context.max_next_hits; i++)
       if (context.hits.begin+i < MAX_HITS)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
@@ -367,9 +367,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   bool has_error = false;
   HitList hits;
 
-  int max_hits = g_num_hits;
-  if (max_hits == 0)
-    max_hits = max(1,g_num_prev_hits[iy*TutorialApplication::instance->width+ix]);
+  int max_next_hits = g_max_next_hits;
+  if (max_next_hits == 0)
+    max_next_hits = max(1,g_num_prev_hits[iy*TutorialApplication::instance->width+ix]);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
@@ -378,9 +378,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   if (g_all_hits)
     single_pass(ray,hits,stats);
   else if (g_curve_opacity >= 0.0f) 
-    hair_pass(ray,hits,max_hits,mysampler,stats);
+    hair_pass(ray,hits,max_next_hits,mysampler,stats);
   else
-    multi_pass (ray,hits,max_hits,stats);
+    multi_pass (ray,hits,max_next_hits,stats);
 
   /* verify result with gathering all hits */
   if (g_verify || g_visualize_errors)

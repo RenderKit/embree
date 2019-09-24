@@ -20,7 +20,7 @@ namespace embree
 {
   extern "C" {
     bool g_all_hits = false;
-    int g_num_hits = 4;
+    int g_max_next_hits = 4;
     bool g_verify = false;
     bool g_visualize_errors = false;
     float g_curve_opacity = -1.0f;
@@ -35,9 +35,9 @@ namespace embree
           g_all_hits = true;
         }, "--all_hits: use special all hits kernel to gather all hits along ray");
 
-      registerOption("num_hits", [] (Ref<ParseStream> cin, const FileName& path) {
-          g_num_hits = cin->getInt();
-        }, "--num_hits <int>: sets number of hits to accumulate maximally in each trace ray call");
+      registerOption("max_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_max_next_hits = cin->getInt();
+        }, "--max_next_hits <int>: sets number of hits to accumulate maximally in each trace ray call");
 
        registerOption("curve_opacity", [] (Ref<ParseStream> cin, const FileName& path) {
            g_curve_opacity = cin->getFloat();
@@ -63,7 +63,7 @@ namespace embree
 
     void drawGUI()
     {
-      ImGui::DragInt("num_hits",&g_num_hits,1.0f,0,16);
+      ImGui::DragInt("max_next_hits",&g_max_next_hits,1.0f,0,16);
       ImGui::Checkbox("verify",&g_verify);
     }
   };
