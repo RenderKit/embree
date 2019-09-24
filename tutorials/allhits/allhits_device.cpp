@@ -141,7 +141,11 @@ void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > MAX_HITS) return;
 
-  HitList::Hit h(false,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
+  /* check if geometry is opaque */
+  ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
+  bool opaque = geometry->type != CURVES;
+  
+  HitList::Hit h(opaque,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
   /* add hit to list */
   hits.hits[hits.end++] = h;
@@ -160,7 +164,11 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > MAX_HITS) return;
 
-  HitList::Hit nhit(false,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
+   /* check if geometry is opaque */
+  ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
+  bool opaque = geometry->type != CURVES;
+
+  HitList::Hit nhit(opaque,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
   /* ignore already found hits */
   if (hits.begin > 0 && nhit <= hits.hits[hits.begin-1])
@@ -197,8 +205,7 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
-  //bool opaque = geometry->type != CURVES;
-  bool opaque = false;
+  bool opaque = geometry->type != CURVES;
   
   HitList::Hit nhit(opaque, ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
@@ -211,7 +218,7 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
   {
     if (nhit < hits.hits[i]) {
       std::swap(nhit,hits.hits[i]);
-      if (nhit.opaque) {
+      if (hits.hits[i].opaque) {
         hits.end = i+1;
         break;
       }
@@ -231,7 +238,6 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
     args->valid[0] = -1; // accept hit
   }
 }
-
 
 void single_pass(Ray ray, HitList& hits_o, RayStats& stats)
 {
@@ -260,8 +266,8 @@ void multi_pass(Ray ray, HitList& hits_o, RayStats& stats)
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
   
-  //context.context.filter = gatherNHits;
-  context.context.filter = gatherNNonOpaqueHits;
+  context.context.filter = gatherNHits;
+  //context.context.filter = gatherNNonOpaqueHits;
   
   int iter = 0;
   do {
@@ -281,6 +287,57 @@ void multi_pass(Ray ray, HitList& hits_o, RayStats& stats)
     rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
     iter++;
+
+    //if (context.hits.size() && context.hits.hits[context.hits.end-1].opaque)
+    //  break;
+    
+  } while (context.hits.size() != 0);
+  
+  context.hits.begin = 0;
+}
+
+void hair_pass(Ray ray, HitList& hits_o, RandomSampler& sampler, RayStats& stats)
+{
+  IntersectContext context(hits_o);
+  rtcInitIntersectContext(&context.context);
+  
+  context.context.filter = gatherNNonOpaqueHits;
+  
+  int iter = 0;
+  do {
+    
+    if (context.hits.end) 
+      ray.tnear() = context.hits.hits[context.hits.end-1].t;
+    
+    ray.tfar = inf;
+    ray.geomID = RTC_INVALID_GEOMETRY_ID;
+    ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
+    context.hits.begin = context.hits.end;
+    
+    for (size_t i=0; i<g_num_hits; i++)
+      if (context.hits.begin+i < MAX_HITS)
+        context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
+
+    rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
+    RayStats_addRay(stats);
+    iter++;
+
+    /* shade all hits */
+    for (size_t i=context.hits.begin; i<context.hits.end; i++)
+    {
+      HitList::Hit& hit = context.hits.hits[i];
+
+      bool opaque = hit.opaque;
+      if (RandomSampler_get1D(sampler) < 0.25f)
+        opaque = true;
+
+      opaque = false;
+        
+      if (opaque) {
+        context.hits.begin = 0;
+        return;
+      }
+    }
     
   } while (context.hits.size() != 0);
   
