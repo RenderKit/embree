@@ -160,8 +160,6 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > MAX_HITS) return;
 
-  //ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserData;
-  
   HitList::Hit nhit(false,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
   /* ignore already found hits */
@@ -183,6 +181,57 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
     args->valid[0] = -1; // accept hit
   }
 }
+
+/* Filter callback function that gathers first N hits */
+void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
+{
+  assert(*args->valid == -1);
+  IntersectContext* context = (IntersectContext*) args->context;
+  HitList& hits = context->hits;
+  RTCRay* ray = (RTCRay*) args->ray;
+  RTCHit* hit = (RTCHit*) args->hit;
+  assert(args->N == 1);
+  args->valid[0] = 0; // ignore all hits
+    
+  if (hits.end > MAX_HITS) return;
+
+  /* check if geometry is opaque */
+  //ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
+  //bool opaque = geometry->type != CURVES;
+  bool opaque = false;
+  
+  HitList::Hit nhit(opaque, ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
+
+  /* ignore already found hits */
+  if (hits.begin > 0 && nhit <= hits.hits[hits.begin-1])
+    return;
+
+  /* insert new hit at proper location */
+  for (size_t i=hits.begin; i<hits.end; i++)
+  {
+    if (nhit < hits.hits[i]) {
+      std::swap(nhit,hits.hits[i]);
+      /*if (nhit.opaque) {
+        hits.end = i+1;
+        break;
+        }*/
+    }
+  }
+
+  /* store farthest hit if place left and last is not opaque */
+  if (hits.size() < g_num_hits)
+  {
+    if (!hits.size() || hits.size() && !hits.hits[hits.end-1].opaque)
+      hits.hits[hits.end++] = nhit;
+  }
+
+  if (hits.size() == g_num_hits || (hits.size() && hits.hits[hits.end-1].opaque))
+  {
+    ray->tfar = hits.hits[hits.end-1].t;
+    args->valid[0] = -1; // accept hit
+  }
+}
+
 
 void single_pass(Ray ray, HitList& hits_o, RayStats& stats)
 {
@@ -211,7 +260,8 @@ void multi_pass(Ray ray, HitList& hits_o, RayStats& stats)
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
   
-  context.context.filter = gatherNHits;
+  //context.context.filter = gatherNHits;
+  context.context.filter = gatherNNonOpaqueHits;
   
   int iter = 0;
   do {
