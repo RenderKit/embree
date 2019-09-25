@@ -216,7 +216,7 @@ namespace embree
     unsigned grid_resX, grid_resY;
     bool remove_mblur;
     bool remove_non_mblur;
-    FileName sceneFilename;
+    std::vector<FileName> sceneFilename;
     std::vector<FileName> keyFramesFilenames;
     SceneGraph::InstancingMode instancing_mode;
     std::string subdiv_mode;

@@ -44,6 +44,8 @@ namespace embree
     
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1MB);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersectorRobust1);
+  DECLARE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersectorRobust1MB);
 
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
   DECLARE_SYMBOL2(Accel::Intersector1,BVH4Triangle4iIntersector1Moeller);
@@ -81,6 +83,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersector4Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersector4HybridMB);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersectorRobust4Hybrid);
+  DECLARE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersectorRobust4HybridMB);
 
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4Intersector4HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector4,BVH4Triangle4Intersector4HybridMoellerNoFilter);
@@ -117,6 +121,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersector8Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersector8HybridMB);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersectorRobust8Hybrid);
+  DECLARE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersectorRobust8HybridMB);
 
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4Intersector8HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector8,BVH4Triangle4Intersector8HybridMoellerNoFilter);
@@ -153,6 +159,8 @@ namespace embree
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersector16Hybrid);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersector16HybridMB);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersectorRobust16Hybrid);
+  DECLARE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersectorRobust16HybridMB);
 
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoeller);
   DECLARE_SYMBOL2(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoellerNoFilter);
@@ -347,6 +355,8 @@ namespace embree
     /* select intersectors1 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector1));
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector1MB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersectorRobust1));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersectorRobust1MB));
     
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector1Moeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX512SKX(features,BVH4Triangle4iIntersector1Moeller));
@@ -387,6 +397,8 @@ namespace embree
     /* select intersectors4 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector4Hybrid));
     IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector4HybridMB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersectorRobust4Hybrid));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersectorRobust4HybridMB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector4HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector4HybridMoellerNoFilter));
@@ -426,6 +438,8 @@ namespace embree
     /* select intersectors8 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector8Hybrid));
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersector8HybridMB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersectorRobust8Hybrid));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4OBBVirtualCurveIntersectorRobust8HybridMB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector8HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX_AVX2_AVX512SKX(features,BVH4Triangle4Intersector8HybridMoellerNoFilter));
@@ -463,6 +477,8 @@ namespace embree
     /* select intersectors16 */
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4OBBVirtualCurveIntersector16Hybrid));
     IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4OBBVirtualCurveIntersector16HybridMB));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4OBBVirtualCurveIntersectorRobust16Hybrid));
+    IF_ENABLED_CURVES(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4OBBVirtualCurveIntersectorRobust16HybridMB));
 
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector16HybridMoeller));
     IF_ENABLED_TRIS(SELECT_SYMBOL_INIT_AVX512KNL_AVX512SKX(features,BVH4Triangle4Intersector16HybridMoellerNoFilter));
@@ -519,34 +535,76 @@ namespace embree
 #endif
   }
 
-  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector)
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector, IntersectVariant ivariant)
   {
-    Accel::Intersectors intersectors;
-    intersectors.ptr = bvh;
-    intersectors.leafIntersector = leafIntersector;
-    intersectors.intersector1  = BVH4OBBVirtualCurveIntersector1();
+    switch (ivariant) {
+    case IntersectVariant::FAST:
+    {
+      Accel::Intersectors intersectors;
+      intersectors.ptr = bvh;
+      intersectors.leafIntersector = leafIntersector;
+      intersectors.intersector1  = BVH4OBBVirtualCurveIntersector1();
 #if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH4OBBVirtualCurveIntersector4Hybrid();
-    intersectors.intersector8  = BVH4OBBVirtualCurveIntersector8Hybrid();
-    intersectors.intersector16 = BVH4OBBVirtualCurveIntersector16Hybrid();
-    intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
+      intersectors.intersector4  = BVH4OBBVirtualCurveIntersector4Hybrid();
+      intersectors.intersector8  = BVH4OBBVirtualCurveIntersector8Hybrid();
+      intersectors.intersector16 = BVH4OBBVirtualCurveIntersector16Hybrid();
+      intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
 #endif
-    return intersectors;
+      return intersectors;
+    }
+    case IntersectVariant::ROBUST:
+    {
+      Accel::Intersectors intersectors;
+      intersectors.ptr = bvh;
+      intersectors.leafIntersector = leafIntersector;
+      intersectors.intersector1  = BVH4OBBVirtualCurveIntersectorRobust1();
+#if defined (EMBREE_RAY_PACKETS)
+      intersectors.intersector4  = BVH4OBBVirtualCurveIntersectorRobust4Hybrid();
+      intersectors.intersector8  = BVH4OBBVirtualCurveIntersectorRobust8Hybrid();
+      intersectors.intersector16 = BVH4OBBVirtualCurveIntersectorRobust16Hybrid();
+      intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
+#endif
+      return intersectors;
+    }
+    default: assert(false);
+    }
+    return Accel::Intersectors();
   }
 
-  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurveIntersector* leafIntersector)
+  Accel::Intersectors BVH4Factory::BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurveIntersector* leafIntersector, IntersectVariant ivariant)
   {
-    Accel::Intersectors intersectors;
-    intersectors.ptr = bvh;
-    intersectors.leafIntersector = leafIntersector;
-    intersectors.intersector1  = BVH4OBBVirtualCurveIntersector1MB();
+    switch (ivariant) {
+    case IntersectVariant::FAST:
+    {
+      Accel::Intersectors intersectors;
+      intersectors.ptr = bvh;
+      intersectors.leafIntersector = leafIntersector;
+      intersectors.intersector1  = BVH4OBBVirtualCurveIntersector1MB();
 #if defined (EMBREE_RAY_PACKETS)
-    intersectors.intersector4  = BVH4OBBVirtualCurveIntersector4HybridMB();
-    intersectors.intersector8  = BVH4OBBVirtualCurveIntersector8HybridMB();
-    intersectors.intersector16 = BVH4OBBVirtualCurveIntersector16HybridMB();
-    intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
+      intersectors.intersector4  = BVH4OBBVirtualCurveIntersector4HybridMB();
+      intersectors.intersector8  = BVH4OBBVirtualCurveIntersector8HybridMB();
+      intersectors.intersector16 = BVH4OBBVirtualCurveIntersector16HybridMB();
+      intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
 #endif
-    return intersectors;
+      return intersectors;
+    }
+    case IntersectVariant::ROBUST:
+    {
+      Accel::Intersectors intersectors;
+      intersectors.ptr = bvh;
+      intersectors.leafIntersector = leafIntersector;
+      intersectors.intersector1  = BVH4OBBVirtualCurveIntersectorRobust1MB();
+#if defined (EMBREE_RAY_PACKETS)
+      intersectors.intersector4  = BVH4OBBVirtualCurveIntersectorRobust4HybridMB();
+      intersectors.intersector8  = BVH4OBBVirtualCurveIntersectorRobust8HybridMB();
+      intersectors.intersector16 = BVH4OBBVirtualCurveIntersectorRobust16HybridMB();
+      intersectors.intersectorN  = BVH4IntersectorStreamPacketFallback();
+#endif
+      return intersectors;
+    }
+    default: assert(false);
+    }
+    return Accel::Intersectors();
   }
 
   Accel::Intersectors BVH4Factory::BVH4Triangle4Intersectors(BVH4* bvh, IntersectVariant ivariant)
@@ -978,10 +1036,10 @@ namespace embree
     }
   }
 
-  Accel* BVH4Factory::BVH4OBBVirtualCurve4i(Scene* scene)
+  Accel* BVH4Factory::BVH4OBBVirtualCurve4i(Scene* scene, IntersectVariant ivariant)
   {
     BVH4* accel = new BVH4(Curve4i::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector4i());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector4i(),ivariant);
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve4iBuilder_OBB_New(accel,scene,0);
@@ -992,10 +1050,10 @@ namespace embree
   }
 
 #if defined(EMBREE_TARGET_SIMD8)
-  Accel* BVH4Factory::BVH4OBBVirtualCurve8i(Scene* scene)
+  Accel* BVH4Factory::BVH4OBBVirtualCurve8i(Scene* scene, IntersectVariant ivariant)
   {
     BVH4* accel = new BVH4(Curve8i::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector8i());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector8i(),ivariant);
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve8iBuilder_OBB_New(accel,scene,0);
@@ -1006,10 +1064,10 @@ namespace embree
   }
 #endif
 
-  Accel* BVH4Factory::BVH4OBBVirtualCurve4v(Scene* scene)
+  Accel* BVH4Factory::BVH4OBBVirtualCurve4v(Scene* scene, IntersectVariant ivariant)
   {
     BVH4* accel = new BVH4(Curve4v::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector4v());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectors(accel,VirtualCurveIntersector4v(),ivariant);
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4Curve4vBuilder_OBB_New(accel,scene,0);
@@ -1019,10 +1077,10 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4OBBVirtualCurve4iMB(Scene* scene)
+  Accel* BVH4Factory::BVH4OBBVirtualCurve4iMB(Scene* scene, IntersectVariant ivariant)
   {
     BVH4* accel = new BVH4(Curve4iMB::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurveIntersector4iMB());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurveIntersector4iMB(),ivariant);
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBCurve4iMBBuilder_OBB(accel,scene,0);
@@ -1033,10 +1091,10 @@ namespace embree
   }
 
 #if defined(EMBREE_TARGET_SIMD8)
-  Accel* BVH4Factory::BVH4OBBVirtualCurve8iMB(Scene* scene)
+  Accel* BVH4Factory::BVH4OBBVirtualCurve8iMB(Scene* scene, IntersectVariant ivariant)
   {
     BVH4* accel = new BVH4(Curve8iMB::type,scene);
-    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurveIntersector8iMB());
+    Accel::Intersectors intersectors = BVH4OBBVirtualCurveIntersectorsMB(accel,VirtualCurveIntersector8iMB(), ivariant);
 
     Builder* builder = nullptr;
     if      (scene->device->hair_builder == "default"     ) builder = BVH4OBBCurve8iMBBuilder_OBB(accel,scene,0);

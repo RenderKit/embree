@@ -346,3 +346,13 @@ the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable must be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree3`.
 
+Next Hit
+-----------
+
+This tutorial demonstrates how to robustly enumerate all hits along
+the ray using multiple ray queries and an intersection filter
+function. To improve performance, the tutorial also supports
+collecting the next N hits in a single ray query.
+
+
+

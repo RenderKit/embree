@@ -1027,6 +1027,36 @@ namespace embree
   };
 
   /////////////////////////////////////////////////////////////////////////////////
+
+  /*
+   * Test that types can be instantiated.
+   */
+  struct TypesTest : public VerifyApplication::Test
+  {
+    TypesTest(std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS)
+    {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      return VerifyApplication::PASSED;
+    }
+
+    BBox<Vec2<int>> bbv2i;
+    BBox<Vec3<int>> bbv3i;
+    BBox<Vec4<int>> bbv4i;
+    BBox<Vec2<unsigned int>> bbv2u;
+    BBox<Vec3<unsigned int>> bbv3u;
+    BBox<Vec4<unsigned int>> bbv4u;
+    BBox<Vec2<float>> bbv2f;
+    BBox<Vec3<float>> bbv3f;
+    BBox<Vec4<float>> bbv4f;
+    BBox<Vec2<double>> bbv2d;
+    BBox<Vec3<double>> bbv3d;
+    BBox<Vec4<double>> bbv4d;
+  };
+
+  /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -4960,6 +4990,7 @@ namespace embree
       push(new TestGroup(stringOfISA(isa),false,false));
       
       groups.top()->add(new MultipleDevicesTest("multiple_devices",isa));
+      groups.top()->add(new TypesTest("types_test",isa));
 
       push(new TestGroup("get_bounds",true,true));
       for (auto gtype : gtypes_all)
