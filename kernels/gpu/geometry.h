@@ -149,7 +149,7 @@ namespace embree
 	  float t = dot3(tri_v0_org,tri_Ng) * inv_den; 
 	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
 	  //if (m_hit == 0) return; // early out
-	  m_hit &= (tnear <= t) & (t < tfar); // den != 0.0f &&
+	  m_hit &= (tnear <= t) & (t <= tfar); // den != 0.0f &&
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
@@ -201,7 +201,7 @@ namespace embree
 	  float t = dot3(tri_v0_org,tri_Ng) * inv_den; 
 	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
 	  //if (m_hit == 0) return; // early out
-	  m_hit &= (tnear <= t) & (t < tfar); // den != 0.0f &&
+	  m_hit &= (tnear <= t) & (t <= tfar); // den != 0.0f &&
 	  if (m_hit) 
 	    {
 	      new_tfar = t;

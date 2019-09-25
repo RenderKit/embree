@@ -874,8 +874,9 @@ namespace embree
 	    prims.getAlloc().enableUSM(&deviceGPU->getGPUDevice(),&deviceGPU->getGPUContext());	    
 #endif	    
 
-            /* create primref array */	    
-            prims.resize(numPrimitives); 
+            /* create primref array */
+	    const float alloc_factor = 1.1f;
+            prims.resize((size_t)(numPrimitives*alloc_factor)); 
 
             PrimInfo pinfo = mesh ?
               createPrimRefArray(mesh,numPrimitives,prims,bvh->scene->progressInterface) :
