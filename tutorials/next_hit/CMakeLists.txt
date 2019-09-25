@@ -15,10 +15,10 @@
 ## ======================================================================== ##
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(allhits)
+ADD_TUTORIAL(next_hit)
 
 MACRO (ALL_HITS_TEST name model max_next_hits      )
-  ADD_TEST(NAME allhits_${name}_${max_next_hits} COMMAND allhits -c ${EMBREE_MODEL_DIR}/${model} -c ${EMBREE_MODEL_DIR}/${model} --verify --max_next_hits ${max_next_hits} --max_total_hits 1024 ${ARGN} --shader default -o test.tga)
+  ADD_TEST(NAME next_hit_${name}_${max_next_hits} COMMAND next_hit -c ${EMBREE_MODEL_DIR}/${model} -c ${EMBREE_MODEL_DIR}/${model} --verify --max_next_hits ${max_next_hits} --max_total_hits 1024 ${ARGN} --shader default -o test.tga)
 ENDMACRO ()
 
 IF (EMBREE_TESTING_INTENSITY GREATER 1)

@@ -21,16 +21,16 @@
 #include <algorithm>
 #include "../common/tutorial/tutorial.h"
 
-#define ALL_HITS_SINGLE_PASS 0
-#define ALL_HITS_MULTI_PASS_FIXED_NEXT_HITS 1
-#define ALL_HITS_MULTI_PASS_OPTIMAL_NEXT_HITS 2
-#define ALL_HITS_MULTI_PASS_ESTIMATED_NEXT_HITS 3
+#define SINGLE_PASS 0
+#define MULTI_PASS_FIXED_NEXT_HITS 1
+#define MULTI_PASS_OPTIMAL_NEXT_HITS 2
+#define MULTI_PASS_ESTIMATED_NEXT_HITS 3
 
 namespace embree {
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
-extern "C" int g_allhits_mode;
+extern "C" int g_next_hit_mode;
 extern "C" unsigned g_max_next_hits;
 extern "C" unsigned g_max_total_hits;
 extern "C" bool g_verify;
@@ -339,22 +339,22 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
   /* either gather hits in single pass or using multiple passes */
   HitList hits;
-  switch (g_allhits_mode)
+  switch (g_next_hit_mode)
   {
-  case ALL_HITS_SINGLE_PASS:
+  case SINGLE_PASS:
     single_pass(ray,hits,mysampler,stats);
     break;
   
-  case ALL_HITS_MULTI_PASS_FIXED_NEXT_HITS:
+  case MULTI_PASS_FIXED_NEXT_HITS:
     multi_pass (ray,hits,g_max_next_hits,mysampler,stats);
     break;
 
-  case ALL_HITS_MULTI_PASS_OPTIMAL_NEXT_HITS: {
+  case MULTI_PASS_OPTIMAL_NEXT_HITS: {
     int num_prev_hits = max(1,g_num_prev_hits[iy*TutorialApplication::instance->width+ix]);
     multi_pass (ray,hits,num_prev_hits,mysampler,stats);
     break;
   }
-  case ALL_HITS_MULTI_PASS_ESTIMATED_NEXT_HITS: {
+  case MULTI_PASS_ESTIMATED_NEXT_HITS: {
     int estimated_num_next_hits = (int) min((float)g_max_next_hits, max(1.0f, 0.5f/g_curve_opacity));
     multi_pass (ray,hits,estimated_num_next_hits,mysampler,stats);
     break;

@@ -18,12 +18,12 @@
 
 namespace embree
 {
-  #define ALL_HITS_SINGLE_PASS 0
-  #define ALL_HITS_MULTI_PASS_FIXED_NEXT_HITS 1
-  #define ALL_HITS_MULTI_PASS_OPTIMAL_NEXT_HITS 2
-  #define ALL_HITS_MULTI_PASS_ESTIMATED_NEXT_HITS 3
+  #define SINGLE_PASS 0
+  #define MULTI_PASS_FIXED_NEXT_HITS 1
+  #define MULTI_PASS_OPTIMAL_NEXT_HITS 2
+  #define MULTI_PASS_ESTIMATED_NEXT_HITS 3
 
-  const char* allhits_mode_names[] = {
+  const char* next_hit_mode_names[] = {
     "single pass",
     "multi_pass_fixed_next_hits",
     "multi_pass_optimal_next_hits",
@@ -31,7 +31,7 @@ namespace embree
   };
   
   extern "C" {
-    int g_allhits_mode = ALL_HITS_MULTI_PASS_FIXED_NEXT_HITS;
+    int g_next_hit_mode = MULTI_PASS_FIXED_NEXT_HITS;
     unsigned g_max_next_hits = 4;
     unsigned g_max_total_hits = 128;
     bool g_verify = false;
@@ -43,22 +43,22 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("allhits",FEATURE_RTCORE)
+      : SceneLoadingTutorialApplication("next_hit",FEATURE_RTCORE)
     {
       registerOption("single_pass", [] (Ref<ParseStream> cin, const FileName& path) {
-          g_allhits_mode = ALL_HITS_SINGLE_PASS;
+          g_next_hit_mode = SINGLE_PASS;
         }, "--single_pass: use special all hits kernel to gather all hits along ray");
 
       registerOption("multi_pass_fixed_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
-          g_allhits_mode = ALL_HITS_MULTI_PASS_FIXED_NEXT_HITS;
+          g_next_hit_mode = MULTI_PASS_FIXED_NEXT_HITS;
         }, "--multi_pass_fixed_next_hits: use multiple passes and gather a fixed number of hits each pass");
 
       registerOption("multi_pass_optimal_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
-          g_allhits_mode = ALL_HITS_MULTI_PASS_OPTIMAL_NEXT_HITS;
+          g_next_hit_mode = MULTI_PASS_OPTIMAL_NEXT_HITS;
         }, "--multi_pass_optimal_next_hits: use multiple passes and gather the optimal number of hits (known from previous frame)");
 
       registerOption("multi_pass_estimate_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
-          g_allhits_mode = ALL_HITS_MULTI_PASS_ESTIMATED_NEXT_HITS;
+          g_next_hit_mode = MULTI_PASS_ESTIMATED_NEXT_HITS;
         }, "--multi_pass_estimate_next_hits: use multiple passes and estimate the number of hits to gather from opacity");
 
       registerOption("max_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
@@ -97,14 +97,14 @@ namespace embree
     void drawGUI()
     {
       
-      ImGui::Combo("mode",&g_allhits_mode,allhits_mode_names,4);
-      if (g_allhits_mode != 0)
+      ImGui::Combo("mode",&g_next_hit_mode,next_hit_mode_names,4);
+      if (g_next_hit_mode != 0)
         ImGui::DragInt("max_next_hits",(int*)&g_max_next_hits,1.0f,1,16);
       ImGui::DragInt("max_total_hits",(int*)&g_max_total_hits,1.0f,1,128);
       ImGui::Checkbox("enable_opacity",&g_enable_opacity);
       if (g_enable_opacity)
         ImGui::DragFloat("curve_opacity",&g_curve_opacity,0.01f,0.0f,1.0f);
-      if (g_allhits_mode != 0)
+      if (g_next_hit_mode != 0)
         ImGui::Checkbox("verify",&g_verify);
     }
   };
