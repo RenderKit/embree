@@ -2,9 +2,13 @@ Version History
 ---------------
 
 ### New Features in Embree 3.6.2
--   Implemented robust mode for curves.
+-   Depth test consistently uses tnear <= t <= tfar now in order
+    to support robustly continue traversal at a previous hit point
+    in a way that guarentees reaching all hits.
+-   Fixed depth test in robust mode to be precise at tnear and tfar.
 -   Added next_hit tutorial to demonstrate robustly collecting all hits
     along a ray using multiple ray queries.
+-   Implemented robust mode for curves.
 
 ### New Features in Embree 3.6.1
 -   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
