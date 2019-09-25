@@ -355,7 +355,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     break;
   }
   case ALL_HITS_MULTI_PASS_ESTIMATED_NEXT_HITS: {
-    int estimated_num_next_hits = (int) min((float)g_max_next_hits, 1.0f/g_curve_opacity);
+    int estimated_num_next_hits = (int) min((float)g_max_next_hits, max(1.0f, 0.5f/g_curve_opacity));
     multi_pass (ray,hits,estimated_num_next_hits,mysampler,stats);
     break;
   }
