@@ -22,18 +22,7 @@
 namespace embree
 {
   namespace isa
-  {
-    /*
-      This presplit item contains for each primitive a number of splits to
-      perform (priority) and the primref index.
-    */
-    
-    struct PresplitItem
-    {
-      unsigned int index;
-      float priority;
-    };
-    
+  {    
     PrimInfo createPrimRefArray(Geometry* geometry, const size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;

@@ -22,10 +22,28 @@
 
 namespace embree
 {
+  // FIXME: maybe there's a better place for this util fct
+  __forceinline float areaProjectedTriangle(const Vec3fa v0, const Vec3fa v1, const Vec3fa v2)
+  {
+    const Vec2f v0_xy(v0.x,v0.y);
+    const Vec2f v0_yz(v0.y,v0.z);
+    const Vec2f v0_zx(v0.z,v0.x);
+    const Vec2f v1_xy(v1.x,v1.y);
+    const Vec2f v1_yz(v1.y,v1.z);
+    const Vec2f v1_zx(v1.z,v1.x);
+    const Vec2f v2_xy(v2.x,v2.y);
+    const Vec2f v2_yz(v2.y,v2.z);
+    const Vec2f v2_zx(v2.z,v2.x);      
+    const float xy = 0.5f*fabs(det(v1_xy-v0_xy,v2_xy-v0_xy));
+    const float yz = 0.5f*fabs(det(v1_yz-v0_yz,v2_yz-v0_yz));
+    const float zx = 0.5f*fabs(det(v1_zx-v0_zx,v2_zx-v0_zx));
+    return xy+yz+zx;
+  }
+  
   //namespace isa
   //{
-    template<typename BBox>
-      class CentGeom
+  template<typename BBox>
+    class CentGeom
     {
     public:
       __forceinline CentGeom () {}
@@ -38,20 +56,20 @@ namespace embree
       
       template<typename PrimRef> 
         __forceinline void extend_primref(const PrimRef& prim) 
-      {
-        BBox bounds; Vec3fa center;
-        prim.binBoundsAndCenter(bounds,center);
-        geomBounds.extend(bounds);
-        centBounds.extend(center);
-      }
+	{
+	  BBox bounds; Vec3fa center;
+	  prim.binBoundsAndCenter(bounds,center);
+	  geomBounds.extend(bounds);
+	  centBounds.extend(center);
+	}
 
-       template<typename PrimRef> 
-         __forceinline void extend_center2(const PrimRef& prim) 
-       {
-         BBox3fa bounds = prim.bounds();
-         geomBounds.extend(bounds);
-         centBounds.extend(bounds.center2());
-       }
+      template<typename PrimRef> 
+	__forceinline void extend_center2(const PrimRef& prim) 
+	{
+	  BBox3fa bounds = prim.bounds();
+	  geomBounds.extend(bounds);
+	  centBounds.extend(bounds.center2());
+	}
        
       __forceinline void extend(const BBox& geomBounds_) {
 	geomBounds.extend(geomBounds_);
@@ -73,11 +91,11 @@ namespace embree
       BBox3fa centBounds;   //!< centroid bounds of primitives
     };
 
-    typedef CentGeom<BBox3fa> CentGeomBBox3fa;
+  typedef CentGeom<BBox3fa> CentGeomBBox3fa;
 
-    /*! stores bounding information for a set of primitives */
-    template<typename BBox>
-      class PrimInfoT : public CentGeom<BBox>
+  /*! stores bounding information for a set of primitives */
+  template<typename BBox>
+    class PrimInfoT : public CentGeom<BBox>
     {
     public:
       using CentGeom<BBox>::geomBounds;
@@ -93,29 +111,29 @@ namespace embree
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
-      {
-        CentGeom<BBox>::extend_primref(prim);
-        end++;
+	{
+	  CentGeom<BBox>::extend_primref(prim);
+	  end++;
+	}
+
+      template<typename PrimRef> 
+	__forceinline void add_center2(const PrimRef& prim) {
+	CentGeom<BBox>::extend_center2(prim);
+	end++;
       }
 
-       template<typename PrimRef> 
-         __forceinline void add_center2(const PrimRef& prim) {
-         CentGeom<BBox>::extend_center2(prim);
-         end++;
-       }
-
-        template<typename PrimRef> 
-          __forceinline void add_center2(const PrimRef& prim, const size_t i) {
-          CentGeom<BBox>::extend_center2(prim);
-          end+=i;
-        }
+      template<typename PrimRef> 
+	__forceinline void add_center2(const PrimRef& prim, const size_t i) {
+	CentGeom<BBox>::extend_center2(prim);
+	end+=i;
+      }
 
       /*__forceinline void add(const BBox& geomBounds_) {
 	CentGeom<BBox>::extend(geomBounds_);
 	end++;
-      }
+	}
 
-      __forceinline void add(const BBox& geomBounds_, const size_t i) {
+	__forceinline void add(const BBox& geomBounds_, const size_t i) {
 	CentGeom<BBox>::extend(geomBounds_);
 	end+=i;
         }*/
@@ -160,12 +178,12 @@ namespace embree
       size_t begin,end;          //!< number of primitives
     };
 
-    typedef PrimInfoT<BBox3fa> PrimInfo;
-    //typedef PrimInfoT<LBBox3fa> PrimInfoMB;
+  typedef PrimInfoT<BBox3fa> PrimInfo;
+  //typedef PrimInfoT<LBBox3fa> PrimInfoMB;
 
-    /*! stores bounding information for a set of primitives */
-    template<typename BBox>
-      class PrimInfoMBT : public CentGeom<BBox>
+  /*! stores bounding information for a set of primitives */
+  template<typename BBox>
+    class PrimInfoMBT : public CentGeom<BBox>
     {
     public:
       using CentGeom<BBox>::geomBounds;
@@ -182,16 +200,16 @@ namespace embree
 
       template<typename PrimRef> 
         __forceinline void add_primref(const PrimRef& prim) 
-      {
-        CentGeom<BBox>::extend_primref(prim);
-        time_range.extend(prim.time_range);
-        object_range._end++;
-        num_time_segments += prim.size();
-        if (max_num_time_segments < prim.totalTimeSegments()) {
-          max_num_time_segments = prim.totalTimeSegments();
-          max_time_range = prim.time_range;
-        }
-      }
+	{
+	  CentGeom<BBox>::extend_primref(prim);
+	  time_range.extend(prim.time_range);
+	  object_range._end++;
+	  num_time_segments += prim.size();
+	  if (max_num_time_segments < prim.totalTimeSegments()) {
+	    max_num_time_segments = prim.totalTimeSegments();
+	    max_time_range = prim.time_range;
+	  }
+	}
 
       __forceinline void merge(const PrimInfoMBT& other)
       {
@@ -263,95 +281,95 @@ namespace embree
       BBox1f time_range; //!< merged time range of primitives when merging prims, or additionally clipped with build time range when used in SetMB
     };
 
-    typedef PrimInfoMBT<typename PrimRefMB::BBox> PrimInfoMB;
+  typedef PrimInfoMBT<typename PrimRefMB::BBox> PrimInfoMB;
 
-    struct SetMB : public PrimInfoMB
+  struct SetMB : public PrimInfoMB
+  {
+    static const size_t PARALLEL_THRESHOLD = 3 * 1024;
+    static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
+    static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
+
+    typedef mvector<PrimRefMB>* PrimRefVector;
+
+    __forceinline SetMB() {}
+
+    __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims)
+      : PrimInfoMB(pinfo_i), prims(prims) {}
+
+    __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range_in, BBox1f time_range_in)
+      : PrimInfoMB(pinfo_i), prims(prims)
     {
-      static const size_t PARALLEL_THRESHOLD = 3 * 1024;
-      static const size_t PARALLEL_FIND_BLOCK_SIZE = 1024;
-      static const size_t PARALLEL_PARTITION_BLOCK_SIZE = 128;
-
-      typedef mvector<PrimRefMB>* PrimRefVector;
-
-      __forceinline SetMB() {}
-
-       __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims)
-         : PrimInfoMB(pinfo_i), prims(prims) {}
-
-      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, range<size_t> object_range_in, BBox1f time_range_in)
-        : PrimInfoMB(pinfo_i), prims(prims)
-      {
-        object_range = object_range_in;
-        time_range = intersect(time_range,time_range_in);
-      }
+      object_range = object_range_in;
+      time_range = intersect(time_range,time_range_in);
+    }
       
-      __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range_in)
-        : PrimInfoMB(pinfo_i), prims(prims)
-      {
-        time_range = intersect(time_range,time_range_in);
-      }
+    __forceinline SetMB(const PrimInfoMB& pinfo_i, PrimRefVector prims, BBox1f time_range_in)
+      : PrimInfoMB(pinfo_i), prims(prims)
+    {
+      time_range = intersect(time_range,time_range_in);
+    }
 
-      void deterministic_order() const 
-      {
-        /* required as parallel partition destroys original primitive order */
-        PrimRefMB* prim = prims->data();
-        std::sort(&prim[object_range.begin()],&prim[object_range.end()]);
-      }
+    void deterministic_order() const 
+    {
+      /* required as parallel partition destroys original primitive order */
+      PrimRefMB* prim = prims->data();
+      std::sort(&prim[object_range.begin()],&prim[object_range.end()]);
+    }
 
-      template<typename RecalculatePrimRef>
+    template<typename RecalculatePrimRef>
       __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef) const
       {
         auto reduce = [&](const range<size_t>& r) -> LBBox3fa
-        {
-          LBBox3fa cbounds(empty);
-          for (size_t j = r.begin(); j < r.end(); j++)
-          {
-            PrimRefMB& ref = (*prims)[j];
-            const LBBox3fa bn = recalculatePrimRef.linearBounds(ref, time_range);
-            cbounds.extend(bn);
-          };
-          return cbounds;
-        };
+	  {
+	    LBBox3fa cbounds(empty);
+	    for (size_t j = r.begin(); j < r.end(); j++)
+	      {
+		PrimRefMB& ref = (*prims)[j];
+		const LBBox3fa bn = recalculatePrimRef.linearBounds(ref, time_range);
+		cbounds.extend(bn);
+	      };
+	    return cbounds;
+	  };
         
         return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
                                reduce,
                                [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return embree::merge(b0, b1); });
       }
 
-      template<typename RecalculatePrimRef>
-        __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef, const LinearSpace3fa& space) const
+    template<typename RecalculatePrimRef>
+      __forceinline LBBox3fa linearBounds(const RecalculatePrimRef& recalculatePrimRef, const LinearSpace3fa& space) const
       {
         auto reduce = [&](const range<size_t>& r) -> LBBox3fa
-        {
-          LBBox3fa cbounds(empty);
-          for (size_t j = r.begin(); j < r.end(); j++)
-          {
-            PrimRefMB& ref = (*prims)[j];
-            const LBBox3fa bn = recalculatePrimRef.linearBounds(ref, time_range, space);
-            cbounds.extend(bn);
-          };
-          return cbounds;
-        };
+	  {
+	    LBBox3fa cbounds(empty);
+	    for (size_t j = r.begin(); j < r.end(); j++)
+	      {
+		PrimRefMB& ref = (*prims)[j];
+		const LBBox3fa bn = recalculatePrimRef.linearBounds(ref, time_range, space);
+		cbounds.extend(bn);
+	      };
+	    return cbounds;
+	  };
         
         return parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, LBBox3fa(empty),
                                reduce,
                                [&](const LBBox3fa& b0, const LBBox3fa& b1) -> LBBox3fa { return embree::merge(b0, b1); });
       }
 
-      template<typename RecalculatePrimRef>
-        const SetMB primInfo(const RecalculatePrimRef& recalculatePrimRef, const LinearSpace3fa& space) const
+    template<typename RecalculatePrimRef>
+      const SetMB primInfo(const RecalculatePrimRef& recalculatePrimRef, const LinearSpace3fa& space) const
       {
         auto computePrimInfo = [&](const range<size_t>& r) -> PrimInfoMB
-        {
-          PrimInfoMB pinfo(empty);
-          for (size_t j=r.begin(); j<r.end(); j++)
-          {
-            PrimRefMB& ref = (*prims)[j];
-            PrimRefMB ref1 = recalculatePrimRef(ref,time_range,space);
-            pinfo.add_primref(ref1);
-          };
-          return pinfo;
-        };
+	  {
+	    PrimInfoMB pinfo(empty);
+	    for (size_t j=r.begin(); j<r.end(); j++)
+	      {
+		PrimRefMB& ref = (*prims)[j];
+		PrimRefMB ref1 = recalculatePrimRef(ref,time_range,space);
+		pinfo.add_primref(ref1);
+	      };
+	    return pinfo;
+	  };
         
         const PrimInfoMB pinfo = parallel_reduce(object_range.begin(), object_range.end(), PARALLEL_FIND_BLOCK_SIZE, PARALLEL_THRESHOLD, 
                                                  PrimInfoMB(empty), computePrimInfo, PrimInfoMB::merge2);
@@ -359,8 +377,8 @@ namespace embree
         return SetMB(pinfo,prims,object_range,time_range);
       }
       
-    public:
-      PrimRefVector prims;
-    };
-//}
+  public:
+    PrimRefVector prims;
+  };
+  //}
 }

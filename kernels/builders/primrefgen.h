@@ -23,9 +23,10 @@
 #include "bvh_builder_morton.h"
 
 namespace embree
-{
+{ 
   namespace isa
   {
+    
     PrimInfo createPrimRefArray(Geometry* geometry, size_t numPrimitives, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
    
     PrimInfo createPrimRefArray(Scene* scene, Geometry::GTypeMask types, bool mblur, size_t numPrimitives, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);

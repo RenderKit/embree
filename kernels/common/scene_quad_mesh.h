@@ -210,6 +210,17 @@ namespace embree
       return quads.isModified() || numPrimitivesChanged;
     }
 
+    /* returns the projected area */
+    __forceinline float projectedPrimitiveArea(const size_t i) const {
+      const Quad& q = quad(i);
+      const Vec3fa v0 = vertex(q.v[0]);
+      const Vec3fa v1 = vertex(q.v[1]);
+      const Vec3fa v2 = vertex(q.v[2]);
+      const Vec3fa v3 = vertex(q.v[3]);
+      return areaProjectedTriangle(v0,v1,v3) +
+	areaProjectedTriangle(v1,v2,v3);
+    }
+    
   public:
     BufferView<Quad> quads;                 //!< array of quads
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer

@@ -35,11 +35,35 @@
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
 #define ENABLE_STATS 1
 #define BUILD_CHECKS 0
+#define ENABLE_PRESPLITS 0
+
+#define GRID_SIZE 1024
 
 namespace embree
 {
 #if defined(EMBREE_DPCPP_SUPPORT)
 
+    
+  struct PresplitItem
+  {
+    float priority;    
+    unsigned int index;
+
+    __forceinline operator unsigned() const
+    {
+      return priority;
+    }
+    __forceinline bool operator < (const PresplitItem& item) const
+    {
+      return (priority < item.priority) || ((priority == item.priority) && (index < item.index));
+    }
+    
+  };
+
+  inline std::ostream &operator<<(std::ostream &cout, const PresplitItem& item) {
+    return cout << "index " << item.index << " priority " << item.priority;    
+  };  
+  
   inline float4 Vec3fa_to_float4(const Vec3fa& v)
   {
     return float4(v.x,v.y,v.z,v.w);
@@ -823,7 +847,7 @@ namespace embree
 
   namespace isa
   {    
-    template<int N, typename Mesh, typename Primitive, typename Splitter>
+    template<int N, typename Mesh, typename Primitive, typename SplitterFactory>
     struct BVHGPUBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
@@ -852,8 +876,8 @@ namespace embree
         }
 
 	/* skip build for empty scene */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
-        if (numPrimitives == 0) {
+        const size_t org_numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        if (org_numPrimitives == 0) {
           bvh->clear();
           prims.clear();
           return;
@@ -862,7 +886,7 @@ namespace embree
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
-        profile(2,PROFILE_RUNS,numPrimitives,[&] (ProfileTimer& timer) {
+        profile(2,PROFILE_RUNS,org_numPrimitives,[&] (ProfileTimer& timer) {
 #endif
 
             /* enable USM allocation for primrefs */
@@ -874,25 +898,129 @@ namespace embree
 	    prims.getAlloc().enableUSM(&deviceGPU->getGPUDevice(),&deviceGPU->getGPUContext());	    
 #endif	    
 
+	    /* allocate primref array */
+#if ENABLE_PRESPLITS == 1	    
+	    const float alloc_factor = 1.2f; // 20% spatial splits
+#else
+	    const float alloc_factor = 1.0f; // 20% spatial splits
+#endif	    
+	    const size_t alloc_numPrimitives = (size_t)(org_numPrimitives*alloc_factor);
+            prims.resize(alloc_numPrimitives); 
+	    
             /* create primref array */
-	    const float alloc_factor = 1.1f;
-            prims.resize((size_t)(numPrimitives*alloc_factor)); 
-
             PrimInfo pinfo = mesh ?
-              createPrimRefArray(mesh,numPrimitives,prims,bvh->scene->progressInterface) :
-              createPrimRefArray(scene,Mesh::geom_type,false,numPrimitives,prims,bvh->scene->progressInterface);
+              createPrimRefArray(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
+              createPrimRefArray(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);
 
-	    Splitter splitter(scene);
+	    /* use correct number of primitives */
+	    size_t numPrimitives = pinfo.size();
 
+	    if (alloc_factor > 1.0f)
+	      {
+		/* set up primitive splitter */
+		SplitterFactory Splitter(scene);
+
+		size_t numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
+		PRINT(numPrimitivesToSplit);
+	    
+		PresplitItem *presplitItem = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
+
+		float priority_sum = 0.0f;
+		for (size_t i=0;i<numPrimitives;i++)
+		  {
+		    const unsigned int geomID = prims[i].geomID();
+		    const unsigned int primID = prims[i].primID();
+
+		    const float area_aabb  = halfArea(prims[i].bounds());
+		    float priority = area_aabb;		
+		    const float area_prim  = ((Mesh*)scene->get(geomID))->projectedPrimitiveArea(primID);
+		    const float area_ratio = min(4.0f, area_aabb / max(1E-12f,area_prim));
+		    priority *= area_ratio;
+		    presplitItem[i].index = i;
+		    presplitItem[i].priority = priority;
+		    priority_sum += priority;
+		  }
+
+		radixsort32(presplitItem,numPrimitives);
+	    
+		//for (size_t i=0;i<numPrimitives;i++)
+		//std::cout << "i " << i << " " << presplitItem[i] << std::endl;
+
+		PRINT(priority_sum);
+
+		const Vec3fa grid_base    = pinfo.geomBounds.lower;
+		const Vec3fa grid_diag    = pinfo.geomBounds.size();
+		const float grid_extend   = max(grid_diag.x,max(grid_diag.y,grid_diag.z));
+		const float grid_scale    = grid_extend == 0.0f ? 0.0f : GRID_SIZE / grid_extend;
+		const float inv_grid_size = 1.0f / GRID_SIZE;
+
+		PRINT(grid_scale);
+		PRINT(inv_grid_size);
+		size_t offset = 0;
+		//for (ssize_t i=numPrims-1;i>=0;i--)
+		for (size_t j=0;j<numPrimitivesToSplit;j++)
+		  {
+		    const size_t i = numPrimitives - 1 - j;
+		    const float prob      = presplitItem[i].priority;
+		    if (prob <= 0.0f) continue;
+		
+		    const uint  primrefID = presplitItem[i].index;		
+		    const uint   geomID   = prims[primrefID].geomID();
+		    const uint   primID   = prims[primrefID].primID();
+		    const float numSplitPrims = prob/priority_sum*(float)numPrimitivesToSplit;
+		    //std::cout << "i " << i << " primrefID " << primrefID << " numSplitPrims " << numSplitPrims << std::endl;
+		    const Vec3fa lower = prims[primrefID].lower;
+		    const Vec3fa upper = prims[primrefID].upper;
+		    const Vec3fa glower = (lower-grid_base)*Vec3fa(grid_scale+0.2f);
+		    const Vec3fa gupper = (upper-grid_base)*Vec3fa(grid_scale-0.2f);
+		    Vec3ia ilower(glower);
+		    Vec3ia iupper(gupper);
+      
+		    /* this ignores dimensions that are empty */
+		    if (glower.x >= gupper.x) iupper.x = ilower.x;
+		    if (glower.y >= gupper.y) iupper.y = ilower.y;
+		    if (glower.z >= gupper.z) iupper.z = ilower.z;
+		
+		    /* Now we compute a morton code for the lower and upper grid coordinates. */
+		    const uint lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
+		    const uint upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
+      
+		    /* if all bits are equal then we cannot split */
+		    if (lower_code != upper_code)
+		      {
+			const uint diff = 31 - lzcnt(lower_code^upper_code);
+		    
+			/* compute octree level and dimension to perform the split in */
+			const uint level = diff / 3;
+			const uint dim   = diff % 3;
+      
+			/* now we compute the grid position of the split */
+			const uint isplit = iupper[dim] & ~((1<<level)-1);
+      
+			/* compute world space position of split */
+			const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend;
+			const auto splitter = Splitter(prims[primrefID]);
+			BBox3fa left,right;
+			splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
+			//std::cout << i << " " << prims[primrefID].bounds() << " left " << left << " right " << right << std::endl;
+			prims[primrefID] = PrimRef(left,geomID,primID);
+			prims[numPrimitives+offset] = PrimRef(right,geomID,primID);
+			offset++;
+		      }	
+		  }	    
+		PRINT(offset);
+		numPrimitives += offset;
+		PRINT(numPrimitives);
+		alignedFree(presplitItem);		
+	      }
 	    
             /* pinfo might has zero size due to invalid geometry */
-            if (unlikely(pinfo.size() == 0))
+            if (unlikely(numPrimitives == 0))
 	      {
 		bvh->clear();
 		prims.clear();
 		return;
 	      }
-	    PRINT(pinfo.size());
 
 	    NodeRef root(BVH::emptyNode);
 
@@ -1123,7 +1251,7 @@ namespace embree
 
 	    // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
 #endif	    
-            bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
 
 	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
 	    

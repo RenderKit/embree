@@ -208,6 +208,15 @@ namespace embree
       return triangles.isModified() || numPrimitivesChanged;
     }
 
+    /* returns the projected area */
+    __forceinline float projectedPrimitiveArea(const size_t i) const {
+      const Triangle& tri = triangle(i);
+      const Vec3fa v0 = vertex(tri.v[0]);
+      const Vec3fa v1 = vertex(tri.v[1]);
+      const Vec3fa v2 = vertex(tri.v[2]);      
+      return areaProjectedTriangle(v0,v1,v2);
+    }
+    
   public:
     BufferView<Triangle> triangles;      //!< array of triangles
     BufferView<Vec3fa> vertices0;        //!< fast access to first vertex buffer
