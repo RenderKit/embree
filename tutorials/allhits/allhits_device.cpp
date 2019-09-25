@@ -21,15 +21,21 @@
 #include <algorithm>
 #include "../common/tutorial/tutorial.h"
 
+#define ALL_HITS_SINGLE_PASS 0
+#define ALL_HITS_MULTI_PASS_FIXED_NEXT_HITS 1
+#define ALL_HITS_MULTI_PASS_OPTIMAL_NEXT_HITS 2
+#define ALL_HITS_MULTI_PASS_ESTIMATED_NEXT_HITS 3
+
 namespace embree {
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
-extern "C" bool g_single_pass;
+extern "C" int g_allhits_mode;
 extern "C" unsigned g_max_next_hits;
 extern "C" unsigned g_max_total_hits;
 extern "C" bool g_verify;
 extern "C" bool g_visualize_errors;
+extern "C" bool g_enable_opacity;
 extern "C" float g_curve_opacity;
 
 #define MAX_TOTAL_HITS 16*1024
@@ -146,9 +152,9 @@ void gatherAllHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > g_max_total_hits) return;
 
-  /* check if geometry is opaque */
+   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
-  bool opaque = geometry->type != CURVES;
+  bool opaque = !g_enable_opacity && geometry->type != CURVES;
   
   HitList::Hit h(opaque,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
@@ -169,9 +175,9 @@ void gatherNHits(const struct RTCFilterFunctionNArguments* args)
     
   if (hits.end > g_max_total_hits) return;
 
-   /* check if geometry is opaque */
+  /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
-  bool opaque = geometry->type != CURVES;
+  bool opaque = !g_enable_opacity && geometry->type != CURVES;
 
   HitList::Hit nhit(opaque,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
@@ -210,7 +216,7 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
-  bool opaque = geometry->type != CURVES;
+  bool opaque = !g_enable_opacity && geometry->type != CURVES;
   
   HitList::Hit nhit(opaque, ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
@@ -244,7 +250,7 @@ void gatherNNonOpaqueHits(const struct RTCFilterFunctionNArguments* args)
   }
 }
 
-void single_pass(Ray ray, HitList& hits_o, RayStats& stats)
+void single_pass(Ray ray, HitList& hits_o, RandomSampler& sampler, RayStats& stats)
 {
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
@@ -267,6 +273,24 @@ void single_pass(Ray ray, HitList& hits_o, RayStats& stats)
 
   /* drop hits in case we found too many */
   hits_o.end = std::min(hits_o.end, g_max_total_hits);
+
+  /* shade all hits */
+  if (g_enable_opacity)
+  {
+    for (size_t i=context.hits.begin; i<context.hits.end; i++)
+    {
+      HitList::Hit& hit = context.hits.hits[i];
+      
+      bool opaque = hit.opaque;
+      if (RandomSampler_get1D(sampler) < g_curve_opacity)
+        opaque = true;
+      
+      if (opaque) {
+        hits_o.end = i+1;
+        return;
+      }
+    }
+  }
 }
 
 void multi_pass(Ray ray, HitList& hits_o, int max_next_hits, RayStats& stats)
@@ -338,18 +362,21 @@ void hair_pass(Ray ray, HitList& hits_o, int max_next_hits, RandomSampler& sampl
     iter++;
 
     /* shade all hits */
-    for (size_t i=context.hits.begin; i<context.hits.end; i++)
+    if (g_enable_opacity)
     {
-      HitList::Hit& hit = context.hits.hits[i];
-
-      bool opaque = hit.opaque;
-      if (RandomSampler_get1D(sampler) < g_curve_opacity)
-        opaque = true;
+      for (size_t i=context.hits.begin; i<context.hits.end; i++)
+      {
+        HitList::Hit& hit = context.hits.hits[i];
         
-      if (opaque) {
-        context.hits.begin = 0;
-        context.hits.end = i+1;
-        return;
+        bool opaque = hit.opaque;
+        if (RandomSampler_get1D(sampler) < g_curve_opacity)
+          opaque = true;
+        
+        if (opaque) {
+          context.hits.begin = 0;
+          context.hits.end = i+1;
+          return;
+        }
       }
     }
     
@@ -361,36 +388,50 @@ void hair_pass(Ray ray, HitList& hits_o, int max_next_hits, RandomSampler& sampl
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
-  int ix = (int)x;
-  int iy = (int)y;
-  
   /* initialize sampler */
+  const int ix = (int)x;
+  const int iy = (int)y;
   RandomSampler mysampler;
   RandomSampler_init(mysampler, ix, iy, 0);
-  
-  bool has_error = false;
-  HitList hits;
-
-  int max_next_hits = g_max_next_hits;
-  if (max_next_hits == 0)
-    max_next_hits = max(1,g_num_prev_hits[iy*TutorialApplication::instance->width+ix]);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
   /* either gather hits in single pass or using multiple passes */
-  if (g_single_pass)
-    single_pass(ray,hits,stats);
-  else if (g_curve_opacity >= 0.0f) 
-    hair_pass(ray,hits,max_next_hits,mysampler,stats);
-  else
-    multi_pass (ray,hits,max_next_hits,stats);
+  HitList hits;
+  switch (g_allhits_mode)
+  {
+  case ALL_HITS_SINGLE_PASS:
+    single_pass(ray,hits,mysampler,stats);
+    break;
+  
+  case ALL_HITS_MULTI_PASS_FIXED_NEXT_HITS:
+    hair_pass (ray,hits,g_max_next_hits,mysampler,stats);
+    break;
 
+  case ALL_HITS_MULTI_PASS_OPTIMAL_NEXT_HITS: {
+    int num_prev_hits = max(1,g_num_prev_hits[iy*TutorialApplication::instance->width+ix]);
+    hair_pass (ray,hits,num_prev_hits,mysampler,stats);
+    break;
+  }
+  case ALL_HITS_MULTI_PASS_ESTIMATED_NEXT_HITS: {
+    int estimated_num_next_hits = (int) min((float)g_max_next_hits, 1.0f/g_curve_opacity);
+    hair_pass (ray,hits,estimated_num_next_hits,mysampler,stats);
+    break;
+  }
+  default:
+    assert(false);
+  }
+   
   /* verify result with gathering all hits */
+  bool has_error = false;
   if (g_verify || g_visualize_errors)
   {
+    /* repeat using a single pass, which is assumed to produce the correct result */
     HitList verify_hits;
-    single_pass(ray,verify_hits,stats);
+    RandomSampler verify_sampler;
+    RandomSampler_init(verify_sampler, ix, iy, 0);
+    single_pass(ray,verify_hits,verify_sampler,stats);
 
     //std::cout << std::hexfloat;
     //for (size_t i=0; i<hits.size(); i++)
