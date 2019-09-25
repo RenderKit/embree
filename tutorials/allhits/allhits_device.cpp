@@ -172,7 +172,7 @@ void gather_all_hits(const struct RTCFilterFunctionNArguments* args)
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
-  bool opaque = !g_enable_opacity && geometry->type != CURVES;
+  bool opaque = !g_enable_opacity || geometry->type != CURVES;
   
   /* add hit to list */
   hits.hits[hits.end++] = HitList::Hit(opaque,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
@@ -239,7 +239,7 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
-  bool opaque = !g_enable_opacity && geometry->type != CURVES;
+  bool opaque = !g_enable_opacity || geometry->type != CURVES;
   
   HitList::Hit nhit(opaque, ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
