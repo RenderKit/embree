@@ -52,11 +52,6 @@ struct HitList
   HitList ()
     : begin(0), end(0) {}
 
-  /* return number of gathered hits */
-  unsigned int size() const {
-    return end-begin;
-  }
-
   /* Hit structure that defines complete order over hits */
   struct Hit
   {
@@ -103,6 +98,22 @@ struct HitList
     unsigned int geomID;
     unsigned int instID;
   };
+
+  /* return number of gathered hits */
+  unsigned int size() const {
+    return end-begin;
+  }
+
+  /* returns the last hit */
+  const Hit& last() const {
+    assert(end);
+    return hits[end-1];
+  }
+
+  /* checks if the last hit is opaque */
+  bool last_is_opaque() const {
+    return size() && last().opaque;
+  }
 
 public:
   unsigned int begin;   // begin of hit list
@@ -155,28 +166,29 @@ void gather_all_hits(const struct RTCFilterFunctionNArguments* args)
   RTCHit* hit = (RTCHit*) args->hit;
   assert(args->N == 1);
   args->valid[0] = 0; // ignore all hits
-    
-  if (hits.end > g_max_total_hits) return;
 
-   /* check if geometry is opaque */
+  /* avoid overflow of hits array */
+  if (hits.end > MAX_TOTAL_HITS) return;
+
+  /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
   bool opaque = !g_enable_opacity && geometry->type != CURVES;
   
-  HitList::Hit h(opaque,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
-
   /* add hit to list */
-  hits.hits[hits.end++] = h;
+  hits.hits[hits.end++] = HitList::Hit(opaque,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 }
 
 /* gathers hits in a single pass */
 void single_pass(Ray ray, HitList& hits_o, RandomSampler& sampler, RayStats& stats)
 {
+  /* trace ray to gather all hits */
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
-  
   context.context.filter = gather_all_hits;
   rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
   RayStats_addRay(stats);
+
+  /* sort hits by extended order */
   std::sort(&context.hits.hits[context.hits.begin],&context.hits.hits[context.hits.end]);
 
   /* ignore duplicated hits that can occur for tesselated primitives */
@@ -198,9 +210,8 @@ void single_pass(Ray ray, HitList& hits_o, RandomSampler& sampler, RayStats& sta
   {
     for (size_t i=context.hits.begin; i<context.hits.end; i++)
     {
-      HitList::Hit& hit = context.hits.hits[i];
-      
-      bool opaque = hit.opaque;
+      /* roussion roulette ray termination */
+      bool opaque = context.hits.hits[i].opaque;
       if (RandomSampler_get1D(sampler) < g_curve_opacity)
         opaque = true;
       
@@ -222,8 +233,9 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
   RTCHit* hit = (RTCHit*) args->hit;
   assert(args->N == 1);
   args->valid[0] = 0; // ignore all hits
-    
-  if (hits.end > g_max_total_hits) return;
+
+  /* avoid overflow of hits array */
+  if (hits.end > MAX_TOTAL_HITS) return;
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
@@ -248,15 +260,13 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
   }
 
   /* store farthest hit if place left and last is not opaque */
-  if (hits.size() < context->max_next_hits)
-  {
-    if (!hits.size() || (hits.size() && !hits.hits[hits.end-1].opaque))
-      hits.hits[hits.end++] = nhit;
-  }
+  if (hits.size() < context->max_next_hits && hits.end < g_max_total_hits && !hits.last_is_opaque())
+    hits.hits[hits.end++] = nhit;
 
-  if (hits.size() == context->max_next_hits || ((hits.size() && hits.hits[hits.end-1].opaque)))
+  /* shrink tfar when we collected sufficient hits for this pass, or the last hit is opaque */
+  if (hits.size() == context->max_next_hits || hits.last_is_opaque())
   {
-    ray->tfar = hits.hits[hits.end-1].t;
+    ray->tfar = hits.last().t;
     args->valid[0] = -1; // accept hit
   }
 }
@@ -264,42 +274,44 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
 /* gathers hits in multiple passes */
 void multi_pass(Ray ray, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats)
 {
+  /* configure intersect context */
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
-
   context.max_next_hits = max_next_hits;
   context.context.filter = gather_next_hits;
-  
-  int iter = 0;
+
+  /* in each pass we collect some hits */
   do {
-    
+
+    /* continue from previous fartherst hit */
     if (context.hits.end) 
-      ray.tnear() = context.hits.hits[context.hits.end-1].t;
-    
+      ray.tnear() = context.hits.last().t;
+
+    /* initialize ray */
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
     ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
+
+    /* insert new hits at previous end of hits list */
     context.hits.begin = context.hits.end;
-    
     for (size_t i=0; i<context.max_next_hits; i++)
       if (context.hits.begin+i < g_max_total_hits)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
     rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
-    iter++;
 
     /* shade all hits */
     if (g_enable_opacity)
     {
       for (size_t i=context.hits.begin; i<context.hits.end; i++)
       {
-        HitList::Hit& hit = context.hits.hits[i];
-        
-        bool opaque = hit.opaque;
+        /* roussion roulette ray termination */
+        bool opaque = context.hits.hits[i].opaque;
         if (RandomSampler_get1D(sampler) < g_curve_opacity)
           opaque = true;
-        
+
+        /* remove all farther hits in case we terminate here */
         if (opaque) {
           context.hits.begin = 0;
           context.hits.end = i+1;
