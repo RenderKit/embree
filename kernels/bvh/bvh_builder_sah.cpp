@@ -162,8 +162,8 @@ namespace embree
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ?
-              createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
-              createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
+              createPrimRefArray(mesh,numPrimitives,prims,bvh->scene->progressInterface) :
+              createPrimRefArray(scene,Mesh::geom_type,false,numPrimitives,prims,bvh->scene->progressInterface);
 
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
@@ -248,8 +248,8 @@ namespace embree
             /* create primref array */
             prims.resize(numPrimitives);
             PrimInfo pinfo = mesh ?
-              createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
-              createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
+              createPrimRefArray(mesh,numPrimitives,prims,bvh->scene->progressInterface) :
+              createPrimRefArray(scene,Mesh::geom_type,false,numPrimitives,prims,bvh->scene->progressInterface);
 
             /* enable os_malloc for two level build */
             if (mesh)

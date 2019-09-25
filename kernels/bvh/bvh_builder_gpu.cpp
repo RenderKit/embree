@@ -823,7 +823,7 @@ namespace embree
 
   namespace isa
   {    
-    template<int N, typename Mesh, typename Primitive>
+    template<int N, typename Mesh, typename Primitive, typename Splitter>
     struct BVHGPUBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
@@ -878,8 +878,8 @@ namespace embree
             prims.resize(numPrimitives); 
 
             PrimInfo pinfo = mesh ?
-              createPrimRefArray(mesh,prims,bvh->scene->progressInterface) :
-              createPrimRefArray(scene,Mesh::geom_type,false,prims,bvh->scene->progressInterface);
+              createPrimRefArray(mesh,numPrimitives,prims,bvh->scene->progressInterface) :
+              createPrimRefArray(scene,Mesh::geom_type,false,numPrimitives,prims,bvh->scene->progressInterface);
 	    	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
@@ -1173,8 +1173,8 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
-    Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
+    Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v,TriangleSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
+    Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v,QuadSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
 #endif
     
   }

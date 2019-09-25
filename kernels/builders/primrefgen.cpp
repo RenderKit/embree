@@ -23,7 +23,18 @@ namespace embree
 {
   namespace isa
   {
-    PrimInfo createPrimRefArray(Geometry* geometry, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    /*
+      This presplit item contains for each primitive a number of splits to
+      perform (priority) and the primref index.
+    */
+    
+    struct PresplitItem
+    {
+      unsigned int index;
+      float priority;
+    };
+    
+    PrimInfo createPrimRefArray(Geometry* geometry, const size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;
       
@@ -34,7 +45,7 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 
       /* if we need to filter out geometry, run again */
-      if (pinfo.size() != prims.size())
+      if (pinfo.size() != numPrimRefs)
       {
         progressMonitor(0);
         pinfo = parallel_prefix_sum( pstate, size_t(0), geometry->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo {
@@ -44,7 +55,7 @@ namespace embree
       return pinfo;
     }
 
-    PrimInfo createPrimRefArray(Scene* scene, Geometry::GTypeMask types, bool mblur, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    PrimInfo createPrimRefArray(Scene* scene, Geometry::GTypeMask types, bool mblur, const size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator2 iter(scene,types,mblur);
@@ -57,7 +68,7 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
       /* if we need to filter out geometry, run again */
-      if (pinfo.size() != prims.size())
+      if (pinfo.size() != numPrimRefs)
       {
         progressMonitor(0);
         pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
@@ -67,7 +78,7 @@ namespace embree
       return pinfo;
     }
 
-    PrimInfo createPrimRefArrayMBlur(Scene* scene, Geometry::GTypeMask types, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor, size_t itime)
+    PrimInfo createPrimRefArrayMBlur(Scene* scene, Geometry::GTypeMask types, const size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor, size_t itime)
     {
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator2 iter(scene,types,true);
@@ -80,7 +91,7 @@ namespace embree
         }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
       /* if we need to filter out geometry, run again */
-      if (pinfo.size() != prims.size())
+      if (pinfo.size() != numPrimRefs)
       {
         progressMonitor(0);
         pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
@@ -90,7 +101,7 @@ namespace embree
       return pinfo;
     }
 
-    PrimInfoMB createPrimRefArrayMSMBlur(Scene* scene, Geometry::GTypeMask types, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1)
+    PrimInfoMB createPrimRefArrayMSMBlur(Scene* scene, Geometry::GTypeMask types, const size_t numPrimRefs, mvector<PrimRefMB>& prims, BuildProgressMonitor& progressMonitor, BBox1f t0t1)
     {
       ParallelForForPrefixSumState<PrimInfoMB> pstate;
       Scene::Iterator2 iter(scene,types,true);
@@ -103,7 +114,7 @@ namespace embree
       }, [](const PrimInfoMB& a, const PrimInfoMB& b) -> PrimInfoMB { return PrimInfoMB::merge2(a,b); });
       
       /* if we need to filter out geometry, run again */
-      if (pinfo.size() != prims.size())
+      if (pinfo.size() != numPrimRefs)
       {
         progressMonitor(0);
         pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, const PrimInfoMB& base) -> PrimInfoMB {
@@ -198,7 +209,7 @@ namespace embree
 
 #if 0
     template<>
-    PrimInfo createPrimRefArray<GridMesh,false>(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+    PrimInfo createPrimRefArray<GridMesh,false>(Scene* scene, const size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       PING;
       ParallelForForPrefixSumState<PrimInfo> pstate;
@@ -222,7 +233,7 @@ namespace embree
       }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
       /* if we need to filter out geometry, run again */
-      if (pinfo.size() != prims.size())
+      if (pinfo.size() != numPrimRefs)
       {
         progressMonitor(0);
         pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo

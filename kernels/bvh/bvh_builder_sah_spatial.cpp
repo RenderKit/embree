@@ -105,8 +105,8 @@ namespace embree
         const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));
         prims0.resize(numSplitPrimitives);
         PrimInfo pinfo = mesh ?
-          createPrimRefArray(mesh,prims0,bvh->scene->progressInterface) :
-          createPrimRefArray(scene,Mesh::geom_type,false,prims0,bvh->scene->progressInterface);
+          createPrimRefArray(mesh,numSplitPrimitives,prims0,bvh->scene->progressInterface) :
+          createPrimRefArray(scene,Mesh::geom_type,false,numSplitPrimitives,prims0,bvh->scene->progressInterface);
 
         Splitter splitter(scene);
 

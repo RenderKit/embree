@@ -155,7 +155,7 @@ namespace embree
       {
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
-        const PrimInfo pinfo = createPrimRefArrayMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface,0);
+        const PrimInfo pinfo = createPrimRefArrayMBlur(scene,Mesh::geom_type,numPrimitives,prims,bvh->scene->progressInterface,0);
         /* early out if no valid primitives */
         if (pinfo.size() == 0) { bvh->clear(); return; }
         /* estimate acceleration structure size */
@@ -188,7 +188,7 @@ namespace embree
       {
         /* create primref array */
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
-        PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface);
+        PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,numPrimitives,prims,bvh->scene->progressInterface);
 
         /* early out if no valid primitives */
         if (pinfo.size() == 0) { bvh->clear(); return; }
