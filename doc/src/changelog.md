@@ -3,6 +3,8 @@ Version History
 
 ### New Features in Embree 3.6.2
 -   Implemented robust mode for curves.
+-   Added next_hit tutorial to demonstrate robustly collecting all hits
+    along a ray using multiple ray queries.
 
 ### New Features in Embree 3.6.1
 -   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
