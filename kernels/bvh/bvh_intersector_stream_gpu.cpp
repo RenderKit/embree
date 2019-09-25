@@ -277,6 +277,7 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     /// General BVHIntersectorStreamPacketFallback Intersector
     ////////////////////////////////////////////////////////////////////////////////
+#if defined(EMBREE_DPCPP_SUPPORT)
 
     DEFINE_INTERSECTORN(BVHGPUTriangle1vIntersectorStream,BVHNGPUTriangle1vIntersectorStream);
     DEFINE_INTERSECTOR1(BVHGPUTriangle1vIntersector1,BVHNGPUTriangle1vIntersector1);
@@ -285,6 +286,7 @@ namespace embree
     DEFINE_INTERSECTORN(BVHGPUQuad1vIntersectorStream,BVHNGPUQuad1vIntersectorStream);
     DEFINE_INTERSECTOR1(BVHGPUQuad1vIntersector1,BVHNGPUQuad1vIntersector1);
     DEFINE_INTERSECTOR4(BVHGPUQuad1vIntersector4,BVHNGPUQuad1vIntersector4);    
-    
+
+#endif    
   };
 };
