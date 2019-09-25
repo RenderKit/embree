@@ -87,6 +87,7 @@ ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
 ADD_SUBDIRECTORY(closest_point)
 ADD_SUBDIRECTORY(voronoi)
+ADD_SUBDIRECTORY(next_hit)
 
 IF (EMBREE_RAY_PACKETS)
   ADD_SUBDIRECTORY(viewer_stream)

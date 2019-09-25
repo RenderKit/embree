@@ -62,7 +62,7 @@ namespace embree
     }
 
      /*! enlarge box by some scaling factor */
-    __forceinline BBox enlarge_by(const float a) {
+    __forceinline BBox enlarge_by(const float a) const {
       return BBox(lower - T(a)*abs(lower), upper + T(a)*abs(upper));
     }
     
