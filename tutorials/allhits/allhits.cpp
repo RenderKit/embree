@@ -57,7 +57,7 @@ namespace embree
           g_allhits_mode = ALL_HITS_MULTI_PASS_OPTIMAL_NEXT_HITS;
         }, "--multi_pass_optimal_next_hits: use multiple passes and gather the optimal number of hits (known from previous frame)");
 
-      registerOption("multi_estimate_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
+      registerOption("multi_pass_estimate_next_hits", [] (Ref<ParseStream> cin, const FileName& path) {
           g_allhits_mode = ALL_HITS_MULTI_PASS_ESTIMATED_NEXT_HITS;
         }, "--multi_pass_estimate_next_hits: use multiple passes and estimate the number of hits to gather from opacity");
 
