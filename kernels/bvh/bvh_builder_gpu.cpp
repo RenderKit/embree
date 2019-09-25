@@ -881,7 +881,10 @@ namespace embree
             PrimInfo pinfo = mesh ?
               createPrimRefArray(mesh,numPrimitives,prims,bvh->scene->progressInterface) :
               createPrimRefArray(scene,Mesh::geom_type,false,numPrimitives,prims,bvh->scene->progressInterface);
-	    	    
+
+	    Splitter splitter(scene);
+
+	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
 	      {
