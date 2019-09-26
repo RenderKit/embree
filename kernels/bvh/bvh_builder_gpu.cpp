@@ -932,6 +932,7 @@ namespace embree
 
 	    if (alloc_factor > 1.0f)
 	      {
+		double t0_presplits = getSeconds();
 		PRINT(numPrimitives);
 		
 		/* set up primitive splitter */
@@ -942,6 +943,7 @@ namespace embree
 	    
 		PresplitItem *presplitItem = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
 
+		
 		parallel_for( size_t(0), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
 		    for (size_t i=r.begin(); i<r.end(); i++)
 		      {		
@@ -961,6 +963,7 @@ namespace embree
 		
 		while(numPrimitivesToSplit)
 		  {
+		    PRINT(numPrimitives);
 #if 1
 		    const float priority_sum = (float) parallel_reduce(size_t(0),numPrimitives,0.0f, [&] (const range<size_t>& r) -> float {
 			float sum = 0.0f;
@@ -976,18 +979,12 @@ namespace embree
 		    const float priority_avg = priority_sum / numPrimitives;
 
 		    
-		    // size_t above_avg = 0;
-		    // for (size_t i=0;i<numPrimitives;i++)
-		    //   if (presplitItem[i].priority > priority_avg)
-		    // 	above_avg++;
-		    
-		    PRINT(priority_sum);
-		    //PRINT(priority_avg);		    
-		    //PRINT(above_avg);
-
-		    
+		    double t0,t1;
+		    t0 = getSeconds();	    
 		    std::sort(&presplitItem[0],&presplitItem[numPrimitives],std::less<PresplitItem>());
-
+		    t1 = getSeconds();	    
+		    PRINT(1000*(t1-t0));
+		    
 		    size_t l = 0;
 		    size_t r = numPrimitives;
 		    
@@ -1000,26 +997,17 @@ namespace embree
 			else
 			    r = mid;
 		      }
-		    
-		    PRINT(l);
-		    PRINT(r);
-		    PRINT(presplitItem[l].priority);
-		    PRINT(presplitItem[r].priority);
-		    //exit(0);
-		    
+		    		    
 		    const size_t numPrimitivesToSplitStep = min(numPrimitives-r,numPrimitivesToSplit);
 		    PRINT( numPrimitivesToSplitStep );
 		    __aligned(64) std::atomic<size_t> offset;
 		    offset.store(0);
 		    
-		    //for (size_t j=0;j<numPrimitivesToSplitStep;j++)
-		    //for (size_t j=0;j<numPrimitives;j++)
 		    parallel_for( size_t(0), numPrimitivesToSplitStep, size_t(128), [&](const range<size_t>& r) -> void {
 			for (size_t j=r.begin(); j<r.end(); j++)		    
 			  {
 			    const size_t i = numPrimitives - 1 - j;
-			    const float prob      = presplitItem[i].priority;
-			    assert(prob >= priority_avg);
+			    assert(presplitItem[i].priority >= priority_avg);
 		
 			    const uint  primrefID = presplitItem[i].index;		
 			    const uint   geomID   = prims[primrefID].geomID();
@@ -1085,6 +1073,8 @@ namespace embree
 
 		alignedFree(presplitItem);
 		PRINT(numPrimitives);
+		double t1_presplits = getSeconds();
+		PRINT((t1_presplits-t0_presplits)*1000);
 	      }
 	    //exit(0);
 	    
