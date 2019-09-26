@@ -42,7 +42,6 @@
 namespace embree
 {
 #if defined(EMBREE_DPCPP_SUPPORT)
-
     
   struct PresplitItem
   {
@@ -57,12 +56,28 @@ namespace embree
     {
       return (priority < item.priority) || ((priority == item.priority) && (index < item.index));
     }
+
+    template<typename Mesh>
+    static float compute_probability(const PrimRef &ref, Scene *scene)
+    {
+      const unsigned int geomID = ref.geomID();
+      const unsigned int primID = ref.primID();
+      const float area_aabb  = halfArea(ref.bounds());
+      const float priority = area_aabb;		
+      const float area_prim  = ((Mesh*)scene->get(geomID))->projectedPrimitiveArea(primID);
+      const float area_ratio = min(4.0f, area_aabb / max(1E-12f,area_prim));
+      return priority * area_ratio;      
+    }
     
   };
 
   inline std::ostream &operator<<(std::ostream &cout, const PresplitItem& item) {
     return cout << "index " << item.index << " priority " << item.priority;    
   };  
+
+
+
+
   
   inline float4 Vec3fa_to_float4(const Vec3fa& v)
   {
@@ -928,25 +943,15 @@ namespace embree
 		float priority_sum = 0.0f;
 		for (size_t i=0;i<numPrimitives;i++)
 		  {
-		    const unsigned int geomID = prims[i].geomID();
-		    const unsigned int primID = prims[i].primID();
-
-		    const float area_aabb  = halfArea(prims[i].bounds());
-		    float priority = area_aabb;		
-		    const float area_prim  = ((Mesh*)scene->get(geomID))->projectedPrimitiveArea(primID);
-		    const float area_ratio = min(4.0f, area_aabb / max(1E-12f,area_prim));
-		    priority *= area_ratio;
 		    presplitItem[i].index = i;
-		    presplitItem[i].priority = priority;
-		    priority_sum += priority;
+		    presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[i],scene);
+		    priority_sum += presplitItem[i].priority;
 		  }
 
 		radixsort32(presplitItem,numPrimitives);
 	    
-		//for (size_t i=0;i<numPrimitives;i++)
-		//std::cout << "i " << i << " " << presplitItem[i] << std::endl;
-
-		PRINT(priority_sum);
+		// for (size_t i=0;i<numPrimitives;i++)
+		//   std::cout << "i " << i << " " << presplitItem[i] << std::endl;
 
 		const Vec3fa grid_base    = pinfo.geomBounds.lower;
 		const Vec3fa grid_diag    = pinfo.geomBounds.size();
@@ -954,8 +959,9 @@ namespace embree
 		const float grid_scale    = grid_extend == 0.0f ? 0.0f : GRID_SIZE / grid_extend;
 		const float inv_grid_size = 1.0f / GRID_SIZE;
 
-		PRINT(grid_scale);
-		PRINT(inv_grid_size);
+		//PRINT(grid_scale);
+		//PRINT(inv_grid_size);
+		
 		size_t offset = 0;
 		//for (ssize_t i=numPrims-1;i>=0;i--)
 		for (size_t j=0;j<numPrimitivesToSplit;j++)
@@ -968,7 +974,7 @@ namespace embree
 		    const uint   geomID   = prims[primrefID].geomID();
 		    const uint   primID   = prims[primrefID].primID();
 		    const float numSplitPrims = prob/priority_sum*(float)numPrimitivesToSplit;
-		    //std::cout << "i " << i << " primrefID " << primrefID << " numSplitPrims " << numSplitPrims << std::endl;
+		    std::cout << "i " << i << " primrefID " << primrefID << " numSplitPrims " << numSplitPrims << std::endl;
 		    const Vec3fa lower = prims[primrefID].lower;
 		    const Vec3fa upper = prims[primrefID].upper;
 		    const Vec3fa glower = (lower-grid_base)*Vec3fa(grid_scale+0.2f);
@@ -1003,14 +1009,25 @@ namespace embree
 			BBox3fa left,right;
 			splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
 			//std::cout << i << " " << prims[primrefID].bounds() << " left " << left << " right " << right << std::endl;
+			
+			const size_t newID = numPrimitives+offset;
 			prims[primrefID] = PrimRef(left,geomID,primID);
-			prims[numPrimitives+offset] = PrimRef(right,geomID,primID);
+			prims[newID    ] = PrimRef(right,geomID,primID);
+
+			presplitItem[primrefID].index = primrefID;
+			presplitItem[primrefID].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
+
+			presplitItem[newID].index = newID;
+			presplitItem[newID].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
+			
 			offset++;
 		      }	
 		  }	    
 		PRINT(offset);
 		numPrimitives += offset;
 		PRINT(numPrimitives);
+
+		
 		alignedFree(presplitItem);		
 	      }
 	    

@@ -30,6 +30,8 @@
 #define RAY_STATS(x) 
 #endif
 
+#define TSTATS(x) 
+
 #define STACK_CULLING 1
 
 namespace embree
@@ -49,9 +51,31 @@ namespace embree
     };       
 
 #if defined(EMBREE_DPCPP_SUPPORT)   
+
+    struct TraversalStats
+    {
+      uint nrays;
+      uint tsteps;
+      uint isteps;
+      
+      inline void reset() {
+	nrays  = 0;
+	tsteps = 0;
+	isteps = 0;
+      }
+
+      inline void nrays_inc()  { gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&nrays,1); }
+      inline void tsteps_inc() { gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&tsteps,1); }
+      inline void isteps_inc() { gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&isteps,1); }      
+    };
+
+    inline std::ostream &operator<<(std::ostream &cout, const TraversalStats& s) {
+      return cout << "tsteps/ray " << (float)s.tsteps / s.nrays << " isteps/ray " << (float)s.isteps / s.nrays;
+    };  
+
     
     template<typename Primitive>
-    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, const cl::sycl::stream &out)
+    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, TraversalStats *tstats, const cl::sycl::stream &out)
     {
       unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
       float        stack_dist[BVH_MAX_STACK_ENTRIES];  
@@ -78,10 +102,7 @@ namespace embree
       const uint3 dir_mask = cselect(dir >= 0.0f,uint3(0),uint3(1));
       const float3 new_dir = cselect(dir != 0.0f, dir, float3(1E-18f));
       const float3 inv_dir = cl::sycl::native::recip(new_dir);
-
-      //const float3 inv_dir_org = -inv_dir * org; // FIXME
-
-      const float3 inv_dir_org(-(float)inv_dir.x() * (float)org.x(),-(float)inv_dir.y() * (float)org.y(),-(float)inv_dir.z() * (float)org.z());
+      const float3 inv_dir_org = -inv_dir * org; 
             
       const uint max_uint  = 0xffffffff;  
       const uint mask_uint = 0xfffffff0;
@@ -92,7 +113,9 @@ namespace embree
       stack_offset[1] = sizeof(struct gpu::BVHBase); // single node after bvh start 
       stack_dist[1]   = -(float)INFINITY;
 
-      unsigned int sindex = 2; 
+      unsigned int sindex = 2;
+
+      TSTATS(tstats->nrays_inc());
 
       while(1)
 	{ 
@@ -106,6 +129,8 @@ namespace embree
 
 	  while(!cur.isLeaf()) 
 	    {
+	      TSTATS(tstats->tsteps_inc());
+	      
 	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);
 	      const gpu::NodeIntersectionData isec = intersectQBVHNodeN(sg,node,dir_mask,inv_dir,inv_dir_org,tnear,tfar);
 	      const float fnear = isec.dist;
@@ -153,6 +178,7 @@ namespace embree
 	  const uint leafOffset = cur.getLeafOffset();    
 
 	  const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
+	  TSTATS(tstats->isteps_inc());	  
 	  hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);  
 	  tfar = sg.reduce<float,cl::sycl::intel::minimum>(hit_tfar);	  
 	}
@@ -183,12 +209,19 @@ namespace embree
       if (bvh->root == BVH::emptyNode) return;
       
 #if defined(EMBREE_DPCPP_SUPPORT)
+      
+      
       gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
       void *bvh_mem = (void*)(size_t)(bvh->root);
       assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );      
       DBG(numRays = 1);      
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
+
+      TraversalStats *tstats = nullptr;
+      TSTATS(tstats = (TraversalStats *)cl::sycl::aligned_alloc(64,sizeof(TraversalStats),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared));
+      TSTATS(tstats->reset());
+      
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
@@ -197,7 +230,7 @@ namespace embree
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint groupID   = item.get_group(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();		
-		traceRayBVH16<Primitive>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,out);
+		traceRayBVH16<Primitive>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,tstats,out);
 	      });		  
 	  });
 	try {
@@ -207,6 +240,9 @@ namespace embree
 		    << e.what() << std::endl;
 	  FATAL("OpenCL Exception");
 	}
+
+      TSTATS(cl::sycl::free(tstats,deviceGPU->getGPUContext()););
+      TSTATS(std::cout << "RAY TRAVERSAL STATS: " << *tstats << std::endl);
       }
       DBG(exit(0));
 #endif      
