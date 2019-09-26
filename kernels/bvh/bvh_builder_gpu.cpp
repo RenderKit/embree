@@ -942,13 +942,13 @@ namespace embree
 	    
 		PresplitItem *presplitItem = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
 
-		float priority_sum = 0.0f;
-		for (size_t i=0;i<numPrimitives;i++)
-		  {
-		    presplitItem[i].index = i;
-		    presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[i],scene);
-		    priority_sum += presplitItem[i].priority;
-		  }
+		parallel_for( size_t(0), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
+		    for (size_t i=r.begin(); i<r.end(); i++)
+		      {		
+			presplitItem[i].index = i;
+			presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[i],scene);
+		      }
+		  });
 
 		const Vec3fa grid_base    = pinfo.geomBounds.lower;
 		const Vec3fa grid_diag    = pinfo.geomBounds.size();
@@ -956,89 +956,137 @@ namespace embree
 		const Vec3fa grid_scale   = select(grid_extend == Vec3fa(0.0f), Vec3fa(0.0f), Vec3fa(GRID_SIZE) / grid_extend);
 		const float inv_grid_size = 1.0f / GRID_SIZE;
 
-		const size_t step_size = (size_t)ceil((float)numPrimitivesToSplit * 0.8f);
 		//PRINT(numPrimitivesToSplit);
 		//PRINT(step_size);
 		
 		while(numPrimitivesToSplit)
 		  {
-		    std::sort(&presplitItem[0],&presplitItem[numPrimitives],std::less<PresplitItem>());
-	    
-		    const size_t numPrimitivesToSplitStep = min(step_size,numPrimitivesToSplit);
-		    PRINT( numPrimitivesToSplitStep );
-		    size_t offset = 0;
-		    for (size_t j=0;j<numPrimitivesToSplitStep;j++)
-		      {
-			const size_t i = numPrimitives - 1 - j;
-			const float prob      = presplitItem[i].priority;
-			if (prob <= 0.0f) continue;
-		
-			const uint  primrefID = presplitItem[i].index;		
-			const uint   geomID   = prims[primrefID].geomID();
-			const uint   primID   = prims[primrefID].primID();
-			const float numSplitPrims = prob/priority_sum*(float)numPrimitivesToSplit;
+#if 1
+		    const float priority_sum = (float) parallel_reduce(size_t(0),numPrimitives,0.0f, [&] (const range<size_t>& r) -> float {
+			float sum = 0.0f;
+			for (size_t i=r.begin(); i<r.end(); i++)
+			  sum += presplitItem[i].priority;			  
+			return sum;
+		      },std::plus<float>());		    
+#else
+		    float priority_sum = 0.0f;		    
+		    for (size_t i=0;i<numPrimitives;i++)
+			priority_sum += presplitItem[i].priority;
+#endif		    
+		    const float priority_avg = priority_sum / numPrimitives;
 
-			const Vec3fa lower = prims[primrefID].lower;
-			const Vec3fa upper = prims[primrefID].upper;
-			const Vec3fa glower = (lower-grid_base)*Vec3fa(grid_scale)+Vec3fa(0.2f);
-			const Vec3fa gupper = (upper-grid_base)*Vec3fa(grid_scale)-Vec3fa(0.2f);
-			Vec3ia ilower(floor(glower));
-			Vec3ia iupper(floor(gupper));
-      
-			/* this ignores dimensions that are empty */
-			if (glower.x >= gupper.x) iupper.x = ilower.x;
-			if (glower.y >= gupper.y) iupper.y = ilower.y;
-			if (glower.z >= gupper.z) iupper.z = ilower.z;
-		
-			/* Now we compute a morton code for the lower and upper grid coordinates. */
-			const uint lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
-			const uint upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
-			
-			/* if all bits are equal then we cannot split */
-			if (lower_code != upper_code)
-			  {
-			    const uint diff = 31 - lzcnt(lower_code^upper_code);
 		    
-			    /* compute octree level and dimension to perform the split in */
-			    const uint level = diff / 3;
-			    const uint dim   = diff % 3;
-      
-			    /* now we compute the grid position of the split */
-			    const uint isplit = iupper[dim] & ~((1<<level)-1);
-			    
-			    /* compute world space position of split */
-			    const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend[dim];
-			    assert(prims[primrefID].bounds().lower[dim] <= fsplit &&
-				   prims[primrefID].bounds().upper[dim] >= fsplit);
-			    const auto splitter = Splitter(prims[primrefID]);
-			    BBox3fa left,right;
-			    splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
-			    
-			    const size_t newID = numPrimitives+offset;
-			    prims[primrefID] = PrimRef(left,geomID,primID);
-			    prims[newID    ] = PrimRef(right,geomID,primID);
+		    // size_t above_avg = 0;
+		    // for (size_t i=0;i<numPrimitives;i++)
+		    //   if (presplitItem[i].priority > priority_avg)
+		    // 	above_avg++;
+		    
+		    PRINT(priority_sum);
+		    //PRINT(priority_avg);		    
+		    //PRINT(above_avg);
 
-			    presplitItem[i].index = primrefID;
-			    presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
-			    presplitItem[newID].index = newID;
-			    presplitItem[newID].priority = PresplitItem::compute_probability<Mesh>(prims[newID],scene);
-			    offset++;
-			  }
+		    
+		    std::sort(&presplitItem[0],&presplitItem[numPrimitives],std::less<PresplitItem>());
+
+		    size_t l = 0;
+		    size_t r = numPrimitives;
+		    
+		    while(l+1 < r)
+		      {
+			const size_t mid = (l+r)/2;
+			//std::cout << "mid " << mid << " l " << l << " r " << r << std::endl;
+			if (presplitItem[mid].priority < priority_avg)
+			    l = mid;
+			else
+			    r = mid;
 		      }
 		    
-		    //PRINT(offset);
+		    PRINT(l);
+		    PRINT(r);
+		    PRINT(presplitItem[l].priority);
+		    PRINT(presplitItem[r].priority);
+		    //exit(0);
+		    
+		    const size_t numPrimitivesToSplitStep = min(numPrimitives-r,numPrimitivesToSplit);
+		    PRINT( numPrimitivesToSplitStep );
+		    __aligned(64) std::atomic<size_t> offset;
+		    offset.store(0);
+		    
+		    //for (size_t j=0;j<numPrimitivesToSplitStep;j++)
+		    //for (size_t j=0;j<numPrimitives;j++)
+		    parallel_for( size_t(0), numPrimitivesToSplitStep, size_t(128), [&](const range<size_t>& r) -> void {
+			for (size_t j=r.begin(); j<r.end(); j++)		    
+			  {
+			    const size_t i = numPrimitives - 1 - j;
+			    const float prob      = presplitItem[i].priority;
+			    assert(prob >= priority_avg);
+		
+			    const uint  primrefID = presplitItem[i].index;		
+			    const uint   geomID   = prims[primrefID].geomID();
+			    const uint   primID   = prims[primrefID].primID();
+
+			    const Vec3fa lower = prims[primrefID].lower;
+			    const Vec3fa upper = prims[primrefID].upper;
+			    const Vec3fa glower = (lower-grid_base)*Vec3fa(grid_scale)+Vec3fa(0.2f);
+			    const Vec3fa gupper = (upper-grid_base)*Vec3fa(grid_scale)-Vec3fa(0.2f);
+			    Vec3ia ilower(floor(glower));
+			    Vec3ia iupper(floor(gupper));
+      
+			    /* this ignores dimensions that are empty */
+			    if (glower.x >= gupper.x) iupper.x = ilower.x;
+			    if (glower.y >= gupper.y) iupper.y = ilower.y;
+			    if (glower.z >= gupper.z) iupper.z = ilower.z;
+		
+			    /* Now we compute a morton code for the lower and upper grid coordinates. */
+			    const uint lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
+			    const uint upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
+			
+			    /* if all bits are equal then we cannot split */
+			    if (lower_code != upper_code)
+			      {
+				const uint diff = 31 - lzcnt(lower_code^upper_code);
+		    
+				/* compute octree level and dimension to perform the split in */
+				const uint level = diff / 3;
+				const uint dim   = diff % 3;
+      
+				/* now we compute the grid position of the split */
+				const uint isplit = iupper[dim] & ~((1<<level)-1);
+			    
+				/* compute world space position of split */
+				const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend[dim];
+				assert(prims[primrefID].bounds().lower[dim] <= fsplit &&
+				       prims[primrefID].bounds().upper[dim] >= fsplit);
+				const auto splitter = Splitter(prims[primrefID]);
+				BBox3fa left,right;
+				splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
+			    
+				const size_t newID = numPrimitives + offset.fetch_add(1);
+				assert(newID < numPrimitives + numPrimitivesToSplitStep);
+				prims[primrefID] = PrimRef(left,geomID,primID);
+				prims[newID    ] = PrimRef(right,geomID,primID);
+
+				presplitItem[i].index = primrefID;
+				presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
+				presplitItem[newID].index = newID;
+				presplitItem[newID].priority = PresplitItem::compute_probability<Mesh>(prims[newID],scene);
+			      }
+			  }
+		      });
+		    assert(offset <= numPrimitivesToSplit);
+		    
+		    PRINT(offset);
 		    numPrimitives += offset;
 		    numPrimitivesToSplit -= offset;
-		    //PRINT(numPrimitives);
-		    //PRINT(numPrimitivesToSplit);
+		    PRINT(numPrimitives);
+		    PRINT(numPrimitivesToSplit);
 		    if (offset == 0) break;
-		    break;
 		  }
 
 		alignedFree(presplitItem);
 		PRINT(numPrimitives);
 	      }
-
+	    //exit(0);
 	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(numPrimitives == 0))
