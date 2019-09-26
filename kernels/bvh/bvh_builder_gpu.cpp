@@ -940,10 +940,13 @@ namespace embree
 
 		size_t numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
 		PRINT(numPrimitivesToSplit);
-	    
+
+		/* double buffer presplit items */
 		PresplitItem *presplitItem = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
 
+		PresplitItem *tmp_presplitItem = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
 		
+		/* init presplit items */
 		parallel_for( size_t(0), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
 		    for (size_t i=r.begin(); i<r.end(); i++)
 		      {		
@@ -964,42 +967,38 @@ namespace embree
 		while(numPrimitivesToSplit)
 		  {
 		    PRINT(numPrimitives);
-#if 1
+
+		    // FIXME: non deterministic
+
+		    /* get sum of split priorities */
 		    const float priority_sum = (float) parallel_reduce(size_t(0),numPrimitives,0.0f, [&] (const range<size_t>& r) -> float {
 			float sum = 0.0f;
 			for (size_t i=r.begin(); i<r.end(); i++)
 			  sum += presplitItem[i].priority;			  
 			return sum;
 		      },std::plus<float>());		    
-#else
-		    float priority_sum = 0.0f;		    
-		    for (size_t i=0;i<numPrimitives;i++)
-			priority_sum += presplitItem[i].priority;
-#endif		    
-		    const float priority_avg = priority_sum / numPrimitives;
 
+		    const float priority_avg = priority_sum / numPrimitives;
 		    
-		    double t0,t1;
-		    t0 = getSeconds();	    
-		    std::sort(&presplitItem[0],&presplitItem[numPrimitives],std::less<PresplitItem>());
-		    t1 = getSeconds();	    
-		    PRINT(1000*(t1-t0));
+		    //std::sort(&presplitItem[0],&presplitItem[numPrimitives],std::less<PresplitItem>());
+		    radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
 		    
 		    size_t l = 0;
 		    size_t r = numPrimitives;
-		    
+
+		    /* binary search to find index with priority >= priority_avg */
 		    while(l+1 < r)
 		      {
 			const size_t mid = (l+r)/2;
-			//std::cout << "mid " << mid << " l " << l << " r " << r << std::endl;
 			if (presplitItem[mid].priority < priority_avg)
 			    l = mid;
 			else
 			    r = mid;
 		      }
-		    		    
+
+		    /* how many splits can we use this iteration ? */
 		    const size_t numPrimitivesToSplitStep = min(numPrimitives-r,numPrimitivesToSplit);
-		    PRINT( numPrimitivesToSplitStep );
+		    //PRINT( numPrimitivesToSplitStep );
 		    __aligned(64) std::atomic<size_t> offset;
 		    offset.store(0);
 		    
@@ -1063,20 +1062,22 @@ namespace embree
 		      });
 		    assert(offset <= numPrimitivesToSplit);
 		    
-		    PRINT(offset);
 		    numPrimitives += offset;
 		    numPrimitivesToSplit -= offset;
+#if 0		    
+		    PRINT(offset);		    
 		    PRINT(numPrimitives);
 		    PRINT(numPrimitivesToSplit);
+#endif		    
 		    if (offset == 0) break;
 		  }
 
+		alignedFree(tmp_presplitItem);		
 		alignedFree(presplitItem);
-		PRINT(numPrimitives);
 		double t1_presplits = getSeconds();
+		PRINT(numPrimitives);		
 		PRINT((t1_presplits-t0_presplits)*1000);
 	      }
-	    //exit(0);
 	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(numPrimitives == 0))
