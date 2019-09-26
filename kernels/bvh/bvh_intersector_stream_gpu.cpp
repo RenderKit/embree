@@ -30,7 +30,7 @@
 #define RAY_STATS(x) 
 #endif
 
-#define TSTATS(x) 
+#define TSTATS(x) x
 
 #define STACK_CULLING 1
 

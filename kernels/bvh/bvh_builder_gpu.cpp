@@ -33,9 +33,9 @@
 #define PROFILE_RUNS 20
 #define ENABLE_BREADTH_FIRST_PHASE 1
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
-#define ENABLE_STATS 1
+#define ENABLE_STATS 0
 #define BUILD_CHECKS 0
-#define ENABLE_PRESPLITS 0
+#define ENABLE_PRESPLITS 1
 
 #define GRID_SIZE 1024
 
@@ -932,6 +932,8 @@ namespace embree
 
 	    if (alloc_factor > 1.0f)
 	      {
+		PRINT(numPrimitives);
+		
 		/* set up primitive splitter */
 		SplitterFactory Splitter(scene);
 
@@ -948,88 +950,95 @@ namespace embree
 		    priority_sum += presplitItem[i].priority;
 		  }
 
-		radixsort32(presplitItem,numPrimitives);
-	    
-		// for (size_t i=0;i<numPrimitives;i++)
-		//   std::cout << "i " << i << " " << presplitItem[i] << std::endl;
-
 		const Vec3fa grid_base    = pinfo.geomBounds.lower;
 		const Vec3fa grid_diag    = pinfo.geomBounds.size();
-		const float grid_extend   = max(grid_diag.x,max(grid_diag.y,grid_diag.z));
-		const float grid_scale    = grid_extend == 0.0f ? 0.0f : GRID_SIZE / grid_extend;
+		const Vec3fa grid_extend  = grid_diag; //max(grid_diag.x,max(grid_diag.y,grid_diag.z));
+		const Vec3fa grid_scale   = select(grid_extend == Vec3fa(0.0f), Vec3fa(0.0f), Vec3fa(GRID_SIZE) / grid_extend);
 		const float inv_grid_size = 1.0f / GRID_SIZE;
 
-		//PRINT(grid_scale);
-		//PRINT(inv_grid_size);
+		const size_t step_size = (size_t)ceil((float)numPrimitivesToSplit * 0.8f);
+		//PRINT(numPrimitivesToSplit);
+		//PRINT(step_size);
 		
-		size_t offset = 0;
-		//for (ssize_t i=numPrims-1;i>=0;i--)
-		for (size_t j=0;j<numPrimitivesToSplit;j++)
+		while(numPrimitivesToSplit)
 		  {
-		    const size_t i = numPrimitives - 1 - j;
-		    const float prob      = presplitItem[i].priority;
-		    if (prob <= 0.0f) continue;
-		
-		    const uint  primrefID = presplitItem[i].index;		
-		    const uint   geomID   = prims[primrefID].geomID();
-		    const uint   primID   = prims[primrefID].primID();
-		    const float numSplitPrims = prob/priority_sum*(float)numPrimitivesToSplit;
-		    std::cout << "i " << i << " primrefID " << primrefID << " numSplitPrims " << numSplitPrims << std::endl;
-		    const Vec3fa lower = prims[primrefID].lower;
-		    const Vec3fa upper = prims[primrefID].upper;
-		    const Vec3fa glower = (lower-grid_base)*Vec3fa(grid_scale+0.2f);
-		    const Vec3fa gupper = (upper-grid_base)*Vec3fa(grid_scale-0.2f);
-		    Vec3ia ilower(glower);
-		    Vec3ia iupper(gupper);
-      
-		    /* this ignores dimensions that are empty */
-		    if (glower.x >= gupper.x) iupper.x = ilower.x;
-		    if (glower.y >= gupper.y) iupper.y = ilower.y;
-		    if (glower.z >= gupper.z) iupper.z = ilower.z;
-		
-		    /* Now we compute a morton code for the lower and upper grid coordinates. */
-		    const uint lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
-		    const uint upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
-      
-		    /* if all bits are equal then we cannot split */
-		    if (lower_code != upper_code)
+		    std::sort(&presplitItem[0],&presplitItem[numPrimitives],std::less<PresplitItem>());
+	    
+		    const size_t numPrimitivesToSplitStep = min(step_size,numPrimitivesToSplit);
+		    PRINT( numPrimitivesToSplitStep );
+		    size_t offset = 0;
+		    for (size_t j=0;j<numPrimitivesToSplitStep;j++)
 		      {
-			const uint diff = 31 - lzcnt(lower_code^upper_code);
-		    
-			/* compute octree level and dimension to perform the split in */
-			const uint level = diff / 3;
-			const uint dim   = diff % 3;
-      
-			/* now we compute the grid position of the split */
-			const uint isplit = iupper[dim] & ~((1<<level)-1);
-      
-			/* compute world space position of split */
-			const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend;
-			const auto splitter = Splitter(prims[primrefID]);
-			BBox3fa left,right;
-			splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
-			//std::cout << i << " " << prims[primrefID].bounds() << " left " << left << " right " << right << std::endl;
-			
-			const size_t newID = numPrimitives+offset;
-			prims[primrefID] = PrimRef(left,geomID,primID);
-			prims[newID    ] = PrimRef(right,geomID,primID);
-
-			presplitItem[primrefID].index = primrefID;
-			presplitItem[primrefID].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
-
-			presplitItem[newID].index = newID;
-			presplitItem[newID].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
-			
-			offset++;
-		      }	
-		  }	    
-		PRINT(offset);
-		numPrimitives += offset;
-		PRINT(numPrimitives);
-
+			const size_t i = numPrimitives - 1 - j;
+			const float prob      = presplitItem[i].priority;
+			if (prob <= 0.0f) continue;
 		
-		alignedFree(presplitItem);		
+			const uint  primrefID = presplitItem[i].index;		
+			const uint   geomID   = prims[primrefID].geomID();
+			const uint   primID   = prims[primrefID].primID();
+			const float numSplitPrims = prob/priority_sum*(float)numPrimitivesToSplit;
+
+			const Vec3fa lower = prims[primrefID].lower;
+			const Vec3fa upper = prims[primrefID].upper;
+			const Vec3fa glower = (lower-grid_base)*Vec3fa(grid_scale)+Vec3fa(0.2f);
+			const Vec3fa gupper = (upper-grid_base)*Vec3fa(grid_scale)-Vec3fa(0.2f);
+			Vec3ia ilower(floor(glower));
+			Vec3ia iupper(floor(gupper));
+      
+			/* this ignores dimensions that are empty */
+			if (glower.x >= gupper.x) iupper.x = ilower.x;
+			if (glower.y >= gupper.y) iupper.y = ilower.y;
+			if (glower.z >= gupper.z) iupper.z = ilower.z;
+		
+			/* Now we compute a morton code for the lower and upper grid coordinates. */
+			const uint lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
+			const uint upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
+			
+			/* if all bits are equal then we cannot split */
+			if (lower_code != upper_code)
+			  {
+			    const uint diff = 31 - lzcnt(lower_code^upper_code);
+		    
+			    /* compute octree level and dimension to perform the split in */
+			    const uint level = diff / 3;
+			    const uint dim   = diff % 3;
+      
+			    /* now we compute the grid position of the split */
+			    const uint isplit = iupper[dim] & ~((1<<level)-1);
+			    
+			    /* compute world space position of split */
+			    const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend[dim];
+			    assert(prims[primrefID].bounds().lower[dim] <= fsplit &&
+				   prims[primrefID].bounds().upper[dim] >= fsplit);
+			    const auto splitter = Splitter(prims[primrefID]);
+			    BBox3fa left,right;
+			    splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
+			    
+			    const size_t newID = numPrimitives+offset;
+			    prims[primrefID] = PrimRef(left,geomID,primID);
+			    prims[newID    ] = PrimRef(right,geomID,primID);
+
+			    presplitItem[i].index = primrefID;
+			    presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
+			    presplitItem[newID].index = newID;
+			    presplitItem[newID].priority = PresplitItem::compute_probability<Mesh>(prims[newID],scene);
+			    offset++;
+			  }
+		      }
+		    
+		    //PRINT(offset);
+		    numPrimitives += offset;
+		    numPrimitivesToSplit -= offset;
+		    //PRINT(numPrimitives);
+		    //PRINT(numPrimitivesToSplit);
+		    if (offset == 0) break;
+		    break;
+		  }
+
+		alignedFree(presplitItem);
+		PRINT(numPrimitives);
 	      }
+
 	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(numPrimitives == 0))
@@ -1038,7 +1047,7 @@ namespace embree
 		prims.clear();
 		return;
 	      }
-
+	    
 	    NodeRef root(BVH::emptyNode);
 
 #if defined(EMBREE_DPCPP_SUPPORT)
@@ -1124,6 +1133,7 @@ namespace embree
 	      }
 	    }
 
+	    
 	    /* --- init bvh sah builder (device) --- */
 	    {
 	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
