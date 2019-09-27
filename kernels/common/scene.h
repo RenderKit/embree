@@ -216,7 +216,7 @@ namespace embree
     template<typename Mesh>
       __forceinline       Mesh* get(size_t i)       { 
       assert(i < geometries.size()); 
-      //assert(geometries[i]->getTypeMask() & Mesh::geom_type);
+      assert(geometries[i]->getTypeMask() & Mesh::geom_type);
       return (Mesh*)geometries[i].ptr; 
     }
     template<typename Mesh>
