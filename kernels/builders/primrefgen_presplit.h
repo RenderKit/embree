@@ -73,23 +73,28 @@ namespace embree
     struct ProbStats
     {
       float p_min, p_max, p_sum;
-      __forceinline ProbStats( const float p_min, const float p_max, const float p_sum) : p_min(p_min), p_max(p_max), p_sum(p_sum) {}
-      __forceinline ProbStats( EmptyTy ) : p_min(pos_inf), p_max(neg_inf), p_sum(0.0f) {}
+      size_t p_nonzero;
+      __forceinline ProbStats( const float p_min, const float p_max, const float p_sum, const size_t p_nonzero) : p_min(p_min), p_max(p_max), p_sum(p_sum), p_nonzero(p_nonzero) {}
+      __forceinline ProbStats( EmptyTy ) : p_min(pos_inf), p_max(neg_inf), p_sum(0.0f), p_nonzero(0) {}
 
       __forceinline void extend(const float f) {
-	p_min = min(p_min,f);
-	p_max = max(p_max,f);
-	p_sum += f;	
+	if (f > 0.0f)
+	  {
+	    p_min = min(p_min,f);
+	    p_max = max(p_max,f);
+	    p_sum += f;
+	    p_nonzero++;
+	  }
       }
       
       /*! merges two boxes */
       __forceinline static const ProbStats merge (const ProbStats& a, const ProbStats& b) {
-	return ProbStats(min(a.p_min,b.p_min),max(a.p_max,b.p_max),a.p_sum+b.p_sum);
+	return ProbStats(min(a.p_min,b.p_min),max(a.p_max,b.p_max),a.p_sum+b.p_sum,a.p_nonzero+b.p_nonzero);
       }      
     };
 
     inline std::ostream &operator<<(std::ostream &cout, const ProbStats& p) {
-      return cout << "p_min " << p.p_min << " p_max " << p.p_max << " p_sum " << p.p_sum;
+      return cout << "p_min " << p.p_min << " p_max " << p.p_max << " p_sum " << p.p_sum << " p_nonzero " << p.p_nonzero;
     };
 
     
@@ -183,10 +188,10 @@ namespace embree
 		current.extend(presplitItem[i].priority);			  
 	      return current;
 	    },[](const ProbStats& a, const ProbStats& b) -> ProbStats { return ProbStats::merge(a,b); });		    
-	  const float priority_avg = pstats.p_sum / numPrimitives;
+	  //const float priority_avg = pstats.p_sum / numPrimitives;
+	  const float priority_avg = pstats.p_sum / pstats.p_nonzero;
 
-	  PRINT(pstats.p_max);
-	  PRINT(pstats.p_min);	  
+	  PRINT(pstats);
 	  PRINT(priority_avg);
 	  
 	  /* sort presplit items */
@@ -203,7 +208,7 @@ namespace embree
 	  while(l+1 < r)
 	    {
 	      const size_t mid = (l+r)/2;
-	      if (presplitItem[mid].priority < priority_avg)
+	      if (presplitItem[mid].priority < 1.5f*priority_avg) // FIXME
 		l = mid;
 	      else
 		r = mid;
@@ -225,7 +230,9 @@ namespace embree
 		{
 		  const size_t i = numPrimitives - 1 - j;
 		  assert(presplitItem[i].priority >= priority_avg);
-		
+
+		  //if (presplitItem[i].priority <= 2.0f*priority_avg) continue;
+		  
 		  const uint  primrefID = presplitItem[i].index;		
 		  const uint   geomID   = prims[primrefID].geomID();
 		  const uint   primID   = prims[primrefID].primID();
