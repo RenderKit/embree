@@ -17,6 +17,7 @@
 #include "bvh.h"
 #include "bvh_builder.h"
 #include "../builders/primrefgen.h"
+#include "../builders/primrefgen_presplit.h"
 #include "../builders/splitter.h"
 #include "../geometry/triangle1v.h"
 #include "../geometry/quad1v.h"
@@ -37,48 +38,11 @@
 #define BUILD_CHECKS 0
 #define ENABLE_PRESPLITS 1
 
-#define GRID_SIZE 1024
 
 namespace embree
 {
 #if defined(EMBREE_DPCPP_SUPPORT)
-    
-  struct PresplitItem
-  {
-    float priority;    
-    unsigned int index;
-
-    __forceinline operator unsigned() const
-    {
-      return priority;
-    }
-    __forceinline bool operator < (const PresplitItem& item) const
-    {
-      return (priority < item.priority) || ((priority == item.priority) && (index < item.index));
-    }
-
-    template<typename Mesh>
-    static float compute_probability(const PrimRef &ref, Scene *scene)
-    {
-      const unsigned int geomID = ref.geomID();
-      const unsigned int primID = ref.primID();
-      const float area_aabb  = halfArea(ref.bounds());
-      const float priority = area_aabb;		
-      const float area_prim  = ((Mesh*)scene->get(geomID))->projectedPrimitiveArea(primID);
-      const float area_ratio = min(4.0f, area_aabb / max(1E-12f,area_prim));
-      return priority * area_ratio;      
-    }
-    
-  };
-
-  inline std::ostream &operator<<(std::ostream &cout, const PresplitItem& item) {
-    return cout << "index " << item.index << " priority " << item.priority;    
-  };  
-
-
-
-
-  
+      
   inline float4 Vec3fa_to_float4(const Vec3fa& v)
   {
     return float4(v.x,v.y,v.z,v.w);
@@ -917,166 +881,30 @@ namespace embree
 #if ENABLE_PRESPLITS == 1	    
 	    const float alloc_factor = 1.2f; // 20% spatial splits
 #else
-	    const float alloc_factor = 1.0f; // 20% spatial splits
+	    const float alloc_factor = 1.0f; // no spatial splits
 #endif	    
 	    const size_t alloc_numPrimitives = (size_t)(org_numPrimitives*alloc_factor);
             prims.resize(alloc_numPrimitives); 
 	    
             /* create primref array */
-            PrimInfo pinfo = mesh ?
-              createPrimRefArray(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
-              createPrimRefArray(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);
-
-	    /* use correct number of primitives */
-	    size_t numPrimitives = pinfo.size();
+            PrimInfo pinfo;
 
 	    if (alloc_factor > 1.0f)
 	      {
-		double t0_presplits = getSeconds();
-		PRINT(numPrimitives);
-		
-		/* set up primitive splitter */
-		SplitterFactory Splitter(scene);
-
-		const size_t org_numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
-		size_t numPrimitivesToSplit = org_numPrimitivesToSplit;
-		
-		PRINT(numPrimitivesToSplit);
-
-		/* double buffer presplit items */
-		PresplitItem *presplitItem = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
-
-		PresplitItem *tmp_presplitItem = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
-		
-		/* init presplit items */
-		parallel_for( size_t(0), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
-		    for (size_t i=r.begin(); i<r.end(); i++)
-		      {		
-			presplitItem[i].index = i;
-			presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[i],scene);
-		      }
-		  });
-
-		const Vec3fa grid_base    = pinfo.geomBounds.lower;
-		const Vec3fa grid_diag    = pinfo.geomBounds.size();
-		const Vec3fa grid_extend  = grid_diag; //max(grid_diag.x,max(grid_diag.y,grid_diag.z));
-		const Vec3fa grid_scale   = select(grid_extend == Vec3fa(0.0f), Vec3fa(0.0f), Vec3fa(GRID_SIZE) / grid_extend);
-		const float inv_grid_size = 1.0f / GRID_SIZE;
-		
-		while(numPrimitivesToSplit)
-		  {
-		    PRINT(numPrimitives);
-
-		    // FIXME: non deterministic
-
-		    /* get sum of split priorities */
-		    const float priority_sum = (float) parallel_reduce(size_t(0),numPrimitives,0.0f, [&] (const range<size_t>& r) -> float {
-			float sum = 0.0f;
-			for (size_t i=r.begin(); i<r.end(); i++)
-			  sum += presplitItem[i].priority;			  
-			return sum;
-		      },std::plus<float>());		    
-		    const float priority_avg = priority_sum / numPrimitives;
-
-		    /* sort presplit items */
-		    radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);		    
-
-		    /* binary search to find index with priority >= priority_avg */
-		    size_t l = 0;
-		    size_t r = numPrimitives;		    
-		    while(l+1 < r)
-		      {
-			const size_t mid = (l+r)/2;
-			if (presplitItem[mid].priority < priority_avg)
-			    l = mid;
-			else
-			    r = mid;
-		      }
-
-		    /* #prims with prob >= avg_prob must not be larger the current split budget or 50% of the initial budget */
-		    const size_t numPrimitivesToSplitStep = min(min(numPrimitives-r,numPrimitivesToSplit),org_numPrimitivesToSplit/2);
-		    PRINT( numPrimitivesToSplitStep );
-		    PRINT( 100.0f * (float)numPrimitivesToSplitStep / org_numPrimitivesToSplit);
-		    
-		    __aligned(64) std::atomic<size_t> offset;
-		    offset.store(0);
-		    
-		    parallel_for( size_t(0), numPrimitivesToSplitStep, size_t(128), [&](const range<size_t>& r) -> void {
-			for (size_t j=r.begin(); j<r.end(); j++)		    
-			  {
-			    const size_t i = numPrimitives - 1 - j;
-			    assert(presplitItem[i].priority >= priority_avg);
-		
-			    const uint  primrefID = presplitItem[i].index;		
-			    const uint   geomID   = prims[primrefID].geomID();
-			    const uint   primID   = prims[primrefID].primID();
-
-			    const Vec3fa lower = prims[primrefID].lower;
-			    const Vec3fa upper = prims[primrefID].upper;
-			    const Vec3fa glower = (lower-grid_base)*Vec3fa(grid_scale)+Vec3fa(0.2f);
-			    const Vec3fa gupper = (upper-grid_base)*Vec3fa(grid_scale)-Vec3fa(0.2f);
-			    Vec3ia ilower(floor(glower));
-			    Vec3ia iupper(floor(gupper));
-      
-			    /* this ignores dimensions that are empty */
-			    if (glower.x >= gupper.x) iupper.x = ilower.x;
-			    if (glower.y >= gupper.y) iupper.y = ilower.y;
-			    if (glower.z >= gupper.z) iupper.z = ilower.z;
-		
-			    /* Now we compute a morton code for the lower and upper grid coordinates. */
-			    const uint lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
-			    const uint upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
-			
-			    /* if all bits are equal then we cannot split */
-			    if (lower_code != upper_code)
-			      {
-				const uint diff = 31 - lzcnt(lower_code^upper_code);
-		    
-				/* compute octree level and dimension to perform the split in */
-				const uint level = diff / 3;
-				const uint dim   = diff % 3;
-      
-				/* now we compute the grid position of the split */
-				const uint isplit = iupper[dim] & ~((1<<level)-1);
-			    
-				/* compute world space position of split */
-				const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend[dim];
-				assert(prims[primrefID].bounds().lower[dim] <= fsplit &&
-				       prims[primrefID].bounds().upper[dim] >= fsplit);
-				const auto splitter = Splitter(prims[primrefID]);
-				BBox3fa left,right;
-				splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
-			    
-				const size_t newID = numPrimitives + offset.fetch_add(1);
-				assert(newID < numPrimitives + numPrimitivesToSplitStep);
-				prims[primrefID] = PrimRef(left,geomID,primID);
-				prims[newID    ] = PrimRef(right,geomID,primID);
-
-				presplitItem[i].index = primrefID;
-				presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
-				presplitItem[newID].index = newID;
-				presplitItem[newID].priority = PresplitItem::compute_probability<Mesh>(prims[newID],scene);
-			      }
-			  }
-		      });
-		    assert(offset <= numPrimitivesToSplit);
-		    
-		    numPrimitives += offset;
-		    numPrimitivesToSplit -= offset;
-#if 0		    
-		    PRINT(offset);		    
-		    PRINT(numPrimitives);
-		    PRINT(numPrimitivesToSplit);
-#endif		    
-		    if (offset == 0) break;
-		  }
-
-		alignedFree(tmp_presplitItem);		
-		alignedFree(presplitItem);
-		double t1_presplits = getSeconds();
-		PRINT(numPrimitives);		
-		PRINT((t1_presplits-t0_presplits)*1000);
+		/* presplits */
+		pinfo = mesh ?
+		  createPrimRefArray_presplit<Mesh,SplitterFactory>(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
+		  createPrimRefArray_presplit<Mesh,SplitterFactory>(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);		
 	      }
+	    else
+	      {
+		pinfo = mesh ?
+		  createPrimRefArray(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
+		  createPrimRefArray(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);
+	      }
+
+	    /* use correct number of primitives */
+	    size_t numPrimitives = pinfo.size();
 	    
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(numPrimitives == 0))
