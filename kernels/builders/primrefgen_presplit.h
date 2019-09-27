@@ -68,7 +68,31 @@ namespace embree
 
     inline std::ostream &operator<<(std::ostream &cout, const PresplitItem& item) {
       return cout << "index " << item.index << " priority " << item.priority;    
-    };  
+    };
+
+    struct ProbStats
+    {
+      float p_min, p_max, p_sum;
+      __forceinline ProbStats( const float p_min, const float p_max, const float p_sum) : p_min(p_min), p_max(p_max), p_sum(p_sum) {}
+      __forceinline ProbStats( EmptyTy ) : p_min(pos_inf), p_max(neg_inf), p_sum(0.0f) {}
+
+      __forceinline void extend(const float f) {
+	p_min = min(p_min,f);
+	p_max = max(p_max,f);
+	p_sum += f;	
+      }
+      
+      /*! merges two boxes */
+      __forceinline static const ProbStats merge (const ProbStats& a, const ProbStats& b) {
+	return ProbStats(min(a.p_min,b.p_min),max(a.p_max,b.p_max),a.p_sum+b.p_sum);
+      }      
+    };
+
+    inline std::ostream &operator<<(std::ostream &cout, const ProbStats& p) {
+      return cout << "p_min " << p.p_min << " p_max " << p.p_max << " p_sum " << p.p_sum;
+    };
+
+    
     
     template<typename Mesh, typename SplitterFactory>    
       PrimInfo createPrimRefArray_presplit(Geometry* geometry, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
@@ -153,14 +177,18 @@ namespace embree
 	  // FIXME: non deterministic
 
 	  /* get sum of split priorities */
-	  const float priority_sum = (float) parallel_reduce(size_t(0),numPrimitives,0.0f, [&] (const range<size_t>& r) -> float {
-	      float sum = 0.0f;
+	  const ProbStats pstats = parallel_reduce(size_t(0),numPrimitives,ProbStats(empty), [&] (const range<size_t>& r) -> ProbStats {
+	      ProbStats current(empty);
 	      for (size_t i=r.begin(); i<r.end(); i++)
-		sum += presplitItem[i].priority;			  
-	      return sum;
-	    },std::plus<float>());		    
-	  const float priority_avg = priority_sum / numPrimitives;
+		current.extend(presplitItem[i].priority);			  
+	      return current;
+	    },[](const ProbStats& a, const ProbStats& b) -> ProbStats { return ProbStats::merge(a,b); });		    
+	  const float priority_avg = pstats.p_sum / numPrimitives;
 
+	  PRINT(pstats.p_max);
+	  PRINT(pstats.p_min);	  
+	  PRINT(priority_avg);
+	  
 	  /* sort presplit items */
 	  radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
 
@@ -168,6 +196,7 @@ namespace embree
 		       for (size_t i=1;i<numPrimitives;i++)
 			 assert(presplitItem[i-1].priority <= presplitItem[i].priority);
 		       );
+	  
 	  /* binary search to find index with priority >= priority_avg */
 	  size_t l = 0;
 	  size_t r = numPrimitives;		    
@@ -265,13 +294,10 @@ namespace embree
 	}
 	
       /* recompute bounding boxes */
-
       pinfo = parallel_reduce(size_t(0),numPrimitives,PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 	  PrimInfo p(empty);
 	  for (size_t j=r.begin(); j<r.end(); j++)
-	    {
-	      p.add_center2(prims[j]);
-	    }
+	    p.add_center2(prims[j]);
 	  return p;
 	}, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
   
