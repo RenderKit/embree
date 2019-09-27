@@ -31,7 +31,7 @@
 
 //TODO: Don't sort full array, keep track of min priority anf find index
 
-#define DBG_PRESPLIT(x)
+#define DBG_PRESPLIT(x) 
 
 namespace embree
 {  
@@ -45,11 +45,11 @@ namespace embree
 
       __forceinline operator unsigned() const
       {
-	return priority;
+	return reinterpret_cast<const unsigned&>(priority);
       }
       __forceinline bool operator < (const PresplitItem& item) const
       {
-	return (priority < item.priority) || ((priority == item.priority) && (index < item.index));
+	return (priority < item.priority);
       }
 
       template<typename Mesh>
@@ -162,8 +162,12 @@ namespace embree
 	  const float priority_avg = priority_sum / numPrimitives;
 
 	  /* sort presplit items */
-	  radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);		    
+	  radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
 
+	  DBG_PRESPLIT(
+		       for (size_t i=1;i<numPrimitives;i++)
+			 assert(presplitItem[i-1].priority <= presplitItem[i].priority);
+		       );
 	  /* binary search to find index with priority >= priority_avg */
 	  size_t l = 0;
 	  size_t r = numPrimitives;		    
@@ -175,12 +179,13 @@ namespace embree
 	      else
 		r = mid;
 	    }
-		    
+
 	  /* #prims with prob >= avg_prob must not be larger the current split budget or 50% of the initial budget */
-	  const size_t numPrimitivesToSplitStep = min(min(numPrimitives-r,numPrimitivesToSplit),org_numPrimitivesToSplit/2);
+	  const size_t numPrimitivesToSplitStep = min(min(numPrimitives-r,numPrimitivesToSplit),org_numPrimitivesToSplit/2);	  
 	  DBG_PRESPLIT(
 		       PRINT( numPrimitivesToSplitStep );
 		       PRINT( 100.0f * (float)numPrimitivesToSplitStep / org_numPrimitivesToSplit);
+		       PRINT( priority_avg );
 		       );
 		    
 	  __aligned(64) std::atomic<size_t> offset;
