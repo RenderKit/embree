@@ -23,9 +23,9 @@ namespace embree
 {
   namespace internal {
 
-    template <class T> __forceinline T divideByTwo(T v) { return v / T(2); }
-    template <> __forceinline float divideByTwo<float>(float v) { return v * 0.5f; }
-    template <> __forceinline double divideByTwo<double>(double v) { return v * 0.5; }
+    template <typename T> __forceinline T divideByTwo(const T& v) { return v / T(2); }
+    template <> __forceinline float divideByTwo<float>(const float& v) { return v * 0.5f; }
+    template <> __forceinline double divideByTwo<double>(const double& v) { return v * 0.5; }
 
   } // namespace internal
   template<typename T>
