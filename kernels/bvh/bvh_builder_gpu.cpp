@@ -938,7 +938,9 @@ namespace embree
 		/* set up primitive splitter */
 		SplitterFactory Splitter(scene);
 
-		size_t numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
+		const size_t org_numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
+		size_t numPrimitivesToSplit = org_numPrimitivesToSplit;
+		
 		PRINT(numPrimitivesToSplit);
 
 		/* double buffer presplit items */
@@ -960,9 +962,6 @@ namespace embree
 		const Vec3fa grid_extend  = grid_diag; //max(grid_diag.x,max(grid_diag.y,grid_diag.z));
 		const Vec3fa grid_scale   = select(grid_extend == Vec3fa(0.0f), Vec3fa(0.0f), Vec3fa(GRID_SIZE) / grid_extend);
 		const float inv_grid_size = 1.0f / GRID_SIZE;
-
-		//PRINT(numPrimitivesToSplit);
-		//PRINT(step_size);
 		
 		while(numPrimitivesToSplit)
 		  {
@@ -977,16 +976,14 @@ namespace embree
 			  sum += presplitItem[i].priority;			  
 			return sum;
 		      },std::plus<float>());		    
-
 		    const float priority_avg = priority_sum / numPrimitives;
-		    
-		    //std::sort(&presplitItem[0],&presplitItem[numPrimitives],std::less<PresplitItem>());
-		    radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
-		    
-		    size_t l = 0;
-		    size_t r = numPrimitives;
+
+		    /* sort presplit items */
+		    radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);		    
 
 		    /* binary search to find index with priority >= priority_avg */
+		    size_t l = 0;
+		    size_t r = numPrimitives;		    
 		    while(l+1 < r)
 		      {
 			const size_t mid = (l+r)/2;
@@ -996,9 +993,11 @@ namespace embree
 			    r = mid;
 		      }
 
-		    /* how many splits can we use this iteration ? */
-		    const size_t numPrimitivesToSplitStep = min(numPrimitives-r,numPrimitivesToSplit);
-		    //PRINT( numPrimitivesToSplitStep );
+		    /* #prims with prob >= avg_prob must not be larger the current split budget or 50% of the initial budget */
+		    const size_t numPrimitivesToSplitStep = min(min(numPrimitives-r,numPrimitivesToSplit),org_numPrimitivesToSplit/2);
+		    PRINT( numPrimitivesToSplitStep );
+		    PRINT( 100.0f * (float)numPrimitivesToSplitStep / org_numPrimitivesToSplit);
+		    
 		    __aligned(64) std::atomic<size_t> offset;
 		    offset.store(0);
 		    
