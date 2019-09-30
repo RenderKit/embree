@@ -34,9 +34,9 @@
 #define PROFILE_RUNS 20
 #define ENABLE_BREADTH_FIRST_PHASE 1
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
-#define ENABLE_STATS 0
+#define ENABLE_STATS 1
 #define BUILD_CHECKS 0
-#define ENABLE_PRESPLITS 1
+#define ENABLE_PRESPLITS 0
 
 
 namespace embree
@@ -862,7 +862,7 @@ namespace embree
           return;
         }
 
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
+        bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
         profile(2,PROFILE_RUNS,org_numPrimitives,[&] (ProfileTimer& timer) {
@@ -879,7 +879,7 @@ namespace embree
 
 	    /* allocate primref array */
 #if ENABLE_PRESPLITS == 1	    
-	    const float alloc_factor = 1.2f; // 20% spatial splits
+	    const float alloc_factor = scene->device->max_spatial_split_replications; // 20% spatial splits
 #else
 	    const float alloc_factor = 1.0f; // no spatial splits
 #endif	    
@@ -889,6 +889,7 @@ namespace embree
             /* create primref array */
             PrimInfo pinfo;
 
+#if ENABLE_PRESPLITS == 1	    	    
 	    if (alloc_factor > 1.0f)
 	      {
 		/* presplits */
@@ -897,6 +898,7 @@ namespace embree
 		  createPrimRefArray_presplit<Mesh,SplitterFactory>(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);		
 	      }
 	    else
+#endif	    	      
 	      {
 		pinfo = mesh ?
 		  createPrimRefArray(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
@@ -915,7 +917,7 @@ namespace embree
 	      }
 	    
 	    NodeRef root(BVH::emptyNode);
-
+	    
 #if defined(EMBREE_DPCPP_SUPPORT)
 	      
 	    cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
@@ -960,7 +962,7 @@ namespace embree
 			  << e.what() << std::endl;
 		FATAL("OpenCL Exception");     
 	      }
-	    }
+	    }	    
 	    
 	    const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));	    
 	    {	      
@@ -1071,6 +1073,7 @@ namespace embree
 	    double t2 = getSeconds();
 	    std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;
 #endif	    
+
 	    
 	    /* --- single HW thread recursive build (device) --- */
 	    
@@ -1167,8 +1170,7 @@ namespace embree
 		FATAL("OpenCL Exception");     		
 	      }	      
 	    }
-#endif
-	    
+#endif	    
 	    /* --- deallocate temporary data structures --- */
 #if defined(EMBREE_DPCPP_SUPPORT)	    
 	    cl::sycl::free(primref_index,deviceGPU->getGPUContext());
@@ -1185,7 +1187,7 @@ namespace embree
           prims.clear();
         }
 	bvh->cleanup();
-        bvh->postBuild(t0);
+        //bvh->postBuild(t0); // FIXME: CPU stats don't work right now
       }
 
       void clear() {

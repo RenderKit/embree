@@ -30,7 +30,7 @@
 #define RAY_STATS(x) 
 #endif
 
-#define TSTATS(x) x
+#define TSTATS(x) 
 
 #define STACK_CULLING 1
 
@@ -209,8 +209,7 @@ namespace embree
       if (bvh->root == BVH::emptyNode) return;
       
 #if defined(EMBREE_DPCPP_SUPPORT)
-      
-      
+            
       gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
       void *bvh_mem = (void*)(size_t)(bvh->root);
       assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );      

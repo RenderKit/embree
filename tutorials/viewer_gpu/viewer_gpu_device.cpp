@@ -303,7 +303,7 @@ extern "C" void device_render (int* pixels,
 		<< e.what() << std::endl;
       FATAL("OpenCL Exception");      
     }
-  }
+  }  
   
   /* test function calls */
 #if 0
