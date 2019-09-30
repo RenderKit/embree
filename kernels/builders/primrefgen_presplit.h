@@ -208,7 +208,7 @@ namespace embree
 	  while(l+1 < r)
 	    {
 	      const size_t mid = (l+r)/2;
-	      if (presplitItem[mid].priority < 1.5f*priority_avg) // FIXME
+	      if (presplitItem[mid].priority < priority_avg) // FIXME
 		l = mid;
 	      else
 		r = mid;
@@ -291,6 +291,8 @@ namespace embree
 		    
 	  numPrimitives += offset;
 	  numPrimitivesToSplit -= offset;
+	  PRINT(offset);
+	  PRINT(numPrimitives);
 
 	  DBG_PRESPLIT(	  
 		       PRINT(offset);		    
