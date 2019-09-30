@@ -179,9 +179,10 @@ void gather_all_hits(const struct RTCFilterFunctionNArguments* args)
 }
 
 /* gathers hits in a single pass */
-void single_pass(Ray ray, HitList& hits_o, RandomSampler& sampler, RayStats& stats)
+void single_pass(const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayStats& stats)
 {
   /* trace ray to gather all hits */
+  Ray ray = ray_i;
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
   context.context.filter = gather_all_hits;
@@ -272,9 +273,10 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
 }
 
 /* gathers hits in multiple passes */
-void multi_pass(Ray ray, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats)
+void multi_pass(const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats)
 {
   /* configure intersect context */
+  Ray ray = ray_i;
   IntersectContext context(hits_o);
   rtcInitIntersectContext(&context.context);
   context.max_next_hits = max_next_hits;
