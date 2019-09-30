@@ -121,10 +121,26 @@ namespace embree
   void Scene::createTriangleAccel()
   {
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+    if (device->tri_accel == "bvhgpu.triangle1v") {
+      switch(device->quality_flags)
+	{
+	case RTC_BUILD_QUALITY_HIGH:
+	  accels_add(device->bvh_gpu_factory->BVHGPUTriangle1v(this,BVHFactory::BuildVariant::HIGH_QUALITY));
+	  break;
+	default:
+	  accels_add(device->bvh_gpu_factory->BVHGPUTriangle1v(this,BVHFactory::BuildVariant::STATIC));
+	  break;
+	}
+    }
+    else
+#endif    
+        
     if (device->tri_accel == "default") 
     {
       if (quality_flags != RTC_BUILD_QUALITY_LOW)
-      {
+      {	
         int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
         switch (mode) {
         case /*0b00*/ 0: 
@@ -197,9 +213,6 @@ namespace embree
     else if (device->tri_accel == "qbvh8.triangle4i")     accels_add(device->bvh8_factory->BVH8QuantizedTriangle4i(this));
     else if (device->tri_accel == "qbvh8.triangle4")      accels_add(device->bvh8_factory->BVH8QuantizedTriangle4(this));
 #endif
-#if defined(EMBREE_DPCPP_SUPPORT)	            
-    else if (device->tri_accel == "bvhgpu.triangle1v")    accels_add(device->bvh_gpu_factory->BVHGPUTriangle1v(this));
-#endif    
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
 #endif
 
@@ -246,6 +259,22 @@ namespace embree
   void Scene::createQuadAccel()
   {
 #if defined(EMBREE_GEOMETRY_QUAD)
+    
+#if defined(EMBREE_DPCPP_SUPPORT)	            
+    if (device->quad_accel == "bvhgpu.quad1v") {
+      switch(device->quality_flags)
+	{
+	case RTC_BUILD_QUALITY_HIGH:
+	  accels_add(device->bvh_gpu_factory->BVHGPUQuad1v(this,BVHFactory::BuildVariant::HIGH_QUALITY));
+	  break;
+	default:
+	  accels_add(device->bvh_gpu_factory->BVHGPUQuad1v(this,BVHFactory::BuildVariant::STATIC));
+	  break;
+	}
+    }
+    else
+#endif    
+        
     if (device->quad_accel == "default") 
     {
       if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -320,9 +349,6 @@ namespace embree
     else if (device->quad_accel == "bvh8.quad4i")       accels_add(device->bvh8_factory->BVH8Quad4i(this));
     else if (device->quad_accel == "qbvh8.quad4i")      accels_add(device->bvh8_factory->BVH8QuantizedQuad4i(this));
 #endif
-#if defined(EMBREE_DPCPP_SUPPORT)	            
-    else if (device->quad_accel == "bvhgpu.quad1v")    accels_add(device->bvh_gpu_factory->BVHGPUQuad1v(this));
-#endif        
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown quad acceleration structure "+device->quad_accel);
 #endif
   }

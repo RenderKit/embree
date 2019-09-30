@@ -36,7 +36,6 @@
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
 #define ENABLE_STATS 1
 #define BUILD_CHECKS 0
-#define ENABLE_PRESPLITS 0
 
 
 namespace embree
@@ -837,15 +836,15 @@ namespace embree
       Mesh* mesh;
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
-      bool primrefarrayalloc;
+      size_t mode;
 
       BVHGPUBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize,
-			const size_t mode, bool primrefarrayalloc = false)
+			const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0),
-          settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {}
+          settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), mode(mode) {}
 
       BVHGPUBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), mode(mode) {}
 
       void build()
       {
@@ -861,7 +860,7 @@ namespace embree
           prims.clear();
           return;
         }
-
+	
         bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
 #if PROFILE
@@ -878,18 +877,14 @@ namespace embree
 #endif	    
 
 	    /* allocate primref array */
-#if ENABLE_PRESPLITS == 1	    
-	    const float alloc_factor = scene->device->max_spatial_split_replications; // 20% spatial splits
-#else
-	    const float alloc_factor = 1.0f; // no spatial splits
-#endif	    
+	    const float alloc_factor = mode ? scene->device->max_spatial_split_replications : 1.0f; // 20% spatial s
+
 	    const size_t alloc_numPrimitives = (size_t)(org_numPrimitives*alloc_factor);
             prims.resize(alloc_numPrimitives); 
 	    
             /* create primref array */
             PrimInfo pinfo;
 
-#if ENABLE_PRESPLITS == 1	    	    
 	    if (alloc_factor > 1.0f)
 	      {
 		/* presplits */
@@ -898,7 +893,6 @@ namespace embree
 		  createPrimRefArray_presplit<Mesh,SplitterFactory>(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);		
 	      }
 	    else
-#endif	    	      
 	      {
 		pinfo = mesh ?
 		  createPrimRefArray(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
@@ -1200,8 +1194,8 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v,TriangleSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
-    Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v,QuadSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,mode,true); }    
+    Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v,TriangleSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,mode); }    
+    Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v,QuadSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,mode); }    
 #endif
     
   }

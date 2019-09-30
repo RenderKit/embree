@@ -29,10 +29,10 @@ namespace embree
     BVHGPUFactory();
 
   public:
-    Accel* BVHGPUTriangle1v   (Scene* scene);
+    Accel* BVHGPUTriangle1v   (Scene* scene, BuildVariant bvariant);
     Accel::Intersectors BVHGPUTriangle1vIntersectors(BVH4* bvh);
 
-    Accel* BVHGPUQuad1v   (Scene* scene);
+    Accel* BVHGPUQuad1v   (Scene* scene, BuildVariant bvariant);
     Accel::Intersectors BVHGPUQuad1vIntersectors(BVH4* bvh);
 
   private:

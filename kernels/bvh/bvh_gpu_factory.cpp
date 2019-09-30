@@ -89,19 +89,19 @@ namespace embree
   }
   
 
-  Accel* BVHGPUFactory::BVHGPUTriangle1v(Scene* scene)
+  Accel* BVHGPUFactory::BVHGPUTriangle1v(Scene* scene, BuildVariant bvariant)
   {
     BVH4* accel = new BVH4(Triangle1v::type,scene);
-    Accel::Intersectors intersectors = BVHGPUTriangle1vIntersectors(accel); 
-    Builder* builder = BVHGPUTriangle1vSceneBuilderSAH(accel,scene,0);
+    Accel::Intersectors intersectors = BVHGPUTriangle1vIntersectors(accel);
+    Builder* builder = BVHGPUTriangle1vSceneBuilderSAH(accel,scene,(size_t)bvariant);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVHGPUFactory::BVHGPUQuad1v(Scene* scene)
+  Accel* BVHGPUFactory::BVHGPUQuad1v(Scene* scene, BuildVariant bvariant)
   {
     BVH4* accel = new BVH4(Quad1v::type,scene);
     Accel::Intersectors intersectors = BVHGPUQuad1vIntersectors(accel); 
-    Builder* builder = BVHGPUQuad1vSceneBuilderSAH(accel,scene,0);
+    Builder* builder = BVHGPUQuad1vSceneBuilderSAH(accel,scene,(size_t)bvariant);
     return new AccelInstance(accel,builder,intersectors);
   }
   

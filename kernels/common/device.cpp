@@ -539,10 +539,13 @@ namespace embree
     }
   };  
   
-  DeviceGPU::DeviceGPU(const char* cfg, void *device, void *queue) : Device(cfg ? (std::string(cfg) + std::string("tri_accel=bvhgpu.triangle1v,quad_accel=bvhgpu.quad1v")).c_str() : cfg)
+  DeviceGPU::DeviceGPU(const char* cfg, void *device, void *queue) : Device(cfg)
   {
     assert(device);
     assert(queue);
+    
+    tri_accel = "bvhgpu.triangle1v";
+    quad_accel = "bvhgpu.quad1v";    
     
     gpu_device  = (cl::sycl::device *)device;
     gpu_queue   = (cl::sycl::queue  *)queue;
