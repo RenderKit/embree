@@ -52,10 +52,10 @@
 #  define isa sse42
 #  define ISA SSE42
 #  define ISA_STR "SSE4.2"
-#elif defined (__SSE4_1__)
-#  define isa sse41
-#  define ISA SSE41
-#  define ISA_STR "SSE4.1"
+//#elif defined (__SSE4_1__) //  we demote this to SSE2, MacOSX code compiles with SSE41 by default with XCode 11
+//#  define isa sse41
+//#  define ISA SSE41
+//#  define ISA_STR "SSE4.1"
 //#elif defined(__SSSE3__) // we demote this to SSE2, MacOSX code compiles with SSSE3 by default with ICC
 //#  define isa ssse3
 //#  define ISA SSSE3
