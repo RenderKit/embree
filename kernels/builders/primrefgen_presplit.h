@@ -190,19 +190,17 @@ namespace embree
 		current.extend(presplitItem[i].priority);			  
 	      return current;
 	    },[](const ProbStats& a, const ProbStats& b) -> ProbStats { return ProbStats::merge(a,b); });		    
-	  //const float priority_avg = pstats.p_sum / numPrimitives;
 	  const float priority_avg = pstats.p_sum / pstats.p_nonzero;
 
-	  DBG_PRESPLIT(
-		       PRINT(pstats);
-		       PRINT(priority_avg);
-		       PRINT(prev_avg / priority_avg);
-		       );
+          /* PRINT(pstats); */
+          /* PRINT(priority_avg); */
+          /* PRINT(prev_avg / priority_avg); */
 	  
-	  if (prev_avg / priority_avg < 1.1f) { DBG_PRESPLIT(PRINT("prio avg improvement small")); break; }
+          /* if average priority could not be improved by 5% break */
+	  if (prev_avg / priority_avg < 1.05f) { /* PRINT("prio avg improvement small"); */ break; }
 	  prev_avg = priority_avg;
 	  
-	  /* sort presplit items */
+	  /* sort presplit items in ascending order */
 	  radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
 	  
 	  DBG_PRESPLIT(
@@ -238,8 +236,6 @@ namespace embree
 		{
 		  const size_t i = numPrimitives - 1 - j;
 		  assert(presplitItem[i].priority >= priority_avg);
-
-		  //if (presplitItem[i].priority <= 2.0f*priority_avg) continue;
 		  
 		  const uint  primrefID = presplitItem[i].index;		
 		  const uint   geomID   = prims[primrefID].geomID();
@@ -257,7 +253,7 @@ namespace embree
 		  if (glower.y >= gupper.y) iupper.y = ilower.y;
 		  if (glower.z >= gupper.z) iupper.z = ilower.z;
 		
-		  /* Now we compute a morton code for the lower and upper grid coordinates. */
+		  /* compute a morton code for the lower and upper grid coordinates. */
 		  const uint lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
 		  const uint upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
 			
@@ -278,7 +274,8 @@ namespace embree
 
 		      assert(prims[primrefID].bounds().lower[dim] <= fsplit &&
 			     prims[primrefID].bounds().upper[dim] >= fsplit);
-				
+		
+                      /* split primitive */
 		      const auto splitter = Splitter(prims[primrefID]);
 		      BBox3fa left,right;
 		      splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
@@ -288,6 +285,7 @@ namespace embree
 		      prims[primrefID] = PrimRef(left,geomID,primID);
 		      prims[newID    ] = PrimRef(right,geomID,primID);
 
+                      /* update presplititems */
 		      presplitItem[i].index = primrefID;
 		      presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[primrefID],scene);
 		      presplitItem[newID].index = newID;
@@ -307,8 +305,12 @@ namespace embree
 			  );
 	  if (offset == 0) break;
 	}
+
+      /* radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024); */
+      /* for (ssize_t i=numPrimitives-1;i>=max((int)0,(int)numPrimitives-100);i--) */
+      /*   std::cout << i << " -> " << presplitItem[i] << std::endl; */
 	
-      /* recompute bounding boxes */
+      /* recompute centroid bounding boxes */
       pinfo = parallel_reduce(size_t(0),numPrimitives,PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 	  PrimInfo p(empty);
 	  for (size_t j=r.begin(); j<r.end(); j++)
