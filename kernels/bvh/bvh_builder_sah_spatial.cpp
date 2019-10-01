@@ -68,7 +68,7 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       BVH* bvh;
       Scene* scene;
-      typename Mesh::type_t* mesh;
+      Mesh* mesh;
       mvector<PrimRef> prims0;
       GeneralBVHBuilder::Settings settings;
       const float splitFactor;
@@ -77,7 +77,7 @@ namespace embree
         : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
           splitFactor(scene->device->max_spatial_split_replications) {}
 
-      BVHNBuilderFastSpatialSAH (BVH* bvh, typename Mesh::type_t* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
           splitFactor(scene->device->max_spatial_split_replications) {}
 
@@ -98,7 +98,7 @@ namespace embree
           return;
         }
 
-        const unsigned int maxGeomID = mesh ? mesh->geomID : scene->getMaxGeomID<typename Mesh::type_t,false>();
+        const unsigned int maxGeomID = mesh ? mesh->geomID : scene->getMaxGeomID<Mesh,false>();
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
 
         /* create primref array */

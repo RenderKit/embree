@@ -130,11 +130,6 @@ namespace embree
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
   };
 
-  struct InstanceExpensive {
-    using type_t = Instance;
-    static const Geometry::GTypeMask geom_type = Geometry::MTY_INSTANCE_EXPENSIVE;
-  };
-
   namespace isa
   {
     struct InstanceISA : public Instance
