@@ -670,22 +670,22 @@ namespace embree
           if (geometries[i]) geometries[i]->setModified();
         });
       
-      if (getNumPrimitives<TriangleMesh,false>()) createTriangleAccel();
-      if (getNumPrimitives<TriangleMesh,true>()) createTriangleMBAccel();
-      if (getNumPrimitives<QuadMesh,false>()) createQuadAccel();
-      if (getNumPrimitives<QuadMesh,true>()) createQuadMBAccel();
-      if (getNumPrimitives<GridMesh,false>()) createGridAccel();
-      if (getNumPrimitives<GridMesh,true>()) createGridMBAccel();
-      if (getNumPrimitives<SubdivMesh,false>()) createSubdivAccel();
-      if (getNumPrimitives<SubdivMesh,true>()) createSubdivMBAccel();
-      if (getNumPrimitives<CurveGeometry,false>()) createHairAccel();
-      if (getNumPrimitives<CurveGeometry,true>()) createHairMBAccel();
-      if (getNumPrimitives<UserGeometry,false>()) createUserGeometryAccel();
-      if (getNumPrimitives<UserGeometry,true>()) createUserGeometryMBAccel();
-      if (getNumPrimitives<Instance,false>()) createInstanceAccel();
-      if (getNumPrimitives<Instance,true>()) createInstanceMBAccel();
-      if (getNumPrimitives<InstanceExpensive,false>()) createInstanceExpensiveAccel();
-      if (getNumPrimitives<InstanceExpensive,true>()) createInstanceExpensiveMBAccel();
+      if (getNumPrimitives(TriangleMesh::geom_type,false)) createTriangleAccel();
+      if (getNumPrimitives(TriangleMesh::geom_type,true)) createTriangleMBAccel();
+      if (getNumPrimitives(QuadMesh::geom_type,false)) createQuadAccel();
+      if (getNumPrimitives(QuadMesh::geom_type,true)) createQuadMBAccel();
+      if (getNumPrimitives(GridMesh::geom_type,false)) createGridAccel();
+      if (getNumPrimitives(GridMesh::geom_type,true)) createGridMBAccel();
+      if (getNumPrimitives(SubdivMesh::geom_type,false)) createSubdivAccel();
+      if (getNumPrimitives(SubdivMesh::geom_type,true)) createSubdivMBAccel();
+      if (getNumPrimitives(CurveGeometry::geom_type,false)) createHairAccel();
+      if (getNumPrimitives(CurveGeometry::geom_type,true)) createHairMBAccel();
+      if (getNumPrimitives(UserGeometry::geom_type,false)) createUserGeometryAccel();
+      if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();
+      if (getNumPrimitives(Instance::geom_type,false)) createInstanceAccel();
+      if (getNumPrimitives(Instance::geom_type,true)) createInstanceMBAccel();
+      if (getNumPrimitives(InstanceExpensive::geom_type,false)) createInstanceExpensiveAccel();
+      if (getNumPrimitives(InstanceExpensive::geom_type,true)) createInstanceExpensiveMBAccel();
       
       flags_modified = false;
       enabled_geometry_types = new_enabled_geometry_types;

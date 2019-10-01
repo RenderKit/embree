@@ -49,7 +49,7 @@ namespace embree
           bvh->alloc.unshare(prims);
 
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<CurveGeometry,false>();
+        const size_t numPrimitives = scene->getNumPrimitives(CurveGeometry::geom_type,false);
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
