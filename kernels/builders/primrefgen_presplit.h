@@ -74,6 +74,8 @@ namespace embree
     {
       float p_min, p_max, p_sum;
       size_t p_nonzero;
+
+      __forceinline ProbStats() {}
       __forceinline ProbStats( const float p_min, const float p_max, const float p_sum, const size_t p_nonzero) : p_min(p_min), p_max(p_max), p_sum(p_sum), p_nonzero(p_nonzero) {}
       __forceinline ProbStats( EmptyTy ) : p_min(pos_inf), p_max(neg_inf), p_sum(0.0f), p_nonzero(0) {}
 
