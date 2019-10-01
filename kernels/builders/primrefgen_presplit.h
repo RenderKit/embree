@@ -165,7 +165,7 @@ namespace embree
       parallel_for( size_t(0), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
 	  for (size_t i=r.begin(); i<r.end(); i++)
 	    {		
-	      presplitItem[i].index = i;
+	      presplitItem[i].index = (unsigned int)i;
 	      presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[i],scene);
 	    }
 	});
@@ -237,11 +237,10 @@ namespace embree
 	      for (size_t j=r.begin(); j<r.end(); j++)		    
 		{
 		  const size_t i = numPrimitives - 1 - j;
-		  assert(presplitItem[i].priority >= priority_avg);
 		  
-		  const uint  primrefID = presplitItem[i].index;		
-		  const uint   geomID   = prims[primrefID].geomID();
-		  const uint   primID   = prims[primrefID].primID();
+		  const unsigned int  primrefID = presplitItem[i].index;		
+		  const unsigned int   geomID   = prims[primrefID].geomID();
+		  const unsigned int   primID   = prims[primrefID].primID();
 
 		  const Vec3fa lower = prims[primrefID].lower;
 		  const Vec3fa upper = prims[primrefID].upper;
@@ -256,20 +255,20 @@ namespace embree
 		  if (glower.z >= gupper.z) iupper.z = ilower.z;
 		
 		  /* compute a morton code for the lower and upper grid coordinates. */
-		  const uint lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
-		  const uint upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
+		  const unsigned int lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
+		  const unsigned int upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
 			
 		  /* if all bits are equal then we cannot split */
 		  if (lower_code != upper_code)
 		    {
-		      const uint diff = 31 - lzcnt(lower_code^upper_code);
+		      const unsigned int diff = 31 - lzcnt(lower_code^upper_code);
 		    
 		      /* compute octree level and dimension to perform the split in */
-		      const uint level = diff / 3;
-		      const uint dim   = diff % 3;
+		      const unsigned int level = diff / 3;
+		      const unsigned int dim   = diff % 3;
       
 		      /* now we compute the grid position of the split */
-		      const uint isplit = iupper[dim] & ~((1<<level)-1);
+		      const unsigned int isplit = iupper[dim] & ~((1<<level)-1);
 			    
 		      /* compute world space position of split */
 		      const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend;
@@ -290,7 +289,7 @@ namespace embree
                       /* update presplititems */
 		      presplitItem[i].index = primrefID;
 		      presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[primrefID],scene);
-		      presplitItem[newID].index = newID;
+		      presplitItem[newID].index = (unsigned int)newID;
 		      presplitItem[newID].priority = PresplitItem::compute_priority<Mesh>(prims[newID],scene);
 		    }
 		}
