@@ -116,14 +116,15 @@ namespace embree
       const float intCost;
       const size_t minLeafSize;
       const size_t maxLeafSize;
+      const Geometry::GTypeMask gtype_;
 
-      BVHNBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)) {}
+      BVHNBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
+        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), gtype_(gtype) {}
 
       void build()
       {
 	/* skip build for empty scene */
-        const size_t numPrimitives = scene->getNumPrimitives(Mesh::geom_type,true);
+        const size_t numPrimitives = scene->getNumPrimitives(gtype_,true);
         if (numPrimitives == 0) { bvh->clear(); return; }
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
@@ -155,7 +156,7 @@ namespace embree
       {
         /* create primref array */
         mvector<PrimRef> prims(scene->device,numPrimitives);
-        const PrimInfo pinfo = createPrimRefArrayMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface,0);
+        const PrimInfo pinfo = createPrimRefArrayMBlur(scene,gtype_,prims,bvh->scene->progressInterface,0);
         /* early out if no valid primitives */
         if (pinfo.size() == 0) { bvh->clear(); return; }
         /* estimate acceleration structure size */
@@ -188,7 +189,7 @@ namespace embree
       {
         /* create primref array */
         mvector<PrimRefMB> prims(scene->device,numPrimitives);
-        PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Mesh::geom_type,prims,bvh->scene->progressInterface);
+        PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,gtype_,prims,bvh->scene->progressInterface);
 
         /* early out if no valid primitives */
         if (pinfo.size() == 0) { bvh->clear(); return; }
@@ -213,11 +214,11 @@ namespace embree
         /* build hierarchy */
         auto root =
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
-                                            RecalculatePrimRef<typename Mesh::type_t>(scene),
+                                            RecalculatePrimRef<Mesh>(scene),
                                             typename BVH::CreateAlloc(bvh),
                                             typename BVH::AlignedNodeMB4D::Create(),
                                             typename BVH::AlignedNodeMB4D::Set(),
-                                            CreateMSMBlurLeaf<N,typename Mesh::type_t,Primitive>(bvh),
+                                            CreateMSMBlurLeaf<N,Mesh,Primitive>(bvh),
                                             bvh->scene->progressInterface,
                                             settings);
 
@@ -666,18 +667,18 @@ namespace embree
     /************************************************************************************/
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH4Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,Geometry::MTY_TRIANGLE_MESH); }
+    Builder* BVH4Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf,Geometry::MTY_TRIANGLE_MESH); }
 #if defined(__AVX__)
-    Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf); }
-    Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Triangle4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,Geometry::MTY_TRIANGLE_MESH); }
+    Builder* BVH8Triangle4vMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,TriangleMesh,Triangle4vMB>((BVH8*)bvh,scene,4,1.0f,4,inf,Geometry::MTY_TRIANGLE_MESH); }
 #endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-    Builder* BVH4Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH4Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,Geometry::MTY_QUAD_MESH); }
 #if defined(__AVX__)
-    Builder* BVH8Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf); }
+    Builder* BVH8Quad4iMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,Geometry::MTY_QUAD_MESH); }
 #endif
 #endif
 
@@ -685,23 +686,21 @@ namespace embree
     Builder* BVH4VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
-      return new BVHNBuilderMBlurSAH<4,UserGeometry,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize);
+      return new BVHNBuilderMBlurSAH<4,UserGeometry,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize,Geometry::MTY_USER_GEOMETRY);
     }
 #if defined(__AVX__)
     Builder* BVH8VirtualMBSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_mb_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_mb_max_leaf_size;
-      return new BVHNBuilderMBlurSAH<8,UserGeometry,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize);
+      return new BVHNBuilderMBlurSAH<8,UserGeometry,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize,Geometry::MTY_USER_GEOMETRY);
     }
 #endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-    Builder* BVH4InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1); }
-    Builder* BVH4InstanceExpensiveMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<4,InstanceExpensive,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1); }
+    Builder* BVH4InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, Geometry::GTypeMask gtype) { return new BVHNBuilderMBlurSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1,gtype); }
 #if defined(__AVX__)
-    Builder* BVH8InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1); }
-    Builder* BVH8InstanceExpensiveMBSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderMBlurSAH<8,InstanceExpensive,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1); }
+    Builder* BVH8InstanceMBSceneBuilderSAH (void* bvh, Scene* scene, Geometry::GTypeMask gtype) { return new BVHNBuilderMBlurSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1,gtype); }
 #endif
 #endif
 

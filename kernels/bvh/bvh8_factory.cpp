@@ -220,10 +220,8 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH8VirtualSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8VirtualMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   
-  DECLARE_ISA_FUNCTION(Builder*,BVH8InstanceSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8InstanceExpensiveSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8InstanceExpensiveMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8InstanceSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4SceneBuilderFastSpatialSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vSceneBuilderFastSpatialSAH,void* COMMA Scene* COMMA size_t);
@@ -283,8 +281,6 @@ namespace embree
 
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX(features,BVH8InstanceSceneBuilderSAH));
     IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX(features,BVH8InstanceMBSceneBuilderSAH));
-    IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX(features,BVH8InstanceExpensiveSceneBuilderSAH));
-    IF_ENABLED_INSTANCE(SELECT_SYMBOL_INIT_AVX(features,BVH8InstanceExpensiveMBSceneBuilderSAH));
     
     IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX(features,BVH8GridSceneBuilderSAH));
     IF_ENABLED_GRIDS(SELECT_SYMBOL_INIT_AVX(features,BVH8GridMBSceneBuilderSAH));
@@ -1201,35 +1197,21 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH8Factory::BVH8Instance(Scene* scene, BuildVariant bvariant)
+  Accel* BVH8Factory::BVH8Instance(Scene* scene, bool isExpensive, BuildVariant bvariant)
   {
     BVH8* accel = new BVH8(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH8InstanceIntersectors(accel);
-    Builder* builder = BVH8InstanceSceneBuilderSAH(accel,scene,0);
+    auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE; 
+    Builder* builder = BVH8InstanceSceneBuilderSAH(accel,scene,gtype);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH8Factory::BVH8InstanceMB(Scene* scene)
+  Accel* BVH8Factory::BVH8InstanceMB(Scene* scene, bool isExpensive)
   {
     BVH8* accel = new BVH8(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH8InstanceMBIntersectors(accel);
-    Builder* builder = BVH8InstanceMBSceneBuilderSAH(accel,scene,0);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH8Factory::BVH8InstanceExpensive(Scene* scene, BuildVariant bvariant)
-  {
-    BVH8* accel = new BVH8(InstancePrimitive::type,scene);
-    Accel::Intersectors intersectors = BVH8InstanceIntersectors(accel);
-    Builder* builder = BVH8InstanceExpensiveSceneBuilderSAH(accel,scene,0);
-    return new AccelInstance(accel,builder,intersectors);
-  }
-
-  Accel* BVH8Factory::BVH8InstanceExpensiveMB(Scene* scene)
-  {
-    BVH8* accel = new BVH8(InstancePrimitive::type,scene);
-    Accel::Intersectors intersectors = BVH8InstanceMBIntersectors(accel);
-    Builder* builder = BVH8InstanceExpensiveMBSceneBuilderSAH(accel,scene,0);
+    auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE; 
+    Builder* builder = BVH8InstanceMBSceneBuilderSAH(accel,scene,gtype);
     return new AccelInstance(accel,builder,intersectors);
   }
 

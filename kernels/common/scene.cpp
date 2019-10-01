@@ -501,10 +501,10 @@ namespace embree
     {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
-        accels_add(device->bvh8_factory->BVH8Instance(this,BVHFactory::BuildVariant::STATIC));
+        accels_add(device->bvh8_factory->BVH8Instance(this, false, BVHFactory::BuildVariant::STATIC));
       else
 #endif
-        accels_add(device->bvh4_factory->BVH4Instance(this,BVHFactory::BuildVariant::STATIC));
+        accels_add(device->bvh4_factory->BVH4Instance(this, false, BVHFactory::BuildVariant::STATIC));
     }
     //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
 #endif
@@ -517,10 +517,10 @@ namespace embree
     {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
-        accels_add(device->bvh8_factory->BVH8InstanceMB(this));
+        accels_add(device->bvh8_factory->BVH8InstanceMB(this, false));
       else
 #endif
-        accels_add(device->bvh4_factory->BVH4InstanceMB(this));
+        accels_add(device->bvh4_factory->BVH4InstanceMB(this, false));
     }
     //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance mblur accel "+device->instance_accel_mb);
 #endif
@@ -533,10 +533,10 @@ namespace embree
     {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
-        accels_add(device->bvh8_factory->BVH8InstanceExpensive(this,BVHFactory::BuildVariant::STATIC));
+        accels_add(device->bvh8_factory->BVH8Instance(this, true, BVHFactory::BuildVariant::STATIC));
       else
 #endif
-        accels_add(device->bvh4_factory->BVH4InstanceExpensive(this,BVHFactory::BuildVariant::STATIC));
+        accels_add(device->bvh4_factory->BVH4Instance(this, true, BVHFactory::BuildVariant::STATIC));
     }
     //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
 #endif
@@ -549,10 +549,10 @@ namespace embree
     {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
-        accels_add(device->bvh8_factory->BVH8InstanceExpensiveMB(this));
+        accels_add(device->bvh8_factory->BVH8InstanceMB(this, true));
       else
 #endif
-        accels_add(device->bvh4_factory->BVH4InstanceExpensiveMB(this));
+        accels_add(device->bvh4_factory->BVH4InstanceMB(this, true));
     }
     //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance mblur accel "+device->instance_accel_mb);
 #endif
@@ -682,10 +682,10 @@ namespace embree
       if (getNumPrimitives(CurveGeometry::geom_type,true)) createHairMBAccel();
       if (getNumPrimitives(UserGeometry::geom_type,false)) createUserGeometryAccel();
       if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();
-      if (getNumPrimitives(Instance::geom_type,false)) createInstanceAccel();
-      if (getNumPrimitives(Instance::geom_type,true)) createInstanceMBAccel();
-      if (getNumPrimitives(InstanceExpensive::geom_type,false)) createInstanceExpensiveAccel();
-      if (getNumPrimitives(InstanceExpensive::geom_type,true)) createInstanceExpensiveMBAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE,false)) createInstanceAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE,true)) createInstanceMBAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,false)) createInstanceExpensiveAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,true)) createInstanceExpensiveMBAccel();
       
       flags_modified = false;
       enabled_geometry_types = new_enabled_geometry_types;
