@@ -26,7 +26,6 @@ namespace embree
   {
     ALIGNED_STRUCT_(16);
     static const Geometry::GTypeMask geom_type = Geometry::MTY_INSTANCE;
-    using type_t = Instance;
     
   public:
     Instance (Device* device, Accel* object = nullptr, unsigned int numTimeSteps = 1);
