@@ -53,7 +53,7 @@ namespace embree
       }
 
       template<typename Mesh>
-      static float compute_probability(const PrimRef &ref, Scene *scene)
+      static float compute_priority(const PrimRef &ref, Scene *scene)
       {
 	const unsigned int geomID = ref.geomID();
 	const unsigned int primID = ref.primID();
@@ -164,7 +164,7 @@ namespace embree
 	  for (size_t i=r.begin(); i<r.end(); i++)
 	    {		
 	      presplitItem[i].index = i;
-	      presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[i],scene);
+	      presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[i],scene);
 	    }
 	});
 
@@ -175,6 +175,8 @@ namespace embree
       const float grid_scale    = grid_extend == 0.0f ? 0.0f : GRID_SIZE / grid_extend;
       const float inv_grid_size = 1.0f / GRID_SIZE;
 
+      float prev_avg = pos_inf;
+      
       while(numPrimitivesToSplit)
 	{
 	  DBG_PRESPLIT(PRINT(numPrimitives));
@@ -190,32 +192,59 @@ namespace embree
 	    },[](const ProbStats& a, const ProbStats& b) -> ProbStats { return ProbStats::merge(a,b); });		    
 	  //const float priority_avg = pstats.p_sum / numPrimitives;
 	  const float priority_avg = pstats.p_sum / pstats.p_nonzero;
-
+	  
 	  PRINT(pstats);
 	  PRINT(priority_avg);
+	  PRINT(prev_avg / priority_avg);
+	  
+	  if (prev_avg / priority_avg < 1.1f) { PRINT("prio avg improvement small"); break; }
+	  prev_avg = priority_avg;
 	  
 	  /* sort presplit items */
 	  radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
 
+
+	  for (size_t i=0;i<numPrimitives;i++)
+	    {
+	      tmp_presplitItem[i].priority = presplitItem[i].priority / pstats.p_sum;
+	      tmp_presplitItem[i].index = presplitItem[i].index;
+	    }
+	  
 	  DBG_PRESPLIT(
 		       for (size_t i=1;i<numPrimitives;i++)
 			 assert(presplitItem[i-1].priority <= presplitItem[i].priority);
 		       );
-	  
+
+#if 1
 	  /* binary search to find index with priority >= priority_avg */
 	  size_t l = 0;
 	  size_t r = numPrimitives;		    
 	  while(l+1 < r)
 	    {
 	      const size_t mid = (l+r)/2;
-	      if (presplitItem[mid].priority < priority_avg) // FIXME
+	      if (presplitItem[mid].priority < priority_avg*8.0f) // FIXME
 		l = mid;
 	      else
 		r = mid;
 	    }
-
+	  //const size_t numPrimitivesToSplitStep = min(min(numPrimitives-r,numPrimitivesToSplit),org_numPrimitivesToSplit/2);
+	  const size_t numPrimitivesToSplitStep = min(numPrimitives-r,numPrimitivesToSplit);	
+	  
+#else
+	  ssize_t r;
+	  float sum = 0.0f;
+	  for (r=numPrimitives-1;r>=0;r--)
+	    {
+	      sum += tmp_presplitItem[r].priority;
+	      if (sum > 0.5f) break;
+	    }
+	  PRINT(sum);
+	  PRINT(r);
+	  //exit(0);
+	  const size_t numPrimitivesToSplitStep = min(numPrimitives-r,numPrimitivesToSplit);
+	  
+#endif	  
 	  /* #prims with prob >= avg_prob must not be larger the current split budget or 50% of the initial budget */
-	  const size_t numPrimitivesToSplitStep = min(min(numPrimitives-r,numPrimitivesToSplit),org_numPrimitivesToSplit/2);	  
 	  DBG_PRESPLIT(
 		       PRINT( numPrimitivesToSplitStep );
 		       PRINT( 100.0f * (float)numPrimitivesToSplitStep / org_numPrimitivesToSplit);
@@ -281,9 +310,9 @@ namespace embree
 		      prims[newID    ] = PrimRef(right,geomID,primID);
 
 		      presplitItem[i].index = primrefID;
-		      presplitItem[i].priority = PresplitItem::compute_probability<Mesh>(prims[primrefID],scene);
+		      presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[primrefID],scene);
 		      presplitItem[newID].index = newID;
-		      presplitItem[newID].priority = PresplitItem::compute_probability<Mesh>(prims[newID],scene);
+		      presplitItem[newID].priority = PresplitItem::compute_priority<Mesh>(prims[newID],scene);
 		    }
 		}
 	    });
