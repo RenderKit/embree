@@ -91,9 +91,8 @@ namespace embree
           bvh->alloc.clear();
         }
 
-        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
-
 	/* skip build for empty scene */
+        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(Mesh::geom_type,false);
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();

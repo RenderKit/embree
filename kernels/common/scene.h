@@ -70,7 +70,7 @@ namespace embree
       }
       
       __forceinline size_t numPrimitives() const {
-        return scene->getNumPrimitives<Ty,mblur>();
+        return scene->getNumPrimitives(Ty::geom_type,mblur);
       }
 
       __forceinline size_t maxPrimitivesPerGeometry() 
@@ -216,7 +216,7 @@ namespace embree
     template<typename Mesh>
       __forceinline       Mesh* get(size_t i)       { 
       assert(i < geometries.size()); 
-      assert(geometries[i]->getTypeMask() & Mesh::geom_type);
+     // assert(geometries[i]->getTypeMask() & Mesh::geom_type);
       return (Mesh*)geometries[i].ptr; 
     }
     template<typename Mesh>
@@ -356,7 +356,55 @@ namespace embree
       return world.size() + worldMB.size();
     }
 
-    template<typename Mesh, bool mblur> __forceinline size_t getNumPrimitives() const;
+    __forceinline size_t getNumPrimitives(Geometry::GTypeMask mask, bool mblur) const {
+
+      switch (mask) {
+      case Geometry::MTY_TRIANGLE_MESH:
+        return mblur ? worldMB.numTriangles : world.numTriangles;
+        break;
+
+      case Geometry::MTY_QUAD_MESH:
+        return mblur ? worldMB.numQuads : world.numQuads;
+        break;
+      
+      case Geometry::MTY_CURVE4:
+        return mblur  ? worldMB.numBezierCurves+worldMB.numLineSegments+worldMB.numPoints 
+                      : world.numBezierCurves+world.numLineSegments+world.numPoints;
+        break;
+
+      /*case Geometry::MTY_CURVES:      TODO - line segments?
+        return mblur  ? worldMB.numBezierCurves+worldMB.numLineSegments+worldMB.numPoints 
+                      : world.numBezierCurves+world.numLineSegments+world.numPoints;
+        break;*/
+
+      case Geometry::MTY_SUBDIV_MESH:
+        return mblur  ? worldMB.numSubdivPatches : world.numSubdivPatches;
+        break;
+
+      case Geometry::MTY_USER_GEOMETRY:
+        return mblur  ? worldMB.numUserGeometries : world.numUserGeometries;
+        break;
+
+      case Geometry::MTY_INSTANCE:
+        return mblur  ? worldMB.numInstancesCheap : world.numInstancesCheap;
+        break;
+        
+      case Geometry::MTY_INSTANCE_EXPENSIVE:
+        return mblur  ? worldMB.numInstancesExpensive : world.numInstancesExpensive;
+        break;  
+
+      case Geometry::MTY_GRID_MESH:
+        return mblur  ? worldMB.numGrids : world.numGrids;
+        break;  
+
+      default:
+        break;
+      }
+
+      throw_RTCError  (RTC_ERROR_INVALID_OPERATION,
+                       "getNumPrimitives operation not supported for this geometry"); 
+      return 0;
+    }
     
     template<typename Mesh, bool mblur>
     __forceinline unsigned getNumTimeSteps()
@@ -378,7 +426,7 @@ namespace embree
     std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 
-  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,false>() const { return world.numTriangles; }
+  /* template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,false>() const { return world.numTriangles; }
   template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,true>() const { return worldMB.numTriangles; }
   template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,false>() const { return world.numQuads; }
   template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,true>() const { return worldMB.numQuads; }
@@ -395,5 +443,5 @@ namespace embree
   template<> __forceinline size_t Scene::getNumPrimitives<InstanceExpensive,false>() const { return world.numInstancesExpensive; }
   template<> __forceinline size_t Scene::getNumPrimitives<InstanceExpensive,true>() const { return worldMB.numInstancesExpensive; }
   template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,false>() const { return world.numGrids; }
-  template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,true>() const { return worldMB.numGrids; }
+  template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,true>() const { return worldMB.numGrids; } */
 }

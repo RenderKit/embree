@@ -123,7 +123,7 @@ namespace embree
       void build()
       {
 	/* skip build for empty scene */
-        const size_t numPrimitives = scene->getNumPrimitives<typename Mesh::type_t,true>();
+        const size_t numPrimitives = scene->getNumPrimitives(Mesh::geom_type,true);
         if (numPrimitives == 0) { bvh->clear(); return; }
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAH");
@@ -553,7 +553,7 @@ namespace embree
       void build()
       {
 	/* skip build for empty scene */
-        const size_t numPrimitives = scene->getNumPrimitives<GridMesh,true>();
+        const size_t numPrimitives = scene->getNumPrimitives(GridMesh::geom_type,true);
         if (numPrimitives == 0) { bvh->clear(); return; }
 
         double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderMBlurSAHGrid");
