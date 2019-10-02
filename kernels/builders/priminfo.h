@@ -23,7 +23,7 @@
 namespace embree
 {
   // FIXME: maybe there's a better place for this util fct
-  __forceinline float areaProjectedTriangle(const Vec3fa v0, const Vec3fa v1, const Vec3fa v2)
+  __forceinline float areaProjectedTriangle(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2)
   {
     const Vec2f v0_xy(v0.x,v0.y);
     const Vec2f v0_yz(v0.y,v0.z);
