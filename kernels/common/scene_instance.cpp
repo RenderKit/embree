@@ -36,38 +36,6 @@ namespace embree
     alignedFree(local2world);
     if (object) object->refDec();
   }
-
-  void Instance::enabling () {
-    /* if (numTimeSteps == 1) {
-      if (Geometry::GTY_INSTANCE == this->gtype) {
-        scene->world.numInstancesCheap += numPrimitives;
-      } else {
-        scene->world.numInstancesExpensive += numPrimitives;
-      }
-    } else {
-      if (Geometry::GTY_INSTANCE == this->gtype) {
-        scene->worldMB.numInstancesCheap += numPrimitives;
-      } else {
-        scene->worldMB.numInstancesExpensive += numPrimitives;
-      }
-    } */
-  }
-  
-  void Instance::disabling() { 
-   /*  if (numTimeSteps == 1) {
-      if (Geometry::GTY_INSTANCE == this->gtype) {
-        scene->world.numInstancesCheap -= numPrimitives;
-      } else {
-        scene->world.numInstancesExpensive -= numPrimitives;
-      }
-    } else {
-      if (Geometry::GTY_INSTANCE == this->gtype) {
-        scene->worldMB.numInstancesCheap -= numPrimitives;
-      } else {
-        scene->worldMB.numInstancesExpensive -= numPrimitives;
-      }
-    } */
-  }
   
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
   {
