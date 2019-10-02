@@ -38,7 +38,7 @@ namespace embree
   }
 
   void Instance::enabling () {
-    if (numTimeSteps == 1) {
+    /* if (numTimeSteps == 1) {
       if (Geometry::GTY_INSTANCE == this->gtype) {
         scene->world.numInstancesCheap += numPrimitives;
       } else {
@@ -50,11 +50,11 @@ namespace embree
       } else {
         scene->worldMB.numInstancesExpensive += numPrimitives;
       }
-    }
+    } */
   }
   
   void Instance::disabling() { 
-    if (numTimeSteps == 1) {
+   /*  if (numTimeSteps == 1) {
       if (Geometry::GTY_INSTANCE == this->gtype) {
         scene->world.numInstancesCheap -= numPrimitives;
       } else {
@@ -66,7 +66,7 @@ namespace embree
       } else {
         scene->worldMB.numInstancesExpensive -= numPrimitives;
       }
-    }
+    } */
   }
   
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
@@ -93,6 +93,12 @@ namespace embree
     if (object) object->refDec();
     object = scene.ptr;
     if (object) object->refInc();
+    Geometry::update();
+  }
+
+  void Instance::preCommit() {
+
+    // decide whether we're an expensive instnace or not
     auto numExpensiveGeo =  scene->getNumPrimitives(CurveGeometry::geom_type, false)
                           + scene->getNumPrimitives(CurveGeometry::geom_type, true)
                           + scene->getNumPrimitives(UserGeometry::geom_type, false)
@@ -100,7 +106,16 @@ namespace embree
     if (numExpensiveGeo > 0) {
       this->gtype = GTY_INSTANCE_EXPENSIVE;
     }
-    Geometry::update();
+
+    // gather statistics
+    auto & worldcounts = numTimeSteps == 1 ? scene->world : scene->worldMB;
+    if (Geometry::GTY_INSTANCE == this->gtype) {
+      worldcounts.numInstancesCheap += numPrimitives;
+    } else {
+      worldcounts.numInstancesExpensive += numPrimitives;
+    }
+
+    Geometry::preCommit();
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
