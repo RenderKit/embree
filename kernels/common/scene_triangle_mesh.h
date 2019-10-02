@@ -216,7 +216,7 @@ namespace embree
       const Vec3fa v2 = vertex(tri.v[2]);      
       return areaProjectedTriangle(v0,v1,v2);
     }
-    
+
   public:
     BufferView<Triangle> triangles;      //!< array of triangles
     BufferView<Vec3fa> vertices0;        //!< fast access to first vertex buffer

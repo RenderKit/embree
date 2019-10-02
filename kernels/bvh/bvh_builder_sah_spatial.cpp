@@ -91,15 +91,18 @@ namespace embree
           bvh->alloc.clear();
         }
 
-	/* skip build for empty scene */
         const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+
+	/* skip build for empty scene */
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();
           return;
         }
 
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
+        const unsigned int maxGeomID = mesh ? mesh->geomID : scene->getMaxGeomID<Mesh,false>();
+	const bool usePreSplits = scene->device->useSpatialPreSplits || (maxGeomID >= ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)));
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + (usePreSplits ? "BuilderFastSpatialPresplitSAH" : "BuilderFastSpatialSAH"));
 
         /* create primref array */
         const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));
@@ -112,9 +115,10 @@ namespace embree
 	NodeRef root(0);
 	PrimInfo pinfo;
 	
-	const bool usePreSplits = scene->device->useSpatialPreSplits;
+
         if (likely(usePreSplits))
 	  {		     
+            /* spatial presplit SAH BVH builder */
 	    pinfo = mesh ?
 	      createPrimRefArray_presplit<Mesh,Splitter>(mesh,numOriginalPrimitives,prims0,bvh->scene->progressInterface) :
 	      createPrimRefArray_presplit<Mesh,Splitter>(scene,Mesh::geom_type,false,numOriginalPrimitives,prims0,bvh->scene->progressInterface);
@@ -132,8 +136,7 @@ namespace embree
 	  }
 	else
 	  {
-	    //const unsigned int maxGeomID = mesh ? mesh->geomID : scene->getMaxGeomID<Mesh,false>();
-	
+            /* standard spatial split SAH BVH builder */
 	    pinfo = mesh ?
 	      createPrimRefArray(mesh,numSplitPrimitives,prims0,bvh->scene->progressInterface) :
 	      createPrimRefArray(scene,Mesh::geom_type,false,numSplitPrimitives,prims0,bvh->scene->progressInterface);

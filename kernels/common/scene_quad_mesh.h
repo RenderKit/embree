@@ -220,7 +220,7 @@ namespace embree
       return areaProjectedTriangle(v0,v1,v3) +
 	areaProjectedTriangle(v1,v2,v3);
     }
-    
+
   public:
     BufferView<Quad> quads;                 //!< array of quads
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer
