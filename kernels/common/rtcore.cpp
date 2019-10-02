@@ -1715,10 +1715,10 @@ RTC_NAMESPACE_END
 
 namespace embree
 {
-  // [[intel::device_indirectly_callable]] void rtcIntersectGPUTest(struct RTCRayHit* rayhit)
-  // {
-  //   rayhit->hit.primID = 99;   
-  // }
+  SYCL_EXTERNAL void rtcIntersectGPUTest(struct RTCRayHit &rayhit)
+  {
+    rayhit.hit.primID = 99;   
+  }
 
 }
 #endif

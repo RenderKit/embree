@@ -222,7 +222,7 @@ extern "C" void device_init (char* cfg)
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-  //[[intel::device_indirectly_callable]] void rtcIntersectGPUTest(struct RTCRayHit* rayhit);
+SYCL_EXTERNAL void rtcIntersectGPUTest(struct RTCRayHit &rayhit);
 
 #endif
 
@@ -288,11 +288,11 @@ extern "C" void device_render (int* pixels,
 		rh.ray.dir_y = dir.y();
 		rh.ray.dir_z = dir.z();
 		rh.ray.time  = 0.0f;		
-		rh.ray.tfar  = (float)INFINITY;
+		rh.ray.tfar  = (float)INFINITY;		
+		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-		//RTCIntersectContext ctx;
-		//RTCScene scene;
-		//rtcIntersectGPU(&rh);
+		/* test function calls */		
+		rtcIntersectGPUTest(rh);		
 	      }
 	  });		  
       });
@@ -305,31 +305,9 @@ extern "C" void device_render (int* pixels,
     }
   }  
   
-  /* test function calls */
-#if 0
-  {
-    using namespace cl::sycl;	
-    cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
-	const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(numRays),cl::sycl::range<1>(16));
-	cgh.parallel_for<class test_fct>(nd_range,[=](cl::sycl::nd_item<1> item) {
-#ifdef __SYCL_DEVICE_ONLY__	    
-	    const uint index = item.get_global_id(0);
-	    RTCRayHit &rh = rtc_rays[index];
-	    rtcIntersectGPUTest(&rh);
-#endif	    
-	  });		  
-      });
-    try {
-      gpu_queue->wait_and_throw();
-    } catch (cl::sycl::exception const& e) {
-      std::cout << "Caught synchronous SYCL exception:\n"
-		<< e.what() << std::endl;
-      FATAL("OpenCL Exception");      
-    }
-    PRINT(rtc_rays[0].hit.primID);
-  }  
-#endif
 
+  //PRINT(rtc_rays[0].hit.primID);
+  
   /* trace ray stream */      
   double t0 = getSeconds();
 
