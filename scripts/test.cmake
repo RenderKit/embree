@@ -152,7 +152,7 @@ IF (NOT retval EQUAL 0)
   message(FATAL_ERROR "test.cmake: build failed")
 ENDIF()
 
-IF (EMBREE_TESTING_INTENSITY GREATER 0)
+IF (EMBREE_TESTING_INTENSITY GREATER 0 OR EMBREE_TESTING_KLOCWORK)
   ctest_test(RETURN_VALUE retval)
   message("test.cmake: ctest_test return value = ${retval}")
   IF (NOT retval EQUAL 0)
