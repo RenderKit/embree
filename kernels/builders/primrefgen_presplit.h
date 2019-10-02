@@ -123,6 +123,26 @@ namespace embree
       return pinfo;	
     }
     
+    __forceinline Vec2i computeMC(const Vec3fa &grid_base, const float grid_scale, const PrimRef &ref)
+    {
+      const Vec3fa lower = ref.lower;
+      const Vec3fa upper = ref.upper;
+      const Vec3fa glower = (lower-grid_base)*Vec3fa(grid_scale)+Vec3fa(0.2f);
+      const Vec3fa gupper = (upper-grid_base)*Vec3fa(grid_scale)-Vec3fa(0.2f);
+      Vec3ia ilower(floor(glower));
+      Vec3ia iupper(floor(gupper));
+      
+      /* this ignores dimensions that are empty */
+      if (glower.x >= gupper.x) iupper.x = ilower.x;
+      if (glower.y >= gupper.y) iupper.y = ilower.y;
+      if (glower.z >= gupper.z) iupper.z = ilower.z;
+		
+      /* compute a morton code for the lower and upper grid coordinates. */
+      const unsigned int lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
+      const unsigned int upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
+      return Vec2i(lower_code,upper_code);
+    }
+
     template<typename Mesh, typename SplitterFactory>    
       PrimInfo createPrimRefArray_presplit(Scene* scene, Geometry::GTypeMask types, bool mblur, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {	
@@ -161,15 +181,6 @@ namespace embree
       PresplitItem *presplitItem     = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
       PresplitItem *tmp_presplitItem = (PresplitItem*)alignedMalloc(sizeof(PresplitItem)*alloc_numPrimitives,64);
 
-      /* init presplit items */
-      parallel_for( size_t(0), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
-	  for (size_t i=r.begin(); i<r.end(); i++)
-	    {		
-	      presplitItem[i].index = (unsigned int)i;
-	      presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[i],scene);
-	    }
-	});
-
       /* compute grid */
       const Vec3fa grid_base    = pinfo.geomBounds.lower;
       const Vec3fa grid_diag    = pinfo.geomBounds.size();
@@ -177,13 +188,45 @@ namespace embree
       const float grid_scale    = grid_extend == 0.0f ? 0.0f : GRID_SIZE / grid_extend;
       const float inv_grid_size = 1.0f / GRID_SIZE;
 
-      float prev_avg = pos_inf;
+      /* init presplit items */
+      parallel_for( size_t(0), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
+	  for (size_t i=r.begin(); i<r.end(); i++)
+	    {		
+	      presplitItem[i].index = (unsigned int)i;
+              const Vec2i mc = computeMC(grid_base,grid_scale,prims[i]);
+              /* if all bits are equal then we cannot split */
+              if (mc.x != mc.y)
+                presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[i],scene);
+              else
+                presplitItem[i].priority = 0.0f;
+	    }
+	});
       
       while(numPrimitivesToSplit)
 	{
-	  DBG_PRESPLIT(PRINT(numPrimitives));
+	  /* sort presplit items in ascending order */
+	  radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
 
-	  // FIXME: non deterministic
+	  DBG_PRESPLIT(
+		       for (size_t i=1;i<numPrimitives;i++)
+			 assert(presplitItem[i-1].priority <= presplitItem[i].priority);
+		       );
+
+          /* binary search for finding start of elements with priority > 0.0f */
+	  size_t l = 0;
+	  size_t r = numPrimitives;		    
+	  while(l+1 < r)
+	    {
+	      const size_t mid = (l+r)/2;
+	      if (presplitItem[mid].priority == 0.0f) 
+		l = mid;
+	      else
+		r = mid;
+	    }
+	  const size_t start_priorities = r;
+
+#if 0
+	  
 
 	  /* get sum of split priorities */
 	  const ProbStats pstats = parallel_reduce(size_t(0),numPrimitives,ProbStats(empty), [&] (const range<size_t>& r) -> ProbStats {
@@ -194,41 +237,24 @@ namespace embree
 	    },[](const ProbStats& a, const ProbStats& b) -> ProbStats { return ProbStats::merge(a,b); });		    
 	  const float priority_avg = pstats.p_sum / pstats.p_nonzero;
 
-          /* PRINT(pstats); */
-          /* PRINT(priority_avg); */
-          /* PRINT(prev_avg / priority_avg); */
-	  
-          /* if average priority could not be improved by 5% break */
-	  if (prev_avg / priority_avg < 1.05f) { /* PRINT("prio avg improvement small"); */ break; }
-	  prev_avg = priority_avg;
-	  
-	  /* sort presplit items in ascending order */
-	  radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
-	  
-	  DBG_PRESPLIT(
-		       for (size_t i=1;i<numPrimitives;i++)
-			 assert(presplitItem[i-1].priority <= presplitItem[i].priority);
-		       );
-
 	  /* binary search to find index with priority >= priority_avg */
 	  size_t l = 0;
 	  size_t r = numPrimitives;		    
 	  while(l+1 < r)
 	    {
 	      const size_t mid = (l+r)/2;
-	      if (presplitItem[mid].priority < priority_avg*8.0f) // FIXME: magick factor
+	      if (presplitItem[mid].priority < priority_avg) 
 		l = mid;
 	      else
 		r = mid;
 	    }
-	  //const size_t numPrimitivesToSplitStep = min(min(numPrimitives-r,numPrimitivesToSplit),org_numPrimitivesToSplit/2);
 	  const size_t numPrimitivesToSplitStep = min(numPrimitives-r,numPrimitivesToSplit);	
+#else
+          static const float iteration_factor = 0.25f;
+	  const size_t numPrimitivesToSplitStep = min(numPrimitives-start_priorities,min((size_t)ceilf(iteration_factor*org_numPrimitivesToSplit),numPrimitivesToSplit));	
+#endif
 
-	  DBG_PRESPLIT(
-		       PRINT( numPrimitivesToSplitStep );
-		       PRINT( 100.0f * (float)numPrimitivesToSplitStep / org_numPrimitivesToSplit);
-		       PRINT( priority_avg );
-		       );
+          DBG_PRESPLIT(PRINT( numPrimitivesToSplitStep ));
 		    
 	  __aligned(64) std::atomic<size_t> offset;
 	  offset.store(0);
@@ -237,7 +263,7 @@ namespace embree
 	      for (size_t j=r.begin(); j<r.end(); j++)		    
 		{
 		  const size_t i = numPrimitives - 1 - j;
-		  
+		  assert(presplitItem[i].priority > 0.0f);
 		  const unsigned int  primrefID = presplitItem[i].index;		
 		  const unsigned int   geomID   = prims[primrefID].geomID();
 		  const unsigned int   primID   = prims[primrefID].primID();
@@ -259,39 +285,43 @@ namespace embree
 		  const unsigned int upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
 			
 		  /* if all bits are equal then we cannot split */
-		  if (lower_code != upper_code)
-		    {
-		      const unsigned int diff = 31 - lzcnt(lower_code^upper_code);
+		  assert (lower_code != upper_code);
+                  const unsigned int diff = 31 - lzcnt(lower_code^upper_code);
 		    
-		      /* compute octree level and dimension to perform the split in */
-		      const unsigned int level = diff / 3;
-		      const unsigned int dim   = diff % 3;
+                  /* compute octree level and dimension to perform the split in */
+                  const unsigned int level = diff / 3;
+                  const unsigned int dim   = diff % 3;
       
-		      /* now we compute the grid position of the split */
-		      const unsigned int isplit = iupper[dim] & ~((1<<level)-1);
+                  /* now we compute the grid position of the split */
+                  const unsigned int isplit = iupper[dim] & ~((1<<level)-1);
 			    
-		      /* compute world space position of split */
-		      const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend;
+                  /* compute world space position of split */
+                  const float fsplit = grid_base[dim] + isplit * inv_grid_size * grid_extend;
 
-		      assert(prims[primrefID].bounds().lower[dim] <= fsplit &&
-			     prims[primrefID].bounds().upper[dim] >= fsplit);
+                  assert(prims[primrefID].bounds().lower[dim] <= fsplit &&
+                         prims[primrefID].bounds().upper[dim] >= fsplit);
 		
-                      /* split primitive */
-		      const auto splitter = Splitter(prims[primrefID]);
-		      BBox3fa left,right;
-		      splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
+                  /* split primitive */
+                  const auto splitter = Splitter(prims[primrefID]);
+                  BBox3fa left,right;
+                  splitter(prims[primrefID].bounds(),dim,fsplit,left,right);
 			    
-		      const size_t newID = numPrimitives + offset.fetch_add(1);
-		      assert(newID < numPrimitives + numPrimitivesToSplitStep);
-		      prims[primrefID] = PrimRef(left,geomID,primID);
-		      prims[newID    ] = PrimRef(right,geomID,primID);
+                  const size_t newID = numPrimitives + offset.fetch_add(1);
+                  assert(newID < numPrimitives + numPrimitivesToSplitStep);
+                  prims[primrefID] = PrimRef(left,geomID,primID);
+                  prims[newID    ] = PrimRef(right,geomID,primID);
 
-                      /* update presplititems */
-		      presplitItem[i].index = primrefID;
-		      presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[primrefID],scene);
-		      presplitItem[newID].index = (unsigned int)newID;
-		      presplitItem[newID].priority = PresplitItem::compute_priority<Mesh>(prims[newID],scene);
-		    }
+                  /* update presplititems */
+                  presplitItem[i].index = primrefID;
+                  presplitItem[i].priority = PresplitItem::compute_priority<Mesh>(prims[primrefID],scene);
+                  presplitItem[newID].index = (unsigned int)newID;
+                  presplitItem[newID].priority = PresplitItem::compute_priority<Mesh>(prims[newID],scene);
+
+                  /* set priority to zero if we cannot split the new primitive */
+                  const Vec2i mc0 = computeMC(grid_base,grid_scale,prims[primrefID]);
+                  const Vec2i mc1 = computeMC(grid_base,grid_scale,prims[newID]);
+                  if (mc0.x == mc0.y) presplitItem[i    ].priority = 0.0f;
+                  if (mc1.x == mc1.y) presplitItem[newID].priority = 0.0f;
 		}
 	    });
 	  assert(offset <= numPrimitivesToSplit);
@@ -299,17 +329,13 @@ namespace embree
 	  numPrimitives += offset;
 	  numPrimitivesToSplit -= offset;
 
-	  DBG_PRESPLIT(	  
-		       PRINT(offset);		    
-		       PRINT(numPrimitives);
-		       PRINT(numPrimitivesToSplit);
-			  );
+          DBG_PRESPLIT(
+            PRINT(offset);		    
+            PRINT(numPrimitives);
+            PRINT(numPrimitivesToSplit);
+            );
 	  if (offset == 0) break;
 	}
-
-      /* radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024); */
-      /* for (ssize_t i=numPrimitives-1;i>=max((int)0,(int)numPrimitives-100);i--) */
-      /*   std::cout << i << " -> " << presplitItem[i] << std::endl; */
 	
       /* recompute centroid bounding boxes */
       pinfo = parallel_reduce(size_t(0),numPrimitives,PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
