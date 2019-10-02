@@ -44,6 +44,7 @@ namespace embree
     virtual AffineSpace3fa getTransform(float time);
     virtual void setMask (unsigned mask);
     virtual void build() {}
+    virtual void preCommit();
 
   public:
 
