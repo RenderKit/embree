@@ -99,10 +99,10 @@ namespace embree
   void Instance::preCommit() {
 
     // decide whether we're an expensive instnace or not
-    auto numExpensiveGeo =  scene->getNumPrimitives(CurveGeometry::geom_type, false)
-                          + scene->getNumPrimitives(CurveGeometry::geom_type, true)
-                          + scene->getNumPrimitives(UserGeometry::geom_type, false)
-                          + scene->getNumPrimitives(UserGeometry::geom_type, true);
+    auto numExpensiveGeo =  static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, false)
+                          + static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, true)
+                          + static_cast<Scene*> (object)->getNumPrimitives(UserGeometry::geom_type, false)
+                          + static_cast<Scene*> (object)->getNumPrimitives(UserGeometry::geom_type, true);
     if (numExpensiveGeo > 0) {
       this->gtype = GTY_INSTANCE_EXPENSIVE;
     }
