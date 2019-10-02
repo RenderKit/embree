@@ -94,7 +94,7 @@ namespace embree
     object_accel_mb_min_leaf_size = 1;
     object_accel_mb_max_leaf_size = 1;
 
-    max_spatial_split_replications = 2.0f;
+    max_spatial_split_replications = 1.2f;
     useSpatialPreSplits = false;
 
     tessellation_cache_size = 128*1024*1024;

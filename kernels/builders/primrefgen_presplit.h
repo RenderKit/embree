@@ -212,22 +212,7 @@ namespace embree
 			 assert(presplitItem[i-1].priority <= presplitItem[i].priority);
 		       );
 
-          /* binary search for finding start of elements with priority > 0.0f */
-	  size_t l = 0;
-	  size_t r = numPrimitives;		    
-	  while(l+1 < r)
-	    {
-	      const size_t mid = (l+r)/2;
-	      if (presplitItem[mid].priority == 0.0f) 
-		l = mid;
-	      else
-		r = mid;
-	    }
-	  const size_t start_priorities = r;
-
-#if 0
-	  
-
+#if 1	  
 	  /* get sum of split priorities */
 	  const ProbStats pstats = parallel_reduce(size_t(0),numPrimitives,ProbStats(empty), [&] (const range<size_t>& r) -> ProbStats {
 	      ProbStats current(empty);
@@ -236,6 +221,7 @@ namespace embree
 	      return current;
 	    },[](const ProbStats& a, const ProbStats& b) -> ProbStats { return ProbStats::merge(a,b); });		    
 	  const float priority_avg = pstats.p_sum / pstats.p_nonzero;
+          DBG_PRESPLIT(PRINT( priority_avg ));
 
 	  /* binary search to find index with priority >= priority_avg */
 	  size_t l = 0;
@@ -250,6 +236,19 @@ namespace embree
 	    }
 	  const size_t numPrimitivesToSplitStep = min(numPrimitives-r,numPrimitivesToSplit);	
 #else
+          /* binary search for finding start of elements with priority > 0.0f */
+	  size_t l = 0;
+	  size_t r = numPrimitives;		    
+	  while(l+1 < r)
+	    {
+	      const size_t mid = (l+r)/2;
+	      if (presplitItem[mid].priority == 0.0f) 
+		l = mid;
+	      else
+		r = mid;
+	    }
+	  const size_t start_priorities = r;
+
           static const float iteration_factor = 0.25f;
 	  const size_t numPrimitivesToSplitStep = min(numPrimitives-start_priorities,min((size_t)ceilf(iteration_factor*org_numPrimitivesToSplit),numPrimitivesToSplit));	
 #endif
