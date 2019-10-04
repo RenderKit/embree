@@ -342,6 +342,8 @@ def runConfig(config):
   ctest =  "ctest -VV -S scripts/test.cmake"
   if g_cdash != "": ctest += " -D CTEST_DROP_SITE="+g_cdash
   ctest += " -D EMBREE_TESTING_INTENSITY="+str(g_intensity)
+  if "klocwork" in config:
+    ctest += " -D EMBREE_TESTING_KLOCWORK="+config["klocwork"]
   ctest += " -D CTEST_CONFIGURATION_TYPE=\""+build+"\""
   ctest += " -D CTEST_BUILD_OPTIONS=\"" + escape(" ".join(conf))+"\""
   if g_debugMode:

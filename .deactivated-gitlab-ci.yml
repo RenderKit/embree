@@ -86,9 +86,9 @@ continuous-fedora27-x64-RelWithDebInfo-GCC-ISPC-AVX512SKX-TBB:
   tags:   [docker, skx]
   only:   [pushes]
 
-continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-AVX2-TBB-KLOCKWORK:
+.continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-SSE2-TBB-KLOCKWORK:
   image: embree-kw-centos7
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:AVX2 tasking:TBB klocwork:ON intensity:1"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:GCC ispc:ispc1.9.2 isa:SSE2 tasking:TBB klocwork:ON intensity:0"
   tags:   [kw-scan-docker]
   only:   [pushes]
 
