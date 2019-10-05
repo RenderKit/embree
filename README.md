@@ -277,7 +277,7 @@ version of GLUT.
 Under macOS, all these dependencies can be installed
 using [MacPorts](http://www.macports.org/):
 
-    sudo port install cmake tbb-devel glfw-devel
+    sudo port install cmake tbb glfw-devel openimageio
 
 Depending on your Linux distribution you can install these dependencies
 using `yum` or `apt-get`.  Some of these packages might already be
