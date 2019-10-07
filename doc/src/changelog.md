@@ -9,6 +9,8 @@ Version History
 -   Added next_hit tutorial to demonstrate robustly collecting all hits
     along a ray using multiple ray queries.
 -   Implemented robust mode for curves.
+-   Implemented issue with motion blur builder where number of time segments
+    for SAH heuristic were counted wrong due to some numerical issues.
 
 ### New Features in Embree 3.6.1
 -   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
