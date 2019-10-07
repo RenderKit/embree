@@ -34,21 +34,13 @@ function retry_cmd()
 }
  
 set -e
- 
-#echo "$KW_SERVER_IP;$KW_SERVER_PORT;$KW_USER;$KW_LTOKEN" > $KLOCWORK_LTOKEN
-#cd $CI_PROJECT_DIR && mkdir release && cd release && cmake ..
-#cd $CI_PROJECT_DIR/release && $KW_CLIENT_PATH/bin/kwinject make -j
-#retry_cmd 60 $KW_SERVER_PATH/bin/kwbuildproject --url http://$KW_SERVER_IP:$KW_SERVER_PORT/$KW_PROJECT_NAME --tables-directory $CI_PROJECT_DIR/release/kw_tables kwinject.out
-#retry_cmd 60 $KW_SERVER_PATH/bin/kwadmin --url http://$KW_SERVER_IP:$KW_SERVER_PORT/ load $KW_PROJECT_NAME $CI_PROJECT_DIR/release/kw_tables | tee project_load_log
-#cat project_load_log | grep "Starting build" | cut -d":" -f2 > $CI_PROJECT_DIR/kw_build_number
 
 echo "$KW_SERVER_IP;$KW_SERVER_PORT;$KW_USER;$KW_LTOKEN" > $KLOCWORK_LTOKEN
 make clean > /dev/null
 $KW_CLIENT_PATH/bin/kwinject -w -o buildspec.txt make -j 8
 retry_cmd 60 $KW_SERVER_PATH/bin/kwbuildproject --force --url http://$KW_SERVER_IP:$KW_SERVER_PORT/embree buildspec.txt --tables-directory mytables
 retry_cmd 60 $KW_SERVER_PATH/bin/kwadmin --url http://$KW_SERVER_IP:$KW_SERVER_PORT load embree mytables | tee project_load.log
-build_nr=`cat project_load.log | grep "Starting build" | cut -d":" -f2`
 
-echo "Build nr $build_nr"
-
+# store kw build number for check status later
+cat project_load.log | grep "Starting build" | cut -d":" -f2 > ./kw_build_number
 
