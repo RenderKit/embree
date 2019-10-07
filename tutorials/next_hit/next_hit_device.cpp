@@ -168,7 +168,7 @@ void gather_all_hits(const struct RTCFilterFunctionNArguments* args)
   args->valid[0] = 0; // ignore all hits
 
   /* avoid overflow of hits array */
-  if (hits.end > MAX_TOTAL_HITS) return;
+  if (hits.end >= MAX_TOTAL_HITS) return;
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
@@ -236,7 +236,7 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
   args->valid[0] = 0; // ignore all hits
 
   /* avoid overflow of hits array */
-  if (hits.end > MAX_TOTAL_HITS) return;
+  if (hits.end >= MAX_TOTAL_HITS) return;
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
