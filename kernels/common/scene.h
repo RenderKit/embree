@@ -216,7 +216,7 @@ namespace embree
     template<typename Mesh>
       __forceinline       Mesh* get(size_t i)       { 
       assert(i < geometries.size()); 
-     // assert(geometries[i]->getTypeMask() & Mesh::geom_type);
+      assert(geometries[i]->getTypeMask() & Mesh::geom_type);
       return (Mesh*)geometries[i].ptr; 
     }
     template<typename Mesh>
@@ -385,7 +385,7 @@ namespace embree
         return mblur  ? worldMB.numUserGeometries : world.numUserGeometries;
         break;
 
-      case Geometry::MTY_INSTANCE:
+      case Geometry::MTY_INSTANCE_CHEAP:
         return mblur  ? worldMB.numInstancesCheap : world.numInstancesCheap;
         break;
         

@@ -22,7 +22,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   Instance::Instance (Device* device, Accel* object, unsigned int numTimeSteps) 
-    : Geometry(device,Geometry::GTY_INSTANCE,1,numTimeSteps), object(object), local2world(nullptr)
+    : Geometry(device,Geometry::GTY_INSTANCE_CHEAP,1,numTimeSteps), object(object), local2world(nullptr)
   {
     if (object) object->refInc();
     world2local0 = one;
@@ -77,7 +77,7 @@ namespace embree
 
     // gather statistics
     auto & worldcounts = numTimeSteps == 1 ? scene->world : scene->worldMB;
-    if (Geometry::GTY_INSTANCE == this->gtype) {
+    if (Geometry::GTY_INSTANCE_CHEAP == this->gtype) {
       worldcounts.numInstancesCheap += numPrimitives;
     } else {
       worldcounts.numInstancesExpensive += numPrimitives;

@@ -1357,7 +1357,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH4InstanceIntersectors(accel);
-    auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE;
+    auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE_CHEAP;
     Builder* builder = BVH4InstanceSceneBuilderSAH(accel,scene,gtype);
     return new AccelInstance(accel,builder,intersectors);
   }
@@ -1366,7 +1366,7 @@ namespace embree
   {
     BVH4* accel = new BVH4(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH4InstanceMBIntersectors(accel);
-    auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE;
+    auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE_CHEAP;
     Builder* builder = BVH4InstanceMBSceneBuilderSAH(accel,scene,gtype);
     return new AccelInstance(accel,builder,intersectors);
   }

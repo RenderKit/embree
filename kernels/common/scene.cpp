@@ -682,8 +682,8 @@ namespace embree
       if (getNumPrimitives(CurveGeometry::geom_type,true)) createHairMBAccel();
       if (getNumPrimitives(UserGeometry::geom_type,false)) createUserGeometryAccel();
       if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();
-      if (getNumPrimitives(Geometry::MTY_INSTANCE,false)) createInstanceAccel();
-      if (getNumPrimitives(Geometry::MTY_INSTANCE,true)) createInstanceMBAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,false)) createInstanceAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,true)) createInstanceMBAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,false)) createInstanceExpensiveAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,true)) createInstanceExpensiveMBAccel();
       
