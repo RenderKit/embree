@@ -11125,7 +11125,8 @@ bool ImGui::MenuItem(const char* label, const char* shortcut, bool selected, boo
         if (shortcut_size.x > 0.0f)
         {
             PushStyleColor(ImGuiCol_Text, g.Style.Colors[ImGuiCol_TextDisabled]);
-            RenderText(pos + ImVec2(window->MenuColumns.Pos[1] + extra_w, 0.0f), shortcut, NULL, false);
+            if (shortcut)
+              RenderText(pos + ImVec2(window->MenuColumns.Pos[1] + extra_w, 0.0f), shortcut, NULL, false);
             PopStyleColor();
         }
         if (selected)
