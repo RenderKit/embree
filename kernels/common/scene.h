@@ -356,54 +356,41 @@ namespace embree
       return world.size() + worldMB.size();
     }
 
-    __forceinline size_t getNumPrimitives(Geometry::GTypeMask mask, bool mblur) const {
-
-      switch (mask) {
-      case Geometry::MTY_TRIANGLE_MESH:
-        return mblur ? worldMB.numTriangles : world.numTriangles;
-        break;
-
-      case Geometry::MTY_QUAD_MESH:
-        return mblur ? worldMB.numQuads : world.numQuads;
-        break;
+    __forceinline size_t getNumPrimitives(Geometry::GTypeMask mask, bool mblur) const
+    {
+      size_t count = 0;
       
-      case Geometry::MTY_CURVE4:
-        return mblur  ? worldMB.numBezierCurves+worldMB.numLineSegments+worldMB.numPoints 
-                      : world.numBezierCurves+world.numLineSegments+world.numPoints;
-        break;
-
-      /*case Geometry::MTY_CURVES:      TODO - line segments?
-        return mblur  ? worldMB.numBezierCurves+worldMB.numLineSegments+worldMB.numPoints 
-                      : world.numBezierCurves+world.numLineSegments+world.numPoints;
-        break;*/
-
-      case Geometry::MTY_SUBDIV_MESH:
-        return mblur  ? worldMB.numSubdivPatches : world.numSubdivPatches;
-        break;
-
-      case Geometry::MTY_USER_GEOMETRY:
-        return mblur  ? worldMB.numUserGeometries : world.numUserGeometries;
-        break;
-
-      case Geometry::MTY_INSTANCE_CHEAP:
-        return mblur  ? worldMB.numInstancesCheap : world.numInstancesCheap;
-        break;
-        
-      case Geometry::MTY_INSTANCE_EXPENSIVE:
-        return mblur  ? worldMB.numInstancesExpensive : world.numInstancesExpensive;
-        break;  
-
-      case Geometry::MTY_GRID_MESH:
-        return mblur  ? worldMB.numGrids : world.numGrids;
-        break;  
-
-      default:
-        break;
-      }
-
-      throw_RTCError  (RTC_ERROR_INVALID_OPERATION,
-                       "getNumPrimitives operation not supported for this geometry"); 
-      return 0;
+      if (mask & Geometry::MTY_TRIANGLE_MESH)
+        count += mblur ? worldMB.numTriangles : world.numTriangles;
+      
+      if (mask & Geometry::MTY_QUAD_MESH)
+        count += mblur ? worldMB.numQuads : world.numQuads;
+      
+      if (mask & Geometry::MTY_CURVE2)
+        count += mblur ? worldMB.numLineSegments : world.numLineSegments;
+      
+      if (mask & Geometry::MTY_CURVE4)
+        count += mblur ? worldMB.numBezierCurves : world.numBezierCurves;
+      
+      if (mask & Geometry::MTY_POINTS)
+        count += mblur ? worldMB.numPoints : world.numPoints;
+      
+      if (mask & Geometry::MTY_SUBDIV_MESH)
+        count += mblur ? worldMB.numSubdivPatches : world.numSubdivPatches;
+      
+      if (mask & Geometry::MTY_USER_GEOMETRY)
+        count += mblur ? worldMB.numUserGeometries : world.numUserGeometries;
+      
+      if (mask & Geometry::MTY_INSTANCE_CHEAP)
+        count += mblur ? worldMB.numInstancesCheap : world.numInstancesCheap;
+      
+      if (mask & Geometry::MTY_INSTANCE_EXPENSIVE)
+        count += mblur  ? worldMB.numInstancesExpensive : world.numInstancesExpensive;
+      
+      if (mask & Geometry::MTY_GRID_MESH)
+        count += mblur  ? worldMB.numGrids : world.numGrids;
+      
+      return count;
     }
     
     template<typename Mesh, bool mblur>

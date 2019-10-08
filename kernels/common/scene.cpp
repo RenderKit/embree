@@ -678,8 +678,8 @@ namespace embree
       if (getNumPrimitives(GridMesh::geom_type,true)) createGridMBAccel();
       if (getNumPrimitives(SubdivMesh::geom_type,false)) createSubdivAccel();
       if (getNumPrimitives(SubdivMesh::geom_type,true)) createSubdivMBAccel();
-      if (getNumPrimitives(CurveGeometry::geom_type,false)) createHairAccel();
-      if (getNumPrimitives(CurveGeometry::geom_type,true)) createHairMBAccel();
+      if (getNumPrimitives(Geometry::MTY_CURVES,false)) createHairAccel();
+      if (getNumPrimitives(Geometry::MTY_CURVES,true)) createHairMBAccel();
       if (getNumPrimitives(UserGeometry::geom_type,false)) createUserGeometryAccel();
       if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,false)) createInstanceAccel();
