@@ -27,18 +27,6 @@ namespace embree
     vertices.resize(numTimeSteps);
   }
 
-  void TriangleMesh::enabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numTriangles += numPrimitives;
-    else                   scene->worldMB.numTriangles += numPrimitives;
-  }
-  
-  void TriangleMesh::disabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numTriangles -= numPrimitives;
-    else                   scene->worldMB.numTriangles -= numPrimitives;
-  }
-
   void TriangleMesh::setMask (unsigned mask) 
   {
     this->mask = mask; 
@@ -165,6 +153,9 @@ namespace embree
     for (unsigned int t=0; t<numTimeSteps; t++)
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
+
+    if (numTimeSteps == 1) scene->world.numTriangles += numPrimitives;
+    else                   scene->worldMB.numTriangles += numPrimitives;
 
     Geometry::preCommit();
   }

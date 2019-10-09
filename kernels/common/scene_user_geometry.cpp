@@ -24,14 +24,12 @@ namespace embree
   UserGeometry::UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps) 
     : AccelSet(device,Geometry::GTY_USER_GEOMETRY,items,numTimeSteps) {}
 
-  void UserGeometry::enabling () {
+  void UserGeometry::preCommit () {
+
     if (numTimeSteps == 1) scene->world.numUserGeometries += numPrimitives;
     else                   scene->worldMB.numUserGeometries += numPrimitives;
-  }
-  
-  void UserGeometry::disabling() { 
-    if (numTimeSteps == 1) scene->world.numUserGeometries -= numPrimitives;
-    else                   scene->worldMB.numUserGeometries -= numPrimitives;
+
+    Geometry::preCommit ();
   }
   
   void UserGeometry::setMask (unsigned mask) 

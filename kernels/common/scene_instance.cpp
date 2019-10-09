@@ -36,16 +36,6 @@ namespace embree
     alignedFree(local2world);
     if (object) object->refDec();
   }
-
-  void Instance::enabling () {
-    if (numTimeSteps == 1) scene->world.numInstances += numPrimitives;
-    else                   scene->worldMB.numInstances += numPrimitives;
-  }
-  
-  void Instance::disabling() { 
-    if (numTimeSteps == 1) scene->world.numInstances -= numPrimitives;
-    else                   scene->worldMB.numInstances -= numPrimitives;
-  }
   
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
   {
@@ -64,6 +54,14 @@ namespace embree
     local2world = local2world2;
     
     Geometry::setNumTimeSteps(numTimeSteps_in);
+  }
+
+  void Instance::preCommit() {
+
+    if (numTimeSteps == 1) scene->world.numInstances += numPrimitives;
+    else                   scene->worldMB.numInstances += numPrimitives;
+
+    Geometry::preCommit();
   }
 
   void Instance::setInstancedScene(const Ref<Scene>& scene)

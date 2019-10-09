@@ -27,18 +27,6 @@ namespace embree
     vertices.resize(numTimeSteps);
   }
 
-  void LineSegments::enabling()
-  {
-    if (numTimeSteps == 1) scene->world.numLineSegments += numPrimitives;
-    else                   scene->worldMB.numLineSegments += numPrimitives;
-  }
-
-  void LineSegments::disabling()
-  {
-    if (numTimeSteps == 1) scene->world.numLineSegments -= numPrimitives;
-    else                   scene->worldMB.numLineSegments -= numPrimitives;
-  }
-
   void LineSegments::setMask (unsigned mask)
   {
     this->mask = mask;
@@ -222,6 +210,9 @@ namespace embree
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals0 = normals[0];
+
+    if (numTimeSteps == 1) scene->world.numLineSegments += numPrimitives;
+    else                   scene->worldMB.numLineSegments += numPrimitives;
         
     Geometry::preCommit();
   }
