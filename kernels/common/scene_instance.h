@@ -37,8 +37,11 @@ namespace embree
     
   public:
 <<<<<<< HEAD
+<<<<<<< HEAD
     virtual void enabling () {};
     virtual void disabling() {};
+=======
+>>>>>>> remove enabling/diabling functions - move scene stat counting to preCommit
 =======
 >>>>>>> remove enabling/diabling functions - move scene stat counting to preCommit
     virtual void setNumTimeSteps (unsigned int numTimeSteps);
