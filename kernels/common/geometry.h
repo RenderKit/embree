@@ -254,12 +254,6 @@ namespace embree
     /*! Verify the geometry */
     virtual bool verify() { return true; }
 
-    /*! called if geometry is switching from disabled to enabled state */
-    virtual void enabling() = 0;
-
-    /*! called if geometry is switching from enabled to disabled state */
-    virtual void disabling() = 0;
-
     /*! called before every build */
     virtual void preCommit();
   

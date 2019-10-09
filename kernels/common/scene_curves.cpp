@@ -47,18 +47,6 @@ namespace embree
   {
     resizeBuffers(numTimeSteps);
   }
-
-  void CurveGeometry::enabling() 
-  {
-    if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
-    else                   scene->worldMB.numBezierCurves += numPrimitives; 
-  }
-  
-  void CurveGeometry::disabling() 
-  {
-    if (numTimeSteps == 1) scene->world.numBezierCurves -= numPrimitives; 
-    else                   scene->worldMB.numBezierCurves -= numPrimitives;
-  }
   
   void CurveGeometry::setMask (unsigned mask) 
   {
@@ -388,6 +376,9 @@ namespace embree
     }
     if (getCurveBasis() == GTY_BASIS_HERMITE)
       tangents0 = tangents[0];
+
+    if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
+    else                   scene->worldMB.numBezierCurves += numPrimitives; 
 
     Geometry::preCommit();
   }

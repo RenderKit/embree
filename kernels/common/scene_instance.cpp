@@ -56,6 +56,14 @@ namespace embree
     Geometry::setNumTimeSteps(numTimeSteps_in);
   }
 
+  void Instance::preCommit() {
+
+    if (numTimeSteps == 1) scene->world.numInstances += numPrimitives;
+    else                   scene->worldMB.numInstances += numPrimitives;
+
+    Geometry::preCommit();
+  }
+
   void Instance::setInstancedScene(const Ref<Scene>& scene)
   {
     if (object) object->refDec();

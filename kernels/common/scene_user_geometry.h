@@ -28,13 +28,12 @@ namespace embree
 
   public:
     UserGeometry (Device* device, unsigned int items = 0, unsigned int numTimeSteps = 1);
-    virtual void enabling ();
-    virtual void disabling();
     virtual void setMask (unsigned mask);
     virtual void setBoundsFunction (RTCBoundsFunction bounds, void* userPtr);
     virtual void setIntersectFunctionN (RTCIntersectFunctionN intersect);
     virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded);
     virtual void build() {}
+    virtual void preCommit();
   };
 
   namespace isa

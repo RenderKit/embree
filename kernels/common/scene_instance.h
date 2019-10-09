@@ -36,8 +36,11 @@ namespace embree
     Instance& operator= (const Instance& other) DELETED; // do not implement
     
   public:
+<<<<<<< HEAD
     virtual void enabling () {};
     virtual void disabling() {};
+=======
+>>>>>>> remove enabling/diabling functions - move scene stat counting to preCommit
     virtual void setNumTimeSteps (unsigned int numTimeSteps);
     virtual void setInstancedScene(const Ref<Scene>& scene);
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);

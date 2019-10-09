@@ -47,18 +47,13 @@ namespace embree
     topology[0] = Topology(this);
   }
 
-  void SubdivMesh::enabling() 
-  { 
+  void SubdivMesh::preCommit() {
+
     scene->numSubdivEnableDisableEvents++;
     if (numTimeSteps == 1) scene->world.numSubdivPatches += numPrimitives;
     else                   scene->worldMB.numSubdivPatches += numPrimitives;
-  }
-  
-  void SubdivMesh::disabling() 
-  { 
-    scene->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) scene->world.numSubdivPatches -= numPrimitives;
-    else                   scene->worldMB.numSubdivPatches -= numPrimitives;
+
+    Geometry::preCommit ();
   }
 
   void SubdivMesh::setMask (unsigned mask) 
