@@ -77,10 +77,8 @@ namespace embree
   {      
     if (numPrimitives_in == numPrimitives) return;
     
-    if (isEnabled() && scene) disabling();
     numPrimitives = numPrimitives_in;
     numPrimitivesChanged = true;
-    if (isEnabled() && scene) enabling();
     
     Geometry::update();
   }
@@ -90,10 +88,8 @@ namespace embree
     if (numTimeSteps_in == numTimeSteps)
       return;
     
-    if (isEnabled() && scene) disabling();
     numTimeSteps = numTimeSteps_in;
     fnumTimeSegments = float(numTimeSteps_in-1);
-    if (isEnabled() && scene) enabling();
     
     Geometry::update();
   }
@@ -154,7 +150,6 @@ namespace embree
     if (isEnabled()) {
       scene->setModified();
       updateIntersectionFilters(true);
-      enabling();
     }
     return this;
   }
@@ -164,7 +159,6 @@ namespace embree
     if (isEnabled()) {
       scene->setModified();
       updateIntersectionFilters(false);
-      disabling();
     }
     this->scene = nullptr;
     this->geomID = -1;
@@ -178,7 +172,6 @@ namespace embree
     if (scene) {
       updateIntersectionFilters(true);
       scene->setModified();
-      enabling();
     }
 
     enabled = true;
@@ -192,7 +185,6 @@ namespace embree
     if (scene) {
       updateIntersectionFilters(false);
       scene->setModified();
-      disabling();
     }
     
     enabled = false;
