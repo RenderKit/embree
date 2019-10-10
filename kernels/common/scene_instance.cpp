@@ -22,7 +22,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   Instance::Instance (Device* device, Accel* object, unsigned int numTimeSteps) 
-    : Geometry(device,Geometry::GTY_INSTANCE,1,numTimeSteps), object(object), local2world(nullptr)
+    : Geometry(device,Geometry::GTY_INSTANCE_CHEAP,1,numTimeSteps), object(object), local2world(nullptr)
   {
     if (object) object->refInc();
     world2local0 = one;
@@ -35,16 +35,6 @@ namespace embree
   {
     alignedFree(local2world);
     if (object) object->refDec();
-  }
-
-  void Instance::enabling () {
-    if (numTimeSteps == 1) scene->world.numInstances += numPrimitives;
-    else                   scene->worldMB.numInstances += numPrimitives;
-  }
-  
-  void Instance::disabling() { 
-    if (numTimeSteps == 1) scene->world.numInstances -= numPrimitives;
-    else                   scene->worldMB.numInstances -= numPrimitives;
   }
   
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
@@ -72,6 +62,28 @@ namespace embree
     object = scene.ptr;
     if (object) object->refInc();
     Geometry::update();
+  }
+
+  void Instance::preCommit() {
+
+    // decide whether we're an expensive instnace or not
+    auto numExpensiveGeo =  static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, false)
+                          + static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, true)
+                          + static_cast<Scene*> (object)->getNumPrimitives(UserGeometry::geom_type, false)
+                          + static_cast<Scene*> (object)->getNumPrimitives(UserGeometry::geom_type, true);
+    if (numExpensiveGeo > 0) {
+      this->gtype = GTY_INSTANCE_EXPENSIVE;
+    }
+
+    // gather statistics
+    auto & worldcounts = numTimeSteps == 1 ? scene->world : scene->worldMB;
+    if (Geometry::GTY_INSTANCE_CHEAP == this->gtype) {
+      worldcounts.numInstancesCheap += numPrimitives;
+    } else {
+      worldcounts.numInstancesExpensive += numPrimitives;
+    }
+
+    Geometry::preCommit();
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
