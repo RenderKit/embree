@@ -53,7 +53,7 @@ namespace embree
     };
     
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
-    __forceinline bool intersect_bezier_iterative_debug(const RayHit& ray, const float dt, const NativeCurve3fa& curve, size_t i,
+    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const NativeCurve3fa& curve, size_t i,
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
@@ -107,10 +107,12 @@ namespace embree
         const Vec2f dut = rcp(J)*Vec2f(f,g);
         const Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
-        
-        const bool converged_u = abs(f) < 16.0f*float(ulp)*reduce_max(abs(dPdu));
+
+        //const float R_err = reduce_max(abs(org)) + reduce_max(abs(Q)) + reduce_max(abs(P));
+        const bool converged_u = true; //abs(f) < 16.0f*float(ulp)*R_err/reduce_max(abs(dPdu));
         const bool converged_t = abs(g) < 16.0f*float(ulp)*length_ray_dir;
-        if (converged_u && converged_t) 
+        
+        if (converged_u && converged_t)
         {
           t+=dt;
           if (!(ray.tnear() <= t && t <= ray.tfar)) return false; // rejects NaNs
