@@ -92,6 +92,13 @@ continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-SSE2-TBB-KLOCKWORK:
   tags:   [kw-scan-docker]
   only:   [pushes]
 
+continuous-linux-x64-PROTEX:
+  image: embreedocker/centos:7.4 
+  script: "scripts/source_scan_protex.sh"
+  tags:   [docker]
+  only:   [pushes]
+
+
 #####################################################################
 # Intensive Nightly Tests
 ####################################################################
