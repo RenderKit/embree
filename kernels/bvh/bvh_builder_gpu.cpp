@@ -127,13 +127,14 @@ namespace embree
     uint* l = primref_index0 + start;
     uint* r = primref_index0 + end;
 
+    cl::sycl::intel::plus<uint> plusBinOp;
     /* no valid split, just split in the middle */
     if (split.sah == (float)(INFINITY))
       {      
 	for (uint i=start + subgroupLocalID;i<split.pos;i+=subgroupSize)
 	  {
 	    const uint index       = primref_index1[i];
-	    const uint count       = sg.reduce<uint,cl::sycl::intel::plus>(1);
+	    const uint count       = sg.reduce<uint>(1, plusBinOp);
 	    leftCentroid.extend(primref[index].centroid2());
 	    leftAABB.extend(primref[index]);
 	    l[subgroupLocalID] = index;	  
@@ -143,7 +144,7 @@ namespace embree
 	for (uint i=split.pos + subgroupLocalID;i<end;i+=subgroupSize)
 	  {
 	    const uint index       = primref_index1[i];
-	    const uint count       = sg.reduce<uint,cl::sycl::intel::plus>(1);
+	    const uint count       = sg.reduce<uint>(1, plusBinOp);
 	    rightCentroid.extend(primref[index].centroid2());
 	    rightAABB.extend(primref[index]);	  
 	    r-=count;
@@ -157,10 +158,10 @@ namespace embree
 	    const uint index       = primref_index1[i];
 	    const uint isLeft      = is_left(binMapping, split,primref[index]) ? 1 : 0;
 	    const uint isRight     = 1 - isLeft;
-	    const uint countLeft   = sg.reduce<uint,cl::sycl::intel::plus>(isLeft );
-	    const uint countRight  = sg.reduce<uint,cl::sycl::intel::plus>(isRight);
-	    const uint prefixLeft  = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isLeft);	    
-	    const uint prefixRight = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isRight);
+	    const uint countLeft   = sg.reduce<uint>(isLeft, plusBinOp);
+	    const uint countRight  = sg.reduce<uint>(isRight, plusBinOp);
+	    const uint prefixLeft  = sg.exclusive_scan<uint>(isLeft, plusBinOp);	    
+	    const uint prefixRight = sg.exclusive_scan<uint>(isRight, plusBinOp);
           
 	    r -= countRight;
       
@@ -432,15 +433,16 @@ namespace embree
     const uint startID = begin + ((subgroupID+0)*size/numSubGroups);
     const uint endID   = begin + ((subgroupID+1)*size/numSubGroups);
   
+    cl::sycl::intel::plus<uint> plusBinOp;
     for (uint i=startID + subgroupLocalID;i<endID;i+=subgroupSize)
       {
 	const uint index       = primref_index1[i];
 	const uint isLeft      = is_left(binMapping, split,primref[index]) ? 1 : 0;
 	const uint isRight     = 1 - isLeft;
-	const uint countLeft   = sg.reduce<uint,cl::sycl::intel::plus>(isLeft );
-	const uint countRight  = sg.reduce<uint,cl::sycl::intel::plus>(isRight);
-	const uint prefixLeft  = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isLeft);
-	const uint prefixRight = sg.exclusive_scan<uint,cl::sycl::intel::plus>(isRight);
+	const uint countLeft   = sg.reduce<uint>(isLeft, plusBinOp);
+	const uint countRight  = sg.reduce<uint>(isRight, plusBinOp);
+	const uint prefixLeft  = sg.exclusive_scan<uint>(isLeft, plusBinOp);
+	const uint prefixRight = sg.exclusive_scan<uint>(isRight, plusBinOp);
 
 	uint offsetLeft  = subgroupLocalID == 0 ? gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>(atomicCountLeft,  countLeft) : 0;
 	offsetLeft = sg.broadcast<uint>(offsetLeft,0);

@@ -159,16 +159,17 @@ namespace embree
 	      int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
 	      t = valid ? t : max_uint; // invalid slots set to MIN_INT, as we sort descending;	
 	      
+          cl::sycl::intel::maximum<int> maxBinOp;
 	      for (uint i=0;i<popc-1;i++)
 		{
-		  const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
+		  const int t_max = sg.reduce<int>(t, maxBinOp); // from larger to smaller distance
 		  t = (t == t_max) ? max_uint : t;
 		  const uint index = t_max & (~mask_uint);
 		  stack_offset[sindex] = sg.broadcast<uint> (offset,index);
 		  stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
 		  sindex++;
 		}
-	      const int t_max = sg.reduce<int,cl::sycl::intel::maximum>(t); // from larger to smaller distance
+	      const int t_max = sg.reduce<int>(t, maxBinOp); // from larger to smaller distance
 	      cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
 	    }
 	  
@@ -180,7 +181,8 @@ namespace embree
 	  const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
 	  TSTATS(tstats->isteps_inc());	  
 	  hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);  
-	  tfar = sg.reduce<float,cl::sycl::intel::minimum>(hit_tfar);	  
+      cl::sycl::intel::minimum<float> minBinOp;
+	  tfar = sg.reduce<float>(hit_tfar, minBinOp);	  
 	}
 
       DBG(
