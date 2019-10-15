@@ -292,7 +292,7 @@ extern "C" void device_render (int* pixels,
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
 		/* test function calls */		
-		rtcIntersectGPUTest(rh);		
+		//rtcIntersectGPUTest(rh);		
 	      }
 	  });		  
       });
