@@ -68,7 +68,7 @@ namespace embree
       bvh->alloc.reset();
       
       /* skip build for empty scene */
-      const size_t numPrimitives = scene->getNumPrimitives<Mesh,false>();
+      const size_t numPrimitives = scene->getNumPrimitives(Mesh::geom_type,false);
 
       if (numPrimitives == 0) {
         prims.resize(0);

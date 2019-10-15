@@ -242,12 +242,17 @@ struct TriangleMesh
   unsigned int num_vertices;
   unsigned int num_triangles;
   
-  TriangleMesh() : vertices(nullptr), triangles(nullptr) {}
+  TriangleMesh()
+    : vertices(nullptr), triangles(nullptr) {}
 
   ~TriangleMesh() {
     if(vertices) alignedFree(vertices);
     if(triangles) alignedFree(triangles);
   }
+
+private:
+  TriangleMesh (const TriangleMesh& other) DELETED; // do not implement
+  TriangleMesh& operator= (const TriangleMesh& other) DELETED; // do not implement
 };
 
 

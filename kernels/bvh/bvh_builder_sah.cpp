@@ -95,7 +95,7 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-    template<int N, typename Mesh, typename Primitive>
+    template<int N, typename Primitive>
     struct BVHNBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
@@ -103,18 +103,19 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      Mesh* mesh;
+      Geometry* mesh;
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
+      Geometry::GTypeMask gtype_;
       bool primrefarrayalloc;
 
       BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize,
-                      const size_t mode, bool primrefarrayalloc = false)
+                      const Geometry::GTypeMask gtype, bool primrefarrayalloc = false)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0),
-          settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(primrefarrayalloc) {}
+          settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype), primrefarrayalloc(primrefarrayalloc) {}
 
-      BVHNBuilderSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), primrefarrayalloc(false) {}
+      BVHNBuilderSAH (BVH* bvh, Geometry* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype), primrefarrayalloc(false) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -130,7 +131,7 @@ namespace embree
           bvh->alloc.unshare(prims);
 
 	/* skip build for empty scene */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(gtype_,false);
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
@@ -163,7 +164,7 @@ namespace embree
 
             PrimInfo pinfo = mesh ?
               createPrimRefArray(mesh,numPrimitives,prims,bvh->scene->progressInterface) :
-              createPrimRefArray(scene,Mesh::geom_type,false,numPrimitives,prims,bvh->scene->progressInterface);
+	      createPrimRefArray(scene,gtype_,false,numPrimitives,prims,bvh->scene->progressInterface);
 
             /* pinfo might has zero size due to invalid geometry */
             if (unlikely(pinfo.size() == 0))
@@ -205,7 +206,7 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 
-    template<int N, typename Mesh, typename Primitive>
+    template<int N, typename Primitive>
     struct BVHNBuilderSAHQuantized : public Builder
     {
       typedef BVHN<N> BVH;
@@ -213,15 +214,16 @@ namespace embree
 
       BVH* bvh;
       Scene* scene;
-      Mesh* mesh;
+      Geometry* mesh;
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
+      Geometry::GTypeMask gtype_;
 
-      BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
+      BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
+        : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype) {}
 
-      BVHNBuilderSAHQuantized (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
+      BVHNBuilderSAHQuantized (BVH* bvh, Geometry* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -233,7 +235,7 @@ namespace embree
         }
 
 	/* skip build for empty scene */
-        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(gtype_,false);
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
@@ -249,7 +251,7 @@ namespace embree
             prims.resize(numPrimitives);
             PrimInfo pinfo = mesh ?
               createPrimRefArray(mesh,numPrimitives,prims,bvh->scene->progressInterface) :
-              createPrimRefArray(scene,Mesh::geom_type,false,numPrimitives,prims,bvh->scene->progressInterface);
+	      createPrimRefArray(scene,gtype_,false,numPrimitives,prims,bvh->scene->progressInterface);
 
             /* enable os_malloc for two level build */
             if (mesh)
@@ -553,25 +555,25 @@ namespace embree
 
     
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
+    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,Triangle4>((BVH4*)bvh,mesh,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,Triangle4v>((BVH4*)bvh,mesh,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<4,Triangle4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,TriangleMesh::geom_type); }
 
-    Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode,true); }    
+    Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH4Triangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type,true); }
 
-    Builder* BVH4QuantizedTriangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4QuantizedTriangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
 #if defined(__AVX__)
-    Builder* BVH8Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4i>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
+    Builder* BVH8Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<8,Triangle4>((BVH8*)bvh,mesh,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH8Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<8,Triangle4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH8Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode) { return new BVHNBuilderSAH<8,Triangle4i>((BVH8*)bvh,mesh,4,1.0f,4,inf,TriangleMesh::geom_type); }
 
-    Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle4vSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Triangle4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode,true); }
-    Builder* BVH8QuantizedTriangle4iSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8QuantizedTriangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH8Triangle4vSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Triangle4v>((BVH8*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH8Triangle4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type,true); }
+    Builder* BVH8QuantizedTriangle4iSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,Triangle4i>((BVH8*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH8QuantizedTriangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
 
     
 
@@ -579,19 +581,19 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-    Builder* BVH4Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<4,QuadMesh,Quad4v>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
-    Builder* BVH4Quad4iMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,mode); }
-    Builder* BVH4Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode,true); }
-    Builder* BVH4QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH4QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,mode); }
+    Builder* BVH4Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<4,Quad4v>((BVH4*)bvh,mesh,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH4Quad4iMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<4,Quad4i>((BVH4*)bvh,mesh,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH4Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH4Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type,true); }
+    Builder* BVH4QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH4QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
 
 #if defined(__AVX__)
-    Builder* BVH8Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode,true); }
-    Builder* BVH8QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,QuadMesh,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,mode); }
-    Builder* BVH8Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<8,QuadMesh,Quad4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,mode); }
+    Builder* BVH8Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH8Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type,true); }
+    Builder* BVH8QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH8QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH8Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t mode)     { return new BVHNBuilderSAH<8,Quad4v>((BVH8*)bvh,mesh,4,1.0f,4,inf,QuadMesh::geom_type); }
 
 #endif
 #endif
@@ -601,30 +603,30 @@ namespace embree
     Builder* BVH4VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_max_leaf_size;
-      return new BVHNBuilderSAH<4,UserGeometry,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize,mode);
+      return new BVHNBuilderSAH<4,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize,UserGeometry::geom_type);
     }
 
     Builder* BVH4VirtualMeshBuilderSAH    (void* bvh, UserGeometry* mesh, size_t mode) {
-      return new BVHNBuilderSAH<4,UserGeometry,Object>((BVH4*)bvh,mesh,4,1.0f,1,inf,mode);
+      return new BVHNBuilderSAH<4,Object>((BVH4*)bvh,mesh,4,1.0f,1,inf,UserGeometry::geom_type);
     }
 #if defined(__AVX__)
 
     Builder* BVH8VirtualSceneBuilderSAH    (void* bvh, Scene* scene, size_t mode) {
       int minLeafSize = scene->device->object_accel_min_leaf_size;
       int maxLeafSize = scene->device->object_accel_max_leaf_size;
-      return new BVHNBuilderSAH<8,UserGeometry,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize,mode);
+      return new BVHNBuilderSAH<8,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize,UserGeometry::geom_type);
     }
 
     Builder* BVH8VirtualMeshBuilderSAH    (void* bvh, UserGeometry* mesh, size_t mode) {
-      return new BVHNBuilderSAH<8,UserGeometry,Object>((BVH8*)bvh,mesh,8,1.0f,1,inf,mode);
+      return new BVHNBuilderSAH<8,Object>((BVH8*)bvh,mesh,8,1.0f,1,inf,UserGeometry::geom_type);
     }
 #endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-    Builder* BVH4InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1,mode); }
+    Builder* BVH4InstanceSceneBuilderSAH (void* bvh, Scene* scene, Geometry::GTypeMask gtype) { return new BVHNBuilderSAH<4,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1,gtype); }
 #if defined(__AVX__)
-    Builder* BVH8InstanceSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1,mode); }
+    Builder* BVH8InstanceSceneBuilderSAH (void* bvh, Scene* scene, Geometry::GTypeMask gtype) { return new BVHNBuilderSAH<8,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1,gtype); }
 #endif
 #endif
 

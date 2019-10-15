@@ -535,10 +535,10 @@ namespace embree
     {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
-        accels_add(device->bvh8_factory->BVH8Instance(this,BVHFactory::BuildVariant::STATIC));
+        accels_add(device->bvh8_factory->BVH8Instance(this, false, BVHFactory::BuildVariant::STATIC));
       else
 #endif
-        accels_add(device->bvh4_factory->BVH4Instance(this,BVHFactory::BuildVariant::STATIC));
+        accels_add(device->bvh4_factory->BVH4Instance(this, false, BVHFactory::BuildVariant::STATIC));
     }
     //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
 #endif
@@ -551,10 +551,42 @@ namespace embree
     {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
-        accels_add(device->bvh8_factory->BVH8InstanceMB(this));
+        accels_add(device->bvh8_factory->BVH8InstanceMB(this, false));
       else
 #endif
-        accels_add(device->bvh4_factory->BVH4InstanceMB(this));
+        accels_add(device->bvh4_factory->BVH4InstanceMB(this, false));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance mblur accel "+device->instance_accel_mb);
+#endif
+  }
+
+  void Scene::createInstanceExpensiveAccel()
+  {
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    //if (device->object_accel == "default") 
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->canUseAVX() && !isCompactAccel())
+        accels_add(device->bvh8_factory->BVH8Instance(this, true, BVHFactory::BuildVariant::STATIC));
+      else
+#endif
+        accels_add(device->bvh4_factory->BVH4Instance(this, true, BVHFactory::BuildVariant::STATIC));
+    }
+    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
+#endif
+  }
+
+  void Scene::createInstanceExpensiveMBAccel()
+  {
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    //if (device->instance_accel_mb == "default")
+    {
+#if defined (EMBREE_TARGET_SIMD8)
+      if (device->canUseAVX() && !isCompactAccel())
+        accels_add(device->bvh8_factory->BVH8InstanceMB(this, true));
+      else
+#endif
+        accels_add(device->bvh4_factory->BVH4InstanceMB(this, true));
     }
     //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance mblur accel "+device->instance_accel_mb);
 #endif
@@ -672,20 +704,22 @@ namespace embree
           if (geometries[i]) geometries[i]->setModified();
         });
       
-      if (getNumPrimitives<TriangleMesh,false>()) createTriangleAccel();
-      if (getNumPrimitives<TriangleMesh,true>()) createTriangleMBAccel();
-      if (getNumPrimitives<QuadMesh,false>()) createQuadAccel();
-      if (getNumPrimitives<QuadMesh,true>()) createQuadMBAccel();
-      if (getNumPrimitives<GridMesh,false>()) createGridAccel();
-      if (getNumPrimitives<GridMesh,true>()) createGridMBAccel();
-      if (getNumPrimitives<SubdivMesh,false>()) createSubdivAccel();
-      if (getNumPrimitives<SubdivMesh,true>()) createSubdivMBAccel();
-      if (getNumPrimitives<CurveGeometry,false>()) createHairAccel();
-      if (getNumPrimitives<CurveGeometry,true>()) createHairMBAccel();
-      if (getNumPrimitives<UserGeometry,false>()) createUserGeometryAccel();
-      if (getNumPrimitives<UserGeometry,true>()) createUserGeometryMBAccel();
-      if (getNumPrimitives<Instance,false>()) createInstanceAccel();
-      if (getNumPrimitives<Instance,true>()) createInstanceMBAccel();
+      if (getNumPrimitives(TriangleMesh::geom_type,false)) createTriangleAccel();
+      if (getNumPrimitives(TriangleMesh::geom_type,true)) createTriangleMBAccel();
+      if (getNumPrimitives(QuadMesh::geom_type,false)) createQuadAccel();
+      if (getNumPrimitives(QuadMesh::geom_type,true)) createQuadMBAccel();
+      if (getNumPrimitives(GridMesh::geom_type,false)) createGridAccel();
+      if (getNumPrimitives(GridMesh::geom_type,true)) createGridMBAccel();
+      if (getNumPrimitives(SubdivMesh::geom_type,false)) createSubdivAccel();
+      if (getNumPrimitives(SubdivMesh::geom_type,true)) createSubdivMBAccel();
+      if (getNumPrimitives(Geometry::MTY_CURVES,false)) createHairAccel();
+      if (getNumPrimitives(Geometry::MTY_CURVES,true)) createHairMBAccel();
+      if (getNumPrimitives(UserGeometry::geom_type,false)) createUserGeometryAccel();
+      if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,false)) createInstanceAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,true)) createInstanceMBAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,false)) createInstanceExpensiveAccel();
+      if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,true)) createInstanceExpensiveMBAccel();
       
       flags_modified = false;
       enabled_geometry_types = new_enabled_geometry_types;

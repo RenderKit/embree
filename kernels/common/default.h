@@ -274,8 +274,10 @@ namespace embree
   /* calculate overlapping time segment range */
   __forceinline range<int> getTimeSegmentRange(const BBox1f& time_range, float numTimeSegments)
   {
-    const int itime_lower = (int)max(floor(time_range.lower*numTimeSegments), 0.0f);
-    const int itime_upper = (int)min(ceil (time_range.upper*numTimeSegments), numTimeSegments);
+    const float round_up   = 1.0f+2.0f*float(ulp); // corrects inaccuracies to precisely match time step
+    const float round_down = 1.0f-2.0f*float(ulp);
+    const int itime_lower = (int)max(floor(round_up  *time_range.lower*numTimeSegments), 0.0f);
+    const int itime_upper = (int)min(ceil (round_down*time_range.upper*numTimeSegments), numTimeSegments);
     return make_range(itime_lower, itime_upper);
   }
 

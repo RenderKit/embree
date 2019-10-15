@@ -251,8 +251,8 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
   
   DECLARE_ISA_FUNCTION(Builder*,BVH4GridSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4GridMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -1355,19 +1355,21 @@ namespace embree
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4Instance(Scene* scene, BuildVariant bvariant)
+  Accel* BVH4Factory::BVH4Instance(Scene* scene, bool isExpensive, BuildVariant bvariant)
   {
     BVH4* accel = new BVH4(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH4InstanceIntersectors(accel);
-    Builder* builder = BVH4InstanceSceneBuilderSAH(accel,scene,0);
+    auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE_CHEAP;
+    Builder* builder = BVH4InstanceSceneBuilderSAH(accel,scene,gtype);
     return new AccelInstance(accel,builder,intersectors);
   }
 
-  Accel* BVH4Factory::BVH4InstanceMB(Scene* scene)
+  Accel* BVH4Factory::BVH4InstanceMB(Scene* scene, bool isExpensive)
   {
     BVH4* accel = new BVH4(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH4InstanceMBIntersectors(accel);
-    Builder* builder = BVH4InstanceMBSceneBuilderSAH(accel,scene,0);
+    auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE_CHEAP;
+    Builder* builder = BVH4InstanceMBSceneBuilderSAH(accel,scene,gtype);
     return new AccelInstance(accel,builder,intersectors);
   }
 
