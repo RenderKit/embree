@@ -95,12 +95,14 @@ namespace embree
       inline AABB3f sub_group_reduce(const cl::sycl::intel::sub_group& sg) const
       {
 	AABB3f result;
-	result.lower.x() = sg.reduce<float,cl::sycl::intel::minimum>(lower.x());
-	result.lower.y() = sg.reduce<float,cl::sycl::intel::minimum>(lower.y());
-	result.lower.z() = sg.reduce<float,cl::sycl::intel::minimum>(lower.z());
-	result.upper.x() = sg.reduce<float,cl::sycl::intel::maximum>(upper.x());
-	result.upper.y() = sg.reduce<float,cl::sycl::intel::maximum>(upper.y());
-	result.upper.z() = sg.reduce<float,cl::sycl::intel::maximum>(upper.z());
+    cl::sycl::intel::minimum<float> minBinOp;
+    cl::sycl::intel::maximum<float> maxBinOp;
+	result.lower.x() = sg.reduce<float>(lower.x(), minBinOp);
+	result.lower.y() = sg.reduce<float>(lower.y(), minBinOp);
+	result.lower.z() = sg.reduce<float>(lower.z(), minBinOp);
+	result.upper.x() = sg.reduce<float>(upper.x(), maxBinOp);
+	result.upper.y() = sg.reduce<float>(upper.y(), maxBinOp);
+	result.upper.z() = sg.reduce<float>(upper.z(), maxBinOp);
 	return result;	
       }
 
@@ -119,12 +121,14 @@ namespace embree
       inline AABB3f sub_group_scan_exclusive_min_max(const cl::sycl::intel::sub_group& sg) const
       {
 	AABB3f result;
-	result.lower.x() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(lower.x());
-	result.lower.y() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(lower.y());
-	result.lower.z() = sg.exclusive_scan<float,cl::sycl::intel::minimum>(lower.z());
-	result.upper.x() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(upper.x());
-	result.upper.y() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(upper.y());
-	result.upper.z() = sg.exclusive_scan<float,cl::sycl::intel::maximum>(upper.z());
+    cl::sycl::intel::minimum<float> minBinOp;
+    cl::sycl::intel::maximum<float> maxBinOp;
+	result.lower.x() = sg.exclusive_scan<float>(lower.x(), minBinOp);
+	result.lower.y() = sg.exclusive_scan<float>(lower.y(), minBinOp);
+	result.lower.z() = sg.exclusive_scan<float>(lower.z(), minBinOp);
+	result.upper.x() = sg.exclusive_scan<float>(upper.x(), maxBinOp);
+	result.upper.y() = sg.exclusive_scan<float>(upper.y(), maxBinOp);
+	result.upper.z() = sg.exclusive_scan<float>(upper.z(), maxBinOp);
 	return result;	
       }
 
@@ -132,12 +136,14 @@ namespace embree
 	
       {
 	AABB3f result;
-	result.lower.x() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(lower.x());
-	result.lower.y() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(lower.y());
-	result.lower.z() = sg.inclusive_scan<float,cl::sycl::intel::minimum>(lower.z());
-	result.upper.x() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(upper.x());
-	result.upper.y() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(upper.y());
-	result.upper.z() = sg.inclusive_scan<float,cl::sycl::intel::maximum>(upper.z());
+    cl::sycl::intel::minimum<float> minBinOp;
+    cl::sycl::intel::maximum<float> maxBinOp;
+	result.lower.x() = sg.inclusive_scan<float>(lower.x(), minBinOp);
+	result.lower.y() = sg.inclusive_scan<float>(lower.y(), minBinOp);
+	result.lower.z() = sg.inclusive_scan<float>(lower.z(), minBinOp);
+	result.upper.x() = sg.inclusive_scan<float>(upper.x(), maxBinOp);
+	result.upper.y() = sg.inclusive_scan<float>(upper.y(), maxBinOp);
+	result.upper.z() = sg.inclusive_scan<float>(upper.z(), maxBinOp);
 	return result;	
       }
 
