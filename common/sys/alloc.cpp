@@ -19,12 +19,61 @@
 #include "sysinfo.h"
 #include "mutex.h"
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+#define CL_TARGET_OPENCL_VERSION 220
+#define SYCL_SIMPLE_SWIZZLES
+#include <CL/sycl.hpp>
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
   
 namespace embree
-{  
+{
+#if defined(EMBREE_DPCPP_SUPPORT)
+  cl::sycl::queue   *global_gpu_queue  = nullptr;
+  cl::sycl::device  *global_gpu_device = nullptr;
+#endif
+  
+  void* internal_alignedMalloc(size_t size, size_t align) 
+  {
+    if (size == 0)
+      return nullptr;
+    
+    assert((align & (align-1)) == 0);
+#if defined(EMBREE_DPCPP_SUPPORT)
+    if (global_gpu_queue && global_gpu_device)
+      {
+	void* ptr = cl::sycl::aligned_alloc(align,size,*global_gpu_device,global_gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
+	PRINT(ptr);    	
+	if (size != 0 && ptr == nullptr)
+	  throw std::bad_alloc();
+	return ptr;
+      }
+#endif    
+    void* ptr = _mm_malloc(size,align);
+    if (size != 0 && ptr == nullptr)
+      throw std::bad_alloc();
+    
+    return ptr;
+  }
+  
+  void internal_alignedFree(void* ptr)
+  {    
+    if (ptr)
+      {
+#if defined(EMBREE_DPCPP_SUPPORT)
+	if (global_gpu_queue && global_gpu_device)
+	  {
+	    cl::sycl::free(ptr,global_gpu_queue->get_context());
+	    return;
+	  }
+#endif
+	  _mm_free(ptr);
+      }
+  }
+
   void* alignedMalloc(size_t size, size_t align) 
   {
     if (size == 0)
@@ -33,8 +82,7 @@ namespace embree
     assert((align & (align-1)) == 0);
     void* ptr = _mm_malloc(size,align);
     if (size != 0 && ptr == nullptr)
-      throw std::bad_alloc();
-    
+      throw std::bad_alloc();    
     return ptr;
   }
   
@@ -44,6 +92,8 @@ namespace embree
       _mm_free(ptr);
   }
 
+  
+  
   static bool huge_pages_enabled = false;
   static MutexSys os_init_mutex;
 

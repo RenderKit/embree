@@ -23,7 +23,16 @@
 #include "../../include/embree3/rtcore_ray.h"
 using namespace embree;
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+namespace embree
+{
+  extern cl::sycl::queue   *global_gpu_queue;
+  extern cl::sycl::device  *global_gpu_device;
+};
+#endif
+
 RTC_NAMESPACE_BEGIN;
+
 
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
@@ -47,6 +56,11 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcNewDevice);
     Lock<MutexSys> lock(g_mutex);
 
+    /* === must be done before the first new/delete === */
+    global_gpu_queue  = (cl::sycl::queue*)queue;
+    global_gpu_device = (cl::sycl::device*)device;
+    /* ================================================ */
+    
     std::string new_cfg(config);
     DeviceGPU* gpu_device = new DeviceGPU(new_cfg.c_str(),device,queue);
     

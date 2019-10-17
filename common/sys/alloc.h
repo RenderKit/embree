@@ -22,20 +22,35 @@
 
 namespace embree
 {
-#define ALIGNED_STRUCT_(align)                                           \
-  void* operator new(size_t size) { return alignedMalloc(size,align); } \
-  void operator delete(void* ptr) { alignedFree(ptr); }                 \
+#define ALIGNED_STRUCT_(align)                                            \
+  void* operator new(size_t size) { return alignedMalloc(size,align); }   \
+  void operator delete(void* ptr) { alignedFree(ptr); }                   \
   void* operator new[](size_t size) { return alignedMalloc(size,align); } \
   void operator delete[](void* ptr) { alignedFree(ptr); }
 
-#define ALIGNED_CLASS_(align)                                           \
+#define ALIGNED_STRUCT_USM_(align)                                                 \
+  void* operator new(size_t size) { return internal_alignedMalloc(size,align); }   \
+  void operator delete(void* ptr) { internal_alignedFree(ptr); }                   \
+  void* operator new[](size_t size) { return internal_alignedMalloc(size,align); } \
+  void operator delete[](void* ptr) { internal_alignedFree(ptr); }
+  
+#define ALIGNED_CLASS_(align)                                          \
  public:                                                               \
-    ALIGNED_STRUCT_(align)                                              \
+    ALIGNED_STRUCT_(align)                                             \
+ private:
+
+#define ALIGNED_CLASS_USM_(align)                                      \
+ public:                                                               \
+    ALIGNED_STRUCT_USM_(align)                                         \
  private:
   
   /*! aligned allocation */
   void* alignedMalloc(size_t size, size_t align);
   void alignedFree(void* ptr);
+
+  /*! embree internal aligned allocation */  
+  void* internal_alignedMalloc(size_t size, size_t align);
+  void internal_alignedFree(void* ptr);
   
   /*! allocator that performs aligned allocations */
   template<typename T, size_t alignment>

@@ -38,7 +38,7 @@ namespace embree
   /*! Base class all scenes are derived from */
   class Scene : public AccelN
   {
-    ALIGNED_CLASS_(16);
+    ALIGNED_CLASS_USM_(16); // FIXME
 
   public:
     template<typename Ty, bool mblur = false>
@@ -150,8 +150,9 @@ namespace embree
 
     /*! Scene destruction */
     ~Scene ();
-
+    
   private:
+    
     /*! class is non-copyable */
     Scene (const Scene& other) DELETED; // do not implement
     Scene& operator= (const Scene& other) DELETED; // do not implement

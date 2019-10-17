@@ -576,7 +576,6 @@ namespace embree
     std::cout << "- Max Work Group Size : " << cpu_maxWorkGroupSize << std::endl;
     std::cout << "- Max Compute Units   : " << cpu_maxComputeUnits  << std::endl;
     
-
   }
 
   DeviceGPU::~DeviceGPU()
