@@ -28,7 +28,9 @@
 namespace embree {
 
 #define SIMPLE_SHADING 1
-
+#define DBG_PRINT_BUFFER_SIZE 1024*1024
+#define DBG_PRINT_LINE_SIZE 512
+  
   extern "C" ISPCScene* g_ispc_scene;
   extern "C" int g_instancing_mode;
 
@@ -222,7 +224,9 @@ extern "C" void device_init (char* cfg)
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::global_ptr<RTCSceneTy> scene, struct RTCRayHit &rayhit);
+SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
+				       cl::sycl::global_ptr<RTCSceneTy> scene,
+				       struct RTCRayHit &rayhit);
 
 #endif
 
@@ -272,7 +276,8 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
     cl::sycl::global_ptr<RTCSceneTy> sycl_scene(g_scene);
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
-	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));		  
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));
+	cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);		
 	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
 	    const uint x = item.get_global_id(0);
 	    const uint y = item.get_global_id(1);
@@ -292,8 +297,16 @@ extern "C" void device_render (int* pixels,
 		rh.ray.tfar  = (float)INFINITY;		
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+		
+		cl::sycl::intel::sub_group sg = item.get_sub_group();
+		const uint subgroupID      = sg.get_group_id()[0];      
+		if (x == 0 && y == 0)
+		  {
+		    out << "scene " << sycl_scene << cl::sycl::endl;
+		  }
+		
 		/* test function calls */
-		rtcIntersectGPUTest(sycl_scene, rh);
+		rtcIntersectGPUTest(sg, sycl_scene, rh);
 		
 	      }
 	  });		  
