@@ -49,7 +49,6 @@ namespace embree
 
   void SubdivMesh::preCommit() {
 
-    scene->numSubdivEnableDisableEvents++;
     if (numTimeSteps == 1) scene->world.numSubdivPatches += numPrimitives;
     else                   scene->worldMB.numSubdivPatches += numPrimitives;
 

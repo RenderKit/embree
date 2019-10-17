@@ -350,8 +350,6 @@ namespace embree
     GeometryCounts world;               //!< counts for non-motion blurred geometry
     GeometryCounts worldMB;             //!< counts for motion blurred geometry
 
-    std::atomic<size_t> numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
-
     __forceinline size_t numPrimitives() const {
       return world.size() + worldMB.size();
     }
