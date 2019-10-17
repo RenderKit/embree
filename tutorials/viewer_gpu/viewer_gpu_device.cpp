@@ -225,7 +225,8 @@ extern "C" void device_init (char* cfg)
 #if defined(EMBREE_DPCPP_SUPPORT)
 
 SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
-				       cl::sycl::global_ptr<RTCSceneTy> scene,
+				       //cl::sycl::global_ptr<RTCSceneTy> scene,
+				       cl::sycl::global_ptr<int> scene,
 				       struct RTCRayHit &rayhit);
 
 #endif
@@ -265,6 +266,13 @@ extern "C" void device_render (int* pixels,
   const size_t numPixels = width*height;
   int *fb = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*numPixels,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
   assert(fb);
+
+  /* test */  
+  int *test = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*16,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
+  PRINT(test);
+  for (size_t i=0;i<16;i++)
+    test[i] = 0;
+  assert(test);
   
 
   /* generate primary ray stream */    
@@ -274,7 +282,10 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
     const float3 cam_vy = Vec3fa_to_float3(camera.xfm.l.vy);
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
-    cl::sycl::global_ptr<RTCSceneTy> sycl_scene(g_scene);
+    //PRINT(g_scene);
+    //cl::sycl::global_ptr<RTCSceneTy> sycl_scene(g_scene);
+    cl::sycl::global_ptr<int> sycl_scene(test);
+    
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
 	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));
 	cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);		
@@ -306,8 +317,7 @@ extern "C" void device_render (int* pixels,
 		  }
 		
 		/* test function calls */
-		rtcIntersectGPUTest(sg, sycl_scene, rh);
-		
+		rtcIntersectGPUTest(sg, sycl_scene, rh);		
 	      }
 	  });		  
       });
@@ -320,7 +330,8 @@ extern "C" void device_render (int* pixels,
     }
   }  
   
-
+  PRINT(test[0]);
+  
   //PRINT(rtc_rays[0].hit.primID);
   
   /* trace ray stream */      
@@ -371,6 +382,9 @@ extern "C" void device_render (int* pixels,
     }
   }
 
+  /* test */  
+  cl::sycl::free(test,gpu_queue->get_context());
+  
   /* copy to real framebuffer */
   memcpy(pixels,fb,sizeof(int)*width*height);
   
