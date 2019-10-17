@@ -222,7 +222,7 @@ extern "C" void device_init (char* cfg)
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-SYCL_EXTERNAL void rtcIntersectGPUTest(RTCScene scene, struct RTCRayHit &rayhit);
+SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::global_ptr<RTCSceneTy> scene, struct RTCRayHit &rayhit);
 
 #endif
 
@@ -270,6 +270,7 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
     const float3 cam_vy = Vec3fa_to_float3(camera.xfm.l.vy);
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
+    cl::sycl::global_ptr<RTCSceneTy> sycl_scene(g_scene);
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
 	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));		  
 	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
@@ -292,7 +293,8 @@ extern "C" void device_render (int* pixels,
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
 		/* test function calls */
-		rtcIntersectGPUTest(g_scene, rh);
+		rtcIntersectGPUTest(sycl_scene, rh);
+		
 	      }
 	  });		  
       });
