@@ -1715,7 +1715,7 @@ RTC_NAMESPACE_END
 
 namespace embree
 {
-  SYCL_EXTERNAL void rtcIntersectGPUTest(struct RTCRayHit &rayhit)
+  SYCL_EXTERNAL void rtcIntersectGPUTest(RTCScene scene, struct RTCRayHit &rayhit)
   {
     rayhit.hit.primID = 99;   
   }

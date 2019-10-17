@@ -222,7 +222,7 @@ extern "C" void device_init (char* cfg)
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-SYCL_EXTERNAL void rtcIntersectGPUTest(struct RTCRayHit &rayhit);
+SYCL_EXTERNAL void rtcIntersectGPUTest(RTCScene scene, struct RTCRayHit &rayhit);
 
 #endif
 
@@ -291,8 +291,8 @@ extern "C" void device_render (int* pixels,
 		rh.ray.tfar  = (float)INFINITY;		
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-		/* test function calls */		
-		//rtcIntersectGPUTest(rh);		
+		/* test function calls */
+		rtcIntersectGPUTest(g_scene, rh);
 	      }
 	  });		  
       });
