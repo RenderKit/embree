@@ -51,7 +51,8 @@ namespace embree
     "oriented_disc",
     "",
     "usergeom",
-    "instance",
+    "instance_cheap",
+    "instance_expensive",
   };
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
