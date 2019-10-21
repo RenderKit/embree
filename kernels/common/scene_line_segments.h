@@ -45,6 +45,7 @@ namespace embree
     bool verify ();
     void interpolate(const RTCInterpolateArguments* const args);
     void setTessellationRate(float N);
+    void addElementsToCount (GeometryCounts & counts) const;
 
   public:
 

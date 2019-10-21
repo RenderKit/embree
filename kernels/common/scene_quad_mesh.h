@@ -55,6 +55,7 @@ namespace embree
     void postCommit();
     bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
+    void addElementsToCount (GeometryCounts & counts) const;
 
   public:
 

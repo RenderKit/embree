@@ -155,9 +155,14 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     if (numTimeSteps == 1) scene->world.numTriangles += numPrimitives;
-    else                   scene->worldMB.numTriangles += numPrimitives;
+    else                   scene->world.numMBTriangles += numPrimitives;
 
     Geometry::preCommit();
+  }
+
+  void TriangleMesh::addElementsToCount (GeometryCounts & counts) const 
+  {
+    counts.numTriangles += numPrimitives;
   }
 
   void TriangleMesh::postCommit() 

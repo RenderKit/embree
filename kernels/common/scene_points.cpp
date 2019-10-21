@@ -154,9 +154,14 @@ namespace embree
     if (numTimeSteps == 1)
       scene->world.numPoints += numPrimitives;
     else
-      scene->worldMB.numPoints += numPrimitives;
+      scene->world.numMBPoints += numPrimitives;
 
     Geometry::preCommit();
+  }
+
+  void Points::addElementsToCount (GeometryCounts & counts) const 
+  {
+    counts.numPoints += numPrimitives;
   }
 
   void Points::postCommit()

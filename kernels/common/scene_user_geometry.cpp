@@ -27,9 +27,14 @@ namespace embree
   void UserGeometry::preCommit () {
 
     if (numTimeSteps == 1) scene->world.numUserGeometries += numPrimitives;
-    else                   scene->worldMB.numUserGeometries += numPrimitives;
+    else                   scene->world.numMBUserGeometries += numPrimitives;
 
     Geometry::preCommit ();
+  }
+
+  void UserGeometry::addElementsToCount (GeometryCounts & counts) const
+  {
+    counts.numUserGeometries += numPrimitives;
   }
   
   void UserGeometry::setMask (unsigned mask) 

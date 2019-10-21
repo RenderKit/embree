@@ -50,9 +50,14 @@ namespace embree
   void SubdivMesh::preCommit() {
 
     if (numTimeSteps == 1) scene->world.numSubdivPatches += numPrimitives;
-    else                   scene->worldMB.numSubdivPatches += numPrimitives;
+    else                   scene->world.numMBSubdivPatches += numPrimitives;
 
     Geometry::preCommit ();
+  }
+
+  void SubdivMesh::addElementsToCount (GeometryCounts & counts) const
+  {
+    counts.numSubdivPatches += numPrimitives;
   }
 
   void SubdivMesh::setMask (unsigned mask) 

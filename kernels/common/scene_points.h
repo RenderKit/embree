@@ -48,6 +48,7 @@ namespace embree
     void preCommit();
     void postCommit();
     bool verify();
+    void addElementsToCount (GeometryCounts & counts) const;
 
    public:
     /*! returns the number of vertices */

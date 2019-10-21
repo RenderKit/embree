@@ -267,6 +267,11 @@ namespace embree
     tessellationRate = clamp((int)N,1,16);
   }
 
+  void CurveGeometry::addElementsToCount (GeometryCounts & counts) const 
+  {
+    counts.numBezierCurves += numPrimitives;
+  }
+
   bool CurveGeometry::verify () 
   {
     /*! verify consistent size of vertex arrays */
@@ -378,7 +383,7 @@ namespace embree
       tangents0 = tangents[0];
 
     if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
-    else                   scene->worldMB.numBezierCurves += numPrimitives; 
+    else                   scene->world.numMBBezierCurves += numPrimitives; 
 
     Geometry::preCommit();
   }
