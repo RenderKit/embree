@@ -47,17 +47,10 @@ namespace embree
     topology[0] = Topology(this);
   }
 
-  void SubdivMesh::preCommit() {
-
-    if (numTimeSteps == 1) scene->world.numSubdivPatches += numPrimitives;
-    else                   scene->world.numMBSubdivPatches += numPrimitives;
-
-    Geometry::preCommit ();
-  }
-
   void SubdivMesh::addElementsToCount (GeometryCounts & counts) const
   {
-    counts.numSubdivPatches += numPrimitives;
+    if (numTimeSteps == 1) counts.numSubdivPatches += numPrimitives;
+    else                   counts.numMBSubdivPatches += numPrimitives;
   }
 
   void SubdivMesh::setMask (unsigned mask) 

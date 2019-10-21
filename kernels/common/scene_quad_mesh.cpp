@@ -154,15 +154,13 @@ namespace embree
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
-    if (numTimeSteps == 1) scene->world.numQuads += numPrimitives;
-    else                   scene->world.numMBQuads += numPrimitives;
-
     Geometry::preCommit();
   }
 
   void QuadMesh::addElementsToCount (GeometryCounts & counts) const
   {
-    counts.numQuads += numPrimitives;
+    if (numTimeSteps == 1) counts.numQuads += numPrimitives;
+    else                   counts.numMBQuads += numPrimitives;
   }
 
   void QuadMesh::postCommit() 

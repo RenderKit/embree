@@ -151,17 +151,15 @@ namespace embree
     if (getType() == GTY_ORIENTED_DISC_POINT)
       normals0 = normals[0];
 
-    if (numTimeSteps == 1)
-      scene->world.numPoints += numPrimitives;
-    else
-      scene->world.numMBPoints += numPrimitives;
-
     Geometry::preCommit();
   }
 
   void Points::addElementsToCount (GeometryCounts & counts) const 
   {
-    counts.numPoints += numPrimitives;
+    if (numTimeSteps == 1)
+      counts.numPoints += numPrimitives;
+    else
+      counts.numMBPoints += numPrimitives;
   }
 
   void Points::postCommit()

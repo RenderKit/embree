@@ -269,7 +269,8 @@ namespace embree
 
   void CurveGeometry::addElementsToCount (GeometryCounts & counts) const 
   {
-    counts.numBezierCurves += numPrimitives;
+    if (numTimeSteps == 1) counts.numBezierCurves += numPrimitives; 
+    else                   counts.numMBBezierCurves += numPrimitives;
   }
 
   bool CurveGeometry::verify () 
@@ -381,9 +382,6 @@ namespace embree
     }
     if (getCurveBasis() == GTY_BASIS_HERMITE)
       tangents0 = tangents[0];
-
-    if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
-    else                   scene->world.numMBBezierCurves += numPrimitives; 
 
     Geometry::preCommit();
   }

@@ -75,7 +75,6 @@ namespace embree
     void updateBuffer(RTCBufferType type, unsigned int slot);
     void setTessellationRate(float N);
     bool verify();
-    void preCommit();
     void commit();
     void addElementsToCount (GeometryCounts & counts) const;
     void setDisplacementFunction (RTCDisplacementFunctionN func);
