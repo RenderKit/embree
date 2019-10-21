@@ -51,6 +51,7 @@ namespace embree
     virtual void setMask (unsigned mask);
     virtual void build() {}
     virtual void preCommit();
+    virtual void addElementsToCount (GeometryCounts & counts) const;
 
   public:
 

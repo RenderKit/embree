@@ -77,6 +77,7 @@ namespace embree
     bool verify();
     void preCommit();
     void commit();
+    void addElementsToCount (GeometryCounts & counts) const;
     void setDisplacementFunction (RTCDisplacementFunctionN func);
     unsigned int getFirstHalfEdge(unsigned int faceID);
     unsigned int getFace(unsigned int edgeID);

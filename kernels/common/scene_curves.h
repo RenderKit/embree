@@ -44,6 +44,7 @@ namespace embree
     void postCommit();
     bool verify();
     void setTessellationRate(float N);
+    void addElementsToCount (GeometryCounts & counts) const;
 
   public:
     

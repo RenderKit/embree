@@ -652,14 +652,29 @@ namespace embree
 
     progress_monitor_counter = 0;
     
-    /* call preCommit function of each geometry */
+    /* gather scene stats and call preCommit function of each geometry */
+  /*   GeometryCounts sceneStats;
+    parallel_reduce (size_t(0), geometries.size(), GeometryCounts (empty), [&geometries](const range<size_t>& r) -> GeometryCounts)
+    {
+      for (auto i=r.begin(); i<r.end(); ++i) 
+      {
+        GeometryCounts c(empty);
+        if (geometries[i] && geometries[i]->isEnabled()) 
+        {
+          geometries[i]->preCommit();
+          geometries[i]->addElementsToCount (c);
+        }
+      }
+    }, */
+
+
     parallel_for(geometries.size(), [&] ( const size_t i ) {
         if (geometries[i] && geometries[i]->isEnabled())
           geometries[i]->preCommit();
       });
     
     /* select acceleration structures to build */
-    unsigned int new_enabled_geometry_types = enabledGeometryTypesMask();
+    unsigned int new_enabled_geometry_types = world.enabledGeometryTypesMask();
     if (flags_modified || new_enabled_geometry_types != enabled_geometry_types)
     {
       accels_init();

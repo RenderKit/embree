@@ -212,9 +212,14 @@ namespace embree
       normals0 = normals[0];
 
     if (numTimeSteps == 1) scene->world.numLineSegments += numPrimitives;
-    else                   scene->worldMB.numLineSegments += numPrimitives;
+    else                   scene->world.numMBLineSegments += numPrimitives;
         
     Geometry::preCommit();
+  }
+
+  void LineSegments::addElementsToCount (GeometryCounts & counts) const 
+  {
+    counts.numLineSegments += numPrimitives;
   }
 
   void LineSegments::postCommit() 
