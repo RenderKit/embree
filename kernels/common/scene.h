@@ -308,7 +308,11 @@ namespace embree
 
   public:
     
-    GeometryCounts world;               //!< counts for non-motion blurred geometry
+  private:
+
+    GeometryCounts world;               //!< counts for geometry
+
+  public:
 
     __forceinline size_t numPrimitives() const {
       return world.size();

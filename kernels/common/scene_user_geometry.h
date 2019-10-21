@@ -33,7 +33,6 @@ namespace embree
     virtual void setIntersectFunctionN (RTCIntersectFunctionN intersect);
     virtual void setOccludedFunctionN (RTCOccludedFunctionN occluded);
     virtual void build() {}
-    virtual void preCommit();
     virtual void addElementsToCount (GeometryCounts & counts) const;
   };
 

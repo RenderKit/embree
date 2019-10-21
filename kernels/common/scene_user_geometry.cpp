@@ -24,17 +24,10 @@ namespace embree
   UserGeometry::UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps) 
     : AccelSet(device,Geometry::GTY_USER_GEOMETRY,items,numTimeSteps) {}
 
-  void UserGeometry::preCommit () {
-
-    if (numTimeSteps == 1) scene->world.numUserGeometries += numPrimitives;
-    else                   scene->world.numMBUserGeometries += numPrimitives;
-
-    Geometry::preCommit ();
-  }
-
   void UserGeometry::addElementsToCount (GeometryCounts & counts) const
   {
-    counts.numUserGeometries += numPrimitives;
+    if (numTimeSteps == 1) counts.numUserGeometries += numPrimitives;
+    else                   counts.numMBUserGeometries += numPrimitives;
   }
   
   void UserGeometry::setMask (unsigned mask) 
