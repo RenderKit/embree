@@ -18,6 +18,7 @@
 
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
+#include "../../common/algorithms/parallel_reduce.h"
  
 namespace embree
 {
@@ -653,26 +654,22 @@ namespace embree
     progress_monitor_counter = 0;
     
     /* gather scene stats and call preCommit function of each geometry */
-  /*   GeometryCounts sceneStats;
-    parallel_reduce (size_t(0), geometries.size(), GeometryCounts (empty), [&geometries](const range<size_t>& r) -> GeometryCounts)
-    {
-      for (auto i=r.begin(); i<r.end(); ++i) 
+    this->world = parallel_reduce (size_t(0), geometries.size(), GeometryCounts (), 
+      [this](const range<size_t>& r)->GeometryCounts
       {
-        GeometryCounts c(empty);
-        if (geometries[i] && geometries[i]->isEnabled()) 
+        GeometryCounts c;
+        for (auto i=r.begin(); i<r.end(); ++i) 
         {
-          geometries[i]->preCommit();
-          geometries[i]->addElementsToCount (c);
+          if (geometries[i] && geometries[i]->isEnabled()) 
+          {
+            geometries[i]->preCommit();
+            geometries[i]->addElementsToCount (c);
+          }
         }
-      }
-    }, */
-
-    parallel_for(geometries.size(), [&] ( const size_t i ) {
-        if (geometries[i] && geometries[i]->isEnabled()) {
-          geometries[i]->preCommit();
-          geometries[i]->addElementsToCount(this->world);
-        }
-      });
+        return c;
+      },
+      std::plus<GeometryCounts>()
+    );
     
     /* select acceleration structures to build */
     unsigned int new_enabled_geometry_types = world.enabledGeometryTypesMask();
