@@ -667,10 +667,11 @@ namespace embree
       }
     }, */
 
-
     parallel_for(geometries.size(), [&] ( const size_t i ) {
-        if (geometries[i] && geometries[i]->isEnabled())
+        if (geometries[i] && geometries[i]->isEnabled()) {
           geometries[i]->preCommit();
+          geometries[i]->addElementsToCount(this->world);
+        }
       });
     
     /* select acceleration structures to build */

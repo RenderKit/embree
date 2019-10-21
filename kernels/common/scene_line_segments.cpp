@@ -210,16 +210,14 @@ namespace embree
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals0 = normals[0];
-
-    if (numTimeSteps == 1) scene->world.numLineSegments += numPrimitives;
-    else                   scene->world.numMBLineSegments += numPrimitives;
         
     Geometry::preCommit();
   }
 
   void LineSegments::addElementsToCount (GeometryCounts & counts) const 
   {
-    counts.numLineSegments += numPrimitives;
+    if (numTimeSteps == 1) counts.numLineSegments += numPrimitives;
+    else                   counts.numMBLineSegments += numPrimitives;
   }
 
   void LineSegments::postCommit() 
