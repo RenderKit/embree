@@ -216,6 +216,7 @@ namespace embree
       const size_t numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
 
       DBG_PRESPLIT(
+        const size_t org_numPrimitives = pinfo.size();
         PRINT(numPrimitives);		
         PRINT(alloc_numPrimitives);		
         PRINT(numPrimitivesToSplit);
@@ -284,12 +285,19 @@ namespace embree
         else
           r = mid;
       }
-      assert(presplitItem[r].priority >= 1.0f);
+      DBG_PRESPLIT(
+        PRINT(psum / numPrimitives);
+        PRINT(numPrimitives);
+        PRINT(r);
+        );
+      if (r < numPrimitives)
+      {
+        assert(presplitItem[r].priority >= 1.0f);
 
-      /* compute actual number of sub-primitives generated within the [r;numPrimitives-1] range */
-      const size_t totalNumSubPrims = parallel_reduce( size_t(r), numPrimitives, size_t(0), [&](const range<size_t>& t) -> size_t {
-          size_t sum = 0;
-	  for (size_t i=t.begin(); i<t.end(); i++)
+        /* compute actual number of sub-primitives generated within the [r;numPrimitives-1] range */
+        const size_t totalNumSubPrims = parallel_reduce( size_t(r), numPrimitives, size_t(0), [&](const range<size_t>& t) -> size_t {
+            size_t sum = 0;
+            for (size_t i=t.begin(); i<t.end(); i++)
 	    {	
               PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];	
               assert(presplitItem[i].priority >= 1.0f);
@@ -305,73 +313,78 @@ namespace embree
               sum+=numSubPrims;
               presplitItem[i].data = (numSubPrims << MAX_PRESPLITS_PER_PRIMITIVE_LOG) | split_levels;
 	    }
-          return sum;
-	},[](const size_t& a, const size_t& b) -> size_t { return a+b; });
+            return sum;
+          },[](const size_t& a, const size_t& b) -> size_t { return a+b; });
 
-      if (totalNumSubPrims > numPrimitivesToSplit) 
-      {
-        size_t new_r = numPrimitives-1;
-        size_t sum = 0;
-        for (;new_r>=r;new_r--)
+        if (totalNumSubPrims > numPrimitivesToSplit) 
         {
-          const unsigned int numSubPrims = presplitItem[new_r].data >> MAX_PRESPLITS_PER_PRIMITIVE_LOG;
-          if (unlikely(sum + numSubPrims >= numPrimitivesToSplit)) break;
+          size_t new_r = numPrimitives-1;
+          size_t sum = 0;
+          for (;new_r>=r;new_r--)
+          {
+            const unsigned int numSubPrims = presplitItem[new_r].data >> MAX_PRESPLITS_PER_PRIMITIVE_LOG;
+            if (unlikely(sum + numSubPrims >= numPrimitivesToSplit)) break;
+            sum += numSubPrims;
+          }
+          new_r++;
+          r = new_r;
+        }
+#else
+        ssize_t r = numPrimitives-1;
+        size_t sum = 0;
+        for (;r>=0;r--)
+        {
+          PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];
+          if (presplitItem[r].priority < 1.0f) break; // early out if priority gets to small
+          const unsigned int  primrefID = presplitItem[r].index;	
+          const float prio              = presplitItem[r].priority;
+          const unsigned int   geomID   = prims[primrefID].geomID();
+          const unsigned int   primID   = prims[primrefID].primID();
+          const unsigned int split_levels = (unsigned int)prio;
+          size_t numSubPrims = 0;
+          splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
+          assert(numSubPrims);
+          numSubPrims--; // can reuse slot 
+
+          if (sum + numSubPrims >= numPrimitivesToSplit) break;
           sum += numSubPrims;
         }
-        new_r++;
-        r = new_r;
-      }
-#else
-      ssize_t r = numPrimitives-1;
-      size_t sum = 0;
-      for (;r>=0;r--)
-      {
-        PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];
-        if (presplitItem[r].priority < 1.0f) break; // early out if priority gets to small
-        const unsigned int  primrefID = presplitItem[r].index;	
-        const float prio              = presplitItem[r].priority;
-        const unsigned int   geomID   = prims[primrefID].geomID();
-        const unsigned int   primID   = prims[primrefID].primID();
-        const unsigned int split_levels = (unsigned int)prio;
-        size_t numSubPrims = 0;
-        splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
-        assert(numSubPrims);
-        numSubPrims--; // can reuse slot 
-
-        if (sum + numSubPrims >= numPrimitivesToSplit) break;
-        sum += numSubPrims;
-      }
-      r++;
+        r++;
 #endif
 
-      __aligned(64) std::atomic<size_t> offset;
-      offset.store(0);
+        __aligned(64) std::atomic<size_t> offset;
+        offset.store(0);
 		    
-      parallel_for( size_t(r), numPrimitives, size_t(128), [&](const range<size_t>& r) -> void {
-          for (size_t j=r.begin(); j<r.end(); j++)		    
-          {
-            PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];
-            const unsigned int  primrefID = presplitItem[j].index;	
-            //const float prio              = presplitItem[j].priority;
-            const unsigned int   geomID   = prims[primrefID].geomID();
-            const unsigned int   primID   = prims[primrefID].primID();
-            //const unsigned int split_levels = (unsigned int)prio;
-            const unsigned int split_levels = presplitItem[j].data & ((unsigned int)(1 << MAX_PRESPLITS_PER_PRIMITIVE_LOG)-1);
+        parallel_for( size_t(r), numPrimitives, size_t(128), [&](const range<size_t>& r) -> void {
+            for (size_t j=r.begin(); j<r.end(); j++)		    
+            {
+              PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];
+              const unsigned int  primrefID = presplitItem[j].index;	
+              //const float prio              = presplitItem[j].priority;
+              const unsigned int   geomID   = prims[primrefID].geomID();
+              const unsigned int   primID   = prims[primrefID].primID();
+              //const unsigned int split_levels = (unsigned int)prio;
+              const unsigned int split_levels = presplitItem[j].data & ((unsigned int)(1 << MAX_PRESPLITS_PER_PRIMITIVE_LOG)-1);
 
-            assert(split_levels);
-            assert(split_levels <= MAX_PRESPLITS_PER_PRIMITIVE_LOG);
-            size_t numSubPrims = 0;
-            splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
+              assert(split_levels);
+              assert(split_levels <= MAX_PRESPLITS_PER_PRIMITIVE_LOG);
+              size_t numSubPrims = 0;
+              splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
 
-            const size_t newID = numPrimitives + offset.fetch_add(numSubPrims-1); // FIXME -1
-            assert(newID+numSubPrims <= alloc_numPrimitives);
-            prims[primrefID] = subPrims[0];
-            for (size_t i=1;i<numSubPrims;i++)
-              prims[newID+i-1] = subPrims[i];
-          }
-        });
+              const size_t newID = numPrimitives + offset.fetch_add(numSubPrims-1); // FIXME -1
+              assert(newID+numSubPrims <= alloc_numPrimitives);
+              prims[primrefID] = subPrims[0];
+              for (size_t i=1;i<numSubPrims;i++)
+                prims[newID+i-1] = subPrims[i];
+            }
+          });
 
-      numPrimitives += offset;
+        numPrimitives += offset;
+        DBG_PRESPLIT(
+          PRINT(numPrimitives);
+          PRINT((float)numPrimitives/org_numPrimitives);
+          );
+      }
 
       /* recompute centroid bounding boxes */
       pinfo = parallel_reduce(size_t(0),numPrimitives,PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
