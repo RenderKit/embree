@@ -157,7 +157,7 @@ namespace embree
 
   void Geometry::detach()
   {
-    if (isEnabled()) {
+    if (scene && isEnabled()) {
       scene->setModified();
       updateIntersectionFilters(false);
     }
