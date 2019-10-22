@@ -146,6 +146,9 @@ namespace embree
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
     assert(scene);
+    if (this->scene)
+      this->scene->detachGeometry(this->geomID);
+
     this->scene = scene;
     this->geomID = geomID;
     if (isEnabled()) {
