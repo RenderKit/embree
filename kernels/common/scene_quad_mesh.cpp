@@ -27,18 +27,6 @@ namespace embree
     vertices.resize(numTimeSteps);
   }
 
-  void QuadMesh::enabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numQuads += numPrimitives;
-    else                   scene->worldMB.numQuads += numPrimitives;
-  }
-  
-  void QuadMesh::disabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numQuads -= numPrimitives;
-    else                   scene->worldMB.numQuads -= numPrimitives;
-  }
-
   void QuadMesh::setMask (unsigned mask) 
   {
     this->mask = mask; 
@@ -167,6 +155,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     Geometry::preCommit();
+  }
+
+  void QuadMesh::addElementsToCount (GeometryCounts & counts) const
+  {
+    if (numTimeSteps == 1) counts.numQuads += numPrimitives;
+    else                   counts.numMBQuads += numPrimitives;
   }
 
   void QuadMesh::postCommit() 

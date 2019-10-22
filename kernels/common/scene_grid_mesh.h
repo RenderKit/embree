@@ -59,8 +59,6 @@ namespace embree
 
     /* geometry interface */
   public:
-    void enabling();
-    void disabling();
     void setMask(unsigned mask);
     void setNumTimeSteps (unsigned int numTimeSteps);
     void setVertexAttributeCount (unsigned int N);
@@ -71,6 +69,7 @@ namespace embree
     void postCommit();
     bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
+    void addElementsToCount (GeometryCounts & counts) const;
 
     __forceinline unsigned int getNumSubGrids(const size_t gridID)
     {
