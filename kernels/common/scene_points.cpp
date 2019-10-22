@@ -28,22 +28,6 @@ namespace embree
       normals.resize(numTimeSteps);
   }
 
-  void Points::enabling()
-  {
-    if (numTimeSteps == 1)
-      scene->world.numPoints += numPrimitives;
-    else
-      scene->worldMB.numPoints += numPrimitives;
-  }
-
-  void Points::disabling()
-  {
-    if (numTimeSteps == 1)
-      scene->world.numPoints -= numPrimitives;
-    else
-      scene->worldMB.numPoints -= numPrimitives;
-  }
-
   void Points::setMask(unsigned mask)
   {
     this->mask = mask;
@@ -168,6 +152,14 @@ namespace embree
       normals0 = normals[0];
 
     Geometry::preCommit();
+  }
+
+  void Points::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (numTimeSteps == 1)
+      counts.numPoints += numPrimitives;
+    else
+      counts.numMBPoints += numPrimitives;
   }
 
   void Points::postCommit()

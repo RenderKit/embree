@@ -75,15 +75,24 @@ namespace embree
       this->gtype = GTY_INSTANCE_EXPENSIVE;
     }
 
-    // gather statistics
-    auto & worldcounts = numTimeSteps == 1 ? scene->world : scene->worldMB;
-    if (Geometry::GTY_INSTANCE_CHEAP == this->gtype) {
-      worldcounts.numInstancesCheap += numPrimitives;
-    } else {
-      worldcounts.numInstancesExpensive += numPrimitives;
-    }
-
     Geometry::preCommit();
+  }
+
+  void Instance::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (Geometry::GTY_INSTANCE_CHEAP == this->gtype) {
+      if (1 == numTimeSteps) {
+        counts.numInstancesCheap += numPrimitives;
+      } else {
+        counts.numMBInstancesCheap += numPrimitives;
+      }
+    } else {
+      if (1 == numTimeSteps) {
+        counts.numInstancesExpensive += numPrimitives;
+      } else {
+        counts.numMBInstancesExpensive += numPrimitives;
+      }
+    }
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
