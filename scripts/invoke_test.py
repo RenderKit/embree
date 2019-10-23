@@ -30,6 +30,11 @@ reference = ""
 modeldir = ""
 sde = "OFF"
 
+if sys.platform.startswith("win"):
+  magick_compare = "magick compare"
+else:
+  magick_compare = "compare"
+
 def assert_fatal(condition, error):
   if not condition:
     sys.stdout.write("[error] %s\n" % error)
@@ -38,12 +43,11 @@ def assert_fatal(condition, error):
 def assert_image_exists(name, path):
   assert_fatal(os.path.isfile(path), "%s image %s does not exist." % (name, path))
 
-
 def compareImages(image0,image1,dimage):
   error = float("inf")
   assert_image_exists("output", image0)
   assert_image_exists("reference", image1)
-  line, unused_err = subprocess.Popen("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()
+  line, unused_err = subprocess.Popen(magick_compare+" -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()
   try: error = float(line[line.index('(')+1:line.index(')')])
   except ValueError:
     print("Error: "+line)
