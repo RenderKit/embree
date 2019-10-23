@@ -28,9 +28,12 @@
 
 #define GRID_SIZE 1024
 
-#define DBG_PRESPLIT(x) 
-#define MAX_PRESPLITS_PER_PRIMITIVE_LOG 4
+#define DBG_PRESPLIT(x) x
+#define MAX_PRESPLITS_PER_PRIMITIVE_LOG 5
 #define MAX_PRESPLITS_PER_PRIMITIVE (1<<MAX_PRESPLITS_PER_PRIMITIVE_LOG)
+
+#define PRIORITY_CUTOFF_THRESHOLD 1.5f
+#define PRIORITY_BINARY_SEACH_THRESHOLD 1.0f
 
 namespace embree
 {  
@@ -209,11 +212,11 @@ namespace embree
       /* use correct number of primitives */
       size_t numPrimitives = pinfo.size();
       const size_t alloc_numPrimitives = prims.size(); 
+      const size_t numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
 
       /* set up primitive splitter */
       SplitterFactory Splitter(scene);
 
-      const size_t numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
 
       DBG_PRESPLIT(
         const size_t org_numPrimitives = pinfo.size();
@@ -254,7 +257,7 @@ namespace embree
             if (presplitItem[i].priority > 0.0f)
             {
               const float rel_p = (float)numPrimitivesToSplit * presplitItem[i].priority * inv_psum;
-              if (rel_p >= 1.5f) // need at least a split budget that generates two sub-prims
+              if (rel_p >= PRIORITY_CUTOFF_THRESHOLD) // need at least a split budget that generates two sub-prims
               {
                 presplitItem[i].priority = max(min(ceilf(logf(rel_p)/logf(2.0f)),(float)MAX_PRESPLITS_PER_PRIMITIVE_LOG),1.0f);
                 assert(presplitItem[i].priority >= 1.0f && presplitItem[i].priority <= (float)MAX_PRESPLITS_PER_PRIMITIVE_LOG);
@@ -272,24 +275,24 @@ namespace embree
           assert(presplitItem[i-1].priority <= presplitItem[i].priority);
         );
 
-
-#if 1
       /* binary search to find index with priority >= 1.0f */
       size_t l = 0;
       size_t r = numPrimitives;		    
       while(l+1 < r)
       {
         const size_t mid = (l+r)/2;
-        if (presplitItem[mid].priority < 1.0f) 
+        if (presplitItem[mid].priority < PRIORITY_BINARY_SEACH_THRESHOLD) 
           l = mid;
         else
           r = mid;
       }
+
       DBG_PRESPLIT(
         PRINT(psum / numPrimitives);
         PRINT(numPrimitives);
         PRINT(r);
         );
+
       if (r < numPrimitives)
       {
         assert(presplitItem[r].priority >= 1.0f);
@@ -316,6 +319,7 @@ namespace embree
             return sum;
           },[](const size_t& a, const size_t& b) -> size_t { return a+b; });
 
+        /* if we are over budget, need to shrink the range */
         if (totalNumSubPrims > numPrimitivesToSplit) 
         {
           size_t new_r = numPrimitives-1;
@@ -329,32 +333,11 @@ namespace embree
           new_r++;
           r = new_r;
         }
-#else
-        ssize_t r = numPrimitives-1;
-        size_t sum = 0;
-        for (;r>=0;r--)
-        {
-          PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];
-          if (presplitItem[r].priority < 1.0f) break; // early out if priority gets to small
-          const unsigned int  primrefID = presplitItem[r].index;	
-          const float prio              = presplitItem[r].priority;
-          const unsigned int   geomID   = prims[primrefID].geomID();
-          const unsigned int   primID   = prims[primrefID].primID();
-          const unsigned int split_levels = (unsigned int)prio;
-          size_t numSubPrims = 0;
-          splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
-          assert(numSubPrims);
-          numSubPrims--; // can reuse slot 
 
-          if (sum + numSubPrims >= numPrimitivesToSplit) break;
-          sum += numSubPrims;
-        }
-        r++;
-#endif
 
+        /* iterate over range, and split primitives into sub primitives and append them to prims array */		    
         __aligned(64) std::atomic<size_t> offset;
         offset.store(0);
-		    
         parallel_for( size_t(r), numPrimitives, size_t(128), [&](const range<size_t>& r) -> void {
             for (size_t j=r.begin(); j<r.end(); j++)		    
             {
