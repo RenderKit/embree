@@ -242,9 +242,6 @@ namespace embree
     /*! Geometry destructor */
     virtual ~Geometry();
 
-    /*! updates intersection filter function counts in scene */
-    void updateIntersectionFilters(bool enable);
-
   public:
 
     /*! tests if geometry is enabled */
@@ -259,6 +256,10 @@ namespace embree
     /*! marks geometry modified */
     __forceinline void setModified() {
       if (state == BUILD) state = COMMITTED;
+    }
+
+    __forceinline bool hasFilterFunctions () const {
+      return (intersectionFilterN  != nullptr) || (occlusionFilterN  != nullptr);
     }
 
     /*! returns geometry type */

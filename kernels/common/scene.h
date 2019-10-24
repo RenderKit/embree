@@ -250,8 +250,13 @@ namespace embree
     __forceinline bool hasContextFilterFunction() const {
       return scene_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
     }
-    __forceinline bool hasGeometryFilterFunction() {
-      return numIntersectionFiltersN != 0;
+    __forceinline bool hasGeometryFilterFunction() 
+    {
+      return std::any_of (geometries.begin(), geometries.end(), 
+        [](decltype(*geometries.begin()) g) {
+          return (g && g->isEnabled ()) ? g->hasFilterFunctions () : false;
+        }
+      );
     }
     __forceinline bool hasFilterFunction() {
       return hasContextFilterFunction() || hasGeometryFilterFunction();
@@ -371,7 +376,5 @@ namespace embree
       Scene::Iterator<Mesh,mblur> iter(this);
       return iter.maxGeomID();
     }
-   
-    std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 }

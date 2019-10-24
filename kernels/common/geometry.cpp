@@ -132,17 +132,6 @@ namespace embree
       state = BUILD;
   }
 
-  void Geometry::updateIntersectionFilters(bool enable)
-  {
-    const size_t numN  = (intersectionFilterN  != nullptr) + (occlusionFilterN  != nullptr);
-
-    if (enable) {
-      scene->numIntersectionFiltersN += numN;
-    } else {
-      scene->numIntersectionFiltersN -= numN;
-    }
-  }
-
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
     assert(scene);
@@ -153,7 +142,6 @@ namespace embree
     this->geomID = geomID;
     if (isEnabled()) {
       scene->setModified();
-      updateIntersectionFilters(true);
     }
     return this;
   }
@@ -162,7 +150,6 @@ namespace embree
   {
     if (scene && isEnabled()) {
       scene->setModified();
-      updateIntersectionFilters(false);
     }
     this->scene = nullptr;
     this->geomID = -1;
@@ -174,7 +161,6 @@ namespace embree
       return;
 
     if (scene) {
-      updateIntersectionFilters(true);
       scene->setModified();
     }
 
@@ -187,7 +173,6 @@ namespace embree
       return;
 
     if (scene) {
-      updateIntersectionFilters(false);
       scene->setModified();
     }
     
@@ -204,10 +189,6 @@ namespace embree
     if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFiltersN -= intersectionFilterN != nullptr;
-      scene->numIntersectionFiltersN += filter != nullptr;
-    }
     intersectionFilterN = filter;
   }
 
@@ -216,10 +197,6 @@ namespace embree
     if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFiltersN -= occlusionFilterN != nullptr;
-      scene->numIntersectionFiltersN += filter != nullptr;
-    }
     occlusionFilterN = filter;
   }
   
