@@ -32,8 +32,9 @@
 #define MAX_PRESPLITS_PER_PRIMITIVE_LOG 5
 #define MAX_PRESPLITS_PER_PRIMITIVE (1<<MAX_PRESPLITS_PER_PRIMITIVE_LOG)
 
-#define PRIORITY_CUTOFF_THRESHOLD 1.5f
+#define PRIORITY_CUTOFF_THRESHOLD 1.0f
 #define PRIORITY_BINARY_SEACH_THRESHOLD 1.0f
+#define NEW_PRIO 1
 
 namespace embree
 {  
@@ -58,16 +59,23 @@ namespace embree
       }
 
       template<typename Mesh>
-      static float compute_priority(const PrimRef &ref, Scene *scene)
+      __forceinline static float compute_priority(const PrimRef &ref, Scene *scene, const Vec2i &mc)
       {
 	const unsigned int geomID = ref.geomID();
 	const unsigned int primID = ref.primID();
-	const float area_aabb  = halfArea(ref.bounds());
-	const float priority = area_aabb;		
+	const float area_aabb  = area(ref.bounds());
 	const float area_prim  = ((Mesh*)scene->get(geomID))->projectedPrimitiveArea(primID);
+#if NEW_PRIO == 1
+        const unsigned int diff = 31 - lzcnt(mc.x^mc.y);
+        const float priority = powf((area_aabb - 2.0f*area_prim) * powf(1.5f,(float)diff),1.0f/4.0f);      
+	return priority;      
+#else
+        const float priority = area_aabb;
 	const float area_ratio = min(4.0f, area_aabb / max(1E-12f,area_prim));
 	return priority * area_ratio;      
+#endif
       }
+
     
     };
 
@@ -243,7 +251,7 @@ namespace embree
 	      presplitItem[i].index = (unsigned int)i;
               const Vec2i mc = computeMC(grid_base,grid_scale,prims[i]);
               /* if all bits are equal then we cannot split */
-              presplitItem[i].priority = (mc.x != mc.y) ? PresplitItem::compute_priority<Mesh>(prims[i],scene) : 0.0f;
+              presplitItem[i].priority = (mc.x != mc.y) ? PresplitItem::compute_priority<Mesh>(prims[i],scene,mc) : 0.0f;    
               /* FIXME: sum undeterministic */
               sum += presplitItem[i].priority;
 	    }
@@ -343,10 +351,8 @@ namespace embree
             {
               PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];
               const unsigned int  primrefID = presplitItem[j].index;	
-              //const float prio              = presplitItem[j].priority;
               const unsigned int   geomID   = prims[primrefID].geomID();
               const unsigned int   primID   = prims[primrefID].primID();
-              //const unsigned int split_levels = (unsigned int)prio;
               const unsigned int split_levels = presplitItem[j].data & ((unsigned int)(1 << MAX_PRESPLITS_PER_PRIMITIVE_LOG)-1);
 
               assert(split_levels);
@@ -354,7 +360,7 @@ namespace embree
               size_t numSubPrims = 0;
               splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
 
-              const size_t newID = numPrimitives + offset.fetch_add(numSubPrims-1); // FIXME -1
+              const size_t newID = numPrimitives + offset.fetch_add(numSubPrims-1);
               assert(newID+numSubPrims <= alloc_numPrimitives);
               prims[primrefID] = subPrims[0];
               for (size_t i=1;i<numSubPrims;i++)

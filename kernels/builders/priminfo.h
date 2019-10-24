@@ -33,7 +33,7 @@ namespace embree
     const Vec2f v1_zx(v1.z,v1.x);
     const Vec2f v2_xy(v2.x,v2.y);
     const Vec2f v2_yz(v2.y,v2.z);
-    const Vec2f v2_zx(v2.z,v2.x);      
+    const Vec2f v2_zx(v2.z,v2.x);
     const float xy = 0.5f*fabs(det(v1_xy-v0_xy,v2_xy-v0_xy));
     const float yz = 0.5f*fabs(det(v1_yz-v0_yz,v2_yz-v0_yz));
     const float zx = 0.5f*fabs(det(v1_zx-v0_zx,v2_zx-v0_zx));
