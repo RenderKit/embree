@@ -308,7 +308,7 @@ extern "C" void device_render (int* pixels,
 		rh.ray.tfar  = (float)INFINITY;		
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-		
+#if 0		
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		const uint subgroupID      = sg.get_group_id()[0];      
 		if (x == 0 && y == 0)
@@ -317,7 +317,8 @@ extern "C" void device_render (int* pixels,
 		  }
 		
 		/* test function calls */
-		rtcIntersectGPUTest(sg, sycl_scene, rh);		
+		rtcIntersectGPUTest(sg, sycl_scene, rh);
+#endif		
 	      }
 	  });		  
       });
