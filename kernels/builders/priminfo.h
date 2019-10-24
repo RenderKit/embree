@@ -25,6 +25,7 @@ namespace embree
   // FIXME: maybe there's a better place for this util fct
   __forceinline float areaProjectedTriangle(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2)
   {
+#if 0
     const Vec2f v0_xy(v0.x,v0.y);
     const Vec2f v0_yz(v0.y,v0.z);
     const Vec2f v0_zx(v0.z,v0.x);
@@ -38,6 +39,12 @@ namespace embree
     const float yz = 0.5f*fabs(det(v1_yz-v0_yz,v2_yz-v0_yz));
     const float zx = 0.5f*fabs(det(v1_zx-v0_zx,v2_zx-v0_zx));
     return xy+yz+zx;
+#else
+    const Vec3fa e0 = v1-v0;
+    const Vec3fa e1 = v2-v0;
+    const Vec3fa d = cross(e0,e1);
+    return fabs(d.x) + fabs(d.y) + fabs(d.z);
+#endif
   }
 
   //namespace isa
