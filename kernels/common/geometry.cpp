@@ -51,7 +51,8 @@ namespace embree
     "oriented_disc",
     "",
     "usergeom",
-    "instance",
+    "instance_cheap",
+    "instance_expensive",
   };
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
@@ -77,10 +78,8 @@ namespace embree
   {      
     if (numPrimitives_in == numPrimitives) return;
     
-    if (isEnabled() && scene) disabling();
     numPrimitives = numPrimitives_in;
     numPrimitivesChanged = true;
-    if (isEnabled() && scene) enabling();
     
     Geometry::update();
   }
@@ -90,10 +89,8 @@ namespace embree
     if (numTimeSteps_in == numTimeSteps)
       return;
     
-    if (isEnabled() && scene) disabling();
     numTimeSteps = numTimeSteps_in;
     fnumTimeSegments = float(numTimeSteps_in-1);
-    if (isEnabled() && scene) enabling();
     
     Geometry::update();
   }
@@ -149,22 +146,23 @@ namespace embree
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
     assert(scene);
+    if (this->scene)
+      this->scene->detachGeometry(this->geomID);
+
     this->scene = scene;
     this->geomID = geomID;
     if (isEnabled()) {
       scene->setModified();
       updateIntersectionFilters(true);
-      enabling();
     }
     return this;
   }
 
   void Geometry::detach()
   {
-    if (isEnabled()) {
+    if (scene && isEnabled()) {
       scene->setModified();
       updateIntersectionFilters(false);
-      disabling();
     }
     this->scene = nullptr;
     this->geomID = -1;
@@ -178,7 +176,6 @@ namespace embree
     if (scene) {
       updateIntersectionFilters(true);
       scene->setModified();
-      enabling();
     }
 
     enabled = true;
@@ -192,7 +189,6 @@ namespace embree
     if (scene) {
       updateIntersectionFilters(false);
       scene->setModified();
-      disabling();
     }
     
     enabled = false;

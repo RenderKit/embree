@@ -27,18 +27,6 @@ namespace embree
     vertices.resize(numTimeSteps);
   }
 
-  void GridMesh::enabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numGrids += numPrimitives;
-    else                   scene->worldMB.numGrids += numPrimitives;
-  }
-  
-  void GridMesh::disabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numGrids -= numPrimitives;
-    else                   scene->worldMB.numGrids -= numPrimitives;
-  }
-
   void GridMesh::setMask (unsigned mask) 
   {
     this->mask = mask; 
@@ -167,6 +155,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
     Geometry::preCommit();
+  }
+
+  void GridMesh::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (numTimeSteps == 1) counts.numGrids += numPrimitives;
+    else                   counts.numMBGrids += numPrimitives;
   }
 
   void GridMesh::postCommit() 

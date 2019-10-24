@@ -308,53 +308,15 @@ namespace embree
     void setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr);
 
   public:
-    struct GeometryCounts 
-    {
-      __forceinline GeometryCounts()
-        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0), numInstancesCheap(0), numInstancesExpensive(0),numGrids(0), numPoints(0) {}
-
-      __forceinline size_t size() const {
-        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numGrids + numPoints;
-      }
-
-      __forceinline unsigned int enabledGeometryTypesMask() const
-      {
-        unsigned int mask = 0;
-        if (numTriangles) mask |= 1 << 0;
-        if (numQuads) mask |= 1 << 1;
-        if (numBezierCurves+numLineSegments) mask |= 1 << 2;
-        if (numSubdivPatches) mask |= 1 << 3;
-        if (numUserGeometries) mask |= 1 << 4;
-        if (numInstancesCheap) mask |= 1 << 5;
-        if (numInstancesExpensive) mask |= 1 << 6;
-        if (numGrids) mask |= 1 << 7;
-        if (numPoints) mask |= 1 << 8;
-        return mask;
-      }
-
-      std::atomic<size_t> numTriangles;             //!< number of enabled triangles
-      std::atomic<size_t> numQuads;                 //!< number of enabled quads
-      std::atomic<size_t> numBezierCurves;          //!< number of enabled curves
-      std::atomic<size_t> numLineSegments;          //!< number of enabled line segments
-      std::atomic<size_t> numSubdivPatches;         //!< number of enabled subdivision patches
-      std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
-      std::atomic<size_t> numInstancesCheap;        //!< number of enabled cheap instances
-      std::atomic<size_t> numInstancesExpensive;    //!< number of enabled expensive instances
-      std::atomic<size_t> numGrids;                 //!< number of enabled grid geometries
-      std::atomic<size_t> numPoints;                //!< number of enabled points
-    };
-
-     __forceinline unsigned int enabledGeometryTypesMask() const {
-       return (world.enabledGeometryTypesMask() << 8) + worldMB.enabledGeometryTypesMask();
-     }
     
-    GeometryCounts world;               //!< counts for non-motion blurred geometry
-    GeometryCounts worldMB;             //!< counts for motion blurred geometry
+  private:
 
-    std::atomic<size_t> numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
+    GeometryCounts world;               //!< counts for geometry
+
+  public:
 
     __forceinline size_t numPrimitives() const {
-      return world.size() + worldMB.size();
+      return world.size();
     }
 
     __forceinline size_t getNumPrimitives(Geometry::GTypeMask mask, bool mblur) const
@@ -362,34 +324,34 @@ namespace embree
       size_t count = 0;
       
       if (mask & Geometry::MTY_TRIANGLE_MESH)
-        count += mblur ? worldMB.numTriangles : world.numTriangles;
+        count += mblur ? world.numMBTriangles : world.numTriangles;
       
       if (mask & Geometry::MTY_QUAD_MESH)
-        count += mblur ? worldMB.numQuads : world.numQuads;
+        count += mblur ? world.numMBQuads : world.numQuads;
       
       if (mask & Geometry::MTY_CURVE2)
-        count += mblur ? worldMB.numLineSegments : world.numLineSegments;
+        count += mblur ? world.numMBLineSegments : world.numLineSegments;
       
       if (mask & Geometry::MTY_CURVE4)
-        count += mblur ? worldMB.numBezierCurves : world.numBezierCurves;
+        count += mblur ? world.numMBBezierCurves : world.numBezierCurves;
       
       if (mask & Geometry::MTY_POINTS)
-        count += mblur ? worldMB.numPoints : world.numPoints;
+        count += mblur ? world.numMBPoints : world.numPoints;
       
       if (mask & Geometry::MTY_SUBDIV_MESH)
-        count += mblur ? worldMB.numSubdivPatches : world.numSubdivPatches;
+        count += mblur ? world.numMBSubdivPatches : world.numSubdivPatches;
       
       if (mask & Geometry::MTY_USER_GEOMETRY)
-        count += mblur ? worldMB.numUserGeometries : world.numUserGeometries;
+        count += mblur ? world.numMBUserGeometries : world.numUserGeometries;
       
       if (mask & Geometry::MTY_INSTANCE_CHEAP)
-        count += mblur ? worldMB.numInstancesCheap : world.numInstancesCheap;
+        count += mblur ? world.numMBInstancesCheap : world.numInstancesCheap;
       
       if (mask & Geometry::MTY_INSTANCE_EXPENSIVE)
-        count += mblur  ? worldMB.numInstancesExpensive : world.numInstancesExpensive;
+        count += mblur  ? world.numMBInstancesExpensive : world.numInstancesExpensive;
       
       if (mask & Geometry::MTY_GRID_MESH)
-        count += mblur  ? worldMB.numGrids : world.numGrids;
+        count += mblur  ? world.numMBGrids : world.numGrids;
       
       return count;
     }

@@ -64,8 +64,6 @@ namespace embree
     SubdivMesh(Device* device);
 
   public:
-    void enabling();
-    void disabling();
     void setMask (unsigned mask);
     void setSubdivisionMode (unsigned int topologyID, RTCSubdivisionMode mode);
     void setVertexAttributeTopology(unsigned int vertexAttribID, unsigned int topologyID);
@@ -78,6 +76,7 @@ namespace embree
     void setTessellationRate(float N);
     bool verify();
     void commit();
+    void addElementsToCount (GeometryCounts & counts) const;
     void setDisplacementFunction (RTCDisplacementFunctionN func);
     unsigned int getFirstHalfEdge(unsigned int faceID);
     unsigned int getFace(unsigned int edgeID);

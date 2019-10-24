@@ -33,8 +33,6 @@ namespace embree
     Points(Device* device, Geometry::GType gtype);
 
    public:
-    void enabling();
-    void disabling();
     void setMask(unsigned mask);
     void setNumTimeSteps(unsigned int numTimeSteps);
     void setVertexAttributeCount(unsigned int N);
@@ -50,6 +48,7 @@ namespace embree
     void preCommit();
     void postCommit();
     bool verify();
+    void addElementsToCount (GeometryCounts & counts) const;
 
    public:
     /*! returns the number of vertices */
