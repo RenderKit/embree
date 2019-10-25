@@ -23,9 +23,9 @@
 #include "../../common/algorithms/parallel_for_for.h"
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"
 
-#define DBG_PRESPLIT(x)   x
+#define DBG_PRESPLIT(x)   
 #define CHECK_PRESPLIT(x) 
-#define TIMER_PRESPLIT(x) x
+#define TIMER_PRESPLIT(x) 
 
 #define GRID_SIZE 1024
 #define MAX_PRESPLITS_PER_PRIMITIVE_LOG 5
@@ -207,6 +207,8 @@ namespace embree
       //for (size_t k=0;k<200;k++)
       {
         TIMER_PRESPLIT(double t0 = getSeconds());
+
+        TIMER_PRESPLIT(double p0 = getSeconds());
       
         /* first try */
         progressMonitor(0);
@@ -224,13 +226,16 @@ namespace embree
             }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         }
 
+        TIMER_PRESPLIT(double p1 = getSeconds());
+        TIMER_PRESPLIT(PRINT(1000. * (p1-p0)));
+
         /* use correct number of primitives */
         size_t numPrimitives = pinfo.size();
 
 
 
         const size_t alloc_numPrimitives = prims.size(); 
-        const size_t numPrimitivesToSplit = alloc_numPrimitives - numPrimitives;
+        const size_t numSplitPrimitivesBudget = alloc_numPrimitives - numPrimitives;
 
         /* set up primitive splitter */
         SplitterFactory Splitter(scene);
@@ -240,7 +245,7 @@ namespace embree
           const size_t org_numPrimitives = pinfo.size();
           PRINT(numPrimitives);		
           PRINT(alloc_numPrimitives);		
-          PRINT(numPrimitivesToSplit);
+          PRINT(numSplitPrimitivesBudget);
           );
 
         /* allocate double buffer presplit items */
@@ -274,15 +279,17 @@ namespace embree
         TIMER_PRESPLIT(double d1 = getSeconds());
         TIMER_PRESPLIT(PRINT(1000. * (d1-d0)));
 
+
         TIMER_PRESPLIT(double d2 = getSeconds());
 
         /* compute number of splits per primitive */
         const float inv_psum = 1.0f / psum;
         parallel_for( size_t(0), numPrimitives, size_t(256), [&](const range<size_t>& r) -> void {
             for (size_t i=r.begin(); i<r.end(); i++)
+            {
               if (presplitItem[i].priority > 0.0f)
               {
-                const float rel_p = (float)numPrimitivesToSplit * presplitItem[i].priority * inv_psum;
+                const float rel_p = (float)numSplitPrimitivesBudget * presplitItem[i].priority * inv_psum;
                 if (rel_p >= PRIORITY_CUTOFF_THRESHOLD) // need at least a split budget that generates two sub-prims
                 {
                   presplitItem[i].priority = max(min(ceilf(logf(rel_p)/logf(2.0f)),(float)MAX_PRESPLITS_PER_PRIMITIVE_LOG),1.0f);
@@ -292,68 +299,49 @@ namespace embree
                 else
                   presplitItem[i].priority = 0.0f;
               }
+            }
           });
 
         TIMER_PRESPLIT(double d3 = getSeconds());
         TIMER_PRESPLIT(PRINT(1000. * (d3-d2)));
 
-
         TIMER_PRESPLIT(double d4 = getSeconds());
 
 
-        auto isLeft = [&] (const PresplitItem &ref) { return ref.priority < PRIORITY_BINARY_SEACH_THRESHOLD; };        
-        const size_t center = parallel_partitioning(presplitItem,0,numPrimitives,isLeft,1024);
-
-        PRINT(center);
-
-        /* sort presplit items in ascending order */
-        radix_sort_u32(presplitItem,tmp_presplitItem,numPrimitives,1024);
+        auto isLeft = [&] (const PresplitItem &ref) { return ref.priority < PRIORITY_CUTOFF_THRESHOLD; };        
+        size_t center = parallel_partitioning(presplitItem,0,numPrimitives,isLeft,1024);
 
         TIMER_PRESPLIT(double d5 = getSeconds());
         TIMER_PRESPLIT(PRINT(1000. * (d5-d4)));
 
-
-        CHECK_PRESPLIT(
-          parallel_for( size_t(1), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
-              for (size_t i=r.begin(); i<r.end(); i++)
-                assert(presplitItem[i-1].priority <= presplitItem[i].priority);
-            });
-          );
-
-        /* binary search to find index with priority >= 1.0f */
-        size_t l = 0;
-        size_t r = numPrimitives;		    
-        while(l+1 < r)
-        {
-          const size_t mid = (l+r)/2;
-          if (presplitItem[mid].priority < PRIORITY_BINARY_SEACH_THRESHOLD) 
-            l = mid;
-          else
-            r = mid;
-        }
-
-        DBG_PRESPLIT(
-          PRINT(psum );
-          PRINT(psum / numPrimitives);
-          PRINT(numPrimitives);
-          PRINT(r);
-          PRINT(numPrimitives-r);
-          );
-
         /* anything to split ? */
-        if (r < numPrimitives)
+        if (center < numPrimitives)
         {
-          assert(presplitItem[r].priority >= 1.0f);
-        
-          const size_t numOffsets = numPrimitives - r;
-          unsigned int *const primOffset0 = (unsigned int*)tmp_presplitItem;
-          unsigned int *const primOffset1 = (unsigned int*)tmp_presplitItem + numOffsets;
-
+          const size_t numPrimitivesToSplit = numPrimitives - center;
+          assert(presplitItem[center].priority >= 1.0f);
 
           TIMER_PRESPLIT(double d6 = getSeconds());
 
-          /* compute actual number of sub-primitives generated within the [r;numPrimitives-1] range */
-          const size_t totalNumSubPrims = parallel_reduce( size_t(r), numPrimitives, size_t(0), [&](const range<size_t>& t) -> size_t {
+          /* sort presplit items in ascending order */
+          radix_sort_u32(presplitItem + center,tmp_presplitItem + center,numPrimitivesToSplit,1024);
+
+          CHECK_PRESPLIT(
+            parallel_for( size_t(center+1), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
+                for (size_t i=r.begin(); i<r.end(); i++)
+                  assert(presplitItem[i-1].priority <= presplitItem[i].priority);
+              });
+            );
+
+          TIMER_PRESPLIT(double d7 = getSeconds());
+          TIMER_PRESPLIT(PRINT(1000. * (d7-d6)));
+
+          TIMER_PRESPLIT(double d8 = getSeconds());
+
+          unsigned int *const primOffset0 = (unsigned int*)tmp_presplitItem;
+          unsigned int *const primOffset1 = (unsigned int*)tmp_presplitItem + numPrimitivesToSplit;
+
+          /* compute actual number of sub-primitives generated within the [center;numPrimitives-1] range */
+          const size_t totalNumSubPrims = parallel_reduce( size_t(center), numPrimitives, size_t(0), [&](const range<size_t>& t) -> size_t {
               size_t sum = 0;
               for (size_t i=t.begin(); i<t.end(); i++)
               {	
@@ -370,42 +358,37 @@ namespace embree
                 numSubPrims--; // can reuse slot 
                 sum+=numSubPrims;
                 presplitItem[i].data = (numSubPrims << MAX_PRESPLITS_PER_PRIMITIVE_LOG) | split_levels;
-                primOffset0[i-r] = numSubPrims;
+                primOffset0[i-center] = numSubPrims;
               }
               return sum;
             },[](const size_t& a, const size_t& b) -> size_t { return a+b; });
         
           /* if we are over budget, need to shrink the range */
-          if (totalNumSubPrims > numPrimitivesToSplit) 
+          if (totalNumSubPrims > numSplitPrimitivesBudget) 
           {
-            size_t new_r = numPrimitives-1;
+            DBG_PRESPLIT(PRINT("SERIAL"));
+            size_t new_center = numPrimitives-1;
             size_t sum = 0;
-            for (;new_r>=r;new_r--)
+            for (;new_center>=center;new_center--)
             {
-              const unsigned int numSubPrims = presplitItem[new_r].data >> MAX_PRESPLITS_PER_PRIMITIVE_LOG;
-              if (unlikely(sum + numSubPrims >= numPrimitivesToSplit)) break;
+              const unsigned int numSubPrims = presplitItem[new_center].data >> MAX_PRESPLITS_PER_PRIMITIVE_LOG;
+              if (unlikely(sum + numSubPrims >= numSplitPrimitivesBudget)) break;
               sum += numSubPrims;
             }
-            new_r++;
-            r = new_r;
+            new_center++;
+            center = new_center;
           }
-
-          TIMER_PRESPLIT(double d7 = getSeconds());
-          TIMER_PRESPLIT(PRINT(1000. * (d7-d6)));
-
-          TIMER_PRESPLIT(double d8 = getSeconds());
-
-          /* parallel prefix sum to compute offsets for storing sub-primitives */
-          const unsigned int offset = parallel_prefix_sum(primOffset0,primOffset1,numOffsets,(unsigned int)0,std::plus<unsigned int>());
 
           TIMER_PRESPLIT(double d9 = getSeconds());
           TIMER_PRESPLIT(PRINT(1000. * (d9-d8)));
 
+          /* parallel prefix sum to compute offsets for storing sub-primitives */
+          const unsigned int offset = parallel_prefix_sum(primOffset0,primOffset1,numPrimitivesToSplit,(unsigned int)0,std::plus<unsigned int>());
 
           TIMER_PRESPLIT(double d10 = getSeconds());
 
           /* iterate over range, and split primitives into sub primitives and append them to prims array */		    
-          parallel_for( size_t(r), numPrimitives, size_t(16), [&](const range<size_t>& rn) -> void {
+          parallel_for( size_t(center), numPrimitives, size_t(64), [&](const range<size_t>& rn) -> void {
               for (size_t j=rn.begin(); j<rn.end(); j++)		    
               {
                 PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];
@@ -418,7 +401,7 @@ namespace embree
                 assert(split_levels <= MAX_PRESPLITS_PER_PRIMITIVE_LOG);
                 size_t numSubPrims = 0;
                 splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
-                const size_t newID = numPrimitives + primOffset1[j-r];              
+                const size_t newID = numPrimitives + primOffset1[j-center];              
                 assert(newID+numSubPrims <= alloc_numPrimitives);
                 prims[primrefID] = subPrims[0];
                 for (size_t i=1;i<numSubPrims;i++)
@@ -432,6 +415,7 @@ namespace embree
 
           numPrimitives += offset;
           DBG_PRESPLIT(
+            PRINT(pinfo.size());
             PRINT(numPrimitives);
             PRINT((float)numPrimitives/org_numPrimitives));                
         }
