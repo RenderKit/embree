@@ -64,9 +64,11 @@ namespace embree
 #endif
 
     /* detach all geometries */
-    for (auto& geometry : geometries)
-      if (geometry)
+    for (auto& geometry : geometries) {
+      if (geometry) {
         geometry->detach();
+      }
+  }
 
     device->refDec();
   }
@@ -618,6 +620,9 @@ namespace embree
       vertices.resize(geomID+1);
     }
     geometries[geomID] = geometry->attach(this,geomID);
+    if (geometry->isEnabled()) {
+      this->modified = true;
+    }
     return geomID;
   }
 
@@ -633,6 +638,9 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry");
     
     geometry->detach();
+    if (geometry->isEnabled()) {
+      modified = true;
+    }
     accels_deleteGeometry(unsigned(geomID));
     id_pool.deallocate((unsigned)geomID);
     geometries[geomID] = null;
@@ -783,6 +791,7 @@ namespace embree
     }
 
     /* fast path for unchanged scenes */
+    checkIfModifiedAndSet ();
     if (!isModified()) {
       scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
       return;
@@ -843,6 +852,7 @@ namespace embree
       return;
     }
 
+    checkIfModifiedAndSet ();
     if (!isModified()) {
       return;
     }

@@ -209,6 +209,17 @@ namespace embree
       modified = f; 
     }
 
+  private:
+    __forceinline void checkIfModifiedAndSet () 
+    {
+      if (std::any_of (geometries.begin(), geometries.end(),
+          [](decltype(*geometries.begin()) g) { return g ? g->isModified () : false; })) 
+      {
+          modified = true;
+      }
+    }
+  public:
+
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i].ptr; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i].ptr; }

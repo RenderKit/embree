@@ -103,17 +103,11 @@ namespace embree
   
   void Geometry::update() 
   {
-    if (scene)
-      scene->setModified();
-
     state = MODIFIED;
   }
   
   void Geometry::commit() 
   {
-    if (scene)
-      scene->setModified();
-
     state = COMMITTED;
   }
 
@@ -140,17 +134,12 @@ namespace embree
 
     this->scene = scene;
     this->geomID = geomID;
-    if (isEnabled()) {
-      scene->setModified();
-    }
+
     return this;
   }
 
   void Geometry::detach()
   {
-    if (scene && isEnabled()) {
-      scene->setModified();
-    }
     this->scene = nullptr;
     this->geomID = -1;
   }
@@ -160,10 +149,7 @@ namespace embree
     if (isEnabled()) 
       return;
 
-    if (scene) {
-      scene->setModified();
-    }
-
+    state = COMMITTED;
     enabled = true;
   }
 
@@ -171,11 +157,8 @@ namespace embree
   {
     if (isDisabled()) 
       return;
-
-    if (scene) {
-      scene->setModified();
-    }
     
+    state = COMMITTED;
     enabled = false;
   }
 
