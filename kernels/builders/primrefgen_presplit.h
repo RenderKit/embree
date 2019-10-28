@@ -67,7 +67,8 @@ namespace embree
 #if NEW_PRIO == 1
         const unsigned int diff = 31 - lzcnt(mc.x^mc.y);
         assert(area_prim <= area_aabb);
-        const float priority = powf((area_aabb - area_prim) * powf(PRIORITY_SPLIT_POS_WEIGHT,(float)diff),1.0f/4.0f);   
+        //const float priority = powf((area_aabb - area_prim) * powf(PRIORITY_SPLIT_POS_WEIGHT,(float)diff),1.0f/4.0f);   
+        const float priority = sqrtf(sqrtf( (area_aabb - area_prim) * powf(PRIORITY_SPLIT_POS_WEIGHT,(float)diff) ));
         assert(priority >= 0.0f && priority < FLT_LARGE);
 	return priority;      
 #else
@@ -199,6 +200,8 @@ namespace embree
     template<typename Mesh, typename SplitterFactory>    
       PrimInfo createPrimRefArray_presplit(Scene* scene, Geometry::GTypeMask types, bool mblur, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {	
+      static const size_t MIN_STEP_SIZE = 128;
+
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator2 iter(scene,types,mblur);
 
@@ -213,7 +216,7 @@ namespace embree
         /* first try */
         progressMonitor(0);
         pstate.init(iter,size_t(1024));
-        pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k) -> PrimInfo {
+        pinfo = parallel_for_for_prefix_sum0( pstate, iter, size_t(1024),PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k) -> PrimInfo {
             return mesh->createPrimRefArray(prims,r,k);
           }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
@@ -221,7 +224,7 @@ namespace embree
         if (unlikely(pinfo.size() != numPrimRefs))
         {
           progressMonitor(0);
-          pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
+          pinfo = parallel_for_for_prefix_sum1( pstate, iter, size_t(1024),PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
               return mesh->createPrimRefArray(prims,r,base.size());
             }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
         }
@@ -262,7 +265,7 @@ namespace embree
         TIMER_PRESPLIT(double d0 = getSeconds());
 
         /* init presplit items and get total sum */
-        const float psum = parallel_reduce( size_t(0), numPrimitives, 0.0f, [&](const range<size_t>& r) -> float {
+        const float psum = parallel_reduce( size_t(0), numPrimitives, size_t(MIN_STEP_SIZE), 0.0f, [&](const range<size_t>& r) -> float {
             float sum = 0.0f;
             for (size_t i=r.begin(); i<r.end(); i++)
             {		
@@ -284,7 +287,7 @@ namespace embree
 
         /* compute number of splits per primitive */
         const float inv_psum = 1.0f / psum;
-        parallel_for( size_t(0), numPrimitives, size_t(256), [&](const range<size_t>& r) -> void {
+        parallel_for( size_t(0), numPrimitives, size_t(MIN_STEP_SIZE), [&](const range<size_t>& r) -> void {
             for (size_t i=r.begin(); i<r.end(); i++)
             {
               if (presplitItem[i].priority > 0.0f)
@@ -326,7 +329,7 @@ namespace embree
           radix_sort_u32(presplitItem + center,tmp_presplitItem + center,numPrimitivesToSplit,1024);
 
           CHECK_PRESPLIT(
-            parallel_for( size_t(center+1), numPrimitives, size_t(1024), [&](const range<size_t>& r) -> void {
+            parallel_for( size_t(center+1), numPrimitives, size_t(MIN_STEP_SIZE), [&](const range<size_t>& r) -> void {
                 for (size_t i=r.begin(); i<r.end(); i++)
                   assert(presplitItem[i-1].priority <= presplitItem[i].priority);
               });
@@ -341,7 +344,7 @@ namespace embree
           unsigned int *const primOffset1 = (unsigned int*)tmp_presplitItem + numPrimitivesToSplit;
 
           /* compute actual number of sub-primitives generated within the [center;numPrimitives-1] range */
-          const size_t totalNumSubPrims = parallel_reduce( size_t(center), numPrimitives, size_t(0), [&](const range<size_t>& t) -> size_t {
+          const size_t totalNumSubPrims = parallel_reduce( size_t(center), numPrimitives, size_t(MIN_STEP_SIZE), size_t(0), [&](const range<size_t>& t) -> size_t {
               size_t sum = 0;
               for (size_t i=t.begin(); i<t.end(); i++)
               {	
@@ -388,7 +391,7 @@ namespace embree
           TIMER_PRESPLIT(double d10 = getSeconds());
 
           /* iterate over range, and split primitives into sub primitives and append them to prims array */		    
-          parallel_for( size_t(center), numPrimitives, size_t(64), [&](const range<size_t>& rn) -> void {
+          parallel_for( size_t(center), numPrimitives, size_t(MIN_STEP_SIZE), [&](const range<size_t>& rn) -> void {
               for (size_t j=rn.begin(); j<rn.end(); j++)		    
               {
                 PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE];
@@ -423,7 +426,7 @@ namespace embree
         TIMER_PRESPLIT(double d12 = getSeconds());
                 
         /* recompute centroid bounding boxes */
-        pinfo = parallel_reduce(size_t(0),numPrimitives,PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
+        pinfo = parallel_reduce(size_t(0),numPrimitives,size_t(MIN_STEP_SIZE),PrimInfo(empty),[&] (const range<size_t>& r) -> PrimInfo {
             PrimInfo p(empty);
             for (size_t j=r.begin(); j<r.end(); j++)
               p.add_center2(prims[j]);
