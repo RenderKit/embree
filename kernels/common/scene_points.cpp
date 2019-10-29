@@ -162,10 +162,8 @@ namespace embree
       counts.numMBPoints += numPrimitives;
   }
 
-  void Points::postCommit(Scene * scene)
+  void Points::postCommit()
   {
-    scene->vertices[geomID] = (float*)vertices0.getPtr();
-
     for (auto& buf : vertices)
       buf.setModified(false);
     for (auto& buf : normals)
@@ -173,7 +171,7 @@ namespace embree
     for (auto& attrib : vertexAttribs)
       attrib.setModified(false);
 
-    Geometry::postCommit(scene);
+    Geometry::postCommit();
   }
 
   bool Points::verify()

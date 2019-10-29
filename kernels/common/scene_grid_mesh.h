@@ -66,7 +66,7 @@ namespace embree
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
     void preCommit();
-    void postCommit(Scene * scene);
+    void postCommit();
     bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
     void addElementsToCount (GeometryCounts & counts) const;
@@ -75,6 +75,11 @@ namespace embree
     {
       const Grid &g = grid(gridID);
       return max((unsigned int)1,((unsigned int)g.resX >> 1) * ((unsigned int)g.resY >> 1));
+    }
+
+    /*! get fast access to first vertex buffer */
+    __forceinline float * getCompactVertexArray () const {
+      return (float*) vertices0.getPtr();
     }
 
   public:

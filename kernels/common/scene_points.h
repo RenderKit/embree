@@ -46,7 +46,7 @@ namespace embree
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
     void preCommit();
-    void postCommit(Scene * scene);
+    void postCommit();
     bool verify();
     void addElementsToCount (GeometryCounts & counts) const;
 
@@ -207,6 +207,11 @@ namespace embree
         return false;
       bbox = linearBounds(i, time_range);
       return true;
+    }
+
+    /*! get fast access to first vertex buffer */
+    __forceinline float * getCompactVertexArray () const {
+      return (float*) vertices0.getPtr();
     }
 
     /* returns true if topology changed */

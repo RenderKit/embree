@@ -163,17 +163,15 @@ namespace embree
     else                   counts.numMBGrids += numPrimitives;
   }
 
-  void GridMesh::postCommit(Scene * scene) 
+  void GridMesh::postCommit() 
   {
-    scene->vertices[geomID] = (float*) vertices0.getPtr();
-
     grids.setModified(false);
     for (auto& buf : vertices)
       buf.setModified(false);
     for (auto& attrib : vertexAttribs)
       attrib.setModified(false);
     
-    Geometry::postCommit(scene);
+    Geometry::postCommit();
   }
 
   bool GridMesh::verify() 

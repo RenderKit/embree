@@ -386,7 +386,7 @@ namespace embree
     Geometry::preCommit();
   }
 
-  void CurveGeometry::postCommit(Scene * scene) 
+  void CurveGeometry::postCommit() 
   {
     curves.setModified(false);
     for (auto& buf : vertices) buf.setModified(false);
@@ -396,7 +396,7 @@ namespace embree
     for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
-    Geometry::postCommit(scene);
+    Geometry::postCommit();
   }
 
 #endif
