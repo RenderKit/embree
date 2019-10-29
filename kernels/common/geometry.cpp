@@ -56,7 +56,7 @@ namespace embree
   };
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
-    : device(device), scene(nullptr), userPtr(nullptr),
+    : device(device), scene_(nullptr), userPtr(nullptr),
       geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
       mask(-1),
       gtype(gtype),
@@ -117,7 +117,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry not committed");
   }
 
-  void Geometry::postCommit()
+  void Geometry::postCommit(Scene * /* scene */)
   {
     numPrimitivesChanged = false;
     
@@ -129,10 +129,10 @@ namespace embree
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
     assert(scene);
-    if (this->scene)
-      this->scene->detachGeometry(this->geomID);
+    if (this->scene_)
+      this->scene_->detachGeometry(this->geomID);
 
-    this->scene = scene;
+    this->scene_ = scene;
     this->geomID = geomID;
 
     return this;
@@ -140,7 +140,7 @@ namespace embree
 
   void Geometry::detach()
   {
-    this->scene = nullptr;
+    this->scene_ = nullptr;
     this->geomID = -1;
   }
   

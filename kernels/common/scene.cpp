@@ -726,7 +726,7 @@ namespace embree
     /* call postCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {
         if (geometries[i] && geometries[i]->isEnabled())
-          geometries[i]->postCommit();
+          geometries[i]->postCommit(this);
       });
       
     updateInterface();

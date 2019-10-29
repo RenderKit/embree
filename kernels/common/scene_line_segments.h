@@ -41,7 +41,7 @@ namespace embree
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
     void preCommit();
-    void postCommit();
+    void postCommit(Scene * scene);
     bool verify ();
     void interpolate(const RTCInterpolateArguments* const args);
     void setTessellationRate(float N);

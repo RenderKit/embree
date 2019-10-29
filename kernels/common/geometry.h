@@ -354,7 +354,7 @@ namespace embree
     virtual void preCommit();
   
     /*! called after every build */
-    virtual void postCommit();
+    virtual void postCommit(Scene * scene);
 
     virtual void addElementsToCount (GeometryCounts & counts) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
@@ -548,7 +548,7 @@ namespace embree
 
   public:
     Device* device;             //!< device this geometry belongs to
-    Scene* scene;               //!< pointer to scene this mesh belongs to
+    Scene* scene_;               //!< pointer to scene this mesh belongs to
 
     void* userPtr;              //!< user pointer
     unsigned int geomID;        //!< internal geometry ID

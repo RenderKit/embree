@@ -163,7 +163,7 @@ namespace embree
     else                   counts.numMBTriangles += numPrimitives;
   }
 
-  void TriangleMesh::postCommit() 
+  void TriangleMesh::postCommit(Scene * scene) 
   {
     scene->vertices[geomID] = (float*) vertices0.getPtr();
 
@@ -173,7 +173,7 @@ namespace embree
     for (auto& attrib : vertexAttribs)
       attrib.setModified(false);
     
-    Geometry::postCommit();
+    Geometry::postCommit(scene);
   }
 
   bool TriangleMesh::verify() 
