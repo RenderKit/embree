@@ -117,7 +117,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry not committed");
   }
 
-  void Geometry::postCommit(Scene * /* scene */)
+  void Geometry::postCommit()
   {
     numPrimitivesChanged = false;
     

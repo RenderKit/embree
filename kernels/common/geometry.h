@@ -354,7 +354,7 @@ namespace embree
     virtual void preCommit();
   
     /*! called after every build */
-    virtual void postCommit(Scene * scene);
+    virtual void postCommit();
 
     virtual void addElementsToCount (GeometryCounts & counts) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
@@ -417,6 +417,11 @@ namespace embree
 
     virtual unsigned int getOppositeHalfEdge(unsigned int topologyID, unsigned int edgeID) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! get fast access to first vertex buffer if applicable */
+    virtual float * getCompactVertexArray () const {
+      return nullptr;
     }
 
     /*! for triangle meshes and bezier curves only */

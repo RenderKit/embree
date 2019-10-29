@@ -163,17 +163,15 @@ namespace embree
     else                   counts.numMBQuads += numPrimitives;
   }
 
-  void QuadMesh::postCommit(Scene * scene) 
+  void QuadMesh::postCommit() 
   {
-    scene->vertices[geomID] = (float*) vertices0.getPtr();
-
     quads.setModified(false);
     for (auto& buf : vertices)
       buf.setModified(false);
     for (auto& attrib : vertexAttribs)
       attrib.setModified(false);
 
-    Geometry::postCommit(scene);
+    Geometry::postCommit();
   }
 
   bool QuadMesh::verify() 
