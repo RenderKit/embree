@@ -284,7 +284,6 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
     //PRINT(g_scene);
     //cl::sycl::global_ptr<RTCSceneTy> sycl_scene(g_scene);
-    cl::sycl::global_ptr<int> sycl_scene(test);
     
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
 	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));
@@ -308,7 +307,9 @@ extern "C" void device_render (int* pixels,
 		rh.ray.tfar  = (float)INFINITY;		
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-#if 0		
+#if 1
+		cl::sycl::global_ptr<int> sycl_scene(test);
+		
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		const uint subgroupID      = sg.get_group_id()[0];      
 		if (x == 0 && y == 0)
