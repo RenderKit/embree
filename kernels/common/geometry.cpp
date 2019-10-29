@@ -56,7 +56,7 @@ namespace embree
   };
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
-    : device(device), scene_(nullptr), userPtr(nullptr),
+    : device(device), userPtr(nullptr),
       geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
       mask(-1),
       gtype(gtype),
@@ -128,11 +128,7 @@ namespace embree
 
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
-    assert(scene);
-    if (this->scene_)
-      this->scene_->detachGeometry(this->geomID);
 
-    this->scene_ = scene;
     this->geomID = geomID;
 
     return this;
@@ -140,7 +136,6 @@ namespace embree
 
   void Geometry::detach()
   {
-    this->scene_ = nullptr;
     this->geomID = -1;
   }
   
