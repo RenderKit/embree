@@ -275,4 +275,22 @@ namespace embree
       return begin+p->partition(leftReduction,rightReduction);    
     }
   }
+
+
+  template<typename T, typename IsLeft>
+    inline size_t parallel_partitioning(T* array, 
+                                        const size_t begin,
+                                        const size_t end, 
+                                        const IsLeft& is_left, 
+                                        size_t BLOCK_SIZE = 128)
+  {
+    size_t leftReduction = 0;
+    size_t rightReduction = 0;
+    return parallel_partitioning(
+      array,begin,end,0,leftReduction,rightReduction,is_left,
+      [] (size_t& t,const T& ref) {  },
+      [] (size_t& t0,size_t& t1) { },
+      BLOCK_SIZE);
+  }
+
 }
