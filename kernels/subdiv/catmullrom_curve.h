@@ -18,6 +18,14 @@
 
 #include "../common/default.h"
 
+/*
+
+  Implements Catmul Rom curves with control points p0, p1, p2, p3. At
+  t=0 the curve goes through p1, with tangent (p2-p0)/3, and for t=1
+  the curve goes through p2 with tangent (p3-p2)/2.
+
+ */
+
 namespace embree
 {
   class CatmullRomBasis

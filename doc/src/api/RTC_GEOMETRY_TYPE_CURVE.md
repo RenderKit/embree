@@ -140,7 +140,7 @@ buffer from the control points.
 
 For the Catmull-Rom basis the indices point to the first of 4
 consecutive control points in the vertex buffer.  This basis goes
-through p0 and p3, with p0-p1 and p2-p3 tangents.
+through p1 and p2, with tangents (p2-p0)/2 and (p3-p2)/2.
 
 The `RTC_GEOMETRY_TYPE_FLAT_*` flat mode is a fast mode designed to
 render distant hair. In this mode the curve is rendered as a connected
