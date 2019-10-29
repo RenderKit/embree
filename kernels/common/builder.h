@@ -65,9 +65,9 @@ namespace embree
 
   class Scene;
 
-  typedef void (*createLineSegmentsAccelTy)(LineSegments* mesh, AccelData*& accel, Builder*& builder);
-  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-  typedef void (*createQuadMeshAccelTy)(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
-  typedef void (*createUserGeometryAccelTy)(UserGeometry* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createLineSegmentsAccelTy)(Scene* scene, LineSegments* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createTriangleMeshAccelTy)(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createQuadMeshAccelTy)(Scene* scene, QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createUserGeometryAccelTy)(Scene* scene, UserGeometry* mesh, AccelData*& accel, Builder*& builder);
 
 }

@@ -488,31 +488,31 @@ namespace embree
 #endif
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4Morton(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4::type,scene);
     builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4vMorton(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4v::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4v::type,scene);
     builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4iMorton(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4i::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4i::type,scene);
     builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4::type,scene);
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
@@ -522,10 +522,10 @@ namespace embree
     }
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4v(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4v::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4v::type,scene);
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
@@ -535,10 +535,10 @@ namespace embree
     }
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4i(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4i::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4i::type,scene);
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
@@ -548,10 +548,10 @@ namespace embree
     }
   }
 
-  void BVH8Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createQuadMeshQuad4v(Scene* scene, QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Quad4v::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Quad4v::type,scene);
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
@@ -561,17 +561,17 @@ namespace embree
     }
   }
 
-  void BVH8Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createQuadMeshQuad4vMorton(Scene* scene, QuadMesh* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Quad4v::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Quad4v::type,scene);
     builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
   }
 
-  void BVH8Factory::createUserGeometryMesh(UserGeometry* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createUserGeometryMesh(Scene* scene, UserGeometry* mesh, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene_->device->bvh8_factory.get();
-    accel = new BVH8(Object::type,mesh->scene_);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Object::type,scene);
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8VirtualMeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
