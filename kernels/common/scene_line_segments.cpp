@@ -220,7 +220,7 @@ namespace embree
     else                   counts.numMBLineSegments += numPrimitives;
   }
 
-  void LineSegments::postCommit() 
+  void LineSegments::postCommit(Scene * scene) 
   {
     scene->vertices[geomID] = (float*) vertices0.getPtr();
 
@@ -230,7 +230,7 @@ namespace embree
     for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
-    Geometry::postCommit();
+    Geometry::postCommit(scene);
   }
 
   bool LineSegments::verify ()
