@@ -548,7 +548,6 @@ namespace embree
 
   public:
     Device* device;             //!< device this geometry belongs to
-    Scene* scene_;               //!< pointer to scene this mesh belongs to
 
     void* userPtr;              //!< user pointer
     unsigned int geomID;        //!< internal geometry ID
