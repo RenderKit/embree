@@ -92,6 +92,10 @@ def runConfig(config):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"V141\"")
       ispc_ext = "-vs2015"
+    elif (compiler == "V141_CLANG"):
+      conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
+      conf.append("-T \"v141_clang_c2\"")
+      ispc_ext = "-vs2015"
     elif (compiler == "V140"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"V140\"")
