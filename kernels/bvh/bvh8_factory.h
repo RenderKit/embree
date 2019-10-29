@@ -55,17 +55,17 @@ namespace embree
     Accel* BVH8Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
     Accel* BVH8GridMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
   
-    static void createTriangleMeshTriangle4Morton (TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4 (TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4Morton (Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4vMorton(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4iMorton(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4 (Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4v(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4i(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
 
-    static void createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createQuadMeshQuad4vMorton(Scene* scene, QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createQuadMeshQuad4v(Scene* scene, QuadMesh* mesh, AccelData*& accel, Builder*& builder);
 
-    static void createUserGeometryMesh(UserGeometry* mesh, AccelData*& accel, Builder*& builder);
+    static void createUserGeometryMesh(Scene* scene, UserGeometry* mesh, AccelData*& accel, Builder*& builder);
 
   private:
     void selectBuilders(int features);

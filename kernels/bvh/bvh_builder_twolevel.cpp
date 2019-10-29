@@ -98,7 +98,7 @@ namespace embree
           /* create BVH and builder for new meshes */
           if (objects[objectID] == nullptr) {
             Builder* builder = nullptr;
-            createMeshAccel(mesh,(AccelData*&)objects[objectID],builder);
+            createMeshAccel(scene, mesh,(AccelData*&)objects[objectID],builder);
             builders[objectID] = BuilderState(builder,mesh->quality);
           }
 
@@ -106,7 +106,7 @@ namespace embree
           else if (mesh->quality != builders[objectID].quality) {
             Builder* builder = nullptr;
             delete objects[objectID]; 
-            createMeshAccel(mesh,(AccelData*&)objects[objectID],builder);
+            createMeshAccel(scene, mesh,(AccelData*&)objects[objectID],builder);
             builders[objectID] = BuilderState(builder,mesh->quality);
           }
         }

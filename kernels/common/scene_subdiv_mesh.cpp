@@ -649,11 +649,11 @@ namespace embree
     else if (update) updateHalfEdges();
    
     /* cleanup some state for static scenes */
-    if (mesh->scene_ == nullptr || mesh->scene_->isStaticAccel()) 
+    /* if (mesh->scene_ == nullptr || mesh->scene_->isStaticAccel()) 
     {
       halfEdges0.clear();
       halfEdges1.clear();
-    }
+    } */
 
     /* clear modified state of all buffers */
     vertexIndices.setModified(false); 
@@ -727,11 +727,11 @@ namespace embree
       if (vertexAttribs[i]) vertex_attrib_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertexAttribs[i].getStride()));
 
     /* cleanup some state for static scenes */
-    if (scene_ == nullptr || scene_->isStaticAccel()) 
+    /* if (scene_ == nullptr || scene_->isStaticAccel()) 
     {
       vertexCreaseMap.clear();
       edgeCreaseMap.clear();
-    }
+    } */
 
     /* clear modified state of all buffers */
     faceVertices.setModified(false);
