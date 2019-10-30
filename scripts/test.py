@@ -124,8 +124,9 @@ def runConfig(config):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler XE 15.0\"")
     elif (compiler == "CLANG"):
-      conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
-      conf.append("-T \"LLVM-vs2013\"")
+      conf.append("-G \"Visual Studio 16 2019\"")
+      conf.append("-A "+platform)
+      conf.append("-T \"LLVM_v142\"")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
     
