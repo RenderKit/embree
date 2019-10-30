@@ -23,14 +23,7 @@
 #endif
 
 #define DBG(x) 
-
-#if defined(ENABLE_RAY_STATS)
-#define RAY_STATS(x) x
-#else
-#define RAY_STATS(x) 
-#endif
-
-#define TSTATS(x) x
+#define TSTATS(x) 
 
 #define STACK_CULLING 1
 
@@ -75,7 +68,7 @@ namespace embree
 
     
     template<typename Primitive>
-    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, TraversalStats *tstats, const cl::sycl::stream &out)
+    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, TraversalStats *tstats)
     {
       unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
       float        stack_dist[BVH_MAX_STACK_ENTRIES];  
@@ -229,7 +222,7 @@ namespace embree
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint groupID   = item.get_group(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();		
-		traceRayBVH16<Primitive>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,tstats,out);
+		traceRayBVH16<Primitive>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,tstats);
 	      });		  
 	  });
 	try {
