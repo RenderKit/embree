@@ -111,7 +111,7 @@ namespace embree
         Scene::Iterator<SubdivMesh> iter(scene);
         pstate.init(iter,size_t(1024));
 
-        PrimInfo pinfo1 = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, unsigned int /*geomID*/) -> PrimInfo
+        PrimInfo pinfo1 = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t /*geomID*/) -> PrimInfo
         { 
           size_t p = 0;
           size_t g = 0;
@@ -140,7 +140,7 @@ namespace embree
           return;
         }
 
-        PrimInfo pinfo3 = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, unsigned int /*geomID*/, const PrimInfo& base) -> PrimInfo
+        PrimInfo pinfo3 = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t /*geomID*/, const PrimInfo& base) -> PrimInfo
         {
           Allocator alloc = bvh->alloc.getCachedAllocator();
           
@@ -251,7 +251,7 @@ namespace embree
         Scene::Iterator<SubdivMesh,true> iter(scene);
         pstate.init(iter,size_t(1024));
 
-        PrimInfoMB pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, unsigned int /*geomID*/) -> PrimInfoMB
+        PrimInfoMB pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t /*geomID*/) -> PrimInfoMB
         { 
           size_t s = 0;
           size_t sMB = 0;
@@ -276,7 +276,7 @@ namespace embree
         bvh->alloc.reset();
 
         Scene::Iterator<SubdivMesh,true> iter(scene);
-        PrimInfoMB pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, unsigned int geomID, const PrimInfoMB& base) -> PrimInfoMB
+        PrimInfoMB pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t geomID, const PrimInfoMB& base) -> PrimInfoMB
         {
           size_t s = 0;
           size_t sMB = 0;
