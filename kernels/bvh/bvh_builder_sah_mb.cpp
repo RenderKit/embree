@@ -506,7 +506,7 @@ namespace embree
 
         pstate.init(iter,size_t(1024));
         /* iterate over all meshes in the scene */
-        PrimInfoMB pinfoMB = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, unsigned int /*geomID*/) -> PrimInfoMB
+        PrimInfoMB pinfoMB = parallel_for_for_prefix_sum0( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, size_t /*geomID*/) -> PrimInfoMB
                                                        {
                                                          PrimInfoMB pinfoMB(empty);
                                                          for (size_t j=r.begin(); j<r.end(); j++)
@@ -525,7 +525,7 @@ namespace embree
         sgrids.resize(numPrimitives); 
         prims.resize(numPrimitives); 
         /* second run to fill primrefs and SubGridBuildData arrays */
-        pinfoMB = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, unsigned int geomID, const PrimInfoMB& base) -> PrimInfoMB
+        pinfoMB = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, size_t geomID, const PrimInfoMB& base) -> PrimInfoMB
                                               {
                                                 k = base.size();
                                                 size_t p_index = k;

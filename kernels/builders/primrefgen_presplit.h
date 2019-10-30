@@ -156,7 +156,7 @@ namespace embree
     
     
     template<typename Mesh, typename SplitterFactory>    
-      PrimInfo createPrimRefArray_presplit(Geometry* geometry, unsigned int geomID, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+      PrimInfo createPrimRefArray_presplit(Geometry* geometry, size_t geomID, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;
       
@@ -204,7 +204,7 @@ namespace embree
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
-      PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i) -> PrimInfo {
+      PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, size_t i) -> PrimInfo {
 	  return mesh->createPrimRefArray(prims,r,k,i);
 	}, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
@@ -212,7 +212,7 @@ namespace embree
       if (pinfo.size() != numPrimRefs)
 	{
 	  progressMonitor(0);
-	  pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i, const PrimInfo& base) -> PrimInfo {
+	  pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, size_t i, const PrimInfo& base) -> PrimInfo {
 	      return mesh->createPrimRefArray(prims,r,base.size(),i);
 	    }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 	}
