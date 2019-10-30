@@ -55,17 +55,17 @@ namespace embree
     Accel* BVH8Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
     Accel* BVH8GridMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
   
-    static void createTriangleMeshTriangle4Morton (Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4vMorton(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4iMorton(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4 (Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4v(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4i(Scene* scene, TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4Morton (Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4vMorton(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4iMorton(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4 (Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4v(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4i(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
 
-    static void createQuadMeshQuad4vMorton(Scene* scene, QuadMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createQuadMeshQuad4v(Scene* scene, QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createQuadMeshQuad4vMorton(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
+    static void createQuadMeshQuad4v(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
 
-    static void createUserGeometryMesh(Scene* scene, UserGeometry* mesh, AccelData*& accel, Builder*& builder);
+    static void createUserGeometryMesh(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder);
 
   private:
     void selectBuilders(int features);
@@ -299,19 +299,19 @@ namespace embree
  
     // SAH mesh builders
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA size_t COMMA size_t);
 
     // mesh refitters
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA size_t COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA size_t COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH8GridMeshBuilderSAH,void* COMMA GridMesh* COMMA size_t);
 
     // morton mesh builders

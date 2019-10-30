@@ -136,7 +136,7 @@ namespace embree
       InstanceISA (Device* device)
         : Instance(device) {}
 
-      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);

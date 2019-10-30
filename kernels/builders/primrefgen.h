@@ -26,7 +26,7 @@ namespace embree
 {
   namespace isa
   {
-    PrimInfo createPrimRefArray(Geometry* geometry, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    PrimInfo createPrimRefArray(Geometry* geometry, unsigned int geomID, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
    
     PrimInfo createPrimRefArray(Scene* scene, Geometry::GTypeMask types, bool mblur, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
    
