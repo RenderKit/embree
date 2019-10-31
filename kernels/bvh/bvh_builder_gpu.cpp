@@ -37,6 +37,9 @@
 #define ENABLE_STATS 1
 #define BUILD_CHECKS 0
 
+//#define DBG_PRINT_BUFFER_SIZE 1024*1024
+#define DBG_PRINT_BUFFER_SIZE 0
+#define DBG_PRINT_LINE_SIZE 512
 
 namespace embree
 {
@@ -229,7 +232,7 @@ namespace embree
 
     uint sindex = 1;
     stack[0] = record;
-        
+    
     while(sindex) 
       {
 	/* next element from stack */
@@ -248,10 +251,10 @@ namespace embree
 	
 	/*! create a leaf node when #items < threshold */
 	if (items <= cfg_minLeafSize)
-	  {
+	  {	    
 	    if (subgroup.get_local_id() == 0)
 	      {
-		const uint leaf_offset = createLeaf(globals,current.start,items);		
+		const uint leaf_offset = createLeaf(globals,current.start,items);
 		DBG_BUILD(out << "leaf_offset " << leaf_offset << cl::sycl::endl);
 		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);		
 	      }
@@ -303,7 +306,7 @@ namespace embree
 		DBG_BUILD(if (subgroup.get_local_id() == 0) out << "split " << split << cl::sycl::endl);
 		
 		serial_partition_index(subgroup,primref,binMapping,brecord,split,lrecord,rrecord,childrenAABB[bestChild],childrenAABB[numChildren],primref_index0,primref_index1,out);		    
-		numChildren++;		
+		numChildren++;
 	      }
 
 	    /* sort children based on range size */
@@ -315,6 +318,7 @@ namespace embree
 #else	    
 	    const uint IDs = subgroupLocalID; 
 #endif
+	    
 	    /* create bvh node */
 	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem,out);
 
@@ -428,49 +432,87 @@ namespace embree
     gpu::AABB rightAABB;
     leftAABB.init();
     rightAABB.init();
-      
-    const uint startID = begin + ((subgroupID+0)*size/numSubGroups);
-    const uint endID   = begin + ((subgroupID+1)*size/numSubGroups);
-  
-    for (uint i=startID + subgroupLocalID;i<endID;i+=subgroupSize)
+
+    if (split.sah == (float)(INFINITY))
       {
-	const uint index       = primref_index1[i];
-	const uint isLeft      = is_left(binMapping, split,primref[index]) ? 1 : 0;
-	const uint isRight     = 1 - isLeft;
-	const uint countLeft   = sg.reduce<uint>(isLeft, cl::sycl::intel::plus<>());
-	const uint countRight  = sg.reduce<uint>(isRight, cl::sycl::intel::plus<>());
-	const uint prefixLeft  = sg.exclusive_scan<uint>(isLeft, cl::sycl::intel::plus<>());
-	const uint prefixRight = sg.exclusive_scan<uint>(isRight, cl::sycl::intel::plus<>());
-
-	uint offsetLeft  = subgroupLocalID == 0 ? gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>(atomicCountLeft,  countLeft) : 0;
-	offsetLeft = sg.broadcast<uint>(offsetLeft,0);
-	uint offsetRight = subgroupLocalID == 0 ? gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>(atomicCountRight,countRight) : 0;
-	offsetRight = sg.broadcast<uint>(offsetRight,0);
-
-	const gpu::AABB &pref = primref[index];
-	if (isLeft)
+	if (subgroupID == 0)
 	  {
-	    left.extend(pref);
-	    leftAABB.extend(pref);
-	    primref_index0[begin + offsetLeft + prefixLeft] = index;
-	  }
-	else
-	  {
-	    right.extend(pref);
-	    rightAABB.extend(pref);
-	    primref_index0[end - (offsetRight+countRight) + prefixRight] = index;
-	  }             
+	    for (uint i=begin + subgroupLocalID;i<split.pos;i+=subgroupSize)
+	      {
+		const uint index       = primref_index1[i];
+		left.extend(primref[index]);
+		leftAABB.extend(primref[index]);
+		primref_index0[i] = index;
+	      }
+	    
+	    for (uint i=split.pos + subgroupLocalID;i<end;i+=subgroupSize)
+	      {
+		const uint index       = primref_index1[i];
+		right.extend(primref[index]);
+		rightAABB.extend(primref[index]);
+		primref_index0[i] = index;
+	      }
+	    left.centroidBounds  = left.centroidBounds.sub_group_reduce(sg);
+	    right.centroidBounds = right.centroidBounds.sub_group_reduce(sg);
+	    leftAABB  = leftAABB.sub_group_reduce(sg);
+	    rightAABB = rightAABB.sub_group_reduce(sg);
+
+	    outLeft->centroidBounds  = left.centroidBounds;
+	    outRight->centroidBounds = right.centroidBounds;
+
+	    *outGeometryBoundsLeft = leftAABB;
+	    *outGeometryBoundsRight = rightAABB;
+
+	    *atomicCountLeft = split.pos - begin;
+	    // if (localID == 0)
+	    //   out << record << " - > left " << *outLeft << " right " << *outRight << cl::sycl::endl;
+	  }	
       }
-    left.centroidBounds  = left.centroidBounds.sub_group_reduce(sg);
-    right.centroidBounds = right.centroidBounds.sub_group_reduce(sg);
-    leftAABB  = leftAABB.sub_group_reduce(sg);
-    rightAABB = rightAABB.sub_group_reduce(sg);
+    else
+      {
+	const uint startID = begin + ((subgroupID+0)*size/numSubGroups);
+	const uint endID   = begin + ((subgroupID+1)*size/numSubGroups);
+  
+	for (uint i=startID + subgroupLocalID;i<endID;i+=subgroupSize)
+	  {
+	    const uint index       = primref_index1[i];
+	    const uint isLeft      = is_left(binMapping, split,primref[index]) ? 1 : 0;
+	    const uint isRight     = 1 - isLeft;
+	    const uint countLeft   = sg.reduce<uint>(isLeft, cl::sycl::intel::plus<>());
+	    const uint countRight  = sg.reduce<uint>(isRight, cl::sycl::intel::plus<>());
+	    const uint prefixLeft  = sg.exclusive_scan<uint>(isLeft, cl::sycl::intel::plus<>());
+	    const uint prefixRight = sg.exclusive_scan<uint>(isRight, cl::sycl::intel::plus<>());
 
-    left.centroidBounds.atomic_merge_local(outLeft->centroidBounds);
-    right.centroidBounds.atomic_merge_local(outRight->centroidBounds);
+	    uint offsetLeft  = subgroupLocalID == 0 ? gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>(atomicCountLeft,  countLeft) : 0;
+	    offsetLeft = sg.broadcast<uint>(offsetLeft,0);
+	    uint offsetRight = subgroupLocalID == 0 ? gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>(atomicCountRight,countRight) : 0;
+	    offsetRight = sg.broadcast<uint>(offsetRight,0);
 
-    leftAABB.atomic_merge_local(*outGeometryBoundsLeft);
-    rightAABB.atomic_merge_local(*outGeometryBoundsRight);
+	    const gpu::AABB &pref = primref[index];
+	    if (isLeft)
+	      {
+		left.extend(pref);
+		leftAABB.extend(pref);
+		primref_index0[begin + offsetLeft + prefixLeft] = index;
+	      }
+	    else
+	      {
+		right.extend(pref);
+		rightAABB.extend(pref);
+		primref_index0[end - (offsetRight+countRight) + prefixRight] = index;
+	      }             
+	  }
+	left.centroidBounds  = left.centroidBounds.sub_group_reduce(sg);
+	right.centroidBounds = right.centroidBounds.sub_group_reduce(sg);
+	leftAABB  = leftAABB.sub_group_reduce(sg);
+	rightAABB = rightAABB.sub_group_reduce(sg);
+
+	left.centroidBounds.atomic_merge_local(outLeft->centroidBounds);
+	right.centroidBounds.atomic_merge_local(outRight->centroidBounds);
+
+	leftAABB.atomic_merge_local(*outGeometryBoundsLeft);
+	rightAABB.atomic_merge_local(*outGeometryBoundsRight);
+      }
 
     item.barrier(cl::sycl::access::fence_space::local_space);
 
@@ -549,20 +591,17 @@ namespace embree
 		  out << record << cl::sycl::endl;
 		});
 
+    
     local_current = record;
+
     
     item.barrier(cl::sycl::access::fence_space::global_and_local);
-
+    
     if (local_current.size() >= subtreeThreshold)
       {
 	gpu::BinMapping binMapping;    
 	binMapping.init(record.centroidBounds,2*BINS);    
 	parallel_find_split(item,local_current,primref,bestSplit,binMapping,binInfo2,primref_index0,primref_index1,out);
-
-	DBG_BUILD(
-		  if (localID == 0)
-		    out << "bestSplit " << bestSplit << cl::sycl::endl;
-		  );
     
 	parallel_partition_index(item,local_current,primref,bestSplit,binMapping,&children[0],&children[1],&childrenAABB[0],&childrenAABB[1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
 
@@ -587,7 +626,7 @@ namespace embree
 	    if (bestChild == -1) break;
 
 	    /* perform best found split */
-	    gpu::BuildRecord &brecord = children[bestChild];
+	    gpu::BuildRecord brecord = children[bestChild];
 	    gpu::BuildRecord &lrecord = children[numChildren+0];
 	    gpu::BuildRecord &rrecord = children[numChildren+1];	
 	  
@@ -600,14 +639,17 @@ namespace embree
 		      );
 	    
 	    parallel_partition_index(item,brecord,primref,bestSplit,binMapping,&lrecord,&rrecord,&childrenAABB[numChildren+0],&childrenAABB[numChildren+1],primref_index0,primref_index1,atomicCountLeft,atomicCountRight,out);
-	    brecord = rrecord;
-	    childrenAABB[bestChild] = childrenAABB[numChildren+1];
 	    
+	    children[bestChild] = rrecord;
+	    childrenAABB[bestChild] = childrenAABB[numChildren+1];
+
 	    item.barrier(cl::sycl::access::fence_space::global_and_local);
 	  
 	    numChildren++;
 	  }
 
+	//subgroup.barrier(cl::sycl::access::fence_space::local_space);
+	
 	if (localID <= 16 && subgroupID == 0)
 	  {
 	    /* sort children based on size */
@@ -624,24 +666,21 @@ namespace embree
 	    struct gpu::QBVHNodeN *node = (struct gpu::QBVHNodeN*)(bvh_mem + node_offset);
 	    if (subgroupLocalID < numChildren)
 	      children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
+
 	    
 	    /* write out child buildrecords to memory */	  
 	    if (localID == 0)
 	      {
-		DBG_BUILD(out << "numChildren " << numChildren << cl::sycl::endl);
-		
 		/* update parent pointer */
 		if (local_current.parent != nullptr)
 		  *local_current.parent = gpu::encodeOffset(bvh_mem,local_current.parent,node_offset);
 
 		uint global_records_offset = gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&globals.numBuildRecords_extended,numChildren-1);
-
-		DBG_BUILD(out << "global_records_offset " << global_records_offset << cl::sycl::endl);
 		
 		records[recordID] = children[0];
 		  
 		for (uint i=1;i<numChildren;i++)
-		  records[globals.numBuildRecords + global_records_offset+i-1] = children[i];				
+		  records[globals.numBuildRecords + global_records_offset+i-1] = children[i];		
 	      }
 	  }
 	item.barrier(cl::sycl::access::fence_space::global_and_local);	
@@ -656,12 +695,7 @@ namespace embree
 	    globals.sync = 0;
 	    /* set final number of buildrecords */
 	    globals.numBuildRecords += globals.numBuildRecords_extended;
-	    globals.numBuildRecords_extended = 0;
-	    DBG_BUILD(
-		      out << "globals.numBuildRecords " << globals.numBuildRecords << cl::sycl::endl;
-		      for (uint i=0;i<globals.numBuildRecords;i++)
-			out << i << " -> " << records[i] << cl::sycl::endl;
-		      );
+	    globals.numBuildRecords_extended = 0;		     
 	  }
       }
   }
@@ -757,9 +791,9 @@ namespace embree
 		    break;
 		  }
 		
-		if (nodeN->offset[i] > globals->totalAllocatedMem || (int)nodeN->offset[i] < 0)
+		if (nodeN->offset[i] > globals->totalAllocatedMem)
 		  {
-		    out << "offset error " << i << " nodeN->offset[i] " << nodeN->offset[i] << cl::sycl::endl;
+		    out << "offset error " << i << " nodeN->offset[i] " << nodeN->offset[i] << " total allocated " << globals->totalAllocatedMem << cl::sycl::endl;
 		    break;
 		  }
 				
@@ -1025,7 +1059,6 @@ namespace embree
 
 #if ENABLE_BREADTH_FIRST_PHASE == 1
 	    double t1 = getSeconds();
-	    
 	    uint old_numBuildRecords = 0;
 	    while(old_numBuildRecords != globals->numBuildRecords)
 	    {
@@ -1063,7 +1096,6 @@ namespace embree
 			  << e.what() << std::endl;
 		FATAL("OpenCL Exception");     		
 	      }
-	      //PRINT(globals->numBuildRecords);	      
 	    }
 
 	    double t2 = getSeconds();
@@ -1074,7 +1106,6 @@ namespace embree
 	    /* --- single HW thread recursive build (device) --- */
 	    
 	    t1 = getSeconds();
-	    
 #if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
 	    const uint numParallelRecords = 1;
 #else
@@ -1109,7 +1140,7 @@ namespace embree
 #else
 			const uint recordID = groupID;
 #endif			
-			bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);
+		      bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);
 		    });		  
 		});
 	      try {

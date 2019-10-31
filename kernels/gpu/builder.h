@@ -23,7 +23,7 @@
 #include "geometry.h"
 
 
-#define BUILDRECORD_STACK_SIZE 64
+#define BUILDRECORD_STACK_SIZE 96
 #define SAH_LOG_BLOCK_SHIFT     2
 #define BVH_LEAF_N_MIN          4
 #define BVH_LEAF_N_MAX          4
@@ -555,7 +555,7 @@ namespace embree
     inline uint createLeaf(const Globals &globals,		 
 			   const uint start,
 			   const uint items)
-    {
+    {	
       const uint offset = globals.leaf_mem_allocator_start + start * globals.leafSize;
       const unsigned int final = offset | BVH_LEAF_MASK | (items-1);
       return final;
