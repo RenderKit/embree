@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -77,8 +77,10 @@ namespace embree
         const vfloat<M> t_lower_z = (vz_lower-vfloat<M>(org2.z))*vfloat<M>(rcp_dir2.z);
         const vfloat<M> t_upper_z = (vz_upper-vfloat<M>(org2.z))*vfloat<M>(rcp_dir2.z);
 
-        const vfloat<M> tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat<M>(ray.tnear()));
-        const vfloat<M> tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar));
+        const vfloat<M> round_up  (1.0f+3.0f*float(ulp));
+        const vfloat<M> round_down(1.0f-3.0f*float(ulp));
+        const vfloat<M> tNear = round_down*max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat<M>(ray.tnear()));
+        const vfloat<M> tFar  = round_up  *min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar));
         tNear_o = tNear;
         return (vint<M>(step) < vint<M>(prim.N)) & (tNear <= tFar);
       }
@@ -324,8 +326,10 @@ namespace embree
         const vfloat<M> t_lower_z = (vz_lower-vfloat<M>(org2.z))*vfloat<M>(rcp_dir2.z);
         const vfloat<M> t_upper_z = (vz_upper-vfloat<M>(org2.z))*vfloat<M>(rcp_dir2.z);
 
-        const vfloat<M> tNear = max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat<M>(ray.tnear()[k]));
-        const vfloat<M> tFar  = min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar[k]));
+        const vfloat<M> round_up  (1.0f+3.0f*float(ulp));
+        const vfloat<M> round_down(1.0f-3.0f*float(ulp));
+        const vfloat<M> tNear = round_down*max(mini(t_lower_x,t_upper_x),mini(t_lower_y,t_upper_y),mini(t_lower_z,t_upper_z),vfloat<M>(ray.tnear()[k]));
+        const vfloat<M> tFar  = round_up  *min(maxi(t_lower_x,t_upper_x),maxi(t_lower_y,t_upper_y),maxi(t_lower_z,t_upper_z),vfloat<M>(ray.tfar[k]));
         tNear_o = tNear;
         return (vint<M>(step) < vint<M>(prim.N)) & (tNear <= tFar);
       }

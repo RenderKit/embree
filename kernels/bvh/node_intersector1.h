@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -114,9 +114,11 @@ namespace embree
       __forceinline TravRayBase(const Vec3fa& ray_org, const Vec3fa& ray_dir)
         : org_xyz(ray_org), dir_xyz(ray_dir) 
       {
-        const float ulp3 = 1.0f+3.0f*float(ulp);
-        const Vec3fa ray_rdir_near = 1.0f/zero_fix(ray_dir);
-        const Vec3fa ray_rdir_far  = ray_rdir_near*ulp3;
+        const float round_down = 1.0f-3.0f*float(ulp);
+        const float round_up   = 1.0f+3.0f*float(ulp);
+        const Vec3fa ray_rdir = 1.0f/zero_fix(ray_dir);
+        const Vec3fa ray_rdir_near = round_down*ray_rdir;
+        const Vec3fa ray_rdir_far  = round_up  *ray_rdir;
         org = Vec3vf<N>(ray_org.x,ray_org.y,ray_org.z);
         dir = Vec3vf<N>(ray_dir.x,ray_dir.y,ray_dir.z);
         rdir_near = Vec3vf<N>(ray_rdir_near.x,ray_rdir_near.y,ray_rdir_near.z);
@@ -144,11 +146,12 @@ namespace embree
                                 const Vec3vf<K>& ray_rdir, const Vec3vi<K>& nearXYZ,
                                 size_t flip = sizeof(vfloat<N>))
       {
-        const float ulp3 = 1.0f+3.0f*float(ulp);
+        const vfloat<Nx> round_down = 1.0f-3.0f*float(ulp);
+        const vfloat<Nx> round_up   = 1.0f+3.0f*float(ulp);
         org  = Vec3vf<Nx>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
         dir  = Vec3vf<Nx>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
-        rdir_near = Vec3vf<Nx>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-        rdir_far  = Vec3vf<Nx>(ray_rdir.x[k]*ulp3, ray_rdir.y[k]*ulp3, ray_rdir.z[k]*ulp3);
+        rdir_near = round_down*Vec3vf<Nx>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
+        rdir_far  = round_up  *Vec3vf<Nx>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
 
 	nearX = nearXYZ.x[k];
 	nearY = nearXYZ.y[k];
@@ -582,7 +585,7 @@ namespace embree
 
     template<int N, int Nx>
       __forceinline size_t intersectNodeRobust(const typename BVHN<N>::AlignedNode* node, const TravRay<N,Nx,true>& ray, vfloat<Nx>& dist)
-    {      
+    {
       const vfloat<N> tNearX = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearX)) - ray.org.x) * ray.rdir_near.x;
       const vfloat<N> tNearY = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearY)) - ray.org.y) * ray.rdir_near.y;
       const vfloat<N> tNearZ = (vfloat<N>::load((float*)((const char*)&node->lower_x+ray.nearZ)) - ray.org.z) * ray.rdir_near.z;
@@ -866,9 +869,9 @@ namespace embree
       const vfloat4 lower_z = madd(node->dequantize<4>(ray.nearZ >> 2),scale_z,start_z);
       const vfloat4 upper_z = madd(node->dequantize<4>(ray.farZ  >> 2),scale_z,start_z);
 
-      const vfloat4 tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat4 tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat4 tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat4 tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat4 tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat4 tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat4 tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat4 tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat4 tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -954,9 +957,9 @@ namespace embree
       const vfloat8 lower_z = madd(node->dequantize<8>(ray.nearZ >> 2),scale_z,start_z);
       const vfloat8 upper_z = madd(node->dequantize<8>(ray.farZ  >> 2),scale_z,start_z);
 
-      const vfloat8 tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat8 tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat8 tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat8 tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat8 tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat8 tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat8 tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat8 tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat8 tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -1023,9 +1026,9 @@ namespace embree
       const vfloat16 lower_z = madd(vfloat16(node->dequantize<4>(ray.nearZ >> 2)),scale_z,start_z);
       const vfloat16 upper_z = madd(vfloat16(node->dequantize<4>(ray.farZ  >> 2)),scale_z,start_z);
 
-      const vfloat16 tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat16 tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat16 tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat16 tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat16 tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat16 tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat16 tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat16 tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat16 tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -1063,7 +1066,7 @@ namespace embree
       const vfloat16 bminmaxX  = node->dequantizeLowerUpperX(ray.permX);
       const vfloat16 bminmaxY  = node->dequantizeLowerUpperY(ray.permY);
       const vfloat16 bminmaxZ  = node->dequantizeLowerUpperZ(ray.permZ);
-      const vfloat16 tNearFarX = (bminmaxX - ray.org.x) * ray.rdir_far.x;
+      const vfloat16 tNearFarX = (bminmaxX - ray.org.x) * ray.rdir_far.x; // FIXME: this is not conservative !!!!!!!!!
       const vfloat16 tNearFarY = (bminmaxY - ray.org.y) * ray.rdir_far.y;
       const vfloat16 tNearFarZ = (bminmaxZ - ray.org.z) * ray.rdir_far.z;
       const vfloat16 tNear     = max(tNearFarX, tNearFarY, tNearFarZ, ray.tnear);
@@ -1132,9 +1135,9 @@ namespace embree
       const vfloat<N> upper_y   = node->dequantizeUpperY(time);
       const vfloat<N> lower_z   = node->dequantizeLowerZ(time);
       const vfloat<N> upper_z   = node->dequantizeUpperZ(time);     
-      const vfloat<N> tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat<N> tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat<N> tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat<N> tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat<N> tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat<N> tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat<N> tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat<N> tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat<N> tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -1205,9 +1208,9 @@ namespace embree
       const vfloat16 lower_z  = node->dequantizeLowerZ(time);
       const vfloat16 upper_z  = node->dequantizeUpperZ(time);     
 
-      const vfloat16 tNearX = (lower_x - ray.org.x) * ray.rdir_far.x;
-      const vfloat16 tNearY = (lower_y - ray.org.y) * ray.rdir_far.y;
-      const vfloat16 tNearZ = (lower_z - ray.org.z) * ray.rdir_far.z;
+      const vfloat16 tNearX = (lower_x - ray.org.x) * ray.rdir_near.x;
+      const vfloat16 tNearY = (lower_y - ray.org.y) * ray.rdir_near.y;
+      const vfloat16 tNearZ = (lower_z - ray.org.z) * ray.rdir_near.z;
       const vfloat16 tFarX  = (upper_x - ray.org.x) * ray.rdir_far.x;
       const vfloat16 tFarY  = (upper_y - ray.org.y) * ray.rdir_far.y;
       const vfloat16 tFarZ  = (upper_z - ray.org.z) * ray.rdir_far.z;
@@ -1248,8 +1251,12 @@ namespace embree
       const vfloat<N> tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
       const vfloat<N> tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
       const vfloat<N> tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-      const vfloat<N> tNear  = max(ray.tnear, tNearX,tNearY,tNearZ);
-      const vfloat<N> tFar   = min(ray.tfar,  tFarX ,tFarY ,tFarZ );
+      vfloat<N> tNear  = max(ray.tnear, tNearX,tNearY,tNearZ);
+      vfloat<N> tFar   = min(ray.tfar,  tFarX ,tFarY ,tFarZ );
+      if (robust) {
+        tNear = tNear*vfloat<N>(1.0f-3.0f*float(ulp));
+        tFar  = tFar *vfloat<N>(1.0f+3.0f*float(ulp));
+      }
       const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
       return movemask(vmask);
@@ -1282,8 +1289,12 @@ namespace embree
       const vfloat<N> tFarX  = maxi(tLowerXYZ.x,tUpperXYZ.x);
       const vfloat<N> tFarY  = maxi(tLowerXYZ.y,tUpperXYZ.y);
       const vfloat<N> tFarZ  = maxi(tLowerXYZ.z,tUpperXYZ.z);
-      const vfloat<N> tNear  = max(ray.tnear, tNearX,tNearY,tNearZ);
-      const vfloat<N> tFar   = min(ray.tfar,  tFarX ,tFarY ,tFarZ );
+      vfloat<N> tNear  = max(ray.tnear, tNearX,tNearY,tNearZ);
+      vfloat<N> tFar   = min(ray.tfar,  tFarX ,tFarY ,tFarZ );
+      if (robust) {
+        tNear = tNear*vfloat<N>(1.0f-3.0f*float(ulp));
+        tFar  = tFar *vfloat<N>(1.0f+3.0f*float(ulp));
+      }
       const vbool<N> vmask = tNear <= tFar;
       dist = tNear;
       return movemask(vmask);
@@ -1577,11 +1588,35 @@ namespace embree
     };
 
     template<int N, int Nx>
+    struct BVHNNodeIntersector1<N, Nx, BVH_AN1_UN1, true>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<Nx>& dist, size_t& mask)
+      {
+        if (likely(node.isAlignedNode()))          mask = intersectNodeRobust(node.alignedNode(), ray, dist);
+        else if (unlikely(node.isUnalignedNode())) mask = intersectNode(node.unalignedNode(), ray, dist);
+        else return false;
+        return true;
+      }
+    };
+
+    template<int N, int Nx>
     struct BVHNNodeIntersector1<N, Nx, BVH_AN2_UN2, false>
     {
       static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,false>& ray, float time, vfloat<Nx>& dist, size_t& mask)
       {
         if (likely(node.isAlignedNodeMB()))           mask = intersectNode(node.alignedNodeMB(), ray, time, dist);
+        else if (unlikely(node.isUnalignedNodeMB()))  mask = intersectNode(node.unalignedNodeMB(), ray, time, dist);
+        else return false;
+        return true;
+      }
+    };
+
+    template<int N, int Nx>
+    struct BVHNNodeIntersector1<N, Nx, BVH_AN2_UN2, true>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<Nx>& dist, size_t& mask)
+      {
+        if (likely(node.isAlignedNodeMB()))           mask = intersectNodeRobust(node.alignedNodeMB(), ray, time, dist);
         else if (unlikely(node.isUnalignedNodeMB()))  mask = intersectNode(node.unalignedNodeMB(), ray, time, dist);
         else return false;
         return true;
@@ -1596,6 +1631,18 @@ namespace embree
         if (unlikely(node.isLeaf())) return false;
         if (unlikely(node.isUnalignedNodeMB())) mask = intersectNode(node.unalignedNodeMB(), ray, time, dist);
         else                                    mask = intersectNodeMB4D(node, ray, time, dist);
+        return true;
+      }
+    };
+
+    template<int N, int Nx>
+    struct BVHNNodeIntersector1<N, Nx, BVH_AN2_AN4D_UN2, true>
+    {
+      static __forceinline bool intersect(const typename BVHN<N>::NodeRef& node, const TravRay<N,Nx,true>& ray, float time, vfloat<Nx>& dist, size_t& mask)
+      {
+        if (unlikely(node.isLeaf())) return false;
+        if (unlikely(node.isUnalignedNodeMB())) mask = intersectNode(node.unalignedNodeMB(), ray, time, dist);
+        else                                    mask = intersectNodeMB4DRobust(node, ray, time, dist);
         return true;
       }
     };

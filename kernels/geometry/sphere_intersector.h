@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -88,8 +88,8 @@ namespace embree
         const vfloat<M> t_in  = projC0 - td;
         const vfloat<M> t_out = projC0 + td;
 
-        const vbool<M> valid_in  = valid & (t_in > ray.tnear()) & (t_in < ray.tfar);
-        const vbool<M> valid_out = valid & !valid_in & (t_out > ray.tnear()) & (t_out < ray.tfar);
+        const vbool<M> valid_in  = valid & (ray.tnear() <= t_in) & (t_in <= ray.tfar);
+        const vbool<M> valid_out = valid & !valid_in & (ray.tnear() <= t_out) & (t_out <= ray.tfar);
 
         td          = select(valid_in, -1.0f * td, td);
         vfloat<M> t = 0.f;
@@ -140,8 +140,8 @@ namespace embree
         const vfloat<M> t_in  = projC0 - td;
         const vfloat<M> t_out = projC0 + td;
 
-        const vbool<M> valid_in  = valid & (t_in > ray.tnear()[k]) & (t_in < ray.tfar[k]);
-        const vbool<M> valid_out = valid & !valid_in & (t_out > ray.tnear()[k]) & (t_out < ray.tfar[k]);
+        const vbool<M> valid_in  = valid & (ray.tnear()[k] <= t_in) & (t_in <= ray.tfar[k]);
+        const vbool<M> valid_out = valid & !valid_in & (ray.tnear()[k] <= t_out) & (t_out <= ray.tfar[k]);
 
         td          = select(valid_in, -1.0f * td, td);
         vfloat<M> t = 0.f;

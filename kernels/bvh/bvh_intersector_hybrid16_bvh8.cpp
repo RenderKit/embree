@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -46,6 +46,9 @@ namespace embree
 
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH8OBBVirtualCurveIntersector16Hybrid, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersectorK<16> >));
     IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH8OBBVirtualCurveIntersector16HybridMB, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersectorK<16> >));
+
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH8OBBVirtualCurveIntersectorRobust16Hybrid, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN1_UN1 COMMA true COMMA VirtualCurveIntersectorK<16> >));
+    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH8OBBVirtualCurveIntersectorRobust16HybridMB, BVHNIntersectorKHybrid<8 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA true COMMA VirtualCurveIntersectorK<16> >));
 
     IF_ENABLED_USER(DEFINE_INTERSECTOR16(BVH8VirtualIntersector16Chunk, BVHNIntersectorKChunk<8 COMMA 16 COMMA BVH_AN1 COMMA false COMMA ArrayIntersectorK_1<16 COMMA ObjectIntersector16> >));
     IF_ENABLED_USER(DEFINE_INTERSECTOR16(BVH8VirtualMBIntersector16Chunk, BVHNIntersectorKChunk<8 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<16 COMMA ObjectIntersector16MB> >));

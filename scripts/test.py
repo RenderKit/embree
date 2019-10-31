@@ -92,6 +92,10 @@ def runConfig(config):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"V141\"")
       ispc_ext = "-vs2015"
+    elif (compiler == "V141_CLANG"):
+      conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
+      conf.append("-T \"v141_clang_c2\"")
+      ispc_ext = "-vs2015"
     elif (compiler == "V140"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"V140\"")
@@ -343,6 +347,8 @@ def runConfig(config):
   ctest =  "ctest -VV -S scripts/test.cmake"
   if g_cdash != "": ctest += " -D CTEST_DROP_SITE="+g_cdash
   ctest += " -D EMBREE_TESTING_INTENSITY="+str(g_intensity)
+  if "klocwork" in config:
+    ctest += " -D EMBREE_TESTING_KLOCWORK="+config["klocwork"]
   ctest += " -D CTEST_CONFIGURATION_TYPE=\""+build+"\""
   ctest += " -D CTEST_BUILD_OPTIONS=\"" + escape(" ".join(conf))+"\""
   if g_debugMode:

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -309,12 +309,12 @@ namespace embree
       grid_resY(2),
       remove_mblur(false),
       remove_non_mblur(false),
-      sceneFilename(""),
+      sceneFilename(),
       instancing_mode(SceneGraph::INSTANCING_NONE),
       print_scene_cameras(false)
   {
     registerOption("i", [this] (Ref<ParseStream> cin, const FileName& path) {
-        sceneFilename = path + cin->getFileName();
+        sceneFilename.push_back(path + cin->getFileName());
       }, "-i <filename>: parses scene from <filename>");
 
     registerOption("animlist", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -1140,12 +1140,15 @@ namespace embree
     log(1,"application start");
     
     /* load scene */
-    if (sceneFilename != "")
+    if (sceneFilename.size())
     {
-      if (toLowerCase(sceneFilename.ext()) == std::string("obj"))
-        scene->add(loadOBJ(sceneFilename,subdiv_mode != ""));
-      else if (sceneFilename.ext() != "")
-        scene->add(SceneGraph::load(sceneFilename));
+      for (auto& file : sceneFilename)
+      {
+        if (toLowerCase(file.ext()) == std::string("obj"))
+          scene->add(loadOBJ(file,subdiv_mode != ""));
+        else if (file.ext() != "")
+          scene->add(SceneGraph::load(file));
+      }
     }
 
     Application::instance->log(1,"loading scene done");

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -208,6 +208,17 @@ namespace embree
     /* returns true if topology changed */
     bool topologyChanged() const {
       return quads.isModified() || numPrimitivesChanged;
+    }
+
+    /* returns the projected area */
+    __forceinline float projectedPrimitiveArea(const size_t i) const {
+      const Quad& q = quad(i);
+      const Vec3fa v0 = vertex(q.v[0]);
+      const Vec3fa v1 = vertex(q.v[1]);
+      const Vec3fa v2 = vertex(q.v[2]);
+      const Vec3fa v3 = vertex(q.v[3]);
+      return areaProjectedTriangle(v0,v1,v3) +
+	areaProjectedTriangle(v1,v2,v3);
     }
 
   public:

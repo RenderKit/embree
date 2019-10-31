@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -28,7 +28,8 @@ FIND_PATH(EMBREE_TESTING_MODEL_DIR
   DOC "Path to the folder containing the Embree models for regression testing."
   NO_DEFAULT_PATHS)
 
-SET(EMBREE_TESTING_INTENSITY 1 CACHE INT "Intensity of testing (0 = no testing, 1 = verify and tutorials, 2 = light testing, 3 = intensive testing.")
+SET(EMBREE_TESTING_INTENSITY 1 CACHE STRING "Intensity of testing (0 = no testing, 1 = verify and tutorials, 2 = light testing, 3 = intensive testing.")
+SET_PROPERTY(CACHE EMBREE_TESTING_INTENSITY PROPERTY STRINGS 0 1 2 3)
 SET(EMBREE_TESTING_MEMCHECK OFF CACHE BOOL "Turns on memory checking for some tests.")
 SET(EMBREE_TESTING_BENCHMARK OFF CACHE BOOL "Turns benchmarking on.")
 SET(EMBREE_TESTING_BENCHMARK_DATABASE "${PROJECT_BINARY_DIR}" CACHE PATH "Path to database for benchmarking.")
@@ -142,8 +143,10 @@ ENDMACRO()
 
 # add klocwork test
 IF (EMBREE_TESTING_KLOCWORK)
-  ADD_TEST(NAME Klocwork WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/klocwork.sh)
-  SET_TESTS_PROPERTIES(Klocwork PROPERTIES TIMEOUT 2400)
+  ADD_TEST(NAME Klocwork-Build WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/klocwork_build.sh)
+#  ADD_TEST(NAME Klocwork-Check WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/klocwork_check.sh)
+  SET_TESTS_PROPERTIES(Klocwork-Build PROPERTIES TIMEOUT 2400)
+#  SET_TESTS_PROPERTIES(Klocwork-Check PROPERTIES TIMEOUT 300)
 ENDIF()
 
 # add valgrind test

@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -103,14 +103,14 @@ set(CTEST_DROP_LOCATION "/CDash/submit.php?project=${CTEST_PROJECT_NAME}")
 set(CTEST_DROP_SITE_CDASH TRUE)
 
 # get OS and CPU information
-find_program(UNAME NAMES uname)
-macro(getuname name flag)
-  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
-endmacro(getuname)
+#find_program(UNAME NAMES uname)
+#macro(getuname name flag)
+#  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
+#endmacro(getuname)
 
-getuname(osname -s)
-getuname(osrel  -r)
-getuname(cpu    -m)
+#getuname(osname -s)
+#getuname(osrel  -r)
+#getuname(cpu    -m)
 
 # build using as many processes as we have processors
 include(ProcessorCount)
@@ -120,7 +120,7 @@ if(numProcessors EQUAL 0)
 endif()
 
 # set build name
-set(CTEST_BUILD_NAME "${osname}-${cpu}")
+#set(CTEST_BUILD_NAME "${osname}-${cpu}")
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 IF (WIN32)
   set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE}")
@@ -152,7 +152,7 @@ IF (NOT retval EQUAL 0)
   message(FATAL_ERROR "test.cmake: build failed")
 ENDIF()
 
-IF (EMBREE_TESTING_INTENSITY GREATER 0)
+IF (EMBREE_TESTING_INTENSITY GREATER 0 OR EMBREE_TESTING_KLOCWORK)
   ctest_test(RETURN_VALUE retval)
   message("test.cmake: ctest_test return value = ${retval}")
   IF (NOT retval EQUAL 0)

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -90,7 +90,7 @@ namespace embree
       void build() 
       {
         /* skip build for empty scene */
-        const size_t numPrimitives = scene->getNumPrimitives<SubdivMesh,false>();
+        const size_t numPrimitives = scene->getNumPrimitives(SubdivMesh::geom_type,false);
         if (numPrimitives == 0) {
           prims.resize(numPrimitives);
           bvh->set(BVH::emptyNode,empty,0);
@@ -352,7 +352,7 @@ namespace embree
       void build() 
       {
         /* initialize all half edge structures */
-        size_t numPatches = scene->getNumPrimitives<SubdivMesh,true>();
+        size_t numPatches = scene->getNumPrimitives(SubdivMesh::geom_type,true);
 
         /* skip build for empty scene */
         if (numPatches == 0) {

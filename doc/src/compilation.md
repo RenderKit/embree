@@ -10,7 +10,7 @@ Linux and macOS
 To compile Embree you need a modern C++ compiler that supports C++11.
 Embree is tested with Intel® Compiler 17.0 (Update\ 1), Intel®
 Compiler 16.0 (Update\ 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
-(supports AVX512) and GCC 5.4.0. If the GCC that comes with your
+(supports AVX512) and GCC 5.4.0 (Linux only). If the GCC that comes with your
 Fedora/Red Hat/CentOS distribution is too old then you can run the
 provided script `scripts/install_linux_gcc.sh` to locally install a
 recent GCC into `$HOME/devtools-2`.

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -22,6 +22,24 @@
 
 namespace embree
 {
+  // FIXME: maybe there's a better place for this util fct
+  __forceinline float areaProjectedTriangle(const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2)
+  {
+    const Vec2f v0_xy(v0.x,v0.y);
+    const Vec2f v0_yz(v0.y,v0.z);
+    const Vec2f v0_zx(v0.z,v0.x);
+    const Vec2f v1_xy(v1.x,v1.y);
+    const Vec2f v1_yz(v1.y,v1.z);
+    const Vec2f v1_zx(v1.z,v1.x);
+    const Vec2f v2_xy(v2.x,v2.y);
+    const Vec2f v2_yz(v2.y,v2.z);
+    const Vec2f v2_zx(v2.z,v2.x);      
+    const float xy = 0.5f*fabs(det(v1_xy-v0_xy,v2_xy-v0_xy));
+    const float yz = 0.5f*fabs(det(v1_yz-v0_yz,v2_yz-v0_yz));
+    const float zx = 0.5f*fabs(det(v1_zx-v0_zx,v2_zx-v0_zx));
+    return xy+yz+zx;
+  }
+
   //namespace isa
   //{
     template<typename BBox>

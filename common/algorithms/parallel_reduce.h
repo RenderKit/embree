@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -40,7 +40,7 @@ namespace embree
     taskCount = min(taskCount,threadCount,maxTasks);
 
     /* parallel invokation of all tasks */
-    dynamic_large_stack_array(Value,values,taskCount,4096); // consumes at most 4096 bytes on the stack
+    dynamic_large_stack_array(Value,values,taskCount,8192); // consumes at most 8192 bytes on the stack
     parallel_for(taskCount, [&](const Index taskIndex) {
         const Index k0 = first+(taskIndex+0)*(last-first)/taskCount;
         const Index k1 = first+(taskIndex+1)*(last-first)/taskCount;

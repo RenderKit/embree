@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -66,13 +66,11 @@ namespace embree
       /* calculate geometry normal and denominator */
       const Vec3vf<N> Ng = cross(e1,e0);
       const vfloat<N> den = dot(Ng,D);
-      const vfloat<N> absDen = abs(den);
-      const vfloat<N> sgnDen = signmsk(den);
+      const vfloat<N> rcpDen = rcp(den);
 
       /* perform depth test */
-      const vfloat<N> T = dot(v0,Ng);
-      valid &= absDen*vfloat<N>(ray_tnear) < (T^sgnDen);
-      valid &= (T^sgnDen) <= absDen*vfloat<N>(ray_tfar);
+      const vfloat<N> t = rcpDen*dot(v0,Ng);
+      valid &= vfloat<N>(ray_tnear) <= t & t <= vfloat<N>(ray_tfar);
       if (unlikely(none(valid))) return false;
 
       /* avoid division by 0 */
@@ -80,8 +78,7 @@ namespace embree
       if (unlikely(none(valid))) return false;
 
       /* update hit information */
-      const vfloat<N> rcpDen = rcp(den);
-      t_o = T * rcpDen;
+      t_o = t;
       u_o = U * rcpDen;
       v_o = V * rcpDen;
       u_o = select(WW <= 0.0f,u_o,1.0f-u_o);

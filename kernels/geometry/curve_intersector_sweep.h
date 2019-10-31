@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -113,7 +113,7 @@ namespace embree
         if (converged_u && converged_t) 
         {
           t+=dt;
-          if (!(t > ray.tnear() && t < ray.tfar)) return false; // rejects NaNs
+          if (!(ray.tnear() <= t && t <= ray.tfar)) return false; // rejects NaNs
           if (!(u >= 0.0f && u <= 1.0f)) return false; // rejects NaNs
           const Vec3fa R = normalize(Q-P);
           const Vec3fa U = madd(Vec3fa(dPdu.w),R,dPdu);

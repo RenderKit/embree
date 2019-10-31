@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -242,12 +242,17 @@ struct TriangleMesh
   unsigned int num_vertices;
   unsigned int num_triangles;
   
-  TriangleMesh() : vertices(nullptr), triangles(nullptr) {}
+  TriangleMesh()
+    : vertices(nullptr), triangles(nullptr) {}
 
   ~TriangleMesh() {
     if(vertices) alignedFree(vertices);
     if(triangles) alignedFree(triangles);
   }
+
+private:
+  TriangleMesh (const TriangleMesh& other) DELETED; // do not implement
+  TriangleMesh& operator= (const TriangleMesh& other) DELETED; // do not implement
 };
 
 
