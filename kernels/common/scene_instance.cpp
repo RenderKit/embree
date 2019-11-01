@@ -36,6 +36,20 @@ namespace embree
     alignedFree(local2world);
     if (object) object->refDec();
   }
+
+  Geometry* Instance::attach(Scene* scene, unsigned int geomID)
+  {
+
+    this->instID_ = geomID;
+
+    return Geometry::attach (scene, geomID);
+  }
+
+  void Instance::detach()
+  {
+    this->instID_ = -1;
+    Geometry::detach ();
+  }
   
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
   {

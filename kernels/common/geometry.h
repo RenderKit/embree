@@ -327,8 +327,8 @@ namespace embree
     /*! for all geometries */
   public:
 
-    Geometry* attach(Scene* scene, unsigned int geomID);
-    void detach();
+    virtual Geometry* attach(Scene* scene, unsigned int geomID);
+    virtual void detach();
 
     /*! Enable geometry. */
     virtual void enable();
@@ -555,7 +555,7 @@ namespace embree
     Device* device;             //!< device this geometry belongs to
 
     void* userPtr;              //!< user pointer
-    unsigned int geomID;        //!< internal geometry ID
+    // unsigned int geomID;        //!< internal geometry ID
     unsigned int numPrimitives; //!< number of primitives of this geometry
     
     unsigned int numTimeSteps;  //!< number of time steps

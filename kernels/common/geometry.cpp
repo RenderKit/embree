@@ -57,7 +57,7 @@ namespace embree
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
     : device(device), userPtr(nullptr),
-      geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
+      numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
       mask(-1),
       gtype(gtype),
       quality(RTC_BUILD_QUALITY_MEDIUM),
@@ -129,14 +129,14 @@ namespace embree
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
 
-    this->geomID = geomID;
+    // this->geomID = geomID;
 
     return this;
   }
 
   void Geometry::detach()
   {
-    this->geomID = -1;
+    // this->geomID = -1;
   }
   
   void Geometry::enable () 
