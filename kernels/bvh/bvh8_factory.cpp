@@ -514,6 +514,10 @@ namespace embree
     BVH8Factory* factory = scene->device->bvh8_factory.get();
     accel = new BVH8(Triangle4::type,scene);
     auto mesh = scene->getSafe<TriangleMesh>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
@@ -528,6 +532,10 @@ namespace embree
     BVH8Factory* factory = scene->device->bvh8_factory.get();
     accel = new BVH8(Triangle4v::type,scene);
     auto mesh = scene->getSafe<TriangleMesh>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
@@ -542,6 +550,10 @@ namespace embree
     BVH8Factory* factory = scene->device->bvh8_factory.get();
     accel = new BVH8(Triangle4i::type,scene);
     auto mesh = scene->getSafe<TriangleMesh>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
@@ -556,6 +568,10 @@ namespace embree
     BVH8Factory* factory = scene->device->bvh8_factory.get();
     accel = new BVH8(Quad4v::type,scene);
     auto mesh = scene->getSafe<QuadMesh>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
@@ -577,6 +593,10 @@ namespace embree
     BVH8Factory* factory = scene->device->bvh8_factory.get();
     accel = new BVH8(Object::type,scene);
     auto mesh = scene->getSafe<UserGeometry>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
     case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8VirtualMeshBuilderMortonGeneral(accel,mesh,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:

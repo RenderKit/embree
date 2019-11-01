@@ -81,7 +81,7 @@ namespace embree
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
-          splitFactor(scene->device->max_spatial_split_replications, geomID_(geomID)) {}
+          splitFactor(scene->device->max_spatial_split_replications), geomID_(geomID) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
