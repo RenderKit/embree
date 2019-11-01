@@ -107,7 +107,7 @@ namespace embree
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
       Geometry::GTypeMask gtype_;
-      size_t geomID_ = std::numeric_limits<size_t>::max ();
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max ();
       bool primrefarrayalloc;
 
       BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize,
@@ -115,7 +115,7 @@ namespace embree
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0),
           settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype), primrefarrayalloc(primrefarrayalloc) {}
 
-      BVHNBuilderSAH (BVH* bvh, Geometry* mesh, size_t geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
+      BVHNBuilderSAH (BVH* bvh, Geometry* mesh, unsigned int geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype), geomID_(geomID), primrefarrayalloc(false) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
@@ -219,12 +219,12 @@ namespace embree
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
       Geometry::GTypeMask gtype_;
-      size_t geomID_ = std::numeric_limits<size_t>::max();
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
 
       BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype) {}
 
-      BVHNBuilderSAHQuantized (BVH* bvh, Geometry* mesh, size_t geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
+      BVHNBuilderSAHQuantized (BVH* bvh, Geometry* mesh, unsigned int geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype), geomID_(geomID) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
@@ -366,12 +366,13 @@ namespace embree
       mvector<PrimRef> prims;
       mvector<SubGridBuildData> sgrids;
       GeneralBVHBuilder::Settings settings;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
 
       BVHNBuilderSAHGrid (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
 
-      BVHNBuilderSAHGrid (BVH* bvh, GridMesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
-        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
+      BVHNBuilderSAHGrid (BVH* bvh, GridMesh* mesh, unsigned int geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+        : bvh(bvh), scene(nullptr), mesh(mesh), prims(bvh->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, maxLeafSize, travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), geomID_(geomID) {}
 
       void build()
       {
@@ -397,7 +398,7 @@ namespace embree
           pstate.init(iter,size_t(1024));
 
           /* iterate over all meshes in the scene */
-          pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, size_t geomID) -> PrimInfo
+          pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
                                                 {
                                                   PrimInfo pinfo(empty);
                                                   for (size_t j=r.begin(); j<r.end(); j++)
@@ -417,7 +418,7 @@ namespace embree
           prims.resize(numPrimitives); 
 
           /* second run to fill primrefs and SubGridBuildData arrays */
-          pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, size_t geomID, const PrimInfo& base) -> PrimInfo
+          pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, unsigned int geomID, const PrimInfo& base) -> PrimInfo
                                                 {
                                                   k = base.size();
                                                   size_t p_index = k;
@@ -452,7 +453,7 @@ namespace embree
                                          {
                                            if (!mesh->valid(j)) continue;
                                            BBox3fa bounds = empty;
-                                           const PrimRef prim(bounds,mesh->geomID,unsigned(j));
+                                           const PrimRef prim(bounds,geomID_,unsigned(j));
                                            pinfo.add_center2(prim,mesh->getNumSubGrids(j));
                                          }
                                          return pinfo;
@@ -477,7 +478,7 @@ namespace embree
                                              {
                                                BBox3fa bounds = empty;
                                                if (!mesh->buildBounds(g,x,y,bounds)) continue; // get bounds of subgrid
-                                               const PrimRef prim(bounds,mesh->geomID,unsigned(p_index));
+                                               const PrimRef prim(bounds,geomID_,unsigned(p_index));
                                                pinfo.add_center2(prim);
                                                sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
                                                prims[p_index++] = prim;                
@@ -556,9 +557,9 @@ namespace embree
     /************************************************************************************/
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t geomID, size_t mode) { return new BVHNBuilderSAH<4,Triangle4>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
-    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t geomID, size_t mode) { return new BVHNBuilderSAH<4,Triangle4v>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
-    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t geomID, size_t mode) { return new BVHNBuilderSAH<4,Triangle4i>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNBuilderSAH<4,Triangle4>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNBuilderSAH<4,Triangle4v>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNBuilderSAH<4,Triangle4i>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
 
     Builder* BVH4Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Triangle4>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
     Builder* BVH4Triangle4vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Triangle4v>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
@@ -567,9 +568,9 @@ namespace embree
 
     Builder* BVH4QuantizedTriangle4iSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,Triangle4i>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
 #if defined(__AVX__)
-    Builder* BVH8Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t geomID, size_t mode) { return new BVHNBuilderSAH<8,Triangle4>((BVH8*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
-    Builder* BVH8Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t geomID, size_t mode) { return new BVHNBuilderSAH<8,Triangle4v>((BVH8*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
-    Builder* BVH8Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t geomID, size_t mode) { return new BVHNBuilderSAH<8,Triangle4i>((BVH8*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH8Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNBuilderSAH<8,Triangle4>((BVH8*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH8Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNBuilderSAH<8,Triangle4v>((BVH8*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVH8Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNBuilderSAH<8,Triangle4i>((BVH8*)bvh,mesh,geomID,4,1.0f,4,inf,TriangleMesh::geom_type); }
 
     Builder* BVH8Triangle4SceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Triangle4>((BVH8*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
     Builder* BVH8Triangle4vSceneBuilderSAH  (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Triangle4v>((BVH8*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
@@ -581,8 +582,8 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-    Builder* BVH4Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t geomID, size_t mode)     { return new BVHNBuilderSAH<4,Quad4v>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,QuadMesh::geom_type); }
-    Builder* BVH4Quad4iMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t geomID, size_t mode)     { return new BVHNBuilderSAH<4,Quad4i>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH4Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, unsigned int geomID, size_t mode)     { return new BVHNBuilderSAH<4,Quad4v>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH4Quad4iMeshBuilderSAH     (void* bvh, QuadMesh* mesh, unsigned int geomID, size_t mode)     { return new BVHNBuilderSAH<4,Quad4i>((BVH4*)bvh,mesh,geomID,4,1.0f,4,inf,QuadMesh::geom_type); }
     Builder* BVH4Quad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
     Builder* BVH4Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<4,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type,true); }
     Builder* BVH4QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<4,Quad4v>((BVH4*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
@@ -593,7 +594,7 @@ namespace embree
     Builder* BVH8Quad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAH<8,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type,true); }
     Builder* BVH8QuantizedQuad4vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,Quad4v>((BVH8*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
     Builder* BVH8QuantizedQuad4iSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHNBuilderSAHQuantized<8,Quad4i>((BVH8*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }
-    Builder* BVH8Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, size_t geomID, size_t mode)     { return new BVHNBuilderSAH<8,Quad4v>((BVH8*)bvh,mesh,geomID,4,1.0f,4,inf,QuadMesh::geom_type); }
+    Builder* BVH8Quad4vMeshBuilderSAH     (void* bvh, QuadMesh* mesh, unsigned int geomID, size_t mode)     { return new BVHNBuilderSAH<8,Quad4v>((BVH8*)bvh,mesh,geomID,4,1.0f,4,inf,QuadMesh::geom_type); }
 
 #endif
 #endif
@@ -606,7 +607,7 @@ namespace embree
       return new BVHNBuilderSAH<4,Object>((BVH4*)bvh,scene,4,1.0f,minLeafSize,maxLeafSize,UserGeometry::geom_type);
     }
 
-    Builder* BVH4VirtualMeshBuilderSAH    (void* bvh, UserGeometry* mesh, size_t geomID, size_t mode) {
+    Builder* BVH4VirtualMeshBuilderSAH    (void* bvh, UserGeometry* mesh, unsigned int geomID, size_t mode) {
       return new BVHNBuilderSAH<4,Object>((BVH4*)bvh,mesh,geomID,4,1.0f,1,inf,UserGeometry::geom_type);
     }
 #if defined(__AVX__)
@@ -617,7 +618,7 @@ namespace embree
       return new BVHNBuilderSAH<8,Object>((BVH8*)bvh,scene,8,1.0f,minLeafSize,maxLeafSize,UserGeometry::geom_type);
     }
 
-    Builder* BVH8VirtualMeshBuilderSAH    (void* bvh, UserGeometry* mesh, size_t geomID, size_t mode) {
+    Builder* BVH8VirtualMeshBuilderSAH    (void* bvh, UserGeometry* mesh, unsigned int geomID, size_t mode) {
       return new BVHNBuilderSAH<8,Object>((BVH8*)bvh,mesh,geomID,8,1.0f,1,inf,UserGeometry::geom_type);
     }
 #endif
@@ -631,11 +632,11 @@ namespace embree
 #endif
 
 #if defined(EMBREE_GEOMETRY_GRID)
-    Builder* BVH4GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,mesh,4,1.0f,4,4,mode); }
+    Builder* BVH4GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,mesh,geomID,4,1.0f,4,4,mode); }
     Builder* BVH4GridSceneBuilderSAH (void* bvh, Scene* scene, size_t mode)   { return new BVHNBuilderSAHGrid<4>((BVH4*)bvh,scene,4,1.0f,4,4,mode); } // FIXME: check whether cost factors are correct
 
 #if defined(__AVX__)
-    Builder* BVH8GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, size_t mode) { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,mesh,8,1.0f,8,8,mode); }
+    Builder* BVH8GridMeshBuilderSAH  (void* bvh, GridMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,mesh,geomID,8,1.0f,8,8,mode); }
     Builder* BVH8GridSceneBuilderSAH (void* bvh, Scene* scene, size_t mode)   { return new BVHNBuilderSAHGrid<8>((BVH8*)bvh,scene,8,1.0f,8,8,mode); } // FIXME: check whether cost factors are correct
 #endif
 #endif

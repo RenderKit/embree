@@ -73,13 +73,13 @@ namespace embree
       mvector<PrimRef> prims0;
       GeneralBVHBuilder::Settings settings;
       const float splitFactor;
-      size_t geomID_ = std::numeric_limits<size_t>::max();
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
           splitFactor(scene->device->max_spatial_split_replications) {}
 
-      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const unsigned int geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
           splitFactor(scene->device->max_spatial_split_replications), geomID_(geomID) {}
 
