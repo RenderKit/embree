@@ -34,7 +34,6 @@
 #define PROFILE_RUNS 20
 #define ENABLE_BREADTH_FIRST_PHASE 1
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
-#define ENABLE_STATS 1
 #define BUILD_CHECKS 0
 
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
@@ -1099,7 +1098,8 @@ namespace embree
 	    }
 
 	    double t2 = getSeconds();
-	    std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;
+	    if (unlikely(deviceGPU->verbosity(2)))
+	      std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;
 #endif	    
 
 	    
@@ -1153,7 +1153,8 @@ namespace embree
 	    }
 
 	    t2 = getSeconds();
-	    std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
+	    if (unlikely(deviceGPU->verbosity(2)))
+	      std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
 
 	    /* --- convert primrefs to primitives (host) --- */
 
@@ -1179,7 +1180,8 @@ namespace embree
 	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
 	    
 	    /* print BVH stats */
-#if defined(EMBREE_DPCPP_SUPPORT) && ENABLE_STATS == 1
+#if defined(EMBREE_DPCPP_SUPPORT) 
+	    if (unlikely(deviceGPU->verbosity(2)))	      
 	    {	      
 	      cl::sycl::queue &print_queue = deviceGPU->getGPUQueue();
 	      cl::sycl::event queue_event = print_queue.submit([&](cl::sycl::handler &cgh) {
