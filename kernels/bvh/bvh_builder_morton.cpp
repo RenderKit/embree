@@ -97,8 +97,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, unsigned int geomID, BVHBuilderMorton::BuildPrim* morton)
+        : mesh(mesh), morton(morton), geomID_(geomID) {}
 
       __noinline NodeRecord operator() (const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc)
       {
@@ -113,7 +113,6 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         vuint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned int geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -125,7 +124,7 @@ namespace embree
           const Vec3fa& p2 = mesh->vertex(tri.v[2]);
           lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
-          vgeomID [i] = geomID;
+          vgeomID [i] = geomID_;
           vprimID [i] = primID;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
@@ -144,6 +143,7 @@ namespace embree
     private:
       TriangleMesh* mesh;
       BVHBuilderMorton::BuildPrim* morton;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
     };
     
     template<int N>
@@ -153,8 +153,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, unsigned int geomID, BVHBuilderMorton::BuildPrim* morton)
+        : mesh(mesh), morton(morton), geomID_(geomID) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc)
       {
@@ -169,7 +169,6 @@ namespace embree
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);       
         vuint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned int geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -181,7 +180,7 @@ namespace embree
           const Vec3fa& p2 = mesh->vertex(tri.v[2]);
           lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
-          vgeomID [i] = geomID;
+          vgeomID [i] = geomID_;
           vprimID [i] = primID;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
@@ -198,6 +197,7 @@ namespace embree
     private:
       TriangleMesh* mesh;
       BVHBuilderMorton::BuildPrim* morton;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
     };
 
     template<int N>
@@ -207,8 +207,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (TriangleMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (TriangleMesh* mesh, unsigned int geomID, BVHBuilderMorton::BuildPrim* morton)
+        : mesh(mesh), morton(morton), geomID_(geomID) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc)
       {
@@ -224,7 +224,6 @@ namespace embree
         
         vuint4 vgeomID = -1, vprimID = -1;
         vuint4 v0 = zero, v1 = zero, v2 = zero;
-        const unsigned int geomID = this->mesh->geomID;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
         
         for (size_t i=0; i<items; i++)
@@ -236,7 +235,7 @@ namespace embree
           const Vec3fa& p2 = mesh->vertex(tri.v[2]);
           lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
-          vgeomID[i] = geomID;
+          vgeomID[i] = geomID_;
           vprimID[i] = primID;
           unsigned int int_stride = mesh->vertices0.getStride()/4;
 	  v0[i] = tri.v[0] * int_stride; 
@@ -264,6 +263,7 @@ namespace embree
     private:
       TriangleMesh* mesh;
       BVHBuilderMorton::BuildPrim* morton;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
     };
 
     template<int N>
@@ -273,8 +273,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (QuadMesh* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (QuadMesh* mesh, unsigned int geomID, BVHBuilderMorton::BuildPrim* morton)
+        : mesh(mesh), morton(morton), geomID_(geomID) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc)
       {
@@ -290,7 +290,6 @@ namespace embree
         
         vuint4 vgeomID = -1, vprimID = -1;
         Vec3vf4 v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-        const unsigned int geomID = this->mesh->geomID;
         const QuadMesh* __restrict__ mesh = this->mesh;
 
         for (size_t i=0; i<items; i++)
@@ -303,7 +302,7 @@ namespace embree
           const Vec3fa& p3 = mesh->vertex(tri.v[3]);
           lower = min(lower,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2,(vfloat4)p3);
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2,(vfloat4)p3);
-          vgeomID [i] = geomID;
+          vgeomID [i] = geomID_;
           vprimID [i] = primID;
           v0.x[i] = p0.x; v0.y[i] = p0.y; v0.z[i] = p0.z;
           v1.x[i] = p1.x; v1.y[i] = p1.y; v1.z[i] = p1.z;
@@ -321,6 +320,7 @@ namespace embree
     private:
       QuadMesh* mesh;
       BVHBuilderMorton::BuildPrim* morton;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
     };
 
     template<int N>
@@ -330,8 +330,8 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
-      __forceinline CreateMortonLeaf (UserGeometry* mesh, BVHBuilderMorton::BuildPrim* morton)
-        : mesh(mesh), morton(morton) {}
+      __forceinline CreateMortonLeaf (UserGeometry* mesh, unsigned int geomID, BVHBuilderMorton::BuildPrim* morton)
+        : mesh(mesh), morton(morton), geomID_(geomID) {}
       
       __noinline NodeRecord operator() (const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc)
       {
@@ -343,8 +343,6 @@ namespace embree
         /* allocate leaf node */
         Object* accel = (Object*) alloc.malloc1(items*sizeof(Object),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,items);
-
-        const unsigned int geomID = this->mesh->geomID;
         const UserGeometry* mesh = this->mesh;
         
         BBox3fa bounds = empty;
@@ -353,7 +351,7 @@ namespace embree
           const unsigned int index = morton[start+i].index;
           const unsigned int primID = index; 
           bounds.extend(mesh->bounds(primID));
-          new (&accel[i]) Object(geomID,primID);
+          new (&accel[i]) Object(geomID_,primID);
         }
         BBox3fa box_o = bounds;
 #if ROTATE_TREE
@@ -365,6 +363,7 @@ namespace embree
     private:
       UserGeometry* mesh;
       BVHBuilderMorton::BuildPrim* morton;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
     };
 
     template<typename Mesh>
@@ -391,8 +390,8 @@ namespace embree
 
     public:
       
-      BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
-        : bvh(bvh), mesh(mesh), morton(bvh->device,0), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold) {}
+      BVHNMeshBuilderMorton (BVH* bvh, Mesh* mesh, unsigned int geomID, const size_t minLeafSize, const size_t maxLeafSize, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD)
+        : bvh(bvh), mesh(mesh), morton(bvh->device,0), settings(N,BVH::maxBuildDepth,minLeafSize,maxLeafSize,singleThreadThreshold), geomID_(geomID) {}
       
       /* build function */
       void build() 
@@ -423,7 +422,7 @@ namespace embree
 
         /* create BVH */
         SetBVHNBounds<N> setBounds(bvh);
-        CreateMortonLeaf<N,Primitive> createLeaf(mesh,morton.data());
+        CreateMortonLeaf<N,Primitive> createLeaf(mesh,geomID_,morton.data());
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto root = BVHBuilderMorton::build<NodeRecord>(
           typename BVH::CreateAlloc(bvh), 
@@ -460,30 +459,31 @@ namespace embree
       Mesh* mesh;
       mvector<BVHBuilderMorton::BuildPrim> morton;
       BVHBuilderMorton::Settings settings;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
     };
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4> ((BVH4*)bvh,mesh,4,4); }
-    Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,4,4); }
-    Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,4,4); }
+    Builder* BVH4Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4> ((BVH4*)bvh,mesh,geomID,4,4); }
+    Builder* BVH4Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4v>((BVH4*)bvh,mesh,geomID,4,4); }
+    Builder* BVH4Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,TriangleMesh,Triangle4i>((BVH4*)bvh,mesh,geomID,4,4); }
 #if defined(__AVX__)
-    Builder* BVH8Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,TriangleMesh,Triangle4> ((BVH8*)bvh,mesh,4,4); }
-    Builder* BVH8Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,TriangleMesh,Triangle4v>((BVH8*)bvh,mesh,4,4); }
-    Builder* BVH8Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,TriangleMesh,Triangle4i>((BVH8*)bvh,mesh,4,4); }
+    Builder* BVH8Triangle4MeshBuilderMortonGeneral  (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,TriangleMesh,Triangle4> ((BVH8*)bvh,mesh,geomID,4,4); }
+    Builder* BVH8Triangle4vMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,TriangleMesh,Triangle4v>((BVH8*)bvh,mesh,geomID,4,4); }
+    Builder* BVH8Triangle4iMeshBuilderMortonGeneral (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,TriangleMesh,Triangle4i>((BVH8*)bvh,mesh,geomID,4,4); }
 #endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-    Builder* BVH4Quad4vMeshBuilderMortonGeneral (void* bvh, QuadMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,QuadMesh,Quad4v>((BVH4*)bvh,mesh,4,4); }
+    Builder* BVH4Quad4vMeshBuilderMortonGeneral (void* bvh, QuadMesh* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,QuadMesh,Quad4v>((BVH4*)bvh,mesh,geomID,4,4); }
 #if defined(__AVX__)
-    Builder* BVH8Quad4vMeshBuilderMortonGeneral (void* bvh, QuadMesh* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,QuadMesh,Quad4v>((BVH8*)bvh,mesh,4,4); }
+    Builder* BVH8Quad4vMeshBuilderMortonGeneral (void* bvh, QuadMesh* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,QuadMesh,Quad4v>((BVH8*)bvh,mesh,geomID,4,4); }
 #endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, UserGeometry* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<4,UserGeometry,Object>((BVH4*)bvh,mesh,1,BVH4::maxLeafBlocks); }
+    Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, UserGeometry* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,UserGeometry,Object>((BVH4*)bvh,mesh,geomID,1,BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
-    Builder* BVH8VirtualMeshBuilderMortonGeneral (void* bvh, UserGeometry* mesh, size_t mode) { return new class BVHNMeshBuilderMorton<8,UserGeometry,Object>((BVH8*)bvh,mesh,1,BVH4::maxLeafBlocks); }    
+    Builder* BVH8VirtualMeshBuilderMortonGeneral (void* bvh, UserGeometry* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,UserGeometry,Object>((BVH8*)bvh,mesh,geomID,1,BVH4::maxLeafBlocks); }    
 #endif
 #endif
 
