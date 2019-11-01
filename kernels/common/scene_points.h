@@ -258,7 +258,7 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k) const
+      PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfo pinfo(empty);
         for (size_t j = r.begin(); j < r.end(); j++) {
@@ -275,7 +275,8 @@ namespace embree
       PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims,
                                       const BBox1f& t0t1,
                                       const range<size_t>& r,
-                                      size_t k) const
+                                      size_t k,
+                                      unsigned int geomID) const
       {
         PrimInfoMB pinfo(empty);
         for (size_t j = r.begin(); j < r.end(); j++) {
@@ -285,7 +286,7 @@ namespace embree
                                this->numTimeSegments(),
                                this->time_range,
                                this->numTimeSegments(),
-                               this->geomID,
+                               geomID,
                                unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
