@@ -30,8 +30,6 @@
 #include "../gpu/AABB3f.h"
 #include "../gpu/builder.h"
 
-#define PROFILE 0
-#define PROFILE_RUNS 20
 #define ENABLE_BREADTH_FIRST_PHASE 1
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
 #define BUILD_CHECKS 0
@@ -79,18 +77,10 @@ namespace embree
   inline bool is_left(const gpu::BinMapping &binMapping, const gpu::Split &split, const gpu::AABB &primref)
   {
     const uint   dim  = split.dim;    
-#if 1 
-    const float lower = ((float*)&primref.lower)[dim]; // FIXME    
-    const float upper = ((float*)&primref.upper)[dim];
-    const float c     = lower+upper;
-    const uint pos    = (uint)cl::sycl::floor((c-((float*)&binMapping.ofs)[dim])*((float*)&binMapping.scale)[dim]); // FIXME
-#else
-    // ORG OCL CODE    
     const float lower = primref.lower[dim];    
     const float upper = primref.upper[dim];
     const float c     = lower+upper;
     const uint pos    = (uint)cl::sycl::floor((c-binMapping.ofs[dim])*binMapping.scale[dim]);
-#endif
     return pos < split.pos;    
   }
 
@@ -463,8 +453,6 @@ namespace embree
 	    *outGeometryBoundsRight = rightAABB;
 
 	    *atomicCountLeft = split.pos - begin;
-	    // if (localID == 0)
-	    //   out << record << " - > left " << *outLeft << " right " << *outRight << cl::sycl::endl;
 	  }	
       }
     else
@@ -665,7 +653,6 @@ namespace embree
 	    struct gpu::QBVHNodeN *node = (struct gpu::QBVHNodeN*)(bvh_mem + node_offset);
 	    if (subgroupLocalID < numChildren)
 	      children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
-
 	    
 	    /* write out child buildrecords to memory */	  
 	    if (localID == 0)
@@ -898,317 +885,326 @@ namespace embree
 	
         bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderSAH");
 
-#if PROFILE
-        profile(2,PROFILE_RUNS,org_numPrimitives,[&] (ProfileTimer& timer) {
-#endif
-
-            /* enable USM allocation for primrefs */
+	/* enable USM allocation for primrefs */
 #if defined(EMBREE_DPCPP_SUPPORT)
-	    assert(sizeof(gpu::Globals) == 4*64);
-	    assert(sizeof(gpu::Quad1v)  == 64);
-	    assert(sizeof(gpu::Triangle1v) == 48);
-	    DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
-	    prims.getAlloc().enableUSM(&deviceGPU->getGPUDevice(),&deviceGPU->getGPUContext());	    
+	assert(sizeof(gpu::Globals) == 4*64);
+	assert(sizeof(gpu::Quad1v)  == 64);
+	assert(sizeof(gpu::Triangle1v) == 48);
+	DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
+	prims.getAlloc().enableUSM(&deviceGPU->getGPUDevice(),&deviceGPU->getGPUContext());	    
 #endif	    
 
-	    /* allocate primref array */
-	    const float alloc_factor = mode ? scene->device->max_spatial_split_replications : 1.0f; // 20% spatial s
+	/* allocate primref array */
+	const float alloc_factor = mode ? scene->device->max_spatial_split_replications : 1.0f; // 20% spatial s
 
-	    const size_t alloc_numPrimitives = (size_t)(org_numPrimitives*alloc_factor);
-            prims.resize(alloc_numPrimitives); 
+	const size_t alloc_numPrimitives = (size_t)(org_numPrimitives*alloc_factor);
+	prims.resize(alloc_numPrimitives); 
 	    
-            /* create primref array */
-            PrimInfo pinfo;
+	/* create primref array */
+	PrimInfo pinfo;
 
-	    if (alloc_factor > 1.0f)
-	      {
-		/* presplits */
-		pinfo = mesh ?
-		  createPrimRefArray_presplit<Mesh,SplitterFactory>(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
-		  createPrimRefArray_presplit<Mesh,SplitterFactory>(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);		
-	      }
-	    else
-	      {
-		pinfo = mesh ?
-		  createPrimRefArray(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
-		  createPrimRefArray(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);
-	      }
+	if (alloc_factor > 1.0f)
+	  {
+	    /* presplits */
+	    pinfo = mesh ?
+	      createPrimRefArray_presplit<Mesh,SplitterFactory>(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
+	      createPrimRefArray_presplit<Mesh,SplitterFactory>(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);		
+	  }
+	else
+	  {
+	    pinfo = mesh ?
+	      createPrimRefArray(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
+	      createPrimRefArray(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);
+	  }
 
-	    /* use correct number of primitives */
-	    size_t numPrimitives = pinfo.size();
+	/* use correct number of primitives */
+	size_t numPrimitives = pinfo.size();
 	    
-            /* pinfo might has zero size due to invalid geometry */
-            if (unlikely(numPrimitives == 0))
-	      {
-		bvh->clear();
-		prims.clear();
-		return;
-	      }
+	/* pinfo might has zero size due to invalid geometry */
+	if (unlikely(numPrimitives == 0))
+	  {
+	    bvh->clear();
+	    prims.clear();
+	    return;
+	  }
 	    
-	    NodeRef root(BVH::emptyNode);
+	NodeRef root(BVH::emptyNode);
 	    
 #if defined(EMBREE_DPCPP_SUPPORT)
 	      
-	    cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
-	    const int maxWorkGroupSize = deviceGPU->getGPUMaxWorkGroupSize();
+	cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
+	const int maxWorkGroupSize = deviceGPU->getGPUMaxWorkGroupSize();
 	    
-	    PRINT(maxWorkGroupSize);
+	PRINT(maxWorkGroupSize);
 
-	    /* --- estimate size of the BVH --- */
-	    const uint leaf_primitive_size = sizeof(Primitive);
-	    const uint node_size       = numPrimitives * sizeof(gpu::QBVHNodeN) / 2;
-	    const uint leaf_size       = numPrimitives * leaf_primitive_size;
-	    const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
-	    const uint node_data_start = sizeof(gpu::BVHBase);
-	    const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
+	/* --- estimate size of the BVH --- */
+	const uint leaf_primitive_size = sizeof(Primitive);
+	const uint node_size       = numPrimitives * sizeof(gpu::QBVHNodeN) / 2;
+	const uint leaf_size       = numPrimitives * leaf_primitive_size;
+	const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
+	const uint node_data_start = sizeof(gpu::BVHBase);
+	const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
 	    
-	    /* --- allocate and set buffers --- */
+	/* --- allocate and set buffers --- */
 
-	    gpu::AABB *aabb = (gpu::AABB*)prims.data();
-	    assert(aabb);
+	gpu::AABB *aabb = (gpu::AABB*)prims.data();
+	assert(aabb);
 
-	    char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
-	    assert(bvh_mem);
+	char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
+	assert(bvh_mem);
 
-	    uint *primref_index = (uint*)cl::sycl::aligned_alloc(64,sizeof(uint)*2*numPrimitives,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
-	    assert(primref_index);
+	uint *primref_index = (uint*)cl::sycl::aligned_alloc(64,sizeof(uint)*2*numPrimitives,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
+	assert(primref_index);
 
-	    gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
-	    assert(globals);
+	gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
+	assert(globals);
 
-	    /* --- init globals (device) --- */
-	    {
-	      cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  cgh.single_task<class init_first_kernel>([=]() {
-		      globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize,0,leaf_primitive_size);
-		      globals->leaf_mem_allocator_cur += leaf_primitive_size*numPrimitives;
-		    });
+	double total0 = getSeconds();
+
+	double d0 = getSeconds();
+	
+	/* --- init globals (device) --- */
+	{
+	  cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
+	      cgh.single_task<class init_first_kernel>([=]() {
+		  globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize,0,leaf_primitive_size);
+		  globals->leaf_mem_allocator_cur += leaf_primitive_size*numPrimitives;
 		});
-	      try {
-		gpu_queue.wait_and_throw();
-	      } catch (cl::sycl::exception const& e) {
-		std::cout << "Caught synchronous SYCL exception:\n"
-			  << e.what() << std::endl;
-		FATAL("OpenCL Exception");     
-	      }
-	    }	    
-	    
-	    const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));	    
-	    {	      
-	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-		  cgh.parallel_for<class init_bounds0>(nd_range1,[=](cl::sycl::nd_item<1> item)
+	    });
+	  try {
+	    gpu_queue.wait_and_throw();
+	  } catch (cl::sycl::exception const& e) {
+	    std::cout << "Caught synchronous SYCL exception:\n"
+		      << e.what() << std::endl;
+	    FATAL("OpenCL Exception");     
+	  }
+	}	    
+	double d1 = getSeconds();
+	PRINT(100 * (d1-d0));
+
+	
+	double t1 = getSeconds();
+	
+	const cl::sycl::nd_range<1> nd_range1(cl::sycl::range<1>((int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));	    
+	{	      
+	  cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+	      cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+	      cgh.parallel_for<class init_bounds0>(nd_range1,[=](cl::sycl::nd_item<1> item)
+	    {
+	      const uint startID = item.get_global_id(0);
+	      const uint step    = item.get_global_range().size();
+
+	      gpu::AABB local_geometry_aabb;
+	      gpu::AABB local_centroid_aabb;
+	      local_geometry_aabb.init();
+	      local_centroid_aabb.init();
+		  
+	      for (uint i=startID;i<numPrimitives;i+=step)
 		{
-		  const uint startID = item.get_global_id(0);
-		  const uint step    = item.get_global_range().size();
-
-		  gpu::AABB local_geometry_aabb;
-		  gpu::AABB local_centroid_aabb;
-		  local_geometry_aabb.init();
-		  local_centroid_aabb.init();
+		  const gpu::AABB aabb_geom = aabb[i];
+		  const gpu::AABB aabb_centroid(aabb_geom.centroid2());
+		  primref_index[i] = i;
+		  local_geometry_aabb.extend(aabb_geom);
+		  local_centroid_aabb.extend(aabb_centroid);		      
+		}
+	      cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(globals);
+	      local_geometry_aabb.atomic_merge_global(ptr.get()->geometryBounds);
+	      local_centroid_aabb.atomic_merge_global(ptr.get()->centroidBounds);		  
+	    });
 		  
-		  for (uint i=startID;i<numPrimitives;i+=step)
-		    {
-		      const gpu::AABB aabb_geom = aabb[i];
-		      const gpu::AABB aabb_centroid(aabb_geom.centroid2());
-		      primref_index[i] = i;
-		      local_geometry_aabb.extend(aabb_geom);
-		      local_centroid_aabb.extend(aabb_centroid);		      
-		    }
-		  cl::sycl::multi_ptr<gpu::Globals,cl::sycl::access::address_space::global_space> ptr(globals);
-		  local_geometry_aabb.atomic_merge_global(ptr.get()->geometryBounds);
-		  local_centroid_aabb.atomic_merge_global(ptr.get()->centroidBounds);		  
-		});
-		  
-		});
-	      try {
-		gpu_queue.wait_and_throw();
-	      } catch (cl::sycl::exception const& e) {
-		std::cout << "Caught synchronous SYCL exception:\n"
-			  << e.what() << std::endl;
-		FATAL("OpenCL Exception");     		
-	      }
-	    }
-
+	    });
+	  try {
+	    gpu_queue.wait_and_throw();
+	  } catch (cl::sycl::exception const& e) {
+	    std::cout << "Caught synchronous SYCL exception:\n"
+		      << e.what() << std::endl;
+	    FATAL("OpenCL Exception");     		
+	  }
+	}
+	double t2 = getSeconds();
+	if (unlikely(deviceGPU->verbosity(2)))
+	  std::cout << "Get Geometry and Centroid Bounds Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		
 	    
-	    /* --- init bvh sah builder (device) --- */
-	    {
-	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-		  cgh.single_task<class init_builder>([=]() {
-		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
-		      record->init(0,numPrimitives,globals->centroidBounds);
-		      globals->numBuildRecords = 1;
-		      DBG_BUILD(
-				out << "geometryBounds: " << globals->geometryBounds << cl::sycl::endl;
-				out << "centroiBounds : " << globals->centroidBounds << cl::sycl::endl;
-			  );
-		    });
+	/* --- init bvh sah builder (device) --- */
+	{
+	  cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+	      cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+	      cgh.single_task<class init_builder>([=]() {
+		  gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
+		  record->init(0,numPrimitives,globals->centroidBounds);
+		  globals->numBuildRecords = 1;
+		  DBG_BUILD(
+			    out << "geometryBounds: " << globals->geometryBounds << cl::sycl::endl;
+			    out << "centroiBounds : " << globals->centroidBounds << cl::sycl::endl;
+			    );
 		});
-	      try {
-		gpu_queue.wait_and_throw();
-	      } catch (cl::sycl::exception const& e) {
-		std::cout << "Caught synchronous SYCL exception:\n"
-			  << e.what() << std::endl;
-		FATAL("OpenCL Exception");     		
-	      }
-	    }
+	    });
+	  try {
+	    gpu_queue.wait_and_throw();
+	  } catch (cl::sycl::exception const& e) {
+	    std::cout << "Caught synchronous SYCL exception:\n"
+		      << e.what() << std::endl;
+	    FATAL("OpenCL Exception");     		
+	  }
+	}
 
-	    /* --- parallel thread breadth first build (device) --- */
+	/* --- parallel thread breadth first build (device) --- */
 
 #if ENABLE_BREADTH_FIRST_PHASE == 1
-	    double t1 = getSeconds();
-	    uint old_numBuildRecords = 0;
-	    while(old_numBuildRecords != globals->numBuildRecords)
-	    {
-	      old_numBuildRecords = globals->numBuildRecords;	      
-	      const uint subtreeThreshold = 512;	      
-	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+	t1 = getSeconds();
+	uint old_numBuildRecords = 0;
+	while(old_numBuildRecords != globals->numBuildRecords)
+	  {
+	    old_numBuildRecords = globals->numBuildRecords;	      
+	    const uint subtreeThreshold = 512;	      
+	    cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
-		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(globals->numBuildRecords*(int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));
+		cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+		const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(globals->numBuildRecords*(int)maxWorkGroupSize),cl::sycl::range<1>((int)maxWorkGroupSize));
 		  
-		  /* local variables */
-		  cl::sycl::accessor< gpu::BinInfo2   , 0, sycl_read_write, sycl_local> binInfo2(cgh);
-		  cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> local_current(cgh);
-		  cl::sycl::accessor< gpu::AABB       , 1, sycl_read_write, sycl_local> childrenAABB(cl::sycl::range<1>(BVH_NODE_N+1),cgh);
-		  cl::sycl::accessor< gpu::BuildRecord, 1, sycl_read_write, sycl_local> children(cl::sycl::range<1>(BVH_NODE_N+1),cgh);
-		  cl::sycl::accessor< gpu::Split      , 0, sycl_read_write, sycl_local> bestSplit(cgh);		  
-		  cl::sycl::accessor< uint            , 0, sycl_read_write, sycl_local> atomicCountLeft(cgh);
-		  cl::sycl::accessor< uint            , 0, sycl_read_write, sycl_local> atomicCountRight(cgh);
+		/* local variables */
+		cl::sycl::accessor< gpu::BinInfo2   , 0, sycl_read_write, sycl_local> binInfo2(cgh);
+		cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> local_current(cgh);
+		cl::sycl::accessor< gpu::AABB       , 1, sycl_read_write, sycl_local> childrenAABB(cl::sycl::range<1>(BVH_NODE_N+1),cgh);
+		cl::sycl::accessor< gpu::BuildRecord, 1, sycl_read_write, sycl_local> children(cl::sycl::range<1>(BVH_NODE_N+1),cgh);
+		cl::sycl::accessor< gpu::Split      , 0, sycl_read_write, sycl_local> bestSplit(cgh);		  
+		cl::sycl::accessor< uint            , 0, sycl_read_write, sycl_local> atomicCountLeft(cgh);
+		cl::sycl::accessor< uint            , 0, sycl_read_write, sycl_local> atomicCountRight(cgh);
 		  		  		  		  
-		  cgh.parallel_for<class parallel_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
-		      const uint groupID   = item.get_group(0);
-		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();		      
-		      gpu::AABB *primref     = aabb;
-		      uint *primref_index0   = primref_index + 0;
-		      uint *primref_index1   = primref_index + globals->numPrimitives;		      
-		      gpu::BuildRecord *records = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
+		cgh.parallel_for<class parallel_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
+		    const uint groupID   = item.get_group(0);
+		    cl::sycl::intel::sub_group subgroup = item.get_sub_group();		      
+		    gpu::AABB *primref     = aabb;
+		    uint *primref_index0   = primref_index + 0;
+		    uint *primref_index1   = primref_index + globals->numPrimitives;		      
+		    gpu::BuildRecord *records = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
 		      		      
-		      bvh_build_parallel_breadth_first(item,subgroup,records,groupID,*globals,bvh_mem,primref,primref_index0,primref_index1,bestSplit,binInfo2,local_current,childrenAABB.get_pointer(),children.get_pointer(),atomicCountLeft.get_pointer(),atomicCountRight.get_pointer(),subtreeThreshold,out);
-		    });		  
-		});
-	      try {
-		gpu_queue.wait_and_throw();
-	      } catch (cl::sycl::exception const& e) {
-		std::cout << "Caught synchronous SYCL exception:\n"
-			  << e.what() << std::endl;
-		FATAL("OpenCL Exception");     		
-	      }
-	    }
-
-	    double t2 = getSeconds();
-	    if (unlikely(deviceGPU->verbosity(2)))
-	      std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;
-#endif	    
-
-	    
-	    /* --- single HW thread recursive build (device) --- */
-	    
-	    t1 = getSeconds();
-#if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
-	    const uint numParallelRecords = 1;
-#else
-	    const uint numParallelRecords = globals->numBuildRecords;	    
-#endif	    
-	    {
-	      cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-
-		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-		  const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(numParallelRecords * BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));
-		  
-		  /* local variables */
-		  cl::sycl::accessor< gpu::BinInfo    , 0, sycl_read_write, sycl_local> binInfo(cgh);
-		  cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> current(cgh);
-		  cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> brecord(cgh);
-		  cl::sycl::accessor< gpu::AABB       , 1, sycl_read_write, sycl_local> childrenAABB(cl::sycl::range<1>(BVH_NODE_N),cgh);
-		  cl::sycl::accessor< gpu::BuildRecord, 1, sycl_read_write, sycl_local> stack(cl::sycl::range<1>(BUILDRECORD_STACK_SIZE),cgh);
-		  		  		  
-		  cgh.parallel_for<class serial_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
-		      const uint groupID   = item.get_group(0);
-		      cl::sycl::intel::sub_group subgroup = item.get_sub_group();
-		      
-		      gpu::AABB *primref     = aabb;
-		      uint *primref_index0   = primref_index + 0;
-		      uint *primref_index1   = primref_index + globals->numPrimitives;		      
-		      gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
-		      
-#if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
-		      const uint numRecords = globals->numBuildRecords;		      
-		      const uint numGroups = item.get_group_range(0);		      
-		      for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
-#else
-			const uint recordID = groupID;
-#endif			
-		      bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);
-		    });		  
-		});
-	      try {
-		gpu_queue.wait_and_throw();
-	      } catch (cl::sycl::exception const& e) {
-		std::cout << "Caught synchronous SYCL exception:\n"
-			  << e.what() << std::endl;
-		FATAL("OpenCL Exception");     		
-	      }
-	    }
-
-	    t2 = getSeconds();
-	    if (unlikely(deviceGPU->verbosity(2)))
-	      std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
-
-	    /* --- convert primrefs to primitives (host) --- */
-
-	    Primitive *leaf_prims = (Primitive *)(bvh_mem + globals->leaf_mem_allocator_start);
-	    parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
-		for (size_t i=r.begin(); i<r.end(); i++)
-		  {
-		    const uint index = primref_index[i];
-		    const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
-		    const uint primID = gpu::as_uint((float)aabb[index].upper.w());
-		    leaf_prims[i].init(geomID,primID,scene);
-		  }
+		    bvh_build_parallel_breadth_first(item,subgroup,records,groupID,*globals,bvh_mem,primref,primref_index0,primref_index1,bestSplit,binInfo2,local_current,childrenAABB.get_pointer(),children.get_pointer(),atomicCountLeft.get_pointer(),atomicCountRight.get_pointer(),subtreeThreshold,out);
+		  });		  
 	      });
-	    
-	    
-            /* call BVH builder */
-            root = NodeRef((size_t)bvh_mem);
-
-	    // = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
-#endif	    
-            bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
-
-	    std::cout << "BVH GPU Builder DONE: bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
-	    
-	    /* print BVH stats */
-#if defined(EMBREE_DPCPP_SUPPORT) 
-	    if (unlikely(deviceGPU->verbosity(2)))	      
-	    {	      
-	      cl::sycl::queue &print_queue = deviceGPU->getGPUQueue();
-	      cl::sycl::event queue_event = print_queue.submit([&](cl::sycl::handler &cgh) {
-		  cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-		  cgh.single_task<class printStats>([=]() {
-		      printBVHStats(globals,bvh_mem,out);
-		    });
-
-		});
-	      try {
-		print_queue.wait_and_throw();
-	      } catch (cl::sycl::exception const& e) {
-		std::cout << "Caught synchronous SYCL exception:\n"
-			  << e.what() << std::endl;
-		FATAL("OpenCL Exception");     		
-	      }	      
+	    try {
+	      gpu_queue.wait_and_throw();
+	    } catch (cl::sycl::exception const& e) {
+	      std::cout << "Caught synchronous SYCL exception:\n"
+			<< e.what() << std::endl;
+	      FATAL("OpenCL Exception");     		
 	    }
+	  }
+
+	t2 = getSeconds();
+	if (unlikely(deviceGPU->verbosity(2)))
+	  std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;
 #endif	    
-	    /* --- deallocate temporary data structures --- */
+	
+	    
+	/* --- single HW thread recursive build (device) --- */
+	    
+	t1 = getSeconds();
+#if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
+	const uint numParallelRecords = 1;
+#else
+	const uint numParallelRecords = globals->numBuildRecords;	    
+#endif	    
+	{
+	  cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+
+	      cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+	      const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(numParallelRecords * BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));
+		  
+	      /* local variables */
+	      cl::sycl::accessor< gpu::BinInfo    , 0, sycl_read_write, sycl_local> binInfo(cgh);
+	      cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> current(cgh);
+	      cl::sycl::accessor< gpu::BuildRecord, 0, sycl_read_write, sycl_local> brecord(cgh);
+	      cl::sycl::accessor< gpu::AABB       , 1, sycl_read_write, sycl_local> childrenAABB(cl::sycl::range<1>(BVH_NODE_N),cgh);
+	      cl::sycl::accessor< gpu::BuildRecord, 1, sycl_read_write, sycl_local> stack(cl::sycl::range<1>(BUILDRECORD_STACK_SIZE),cgh);
+		  		  		  
+	      cgh.parallel_for<class serial_build>(nd_range,[=](cl::sycl::nd_item<1> item) {
+		  const uint groupID   = item.get_group(0);
+		  cl::sycl::intel::sub_group subgroup = item.get_sub_group();
+		      
+		  gpu::AABB *primref     = aabb;
+		  uint *primref_index0   = primref_index + 0;
+		  uint *primref_index1   = primref_index + globals->numPrimitives;		      
+		  gpu::BuildRecord *record = (gpu::BuildRecord*)(bvh_mem + globals->leaf_mem_allocator_start);
+		      
+#if ENABLE_SINGLE_THREAD_SERIAL_BUILD == 1
+		  const uint numRecords = globals->numBuildRecords;		      
+		  const uint numGroups = item.get_group_range(0);		      
+		  for (uint recordID = groupID;recordID<numRecords;recordID+=numGroups)
+#else
+		    const uint recordID = groupID;
+#endif			
+		  bvh_build_serial(subgroup,record[recordID],*globals,bvh_mem,primref,primref_index0,primref_index1,binInfo,current,brecord,childrenAABB.get_pointer(),stack.get_pointer(),out);
+		});		  
+	    });
+	  try {
+	    gpu_queue.wait_and_throw();
+	  } catch (cl::sycl::exception const& e) {
+	    std::cout << "Caught synchronous SYCL exception:\n"
+		      << e.what() << std::endl;
+	    FATAL("OpenCL Exception");     		
+	  }
+	}
+
+	t2 = getSeconds();
+	if (unlikely(deviceGPU->verbosity(2)))
+	  std::cout << "Parallel Depth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
+
+	/* --- convert primrefs to primitives (host) --- */
+	t1 = getSeconds();
+	Primitive *leaf_prims = (Primitive *)(bvh_mem + globals->leaf_mem_allocator_start);
+	parallel_for( size_t(0), numPrimitives, size_t(1), [&](const range<size_t>& r) -> void {
+	    for (size_t i=r.begin(); i<r.end(); i++)
+	      {
+		const uint index = primref_index[i];
+		const uint geomID = gpu::as_uint((float)aabb[index].lower.w());
+		const uint primID = gpu::as_uint((float)aabb[index].upper.w());
+		leaf_prims[i].init(geomID,primID,scene);
+	      }
+	  });
+	t2 = getSeconds();
+	if (unlikely(deviceGPU->verbosity(2)))
+	  std::cout << "Convert PrimRefs to Primitives Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		    
+	    
+	    
+	/* call BVH builder */
+	root = NodeRef((size_t)bvh_mem);
+
+	// = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
+#endif	    
+	bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
+
+	double total1 = getSeconds();
+
+	std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
+	    
+	/* print BVH stats */
+#if defined(EMBREE_DPCPP_SUPPORT) 
+	if (unlikely(deviceGPU->verbosity(2)))	      
+	  {	      
+	    cl::sycl::queue &print_queue = deviceGPU->getGPUQueue();
+	    cl::sycl::event queue_event = print_queue.submit([&](cl::sycl::handler &cgh) {
+		cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+		cgh.single_task<class printStats>([=]() {
+		    printBVHStats(globals,bvh_mem,out);
+		  });
+
+	      });
+	    try {
+	      print_queue.wait_and_throw();
+	    } catch (cl::sycl::exception const& e) {
+	      std::cout << "Caught synchronous SYCL exception:\n"
+			<< e.what() << std::endl;
+	      FATAL("OpenCL Exception");     		
+	    }	      
+	  }
+#endif	    
+	/* --- deallocate temporary data structures --- */
 #if defined(EMBREE_DPCPP_SUPPORT)	    
-	    cl::sycl::free(primref_index,deviceGPU->getGPUContext());
-	    cl::sycl::free(globals      ,deviceGPU->getGPUContext());
+	cl::sycl::free(primref_index,deviceGPU->getGPUContext());
+	cl::sycl::free(globals      ,deviceGPU->getGPUContext());
 #endif
 	    
-#if PROFILE
-          });
-#endif
 
         /* for static geometries we can do some cleanups */
         if (scene && scene->isStaticAccel()) {

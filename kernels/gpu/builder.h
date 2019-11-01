@@ -383,9 +383,9 @@ namespace embree
 	bounds.atomic_merge_local(boundsY[i.y()]);
 	bounds.atomic_merge_local(boundsZ[i.z()]);
 
-	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.x()] + 0,1);
-	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.y()] + 1,1);
-	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.z()] + 2,1);        
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.x()].x(),1);	
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.y()].y(),1);
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.z()].z(),1);        
       }
       
 
@@ -465,9 +465,9 @@ namespace embree
 	bounds.atomic_merge_local(boundsY[i.y()]);
 	bounds.atomic_merge_local(boundsZ[i.z()]);
 
-	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.x()] + 0,1);
-	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.y()] + 1,1);
-	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.z()] + 2,1);        
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.x()].x(),1);
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.y()].y(),1);
+	gpu::atomic_add<uint,cl::sycl::access::address_space::local_space>((uint *)&counts[i.z()].z(),1);        
       }
       
       [[cl::intel_reqd_sub_group_size(BINS)]] inline gpu::Split reduceBinsAndComputeBestSplit32(cl::sycl::intel::sub_group &sg, const float4 scale, const uint startID, const uint endID)
