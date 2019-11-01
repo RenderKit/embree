@@ -148,7 +148,7 @@ namespace embree
     
     
     template<typename Mesh, typename SplitterFactory>    
-      PrimInfo createPrimRefArray_presplit(Geometry* geometry, size_t geomID, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+      PrimInfo createPrimRefArray_presplit(Geometry* geometry, unsigned int geomID, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;
       

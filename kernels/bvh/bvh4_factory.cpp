@@ -240,15 +240,15 @@ namespace embree
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4vSceneBuilderFastSpatialSAH,void* COMMA Scene* COMMA size_t);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
   //DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4iMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4GridMeshBuilderSAH,void* COMMA GridMesh* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4GridMeshBuilderSAH,void* COMMA GridMesh* COMMA unsigned int COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4InstanceSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
@@ -260,11 +260,11 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4SubdivPatch1BuilderSAH,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4SubdivPatch1MBBuilderSAH,void* COMMA Scene* COMMA size_t);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA size_t COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA size_t COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
@@ -941,35 +941,35 @@ namespace embree
     return intersectors;
   }
 
-  void BVH4Factory::createTriangleMeshTriangle4Morton(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createTriangleMeshTriangle4Morton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Triangle4::type,scene);
     builder = factory->BVH4Triangle4MeshBuilderMortonGeneral(accel,scene->getSafe<TriangleMesh>(geomID),0);
   }
 
-  void BVH4Factory::createTriangleMeshTriangle4vMorton(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createTriangleMeshTriangle4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Triangle4v::type,scene);
     builder = factory->BVH4Triangle4vMeshBuilderMortonGeneral(accel,scene->getSafe<TriangleMesh>(geomID),0);
   }
 
-  void BVH4Factory::createTriangleMeshTriangle4iMorton(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createTriangleMeshTriangle4iMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Triangle4i::type,scene);
     builder = factory->BVH4Triangle4iMeshBuilderMortonGeneral(accel,scene->getSafe<TriangleMesh>(geomID),0);
   }
 
-  void BVH4Factory::createQuadMeshQuad4vMorton(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createQuadMeshQuad4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Quad4v::type,scene);
     builder = factory->BVH4Quad4vMeshBuilderMortonGeneral(accel,scene->getSafe<QuadMesh>(geomID),0);
   }
 
-  void BVH4Factory::createTriangleMeshTriangle4(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createTriangleMeshTriangle4(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Triangle4::type,scene);
@@ -987,7 +987,7 @@ namespace embree
     }
   }
 
-  void BVH4Factory::createTriangleMeshTriangle4v(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createTriangleMeshTriangle4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Triangle4v::type,scene);
@@ -1005,7 +1005,7 @@ namespace embree
     }
   }
 
-  void BVH4Factory::createTriangleMeshTriangle4i(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createTriangleMeshTriangle4i(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Triangle4i::type,scene);
@@ -1023,7 +1023,7 @@ namespace embree
     }
   }
 
-  void BVH4Factory::createQuadMeshQuad4v(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createQuadMeshQuad4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Quad4v::type,scene);
@@ -1041,7 +1041,7 @@ namespace embree
     }
   }
 
-  void BVH4Factory::createUserGeometryMesh(Scene* scene, size_t geomID, AccelData*& accel, Builder*& builder)
+  void BVH4Factory::createUserGeometryMesh(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
     BVH4Factory* factory = scene->device->bvh4_factory.get();
     accel = new BVH4(Object::type,scene);
