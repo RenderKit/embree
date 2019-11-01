@@ -90,7 +90,7 @@ namespace embree
         for (size_t i=0; i<scene->size(); i++) {
           Ty* mesh = at(i);
           if (mesh == nullptr) continue;
-          ret = max(ret,mesh->geomID);
+          ret = max(ret,(unsigned int)i);
         }
         return ret;
       }
