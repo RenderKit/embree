@@ -221,13 +221,14 @@ def runConfig(config):
       
       elif OS == "windows":
         if tasking == "TBB2019.2": 
-          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2019.2-windows"
+          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2019.2-windows"          
         elif tasking == "TBB2017": 
           tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
-          conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
         else:
           raise ValueError('unknown tasking system: ' + tasking + '')
 
+        conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
+        
         if platform == "x64":
           env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;"+tbb_path+"\\bin\\intel64\\vc14;%PATH%")
         else:
