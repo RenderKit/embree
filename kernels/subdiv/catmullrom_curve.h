@@ -114,6 +114,10 @@ namespace embree
         return 0.25f*(v0+v1+v2+v3);
       }
 
+      __forceinline BBox<Vertex> bounds() const {
+        return merge(BBox<Vertex>(v0),BBox<Vertex>(v1),BBox<Vertex>(v2),BBox<Vertex>(v3));
+      }
+
       __forceinline friend CatmullRomCurveT operator -( const CatmullRomCurveT& a, const Vertex& b ) {
         return CatmullRomCurveT(a.v0-b,a.v1-b,a.v2-b,a.v3-b);
       }
