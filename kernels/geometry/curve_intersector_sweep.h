@@ -53,7 +53,7 @@ namespace embree
     };
     
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
-    __forceinline bool intersect_bezier_iterative_debug(const RayHit& ray, const float dt, const NativeCurve3fa& curve, size_t i,
+    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const NativeCurve3fa& curve, size_t i,
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
@@ -71,26 +71,47 @@ namespace embree
     {
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
-
       const float length_ray_dir = length(dir);
+
+      /* error of curve evaluations is propertional to largest coordinate */
+      const BBox3fa box = curve.bounds();
+      const float P_err = 16.0f*float(ulp)*reduce_max(max(abs(box.lower),abs(box.upper)));
+     
       for (size_t i=0; i<numJacobianIterations; i++) 
       {
         const Vec3fa Q = madd(Vec3fa(t),dir,org);
         //const Vec3fa dQdu = zero;
         const Vec3fa dQdt = dir;
-
+        const float Q_err = 16.0f*float(ulp)*length_ray_dir*t; // works as org=zero here
+           
         Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
         //const Vec3fa dPdt = zero;
 
         const Vec3fa R = Q-P;
+        const float len_R = length(R); //reduce_max(abs(R));
+        const float R_err = max(Q_err,P_err);
         const Vec3fa dRdu = /*dQdu*/-dPdu;
         const Vec3fa dRdt = dQdt;//-dPdt;
 
         const Vec3fa T = normalize(dPdu);
         const Vec3fa dTdu = dnormalize(dPdu,ddPdu);
         //const Vec3fa dTdt = zero;
+        const float cos_err = P_err/length(dPdu);
 
+        /* Error estimate for dot(R,T):
+
+           dot(R,T) = cos(R,T) |R| |T|
+                    = (cos(R,T) +- cos_error) * (|R| +- |R|_err) * (|T| +- |T|_err)
+                    = cos(R,T)*|R|*|T| 
+                      +- cos(R,T)*(|R|*|T|_err + |T|*|R|_err)
+                      +- cos_error*(|R| + |T|)
+                      +- lower order terms
+           with cos(R,T) being in [0,1] and |T| = 1 we get:
+             dot(R,T)_err = |R|*|T|_err + |R|_err = cos_error*(|R|+1)
+        */
+              
         const float f = dot(R,T);
+        const float f_err = len_R*P_err + R_err + cos_err*(1.0f+len_R);
         const float dfdu = dot(dRdu,T) + dot(R,dTdu);
         const float dfdt = dot(dRdt,T);// + dot(R,dTdt);
 
@@ -100,6 +121,7 @@ namespace embree
         const float rsqrt_K = rsqrt(K);
 
         const float g = sqrt(K)-P.w;
+        const float g_err = R_err + f_err + 16.0f*float(ulp)*box.upper.w;
         const float dgdu = /*0.5f*/dKdu*rsqrt_K-dPdu.w;
         const float dgdt = /*0.5f*/dKdt*rsqrt_K;//-dPdt.w;
 
@@ -107,10 +129,8 @@ namespace embree
         const Vec2f dut = rcp(J)*Vec2f(f,g);
         const Vec2f ut = Vec2f(u,t) - dut;
         u = ut.x; t = ut.y;
-        
-        const bool converged_u = abs(f) < 16.0f*float(ulp)*reduce_max(abs(dPdu));
-        const bool converged_t = abs(g) < 16.0f*float(ulp)*length_ray_dir;
-        if (converged_u && converged_t) 
+
+        if (abs(f) < f_err && abs(g) < g_err)
         {
           t+=dt;
           if (!(ray.tnear() <= t && t <= ray.tfar)) return false; // rejects NaNs
