@@ -952,16 +952,36 @@ namespace embree
 
 	char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	assert(bvh_mem);
-
+	
 	uint *primref_index = (uint*)cl::sycl::aligned_alloc(64,sizeof(uint)*2*numPrimitives,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	assert(primref_index);
 
 	gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	assert(globals);
 
-	double total0 = getSeconds();
 
-	double d0 = getSeconds();
+	/* --- USM init absorbtion --- */
+	{
+#if 1
+	  // FIXME: this kernel should not be necessary	  
+	  //double d0 = getSeconds();		  
+	  cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
+	      cgh.single_task<class dumm_usm_kernel>([=]() {
+		});
+	    });
+	  try {
+	    gpu_queue.wait_and_throw();
+	  } catch (cl::sycl::exception const& e) {
+	    std::cout << "Caught synchronous SYCL exception:\n"
+		      << e.what() << std::endl;
+	    FATAL("OpenCL Exception");     
+	  }
+	  //double d1 = getSeconds();
+	  //PRINT(d1-d0);	
+#endif	  
+	}	    
+	
+	double total0 = getSeconds();
 	
 	/* --- init globals (device) --- */
 	{
@@ -979,9 +999,6 @@ namespace embree
 	    FATAL("OpenCL Exception");     
 	  }
 	}	    
-	double d1 = getSeconds();
-	PRINT(100 * (d1-d0));
-
 	
 	double t1 = getSeconds();
 	
@@ -1176,7 +1193,7 @@ namespace embree
 
 	double total1 = getSeconds();
 
-	std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : bvh " << bvh << " bvh->root " << bvh->root << std::endl << std::flush;
+	std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : " << numPrimitives*0.000001f/(total1-total0) << " MPrims/s" << std::endl << std::flush;
 	    
 	/* print BVH stats */
 #if defined(EMBREE_DPCPP_SUPPORT) 
