@@ -23,7 +23,7 @@
   tags:   [mac]
   only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
+.continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   #tags:   [win7, v120]
   #only:   [pushes]
@@ -35,7 +35,7 @@ continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
 #  tags:   [win7, v140]
 #  only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2:
+.continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2 maxinstancelevelcount:8"
   #tags:   [win7, v141]
   #only:   [pushes]
@@ -99,28 +99,28 @@ continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2:
 # Intensive Nightly Tests
 ####################################################################
 
-nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-INT:
+.nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-INT:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:2"
   #tags:   [win7, v120]
   #only:   [schedules]
   tags: [vis-vm-win-04]
   only:   [pushes, web]
 
-nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX-TBB2019.2:
+.nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX tasking:TBB2019.2 intensity:4"
   #tags:   [win7, v120] # avx
   #only:   [schedules]
   tags: [vis-vm-win-04]
   only:   [pushes, web]
 
-nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2019.2:
+.nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2019.2:
   script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   #tags:   [win7, v140]
   #only:   [schedules]
   tags: [vis-vm-win-04]
   only:   [pushes, web]
   
-nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-AVX2-PPL:
+.nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-AVX2-PPL:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:PPL intensity:2"
   #tags:   [win7, v140] # avx2
   #only:   [schedules]
@@ -148,7 +148,7 @@ nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-NAMESPACE:
 #  tags: [vis-vm-win-04]
 #  only:   [pushes, web]
 
-nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX2-TBB2019.2:
+.nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4"
   #tags:   [win7, icc17]
   #only:   [schedules]
@@ -490,7 +490,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX2-TBB2019.2-INSTANCE:
 # Release Builds
 ####################################################################
 
-release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
+.release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC12 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
   #tags:   [win7, icc17]
   #only:   [web]
@@ -502,7 +502,7 @@ release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-VC14-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
+.release-windows-x64-Release-ICC17-VC14-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
   #tags:   [win7, icc17]
   #only:   [web]
@@ -514,7 +514,7 @@ release-windows-x64-Release-ICC17-VC14-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
+.release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:MSI"
   #tags:   [win7, icc17]
   #only:   [web]
