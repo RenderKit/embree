@@ -146,8 +146,12 @@ IF (EMBREE_TESTING_INTENSITY GREATER 0)
 ENDIF()
 ctest_configure()
 
-ctest_build(RETURN_VALUE retval)
+ctest_build(RETURN_VALUE retval
+            NUMBER_ERRORS build_errors
+            NUMBER_WARNINGS build_warnings)
 message("test.cmake: ctest_build return value = ${retval}")
+message("test.cmake: ctest_build #errors = ${build_errors}")
+message("test.cmake: ctest_build #warnings = ${build_warnings}")
 IF (NOT retval EQUAL 0)
   message(FATAL_ERROR "test.cmake: build failed")
 ENDIF()
