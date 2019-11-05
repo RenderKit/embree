@@ -55,7 +55,7 @@ namespace embree
 
     
     template<typename Primitive>
-    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, TraversalStats *tstats)
+    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, TraversalStats *tstats)
     {
       unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
       float        stack_dist[BVH_MAX_STACK_ENTRIES];  
@@ -177,13 +177,15 @@ namespace embree
 	  {	 
 	    hit = local_hit;
 	    ray.tfar = tfar;
-	    DBG(out << "ray.tfar " << ray.tfar << " hit " << hit << cl::sycl::endl);
 	  }
+      local_hit.broadcast(sg,index);
+      return index;
     }
 
     SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
 					   cl::sycl::global_ptr<RTCSceneTy> scene,
-					   struct RTCRayHit &rayhit16)
+					   struct RTCRayHit &rayhit16,
+					   const cl::sycl::stream &out)
   {
     size_t *scene_data = (size_t*)scene.get();
     void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset
@@ -192,7 +194,9 @@ namespace embree
       {
 	rayhit.ray.initFrom(sg,rayhit16.ray,i);
 	rayhit.hit.init();
-	traceRayBVH16<gpu::Triangle1v>(sg,rayhit.ray,rayhit.hit,bvh_root,nullptr);	
+	const uint slot = traceRayBVH16<gpu::Triangle1v>(sg,rayhit.ray,rayhit.hit,bvh_root,nullptr);
+	rayhit.hit.broadcast(sg,slot);
+	//out << rayhit.hit << cl::sycl::endl;	
 	rayhit.hit.storeTo(sg,rayhit16.hit,i);
       }
     

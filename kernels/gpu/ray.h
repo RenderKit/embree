@@ -36,7 +36,7 @@ namespace embree
       unsigned int id;      // ray ID
       unsigned int flags;   // ray flags
 
-      inline void initFrom(cl::sycl::intel::sub_group &subgroup, RTCRay &source, const unsigned int i)
+      inline void initFrom(const cl::sycl::intel::sub_group &subgroup, RTCRay &source, const unsigned int i)
       {
 	org[0] = subgroup.broadcast<float>(source.org_x,i); 
 	org[1] = subgroup.broadcast<float>(source.org_y,i); 
@@ -50,8 +50,7 @@ namespace embree
 	mask   = subgroup.broadcast<unsigned int>(source.mask,i); 
 	id     = subgroup.broadcast<unsigned int>(source.id,i); 
 	flags  = subgroup.broadcast<unsigned int>(source.flags,i); 
-      }
-      
+      }      
     };
 
     /* Hit structure for a single ray */
@@ -74,7 +73,19 @@ namespace embree
 	Ng[0] = Ng[1] = Ng[2] = 0.0f;
       }
 
-      inline void storeTo(cl::sycl::intel::sub_group &subgroup, RTCHit &dest, const unsigned int i)
+      inline void broadcast(const cl::sycl::intel::sub_group &subgroup, const unsigned int i)
+      {
+	Ng[0]  = subgroup.broadcast<float>(Ng[0],i); 
+	Ng[1]  = subgroup.broadcast<float>(Ng[1],i); 
+	Ng[2]  = subgroup.broadcast<float>(Ng[2],i); 
+	u      = subgroup.broadcast<float>(u,i); 
+	v      = subgroup.broadcast<float>(v,i); 
+	primID = subgroup.broadcast<unsigned int>(primID,i);
+	geomID = subgroup.broadcast<unsigned int>(geomID,i);
+	instID = subgroup.broadcast<unsigned int>(instID,i);	
+      }
+      
+      inline void storeTo(const cl::sycl::intel::sub_group &subgroup, RTCHit &dest, const unsigned int i)
       {
 	const uint subgroupID = subgroup.get_group_id()[0];      
 	if (subgroupID == i)
@@ -109,6 +120,15 @@ namespace embree
       
     }
 
+
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const RTCRayGPU& ray) {
+      return out << " org   " << float3(ray.org[0],ray.org[1],ray.org[2])
+		 << " tnear " << ray.tnear
+		 << " dir   " << float3(ray.dir[0],ray.dir[1],ray.dir[2])
+		 << " tnear " << ray.tfar;
+      
+    }
+    
 
   };
 };

@@ -227,7 +227,8 @@ extern "C" void device_init (char* cfg)
 
 SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
 				       cl::sycl::global_ptr<RTCSceneTy> scene,
-				       struct RTCRayHit &rayhit);
+				       struct RTCRayHit &rayhit,
+				       const cl::sycl::stream &out);
 
 #endif
 
@@ -279,11 +280,14 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
     
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
-	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(4,4));
+	//const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(4,4),cl::sycl::range<2>(4,4));
+	
 	cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);		
 	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
 	    const uint x = item.get_global_id(0);
 	    const uint y = item.get_global_id(1);
+	    //out << "x " << x << " y " << y << cl::sycl::endl;
 	    if (x < width && y < height)
 	      {
 		const float3 org = cam_p;
@@ -304,8 +308,9 @@ extern "C" void device_render (int* pixels,
 		cl::sycl::global_ptr<RTCSceneTy> sycl_scene(scene);		
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		/* test function calls */
-		rtcIntersectGPUTest(sg, sycl_scene, rh);
-#endif		
+		rtcIntersectGPUTest(sg, sycl_scene, rh, out);
+#endif
+		
 	      }
 	  });		  
       });
@@ -317,7 +322,7 @@ extern "C" void device_render (int* pixels,
       FATAL("OpenCL Exception");      
     }
   }  
-
+  
 #if USE_FCT_CALLS == 0
   
   /* trace ray stream */      
@@ -336,7 +341,7 @@ extern "C" void device_render (int* pixels,
   {
     using namespace cl::sycl;	
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
-	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,16));		  
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(4,4));		  
 	cgh.parallel_for<class shade_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
 	    const uint x = item.get_global_id(0);
 	    const uint y = item.get_global_id(1);
