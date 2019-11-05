@@ -30,6 +30,7 @@ namespace embree {
 #define SIMPLE_SHADING 1
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
 #define DBG_PRINT_LINE_SIZE 512
+#define USE_FCT_CALLS 0
   
   extern "C" ISPCScene* g_ispc_scene;
   extern "C" int g_instancing_mode;
@@ -265,10 +266,12 @@ extern "C" void device_render (int* pixels,
   const size_t numPixels = width*height;
   int *fb = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*numPixels,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
   assert(fb);
-
+  
   /* generate primary ray stream */    
   {
+#if USE_FCT_CALLS == 1    
     RTCScene scene = g_scene;
+#endif    
     using namespace cl::sycl;	
     const float3 cam_p  = Vec3fa_to_float3(camera.xfm.p);
     const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
@@ -297,7 +300,7 @@ extern "C" void device_render (int* pixels,
 		rh.ray.tfar  = (float)INFINITY;		
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-#if 0
+#if USE_FCT_CALLS == 1
 		cl::sycl::global_ptr<RTCSceneTy> sycl_scene(scene);		
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		/* test function calls */
@@ -314,7 +317,9 @@ extern "C" void device_render (int* pixels,
       FATAL("OpenCL Exception");      
     }
   }  
-    
+
+#if USE_FCT_CALLS == 0
+  
   /* trace ray stream */      
   double t0 = getSeconds();
 
@@ -325,7 +330,8 @@ extern "C" void device_render (int* pixels,
 
   double t1 = getSeconds();
   std::cout << (float)numRays * 0.000001f / (t1 - t0) << " mrays/s" << std::endl;
-
+#endif
+  
   /* shade stream of rays */
   {
     using namespace cl::sycl;	

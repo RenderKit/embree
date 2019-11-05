@@ -35,6 +35,23 @@ namespace embree
       unsigned int mask;    // ray mask
       unsigned int id;      // ray ID
       unsigned int flags;   // ray flags
+
+      inline void initFrom(cl::sycl::intel::sub_group &subgroup, RTCRay &source, const unsigned int i)
+      {
+	org[0] = subgroup.broadcast<float>(source.org_x,i); 
+	org[1] = subgroup.broadcast<float>(source.org_y,i); 
+	org[2] = subgroup.broadcast<float>(source.org_z,i); 
+	tnear  = subgroup.broadcast<float>(source.tnear,i); 
+	dir[0] = subgroup.broadcast<float>(source.dir_x,i); 
+	dir[1] = subgroup.broadcast<float>(source.dir_y,i); 
+	dir[2] = subgroup.broadcast<float>(source.dir_z,i); 
+	time   = subgroup.broadcast<float>(source.time,i); 
+	tfar   = subgroup.broadcast<float>(source.tfar,i); 
+	mask   = subgroup.broadcast<unsigned int>(source.mask,i); 
+	id     = subgroup.broadcast<unsigned int>(source.id,i); 
+	flags  = subgroup.broadcast<unsigned int>(source.flags,i); 
+      }
+      
     };
 
     /* Hit structure for a single ray */
@@ -56,6 +73,23 @@ namespace embree
 	v = 0.0f;
 	Ng[0] = Ng[1] = Ng[2] = 0.0f;
       }
+
+      inline void storeTo(cl::sycl::intel::sub_group &subgroup, RTCHit &dest, const unsigned int i)
+      {
+	const uint subgroupID = subgroup.get_group_id()[0];      
+	if (subgroupID == i)
+	  {
+	    dest.Ng_x = Ng[0];
+	    dest.Ng_y = Ng[1];
+	    dest.Ng_z = Ng[2];
+	    dest.u     = u;
+	    dest.v     = v;
+	    dest.primID = primID;
+	    dest.geomID = geomID;
+	    //dest.instID[0] = instID[0];
+	  }	    
+      }      
+
     };
 
     /* Combined ray/hit structure for a single ray */

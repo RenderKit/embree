@@ -1721,22 +1721,3 @@ RTC_NAMESPACE_BEGIN;
   }
 
 RTC_NAMESPACE_END
-
-#if defined(EMBREE_DPCPP_SUPPORT)
-#define CL_TARGET_OPENCL_VERSION 220
-#define SYCL_SIMPLE_SWIZZLES
-#include <CL/sycl.hpp>
-
-namespace embree
-{
-  SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
-					 cl::sycl::global_ptr<RTCSceneTy> scene,
-					 struct RTCRayHit &rayhit)
-  {
-    //const uint subgroupID      = sg.get_group_id()[0];      
-    rayhit.hit.primID = 99;
-    //scene[0] = 1234;
-  }
-
-}
-#endif

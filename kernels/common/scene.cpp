@@ -51,8 +51,7 @@ namespace embree
 #endif
 
     intersectors = Accel::Intersectors(missing_rtcCommit);
-    //PRINT(offsetof(Scene,refCounter));
-    //exit(0);
+    
     /* one can overwrite flags through device for debugging */
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;

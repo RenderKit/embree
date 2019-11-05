@@ -29,19 +29,6 @@
 
 namespace embree
 {
-  namespace isa
-  {
-    /*! BVH ray stream GPU intersector */
-    template<typename Primitive>
-    class BVHNGPUIntersectorStream
-    {
-      typedef BVHN<4> BVH;
-
-    public:
-      static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
-      static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
-
-    };       
 
 #if defined(EMBREE_DPCPP_SUPPORT)   
 
@@ -193,7 +180,39 @@ namespace embree
 	    DBG(out << "ray.tfar " << ray.tfar << " hit " << hit << cl::sycl::endl);
 	  }
     }
+
+    SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
+					   cl::sycl::global_ptr<RTCSceneTy> scene,
+					   struct RTCRayHit &rayhit16)
+  {
+    size_t *scene_data = (size_t*)scene.get();
+    void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset
+    struct gpu::RTCRayHitGPU rayhit;
+    for (uint i=0;i<16;i++)
+      {
+	rayhit.ray.initFrom(sg,rayhit16.ray,i);
+	rayhit.hit.init();
+	traceRayBVH16<gpu::Triangle1v>(sg,rayhit.ray,rayhit.hit,bvh_root,nullptr);	
+	rayhit.hit.storeTo(sg,rayhit16.hit,i);
+      }
+    
+  }
+
 #endif
+  
+  namespace isa
+  {
+    /*! BVH ray stream GPU intersector */
+    template<typename Primitive>
+    class BVHNGPUIntersectorStream
+    {
+      typedef BVHN<4> BVH;
+
+    public:
+      static void intersect(Accel::Intersectors* This, RayHitN** inputRays, size_t numRays, IntersectContext* context);
+      static void occluded (Accel::Intersectors* This, RayN** inputRays, size_t numRays, IntersectContext* context);
+
+    };       
 
     template<typename Primitive>    
     void BVHNGPUIntersectorStream<Primitive>::intersect(Accel::Intersectors* This, RayHitN** _inputRays, size_t numRays, IntersectContext* context)

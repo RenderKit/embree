@@ -229,9 +229,9 @@ namespace embree
 	current = stack[sindex];
 
 	DBG_BUILD(
-	    if (subgroupLocalID == 0)
-	      out << "sindex = " << sindex << " current " << current << cl::sycl::endl;
-	    );
+		  if (subgroupLocalID == 0)
+		    out << "sindex = " << sindex << " current " << current << cl::sycl::endl;
+		  );
 	
 	gpu::BinMapping binMapping;
 
@@ -314,7 +314,7 @@ namespace embree
 	    /* set parent pointer in child build records */
 	    struct gpu::QBVHNodeN *node = (struct gpu::QBVHNodeN*)(bvh_mem + node_offset);
 	    if (subgroupLocalID < numChildren)
-		children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
+	      children[IDs].parent = ((uint *)&node->offset[0]) + subgroupLocalID;
 
 	    /* update parent pointer */
 	    if (current.parent != nullptr)
@@ -366,7 +366,7 @@ namespace embree
 
     /* find best split */
     if (subgroupID == 0)
-	bestSplit = binInfo2.reduceBinsAndComputeBestSplit32(sg,binMapping.scale,startID,endID);
+      bestSplit = binInfo2.reduceBinsAndComputeBestSplit32(sg,binMapping.scale,startID,endID);
 
     item.barrier(cl::sycl::access::fence_space::local_space);    
   }
@@ -800,45 +800,45 @@ namespace embree
 	  }
       }
     
-      sah_nodes  *= 1.0f / root_area;
-      sah_leaves *= 1.0f / root_area;
-      float sah = sah_nodes + sah_leaves;
-      float node_util = 100.0f * (float)inner_nodes_valid_children / (inner_nodes * BVH_NODE_N);
-      float leaf_util = 100.0f * (float)leaf_items / (leaves * BVH_LEAF_N_MAX);
+    sah_nodes  *= 1.0f / root_area;
+    sah_leaves *= 1.0f / root_area;
+    float sah = sah_nodes + sah_leaves;
+    float node_util = 100.0f * (float)inner_nodes_valid_children / (inner_nodes * BVH_NODE_N);
+    float leaf_util = 100.0f * (float)leaf_items / (leaves * BVH_LEAF_N_MAX);
 
-      out << "BVH_NODE_N " << BVH_NODE_N << " BVH_LEAF_N_MIN " << BVH_LEAF_N_MIN <<  " BVH_LEAF_N_MAX " << BVH_LEAF_N_MAX << cl::sycl::endl;
-      out << "allocators: node " << globals->node_mem_allocator_start << " -> " << globals->node_mem_allocator_cur
-	  << " ; leaf " << globals->leaf_mem_allocator_start << " -> " << globals->leaf_mem_allocator_cur
-	  << " max allocated memory " << globals->totalAllocatedMem << cl::sycl::endl;
+    out << "BVH_NODE_N " << BVH_NODE_N << " BVH_LEAF_N_MIN " << BVH_LEAF_N_MIN <<  " BVH_LEAF_N_MAX " << BVH_LEAF_N_MAX << cl::sycl::endl;
+    out << "allocators: node " << globals->node_mem_allocator_start << " -> " << globals->node_mem_allocator_cur
+	<< " ; leaf " << globals->leaf_mem_allocator_start << " -> " << globals->leaf_mem_allocator_cur
+	<< " max allocated memory " << globals->totalAllocatedMem << cl::sycl::endl;
       
-      out << "inner_nodes " << inner_nodes
-	  << " leaves " << leaves
-	  << " mixed_inner_nodes " << mixed_inner_nodes
-	  << " sah " << sah
-	  << " sah_nodes  " << sah_nodes
-	  << " sah_leaves " << sah_leaves
-	  << " max_depth " << max_depth
-	  << " leaf_items " << leaf_items
-	  << " node_util " << node_util << "%"
-	  << " leaf_util " << leaf_util << "%"
-	  << " (" << (float)leaf_items / leaves << " out of " << BVH_LEAF_N_MAX << ")"
-	  << cl::sycl::endl;
+    out << "inner_nodes " << inner_nodes
+	<< " leaves " << leaves
+	<< " mixed_inner_nodes " << mixed_inner_nodes
+	<< " sah " << sah
+	<< " sah_nodes  " << sah_nodes
+	<< " sah_leaves " << sah_leaves
+	<< " max_depth " << max_depth
+	<< " leaf_items " << leaf_items
+	<< " node_util " << node_util << "%"
+	<< " leaf_util " << leaf_util << "%"
+	<< " (" << (float)leaf_items / leaves << " out of " << BVH_LEAF_N_MAX << ")"
+	<< cl::sycl::endl;
     
-      uint node_mem        = globals->node_mem_allocator_cur-globals->node_mem_allocator_start;
-      uint max_node_mem    = globals->leaf_mem_allocator_start;
-      float node_mem_ratio = 100.0f * (float)node_mem / max_node_mem;
+    uint node_mem        = globals->node_mem_allocator_cur-globals->node_mem_allocator_start;
+    uint max_node_mem    = globals->leaf_mem_allocator_start;
+    float node_mem_ratio = 100.0f * (float)node_mem / max_node_mem;
     
-      uint leaf_mem        = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
-      uint max_leaf_mem    = globals->totalAllocatedMem      - globals->leaf_mem_allocator_start;
-      float leaf_mem_ratio = 100.0f * (float)leaf_mem / max_leaf_mem;
+    uint leaf_mem        = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
+    uint max_leaf_mem    = globals->totalAllocatedMem      - globals->leaf_mem_allocator_start;
+    float leaf_mem_ratio = 100.0f * (float)leaf_mem / max_leaf_mem;
 		      
-      uint total_mem        = node_mem + leaf_mem;
-      float total_mem_ratio = 100.0f * (float)total_mem / globals->totalAllocatedMem;
+    uint total_mem        = node_mem + leaf_mem;
+    float total_mem_ratio = 100.0f * (float)total_mem / globals->totalAllocatedMem;
       
-      out << "used node memory " << node_mem << " (" << node_mem_ratio
-	  << "%) / used leaf memory " << leaf_mem << " (" << leaf_mem_ratio
-	  << "%) / total memory used " << total_mem << " (" << total_mem_ratio
-	  << "%) / total memory allocated " << globals->totalAllocatedMem << cl::sycl::endl;
+    out << "used node memory " << node_mem << " (" << node_mem_ratio
+	<< "%) / used leaf memory " << leaf_mem << " (" << leaf_mem_ratio
+	<< "%) / total memory used " << total_mem << " (" << total_mem_ratio
+	<< "%) / total memory allocated " << globals->totalAllocatedMem << cl::sycl::endl;
   }
 
 #endif
@@ -1173,14 +1173,15 @@ namespace embree
 	    
 	/* call BVH builder */
 	root = NodeRef((size_t)bvh_mem);
-
+	scene->gpu_bvh_root = root;
+	
 	// = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeaf<N,Primitive>(bvh),bvh->scene->progressInterface,prims.data(),pinfo,settings);
 #endif	    
 	bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
 
 	double total1 = getSeconds();
 
-	std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : " << numPrimitives*0.000001f/(total1-total0) << " MPrims/s root = " << bvh->root << std::endl << std::flush;
+	std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : " << numPrimitives*0.000001f/(total1-total0) << " MPrims/s root = " << (void*)(size_t)bvh->root << std::endl << std::flush;
 	    
 	/* print BVH stats */
 #if defined(EMBREE_DPCPP_SUPPORT) 

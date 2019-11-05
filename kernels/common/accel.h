@@ -63,6 +63,11 @@ namespace embree
     }
 
   public:
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+    size_t gpu_bvh_root; // 16 bytes offset from scene class
+#endif
+    
     LBBox3fa bounds; // linear bounds
     Type type;
   };
