@@ -146,11 +146,12 @@ ctest_start("Continuous")
 IF (EMBREE_TESTING_INTENSITY GREATER 0)
   update_test_models()
 ENDIF()
-ctest_configure()
+ctest_configure(CAPTURE_CMAKE_ERROR capture_configure_error)
 
 ctest_build(RETURN_VALUE retval
             NUMBER_ERRORS build_errors
-            NUMBER_WARNINGS build_warnings)
+            NUMBER_WARNINGS build_warnings
+	    CAPTURE_CMAKE_ERROR capture_build_error)
 message("test.cmake: ctest_build return value = ${retval}")
 message("test.cmake: ctest_build #errors = ${build_errors}")
 message("test.cmake: ctest_build #warnings = ${build_warnings}")
@@ -159,7 +160,8 @@ IF (NOT retval EQUAL 0)
 ENDIF()
 
 IF (EMBREE_TESTING_INTENSITY GREATER 0 OR EMBREE_TESTING_KLOCWORK)
-  ctest_test(RETURN_VALUE retval)
+  ctest_test(RETURN_VALUE retval
+             CAPTURE_CMAKE_ERROR capture_test_error)
   message("test.cmake: ctest_test return value = ${retval}")
   IF (NOT retval EQUAL 0)
     message(FATAL_ERROR "test.cmake: some tests failed")
