@@ -127,7 +127,7 @@
   tags: [vis-vm-win-04]
   only:   [pushes, web]
 
-nightly-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
+.nightly-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2 STATIC_LIB:ON"
   #tags:   [win7, v141]
   #only:   [schedules]
