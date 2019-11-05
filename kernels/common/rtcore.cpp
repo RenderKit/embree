@@ -1730,13 +1730,12 @@ RTC_NAMESPACE_END
 namespace embree
 {
   SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
-					 //cl::sycl::global_ptr<RTCSceneTy> scene,
-					 cl::sycl::global_ptr<int> scene,
+					 cl::sycl::global_ptr<RTCSceneTy> scene,
 					 struct RTCRayHit &rayhit)
   {
     //const uint subgroupID      = sg.get_group_id()[0];      
     rayhit.hit.primID = 99;
-    scene[0] = 1234;
+    //scene[0] = 1234;
   }
 
 }

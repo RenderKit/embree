@@ -947,9 +947,11 @@ namespace embree
 	    
 	/* --- allocate and set buffers --- */
 
+	double alloc_time0 = getSeconds();
+	
 	gpu::AABB *aabb = (gpu::AABB*)prims.data();
 	assert(aabb);
-
+	
 	char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	assert(bvh_mem);
 	
@@ -959,32 +961,17 @@ namespace embree
 	gpu::Globals *globals = (gpu::Globals*)cl::sycl::aligned_alloc(64,sizeof(gpu::Globals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	assert(globals);
 
-
-	/* --- USM init absorbtion --- */
-	{
-#if 1
-	  // FIXME: this kernel should not be necessary	  
-	  //double d0 = getSeconds();		  
-	  cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
-	      cgh.single_task<class dumm_usm_kernel>([=]() {
-		});
-	    });
-	  try {
-	    gpu_queue.wait_and_throw();
-	  } catch (cl::sycl::exception const& e) {
-	    std::cout << "Caught synchronous SYCL exception:\n"
-		      << e.what() << std::endl;
-	    FATAL("OpenCL Exception");     
-	  }
-	  //double d1 = getSeconds();
-	  //PRINT(d1-d0);	
-#endif	  
-	}	    
+	const size_t totalUSMAllocations = totalSize + sizeof(uint)*2*numPrimitives + sizeof(gpu::Globals);
+	  
+	double alloc_time1 = getSeconds();
 	
-	double total0 = getSeconds();
+	if (unlikely(deviceGPU->verbosity(2)))
+	  std::cout << "USM allocation time " << 1000 * (alloc_time1 - alloc_time0) << " ms for " << (double)totalUSMAllocations / (1024*1024) << " MBs " << std::endl;     
+	
 	
 	/* --- init globals (device) --- */
-	{
+	double total0 = getSeconds();	
+	{	  
 	  cl::sycl::event queue_event =  gpu_queue.submit([&](cl::sycl::handler &cgh) {
 	      cgh.single_task<class init_first_kernel>([=]() {
 		  globals->init(bvh_mem,numPrimitives,node_data_start,leaf_data_start,totalSize,0,leaf_primitive_size);
@@ -1193,7 +1180,7 @@ namespace embree
 
 	double total1 = getSeconds();
 
-	std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : " << numPrimitives*0.000001f/(total1-total0) << " MPrims/s" << std::endl << std::flush;
+	std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : " << numPrimitives*0.000001f/(total1-total0) << " MPrims/s root = " << bvh->root << std::endl << std::flush;
 	    
 	/* print BVH stats */
 #if defined(EMBREE_DPCPP_SUPPORT) 

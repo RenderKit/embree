@@ -225,8 +225,7 @@ extern "C" void device_init (char* cfg)
 #if defined(EMBREE_DPCPP_SUPPORT)
 
 SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
-				       //cl::sycl::global_ptr<RTCSceneTy> scene,
-				       cl::sycl::global_ptr<int> scene,
+				       cl::sycl::global_ptr<RTCSceneTy> scene,
 				       struct RTCRayHit &rayhit);
 
 #endif
@@ -267,17 +266,9 @@ extern "C" void device_render (int* pixels,
   int *fb = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*numPixels,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
   assert(fb);
 
-  /* test */
-#if 0
-  int *test = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*16,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
-  PRINT(test);
-  for (size_t i=0;i<16;i++)
-    test[i] = 0;
-  assert(test);
-#endif
-
   /* generate primary ray stream */    
   {
+    RTCScene scene = g_scene;
     using namespace cl::sycl;	
     const float3 cam_p  = Vec3fa_to_float3(camera.xfm.p);
     const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
@@ -307,15 +298,8 @@ extern "C" void device_render (int* pixels,
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
 #if 0
-		cl::sycl::global_ptr<int> sycl_scene(test);
-		
+		cl::sycl::global_ptr<RTCSceneTy> sycl_scene(scene);		
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
-		const uint subgroupID      = sg.get_group_id()[0];      
-		if (x == 0 && y == 0)
-		  {
-		    out << "scene " << sycl_scene << cl::sycl::endl;
-		  }
-		
 		/* test function calls */
 		rtcIntersectGPUTest(sg, sycl_scene, rh);
 #endif		
@@ -330,9 +314,7 @@ extern "C" void device_render (int* pixels,
       FATAL("OpenCL Exception");      
     }
   }  
-  
-  //PRINT(test[0]);  
-  
+    
   /* trace ray stream */      
   double t0 = getSeconds();
 
