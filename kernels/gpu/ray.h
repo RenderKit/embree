@@ -36,21 +36,39 @@ namespace embree
       unsigned int id;      // ray ID
       unsigned int flags;   // ray flags
 
-      inline void initFrom(const cl::sycl::intel::sub_group &subgroup, RTCRay &source, const unsigned int i)
+      inline void init(RTCRay &source)
       {
-	org[0] = subgroup.broadcast<float>(source.org_x,i); 
-	org[1] = subgroup.broadcast<float>(source.org_y,i); 
-	org[2] = subgroup.broadcast<float>(source.org_z,i); 
-	tnear  = subgroup.broadcast<float>(source.tnear,i); 
-	dir[0] = subgroup.broadcast<float>(source.dir_x,i); 
-	dir[1] = subgroup.broadcast<float>(source.dir_y,i); 
-	dir[2] = subgroup.broadcast<float>(source.dir_z,i); 
-	time   = subgroup.broadcast<float>(source.time,i); 
-	tfar   = subgroup.broadcast<float>(source.tfar,i); 
-	mask   = subgroup.broadcast<unsigned int>(source.mask,i); 
-	id     = subgroup.broadcast<unsigned int>(source.id,i); 
-	flags  = subgroup.broadcast<unsigned int>(source.flags,i); 
-      }      
+	org[0] = source.org_x; 
+	org[1] = source.org_y; 
+	org[2] = source.org_z; 
+	tnear  = source.tnear; 
+	dir[0] = source.dir_x; 
+	dir[1] = source.dir_y; 
+	dir[2] = source.dir_z; 
+	time   = source.time; 
+	tfar   = source.tfar; 
+	mask   = source.mask; 
+	id     = source.id; 
+	flags  = source.flags; 
+      }
+
+      inline cl::sycl::float3 broadcast_org(const cl::sycl::intel::sub_group &subgroup, const uint index) {
+	return cl::sycl::float3(subgroup.broadcast<float>(org[0],index),
+				subgroup.broadcast<float>(org[1],index),
+				subgroup.broadcast<float>(org[2],index));	
+      }
+
+      inline cl::sycl::float3 broadcast_dir(const cl::sycl::intel::sub_group &subgroup, const uint index) {
+	return cl::sycl::float3(subgroup.broadcast<float>(dir[0],index),
+				subgroup.broadcast<float>(dir[1],index),
+				subgroup.broadcast<float>(dir[2],index));	
+      }
+
+      inline float broadcast_tnear(const cl::sycl::intel::sub_group &subgroup, const uint index) { return subgroup.broadcast<float>(tnear,index); }
+      inline float broadcast_tfar (const cl::sycl::intel::sub_group &subgroup, const uint index) { return subgroup.broadcast<float>(tfar ,index); }
+      
+      
+      
     };
 
     /* Hit structure for a single ray */
@@ -73,32 +91,28 @@ namespace embree
 	Ng[0] = Ng[1] = Ng[2] = 0.0f;
       }
 
-      inline void broadcast(const cl::sycl::intel::sub_group &subgroup, const unsigned int i)
+      inline void broadcast(const cl::sycl::intel::sub_group &subgroup, const uint index)
       {
-	Ng[0]  = subgroup.broadcast<float>(Ng[0],i); 
-	Ng[1]  = subgroup.broadcast<float>(Ng[1],i); 
-	Ng[2]  = subgroup.broadcast<float>(Ng[2],i); 
-	u      = subgroup.broadcast<float>(u,i); 
-	v      = subgroup.broadcast<float>(v,i); 
-	primID = subgroup.broadcast<unsigned int>(primID,i);
-	geomID = subgroup.broadcast<unsigned int>(geomID,i);
-	instID = subgroup.broadcast<unsigned int>(instID,i);	
+	Ng[0] = subgroup.broadcast<float>(Ng[0],index);
+	Ng[1] = subgroup.broadcast<float>(Ng[1],index);
+	Ng[2] = subgroup.broadcast<float>(Ng[2],index);
+	u = subgroup.broadcast<float>(u,index);
+	v = subgroup.broadcast<float>(v,index);
+	primID = subgroup.broadcast<unsigned int>(primID,index);
+	geomID = subgroup.broadcast<unsigned int>(geomID,index);
+	instID = subgroup.broadcast<unsigned int>(instID,index);
       }
       
-      inline void storeTo(const cl::sycl::intel::sub_group &subgroup, RTCHit &dest, const unsigned int i)
+      inline void store(RTCHit &dest)
       {
-	const uint subgroupID = subgroup.get_group_id()[0];      
-	if (subgroupID == i)
-	  {
-	    dest.Ng_x = Ng[0];
-	    dest.Ng_y = Ng[1];
-	    dest.Ng_z = Ng[2];
-	    dest.u     = u;
-	    dest.v     = v;
-	    dest.primID = primID;
-	    dest.geomID = geomID;
-	    //dest.instID[0] = instID[0];
-	  }	    
+	dest.Ng_x = Ng[0];
+	dest.Ng_y = Ng[1];
+	dest.Ng_z = Ng[2];
+	dest.u     = u;
+	dest.v     = v;
+	dest.primID = primID;
+	dest.geomID = geomID;
+	//dest.instID[0] = instID[0];
       }      
 
     };

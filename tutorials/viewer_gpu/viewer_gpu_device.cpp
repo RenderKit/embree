@@ -280,8 +280,8 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
     
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
-	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(4,4));
-	//const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(4,4),cl::sycl::range<2>(4,4));
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,1));
+	//const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(16,1),cl::sycl::range<2>(16,1));
 	
 	cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);		
 	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {

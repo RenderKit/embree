@@ -55,151 +55,152 @@ namespace embree
 
     
     template<typename Primitive>
-    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline uint traceRayBVH16(const cl::sycl::intel::sub_group &sg, gpu::RTCRayGPU &ray, gpu::RTCHitGPU &hit, void *bvh_mem, TraversalStats *tstats)
+    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg,
+									    gpu::RTCRayGPU &ray,
+									    gpu::RTCHitGPU &hit,
+									    void *bvh_mem,
+									    TraversalStats *tstats)
     {
       unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
       float        stack_dist[BVH_MAX_STACK_ENTRIES];  
 
       // === init local hit ===
       gpu::RTCHitGPU local_hit;
-      local_hit.init();
 
       const uint subgroupLocalID  = sg.get_local_id()[0];
       DBG(const uint subgroupSize = sg.get_local_range().size());
-
-      const float3 org(ray.org[0],ray.org[1],ray.org[2]);
-      const float3 dir(ray.dir[0],ray.dir[1],ray.dir[2]);
-            
-      const float tnear = ray.tnear;
-      float tfar        = ray.tfar;
-      float hit_tfar    = ray.tfar;
-
-      DBG(
-	  if (subgroupLocalID == 0)
-	    out << "org " << org << " dir " << dir << " tnear " << tnear << " tfar " << tfar << cl::sycl::endl;
-	  );
       
-      const uint3 dir_mask = cselect(dir >= 0.0f,uint3(0),uint3(1));
-      const float3 new_dir = cselect(dir != 0.0f, dir, float3(1E-18f));
-      const float3 inv_dir = cl::sycl::native::recip(new_dir);
-      const float3 inv_dir_org = -inv_dir * org; 
+#pragma nounroll      
+      for (uint rayID=0;rayID<BVH_NODE_N;rayID++)
+	{	  
+	  local_hit.init();	  
+	  const float3 org = ray.broadcast_org(sg,rayID);
+	  const float3 dir = ray.broadcast_dir(sg,rayID);
             
-      const uint max_uint  = 0xffffffff;  
-      const uint mask_uint = 0xfffffff0;
+	  const float tnear = ray.broadcast_tnear(sg,rayID);
+	  float tfar        = ray.broadcast_tfar(sg,rayID);
+	  float hit_tfar    = tfar;
+	  
+	  DBG(
+	      if (subgroupLocalID == 0)
+		out << "org " << org << " dir " << dir << " tnear " << tnear << " tfar " << tfar << cl::sycl::endl;
+	      );
+      
+	  const uint3 dir_mask = cselect(dir >= 0.0f,uint3(0),uint3(1));
+	  const float3 new_dir = cselect(dir != 0.0f, dir, float3(1E-18f));
+	  const float3 inv_dir = cl::sycl::native::recip(new_dir);
+	  const float3 inv_dir_org = -inv_dir * org; 
+            
+	  const uint max_uint  = 0xffffffff;  
+	  const uint mask_uint = 0xfffffff0;
 
-      const char *const bvh_base = (char*)bvh_mem;
-      stack_offset[0] = max_uint; // sentinel
-      stack_dist[0]   = -(float)INFINITY;
-      stack_offset[1] = sizeof(struct gpu::BVHBase); // single node after bvh start 
-      stack_dist[1]   = -(float)INFINITY;
+	  const char *const bvh_base = (char*)bvh_mem;
+	  stack_offset[0] = max_uint; // sentinel
+	  stack_dist[0]   = -(float)INFINITY;
+	  stack_offset[1] = sizeof(struct gpu::BVHBase); // single node after bvh start 
+	  stack_dist[1]   = -(float)INFINITY;
 
-      unsigned int sindex = 2;
+	  unsigned int sindex = 2;
 
-      TSTATS(tstats->nrays_inc());
+	  TSTATS(tstats->nrays_inc());
 
-      while(1)
-	{ 
-	  sindex--;
+	  while(1)
+	    { 
+	      sindex--;
 
 #if STACK_CULLING  == 1    
-	  if (stack_dist[sindex] > tfar) continue;
+	      if (stack_dist[sindex] > tfar) continue;
 #endif
 	  
-	  gpu::NodeRef cur = stack_offset[sindex]; 
+	      gpu::NodeRef cur = stack_offset[sindex]; 
 
-	  while(!cur.isLeaf()) 
-	    {
-	      TSTATS(tstats->tsteps_inc());
-	      
-	      const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);
-	      const gpu::NodeIntersectionData isec = intersectQBVHNodeN(sg,node,dir_mask,inv_dir,inv_dir_org,tnear,tfar);
-	      const float fnear = isec.dist;
-	      const uint valid  = isec.valid;
-	      uint offset       = isec.offset;
-	      const uint mask   = intel_sub_group_ballot(valid);
-	      
-	      if (mask == 0)
+	      while(!cur.isLeaf()) 
 		{
+		  TSTATS(tstats->tsteps_inc());
+	      
+		  const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);
+		  const gpu::NodeIntersectionData isec = intersectQBVHNodeN(sg,node,dir_mask,inv_dir,inv_dir_org,tnear,tfar);
+		  const float fnear = isec.dist;
+		  const uint valid  = isec.valid;
+		  uint offset       = isec.offset;
+		  const uint mask   = intel_sub_group_ballot(valid);
+	      
+		  if (mask == 0)
+		    {
 #if STACK_CULLING == 1
-		  do { 
-		    sindex--;
-		  } while (stack_dist[sindex] > tfar);
+		      do { 
+			sindex--;
+		      } while (stack_dist[sindex] > tfar);
 #else		  
-		  sindex--;
+		      sindex--;
 #endif		  
-		  cur = stack_offset[sindex];
-		  continue;
-		}
+		      cur = stack_offset[sindex];
+		      continue;
+		    }
 
-	      offset += cur; /* relative encoding */
-	      const uint popc = cl::sycl::popcount(mask); 
-	      cur = sg.broadcast<uint>(offset, cl::sycl::intel::ctz(mask));
+		  offset += cur; /* relative encoding */
+		  const uint popc = cl::sycl::popcount(mask); 
+		  cur = sg.broadcast<uint>(offset, cl::sycl::intel::ctz(mask));
 	      	      
-	      if (popc == 1) continue; // single hit only
-	      int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
-	      t = valid ? t : max_uint; // invalid slots set to MIN_INT, as we sort descending;	
+		  if (popc == 1) continue; // single hit only
+		  int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
+		  t = valid ? t : max_uint; // invalid slots set to MIN_INT, as we sort descending;	
 	      
-	      for (uint i=0;i<popc-1;i++)
-		{
+		  for (uint i=0;i<popc-1;i++)
+		    {
+		      const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<>()); // from larger to smaller distance
+		      t = (t == t_max) ? max_uint : t;
+		      const uint index = t_max & (~mask_uint);
+		      stack_offset[sindex] = sg.broadcast<uint> (offset,index);
+		      stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
+		      sindex++;
+		    }
 		  const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<>()); // from larger to smaller distance
-		  t = (t == t_max) ? max_uint : t;
-		  const uint index = t_max & (~mask_uint);
-		  stack_offset[sindex] = sg.broadcast<uint> (offset,index);
-		  stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
-		  sindex++;
+		  cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
 		}
-	      const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<>()); // from larger to smaller distance
-	      cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
-	    }
 	  
-	  if (cur == max_uint) break; // sentinel reached -> exit
+	      if (cur == max_uint) break; // sentinel reached -> exit
 
-	  const uint numPrims = cur.getNumLeafPrims();
-	  const uint leafOffset = cur.getLeafOffset();    
+	      const uint numPrims = cur.getNumLeafPrims();
+	      const uint leafOffset = cur.getLeafOffset();    
 
-	  const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
-	  TSTATS(tstats->isteps_inc());	  
-	  hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);  
-	  tfar = sg.reduce<float>(hit_tfar, cl::sycl::intel::minimum<>());	  
-	}
+	      const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
+	      TSTATS(tstats->isteps_inc());	  
+	      hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);  
+	      tfar = sg.reduce<float>(hit_tfar, cl::sycl::intel::minimum<>());	  
+	    }
 
-      DBG(
-	  for (uint i=0;i<subgroupSize;i++)
-	    if (i == subgroupLocalID)
-	      out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
-	  );
+	  DBG(
+	      for (uint i=0;i<subgroupSize;i++)
+		if (i == subgroupLocalID)
+		  out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
+	      );
 
-      /* select hit with shortest distance */
+	  /* select hit with shortest distance */
       
-      const uint index = cl::sycl::intel::ctz(intel_sub_group_ballot(tfar == hit_tfar));
-      if (subgroupLocalID == index)
-	if (local_hit.primID != -1)
-	  {	 
-	    hit = local_hit;
-	    ray.tfar = tfar;
-	  }
-      local_hit.broadcast(sg,index);
-      return index;
+	  const uint index = cl::sycl::intel::ctz(intel_sub_group_ballot(tfar == hit_tfar));
+	  local_hit.broadcast(sg,index);
+	  
+	  if (subgroupLocalID == rayID)
+	    if (local_hit.primID != -1)
+	      {	 
+		hit = local_hit;
+		ray.tfar = tfar;
+	      }
+	}
     }
 
     SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
 					   cl::sycl::global_ptr<RTCSceneTy> scene,
-					   struct RTCRayHit &rayhit16,
+					   struct RTCRayHit &rtc_rayhit,
 					   const cl::sycl::stream &out)
   {
     size_t *scene_data = (size_t*)scene.get();
     void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset
     struct gpu::RTCRayHitGPU rayhit;
-    for (uint i=0;i<16;i++)
-      {
-	rayhit.ray.initFrom(sg,rayhit16.ray,i);
-	rayhit.hit.init();
-	const uint slot = traceRayBVH16<gpu::Triangle1v>(sg,rayhit.ray,rayhit.hit,bvh_root,nullptr);
-	rayhit.hit.broadcast(sg,slot);
-	//out << rayhit.hit << cl::sycl::endl;	
-	rayhit.hit.storeTo(sg,rayhit16.hit,i);
-      }
-    
+    rayhit.ray.init(rtc_rayhit.ray);
+    traceRayBVH16<gpu::Triangle1v>(sg,rayhit.ray,rayhit.hit,bvh_root,nullptr);
+    rayhit.hit.store(rtc_rayhit.hit);    
   }
 
 #endif
@@ -239,13 +240,18 @@ namespace embree
       
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+#define DBG_PRINT_BUFFER_SIZE 1024*1024
+#define DBG_PRINT_LINE_SIZE 512
 
 	    //cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
-	    const cl::sycl::nd_range<1> nd_range(numRays*cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));		  
+	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(numRays),cl::sycl::range<1>(BVH_NODE_N));
+
+	    //const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));	    
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
-		const uint groupID   = item.get_group(0);
+		const uint globalID   = item.get_global_id(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();		
-		traceRayBVH16<Primitive>(sg,inputRays[groupID].ray,inputRays[groupID].hit,bvh_mem,tstats);
+		traceRayBVH16<Primitive>(sg,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
+		//out << inputRays[globalID].hit << cl::sycl::endl;
 	      });		  
 	  });
 	try {
@@ -255,7 +261,6 @@ namespace embree
 		    << e.what() << std::endl;
 	  FATAL("OpenCL Exception");
 	}
-
       TSTATS(cl::sycl::free(tstats,deviceGPU->getGPUContext()););
       TSTATS(std::cout << "RAY TRAVERSAL STATS: " << *tstats << std::endl);
       }
