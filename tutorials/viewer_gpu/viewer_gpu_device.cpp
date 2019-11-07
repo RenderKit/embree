@@ -30,7 +30,7 @@ namespace embree {
 #define SIMPLE_SHADING 1
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
 #define DBG_PRINT_LINE_SIZE 512
-#define USE_FCT_CALLS 0
+#define USE_FCT_CALLS 1
   
   extern "C" ISPCScene* g_ispc_scene;
   extern "C" int g_instancing_mode;
@@ -281,7 +281,6 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
 
     t0 = getSeconds();
-    
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
 	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,1));	
 	//const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(16,1),cl::sycl::range<2>(16,1));
@@ -290,8 +289,7 @@ extern "C" void device_render (int* pixels,
 	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
 	    const uint x = item.get_global_id(0);
 	    const uint y = item.get_global_id(1);
-	    //out << "x " << x << " y " << y << cl::sycl::endl;
-	    //if (x < width && y < height)
+	    //if (x < width && y < height) // FIXME: causes 4x slowdown
 	      {
 		const float3 org = cam_p;
 		const float3 dir = normalize((float)x*cam_vx + (float)y*cam_vy + cam_vz);

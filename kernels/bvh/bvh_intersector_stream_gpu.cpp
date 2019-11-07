@@ -70,13 +70,15 @@ namespace embree
       const uint subgroupLocalID  = sg.get_local_id()[0];
       DBG(const uint subgroupSize = sg.get_local_range().size());
 
-      uint countActiveLanesMask   = intel_sub_group_ballot(1);
+      /* cannot handle masked control flow yet */
+      uint m_activeLanes = intel_sub_group_ballot(1);
+      m_activeLanes = cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
       
 #pragma nounroll      
-      while(countActiveLanesMask)
+      while(m_activeLanes)
 	{
-	  const uint rayID = cl::sycl::intel::ctz(countActiveLanesMask);
-	  countActiveLanesMask &= countActiveLanesMask-1;
+	  const uint rayID = cl::sycl::intel::ctz(m_activeLanes);
+	  m_activeLanes &= m_activeLanes-1;
 	  
 	  local_hit.init();	  
 	  const float3 org = ray.broadcast_org(sg,rayID);
@@ -195,16 +197,23 @@ namespace embree
 	}
     }
 
-    SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
+    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]]  SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
 					   cl::sycl::global_ptr<RTCSceneTy> scene,
 					   struct RTCRayHit &rtc_rayhit)
   {
     size_t *scene_data = (size_t*)scene.get();
     void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset    
     gpu::RTCRayGPU &ray = static_cast<gpu::RTCRayGPU&>(rtc_rayhit.ray);
-    gpu::RTCHitGPU &hit = static_cast<gpu::RTCHitGPU&>(rtc_rayhit.hit);    
+    gpu::RTCHitGPU &hit = static_cast<gpu::RTCHitGPU&>(rtc_rayhit.hit);
     traceRayBVH16<gpu::Triangle1v>(sg,ray,hit,bvh_root,nullptr);
   }
+
+  template<typename T>
+  __forceinline T wg_align(T x, unsigned int alignment)
+  {
+    return ((x + alignment-1)/alignment)*alignment;
+  }  
+
 
 #endif
   
@@ -247,14 +256,13 @@ namespace embree
 #define DBG_PRINT_LINE_SIZE 512
 
 	    //cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);
+	    //const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(wg_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
 	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(numRays),cl::sycl::range<1>(BVH_NODE_N));
-
-	    //const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(BVH_NODE_N),cl::sycl::range<1>(BVH_NODE_N));	    
+	    
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint globalID   = item.get_global_id(0);
-		cl::sycl::intel::sub_group sg = item.get_sub_group();		
+		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		traceRayBVH16<Primitive>(sg,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
-		//out << inputRays[globalID].hit << cl::sycl::endl;
 	      });		  
 	  });
 	try {
