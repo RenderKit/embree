@@ -69,10 +69,15 @@ namespace embree
 
       const uint subgroupLocalID  = sg.get_local_id()[0];
       DBG(const uint subgroupSize = sg.get_local_range().size());
+
+      uint countActiveLanesMask   = intel_sub_group_ballot(1);
       
 #pragma nounroll      
-      for (uint rayID=0;rayID<BVH_NODE_N;rayID++)
-	{	  
+      while(countActiveLanesMask)
+	{
+	  const uint rayID = cl::sycl::intel::ctz(countActiveLanesMask);
+	  countActiveLanesMask &= countActiveLanesMask-1;
+	  
 	  local_hit.init();	  
 	  const float3 org = ray.broadcast_org(sg,rayID);
 	  const float3 dir = ray.broadcast_dir(sg,rayID);
@@ -192,15 +197,13 @@ namespace embree
 
     SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
 					   cl::sycl::global_ptr<RTCSceneTy> scene,
-					   struct RTCRayHit &rtc_rayhit,
-					   const cl::sycl::stream &out)
+					   struct RTCRayHit &rtc_rayhit)
   {
     size_t *scene_data = (size_t*)scene.get();
-    void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset
-    struct gpu::RTCRayHitGPU rayhit;
-    rayhit.ray.init(rtc_rayhit.ray);
-    traceRayBVH16<gpu::Triangle1v>(sg,rayhit.ray,rayhit.hit,bvh_root,nullptr);
-    rayhit.hit.store(rtc_rayhit.hit);    
+    void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset    
+    gpu::RTCRayGPU &ray = static_cast<gpu::RTCRayGPU&>(rtc_rayhit.ray);
+    gpu::RTCHitGPU &hit = static_cast<gpu::RTCHitGPU&>(rtc_rayhit.hit);    
+    traceRayBVH16<gpu::Triangle1v>(sg,ray,hit,bvh_root,nullptr);
   }
 
 #endif

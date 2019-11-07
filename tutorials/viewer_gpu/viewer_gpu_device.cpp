@@ -227,8 +227,7 @@ extern "C" void device_init (char* cfg)
 
 SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
 				       cl::sycl::global_ptr<RTCSceneTy> scene,
-				       struct RTCRayHit &rayhit,
-				       const cl::sycl::stream &out);
+				       struct RTCRayHit &rayhit);
 
 #endif
 
@@ -267,6 +266,8 @@ extern "C" void device_render (int* pixels,
   const size_t numPixels = width*height;
   int *fb = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*numPixels,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
   assert(fb);
+
+  double t0, t1;
   
   /* generate primary ray stream */    
   {
@@ -278,17 +279,19 @@ extern "C" void device_render (int* pixels,
     const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
     const float3 cam_vy = Vec3fa_to_float3(camera.xfm.l.vy);
     const float3 cam_vz = Vec3fa_to_float3(camera.xfm.l.vz);
+
+    t0 = getSeconds();
     
     cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
-	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,1));
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,1));	
 	//const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(16,1),cl::sycl::range<2>(16,1));
 	
-	cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);		
+	//cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);		
 	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
 	    const uint x = item.get_global_id(0);
 	    const uint y = item.get_global_id(1);
 	    //out << "x " << x << " y " << y << cl::sycl::endl;
-	    if (x < width && y < height)
+	    //if (x < width && y < height)
 	      {
 		const float3 org = cam_p;
 		const float3 dir = normalize((float)x*cam_vx + (float)y*cam_vy + cam_vz);
@@ -308,7 +311,7 @@ extern "C" void device_render (int* pixels,
 		cl::sycl::global_ptr<RTCSceneTy> sycl_scene(scene);		
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		/* test function calls */
-		rtcIntersectGPUTest(sg, sycl_scene, rh, out);
+		rtcIntersectGPUTest(sg, sycl_scene, rh);
 #endif
 		
 	      }
@@ -322,20 +325,23 @@ extern "C" void device_render (int* pixels,
       FATAL("OpenCL Exception");      
     }
   }  
+  t1 = getSeconds();
   
 #if USE_FCT_CALLS == 0
   
   /* trace ray stream */      
-  double t0 = getSeconds();
+  t0 = getSeconds();
 
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   context.flags = RTC_INTERSECT_CONTEXT_FLAG_GPU;
   rtcIntersect1M(g_scene,&context,rtc_rays,numRays,sizeof(RTCRayHit));
 
-  double t1 = getSeconds();
-  std::cout << (float)numRays * 0.000001f / (t1 - t0) << " mrays/s" << std::endl;
+  t1 = getSeconds();
+#else
+  
 #endif
+  std::cout << (float)numRays * 0.000001f / (t1 - t0) << " mrays/s" << std::endl;
   
   /* shade stream of rays */
   {

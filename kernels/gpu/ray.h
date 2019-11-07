@@ -25,43 +25,18 @@ namespace embree
     // FIXME: can't use float3 here due to stupid size/alignment restriction
     
     /* Ray structure for a single ray */
-    struct RTCRayGPU
+    struct RTCRayGPU : public RTCRay
     {
-      float org[3];         // x,y,z coordinates of ray origin
-      float tnear;          // start of ray segment
-      float dir[3];         // x,y,z coordinate of ray direction
-      float time;           // time of this ray for motion blur
-      float tfar;           // end of ray segment (set to hit distance)
-      unsigned int mask;    // ray mask
-      unsigned int id;      // ray ID
-      unsigned int flags;   // ray flags
-
-      inline void init(RTCRay &source)
-      {
-	org[0] = source.org_x; 
-	org[1] = source.org_y; 
-	org[2] = source.org_z; 
-	tnear  = source.tnear; 
-	dir[0] = source.dir_x; 
-	dir[1] = source.dir_y; 
-	dir[2] = source.dir_z; 
-	time   = source.time; 
-	tfar   = source.tfar; 
-	mask   = source.mask; 
-	id     = source.id; 
-	flags  = source.flags; 
-      }
-
       inline cl::sycl::float3 broadcast_org(const cl::sycl::intel::sub_group &subgroup, const uint index) {
-	return cl::sycl::float3(subgroup.broadcast<float>(org[0],index),
-				subgroup.broadcast<float>(org[1],index),
-				subgroup.broadcast<float>(org[2],index));	
+	return cl::sycl::float3(subgroup.broadcast<float>(org_x,index),
+				subgroup.broadcast<float>(org_y,index),
+				subgroup.broadcast<float>(org_z,index));	
       }
 
       inline cl::sycl::float3 broadcast_dir(const cl::sycl::intel::sub_group &subgroup, const uint index) {
-	return cl::sycl::float3(subgroup.broadcast<float>(dir[0],index),
-				subgroup.broadcast<float>(dir[1],index),
-				subgroup.broadcast<float>(dir[2],index));	
+	return cl::sycl::float3(subgroup.broadcast<float>(dir_x,index),
+				subgroup.broadcast<float>(dir_y,index),
+				subgroup.broadcast<float>(dir_z,index));	
       }
 
       inline float broadcast_tnear(const cl::sycl::intel::sub_group &subgroup, const uint index) { return subgroup.broadcast<float>(tnear,index); }
@@ -72,42 +47,35 @@ namespace embree
     };
 
     /* Hit structure for a single ray */
-    struct RTCHitGPU
+    struct RTCHitGPU : public RTCHit
     {
-      float Ng[3];         // x,y,z coordinates of geometry normal
-      float u;             // barycentric u coordinate of hit
-      float v;             // barycentric v coordinate of hit
-      unsigned int primID; // primitive ID
-      unsigned int geomID; // geometry ID
-      unsigned int instID; // instance ID
-
       inline void init()
       {
 	primID = -1;
 	geomID = -1;
-	instID = 0;
+	//instID[0] = 0;
 	u = 0.0f;
 	v = 0.0f;
-	Ng[0] = Ng[1] = Ng[2] = 0.0f;
+	Ng_x = Ng_y = Ng_z = 0.0f;
       }
 
       inline void broadcast(const cl::sycl::intel::sub_group &subgroup, const uint index)
       {
-	Ng[0] = subgroup.broadcast<float>(Ng[0],index);
-	Ng[1] = subgroup.broadcast<float>(Ng[1],index);
-	Ng[2] = subgroup.broadcast<float>(Ng[2],index);
+	Ng_x = subgroup.broadcast<float>(Ng_x,index);
+	Ng_y = subgroup.broadcast<float>(Ng_y,index);
+	Ng_z = subgroup.broadcast<float>(Ng_z,index);
 	u = subgroup.broadcast<float>(u,index);
 	v = subgroup.broadcast<float>(v,index);
 	primID = subgroup.broadcast<unsigned int>(primID,index);
 	geomID = subgroup.broadcast<unsigned int>(geomID,index);
-	instID = subgroup.broadcast<unsigned int>(instID,index);
+	//instID = subgroup.broadcast<unsigned int>(instID,index);
       }
       
       inline void store(RTCHit &dest)
       {
-	dest.Ng_x = Ng[0];
-	dest.Ng_y = Ng[1];
-	dest.Ng_z = Ng[2];
+	dest.Ng_x = Ng_x;
+	dest.Ng_y = Ng_y;
+	dest.Ng_z = Ng_z;
 	dest.u     = u;
 	dest.v     = v;
 	dest.primID = primID;
@@ -125,7 +93,7 @@ namespace embree
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const RTCHitGPU& hit) {
-      return out << " Ng " << float3(hit.Ng[0],hit.Ng[1],hit.Ng[2])
+      return out << " Ng " << float3(hit.Ng_x,hit.Ng_y,hit.Ng_z)
 		 << " u " << hit.u
 		 << " v " << hit.v
 		 << " primID " << hit.primID
@@ -136,9 +104,9 @@ namespace embree
 
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const RTCRayGPU& ray) {
-      return out << " org   " << float3(ray.org[0],ray.org[1],ray.org[2])
+      return out << " org   " << float3(ray.org_x,ray.org_y,ray.org_z)
 		 << " tnear " << ray.tnear
-		 << " dir   " << float3(ray.dir[0],ray.dir[1],ray.dir[2])
+		 << " dir   " << float3(ray.dir_x,ray.dir_y,ray.dir_z)
 		 << " tnear " << ray.tfar;
       
     }
