@@ -134,7 +134,7 @@ continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-SSE2-TBB-KLOCKWORK:
   tags: [vis-vm-win-04]
   only:   [pushes, web]
 
-.nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-NAMESPACE:
+nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-NAMESPACE:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
   #tags:   [win7, clang]
   #only:   [schedules]
@@ -514,7 +514,7 @@ continuous-linux-x64-RelWithDebInfo-GCC-ISPC1.9.2-SSE2-TBB-KLOCKWORK:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
+.release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:MSI"
   #tags:   [win7, icc17]
   #only:   [web]
@@ -526,7 +526,7 @@ release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI-win7:
+.release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI-win7:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:MSI"
   tags:   [win7, icc17]
   #only:   [web]
