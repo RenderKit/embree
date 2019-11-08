@@ -25,7 +25,7 @@ namespace embree
   namespace gpu
   {
 
-    struct Quad1v
+    struct __aligned(16) Quad1v
     {
       float4 v0,v2,v1,v3; //special optimized layout
 
@@ -69,7 +69,7 @@ namespace embree
 		 << "primID1 " << gpu::as_int((float)quad.v2.w());	      
     }
 
-    struct Triangle1v
+    struct __aligned(16) Triangle1v
     {
       float4 v0,v1,v2; 
 
@@ -182,8 +182,8 @@ namespace embree
 	  const float4 _v0 = tri1v[slotID].v0;
 	  const float4 _v1 = tri1v[slotID].v1;
 	  const float4 _v2 = tri1v[slotID].v2;
-	  const uint primID = gpu::as_uint((float)_v0.w());	  
-	  const uint geomID = gpu::as_uint((float)_v1.w());	    
+	  const uint geomID = gpu::as_uint(_v1.w());
+	  const uint primID = gpu::as_uint(_v2.w());	  	  	  
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();
 	  const float3 v2 = _v2.xyz();
@@ -211,7 +211,9 @@ namespace embree
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;
-	      hit.geomID = geomID;	      
+	      hit.geomID = geomID;
+
+	      
 	    }	  
 	}
       return new_tfar;

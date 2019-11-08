@@ -23,7 +23,7 @@ namespace embree
 {
   namespace gpu
   {
-    class AABB {
+    class __aligned(16) AABB {
     public:
       float4 lower;
       float4 upper;

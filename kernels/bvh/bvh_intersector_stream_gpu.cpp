@@ -56,6 +56,7 @@ namespace embree
     
     template<typename Primitive>
     [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg,
+									    const uint m_active,
 									    gpu::RTCRayGPU &ray,
 									    gpu::RTCHitGPU &hit,
 									    void *bvh_mem,
@@ -71,9 +72,13 @@ namespace embree
       DBG(const uint subgroupSize = sg.get_local_range().size());
 
       /* cannot handle masked control flow yet */
-      uint m_activeLanes = intel_sub_group_ballot(1);
+      uint m_activeLanes = m_active;
       m_activeLanes = cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
-      
+
+      const float3 org16   = ray.org();
+      const float3 dir16   = ray.dir();
+      const float  tnear16 = ray.tnear;      
+      const float  tfar16  = ray.tfar;
 #pragma nounroll      
       while(m_activeLanes)
 	{
@@ -81,18 +86,13 @@ namespace embree
 	  m_activeLanes &= m_activeLanes-1;
 	  
 	  local_hit.init();	  
-	  const float3 org = ray.broadcast_org(sg,rayID);
-	  const float3 dir = ray.broadcast_dir(sg,rayID);
+	  const float3 org(sg.broadcast<float>(org16.x(),rayID),sg.broadcast<float>(org16.y(),rayID),sg.broadcast<float>(org16.z(),rayID));	  
+	  const float3 dir(sg.broadcast<float>(dir16.x(),rayID),sg.broadcast<float>(dir16.y(),rayID),sg.broadcast<float>(dir16.z(),rayID));	  
             
-	  const float tnear = ray.broadcast_tnear(sg,rayID);
-	  float tfar        = ray.broadcast_tfar(sg,rayID);
+	  const float tnear = sg.broadcast<float>(tnear16,rayID);
+	  float tfar        = sg.broadcast<float>(tfar16,rayID);
 	  float hit_tfar    = tfar;
-	  
-	  DBG(
-	      if (subgroupLocalID == 0)
-		out << "org " << org << " dir " << dir << " tnear " << tnear << " tfar " << tfar << cl::sycl::endl;
-	      );
-      
+	        
 	  const uint3 dir_mask = cselect(dir >= 0.0f,uint3(0),uint3(1));
 	  const float3 new_dir = cselect(dir != 0.0f, dir, float3(1E-18f));
 	  const float3 inv_dir = cl::sycl::native::recip(new_dir);
@@ -205,7 +205,8 @@ namespace embree
     void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset    
     gpu::RTCRayGPU &ray = static_cast<gpu::RTCRayGPU&>(rtc_rayhit.ray);
     gpu::RTCHitGPU &hit = static_cast<gpu::RTCHitGPU&>(rtc_rayhit.hit);
-    traceRayBVH16<gpu::Triangle1v>(sg,ray,hit,bvh_root,nullptr);
+    uint m_active = intel_sub_group_ballot(true);
+    traceRayBVH16<gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
   }
 
   template<typename T>
@@ -252,13 +253,15 @@ namespace embree
       
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(numRays),cl::sycl::range<1>(BVH_NODE_N));
+	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(wg_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
 	    
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint globalID   = item.get_global_id(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		//if (globalID < numRays)
-		  traceRayBVH16<Primitive>(sg,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
+		uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
+		if (m_activeLanes == 0xffff)
+		  traceRayBVH16<Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
 	      });		  
 	  });
 	try {

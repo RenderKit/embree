@@ -27,6 +27,14 @@ namespace embree
     /* Ray structure for a single ray */
     struct RTCRayGPU : public RTCRay
     {
+      inline cl::sycl::float3 org() {
+	return cl::sycl::float3(org_x,org_y,org_z);	
+      }
+
+      inline cl::sycl::float3 dir() {
+	return cl::sycl::float3(dir_x,dir_y,dir_z);	
+      }
+      
       inline cl::sycl::float3 broadcast_org(const cl::sycl::intel::sub_group &subgroup, const uint index) {
 	return cl::sycl::float3(subgroup.broadcast<float>(org_x,index),
 				subgroup.broadcast<float>(org_y,index),
@@ -53,12 +61,8 @@ namespace embree
       {
 	primID = -1;
 	geomID = -1;
-	//instID[0] = 0;
-	u = 0.0f;
-	v = 0.0f;
-	Ng_x = Ng_y = Ng_z = 0.0f;
       }
-
+      
       inline void broadcast(const cl::sycl::intel::sub_group &subgroup, const uint index)
       {
 	Ng_x = subgroup.broadcast<float>(Ng_x,index);

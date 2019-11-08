@@ -37,6 +37,8 @@ extern float atomic_min(volatile LOCAL  float *p, float val);
 extern float atomic_max(volatile GLOBAL float *p, float val);
 extern float atomic_max(volatile LOCAL  float *p, float val);
 
+extern "C" uint intel_sub_group_ballot(bool valid);
+
 #else
 #define GLOBAL 
 #define LOCAL 
@@ -49,9 +51,10 @@ inline float work_group_reduce_max(float x) { return x; }
 inline float atomic_min(volatile float *p, float val) { return val; };
 inline float atomic_max(volatile float *p, float val) { return val; };
 
+inline uint intel_sub_group_ballot(bool valid) { return 0; }
+
 #endif
 
-extern "C" uint intel_sub_group_ballot(bool valid);
 
 constexpr cl::sycl::access::target sycl_local    = cl::sycl::access::target::local;
 constexpr cl::sycl::access::mode sycl_read_write = cl::sycl::access::mode::read_write;
