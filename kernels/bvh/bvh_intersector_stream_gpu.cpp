@@ -197,9 +197,10 @@ namespace embree
 	}
     }
 
-    [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]]  SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
-					   cl::sycl::global_ptr<RTCSceneTy> scene,
-					   struct RTCRayHit &rtc_rayhit)
+  [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]]  SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
+											cl::sycl::global_ptr<RTCSceneTy> scene,
+											struct RTCRayHit &rtc_rayhit,
+											ulong ext_fct)
   {
     size_t *scene_data = (size_t*)scene.get();
     void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset    
@@ -207,6 +208,7 @@ namespace embree
     gpu::RTCHitGPU &hit = static_cast<gpu::RTCHitGPU&>(rtc_rayhit.hit);
     uint m_active = intel_sub_group_ballot(true);
     traceRayBVH16<gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
+    
   }
 
   template<typename T>
