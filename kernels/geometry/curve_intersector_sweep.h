@@ -149,14 +149,20 @@ namespace embree
     bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve,
                                              const float u0, const float u1, const size_t depth, const Epilog& epilog)
     {
+#if defined(__AVX__)
+      typedef vfloat8 vfloatx; // maximally 8-wide
+#else
+      typedef vfloat4 vfloatx;
+#endif
+    
       int maxDepth = numBezierSubdivisions;
       //int maxDepth = Device::debug_int1+1;
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
 
       /* subdivide curve */
-      const float dscale = (u1-u0)*(1.0f/(3.0f*(VSIZEX-1)));
-      const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(VSIZEX-1)));
+      const float dscale = (u1-u0)*(1.0f/(3.0f*(vfloatx::size-1)));
+      const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(vfloatx::size-1)));
       Vec4vfx P0, dP0du; curve.veval(vu0,P0,dP0du); dP0du = dP0du * Vec4vfx(dscale);
       const Vec4vfx P3 = shift_right_1(P0);
       const Vec4vfx dP3du = shift_right_1(dP0du); 
@@ -173,9 +179,9 @@ namespace embree
       vfloatx r_inner = min(P0.w,P1.w,P2.w,P3.w)-maxr12;
       r_outer = one_plus_ulp*r_outer;
       r_inner = max(0.0f,one_minus_ulp*r_inner);
-      const CylinderN<VSIZEX> cylinder_outer(Vec3vfx(P0),Vec3vfx(P3),r_outer);
-      const CylinderN<VSIZEX> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
-      vboolx valid = true; clear(valid,VSIZEX-1);
+      const CylinderN<vfloatx::size> cylinder_outer(Vec3vfx(P0),Vec3vfx(P3),r_outer);
+      const CylinderN<vfloatx::size> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
+      vboolx valid = true; clear(valid,vfloatx::size-1);
 
       /* intersect with outer cylinder */
       BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
@@ -185,9 +191,9 @@ namespace embree
       /* intersect with cap-planes */
       BBox<vfloatx> tp(ray.tnear()-dt,ray.tfar-dt);
       tp = embree::intersect(tp,tc_outer);
-      BBox<vfloatx> h0 = HalfPlaneN<VSIZEX>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(org,dir);
+      BBox<vfloatx> h0 = HalfPlaneN<vfloatx::size>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(org,dir);
       tp = embree::intersect(tp,h0);
-      BBox<vfloatx> h1 = HalfPlaneN<VSIZEX>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(org,dir);
+      BBox<vfloatx> h1 = HalfPlaneN<vfloatx::size>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(org,dir);
       tp = embree::intersect(tp,h1);
       valid &= tp.lower <= tp.upper;
       if (none(valid)) return false;
@@ -195,8 +201,8 @@ namespace embree
       /* clamp and correct u parameter */
       u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
       u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
-      u_outer0 = lerp(u0,u1,(vfloatx(step)+u_outer0)*(1.0f/float(VSIZEX)));
-      u_outer1 = lerp(u0,u1,(vfloatx(step)+u_outer1)*(1.0f/float(VSIZEX)));
+      u_outer0 = lerp(u0,u1,(vfloatx(step)+u_outer0)*(1.0f/float(vfloatx::size)));
+      u_outer1 = lerp(u0,u1,(vfloatx(step)+u_outer1)*(1.0f/float(vfloatx::size)));
 
       /* intersect with inner cylinder */
       BBox<vfloatx> tc_inner;
