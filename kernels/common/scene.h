@@ -212,10 +212,11 @@ namespace embree
   private:
     __forceinline void checkIfModifiedAndSet () 
     {
+      if (isModified ()) return;
       if (std::any_of (geometries.begin(), geometries.end(),
-          [](decltype(*geometries.begin()) g) { return g ? g->isModified () : false; })) 
+          [](decltype(*geometries.begin()) g) { return g && g->isEnabled () ? g->isModified () : false; })) 
       {
-          modified = true;
+          setModified ();
       }
     }
   public:
@@ -293,7 +294,9 @@ namespace embree
     MutexSys buildMutex;
     SpinLock geometriesMutex;
     bool is_build;
+  private:
     bool modified;                   //!< true if scene got modified
+  public:
     
     /*! global lock step task scheduler */
 #if defined(TASKING_INTERNAL) 
