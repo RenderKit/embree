@@ -621,7 +621,7 @@ namespace embree
     }
     geometries[geomID] = geometry->attach(this,geomID);
     if (geometry->isEnabled()) {
-      this->modified = true;
+      setModified ();
     }
     return geomID;
   }
@@ -639,7 +639,7 @@ namespace embree
     
     geometry->detach();
     if (geometry->isEnabled()) {
-      modified = true;
+      setModified ();
     }
     accels_deleteGeometry(unsigned(geomID));
     id_pool.deallocate((unsigned)geomID);
@@ -852,9 +852,10 @@ namespace embree
       }
       buildMutex.unlock();
       return;
+    } else {
+      checkIfModifiedAndSet ();
     }
 
-    checkIfModifiedAndSet ();
     if (!isModified()) {
       return;
     }
