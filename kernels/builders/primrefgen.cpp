@@ -15,6 +15,7 @@
 // ======================================================================== //
 
 #include "primrefgen.h"
+#include "primrefgen_presplit.h"
 
 #include "../../common/algorithms/parallel_for_for.h"
 #include "../../common/algorithms/parallel_for_for_prefix_sum.h"
@@ -23,6 +24,11 @@ namespace embree
 {
   namespace isa
   {
+
+    // ====================================================================================================
+    // ====================================================================================================
+    // ====================================================================================================
+
     PrimInfo createPrimRefArray(Geometry* geometry, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;

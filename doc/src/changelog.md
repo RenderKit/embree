@@ -11,6 +11,10 @@ Version History
 -   Implemented robust mode for curves.
 -   Implemented issue with motion blur builder where number of time segments
     for SAH heuristic were counted wrong due to some numerical issues.
+-   Improved performance of multi-segment motion blur, by improving the
+    SAH heuristic used in the motion blur builder.
+-   Improved shadow ray performance for instantiated curve geometries.
+-   Fixed a bug with rendering short fat curves.
 
 ### New Features in Embree 3.6.1
 -   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.

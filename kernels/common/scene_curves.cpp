@@ -47,18 +47,6 @@ namespace embree
   {
     resizeBuffers(numTimeSteps);
   }
-
-  void CurveGeometry::enabling() 
-  {
-    if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
-    else                   scene->worldMB.numBezierCurves += numPrimitives; 
-  }
-  
-  void CurveGeometry::disabling() 
-  {
-    if (numTimeSteps == 1) scene->world.numBezierCurves -= numPrimitives; 
-    else                   scene->worldMB.numBezierCurves -= numPrimitives;
-  }
   
   void CurveGeometry::setMask (unsigned mask) 
   {
@@ -277,6 +265,12 @@ namespace embree
   void CurveGeometry::setTessellationRate(float N)
   {
     tessellationRate = clamp((int)N,1,16);
+  }
+
+  void CurveGeometry::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (numTimeSteps == 1) counts.numBezierCurves += numPrimitives; 
+    else                   counts.numMBBezierCurves += numPrimitives;
   }
 
   bool CurveGeometry::verify () 

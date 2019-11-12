@@ -27,6 +27,101 @@ namespace embree
   class Scene;
   class Geometry;
 
+  struct GeometryCounts 
+  {
+    __forceinline GeometryCounts()
+      : numTriangles(0), numMBTriangles(0), 
+        numQuads(0), numMBQuads(0), 
+        numBezierCurves(0), numMBBezierCurves(0), 
+        numLineSegments(0), numMBLineSegments(0), 
+        numSubdivPatches(0), numMBSubdivPatches(0), 
+        numUserGeometries(0), numMBUserGeometries(0), 
+        numInstancesCheap(0), numMBInstancesCheap(0), 
+        numInstancesExpensive(0), numMBInstancesExpensive(0), 
+        numGrids(0), numMBGrids(0), 
+        numPoints(0), numMBPoints(0) {}
+
+    __forceinline size_t size() const {
+      return    numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numGrids + numPoints
+              + numMBTriangles + numMBQuads + numMBBezierCurves + numMBLineSegments + numMBSubdivPatches + numMBUserGeometries + numMBInstancesCheap + numMBInstancesExpensive + numMBGrids + numMBPoints;
+    }
+
+    __forceinline unsigned int enabledGeometryTypesMask() const
+    {
+      unsigned int mask = 0;
+      if (numTriangles) mask |= 1 << 0;
+      if (numQuads) mask |= 1 << 1;
+      if (numBezierCurves+numLineSegments) mask |= 1 << 2;
+      if (numSubdivPatches) mask |= 1 << 3;
+      if (numUserGeometries) mask |= 1 << 4;
+      if (numInstancesCheap) mask |= 1 << 5;
+      if (numInstancesExpensive) mask |= 1 << 6;
+      if (numGrids) mask |= 1 << 7;
+      if (numPoints) mask |= 1 << 8;
+
+      unsigned int maskMB = 0;
+      if (numMBTriangles) maskMB |= 1 << 0;
+      if (numMBQuads) maskMB |= 1 << 1;
+      if (numMBBezierCurves+numMBLineSegments) maskMB |= 1 << 2;
+      if (numMBSubdivPatches) maskMB |= 1 << 3;
+      if (numMBUserGeometries) maskMB |= 1 << 4;
+      if (numMBInstancesCheap) maskMB |= 1 << 5;
+      if (numMBInstancesExpensive) maskMB |= 1 << 6;
+      if (numMBGrids) maskMB |= 1 << 7;
+      if (numMBPoints) maskMB |= 1 << 8;
+      
+      return (mask<<8) + maskMB;
+    }
+
+    __forceinline GeometryCounts operator+ (GeometryCounts const & rhs) const
+    {
+      GeometryCounts ret;
+      ret.numTriangles = numTriangles + rhs.numTriangles;
+      ret.numMBTriangles = numMBTriangles + rhs.numMBTriangles;
+      ret.numQuads = numQuads + rhs.numQuads;
+      ret.numMBQuads = numMBQuads + rhs.numMBQuads;
+      ret.numBezierCurves = numBezierCurves + rhs.numBezierCurves;
+      ret.numMBBezierCurves = numMBBezierCurves + rhs.numMBBezierCurves;
+      ret.numLineSegments = numLineSegments + rhs.numLineSegments;
+      ret.numMBLineSegments = numMBLineSegments + rhs.numMBLineSegments;
+      ret.numSubdivPatches = numSubdivPatches + rhs.numSubdivPatches;
+      ret.numMBSubdivPatches = numMBSubdivPatches + rhs.numMBSubdivPatches;
+      ret.numUserGeometries = numUserGeometries + rhs.numUserGeometries;
+      ret.numMBUserGeometries = numMBUserGeometries + rhs.numMBUserGeometries;
+      ret.numInstancesCheap = numInstancesCheap + rhs.numInstancesCheap;
+      ret.numMBInstancesCheap = numMBInstancesCheap + rhs.numMBInstancesCheap;
+      ret.numInstancesExpensive = numInstancesExpensive + rhs.numInstancesExpensive;
+      ret.numMBInstancesExpensive = numMBInstancesExpensive + rhs.numMBInstancesExpensive;
+      ret.numGrids = numGrids + rhs.numGrids;
+      ret.numMBGrids = numMBGrids + rhs.numMBGrids;
+      ret.numPoints = numPoints + rhs.numPoints;
+      ret.numMBPoints = numMBPoints + rhs.numMBPoints;
+
+      return ret;
+    }
+
+    size_t numTriangles;             //!< number of enabled triangles
+    size_t numMBTriangles;           //!< number of enabled motion blured triangles
+    size_t numQuads;                 //!< number of enabled quads
+    size_t numMBQuads;               //!< number of enabled motion blurred quads
+    size_t numBezierCurves;          //!< number of enabled curves
+    size_t numMBBezierCurves;        //!< number of enabled motion blurred curves
+    size_t numLineSegments;          //!< number of enabled line segments
+    size_t numMBLineSegments;        //!< number of enabled line motion blurred segments
+    size_t numSubdivPatches;         //!< number of enabled subdivision patches
+    size_t numMBSubdivPatches;       //!< number of enabled motion blured subdivision patches
+    size_t numUserGeometries;        //!< number of enabled user geometries
+    size_t numMBUserGeometries;      //!< number of enabled motion blurred user geometries
+    size_t numInstancesCheap;        //!< number of enabled cheap instances
+    size_t numMBInstancesCheap;      //!< number of enabled motion blurred cheap instances
+    size_t numInstancesExpensive;    //!< number of enabled expensive instances
+    size_t numMBInstancesExpensive;  //!< number of enabled motion blurred expensive instances
+    size_t numGrids;                 //!< number of enabled grid geometries
+    size_t numMBGrids;               //!< number of enabled motion blurred grid geometries
+    size_t numPoints;                //!< number of enabled points
+    size_t numMBPoints;              //!< number of enabled motion blurred points
+  };
+
   /*! Base class all geometries are derived from */
   class Geometry : public RefCount
   {
@@ -254,17 +349,15 @@ namespace embree
     /*! Verify the geometry */
     virtual bool verify() { return true; }
 
-    /*! called if geometry is switching from disabled to enabled state */
-    virtual void enabling() = 0;
-
-    /*! called if geometry is switching from enabled to disabled state */
-    virtual void disabling() = 0;
-
     /*! called before every build */
     virtual void preCommit();
   
     /*! called after every build */
     virtual void postCommit();
+
+    virtual void addElementsToCount (GeometryCounts & counts) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    };
 
     /*! sets constant tessellation rate for the geometry */
     virtual void setTessellationRate(float N) {
