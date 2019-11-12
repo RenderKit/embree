@@ -1181,7 +1181,7 @@ namespace embree
 
 	double total1 = getSeconds();
 
-	std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : " << numPrimitives*0.000001f/(total1-total0) << " MPrims/s root = " << (void*)(size_t)bvh->root << std::endl << std::flush;
+	//std::cout << "BVH GPU Builder DONE in " << 1000.*(total1-total0) << " ms : " << numPrimitives*0.000001f/(total1-total0) << " MPrims/s root = " << (void*)(size_t)bvh->root << std::endl << std::flush;
 	    
 	/* print BVH stats */
 #if defined(EMBREE_DPCPP_SUPPORT) 

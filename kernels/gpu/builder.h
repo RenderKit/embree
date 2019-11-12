@@ -422,7 +422,7 @@ namespace embree
 	/* first bin is invalid */
 	const float pos_inf = (float)INFINITY;
 	const int m_subgroup = subgroupLocalID != 0;
-	const float3 sah = cselect( m_subgroup, cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f), float3(pos_inf));
+	const float3 sah = cselect( int3(m_subgroup), cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f), float3(pos_inf));
 
 	/* select best split */
 	const uint mid = (startID+endID)/2;
@@ -519,7 +519,7 @@ namespace embree
 	float3 sah_low     = cl::sycl::fma(lr_area_low,lr_count_low_f,rl_area_low*rl_count_low_f);
 
 	/* first bin is invalid */
-	sah_low = cselect( (int)(subgroupLocalID != 0), sah_low, float3(pos_inf));
+	sah_low = cselect( int3(subgroupLocalID != 0), sah_low, float3(pos_inf));
 	  
 	/* high part: bins 16..31 */
 	const float3 lr_area_high(lr_areaX.y(),lr_areaY.y(),lr_areaZ.y());

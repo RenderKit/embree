@@ -247,8 +247,8 @@ namespace embree
 
 	  /* disable invalid lanes */	  
 
-	  ilower = cselect(m_valid,ilower,(int4)QUANT_MAX);
-	  iupper = cselect(m_valid,iupper,(int4)QUANT_MIN);
+	  ilower = cselect(int4(m_valid),ilower,int4(QUANT_MAX));
+	  iupper = cselect(int4(m_valid),iupper,int4(QUANT_MIN));
 	  
 	  node.offset[subgroupLocalID] = -1;
 	  node.bounds_x[subgroupLocalID].lower = ilower.x();
