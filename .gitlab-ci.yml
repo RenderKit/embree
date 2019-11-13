@@ -127,9 +127,9 @@ nightly-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
   tags:   [win, v141]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-NAMESPACE:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141_CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
-  tags:   [win, v141_clang]
+nightly-windows-x64-RelWithDebInfo-LLVM-CLANG-ISPC1.9.2-AVX2-TBB2019.2-NAMESPACE:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:LLVM_CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
+  tags:   [win, llvm_clang]
   only:   [schedules]
 
 #nightly-windows-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
