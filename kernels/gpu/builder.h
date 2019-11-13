@@ -422,8 +422,16 @@ namespace embree
 	/* first bin is invalid */
 	const float pos_inf = (float)INFINITY;
 	const int m_subgroup = subgroupLocalID != 0;
-	const float3 sah = cselect( int3(m_subgroup), cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f), float3(pos_inf));
-
+	const float3 cost = cl::sycl::fma(lr_area,lr_count_f,rl_area*rl_count_f);
+#if 1	// workaround for compiler bug
+	float3 sah;
+	sah.x() = cselect( m_subgroup, cost.x() , pos_inf);
+	sah.y() = cselect( m_subgroup, cost.y() , pos_inf);
+	sah.z() = cselect( m_subgroup, cost.z() , pos_inf);
+#else	
+	const float3 sah = cselect( int3(m_subgroup), cost , float3(pos_inf));
+#endif
+	
 	/* select best split */
 	const uint mid = (startID+endID)/2;
 	const uint maxSAH = as_uint(pos_inf);	
@@ -519,8 +527,14 @@ namespace embree
 	float3 sah_low     = cl::sycl::fma(lr_area_low,lr_count_low_f,rl_area_low*rl_count_low_f);
 
 	/* first bin is invalid */
-	sah_low = cselect( int3(subgroupLocalID != 0), sah_low, float3(pos_inf));
-	  
+	const int m_subgroup = subgroupLocalID != 0;	
+#if 1 // workaround for compiler bug
+	sah_low.x() = cselect( m_subgroup, sah_low.x(), pos_inf);
+	sah_low.y() = cselect( m_subgroup, sah_low.y(), pos_inf);
+	sah_low.z() = cselect( m_subgroup, sah_low.z(), pos_inf);
+#else	
+	sah_low = cselect( int3(m_subgroup), sah_low, float3(pos_inf));
+#endif	  
 	/* high part: bins 16..31 */
 	const float3 lr_area_high(lr_areaX.y(),lr_areaY.y(),lr_areaZ.y());
 	const float3 rl_area_high(rl_areaX.y(),rl_areaY.y(),rl_areaZ.y());

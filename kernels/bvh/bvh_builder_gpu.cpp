@@ -29,7 +29,7 @@
 #include "../gpu/AABB.h"
 #include "../gpu/AABB3f.h"
 #include "../gpu/builder.h"
-
+ 
 #define ENABLE_BREADTH_FIRST_PHASE 1
 #define ENABLE_SINGLE_THREAD_SERIAL_BUILD 0
 #define BUILD_CHECKS 0
@@ -1097,7 +1097,7 @@ namespace embree
 
 	t2 = getSeconds();
 	if (unlikely(deviceGPU->verbosity(2)))
-	  std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;
+	  std::cout << "Parallel Breadth First Phase " << 1000 * (t2 - t1) << " ms" << std::endl;	
 #endif	    
 	
 	    
@@ -1201,7 +1201,7 @@ namespace embree
 	      std::cout << "Caught synchronous SYCL exception:\n"
 			<< e.what() << std::endl;
 	      FATAL("OpenCL Exception");     		
-	    }	      
+	    }
 	  }
 #endif	    
 	/* --- deallocate temporary data structures --- */
