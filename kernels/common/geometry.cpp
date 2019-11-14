@@ -61,7 +61,7 @@ namespace embree
       mask(-1),
       gtype(gtype),
       quality(RTC_BUILD_QUALITY_MEDIUM),
-      state(MODIFIED),
+      state(State::MODIFIED),
       numPrimitivesChanged(false),
       enabled(true),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr), pointQueryFunc(nullptr)
@@ -86,8 +86,9 @@ namespace embree
 
   void Geometry::setNumTimeSteps (unsigned int numTimeSteps_in)
   {
-    if (numTimeSteps_in == numTimeSteps)
+    if (numTimeSteps_in == numTimeSteps) {
       return;
+    }
     
     numTimeSteps = numTimeSteps_in;
     fnumTimeSegments = float(numTimeSteps_in-1);
@@ -103,18 +104,19 @@ namespace embree
   
   void Geometry::update() 
   {
-    state = MODIFIED;
+    state = State::MODIFIED;
   }
   
   void Geometry::commit() 
   {
-    state = COMMITTED;
+    state = State::COMMITTED;
   }
 
   void Geometry::preCommit()
   {
-    if (state == MODIFIED)
+    if (state == State::MODIFIED) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry not committed");
+    }
   }
 
   void Geometry::postCommit()
@@ -122,8 +124,9 @@ namespace embree
     numPrimitivesChanged = false;
     
     /* set state to build */
-    if (isEnabled())
-      state = BUILD;
+    if (isEnabled()) {
+      state = State::BUILD;
+    }
   }
 
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
@@ -144,7 +147,7 @@ namespace embree
     if (isEnabled()) 
       return;
 
-    state = COMMITTED;
+    state = State::COMMITTED;
     enabled = true;
   }
 
@@ -153,7 +156,7 @@ namespace embree
     if (isDisabled()) 
       return;
     
-    state = COMMITTED;
+    state = State::COMMITTED;
     enabled = false;
   }
 
