@@ -214,7 +214,7 @@ namespace embree
     {
       if (isModified ()) return;
       if (std::any_of (geometries.begin(), geometries.end(),
-          [](decltype(*geometries.begin()) g) { return g && g->isEnabled () ? g->isModified () : false; })) 
+          [](decltype(*geometries.begin()) g) { return ((g && g->isEnabled ()) ? g->isModified () : false); })) 
       {
           setModified ();
       }

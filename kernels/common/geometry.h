@@ -228,7 +228,7 @@ namespace embree
 
     static const char* gtype_names[GTY_END];
 
-    enum State {
+    enum class State : unsigned short {
       MODIFIED = 0,
       COMMITTED = 1,
       BUILD = 2
@@ -251,11 +251,11 @@ namespace embree
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
     /*! tests if geometry is modified */
-    __forceinline bool isModified() const { return state != BUILD; }
+    __forceinline bool isModified() const { return state != State::BUILD; }
 
     /*! marks geometry modified */
     __forceinline void setModified() {
-      if (state == BUILD) state = COMMITTED;
+      if (state == State::BUILD) state = State::COMMITTED;
     }
 
     __forceinline bool hasFilterFunctions () const {
