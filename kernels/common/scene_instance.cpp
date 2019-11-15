@@ -39,15 +39,11 @@ namespace embree
 
   Geometry* Instance::attach(Scene* scene, unsigned int geomID)
   {
-
-    this->instID_ = geomID;
-
     return Geometry::attach (scene, geomID);
   }
 
   void Instance::detach()
   {
-    this->instID_ = -1;
     Geometry::detach ();
   }
   
