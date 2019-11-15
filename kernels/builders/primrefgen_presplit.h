@@ -160,12 +160,12 @@ namespace embree
 
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != numPrimRefs)
-      {
-        progressMonitor(0);
-        pinfo = parallel_prefix_sum( pstate, size_t(0), geometry->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo {
-            return geometry->createPrimRefArray(prims,r,base.size());
-          }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      }
+	{
+	  progressMonitor(0);
+	  pinfo = parallel_prefix_sum( pstate, size_t(0), geometry->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo {
+	      return geometry->createPrimRefArray(prims,r,base.size(),geomID);
+	    }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+	}
       return pinfo;	
     }
     
@@ -200,7 +200,7 @@ namespace embree
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
-      PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, size_t i) -> PrimInfo {
+      PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i) -> PrimInfo {
 	  return mesh->createPrimRefArray(prims,r,k,i);
 	}, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
@@ -208,7 +208,7 @@ namespace embree
       if (pinfo.size() != numPrimRefs)
 	{
 	  progressMonitor(0);
-	  pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, size_t i, const PrimInfo& base) -> PrimInfo {
+	  pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i, const PrimInfo& base) -> PrimInfo {
 	      return mesh->createPrimRefArray(prims,r,base.size(),i);
 	    }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 	}
