@@ -208,9 +208,6 @@ namespace embree
 	  progressMonitor(0);
 	  pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i, const PrimInfo& base) -> PrimInfo {
 	      return mesh->createPrimRefArray(prims,r,base.size(),i);
-	    }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-	}
-
       /* use correct number of primitives */
       size_t numPrimitives = pinfo.size();
       const size_t alloc_numPrimitives = prims.size(); 
