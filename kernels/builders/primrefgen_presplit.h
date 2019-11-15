@@ -195,8 +195,6 @@ namespace embree
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator2 iter(scene,types,mblur);
 
-      PrimInfo pinfo;
-
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
