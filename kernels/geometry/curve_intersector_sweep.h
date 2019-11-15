@@ -156,7 +156,8 @@ namespace embree
       typedef vbool4 vboolx; // maximally 8-wide
       typedef vfloat4 vfloatx;
 #endif
-      typedef Vec3vfx Vec3<vfloatx>;
+      typedef Vec3<vfloatx> Vec3vfx;
+      typedef Vec4<vfloatx> Vec4vfx;
     
       int maxDepth = numBezierSubdivisions;
       //int maxDepth = Device::debug_int1+1;
