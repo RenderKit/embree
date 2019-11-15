@@ -57,7 +57,7 @@ continuous-linux-skx-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX512SKX-TBB2019.2
 
 continuous-linux-knl-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX512KNL-TBB2019.2:
   image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4.0.0 ispc:ispc1.9.2 isa:AVX512KNL tasking:TBB2019.2 intensity:2"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4.0.0 ispc:ispc1.9.2 isa:AVX512KNL tasking:TBB2019.2 intensity:3"
   tags:   [docker-knl]
   only:   [pushes]
 
