@@ -22,6 +22,7 @@
 #include "../common/math/closest_point.h"
 #include "../../common/algorithms/parallel_for.h"
 #include "../../kernels/common/context.h"
+#include "../../kernels/common/geometry.h"
 #include <regex>
 #include <stack>
 
@@ -3743,6 +3744,130 @@ namespace embree
     }
   };
 
+  struct GeometryStateTest : public VerifyApplication::Test
+  {
+    GeometryStateTest (std::string name, int isa)
+      : VerifyApplication::Test (name, isa, VerifyApplication::TEST_SHOULD_PASS) {}
+    
+    VerifyApplication::TestReturnValue run (VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa=" + stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler (nullptr, rtcGetDeviceError(device));
+      AssertNoError(device);
+      RTCGeometry geom0 = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
+      AssertNoError(device);
+      using embree::Geometry;
+      auto geometry = (Geometry *) geom0;
+
+      // test construction
+      if (geometry->state != Geometry::State::MODIFIED) {
+        return VerifyApplication::FAILED;
+      }
+
+      // test setModified
+      geometry->state = Geometry::State::BUILD;
+      geometry->setModified ();
+      if (geometry->state != Geometry::State::COMMITTED) {
+        return VerifyApplication::FAILED;
+      }
+      geometry->setModified ();
+      if (geometry->state != Geometry::State::COMMITTED) {
+        return VerifyApplication::FAILED;
+      }
+      geometry->state = Geometry::State::MODIFIED;
+      if (geometry->state != Geometry::State::MODIFIED) {
+        return VerifyApplication::FAILED;
+      }
+
+      // test isModified
+      geometry->state = Geometry::State::BUILD;
+      if (geometry->isModified ()) {
+        return VerifyApplication::FAILED;
+      }
+      geometry->state = Geometry::State::MODIFIED;
+      if (!geometry->isModified ()) {
+        return VerifyApplication::FAILED;
+      }
+      geometry->state = Geometry::State::COMMITTED;
+      if (!geometry->isModified ()) {
+        return VerifyApplication::FAILED;
+      }
+
+      //test update
+      geometry->state = Geometry::State::BUILD;
+      geometry->update();
+      if (geometry->state != Geometry::State::MODIFIED) {
+        return VerifyApplication::FAILED;
+      }
+
+      //test commit
+      geometry->state = Geometry::State::BUILD;
+      geometry->commit();
+      if (geometry->state != Geometry::State::COMMITTED) {
+        return VerifyApplication::FAILED;
+      }
+
+      // test postCommit
+      geometry->state = Geometry::State::COMMITTED;
+      geometry->enabled = false;
+      geometry->postCommit ();
+      if (geometry->state != Geometry::State::COMMITTED) {
+        return VerifyApplication::FAILED;
+      }
+      geometry->enabled = true;
+      geometry->postCommit ();
+      if (geometry->state != Geometry::State::BUILD) {
+        return VerifyApplication::FAILED;
+      }
+
+      // test disable
+      geometry->state = Geometry::State::BUILD;
+      geometry->enabled = false;
+      geometry->disable ();
+      if (geometry->state != Geometry::State::BUILD) {
+        return VerifyApplication::FAILED;
+      }
+      if (geometry->isEnabled ()) {
+        return VerifyApplication::FAILED;
+      }
+
+      geometry->state = Geometry::State::BUILD;
+      geometry->enabled = true;
+      geometry->disable ();
+      if (geometry->state != Geometry::State::COMMITTED) {
+        return VerifyApplication::FAILED;
+      }
+      if (geometry->isEnabled ()) {
+        return VerifyApplication::FAILED;
+      }
+
+      // test enable
+      geometry->state = Geometry::State::BUILD;
+      geometry->enabled = true;
+      geometry->enable ();
+      if (geometry->state != Geometry::State::BUILD) {
+        return VerifyApplication::FAILED;
+      }
+      if (!geometry->isEnabled ()) {
+        return VerifyApplication::FAILED;
+      }
+
+      geometry->state = Geometry::State::BUILD;
+      geometry->enabled = false;
+      geometry->enable ();
+      if (geometry->state != Geometry::State::COMMITTED) {
+        return VerifyApplication::FAILED;
+      }
+      if (!geometry->isEnabled ()) {
+        return VerifyApplication::FAILED;
+      }
+
+
+      return VerifyApplication::PASSED;
+    }
+  };
+
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -5347,6 +5472,13 @@ namespace embree
 
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
       groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,30));
+
+      /**************************************************************************/
+      /*                  Function Level Testing                                */
+      /**************************************************************************/
+
+      groups.top()->add(new GeometryStateTest("geometry_state_tests", isa));
+
       
       /**************************************************************************/
       /*                           Benchmarks                                   */
