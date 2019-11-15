@@ -129,7 +129,7 @@ namespace embree
   public:
 
     /*! type of geometry */
-    enum GType : unsigned int
+    enum GType
     {
       GTY_FLAT_LINEAR_CURVE = 0,
       GTY_ROUND_LINEAR_CURVE = 1,
@@ -178,7 +178,7 @@ namespace embree
       GTY_SUBTYPE_MASK = 3,
     };
 
-    enum GTypeMask : unsigned long
+    enum GTypeMask
     {
       MTY_FLAT_LINEAR_CURVE = 1ul << GTY_FLAT_LINEAR_CURVE,
       MTY_ROUND_LINEAR_CURVE = 1ul << GTY_ROUND_LINEAR_CURVE,
