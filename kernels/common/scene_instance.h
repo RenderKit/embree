@@ -129,7 +129,6 @@ namespace embree
     Accel* object;                 //!< pointer to instanced acceleration structure
     AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
-    unsigned int instID_ = std::numeric_limits<unsigned int>::max();
   };
 
   namespace isa

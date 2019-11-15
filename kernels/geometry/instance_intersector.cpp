@@ -68,7 +68,7 @@ namespace embree
 #endif
 
       RTCIntersectContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, instance->instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
         const Vec3fa ray_org = ray.org;
@@ -95,7 +95,7 @@ namespace embree
       
       RTCIntersectContext* user_context = context->user;
       bool occluded = false;
-      if (likely(instance_id_stack::push(user_context, instance->instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
         const Vec3fa ray_org = ray.org;
@@ -123,7 +123,7 @@ namespace embree
                            && similarityTransform(world2local, &similarityScale);
       assert((similtude && similarityScale > 0) || !similtude);
 
-      if (likely(pushInstance(context->userContext, instance->instID_, world2local, local2world)))
+      if (likely(pushInstance(context->userContext, prim.instID_, world2local, local2world)))
       {
         PointQuery query_inst;
         query_inst.time = query->time;
@@ -157,7 +157,7 @@ namespace embree
 #endif
       
       RTCIntersectContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, instance->instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
         const Vec3fa ray_org = ray.org;
@@ -184,7 +184,7 @@ namespace embree
       
       RTCIntersectContext* user_context = context->user;
       bool occluded = false;
-      if (likely(instance_id_stack::push(user_context, instance->instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
         const Vec3fa ray_org = ray.org;
@@ -211,7 +211,7 @@ namespace embree
       const bool similtude = context->query_type == POINT_QUERY_TYPE_SPHERE
                            && similarityTransform(world2local, &similarityScale);
 
-      if (likely(pushInstance(context->userContext, instance->instID_, world2local, local2world)))
+      if (likely(pushInstance(context->userContext, prim.instID_, world2local, local2world)))
       {
         PointQuery query_inst;
         query_inst.time = query->time;
@@ -247,7 +247,7 @@ namespace embree
 #endif
         
       RTCIntersectContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, instance->instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
         const Vec3vf<K> ray_org = ray.org;
@@ -276,7 +276,7 @@ namespace embree
         
       RTCIntersectContext* user_context = context->user;
       vbool<K> occluded = false;
-      if (likely(instance_id_stack::push(user_context, instance->instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
         const Vec3vf<K> ray_org = ray.org;
@@ -306,7 +306,7 @@ namespace embree
 #endif
         
       RTCIntersectContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, instance->instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
         const Vec3vf<K> ray_org = ray.org;
@@ -335,7 +335,7 @@ namespace embree
         
       RTCIntersectContext* user_context = context->user;
       vbool<K> occluded = false;
-      if (likely(instance_id_stack::push(user_context, instance->instID_)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
         const Vec3vf<K> ray_org = ray.org;
