@@ -3863,6 +3863,8 @@ namespace embree
         return VerifyApplication::FAILED;
       }
 
+	  rtcReleaseGeometry(geom0);
+	  AssertNoError(device);
 
       return VerifyApplication::PASSED;
     }
