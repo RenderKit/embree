@@ -207,8 +207,7 @@ namespace embree
     gpu::RTCRayGPU &ray = static_cast<gpu::RTCRayGPU&>(rtc_rayhit.ray);
     gpu::RTCHitGPU &hit = static_cast<gpu::RTCHitGPU&>(rtc_rayhit.hit);
     uint m_active = intel_sub_group_ballot(true);
-    traceRayBVH16<gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
-    
+    traceRayBVH16<gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);    
   }
 
   template<typename T>

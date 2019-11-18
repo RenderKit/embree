@@ -856,7 +856,8 @@ namespace embree
       Mesh* mesh;
       mvector<PrimRef> prims;
       GeneralBVHBuilder::Settings settings;
-      Geometry::GTypeMask gtype_;      
+      Geometry::GTypeMask gtype_;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
       size_t mode;
 
       BVHGPUBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype,
@@ -907,13 +908,13 @@ namespace embree
 	  {
 	    /* presplits */
 	    pinfo = mesh ?
-	      createPrimRefArray_presplit<Mesh,SplitterFactory>(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
+	      createPrimRefArray_presplit<Mesh,SplitterFactory>(mesh,geomID_,org_numPrimitives,prims,bvh->scene->progressInterface) :
 	      createPrimRefArray_presplit<Mesh,SplitterFactory>(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);		
 	  }
 	else
 	  {
 	    pinfo = mesh ?
-	      createPrimRefArray(mesh,org_numPrimitives,prims,bvh->scene->progressInterface) :
+	      createPrimRefArray(mesh,geomID_,org_numPrimitives,prims,bvh->scene->progressInterface) :
 	      createPrimRefArray(scene,Mesh::geom_type,false,org_numPrimitives,prims,bvh->scene->progressInterface);
 	  }
 

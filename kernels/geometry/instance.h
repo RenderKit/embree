@@ -45,8 +45,10 @@ namespace embree
 
   public:
 
-    InstancePrimitive (const Instance* instance) 
-    : instance(instance) {}
+    InstancePrimitive (const Instance* instance, unsigned int instID) 
+    : instance(instance) 
+    , instID_(instID)
+    {}
 
     __forceinline void fill(const PrimRef* prims, size_t& i, size_t end, Scene* scene)
     {
@@ -54,7 +56,7 @@ namespace embree
       const PrimRef& prim = prims[i]; i++;
       const unsigned int geomID = prim.geomID();
       const Instance* instance = scene->get<Instance>(geomID);
-      new (this) InstancePrimitive(instance);
+      new (this) InstancePrimitive(instance, geomID);
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& i, size_t end, Scene* scene, size_t itime)
@@ -63,7 +65,7 @@ namespace embree
       const PrimRef& prim = prims[i]; i++;
       const unsigned int geomID = prim.geomID();
       const Instance* instance = scene->get<Instance>(geomID);
-      new (this) InstancePrimitive(instance);
+      new (this) InstancePrimitive(instance,geomID);
       return instance->linearBounds(0,itime);
     }
 
@@ -73,11 +75,12 @@ namespace embree
       const PrimRefMB& prim = prims[i]; i++;
       const unsigned int geomID = prim.geomID();
       const Instance* instance = scene->get<Instance>(geomID);
-      new (this) InstancePrimitive(instance);
+      new (this) InstancePrimitive(instance,geomID);
       return instance->linearBounds(0,time_range);
     }
 
   public:
     const Instance* instance;
+    const unsigned int instID_ = std::numeric_limits<unsigned int>::max ();
   };
 }

@@ -164,8 +164,6 @@ namespace embree
 
   void Points::postCommit()
   {
-    scene->vertices[geomID] = (float*)vertices0.getPtr();
-
     for (auto& buf : vertices)
       buf.setModified(false);
     for (auto& buf : normals)

@@ -77,6 +77,11 @@ namespace embree
       return max((unsigned int)1,((unsigned int)g.resX >> 1) * ((unsigned int)g.resY >> 1));
     }
 
+    /*! get fast access to first vertex buffer */
+    __forceinline float * getCompactVertexArray () const {
+      return (float*) vertices0.getPtr();
+    }
+
   public:
 
     /*! returns number of vertices */

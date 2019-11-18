@@ -18,28 +18,27 @@
 # Continuous Test
 ####################################################################
 
-
-continuous-macosx-x64-RelWithDebInfo-ICC2019.4-ISPC1.9.2-AVX2-TBB2019.2:
+continuous-macosx-x64-RelWithDebInfo-ICC2019.4-ISPC1.9.2-SSE2-TBB2019.2:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:ICC2019.4 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [mac]
   only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX2-TBB2019.2:
+continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
-  tags:   [win7, v120]
+  tags:   [win10, v120]
   only:   [pushes]
 
-#continuous-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-AVX2-TBB2019.2:
+#continuous-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2019.2:
 #  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
-#  tags:   [win7, v140]
+#  tags:   [win10, v140]
 #  only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2:
+continuous-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-SSE2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2 maxinstancelevelcount:8"
-  tags:   [win7, v141]
+  tags:   [win10, v141]
   only:   [pushes]
  
-continuous-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2:
+continuous-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-SSE2-TBB2019.2:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [mac]
   only:   [pushes]
@@ -61,7 +60,7 @@ continuous-linux-skx-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX512SKX-TBB2019.2
 #  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4.0.0 ispc:ispc1.9.2 isa:AVX512KNL tasking:TBB2019.2 intensity:2"
 #  tags:   [docker-knl]
 #  only:   [pushes]
-  
+
 continuous-linux-x64-RelWithDebInfo-CLANG5.0.0-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5.0.0 ispc:ispc1.9.2 isa:AVX2 tasking:INT intensity:1 addrsanitizer:ON"
@@ -105,52 +104,52 @@ continuous-linux-x64-PROTEX:
 
 nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-INT:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:2"
-  tags:   [win7, v120]
+  tags:   [win10, v120]
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX tasking:TBB2019.2 intensity:4"
-  tags:   [win7, v120] # avx
+  tags:   [win10, v120] # avx
   only:   [schedules]
 
-nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2"
-  tags:   [win7, v140, vis-ci-win2]
+nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2019.2:
+  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
+  tags:   [win10, v140]
   only:   [schedules]
   
 nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-AVX2-PPL:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:PPL intensity:2"
-  tags:   [win7, v140] # avx2
+  tags:   [win10, v140] # avx2
   only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-V141-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2 STATIC_LIB:ON"
-  tags:   [win7, v141]
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2 STATIC_LIB:ON"
+  tags:   [win10, v141]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-NAMESPACE:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
-  tags:   [win7, llvm_clang]
+nightly-windows-x64-RelWithDebInfo-LLVM-CLANG-ISPC1.9.2-AVX2-TBB2019.2-NAMESPACE:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:LLVM_CLANG ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4 api_namespace:myembree"
+  tags:   [win10, llvm_clang]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2"
-  tags:   [win7, icc16]
-  only:   [schedules]
+#nightly-windows-x64-RelWithDebInfo-ICC16-ISPC1.9.2-AVX2-TBB2019.2:
+#  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC16 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:2"
+#  #tags:   [win10, icc16]
+#  #only:   [schedules]
 
 nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.9.2-AVX2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC17 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:4"
-  tags:   [win7, icc17]
+  tags:   [win10, icc17]
   only:   [schedules]
   
 #nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX2-TBB2019.2:
 #  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX2 tasking:TBB2019.2 intensity:3"
-#  tags:   [win7, icc18]
+#  tags:   [win10, icc18]
 #  only:   [schedules]
 
 #nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.9.2-AVX512SKX-TBB2019.2:
 #  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18 ispc:ispc1.9.2 isa:AVX512SKX tasking:TBB2019.2 intensity:1 sde:skx"
-#  tags:   [win7, icc18]
+#  tags:   [win10, icc18]
 #  only:   [schedules]
 
 
@@ -166,7 +165,7 @@ nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX-INT:
   tags:   [mac] # avx
   only:   [schedules]
 
-nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-AVX2-TBB2019.2-STATIC:
+nightly-macosx-x64-RelWithDebInfo-CLANG-ISPC1.9.2-SSE2-TBB2019.2-STATIC:
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:4 STATIC_LIB:ON"
   tags:   [mac] # avx2
   only:   [schedules]
@@ -480,7 +479,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX2-TBB2019.2-INSTANCE:
 
 release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC12 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
-  tags:   [win7, icc17]
+  tags:   [win10, icc17]
   only:   [web]
   artifacts:
     name: "$env:CI_JOB_NAME"
@@ -490,7 +489,7 @@ release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
 
 release-windows-x64-Release-ICC17-VC14-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
-  tags:   [win7, icc17]
+  tags:   [win10, icc17]
   only:   [web]
   artifacts:
     name: "$env:CI_JOB_NAME"
@@ -498,9 +497,9 @@ release-windows-x64-Release-ICC17-VC14-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:MSI"
-  tags:   [win7, icc17]
+release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-MSI:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC12 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:MSI"
+  tags:   [win10, icc17]
   only:   [web]
   artifacts:
     name: "$env:CI_JOB_NAME"

@@ -33,7 +33,7 @@ namespace embree
 
     public:
 
-      typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
+      typedef void (*createMeshAccelTy)(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
 
       struct BuildRef : public PrimRef
       {

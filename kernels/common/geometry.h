@@ -180,25 +180,25 @@ namespace embree
 
     enum GTypeMask
     {
-      MTY_FLAT_LINEAR_CURVE = 1 << GTY_FLAT_LINEAR_CURVE,
-      MTY_ROUND_LINEAR_CURVE = 1 << GTY_ROUND_LINEAR_CURVE,
-      MTY_ORIENTED_LINEAR_CURVE = 1 << GTY_ORIENTED_LINEAR_CURVE,
+      MTY_FLAT_LINEAR_CURVE = 1ul << GTY_FLAT_LINEAR_CURVE,
+      MTY_ROUND_LINEAR_CURVE = 1ul << GTY_ROUND_LINEAR_CURVE,
+      MTY_ORIENTED_LINEAR_CURVE = 1ul << GTY_ORIENTED_LINEAR_CURVE,
       
-      MTY_FLAT_BEZIER_CURVE = 1 << GTY_FLAT_BEZIER_CURVE,
-      MTY_ROUND_BEZIER_CURVE = 1 << GTY_ROUND_BEZIER_CURVE,
-      MTY_ORIENTED_BEZIER_CURVE = 1 << GTY_ORIENTED_BEZIER_CURVE,
+      MTY_FLAT_BEZIER_CURVE = 1ul << GTY_FLAT_BEZIER_CURVE,
+      MTY_ROUND_BEZIER_CURVE = 1ul << GTY_ROUND_BEZIER_CURVE,
+      MTY_ORIENTED_BEZIER_CURVE = 1ul << GTY_ORIENTED_BEZIER_CURVE,
       
-      MTY_FLAT_BSPLINE_CURVE = 1 << GTY_FLAT_BSPLINE_CURVE,
-      MTY_ROUND_BSPLINE_CURVE = 1 << GTY_ROUND_BSPLINE_CURVE,
-      MTY_ORIENTED_BSPLINE_CURVE = 1 << GTY_ORIENTED_BSPLINE_CURVE,
+      MTY_FLAT_BSPLINE_CURVE = 1ul << GTY_FLAT_BSPLINE_CURVE,
+      MTY_ROUND_BSPLINE_CURVE = 1ul << GTY_ROUND_BSPLINE_CURVE,
+      MTY_ORIENTED_BSPLINE_CURVE = 1ul << GTY_ORIENTED_BSPLINE_CURVE,
 
-      MTY_FLAT_HERMITE_CURVE = 1 << GTY_FLAT_HERMITE_CURVE,
-      MTY_ROUND_HERMITE_CURVE = 1 << GTY_ROUND_HERMITE_CURVE,
-      MTY_ORIENTED_HERMITE_CURVE = 1 << GTY_ORIENTED_HERMITE_CURVE,
+      MTY_FLAT_HERMITE_CURVE = 1ul << GTY_FLAT_HERMITE_CURVE,
+      MTY_ROUND_HERMITE_CURVE = 1ul << GTY_ROUND_HERMITE_CURVE,
+      MTY_ORIENTED_HERMITE_CURVE = 1ul << GTY_ORIENTED_HERMITE_CURVE,
 
-      MTY_FLAT_CATMULL_ROM_CURVE = 1 << GTY_FLAT_CATMULL_ROM_CURVE,
-      MTY_ROUND_CATMULL_ROM_CURVE = 1 << GTY_ROUND_CATMULL_ROM_CURVE,
-      MTY_ORIENTED_CATMULL_ROM_CURVE = 1 << GTY_ORIENTED_CATMULL_ROM_CURVE,
+      MTY_FLAT_CATMULL_ROM_CURVE = 1ul << GTY_FLAT_CATMULL_ROM_CURVE,
+      MTY_ROUND_CATMULL_ROM_CURVE = 1ul << GTY_ROUND_CATMULL_ROM_CURVE,
+      MTY_ORIENTED_CATMULL_ROM_CURVE = 1ul << GTY_ORIENTED_CATMULL_ROM_CURVE,
 
       MTY_CURVE2 = MTY_FLAT_LINEAR_CURVE | MTY_ROUND_LINEAR_CURVE | MTY_ORIENTED_LINEAR_CURVE,
       
@@ -207,28 +207,28 @@ namespace embree
                    MTY_FLAT_HERMITE_CURVE | MTY_ROUND_HERMITE_CURVE | MTY_ORIENTED_HERMITE_CURVE |
                    MTY_FLAT_CATMULL_ROM_CURVE | MTY_ROUND_CATMULL_ROM_CURVE | MTY_ORIENTED_CATMULL_ROM_CURVE,
 
-      MTY_SPHERE_POINT = 1 << GTY_SPHERE_POINT,
-      MTY_DISC_POINT = 1 << GTY_DISC_POINT,
-      MTY_ORIENTED_DISC_POINT = 1 << GTY_ORIENTED_DISC_POINT,
+      MTY_SPHERE_POINT = 1ul << GTY_SPHERE_POINT,
+      MTY_DISC_POINT = 1ul << GTY_DISC_POINT,
+      MTY_ORIENTED_DISC_POINT = 1ul << GTY_ORIENTED_DISC_POINT,
 
       MTY_POINTS = MTY_SPHERE_POINT | MTY_DISC_POINT | MTY_ORIENTED_DISC_POINT,
 
       MTY_CURVES = MTY_CURVE2 | MTY_CURVE4 | MTY_POINTS,
 
-      MTY_TRIANGLE_MESH = 1 << GTY_TRIANGLE_MESH,
-      MTY_QUAD_MESH = 1 << GTY_QUAD_MESH,
-      MTY_GRID_MESH = 1 << GTY_GRID_MESH,
-      MTY_SUBDIV_MESH = 1 << GTY_SUBDIV_MESH,
-      MTY_USER_GEOMETRY = 1 << GTY_USER_GEOMETRY,
+      MTY_TRIANGLE_MESH = 1ul << GTY_TRIANGLE_MESH,
+      MTY_QUAD_MESH = 1ul << GTY_QUAD_MESH,
+      MTY_GRID_MESH = 1ul << GTY_GRID_MESH,
+      MTY_SUBDIV_MESH = 1ul << GTY_SUBDIV_MESH,
+      MTY_USER_GEOMETRY = 1ul << GTY_USER_GEOMETRY,
 
-      MTY_INSTANCE_CHEAP = 1 << GTY_INSTANCE_CHEAP,
-      MTY_INSTANCE_EXPENSIVE = 1 << GTY_INSTANCE_EXPENSIVE,
+      MTY_INSTANCE_CHEAP = 1ul << GTY_INSTANCE_CHEAP,
+      MTY_INSTANCE_EXPENSIVE = 1ul << GTY_INSTANCE_EXPENSIVE,
       MTY_INSTANCE = MTY_INSTANCE_CHEAP | MTY_INSTANCE_EXPENSIVE
     };
 
     static const char* gtype_names[GTY_END];
 
-    enum State {
+    enum class State : unsigned short {
       MODIFIED = 0,
       COMMITTED = 1,
       BUILD = 2
@@ -242,9 +242,6 @@ namespace embree
     /*! Geometry destructor */
     virtual ~Geometry();
 
-    /*! updates intersection filter function counts in scene */
-    void updateIntersectionFilters(bool enable);
-
   public:
 
     /*! tests if geometry is enabled */
@@ -254,11 +251,15 @@ namespace embree
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
     /*! tests if geometry is modified */
-    __forceinline bool isModified() const { return state != BUILD; }
+    __forceinline bool isModified() const { return state != State::BUILD; }
 
     /*! marks geometry modified */
     __forceinline void setModified() {
-      if (state == BUILD) state = COMMITTED;
+      if (state == State::BUILD) state = State::COMMITTED;
+    }
+
+    __forceinline bool hasFilterFunctions () const {
+      return (intersectionFilterN  != nullptr) || (occlusionFilterN  != nullptr);
     }
 
     /*! returns geometry type */
@@ -326,8 +327,8 @@ namespace embree
     /*! for all geometries */
   public:
 
-    Geometry* attach(Scene* scene, unsigned int geomID);
-    void detach();
+    virtual Geometry* attach(Scene* scene, unsigned int geomID);
+    virtual void detach();
 
     /*! Enable geometry. */
     virtual void enable();
@@ -418,6 +419,11 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! get fast access to first vertex buffer if applicable */
+    virtual float * getCompactVertexArray () const {
+      return nullptr;
+    }
+
     /*! for triangle meshes and bezier curves only */
   public:
 
@@ -489,15 +495,15 @@ namespace embree
 
   public:
 
-    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const {
+    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
     }
 
-    virtual PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k) const {
+    virtual PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
     }
 
-    virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const {
+    virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
     }
 
@@ -547,10 +553,9 @@ namespace embree
 
   public:
     Device* device;             //!< device this geometry belongs to
-    Scene* scene;               //!< pointer to scene this mesh belongs to
 
     void* userPtr;              //!< user pointer
-    unsigned int geomID;        //!< internal geometry ID
+    // unsigned int geomID;        //!< internal geometry ID
     unsigned int numPrimitives; //!< number of primitives of this geometry
     
     unsigned int numTimeSteps;  //!< number of time steps

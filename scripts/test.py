@@ -123,9 +123,14 @@ def runConfig(config):
     elif (compiler == "ICC15"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler XE 15.0\"")
-    elif (compiler == "CLANG"):
-      conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
-      conf.append("-T \"LLVM-vs2013\"")
+    elif (compiler == "LLVM_CLANG"):
+      conf.append("-G \"Visual Studio 16 2019\"")
+      conf.append("-A "+platform)
+      conf.append("-T \"LLVM_v142\"")
+    elif (compiler == "V141_CLANG"):
+      conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
+      conf.append("-T \"v141_clang_c2\"")
+      ispc_ext = "-vs2015"
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
     
@@ -216,13 +221,14 @@ def runConfig(config):
       
       elif OS == "windows":
         if tasking == "TBB2019.2": 
-          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2019.2-windows"
+          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2019.2-windows"          
         elif tasking == "TBB2017": 
           tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
-          conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
         else:
           raise ValueError('unknown tasking system: ' + tasking + '')
 
+        conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
+        
         if platform == "x64":
           env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;"+tbb_path+"\\bin\\intel64\\vc14;%PATH%")
         else:

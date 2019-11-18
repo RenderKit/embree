@@ -148,24 +148,24 @@ namespace embree
     
     
     template<typename Mesh, typename SplitterFactory>    
-      PrimInfo createPrimRefArray_presplit(Geometry* geometry, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
+      PrimInfo createPrimRefArray_presplit(Geometry* geometry, unsigned int geomID, size_t numPrimRefs, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor)
     {
       ParallelPrefixSumState<PrimInfo> pstate;
       
       /* first try */
       progressMonitor(0);
       PrimInfo pinfo = parallel_prefix_sum( pstate, size_t(0), geometry->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo {
-	  return geometry->createPrimRefArray(prims,r,r.begin());
+	  return geometry->createPrimRefArray(prims,r,r.begin(),geomID);
 	}, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != numPrimRefs)
-      {
-        progressMonitor(0);
-        pinfo = parallel_prefix_sum( pstate, size_t(0), geometry->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo {
-            return geometry->createPrimRefArray(prims,r,base.size());
-          }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      }
+	{
+	  progressMonitor(0);
+	  pinfo = parallel_prefix_sum( pstate, size_t(0), geometry->size(), size_t(1024), PrimInfo(empty), [&](const range<size_t>& r, const PrimInfo& base) -> PrimInfo {
+	      return geometry->createPrimRefArray(prims,r,base.size(),geomID);
+	    }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+	}
       return pinfo;	
     }
     
@@ -195,23 +195,21 @@ namespace embree
       ParallelForForPrefixSumState<PrimInfo> pstate;
       Scene::Iterator2 iter(scene,types,mblur);
 
-      PrimInfo pinfo;
-
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
-      pinfo = parallel_for_for_prefix_sum0( pstate, iter, size_t(1024),PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k) -> PrimInfo {
-          return mesh->createPrimRefArray(prims,r,k);
-        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+      PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i) -> PrimInfo {
+	  return mesh->createPrimRefArray(prims,r,k,i);
+	}, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
       /* if we need to filter out geometry, run again */
-      if (unlikely(pinfo.size() != numPrimRefs))
-      {
-        progressMonitor(0);
-        pinfo = parallel_for_for_prefix_sum1( pstate, iter, size_t(1024),PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
-            return mesh->createPrimRefArray(prims,r,base.size());
-          }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-      }
+      if (pinfo.size() != numPrimRefs)
+	{
+	  progressMonitor(0);
+	  pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i, const PrimInfo& base) -> PrimInfo {
+	      return mesh->createPrimRefArray(prims,r,base.size(),i);
+	    }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+	}
 
       /* use correct number of primitives */
       size_t numPrimitives = pinfo.size();

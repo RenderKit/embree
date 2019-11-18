@@ -103,14 +103,14 @@ set(CTEST_DROP_LOCATION "/CDash/submit.php?project=${CTEST_PROJECT_NAME}")
 set(CTEST_DROP_SITE_CDASH TRUE)
 
 # get OS and CPU information
-find_program(UNAME NAMES uname)
-macro(getuname name flag)
-  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
-endmacro(getuname)
+#find_program(UNAME NAMES uname)
+#macro(getuname name flag)
+#  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
+#endmacro(getuname)
 
-getuname(osname -s)
-getuname(osrel  -r)
-getuname(cpu    -m)
+#getuname(osname -s)
+#getuname(osrel  -r)
+#getuname(cpu    -m)
 
 # build using as many processes as we have processors
 include(ProcessorCount)
@@ -120,10 +120,10 @@ if(numProcessors EQUAL 0)
 endif()
 
 # set build name
-set(CTEST_BUILD_NAME "${osname}-${cpu}")
+#set(CTEST_BUILD_NAME "${osname}-${cpu}")
 set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 IF (WIN32)
-  set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE}")
+  set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE} -- /m /t:rebuild ")
 ELSE()
   set(CTEST_BUILD_COMMAND "make -j ${numProcessors}")
 ENDIF()
@@ -138,7 +138,9 @@ ENDIF()
 set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_BUILD_OPTIONS} ..")
 
 # start the test
-ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
+IF (NOT WIN32)
+  ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
+ENDIF()
 ctest_start("Continuous")
 #ctest_update (RETURN_VALUE count)
 IF (EMBREE_TESTING_INTENSITY GREATER 0)
@@ -148,6 +150,7 @@ ctest_configure()
 
 ctest_build(RETURN_VALUE retval)
 message("test.cmake: ctest_build return value = ${retval}")
+
 IF (NOT retval EQUAL 0)
   message(FATAL_ERROR "test.cmake: build failed")
 ENDIF()

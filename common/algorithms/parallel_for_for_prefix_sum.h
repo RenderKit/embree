@@ -53,7 +53,7 @@ namespace embree
       for (size_t i=i0; k<k1; i++) {
 	const size_t size = array2[i] ? array2[i]->size() : 0;
         const size_t r0 = j0, r1 = min(size,r0+k1-k);
-        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k));
+        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k,i));
         k+=r1-r0; j0 = 0;
       }
       state.prefix_state.counts[taskIndex] = N;
@@ -91,7 +91,7 @@ namespace embree
       for (size_t i=i0; k<k1; i++) {
 	const size_t size = array2[i] ? array2[i]->size() : 0;
         const size_t r0 = j0, r1 = min(size,r0+k1-k);
-        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k,reduction(state.prefix_state.sums[taskIndex],N)));
+        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k,i,reduction(state.prefix_state.sums[taskIndex],N)));
         k+=r1-r0; j0 = 0;
       }
       state.prefix_state.counts[taskIndex] = N;

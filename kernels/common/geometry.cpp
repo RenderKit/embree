@@ -56,12 +56,12 @@ namespace embree
   };
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
-    : device(device), scene(nullptr), userPtr(nullptr),
-      geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
+    : device(device), userPtr(nullptr),
+      numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
       mask(-1),
       gtype(gtype),
       quality(RTC_BUILD_QUALITY_MEDIUM),
-      state(MODIFIED),
+      state(State::MODIFIED),
       numPrimitivesChanged(false),
       enabled(true),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr), pointQueryFunc(nullptr)
@@ -86,8 +86,9 @@ namespace embree
 
   void Geometry::setNumTimeSteps (unsigned int numTimeSteps_in)
   {
-    if (numTimeSteps_in == numTimeSteps)
+    if (numTimeSteps_in == numTimeSteps) {
       return;
+    }
     
     numTimeSteps = numTimeSteps_in;
     fnumTimeSegments = float(numTimeSteps_in-1);
@@ -103,24 +104,19 @@ namespace embree
   
   void Geometry::update() 
   {
-    if (scene)
-      scene->setModified();
-
-    state = MODIFIED;
+    state = State::MODIFIED;
   }
   
   void Geometry::commit() 
   {
-    if (scene)
-      scene->setModified();
-
-    state = COMMITTED;
+    state = State::COMMITTED;
   }
 
   void Geometry::preCommit()
   {
-    if (state == MODIFIED)
+    if (state == State::MODIFIED) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry not committed");
+    }
   }
 
   void Geometry::postCommit()
@@ -128,44 +124,22 @@ namespace embree
     numPrimitivesChanged = false;
     
     /* set state to build */
-    if (isEnabled())
-      state = BUILD;
-  }
-
-  void Geometry::updateIntersectionFilters(bool enable)
-  {
-    const size_t numN  = (intersectionFilterN  != nullptr) + (occlusionFilterN  != nullptr);
-
-    if (enable) {
-      scene->numIntersectionFiltersN += numN;
-    } else {
-      scene->numIntersectionFiltersN -= numN;
+    if (isEnabled()) {
+      state = State::BUILD;
     }
   }
 
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
-    assert(scene);
-    if (this->scene)
-      this->scene->detachGeometry(this->geomID);
 
-    this->scene = scene;
-    this->geomID = geomID;
-    if (isEnabled()) {
-      scene->setModified();
-      updateIntersectionFilters(true);
-    }
+    // this->geomID = geomID;
+
     return this;
   }
 
   void Geometry::detach()
   {
-    if (scene && isEnabled()) {
-      scene->setModified();
-      updateIntersectionFilters(false);
-    }
-    this->scene = nullptr;
-    this->geomID = -1;
+    // this->geomID = -1;
   }
   
   void Geometry::enable () 
@@ -173,11 +147,7 @@ namespace embree
     if (isEnabled()) 
       return;
 
-    if (scene) {
-      updateIntersectionFilters(true);
-      scene->setModified();
-    }
-
+    state = State::COMMITTED;
     enabled = true;
   }
 
@@ -185,12 +155,8 @@ namespace embree
   {
     if (isDisabled()) 
       return;
-
-    if (scene) {
-      updateIntersectionFilters(false);
-      scene->setModified();
-    }
     
+    state = State::COMMITTED;
     enabled = false;
   }
 
@@ -204,10 +170,6 @@ namespace embree
     if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFiltersN -= intersectionFilterN != nullptr;
-      scene->numIntersectionFiltersN += filter != nullptr;
-    }
     intersectionFilterN = filter;
   }
 
@@ -216,10 +178,6 @@ namespace embree
     if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFiltersN -= occlusionFilterN != nullptr;
-      scene->numIntersectionFiltersN += filter != nullptr;
-    }
     occlusionFilterN = filter;
   }
   

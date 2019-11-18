@@ -222,8 +222,6 @@ namespace embree
 
   void LineSegments::postCommit() 
   {
-    scene->vertices[geomID] = (float*) vertices0.getPtr();
-
     segments.setModified(false);
     for (auto& buf : vertices) buf.setModified(false);
     for (auto& buf : normals)  buf.setModified(false);

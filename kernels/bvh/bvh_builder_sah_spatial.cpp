@@ -73,14 +73,15 @@ namespace embree
       mvector<PrimRef> prims0;
       GeneralBVHBuilder::Settings settings;
       const float splitFactor;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
           splitFactor(scene->device->max_spatial_split_replications) {}
 
-      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const unsigned int geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
-          splitFactor(scene->device->max_spatial_split_replications) {}
+          splitFactor(scene->device->max_spatial_split_replications), geomID_(geomID) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -99,7 +100,7 @@ namespace embree
           return;
         }
 
-        const unsigned int maxGeomID = mesh ? mesh->geomID : scene->getMaxGeomID<Mesh,false>();
+        const unsigned int maxGeomID = mesh ? geomID_ : scene->getMaxGeomID<Mesh,false>();
 	      const bool usePreSplits = scene->device->useSpatialPreSplits || (maxGeomID >= ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)));
         double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + (usePreSplits ? "BuilderFastSpatialPresplitSAH" : "BuilderFastSpatialSAH"));
 
@@ -119,7 +120,7 @@ namespace embree
 	  {		     
             /* spatial presplit SAH BVH builder */
 	    pinfo = mesh ?
-	      createPrimRefArray_presplit<Mesh,Splitter>(mesh,numOriginalPrimitives,prims0,bvh->scene->progressInterface) :
+	      createPrimRefArray_presplit<Mesh,Splitter>(mesh,maxGeomID,numOriginalPrimitives,prims0,bvh->scene->progressInterface) :
 	      createPrimRefArray_presplit<Mesh,Splitter>(scene,Mesh::geom_type,false,numOriginalPrimitives,prims0,bvh->scene->progressInterface);
 
 	    const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
@@ -137,7 +138,9 @@ namespace embree
 	  {
             /* standard spatial split SAH BVH builder */
 	    pinfo = mesh ?
-	      createPrimRefArray(mesh,numSplitPrimitives,prims0,bvh->scene->progressInterface) :
+	      //createPrimRefArray(mesh,numSplitPrimitives,prims0,bvh->scene->progressInterface) :
+	      //createPrimRefArray(scene,Mesh::geom_type,false,numSplitPrimitives,prims0,bvh->scene->progressInterface);
+	      createPrimRefArray(mesh,geomID_,numSplitPrimitives,prims0,bvh->scene->progressInterface) :
 	      createPrimRefArray(scene,Mesh::geom_type,false,numSplitPrimitives,prims0,bvh->scene->progressInterface);
 	
 	    Splitter splitter(scene);

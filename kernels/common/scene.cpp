@@ -37,8 +37,7 @@ namespace embree
       scene_flags(RTC_SCENE_FLAG_NONE),
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       is_build(false), modified(true),
-      progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0), 
-      numIntersectionFiltersN(0)
+      progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
     device->refInc();
 
@@ -66,9 +65,11 @@ namespace embree
 #endif
 
     /* detach all geometries */
-    for (auto& geometry : geometries)
-      if (geometry)
+    for (auto& geometry : geometries) {
+      if (geometry) {
         geometry->detach();
+      }
+  }
 
     device->refDec();
   }
@@ -653,6 +654,9 @@ namespace embree
       vertices.resize(geomID+1);
     }
     geometries[geomID] = geometry->attach(this,geomID);
+    if (geometry->isEnabled()) {
+      setModified ();
+    }
     return geomID;
   }
 
@@ -668,6 +672,9 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry");
     
     geometry->detach();
+    if (geometry->isEnabled()) {
+      setModified ();
+    }
     accels_deleteGeometry(unsigned(geomID));
     id_pool.deallocate((unsigned)geomID);
     geometries[geomID] = null;
@@ -752,8 +759,10 @@ namespace embree
 
     /* call postCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {
-        if (geometries[i] && geometries[i]->isEnabled())
+        if (geometries[i] && geometries[i]->isEnabled()) {
           geometries[i]->postCommit();
+          vertices[i] = geometries[i]->getCompactVertexArray();
+        }
       });
       
     updateInterface();
@@ -818,6 +827,7 @@ namespace embree
     }
 
     /* fast path for unchanged scenes */
+    checkIfModifiedAndSet ();
     if (!isModified()) {
       scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
       return;
@@ -876,6 +886,8 @@ namespace embree
       }
       buildMutex.unlock();
       return;
+    } else {
+      checkIfModifiedAndSet ();
     }
 
     if (!isModified()) {

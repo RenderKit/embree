@@ -165,8 +165,6 @@ namespace embree
 
   void QuadMesh::postCommit() 
   {
-    scene->vertices[geomID] = (float*) vertices0.getPtr();
-
     quads.setModified(false);
     for (auto& buf : vertices)
       buf.setModified(false);

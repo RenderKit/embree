@@ -36,6 +36,8 @@ namespace embree
     Instance& operator= (const Instance& other) DELETED; // do not implement
     
   public:
+    virtual Geometry* attach(Scene* scene, unsigned int geomID);
+    virtual void detach();
     virtual void setNumTimeSteps (unsigned int numTimeSteps);
     virtual void setInstancedScene(const Ref<Scene>& scene);
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);
@@ -136,7 +138,7 @@ namespace embree
       InstanceISA (Device* device)
         : Instance(device) {}
 
-      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);
@@ -151,7 +153,7 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k) const
+      PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);
@@ -164,14 +166,14 @@ namespace embree
         return pinfo;
       }
       
-      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const
+      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);
         
         PrimInfoMB pinfo(empty);
         if (!valid(0, timeSegmentRange(t0t1))) return pinfo;
-        const PrimRefMB prim(linearBounds(0,t0t1),this->numTimeSegments(),this->time_range,this->numTimeSegments(),this->geomID,unsigned(0));
+        const PrimRefMB prim(linearBounds(0,t0t1),this->numTimeSegments(),this->time_range,this->numTimeSegments(),geomID,unsigned(0));
         pinfo.add_primref(prim);
         prims[k++] = prim;
         return pinfo;

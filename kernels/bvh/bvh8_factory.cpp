@@ -233,24 +233,24 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
   DECLARE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createUserGeometryAccelTy);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8GridMeshBuilderSAH,void* COMMA GridMesh* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8GridMeshBuilderSAH,void* COMMA GridMesh* COMMA unsigned int COMMA size_t);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
 
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshBuilderMortonGeneral,void* COMMA QuadMesh* COMMA size_t);
-  DECLARE_ISA_FUNCTION(Builder*,BVH8VirtualMeshBuilderMortonGeneral,void* COMMA UserGeometry* COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4MeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4vMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Triangle4iMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8Quad4vMeshBuilderMortonGeneral,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
+  DECLARE_ISA_FUNCTION(Builder*,BVH8VirtualMeshBuilderMortonGeneral,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
 
   BVH8Factory::BVH8Factory(int bfeatures, int ifeatures)
   {
@@ -488,95 +488,120 @@ namespace embree
 #endif
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4Morton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4::type,mesh->scene);
-    builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4::type,scene);
+    builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,scene->getSafe<TriangleMesh>(geomID),geomID,0);
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4v::type,mesh->scene);
-    builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4v::type,scene);
+    builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,scene->getSafe<TriangleMesh>(geomID),geomID,0);
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4iMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4i::type,mesh->scene);
-    builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4i::type,scene);
+    builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,scene->getSafe<TriangleMesh>(geomID),geomID,0);
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4::type,mesh->scene);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4::type,scene);
+    auto mesh = scene->getSafe<TriangleMesh>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
-    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4MeshBuilderMortonGeneral(accel,mesh,geomID,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
-    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4MeshBuilderSAH(accel,mesh,0); break;
-    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4MeshRefitSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4MeshBuilderSAH(accel,mesh,geomID,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4MeshRefitSAH(accel,mesh,geomID,0); break;
     default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4v::type,mesh->scene);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4v::type,scene);
+    auto mesh = scene->getSafe<TriangleMesh>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
-    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4vMeshBuilderMortonGeneral(accel,mesh,geomID,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
-    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4vMeshBuilderSAH(accel,mesh,0); break;
-    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4vMeshRefitSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4vMeshBuilderSAH(accel,mesh,geomID,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4vMeshRefitSAH(accel,mesh,geomID,0); break;
     default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
-  void BVH8Factory::createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createTriangleMeshTriangle4i(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Triangle4i::type,mesh->scene);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Triangle4i::type,scene);
+    auto mesh = scene->getSafe<TriangleMesh>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
-    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Triangle4iMeshBuilderMortonGeneral(accel,mesh,geomID,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
-    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4iMeshBuilderSAH(accel,mesh,0); break;
-    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4iMeshRefitSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Triangle4iMeshBuilderSAH(accel,mesh,geomID,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Triangle4iMeshRefitSAH(accel,mesh,geomID,0); break;
     default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
-  void BVH8Factory::createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createQuadMeshQuad4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Quad4v::type,mesh->scene);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Quad4v::type,scene);
+    auto mesh = scene->getSafe<QuadMesh>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
-    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,geomID,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
-    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Quad4vMeshBuilderSAH(accel,mesh,0); break;
-    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Quad4vMeshRefitSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8Quad4vMeshBuilderSAH(accel,mesh,geomID,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8Quad4vMeshRefitSAH(accel,mesh,geomID,0); break;
     default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }
 
-  void BVH8Factory::createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createQuadMeshQuad4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Quad4v::type,mesh->scene);
-    builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,mesh,0);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Quad4v::type,scene);
+    builder = factory->BVH8Quad4vMeshBuilderMortonGeneral(accel,scene->getSafe<QuadMesh>(geomID),geomID,0);
   }
 
-  void BVH8Factory::createUserGeometryMesh(UserGeometry* mesh, AccelData*& accel, Builder*& builder)
+  void BVH8Factory::createUserGeometryMesh(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder)
   {
-    BVH8Factory* factory = mesh->scene->device->bvh8_factory.get();
-    accel = new BVH8(Object::type,mesh->scene);
+    BVH8Factory* factory = scene->device->bvh8_factory.get();
+    accel = new BVH8(Object::type,scene);
+    auto mesh = scene->getSafe<UserGeometry>(geomID);
+    if (nullptr == mesh) {
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+      return;
+    }
     switch (mesh->quality) {
-    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8VirtualMeshBuilderMortonGeneral(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_LOW:    builder = factory->BVH8VirtualMeshBuilderMortonGeneral(accel,mesh,geomID,0); break;
     case RTC_BUILD_QUALITY_MEDIUM:
-    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8VirtualMeshBuilderSAH(accel,mesh,0); break;
-    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8VirtualMeshRefitSAH(accel,mesh,0); break;
+    case RTC_BUILD_QUALITY_HIGH:   builder = factory->BVH8VirtualMeshBuilderSAH(accel,mesh,geomID,0); break;
+    case RTC_BUILD_QUALITY_REFIT:  builder = factory->BVH8VirtualMeshRefitSAH(accel,mesh,geomID,0); break;
     default: throw_RTCError(RTC_ERROR_UNKNOWN,"invalid build quality");
     }
   }

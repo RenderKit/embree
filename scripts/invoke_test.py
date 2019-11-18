@@ -24,11 +24,17 @@ import shutil
 import subprocess 
 import multiprocessing
 
+platform = ""
 name = ""
 model = ""
 reference = ""
 modeldir = ""
 sde = "OFF"
+
+if sys.platform.startswith("win"):
+  magick_compare = "magick compare"
+else:
+  magick_compare = "compare"
 
 def assert_fatal(condition, error):
   if not condition:
@@ -38,12 +44,11 @@ def assert_fatal(condition, error):
 def assert_image_exists(name, path):
   assert_fatal(os.path.isfile(path), "%s image %s does not exist." % (name, path))
 
-
 def compareImages(image0,image1,dimage):
   error = float("inf")
   assert_image_exists("output", image0)
   assert_image_exists("reference", image1)
-  line, unused_err = subprocess.Popen("compare -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()
+  line, unused_err = subprocess.Popen(magick_compare+" -metric MAE "+image0+" "+image1+" -compose Src "+dimage, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True).communicate()
   try: error = float(line[line.index('(')+1:line.index(')')])
   except ValueError:
     print("Error: "+line)
@@ -88,10 +93,13 @@ if sys.platform.startswith("win"):
   SEM_NOGPFAULTERRORBOX  = 0x0002
   SEM_NOOPENFILEERRORBOX = 0x8000
   ctypes.windll.kernel32.SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOGPFAULTERRORBOX | SEM_NOOPENFILEERRORBOX);
+  platform = "win"
 elif sys.platform.startswith("linux"):
   dash = '/'
+  platform = "linux"
 elif sys.platform.startswith("darwin"):
   dash = '/'
+  platform = "darwin"
 else:
   print("unknown platform: "+ sys.platform);
   sys.exit(1)

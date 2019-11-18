@@ -123,6 +123,7 @@ ELSE ()
     ELSE()
       FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${EMBREE_TBB_ROOT}/include NO_DEFAULT_PATH)
       SET(TBB_HINTS HINTS
+          ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.8
           ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.7
           ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4
           ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.1

@@ -90,7 +90,7 @@ namespace embree
         for (size_t i=0; i<scene->size(); i++) {
           Ty* mesh = at(i);
           if (mesh == nullptr) continue;
-          ret = max(ret,mesh->geomID);
+          ret = max(ret,(unsigned int)i);
         }
         return ret;
       }
@@ -210,6 +210,18 @@ namespace embree
       modified = f; 
     }
 
+  private:
+    __forceinline void checkIfModifiedAndSet () 
+    {
+      if (isModified ()) return;
+      if (std::any_of (geometries.begin(), geometries.end(),
+          [](decltype(*geometries.begin()) g) { return ((g && g->isEnabled ()) ? g->isModified () : false); })) 
+      {
+          setModified ();
+      }
+    }
+  public:
+
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i].ptr; }
     __forceinline const Geometry* get(size_t i) const { assert(i < geometries.size()); return geometries[i].ptr; }
@@ -251,8 +263,13 @@ namespace embree
     __forceinline bool hasContextFilterFunction() const {
       return scene_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
     }
-    __forceinline bool hasGeometryFilterFunction() {
-      return numIntersectionFiltersN != 0;
+    __forceinline bool hasGeometryFilterFunction() 
+    {
+      return std::any_of (geometries.begin(), geometries.end(), 
+        [](decltype(*geometries.begin()) g) {
+          return (g && g->isEnabled ()) ? g->hasFilterFunctions () : false;
+        }
+      );
     }
     __forceinline bool hasFilterFunction() {
       return hasContextFilterFunction() || hasGeometryFilterFunction();
@@ -278,7 +295,9 @@ namespace embree
     MutexSys buildMutex;
     SpinLock geometriesMutex;
     bool is_build;
+  private:
     bool modified;                   //!< true if scene got modified
+  public:
     
     /*! global lock step task scheduler */
 #if defined(TASKING_INTERNAL) 
@@ -372,7 +391,5 @@ namespace embree
       Scene::Iterator<Mesh,mblur> iter(this);
       return iter.maxGeomID();
     }
-   
-    std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
   };
 }
