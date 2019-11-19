@@ -507,6 +507,12 @@ namespace embree
     case RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED: return 1;
 #endif
 
+#if defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
+    case RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED: return 1;
+#else
+    case RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED: return 0;
+#endif
+
     default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown readable property"); break;
     };
   }

@@ -18,8 +18,8 @@ spatial acceleration structure for the scene using all available
 worker threads. Ray queries can be performed only after committing
 all scene changes.
 
-If the application also uses TBB for parallelization of rendering,
-lazy scene construction during rendering is supported by
+If the application uses TBB 2019 Update 9 or later for parallelization
+of rendering, lazy scene construction during rendering is supported by
 `rtcCommitScene`. Therefore `rtcCommitScene` can get called from
 multiple TBB worker threads concurrently for the same scene. The
 `rtcCommitScene` function will then internally isolate the scene
