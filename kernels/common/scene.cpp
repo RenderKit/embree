@@ -792,10 +792,11 @@ namespace embree
       
       scheduler->join();
       return;
+    } else {
+      checkIfModifiedAndSet ();
     }
 
     /* fast path for unchanged scenes */
-    checkIfModifiedAndSet ();
     if (!isModified()) {
       scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
       return;
