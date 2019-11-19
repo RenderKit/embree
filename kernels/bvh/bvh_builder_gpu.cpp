@@ -1231,7 +1231,10 @@ namespace embree
     /************************************************************************************/
     /************************************************************************************/
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v,TriangleSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,TriangleMesh::geom_type,mode); }    
+    Builder* BVHGPUTriangle1vSceneBuilderSAH (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,TriangleMesh,Triangle1v,TriangleSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,TriangleMesh::geom_type,mode); }
+#endif
+
+#if defined(EMBREE_GEOMETRY_QUAD)
     Builder* BVHGPUQuad1vSceneBuilderSAH     (void* bvh, Scene* scene, size_t mode) { return new BVHGPUBuilderSAH<4,QuadMesh,Quad1v,QuadSplitterFactory>((BVH4*)bvh,scene,1,1.0f,1,inf,QuadMesh::geom_type,mode); }    
 #endif
     
