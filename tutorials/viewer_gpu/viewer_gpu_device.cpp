@@ -226,12 +226,12 @@ extern "C" void device_init (char* cfg)
 #if defined(EMBREE_DPCPP_SUPPORT)
 
 //[[intel::device_indirectly_callable]]
-SYCL_EXTERNAL uint external_fct(uint a, uint b) { return a + b; }
+[[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL uint external_fct(uint a, uint b) { return a + b; }
 
-SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
-				       cl::sycl::global_ptr<RTCSceneTy> scene,
-				       struct RTCRayHit &rayhit,
-				       ulong ext_fct);
+[[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
+										     cl::sycl::global_ptr<RTCSceneTy> scene,
+										     struct RTCRayHit &rayhit,
+										     ulong ext_fct);
 
 #endif
 
