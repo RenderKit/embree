@@ -209,7 +209,7 @@ namespace embree
       modified = f; 
     }
 
-  private:
+  protected:
     __forceinline void checkIfModifiedAndSet () 
     {
       if (isModified ()) return;

@@ -23,6 +23,7 @@
 #include "../../common/algorithms/parallel_for.h"
 #include "../../kernels/common/context.h"
 #include "../../kernels/common/geometry.h"
+#include "../../kernels/common/scene.h"
 #include <regex>
 #include <stack>
 
@@ -3870,6 +3871,89 @@ namespace embree
     }
   };
 
+  struct SceneCheckModifiedGeometryTest : public VerifyApplication::Test
+  {
+	  struct TestScene : public Scene {
+		  __forceinline void checkIfModifiedAndSet() {
+			  return Scene::checkIfModifiedAndSet();
+		  }
+	  };
+
+	  SceneCheckModifiedGeometryTest (std::string name, int isa) 
+		: VerifyApplication::Test(name, isa, VerifyApplication::TEST_SHOULD_PASS)
+	  {}
+
+	  VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+	  {
+		  std::string cfg = state->rtcore + ",isa=" + stringOfISA(isa);
+		  RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+		  errorHandler(nullptr, rtcGetDeviceError(device));
+
+		  RTCSceneRef scene = rtcNewScene(device);
+		  AssertNoError(device);
+
+		  RTCGeometry geom0 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+		  AssertNoError(device);
+		  RTCGeometry geom1 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+		  AssertNoError(device);
+		  RTCGeometry geom2 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+		  AssertNoError(device);
+		  RTCGeometry geom3 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+		  AssertNoError(device);
+
+		  rtcAttachGeometry(scene, geom0);
+		  rtcAttachGeometry(scene, geom1);
+		  rtcAttachGeometry(scene, geom2);
+		  rtcAttachGeometry(scene, geom3);
+
+		  auto scene0 = (TestScene*)scene.scene;
+		  auto geometry0 = (Geometry*) geom0;
+		  auto geometry1 = (Geometry*) geom1;
+		  auto geometry2 = (Geometry*) geom2;
+		  auto geometry3 = (Geometry*) geom3;
+
+		  scene0->setModified();
+		  scene0->checkIfModifiedAndSet();
+		  if (!scene0->isModified()) {
+			  return VerifyApplication::FAILED;
+		  }
+
+		  scene0->setModified(false);
+		  geometry0->enable();
+		  geometry1->enable();
+		  geometry2->enable();
+		  geometry3->enable();
+		  geometry0->state = Geometry::State::BUILD;
+		  geometry1->state = Geometry::State::BUILD;
+		  geometry2->state = Geometry::State::BUILD;
+		  geometry3->state = Geometry::State::BUILD;
+		  scene0->checkIfModifiedAndSet();
+		  if (scene0->isModified()) {
+			  return VerifyApplication::FAILED;
+		  }
+
+		  geometry0->state = Geometry::State::BUILD;
+		  geometry1->state = Geometry::State::BUILD;
+		  geometry2->state = Geometry::State::MODIFIED;
+		  geometry3->state = Geometry::State::BUILD;
+		  scene0->checkIfModifiedAndSet();
+		  if (!scene0->isModified()) {
+			  return VerifyApplication::FAILED;
+		  }
+
+		  rtcReleaseGeometry(geom0);
+		  AssertNoError(device);
+		  rtcReleaseGeometry(geom1);
+		  AssertNoError(device);
+		  rtcReleaseGeometry(geom2);
+		  AssertNoError(device);
+		  rtcReleaseGeometry(geom3);
+		  AssertNoError(device);
+
+		  return VerifyApplication::PASSED;
+	  }
+  };
+
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -5480,6 +5564,7 @@ namespace embree
       /**************************************************************************/
 
       groups.top()->add(new GeometryStateTest("geometry_state_tests", isa));
+	  groups.top()->add(new SceneCheckModifiedGeometryTest("scene_modified_geometry_tests", isa));
 
       
       /**************************************************************************/
