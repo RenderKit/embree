@@ -304,10 +304,8 @@ namespace embree
     Ref<TaskScheduler> scheduler;
 #elif defined(TASKING_TBB)
     tbb::task_group* group;
-    BarrierActiveAutoReset group_barrier;
 #elif defined(TASKING_PPL)
     concurrency::task_group* group;
-    BarrierActiveAutoReset group_barrier;
 #endif
     
   public:
