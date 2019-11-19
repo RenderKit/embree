@@ -814,15 +814,10 @@ namespace embree
 
 #endif
 
-#if defined(TASKING_TBB) || defined(TASKING_PPL)
+#if defined(TASKING_TBB)
 
   void Scene::commit (bool join) 
   {
-#if defined(TASKING_PPL)
-    if (join)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with PPL");
-#endif
-    
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
     if (join)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with this TBB version");
@@ -836,6 +831,7 @@ namespace embree
     {
       if (!join) 
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcJoinCommitScene to join a build operation");
+      
 #if USE_TASK_ARENA
       device->arena->execute([&]{ group->wait(); });
 #else
@@ -852,7 +848,8 @@ namespace embree
       }
       buildMutex.unlock();
       return;
-    } else {
+    }
+    else {
       checkIfModifiedAndSet ();
     }
 
@@ -861,11 +858,10 @@ namespace embree
     }
 
     /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
-    unsigned int mxcsr = _mm_getcsr();
+    const unsigned int mxcsr = _mm_getcsr();
     _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
     
     try {
-#if defined(TASKING_TBB)
 #if TBB_INTERFACE_VERSION_MAJOR < 8    
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits);
 #else
@@ -886,16 +882,52 @@ namespace embree
      
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);
-#else
+    } 
+    catch (...)
+    {
+      /* reset MXCSR register again */
+      _mm_setcsr(mxcsr);
+      
+      accels_clear();
+      updateInterface();
+      throw;
+    }
+  }
+#endif
+
+#if defined(TASKING_PPL)
+
+  void Scene::commit (bool join) 
+  {
+#if defined(TASKING_PPL)
+    if (join)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with PPL");
+#endif
+
+    /* try to obtain build lock */
+    Lock<MutexSys> lock(buildMutex,buildMutex.lock());
+
+    checkIfModifiedAndSet ();
+    if (!isModified()) {
+      return;
+    }
+
+    /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
+    const unsigned int mxcsr = _mm_getcsr();
+    _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+    
+    try {
+
       group->run([&]{
           concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { commit_task(); });
         });
       group->wait();
 
-#endif
+       /* reset MXCSR register again */
+      _mm_setcsr(mxcsr);
     } 
-    catch (...) {
-
+    catch (...)
+    {
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);
       
