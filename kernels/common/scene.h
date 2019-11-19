@@ -19,6 +19,7 @@
 #include "default.h"
 #include "device.h"
 #include "builder.h"
+#include "../../common/algorithms/parallel_any_of.h"
 #include "scene_triangle_mesh.h"
 #include "scene_quad_mesh.h"
 #include "scene_user_geometry.h"
@@ -213,10 +214,15 @@ namespace embree
     __forceinline void checkIfModifiedAndSet () 
     {
       if (isModified ()) return;
-      if (std::any_of (geometries.begin(), geometries.end(),
-          [](decltype(*geometries.begin()) g) { return ((g && g->isEnabled ()) ? g->isModified () : false); })) 
-      {
-          setModified ();
+      
+      auto geometryIsModified = [this](size_t i)->bool { 
+        auto g = geometries[i];
+        bool ret = ((g && g->isEnabled ()) ? g->isModified () : false);
+        return ret; 
+      };
+
+      if (parallel_any_of (size_t(0), geometries.size (), geometryIsModified)) {
+        setModified ();
       }
     }
   public:
