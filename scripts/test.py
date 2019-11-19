@@ -216,7 +216,7 @@ def runConfig(config):
           raise ValueError('unknown tasking system: ' + tasking + '')
       
       elif OS == "windows":
-         if tasking.startswith("TBB"):
+        if tasking.startswith("TBB"):
           tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-"+tasking[3:]+"-windows"          
         else:
           raise ValueError('unknown tasking system: ' + tasking + '')
