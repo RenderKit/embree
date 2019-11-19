@@ -42,6 +42,8 @@ namespace embree
 
 #if defined(TASKING_INTERNAL) 
     scheduler = nullptr;
+#elif defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
+    group = new tbb::isolated_task_group;
 #elif defined(TASKING_TBB)
     group = new tbb::task_group;
 #elif defined(TASKING_PPL)
@@ -829,30 +831,32 @@ namespace embree
     /* join hierarchy build */
     if (!lock.isLocked())
     {
+#if !TASKING_TBB_USE_TASK_ISOLATION
       if (!join) 
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcJoinCommitScene to join a build operation");
-      
-#if USE_TASK_ARENA
-      device->arena->execute([&]{ group->wait(); });
-#else
-      group->wait();
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invoking rtcCommitScene from multiple threads is not supported with this TBB version");
 #endif
-      while (!buildMutex.try_lock()) {
+      
+      do {
+
+#if USE_TASK_ARENA
+        if (join) {
+          device->arena->execute([&]{ group->wait(); });
+        }
+        else
+#endif
+        {
+          group->wait();
+        }
+
         pause_cpu();
         yield();
-#if USE_TASK_ARENA
-        device->arena->execute([&]{ group->wait(); });
-#else
-        group->wait();
-#endif
-      }
+      } while (!buildMutex.try_lock());
+      
       buildMutex.unlock();
       return;
     }
-    else {
-      checkIfModifiedAndSet ();
-    }
 
+    checkIfModifiedAndSet ();
     if (!isModified()) {
       return;
     }
@@ -870,15 +874,23 @@ namespace embree
       //ctx.set_priority(tbb::priority_high);
 
 #if USE_TASK_ARENA
-      device->arena->execute([&]{
+      if (join)
+      {
+        device->arena->execute([&]{
+            group->run([&]{
+                tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
+              });
+            group->wait();
+          });
+      }
+      else
 #endif
-          group->run([&]{
-              tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
-            });
-          group->wait();
-#if USE_TASK_ARENA
-        }); 
-#endif
+      {
+        group->run([&]{
+            tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
+          });
+        group->wait();
+      }
      
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);

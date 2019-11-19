@@ -13,16 +13,22 @@
 #### DESCRIPTION
 
 The `rtcJoinCommitScene` function commits all changes for the
-specified scene (`scene` argument). In contrast to the
-`rtcCommitScene` function, the `rtcJoinCommitScene` function can be
-called from multiple threads, which all cooperate in the same scene
-commit. All threads will return from this function after the scene
-commit is finished. All threads must consistently call
-`rtcJoinCommitScene` and not `rtcCommitScene`.
-
-The scene commit internally triggers building of a spatial
+specified scene (`scene` argument). The scene commit internally triggers building of a spatial
 acceleration structure for the scene. Ray queries can be performed
 after scene changes got properly committed.
+
+The `rtcJoinCommitScene` function can get called from
+multiple user threads which will all cooperate in the build operation.
+All threads calling into this function will return from
+`rtcJoinCommitScene` after the scene commit is finished. All threads
+must consistently call `rtcJoinCommitScene` and not `rtcCommitScene`.
+
+In contrast to the `rtcCommitScene` function, the `rtcJoinCommitScene`
+function can be called from multiple user threads, while the `rtcCommitScene`
+can only get called from multiple TBB worker threads when used concurrently. For
+optimal performance we strongly recommend using TBB inside the application
+together with the `rtcCommitScene` function and to avoid using the
+`rtcJoinCommitScene` function.
 
 The `rtcJoinCommitScene` feature allows a flexible way to lazily
 create hierarchies during rendering. A thread reaching a

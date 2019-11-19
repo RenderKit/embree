@@ -34,6 +34,7 @@
 #define __TBB_NO_IMPLICIT_LINKAGE 1
 #define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
 #define TBB_SUPPRESS_DEPRECATED_MESSAGES 1
+#define TBB_PREVIEW_ISOLATED_TASK_GROUP 1
 #include "tbb/tbb.h"
 #include "tbb/parallel_sort.h"
 

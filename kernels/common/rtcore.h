@@ -27,8 +27,10 @@ namespace embree
 
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR >= 8)
 #  define USE_TASK_ARENA 1
+#  define TASKING_TBB_USE_TASK_ISOLATION 1
 #else
 #  define USE_TASK_ARENA 0
+#  define TASKING_TBB_USE_TASK_ISOLATION 0
 #endif
 
 /*! Macros used in the rtcore API implementation */
