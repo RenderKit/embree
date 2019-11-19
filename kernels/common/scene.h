@@ -217,8 +217,7 @@ namespace embree
       
       auto geometryIsModified = [this](size_t i)->bool { 
         auto g = geometries[i];
-        bool ret = ((g && g->isEnabled ()) ? g->isModified () : false);
-        return ret; 
+        return (g && g->isEnabled ()) ? g->isModified () : false; 
       };
 
       if (parallel_any_of (size_t(0), geometries.size (), geometryIsModified)) {
@@ -270,11 +269,12 @@ namespace embree
     }
     __forceinline bool hasGeometryFilterFunction() 
     {
-      return std::any_of (geometries.begin(), geometries.end(), 
-        [](decltype(*geometries.begin()) g) {
-          return (g && g->isEnabled ()) ? g->hasFilterFunctions () : false;
-        }
-      );
+      auto geometryHasFilterFunctions = [this](size_t i)->bool { 
+        auto g = geometries[i];
+        return (g && g->isEnabled ()) ? g->hasFilterFunctions () : false; 
+      };
+
+      return parallel_any_of (size_t(0), geometries.size (), geometryHasFilterFunctions);
     }
     __forceinline bool hasFilterFunction() {
       return hasContextFilterFunction() || hasGeometryFilterFunction();
