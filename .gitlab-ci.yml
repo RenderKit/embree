@@ -23,8 +23,8 @@ continuous-macosx-x64-RelWithDebInfo-ICC2019.4-ISPC1.9.2-SSE2-TBB2019.9:
   tags:   [mac]
   only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-TBB2019.9:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.9 intensity:2"
+continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-TBB2019.2:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [win10, v120]
   only:   [pushes]
 
@@ -107,8 +107,8 @@ nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-INT:
   tags:   [win10, v120]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX-TBB2019.9:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX tasking:TBB2019.9 intensity:4"
+nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX-TBB2019.2:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX tasking:TBB2019.2 intensity:4"
   tags:   [win10, v120] # avx
   only:   [schedules]
 
@@ -477,8 +477,8 @@ nightly-linux-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX2-TBB2019.9-INSTANCE:
 # Release Builds
 ####################################################################
 
-release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.9-PACKAGE-ZIP:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC12 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.9 intensity:4 package:ZIP"
+release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC12 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
   tags:   [win10, icc17]
   only:   [web]
   artifacts:
