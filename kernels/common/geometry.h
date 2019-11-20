@@ -228,7 +228,7 @@ namespace embree
 
     static const char* gtype_names[GTY_END];
 
-    enum class State {
+    enum class State : unsigned short {
       MODIFIED = 0,
       COMMITTED = 1,
       BUILD = 2
@@ -251,11 +251,11 @@ namespace embree
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
     /*! tests if geometry is modified */
-    __forceinline bool isModified() const { return state != State::BUILD; }
+    __forceinline bool isModified() const { return State::BUILD != (State)state; }
 
     /*! marks geometry modified */
     __forceinline void setModified() {
-      if (state == State::BUILD) state = State::COMMITTED;
+      if (State::BUILD == (State)state) state = (ushort)State::COMMITTED;
     }
 
     __forceinline bool hasFilterFunctions () const {
@@ -566,7 +566,7 @@ namespace embree
     struct {
       GType gtype : 6;                //!< geometry type
       RTCBuildQuality quality : 3;    //!< build quality for geometry
-      State state : 3;
+      ushort state : 2;
       bool numPrimitivesChanged : 1; //!< true if number of primitives changed
       bool enabled : 1;              //!< true if geometry is enabled
     };

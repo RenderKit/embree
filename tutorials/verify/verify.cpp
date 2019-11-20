@@ -3762,81 +3762,81 @@ namespace embree
       auto geometry = (Geometry *) geom0;
 
       // test construction
-      if (geometry->state != Geometry::State::MODIFIED) {
+      if (geometry->state != (ushort)Geometry::State::MODIFIED) {
         return VerifyApplication::FAILED;
       }
 
       // test setModified
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (ushort)Geometry::State::BUILD;
       geometry->setModified ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (ushort)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
       geometry->setModified ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (ushort)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
-      geometry->state = Geometry::State::MODIFIED;
-      if (geometry->state != Geometry::State::MODIFIED) {
+      geometry->state = (ushort)Geometry::State::MODIFIED;
+      if (geometry->state != (ushort)Geometry::State::MODIFIED) {
         return VerifyApplication::FAILED;
       }
 
       // test isModified
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (ushort)Geometry::State::BUILD;
       if (geometry->isModified ()) {
         return VerifyApplication::FAILED;
       }
-      geometry->state = Geometry::State::MODIFIED;
+      geometry->state = (ushort)Geometry::State::MODIFIED;
       if (!geometry->isModified ()) {
         return VerifyApplication::FAILED;
       }
-      geometry->state = Geometry::State::COMMITTED;
+      geometry->state = (ushort)Geometry::State::COMMITTED;
       if (!geometry->isModified ()) {
         return VerifyApplication::FAILED;
       }
 
       //test update
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (ushort)Geometry::State::BUILD;
       geometry->update();
-      if (geometry->state != Geometry::State::MODIFIED) {
+      if (geometry->state != (ushort)Geometry::State::MODIFIED) {
         return VerifyApplication::FAILED;
       }
 
       //test commit
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (ushort)Geometry::State::BUILD;
       geometry->commit();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (ushort)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
 
       // test postCommit
-      geometry->state = Geometry::State::COMMITTED;
+      geometry->state = (ushort)Geometry::State::COMMITTED;
       geometry->enabled = false;
       geometry->postCommit ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (ushort)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
       geometry->enabled = true;
       geometry->postCommit ();
-      if (geometry->state != Geometry::State::BUILD) {
+      if (geometry->state != (ushort)Geometry::State::BUILD) {
         return VerifyApplication::FAILED;
       }
 
       // test disable
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (ushort)Geometry::State::BUILD;
       geometry->enabled = false;
       geometry->disable ();
-      if (geometry->state != Geometry::State::BUILD) {
+      if (geometry->state != (ushort)Geometry::State::BUILD) {
         return VerifyApplication::FAILED;
       }
       if (geometry->isEnabled ()) {
         return VerifyApplication::FAILED;
       }
 
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (ushort)Geometry::State::BUILD;
       geometry->enabled = true;
       geometry->disable ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (ushort)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
       if (geometry->isEnabled ()) {
@@ -3844,20 +3844,20 @@ namespace embree
       }
 
       // test enable
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (ushort)Geometry::State::BUILD;
       geometry->enabled = true;
       geometry->enable ();
-      if (geometry->state != Geometry::State::BUILD) {
+      if (geometry->state != (ushort)Geometry::State::BUILD) {
         return VerifyApplication::FAILED;
       }
       if (!geometry->isEnabled ()) {
         return VerifyApplication::FAILED;
       }
 
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (ushort)Geometry::State::BUILD;
       geometry->enabled = false;
       geometry->enable ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (ushort)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
       if (!geometry->isEnabled ()) {
@@ -3923,19 +3923,19 @@ namespace embree
 		  geometry1->enable();
 		  geometry2->enable();
 		  geometry3->enable();
-		  geometry0->state = Geometry::State::BUILD;
-		  geometry1->state = Geometry::State::BUILD;
-		  geometry2->state = Geometry::State::BUILD;
-		  geometry3->state = Geometry::State::BUILD;
+		  geometry0->state = (ushort)Geometry::State::BUILD;
+		  geometry1->state = (ushort)Geometry::State::BUILD;
+		  geometry2->state = (ushort)Geometry::State::BUILD;
+		  geometry3->state = (ushort)Geometry::State::BUILD;
 		  scene0->checkIfModifiedAndSet();
 		  if (scene0->isModified()) {
 			  return VerifyApplication::FAILED;
 		  }
 
-		  geometry0->state = Geometry::State::BUILD;
-		  geometry1->state = Geometry::State::BUILD;
-		  geometry2->state = Geometry::State::MODIFIED;
-		  geometry3->state = Geometry::State::BUILD;
+		  geometry0->state = (ushort)Geometry::State::BUILD;
+		  geometry1->state = (ushort)Geometry::State::BUILD;
+		  geometry2->state = (ushort)Geometry::State::MODIFIED;
+		  geometry3->state = (ushort)Geometry::State::BUILD;
 		  scene0->checkIfModifiedAndSet();
 		  if (!scene0->isModified()) {
 			  return VerifyApplication::FAILED;
