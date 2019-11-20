@@ -61,7 +61,7 @@ namespace embree
       mask(-1),
       gtype(gtype),
       quality(RTC_BUILD_QUALITY_MEDIUM),
-      state((ushort)State::MODIFIED),
+      state((unsigned)State::MODIFIED),
       numPrimitivesChanged(false),
       enabled(true),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr), pointQueryFunc(nullptr)
@@ -104,12 +104,12 @@ namespace embree
   
   void Geometry::update() 
   {
-    state = (ushort)State::MODIFIED;
+    state = (unsigned)State::MODIFIED;
   }
   
   void Geometry::commit() 
   {
-    state = (ushort)State::COMMITTED;
+    state = (unsigned)State::COMMITTED;
   }
 
   void Geometry::preCommit()
@@ -125,7 +125,7 @@ namespace embree
     
     /* set state to build */
     if (isEnabled()) {
-      state = (ushort)State::BUILD;
+      state = (unsigned)State::BUILD;
     }
   }
 
@@ -147,7 +147,7 @@ namespace embree
     if (isEnabled()) 
       return;
 
-    state = (ushort)State::COMMITTED;
+    state = (unsigned)State::COMMITTED;
     enabled = true;
   }
 
@@ -156,7 +156,7 @@ namespace embree
     if (isDisabled()) 
       return;
     
-    state = (ushort)State::COMMITTED;
+    state = (unsigned)State::COMMITTED;
     enabled = false;
   }
 
