@@ -917,7 +917,7 @@ namespace embree
 #endif
 
     /* try to obtain build lock */
-    Lock<MutexSys> lock(buildMutex,buildMutex.lock());
+    Lock<MutexSys> lock(buildMutex);
 
     checkIfModifiedAndSet ();
     if (!isModified()) {
