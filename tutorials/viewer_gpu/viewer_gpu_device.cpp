@@ -30,7 +30,7 @@ namespace embree {
 #define SIMPLE_SHADING 1
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
 #define DBG_PRINT_LINE_SIZE 512
-#define USE_FCT_CALLS 1
+#define USE_FCT_CALLS 0
   
   extern "C" ISPCScene* g_ispc_scene;
   extern "C" int g_instancing_mode;
@@ -207,10 +207,16 @@ extern "C" void device_init (char* cfg)
       }
       assert(gpu_queue);
       assert(gpu_device);
-    } catch (cl::sycl::invalid_parameter_error &E) {
-      std::cout << E.what() << std::endl;
-      FATAL("OpenCL Exception");
     }
+    catch (cl::sycl::runtime_error &E) {
+      std::cout << E.what() << std::endl;
+      FATAL("OpenCL Exception (runtime error)");
+    }
+    catch (...)
+      {
+	FATAL("OpenCL Exception (runtime error)");
+      }
+    
   }
   
   /* init embree GPU device */
