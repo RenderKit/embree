@@ -30,7 +30,7 @@ namespace embree {
 #define SIMPLE_SHADING 1
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
 #define DBG_PRINT_LINE_SIZE 512
-#define USE_FCT_CALLS 0
+#define USE_FCT_CALLS 1
   
   extern "C" ISPCScene* g_ispc_scene;
   extern "C" int g_instancing_mode;
@@ -225,8 +225,8 @@ extern "C" void device_init (char* cfg)
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
-//[[intel::device_indirectly_callable]]
-[[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL uint external_fct(uint a, uint b) { return a + b; }
+// [[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL
+[[intel::device_indirectly_callable]] uint external_fct(uint a, uint b) { return a + b; }
 
 [[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
 										     cl::sycl::global_ptr<RTCSceneTy> scene,
@@ -315,7 +315,11 @@ extern "C" void device_render (int* pixels,
 		ulong ext_fct = reinterpret_cast<ulong>(&external_fct);
 
 		/* test function calls */
-		rtcIntersectGPUTest(sg, sycl_scene, rh, ext_fct);
+		//rtcIntersectGPUTest(sg, sycl_scene, rh, ext_fct);
+
+		uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
+		rh.hit.primID = testfct(rh.hit.primID,rh.hit.primID); 
+
 #endif
 		
 	      }
