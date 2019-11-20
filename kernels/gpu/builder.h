@@ -253,7 +253,7 @@ namespace embree
 
     [[cl::intel_reqd_sub_group_size(BINS)]] inline uint left_to_right_counts16(const cl::sycl::intel::sub_group &sg, uint low)
       {
-	return sg.exclusive_scan<uint>(low, cl::sycl::intel::plus<>());
+	return sg.exclusive_scan<uint>(low, cl::sycl::intel::plus<uint>());
       }
 
 
@@ -274,7 +274,7 @@ namespace embree
 	const uint subgroupSize    = sg.get_local_range().size();	
 	const uint ID              = subgroupSize - 1 - subgroupLocalID;  
 	const uint low_reverse     = sg.shuffle<uint>(low,ID);
-	const uint low_prefix      = sg.inclusive_scan<float>(low_reverse, cl::sycl::intel::plus<>());
+	const uint low_prefix      = sg.inclusive_scan<float>(low_reverse, cl::sycl::intel::plus<float>());
 	return sg.shuffle<uint>(low_prefix,ID);
       }
 
@@ -291,9 +291,9 @@ namespace embree
     
     [[cl::intel_reqd_sub_group_size(BINS)]] inline uint2 left_to_right_counts32(const cl::sycl::intel::sub_group &sg, uint low, uint high)
       {
-	const uint low_prefix  = sg.exclusive_scan<uint>(low, cl::sycl::intel::plus<>());
-	const uint low_reduce  = sg.reduce<uint>(low, cl::sycl::intel::plus<>());
-	const uint high_prefix = sg.exclusive_scan<uint>(high, cl::sycl::intel::plus<>());
+	const uint low_prefix  = sg.exclusive_scan<uint>(low, cl::sycl::intel::plus<uint>());
+	const uint low_reduce  = sg.reduce<uint>(low, cl::sycl::intel::plus<uint>());
+	const uint high_prefix = sg.exclusive_scan<uint>(high, cl::sycl::intel::plus<uint>());
 	return uint2(low_prefix,low_reduce+high_prefix);
       }
         
@@ -320,9 +320,9 @@ namespace embree
 	const uint ID              = subgroupSize - 1 - subgroupLocalID;  	
 	const uint low_reverse     = sg.shuffle<uint>(high,ID);
 	const uint high_reverse    = sg.shuffle<uint>(low,ID);  
-	const uint low_prefix      = sg.inclusive_scan<uint>(low_reverse, cl::sycl::intel::plus<>());
-	const uint low_reduce      = sg.reduce<uint>(low_reverse, cl::sycl::intel::plus<>());
-	const uint high_prefix     = sg.inclusive_scan<uint>(high_reverse, cl::sycl::intel::plus<>()) + low_reduce;
+	const uint low_prefix      = sg.inclusive_scan<uint>(low_reverse, cl::sycl::intel::plus<uint>());
+	const uint low_reduce      = sg.reduce<uint>(low_reverse, cl::sycl::intel::plus<uint>());
+	const uint high_prefix     = sg.inclusive_scan<uint>(high_reverse, cl::sycl::intel::plus<uint>()) + low_reduce;
 	return uint2(sg.shuffle<uint>(high_prefix,ID),sg.shuffle<uint>(low_prefix,ID));	
       }
 
@@ -338,7 +338,7 @@ namespace embree
 	splitY = cselect( (ulong)(scale.y() == 0), defaultSplit, splitY);
 	splitZ = cselect( (ulong)(scale.z() == 0), defaultSplit, splitZ);
 	ulong bestSplit = min(min(splitX,splitY),splitZ);
-	bestSplit = sg.reduce<ulong>(bestSplit, cl::sycl::intel::minimum<>());
+	bestSplit = sg.reduce<ulong>(bestSplit, cl::sycl::intel::minimum<ulong>());
 	return bestSplit;
       }
     

@@ -155,14 +155,14 @@ namespace embree
 	      
 		  for (uint i=0;i<popc-1;i++)
 		    {
-		      const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<>()); // from larger to smaller distance
+		      const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<int>()); // from larger to smaller distance
 		      t = (t == t_max) ? max_uint : t;
 		      const uint index = t_max & (~mask_uint);
 		      stack_offset[sindex] = sg.broadcast<uint> (offset,index);
 		      stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
 		      sindex++;
 		    }
-		  const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<>()); // from larger to smaller distance
+		  const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<int>()); // from larger to smaller distance
 		  cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
 		}
 	  
@@ -174,7 +174,7 @@ namespace embree
 	      const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
 	      TSTATS(tstats->isteps_inc());	  
 	      hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);  
-	      tfar = sg.reduce<float>(hit_tfar, cl::sycl::intel::minimum<>());	  
+	      tfar = sg.reduce<float>(hit_tfar, cl::sycl::intel::minimum<float>());
 	    }
 
 	  DBG(
