@@ -565,17 +565,19 @@ namespace embree
 	assert(cpu_queue);
 	assert(cpu_device);
 	cpu_context = cpu_queue->get_context();	
-    } catch (cl::sycl::invalid_parameter_error &E) {
-      std::cout << E.what() << std::endl;
-    }
           
-    unsigned int cpu_maxWorkGroupSize = getCPUDevice().get_info<cl::sycl::info::device::max_work_group_size>();
-    unsigned int cpu_maxComputeUnits  = getCPUDevice().get_info<cl::sycl::info::device::max_compute_units>();    
+        unsigned int cpu_maxWorkGroupSize = getCPUDevice().get_info<cl::sycl::info::device::max_work_group_size>();
+        unsigned int cpu_maxComputeUnits  = getCPUDevice().get_info<cl::sycl::info::device::max_compute_units>();
     
-    std::cout << "CPU Device: " << getCPUDevice().get_info<cl::sycl::info::device::name>() << std::endl;
-    std::cout << "- Max Work Group Size : " << cpu_maxWorkGroupSize << std::endl;
-    std::cout << "- Max Compute Units   : " << cpu_maxComputeUnits  << std::endl;
-    
+        std::cout << "CPU Device: " << getCPUDevice().get_info<cl::sycl::info::device::name>() << std::endl;
+        std::cout << "- Max Work Group Size : " << cpu_maxWorkGroupSize << std::endl;
+        std::cout << "- Max Compute Units   : " << cpu_maxComputeUnits  << std::endl;
+
+    } catch (cl::sycl::runtime_error &E) {
+      std::cout << E.what() << std::endl;
+    } catch (...) {
+      std::cout << "Houston, we've had a problem. Unhandled exception in DeviceGPU constructor";
+    }
   }
 
   DeviceGPU::~DeviceGPU()
