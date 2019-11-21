@@ -86,7 +86,7 @@ namespace embree
                           const float grid_scale,
                           const float grid_extend,
                           PrimRef subPrims[MAX_PRESPLITS_PER_PRIMITIVE],
-                          size_t &numSubPrims)
+                          unsigned int& numSubPrims)
     {
       assert(split_level <= MAX_PRESPLITS_PER_PRIMITIVE_LOG);
       if (split_level == 0)
@@ -307,7 +307,7 @@ namespace embree
               const unsigned int   geomID   = prims[primrefID].geomID();
               const unsigned int   primID   = prims[primrefID].primID();
               const unsigned int split_levels = (unsigned int)prio;
-              size_t numSubPrims = 0;
+              unsigned int numSubPrims = 0;
               splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
               assert(numSubPrims);
               numSubPrims--; // can reuse slot 
@@ -348,7 +348,7 @@ namespace embree
 
               assert(split_levels);
               assert(split_levels <= MAX_PRESPLITS_PER_PRIMITIVE_LOG);
-              size_t numSubPrims = 0;
+              unsigned int numSubPrims = 0;
               splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
               const size_t newID = numPrimitives + primOffset1[j-center];              
               assert(newID+numSubPrims <= alloc_numPrimitives);

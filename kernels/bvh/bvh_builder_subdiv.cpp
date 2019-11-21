@@ -150,7 +150,7 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              SubdivPatch1Base patch(geomID,unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
+              SubdivPatch1Base patch(unsigned(geomID),unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
               size_t num = createEager(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
               assert(num == getNumEagerLeaves(patch.grid_u_res,patch.grid_v_res));
               for (size_t i=0; i<num; i++)
