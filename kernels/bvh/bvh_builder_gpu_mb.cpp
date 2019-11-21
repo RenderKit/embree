@@ -139,8 +139,12 @@ namespace embree
                                             settings);
 
         bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
+	PRINT(root.ref);
+	PRINT("BVH MB BUILDING DONE");      
+	exit(0);	
       }
 
+      
       void clear() {
       }
     };
