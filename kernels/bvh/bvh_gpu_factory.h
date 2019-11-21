@@ -31,9 +31,13 @@ namespace embree
   public:
     Accel* BVHGPUTriangle1v   (Scene* scene, BuildVariant bvariant);
     Accel::Intersectors BVHGPUTriangle1vIntersectors(BVH4* bvh);
-
     Accel* BVHGPUQuad1v   (Scene* scene, BuildVariant bvariant);
     Accel::Intersectors BVHGPUQuad1vIntersectors(BVH4* bvh);
+
+    Accel* BVHGPUTriangle1vMB   (Scene* scene);
+    Accel::Intersectors BVHGPUTriangle1vMBIntersectors(BVH4* bvh);
+    Accel* BVHGPUQuad1vMB   (Scene* scene);
+    Accel::Intersectors BVHGPUQuad1vMBIntersectors(BVH4* bvh);    
 
   private:
     void selectBuilders(int features);
@@ -42,6 +46,10 @@ namespace embree
   private:
     DEFINE_ISA_FUNCTION(Builder*,BVHGPUQuad1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+
+    DEFINE_ISA_FUNCTION(Builder*,BVHGPUQuad1vMBSceneBuilderSAH,void* COMMA Scene*);
+    DEFINE_ISA_FUNCTION(Builder*,BVHGPUTriangle1vMBSceneBuilderSAH,void* COMMA Scene*);
+    
     DEFINE_SYMBOL2(Accel::Intersector1,BVHGPUTriangle1vIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector4,BVHGPUTriangle1vIntersector4);    
     DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUTriangle1vIntersectorStream);
@@ -49,6 +57,12 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector4,BVHGPUQuad1vIntersector4);    
     DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUQuad1vIntersectorStream);
 
+    DEFINE_SYMBOL2(Accel::Intersector1,BVHGPUTriangle1vMBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVHGPUTriangle1vMBIntersector4);    
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUTriangle1vMBIntersectorStream);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVHGPUQuad1vMBIntersector1);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVHGPUQuad1vMBIntersector4);    
+    DEFINE_SYMBOL2(Accel::IntersectorN,BVHGPUQuad1vMBIntersectorStream);
   };
 #endif
   

@@ -83,7 +83,8 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_gpu.cpp
   bvh/bvh_builder_gpu_mb.cpp  
   bvh/bvh_intersector1_bvh4.cpp
-  bvh/bvh_intersector_stream_gpu.cpp  
+  bvh/bvh_intersector_stream_gpu.cpp
+  bvh/bvh_intersector_stream_gpu_mb.cpp    
   )
 
 IF (EMBREE_GEOMETRY_SUBDIVISION)

@@ -225,6 +225,12 @@ namespace embree
   void Scene::createTriangleMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
+#if defined(EMBREE_DPCPP_SUPPORT)
+    if (device->tri_accel_mb == "bvhgpu.triangle1vmb") {
+      accels_add(device->bvh_gpu_factory->BVHGPUTriangle1vMB(this));
+    }
+    else
+#endif        
     if (device->tri_accel_mb == "default")
     {
       int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
@@ -360,6 +366,12 @@ namespace embree
   void Scene::createQuadMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_QUAD)
+#if defined(EMBREE_DPCPP_SUPPORT)
+    if (device->tri_accel_mb == "bvhgpu.quad1vmb") {
+      accels_add(device->bvh_gpu_factory->BVHGPUTriangle1vMB(this));
+    }
+    else
+#endif            
     if (device->quad_accel_mb == "default") 
     {
       int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 

@@ -219,7 +219,21 @@ namespace embree
       return new_tfar;
     }
 
+
+    struct __aligned(16) Triangle1vMB
+    {
+      float4 v0,v1,v2; //special optimized layout
+      float4 d0,d1,d2;
+    };
+  
+
+    struct __aligned(16) Quad1vMB
+    {
+      float4 v0,v2,v1,v3; //special optimized layout
+      float4 d0,d2,d1,d3;
+    };
   };
+  
 };
 
 #endif
