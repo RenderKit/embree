@@ -198,16 +198,16 @@ namespace embree
       /* first try */
       progressMonitor(0);
       pstate.init(iter,size_t(1024));
-      PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i) -> PrimInfo {
-	  return mesh->createPrimRefArray(prims,r,k,i);
+      PrimInfo pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, size_t geomID) -> PrimInfo {
+	  return mesh->createPrimRefArray(prims,r,k,(unsigned)geomID);
 	}, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
       
       /* if we need to filter out geometry, run again */
       if (pinfo.size() != numPrimRefs)
 	{
 	  progressMonitor(0);
-	  pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, unsigned int i, const PrimInfo& base) -> PrimInfo {
-	      return mesh->createPrimRefArray(prims,r,base.size(),i);
+	  pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](Geometry* mesh, const range<size_t>& r, size_t k, size_t geomID, const PrimInfo& base) -> PrimInfo {
+	      return mesh->createPrimRefArray(prims,r,base.size(),(unsigned)geomID);
 	    }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 	}
 

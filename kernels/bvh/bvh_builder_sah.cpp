@@ -398,48 +398,46 @@ namespace embree
           pstate.init(iter,size_t(1024));
 
           /* iterate over all meshes in the scene */
-          pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
-                                                {
-                                                  PrimInfo pinfo(empty);
-                                                  for (size_t j=r.begin(); j<r.end(); j++)
-                                                  {
-                                                    if (!mesh->valid(j)) continue;
-                                                    BBox3fa bounds = empty;
-                                                    const PrimRef prim(bounds,geomID,unsigned(j));                                                          if (!mesh->valid(j)) continue;
-
-                                                    pinfo.add_center2(prim,mesh->getNumSubGrids(j));
-                                                  }
-                                                  return pinfo;
-                                                }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+          pinfo = parallel_for_for_prefix_sum0( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, size_t geomID) -> PrimInfo {
+              PrimInfo pinfo(empty);
+              for (size_t j=r.begin(); j<r.end(); j++)
+              {
+                if (!mesh->valid(j)) continue;
+                BBox3fa bounds = empty;
+                const PrimRef prim(bounds,(unsigned)geomID,(unsigned)j);
+                if (!mesh->valid(j)) continue;
+                pinfo.add_center2(prim,mesh->getNumSubGrids(j));
+              }
+              return pinfo;
+            }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
           numPrimitives = pinfo.size();
-
+          
           /* resize arrays */
           sgrids.resize(numPrimitives); 
           prims.resize(numPrimitives); 
 
           /* second run to fill primrefs and SubGridBuildData arrays */
-          pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, unsigned int geomID, const PrimInfo& base) -> PrimInfo
-                                                {
-                                                  k = base.size();
-                                                  size_t p_index = k;
-                                                  PrimInfo pinfo(empty);
-                                                  for (size_t j=r.begin(); j<r.end(); j++)
-                                                  {
-                                                    if (!mesh->valid(j)) continue;
-                                                    const GridMesh::Grid &g = mesh->grid(j);
-                                                    for (unsigned int y=0; y<g.resY-1u; y+=2)
-                                                      for (unsigned int x=0; x<g.resX-1u; x+=2)
-                                                      {
-                                                        BBox3fa bounds = empty;
-                                                        if (!mesh->buildBounds(g,x,y,bounds)) continue; // get bounds of subgrid
-                                                        const PrimRef prim(bounds,geomID,unsigned(p_index));
-                                                        pinfo.add_center2(prim);
-                                                        sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
-                                                        prims[p_index++] = prim;                
-                                                      }
-                                                  }
-                                                  return pinfo;
-                                                }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
+          pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfo(empty), [&](GridMesh* mesh, const range<size_t>& r, size_t k, size_t geomID, const PrimInfo& base) -> PrimInfo {
+              k = base.size();
+              size_t p_index = k;
+              PrimInfo pinfo(empty);
+              for (size_t j=r.begin(); j<r.end(); j++)
+              {
+                if (!mesh->valid(j)) continue;
+                const GridMesh::Grid &g = mesh->grid(j);
+                for (unsigned int y=0; y<g.resY-1u; y+=2)
+                  for (unsigned int x=0; x<g.resX-1u; x+=2)
+                  {
+                    BBox3fa bounds = empty;
+                    if (!mesh->buildBounds(g,x,y,bounds)) continue; // get bounds of subgrid
+                    const PrimRef prim(bounds,(unsigned)geomID,(unsigned)p_index);
+                    pinfo.add_center2(prim);
+                    sgrids[p_index] = SubGridBuildData(x | g.get3x3FlagsX(x), y | g.get3x3FlagsY(y), unsigned(j));
+                    prims[p_index++] = prim;                
+                  }
+              }
+              return pinfo;
+            }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
           assert(pinfo.size() == numPrimitives);
         }
         else
