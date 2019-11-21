@@ -19,6 +19,7 @@
 #include "../sys/platform.h"
 #include "../sys/intrinsics.h"
 #include "../math/constants.h"
+#include "../sys/alloc.h"
 #include "varying.h"
 
 #include "vboolf16_avx512.h"

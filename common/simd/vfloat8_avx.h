@@ -22,6 +22,8 @@ namespace embree
   template<>
   struct vfloat<8>
   {
+    ALIGNED_STRUCT_(32);
+   
     typedef vboolf8 Bool;
     typedef vint8   Int;
     typedef vfloat8 Float;
