@@ -195,7 +195,7 @@ void single_pass(const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayS
   /* ignore duplicated hits that can occur for tesselated primitives */
   if (hits_o.size())
   {
-    size_t i=0, j=1;
+    unsigned int i=0, j=1;
     for (; j<hits_o.size(); j++) {
       if (hits_o.hits[i] == hits_o.hits[j]) continue;
       hits_o.hits[++i] = hits_o.hits[j];
@@ -249,7 +249,7 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
     return;
 
   /* insert new hit at proper location */
-  for (size_t i=hits.begin; i<hits.end; i++)
+  for (unsigned int i=hits.begin; i<hits.end; i++)
   {
     if (nhit < hits.hits[i]) {
       std::swap(nhit,hits.hits[i]);
@@ -306,7 +306,7 @@ void multi_pass(const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSamp
     /* shade all hits */
     if (g_enable_opacity)
     {
-      for (size_t i=context.hits.begin; i<context.hits.end; i++)
+      for (unsigned int i=context.hits.begin; i<context.hits.end; i++)
       {
         /* roussion roulette ray termination */
         bool opaque = context.hits.hits[i].opaque;
