@@ -200,30 +200,24 @@ def runConfig(config):
       conf.append("-D EMBREE_TASKING_SYSTEM=TBB")
 
       if OS == "linux":
-        if tasking == "TBB2019.2":
-          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2019.2-linux")
-        elif tasking == "TBB2017":
-          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-linux")
-        elif tasking == "TBB":
+        if tasking == "TBB":
           conf.append("-D EMBREE_TBB_ROOT=/usr")
+        elif tasking.startswith("TBB"):
+          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-"+tasking[3:]+"-linux")
         else:
           raise ValueError('unknown tasking system: ' + tasking + '')
       
       elif OS == "macosx":
-        if tasking == "TBB2019.2":
-          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2019.2-osx")
-        elif tasking == "TBB2017":
-          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-2017-osx")
-        elif tasking == "TBB":
+        if tasking == "TBB":
           conf.append("-D EMBREE_TBB_ROOT=/opt/local")
+        elif tasking.startswith("TBB"):
+          conf.append("-D EMBREE_TBB_ROOT=/NAS/packages/apps/tbb/tbb-"+tasking[3:]+"-osx")
         else:
           raise ValueError('unknown tasking system: ' + tasking + '')
       
       elif OS == "windows":
-        if tasking == "TBB2019.2": 
-          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2019.2-windows"          
-        elif tasking == "TBB2017": 
-          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-2017-windows"
+        if tasking.startswith("TBB"):
+          tbb_path = "\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\tbb\\tbb-"+tasking[3:]+"-windows"          
         else:
           raise ValueError('unknown tasking system: ' + tasking + '')
 

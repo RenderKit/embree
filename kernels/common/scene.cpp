@@ -43,6 +43,8 @@ namespace embree
 
 #if defined(TASKING_INTERNAL) 
     scheduler = nullptr;
+#elif defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
+    group = new tbb::isolated_task_group;
 #elif defined(TASKING_TBB)
     group = new tbb::task_group;
 #elif defined(TASKING_PPL)
@@ -848,15 +850,10 @@ namespace embree
 
 #endif
 
-#if defined(TASKING_TBB) || defined(TASKING_PPL)
+#if defined(TASKING_TBB)
 
   void Scene::commit (bool join) 
   {
-#if defined(TASKING_PPL)
-    if (join)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with PPL");
-#endif
-    
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
     if (join)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with this TBB version");
@@ -868,38 +865,41 @@ namespace embree
     /* join hierarchy build */
     if (!lock.isLocked())
     {
+#if !TASKING_TBB_USE_TASK_ISOLATION
       if (!join) 
-        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"use rtcJoinCommitScene to join a build operation");
-#if USE_TASK_ARENA
-      device->arena->execute([&]{ group->wait(); });
-#else
-      group->wait();
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invoking rtcCommitScene from multiple threads is not supported with this TBB version");
 #endif
-      while (!buildMutex.try_lock()) {
+      
+      do {
+
+#if USE_TASK_ARENA
+        if (join) {
+          device->arena->execute([&]{ group->wait(); });
+        }
+        else
+#endif
+        {
+          group->wait();
+        }
+
         pause_cpu();
         yield();
-#if USE_TASK_ARENA
-        device->arena->execute([&]{ group->wait(); });
-#else
-        group->wait();
-#endif
-      }
+      } while (!buildMutex.try_lock());
+      
       buildMutex.unlock();
       return;
-    } else {
-      checkIfModifiedAndSet ();
     }
 
+    checkIfModifiedAndSet ();
     if (!isModified()) {
       return;
     }
 
     /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
-    unsigned int mxcsr = _mm_getcsr();
+    const unsigned int mxcsr = _mm_getcsr();
     _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
     
     try {
-#if defined(TASKING_TBB)
 #if TBB_INTERFACE_VERSION_MAJOR < 8    
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits);
 #else
@@ -908,28 +908,72 @@ namespace embree
       //ctx.set_priority(tbb::priority_high);
 
 #if USE_TASK_ARENA
-      device->arena->execute([&]{
+      if (join)
+      {
+        device->arena->execute([&]{
+            group->run([&]{
+                tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
+              });
+            group->wait();
+          });
+      }
+      else
 #endif
-          group->run([&]{
-              tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
-            });
-          group->wait();
-#if USE_TASK_ARENA
-        }); 
-#endif
+      {
+        group->run([&]{
+            tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
+          });
+        group->wait();
+      }
      
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);
-#else
+    } 
+    catch (...)
+    {
+      /* reset MXCSR register again */
+      _mm_setcsr(mxcsr);
+      
+      accels_clear();
+      updateInterface();
+      throw;
+    }
+  }
+#endif
+
+#if defined(TASKING_PPL)
+
+  void Scene::commit (bool join) 
+  {
+#if defined(TASKING_PPL)
+    if (join)
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with PPL");
+#endif
+
+    /* try to obtain build lock */
+    Lock<MutexSys> lock(buildMutex);
+
+    checkIfModifiedAndSet ();
+    if (!isModified()) {
+      return;
+    }
+
+    /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
+    const unsigned int mxcsr = _mm_getcsr();
+    _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
+    
+    try {
+
       group->run([&]{
           concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { commit_task(); });
         });
       group->wait();
 
-#endif
+       /* reset MXCSR register again */
+      _mm_setcsr(mxcsr);
     } 
-    catch (...) {
-
+    catch (...)
+    {
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);
       

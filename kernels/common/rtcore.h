@@ -33,6 +33,12 @@ namespace embree
 #  define USE_TASK_ARENA 0
 #endif
 
+#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION >= 11009) // TBB 2019 Update 9
+#  define TASKING_TBB_USE_TASK_ISOLATION 1
+#else
+#  define TASKING_TBB_USE_TASK_ISOLATION 0
+#endif
+
 /*! Macros used in the rtcore API implementation */
 #define RTC_CATCH_BEGIN try {
   
