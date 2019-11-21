@@ -72,6 +72,7 @@ namespace embree
     
     if (ext == "pfm" ) return loadPFM(fileName);
     if (ext == "ppm" ) return loadPPM(fileName);
+    if (ext == "tga" ) return loadTGA(fileName);
     THROW_RUNTIME_ERROR("image format " + ext + " not supported");
   }
 

@@ -173,8 +173,11 @@ namespace embree
   /*! Loads image from PPM file. */
   Ref<Image> loadPPM(const FileName& fileName);
 
+   /*! Loads image from TGA file. */
+  Ref<Image> loadTGA(const FileName& fileName);
+
   /*! Loads image from TIFF file. */
-//Ref<Image> loadTIFF(const FileName& fileName);
+  //Ref<Image> loadTIFF(const FileName& fileName);
   
   /*! Store image to file. Format is auto detected. */
   void storeImage(const Ref<Image>& image, const FileName& filename);
@@ -189,7 +192,7 @@ namespace embree
   void storePFM(const Ref<Image>& img, const FileName& fileName);
   
   /*! Store image to PNG file. */
-//void storePNG(const Ref<Image>& img, const FileName& fileName);
+  //void storePNG(const Ref<Image>& img, const FileName& fileName);
 
   /*! Store image to PPM file. */
   void storePPM(const Ref<Image>& img, const FileName& fileName);
@@ -198,6 +201,6 @@ namespace embree
   void storeTga(const Ref<Image>& img, const FileName& fileName);
 
   /*! Store image to TIFF file. */
-//void storeTIFF(const Ref<Image>& img, const FileName& fileName);
+  //void storeTIFF(const Ref<Image>& img, const FileName& fileName);
 
 }

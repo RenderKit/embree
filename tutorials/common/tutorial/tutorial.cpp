@@ -710,7 +710,7 @@ namespace embree
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     Ref<Image> reference = loadImage(fileName);
     const double error = compareImages(image,reference);
-    if (error > 1)
+    if (error > 10.0f/65536.0f)
       throw std::runtime_error("reference image differs by " + std::to_string(error));
   }
 
