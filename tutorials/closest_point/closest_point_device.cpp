@@ -518,12 +518,12 @@ void updateGeometryAndQueries(float time)
                     * AffineSpace3fa::rotate(Vec3f(0.f, 1.f, 0.f), float(pi)/2.f)
                     * AffineSpace3fa::rotate(Vec3f(1.f, 0.f, 0.f), 0.2f * sin(g_animate_time));
 
-  g_instance_xfm[1] = AffineSpace3fa::translate(Vec3f(0.f, 3.f + 1.5*sin(g_animate_time), -9.f)) 
+  g_instance_xfm[1] = AffineSpace3fa::translate(Vec3f(0.f, 3.f + 1.5f*sin(g_animate_time), -9.f)) 
                     * AffineSpace3fa::scale(Vec3fa(1.f, 2.f, 3.f))
                     * AffineSpace3fa::rotate(Vec3f(0.f, 1.f, 0.f), float(pi));
   
   AffineSpace3fa sheer = AffineSpace3fa::scale(Vec3f(1.2f));
-  sheer.l.vz.x = cos(g_animate_time*0.75) * 1.0f + 0.5f;
+  sheer.l.vz.x = cos(g_animate_time*0.75f) * 1.0f + 0.5f;
   g_instance_xfm[2] = AffineSpace3fa::translate(Vec3f(-8.5f, 0.f, -7.f)) 
                     * AffineSpace3fa::rotate(Vec3fa(0.f, 1.f, 0.f), -float(pi)/2.f)
                     * sheer;
@@ -634,7 +634,7 @@ extern "C" void device_init (char* cfg)
   Vec3f bbmax(neg_inf);
   for (int i = 0; i < 4; ++i) {
     TriangleMesh* mesh = g_triangle_meshes[i];
-    for (int v = 0; v < mesh->num_vertices; ++v) {
+    for (unsigned int v = 0; v < mesh->num_vertices; ++v) {
       Vertex* vert = mesh->vertices+v;
       bbmin = min(bbmin, Vec3f(vert->x, vert->y, vert->z));
       bbmax = max(bbmax, Vec3f(vert->x, vert->y, vert->z));
@@ -642,7 +642,7 @@ extern "C" void device_init (char* cfg)
   }
   
   /* instantiate geometry */
-  for (int i = 0; i < 3; ++i) {
+  for (unsigned int i = 0; i < 3; ++i) {
     g_instanceEmbree[i] = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
     rtcSetGeometryInstancedScene(g_instanceEmbree[i], g_scene1);
     rtcSetGeometryTimeStepCount(g_instanceEmbree[i], 1);
@@ -656,7 +656,7 @@ extern "C" void device_init (char* cfg)
   {
     // add visualization spheres to both scenes
     RTCScene scenes[2] = { g_sceneEmbreeInstance, g_sceneUserDefinedInstance };
-    for (int s = 0; s < 2; ++s)
+    for (unsigned int s = 0; s < 2; ++s)
     {
       g_spheres = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
       rtcSetSharedGeometryBuffer(g_spheres, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, g_sphere_vertex_buffer, 0, sizeof(Vec4f), 2*g_num_point_queries);
