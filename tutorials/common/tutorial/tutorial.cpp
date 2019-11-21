@@ -151,6 +151,11 @@ namespace embree
         interactive = false;
       }, "-o <filename>: output image filename");
 
+    registerOption("compare", [this] (Ref<ParseStream> cin, const FileName& path) {
+        referenceImageFilename = cin->getFileName();
+        interactive = false;
+      }, "--compare <filename>: reference image to compare against");
+
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.from = cin->getVec3fa();
@@ -696,7 +701,7 @@ namespace embree
     storeImage(image, fileName);
   }
 
-  void TutorialApplication::compareToReference(const FileName& fileName)
+  void TutorialApplication::compareToReferenceImage(const FileName& fileName)
   {
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
@@ -1040,6 +1045,10 @@ namespace embree
     /* render to disk */
     if (outputImageFilename.str() != "")
       renderToFile(outputImageFilename);
+
+    /* compare to reference image */
+    if (referenceImageFilename.str() != "")
+      compareToReferenceImage(referenceImageFilename);
 
     /* interactive mode */
     if (interactive)
