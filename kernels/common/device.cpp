@@ -552,6 +552,8 @@ namespace embree
     
     tri_accel = "bvhgpu.triangle1v";
     quad_accel = "bvhgpu.quad1v";    
+    tri_accel_mb = "bvhgpu.triangle1vmb";
+    quad_accel_mb = "bvhgpu.quad1vmb";    
     
     gpu_device  = (cl::sycl::device *)device;
     gpu_queue   = (cl::sycl::queue  *)queue;
