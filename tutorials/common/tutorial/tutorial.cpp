@@ -696,6 +696,19 @@ namespace embree
     storeImage(image, fileName);
   }
 
+  void TutorialApplication::compareToReference(const FileName& fileName)
+  {
+    resize(width,height);
+    ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+    initRayStats();
+    device_render(pixels,width,height,0.0f,ispccamera);
+    Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
+    Ref<Image> reference = loadImage(fileName);
+    const double error = compareImages(image,reference);
+    if (error > 1)
+      throw std::runtime_error("reference image differs by " + std::to_string(error));
+  }
+
   void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
     rtcSetDeviceProperty(nullptr,(RTCDeviceProperty)parm,val);
   }

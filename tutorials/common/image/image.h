@@ -152,6 +152,9 @@ namespace embree
   /*! Generate a JPEG encoded image from a RGB8 buffer in memory. */
   void encodeRGB8_to_JPEG(unsigned char *image, size_t width, size_t height, unsigned char **encoded, unsigned long *capacity);
 
+  /*! compare two images */
+  double compareImages(Ref<Image> image0, Ref<Image> image1);
+
   /*! Loads image from file. Format is auto detected. */
   Ref<Image> loadImage(const FileName& filename, bool cache = false);
 

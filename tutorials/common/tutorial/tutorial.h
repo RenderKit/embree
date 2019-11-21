@@ -98,6 +98,9 @@ namespace embree
     /* render to file mode */
     void renderToFile(const FileName& fileName);
 
+    /* compare rendering to reference image */
+    void compareToReference(const FileName& fileName);
+
     /* passes parameters to the backend */
     void set_parameter(size_t parm, ssize_t val);
 
