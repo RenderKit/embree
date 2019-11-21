@@ -16,17 +16,19 @@
 
 #include "image.h"
 
-#include <cstdio>
+#include <fstream>
 
 namespace embree
 {
-  inline void fwrite_uchar (unsigned char  v, FILE* file) { fwrite(&v, sizeof(v), 1, file); }
-  inline void fwrite_ushort(unsigned short v, FILE* file) { fwrite(&v, sizeof(v), 1, file); }
+  inline void fwrite_uchar (unsigned char  v, std::fstream& file) { file.write((const char*)&v,sizeof(v)); }
+  inline void fwrite_ushort(unsigned short v, std::fstream& file) { file.write((const char*)&v,sizeof(v)); }
 
   void storeTga(const Ref<Image>& img, const FileName& fileName)
   {
-    FILE* file = fopen(fileName.c_str(), "wb");
-    if (!file) THROW_RUNTIME_ERROR("error opening file " + fileName.str());
+    /* open file for reading */
+    std::fstream file;
+    file.exceptions (std::fstream::failbit | std::fstream::badbit);
+    file.open (fileName.c_str(), std::fstream::out | std::fstream::binary);
 
     fwrite_uchar(0x00, file);
     fwrite_uchar(0x00, file);
@@ -49,6 +51,5 @@ namespace embree
         fwrite_uchar((unsigned char)(clamp(c.r)*255.0f), file);
       }
     }
-    fclose(file);
   }
 }
