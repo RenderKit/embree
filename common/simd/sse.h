@@ -18,6 +18,7 @@
 
 #include "../sys/platform.h"
 #include "../sys/intrinsics.h"
+#include "../sys/alloc.h"
 #include "../math/constants.h"
 #include "varying.h"
 

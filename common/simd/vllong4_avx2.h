@@ -22,6 +22,8 @@ namespace embree
   template<>
   struct vllong<4>
   {
+    ALIGNED_STRUCT_(32);
+    
     typedef vboold4 Bool;
 
     enum  { size = 4 }; // number of SIMD elements

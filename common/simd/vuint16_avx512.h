@@ -22,6 +22,8 @@ namespace embree
   template<>
   struct vuint<16>
   {
+    ALIGNED_STRUCT_(64);   
+
     typedef vboolf16 Bool;
     typedef vuint16  UInt;
     typedef vfloat16 Float;
