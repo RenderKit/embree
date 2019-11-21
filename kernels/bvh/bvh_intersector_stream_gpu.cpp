@@ -253,7 +253,7 @@ namespace embree
       TraversalStats *tstats = nullptr;
       TSTATS(tstats = (TraversalStats *)cl::sycl::aligned_alloc(64,sizeof(TraversalStats),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared));
       TSTATS(tstats->reset());
-      
+
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(wg_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
@@ -262,9 +262,11 @@ namespace embree
 		const uint globalID   = item.get_global_id(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		//if (globalID < numRays)
-		uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
-		if (m_activeLanes == 0xffff)
-		  traceRayBVH16<Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
+		  {
+		    uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
+		    if (m_activeLanes == 0xffff)
+		      traceRayBVH16<Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
+		  }
 	      });		  
 	  });
 	try {
