@@ -237,6 +237,11 @@ namespace embree
          debug3 = cin->getInt();
        }, "--debug3: sets internal debugging value");
 
+     registerOption("time", [this] (Ref<ParseStream> cin, const FileName& path) {
+         shader = SHADER_EYELIGHT;
+         g_debug = cin->getFloat();
+       }, "--time: sets time for motion blur");
+
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
