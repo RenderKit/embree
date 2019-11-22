@@ -169,7 +169,7 @@ namespace embree
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
         settings.logBlockSize = bsr(sahBlockSize);
-        settings.minLeafSize = minLeafSize;
+        settings.minLeafSize = min(minLeafSize,maxLeafSize);
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
         settings.intCost = intCost;
@@ -204,7 +204,7 @@ namespace embree
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
         settings.logBlockSize = bsr(sahBlockSize);
-        settings.minLeafSize = minLeafSize;
+        settings.minLeafSize = min(minLeafSize,maxLeafSize);
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
         settings.intCost = intCost;
@@ -597,7 +597,7 @@ namespace embree
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxBuildDepthLeaf;
         settings.logBlockSize = bsr(sahBlockSize);
-        settings.minLeafSize = minLeafSize;
+        settings.minLeafSize = min(minLeafSize,maxLeafSize);
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
         settings.intCost = intCost;
@@ -642,7 +642,7 @@ namespace embree
         settings.branchingFactor = N;
         settings.maxDepth = BVH::maxDepth;
         settings.logBlockSize = bsr(sahBlockSize);
-        settings.minLeafSize = minLeafSize;
+        settings.minLeafSize = min(minLeafSize,maxLeafSize);
         settings.maxLeafSize = maxLeafSize;
         settings.travCost = travCost;
         settings.intCost = intCost;
