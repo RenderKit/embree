@@ -24,6 +24,8 @@ namespace embree
   template<>
   struct vint<4>
   {
+    ALIGNED_STRUCT_(16);
+    
     typedef vboolf4 Bool;
     typedef vint4   Int;
     typedef vfloat4 Float;

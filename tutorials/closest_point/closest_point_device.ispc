@@ -469,8 +469,8 @@ uniform TriangleMesh createPlane (uniform AffineSpace3f M, uniform unsigned int 
   mesh.triangles = (uniform Triangle* uniform)rtcSetNewGeometryBuffer(mesh.geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT3,  sizeof(uniform Triangle), mesh.num_triangles);
 
   /* set vertices and vertex colors */
-  for (uniform int y = 0; y <= R; ++y)
-  for (uniform int x = 0; x <= R; ++x)
+  for (uniform unsigned int y = 0; y <= R; ++y)
+  for (uniform unsigned int x = 0; x <= R; ++x)
   {
     uniform Vec3f p = make_Vec3f((float)x/R, (float)y/R, 0.f);
     uniform Vec3f pt = xfmPoint(M, p);
@@ -480,8 +480,8 @@ uniform TriangleMesh createPlane (uniform AffineSpace3f M, uniform unsigned int 
   }
 
   /* set triangles and face colors */
-  for (uniform int j = 0; j < R; ++j)
-  for (uniform int i = 0; i < R; ++i)
+  for (uniform unsigned int j = 0; j < R; ++j)
+  for (uniform unsigned int i = 0; i < R; ++i)
   {
     mesh.triangles[2*(j*R+i)+0].v0 = (j*(R+1)+i);
     mesh.triangles[2*(j*R+i)+0].v1 = (j*(R+1)+i) + (R + 1) + 1;
@@ -559,7 +559,7 @@ void updateGeometryAndQueries(uniform float time)
     * make_AffineSpace3f_rotate(make_Vec3f(0.f), make_Vec3f(1.f, 0.f, 0.f), 0.2f * sin(g_animate_time));
 
   g_instance[1]->local2world 
-    = make_AffineSpace3f_translate(make_Vec3f(0.f, 3.f + 1.5*sin(g_animate_time), -9.f)) 
+    = make_AffineSpace3f_translate(make_Vec3f(0.f, 3.f + 1.5f*sin(g_animate_time), -9.f)) 
     * make_AffineSpace3f_scale(make_Vec3f(1.f, 2.f, 3.f))
     * make_AffineSpace3f_rotate(make_Vec3f(0.f), make_Vec3f(0.f, 1.f, 0.f), M_PI);
   

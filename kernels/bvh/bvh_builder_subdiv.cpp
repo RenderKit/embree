@@ -150,7 +150,7 @@ namespace embree
             
             patch_eval_subdivision(mesh->getHalfEdge(0,f),[&](const Vec2f uv[4], const int subdiv[4], const float edge_level[4], int subPatch)
             {
-              SubdivPatch1Base patch(geomID,unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
+              SubdivPatch1Base patch(unsigned(geomID),unsigned(f),subPatch,mesh,0,uv,edge_level,subdiv,VSIZEX);
               size_t num = createEager(patch,scene,mesh,unsigned(f),alloc,&prims[base.end+s.end]);
               assert(num == getNumEagerLeaves(patch.grid_u_res,patch.grid_v_res));
               for (size_t i=0; i<num; i++)
@@ -276,7 +276,7 @@ namespace embree
         bvh->alloc.reset();
 
         Scene::Iterator<SubdivMesh,true> iter(scene);
-        PrimInfoMB pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, unsigned int geomID, const PrimInfoMB& base) -> PrimInfoMB
+        PrimInfoMB pinfo = parallel_for_for_prefix_sum1( pstate, iter, PrimInfoMB(empty), [&](SubdivMesh* mesh, const range<size_t>& r, size_t k, size_t geomID, const PrimInfoMB& base) -> PrimInfoMB
         {
           size_t s = 0;
           size_t sMB = 0;
@@ -295,7 +295,7 @@ namespace embree
               for (size_t t=0; t<mesh->numTimeSteps; t++)
               {
                 SubdivPatch1Base& patch = subdiv_patches[patchIndexMB+t];
-                new (&patch) SubdivPatch1(geomID,unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
+                new (&patch) SubdivPatch1(unsigned(geomID),unsigned(f),subPatch,mesh,t,uv,edge_level,subdiv,VSIZEX);
               }
               SubdivPatch1Base& patch0 = subdiv_patches[patchIndexMB];
               patch0.root_ref.set((int64_t) GridSOA::create(&patch0,(unsigned)mesh->numTimeSteps,scene,alloc,&bounds[patchIndexMB]));

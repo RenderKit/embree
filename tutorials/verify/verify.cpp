@@ -296,11 +296,11 @@ namespace embree
 
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
         rtcSetGeometryInstancedScene(geom, exemplar);
-        rtcSetGeometryTimeStepCount(geom, mesh->spaces.size());
+        rtcSetGeometryTimeStepCount(geom, (unsigned) mesh->spaces.size());
         for (size_t i = 0; i < mesh->spaces.size(); ++i)
         {
           rtcSetGeometryTransform(geom,
-                                  i,
+                                  (unsigned)i,
                                   RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
                                   reinterpret_cast<float*>(&mesh->spaces[i]));
         }
@@ -3527,9 +3527,9 @@ namespace embree
       Triangle* triangles = (Triangle*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3, sizeof(Triangle), 32);
       for (int i = 0; i < 32; ++i) {
         float xi = random_float();
-        vertices[3*i+0] = Vec3f(0.0f,          0.0f,          i);
-        vertices[3*i+1] = Vec3f(1.0f + 5.f*xi, 0.0f,          i);
-        vertices[3*i+2] = Vec3f(0.0f,          1.0f + 5.f*xi, i);
+        vertices[3*i+0] = Vec3f(0.0f,          0.0f,          (float)i);
+        vertices[3*i+1] = Vec3f(1.0f + 5.f*xi, 0.0f,          (float)i);
+        vertices[3*i+2] = Vec3f(0.0f,          1.0f + 5.f*xi, (float)i);
         triangles[i] = Triangle(3*i+0, 3*i+1, 3*i+2);
       };
 

@@ -256,7 +256,12 @@ __forceinline std::string toString(long long value) {
 #pragma warning(disable:4503) // decorated name length exceeded, name was truncated
 #pragma warning(disable:4180) // qualifier applied to function type has no meaning; ignored
 #pragma warning(disable:4258) // definition from the for loop is ignored; the definition from the enclosing scope is used
-#pragma warning(disable:4789) // buffer '' of size 8 bytes will be overrun; 32 bytes will be written starting at offset 0
+
+#  if _MSC_VER < 1910 // prior to Visual studio 2017 (V141)
+#    pragma warning(disable:4101) // warning C4101: 'x': unreferenced local variable // a compiler bug issues wrong warnings
+#    pragma warning(disable:4789) // buffer '' of size 8 bytes will be overrun; 32 bytes will be written starting at offset 0
+#  endif
+
 #endif
 
 #if defined(__clang__) && !defined(__INTEL_COMPILER)
