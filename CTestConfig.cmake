@@ -15,4 +15,4 @@
 ## ======================================================================== ##
 
 set(CTEST_PROJECT_NAME "Embree")
-set(TEST_MODELS_HASH 0e62217d210483c93f80371b97a2ff013d5d59b6)
+set(TEST_MODELS_HASH 42a727d318b490fe155f1ab1ca77d5b8a835a021)
