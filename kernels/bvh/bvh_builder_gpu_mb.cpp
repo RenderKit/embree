@@ -26,6 +26,8 @@
 #include "../geometry/trianglev.h"
 #include "../geometry/trianglev_mb.h"
 #include "../geometry/trianglei.h"
+#include "../geometry/triangle1v.h"
+#include "../geometry/triangle1vmb.h"
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/object.h"
@@ -34,8 +36,14 @@
 
 #include "../common/state.h"
 
+#include "../gpu/AABB.h"
+#include "../gpu/AABB3f.h"
+#include "../gpu/builder.h"
+
+
 namespace embree
 {
+  
   namespace isa
   {
 
@@ -90,28 +98,28 @@ namespace embree
       BVHGPUBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
         : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), gtype_(gtype) {}
 
-      void convertToGPULayout(NodeRef node)
+      void convertToGPULayout(NodeRef node, std::atomic<size_t> &gpu_node_allocator)
       {
 	if (node.isAlignedNode())
 	  {
 	    PRINT("ALIGNED NODE");
 	    AlignedNode* n = node.alignedNode();
 	    for (size_t i=0;i<N;i++)
-	      convertToGPULayout(n->child(i));
+	      convertToGPULayout(n->child(i),gpu_node_allocator);
 	  }
 	else if (node.isUnalignedNode())
 	  {
 	    PRINT("UNALIGNED NODE");
 	    UnalignedNode* n = node.unalignedNode();
 	    for (size_t i=0;i<N;i++)
-	      convertToGPULayout(n->child(i));	    
+	      convertToGPULayout(n->child(i),gpu_node_allocator);	    
 	  }
 	else if (node.isAlignedNodeMB())
 	  {
 	    PRINT("ALIGNED NODE MB");
 	    AlignedNodeMB* n = node.alignedNodeMB();
 	    for (size_t i=0;i<N;i++)
-	      convertToGPULayout(n->child(i));
+	      convertToGPULayout(n->child(i),gpu_node_allocator);
 	  }
 	else if (node.isAlignedNodeMB4D())
 	  {
@@ -119,21 +127,21 @@ namespace embree
 	    AlignedNodeMB4D* n = node.alignedNodeMB4D();
 	    PRINT(*n);
 	    for (size_t i=0;i<N;i++)
-	      convertToGPULayout(n->child(i));	    
+	      convertToGPULayout(n->child(i),gpu_node_allocator);	    
 	  }
 	else if (node.isUnalignedNodeMB())
 	  {
 	    PRINT("UNALIGNED NODE MB");	    
 	    UnalignedNodeMB* n = node.unalignedNodeMB();
 	    for (size_t i=0;i<N;i++)
-	      convertToGPULayout(n->child(i));	    
+	      convertToGPULayout(n->child(i),gpu_node_allocator);	    
 	  }
 	else if (node.isQuantizedNode())
 	  {
 	    PRINT("QUANTIZED NODE");	    
 	    QuantizedNode* n = node.quantizedNode();
 	    for (size_t i=0;i<N;i++)
-	      convertToGPULayout(n->child(i));	    	    
+	      convertToGPULayout(n->child(i),gpu_node_allocator);	    	    
 	  }
 	else if (node.isLeaf())
 	  {
@@ -167,9 +175,31 @@ namespace embree
 	bvh->cleanup();
         bvh->postBuild(t0);
 
-	convertToGPULayout(bvh->root);
+	const size_t totalBytesAllocated = bvh->alloc.getUsedBytes();
+	PRINT(totalBytesAllocated);
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+	DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
+
+	const uint leaf_primitive_size = sizeof(Triangle1vMB);
+	const uint node_size       = totalBytesAllocated;
+	const uint leaf_size       = numPrimitives * leaf_primitive_size;
+	const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
+	const uint node_data_start = sizeof(gpu::BVHBase);
+	const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
+	
+	char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
+	assert(bvh_mem);
+
+	std::atomic<size_t> gpu_node_allocator;
+	gpu_node_allocator.store(node_data_start);
+
+	convertToGPULayout(bvh->root, gpu_node_allocator);
+	assert(gpu_node_allocator.load() <= leaf_data_start);
+	
 	PRINT("BVH MB BUILDING DONE");      
 	exit(0);	
+#endif	
 
       }
 

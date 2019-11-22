@@ -86,62 +86,30 @@ namespace embree
 
 
     
-    /* ======================================================================== */
-    /* ============================== BVH NODES =============================== */
-    /* ======================================================================== */
+    /* =========================================================================== */
+    /* ============================== QBVH NODE MB =============================== */
+    /* =========================================================================== */
 
-    struct BVHNodeN
+    struct QBVHNodeNMB
     {              
-      uint offset[BVH_NODE_N];  
-      uint parent[BVH_NODE_N]; 
+      uint  offset[BVH_NODE_N];  
       float lower_x[BVH_NODE_N]; 
       float upper_x[BVH_NODE_N]; 
       float lower_y[BVH_NODE_N]; 
       float upper_y[BVH_NODE_N]; 
       float lower_z[BVH_NODE_N]; 
-      float upper_z[BVH_NODE_N]; 
-
-      inline void initBVHNodeN(uint slotID)
-      {
-	const float pos_inf =  INFINITY;
-	const float neg_inf = -INFINITY;	
-	offset[slotID]  =  (uint)(-1);  
-	parent[slotID]  =  (uint)(-1); 
-	lower_x[slotID] =  pos_inf; 
-	upper_x[slotID] =  neg_inf;
-	lower_y[slotID] =  pos_inf; 
-	upper_y[slotID] =  neg_inf;
-	lower_z[slotID] =  pos_inf; 
-	upper_z[slotID] =  neg_inf;  
-      }
-
-
-      inline void setBVHNodeN(const struct AABB &aabb, uint slot)
-      {
-	lower_x[slot] = aabb.lower.x();
-	lower_y[slot] = aabb.lower.y();
-	lower_z[slot] = aabb.lower.z();
-	upper_x[slot] = aabb.upper.x();
-	upper_y[slot] = aabb.upper.y();
-	upper_z[slot] = aabb.upper.z();
-      }
-
-      inline void setBVHNodeN_offset(const struct AABB &aabb, const uint _offset, const uint _parent, uint slot)
-      {
-	offset[slot] = _offset;
-	parent[slot] = _parent;  
-	lower_x[slot] = aabb.lower.x();
-	lower_y[slot] = aabb.lower.y();
-	lower_z[slot] = aabb.lower.z();
-	upper_x[slot] = aabb.upper.x();
-	upper_y[slot] = aabb.upper.y();
-	upper_z[slot] = aabb.upper.z();
-      }
-
-
+      float upper_z[BVH_NODE_N];
+      float time[BVH_NODE_N];       
+      float lower_dx[BVH_NODE_N]; 
+      float upper_dx[BVH_NODE_N]; 
+      float lower_dy[BVH_NODE_N]; 
+      float upper_dy[BVH_NODE_N]; 
+      float lower_dz[BVH_NODE_N]; 
+      float upper_dz[BVH_NODE_N]; 
+      
     };
 
-    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BVHNodeN& node) {
+    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeNMB& node) {
       for (uint i=0;i<BVH_NODE_N;i++)
 	{
 	  out << " i " << i << " offset " << node.offset[i] << " lower_x " << node.lower_x[i] << " upper_x " << node.upper_x[i] << " lower_y " << node.lower_y[i] << " upper_y " << node.upper_y[i] << " lower_z " << node.lower_z[i] << " upper_z " << node.upper_z[i] << cl::sycl::endl;
@@ -297,6 +265,7 @@ namespace embree
     /* =============================================================================== */
     /* ============================== NODE INTERSECTION =============================== */
     /* =============================================================================== */
+
     struct NodeIntersectionData {
       inline NodeIntersectionData(float dist, uint valid, uint offset) : dist(dist), valid(valid), offset(offset) {}      
       float dist;

@@ -123,6 +123,12 @@ namespace embree
     unsigned int geomId; // geometry ID    
     Vec3f v2;            // 3rd vertex of the triangle
     unsigned int primId; // primitive ID
+    Vec3f v0_delta;
+    float time0;
+    Vec3f v1_delta;
+    float time1;
+    Vec3f v2_delta;
+    float reserved;    
   };
 
 }
