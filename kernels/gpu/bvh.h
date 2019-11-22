@@ -92,21 +92,35 @@ namespace embree
 
     struct QBVHNodeNMB
     {              
-      uint  offset[BVH_NODE_N];  
+      uint  offset[BVH_NODE_N];
+      float lower_t[BVH_NODE_N];
+      float upper_t[BVH_NODE_N];             
       float lower_x[BVH_NODE_N]; 
       float upper_x[BVH_NODE_N]; 
       float lower_y[BVH_NODE_N]; 
       float upper_y[BVH_NODE_N]; 
       float lower_z[BVH_NODE_N]; 
-      float upper_z[BVH_NODE_N];
-      float time[BVH_NODE_N];       
+      float upper_z[BVH_NODE_N];      
       float lower_dx[BVH_NODE_N]; 
       float upper_dx[BVH_NODE_N]; 
       float lower_dy[BVH_NODE_N]; 
       float upper_dy[BVH_NODE_N]; 
       float lower_dz[BVH_NODE_N]; 
       float upper_dz[BVH_NODE_N]; 
-      
+
+      inline void clear()
+      {
+	for (size_t i=0;i<BVH_NODE_N;i++)
+	  {
+	    offset[i] = 0;
+	    lower_t[i] = 1.0f;
+	    upper_t[i] = 0.0f;	    	    
+	    lower_x[i] = lower_y[i] = lower_z[i] = pos_inf;
+	    upper_x[i] = upper_y[i] = upper_z[i] = neg_inf;
+	    lower_dx[i] = lower_dy[i] = lower_dz[i] = pos_inf;
+	    upper_dx[i] = upper_dy[i] = upper_dz[i] = neg_inf;	    
+	  }
+      }
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeNMB& node) {
@@ -115,7 +129,7 @@ namespace embree
 	  out << " i " << i << " offset " << node.offset[i] << " lower_x " << node.lower_x[i] << " upper_x " << node.upper_x[i] << " lower_y " << node.lower_y[i] << " upper_y " << node.upper_y[i] << " lower_z " << node.lower_z[i] << " upper_z " << node.upper_z[i] << cl::sycl::endl;
 	}      
       return out; 
-    }
+    }    
     
     
     /* ======================================================================== */
