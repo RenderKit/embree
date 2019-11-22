@@ -678,6 +678,7 @@ namespace embree
           {
             geometries[i]->preCommit();
             geometries[i]->addElementsToCount (c);
+            c.numFilterFunctions += (int) geometries[i]->hasFilterFunctions();
           }
         }
         return c;

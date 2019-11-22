@@ -224,6 +224,7 @@ namespace embree
         setModified ();
       }
     }
+    
   public:
 
     /* get mesh by ID */
@@ -267,15 +268,11 @@ namespace embree
     __forceinline bool hasContextFilterFunction() const {
       return scene_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
     }
-    __forceinline bool hasGeometryFilterFunction() 
-    {
-      auto geometryHasFilterFunctions = [this](size_t i)->bool { 
-        auto g = geometries[i];
-        return (g && g->isEnabled ()) ? g->hasFilterFunctions () : false; 
-      };
-
-      return parallel_any_of (size_t(0), geometries.size (), geometryHasFilterFunctions);
+    
+    __forceinline bool hasGeometryFilterFunction() {
+      return world.numFilterFunctions != 0;
     }
+      
     __forceinline bool hasFilterFunction() {
       return hasContextFilterFunction() || hasGeometryFilterFunction();
     }
@@ -302,6 +299,7 @@ namespace embree
     bool is_build;
   private:
     bool modified;                   //!< true if scene got modified
+
   public:
     
     /*! global lock step task scheduler */

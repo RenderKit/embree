@@ -30,7 +30,8 @@ namespace embree
   struct GeometryCounts 
   {
     __forceinline GeometryCounts()
-      : numTriangles(0), numMBTriangles(0), 
+      : numFilterFunctions(0),
+        numTriangles(0), numMBTriangles(0), 
         numQuads(0), numMBQuads(0), 
         numBezierCurves(0), numMBBezierCurves(0), 
         numLineSegments(0), numMBLineSegments(0), 
@@ -76,6 +77,7 @@ namespace embree
     __forceinline GeometryCounts operator+ (GeometryCounts const & rhs) const
     {
       GeometryCounts ret;
+      ret.numFilterFunctions = numFilterFunctions + rhs.numFilterFunctions;
       ret.numTriangles = numTriangles + rhs.numTriangles;
       ret.numMBTriangles = numMBTriangles + rhs.numMBTriangles;
       ret.numQuads = numQuads + rhs.numQuads;
@@ -100,6 +102,7 @@ namespace embree
       return ret;
     }
 
+    size_t numFilterFunctions;       //!< number of geometries with filter functions enabled
     size_t numTriangles;             //!< number of enabled triangles
     size_t numMBTriangles;           //!< number of enabled motion blured triangles
     size_t numQuads;                 //!< number of enabled quads
