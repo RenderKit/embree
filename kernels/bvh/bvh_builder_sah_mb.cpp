@@ -440,7 +440,7 @@ namespace embree
 
 
       BVHNBuilderMBlurSAHGrid (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize)
-        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize), sgrids(scene->device,0) {} //todo check max leaf size 
+        : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,BVH::maxLeafBlocks)), sgrids(scene->device,0) {}
 
 
       PrimInfo createPrimRefArrayMBlurGrid(Scene* scene, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor, size_t itime)
