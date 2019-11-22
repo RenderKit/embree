@@ -140,6 +140,7 @@ namespace embree
     /* image output settings */
     FileName outputImageFilename;
     FileName referenceImageFilename;
+    float referenceImageThreshold; // threshold when we consider images to differ
 
     /* benchmark mode settings */
     size_t skipBenchmarkFrames;

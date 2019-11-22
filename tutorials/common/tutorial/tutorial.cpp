@@ -99,6 +99,8 @@ namespace embree
       pixels(nullptr),
 
       outputImageFilename(""),
+      referenceImageFilename(""),
+      referenceImageThreshold(32.0f),
 
       skipBenchmarkFrames(0),
       numBenchmarkFrames(0),
@@ -155,6 +157,10 @@ namespace embree
         referenceImageFilename = cin->getFileName();
         interactive = false;
       }, "--compare <filename>: reference image to compare against");
+
+    registerOption("compare-threshold", [this] (Ref<ParseStream> cin, const FileName& path) {
+        referenceImageThreshold = cin->getFloat();
+      }, "--compare--threshold <float>: threshold in number of wrong pixels when image is considered wrong");
 
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -715,7 +721,7 @@ namespace embree
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     Ref<Image> reference = loadImage(fileName);
     const double error = compareImages(image,reference);
-    if (error > 32.0f) // error corresponds roughly to number of pixels that are completely off in color
+    if (error > referenceImageThreshold) // error corresponds roughly to number of pixels that are completely off in color
       throw std::runtime_error("reference image differs by " + std::to_string(error));
   }
 

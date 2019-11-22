@@ -15,5 +15,4 @@
 ## ======================================================================== ##
 
 set(CTEST_PROJECT_NAME "Embree")
-set(CTEST_NIGHTLY_START_TIME "22:00:00 UTC")
-set(TEST_MODELS_HASH c4e1dd8d302e7b837263729c32c6e6700d90981a)
+set(TEST_MODELS_HASH cff1ac27a8dba1b65d1cbb6c9c06be39b4baad71)
