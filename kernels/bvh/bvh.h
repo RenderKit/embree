@@ -828,6 +828,7 @@ namespace embree
       {
         __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
         {
+	  PING;
           if (hasTimeSplits)
           {
             AlignedNodeMB4D* node = (AlignedNodeMB4D*) alloc.malloc0(sizeof(AlignedNodeMB4D),byteNodeAlignment); node->clear();
@@ -845,6 +846,12 @@ namespace embree
       {
         __forceinline void operator() (NodeRef ref, size_t i, const NodeRecordMB4D& child) const
         {
+	  PING;
+	  PRINT(ref.isAlignedNodeMB());
+	  PRINT(i);
+	  PRINT(child.lbounds);
+	  PRINT(child.dt);
+
           if (likely(ref.isAlignedNodeMB())) {
             ref.alignedNodeMB()->set(i, child);
           } else {

@@ -73,6 +73,11 @@ namespace embree
       typedef typename BVHN<N>::NodeRef NodeRef;
       typedef typename BVHN<N>::NodeRecordMB NodeRecordMB;
       typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
+      typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
+      typedef typename BVHN<N>::AlignedNode AlignedNode;
+      typedef typename BVHN<N>::UnalignedNode UnalignedNode;
+      typedef typename BVHN<N>::UnalignedNodeMB UnalignedNodeMB;
+      typedef typename BVHN<N>::QuantizedNode QuantizedNode;
 
       BVH* bvh;
       Scene* scene;
@@ -85,6 +90,68 @@ namespace embree
       BVHGPUBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
         : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), gtype_(gtype) {}
 
+      void convertToGPULayout(NodeRef node)
+      {
+	if (node.isAlignedNode())
+	  {
+	    PRINT("ALIGNED NODE");
+	    AlignedNode* n = node.alignedNode();
+	    for (size_t i=0;i<N;i++)
+	      convertToGPULayout(n->child(i));
+	  }
+	else if (node.isUnalignedNode())
+	  {
+	    PRINT("UNALIGNED NODE");
+	    UnalignedNode* n = node.unalignedNode();
+	    for (size_t i=0;i<N;i++)
+	      convertToGPULayout(n->child(i));	    
+	  }
+	else if (node.isAlignedNodeMB())
+	  {
+	    PRINT("ALIGNED NODE MB");
+	    AlignedNodeMB* n = node.alignedNodeMB();
+	    for (size_t i=0;i<N;i++)
+	      convertToGPULayout(n->child(i));
+	  }
+	else if (node.isAlignedNodeMB4D())
+	  {
+	    PRINT("ALIGNED NODE MB 4D");
+	    AlignedNodeMB4D* n = node.alignedNodeMB4D();
+	    PRINT(*n);
+	    for (size_t i=0;i<N;i++)
+	      convertToGPULayout(n->child(i));	    
+	  }
+	else if (node.isUnalignedNodeMB())
+	  {
+	    PRINT("UNALIGNED NODE MB");	    
+	    UnalignedNodeMB* n = node.unalignedNodeMB();
+	    for (size_t i=0;i<N;i++)
+	      convertToGPULayout(n->child(i));	    
+	  }
+	else if (node.isQuantizedNode())
+	  {
+	    PRINT("QUANTIZED NODE");	    
+	    QuantizedNode* n = node.quantizedNode();
+	    for (size_t i=0;i<N;i++)
+	      convertToGPULayout(n->child(i));	    	    
+	  }
+	else if (node.isLeaf())
+	  {
+	    size_t num; const char* tri = node.leaf(num);
+	    if (num)
+	      {
+		for (size_t i=0; i<num; i++)
+		  {
+		    const size_t bytes = bvh->primTy->getBytes(tri);
+		  }
+	      }
+	  }
+	else {
+	  throw std::runtime_error("not supported node type in bvh_statistics");
+	}
+	
+      }
+      
       void build()
       {
 	/* skip build for empty scene */
@@ -99,6 +166,11 @@ namespace embree
         if (scene->isStaticAccel()) bvh->shrink();
 	bvh->cleanup();
         bvh->postBuild(t0);
+
+	convertToGPULayout(bvh->root);
+	PRINT("BVH MB BUILDING DONE");      
+	exit(0);	
+
       }
 
       void buildMultiSegment(size_t numPrimitives)
@@ -139,9 +211,6 @@ namespace embree
                                             settings);
 
         bvh->set(root.ref,root.lbounds,pinfo.num_time_segments);
-	PRINT(root.ref);
-	PRINT("BVH MB BUILDING DONE");      
-	exit(0);	
       }
 
       
