@@ -22,6 +22,31 @@
 
 namespace embree
 {
+  double compareImages(Ref<Image> image0, Ref<Image> image1)
+  {
+    /* compare image size */
+    const size_t width = image0->width;
+    const size_t height = image0->height;
+    if (image1->width != width) return 1;
+    if (image1->height != height) return 1;
+
+    /* compare both images */
+    double diff = 0.0;
+    for (size_t y=0; y<height; y++)
+    {
+      for (size_t x=0; x<width; x++)
+      {
+        const Color c0 = image0->get(x,y);
+        const Color c1 = image1->get(x,y);
+        diff += sqr(fabs(c0.r - c1.r))/3.0f;
+        diff += sqr(fabs(c0.g - c1.g))/3.0f;
+        diff += sqr(fabs(c0.b - c1.b))/3.0f;
+      }
+    }
+
+    return diff;
+  }
+  
   /*! loads an image from a file with auto-detection of format */
   Ref<Image> loadImageFromDisk(const FileName& fileName)
   {
@@ -47,6 +72,7 @@ namespace embree
     
     if (ext == "pfm" ) return loadPFM(fileName);
     if (ext == "ppm" ) return loadPPM(fileName);
+    if (ext == "tga" ) return loadTGA(fileName);
     THROW_RUNTIME_ERROR("image format " + ext + " not supported");
   }
 
