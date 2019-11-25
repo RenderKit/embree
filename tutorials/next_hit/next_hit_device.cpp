@@ -129,7 +129,7 @@ struct IntersectContext
 
   RTCIntersectContext context;
   HitList& hits;
-  int max_next_hits; // maximal number of hits to collect in a single pass
+  unsigned int max_next_hits; // maximal number of hits to collect in a single pass
 };
 
 /* scene data */
@@ -209,7 +209,7 @@ void single_pass(const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayS
   /* shade all hits */
   if (g_enable_opacity)
   {
-    for (size_t i=context.hits.begin; i<context.hits.end; i++)
+    for (unsigned int i=context.hits.begin; i<context.hits.end; i++)
     {
       /* roussion roulette ray termination */
       bool opaque = context.hits.hits[i].opaque;
@@ -418,7 +418,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       color = Vec3fa(1,0,0);
   }
   
-  color.w = hits.size();
+  color.w = (float) hits.size();
   return color;
 }
 
