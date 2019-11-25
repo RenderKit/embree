@@ -99,6 +99,8 @@ namespace embree
       pixels(nullptr),
 
       outputImageFilename(""),
+      referenceImageFilename(""),
+      referenceImageThreshold(32.0f),
 
       skipBenchmarkFrames(0),
       numBenchmarkFrames(0),
@@ -150,6 +152,15 @@ namespace embree
         outputImageFilename = cin->getFileName();
         interactive = false;
       }, "-o <filename>: output image filename");
+
+    registerOption("compare", [this] (Ref<ParseStream> cin, const FileName& path) {
+        referenceImageFilename = cin->getFileName();
+        interactive = false;
+      }, "--compare <filename>: reference image to compare against");
+
+    registerOption("compare-threshold", [this] (Ref<ParseStream> cin, const FileName& path) {
+        referenceImageThreshold = cin->getFloat();
+      }, "--compare--threshold <float>: threshold in number of wrong pixels when image is considered wrong");
 
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -231,6 +242,11 @@ namespace embree
      registerOption("debug3", [this] (Ref<ParseStream> cin, const FileName& path) {
          debug3 = cin->getInt();
        }, "--debug3: sets internal debugging value");
+
+     registerOption("time", [this] (Ref<ParseStream> cin, const FileName& path) {
+         shader = SHADER_EYELIGHT;
+         g_debug = cin->getFloat();
+       }, "--time: sets time for motion blur");
 
     /* output filename */
     registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -696,6 +712,19 @@ namespace embree
     storeImage(image, fileName);
   }
 
+  void TutorialApplication::compareToReferenceImage(const FileName& fileName)
+  {
+    resize(width,height);
+    ISPCCamera ispccamera = camera.getISPCCamera(width,height);
+    initRayStats();
+    device_render(pixels,width,height,0.0f,ispccamera);
+    Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
+    Ref<Image> reference = loadImage(fileName);
+    const double error = compareImages(image,reference);
+    if (error > referenceImageThreshold) // error corresponds roughly to number of pixels that are completely off in color
+      throw std::runtime_error("reference image differs by " + std::to_string(error));
+  }
+
   void TutorialApplication::set_parameter(size_t parm, ssize_t val) {
     rtcSetDeviceProperty(nullptr,(RTCDeviceProperty)parm,val);
   }
@@ -1027,6 +1056,10 @@ namespace embree
     /* render to disk */
     if (outputImageFilename.str() != "")
       renderToFile(outputImageFilename);
+
+    /* compare to reference image */
+    if (referenceImageFilename.str() != "")
+      compareToReferenceImage(referenceImageFilename);
 
     /* interactive mode */
     if (interactive)

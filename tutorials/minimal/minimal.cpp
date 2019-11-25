@@ -17,6 +17,7 @@
 #include <embree3/rtcore.h>
 #include <stdio.h>
 #include <math.h>
+#include <limits>
 
 /*
  * A minimal tutorial. 
@@ -181,7 +182,7 @@ void castRay(RTCScene scene,
   rayhit.ray.dir_y = dy;
   rayhit.ray.dir_z = dz;
   rayhit.ray.tnear = 0;
-  rayhit.ray.tfar = INFINITY;
+  rayhit.ray.tfar = std::numeric_limits<float>::infinity();
   rayhit.ray.mask = 0;
   rayhit.ray.flags = 0;
   rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;

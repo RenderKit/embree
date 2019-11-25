@@ -47,26 +47,14 @@ MACRO (ADD_EMBREE_NORMAL_TEST name reference executable args)
   IF (BUILD_TESTING)  
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                     --name ${name}
-                     --reference ${reference}
-                     --modeldir ${EMBREE_MODEL_DIR}
-                     --model default
-                     --sde ${EMBREE_TESTING_SDE}
-                     --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
+             COMMAND ${executable} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
   ENDIF()
   
   IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-               COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                       --name ${name}_ispc
-                       --reference ${reference}
-                       --modeldir ${EMBREE_MODEL_DIR}
-                       --model default
-                       --sde ${EMBREE_TESTING_SDE}
-                       --execute ${MY_PROJECT_BINARY_DIR}/${executable}_ispc ${args})
+               COMMAND ${executable} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
     ENDIF()
   ENDIF()
 ENDMACRO()
@@ -75,13 +63,7 @@ MACRO (ADD_EMBREE_TEST_WITHOUT_ISPC name)
   IF (BUILD_TESTING)  
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                     --name ${name}
-                     --reference ${name}
-                     --modeldir ${EMBREE_MODEL_DIR}
-                     --model default
-                     --sde ${EMBREE_TESTING_SDE}
-                     --execute ${MY_PROJECT_BINARY_DIR}/${name})
+             COMMAND ${executable} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
   ENDIF()
 ENDMACRO()
 
@@ -90,33 +72,21 @@ MACRO (ADD_EMBREE_TEST name)
 ENDMACRO()
 
 MACRO (ADD_EMBREE_TEST2 name exe args)
-  ADD_EMBREE_MODEL_TEST(${name} ${exe} ${exe} "${args}" "default")
+  ADD_EMBREE_NORMAL_TEST(${name} ${exe} ${exe} "${args}")
 ENDMACRO()
 
 MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   IF (BUILD_TESTING)  
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                     --name ${name}
-                     --reference ${reference}
-                     --modeldir ${EMBREE_MODEL_DIR}
-                     --model ${model}
-                     --sde ${EMBREE_TESTING_SDE}
-                     --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
+             COMMAND ${executable} -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
   ENDIF()
   
   IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-               COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                       --name ${name}_ispc
-                       --reference ${reference}
-                       --modeldir ${EMBREE_MODEL_DIR}
-                       --model ${model}
-                       --sde ${EMBREE_TESTING_SDE}
-                       --execute ${MY_PROJECT_BINARY_DIR}/${executable}_ispc ${args})
+               COMMAND COMMAND ${executable} -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
     ENDIF()
   ENDIF()
 ENDMACRO()

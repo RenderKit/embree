@@ -98,6 +98,9 @@ namespace embree
     /* render to file mode */
     void renderToFile(const FileName& fileName);
 
+    /* compare rendering to reference image */
+    void compareToReferenceImage(const FileName& fileName);
+
     /* passes parameters to the backend */
     void set_parameter(size_t parm, ssize_t val);
 
@@ -136,6 +139,8 @@ namespace embree
 
     /* image output settings */
     FileName outputImageFilename;
+    FileName referenceImageFilename;
+    float referenceImageThreshold; // threshold when we consider images to differ
 
     /* benchmark mode settings */
     size_t skipBenchmarkFrames;
