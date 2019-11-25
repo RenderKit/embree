@@ -120,7 +120,7 @@ namespace embree
 	  }
       }
 
-      inline void convertToTriangle1vMB(gpu::Triangle1vMB &tri1v,Triangle4vMB &tri_block, const size_t slot)
+      inline void convertToTriangle1vMB(gpu::Triangle1vMB &tri1v, const Triangle4vMB &tri_block, const size_t slot)
       {
 	tri1v.v0.x() = tri_block.v0.x[slot];
 	tri1v.v0.y() = tri_block.v0.y[slot];

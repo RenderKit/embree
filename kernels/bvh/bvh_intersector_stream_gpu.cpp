@@ -14,13 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh_traverser_stream.h"
-
-#if defined(EMBREE_DPCPP_SUPPORT)
-#include "../gpu/bvh.h"
-#include "../gpu/ray.h"
-#include "../gpu/geometry.h"
-#endif
+#include "bvh_intersector_gpu.h"
 
 #define DBG(x) 
 #define TSTATS(x) 
@@ -31,28 +25,6 @@ namespace embree
 {
 
 #if defined(EMBREE_DPCPP_SUPPORT)   
-
-    struct TraversalStats
-    {
-      uint nrays;
-      uint tsteps;
-      uint isteps;
-      
-      inline void reset() {
-	nrays  = 0;
-	tsteps = 0;
-	isteps = 0;
-      }
-
-      inline void nrays_inc()  { gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&nrays,1); }
-      inline void tsteps_inc() { gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&tsteps,1); }
-      inline void isteps_inc() { gpu::atomic_add<uint,cl::sycl::access::address_space::global_space>(&isteps,1); }      
-    };
-
-    inline std::ostream &operator<<(std::ostream &cout, const TraversalStats& s) {
-      return cout << "tsteps/ray " << (float)s.tsteps / s.nrays << " isteps/ray " << (float)s.isteps / s.nrays;
-    };  
-
     
     template<typename Primitive>
     [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]] inline void traceRayBVH16(const cl::sycl::intel::sub_group &sg,
@@ -98,9 +70,6 @@ namespace embree
 	  const float3 inv_dir = cl::sycl::native::recip(new_dir);
 	  const float3 inv_dir_org = -inv_dir * org; 
             
-	  const uint max_uint  = 0xffffffff;  
-	  const uint mask_uint = 0xfffffff0;
-
 	  const char *const bvh_base = (char*)bvh_mem;
 	  stack_offset[0] = max_uint; // sentinel
 	  stack_dist[0]   = -(float)INFINITY;
@@ -112,7 +81,8 @@ namespace embree
 	  TSTATS(tstats->nrays_inc());
 
 	  while(1)
-	    { 
+	    {
+	      /* stack pop */
 	      sindex--;
 
 #if STACK_CULLING  == 1    
@@ -121,59 +91,27 @@ namespace embree
 	  
 	      gpu::NodeRef cur = stack_offset[sindex]; 
 
+	      /* BVH down traversal */
 	      while(!cur.isLeaf()) 
 		{
-		  TSTATS(tstats->tsteps_inc());
-	      
+		  TSTATS(tstats->tsteps_inc());	      
 		  const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);
 		  const gpu::NodeIntersectionData isec = intersectQBVHNodeN(sg,node,dir_mask,inv_dir,inv_dir_org,tnear,tfar);
-		  const float fnear = isec.dist;
-		  const uint valid  = isec.valid;
-		  uint offset       = isec.offset;
-		  const uint mask   = intel_sub_group_ballot(valid);
-	      
-		  if (mask == 0)
-		    {
-#if STACK_CULLING == 1
-		      do { 
-			sindex--;
-		      } while (stack_dist[sindex] > tfar);
-#else		  
-		      sindex--;
-#endif		  
-		      cur = stack_offset[sindex];
-		      continue;
-		    }
-
-		  offset += cur; /* relative encoding */
-		  const uint popc = cl::sycl::popcount(mask); 
-		  cur = sg.broadcast<uint>(offset, cl::sycl::intel::ctz(mask));
-	      	      
-		  if (popc == 1) continue; // single hit only
-		  int t = (gpu::as_int(fnear) & mask_uint) | subgroupLocalID;  // make the integer distance unique by masking off the least significant bits and adding the slotID
-		  t = valid ? t : max_uint; // invalid slots set to MIN_INT, as we sort descending;	
-	      
-		  for (uint i=0;i<popc-1;i++)
-		    {
-		      const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<int>()); // from larger to smaller distance
-		      t = (t == t_max) ? max_uint : t;
-		      const uint index = t_max & (~mask_uint);
-		      stack_offset[sindex] = sg.broadcast<uint> (offset,index);
-		      stack_dist[sindex]   = sg.broadcast<float>(fnear,index);
-		      sindex++;
-		    }
-		  const int t_max = sg.reduce<int>(t, cl::sycl::intel::maximum<int>()); // from larger to smaller distance
-		  cur = sg.broadcast<uint>(offset,t_max & (~mask_uint));
+		  getClosestChildNode(sg,isec,cur,sindex,tfar,stack_offset,stack_dist);
 		}
-	  
+
+	      /* stack empty */
 	      if (cur == max_uint) break; // sentinel reached -> exit
 
+	      /* leaf intersection */
 	      const uint numPrims = cur.getNumLeafPrims();
 	      const uint leafOffset = cur.getLeafOffset();    
 
 	      const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
 	      TSTATS(tstats->isteps_inc());	  
-	      hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);  
+	      hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
+
+	      /* update tfar */
 	      tfar = sg.reduce<float>(hit_tfar, cl::sycl::intel::minimum<float>());
 	    }
 
@@ -183,7 +121,7 @@ namespace embree
 		  out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
 	      );
 
-	  /* select hit with shortest distance */
+	  /* select hit with shortest intersection distance */
       
 	  const uint index = cl::sycl::intel::ctz(intel_sub_group_ballot(tfar == hit_tfar));
 	  local_hit.broadcast(sg,index);
