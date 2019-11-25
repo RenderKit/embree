@@ -14,32 +14,19 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "bvh_traverser_stream.h"
-
-#if defined(EMBREE_DPCPP_SUPPORT)
-#include "../gpu/bvh.h"
-#include "../gpu/ray.h"
-#include "../gpu/geometry.h"
-#endif
+#include "bvh_intersector_gpu.h"
 
 #define DBG(x)
 
 namespace embree
-{
-
-#if defined(EMBREE_DPCPP_SUPPORT)   
-
-  template<typename T>
-  __forceinline T wg_align(T x, unsigned int alignment)
-  {
-    return ((x + alignment-1)/alignment)*alignment;
-  }  
-
-
-#endif
-  
+{  
   namespace isa
   {
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+    
+#endif
+    
     /*! BVH ray stream GPU intersector */
     template<typename Primitive>
     class BVHNGPUIntersectorStreamMB
