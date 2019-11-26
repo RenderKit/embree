@@ -181,7 +181,7 @@ namespace embree
 	      {
 		TSTATS(tstats->tsteps_inc());	      
 		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);
-		const gpu::NodeIntersectionData isec = intersectQBVHNodeN(sg,node,dir_mask,inv_dir,inv_dir_org,tnear,tfar);
+		const gpu::NodeIntersectionData isec = intersectNode(sg,node,dir_mask,inv_dir,inv_dir_org,tnear,tfar);
 		getClosestChildNode(sg,isec,cur,sindex,tfar,stack_offset,stack_dist);
 	      }
 

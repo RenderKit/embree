@@ -81,11 +81,11 @@ namespace embree
 		const uint globalID   = item.get_global_id(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		//if (globalID < numRays)
-		  {
-		    uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
-		    if (m_activeLanes == 0xffff)
-		      traceRayBVH16<gpu::QBVHNodeN,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
-		  }
+		{
+		  uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
+		  if (m_activeLanes == 0xffff)
+		    traceRayBVH16<gpu::QBVHNodeN,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
+		}
 	      });		  
 	  });
 	try {
@@ -95,8 +95,8 @@ namespace embree
 		    << e.what() << std::endl;
 	  FATAL("OpenCL Exception");
 	}
-      TSTATS(cl::sycl::free(tstats,deviceGPU->getGPUContext()););
-      TSTATS(std::cout << "RAY TRAVERSAL STATS: " << *tstats << std::endl);
+	TSTATS(cl::sycl::free(tstats,deviceGPU->getGPUContext()););
+	TSTATS(std::cout << "RAY TRAVERSAL STATS: " << *tstats << std::endl);
       }
       DBG(exit(0));
 #endif      

@@ -108,7 +108,7 @@ namespace embree
       float lower_dz[BVH_NODE_N]; 
       float upper_dz[BVH_NODE_N]; 
 
-      inline void clear()
+      __forceinline void clear()
       {
 	for (size_t i=0;i<BVH_NODE_N;i++)
 	  {
@@ -123,7 +123,7 @@ namespace embree
       }
     };
 
-    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeNMB& node) {
+    __forceinline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeNMB& node) {
       for (uint i=0;i<BVH_NODE_N;i++)
 	{
 	  out << " i " << i << " offset " << node.offset[i] << " lower_x " << node.lower_x[i] << " upper_x " << node.upper_x[i] << " lower_y " << node.lower_y[i] << " upper_y " << node.upper_y[i] << " lower_z " << node.lower_z[i] << " upper_z " << node.upper_z[i] << cl::sycl::endl;
@@ -159,7 +159,7 @@ namespace embree
 	uchar upper;    
       } bounds_z[BVH_NODE_N];
       
-      inline AABB getBounds(const uint i)
+      __forceinline AABB getBounds(const uint i)
       {
 	const uchar4 ilower(bounds_x[i].lower,bounds_y[i].lower,bounds_z[i].lower,0);
 	const uchar4 iupper(bounds_x[i].upper,bounds_y[i].upper,bounds_z[i].upper,0);	      
@@ -171,7 +171,7 @@ namespace embree
 	return aabb;
       }
 
-      inline AABB getBounds()
+      __forceinline AABB getBounds()
       {
 	AABB aabb;
 	aabb.init();
@@ -184,12 +184,12 @@ namespace embree
       }
 
       
-      inline static void init(cl::sycl::intel::sub_group &sg,
-			      QBVHNodeN &node,			      
-			      AABB *childrenAABB,
-			      uint numChildren,
-			      const uint ID,
-			      const cl::sycl::stream &out)
+      __forceinline static void init(cl::sycl::intel::sub_group &sg,
+				     QBVHNodeN &node,			      
+				     AABB *childrenAABB,
+				     uint numChildren,
+				     const uint ID,
+				     const cl::sycl::stream &out)
       {
 	AABB child;
 	const uint subgroupLocalID = sg.get_local_id()[0];
@@ -207,57 +207,57 @@ namespace embree
 	encode_scale = cselect(diff > 0.0f, encode_scale, float4(0.0f));
 	
 	if (subgroupLocalID < BVH_NODE_N)
-	{
+	  {
 
-	  int m_valid = subgroupLocalID < numChildren;
+	    int m_valid = subgroupLocalID < numChildren;
 	  
-	  const float4 lower = child.lower;
-	  const float4 upper = child.upper;
+	    const float4 lower = child.lower;
+	    const float4 upper = child.upper;
 	  
-	  float4 lowerf = floor((lower - minF)*encode_scale);
-	  float4 upperf =  ceil((upper - minF)*encode_scale);
+	    float4 lowerf = floor((lower - minF)*encode_scale);
+	    float4 upperf =  ceil((upper - minF)*encode_scale);
 
-	  int4 ilower = max(lowerf.convert<int,cl::sycl::rounding_mode::rtn>(),int4(QUANT_MIN));
-	  int4 iupper = min(upperf.convert<int,cl::sycl::rounding_mode::rtp>(),int4(QUANT_MAX));
+	    int4 ilower = max(lowerf.convert<int,cl::sycl::rounding_mode::rtn>(),int4(QUANT_MIN));
+	    int4 iupper = min(upperf.convert<int,cl::sycl::rounding_mode::rtp>(),int4(QUANT_MAX));
 
-	  /* lower/upper correction */
-	  int4 m_lower_correction = (cl::sycl::fma(ilower.convert<float,cl::sycl::rounding_mode::rtn>(),decode_scale,minF)) > lower;
-	  int4 m_upper_correction = (cl::sycl::fma(iupper.convert<float,cl::sycl::rounding_mode::rtp>(),decode_scale,minF)) < upper;
+	    /* lower/upper correction */
+	    int4 m_lower_correction = (cl::sycl::fma(ilower.convert<float,cl::sycl::rounding_mode::rtn>(),decode_scale,minF)) > lower;
+	    int4 m_upper_correction = (cl::sycl::fma(iupper.convert<float,cl::sycl::rounding_mode::rtp>(),decode_scale,minF)) < upper;
 	  
-	  ilower = max(cselect(m_lower_correction,ilower-1,ilower),QUANT_MIN);
-	  iupper = min(cselect(m_upper_correction,iupper+1,iupper),QUANT_MAX);	  
+	    ilower = max(cselect(m_lower_correction,ilower-1,ilower),QUANT_MIN);
+	    iupper = min(cselect(m_upper_correction,iupper+1,iupper),QUANT_MAX);	  
 
-	  /* disable invalid lanes */	  
+	    /* disable invalid lanes */	  
 
 #if 1 // workaround for compiler bug	  
-	  ilower.x() = cselect(m_valid,ilower.x(),QUANT_MAX);
-	  ilower.y() = cselect(m_valid,ilower.y(),QUANT_MAX);
-	  ilower.z() = cselect(m_valid,ilower.z(),QUANT_MAX);
+	    ilower.x() = cselect(m_valid,ilower.x(),QUANT_MAX);
+	    ilower.y() = cselect(m_valid,ilower.y(),QUANT_MAX);
+	    ilower.z() = cselect(m_valid,ilower.z(),QUANT_MAX);
 	  
-	  iupper.x() = cselect(m_valid,iupper.x(),QUANT_MIN);
-	  iupper.y() = cselect(m_valid,iupper.y(),QUANT_MIN);
-	  iupper.z() = cselect(m_valid,iupper.z(),QUANT_MIN);	  
+	    iupper.x() = cselect(m_valid,iupper.x(),QUANT_MIN);
+	    iupper.y() = cselect(m_valid,iupper.y(),QUANT_MIN);
+	    iupper.z() = cselect(m_valid,iupper.z(),QUANT_MIN);	  
 #else
-	  ilower = cselect(int4(m_valid),ilower,int4(QUANT_MAX)); 
-	  iupper = cselect(int4(m_valid),iupper,int4(QUANT_MIN));
+	    ilower = cselect(int4(m_valid),ilower,int4(QUANT_MAX)); 
+	    iupper = cselect(int4(m_valid),iupper,int4(QUANT_MIN));
 #endif	  
 	  
-	  node.offset[subgroupLocalID] = -1;
-	  node.bounds_x[subgroupLocalID].lower = ilower.x();
-	  node.bounds_y[subgroupLocalID].lower = ilower.y();
-	  node.bounds_z[subgroupLocalID].lower = ilower.z();
-	  node.bounds_x[subgroupLocalID].upper = iupper.x();
-	  node.bounds_y[subgroupLocalID].upper = iupper.y();
-	  node.bounds_z[subgroupLocalID].upper = iupper.z();	  
-	  node.org   = minF;
-	  node.scale = decode_scale;	  
-	}
+	    node.offset[subgroupLocalID] = -1;
+	    node.bounds_x[subgroupLocalID].lower = ilower.x();
+	    node.bounds_y[subgroupLocalID].lower = ilower.y();
+	    node.bounds_z[subgroupLocalID].lower = ilower.z();
+	    node.bounds_x[subgroupLocalID].upper = iupper.x();
+	    node.bounds_y[subgroupLocalID].upper = iupper.y();
+	    node.bounds_z[subgroupLocalID].upper = iupper.z();	  
+	    node.org   = minF;
+	    node.scale = decode_scale;	  
+	  }
       }
 
     };
 
     
-    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeN& node) {
+    __forceinline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeN& node) {
       out << " org "     << node.org
 	  << " scale "   << node.scale
 	  << cl::sycl::endl;
@@ -281,21 +281,22 @@ namespace embree
     /* =============================================================================== */
 
     struct NodeIntersectionData {
-      inline NodeIntersectionData(float dist, uint valid, uint offset) : dist(dist), valid(valid), offset(offset) {}      
+      __forceinline NodeIntersectionData(float dist, uint valid, uint offset) : dist(dist), valid(valid), offset(offset) {}      
       float dist;
       uint valid;
       uint offset;
     };
 
-    inline NodeIntersectionData intersectQBVHNodeN(const cl::sycl::intel::sub_group &sg,
-						   const QBVHNodeN &node,
-						   const uint3 &dir_mask,
-						   const float3 &inv_dir,
-						   const float3 &inv_dir_org,
-						   const float tnear,
-						   const float tfar)
+    __forceinline NodeIntersectionData intersectNode(const cl::sycl::intel::sub_group &sg,
+						     const QBVHNodeN &node,
+						     const uint3 &dir_mask,
+						     const float3 &inv_dir,
+						     const float3 &inv_dir_org,
+						     const float tnear,
+						     const float tfar)
     {
 #if 0
+      const uint subgroupLocalID = sg.get_local_id()[0];      
       const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);	      
       uint  offset          = node.offset[subgroupLocalID];	      	      
       const float3 org      = node.org.xyz();
@@ -343,6 +344,42 @@ namespace embree
       const uint valid = (fnear <= ffar) & (offset != -1); //((uchar)ilower.x() <= (uchar)iupper.x());	       
       return NodeIntersectionData(fnear, valid, offset);
     }
+
+
+    __forceinline NodeIntersectionData intersectNode(const cl::sycl::intel::sub_group &sg,
+						     const QBVHNodeNMB &node,
+						     const uint3 &dir_mask,
+						     const float3 &inv_dir,
+						     const float3 &inv_dir_org,
+						     const float tnear,
+						     const float tfar)
+    {
+      const uint subgroupLocalID = sg.get_local_id()[0];      
+      uint  offset = node.offset[subgroupLocalID];	      	      
+      const float3 _lower(node.lower_x[subgroupLocalID],node.lower_y[subgroupLocalID],node.lower_z[subgroupLocalID]);
+      const float3 _upper(node.upper_x[subgroupLocalID],node.upper_y[subgroupLocalID],node.upper_z[subgroupLocalID]);
+      
+      const float lower_x = cselect((uint)dir_mask.x(),(float)_upper.x(),(float)_lower.x());
+      const float upper_x = cselect((uint)dir_mask.x(),(float)_lower.x(),(float)_upper.x());
+      const float lower_y = cselect((uint)dir_mask.y(),(float)_upper.y(),(float)_lower.y());
+      const float upper_y = cselect((uint)dir_mask.y(),(float)_lower.y(),(float)_upper.y());
+      const float lower_z = cselect((uint)dir_mask.z(),(float)_upper.z(),(float)_lower.z());
+      const float upper_z = cselect((uint)dir_mask.z(),(float)_lower.z(),(float)_upper.z());	     
+	      
+      const float lowerX = cfma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
+      const float upperX = cfma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());
+      const float lowerY = cfma((float)inv_dir.y(), lower_y, (float)inv_dir_org.y());
+      const float upperY = cfma((float)inv_dir.y(), upper_y, (float)inv_dir_org.y());
+      const float lowerZ = cfma((float)inv_dir.z(), lower_z, (float)inv_dir_org.z());
+      const float upperZ = cfma((float)inv_dir.z(), upper_z, (float)inv_dir_org.z());
+
+      const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
+      const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
+      const uint valid = (fnear <= ffar) & (offset != -1); //((uchar)ilower.x() <= (uchar)iupper.x());	       
+      return NodeIntersectionData(fnear, valid, offset);
+    }
+    
+    
     
   };
 };
