@@ -28,13 +28,15 @@ namespace embree
       float3 lower; // very careful here, as sizeof(float3) == 16 in SYCL...
       float3 upper;
       
-      AABB3f() = default;
+      __forceinline AABB3f() = default;
 
-      AABB3f(const AABB3f &aabb) : lower(aabb.lower),upper(aabb.upper) {} 
+      __forceinline AABB3f(const AABB3f &aabb) : lower(aabb.lower),upper(aabb.upper) {} 
 
-      AABB3f(const float3 &v) : lower(v),upper(v) {}
+      __forceinline AABB3f(const float3 &v) : lower(v),upper(v) {}
+
+      __forceinline AABB3f(const float3 &lower, const float3 &upper) : lower(lower),upper(upper) {}
       
-      inline void init()
+      __forceinline void init()
       {
 	const float pos_inf =  INFINITY;
 	const float neg_inf = -INFINITY;
@@ -42,35 +44,35 @@ namespace embree
 	upper = (float3)(neg_inf);
       }
       
-      inline void extend(class AABB3f &aabb)
+      __forceinline void extend(class AABB3f &aabb)
       {
 	lower = min(lower,aabb.lower);
 	upper = max(upper,aabb.upper);	
       }
 
-      inline void extend(const float3 &v)
+      __forceinline void extend(const float3 &v)
       {
 	lower = min(lower,v);
 	upper = max(upper,v);	
       }
 
-      inline void enlarge(const float3 &v)
+      __forceinline void enlarge(const float3 &v)
       {
 	lower -= v;
 	upper += v;	
       }
 
-      inline float3 size() const
+      __forceinline float3 size() const
       {
 	return upper - lower;
       }
 
-      inline float3 centroid2() const
+      __forceinline float3 centroid2() const
       {
 	return upper + lower;
       }
 
-      inline void atomic_merge_global(AABB3f &dest) const
+      __forceinline void atomic_merge_global(AABB3f &dest) const
       {
 	atomic_min(((volatile GLOBAL float *)&dest.lower) + 0,lower.x());
 	atomic_min(((volatile GLOBAL float *)&dest.lower) + 1,lower.y());
@@ -81,7 +83,7 @@ namespace embree
 	atomic_max(((volatile GLOBAL float *)&dest.upper) + 2,upper.z());	
       }
 
-      inline void atomic_merge_local(AABB3f &dest) const
+      __forceinline void atomic_merge_local(AABB3f &dest) const
       {
 	atomic_min(((volatile LOCAL float *)&dest.lower) + 0,lower.x());
 	atomic_min(((volatile LOCAL float *)&dest.lower) + 1,lower.y());
@@ -92,7 +94,7 @@ namespace embree
 	atomic_max(((volatile LOCAL float *)&dest.upper) + 2,upper.z());	
       }
       
-      inline AABB3f sub_group_reduce(const cl::sycl::intel::sub_group& sg) const
+      __forceinline AABB3f sub_group_reduce(const cl::sycl::intel::sub_group& sg) const
       {
 	AABB3f result;
 	result.lower.x() = sg.reduce<float>(lower.x(), cl::sycl::intel::minimum<float>());
@@ -104,7 +106,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB3f sub_group_shuffle(const cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
+      __forceinline AABB3f sub_group_shuffle(const cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
       {
 	AABB3f result;
 	result.lower.x() = sg.shuffle<float>(lower.x(),localID);
@@ -116,7 +118,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB3f sub_group_scan_exclusive_min_max(const cl::sycl::intel::sub_group& sg) const
+      __forceinline AABB3f sub_group_scan_exclusive_min_max(const cl::sycl::intel::sub_group& sg) const
       {
 	AABB3f result;
 	result.lower.x() = sg.exclusive_scan<float>(lower.x(), cl::sycl::intel::minimum<float>());
@@ -128,7 +130,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB3f sub_group_scan_inclusive_min_max(const cl::sycl::intel::sub_group& sg) const
+      __forceinline AABB3f sub_group_scan_inclusive_min_max(const cl::sycl::intel::sub_group& sg) const
 	
       {
 	AABB3f result;
@@ -141,7 +143,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB3f work_group_reduce() const
+      __forceinline AABB3f work_group_reduce() const
       {
 	AABB3f result;
 	result.lower.x() = work_group_reduce_min(lower.x());
@@ -153,7 +155,7 @@ namespace embree
 	return result;	
       }
 
-      inline float halfArea() const
+      __forceinline float halfArea() const
       {
 	const float3 d = size();
 	return halfarea(d);
@@ -161,7 +163,7 @@ namespace embree
       
     };
 
-    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB3f& aabb) {
+    __forceinline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB3f& aabb) {
       return out << "lower " << aabb.lower << "  upper " << aabb.upper;
     }
     

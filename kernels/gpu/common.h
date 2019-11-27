@@ -103,32 +103,38 @@ template<typename T>
   return cl::sycl::fma(a,b,c);
 }
 
+
 namespace embree
 {
   namespace gpu
   {
+    template<typename T>
+      __forceinline T lerp(const T &a, const T &b, const float t) {      
+      return cl::sycl::fma(T(1.0f-t),a,T(t)*b);
+    }
+    
       
-    inline float halfarea(const cl::sycl::float3 &d)
+    __forceinline float halfarea(const cl::sycl::float3 &d)
     {
       return cl::sycl::fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
     }
 
-    inline float halfarea(const cl::sycl::float4 &d)
+    __forceinline float halfarea(const cl::sycl::float4 &d)
     {
       return cl::sycl::fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
     }
     
-    inline float area(const cl::sycl::float3 &d)
+    __forceinline float area(const cl::sycl::float3 &d)
     {
       return halfarea(d) * 2.0f;
     }
 
-    inline float area(const cl::sycl::float4 &d)
+    __forceinline float area(const cl::sycl::float4 &d)
     {
       return halfarea(d) * 2.0f;
     }
 
-    inline float dot3(const float3 &a,
+    __forceinline float dot3(const float3 &a,
 		      const float3 &b)
     {
 #if 0
@@ -140,7 +146,7 @@ namespace embree
     }    
     
     template<typename T, cl::sycl::access::address_space space>
-      static inline uint atomic_add(T *dest, const T count=1)
+      static __forceinline uint atomic_add(T *dest, const T count=1)
       {
 	cl::sycl::multi_ptr<T,space> ptr(dest);
 	cl::sycl::atomic<T,space> counter(ptr);
@@ -148,24 +154,24 @@ namespace embree
       }
 
     template<typename T>
-      static inline uint as_uint(T t)
+      static __forceinline uint as_uint(T t)
       {
 	return __builtin_bit_cast(uint,t);
       }
 
     template<typename T>
-      static inline uint as_int(T t)
+      static __forceinline uint as_int(T t)
       {
 	return __builtin_bit_cast(int,t);
       }
     
     template<typename T>
-      static inline float as_float(T t)
+      static __forceinline float as_float(T t)
       {
 	return __builtin_bit_cast(float,t);
       }
 
-    inline uint bitInterleave(const uint4 in)
+    __forceinline uint bitInterleave(const uint4 in)
     {
       uint x = in.x(), y = in.y(), z = in.z();
       x = (x | (x << 16)) & 0x030000FF;
