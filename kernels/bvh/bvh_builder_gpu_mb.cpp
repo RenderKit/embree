@@ -307,9 +307,12 @@ namespace embree
 
 	assert(gpu_node_allocator.load() <= leaf_data_start);
 	assert(gpu_leaf_allocator.load() == numPrimitives);
-	
+
+	scene->gpu_bvh_mb_root = (size_t)bvh_mem;
+
 	PRINT("BVH MB BUILDING DONE");      
-	exit(0);	
+	//exit(0);
+	
 #endif	
 
       }

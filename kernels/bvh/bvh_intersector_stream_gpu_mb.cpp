@@ -46,9 +46,8 @@ namespace embree
       if (bvh->root == BVH::emptyNode) return;
       
 #if defined(EMBREE_DPCPP_SUPPORT)
-      PING;
       gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
-      void *bvh_mem = (void*)(size_t)(bvh->root);
+      void *bvh_mem = (void*)(bvh->scene->gpu_bvh_mb_root);      
       assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );      
       DBG(numRays = 1);      
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
