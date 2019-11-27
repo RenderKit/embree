@@ -126,7 +126,17 @@ namespace embree
     __forceinline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeNMB& node) {
       for (uint i=0;i<BVH_NODE_N;i++)
 	{
-	  out << " i " << i << " offset " << node.offset[i] << " lower_x " << node.lower_x[i] << " upper_x " << node.upper_x[i] << " lower_y " << node.lower_y[i] << " upper_y " << node.upper_y[i] << " lower_z " << node.lower_z[i] << " upper_z " << node.upper_z[i] << cl::sycl::endl;
+	  out << " i " << i
+	      << " offset " << node.offset[i]
+	      << " time (" << node.lower_t[i] << "," << node.upper_t[i] << ") "
+	      << " {("
+	      << node.lower_x[i] << ","
+	      << node.lower_y[i] << ","
+	      << node.lower_z[i] << "),("
+	      << node.upper_x[i] << ","
+	      << node.upper_y[i] << ","
+	      << node.upper_z[i]
+	      << ")}" << cl::sycl::endl;
 	}      
       return out; 
     }    
@@ -265,12 +275,15 @@ namespace embree
       for (uint i=0;i<BVH_NODE_N;i++)
 	{
 	  out << " offset  " << node.offset[i]
-	      << " lower_x " << (int)node.bounds_x[i].lower
-	      << " upper_x " << (int)node.bounds_x[i].upper
-	      << " lower_y " << (int)node.bounds_y[i].lower
-	      << " upper_y " << (int)node.bounds_y[i].upper
-	      << " lower_z " << (int)node.bounds_z[i].lower
-	      << " upper_z " << (int)node.bounds_z[i].upper
+	      << " {("
+	      << (int)node.bounds_x[i].lower << ","
+	      << (int)node.bounds_y[i].lower << ","
+	      << (int)node.bounds_z[i].lower
+	      << "),("
+	      << (int)node.bounds_x[i].upper << ","
+	      << (int)node.bounds_y[i].upper << ","
+	      << (int)node.bounds_z[i].upper
+	      <<  ")}"	    
 	      << cl::sycl::endl;
 	}      
       return out; 

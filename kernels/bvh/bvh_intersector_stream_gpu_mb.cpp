@@ -16,7 +16,11 @@
 
 #include "bvh_intersector_gpu.h"
 
-#define DBG(x)
+#define DBG(x) x
+
+#define DBG_PRINT_BUFFER_SIZE 1024*1024
+//#define DBG_PRINT_BUFFER_SIZE 0
+#define DBG_PRINT_LINE_SIZE 512
 
 namespace embree
 {  
@@ -59,6 +63,8 @@ namespace embree
       
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
+
+	    cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);	    
 	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(wg_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
 	    
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
@@ -66,8 +72,11 @@ namespace embree
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		{
 		  uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
-		  if (m_activeLanes == 0xffff)
-		    traceRayBVH16<gpu::QBVHNodeNMB,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
+		  gpu::QBVHNodeNMB *node = (gpu::QBVHNodeNMB*)((size_t)bvh_mem+sizeof(gpu::BVHBase));
+		  if (globalID == 0)
+		    out << *node << cl::sycl::endl;
+		  //if (m_activeLanes == 0xffff)
+		  //  traceRayBVH16<gpu::QBVHNodeNMB,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
 		}
 		
 	      });		  
