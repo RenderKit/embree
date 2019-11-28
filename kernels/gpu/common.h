@@ -91,23 +91,22 @@ using cl::sycl::ushort2;
 using cl::sycl::fmax;
 using cl::sycl::fmin;
 
-template<typename T, typename M>
-  inline T cselect(const M &mask, const T &a, const T &b)
-{
-  return cl::sycl::select(b,a,mask);
-}
-
-template<typename T>
-  inline T cfma(const T &a, const T &b, const T &c)
-{
-  return cl::sycl::fma(a,b,c);
-}
-
-
 namespace embree
 {
   namespace gpu
   {
+    template<typename T, typename M>
+      __forceinline T cselect(const M &mask, const T &a, const T &b)
+    {
+      return cl::sycl::select(b,a,mask);
+    }
+
+    template<typename T>
+      __forceinline T cfma(const T &a, const T &b, const T &c)
+      {
+	return cl::sycl::fma(a,b,c);
+      }
+    
     template<typename T>
       __forceinline T lerp(const T &a, const T &b, const float t) {      
       return cl::sycl::fma(T(1.0f-t),a,T(t)*b);

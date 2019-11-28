@@ -128,7 +128,7 @@ namespace embree
 
     /* cannot handle masked control flow yet */
     uint m_activeLanes = m_active;
-    m_activeLanes = cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
+    m_activeLanes = gpu::cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
 
     const float3 org16   = ray.org();
     const float3 dir16   = ray.dir();
@@ -150,8 +150,8 @@ namespace embree
 	float tfar        = sg.broadcast<float>(tfar16 ,rayID);
 	float hit_tfar    = tfar;
 	        
-	const uint3 dir_mask = cselect(dir >= 0.0f,uint3(0),uint3(1));
-	const float3 new_dir = cselect(dir != 0.0f, dir, float3(1E-18f));
+	const uint3 dir_mask = gpu::cselect(dir >= 0.0f,uint3(0),uint3(1));
+	const float3 new_dir = gpu::cselect(dir != 0.0f, dir, float3(1E-18f));
 	const float3 inv_dir = cl::sycl::native::recip(new_dir);
 	const float3 inv_dir_org = -inv_dir * org; 
             
@@ -194,7 +194,7 @@ namespace embree
 
 	    const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
 	    TSTATS(tstats->isteps_inc());	  
-	    hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, tnear, hit_tfar, local_hit, subgroupLocalID);
+	    hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, time, tnear, hit_tfar, local_hit, subgroupLocalID);
 
 	    /* update tfar */
 	    tfar = sg.reduce<float>(hit_tfar, cl::sycl::intel::minimum<float>());

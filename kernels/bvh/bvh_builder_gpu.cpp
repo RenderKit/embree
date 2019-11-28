@@ -302,7 +302,7 @@ namespace embree
 #if 1
 	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
 	    const uint sortID = gpu::as_uint(_sortID);
-	    const uint numPrimsIDs = cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
+	    const uint numPrimsIDs = gpu::cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
 	    const uint IDs = gpu::sortBVHChildrenIDs(subgroup,numPrimsIDs) & (BVH_NODE_N-1);
 #else	    
 	    const uint IDs = subgroupLocalID; 
@@ -642,7 +642,7 @@ namespace embree
 	    /* sort children based on size */
 	    const float _sortID = childrenAABB[subgroupLocalID].upper.w();
 	    const uint sortID = gpu::as_uint(_sortID);
-	    const uint numPrimsIDs = cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
+	    const uint numPrimsIDs = gpu::cselect((int)(subgroupLocalID < numChildren), (sortID << BVH_NODE_N_LOG) | subgroupLocalID, (uint)0);
 	    const uint IDs = gpu::sortBVHChildrenIDs(subgroup,numPrimsIDs) & (BVH_NODE_N-1);
 	    /* update parent pointer*/
 

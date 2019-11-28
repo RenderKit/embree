@@ -112,8 +112,9 @@ namespace embree
 				      const uint numQuads,
 				      const float3 &org,
 				      const float3 &dir,
-				      const float &tnear,
-				      const float &tfar,
+				      const float time,
+				      const float tnear,
+				      const float tfar,
 				      gpu::RTCHitGPU &hit,
 				      const unsigned int slotID)
     {
@@ -171,8 +172,9 @@ namespace embree
 				      const uint numTris,
 				      const float3 &org,
 				      const float3 &dir,
-				      const float &tnear,
-				      const float &tfar,
+				      const float time,
+				      const float tnear,
+				      const float tfar,
 				      gpu::RTCHitGPU &hit,
 				      const unsigned int slotID)
     {
@@ -235,19 +237,30 @@ namespace embree
 				      const uint numTris,
 				      const float3 &org,
 				      const float3 &dir,
-				      const float &tnear,
-				      const float &tfar,
+				      const float time,
+				      const float tnear,
+				      const float tfar,
 				      gpu::RTCHitGPU &hit,
 				      const unsigned int slotID)
     {
       float new_tfar = tfar;
       if (slotID < numTris)
 	{
-	  const float4 _v0 = tri1v[slotID].v0;
-	  const float4 _v1 = tri1v[slotID].v1;
-	  const float4 _v2 = tri1v[slotID].v2;
-	  const uint geomID = gpu::as_uint(_v1.w());
-	  const uint primID = gpu::as_uint(_v2.w());	  	  	  
+	  const float4 time0_v0 = tri1v[slotID].v0;
+	  const float4 time0_v1 = tri1v[slotID].v1;
+	  const float4 time0_v2 = tri1v[slotID].v2;
+
+	  const uint geomID = gpu::as_uint(time0_v1.w());
+	  const uint primID = gpu::as_uint(time0_v2.w());	  	  	  
+	  
+	  const float4 time1_v0 = tri1v[slotID].d0;
+	  const float4 time1_v1 = tri1v[slotID].d1;
+	  const float4 time1_v2 = tri1v[slotID].d2;
+
+	  const float4 _v0 = cl::sycl::fma(time1_v0,float4(time),time0_v0);
+	  const float4 _v1 = cl::sycl::fma(time1_v1,float4(time),time0_v1);
+	  const float4 _v2 = cl::sycl::fma(time1_v2,float4(time),time0_v2);	  
+	  
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();
 	  const float3 v2 = _v2.xyz();
@@ -288,12 +301,14 @@ namespace embree
 				      const uint numTris,
 				      const float3 &org,
 				      const float3 &dir,
-				      const float &tnear,
-				      const float &tfar,
+				      const float time,
+				      const float tnear,
+				      const float tfar,
 				      gpu::RTCHitGPU &hit,
 				      const unsigned int slotID)
     {
       float new_tfar = tfar;
+      /* not yet implemented */
       return new_tfar;
     }
     

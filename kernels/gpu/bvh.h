@@ -337,13 +337,13 @@ namespace embree
 #if 0
       const uint subgroupLocalID = sg.get_local_id()[0];      
       const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);	      
-      uint  offset          = node.offset[subgroupLocalID];	      	      
+      const uint  offset          = node.offset[subgroupLocalID];	      	      
       const float3 org      = node.org.xyz();
       const float3 scale    = node.scale.xyz();
 #else
       cl::sycl::multi_ptr<uint,cl::sycl::access::address_space::global_space> node_ptr((uint*)&node);
       const uint2 block0 = sg.load<2,uint>(node_ptr);
-      uint offset = (uint)block0.x();
+      const uint offset = (uint)block0.x();
       const float3 org(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 0)),
 		       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 1)),
 		       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 2)));
@@ -395,7 +395,10 @@ namespace embree
 						     const float tfar)
     {
       const uint subgroupLocalID = sg.get_local_id()[0];      
-      uint  offset = node.offset[subgroupLocalID];	      	      
+      const uint  offset = node.offset[subgroupLocalID];
+      const float time0 = node.lower_t[subgroupLocalID];
+      const float time1 = node.upper_t[subgroupLocalID];
+      
       const float3 lower0(node.lower_x[subgroupLocalID],node.lower_y[subgroupLocalID],node.lower_z[subgroupLocalID]);
       const float3 upper0(node.upper_x[subgroupLocalID],node.upper_y[subgroupLocalID],node.upper_z[subgroupLocalID]);
       const float3 lower1(node.lower_dx[subgroupLocalID],node.lower_dy[subgroupLocalID],node.lower_dz[subgroupLocalID]);
@@ -432,7 +435,7 @@ namespace embree
 
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
-      const uint valid = (fnear <= ffar) & (offset != -1); //((uchar)ilower.x() <= (uchar)iupper.x());	       
+      const uint valid = (fnear <= ffar) & (offset != -1) & (time0 <= time) & (time < time1);
       return NodeIntersectionData(fnear, valid, offset);
     }
     
