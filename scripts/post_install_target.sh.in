@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# get last argument to bash script
+for i; do :; done
+
+echo signing $i ...
+@EMBREE_SIGN_FILE@ -o runtime -e @CMAKE_CURRENT_SOURCE_DIR@/common/cmake/embree.entitlements $i
