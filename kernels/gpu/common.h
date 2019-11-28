@@ -134,14 +134,9 @@ namespace embree
     }
 
     __forceinline float dot3(const float3 &a,
-		      const float3 &b)
+			     const float3 &b)
     {
-#if 0
-      // this is currently broken
       return cl::sycl::dot(a,b);
-#else      
-      return a.x()*b.x() + a.y()*b.y() + a.z()*b.z();
-#endif      
     }    
     
     template<typename T, cl::sycl::access::address_space space>
