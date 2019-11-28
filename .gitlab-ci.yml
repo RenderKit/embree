@@ -513,7 +513,7 @@ release-macosx-x64-Release-ICC2019.4-ISPC1.9.2-TBB2019.9-PACKAGE-ZIP:
   only:   [web]
   artifacts:
     name: "$CI_JOB_NAME"
-    paths: [build/*.tar.gz]
+    paths: [build/*.zip]
     when:  always
     expire_in: 2 mos
 
