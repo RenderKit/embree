@@ -23,7 +23,6 @@
 #endif
 
 #define STACK_CULLING 1
-#define DBG_GPU_TRAV(x) 
 #define TSTATS(x) 
 
 namespace embree
@@ -126,7 +125,6 @@ namespace embree
     gpu::RTCHitGPU local_hit;
 
     const uint subgroupLocalID  = sg.get_local_id()[0];
-    DBG_GPU_TRAV(const uint subgroupSize = sg.get_local_range().size());
 
     /* cannot handle masked control flow yet */
     uint m_activeLanes = m_active;
@@ -136,6 +134,7 @@ namespace embree
     const float3 dir16   = ray.dir();
     const float  tnear16 = ray.tnear;      
     const float  tfar16  = ray.tfar;
+    const float  time16  = ray.time;
 #pragma nounroll      
     while(m_activeLanes)
       {
@@ -145,9 +144,10 @@ namespace embree
 	local_hit.init();	  
 	const float3 org(sg.broadcast<float>(org16.x(),rayID),sg.broadcast<float>(org16.y(),rayID),sg.broadcast<float>(org16.z(),rayID));	  
 	const float3 dir(sg.broadcast<float>(dir16.x(),rayID),sg.broadcast<float>(dir16.y(),rayID),sg.broadcast<float>(dir16.z(),rayID));	  
-            
+
+	const float time  = sg.broadcast<float>(time16 ,rayID);
 	const float tnear = sg.broadcast<float>(tnear16,rayID);
-	float tfar        = sg.broadcast<float>(tfar16,rayID);
+	float tfar        = sg.broadcast<float>(tfar16 ,rayID);
 	float hit_tfar    = tfar;
 	        
 	const uint3 dir_mask = cselect(dir >= 0.0f,uint3(0),uint3(1));
@@ -181,7 +181,7 @@ namespace embree
 	      {
 		TSTATS(tstats->tsteps_inc());	      
 		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);
-		const gpu::NodeIntersectionData isec = intersectNode(sg,node,dir_mask,inv_dir,inv_dir_org,tnear,tfar);
+		const gpu::NodeIntersectionData isec = intersectNode(sg,node,dir_mask,inv_dir,inv_dir_org,time,tnear,tfar);
 		getClosestChildNode(sg,isec,cur,sindex,tfar,stack_offset,stack_dist);
 	      }
 
@@ -199,12 +199,6 @@ namespace embree
 	    /* update tfar */
 	    tfar = sg.reduce<float>(hit_tfar, cl::sycl::intel::minimum<float>());
 	  }
-
-	DBG_GPU_TRAV(
-	    for (uint i=0;i<subgroupSize;i++)
-	      if (i == subgroupLocalID)
-		out << "i " << i << " local_hit " << local_hit << " tfar " << tfar << " hit_tfar " << hit_tfar << cl::sycl::endl;
-	    );
 
 	/* select hit with shortest intersection distance */
       

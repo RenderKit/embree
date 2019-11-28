@@ -183,7 +183,7 @@ namespace embree
 	  const float4 _v1 = tri1v[slotID].v1;
 	  const float4 _v2 = tri1v[slotID].v2;
 	  const uint geomID = gpu::as_uint(_v1.w());
-	  const uint primID = gpu::as_uint(_v2.w());	  	  	  
+	  const uint primID = gpu::as_uint(_v2.w());
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();
 	  const float3 v2 = _v2.xyz();
@@ -211,9 +211,7 @@ namespace embree
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;
-	      hit.geomID = geomID;
-
-	      
+	      hit.geomID = geomID;	      
 	    }	  
 	}
       return new_tfar;
