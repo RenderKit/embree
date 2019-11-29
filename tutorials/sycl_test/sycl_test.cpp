@@ -99,51 +99,6 @@ struct parallel_for_sycl_buffer_test : public Test
   }
 };
 
-struct parallel_for_sycl_buffer_test_fail : public Test
-{
-  parallel_for_sycl_buffer_test_fail ()
-    : Test("parallel_for_sycl_buffer_test_fail") {}
-  
-  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
-  {
-    std::vector<int> h_a(1000);
-    std::vector<int> h_b(1000);
-    std::vector<int> h_c(1000);
-    
-    for (int i=0; i<1000; i++) {
-      h_a[i] = i;
-      h_b[i] = i+5;
-      h_c[i] = 0;
-    }
-    
-    {
-      cl::sycl::buffer<int> d_a(h_a);
-      cl::sycl::buffer<int> d_b(h_b);
-      cl::sycl::buffer<int> d_c(h_c);
-      
-      myQueue.submit([&](cl::sycl::handler& cgh) {
-          auto a = d_a.get_access<cl::sycl::access::mode::read>();
-          auto b = d_b.get_access<cl::sycl::access::mode::read>();
-          auto c = d_c.get_access<cl::sycl::access::mode::write>();
-          cgh.parallel_for<class test>(cl::sycl::range<1>(1000), [=](cl::sycl::id<1> item) {
-              int i = item.get(0);
-              c[i] = a[i] + b[i];
-            });
-        });
-      
-      myQueue.wait_and_throw();
-    }
-    
-    for (int i=0; i<1000; i++)
-    {
-      if (h_a[i]+h_b[i] != h_c[i])
-        return false;
-    }
-    
-    return true;
-  }
-};
-
 struct parallel_for_sycl_aligned_alloc_test : public Test
 {
   parallel_for_sycl_aligned_alloc_test ()
@@ -409,7 +364,6 @@ int main()
   /* create all tests */
   std::vector<std::unique_ptr<Test>> tests;
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_buffer_test()));
-  tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_buffer_test_fail()));
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_aligned_alloc_test()));
   tests.push_back(std::unique_ptr<Test>(new subgroup_test()));
   //tests.push_back(std::unique_ptr<Test>(new function_pointer_test()));
