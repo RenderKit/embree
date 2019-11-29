@@ -316,7 +316,6 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_LIBDIR=lib")
       conf.append("-D CMAKE_INSTALL_DOCDIR=../../Applications/Embree3/doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=../../Applications/Embree3/bin")
-      conf.append("-D EMBREE_TBB_ROOT=/opt/local")
     elif OS == "windows" and config["package"] == "ZIP":
       conf.append("-D EMBREE_SIGN_FILE=\\\\vis-nassie.an.intel.com\\NAS\\packages\\apps\\signfile\\windows\\SignFile.exe")
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")

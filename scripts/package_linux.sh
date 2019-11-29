@@ -48,7 +48,8 @@ EMBREE_SIGN_FILE=$5
 
 # create package
 make -j 16 preinstall
-check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBC 2 4 0
+#check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBC 2 4 0
+check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBC 2 14 0    # GCC 4.8
 check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBCXX 3 4 11
 check_symbols lib${EMBREE_LIBRARY_NAME}.so CXXABI 1 3 0
 make -j 16 package

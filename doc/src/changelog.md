@@ -19,6 +19,7 @@ Version History
     to lazily build geometry. When TBB is used this causes a much lower overhead
     than using rtcJoinCommitScene.
 -   Updated to TBB 2019.9 for release builds.
+-   Added macOS Catalina support to Embree releases.
 
 ### New Features in Embree 3.6.1
 -   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
