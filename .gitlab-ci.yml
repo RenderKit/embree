@@ -63,7 +63,7 @@ continuous-linux-skx-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX512SKX-TBB2019.9
 
 continuous-linux-x64-RelWithDebInfo-CLANG5.0.0-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
   image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5.0.0 ispc:ispc1.9.2 isa:AVX2 tasking:INT intensity:1 addrsanitizer:ON"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5.0.0 ispc:ispc1.9.2 isa:AVX tasking:INT intensity:1 addrsanitizer:ON"
   tags:   [docker]
   only:   [pushes]
 
@@ -199,7 +199,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.9.2-AVX-TBB2019.9-VALGRIND:
 
 nightly-linux-x64-RelWithDebInfo-CLANG5.0.0-ISPC1.9.2-AVX2-INT-ADDRSANITIZER:
   image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5.0.0 ispc:ispc1.9.2 isa:AVX2 tasking:INT intensity:2 addrsanitizer:ON"
+  script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG5.0.0 ispc:ispc1.9.2 isa:AVX tasking:INT intensity:2 addrsanitizer:ON"
   tags:   [docker]
   only:   [schedules]
 

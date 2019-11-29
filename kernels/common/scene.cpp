@@ -656,6 +656,11 @@ namespace embree
 
   void Scene::commit_task ()
   {
+    checkIfModifiedAndSet ();
+    if (!isModified()) {
+      return;
+    }
+    
     /* print scene statistics */
     if (device->verbosity(2))
       printStatistics();
@@ -673,6 +678,7 @@ namespace embree
           {
             geometries[i]->preCommit();
             geometries[i]->addElementsToCount (c);
+            c.numFilterFunctions += (int) geometries[i]->hasFilterFunctions();
           }
         }
         return c;
@@ -794,13 +800,6 @@ namespace embree
       return;
     }
 
-    /* fast path for unchanged scenes */
-    checkIfModifiedAndSet ();
-    if (!isModified()) {
-      scheduler->spawn_root([&]() { Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
-      return;
-    }
-
     /* initiate build */
     try {
       scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
@@ -854,12 +853,7 @@ namespace embree
       
       buildMutex.unlock();
       return;
-    }
-
-    checkIfModifiedAndSet ();
-    if (!isModified()) {
-      return;
-    }
+    }   
 
     /* for best performance set FTZ and DAZ flags in the MXCSR control and status register */
     const unsigned int mxcsr = _mm_getcsr();

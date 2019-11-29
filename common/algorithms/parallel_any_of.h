@@ -16,33 +16,41 @@
 
 #pragma once
 
-#include "../sys/platform.h"
-#include "../sys/intrinsics.h"
-#include "../sys/alloc.h"
-#include "../math/constants.h"
-#include "varying.h"
+#include <functional>
+#include "parallel_reduce.h"
 
-namespace embree 
+namespace embree
 {
-#if defined(__SSE4_1__)
-  __forceinline __m128 blendv_ps(__m128 f, __m128 t, __m128 mask) { 
-    return _mm_blendv_ps(f,t,mask);
-  }
+
+    template<typename Index, class UnaryPredicate>
+    __forceinline bool parallel_any_of (Index first, Index last, UnaryPredicate pred)
+    {
+        bool ret = false;
+
+#if defined(TASKING_TBB)
+        tbb::parallel_for(tbb::blocked_range<size_t>{first, last}, [&ret,pred](const tbb::blocked_range<size_t>& r) {
+            if (tbb::task::self().is_cancelled()) return;
+            for (size_t i = r.begin(); i != r.end(); ++i) {
+                if (pred(i)) {
+                    ret = true;
+                    tbb::task::self().cancel_group_execution();
+                }
+            }
+        });
 #else
-  __forceinline __m128 blendv_ps(__m128 f, __m128 t, __m128 mask) { 
-    return _mm_or_ps(_mm_and_ps(mask, t), _mm_andnot_ps(mask, f)); 
-  }
+        ret = parallel_reduce (first, last, false, 
+            [pred](const range<size_t>& r)->bool {
+                bool localret = false;
+                for (auto i=r.begin(); i<r.end(); ++i) {
+                    localret |= pred(i);
+                }
+                return localret;
+            },
+            std::bit_or<bool>()
+        );
 #endif
 
-  extern const __m128  mm_lookupmask_ps[16];
-  extern const __m128d mm_lookupmask_pd[4];
-}
+        return ret;
+    }
 
-#if defined(__AVX512VL__)
-#include "vboolf4_avx512.h"
-#else
-#include "vboolf4_sse2.h"
-#endif
-#include "vint4_sse2.h"
-#include "vuint4_sse2.h"
-#include "vfloat4_sse2.h"
+} // end namespace

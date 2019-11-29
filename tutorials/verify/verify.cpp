@@ -23,6 +23,7 @@
 #include "../../common/algorithms/parallel_for.h"
 #include "../../kernels/common/context.h"
 #include "../../kernels/common/geometry.h"
+#include "../../kernels/common/scene.h"
 #include <regex>
 #include <stack>
 
@@ -295,11 +296,11 @@ namespace embree
 
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
         rtcSetGeometryInstancedScene(geom, exemplar);
-        rtcSetGeometryTimeStepCount(geom, mesh->spaces.size());
+        rtcSetGeometryTimeStepCount(geom, (unsigned) mesh->spaces.size());
         for (size_t i = 0; i < mesh->spaces.size(); ++i)
         {
           rtcSetGeometryTransform(geom,
-                                  i,
+                                  (unsigned)i,
                                   RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
                                   reinterpret_cast<float*>(&mesh->spaces[i]));
         }
@@ -3526,9 +3527,9 @@ namespace embree
       Triangle* triangles = (Triangle*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3, sizeof(Triangle), 32);
       for (int i = 0; i < 32; ++i) {
         float xi = random_float();
-        vertices[3*i+0] = Vec3f(0.0f,          0.0f,          i);
-        vertices[3*i+1] = Vec3f(1.0f + 5.f*xi, 0.0f,          i);
-        vertices[3*i+2] = Vec3f(0.0f,          1.0f + 5.f*xi, i);
+        vertices[3*i+0] = Vec3f(0.0f,          0.0f,          (float)i);
+        vertices[3*i+1] = Vec3f(1.0f + 5.f*xi, 0.0f,          (float)i);
+        vertices[3*i+2] = Vec3f(0.0f,          1.0f + 5.f*xi, (float)i);
         triangles[i] = Triangle(3*i+0, 3*i+1, 3*i+2);
       };
 
@@ -3761,81 +3762,81 @@ namespace embree
       auto geometry = (Geometry *) geom0;
 
       // test construction
-      if (geometry->state != Geometry::State::MODIFIED) {
+      if (geometry->state != (unsigned)Geometry::State::MODIFIED) {
         return VerifyApplication::FAILED;
       }
 
       // test setModified
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->setModified ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
       geometry->setModified ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
-      geometry->state = Geometry::State::MODIFIED;
-      if (geometry->state != Geometry::State::MODIFIED) {
+      geometry->state = (unsigned)Geometry::State::MODIFIED;
+      if (geometry->state != (unsigned)Geometry::State::MODIFIED) {
         return VerifyApplication::FAILED;
       }
 
       // test isModified
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::BUILD;
       if (geometry->isModified ()) {
         return VerifyApplication::FAILED;
       }
-      geometry->state = Geometry::State::MODIFIED;
+      geometry->state = (unsigned)Geometry::State::MODIFIED;
       if (!geometry->isModified ()) {
         return VerifyApplication::FAILED;
       }
-      geometry->state = Geometry::State::COMMITTED;
+      geometry->state = (unsigned)Geometry::State::COMMITTED;
       if (!geometry->isModified ()) {
         return VerifyApplication::FAILED;
       }
 
       //test update
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->update();
-      if (geometry->state != Geometry::State::MODIFIED) {
+      if (geometry->state != (unsigned)Geometry::State::MODIFIED) {
         return VerifyApplication::FAILED;
       }
 
       //test commit
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->commit();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
 
       // test postCommit
-      geometry->state = Geometry::State::COMMITTED;
+      geometry->state = (unsigned)Geometry::State::COMMITTED;
       geometry->enabled = false;
       geometry->postCommit ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
       geometry->enabled = true;
       geometry->postCommit ();
-      if (geometry->state != Geometry::State::BUILD) {
+      if (geometry->state != (unsigned)Geometry::State::BUILD) {
         return VerifyApplication::FAILED;
       }
 
       // test disable
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->enabled = false;
       geometry->disable ();
-      if (geometry->state != Geometry::State::BUILD) {
+      if (geometry->state != (unsigned)Geometry::State::BUILD) {
         return VerifyApplication::FAILED;
       }
       if (geometry->isEnabled ()) {
         return VerifyApplication::FAILED;
       }
 
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->enabled = true;
       geometry->disable ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
       if (geometry->isEnabled ()) {
@@ -3843,20 +3844,20 @@ namespace embree
       }
 
       // test enable
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->enabled = true;
       geometry->enable ();
-      if (geometry->state != Geometry::State::BUILD) {
+      if (geometry->state != (unsigned)Geometry::State::BUILD) {
         return VerifyApplication::FAILED;
       }
       if (!geometry->isEnabled ()) {
         return VerifyApplication::FAILED;
       }
 
-      geometry->state = Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->enabled = false;
       geometry->enable ();
-      if (geometry->state != Geometry::State::COMMITTED) {
+      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
       if (!geometry->isEnabled ()) {
@@ -3868,6 +3869,89 @@ namespace embree
 
       return VerifyApplication::PASSED;
     }
+  };
+
+  struct SceneCheckModifiedGeometryTest : public VerifyApplication::Test
+  {
+	  struct TestScene : public Scene {
+		  __forceinline void checkIfModifiedAndSet() {
+			  return Scene::checkIfModifiedAndSet();
+		  }
+	  };
+
+	  SceneCheckModifiedGeometryTest (std::string name, int isa) 
+		: VerifyApplication::Test(name, isa, VerifyApplication::TEST_SHOULD_PASS)
+	  {}
+
+	  VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+	  {
+		  std::string cfg = state->rtcore + ",isa=" + stringOfISA(isa);
+		  RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+		  errorHandler(nullptr, rtcGetDeviceError(device));
+
+		  RTCSceneRef scene = rtcNewScene(device);
+		  AssertNoError(device);
+
+		  RTCGeometry geom0 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+		  AssertNoError(device);
+		  RTCGeometry geom1 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+		  AssertNoError(device);
+		  RTCGeometry geom2 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+		  AssertNoError(device);
+		  RTCGeometry geom3 = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+		  AssertNoError(device);
+
+		  rtcAttachGeometry(scene, geom0);
+		  rtcAttachGeometry(scene, geom1);
+		  rtcAttachGeometry(scene, geom2);
+		  rtcAttachGeometry(scene, geom3);
+
+		  auto scene0 = (TestScene*)scene.scene;
+		  auto geometry0 = (Geometry*) geom0;
+		  auto geometry1 = (Geometry*) geom1;
+		  auto geometry2 = (Geometry*) geom2;
+		  auto geometry3 = (Geometry*) geom3;
+
+		  scene0->setModified();
+		  scene0->checkIfModifiedAndSet();
+		  if (!scene0->isModified()) {
+			  return VerifyApplication::FAILED;
+		  }
+
+		  scene0->setModified(false);
+		  geometry0->enable();
+		  geometry1->enable();
+		  geometry2->enable();
+		  geometry3->enable();
+		  geometry0->state = (unsigned)Geometry::State::BUILD;
+		  geometry1->state = (unsigned)Geometry::State::BUILD;
+		  geometry2->state = (unsigned)Geometry::State::BUILD;
+		  geometry3->state = (unsigned)Geometry::State::BUILD;
+		  scene0->checkIfModifiedAndSet();
+		  if (scene0->isModified()) {
+			  return VerifyApplication::FAILED;
+		  }
+
+		  geometry0->state = (unsigned)Geometry::State::BUILD;
+		  geometry1->state = (unsigned)Geometry::State::BUILD;
+		  geometry2->state = (unsigned)Geometry::State::MODIFIED;
+		  geometry3->state = (unsigned)Geometry::State::BUILD;
+		  scene0->checkIfModifiedAndSet();
+		  if (!scene0->isModified()) {
+			  return VerifyApplication::FAILED;
+		  }
+
+		  rtcReleaseGeometry(geom0);
+		  AssertNoError(device);
+		  rtcReleaseGeometry(geom1);
+		  AssertNoError(device);
+		  rtcReleaseGeometry(geom2);
+		  AssertNoError(device);
+		  rtcReleaseGeometry(geom3);
+		  AssertNoError(device);
+
+		  return VerifyApplication::PASSED;
+	  }
   };
 
   /////////////////////////////////////////////////////////////////////////////////
@@ -5480,6 +5564,7 @@ namespace embree
       /**************************************************************************/
 
       groups.top()->add(new GeometryStateTest("geometry_state_tests", isa));
+	  groups.top()->add(new SceneCheckModifiedGeometryTest("scene_modified_geometry_tests", isa));
 
       
       /**************************************************************************/

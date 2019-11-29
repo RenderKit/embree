@@ -318,7 +318,7 @@ namespace embree {
   BarrierSys barrier;
   volatile bool term = false;
   
-  void perform_work(int threadID)
+  void perform_work(size_t threadID)
   {
     setAffinity(threadID); 
     while (true) {
