@@ -203,9 +203,9 @@ struct function_pointer_test : public Test
 
   bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
-    std::vector<int> A(size, 1);
-    std::vector<int> B(size, 2);
-    std::vector<int> C(size, 0);
+    std::vector<int> A(size);
+    std::vector<int> B(size);
+    std::vector<int> C(size);
 
     std::generate(A.begin(), A.end(), std::rand);
     std::generate(B.begin(), B.end(), std::rand);
@@ -252,9 +252,13 @@ struct function_pointer_take_address_on_device_test : public Test
   
     for (int Mode = 0; Mode < 2; ++Mode)
     {
-      std::vector<int> A(size, 1);
-      std::vector<int> B(size, 2);
-      std::vector<int> C(size, 0);
+      std::vector<int> A(size);
+      std::vector<int> B(size);
+      std::vector<int> C(size);
+
+      std::generate(A.begin(), A.end(), std::rand);
+      std::generate(B.begin(), B.end(), std::rand);
+      std::generate(C.begin(), C.end(), std::rand);
       
       cl::sycl::buffer<int> bufA(A.data(), cl::sycl::range<1>(size));
       cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
@@ -310,9 +314,13 @@ struct function_pointer_take_address_on_device_array_test : public Test
     
     for (int Mode = 0; Mode < 2; ++Mode)
     {
-      std::vector<int> A(size, 1);
-      std::vector<int> B(size, 2);
-      std::vector<int> C(size, 0);
+      std::vector<int> A(size);
+      std::vector<int> B(size);
+      std::vector<int> C(size);
+
+      std::generate(A.begin(), A.end(), std::rand);
+      std::generate(B.begin(), B.end(), std::rand);
+      std::generate(C.begin(), C.end(), std::rand);
       
       cl::sycl::buffer<int> bufA(A.data(), cl::sycl::range<1>(size));
       cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
