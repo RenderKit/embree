@@ -6,19 +6,19 @@
 class NEOGPUDeviceSelector : public cl::sycl::device_selector
 {
 public:
-  int operator()(const cl::sycl::device &Device) const override {
+  int operator()(const cl::sycl::device& device) const override {
     using namespace cl::sycl::info;
     
-    const std::string DeviceName = Device.get_info<device::name>();
-    const std::string DeviceVendor = Device.get_info<device::vendor>();      
-    return Device.is_gpu() && DeviceName.find("HD Graphics NEO") ? 1 : -1;
+    const std::string deviceName = device.get_info<device::name>();
+    const std::string deviceVendor = device.get_info<device::vendor>();      
+    return device.is_gpu() && deviceName.find("HD Graphics NEO") ? 1 : -1;
   }
 };
 
 class CPUDeviceSelector : public cl::sycl::device_selector {
   public:
-  int operator()(const cl::sycl::device &Device) const override {
-    return Device.is_cpu() ? 1 : -1;
+  int operator()(const cl::sycl::device& device) const override {
+    return device.is_cpu() ? 1 : -1;
   }
 };
 
@@ -41,12 +41,12 @@ struct Test
 
   virtual ~Test() {}
 
-  virtual bool run(cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue) = 0;
+  virtual bool run(cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue) = 0;
 
-  void invoke(cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  void invoke(cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
     std::cout << name << ": " << std::flush;
-    bool passed = run(myDevice,myContext,myQueue);
+    bool passed = run(device,context,queue);
     if (passed) std::cout << " [PASSED]" << std::endl;
     else        std::cout << " [FAILED]" << std::endl;
   }
@@ -61,7 +61,7 @@ struct parallel_for_sycl_buffer_test : public Test
   parallel_for_sycl_buffer_test ()
     : Test("parallel_for_sycl_buffer_test") {}
   
-  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
     std::vector<int> h_a(size);
     std::vector<int> h_b(size);
@@ -78,7 +78,7 @@ struct parallel_for_sycl_buffer_test : public Test
       cl::sycl::buffer<int> d_b(h_b);
       cl::sycl::buffer<int> d_c(h_c);
       
-      myQueue.submit([&](cl::sycl::handler& cgh) {
+      queue.submit([&](cl::sycl::handler& cgh) {
           auto a = d_a.get_access<cl::sycl::access::mode::read>(cgh);
           auto b = d_b.get_access<cl::sycl::access::mode::read>(cgh);
           auto c = d_c.get_access<cl::sycl::access::mode::write>(cgh);
@@ -88,7 +88,7 @@ struct parallel_for_sycl_buffer_test : public Test
             });
         });
 
-      myQueue.wait_and_throw();
+      queue.wait_and_throw();
     }
     
     for (int i=0; i<size; i++)
@@ -108,11 +108,11 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
   parallel_for_sycl_aligned_alloc_test ()
     : Test("parallel_for_sycl_aligned_alloc_test") {}
   
-  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
-    int* a = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* a = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
+    int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
+    int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
 
     for (int i=0; i<size; i++) {
       a[i] = i;
@@ -121,13 +121,13 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
     }
     
     {
-      myQueue.submit([&](cl::sycl::handler& cgh) {
+      queue.submit([&](cl::sycl::handler& cgh) {
           cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
               int i = item.get(0);
               c[i] = a[i] + b[i];
             });
         });
-      myQueue.wait_and_throw();
+      queue.wait_and_throw();
     }
     
     for (int i=0; i<size; i++)
@@ -136,9 +136,9 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
         return false;
     }
 
-    cl::sycl::free(a, myContext);
-    cl::sycl::free(b, myContext);
-    cl::sycl::free(c, myContext);
+    cl::sycl::free(a, context);
+    cl::sycl::free(b, context);
+    cl::sycl::free(c, context);
     
     return true;
   }
@@ -158,11 +158,11 @@ struct subgroup_test : public Test
     c[i] = a[i] + b[i];
   }
                                                                               
-  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
-    int* a = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* a = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
+    int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
+    int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
 
     for (int i=0; i<size; i++) {
       a[i] = i;
@@ -171,7 +171,7 @@ struct subgroup_test : public Test
     }
     
     {
-      myQueue.submit([&](cl::sycl::handler &cgh) {
+      queue.submit([&](cl::sycl::handler &cgh) {
           
           const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(256 * 16), cl::sycl::range<1>(16));
 		  
@@ -182,7 +182,7 @@ struct subgroup_test : public Test
             });		  
         });
       
-      myQueue.wait_and_throw();
+      queue.wait_and_throw();
     }
     
     for (int i=0; i<size; i++)
@@ -191,9 +191,9 @@ struct subgroup_test : public Test
         return false;
     }
 
-    cl::sycl::free(a, myContext);
-    cl::sycl::free(b, myContext);
-    cl::sycl::free(c, myContext);
+    cl::sycl::free(a, context);
+    cl::sycl::free(b, context);
+    cl::sycl::free(c, context);
     
     return true;
   }
@@ -210,7 +210,7 @@ struct function_pointer_test : public Test
   function_pointer_test ()
     : Test("function_pointer_test") {}
 
-  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
     std::vector<int> A(size, 1);
     std::vector<int> B(size, 2);
@@ -224,7 +224,7 @@ struct function_pointer_test : public Test
     cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
     cl::sycl::buffer<int> bufC(C.data(), cl::sycl::range<1>(size));
     
-    myQueue.submit([&](cl::sycl::handler& cgh) {
+    queue.submit([&](cl::sycl::handler& cgh) {
         
         auto accA = bufA.get_access<cl::sycl::access::mode::read>(cgh);
         auto accB = bufB.get_access<cl::sycl::access::mode::read>(cgh);
@@ -255,7 +255,7 @@ struct function_pointer_take_address_on_device_test : public Test
   function_pointer_take_address_on_device_test ()
     : Test("function_pointer_take_address_on_device_test") {}
 
-  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
     bool passed = true;
   
@@ -269,7 +269,7 @@ struct function_pointer_take_address_on_device_test : public Test
       cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
       cl::sycl::buffer<int> bufC(C.data(), cl::sycl::range<1>(size));
       
-      myQueue.submit([&](cl::sycl::handler &cgh) {
+      queue.submit([&](cl::sycl::handler &cgh) {
           
           auto accA = bufA.get_access<cl::sycl::access::mode::read>(cgh);
           auto accB = bufB.get_access<cl::sycl::access::mode::read>(cgh);
@@ -302,13 +302,13 @@ struct function_pointer_take_address_on_device_array_test : public Test
   function_pointer_take_address_on_device_array_test ()
     : Test("function_pointer_take_address_on_device_array_test") {}
 
-  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
     bool passed = true;
     
     cl::sycl::buffer<cl_ulong> DispatchTableBuffer(2);
     {
-      myQueue.submit([&](cl::sycl::handler &cgh) {
+      queue.submit([&](cl::sycl::handler &cgh) {
           auto accDT = DispatchTableBuffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
           cgh.single_task([=]() {
               accDT[0] = reinterpret_cast<cl_ulong>(&add_function);
@@ -327,7 +327,7 @@ struct function_pointer_take_address_on_device_array_test : public Test
       cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
       cl::sycl::buffer<int> bufC(C.data(), cl::sycl::range<1>(size));
       
-      myQueue.submit([&](cl::sycl::handler &cgh) {
+      queue.submit([&](cl::sycl::handler &cgh) {
           
           auto accA = bufA.get_access<cl::sycl::access::mode::read>(cgh);
           auto accB = bufB.get_access<cl::sycl::access::mode::read>(cgh);
@@ -356,14 +356,14 @@ struct function_pointer_take_address_on_device_array_test : public Test
 
 int main()
 {
-  cl::sycl::device myDevice = cl::sycl::device(NEOGPUDeviceSelector());
-  //cl::sycl::device myDevice = cl::sycl::device(CPUDeviceSelector());
-  cl::sycl::queue myQueue = cl::sycl::queue(myDevice,exception_handler);
-  cl::sycl::context myContext = myQueue.get_context();
+  cl::sycl::device device = cl::sycl::device(NEOGPUDeviceSelector());
+  //cl::sycl::device device = cl::sycl::device(CPUDeviceSelector());
+  cl::sycl::queue queue = cl::sycl::queue(device,exception_handler);
+  cl::sycl::context context = queue.get_context();
   
-  std::cout << "GPU Device: " << myDevice.get_info<cl::sycl::info::device::name>() << std::endl;
-  int gpu_maxWorkGroupSize = myDevice.get_info<cl::sycl::info::device::max_work_group_size>();
-  int gpu_maxComputeUnits  = myDevice.get_info<cl::sycl::info::device::max_compute_units>();    
+  std::cout << "GPU Device: " << device.get_info<cl::sycl::info::device::name>() << std::endl;
+  int gpu_maxWorkGroupSize = device.get_info<cl::sycl::info::device::max_work_group_size>();
+  int gpu_maxComputeUnits  = device.get_info<cl::sycl::info::device::max_compute_units>();    
   std::cout << "- Max Work Group Size : " << gpu_maxWorkGroupSize << std::endl;
   std::cout << "- Max Compute Units   : " << gpu_maxComputeUnits  << std::endl;
 
@@ -378,7 +378,7 @@ int main()
 
   /* invoke all tests */
   for (auto& test : tests)
-    test->invoke(myDevice,myContext,myQueue);
+    test->invoke(device,context,queue);
  
   return 0;    
 }
