@@ -63,37 +63,38 @@ struct parallel_for_sycl_buffer_test : public Test
   
   bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
-    std::vector<int> h_a(size);
-    std::vector<int> h_b(size);
-    std::vector<int> h_c(size);
+    std::vector<int> A(size);
+    std::vector<int> B(size);
+    std::vector<int> C(size);
     
     for (int i=0; i<size; i++) {
-      h_a[i] = i;
-      h_b[i] = i+5;
-      h_c[i] = 0;
+      A[i] = i;
+      B[i] = i+5;
+      C[i] = 0;
     }
-    
-    {
-      cl::sycl::buffer<int> d_a(h_a);
-      cl::sycl::buffer<int> d_b(h_b);
-      cl::sycl::buffer<int> d_c(h_c);
-      
-      queue.submit([&](cl::sycl::handler& cgh) {
-          auto a = d_a.get_access<cl::sycl::access::mode::read>(cgh);
-          auto b = d_b.get_access<cl::sycl::access::mode::read>(cgh);
-          auto c = d_c.get_access<cl::sycl::access::mode::write>(cgh);
-          cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
-              int i = item.get(0);
-              c[i] = a[i] + b[i];
-            });
-        });
 
-      queue.wait_and_throw();
-    }
+    cl::sycl::buffer<int> bufA(A);
+    cl::sycl::buffer<int> bufB(B);
+    cl::sycl::buffer<int> bufC(C);
+    
+    queue.submit([&](cl::sycl::handler& cgh) {
+        
+        auto a = bufA.get_access<cl::sycl::access::mode::read>(cgh);
+        auto b = bufB.get_access<cl::sycl::access::mode::read>(cgh);
+        auto c = bufC.get_access<cl::sycl::access::mode::write>(cgh);
+        
+        cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
+            c[item] = a[item] + b[item];
+          });
+      });
+    
+    auto hostA = bufA.get_access<cl::sycl::access::mode::read>();
+    auto hostB = bufB.get_access<cl::sycl::access::mode::read>();
+    auto hostC = bufC.get_access<cl::sycl::access::mode::read>();
     
     for (int i=0; i<size; i++)
     {
-      if (h_a[i]+h_b[i] != h_c[i])
+      if (hostA[i]+hostB[i] != hostC[i])
         return false;
     }
     
