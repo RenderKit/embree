@@ -185,6 +185,59 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
   }
 };
 
+struct subgroup_test : public Test
+{
+  subgroup_test ()
+    : Test("subgroup_test") {}
+
+  [[cl::intel_reqd_sub_group_size(16)]] static inline void test(const uint groupID, cl::sycl::intel::sub_group& subgroup, int* a, int* b, int* c)
+  {
+    const uint subgroupLocalID = subgroup.get_local_id()[0];
+    const uint i = groupID*16+subgroupLocalID;
+    c[i] = a[i] + b[i];
+  }
+                                                                              
+  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  {
+    int* a = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* b = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* c = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+
+    for (int i=0; i<1000; i++) {
+      a[i] = i;
+      b[i] = i+5;
+      c[i] = 0;
+    }
+    
+    {
+      myQueue.submit([&](cl::sycl::handler &cgh) {
+          
+          const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(256 * 16), cl::sycl::range<1>(16));
+		  
+          cgh.parallel_for(nd_range,[=](cl::sycl::nd_item<1> item) {
+              const uint groupID = item.get_group(0);
+              cl::sycl::intel::sub_group subgroup = item.get_sub_group();
+              test(groupID,subgroup,a,b,c);
+            });		  
+        });
+      
+      myQueue.wait_and_throw();
+    }
+    
+    for (int i=0; i<1000; i++)
+    {
+      if (a[i]+b[i] != c[i])
+        return false;
+    }
+
+    cl::sycl::free(a, myContext);
+    cl::sycl::free(b, myContext);
+    cl::sycl::free(c, myContext);
+    
+    return true;
+  }
+};
+
 int main()
 {
   cl::sycl::device myDevice = cl::sycl::device(NEOGPUDeviceSelector());
@@ -202,6 +255,7 @@ int main()
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_buffer_test()));
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_buffer_test_fail()));
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_aligned_alloc_test()));
+  tests.push_back(std::unique_ptr<Test>(new subgroup_test()));
 
   for (auto& test : tests) {
     test->invoke(myDevice,myContext,myQueue);
