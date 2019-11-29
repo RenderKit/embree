@@ -284,6 +284,119 @@ struct function_pointer_test : public Test
 };
 
 
+[[intel::device_indirectly_callable]] int add(int a, int b) { return a + b; }
+
+[[intel::device_indirectly_callable]] int sub(int a, int b) { return a - b; }
+
+
+struct function_pointer_take_address_on_device_test : public Test
+{
+  function_pointer_take_address_on_device_test ()
+    : Test("function_pointer_take_address_on_device_test") {}
+
+  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  {
+    bool passed = true;
+    const int size = 10;
+
+    for (int Mode = 0; Mode < 2; ++Mode)
+    {
+      std::vector<int> A(size, 1);
+      std::vector<int> B(size, 2);
+      std::vector<int> C(size, 0);
+      
+      cl::sycl::buffer<int> bufA(A.data(), cl::sycl::range<1>(size));
+      cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
+      cl::sycl::buffer<int> bufC(C.data(), cl::sycl::range<1>(size));
+      
+      myQueue.submit([&](cl::sycl::handler &cgh) {
+          
+          auto accA = bufA.get_access<cl::sycl::access::mode::read>(cgh);
+          auto accB = bufB.get_access<cl::sycl::access::mode::read>(cgh);
+          auto accC = bufC.get_access<cl::sycl::access::mode::write>(cgh);
+          
+          cgh.parallel_for(cl::sycl::range<1>(size), [=](cl::sycl::id<1> index) {
+              
+              int (*FP)(int, int) = nullptr;
+              if (Mode == 0) FP = &add;
+              else           FP = &sub;
+              
+              accC[index] = FP(accA[index], accB[index]);
+            });
+        });
+      
+      auto hostA = bufA.get_access<cl::sycl::access::mode::read>();
+      auto hostB = bufB.get_access<cl::sycl::access::mode::read>();
+      auto hostC = bufC.get_access<cl::sycl::access::mode::read>();
+
+      if (Mode == 0) {
+        for (size_t i=0; i<size; i++) passed &= hostA[i] + hostB[i] == hostC[i];
+      } else {
+        for (size_t i=0; i<size; i++) passed &= hostA[i] - hostB[i] == hostC[i];
+      }
+    }
+    return passed;
+  }
+};
+
+struct function_pointer_take_address_on_device_array_test : public Test
+{
+  function_pointer_take_address_on_device_array_test ()
+    : Test("function_pointer_take_address_on_device_array_test") {}
+
+  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  {
+    bool passed = true;
+    
+    const int size = 10;
+    
+    cl::sycl::buffer<cl_ulong> DispatchTableBuffer(2);
+    {
+      myQueue.submit([&](cl::sycl::handler &cgh) {
+          auto accDT = DispatchTableBuffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
+          cgh.single_task([=]() {
+              accDT[0] = reinterpret_cast<cl_ulong>(&add);
+              accDT[1] = reinterpret_cast<cl_ulong>(&sub);
+            });
+        });
+    }
+    
+    for (int Mode = 0; Mode < 2; ++Mode)
+    {
+      std::vector<int> A(size, 1);
+      std::vector<int> B(size, 2);
+      std::vector<int> C(size, 0);
+      
+      cl::sycl::buffer<int> bufA(A.data(), cl::sycl::range<1>(size));
+      cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
+      cl::sycl::buffer<int> bufC(C.data(), cl::sycl::range<1>(size));
+      
+      myQueue.submit([&](cl::sycl::handler &cgh) {
+          
+          auto accA = bufA.get_access<cl::sycl::access::mode::read>(cgh);
+          auto accB = bufB.get_access<cl::sycl::access::mode::read>(cgh);
+          auto accC = bufC.get_access<cl::sycl::access::mode::write>(cgh);
+          auto accDT = DispatchTableBuffer.get_access<cl::sycl::access::mode::read>(cgh);
+          
+          cgh.parallel_for<class K>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> index) {
+              int (*FP)(int, int) = reinterpret_cast<int(*)(int, int)>(accDT[Mode]);
+              accC[index] = FP(accA[index], accB[index]);
+            });
+        });
+
+      auto hostA = bufA.get_access<cl::sycl::access::mode::read>();
+      auto hostB = bufB.get_access<cl::sycl::access::mode::read>();
+      auto hostC = bufC.get_access<cl::sycl::access::mode::read>();
+
+      if (Mode == 0) {
+        for (size_t i=0; i<size; i++) passed &= hostA[i] + hostB[i] == hostC[i];
+      } else {
+        for (size_t i=0; i<size; i++) passed &= hostA[i] - hostB[i] == hostC[i];
+      }
+    } 
+    return passed;
+  }
+};
 
 int main()
 {
@@ -304,7 +417,9 @@ int main()
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_buffer_test_fail()));
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_aligned_alloc_test()));
   tests.push_back(std::unique_ptr<Test>(new subgroup_test()));
-  tests.push_back(std::unique_ptr<Test>(new function_pointer_test()));
+  //tests.push_back(std::unique_ptr<Test>(new function_pointer_test()));
+  tests.push_back(std::unique_ptr<Test>(new function_pointer_take_address_on_device_test()));
+  tests.push_back(std::unique_ptr<Test>(new function_pointer_take_address_on_device_array_test()));
 
   /* invoke all tests */
   for (auto& test : tests)
