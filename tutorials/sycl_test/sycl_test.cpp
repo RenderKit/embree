@@ -238,6 +238,53 @@ struct subgroup_test : public Test
   }
 };
 
+typedef uint (*fptr_ty) (uint a, uint b);
+[[intel::device_indirectly_callable]] uint add_function(uint a, uint b) { return a + b; }
+
+struct function_pointer_test : public Test
+{
+  function_pointer_test ()
+    : Test("function_pointer_test") {}
+
+  bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
+  {
+    int* a = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* b = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* c = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    
+    for (int i=0; i<1000; i++) {
+      a[i] = i;
+      b[i] = i+5;
+      c[i] = 0;
+    }
+    
+    {
+      myQueue.submit([&](cl::sycl::handler& cgh) {
+          cgh.parallel_for<class test>(cl::sycl::range<1>(1000), [=](cl::sycl::id<1> item) {
+              fptr_ty fptr = add_function;
+              int i = item.get(0);
+              c[i] = fptr(a[i],b[i]);
+            });
+        });
+      myQueue.wait_and_throw();
+    }
+    
+    for (int i=0; i<1000; i++)
+    {
+      if (a[i]+b[i] != c[i])
+        return false;
+    }
+
+    cl::sycl::free(a, myContext);
+    cl::sycl::free(b, myContext);
+    cl::sycl::free(c, myContext);
+    
+    return true;
+  }
+};
+
+
+
 int main()
 {
   cl::sycl::device myDevice = cl::sycl::device(NEOGPUDeviceSelector());
@@ -251,15 +298,17 @@ int main()
   std::cout << "- Max Work Group Size : " << gpu_maxWorkGroupSize << std::endl;
   std::cout << "- Max Compute Units   : " << gpu_maxComputeUnits  << std::endl;
 
+  /* create all tests */
   std::vector<std::unique_ptr<Test>> tests;
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_buffer_test()));
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_buffer_test_fail()));
   tests.push_back(std::unique_ptr<Test>(new parallel_for_sycl_aligned_alloc_test()));
   tests.push_back(std::unique_ptr<Test>(new subgroup_test()));
+  tests.push_back(std::unique_ptr<Test>(new function_pointer_test()));
 
-  for (auto& test : tests) {
+  /* invoke all tests */
+  for (auto& test : tests)
     test->invoke(myDevice,myContext,myQueue);
-  }
  
   return 0;    
 }
