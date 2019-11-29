@@ -56,16 +56,18 @@ struct Test
 
 struct parallel_for_sycl_buffer_test : public Test
 {
+  static const int size = 1000;
+
   parallel_for_sycl_buffer_test ()
     : Test("parallel_for_sycl_buffer_test") {}
   
   bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
   {
-    std::vector<int> h_a(1000);
-    std::vector<int> h_b(1000);
-    std::vector<int> h_c(1000);
+    std::vector<int> h_a(size);
+    std::vector<int> h_b(size);
+    std::vector<int> h_c(size);
     
-    for (int i=0; i<1000; i++) {
+    for (int i=0; i<size; i++) {
       h_a[i] = i;
       h_b[i] = i+5;
       h_c[i] = 0;
@@ -80,7 +82,7 @@ struct parallel_for_sycl_buffer_test : public Test
           auto a = d_a.get_access<cl::sycl::access::mode::read>(cgh);
           auto b = d_b.get_access<cl::sycl::access::mode::read>(cgh);
           auto c = d_c.get_access<cl::sycl::access::mode::write>(cgh);
-          cgh.parallel_for<class test>(cl::sycl::range<1>(1000), [=](cl::sycl::id<1> item) {
+          cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
               int i = item.get(0);
               c[i] = a[i] + b[i];
             });
@@ -89,7 +91,7 @@ struct parallel_for_sycl_buffer_test : public Test
       myQueue.wait_and_throw();
     }
     
-    for (int i=0; i<1000; i++)
+    for (int i=0; i<size; i++)
     {
       if (h_a[i]+h_b[i] != h_c[i])
         return false;
@@ -101,16 +103,18 @@ struct parallel_for_sycl_buffer_test : public Test
 
 struct parallel_for_sycl_aligned_alloc_test : public Test
 {
+  static const int size = 1000;
+
   parallel_for_sycl_aligned_alloc_test ()
     : Test("parallel_for_sycl_aligned_alloc_test") {}
   
   bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
   {
-    int* a = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* b = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* c = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* a = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
 
-    for (int i=0; i<1000; i++) {
+    for (int i=0; i<size; i++) {
       a[i] = i;
       b[i] = i+5;
       c[i] = 0;
@@ -118,7 +122,7 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
     
     {
       myQueue.submit([&](cl::sycl::handler& cgh) {
-          cgh.parallel_for<class test>(cl::sycl::range<1>(1000), [=](cl::sycl::id<1> item) {
+          cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
               int i = item.get(0);
               c[i] = a[i] + b[i];
             });
@@ -126,7 +130,7 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
       myQueue.wait_and_throw();
     }
     
-    for (int i=0; i<1000; i++)
+    for (int i=0; i<size; i++)
     {
       if (a[i]+b[i] != c[i])
         return false;
@@ -142,6 +146,8 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
 
 struct subgroup_test : public Test
 {
+  static const int size = 1000;
+  
   subgroup_test ()
     : Test("subgroup_test") {}
 
@@ -154,11 +160,11 @@ struct subgroup_test : public Test
                                                                               
   bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
   {
-    int* a = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* b = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* c = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* a = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
+    int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
 
-    for (int i=0; i<1000; i++) {
+    for (int i=0; i<size; i++) {
       a[i] = i;
       b[i] = i+5;
       c[i] = 0;
@@ -179,7 +185,7 @@ struct subgroup_test : public Test
       myQueue.wait_and_throw();
     }
     
-    for (int i=0; i<1000; i++)
+    for (int i=0; i<size; i++)
     {
       if (a[i]+b[i] != c[i])
         return false;
