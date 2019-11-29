@@ -113,22 +113,18 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
     int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
     int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
 
-    for (int i=0; i<size; i++) {
-      a[i] = i;
-      b[i] = i+5;
-      c[i] = 0;
-    }
+    std::generate(a, a+size, std::rand);
+    std::generate(b, b+size, std::rand);
+    std::generate(c, c+size, std::rand);
     
-    {
-      queue.submit([&](cl::sycl::handler& cgh) {
-          cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
-              int i = item.get(0);
-              c[i] = a[i] + b[i];
-            });
-        });
-      queue.wait_and_throw();
-    }
-    
+    queue.submit([&](cl::sycl::handler& cgh) {
+        cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
+            int i = item.get(0);
+            c[i] = a[i] + b[i];
+          });
+      });
+    queue.wait_and_throw();
+   
     for (int i=0; i<size; i++)
     {
       if (a[i]+b[i] != c[i])
@@ -145,7 +141,7 @@ struct parallel_for_sycl_aligned_alloc_test : public Test
 
 struct subgroup_test : public Test
 {
-  static const int size = 1000;
+  static const int size = 256*16;
   
   subgroup_test ()
     : Test("subgroup_test") {}
@@ -163,26 +159,22 @@ struct subgroup_test : public Test
     int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
     int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
 
-    for (int i=0; i<size; i++) {
-      a[i] = i;
-      b[i] = i+5;
-      c[i] = 0;
-    }
+    std::generate(a, a+size, std::rand);
+    std::generate(b, b+size, std::rand);
+    std::generate(c, c+size, std::rand);
+
+    queue.submit([&](cl::sycl::handler& cgh) {
+        
+        const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(size), cl::sycl::range<1>(16));
+	
+        cgh.parallel_for(nd_range,[=](cl::sycl::nd_item<1> item) {
+            const uint groupID = item.get_group(0);
+            cl::sycl::intel::sub_group subgroup = item.get_sub_group();
+            test(groupID,subgroup,a,b,c);
+          });		  
+      });
     
-    {
-      queue.submit([&](cl::sycl::handler &cgh) {
-          
-          const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(256 * 16), cl::sycl::range<1>(16));
-		  
-          cgh.parallel_for(nd_range,[=](cl::sycl::nd_item<1> item) {
-              const uint groupID = item.get_group(0);
-              cl::sycl::intel::sub_group subgroup = item.get_sub_group();
-              test(groupID,subgroup,a,b,c);
-            });		  
-        });
-      
-      queue.wait_and_throw();
-    }
+    queue.wait_and_throw();
     
     for (int i=0; i<size; i++)
     {
@@ -268,7 +260,7 @@ struct function_pointer_take_address_on_device_test : public Test
       cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
       cl::sycl::buffer<int> bufC(C.data(), cl::sycl::range<1>(size));
       
-      queue.submit([&](cl::sycl::handler &cgh) {
+      queue.submit([&](cl::sycl::handler& cgh) {
           
           auto accA = bufA.get_access<cl::sycl::access::mode::read>(cgh);
           auto accB = bufB.get_access<cl::sycl::access::mode::read>(cgh);
@@ -307,7 +299,7 @@ struct function_pointer_take_address_on_device_array_test : public Test
     
     cl::sycl::buffer<cl_ulong> DispatchTableBuffer(2);
     {
-      queue.submit([&](cl::sycl::handler &cgh) {
+      queue.submit([&](cl::sycl::handler& cgh) {
           auto accDT = DispatchTableBuffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
           cgh.single_task([=]() {
               accDT[0] = reinterpret_cast<cl_ulong>(&add_function);
@@ -326,7 +318,7 @@ struct function_pointer_take_address_on_device_array_test : public Test
       cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
       cl::sycl::buffer<int> bufC(C.data(), cl::sycl::range<1>(size));
       
-      queue.submit([&](cl::sycl::handler &cgh) {
+      queue.submit([&](cl::sycl::handler& cgh) {
           
           auto accA = bufA.get_access<cl::sycl::access::mode::read>(cgh);
           auto accB = bufB.get_access<cl::sycl::access::mode::read>(cgh);
