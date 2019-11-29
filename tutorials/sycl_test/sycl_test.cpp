@@ -66,12 +66,10 @@ struct parallel_for_sycl_buffer_test : public Test
     std::vector<int> A(size);
     std::vector<int> B(size);
     std::vector<int> C(size);
-    
-    for (int i=0; i<size; i++) {
-      A[i] = i;
-      B[i] = i+5;
-      C[i] = 0;
-    }
+
+    std::generate(A.begin(), A.end(), std::rand);
+    std::generate(B.begin(), B.end(), std::rand);
+    std::generate(C.begin(), C.end(), std::rand);
 
     cl::sycl::buffer<int> bufA(A);
     cl::sycl::buffer<int> bufB(B);
