@@ -499,6 +499,9 @@ IF (EMBREE_TUTORIALS)
   ADD_SUBDIRECTORY(tutorials)
 ENDIF()
 
+ADD_SUBDIRECTORY(tutorials/sycl_test)
+
+
 ##############################################################
 # Uninstall
 ##############################################################
