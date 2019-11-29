@@ -238,67 +238,66 @@ struct subgroup_test : public Test
   }
 };
 
-typedef uint (*fptr_ty) (uint a, uint b);
-[[intel::device_indirectly_callable]] uint add_function(uint a, uint b) { return a + b; }
+typedef int (*fptr_ty) (int a, int b);
+[[intel::device_indirectly_callable]] int add_function(int a, int b) { return a + b; }
+[[intel::device_indirectly_callable]] int sub_function(int a, int b) { return a - b; }
 
 struct function_pointer_test : public Test
 {
+  static const int size = 1000;
+
   function_pointer_test ()
     : Test("function_pointer_test") {}
 
   bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
   {
-    int* a = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* b = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    int* c = (int*) cl::sycl::aligned_alloc(64,1000*sizeof(int),myDevice,myContext,cl::sycl::usm::alloc::shared);
-    
-    for (int i=0; i<1000; i++) {
-      a[i] = i;
-      b[i] = i+5;
-      c[i] = 0;
-    }
-    
-    {
-      myQueue.submit([&](cl::sycl::handler& cgh) {
-          cgh.parallel_for<class test>(cl::sycl::range<1>(1000), [=](cl::sycl::id<1> item) {
-              fptr_ty fptr = add_function;
-              int i = item.get(0);
-              c[i] = fptr(a[i],b[i]);
-            });
-        });
-      myQueue.wait_and_throw();
-    }
-    
-    for (int i=0; i<1000; i++)
-    {
-      if (a[i]+b[i] != c[i])
-        return false;
-    }
+    std::vector<int> A(size, 1);
+    std::vector<int> B(size, 2);
+    std::vector<int> C(size, 0);
 
-    cl::sycl::free(a, myContext);
-    cl::sycl::free(b, myContext);
-    cl::sycl::free(c, myContext);
+    std::generate(A.begin(), A.end(), std::rand);
+    std::generate(B.begin(), B.end(), std::rand);
+    std::generate(C.begin(), C.end(), std::rand);
     
-    return true;
+    cl::sycl::buffer<int> bufA(A.data(), cl::sycl::range<1>(size));
+    cl::sycl::buffer<int> bufB(B.data(), cl::sycl::range<1>(size));
+    cl::sycl::buffer<int> bufC(C.data(), cl::sycl::range<1>(size));
+    
+    myQueue.submit([&](cl::sycl::handler& cgh) {
+        
+        auto accA = bufA.get_access<cl::sycl::access::mode::read>(cgh);
+        auto accB = bufB.get_access<cl::sycl::access::mode::read>(cgh);
+        auto accC = bufC.get_access<cl::sycl::access::mode::write>(cgh);
+        
+        cgh.parallel_for(cl::sycl::range<1>(size), [=](cl::sycl::id<1> index) {
+            fptr_ty fptr = &add_function;
+            accC[index] = fptr(accA[index],accB[index]);
+          });
+      });
+      
+    auto hostA = bufA.get_access<cl::sycl::access::mode::read>();
+    auto hostB = bufB.get_access<cl::sycl::access::mode::read>();
+    auto hostC = bufC.get_access<cl::sycl::access::mode::read>();
+
+    bool passed = true;
+    for (size_t i=0; i<size; i++)
+      passed &= hostA[i] + hostB[i] == hostC[i];
+    
+    return passed;
   }
 };
 
-
-[[intel::device_indirectly_callable]] int add(int a, int b) { return a + b; }
-
-[[intel::device_indirectly_callable]] int sub(int a, int b) { return a - b; }
-
-
 struct function_pointer_take_address_on_device_test : public Test
 {
+  static const int size = 1000;
+
   function_pointer_take_address_on_device_test ()
     : Test("function_pointer_take_address_on_device_test") {}
 
   bool run (cl::sycl::device& myDevice, cl::sycl::context myContext, cl::sycl::queue& myQueue)
   {
     bool passed = true;
-    const int size = 10;
-
+  
     for (int Mode = 0; Mode < 2; ++Mode)
     {
       std::vector<int> A(size, 1);
@@ -316,12 +315,8 @@ struct function_pointer_take_address_on_device_test : public Test
           auto accC = bufC.get_access<cl::sycl::access::mode::write>(cgh);
           
           cgh.parallel_for(cl::sycl::range<1>(size), [=](cl::sycl::id<1> index) {
-              
-              int (*FP)(int, int) = nullptr;
-              if (Mode == 0) FP = &add;
-              else           FP = &sub;
-              
-              accC[index] = FP(accA[index], accB[index]);
+              fptr_ty fptr = Mode ? &sub_function : &add_function;
+              accC[index] = fptr(accA[index], accB[index]);
             });
         });
       
@@ -341,6 +336,8 @@ struct function_pointer_take_address_on_device_test : public Test
 
 struct function_pointer_take_address_on_device_array_test : public Test
 {
+  static const int size = 1000;
+  
   function_pointer_take_address_on_device_array_test ()
     : Test("function_pointer_take_address_on_device_array_test") {}
 
@@ -348,15 +345,13 @@ struct function_pointer_take_address_on_device_array_test : public Test
   {
     bool passed = true;
     
-    const int size = 10;
-    
     cl::sycl::buffer<cl_ulong> DispatchTableBuffer(2);
     {
       myQueue.submit([&](cl::sycl::handler &cgh) {
           auto accDT = DispatchTableBuffer.get_access<cl::sycl::access::mode::discard_write>(cgh);
           cgh.single_task([=]() {
-              accDT[0] = reinterpret_cast<cl_ulong>(&add);
-              accDT[1] = reinterpret_cast<cl_ulong>(&sub);
+              accDT[0] = reinterpret_cast<cl_ulong>(&add_function);
+              accDT[1] = reinterpret_cast<cl_ulong>(&sub_function);
             });
         });
     }
@@ -379,8 +374,8 @@ struct function_pointer_take_address_on_device_array_test : public Test
           auto accDT = DispatchTableBuffer.get_access<cl::sycl::access::mode::read>(cgh);
           
           cgh.parallel_for<class K>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> index) {
-              int (*FP)(int, int) = reinterpret_cast<int(*)(int, int)>(accDT[Mode]);
-              accC[index] = FP(accA[index], accB[index]);
+              fptr_ty fptr = reinterpret_cast<fptr_ty>(accDT[Mode]);
+              accC[index] = fptr(accA[index], accB[index]);
             });
         });
 
