@@ -24,9 +24,9 @@
 
 #define BINS 16
 
-#define BVH_LEAF_MASK_SHIFT  3
+#define BVH_LEAF_MASK_SHIFT  31
 #define BVH_LEAF_MASK        (1<<BVH_LEAF_MASK_SHIFT)
-#define BVH_LOWER_BITS_MASK  ((1<<(BVH_LEAF_MASK_SHIFT+1))-1)
+#define BVH_LOWER_BITS_MASK  ((1<<(3))-1)
 #define BVH_NODE_N           16
 #define BVH_NODE_N_LOG       4
 
@@ -77,8 +77,9 @@ namespace embree
 
       __forceinline size_t isLeaf() const { return offset & BVH_LEAF_MASK; }
       
-      __forceinline uint getNumLeafPrims() { return (offset & (BVH_LEAF_MASK-1))+1; }      
-      __forceinline uint getLeafOffset()   { return offset & (~BVH_LOWER_BITS_MASK); }
+      __forceinline uint getNumLeafPrims()   { return (offset & BVH_LOWER_BITS_MASK)+1; }      
+      __forceinline uint getLeafOffset()   { return offset & (~(BVH_LOWER_BITS_MASK|BVH_LEAF_MASK)); }
+      
       
     private:
       uint offset;
@@ -332,7 +333,8 @@ namespace embree
 						     const float3 &inv_dir_org,
 						     const float time,
 						     const float tnear,
-						     const float tfar)
+						     const float tfar,
+						     const cl::sycl::stream &out)
     {
 #if 0
       const uint subgroupLocalID = sg.get_local_id()[0];      
@@ -392,10 +394,12 @@ namespace embree
 						     const float3 &inv_dir_org,
 						     const float time,
 						     const float tnear,
-						     const float tfar)
+						     const float tfar,
+						     const cl::sycl::stream &out)
     {
       const uint subgroupLocalID = sg.get_local_id()[0];      
       const uint  offset = node.offset[subgroupLocalID];
+      
       const float time0 = node.lower_t[subgroupLocalID];
       const float time1 = node.upper_t[subgroupLocalID];
       
@@ -436,6 +440,13 @@ namespace embree
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
       const uint valid = (fnear <= ffar) & (offset != -1) & (time0 <= time) & (time < time1);
+
+      if (subgroupLocalID == 0) 
+       	{
+       	  out << "fnear " << fnear << " ffar " << ffar << cl::sycl::endl; 
+	} 
+       out << "valid " << valid << cl::sycl::endl; 
+      
       return NodeIntersectionData(fnear, valid, offset);
     }
     

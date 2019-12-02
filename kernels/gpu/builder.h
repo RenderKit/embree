@@ -566,15 +566,25 @@ namespace embree
       return relative_offset;
     }
 
-    inline uint createLeaf(const Globals &globals,		 
+#if 1
+    inline uint createLeaf(const Globals &globals,
+			   char *bvh_mem,
+			   uint *parent,
 			   const uint start,
-			   const uint items)
-    {	
-      const uint offset = globals.leaf_mem_allocator_start + start * globals.leafSize;
+			   const uint items,
+			   const cl::sycl::stream &out)
+    {
+      ulong global_parent_offset = (ulong)parent - (ulong)bvh_mem;
+      // parent node address starts at least on 64 bytes boundary      
+      global_parent_offset = global_parent_offset & (~63);
+      const uint global_child_offset = globals.leaf_mem_allocator_start + start * globals.leafSize;      
+      const uint offset = global_child_offset - (uint)global_parent_offset;
+      if (offset & BVH_LOWER_BITS_MASK)
+	out << "offset & BVH_LOWER_BITS_MASK " << (offset&BVH_LOWER_BITS_MASK) << cl::sycl::endl;
       const unsigned int final = offset | BVH_LEAF_MASK | (items-1);
       return final;
     }
-
+#endif
     
     inline uint createNode(cl::sycl::intel::sub_group &subgroup, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem, const cl::sycl::stream &out)
     {

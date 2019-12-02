@@ -243,9 +243,9 @@ namespace embree
 	  {	    
 	    if (subgroup.get_local_id() == 0)
 	      {
-		const uint leaf_offset = createLeaf(globals,current.start,items);
+		const uint leaf_offset = createLeaf(globals,bvh_mem,current.parent,current.start,items,out);
 		DBG_BUILD(out << "leaf_offset " << leaf_offset << cl::sycl::endl);
-		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);		
+		*current.parent = leaf_offset; //gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);		
 	      }
 	  }
 	else
@@ -936,7 +936,6 @@ namespace embree
 	cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
 	const int maxWorkGroupSize = deviceGPU->getGPUMaxWorkGroupSize();
 	    
-	PRINT(maxWorkGroupSize);
 
 	/* --- estimate size of the BVH --- */
 	const uint leaf_primitive_size = sizeof(Primitive);
@@ -945,7 +944,17 @@ namespace embree
 	const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
 	const uint node_data_start = sizeof(gpu::BVHBase);
 	const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
-	    
+	assert( (leaf_data_start % 64) == 0 );
+
+	if (unlikely(deviceGPU->verbosity(2)))
+	  {
+	    PRINT( maxWorkGroupSize );	
+	    PRINT( leaf_primitive_size );
+	    PRINT( node_size );
+	    PRINT( leaf_size );	
+	    PRINT( totalSize );
+	  }
+	
 	/* --- allocate and set buffers --- */
 
 	double alloc_time0 = getSeconds();
@@ -963,7 +972,7 @@ namespace embree
 	assert(globals);
 
 	const size_t totalUSMAllocations = totalSize + sizeof(uint)*2*numPrimitives + sizeof(gpu::Globals);
-	  
+
 	double alloc_time1 = getSeconds();
 	
 	if (unlikely(deviceGPU->verbosity(2)))

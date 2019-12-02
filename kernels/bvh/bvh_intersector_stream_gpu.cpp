@@ -17,6 +17,9 @@
 #include "bvh_intersector_gpu.h"
 
 #define DBG(x) 
+#define DBG_PRINT_BUFFER_SIZE 1024*1024
+//#define DBG_PRINT_BUFFER_SIZE 0
+#define DBG_PRINT_LINE_SIZE 512
 
 namespace embree
 {
@@ -33,7 +36,7 @@ namespace embree
     gpu::RTCRayGPU &ray = static_cast<gpu::RTCRayGPU&>(rtc_rayhit.ray);
     gpu::RTCHitGPU &hit = static_cast<gpu::RTCHitGPU&>(rtc_rayhit.hit);
     uint m_active = intel_sub_group_ballot(true);
-    traceRayBVH16<gpu::QBVHNodeN,gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
+    //traceRayBVH16<gpu::QBVHNodeN,gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
     //uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
     //hit.primID = testfct(hit.primID,hit.primID); 
   }
@@ -75,7 +78,8 @@ namespace embree
 
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(wg_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
+	    cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);	    	    
+	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(block_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
 	    
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint globalID   = item.get_global_id(0);
@@ -84,7 +88,7 @@ namespace embree
 		{
 		  uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
 		  if (m_activeLanes == 0xffff)
-		    traceRayBVH16<gpu::QBVHNodeN,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
+		    traceRayBVH16<gpu::QBVHNodeN,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats,out);
 		}
 	      });		  
 	  });
