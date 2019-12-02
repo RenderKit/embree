@@ -35,6 +35,10 @@ int main() {
   cl::sycl::context C = Q.get_context();
   cl::sycl::program AppProg(C);
 
+  auto devices = C.get_devices();
+  for (auto& device : devices)
+    std::cout << "Device: " << device.get_info<cl::sycl::info::device::name>() << std::endl;
+  
   AppProg.compile_with_kernel_type<class app_kernel>();
   auto LibProg = lib_get_program(C);
 
