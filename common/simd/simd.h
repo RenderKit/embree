@@ -18,6 +18,10 @@
 
 #include "../math/math.h"
 
+#if defined(SPIR64)
+#include "vfloat4_sycl.h"
+#else
+
 /* include SSE wrapper classes */
 #if defined(__SSE__)
 #  include "sse.h"
@@ -31,6 +35,8 @@
 /* include AVX512 wrapper classes */
 #if defined (__AVX512F__)
 #  include "avx512.h"
+#endif
+
 #endif
 
 namespace embree

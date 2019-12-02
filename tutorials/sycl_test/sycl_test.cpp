@@ -2,6 +2,7 @@
 #include <CL/sycl.hpp>
 #include <iostream>
 #include <memory>
+#include "../../common/simd/simd.h"
 
 class NEOGPUDeviceSelector : public cl::sycl::device_selector
 {
@@ -536,6 +537,57 @@ struct access_virtual_structure_test : public Test
 
 #endif
 
+struct subgroup_library_test : public Test
+{
+  static const int size = 256*16;
+  
+  subgroup_library_test ()
+    : Test("subgroup_library_test") {}
+
+  [[cl::intel_reqd_sub_group_size(16)]] static inline void test(const uint groupID, cl::sycl::intel::sub_group& subgroup, int* a, int* b, int* c)
+  {
+    const uint subgroupLocalID = subgroup.get_local_id()[0];
+    const uint i = groupID*16+subgroupLocalID;
+    c[i] = a[i] + b[i];
+  }
+                                                                              
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
+  {
+    int* a = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
+    int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
+    int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
+
+    std::generate(a, a+size, std::rand);
+    std::generate(b, b+size, std::rand);
+    std::generate(c, c+size, std::rand);
+
+    queue.submit([&](cl::sycl::handler& cgh) {
+        
+        const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(size), cl::sycl::range<1>(16));
+	
+        cgh.parallel_for(nd_range,[=](cl::sycl::nd_item<1> item) {
+            const uint groupID = item.get_group(0);
+            cl::sycl::intel::sub_group subgroup = item.get_sub_group();
+            test(groupID,subgroup,a,b,c);
+          });		  
+      });
+    
+    queue.wait_and_throw();
+    
+    for (int i=0; i<size; i++)
+    {
+      if (a[i]+b[i] != c[i])
+        return false;
+    }
+
+    cl::sycl::free(a, context);
+    cl::sycl::free(b, context);
+    cl::sycl::free(c, context);
+    
+    return true;
+  }
+};
+
 int main()
 {
   cl::sycl::device device = cl::sycl::device(NEOGPUDeviceSelector());
@@ -564,6 +616,8 @@ int main()
 #endif
 
   //tests.push_back(std::unique_ptr<Test>(new access_virtual_structure_test())); // FIXME: does not compile
+
+  tests.push_back(std::unique_ptr<Test>(new subgroup_library_test()));
    
   /* invoke all tests */
   for (auto& test : tests)
