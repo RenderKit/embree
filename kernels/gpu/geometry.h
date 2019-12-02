@@ -264,6 +264,7 @@ namespace embree
 	  const float4 _v1 = cl::sycl::fma(time1_v1,float4(time),time0_v1);
 	  const float4 _v2 = cl::sycl::fma(time1_v2,float4(time),time0_v2);	  
 
+#if 0	  
 	  if (slotID == 0)
 	    {
 	      out << "time0_v0 " << time0_v0 << cl::sycl::endl;
@@ -278,6 +279,7 @@ namespace embree
 	      out << "_v1 " << _v1 << cl::sycl::endl;
 	      out << "_v2 " << _v2 << cl::sycl::endl;
 	    }
+#endif
 	  
 	  const float3 v0 = _v0.xyz();
 	  const float3 v1 = _v1.xyz();

@@ -182,15 +182,13 @@ namespace embree
 	      {
 		TSTATS(tstats->tsteps_inc());	      
 		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);
-		/* if (subgroupLocalID == 0)  */
-		/*   out << "cur " << (size_t)cur << cl::sycl::endl;  */
+		/* if (subgroupLocalID == 0)   */
+		/*   out << "node " << node << cl::sycl::endl;   */
 		
 		const gpu::NodeIntersectionData isec = intersectNode(sg,node,dir_mask,inv_dir,inv_dir_org,time,tnear,tfar,out);
 		getClosestChildNode(sg,isec,cur,sindex,tfar,stack_offset,stack_dist);
 
-		/* const BVHNodeType &next_node = *(BVHNodeType*)(bvh_base + cur); */
-		/* if (subgroupLocalID == 0)  */
-		/*    out << next_node << cl::sycl::endl;  */
+		//const BVHNodeType &next_node = *(BVHNodeType*)(bvh_base + cur); 
 		/* cur = max_uint;  */
 		
 	      }
@@ -204,8 +202,8 @@ namespace embree
 	    const uint numPrims = cur.getNumLeafPrims();
 	    const uint leafOffset = cur.getLeafOffset();    
 
-	    /* if (subgroupLocalID == 0)   */
-	    /*   out << "leafOffset " << leafOffset << " numPrims " << numPrims << cl::sycl::endl;   */
+	    /* if (subgroupLocalID == 0)    */
+	    /*   out << "leafOffset " << leafOffset << " numPrims " << numPrims << cl::sycl::endl;    */
 	    
 	    const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
 	    TSTATS(tstats->isteps_inc());	  

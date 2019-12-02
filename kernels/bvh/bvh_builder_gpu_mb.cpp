@@ -281,10 +281,9 @@ namespace embree
 		size_t numTris=0;
 		for (size_t i=0; i<num; i++)
 		  numTris += tri_mb[i].size();
-
+		
 		PRINT(numTris);
-		PRINT(BVH_LEAF_MASK-1);
-		assert(numTris-1 <= BVH_LEAF_MASK-1);
+		assert(numTris <= BVH_MAX_NUM_ITEMS);
 		
 		const size_t leaf_index = gpu_leaf_allocator.fetch_add(numTris);		    
 
@@ -311,11 +310,21 @@ namespace embree
 		  {
 		    PRINT("LEAF PARENT");
 		    gpu::QBVHNodeNMB *parent_gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + parent_node_offset);
+		    assert( ((size_t)parent_gpu_node % 64) == 0 );
+		    assert( ((size_t)leaf_ptr % 16) == 0 );
+		    
 		    const unsigned int offset = (size_t)((char*)&leaf_ptr[leaf_index] - (char*)parent_gpu_node);
-		    assert(((offset - parent_node_offset) & BVH_LEAF_MASK) == 0);
+		    assert(((offset - parent_node_offset) &  BVH_LOWER_BITS_MASK) == 0);
 
 		    parent_gpu_node->offset[slot] = offset | BVH_LEAF_MASK | (index-1);
-		    PRINT( parent_gpu_node->offset[slot] );		    
+		    PRINT( (size_t)((char*)&leaf_ptr[leaf_index] - (char*)bvh_mem) );
+		    PRINT( offset );
+		    PRINT( numTris );
+		    gpu::NodeRef ref( parent_gpu_node->offset[slot] );
+		    PRINT( ref.getLeafOffset() );
+		    PRINT( ref.getNumLeafPrims() );
+		    
+		    
 		  }
 		
 	      }
@@ -354,7 +363,8 @@ namespace embree
 	const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
 	const uint node_data_start = sizeof(gpu::BVHBase);
 	const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
-	
+	assert( (leaf_data_start % 64) == 0 );
+
 	char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	assert(bvh_mem);
 

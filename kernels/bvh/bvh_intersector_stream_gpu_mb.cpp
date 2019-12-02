@@ -16,7 +16,7 @@
 
 #include "bvh_intersector_gpu.h"
 
-#define DBG(x) x
+#define DBG(x) 
 
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
 //#define DBG_PRINT_BUFFER_SIZE 0
@@ -74,9 +74,9 @@ namespace embree
 		  uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
 		  //out << inputRays[globalID].ray << cl::sycl::endl;
 		  
-		  //if (m_activeLanes == 0xffff)
+		  if (m_activeLanes == 0xffff)
 		    traceRayBVH16<gpu::QBVHNodeNMB,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats,out);
-		  out << inputRays[globalID].hit << cl::sycl::endl;
+		    //out << inputRays[globalID].hit << cl::sycl::endl;
 		}
 		
 	      });		  
