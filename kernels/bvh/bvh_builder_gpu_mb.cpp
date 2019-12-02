@@ -40,6 +40,8 @@
 #include "../gpu/AABB3f.h"
 #include "../gpu/builder.h"
 
+#define DBG(x)
+
 
 namespace embree
 {
