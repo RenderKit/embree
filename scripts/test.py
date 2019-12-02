@@ -163,12 +163,13 @@ def runConfig(config):
   if ispc_compiler.startswith("ispc"):
     
     ispc_version = ispc_compiler[4:]
-    if OS == "windows": bin_folder = "bin\\"
-    else              : bin_folder = "bin/"
-    if parse_version(ispc_version) < parse_version("1.11.0"):
-      bin_folder = ""
-      
+          
     if ispc_version != "":
+      
+      if OS == "windows": bin_folder = "bin\\"
+      else              : bin_folder = "bin/"
+      if parse_version(ispc_version) < parse_version("1.11.0"): bin_folder = ""
+      
       if OS == "linux":
         conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"-linux/"+bin_folder+"ispc")
       elif OS == "macosx":
