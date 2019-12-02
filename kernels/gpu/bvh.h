@@ -30,6 +30,7 @@
 #define BVH_NODE_N            16
 #define BVH_NODE_N_LOG         4
 #define BVH_MAX_STACK_ENTRIES 64
+#define BVH_INVALID_NODE_REF  -1
 
 
 /* ====== BVH Builder and Quantization config ====== */
@@ -130,7 +131,7 @@ namespace embree
 	aabb.init();
 	for (uint i=0;i<BVH_NODE_N;i++)
 	  {
-	    if (offset[i] == -1) break;
+	    if (offset[i] == BVH_INVALID_NODE_REF) break;
 	    aabb.extend(getBounds(i));
 	  }
 	return aabb;
@@ -195,7 +196,7 @@ namespace embree
 	    iupper = cselect(int4(m_valid),iupper,int4(QUANT_MIN));
 #endif	  
 	  
-	    node.offset[subgroupLocalID] = -1;
+	    node.offset[subgroupLocalID] = BVH_INVALID_NODE_REF;
 	    node.bounds_x[subgroupLocalID].lower = ilower.x();
 	    node.bounds_y[subgroupLocalID].lower = ilower.y();
 	    node.bounds_z[subgroupLocalID].lower = ilower.z();
@@ -289,7 +290,7 @@ namespace embree
       {
 	for (size_t i=0;i<BVH_NODE_N;i++)
 	  {
-	    offset[i] = 0;
+	    offset[i] = BVH_INVALID_NODE_REF;
 	    lower_t[i] = 1.0f;
 	    upper_t[i] = 0.0f;	    	    
 	    lower_x[i] = lower_y[i] = lower_z[i] = pos_inf;
@@ -378,7 +379,7 @@ namespace embree
 
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
-      const uint valid = (fnear <= ffar) & (offset != -1); //((uchar)ilower.x() <= (uchar)iupper.x());	       
+      const uint valid = (fnear <= ffar) & (offset != BVH_INVALID_NODE_REF); //((uchar)ilower.x() <= (uchar)iupper.x());	       
       return NodeIntersectionData(fnear, valid, offset);
     }
 
@@ -435,13 +436,10 @@ namespace embree
 
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
-      const uint valid = (fnear <= ffar) & (offset != -1) & (time0 <= time) & (time < time1);
+      const uint valid = (fnear <= ffar) & (offset != BVH_INVALID_NODE_REF) & (time0 <= time) & (time < time1);
 
-      /* if (subgroupLocalID == 0)  */
-      /*  	{ */
-      /*  	  out << "fnear " << fnear << " ffar " << ffar << cl::sycl::endl;  */
-      /* 	}  */
-      /*  out << "valid " << valid << cl::sycl::endl;  */
+      /* out << "fnear " << fnear << " ffar " << ffar << cl::sycl::endl; */
+      /* out << "valid " << valid << cl::sycl::endl; */
       
       return NodeIntersectionData(fnear, valid, offset);
     }

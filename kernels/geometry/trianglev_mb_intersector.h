@@ -38,7 +38,7 @@ namespace embree
         const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
         const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
         const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
-
+#if 0
 	PRINT(tri.v0);
 	PRINT(tri.v1);
 	PRINT(tri.v2);
@@ -50,7 +50,7 @@ namespace embree
 	PRINT(v0);
 	PRINT(v1);
 	PRINT(v2);
-	
+#endif	
         pre.intersect(ray,v0,v1,v2,Intersect1EpilogM<M,Mx,filter>(ray,context,tri.geomID(),tri.primID()));
       }
 

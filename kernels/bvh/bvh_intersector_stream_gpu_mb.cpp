@@ -60,7 +60,6 @@ namespace embree
       TraversalStats *tstats = nullptr;
       TSTATS(tstats = (TraversalStats *)cl::sycl::aligned_alloc(64,sizeof(TraversalStats),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared));
       TSTATS(tstats->reset());
-      
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
@@ -89,7 +88,7 @@ namespace embree
 	  FATAL("OpenCL Exception");
 	}
 	TSTATS(cl::sycl::free(tstats,deviceGPU->getGPUContext()););
-	TSTATS(std::cout << "RAY TRAVERSAL STATS: " << *tstats << std::endl);	
+	TSTATS(std::cout << "RAY TRAVERSAL STATS: " << *tstats << std::endl);
       }
       DBG(exit(0));
 #endif      

@@ -209,6 +209,8 @@ namespace embree
 	    AlignedNodeMB* n = node.alignedNodeMB();
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
 	    PRINT(offset);
+	    PRINT(parent_node_offset);
+	    PRINT(slot);
 
 	    /* set parent offset */
 	    if (parent_node_offset)
@@ -223,8 +225,10 @@ namespace embree
 	    convertToQBVHNodeNMB(gpu_node,n,inputN);
 	    
 	    for (size_t i=0;i<N;i++)
-	      if (n->child(i) != BVH::emptyNode)	      
-		convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,0,i,gpu_node_allocator,gpu_leaf_allocator,inputN);
+	      if (n->child(i) != BVH::emptyNode)
+		{
+		  convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator,inputN);
+		}
 	  }
 	else if (node.isAlignedNodeMB4D())
 	  {
@@ -234,6 +238,8 @@ namespace embree
 
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
 	    PRINT(offset);
+	    PRINT(parent_node_offset);
+	    PRINT(slot);
 
 	    /* set parent offset */
 	    if (parent_node_offset)
@@ -351,19 +357,27 @@ namespace embree
 	bvh->cleanup();
         bvh->postBuild(t0);
 
-	const size_t totalBytesAllocated = bvh->alloc.getUsedBytes();
-	PRINT(totalBytesAllocated);
+	const size_t numOrgBVHNodes = bvh->alloc.getUsedBytes() / sizeof(AlignedNodeMB);
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 	DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
-
 	const uint leaf_primitive_size = sizeof(Triangle1vMB);
-	const uint node_size       = totalBytesAllocated;
+	const uint node_size       = sizeof(gpu::QBVHNodeNMB) * numOrgBVHNodes;
 	const uint leaf_size       = 2 * numPrimitives * leaf_primitive_size;
 	const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
 	const uint node_data_start = sizeof(gpu::BVHBase);
 	const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
 	assert( (leaf_data_start % 64) == 0 );
+
+	if (unlikely(deviceGPU->verbosity(2)))
+	  {
+	    PRINT( numOrgBVHNodes );	    
+	    PRINT( leaf_primitive_size );
+	    PRINT( node_size );
+	    PRINT( leaf_size );	
+	    PRINT( totalSize );
+	  }
+	
 
 	char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	assert(bvh_mem);
@@ -384,7 +398,6 @@ namespace embree
 	scene->gpu_bvh_mb_root = (size_t)bvh_mem;
 
 	PRINT("BVH MB BUILDING DONE");      
-	//exit(0);
 	
 #endif	
 

@@ -752,15 +752,15 @@ namespace embree
       vbool<N> vmask = tNear <= tFar;
       if (unlikely(ref.isAlignedNodeMB4D())) {
         const typename BVHN<N>::AlignedNodeMB4D* node1 = (const typename BVHN<N>::AlignedNodeMB4D*) node;
-	PRINT(*node1);
+	//PRINT(*node1);
         vmask &= (node1->lower_t <= time) & (time < node1->upper_t);
       }
-      else
-	PRINT(*node);
+      /* else */
+      /* 	PRINT(*node); */
 
-      PRINT(tNear);
-      PRINT(tFar);
-      PRINT(vmask);
+      /* PRINT(tNear); */
+      /* PRINT(tFar); */
+      /* PRINT(vmask); */
       const size_t mask = movemask(vmask);
       dist = tNear;
       return mask;
