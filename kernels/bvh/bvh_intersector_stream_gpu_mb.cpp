@@ -63,18 +63,16 @@ namespace embree
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
-	    cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);	    
+	    //cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);	    
 	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(block_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
 	    
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint globalID   = item.get_global_id(0);		
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
 		{
-		  uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
-		  //out << inputRays[globalID].ray << cl::sycl::endl;
-		  
+		  uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);		  
 		  if (m_activeLanes == 0xffff)
-		    traceRayBVH16<gpu::QBVHNodeNMB,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats,out);
+		    traceRayBVH16<gpu::QBVHNodeNMB,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
 		    //out << inputRays[globalID].hit << cl::sycl::endl;
 		}
 		

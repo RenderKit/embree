@@ -142,8 +142,7 @@ namespace embree
 				     QBVHNodeN &node,			      
 				     AABB *childrenAABB,
 				     uint numChildren,
-				     const uint ID,
-				     const cl::sycl::stream &out)
+				     const uint ID)
       {
 	AABB child;
 	const uint subgroupLocalID = sg.get_local_id()[0];
@@ -330,8 +329,7 @@ namespace embree
 						     const float3 &inv_dir_org,
 						     const float time,
 						     const float tnear,
-						     const float tfar,
-						     const cl::sycl::stream &out)
+						     const float tfar)
     {
 #if 0
       const uint subgroupLocalID = sg.get_local_id()[0];      
@@ -391,8 +389,7 @@ namespace embree
 						     const float3 &inv_dir_org,
 						     const float time,
 						     const float tnear,
-						     const float tfar,
-						     const cl::sycl::stream &out)
+						     const float tfar)
     {
       const uint subgroupLocalID = sg.get_local_id()[0];      
       const uint  offset = node.offset[subgroupLocalID];
@@ -437,9 +434,6 @@ namespace embree
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
       const uint valid = (fnear <= ffar) & (offset != BVH_INVALID_NODE_REF) & (time0 <= time) & (time < time1);
-
-      /* out << "fnear " << fnear << " ffar " << ffar << cl::sycl::endl; */
-      /* out << "valid " << valid << cl::sycl::endl; */
       
       return NodeIntersectionData(fnear, valid, offset);
     }

@@ -208,9 +208,11 @@ namespace embree
 	    PRINT("ALIGNED NODE MB");
 	    AlignedNodeMB* n = node.alignedNodeMB();
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
-	    PRINT(offset);
-	    PRINT(parent_node_offset);
-	    PRINT(slot);
+	    DBG(
+		PRINT(offset);
+		PRINT(parent_node_offset);
+		PRINT(slot);
+		);
 
 	    /* set parent offset */
 	    if (parent_node_offset)
@@ -226,9 +228,7 @@ namespace embree
 	    
 	    for (size_t i=0;i<N;i++)
 	      if (n->child(i) != BVH::emptyNode)
-		{
-		  convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator,inputN);
-		}
+		convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator,inputN);
 	  }
 	else if (node.isAlignedNodeMB4D())
 	  {
@@ -237,16 +237,18 @@ namespace embree
 	    //PRINT(*n);
 
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
-	    PRINT(offset);
-	    PRINT(parent_node_offset);
-	    PRINT(slot);
+	    DBG(
+		PRINT(offset);
+		PRINT(parent_node_offset);
+		PRINT(slot);
+		);
 
 	    /* set parent offset */
 	    if (parent_node_offset)
 	      {
 		gpu::QBVHNodeNMB *parent_gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + parent_node_offset);
 		parent_gpu_node->offset[slot] = offset - parent_node_offset;
-		PRINT( parent_gpu_node->offset[slot] );
+		DBG (PRINT( parent_gpu_node->offset[slot] ); );
 		assert(((offset - parent_node_offset) & BVH_LEAF_MASK) == 0);		
 	      }
 
@@ -276,9 +278,11 @@ namespace embree
 	  }
 	else if (node.isLeaf())
 	  {
+	    size_t num; const char* tri = node.leaf(num);	    
 	    PRINT("LEAF");
-	    size_t num; const char* tri = node.leaf(num);
-	    PRINT(num);
+	    DBG(
+		PRINT(num);
+		);
 	    
 	    if (num)
 	      {
@@ -288,7 +292,7 @@ namespace embree
 		for (size_t i=0; i<num; i++)
 		  numTris += tri_mb[i].size();
 		
-		PRINT(numTris);
+		DBG( PRINT(numTris) );
 		assert(numTris <= BVH_MAX_NUM_ITEMS);
 		
 		const size_t leaf_index = gpu_leaf_allocator.fetch_add(numTris);		    
@@ -298,23 +302,13 @@ namespace embree
 		  {
 		    for (size_t j=0;j<tri_mb[i].size();j++)
 		      convertToTriangle1vMB(leaf_ptr[leaf_index+index++],tri_mb[i],j);
-		    
-		    // PRINT(i);
-		    // PRINT(tri_mb[i].v0);
-		    // PRINT(tri_mb[i].v1);
-		    // PRINT(tri_mb[i].v2);
-		    // PRINT(tri_mb[i].dv0);
-		    // PRINT(tri_mb[i].dv1);
-		    // PRINT(tri_mb[i].dv2);
-		    // PRINT(tri_mb[i].geomID());
-		    // PRINT(tri_mb[i].primID());		    
 		  }
 		assert(numTris == index);
 		
 		/* set parent offset */
 		if (parent_node_offset)
 		  {
-		    PRINT("LEAF PARENT");
+		    DBG( PRINT("LEAF PARENT") );
 		    gpu::QBVHNodeNMB *parent_gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + parent_node_offset);
 		    assert( ((size_t)parent_gpu_node % 64) == 0 );
 		    assert( ((size_t)leaf_ptr % 16) == 0 );
@@ -323,12 +317,14 @@ namespace embree
 		    assert(((offset - parent_node_offset) &  BVH_LOWER_BITS_MASK) == 0);
 
 		    parent_gpu_node->offset[slot] = offset | BVH_LEAF_MASK | (index-1);
-		    PRINT( (size_t)((char*)&leaf_ptr[leaf_index] - (char*)bvh_mem) );
-		    PRINT( offset );
-		    PRINT( numTris );
-		    gpu::NodeRef ref( parent_gpu_node->offset[slot] );
-		    PRINT( ref.getLeafOffset() );
-		    PRINT( ref.getNumLeafPrims() );
+		    DBG(
+			PRINT( (size_t)((char*)&leaf_ptr[leaf_index] - (char*)bvh_mem) );
+			PRINT( offset );
+			PRINT( numTris );
+			gpu::NodeRef ref( parent_gpu_node->offset[slot] );
+			PRINT( ref.getLeafOffset() );
+			PRINT( ref.getNumLeafPrims() );
+			);
 		    
 		    
 		  }

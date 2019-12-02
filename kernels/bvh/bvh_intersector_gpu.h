@@ -116,8 +116,7 @@ namespace embree
 									    gpu::RTCRayGPU &ray,
 									    gpu::RTCHitGPU &hit,
 									    void *bvh_mem,
-									    TraversalStats *tstats,
-									    const cl::sycl::stream &out)
+									    TraversalStats *tstats)
   {
     unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
     float        stack_dist[BVH_MAX_STACK_ENTRIES];  
@@ -181,18 +180,10 @@ namespace embree
 	    while(!cur.isLeaf()) 
 	      {
 		TSTATS(tstats->tsteps_inc());	      
-		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);
-		/* if (subgroupLocalID == 0)    */
-		/*   out << "node " << node << cl::sycl::endl;    */
-		
-		const gpu::NodeIntersectionData isec = intersectNode(sg,node,dir_mask,inv_dir,inv_dir_org,time,tnear,tfar,out);
+		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);		
+		const gpu::NodeIntersectionData isec = intersectNode(sg,node,dir_mask,inv_dir,inv_dir_org,time,tnear,tfar);
 		getClosestChildNode(sg,isec,cur,sindex,tfar,stack_offset,stack_dist);
-
-		//const BVHNodeType &next_node = *(BVHNodeType*)(bvh_base + cur);
 	      }
-
-
-	    //cur = max_uint; 
 
 	    /* stack empty */
 	    if (cur == max_uint) break; // sentinel reached -> exit
@@ -200,13 +191,10 @@ namespace embree
 	    /* leaf intersection */
 	    const uint numPrims = cur.getNumLeafPrims();
 	    const uint leafOffset = cur.getLeafOffset();    
-
-	    /* if (subgroupLocalID == 0)    */
-	    /*   out << "leafOffset " << leafOffset << " numPrims " << numPrims << cl::sycl::endl;    */
 	    
 	    const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
 	    TSTATS(tstats->isteps_inc());	  
-	    hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, time, tnear, hit_tfar, local_hit, subgroupLocalID,out);
+	    hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, time, tnear, hit_tfar, local_hit, subgroupLocalID);
 
 	    /* update tfar */
 	    tfar = sg.reduce<float>(hit_tfar, cl::sycl::intel::minimum<float>());

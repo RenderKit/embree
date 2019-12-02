@@ -116,8 +116,7 @@ namespace embree
 				      const float tnear,
 				      const float tfar,
 				      gpu::RTCHitGPU &hit,
-				      const unsigned int slotID,
-				      const cl::sycl::stream &out)
+				      const unsigned int slotID)
     {
       float new_tfar = tfar;
       const uint quadID = slotID >> 1;
@@ -177,8 +176,7 @@ namespace embree
 				      const float tnear,
 				      const float tfar,
 				      gpu::RTCHitGPU &hit,
-				      const unsigned int slotID,
-				      const cl::sycl::stream &out)
+				      const unsigned int slotID)
     {
       float new_tfar = tfar;
       if (slotID < numTris)
@@ -243,8 +241,7 @@ namespace embree
 				      const float tnear,
 				      const float tfar,
 				      gpu::RTCHitGPU &hit,
-				      const unsigned int slotID,
-				      const cl::sycl::stream &out)
+				      const unsigned int slotID)
     {
       float new_tfar = tfar;
       if (slotID < numTris)
@@ -325,8 +322,7 @@ namespace embree
 				      const float tnear,
 				      const float tfar,
 				      gpu::RTCHitGPU &hit,
-				      const unsigned int slotID,
-				      const cl::sycl::stream &out)
+				      const unsigned int slotID)
     {
       float new_tfar = tfar;
       /* not yet implemented */

@@ -301,6 +301,11 @@ extern "C" void device_render (int* pixels,
 	    const uint y = item.get_global_id(1);
 	    //if (x < width && y < height) // FIXME: causes 4x slowdown
 	      {
+#define RANDOM_SAMPLES 1
+#if RANDOM_SAMPLES == 1		
+		RandomSampler sampler;
+		RandomSampler_init(sampler, (int)x, (int)y, 0);
+#endif		
 		const float3 org = cam_p;
 		const float3 dir = normalize((float)x*cam_vx + (float)y*cam_vy + cam_vz);
 		RTCRayHit &rh = rtc_rays[y*width+x];
@@ -311,7 +316,11 @@ extern "C" void device_render (int* pixels,
 		rh.ray.dir_x = dir.x();
 		rh.ray.dir_y = dir.y();
 		rh.ray.dir_z = dir.z();
-		rh.ray.time  = 0.0f;		
+#if RANDOM_SAMPLES == 1
+		rh.ray.time  = RandomSampler_get1D(sampler);
+#else		
+		rh.ray.time  = 0.0f;
+#endif		
 		rh.ray.tfar  = (float)INFINITY;		
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
