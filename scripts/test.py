@@ -21,6 +21,9 @@ def escape(str):
   str = str.replace("\"",r"\"")
   return str
 
+def parse_version(v):
+  return tuple(map(int, v.split(".")))
+
 # detect platform
 if sys.platform.startswith("win"):
   dash = '\\'
@@ -159,6 +162,8 @@ def runConfig(config):
   ispc_compiler = config["ispc"]
   if ispc_compiler.startswith("ispc"):
     ispc_version = ispc_compiler[4:]
+    bin_folder = "bin"
+    if parse_version(ispc_version) < parse_version("1.11.0"): bin_folder = ""
     if ispc_version != "":
       if OS == "linux":
         conf.append("-D EMBREE_ISPC_EXECUTABLE=/NAS/packages/apps/ispc/"+ispc_version+"-linux/ispc")
