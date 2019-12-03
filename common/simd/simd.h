@@ -18,6 +18,10 @@
 
 #include "../math/math.h"
 
+//#if defined(__SYCL_DEVICE_ONLY__)
+//#  include "sycl.h"
+//#else
+
 /* include SSE wrapper classes */
 #if defined(__SSE__)
 #  include "sse.h"
@@ -114,3 +118,5 @@ namespace embree
     }
   }
 }
+
+//#endif

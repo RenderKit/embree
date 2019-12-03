@@ -1,7 +1,14 @@
 
+/*#if defined(__SYCL_DEVICE_ONLY__)
+#pragma message "SYCL DEVICE"
+#else
+#pragma message "SYCL HOST"
+#endif*/
+
 #include <CL/sycl.hpp>
 #include <iostream>
 #include <memory>
+#include "../../common/simd/simd.h"
 
 class NEOGPUDeviceSelector : public cl::sycl::device_selector
 {
@@ -465,6 +472,132 @@ struct function_pointer_take_varying_address_on_device_array_test : public Test
   }
 };
 
+#if 0 // FIXME: does not compile
+
+struct access_virtual_structure_test : public Test
+{
+  static const int size = 1000;
+
+  struct OtherVirtualStructure {
+    virtual void add() {}
+  };
+
+  struct VirtualStructure
+  {
+    VirtualStructure () = default;
+    
+    VirtualStructure (int value)
+      : value(value) {}
+
+    static VirtualStructure rand() {
+      return VirtualStructure(std::rand());
+    }
+
+    virtual void add() {}
+    
+    int value;
+    OtherVirtualStructure* ptr;
+  };
+
+  access_virtual_structure_test ()
+    : Test("access_virtual_structure_test") {}
+  
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
+  {
+    std::vector<VirtualStructure> A(size);
+    std::vector<VirtualStructure> B(size);
+    std::vector<VirtualStructure> C(size);
+
+    std::generate(A.begin(), A.end(), VirtualStructure::rand);
+    std::generate(B.begin(), B.end(), VirtualStructure::rand);
+    std::generate(C.begin(), C.end(), VirtualStructure::rand);
+
+    cl::sycl::buffer<VirtualStructure> bufA(A);
+    cl::sycl::buffer<VirtualStructure> bufB(B);
+    cl::sycl::buffer<VirtualStructure> bufC(C);
+    
+    queue.submit([&](cl::sycl::handler& cgh) {
+        
+        auto a = bufA.get_access<cl::sycl::access::mode::read>(cgh);
+        auto b = bufB.get_access<cl::sycl::access::mode::read>(cgh);
+        auto c = bufC.get_access<cl::sycl::access::mode::write>(cgh);
+        
+        cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
+            c[item].value = a[item].value + b[item].value;
+          });
+      });
+    
+    auto hostA = bufA.get_access<cl::sycl::access::mode::read>();
+    auto hostB = bufB.get_access<cl::sycl::access::mode::read>();
+    auto hostC = bufC.get_access<cl::sycl::access::mode::read>();
+    
+    for (int i=0; i<size; i++)
+    {
+      if (hostA[i].value+hostB[i].value != hostC[i].value)
+        return false;
+    }
+    
+    return true;
+  }
+};
+
+#endif
+
+struct subgroup_library_test : public Test
+{
+  static const int size = 256;
+  
+  subgroup_library_test ()
+    : Test("subgroup_library_test") {}
+
+  [[cl::intel_reqd_sub_group_size(16)]] static inline void test(const uint i, float* a, float* b, float* c)
+  {
+    embree::vfloat4 ai = embree::vfloat4::load(&a[i]);
+    embree::vfloat4 bi = embree::vfloat4::load(&b[i]);
+    embree::vfloat4 ci = embree::vreduce_min(ai+bi);
+    embree::vfloat4::store(&c[i],ci);
+  }
+                                                                              
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
+  {
+    float* a = (float*) cl::sycl::aligned_alloc(64,4*size*sizeof(float),device,context,cl::sycl::usm::alloc::shared);
+    float* b = (float*) cl::sycl::aligned_alloc(64,4*size*sizeof(float),device,context,cl::sycl::usm::alloc::shared);
+    float* c = (float*) cl::sycl::aligned_alloc(64,4*size*sizeof(float),device,context,cl::sycl::usm::alloc::shared);
+
+    std::generate(a, a+4*size, drand48);
+    std::generate(b, b+4*size, drand48);
+    std::generate(c, c+4*size, drand48);
+
+    queue.submit([&](cl::sycl::handler& cgh) {
+        
+        const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(16*size), cl::sycl::range<1>(16));
+	
+        cgh.parallel_for(nd_range,[=](cl::sycl::nd_item<1> item) {
+            const uint i = item.get_group(0);
+            test(4*i,a,b,c);
+          });		  
+      });
+    
+    queue.wait_and_throw();
+    
+    for (int i=0; i<4*size; i+=4)
+    {
+      embree::vfloat4 ai = embree::vfloat4::load(&a[i]);
+      embree::vfloat4 bi = embree::vfloat4::load(&b[i]);
+      embree::vfloat4 ci = embree::vreduce_min(ai+bi);
+      embree::vfloat4 ci_device = embree::vfloat4::load(&c[i]);
+      if (embree::any(ci != ci_device))
+        return false;
+    }
+
+    cl::sycl::free(a, context);
+    cl::sycl::free(b, context);
+    cl::sycl::free(c, context);
+    
+    return true;
+  }
+};
+
 int main()
 {
   cl::sycl::device device = cl::sycl::device(NEOGPUDeviceSelector());
@@ -486,12 +619,16 @@ int main()
   tests.push_back(std::unique_ptr<Test>(new function_pointer_take_uniform_address_on_device_test()));
   tests.push_back(std::unique_ptr<Test>(new function_pointer_take_uniform_address_on_device_array_test()));
 
-#if 1
+#if 0
   tests.push_back(std::unique_ptr<Test>(new single_uniform_function_pointer_test()));
   tests.push_back(std::unique_ptr<Test>(new function_pointer_take_varying_address_on_device_test()));
   tests.push_back(std::unique_ptr<Test>(new function_pointer_take_varying_address_on_device_array_test()));
 #endif
 
+  //tests.push_back(std::unique_ptr<Test>(new access_virtual_structure_test())); // FIXME: does not compile
+
+  tests.push_back(std::unique_ptr<Test>(new subgroup_library_test()));
+   
   /* invoke all tests */
   for (auto& test : tests)
     test->invoke(device,context,queue);
