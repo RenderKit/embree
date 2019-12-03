@@ -78,10 +78,19 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    //static __forceinline vfloat4 load (const void* a) { return _mm_load_ps((float*)a); }
+    static __forceinline vfloat4 load (const void* a) {
+      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+      return lid < 4 ? ((float*)a)[lid] : 0.0f;
+      //return _mm_load_ps((float*)a);
+    }
     //static __forceinline vfloat4 loadu(const void* a) { return _mm_loadu_ps((float*)a); }
 
-    //static __forceinline void store (void* ptr, const vfloat4& v) { _mm_store_ps((float*)ptr,v); }
+    static __forceinline void store (void* ptr, const vfloat4& v) {
+      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+      if (lid < 4) ((float*)ptr)[lid] = v.v;
+      //_mm_store_ps((float*)ptr,v);
+    }
+    
     //static __forceinline void storeu(void* ptr, const vfloat4& v) { _mm_storeu_ps((float*)ptr,v); }
 
     //static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &v) {
@@ -290,6 +299,17 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
+
+  __forceinline bool operator ==(const vfloat4& a, const vfloat4& b) { return true; }
+  __forceinline bool operator !=(const vfloat4& a, const vfloat4& b) { return true; }
+  __forceinline bool operator < (const vfloat4& a, const vfloat4& b) { return true; }
+  __forceinline bool operator >=(const vfloat4& a, const vfloat4& b) { return true; }
+  __forceinline bool operator > (const vfloat4& a, const vfloat4& b) { return true; }
+  __forceinline bool operator <=(const vfloat4& a, const vfloat4& b) { return true; }
+
+  __forceinline bool any(const bool a) {
+    return a;
+  }
   
 /*
   __forceinline vboolf4 operator ==(const vfloat4& a, const vfloat4& b) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_EQ); }
@@ -537,12 +557,12 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vfloat4 vreduce_min(const vfloat4& v) {
-    const float x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : float(pos_inf);
+    const float x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : +INFINITY;
     return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::minimum<float>());
   }
 
   __forceinline vfloat4 vreduce_max(const vfloat4& v) {
-    const float x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : float(neg_inf);
+    const float x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : -INFINITY;
     return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::maximum<float>());
   }
   

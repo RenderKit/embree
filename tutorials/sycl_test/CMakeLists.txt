@@ -1,3 +1,3 @@
 
 ADD_EXECUTABLE(sycl_test sycl_test.cpp)
-
+#SET_TARGET_PROPERTIES(sycl_test PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")

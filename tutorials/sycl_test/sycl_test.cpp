@@ -1,4 +1,10 @@
 
+#if defined(__SYCL_DEVICE_ONLY__)
+#pragma message "SYCL DEVICE"
+#else
+#pragma message "SYCL HOST"
+#endif
+
 #include <CL/sycl.hpp>
 #include <iostream>
 #include <memory>
@@ -539,44 +545,47 @@ struct access_virtual_structure_test : public Test
 
 struct subgroup_library_test : public Test
 {
-  static const int size = 256*16;
+  static const int size = 16;
   
   subgroup_library_test ()
     : Test("subgroup_library_test") {}
 
-  [[cl::intel_reqd_sub_group_size(16)]] static inline void test(const uint groupID, cl::sycl::intel::sub_group& subgroup, int* a, int* b, int* c)
+  [[cl::intel_reqd_sub_group_size(16)]] static inline void test(const uint i, float* a, float* b, float* c)
   {
-    const uint subgroupLocalID = subgroup.get_local_id()[0];
-    const uint i = groupID*16+subgroupLocalID;
-    c[i] = a[i] + b[i];
+    embree::vfloat4 ai = embree::vfloat4::load(&a[i]);
+    embree::vfloat4 bi = embree::vfloat4::load(&b[i]);
+    embree::vfloat4 ci = embree::vreduce_min(ai+bi);
+    embree::vfloat4::store(&c[i],ci);
   }
                                                                               
   bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
   {
-    int* a = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
-    int* b = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
-    int* c = (int*) cl::sycl::aligned_alloc(64,size*sizeof(int),device,context,cl::sycl::usm::alloc::shared);
+    float* a = (float*) cl::sycl::aligned_alloc(64,4*size*sizeof(float),device,context,cl::sycl::usm::alloc::shared);
+    float* b = (float*) cl::sycl::aligned_alloc(64,4*size*sizeof(float),device,context,cl::sycl::usm::alloc::shared);
+    float* c = (float*) cl::sycl::aligned_alloc(64,4*size*sizeof(float),device,context,cl::sycl::usm::alloc::shared);
 
-    std::generate(a, a+size, std::rand);
-    std::generate(b, b+size, std::rand);
-    std::generate(c, c+size, std::rand);
+    std::generate(a, a+4*size, drand48);
+    std::generate(b, b+4*size, drand48);
+    std::generate(c, c+4*size, drand48);
 
     queue.submit([&](cl::sycl::handler& cgh) {
         
-        const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(size), cl::sycl::range<1>(16));
+        const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(16*size), cl::sycl::range<1>(16));
 	
         cgh.parallel_for(nd_range,[=](cl::sycl::nd_item<1> item) {
-            const uint groupID = item.get_group(0);
-            cl::sycl::intel::sub_group subgroup = item.get_sub_group();
-            test(groupID,subgroup,a,b,c);
+            const uint i = item.get_group(0);
+            test(4*i,a,b,c);
           });		  
       });
     
     queue.wait_and_throw();
     
-    for (int i=0; i<size; i++)
+    for (int i=0; i<4*size; i+=4)
     {
-      if (a[i]+b[i] != c[i])
+      embree::vfloat4 ai = embree::vfloat4::load(&a[i]);
+      embree::vfloat4 bi = embree::vfloat4::load(&b[i]);
+      embree::vfloat4 ci = embree::vreduce_min(ai+bi);
+      if (embree::any(ci != embree::vfloat4::load(&c[i])))
         return false;
     }
 

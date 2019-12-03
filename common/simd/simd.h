@@ -18,8 +18,8 @@
 
 #include "../math/math.h"
 
-#if defined(SPIR64)
-#include "vfloat4_sycl.h"
+#if defined(__SYCL_DEVICE_ONLY__)
+#  include "sycl.h"
 #else
 
 /* include SSE wrapper classes */
@@ -35,8 +35,6 @@
 /* include AVX512 wrapper classes */
 #if defined (__AVX512F__)
 #  include "avx512.h"
-#endif
-
 #endif
 
 namespace embree
@@ -120,3 +118,5 @@ namespace embree
     }
   }
 }
+
+#endif
