@@ -1,9 +1,9 @@
 
-#if defined(__SYCL_DEVICE_ONLY__)
+/*#if defined(__SYCL_DEVICE_ONLY__)
 #pragma message "SYCL DEVICE"
 #else
 #pragma message "SYCL HOST"
-#endif
+#endif*/
 
 #include <CL/sycl.hpp>
 #include <iostream>
