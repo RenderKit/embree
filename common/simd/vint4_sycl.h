@@ -521,5 +521,9 @@ namespace embree
     }
     return cout << ">";
   }
+
+  inline std::ostream& operator <<(std::ostream& cout, const vint4& a) {
+    return cout;
+  }
 }
 

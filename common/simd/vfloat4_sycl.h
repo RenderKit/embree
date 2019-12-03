@@ -54,7 +54,8 @@ namespace embree
       if (lid == 3) v = d;
     }
 
-    //__forceinline explicit vfloat(const vint4& a) : v(_mm_cvtepi32_ps(a)) {}
+    __forceinline explicit vfloat(const vint4& a) : v((float)a.v) {}
+  
     /*__forceinline explicit vfloat(const vuint4& x) {
       const __m128i a   = _mm_and_si128(x,_mm_set1_epi32(0x7FFFFFFF));
       const __m128i b   = _mm_and_si128(_mm_srai_epi32(x,31),_mm_set1_epi32(0x4F000000)); //0x4F000000 = 2^31 
@@ -82,14 +83,23 @@ namespace embree
     static __forceinline vfloat4 load (const void* a) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
       return lid < 4 ? ((float*)a)[lid] : 0.0f;
+      //return vfloat4(__spirv_SubgroupBlockReadINTEL<float>((const __attribute__((ocl_global)) uint32_t*) a));
     }
-    //static __forceinline vfloat4 loadu(const void* a) { return _mm_loadu_ps((float*)a); }
+    static __forceinline vfloat4 loadu(const void* a) {
+      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+      return lid < 4 ? ((float*)a)[lid] : 0.0f;
+    }
 
     static __forceinline void store (void* ptr, const vfloat4& v) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
       if (lid < 4) ((float*)ptr)[lid] = v.v;
+      //float x = lid < 4 ? v.v : 0.0f;
+      //if (lid < 4) __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&x);
     }
-    //static __forceinline void storeu(void* ptr, const vfloat4& v) { _mm_storeu_ps((float*)ptr,v); }
+    static __forceinline void storeu(void* ptr, const vfloat4& v) {
+      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+      if (lid < 4) ((float*)ptr)[lid] = v.v;
+    }
 
     //static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &v) {
     //  return _mm_mask_compress_ps(v, mask, v);
@@ -98,17 +108,31 @@ namespace embree
     //  return _mm_mask_compress_ps(a, mask, b);
     //}
 
-    //static __forceinline vfloat4 load (const vboolf4& mask, const void* ptr) { return _mm_mask_load_ps (_mm_setzero_ps(),mask,(float*)ptr); }
-    //static __forceinline vfloat4 loadu(const vboolf4& mask, const void* ptr) { return _mm_mask_loadu_ps(_mm_setzero_ps(),mask,(float*)ptr); }
+    static __forceinline vfloat4 load (const vboolf4& mask, const void* ptr) {
+      if (mask.v) return loadu(ptr); else return vfloat4(0.0f);
+    }
+    static __forceinline vfloat4 loadu(const vboolf4& mask, const void* ptr) {
+      if (mask.v) return loadu(ptr); else return vfloat4(0.0f);
+    }
 
-    //static __forceinline void store (const vboolf4& mask, void* ptr, const vfloat4& v) { _mm_mask_store_ps ((float*)ptr,mask,v); }
-    //static __forceinline void storeu(const vboolf4& mask, void* ptr, const vfloat4& v) { _mm_mask_storeu_ps((float*)ptr,mask,v); }
+    static __forceinline void store (const vboolf4& mask, void* ptr, const vfloat4& v) {
+      if (mask.v) storeu(ptr,v);
+    }
+    static __forceinline void storeu(const vboolf4& mask, void* ptr, const vfloat4& v) {
+      if (mask.v) storeu(ptr,v);
+    }
 
-    //static __forceinline vfloat4 broadcast(const void* a) { return _mm_broadcast_ss((float*)a); }
+    static __forceinline vfloat4 broadcast(const void* a) {
+      return vfloat4(*(float*)a);
+    }
 
-    //static __forceinline vfloat4 load_nt (const float* ptr) {
-    //  return _mm_castsi128_ps(_mm_stream_load_si128((__m128i*)ptr));
-    //}
+    static __forceinline vfloat4 load_nt (const float* ptr) {
+      return load(ptr);
+    }
+
+    static __forceinline void store_nt(void* ptr, const vfloat4& v) {
+      store(ptr,v);
+    }
 
     //static __forceinline vfloat4 load(const char* ptr) {
     //  return _mm_cvtepi32_ps(_mm_cvtepi8_epi32(_mm_loadu_si128((__m128i*)ptr)));
@@ -125,65 +149,26 @@ namespace embree
     //static __forceinline vfloat4 load(const unsigned short* ptr) {
     //  return _mm_mul_ps(vfloat4(vint4::load(ptr)),vfloat4(1.0f/65535.0f));
     //}
-    
-    //static __forceinline void store_nt(void* ptr, const vfloat4& v) {
-    //  _mm_stream_ps((float*)ptr,v);
-    //}
 
-#if 0
     template<int scale = 4>
     static __forceinline vfloat4 gather(const float* ptr, const vint4& index) {
-#if defined(__AVX2__)
-      return _mm_i32gather_ps(ptr, index, scale);
-#else
-      return vfloat4(
-        *(float*)(((char*)ptr)+scale*index[0]),
-        *(float*)(((char*)ptr)+scale*index[1]),
-        *(float*)(((char*)ptr)+scale*index[2]),
-        *(float*)(((char*)ptr)+scale*index[3]));
-#endif
+      return *(float*)((char*)ptr + scale*index.v);
     }
 
     template<int scale = 4>
-    static __forceinline vfloat4 gather(const vboolf4& mask, const float* ptr, const vint4& index) {
-      vfloat4 r = zero;
-#if defined(__AVX512VL__)
-      return _mm_mmask_i32gather_ps(r, mask, index, ptr, scale);
-#elif defined(__AVX2__)
-      return _mm_mask_i32gather_ps(r, ptr, index, mask, scale);
-#else
-      if (likely(mask[0])) r[0] = *(float*)(((char*)ptr)+scale*index[0]);
-      if (likely(mask[1])) r[1] = *(float*)(((char*)ptr)+scale*index[1]);
-      if (likely(mask[2])) r[2] = *(float*)(((char*)ptr)+scale*index[2]);
-      if (likely(mask[3])) r[3] = *(float*)(((char*)ptr)+scale*index[3]);
-      return r;
-#endif
+      static __forceinline vfloat4 gather(const vboolf4& mask, const float* ptr, const vint4& index) {
+      if (mask.v) return gather<scale>(ptr,index);
+      else        return vfloat4(0.0f);
     }
 
     template<int scale = 4>
-    static __forceinline void scatter(void* ptr, const vint4& index, const vfloat4& v)
-    {
-#if defined(__AVX512VL__)
-      _mm_i32scatter_ps((float*)ptr, index, v, scale);
-#else
-      *(float*)(((char*)ptr)+scale*index[0]) = v[0];
-      *(float*)(((char*)ptr)+scale*index[1]) = v[1];
-      *(float*)(((char*)ptr)+scale*index[2]) = v[2];
-      *(float*)(((char*)ptr)+scale*index[3]) = v[3];
-#endif
+      static __forceinline void scatter(void* ptr, const vint4& index, const vfloat4& v) {
+      *(float*) ((char*)ptr + scale*index.v) = v.v;
     }
 
     template<int scale = 4>
-    static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vfloat4& v)
-    {
-#if defined(__AVX512VL__)
-      _mm_mask_i32scatter_ps((float*)ptr ,mask, index, v, scale);
-#else
-      if (likely(mask[0])) *(float*)(((char*)ptr)+scale*index[0]) = v[0];
-      if (likely(mask[1])) *(float*)(((char*)ptr)+scale*index[1]) = v[1];
-      if (likely(mask[2])) *(float*)(((char*)ptr)+scale*index[2]) = v[2];
-      if (likely(mask[3])) *(float*)(((char*)ptr)+scale*index[3]) = v[3];
-#endif
+    static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vfloat4& v) {
+      if (mask.v) scatter<scale>(ptr,index,v);
     }
 
     static __forceinline void store(const vboolf4& mask, char* ptr, const vint4& ofs, const vfloat4& v) {
@@ -192,13 +177,15 @@ namespace embree
     static __forceinline void store(const vboolf4& mask, float* ptr, const vint4& ofs, const vfloat4& v) {
       scatter<4>(mask,ptr,ofs,v);
     }
-#endif
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    //__forceinline const float& operator [](size_t index) const { assert(index < 4); return f[index]; }
+    __forceinline const float operator [](size_t index) const {
+      assert(index < 4);
+      return __spirv_GroupBroadcast<float>(__spv::Scope::Subgroup, v, index);
+    }
     //__forceinline       float& operator [](size_t index)       { assert(index < 4); return f[index]; }
 
     //friend __forceinline vfloat4 select(const vboolf4& m, const vfloat4& t, const vfloat4& f) {
@@ -609,5 +596,9 @@ namespace embree
       }
     }
     return cout << ">";
+  }
+
+  inline std::ostream& operator <<(std::ostream& cout, const vfloat4& a) {
+    return cout;
   }
 }

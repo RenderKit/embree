@@ -212,4 +212,8 @@ namespace embree
     }
     return cout << ">";
   }
+
+  inline std::ostream& operator <<(std::ostream& cout, const vboolf4& a) {
+    return cout;
+  }
 }

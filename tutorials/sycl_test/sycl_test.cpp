@@ -545,7 +545,7 @@ struct access_virtual_structure_test : public Test
 
 struct subgroup_library_test : public Test
 {
-  static const int size = 16;
+  static const int size = 256;
   
   subgroup_library_test ()
     : Test("subgroup_library_test") {}
@@ -585,7 +585,8 @@ struct subgroup_library_test : public Test
       embree::vfloat4 ai = embree::vfloat4::load(&a[i]);
       embree::vfloat4 bi = embree::vfloat4::load(&b[i]);
       embree::vfloat4 ci = embree::vreduce_min(ai+bi);
-      if (embree::any(ci != embree::vfloat4::load(&c[i])))
+      embree::vfloat4 ci_device = embree::vfloat4::load(&c[i]);
+      if (embree::any(ci != ci_device))
         return false;
     }
 
