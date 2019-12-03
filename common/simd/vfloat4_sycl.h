@@ -186,11 +186,14 @@ namespace embree
       assert(index < 4);
       return __spirv_GroupBroadcast<float>(__spv::Scope::Subgroup, v, index);
     }
-    //__forceinline       float& operator [](size_t index)       { assert(index < 4); return f[index]; }
+    __forceinline float operator [](size_t index) {
+      assert(index < 4);
+      return __spirv_GroupBroadcast<float>(__spv::Scope::Subgroup, v, index);
+    }
 
-    //friend __forceinline vfloat4 select(const vboolf4& m, const vfloat4& t, const vfloat4& f) {
-    //  return _mm_mask_blend_ps(m, f, t);
-    //}
+    friend __forceinline vfloat4 select(const vboolf4& m, const vfloat4& t, const vfloat4& f) {
+      return m.v ? t : f;
+    }
   };
 
 
