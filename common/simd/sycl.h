@@ -22,4 +22,5 @@
 #include "../math/constants.h"
 #include "varying.h"
 
+#include "vboolf4_sycl.h"
 #include "vfloat4_sycl.h"

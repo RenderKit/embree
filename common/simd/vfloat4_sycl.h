@@ -24,7 +24,7 @@ namespace embree
   {
     //ALIGNED_STRUCT_(16);
     
-    //typedef vboolf4 Bool;
+    typedef vboolf4 Bool;
     //typedef vint4   Int;
     //typedef vfloat4 Float;
     
@@ -300,24 +300,12 @@ namespace embree
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline bool operator ==(const vfloat4& a, const vfloat4& b) { return true; }
-  __forceinline bool operator !=(const vfloat4& a, const vfloat4& b) { return true; }
-  __forceinline bool operator < (const vfloat4& a, const vfloat4& b) { return true; }
-  __forceinline bool operator >=(const vfloat4& a, const vfloat4& b) { return true; }
-  __forceinline bool operator > (const vfloat4& a, const vfloat4& b) { return true; }
-  __forceinline bool operator <=(const vfloat4& a, const vfloat4& b) { return true; }
-
-  __forceinline bool any(const bool a) {
-    return a;
-  }
-  
-/*
-  __forceinline vboolf4 operator ==(const vfloat4& a, const vfloat4& b) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_EQ); }
-  __forceinline vboolf4 operator !=(const vfloat4& a, const vfloat4& b) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_NE); }
-  __forceinline vboolf4 operator < (const vfloat4& a, const vfloat4& b) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_LT); }
-  __forceinline vboolf4 operator >=(const vfloat4& a, const vfloat4& b) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_GE); }
-  __forceinline vboolf4 operator > (const vfloat4& a, const vfloat4& b) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_GT); }
-  __forceinline vboolf4 operator <=(const vfloat4& a, const vfloat4& b) { return _mm_cmp_ps_mask(a, b, _MM_CMPINT_LE); }
+  __forceinline vboolf4 operator ==(const vfloat4& a, const vfloat4& b) { return vboolf4(a.v == b.v); }
+  __forceinline vboolf4 operator !=(const vfloat4& a, const vfloat4& b) { return vboolf4(a.v != b.v); }
+  __forceinline vboolf4 operator < (const vfloat4& a, const vfloat4& b) { return vboolf4(a.v <  b.v); }
+  __forceinline vboolf4 operator >=(const vfloat4& a, const vfloat4& b) { return vboolf4(a.v >= b.v); }
+  __forceinline vboolf4 operator > (const vfloat4& a, const vfloat4& b) { return vboolf4(a.v >  b.v); }
+  __forceinline vboolf4 operator <=(const vfloat4& a, const vfloat4& b) { return vboolf4(a.v <= b.v); }
 
   __forceinline vboolf4 operator ==(const vfloat4& a, float          b) { return a == vfloat4(b); }
   __forceinline vboolf4 operator ==(float          a, const vfloat4& b) { return vfloat4(a) == b; }
@@ -344,13 +332,14 @@ namespace embree
   __forceinline vboolf4 gt(const vfloat4& a, const vfloat4& b) { return a >  b; }
   __forceinline vboolf4 le(const vfloat4& a, const vfloat4& b) { return a <= b; }
 
-  __forceinline vboolf4 eq(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_EQ); }
-  __forceinline vboolf4 ne(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_NE); }
-  __forceinline vboolf4 lt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LT); }
-  __forceinline vboolf4 ge(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GE); }
-  __forceinline vboolf4 gt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GT); }
-  __forceinline vboolf4 le(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LE); }
+  //__forceinline vboolf4 eq(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_EQ); }
+  //__forceinline vboolf4 ne(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_NE); }
+  //__forceinline vboolf4 lt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LT); }
+  //__forceinline vboolf4 ge(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GE); }
+  //__forceinline vboolf4 gt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GT); }
+  //__forceinline vboolf4 le(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LE); }
 
+  /*
   template<int mask>
     __forceinline vfloat4 select(const vfloat4& t, const vfloat4& f)
   {
@@ -612,7 +601,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  inline std::ostream& operator <<(std::ostream& cout, const vfloat4& a)
+  inline const cl::sycl::stream& operator <<(const cl::sycl::stream& cout, const vfloat4& a)
   {
     cout << "<";
     for (int i=0; i<4; i++) {
