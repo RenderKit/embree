@@ -34,7 +34,7 @@ namespace embree
   static const uint mask_uint = 0xfffffff0;
 
   template<typename T>
-    __forceinline T wg_align(T x, unsigned int alignment)
+    __forceinline T block_align(T x, unsigned int alignment)
     {
       return ((x + alignment-1)/alignment)*alignment;
     }  
@@ -128,7 +128,7 @@ namespace embree
 
     /* cannot handle masked control flow yet */
     uint m_activeLanes = m_active;
-    m_activeLanes = gpu::cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
+    //m_activeLanes = gpu::cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
 
     const float3 org16   = ray.org();
     const float3 dir16   = ray.dir();
@@ -149,7 +149,7 @@ namespace embree
 	const float tnear = sg.broadcast<float>(tnear16,rayID);
 	float tfar        = sg.broadcast<float>(tfar16 ,rayID);
 	float hit_tfar    = tfar;
-	        
+	
 	const uint3 dir_mask = gpu::cselect(dir >= 0.0f,uint3(0),uint3(1));
 	const float3 new_dir = gpu::cselect(dir != 0.0f, dir, float3(1E-18f));
 	const float3 inv_dir = cl::sycl::native::recip(new_dir);
@@ -180,7 +180,7 @@ namespace embree
 	    while(!cur.isLeaf()) 
 	      {
 		TSTATS(tstats->tsteps_inc());	      
-		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);
+		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);		
 		const gpu::NodeIntersectionData isec = intersectNode(sg,node,dir_mask,inv_dir,inv_dir_org,time,tnear,tfar);
 		getClosestChildNode(sg,isec,cur,sindex,tfar,stack_offset,stack_dist);
 	      }
@@ -191,7 +191,7 @@ namespace embree
 	    /* leaf intersection */
 	    const uint numPrims = cur.getNumLeafPrims();
 	    const uint leafOffset = cur.getLeafOffset();    
-
+	    
 	    const Primitive *const prim = (Primitive *)(bvh_base + leafOffset);
 	    TSTATS(tstats->isteps_inc());	  
 	    hit_tfar = intersectPrimitive1v(sg, prim, numPrims, org, dir, time, tnear, hit_tfar, local_hit, subgroupLocalID);

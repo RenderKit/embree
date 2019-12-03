@@ -40,6 +40,8 @@
 #include "../gpu/AABB3f.h"
 #include "../gpu/builder.h"
 
+#define DBG(x)
+
 
 namespace embree
 {
@@ -122,6 +124,30 @@ namespace embree
 	  }	
       }
 
+      inline void convertToQBVHNodeNMB(gpu::QBVHNodeNMB *gpu_node, const AlignedNodeMB *const n, const size_t inputN)
+      {
+	gpu_node->clear();
+	for (size_t i=0;i<inputN;i++)
+	  {
+	    gpu_node->offset[i]   = 0;
+	    gpu_node->lower_t[i]  = neg_inf;
+	    gpu_node->upper_t[i]  = pos_inf;
+	    gpu_node->lower_x[i]  = n->lower_x[i];
+	    gpu_node->upper_x[i]  = n->upper_x[i];
+	    gpu_node->lower_y[i]  = n->lower_y[i];
+	    gpu_node->upper_y[i]  = n->upper_y[i];
+	    gpu_node->lower_z[i]  = n->lower_z[i];
+	    gpu_node->upper_z[i]  = n->upper_z[i];
+	    gpu_node->lower_dx[i] = n->lower_dx[i];
+	    gpu_node->upper_dx[i] = n->upper_dx[i];
+	    gpu_node->lower_dy[i] = n->lower_dy[i];
+	    gpu_node->upper_dy[i] = n->upper_dy[i];
+	    gpu_node->lower_dz[i] = n->lower_dz[i];
+	    gpu_node->upper_dz[i] = n->upper_dz[i];
+
+	  }	
+      }
+      
       inline void convertToTriangle1vMB(gpu::Triangle1vMB &tri1v, const Triangle4vMB &tri_block, const size_t slot)
       {
 	tri1v.v0.x() = tri_block.v0.x[slot];
@@ -183,25 +209,49 @@ namespace embree
 	  {
 	    PRINT("ALIGNED NODE MB");
 	    AlignedNodeMB* n = node.alignedNodeMB();
+	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
+	    DBG(
+		PRINT(offset);
+		PRINT(parent_node_offset);
+		PRINT(slot);
+		);
+
+	    /* set parent offset */
+	    if (parent_node_offset)
+	      {
+		gpu::QBVHNodeNMB *parent_gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + parent_node_offset);
+		assert(((offset - parent_node_offset) & BVH_LEAF_MASK) == 0);
+		parent_gpu_node->offset[slot] = offset - parent_node_offset;
+	      }
+
+	    /* create new gpu node and convert layout */
+	    gpu::QBVHNodeNMB *gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + offset);
+	    convertToQBVHNodeNMB(gpu_node,n,inputN);
+	    
 	    for (size_t i=0;i<N;i++)
-	      if (n->child(i) != BVH::emptyNode)	      
-		convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,0,i,gpu_node_allocator,gpu_leaf_allocator,inputN);
+	      if (n->child(i) != BVH::emptyNode)
+		convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator,inputN);
 	  }
 	else if (node.isAlignedNodeMB4D())
 	  {
 	    PRINT("ALIGNED NODE MB 4D");
 	    AlignedNodeMB4D* n = node.alignedNodeMB4D();
-	    PRINT(*n);
+	    //PRINT(*n);
 
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
-	    PRINT(offset);
+	    DBG(
+		PRINT(offset);
+		PRINT(parent_node_offset);
+		PRINT(slot);
+		);
 
 	    /* set parent offset */
 	    if (parent_node_offset)
 	      {
 		gpu::QBVHNodeNMB *parent_gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + parent_node_offset);
 		parent_gpu_node->offset[slot] = offset - parent_node_offset;
-		PRINT( parent_gpu_node->offset[slot] );
+		DBG (PRINT( parent_gpu_node->offset[slot] ); );
+		assert(((offset - parent_node_offset) & BVH_LEAF_MASK) == 0);		
 	      }
 
 	    /* create new gpu node and convert layout */
@@ -230,9 +280,11 @@ namespace embree
 	  }
 	else if (node.isLeaf())
 	  {
+	    size_t num; const char* tri = node.leaf(num);	    
 	    PRINT("LEAF");
-	    size_t num; const char* tri = node.leaf(num);
-	    PRINT(num);
+	    DBG(
+		PRINT(num);
+		);
 	    
 	    if (num)
 	      {
@@ -241,26 +293,46 @@ namespace embree
 		size_t numTris=0;
 		for (size_t i=0; i<num; i++)
 		  numTris += tri_mb[i].size();
-
+		
+		DBG( PRINT(numTris) );
+		assert(numTris <= BVH_MAX_NUM_ITEMS);
+		
 		const size_t leaf_index = gpu_leaf_allocator.fetch_add(numTris);		    
 
 		size_t index=0;
 		for (size_t i=0; i<num; i++)
 		  {
 		    for (size_t j=0;j<tri_mb[i].size();j++)
-		      convertToTriangle1vMB(leaf_ptr[index++],tri_mb[i],j);
-		    
-		    PRINT(i);
-		    PRINT(tri_mb[i].v0);
-		    PRINT(tri_mb[i].v1);
-		    PRINT(tri_mb[i].v2);
-		    PRINT(tri_mb[i].dv0);
-		    PRINT(tri_mb[i].dv1);
-		    PRINT(tri_mb[i].dv2);
-		    PRINT(tri_mb[i].geomID());
-		    PRINT(tri_mb[i].primID());		    
+		      convertToTriangle1vMB(leaf_ptr[leaf_index+index++],tri_mb[i],j);
 		  }
+		assert(numTris == index);
+		
+		/* set parent offset */
+		if (parent_node_offset)
+		  {
+		    DBG( PRINT("LEAF PARENT") );
+		    gpu::QBVHNodeNMB *parent_gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + parent_node_offset);
+		    assert( ((size_t)parent_gpu_node % 64) == 0 );
+		    assert( ((size_t)leaf_ptr % 16) == 0 );
+		    
+		    const unsigned int offset = (size_t)((char*)&leaf_ptr[leaf_index] - (char*)parent_gpu_node);
+		    assert(((offset - parent_node_offset) &  BVH_LOWER_BITS_MASK) == 0);
+
+		    parent_gpu_node->offset[slot] = offset | BVH_LEAF_MASK | (index-1);
+		    DBG(
+			PRINT( (size_t)((char*)&leaf_ptr[leaf_index] - (char*)bvh_mem) );
+			PRINT( offset );
+			PRINT( numTris );
+			gpu::NodeRef ref( parent_gpu_node->offset[slot] );
+			PRINT( ref.getLeafOffset() );
+			PRINT( ref.getNumLeafPrims() );
+			);
+		    
+		    
+		  }
+		
 	      }
+	    
 	  }
 	else {
 	  throw std::runtime_error("not supported node type in bvh_statistics");
@@ -283,19 +355,28 @@ namespace embree
 	bvh->cleanup();
         bvh->postBuild(t0);
 
-	const size_t totalBytesAllocated = bvh->alloc.getUsedBytes();
-	PRINT(totalBytesAllocated);
+	const size_t numOrgBVHNodes = bvh->alloc.getUsedBytes() / sizeof(AlignedNodeMB);
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 	DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
-
 	const uint leaf_primitive_size = sizeof(Triangle1vMB);
-	const uint node_size       = totalBytesAllocated;
-	const uint leaf_size       = numPrimitives * leaf_primitive_size;
+	const uint node_size       = sizeof(gpu::QBVHNodeNMB) * numOrgBVHNodes;
+	const uint leaf_size       = 2 * numPrimitives * leaf_primitive_size;
 	const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
 	const uint node_data_start = sizeof(gpu::BVHBase);
 	const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
+	assert( (leaf_data_start % 64) == 0 );
+
+	if (unlikely(deviceGPU->verbosity(2)))
+	  {
+	    PRINT( numOrgBVHNodes );	    
+	    PRINT( leaf_primitive_size );
+	    PRINT( node_size );
+	    PRINT( leaf_size );	
+	    PRINT( totalSize );
+	  }
 	
+
 	char *bvh_mem = (char*)cl::sycl::aligned_alloc(64,totalSize,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared);
 	assert(bvh_mem);
 
@@ -307,13 +388,14 @@ namespace embree
 
 	convertToGPULayout(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator,N);
 
-	assert(gpu_node_allocator.load() <= leaf_data_start);
-	assert(gpu_leaf_allocator.load() == numPrimitives);
+	PRINT(gpu_leaf_allocator.load());
+	PRINT(numPrimitives);
+	assert(gpu_node_allocator.load() <= leaf_data_start);	
+	assert(gpu_leaf_allocator.load() <= leaf_size);
 
 	scene->gpu_bvh_mb_root = (size_t)bvh_mem;
 
 	PRINT("BVH MB BUILDING DONE");      
-	//exit(0);
 	
 #endif	
 
@@ -365,7 +447,7 @@ namespace embree
     };
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVHGPUTriangle1vMBSceneBuilderSAH (void* bvh, Scene* scene) { return new BVHGPUBuilderMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); }
+    Builder* BVHGPUTriangle1vMBSceneBuilderSAH (void* bvh, Scene* scene) { return new BVHGPUBuilderMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); } 
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)

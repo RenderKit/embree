@@ -17,6 +17,9 @@
 #include "bvh_intersector_gpu.h"
 
 #define DBG(x) 
+#define DBG_PRINT_BUFFER_SIZE 1024*1024
+//#define DBG_PRINT_BUFFER_SIZE 0
+#define DBG_PRINT_LINE_SIZE 512
 
 namespace embree
 {
@@ -75,7 +78,8 @@ namespace embree
 
       {
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
-	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(wg_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
+	    //cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);	    	    
+	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(block_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
 	    
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint globalID   = item.get_global_id(0);

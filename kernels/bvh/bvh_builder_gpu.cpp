@@ -243,9 +243,9 @@ namespace embree
 	  {	    
 	    if (subgroup.get_local_id() == 0)
 	      {
-		const uint leaf_offset = createLeaf(globals,current.start,items);
+		const uint leaf_offset = createLeaf(globals,bvh_mem,current.parent,current.start,items);
 		DBG_BUILD(out << "leaf_offset " << leaf_offset << cl::sycl::endl);
-		*current.parent = gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);		
+		*current.parent = leaf_offset; //gpu::encodeOffset(bvh_mem,current.parent,leaf_offset);		
 	      }
 	  }
 	else
@@ -309,7 +309,7 @@ namespace embree
 #endif
 	    
 	    /* create bvh node */
-	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem,out);
+	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem);
 
 	    /* set parent pointer in child build records */
 	    struct gpu::QBVHNodeN *node = (struct gpu::QBVHNodeN*)(bvh_mem + node_offset);
@@ -359,7 +359,7 @@ namespace embree
       {
 	const uint index = primref_index0[t];
 	primref_index1[t] = index;      
-	binInfo2.atomicUpdate(binMapping,primref[index],out);
+	binInfo2.atomicUpdate(binMapping,primref[index]);
       }
 
     item.barrier(cl::sycl::access::fence_space::local_space);
@@ -647,7 +647,7 @@ namespace embree
 	    /* update parent pointer*/
 
 	    /* create bvh node */
-	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem,out);
+	    uint node_offset = gpu::createNode(subgroup,globals,IDs,childrenAABB,numChildren,bvh_mem);
 
 	    /* set parent pointer in child build records */
 	    struct gpu::QBVHNodeN *node = (struct gpu::QBVHNodeN*)(bvh_mem + node_offset);
@@ -777,7 +777,7 @@ namespace embree
 		    break;
 		  }
 		
-		if (nodeN->offset[i] > globals->totalAllocatedMem)
+		if (gpu::NodeRef(nodeN->offset[i]).getLeafOffset() > globals->totalAllocatedMem)
 		  {
 		    out << "offset error " << i << " nodeN->offset[i] " << nodeN->offset[i] << " total allocated " << globals->totalAllocatedMem << cl::sycl::endl;
 		    break;
@@ -936,16 +936,26 @@ namespace embree
 	cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
 	const int maxWorkGroupSize = deviceGPU->getGPUMaxWorkGroupSize();
 	    
-	PRINT(maxWorkGroupSize);
 
 	/* --- estimate size of the BVH --- */
 	const uint leaf_primitive_size = sizeof(Primitive);
-	const uint node_size       = numPrimitives * sizeof(gpu::QBVHNodeN) / 2;
+	const uint node_size       = ((numPrimitives+1)/2) * sizeof(gpu::QBVHNodeN);
 	const uint leaf_size       = numPrimitives * leaf_primitive_size;
 	const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
 	const uint node_data_start = sizeof(gpu::BVHBase);
 	const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
-	    
+
+	if (unlikely(deviceGPU->verbosity(2)))
+	  {
+	    PRINT( maxWorkGroupSize );	
+	    PRINT( leaf_primitive_size );
+	    PRINT( node_size );
+	    PRINT( leaf_size );	
+	    PRINT( totalSize );
+	  }
+
+	assert( (leaf_data_start % 64) == 0 );
+	
 	/* --- allocate and set buffers --- */
 
 	double alloc_time0 = getSeconds();
@@ -963,7 +973,7 @@ namespace embree
 	assert(globals);
 
 	const size_t totalUSMAllocations = totalSize + sizeof(uint)*2*numPrimitives + sizeof(gpu::Globals);
-	  
+
 	double alloc_time1 = getSeconds();
 	
 	if (unlikely(deviceGPU->verbosity(2)))

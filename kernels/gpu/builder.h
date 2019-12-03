@@ -461,7 +461,7 @@ namespace embree
 	  }
       }
 
-      [[cl::intel_reqd_sub_group_size(BINS)]] inline void atomicUpdate( const gpu::BinMapping &binMapping, const gpu::AABB &primref,const cl::sycl::stream &out)
+      [[cl::intel_reqd_sub_group_size(BINS)]] inline void atomicUpdate( const gpu::BinMapping &binMapping, const gpu::AABB &primref)
       {
 	const float4 p = primref.centroid2();
 	const float4 bin4 = (p-binMapping.ofs)*binMapping.scale;
@@ -566,30 +566,34 @@ namespace embree
       return relative_offset;
     }
 
-    inline uint createLeaf(const Globals &globals,		 
+    inline uint createLeaf(const Globals &globals,
+			   char *bvh_mem,
+			   uint *parent,
 			   const uint start,
 			   const uint items)
-    {	
-      const uint offset = globals.leaf_mem_allocator_start + start * globals.leafSize;
+    {
+      ulong global_parent_offset = (ulong)parent - (ulong)bvh_mem;
+      // parent node address starts at least on 64 bytes boundary      
+      global_parent_offset = global_parent_offset & (~63);
+      const uint global_child_offset = globals.leaf_mem_allocator_start + start * globals.leafSize;      
+      const uint offset = global_child_offset - (uint)global_parent_offset;
+      /* if (offset & BVH_LOWER_BITS_MASK) */
+      /* 	out << "offset & BVH_LOWER_BITS_MASK " << (offset&BVH_LOWER_BITS_MASK) << cl::sycl::endl; */
       const unsigned int final = offset | BVH_LEAF_MASK | (items-1);
       return final;
     }
-
     
-    inline uint createNode(cl::sycl::intel::sub_group &subgroup, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem, const cl::sycl::stream &out)
+    inline uint createNode(cl::sycl::intel::sub_group &subgroup, Globals &globals, const uint ID, struct AABB *childrenAABB, uint numChildren, char *bvh_mem)
     {
       const uint subgroupLocalID = subgroup.get_local_id()[0];
-
       uint node_offset = 0;
       if (subgroupLocalID == 0)
 	{
 	  node_offset = globals.alloc_node_mem(sizeof(gpu::QBVHNodeN));
-	  DBG_BUILD(out << "node offset " << node_offset << cl::sycl::endl);
 	}
       node_offset = subgroup.broadcast<uint>(node_offset,0); 
-
       gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_mem + node_offset);
-      gpu::QBVHNodeN::init(subgroup,node,childrenAABB,numChildren,ID,out);
+      gpu::QBVHNodeN::init(subgroup,node,childrenAABB,numChildren,ID);
       return node_offset;      
     }
 

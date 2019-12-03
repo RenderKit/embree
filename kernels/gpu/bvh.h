@@ -22,19 +22,20 @@
 
 /* ====== BVH16 config ====== */
 
-#define BINS 16
-
-#define BVH_LEAF_MASK_SHIFT  3
-#define BVH_LEAF_MASK        (1<<BVH_LEAF_MASK_SHIFT)
-#define BVH_LOWER_BITS_MASK  ((1<<(BVH_LEAF_MASK_SHIFT+1))-1)
-#define BVH_NODE_N           16
-#define BVH_NODE_N_LOG       4
-
+#define BVH_LEAF_MASK_SHIFT   31
+#define BVH_LEAF_MASK         (1<<BVH_LEAF_MASK_SHIFT)
+#define BVH_NUM_ITEMS_SHIFT    4
+#define BVH_LOWER_BITS_MASK   ((1<<(BVH_NUM_ITEMS_SHIFT))-1)
+#define BVH_MAX_NUM_ITEMS     (BVH_LOWER_BITS_MASK+1)
+#define BVH_NODE_N            16
+#define BVH_NODE_N_LOG         4
 #define BVH_MAX_STACK_ENTRIES 64
+#define BVH_INVALID_NODE_REF  -1
 
 
-/* ====== QUANTIZATION config ====== */
+/* ====== BVH Builder and Quantization config ====== */
 
+#define BINS 16
 #define QUANT_BITS            8
 #define QUANT_MIN             0
 #define QUANT_MAX             255
@@ -77,16 +78,13 @@ namespace embree
 
       __forceinline size_t isLeaf() const { return offset & BVH_LEAF_MASK; }
       
-      __forceinline uint getNumLeafPrims() { return (offset & (BVH_LEAF_MASK-1))+1; }      
-      __forceinline uint getLeafOffset()   { return offset & (~BVH_LOWER_BITS_MASK); }
+      __forceinline uint getNumLeafPrims() const  { return (offset & BVH_LOWER_BITS_MASK)+1; }      
+      __forceinline uint getLeafOffset() const  { return offset & (~(BVH_LOWER_BITS_MASK|BVH_LEAF_MASK)); }
+      
       
     private:
       uint offset;
-    };
-
-
-    
-    
+    };    
     
     /* ======================================================================== */
     /* ============================== QBVH NODE =============================== */
@@ -133,7 +131,7 @@ namespace embree
 	aabb.init();
 	for (uint i=0;i<BVH_NODE_N;i++)
 	  {
-	    if (offset[i] == -1) break;
+	    if (offset[i] == BVH_INVALID_NODE_REF) break;
 	    aabb.extend(getBounds(i));
 	  }
 	return aabb;
@@ -144,8 +142,7 @@ namespace embree
 				     QBVHNodeN &node,			      
 				     AABB *childrenAABB,
 				     uint numChildren,
-				     const uint ID,
-				     const cl::sycl::stream &out)
+				     const uint ID)
       {
 	AABB child;
 	const uint subgroupLocalID = sg.get_local_id()[0];
@@ -198,7 +195,7 @@ namespace embree
 	    iupper = cselect(int4(m_valid),iupper,int4(QUANT_MIN));
 #endif	  
 	  
-	    node.offset[subgroupLocalID] = -1;
+	    node.offset[subgroupLocalID] = BVH_INVALID_NODE_REF;
 	    node.bounds_x[subgroupLocalID].lower = ilower.x();
 	    node.bounds_y[subgroupLocalID].lower = ilower.y();
 	    node.bounds_z[subgroupLocalID].lower = ilower.z();
@@ -242,7 +239,7 @@ namespace embree
 
     struct QBVHNodeNMB
     {              
-      uint  offset[BVH_NODE_N];
+      NodeRef offset[BVH_NODE_N];
       float lower_t[BVH_NODE_N];
       float upper_t[BVH_NODE_N];             
       float lower_x[BVH_NODE_N]; 
@@ -292,7 +289,7 @@ namespace embree
       {
 	for (size_t i=0;i<BVH_NODE_N;i++)
 	  {
-	    offset[i] = 0;
+	    offset[i] = BVH_INVALID_NODE_REF;
 	    lower_t[i] = 1.0f;
 	    upper_t[i] = 0.0f;	    	    
 	    lower_x[i] = lower_y[i] = lower_z[i] = pos_inf;
@@ -307,7 +304,7 @@ namespace embree
       for (uint i=0;i<BVH_NODE_N;i++)
 	{
 	  out << " i " << i
-	      << " offset " << node.offset[i]
+	      << " offset " << (uint)node.offset[i] << " offset " << node.offset[i].getLeafOffset() << " numPrims " << node.offset[i].getNumLeafPrims()	 
 	      << " time (" << node.lower_t[i] << "," << node.upper_t[i] << ") "
 	      << "bounds0 " << node.bounds_lower(i) << " bounds1 " << node.bounds_upper(i) << cl::sycl::endl;
 	}      
@@ -380,7 +377,7 @@ namespace embree
 
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
-      const uint valid = (fnear <= ffar) & (offset != -1); //((uchar)ilower.x() <= (uchar)iupper.x());	       
+      const uint valid = (fnear <= ffar) & (offset != BVH_INVALID_NODE_REF); //((uchar)ilower.x() <= (uchar)iupper.x());	       
       return NodeIntersectionData(fnear, valid, offset);
     }
 
@@ -396,6 +393,7 @@ namespace embree
     {
       const uint subgroupLocalID = sg.get_local_id()[0];      
       const uint  offset = node.offset[subgroupLocalID];
+      
       const float time0 = node.lower_t[subgroupLocalID];
       const float time1 = node.upper_t[subgroupLocalID];
       
@@ -435,7 +433,8 @@ namespace embree
 
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
-      const uint valid = (fnear <= ffar) & (offset != -1) & (time0 <= time) & (time < time1);
+      const uint valid = (fnear <= ffar) & (offset != BVH_INVALID_NODE_REF) & (time0 <= time) & (time < time1);
+      
       return NodeIntersectionData(fnear, valid, offset);
     }
     

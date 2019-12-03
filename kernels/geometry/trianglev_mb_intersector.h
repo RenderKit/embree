@@ -206,6 +206,18 @@ namespace embree
         const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
         const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
         const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
+	PRINT(tri.v0);
+	PRINT(tri.v1);
+	PRINT(tri.v2);
+
+	PRINT(tri.dv0);
+	PRINT(tri.dv1);
+	PRINT(tri.dv2);
+	
+	PRINT(v0);
+	PRINT(v1);
+	PRINT(v2);
+	
         pre.intersect(ray,k,v0,v1,v2,UVIdentity<Mx>(),Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomID(),tri.primID()));
       }
 
@@ -216,7 +228,7 @@ namespace embree
         const Vec3vf<Mx> time(ray.time()[k]);
         const Vec3vf<Mx> v0 = madd(time,Vec3vf<Mx>(tri.dv0),Vec3vf<Mx>(tri.v0));
         const Vec3vf<Mx> v1 = madd(time,Vec3vf<Mx>(tri.dv1),Vec3vf<Mx>(tri.v1));
-        const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));
+        const Vec3vf<Mx> v2 = madd(time,Vec3vf<Mx>(tri.dv2),Vec3vf<Mx>(tri.v2));       
         return pre.intersect(ray,k,v0,v1,v2,UVIdentity<Mx>(),Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,tri.geomID(),tri.primID()));
       }
     };
