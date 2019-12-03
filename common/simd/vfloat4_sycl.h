@@ -25,8 +25,8 @@ namespace embree
     //ALIGNED_STRUCT_(16);
     
     typedef vboolf4 Bool;
-    //typedef vint4   Int;
-    //typedef vfloat4 Float;
+    typedef vint4   Int;
+    typedef vfloat4 Float;
     
     enum  { size = 4 };                        // number of SIMD elements
     //union { __m128 v; float f[4]; int i[4]; }; // data
@@ -45,7 +45,8 @@ namespace embree
     //__forceinline operator       __m128&()       { return v; }
 
     __forceinline vfloat(float a) : v(a) {}
-    __forceinline vfloat(float a, float b, float c, float d) {
+    __forceinline vfloat(float a, float b, float c, float d)
+    {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
       if (lid == 0) v = a;
       if (lid == 1) v = b;
@@ -81,16 +82,13 @@ namespace embree
     static __forceinline vfloat4 load (const void* a) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
       return lid < 4 ? ((float*)a)[lid] : 0.0f;
-      //return _mm_load_ps((float*)a);
     }
     //static __forceinline vfloat4 loadu(const void* a) { return _mm_loadu_ps((float*)a); }
 
     static __forceinline void store (void* ptr, const vfloat4& v) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
       if (lid < 4) ((float*)ptr)[lid] = v.v;
-      //_mm_store_ps((float*)ptr,v);
     }
-    
     //static __forceinline void storeu(void* ptr, const vfloat4& v) { _mm_storeu_ps((float*)ptr,v); }
 
     //static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &v) {

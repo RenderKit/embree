@@ -25,7 +25,7 @@ namespace embree
     //ALIGNED_STRUCT_(16);
     
     typedef vboolf4 Bool;
-    //typedef vint4   Int;
+    typedef vint4   Int;
     typedef vfloat4 Float;
 
     enum  { size = 4 };            // number of SIMD elements

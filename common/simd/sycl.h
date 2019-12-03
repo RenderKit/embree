@@ -23,4 +23,5 @@
 #include "varying.h"
 
 #include "vboolf4_sycl.h"
+#include "vint4_sycl.h"
 #include "vfloat4_sycl.h"
