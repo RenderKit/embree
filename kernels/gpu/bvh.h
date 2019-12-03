@@ -306,11 +306,11 @@ namespace embree
 	  out << " i " << i
 	      << " offset " << (uint)node.offset[i] << " offset " << node.offset[i].getLeafOffset() << " numPrims " << node.offset[i].getNumLeafPrims()	 
 	      << " time (" << node.lower_t[i] << "," << node.upper_t[i] << ") "
-	      << "bounds0 " << node.bounds_lower(i) << " bounds1 " << node.bounds_upper(i) << cl::sycl::endl;
+	    << "bounds0 " << node.bounds0(i) << " bounds1 " << node.bounds1(i) << cl::sycl::endl;
 	}      
       return out; 
     }    
-    
+
     /* =============================================================================== */
     /* ============================== NODE INTERSECTION =============================== */
     /* =============================================================================== */

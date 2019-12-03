@@ -118,8 +118,8 @@ namespace embree
 									    void *bvh_mem,
 									    TraversalStats *tstats)
   {
-    unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
-    float        stack_dist[BVH_MAX_STACK_ENTRIES];  
+    unsigned int stack_offset[2*BVH_MAX_STACK_ENTRIES]; 
+    float        stack_dist[2*BVH_MAX_STACK_ENTRIES];  
 
     // === init local hit ===
     gpu::RTCHitGPU local_hit;
@@ -180,11 +180,21 @@ namespace embree
 	    while(!cur.isLeaf()) 
 	      {
 		TSTATS(tstats->tsteps_inc());	      
-		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);		
+		const BVHNodeType &node = *(BVHNodeType*)(bvh_base + cur);
+		/* if (subgroupLocalID == 0) */
+		/*   { */
+		/*     out << "node " << node << cl::sycl::endl; */
+		/*     out << &node << cl::sycl::endl; */
+		/*   } */
+		//if (count == 1) break;
+		//count++;
+		
 		const gpu::NodeIntersectionData isec = intersectNode(sg,node,dir_mask,inv_dir,inv_dir_org,time,tnear,tfar);
 		getClosestChildNode(sg,isec,cur,sindex,tfar,stack_offset,stack_dist);
 	      }
-
+	    
+	    //cur = max_uint;
+	    
 	    /* stack empty */
 	    if (cur == max_uint) break; // sentinel reached -> exit
 

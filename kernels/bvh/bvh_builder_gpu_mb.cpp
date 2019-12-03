@@ -42,7 +42,6 @@
 
 #define DBG(x) 
 
-
 namespace embree
 {
   
@@ -75,6 +74,7 @@ namespace embree
       BVH* bvh;
     };
 
+
     /* Motion blur BVH with 4D nodes and internal time splits */
     template<int N, typename Mesh, typename Primitive>
     struct BVHGPUBuilderMBlurSAH : public Builder
@@ -105,6 +105,8 @@ namespace embree
 	gpu_node->clear();
 	for (size_t i=0;i<inputN;i++)
 	  {
+	    if (n->child(i) == BVH::emptyNode) continue;
+	    
 	    gpu_node->offset[i]   = 0;
 	    gpu_node->lower_t[i]  = n->lower_t[i];
 	    gpu_node->upper_t[i]  = n->upper_t[i];	    	    
@@ -121,7 +123,22 @@ namespace embree
 	    gpu_node->lower_dz[i] = n->lower_dz[i];
 	    gpu_node->upper_dz[i] = n->upper_dz[i];
 
-	  }	
+	    assert(!std::isnan( gpu_node->lower_t[i] ));
+	    assert(!std::isnan( gpu_node->upper_t[i] ));
+	    assert(!std::isnan( gpu_node->lower_x[i] ));
+	    assert(!std::isnan( gpu_node->lower_y[i] ));
+	    assert(!std::isnan( gpu_node->lower_z[i] ));
+	    assert(!std::isnan( gpu_node->upper_x[i] ));
+	    assert(!std::isnan( gpu_node->upper_y[i] ));
+	    assert(!std::isnan( gpu_node->upper_z[i] ));
+	    assert(!std::isnan( gpu_node->lower_dx[i] ));
+	    assert(!std::isnan( gpu_node->lower_dy[i] ));
+	    assert(!std::isnan( gpu_node->lower_dz[i] ));
+	    assert(!std::isnan( gpu_node->upper_dx[i] ));
+	    assert(!std::isnan( gpu_node->upper_dy[i] ));
+	    assert(!std::isnan( gpu_node->upper_dz[i] ));
+	    
+	  }
       }
 
       inline void convertToQBVHNodeNMB(gpu::QBVHNodeNMB *gpu_node, const AlignedNodeMB *const n, const size_t inputN)
@@ -129,6 +146,8 @@ namespace embree
 	gpu_node->clear();
 	for (size_t i=0;i<inputN;i++)
 	  {
+	    if (n->child(i) == BVH::emptyNode) continue;
+	    
 	    gpu_node->offset[i]   = 0;
 	    gpu_node->lower_t[i]  = neg_inf;
 	    gpu_node->upper_t[i]  = pos_inf;
@@ -145,6 +164,21 @@ namespace embree
 	    gpu_node->lower_dz[i] = n->lower_dz[i];
 	    gpu_node->upper_dz[i] = n->upper_dz[i];
 
+	    assert(!std::isnan( (float)gpu_node->lower_t[i] ));
+	    assert(!std::isnan( gpu_node->upper_t[i] ));
+	    assert(!std::isnan( gpu_node->lower_x[i] ));
+	    assert(!std::isnan( gpu_node->lower_y[i] ));
+	    assert(!std::isnan( gpu_node->lower_z[i] ));
+	    assert(!std::isnan( gpu_node->upper_x[i] ));
+	    assert(!std::isnan( gpu_node->upper_y[i] ));
+	    assert(!std::isnan( gpu_node->upper_z[i] ));
+	    assert(!std::isnan( gpu_node->lower_dx[i] ));
+	    assert(!std::isnan( gpu_node->lower_dy[i] ));
+	    assert(!std::isnan( gpu_node->lower_dz[i] ));
+	    assert(!std::isnan( gpu_node->upper_dx[i] ));
+	    assert(!std::isnan( gpu_node->upper_dy[i] ));
+	    assert(!std::isnan( gpu_node->upper_dz[i] ));
+	    
 	  }	
       }
       
@@ -191,7 +225,7 @@ namespace embree
       {
 	if (node.isAlignedNode())
 	  {
-	    PRINT("ALIGNED NODE");
+	    DBG(PRINT("ALIGNED NODE"));
 	    AlignedNode* n = node.alignedNode();
 	    for (size_t i=0;i<N;i++)
 	      if (n->child(i) != BVH::emptyNode)
@@ -199,7 +233,7 @@ namespace embree
 	  }
 	else if (node.isUnalignedNode())
 	  {
-	    PRINT("UNALIGNED NODE");
+	    DBG(PRINT("UNALIGNED NODE"));
 	    UnalignedNode* n = node.unalignedNode();	    
 	    for (size_t i=0;i<N;i++)
 	      if (n->child(i) != BVH::emptyNode)	      
@@ -207,7 +241,7 @@ namespace embree
 	  }
 	else if (node.isAlignedNodeMB())
 	  {
-	    PRINT("ALIGNED NODE MB");
+	    DBG(PRINT("ALIGNED NODE MB"));
 	    AlignedNodeMB* n = node.alignedNodeMB();
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
 	    DBG(
@@ -234,10 +268,8 @@ namespace embree
 	  }
 	else if (node.isAlignedNodeMB4D())
 	  {
-	    PRINT("ALIGNED NODE MB 4D");
+	    DBG(PRINT("ALIGNED NODE MB 4D"));
 	    AlignedNodeMB4D* n = node.alignedNodeMB4D();
-	    //PRINT(*n);
-
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
 	    DBG(
 		PRINT(offset);
@@ -264,7 +296,7 @@ namespace embree
 	  }
 	else if (node.isUnalignedNodeMB())
 	  {
-	    PRINT("UNALIGNED NODE MB");	    
+	    DBG(PRINT("UNALIGNED NODE MB"));
 	    UnalignedNodeMB* n = node.unalignedNodeMB();
 	    for (size_t i=0;i<N;i++)
 	      if (n->child(i) != BVH::emptyNode)	      
@@ -272,7 +304,7 @@ namespace embree
 	  }
 	else if (node.isQuantizedNode())
 	  {
-	    PRINT("QUANTIZED NODE");	    
+	    PRINT("QUANTIZED NODE");
 	    QuantizedNode* n = node.quantizedNode();
 	    for (size_t i=0;i<N;i++)
 	      if (n->child(i) != BVH::emptyNode)	      
@@ -281,8 +313,8 @@ namespace embree
 	else if (node.isLeaf())
 	  {
 	    size_t num; const char* tri = node.leaf(num);	    
-	    PRINT("LEAF");
 	    DBG(
+		PRINT("LEAF");		
 		PRINT(num);
 		);
 	    
@@ -374,6 +406,8 @@ namespace embree
 	    PRINT( node_size );
 	    PRINT( leaf_size );	
 	    PRINT( totalSize );
+	    PRINT( node_data_start );
+	    PRINT( leaf_data_start );	    
 	  }
 	
 
@@ -388,14 +422,18 @@ namespace embree
 
 	convertToGPULayout(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator,N);
 
-	PRINT(gpu_leaf_allocator.load());
-	PRINT(numPrimitives);
+	if (unlikely(deviceGPU->verbosity(2)))
+	  {
+	    PRINT(gpu_node_allocator.load());	    
+	    PRINT(gpu_leaf_allocator.load());
+	    PRINT(numPrimitives);
+	    PRINT("BVH MB BUILDING DONE");
+	  }
+	
 	assert(gpu_node_allocator.load() <= leaf_data_start);	
-	assert(gpu_leaf_allocator.load() <= leaf_size);
+	assert(gpu_leaf_allocator.load() <= 2*numPrimitives);
 
 	scene->gpu_bvh_mb_root = (size_t)bvh_mem;
-
-	PRINT("BVH MB BUILDING DONE");      
 	
 #endif	
 
