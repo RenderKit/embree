@@ -327,7 +327,7 @@ namespace embree
   //__forceinline vboolf4 gt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GT); }
   //__forceinline vboolf4 le(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LE); }
 
-  /*
+/*
   template<int mask>
     __forceinline vfloat4 select(const vfloat4& t, const vfloat4& f)
   {
@@ -337,9 +337,10 @@ namespace embree
     return select(vboolf4(mask), t, f);
 #endif
   }
+*/
   
   __forceinline vfloat4 lerp(const vfloat4& a, const vfloat4& b, const vfloat4& t) {
-    return madd(t,b-a,a);
+    return vfloat4(madd(t.v,b.v-a.v,a.v));
   }
   
   __forceinline bool isvalid(const vfloat4& v) {
@@ -353,7 +354,6 @@ namespace embree
   __forceinline bool is_finite(const vboolf4& valid, const vfloat4& a) {
     return all(valid, (a >= vfloat4(-FLT_MAX)) & (a <= vfloat4(+FLT_MAX)));
   }
-*/
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
