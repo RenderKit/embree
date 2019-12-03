@@ -40,7 +40,7 @@
 #include "../gpu/AABB3f.h"
 #include "../gpu/builder.h"
 
-#define DBG(x)
+#define DBG(x) 
 
 
 namespace embree
@@ -447,11 +447,11 @@ namespace embree
     };
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVHGPUTriangle1vMBSceneBuilderSAH (void* bvh, Scene* scene) { return new BVHGPUBuilderMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,inf,TriangleMesh::geom_type); } 
+    Builder* BVHGPUTriangle1vMBSceneBuilderSAH (void* bvh, Scene* scene) { return new BVHGPUBuilderMBlurSAH<4,TriangleMesh,Triangle4vMB>((BVH4*)bvh,scene,4,1.0f,4,16,TriangleMesh::geom_type); } 
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-    Builder* BVHGPUQuad1vMBSceneBuilderSAH (void* bvh, Scene* scene) { return new BVHGPUBuilderMBlurSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,inf,QuadMesh::geom_type); }    
+    Builder* BVHGPUQuad1vMBSceneBuilderSAH (void* bvh, Scene* scene) { return new BVHGPUBuilderMBlurSAH<4,QuadMesh,Quad4i>((BVH4*)bvh,scene,4,1.0f,4,16,QuadMesh::geom_type); }    
 #endif
     
   } 

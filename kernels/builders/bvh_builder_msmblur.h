@@ -451,11 +451,11 @@ namespace embree
               
               force_split = c.lower > p.lower || c.upper < p.upper;
             }
-
+	    
             /* create leaf for few primitives */
             if (current.size() <= cfg.maxLeafSize && current.split.data < Split::SPLIT_ENFORCE && !force_split)
               return createLeaf(current,alloc);
-
+	  
             /* fill all children by always splitting the largest one */
             bool hasTimeSplits = false;
             NodeRecordMB4D values[MAX_BRANCHING_FACTOR];
