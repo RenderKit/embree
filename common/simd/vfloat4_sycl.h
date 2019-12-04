@@ -64,6 +64,10 @@ namespace embree
       v  = _mm_add_ps(af,bf);
       }*/
 
+    vfloat4 fix_upper(float c) const {
+      return vfloat4(__spirv_BuiltInSubgroupLocalInvocationId < 4 ? v : c);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -507,18 +511,15 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vfloat4 vreduce_min(const vfloat4& v) {
-    const float x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : +INFINITY;
-    return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::minimum<float>());
+    return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(v.fix_upper(+INFINITY).v, cl::sycl::intel::minimum<float>());
   }
 
   __forceinline vfloat4 vreduce_max(const vfloat4& v) {
-    const float x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : -INFINITY;
-    return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::maximum<float>());
+    return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(v.fix_upper(-INFINITY).v, cl::sycl::intel::maximum<float>());
   }
   
   __forceinline vfloat4 vreduce_add(const vfloat4& v) {
-    const float x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : 0.0f;
-    return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::plus<float>());
+    return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(v.fix_upper(0.0f).v, cl::sycl::intel::plus<float>());
   }
 
   __forceinline float reduce_min(const vfloat4& v) { return vreduce_min(v).v; }
@@ -543,8 +544,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline float dot(const vfloat4& a, const vfloat4& b) {
-    const float x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? a.v*b.v : 0.0f;
-    return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::plus<float>());
+    return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>((a*b).fix_upper(0.0f).v, cl::sycl::intel::plus<float>());
   }
 
   __forceinline vfloat4 cross(const vfloat4& a, const vfloat4& b)

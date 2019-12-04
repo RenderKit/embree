@@ -74,6 +74,10 @@ namespace embree
     //  return _mm_castps_si128(v);
     //}
 
+    vboolf4 fix_upper(bool c) const {
+      return vboolf4(__spirv_BuiltInSubgroupLocalInvocationId < 4 ? v : c);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -155,23 +159,19 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
     
   __forceinline bool reduce_and(const vboolf4& a) {
-    const bool x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? a.v : true;
-    return __spirv_GroupAll(__spv::Scope::Subgroup, x);
+    return __spirv_GroupAll(__spv::Scope::Subgroup, a.fix_upper(true).v);
   }
 
   __forceinline bool reduce_or(const vboolf4& a) {
-    const bool x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? a.v : false;
-    return __spirv_GroupAny(__spv::Scope::Subgroup, x);
+    return __spirv_GroupAny(__spv::Scope::Subgroup, a.fix_upper(false).v);
   }
 
   __forceinline bool all(const vboolf4& a) {
-    const bool x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? a.v : true;
-    return __spirv_GroupAll(__spv::Scope::Subgroup, x);
+    return __spirv_GroupAll(__spv::Scope::Subgroup, a.fix_upper(true).v);
   }
 
   __forceinline bool any(const vboolf4& a) {
-    const bool x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? a.v : false;
-    return __spirv_GroupAny(__spv::Scope::Subgroup, x);
+    return __spirv_GroupAny(__spv::Scope::Subgroup, a.fix_upper(false).v);
   }
 
   __forceinline bool none(const vboolf4& a) {
@@ -183,13 +183,10 @@ namespace embree
   __forceinline bool none(const vboolf4& valid, const vboolf4& b) { return none(valid & b); }
   
   __forceinline size_t movemask(const vboolf4& a) {
-    const bool x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? a.v : false;
-    return intel_sub_group_ballot(x);
+    return intel_sub_group_ballot(a.fix_upper(false).v);
   }
   __forceinline size_t popcnt(const vboolf4& a) {
-    const int x = a.v ? 1 : 0;
-    const int y = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? x : 0;
-    return cl::sycl::detail::calc<int, __spv::GroupOperation::Reduce>(y, cl::sycl::intel::plus<int>());
+    return cl::sycl::popcount(movemask(a)); 
   }
 
   ////////////////////////////////////////////////////////////////////////////////

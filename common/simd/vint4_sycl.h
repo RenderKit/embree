@@ -61,6 +61,10 @@ namespace embree
 
     //__forceinline vint(long long a, long long b) : v(_mm_set_epi64x(b,a)) {}
 
+    vint4 fix_upper(int c) const {
+      return vint4(__spirv_BuiltInSubgroupLocalInvocationId < 4 ? v : c);
+    }
+    
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
     ////////////////////////////////////////////////////////////////////////////////
@@ -380,18 +384,15 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline vint4 vreduce_min(const vint4& v) {
-    const int x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : 0x7FFFFFFF;
-    return cl::sycl::detail::calc<int, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::minimum<int>());
+    return cl::sycl::detail::calc<int, __spv::GroupOperation::Reduce>(v.fix_upper(0x7FFFFFFF).v, cl::sycl::intel::minimum<int>());
   }
 
   __forceinline vint4 vreduce_max(const vint4& v) {
-    const int x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : 0x80000000;
-    return cl::sycl::detail::calc<int, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::maximum<int>());
+    return cl::sycl::detail::calc<int, __spv::GroupOperation::Reduce>(v.fix_upper(0x80000000).v, cl::sycl::intel::maximum<int>());
   }
   
   __forceinline vint4 vreduce_add(const vint4& v) {
-    const int x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? v.v : 0;
-    return cl::sycl::detail::calc<int, __spv::GroupOperation::Reduce>(x, cl::sycl::intel::plus<int>());
+    return cl::sycl::detail::calc<int, __spv::GroupOperation::Reduce>(v.fix_upper(0).v, cl::sycl::intel::plus<int>());
   }
 
   __forceinline int reduce_min(const vint4& v) { return vreduce_min(v).v; }
