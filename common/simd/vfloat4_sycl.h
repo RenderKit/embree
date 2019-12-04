@@ -18,18 +18,18 @@
 
 namespace embree
 {
-  /* 4-wide SSE float type */
-  template<>
-  struct vfloat<4>
+  /* N-wide SSE float type */
+  template<int N>
+  struct vfloat
   {
     //ALIGNED_STRUCT_(16);
     
-    typedef vboolf4 Bool;
-    typedef vint4   Int;
-    typedef vfloat4 Float;
+    typedef vboolf<N> Bool;
+    typedef vint<N>   Int;
+    typedef vfloat<N> Float;
     
-    enum  { size = 4 };                        // number of SIMD elements
-    //union { __m128 v; float f[4]; int i[4]; }; // data
+    enum  { size = N };                        // number of SIMD elements
+    //union { __m128 v; float f[N]; int i[N]; }; // data
     float v;
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -37,8 +37,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     
     __forceinline vfloat() {}
-    //__forceinline vfloat(const vfloat4& other) { v = other.v; }
-    //__forceinline vfloat4& operator =(const vfloat4& other) { v = other.v; return *this; }
+    //__forceinline vfloat(const vfloat<N>& other) { v = other.v; }
+    //__forceinline vfloat<N>& operator =(const vfloat<N>& other) { v = other.v; return *this; }
 
     //__forceinline vfloat(__m128 a) : v(a) {}
     //__forceinline operator const __m128&() const { return v; }
@@ -54,9 +54,9 @@ namespace embree
       if (lid == 3) v = d;
     }
 
-    __forceinline explicit vfloat(const vint4& a) : v((float)a.v) {}
+    __forceinline explicit vfloat(const vint<N>& a) : v((float)a.v) {}
   
-    /*__forceinline explicit vfloat(const vuint4& x) {
+    /*__forceinline explicit vfloat(const vuintN& x) {
       const __m128i a   = _mm_and_si128(x,_mm_set1_epi32(0x7FFFFFFF));
       const __m128i b   = _mm_and_si128(_mm_srai_epi32(x,31),_mm_set1_epi32(0x4F000000)); //0x4F000000 = 2^31 
       const __m128  af  = _mm_cvtepi32_ps(a);
@@ -64,8 +64,8 @@ namespace embree
       v  = _mm_add_ps(af,bf);
       }*/
 
-    vfloat4 fix_upper(float c) const {
-      return vfloat4(__spirv_BuiltInSubgroupLocalInvocationId < 4 ? v : c);
+    vfloat<N> fix_upper(float c) const {
+      return vfloat<N>(__spirv_BuiltInSubgroupLocalInvocationId < N ? v : c);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -84,101 +84,101 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline vfloat4 load (const void* a) {
+    static __forceinline vfloat<N> load (const void* a) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      return lid < 4 ? ((float*)a)[lid] : 0.0f;
-      //return vfloat4(__spirv_SubgroupBlockReadINTEL<float>((const __attribute__((ocl_global)) uint32_t*) a));
+      return lid < N ? ((float*)a)[lid] : 0.0f;
+      //return vfloat<N>(__spirv_SubgroupBlockReadINTEL<float>((const __attribute__((ocl_global)) uint32_t*) a));
     }
-    static __forceinline vfloat4 loadu(const void* a) {
+    static __forceinline vfloat<N> loadu(const void* a) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      return lid < 4 ? ((float*)a)[lid] : 0.0f;
-    }
-
-    static __forceinline void store (void* ptr, const vfloat4& v) {
-      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      if (lid < 4) ((float*)ptr)[lid] = v.v;
-      //float x = lid < 4 ? v.v : 0.0f;
-      //if (lid < 4) __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&x);
-    }
-    static __forceinline void storeu(void* ptr, const vfloat4& v) {
-      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      if (lid < 4) ((float*)ptr)[lid] = v.v;
+      return lid < N ? ((float*)a)[lid] : 0.0f;
     }
 
-    //static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &v) {
+    static __forceinline void store (void* ptr, const vfloat<N>& v) {
+      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+      if (lid < N) ((float*)ptr)[lid] = v.v;
+      //float x = lid < N ? v.v : 0.0f;
+      //if (lid < N) __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&x);
+    }
+    static __forceinline void storeu(void* ptr, const vfloat<N>& v) {
+      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+      if (lid < N) ((float*)ptr)[lid] = v.v;
+    }
+
+    //static __forceinline vfloat<N> compact(const vboolf<N>& mask, vfloat<N> &v) {
     //  return _mm_mask_compress_ps(v, mask, v);
     //}
-    //static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &a, const vfloat4& b) {
+    //static __forceinline vfloat<N> compact(const vboolf<N>& mask, vfloat<N> &a, const vfloat<N>& b) {
     //  return _mm_mask_compress_ps(a, mask, b);
     //}
 
-    static __forceinline vfloat4 load (const vboolf4& mask, const void* ptr) {
-      if (mask.v) return loadu(ptr); else return vfloat4(0.0f);
+    static __forceinline vfloat<N> load (const vboolf<N>& mask, const void* ptr) {
+      if (mask.v) return loadu(ptr); else return vfloat<N>(0.0f);
     }
-    static __forceinline vfloat4 loadu(const vboolf4& mask, const void* ptr) {
-      if (mask.v) return loadu(ptr); else return vfloat4(0.0f);
+    static __forceinline vfloat<N> loadu(const vboolf<N>& mask, const void* ptr) {
+      if (mask.v) return loadu(ptr); else return vfloat<N>(0.0f);
     }
 
-    static __forceinline void store (const vboolf4& mask, void* ptr, const vfloat4& v) {
+    static __forceinline void store (const vboolf<N>& mask, void* ptr, const vfloat<N>& v) {
       if (mask.v) storeu(ptr,v);
     }
-    static __forceinline void storeu(const vboolf4& mask, void* ptr, const vfloat4& v) {
+    static __forceinline void storeu(const vboolf<N>& mask, void* ptr, const vfloat<N>& v) {
       if (mask.v) storeu(ptr,v);
     }
 
-    static __forceinline vfloat4 broadcast(const void* a) {
-      return vfloat4(*(float*)a);
+    static __forceinline vfloat<N> broadcast(const void* a) {
+      return vfloat<N>(*(float*)a);
     }
 
-    static __forceinline vfloat4 load_nt (const float* ptr) {
+    static __forceinline vfloat<N> load_nt (const float* ptr) {
       return load(ptr);
     }
 
-    static __forceinline void store_nt(void* ptr, const vfloat4& v) {
+    static __forceinline void store_nt(void* ptr, const vfloat<N>& v) {
       store(ptr,v);
     }
 
-    //static __forceinline vfloat4 load(const char* ptr) {
+    //static __forceinline vfloat<N> load(const char* ptr) {
     //  return _mm_cvtepi32_ps(_mm_cvtepi8_epi32(_mm_loadu_si128((__m128i*)ptr)));
     //}
 
-    //static __forceinline vfloat4 load(const unsigned char* ptr) {
+    //static __forceinline vfloat<N> load(const unsigned char* ptr) {
     //  return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
     //}
 
-    //static __forceinline vfloat4 load(const short* ptr) {
+    //static __forceinline vfloat<N> load(const short* ptr) {
     //  return _mm_cvtepi32_ps(_mm_cvtepi16_epi32(_mm_loadu_si128((__m128i*)ptr)));
     //}
 
-    //static __forceinline vfloat4 load(const unsigned short* ptr) {
-    //  return _mm_mul_ps(vfloat4(vint4::load(ptr)),vfloat4(1.0f/65535.0f));
+    //static __forceinline vfloat<N> load(const unsigned short* ptr) {
+    //  return _mm_mul_ps(vfloat<N>(vint<N>::load(ptr)),vfloat<N>(1.0f/65535.0f));
     //}
 
     template<int scale = 4>
-    static __forceinline vfloat4 gather(const float* ptr, const vint4& index) {
+    static __forceinline vfloat<N> gather(const float* ptr, const vint<N>& index) {
       return *(float*)((char*)ptr + scale*index.v);
     }
 
     template<int scale = 4>
-      static __forceinline vfloat4 gather(const vboolf4& mask, const float* ptr, const vint4& index) {
+      static __forceinline vfloat<N> gather(const vboolf<N>& mask, const float* ptr, const vint<N>& index) {
       if (mask.v) return gather<scale>(ptr,index);
-      else        return vfloat4(0.0f);
+      else        return vfloat<N>(0.0f);
     }
 
     template<int scale = 4>
-      static __forceinline void scatter(void* ptr, const vint4& index, const vfloat4& v) {
+      static __forceinline void scatter(void* ptr, const vint<N>& index, const vfloat<N>& v) {
       *(float*) ((char*)ptr + scale*index.v) = v.v;
     }
 
     template<int scale = 4>
-    static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vfloat4& v) {
+    static __forceinline void scatter(const vboolf<N>& mask, void* ptr, const vint<N>& index, const vfloat<N>& v) {
       if (mask.v) scatter<scale>(ptr,index,v);
     }
 
-    static __forceinline void store(const vboolf4& mask, char* ptr, const vint4& ofs, const vfloat4& v) {
+    static __forceinline void store(const vboolf<N>& mask, char* ptr, const vint<N>& ofs, const vfloat<N>& v) {
       scatter<1>(mask,ptr,ofs,v);
     }
-    static __forceinline void store(const vboolf4& mask, float* ptr, const vint4& ofs, const vfloat4& v) {
+    static __forceinline void store(const vboolf<N>& mask, float* ptr, const vint<N>& ofs, const vfloat<N>& v) {
       scatter<4>(mask,ptr,ofs,v);
     }
     
@@ -195,7 +195,7 @@ namespace embree
       return __spirv_GroupBroadcast<float>(__spv::Scope::Subgroup, v, index);
     }
 
-    friend __forceinline vfloat4 select(const vboolf4& m, const vfloat4& t, const vfloat4& f) {
+    friend __forceinline vfloat<N> select(const vboolf<N>& m, const vfloat<N>& t, const vfloat<N>& f) {
       return m.v ? t : f;
     }
   };
@@ -205,232 +205,232 @@ namespace embree
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4 asFloat(const vint4&   a) { return vfloat4(__builtin_bit_cast(float,a.v)); }
-  __forceinline vint4   asInt  (const vfloat4& a) { return vint4(__builtin_bit_cast(int,a.v)); }
-  //__forceinline vuint4  asUInt (const vfloat4& a) { return _mm_castps_si128(a); }
+  template<int N> __forceinline vfloat<N> asFloat(const vint<N>&   a) { return vfloat<N>(__builtin_bit_cast(float,a.v)); }
+  template<int N> __forceinline vint<N>   asInt  (const vfloat<N>& a) { return vint<N>(__builtin_bit_cast(int,a.v)); }
+  //template<int N> __forceinline vuintN  asUInt (const vfloat<N>& a) { return _mm_castps_si128(a); }
 
-  __forceinline vfloat4 operator +(const vfloat4& a) { return a; }
-  __forceinline vfloat4 operator -(const vfloat4& a) { return vfloat4(-a.v); }
+  template<int N> __forceinline vfloat<N> operator +(const vfloat<N>& a) { return a; }
+  template<int N> __forceinline vfloat<N> operator -(const vfloat<N>& a) { return vfloat<N>(-a.v); }
 
-  __forceinline vfloat4 abs(const vfloat4& a) { return vfloat4(cl::sycl::fabs(a.v)); }
-  __forceinline vfloat4 sign(const vfloat4& a) { return vfloat4(cl::sycl::sign(a.v)); }
-  __forceinline vfloat4 signmsk(const vfloat4& a) { return asFloat(asInt(a.v) & 0x80000000); }
+  template<int N> __forceinline vfloat<N> abs(const vfloat<N>& a) { return vfloat<N>(cl::sycl::fabs(a.v)); }
+  template<int N> __forceinline vfloat<N> sign(const vfloat<N>& a) { return vfloat<N>(cl::sycl::sign(a.v)); }
+  template<int N> __forceinline vfloat<N> signmsk(const vfloat<N>& a) { return asFloat(asInt(a.v) & 0x80000000); }
   
-  //__forceinline vfloat4 rcp(const vfloat4& a) { return vfloat4(cl::sycl::recip(a.v)); } // FIXME: does not compile
-  __forceinline vfloat4 rcp(const vfloat4& a) { return vfloat4(__sycl_std::__invoke_native_recip<float>(a.v)); }
+  //template<int N> __forceinline vfloat<N> rcp(const vfloat<N>& a) { return vfloat<N>(cl::sycl::recip(a.v)); } // FIXME: does not compile
+  template<int N> __forceinline vfloat<N> rcp(const vfloat<N>& a) { return vfloat<N>(__sycl_std::__invoke_native_recip<float>(a.v)); }
 
-  __forceinline vfloat4 sqr (const vfloat4& a) { return vfloat4(a.v*a.v); }
-  __forceinline vfloat4 sqrt(const vfloat4& a) { return vfloat4(cl::sycl::sqrt(a.v)); }
+  template<int N> __forceinline vfloat<N> sqr (const vfloat<N>& a) { return vfloat<N>(a.v*a.v); }
+  template<int N> __forceinline vfloat<N> sqrt(const vfloat<N>& a) { return vfloat<N>(cl::sycl::sqrt(a.v)); }
 
-  __forceinline vfloat4 rsqrt(const vfloat4& a) { return vfloat4(cl::sycl::rsqrt(a.v)); }
+  template<int N> __forceinline vfloat<N> rsqrt(const vfloat<N>& a) { return vfloat<N>(cl::sycl::rsqrt(a.v)); }
 
-  __forceinline vboolf4 isnan(const vfloat4& a) { return vboolf4(cl::sycl::isnan(a.v)); }
+  template<int N> __forceinline vboolf<N> isnan(const vfloat<N>& a) { return vboolf<N>(cl::sycl::isnan(a.v)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4 operator +(const vfloat4& a, const vfloat4& b) { return vfloat4(a.v+b.v); }
-  __forceinline vfloat4 operator +(const vfloat4& a, float          b) { return a + vfloat4(b); }
-  __forceinline vfloat4 operator +(float          a, const vfloat4& b) { return vfloat4(a) + b; }
+  template<int N> __forceinline vfloat<N> operator +(const vfloat<N>& a, const vfloat<N>& b) { return vfloat<N>(a.v+b.v); }
+  template<int N> __forceinline vfloat<N> operator +(const vfloat<N>& a, float          b) { return a + vfloat<N>(b); }
+  template<int N> __forceinline vfloat<N> operator +(float          a, const vfloat<N>& b) { return vfloat<N>(a) + b; }
 
-  __forceinline vfloat4 operator -(const vfloat4& a, const vfloat4& b) { return vfloat4(a.v-b.v); }
-  __forceinline vfloat4 operator -(const vfloat4& a, float          b) { return a - vfloat4(b); }
-  __forceinline vfloat4 operator -(float          a, const vfloat4& b) { return vfloat4(a) - b; }
+  template<int N> __forceinline vfloat<N> operator -(const vfloat<N>& a, const vfloat<N>& b) { return vfloat<N>(a.v-b.v); }
+  template<int N> __forceinline vfloat<N> operator -(const vfloat<N>& a, float          b) { return a - vfloat<N>(b); }
+  template<int N> __forceinline vfloat<N> operator -(float          a, const vfloat<N>& b) { return vfloat<N>(a) - b; }
 
-  __forceinline vfloat4 operator *(const vfloat4& a, const vfloat4& b) { return vfloat4(a.v*b.v); }
-  __forceinline vfloat4 operator *(const vfloat4& a, float          b) { return a * vfloat4(b); }
-  __forceinline vfloat4 operator *(float          a, const vfloat4& b) { return vfloat4(a) * b; }
+  template<int N> __forceinline vfloat<N> operator *(const vfloat<N>& a, const vfloat<N>& b) { return vfloat<N>(a.v*b.v); }
+  template<int N> __forceinline vfloat<N> operator *(const vfloat<N>& a, float          b) { return a * vfloat<N>(b); }
+  template<int N> __forceinline vfloat<N> operator *(float          a, const vfloat<N>& b) { return vfloat<N>(a) * b; }
 
-  __forceinline vfloat4 operator /(const vfloat4& a, const vfloat4& b) { return vfloat4(a.v/b.v); }
-  __forceinline vfloat4 operator /(const vfloat4& a, float          b) { return a/vfloat4(b); }
-  __forceinline vfloat4 operator /(float          a, const vfloat4& b) { return vfloat4(a)/b; }
+  template<int N> __forceinline vfloat<N> operator /(const vfloat<N>& a, const vfloat<N>& b) { return vfloat<N>(a.v/b.v); }
+  template<int N> __forceinline vfloat<N> operator /(const vfloat<N>& a, float          b) { return a/vfloat<N>(b); }
+  template<int N> __forceinline vfloat<N> operator /(float          a, const vfloat<N>& b) { return vfloat<N>(a)/b; }
 
-  __forceinline vfloat4 operator ^(const vfloat4& a, const vfloat4& b) { return vfloat4(asFloat(asInt(a.v) ^ asInt(b.v))); }
-  __forceinline vfloat4 operator ^(const vfloat4& a, const vint4&   b) { return vfloat4(asFloat(asInt(a.v) ^ b.v)); }
+  template<int N> __forceinline vfloat<N> operator ^(const vfloat<N>& a, const vfloat<N>& b) { return vfloat<N>(asFloat(asInt(a.v) ^ asInt(b.v))); }
+  template<int N> __forceinline vfloat<N> operator ^(const vfloat<N>& a, const vint<N>&   b) { return vfloat<N>(asFloat(asInt(a.v) ^ b.v)); }
 
-  __forceinline vfloat4 min(const vfloat4& a, const vfloat4& b) { return vfloat4(cl::sycl::fmin(a.v,b.v)); }
-  __forceinline vfloat4 min(const vfloat4& a, float          b) { return min(a,vfloat4(b)); }
-  __forceinline vfloat4 min(float          a, const vfloat4& b) { return min(vfloat4(a),b); }
+  template<int N> __forceinline vfloat<N> min(const vfloat<N>& a, const vfloat<N>& b) { return vfloat<N>(cl::sycl::fmin(a.v,b.v)); }
+  template<int N> __forceinline vfloat<N> min(const vfloat<N>& a, float          b) { return min(a,vfloat<N>(b)); }
+  template<int N> __forceinline vfloat<N> min(float          a, const vfloat<N>& b) { return min(vfloat<N>(a),b); }
 
-  __forceinline vfloat4 max(const vfloat4& a, const vfloat4& b) { return vfloat4(cl::sycl::fmax(a.v,b.v)); }
-  __forceinline vfloat4 max(const vfloat4& a, float          b) { return max(a,vfloat4(b)); }
-  __forceinline vfloat4 max(float          a, const vfloat4& b) { return max(vfloat4(a),b); }
+  template<int N> __forceinline vfloat<N> max(const vfloat<N>& a, const vfloat<N>& b) { return vfloat<N>(cl::sycl::fmax(a.v,b.v)); }
+  template<int N> __forceinline vfloat<N> max(const vfloat<N>& a, float          b) { return max(a,vfloat<N>(b)); }
+  template<int N> __forceinline vfloat<N> max(float          a, const vfloat<N>& b) { return max(vfloat<N>(a),b); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4 madd (const vfloat4& a, const vfloat4& b, const vfloat4& c) { return vfloat4(+cl::sycl::fma(+a.v,b.v,+c.v)); }
-  __forceinline vfloat4 msub (const vfloat4& a, const vfloat4& b, const vfloat4& c) { return vfloat4(+cl::sycl::fma(+a.v,b.v,-c.v)); }
-  __forceinline vfloat4 nmadd(const vfloat4& a, const vfloat4& b, const vfloat4& c) { return vfloat4(+cl::sycl::fma(-a.v,b.v,+c.v));}
-  __forceinline vfloat4 nmsub(const vfloat4& a, const vfloat4& b, const vfloat4& c) { return vfloat4(-cl::sycl::fma(+a.v,b.v,+c.v)); }
+  template<int N> __forceinline vfloat<N> madd (const vfloat<N>& a, const vfloat<N>& b, const vfloat<N>& c) { return vfloat<N>(+cl::sycl::fma(+a.v,b.v,+c.v)); }
+  template<int N> __forceinline vfloat<N> msub (const vfloat<N>& a, const vfloat<N>& b, const vfloat<N>& c) { return vfloat<N>(+cl::sycl::fma(+a.v,b.v,-c.v)); }
+  template<int N> __forceinline vfloat<N> nmadd(const vfloat<N>& a, const vfloat<N>& b, const vfloat<N>& c) { return vfloat<N>(+cl::sycl::fma(-a.v,b.v,+c.v));}
+  template<int N> __forceinline vfloat<N> nmsub(const vfloat<N>& a, const vfloat<N>& b, const vfloat<N>& c) { return vfloat<N>(-cl::sycl::fma(+a.v,b.v,+c.v)); }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4& operator +=(vfloat4& a, const vfloat4& b) { return a = a + b; }
-  __forceinline vfloat4& operator +=(vfloat4& a, float          b) { return a = a + b; }
+  template<int N> __forceinline vfloat<N>& operator +=(vfloat<N>& a, const vfloat<N>& b) { return a = a + b; }
+  template<int N> __forceinline vfloat<N>& operator +=(vfloat<N>& a, float          b) { return a = a + b; }
 
-  __forceinline vfloat4& operator -=(vfloat4& a, const vfloat4& b) { return a = a - b; }
-  __forceinline vfloat4& operator -=(vfloat4& a, float          b) { return a = a - b; }
+  template<int N> __forceinline vfloat<N>& operator -=(vfloat<N>& a, const vfloat<N>& b) { return a = a - b; }
+  template<int N> __forceinline vfloat<N>& operator -=(vfloat<N>& a, float          b) { return a = a - b; }
 
-  __forceinline vfloat4& operator *=(vfloat4& a, const vfloat4& b) { return a = a * b; }
-  __forceinline vfloat4& operator *=(vfloat4& a, float          b) { return a = a * b; }
+  template<int N> __forceinline vfloat<N>& operator *=(vfloat<N>& a, const vfloat<N>& b) { return a = a * b; }
+  template<int N> __forceinline vfloat<N>& operator *=(vfloat<N>& a, float          b) { return a = a * b; }
 
-  __forceinline vfloat4& operator /=(vfloat4& a, const vfloat4& b) { return a = a / b; }
-  __forceinline vfloat4& operator /=(vfloat4& a, float          b) { return a = a / b; }
+  template<int N> __forceinline vfloat<N>& operator /=(vfloat<N>& a, const vfloat<N>& b) { return a = a / b; }
+  template<int N> __forceinline vfloat<N>& operator /=(vfloat<N>& a, float          b) { return a = a / b; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vboolf4 operator ==(const vfloat4& a, const vfloat4& b) { return vboolf4(a.v == b.v); }
-  __forceinline vboolf4 operator !=(const vfloat4& a, const vfloat4& b) { return vboolf4(a.v != b.v); }
-  __forceinline vboolf4 operator < (const vfloat4& a, const vfloat4& b) { return vboolf4(a.v <  b.v); }
-  __forceinline vboolf4 operator >=(const vfloat4& a, const vfloat4& b) { return vboolf4(a.v >= b.v); }
-  __forceinline vboolf4 operator > (const vfloat4& a, const vfloat4& b) { return vboolf4(a.v >  b.v); }
-  __forceinline vboolf4 operator <=(const vfloat4& a, const vfloat4& b) { return vboolf4(a.v <= b.v); }
+  template<int N> __forceinline vboolf<N> operator ==(const vfloat<N>& a, const vfloat<N>& b) { return vboolf<N>(a.v == b.v); }
+  template<int N> __forceinline vboolf<N> operator !=(const vfloat<N>& a, const vfloat<N>& b) { return vboolf<N>(a.v != b.v); }
+  template<int N> __forceinline vboolf<N> operator < (const vfloat<N>& a, const vfloat<N>& b) { return vboolf<N>(a.v <  b.v); }
+  template<int N> __forceinline vboolf<N> operator >=(const vfloat<N>& a, const vfloat<N>& b) { return vboolf<N>(a.v >= b.v); }
+  template<int N> __forceinline vboolf<N> operator > (const vfloat<N>& a, const vfloat<N>& b) { return vboolf<N>(a.v >  b.v); }
+  template<int N> __forceinline vboolf<N> operator <=(const vfloat<N>& a, const vfloat<N>& b) { return vboolf<N>(a.v <= b.v); }
 
-  __forceinline vboolf4 operator ==(const vfloat4& a, float          b) { return a == vfloat4(b); }
-  __forceinline vboolf4 operator ==(float          a, const vfloat4& b) { return vfloat4(a) == b; }
+  template<int N> __forceinline vboolf<N> operator ==(const vfloat<N>& a, float          b) { return a == vfloat<N>(b); }
+  template<int N> __forceinline vboolf<N> operator ==(float          a, const vfloat<N>& b) { return vfloat<N>(a) == b; }
 
-  __forceinline vboolf4 operator !=(const vfloat4& a, float          b) { return a != vfloat4(b); }
-  __forceinline vboolf4 operator !=(float          a, const vfloat4& b) { return vfloat4(a) != b; }
+  template<int N> __forceinline vboolf<N> operator !=(const vfloat<N>& a, float          b) { return a != vfloat<N>(b); }
+  template<int N> __forceinline vboolf<N> operator !=(float          a, const vfloat<N>& b) { return vfloat<N>(a) != b; }
 
-  __forceinline vboolf4 operator < (const vfloat4& a, float          b) { return a <  vfloat4(b); }
-  __forceinline vboolf4 operator < (float          a, const vfloat4& b) { return vfloat4(a) <  b; }
+  template<int N> __forceinline vboolf<N> operator < (const vfloat<N>& a, float          b) { return a <  vfloat<N>(b); }
+  template<int N> __forceinline vboolf<N> operator < (float          a, const vfloat<N>& b) { return vfloat<N>(a) <  b; }
   
-  __forceinline vboolf4 operator >=(const vfloat4& a, float          b) { return a >= vfloat4(b); }
-  __forceinline vboolf4 operator >=(float          a, const vfloat4& b) { return vfloat4(a) >= b; }
+  template<int N> __forceinline vboolf<N> operator >=(const vfloat<N>& a, float          b) { return a >= vfloat<N>(b); }
+  template<int N> __forceinline vboolf<N> operator >=(float          a, const vfloat<N>& b) { return vfloat<N>(a) >= b; }
 
-  __forceinline vboolf4 operator > (const vfloat4& a, float          b) { return a >  vfloat4(b); }
-  __forceinline vboolf4 operator > (float          a, const vfloat4& b) { return vfloat4(a) >  b; }
+  template<int N> __forceinline vboolf<N> operator > (const vfloat<N>& a, float          b) { return a >  vfloat<N>(b); }
+  template<int N> __forceinline vboolf<N> operator > (float          a, const vfloat<N>& b) { return vfloat<N>(a) >  b; }
 
-  __forceinline vboolf4 operator <=(const vfloat4& a, float          b) { return a <= vfloat4(b); }
-  __forceinline vboolf4 operator <=(float          a, const vfloat4& b) { return vfloat4(a) <= b; }
+  template<int N> __forceinline vboolf<N> operator <=(const vfloat<N>& a, float          b) { return a <= vfloat<N>(b); }
+  template<int N> __forceinline vboolf<N> operator <=(float          a, const vfloat<N>& b) { return vfloat<N>(a) <= b; }
 
-  __forceinline vboolf4 eq(const vfloat4& a, const vfloat4& b) { return a == b; }
-  __forceinline vboolf4 ne(const vfloat4& a, const vfloat4& b) { return a != b; }
-  __forceinline vboolf4 lt(const vfloat4& a, const vfloat4& b) { return a <  b; }
-  __forceinline vboolf4 ge(const vfloat4& a, const vfloat4& b) { return a >= b; }
-  __forceinline vboolf4 gt(const vfloat4& a, const vfloat4& b) { return a >  b; }
-  __forceinline vboolf4 le(const vfloat4& a, const vfloat4& b) { return a <= b; }
+  template<int N> __forceinline vboolf<N> eq(const vfloat<N>& a, const vfloat<N>& b) { return a == b; }
+  template<int N> __forceinline vboolf<N> ne(const vfloat<N>& a, const vfloat<N>& b) { return a != b; }
+  template<int N> __forceinline vboolf<N> lt(const vfloat<N>& a, const vfloat<N>& b) { return a <  b; }
+  template<int N> __forceinline vboolf<N> ge(const vfloat<N>& a, const vfloat<N>& b) { return a >= b; }
+  template<int N> __forceinline vboolf<N> gt(const vfloat<N>& a, const vfloat<N>& b) { return a >  b; }
+  template<int N> __forceinline vboolf<N> le(const vfloat<N>& a, const vfloat<N>& b) { return a <= b; }
 
-  //__forceinline vboolf4 eq(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_EQ); }
-  //__forceinline vboolf4 ne(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_NE); }
-  //__forceinline vboolf4 lt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LT); }
-  //__forceinline vboolf4 ge(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GE); }
-  //__forceinline vboolf4 gt(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GT); }
-  //__forceinline vboolf4 le(const vboolf4& mask, const vfloat4& a, const vfloat4& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LE); }
+  //template<int N> __forceinline vboolf<N> eq(const vboolf<N>& mask, const vfloat<N>& a, const vfloat<N>& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_EQ); }
+  //template<int N> __forceinline vboolf<N> ne(const vboolf<N>& mask, const vfloat<N>& a, const vfloat<N>& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_NE); }
+  //template<int N> __forceinline vboolf<N> lt(const vboolf<N>& mask, const vfloat<N>& a, const vfloat<N>& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LT); }
+  //template<int N> __forceinline vboolf<N> ge(const vboolf<N>& mask, const vfloat<N>& a, const vfloat<N>& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GE); }
+  //template<int N> __forceinline vboolf<N> gt(const vboolf<N>& mask, const vfloat<N>& a, const vfloat<N>& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_GT); }
+  //template<int N> __forceinline vboolf<N> le(const vboolf<N>& mask, const vfloat<N>& a, const vfloat<N>& b) { return _mm_mask_cmp_ps_mask(mask, a, b, _MM_CMPINT_LE); }
 
 /*
   template<int mask>
-    __forceinline vfloat4 select(const vfloat4& t, const vfloat4& f)
+    template<int N> __forceinline vfloat<N> select(const vfloat<N>& t, const vfloat<N>& f)
   {
 #if defined(__SSE4_1__) 
     return _mm_blend_ps(f, t, mask);
 #else
-    return select(vboolf4(mask), t, f);
+    return select(vboolf<N>(mask), t, f);
 #endif
   }
 */
   
-  __forceinline vfloat4 lerp(const vfloat4& a, const vfloat4& b, const vfloat4& t) {
-    return vfloat4(madd(t.v,b.v-a.v,a.v));
+  template<int N> __forceinline vfloat<N> lerp(const vfloat<N>& a, const vfloat<N>& b, const vfloat<N>& t) {
+    return vfloat<N>(madd(t.v,b.v-a.v,a.v));
   }
   
-  __forceinline bool isvalid(const vfloat4& v) {
-    return all((v > vfloat4(-FLT_LARGE)) & (v < vfloat4(+FLT_LARGE)));
+  template<int N> __forceinline bool isvalid(const vfloat<N>& v) {
+    return all((v > vfloat<N>(-FLT_LARGE)) & (v < vfloat<N>(+FLT_LARGE)));
   }
 
-  __forceinline bool is_finite(const vfloat4& a) {
-    return all((a >= vfloat4(-FLT_MAX)) & (a <= vfloat4(+FLT_MAX)));
+  template<int N> __forceinline bool is_finite(const vfloat<N>& a) {
+    return all((a >= vfloat<N>(-FLT_MAX)) & (a <= vfloat<N>(+FLT_MAX)));
   }
 
-  __forceinline bool is_finite(const vboolf4& valid, const vfloat4& a) {
-    return all(valid, (a >= vfloat4(-FLT_MAX)) & (a <= vfloat4(+FLT_MAX)));
+  template<int N> __forceinline bool is_finite(const vboolf<N>& valid, const vfloat<N>& a) {
+    return all(valid, (a >= vfloat<N>(-FLT_MAX)) & (a <= vfloat<N>(+FLT_MAX)));
   }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4 floor(const vfloat4& a) { return vfloat4(cl::sycl::floor(a.v));  }
-  __forceinline vfloat4 ceil (const vfloat4& a) { return vfloat4(cl::sycl::ceil(a.v)); }
-  __forceinline vfloat4 trunc(const vfloat4& a) { return vfloat4(cl::sycl::trunc(a.v)); }
-  __forceinline vfloat4 frac (const vfloat4& a) { return a-floor(a); }
-  __forceinline vint4   floori(const vfloat4& a){ return vint4((int)floor(a).v); }
+  template<int N> __forceinline vfloat<N> floor(const vfloat<N>& a) { return vfloat<N>(cl::sycl::floor(a.v));  }
+  template<int N> __forceinline vfloat<N> ceil (const vfloat<N>& a) { return vfloat<N>(cl::sycl::ceil(a.v)); }
+  template<int N> __forceinline vfloat<N> trunc(const vfloat<N>& a) { return vfloat<N>(cl::sycl::trunc(a.v)); }
+  template<int N> __forceinline vfloat<N> frac (const vfloat<N>& a) { return a-floor(a); }
+  template<int N> __forceinline vint<N>   floori(const vfloat<N>& a){ return vint<N>((int)floor(a).v); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
 
 /*
-  __forceinline vfloat4 unpacklo(const vfloat4& a, const vfloat4& b) { return _mm_unpacklo_ps(a, b); }
-  __forceinline vfloat4 unpackhi(const vfloat4& a, const vfloat4& b) { return _mm_unpackhi_ps(a, b); }
+  template<int N> __forceinline vfloat<N> unpacklo(const vfloat<N>& a, const vfloat<N>& b) { return _mm_unpacklo_ps(a, b); }
+  template<int N> __forceinline vfloat<N> unpackhi(const vfloat<N>& a, const vfloat<N>& b) { return _mm_unpackhi_ps(a, b); }
 */
   
-  template<int i0, int i1, int i2, int i3>
-  __forceinline vfloat4 shuffle(const vfloat4& v) {
-    return vfloat4(__spirv_SubgroupShuffleINTEL(v.v, vint4(i0,i1,i2,i3).v));
+  template<int i0, int i1, int i2, int i3, int N>
+    __forceinline vfloat<N> shuffle(const vfloat<N>& v) {
+    return vfloat<N>(__spirv_SubgroupShuffleINTEL(v.v, vint<N>(i0,i1,i2,i3).v));
   }
 /*
   template<int i0, int i1, int i2, int i3>
-  __forceinline vfloat4 shuffle(const vfloat4& a, const vfloat4& b) {
+  template<int N> __forceinline vfloat<N> shuffle(const vfloat<N>& a, const vfloat<N>& b) {
     return _mm_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 */
   
 /*
-  __forceinline vfloat4 shuffle8(const vfloat4& a, const vint4& shuf) {
+  template<int N> __forceinline vfloat<N> shuffle8(const vfloat<N>& a, const vint<N>& shuf) {
     return _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(a), shuf)); 
   }
 */
       
-  template<int i>
-    __forceinline vfloat4 shuffle(const vfloat4& v) {
-    return vfloat4(__spirv_GroupBroadcast(__spv::Scope::Subgroup, v.v, i));
+  template<int i, int N>
+    __forceinline vfloat<N> shuffle(const vfloat<N>& v) {
+    return vfloat<N>(__spirv_GroupBroadcast(__spv::Scope::Subgroup, v.v, i));
   }
   
-  template<int i> __forceinline float extract(const vfloat4& a) {
+  template<int i, int N> __forceinline float extract(const vfloat<N>& a) {
     return __spirv_GroupBroadcast(__spv::Scope::Subgroup, a.v, i);
   }
 /*
 #if defined (__SSE4_1__)
-  template<int dst, int src, int clr> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
-  template<int dst, int src> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return insert<dst, src, 0>(a, b); }
-  template<int dst> __forceinline vfloat4 insert(const vfloat4& a, const float b) { return insert<dst, 0>(a, _mm_set_ss(b)); }
+  template<int dst, int src, int clr> template<int N> __forceinline vfloat<N> insert(const vfloat<N>& a, const vfloat<N>& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
+  template<int dst, int src> template<int N> __forceinline vfloat<N> insert(const vfloat<N>& a, const vfloat<N>& b) { return insert<dst, src, 0>(a, b); }
+  template<int dst> template<int N> __forceinline vfloat<N> insert(const vfloat<N>& a, const float b) { return insert<dst, 0>(a, _mm_set_ss(b)); }
 #else
-  template<int dst, int src> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { vfloat4 c = a; c[dst&3] = b[src&3]; return c; }
-  template<int dst>  __forceinline vfloat4 insert(const vfloat4& a, float b) { vfloat4 c = a; c[dst&3] = b; return c; }
+  template<int dst, int src> template<int N> __forceinline vfloat<N> insert(const vfloat<N>& a, const vfloat<N>& b) { vfloat<N> c = a; c[dst&3] = b[src&3]; return c; }
+  template<int dst>  template<int N> __forceinline vfloat<N> insert(const vfloat<N>& a, float b) { vfloat<N> c = a; c[dst&3] = b; return c; }
 #endif
 */
-  __forceinline float toScalar(const vfloat4& v) { return extract<0>(v); }
+  template<int N> __forceinline float toScalar(const vfloat<N>& v) { return extract<0>(v); }
 
 /*
-  __forceinline vfloat4 broadcast4f(const vfloat4& a, size_t k) {
-   return vfloat4::broadcast(&a[k]);
+  template<int N> __forceinline vfloat<N> broadcast4f(const vfloat<N>& a, size_t k) {
+   return vfloat<N>::broadcast(&a[k]);
  }
 */
   
-  __forceinline vfloat4 shift_right_1(const vfloat4& x) {
-    return vfloat4(__spirv_SubgroupShuffleDownINTEL(x.v, x.v, 1));
+  template<int N> __forceinline vfloat<N> shift_right_1(const vfloat<N>& x) {
+    return vfloat<N>(__spirv_SubgroupShuffleDownINTEL(x.v, x.v, 1));
   }
 
 /*
-  __forceinline vfloat4 permute(const vfloat4 &a, const __m128i &index) {
+  template<int N> __forceinline vfloat<N> permute(const vfloat<N> &a, const __m128i &index) {
     return _mm_permutevar_ps(a,index);
   }
 */
-  __forceinline vfloat4 broadcast1f(const void* a) {
-    return vfloat4::broadcast(a);
+  template<int N> __forceinline vfloat<N> broadcast1f(const void* a) {
+    return vfloat<N>::broadcast(a);
   }
 
 /*
   template<int i>
-  __forceinline vfloat4 align_shift_right(const vfloat4& a, const vfloat4& b) {
+  template<int N> __forceinline vfloat<N> align_shift_right(const vfloat<N>& a, const vfloat<N>& b) {
     return _mm_castsi128_ps(_mm_alignr_epi32(_mm_castps_si128(a), _mm_castps_si128(b), i));
   }  
 */
@@ -440,39 +440,39 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if 0
-  __forceinline vfloat4 sort_ascending(const vfloat4& v)
+  template<int N> __forceinline vfloat<N> sort_ascending(const vfloat<N>& v)
   {
-    const vfloat4 a0 = v;
-    const vfloat4 b0 = shuffle<1,0,3,2>(a0);
-    const vfloat4 c0 = min(a0,b0);
-    const vfloat4 d0 = max(a0,b0);
-    const vfloat4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
-    const vfloat4 b1 = shuffle<2,3,0,1>(a1);
-    const vfloat4 c1 = min(a1,b1);
-    const vfloat4 d1 = max(a1,b1);
-    const vfloat4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
-    const vfloat4 b2 = shuffle<0,2,1,3>(a2);
-    const vfloat4 c2 = min(a2,b2);
-    const vfloat4 d2 = max(a2,b2);
-    const vfloat4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
+    const vfloat<N> a0 = v;
+    const vfloat<N> b0 = shuffle<1,0,3,2>(a0);
+    const vfloat<N> c0 = min(a0,b0);
+    const vfloat<N> d0 = max(a0,b0);
+    const vfloat<N> a1 = select<0x5 /* 0b0101 */>(c0,d0);
+    const vfloat<N> b1 = shuffle<2,3,0,1>(a1);
+    const vfloat<N> c1 = min(a1,b1);
+    const vfloat<N> d1 = max(a1,b1);
+    const vfloat<N> a2 = select<0x3 /* 0b0011 */>(c1,d1);
+    const vfloat<N> b2 = shuffle<0,2,1,3>(a2);
+    const vfloat<N> c2 = min(a2,b2);
+    const vfloat<N> d2 = max(a2,b2);
+    const vfloat<N> a3 = select<0x2 /* 0b0010 */>(c2,d2);
     return a3;
   }
 
-  __forceinline vfloat4 sort_descending(const vfloat4& v)
+  template<int N> __forceinline vfloat<N> sort_descending(const vfloat<N>& v)
   {
-    const vfloat4 a0 = v;
-    const vfloat4 b0 = shuffle<1,0,3,2>(a0);
-    const vfloat4 c0 = max(a0,b0);
-    const vfloat4 d0 = min(a0,b0);
-    const vfloat4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
-    const vfloat4 b1 = shuffle<2,3,0,1>(a1);
-    const vfloat4 c1 = max(a1,b1);
-    const vfloat4 d1 = min(a1,b1);
-    const vfloat4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
-    const vfloat4 b2 = shuffle<0,2,1,3>(a2);
-    const vfloat4 c2 = max(a2,b2);
-    const vfloat4 d2 = min(a2,b2);
-    const vfloat4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
+    const vfloat<N> a0 = v;
+    const vfloat<N> b0 = shuffle<1,0,3,2>(a0);
+    const vfloat<N> c0 = max(a0,b0);
+    const vfloat<N> d0 = min(a0,b0);
+    const vfloat<N> a1 = select<0x5 /* 0b0101 */>(c0,d0);
+    const vfloat<N> b1 = shuffle<2,3,0,1>(a1);
+    const vfloat<N> c1 = max(a1,b1);
+    const vfloat<N> d1 = min(a1,b1);
+    const vfloat<N> a2 = select<0x3 /* 0b0011 */>(c1,d1);
+    const vfloat<N> b2 = shuffle<0,2,1,3>(a2);
+    const vfloat<N> c2 = max(a2,b2);
+    const vfloat<N> d2 = min(a2,b2);
+    const vfloat<N> a3 = select<0x2 /* 0b0010 */>(c2,d2);
     return a3;
   }
 #endif
@@ -482,24 +482,24 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if 0
-  __forceinline void transpose(const vfloat4& r0, const vfloat4& r1, const vfloat4& r2, const vfloat4& r3, vfloat4& c0, vfloat4& c1, vfloat4& c2, vfloat4& c3)
+  template<int N> __forceinline void transpose(const vfloat<N>& r0, const vfloat<N>& r1, const vfloat<N>& r2, const vfloat<N>& r3, vfloat<N>& c0, vfloat<N>& c1, vfloat<N>& c2, vfloat<N>& c3)
   {
-    vfloat4 l02 = unpacklo(r0,r2);
-    vfloat4 h02 = unpackhi(r0,r2);
-    vfloat4 l13 = unpacklo(r1,r3);
-    vfloat4 h13 = unpackhi(r1,r3);
+    vfloat<N> l02 = unpacklo(r0,r2);
+    vfloat<N> h02 = unpackhi(r0,r2);
+    vfloat<N> l13 = unpacklo(r1,r3);
+    vfloat<N> h13 = unpackhi(r1,r3);
     c0 = unpacklo(l02,l13);
     c1 = unpackhi(l02,l13);
     c2 = unpacklo(h02,h13);
     c3 = unpackhi(h02,h13);
   }
 
-  __forceinline void transpose(const vfloat4& r0, const vfloat4& r1, const vfloat4& r2, const vfloat4& r3, vfloat4& c0, vfloat4& c1, vfloat4& c2)
+  template<int N> __forceinline void transpose(const vfloat<N>& r0, const vfloat<N>& r1, const vfloat<N>& r2, const vfloat<N>& r3, vfloat<N>& c0, vfloat<N>& c1, vfloat<N>& c2)
   {
-    vfloat4 l02 = unpacklo(r0,r2);
-    vfloat4 h02 = unpackhi(r0,r2);
-    vfloat4 l13 = unpacklo(r1,r3);
-    vfloat4 h13 = unpackhi(r1,r3);
+    vfloat<N> l02 = unpacklo(r0,r2);
+    vfloat<N> h02 = unpackhi(r0,r2);
+    vfloat<N> l13 = unpacklo(r1,r3);
+    vfloat<N> h13 = unpackhi(r1,r3);
     c0 = unpacklo(l02,l13);
     c1 = unpackhi(l02,l13);
     c2 = unpacklo(h02,h13);
@@ -510,32 +510,32 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat4 vreduce_min(const vfloat4& v) {
+  template<int N> __forceinline vfloat<N> vreduce_min(const vfloat<N>& v) {
     return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(v.fix_upper(+INFINITY).v, cl::sycl::intel::minimum<float>());
   }
 
-  __forceinline vfloat4 vreduce_max(const vfloat4& v) {
+  template<int N> __forceinline vfloat<N> vreduce_max(const vfloat<N>& v) {
     return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(v.fix_upper(-INFINITY).v, cl::sycl::intel::maximum<float>());
   }
   
-  __forceinline vfloat4 vreduce_add(const vfloat4& v) {
+  template<int N> __forceinline vfloat<N> vreduce_add(const vfloat<N>& v) {
     return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>(v.fix_upper(0.0f).v, cl::sycl::intel::plus<float>());
   }
 
-  __forceinline float reduce_min(const vfloat4& v) { return vreduce_min(v).v; }
-  __forceinline float reduce_max(const vfloat4& v) { return vreduce_max(v).v; }
-  __forceinline float reduce_add(const vfloat4& v) { return vreduce_add(v).v; }
+  template<int N> __forceinline float reduce_min(const vfloat<N>& v) { return vreduce_min(v).v; }
+  template<int N> __forceinline float reduce_max(const vfloat<N>& v) { return vreduce_max(v).v; }
+  template<int N> __forceinline float reduce_add(const vfloat<N>& v) { return vreduce_add(v).v; }
 
-  __forceinline size_t select_min(const vboolf4& valid, const vfloat4& v) 
+  template<int N> __forceinline size_t select_min(const vboolf<N>& valid, const vfloat<N>& v) 
   { 
-    const vfloat4 a = select(valid,v,vfloat4(pos_inf)); 
-    const vbool4 valid_min = valid & (a == vreduce_min(a));
+    const vfloat<N> a = select(valid,v,vfloat<N>(pos_inf)); 
+    const vboolf<N> valid_min = valid & (a == vreduce_min(a));
     return cl::sycl::intel::ctz(movemask(any(valid_min) ? valid_min : valid)); 
   }
-  __forceinline size_t select_max(const vboolf4& valid, const vfloat4& v) 
+  template<int N> __forceinline size_t select_max(const vboolf<N>& valid, const vfloat<N>& v) 
   { 
-    const vfloat4 a = select(valid,v,vfloat4(neg_inf)); 
-    const vbool4 valid_max = valid & (a == vreduce_max(a));
+    const vfloat<N> a = select(valid,v,vfloat<N>(neg_inf)); 
+    const vboolf<N> valid_max = valid & (a == vreduce_max(a));
     return cl::sycl::intel::ctz(movemask(any(valid_max) ? valid_max : valid)); 
   }
   
@@ -543,16 +543,16 @@ namespace embree
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline float dot(const vfloat4& a, const vfloat4& b) {
+  template<int N> __forceinline float dot(const vfloat<N>& a, const vfloat<N>& b) {
     return cl::sycl::detail::calc<float, __spv::GroupOperation::Reduce>((a*b).fix_upper(0.0f).v, cl::sycl::intel::plus<float>());
   }
 
-  __forceinline vfloat4 cross(const vfloat4& a, const vfloat4& b)
+  template<int N> __forceinline vfloat<N> cross(const vfloat<N>& a, const vfloat<N>& b)
   {
-    const vfloat4 a0 = a;
-    const vfloat4 b0 = shuffle<1,2,0,3>(b);
-    const vfloat4 a1 = shuffle<1,2,0,3>(a);
-    const vfloat4 b1 = b;
+    const vfloat<N> a0 = a;
+    const vfloat<N> b0 = shuffle<1,2,0,3>(b);
+    const vfloat<N> a1 = shuffle<1,2,0,3>(a);
+    const vfloat<N> b1 = b;
     return shuffle<1,2,0,3>(msub(a0,b0,a1*b1));
   }
 
@@ -560,10 +560,10 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  inline const cl::sycl::stream& operator <<(const cl::sycl::stream& cout, const vfloat4& a)
+  template<int N> inline const cl::sycl::stream& operator <<(const cl::sycl::stream& cout, const vfloat<N>& a)
   {
     cout << "<";
-    for (int i=0; i<4; i++) {
+    for (int i=0; i<N; i++) {
       if (__spirv_BuiltInSubgroupLocalInvocationId == i) {
         cout << a.v;
         if (i != 3) cout << ", ";
@@ -572,7 +572,7 @@ namespace embree
     return cout << ">";
   }
 
-  inline std::ostream& operator <<(std::ostream& cout, const vfloat4& a) {
+  template<int N> inline std::ostream& operator <<(std::ostream& cout, const vfloat<N>& a) {
     return cout;
   }
 }
