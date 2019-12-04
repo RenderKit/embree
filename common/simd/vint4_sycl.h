@@ -64,6 +64,11 @@ namespace embree
     vint<N> fix_upper(int c) const {
       return vint<N>(__spirv_BuiltInSubgroupLocalInvocationId < N ? v : c);
     }
+
+    static uint sgid() {
+      if (N == 16) return __spirv_BuiltInSubgroupLocalInvocationId;
+      return cl::sycl::min(__spirv_BuiltInSubgroupLocalInvocationId,unsigned(N-1));
+    }
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -84,22 +89,29 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline vint<N> load (const void* a) {
-      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      return lid < N ? ((int*)a)[lid] : 0.0f;
-      //return vint<N>(__spirv_SubgroupBlockReadINTEL<int>((const __attribute__((ocl_global)) uint32_t*) a));
+    static __forceinline vint<N> load (const void* a)
+    {
+      if (N == 16) {
+        return vint<N>(__spirv_SubgroupBlockReadINTEL<int>((const __attribute__((ocl_global)) uint32_t*) a));
+      } else {
+        return ((int*)a)[vint<N>::sgid()];
+      }
     }
+    
     static __forceinline vint<N> loadu(const void* a) {
-      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      return lid < N ? ((int*)a)[lid] : 0.0f;
+      return ((int*)a)[vint<N>::sgid()];
     }
 
-    static __forceinline void store (void* ptr, const vint<N>& v) {
-      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      if (lid < N) ((int*)ptr)[lid] = v.v;
-      //int x = lid < N ? v.v : 0.0f;
-      //if (lid < N) __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&x);
+    static __forceinline void store (void* ptr, const vint<N>& v)
+    {
+      if (N == 16) {
+        __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&v.v);
+      } else {
+        const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+        if (lid < N) ((int*)ptr)[lid] = v.v;
+      }
     }
+    
     static __forceinline void storeu(void* ptr, const vint<N>& v) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
       if (lid < N) ((int*)ptr)[lid] = v.v;
