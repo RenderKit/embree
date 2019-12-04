@@ -18,18 +18,18 @@
 
 namespace embree
 {
-  /* 4-wide SSE bool type */
-  template<>
-  struct vboolf<4>
+  /* N-wide SYCL bool type */
+  template<int N>
+  struct vboolf
   {
     //ALIGNED_STRUCT_(16);
     
-    typedef vboolf4 Bool;
-    typedef vint4   Int;
-    typedef vfloat4 Float;
+    typedef vboolf<N> Bool;
+    typedef vint<N>   Int;
+    typedef vfloat<N> Float;
 
-    enum  { size = 4 };            // number of SIMD elements
-    //union { __m128 v; int i[4]; }; // data
+    enum  { size = N };            // number of SIMD elements
+    //union { __m128 v; int i[N]; }; // data
     bool v;
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -37,8 +37,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
     
     __forceinline vboolf() {}
-    //__forceinline vboolf(const vboolf4& other) { v = other.v; }
-    //__forceinline vboolf4& operator =(const vboolf4& other) { v = other.v; return *this; }
+    //__forceinline vboolf(const vboolf& other) { v = other.v; }
+    //__forceinline vboolf& operator =(const vboolf& other) { v = other.v; return *this; }
 
     //__forceinline vboolf(__m128 input) : v(input) {}
     //__forceinline operator const __m128&() const { return v; }
@@ -74,8 +74,8 @@ namespace embree
     //  return _mm_castps_si128(v);
     //}
 
-    vboolf4 fix_upper(bool c) const {
-      return vboolf4(__spirv_BuiltInSubgroupLocalInvocationId < 4 ? v : c);
+    vboolf fix_upper(bool c) const {
+      return vboolf(__spirv_BuiltInSubgroupLocalInvocationId < N ? v : c);
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -89,103 +89,103 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    //__forceinline bool operator [](size_t index) const { assert(index < 4); return (_mm_movemask_ps(v) >> index) & 1; }
-    //__forceinline int& operator [](size_t index)       { assert(index < 4); return i[index]; }
+    //__forceinline bool operator [](size_t index) const { assert(index < N); return (_mm_movemask_ps(v) >> index) & 1; }
+    //__forceinline int& operator [](size_t index)       { assert(index < N); return i[index]; }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf4 operator !(const vboolf4& a) { return vboolf4(!a.v); }
+  template<int N> __forceinline vboolf<N> operator !(const vboolf<N>& a) { return vboolf<N>(!a.v); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf4 operator &(const vboolf4& a, const vboolf4& b) { return vboolf4(a.v && b.v); }
-  __forceinline vboolf4 operator |(const vboolf4& a, const vboolf4& b) { return vboolf4(a.v || b.v); }
-  __forceinline vboolf4 operator ^(const vboolf4& a, const vboolf4& b) { return vboolf4(a.v != b.v); }
+  template<int N> __forceinline vboolf<N> operator &(const vboolf<N>& a, const vboolf<N>& b) { return vboolf<N>(a.v && b.v); }
+  template<int N> __forceinline vboolf<N> operator |(const vboolf<N>& a, const vboolf<N>& b) { return vboolf<N>(a.v || b.v); }
+  template<int N> __forceinline vboolf<N> operator ^(const vboolf<N>& a, const vboolf<N>& b) { return vboolf<N>(a.v != b.v); }
 
-  //__forceinline vboolf4 andn(const vboolf4& a, const vboolf4& b) { return _mm_andnot_ps(b, a); }
+  //template<int N> __forceinline vboolf<N> andn(const vboolf<N>& a, const vboolf<N>& b) { return _mm_andnot_ps(b, a); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf4& operator &=(vboolf4& a, const vboolf4& b) { return a = a & b; }
-  __forceinline vboolf4& operator |=(vboolf4& a, const vboolf4& b) { return a = a | b; }
-  __forceinline vboolf4& operator ^=(vboolf4& a, const vboolf4& b) { return a = a ^ b; }
+  template<int N> __forceinline vboolf<N>& operator &=(vboolf<N>& a, const vboolf<N>& b) { return a = a & b; }
+  template<int N> __forceinline vboolf<N>& operator |=(vboolf<N>& a, const vboolf<N>& b) { return a = a | b; }
+  template<int N> __forceinline vboolf<N>& operator ^=(vboolf<N>& a, const vboolf<N>& b) { return a = a ^ b; }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators + Select
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline vboolf4 operator !=(const vboolf4& a, const vboolf4& b) { return vboolf4(a.v != b.v); }
-  __forceinline vboolf4 operator ==(const vboolf4& a, const vboolf4& b) { return vboolf4(a.v == b.v); }
+  template<int N> __forceinline vboolf<N> operator !=(const vboolf<N>& a, const vboolf<N>& b) { return vboolf<N>(a.v != b.v); }
+  template<int N> __forceinline vboolf<N> operator ==(const vboolf<N>& a, const vboolf<N>& b) { return vboolf<N>(a.v == b.v); }
   
-  __forceinline vboolf4 select(const vboolf4& m, const vboolf4& t, const vboolf4& f) {
-    return vboolf4(m.v ? t.v : f.v);
+  template<int N> __forceinline vboolf<N> select(const vboolf<N>& m, const vboolf<N>& t, const vboolf<N>& f) {
+    return vboolf<N>(m.v ? t.v : f.v);
   }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
   
-  //__forceinline vboolf4 unpacklo(const vboolf4& a, const vboolf4& b) { return _mm_unpacklo_ps(a, b); }
-  //__forceinline vboolf4 unpackhi(const vboolf4& a, const vboolf4& b) { return _mm_unpackhi_ps(a, b); }
+  //template<int N> __forceinline vboolf<N> unpacklo(const vboolf<N>& a, const vboolf<N>& b) { return _mm_unpacklo_ps(a, b); }
+  //template<int N> __forceinline vboolf<N> unpackhi(const vboolf<N>& a, const vboolf<N>& b) { return _mm_unpackhi_ps(a, b); }
 
   //template<int i0, int i1, int i2, int i3>
-  //__forceinline vboolf4 shuffle(const vboolf4& v) {
+  //template<int N> __forceinline vboolf<N> shuffle(const vboolf<N>& v) {
   //  return _mm_castsi128_ps(_mm_shuffle_epi32(v, _MM_SHUFFLE(i3, i2, i1, i0)));
   //}
 
   //template<int i0, int i1, int i2, int i3>
-  //__forceinline vboolf4 shuffle(const vboolf4& a, const vboolf4& b) {
+  //template<int N> __forceinline vboolf<N> shuffle(const vboolf<N>& a, const vboolf<N>& b) {
   //  return _mm_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   //}
 
   //template<int i0>
-  //__forceinline vboolf4 shuffle(const vboolf4& v) {
+  //template<int N> __forceinline vboolf<N> shuffle(const vboolf<N>& v) {
   //  return shuffle<i0,i0,i0,i0>(v);
   //}
 
-  //template<int dst, int src, int clr> __forceinline vboolf4 insert(const vboolf4& a, const vboolf4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
-  //template<int dst, int src> __forceinline vboolf4 insert(const vboolf4& a, const vboolf4& b) { return insert<dst, src, 0>(a, b); }
-  //template<int dst> __forceinline vboolf4 insert(const vboolf4& a, const bool b) { return insert<dst, 0>(a, vboolf4(b)); }
+  //template<int dst, int src, int clr> template<int N> __forceinline vboolf<N> insert(const vboolf<N>& a, const vboolf<N>& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
+  //template<int dst, int src> template<int N> __forceinline vboolf<N> insert(const vboolf<N>& a, const vboolf<N>& b) { return insert<dst, src, 0>(a, b); }
+  //template<int dst> template<int N> __forceinline vboolf<N> insert(const vboolf<N>& a, const bool b) { return insert<dst, 0>(a, vboolf<N>(b)); }
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Reduction Operations
   ////////////////////////////////////////////////////////////////////////////////
     
-  __forceinline bool reduce_and(const vboolf4& a) {
+  template<int N> __forceinline bool reduce_and(const vboolf<N>& a) {
     return __spirv_GroupAll(__spv::Scope::Subgroup, a.fix_upper(true).v);
   }
 
-  __forceinline bool reduce_or(const vboolf4& a) {
+  template<int N> __forceinline bool reduce_or(const vboolf<N>& a) {
     return __spirv_GroupAny(__spv::Scope::Subgroup, a.fix_upper(false).v);
   }
 
-  __forceinline bool all(const vboolf4& a) {
+  template<int N> __forceinline bool all(const vboolf<N>& a) {
     return __spirv_GroupAll(__spv::Scope::Subgroup, a.fix_upper(true).v);
   }
 
-  __forceinline bool any(const vboolf4& a) {
+  template<int N> __forceinline bool any(const vboolf<N>& a) {
     return __spirv_GroupAny(__spv::Scope::Subgroup, a.fix_upper(false).v);
   }
 
-  __forceinline bool none(const vboolf4& a) {
+  template<int N> __forceinline bool none(const vboolf<N>& a) {
     return !any(a);
   }
 
-  __forceinline bool all (const vboolf4& valid, const vboolf4& b) { return all((!valid) | b); }
-  __forceinline bool any (const vboolf4& valid, const vboolf4& b) { return any(valid & b); }
-  __forceinline bool none(const vboolf4& valid, const vboolf4& b) { return none(valid & b); }
+  template<int N> __forceinline bool all (const vboolf<N>& valid, const vboolf<N>& b) { return all((!valid) | b); }
+  template<int N> __forceinline bool any (const vboolf<N>& valid, const vboolf<N>& b) { return any(valid & b); }
+  template<int N> __forceinline bool none(const vboolf<N>& valid, const vboolf<N>& b) { return none(valid & b); }
   
-  __forceinline size_t movemask(const vboolf4& a) {
+  template<int N> __forceinline size_t movemask(const vboolf<N>& a) {
     return intel_sub_group_ballot(a.fix_upper(false).v);
   }
-  __forceinline size_t popcnt(const vboolf4& a) {
+  template<int N> __forceinline size_t popcnt(const vboolf<N>& a) {
     return cl::sycl::popcount(movemask(a)); 
   }
 
@@ -193,18 +193,18 @@ namespace embree
   /// Get/Set Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  //__forceinline bool get(const vboolf4& a, size_t index) { return a[index]; }
-  //__forceinline void set(vboolf4& a, size_t index)       { a[index] = -1; }
-  //__forceinline void clear(vboolf4& a, size_t index)     { a[index] =  0; }
+  //template<int N> __forceinline bool get(const vboolf<N>& a, size_t index) { return a[index]; }
+  //template<int N> __forceinline void set(vboolf<N>& a, size_t index)       { a[index] = -1; }
+  //template<int N> __forceinline void clear(vboolf<N>& a, size_t index)     { a[index] =  0; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  inline const cl::sycl::stream& operator <<(const cl::sycl::stream& cout, const vboolf4& a)
+  template<int N> inline const cl::sycl::stream& operator <<(const cl::sycl::stream& cout, const vboolf<N>& a)
   {
     cout << "<";
-    for (int i=0; i<4; i++) {
+    for (int i=0; i<N; i++) {
       if (__spirv_BuiltInSubgroupLocalInvocationId == i) {
         cout << a.v;
         if (i != 3) cout << ", ";
@@ -213,7 +213,7 @@ namespace embree
     return cout << ">";
   }
 
-  inline std::ostream& operator <<(std::ostream& cout, const vboolf4& a) {
+  template<int N> inline std::ostream& operator <<(std::ostream& cout, const vboolf<N>& a) {
     return cout;
   }
 }

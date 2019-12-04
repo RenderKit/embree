@@ -28,7 +28,7 @@ namespace embree
     __forceinline const float& operator [](size_t index) const { assert(index < N); return f[index]; }
     __forceinline       float& operator [](size_t index)       { assert(index < N); return f[index]; }
   };
-
+  
   template<int N>
   struct vdouble
   {
@@ -44,7 +44,7 @@ namespace embree
     __forceinline const int& operator [](size_t index) const { assert(index < N); return i[index]; }
     __forceinline       int& operator [](size_t index)       { assert(index < N); return i[index]; }
   };
-
+  
   template<int N>
   struct vuint
   {
@@ -62,7 +62,11 @@ namespace embree
   };
 
   /* Varying bool types */
+#if defined(EMBREE_SYCL_SIMD_LIBRARY) && defined(__SYCL_DEVICE_ONLY__)
+  template<int N> struct vboolf;
+#else
   template<int N> struct vboolf { int       i[N]; }; // for float/int
+#endif
   template<int N> struct vboold { long long i[N]; }; // for double/long long
 
   /* Aliases to default types */
