@@ -319,11 +319,11 @@ namespace embree
   }
   */
   
-  __forceinline vint4 min(const vint4& a, const vint4& b) { return vint4(std::min(a.v,b.v)); }
-  __forceinline vint4 max(const vint4& a, const vint4& b) { return vint4(std::max(a.v,b.v)); }
+  __forceinline vint4 min(const vint4& a, const vint4& b) { return vint4(cl::sycl::min(a.v,b.v)); }
+  __forceinline vint4 max(const vint4& a, const vint4& b) { return vint4(cl::sycl::max(a.v,b.v)); }
 
-  __forceinline vint4 umin(const vint4& a, const vint4& b) { return vint4(std::min(unsigned(a.v),unsigned(b.v))); }
-  __forceinline vint4 umax(const vint4& a, const vint4& b) { return vint4(std::max(unsigned(a.v),unsigned(b.v))); }
+  __forceinline vint4 umin(const vint4& a, const vint4& b) { return vint4(cl::sycl::min(unsigned(a.v),unsigned(b.v))); }
+  __forceinline vint4 umax(const vint4& a, const vint4& b) { return vint4(cl::sycl::max(unsigned(a.v),unsigned(b.v))); }
 
   __forceinline vint4 min(const vint4& a, int          b) { return min(a,vint4(b)); }
   __forceinline vint4 min(int          a, const vint4& b) { return min(vint4(a),b); }
@@ -336,60 +336,44 @@ namespace embree
 /*
   __forceinline vint4 unpacklo(const vint4& a, const vint4& b) { return _mm_castps_si128(_mm_unpacklo_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b))); }
   __forceinline vint4 unpackhi(const vint4& a, const vint4& b) { return _mm_castps_si128(_mm_unpackhi_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b))); }
+*/
 
   template<int i0, int i1, int i2, int i3>
   __forceinline vint4 shuffle(const vint4& v) {
-    return _mm_shuffle_epi32(v, _MM_SHUFFLE(i3, i2, i1, i0));
+    return vint4(__spirv_SubgroupShuffleINTEL(v.v, vint4(i0,i1,i2,i3).v));
   }
 
+/*
   template<int i0, int i1, int i2, int i3>
   __forceinline vint4 shuffle(const vint4& a, const vint4& b) {
     return _mm_castps_si128(_mm_shuffle_ps(_mm_castsi128_ps(a), _mm_castsi128_ps(b), _MM_SHUFFLE(i3, i2, i1, i0)));
   }
-
-#if defined(__SSE3__)
-  template<> __forceinline vint4 shuffle<0, 0, 2, 2>(const vint4& v) { return _mm_castps_si128(_mm_moveldup_ps(_mm_castsi128_ps(v))); }
-  template<> __forceinline vint4 shuffle<1, 1, 3, 3>(const vint4& v) { return _mm_castps_si128(_mm_movehdup_ps(_mm_castsi128_ps(v))); }
-  template<> __forceinline vint4 shuffle<0, 1, 0, 1>(const vint4& v) { return _mm_castpd_si128(_mm_movedup_pd (_mm_castsi128_pd(v))); }
-#endif
+*/
 
   template<int i>
-  __forceinline vint4 shuffle(const vint4& v) {
-    return shuffle<i,i,i,i>(v);
+    __forceinline vint4 shuffle(const vint4& v) {
+    return vint4(__spirv_GroupBroadcast(__spv::Scope::Subgroup, v.v, i));
   }
 
-#if defined(__SSE4_1__)
-  template<int src> __forceinline int extract(const vint4& b) { return _mm_extract_epi32(b, src); }
-  template<int dst> __forceinline vint4 insert(const vint4& a, const int b) { return _mm_insert_epi32(a, b, dst); }
-#else
-  template<int src> __forceinline int extract(const vint4& b) { return b[src&3]; }
-  template<int dst> __forceinline vint4 insert(const vint4& a, int b) { vint4 c = a; c[dst&3] = b; return c; }
-#endif
-
-
-  template<> __forceinline int extract<0>(const vint4& b) { return _mm_cvtsi128_si32(b); }
-
-  __forceinline int toScalar(const vint4& v) { return _mm_cvtsi128_si32(v); }
-
-  __forceinline size_t toSizeT(const vint4& v) { 
-#if defined(__WIN32__) && !defined(__X86_64__) // win32 workaround
-    return toScalar(v);
-#else
-    return _mm_cvtsi128_si64(v); 
-#endif
+  template<int i> __forceinline int extract(const vint4& a) {
+    return __spirv_GroupBroadcast(__spv::Scope::Subgroup, a.v, i);
   }
+  
+  //template<int dst> __forceinline vint4 insert(const vint4& a, const int b) { return _mm_insert_epi32(a, b, dst); }
 
-#if defined(__AVX512VL__)
+  __forceinline int toScalar(const vint4& v) { return extract<0>(v); }
+  __forceinline size_t toSizeT(const vint4& v) { return toScalar(v); }
 
+/*
   __forceinline vint4 permute(const vint4 &a, const vint4 &index) {
     return  _mm_castps_si128(_mm_permutevar_ps(_mm_castsi128_ps(a),index));
   }
-
+*/
+/*  
   template<int i>
   __forceinline vint4 align_shift_right(const vint4& a, const vint4& b) {
     return _mm_alignr_epi32(a, b, i);    
   }  
-#endif
 */
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
@@ -426,8 +410,6 @@ namespace embree
 
 #if 0
   
-#if defined(__SSE4_1__)
-
   __forceinline vint4 usort_ascending(const vint4& v)
   {
     const vint4 a0 = v;
@@ -464,45 +446,6 @@ namespace embree
     return a3;
   }
 
-#else
-
-  __forceinline vint4 usort_ascending(const vint4& v)
-  {
-    const vint4 a0 = v-vint4(0x80000000);
-    const vint4 b0 = shuffle<1,0,3,2>(a0);
-    const vint4 c0 = min(a0,b0);
-    const vint4 d0 = max(a0,b0);
-    const vint4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
-    const vint4 b1 = shuffle<2,3,0,1>(a1);
-    const vint4 c1 = min(a1,b1);
-    const vint4 d1 = max(a1,b1);
-    const vint4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
-    const vint4 b2 = shuffle<0,2,1,3>(a2);
-    const vint4 c2 = min(a2,b2);
-    const vint4 d2 = max(a2,b2);
-    const vint4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
-    return a3+vint4(0x80000000);
-  }
-
-  __forceinline vint4 usort_descending(const vint4& v)
-  {
-    const vint4 a0 = v-vint4(0x80000000);
-    const vint4 b0 = shuffle<1,0,3,2>(a0);
-    const vint4 c0 = max(a0,b0);
-    const vint4 d0 = min(a0,b0);
-    const vint4 a1 = select<0x5 /* 0b0101 */>(c0,d0);
-    const vint4 b1 = shuffle<2,3,0,1>(a1);
-    const vint4 c1 = max(a1,b1);
-    const vint4 d1 = min(a1,b1);
-    const vint4 a2 = select<0x3 /* 0b0011 */>(c1,d1);
-    const vint4 b2 = shuffle<0,2,1,3>(a2);
-    const vint4 c2 = max(a2,b2);
-    const vint4 d2 = min(a2,b2);
-    const vint4 a3 = select<0x2 /* 0b0010 */>(c2,d2);
-    return a3+vint4(0x80000000);
-  }
-
-#endif
 #endif
   
   ////////////////////////////////////////////////////////////////////////////////
