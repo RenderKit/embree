@@ -403,6 +403,15 @@ namespace embree
         return true;
       }
 
+      __forceinline bool numValid() const
+      {
+	size_t num = 0;
+        for (size_t i=0; i<N; i++) 
+          if (child(i) != BVHN::emptyNode)
+	    num++;
+	return num;
+      }
+      
       NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)
     };
 

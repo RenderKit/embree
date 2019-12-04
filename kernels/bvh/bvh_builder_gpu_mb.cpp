@@ -100,84 +100,90 @@ namespace embree
       BVHGPUBuilderMBlurSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
         : bvh(bvh), scene(scene), sahBlockSize(sahBlockSize), intCost(intCost), minLeafSize(minLeafSize), maxLeafSize(min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks)), gtype_(gtype) {}
 
-      inline void convertToQBVHNodeNMB(gpu::QBVHNodeNMB *gpu_node, const AlignedNodeMB4D *const n)
+      inline size_t convertToQBVHNodeNMB(gpu::QBVHNodeNMB *gpu_node, const AlignedNodeMB4D *const n, NodeRef *refs, const size_t offset = 0, const size_t numElements = N)
       {
-	for (size_t i=0;i<N;i++)
+	size_t num = 0;
+	for (size_t i=0;i<numElements;i++)
 	  {
 	    if (n->child(i) == BVH::emptyNode) continue;
 	    
-	    gpu_node->offset[i]   = 0;
-	    gpu_node->lower_t[i]  = n->lower_t[i];
-	    gpu_node->upper_t[i]  = n->upper_t[i];	    	    
-	    gpu_node->lower_x[i]  = n->lower_x[i];
-	    gpu_node->upper_x[i]  = n->upper_x[i];
-	    gpu_node->lower_y[i]  = n->lower_y[i];
-	    gpu_node->upper_y[i]  = n->upper_y[i];
-	    gpu_node->lower_z[i]  = n->lower_z[i];
-	    gpu_node->upper_z[i]  = n->upper_z[i];
-	    gpu_node->lower_dx[i] = n->lower_dx[i];
-	    gpu_node->upper_dx[i] = n->upper_dx[i];
-	    gpu_node->lower_dy[i] = n->lower_dy[i];
-	    gpu_node->upper_dy[i] = n->upper_dy[i];
-	    gpu_node->lower_dz[i] = n->lower_dz[i];
-	    gpu_node->upper_dz[i] = n->upper_dz[i];
+	    gpu_node->offset[offset+num]   = 0;
+	    gpu_node->lower_t[offset+num]  = n->lower_t[i];
+	    gpu_node->upper_t[offset+num]  = n->upper_t[i];	    	    
+	    gpu_node->lower_x[offset+num]  = n->lower_x[i];
+	    gpu_node->upper_x[offset+num]  = n->upper_x[i];
+	    gpu_node->lower_y[offset+num]  = n->lower_y[i];
+	    gpu_node->upper_y[offset+num]  = n->upper_y[i];
+	    gpu_node->lower_z[offset+num]  = n->lower_z[i];
+	    gpu_node->upper_z[offset+num]  = n->upper_z[i];
+	    gpu_node->lower_dx[offset+num] = n->lower_dx[i];
+	    gpu_node->upper_dx[offset+num] = n->upper_dx[i];
+	    gpu_node->lower_dy[offset+num] = n->lower_dy[i];
+	    gpu_node->upper_dy[offset+num] = n->upper_dy[i];
+	    gpu_node->lower_dz[offset+num] = n->lower_dz[i];
+	    gpu_node->upper_dz[offset+num] = n->upper_dz[i];
 
-	    assert(!std::isnan( gpu_node->lower_t[i] ));
-	    assert(!std::isnan( gpu_node->upper_t[i] ));
-	    assert(!std::isnan( gpu_node->lower_x[i] ));
-	    assert(!std::isnan( gpu_node->lower_y[i] ));
-	    assert(!std::isnan( gpu_node->lower_z[i] ));
-	    assert(!std::isnan( gpu_node->upper_x[i] ));
-	    assert(!std::isnan( gpu_node->upper_y[i] ));
-	    assert(!std::isnan( gpu_node->upper_z[i] ));
-	    assert(!std::isnan( gpu_node->lower_dx[i] ));
-	    assert(!std::isnan( gpu_node->lower_dy[i] ));
-	    assert(!std::isnan( gpu_node->lower_dz[i] ));
-	    assert(!std::isnan( gpu_node->upper_dx[i] ));
-	    assert(!std::isnan( gpu_node->upper_dy[i] ));
-	    assert(!std::isnan( gpu_node->upper_dz[i] ));
-	    
+	    assert(!std::isnan( gpu_node->lower_t[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_t[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_x[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_y[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_z[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_x[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_y[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_z[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_dx[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_dy[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_dz[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_dx[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_dy[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_dz[offset+num] ));
+	    refs[offset+num] = n->child(i);	    
+	    num++;
 	  }
+	return num;
       }
 
-      inline void convertToQBVHNodeNMB(gpu::QBVHNodeNMB *gpu_node, const AlignedNodeMB *const n)
+      inline size_t convertToQBVHNodeNMB(gpu::QBVHNodeNMB *gpu_node, const AlignedNodeMB *const n, NodeRef *refs, const size_t offset = 0, const size_t numElements = N)
       {
-	for (size_t i=0;i<N;i++)
+	size_t num = 0;
+	for (size_t i=0;i<numElements;i++)
 	  {
 	    if (n->child(i) == BVH::emptyNode) continue;
 	    
-	    gpu_node->offset[i]   = 0;
-	    gpu_node->lower_t[i]  = neg_inf;
-	    gpu_node->upper_t[i]  = pos_inf;
-	    gpu_node->lower_x[i]  = n->lower_x[i];
-	    gpu_node->upper_x[i]  = n->upper_x[i];
-	    gpu_node->lower_y[i]  = n->lower_y[i];
-	    gpu_node->upper_y[i]  = n->upper_y[i];
-	    gpu_node->lower_z[i]  = n->lower_z[i];
-	    gpu_node->upper_z[i]  = n->upper_z[i];
-	    gpu_node->lower_dx[i] = n->lower_dx[i];
-	    gpu_node->upper_dx[i] = n->upper_dx[i];
-	    gpu_node->lower_dy[i] = n->lower_dy[i];
-	    gpu_node->upper_dy[i] = n->upper_dy[i];
-	    gpu_node->lower_dz[i] = n->lower_dz[i];
-	    gpu_node->upper_dz[i] = n->upper_dz[i];
+	    gpu_node->offset[offset+num]   = 0;
+	    gpu_node->lower_t[offset+num]  = neg_inf;
+	    gpu_node->upper_t[offset+num]  = pos_inf;
+	    gpu_node->lower_x[offset+num]  = n->lower_x[i];
+	    gpu_node->upper_x[offset+num]  = n->upper_x[i];
+	    gpu_node->lower_y[offset+num]  = n->lower_y[i];
+	    gpu_node->upper_y[offset+num]  = n->upper_y[i];
+	    gpu_node->lower_z[offset+num]  = n->lower_z[i];
+	    gpu_node->upper_z[offset+num]  = n->upper_z[i];
+	    gpu_node->lower_dx[offset+num] = n->lower_dx[i];
+	    gpu_node->upper_dx[offset+num] = n->upper_dx[i];
+	    gpu_node->lower_dy[offset+num] = n->lower_dy[i];
+	    gpu_node->upper_dy[offset+num] = n->upper_dy[i];
+	    gpu_node->lower_dz[offset+num] = n->lower_dz[i];
+	    gpu_node->upper_dz[offset+num] = n->upper_dz[i];
 
-	    assert(!std::isnan( (float)gpu_node->lower_t[i] ));
-	    assert(!std::isnan( gpu_node->upper_t[i] ));
-	    assert(!std::isnan( gpu_node->lower_x[i] ));
-	    assert(!std::isnan( gpu_node->lower_y[i] ));
-	    assert(!std::isnan( gpu_node->lower_z[i] ));
-	    assert(!std::isnan( gpu_node->upper_x[i] ));
-	    assert(!std::isnan( gpu_node->upper_y[i] ));
-	    assert(!std::isnan( gpu_node->upper_z[i] ));
-	    assert(!std::isnan( gpu_node->lower_dx[i] ));
-	    assert(!std::isnan( gpu_node->lower_dy[i] ));
-	    assert(!std::isnan( gpu_node->lower_dz[i] ));
-	    assert(!std::isnan( gpu_node->upper_dx[i] ));
-	    assert(!std::isnan( gpu_node->upper_dy[i] ));
-	    assert(!std::isnan( gpu_node->upper_dz[i] ));
-	    
-	  }	
+	    assert(!std::isnan( gpu_node->lower_t[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_t[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_x[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_y[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_z[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_x[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_y[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_z[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_dx[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_dy[offset+num] ));
+	    assert(!std::isnan( gpu_node->lower_dz[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_dx[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_dy[offset+num] ));
+	    assert(!std::isnan( gpu_node->upper_dz[offset+num] ));
+	    refs[offset+num] = n->child(i);
+	    num++;
+	  }
+	return num;
       }
       
       inline void convertToTriangle1vMB(gpu::Triangle1vMB &tri1v, const Triangle4vMB &tri_block, const size_t slot)
@@ -275,8 +281,10 @@ namespace embree
 		convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,0,i,gpu_node_allocator,gpu_leaf_allocator);
 	  }
 	else if (node.isAlignedNodeMB())
-	  {
+	  {	    
 	    DBG(PRINT("ALIGNED NODE MB"));
+	    NodeRef refs[BVH_NODE_N];
+	    
 	    AlignedNodeMB* n = node.alignedNodeMB();
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
 	    DBG(
@@ -296,15 +304,17 @@ namespace embree
 	    /* create new gpu node and convert layout */
 	    gpu::QBVHNodeNMB *gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + offset);
 	    gpu_node->clear();	    
-	    convertToQBVHNodeNMB(gpu_node,n);
-	    
-	    for (size_t i=0;i<N;i++)
-	      if (n->child(i) != BVH::emptyNode)
-		convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator);
+	    const size_t slots = convertToQBVHNodeNMB(gpu_node,n,refs,0);
+	    for (size_t i=0;i<slots;i++)
+	      {
+		assert(refs[i] != BVH::emptyNode && refs[i] != BVH::invalidNode);		
+		convertToGPULayout(refs[i],bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator);
+	      }
 	  }
 	else if (node.isAlignedNodeMB4D())
 	  {
 	    DBG(PRINT("ALIGNED NODE MB 4D"));
+	    NodeRef refs[BVH_NODE_N];	    	    
 	    AlignedNodeMB4D* n = node.alignedNodeMB4D();
 	    const size_t offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
 	    DBG(
@@ -325,11 +335,13 @@ namespace embree
 	    /* create new gpu node and convert layout */
 	    gpu::QBVHNodeNMB *gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + offset);
 	    gpu_node->clear();	    
-	    convertToQBVHNodeNMB(gpu_node,n);
+	    const size_t slots = convertToQBVHNodeNMB(gpu_node,n,refs,0);
 
-	    for (size_t i=0;i<N;i++)
-	      if (n->child(i) != BVH::emptyNode)	      
-		convertToGPULayout(n->child(i),bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator);
+	    for (size_t i=0;i<slots;i++)
+	      {
+		assert(refs[i] != BVH::emptyNode && refs[i] != BVH::invalidNode);		
+		convertToGPULayout(refs[i],bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator);
+	      }
 	  }
 	else if (node.isUnalignedNodeMB())
 	  {
@@ -403,10 +415,123 @@ namespace embree
 	      }
 	    
 	  }
-	else {
-	  throw std::runtime_error("not supported node type in bvh_statistics");
-	}
-	
+	else 
+	  throw std::runtime_error("not supported node type in bvh mb conversion");		
+      }
+
+
+      void convertToGPULayout16(NodeRef node,
+				char* bvh_mem,
+				gpu::Triangle1vMB *leaf_ptr,
+				size_t parent_node_offset,
+				size_t slot,
+				std::atomic<size_t> &gpu_node_allocator,
+				std::atomic<size_t> &gpu_leaf_allocator)
+      {
+	if (node.isLeaf())
+	  {
+	    size_t num; const char* tri = node.leaf(num);	    
+	    DBG(
+		PRINT("LEAF");		
+		PRINT(num);
+		);
+	    
+	    if (num)
+	      {
+		Triangle4vMB *tri_mb = (Triangle4vMB*)tri;
+
+		size_t numTris=0;
+		for (size_t i=0; i<num; i++)
+		  numTris += tri_mb[i].size();
+		
+		DBG( PRINT(numTris) );
+		assert(numTris <= BVH_MAX_NUM_ITEMS);
+		
+		const size_t leaf_index = gpu_leaf_allocator.fetch_add(numTris);		    
+
+		size_t index=0;
+		for (size_t i=0; i<num; i++)
+		  for (size_t j=0;j<tri_mb[i].size();j++)
+		    convertToTriangle1vMB(leaf_ptr[leaf_index+index++],tri_mb[i],j);
+		assert(numTris == index);
+		
+		/* set parent offset */
+		if (parent_node_offset)
+		  {
+		    DBG( PRINT("LEAF PARENT") );
+		    gpu::QBVHNodeNMB *parent_gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + parent_node_offset);
+		    const unsigned int offset = (size_t)((char*)&leaf_ptr[leaf_index] - (char*)parent_gpu_node);
+		    parent_gpu_node->offset[slot] = offset | BVH_LEAF_MASK | (index-1);
+		    assert( ((size_t)parent_gpu_node % 64) == 0 );
+		    assert( ((size_t)leaf_ptr % 16) == 0 );		    		    
+		    assert(((offset - parent_node_offset) &  BVH_LOWER_BITS_MASK) == 0);		    
+		  }		
+	      }	    
+	  }
+	else
+	  {
+	    NodeRef refs[BVH_NODE_N];
+	    
+	    const size_t gpu_node_offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
+	    gpu::QBVHNodeNMB *gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + gpu_node_offset);
+	    gpu_node->clear();
+
+	    size_t slots = 0;
+	    for (size_t i=0;i<N;i++)
+	      {
+		NodeRef child = node.baseNode(0)->child(i);
+		if (child != BVH::emptyNode)
+		  {
+		    if (child.isAlignedNodeMB())
+		      {
+			AlignedNodeMB* n = child.alignedNodeMB();		      
+			slots += convertToQBVHNodeNMB(gpu_node,n,refs,slots);
+		      }
+		    else if (child.isAlignedNodeMB4D())
+		      {
+			AlignedNodeMB4D* n = child.alignedNodeMB4D();
+			slots += convertToQBVHNodeNMB(gpu_node,n,refs,slots);		      
+		      }
+		    else if (child.isLeaf())
+		      {
+			PRINT("direct leaf");
+			/* direct child is a leaf */
+			if (node.isAlignedNodeMB())
+			  {
+			    AlignedNodeMB* n = node.alignedNodeMB();		      
+			    slots += convertToQBVHNodeNMB(gpu_node,n,refs,slots,1);
+			  }
+			else if (node.isAlignedNodeMB4D())
+			  {
+			    AlignedNodeMB4D* n = node.alignedNodeMB4D();
+			    slots += convertToQBVHNodeNMB(gpu_node,n,refs,slots,1);		      
+			  }
+			else 
+			  throw std::runtime_error("not supported node type in bvh mb conversion");
+		      }
+		    else 
+		      throw std::runtime_error("not supported node type in bvh mb conversion");  
+		  }
+	      }
+	    PRINT(slots);
+	    assert(slots <= BVH_NODE_N);
+
+	    /* set parent offset */	    
+	    if (parent_node_offset)
+	      {
+		gpu::QBVHNodeNMB *parent_gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + parent_node_offset);
+		parent_gpu_node->offset[slot] = gpu_node_offset - parent_node_offset;
+		assert(((gpu_node_offset - parent_node_offset) & BVH_LEAF_MASK) == 0);		
+	      }
+
+	    /* recursive continue with children of child(i) */
+	    for (size_t i=0;i<slots;i++)
+	      {
+		assert(refs[i] != BVH::invalidNode);
+		assert(refs[i] != BVH::emptyNode);
+		convertToGPULayout16(refs[i],bvh_mem,leaf_ptr,gpu_node_offset,i,gpu_node_allocator,gpu_leaf_allocator);
+	      }	    
+	  }	
       }
       
       void build()
@@ -461,6 +586,7 @@ namespace embree
 	gpu_leaf_allocator.store(0);
 
 	convertToGPULayout(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator);
+	//convertToGPULayout16(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator);
        
 	if (unlikely(deviceGPU->verbosity(2)))
 	  {
