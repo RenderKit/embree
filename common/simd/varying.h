@@ -20,6 +20,35 @@
 
 namespace embree
 {
+#if defined(EMBREE_SYCL_SIMD_LIBRARY) && defined(__SYCL_DEVICE_ONLY__)
+  
+  /* Varying numeric types */
+  template<int N> struct vfloat;
+  template<int N> struct vdouble;
+  template<int N> struct vint;
+  template<int N> struct vuint;
+  template<int N> struct vllong;
+  template<int N> struct vboolf; // for float/int
+  template<int N> struct vboold; // for double/long long
+
+  /* Aliases to default types */
+  template<int N> using vreal = vfloat<N>;
+  template<int N> using vbool = vboolf<N>;
+
+  /* Varying size constants */
+  const int VSIZEX = 16;  // default size
+  const int VSIZEL = 16; // large size
+
+  /* Extends varying size N to optimal or up to max(N, N2) */
+  template<int N, int N2 = VSIZEX>
+  struct vextend
+  {
+    static const int size = N;
+#define SIMD_MODE(N) N, N
+  };
+  
+#else
+
   /* Varying numeric types */
   template<int N>
   struct vfloat
@@ -62,13 +91,9 @@ namespace embree
   };
 
   /* Varying bool types */
-#if defined(EMBREE_SYCL_SIMD_LIBRARY) && defined(__SYCL_DEVICE_ONLY__)
-  template<int N> struct vboolf;
-#else
   template<int N> struct vboolf { int       i[N]; }; // for float/int
-#endif
   template<int N> struct vboold { long long i[N]; }; // for double/long long
-
+ 
   /* Aliases to default types */
   template<int N> using vreal = vfloat<N>;
   template<int N> using vbool = vboolf<N>;
@@ -102,6 +127,8 @@ namespace embree
     #define SIMD_MODE(N) N, N
 #endif
   };
+
+#endif
 
   /* 4-wide shortcuts */
   typedef vfloat<4>  vfloat4;
