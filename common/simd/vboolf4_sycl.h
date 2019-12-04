@@ -182,7 +182,10 @@ namespace embree
   __forceinline bool any (const vboolf4& valid, const vboolf4& b) { return any(valid & b); }
   __forceinline bool none(const vboolf4& valid, const vboolf4& b) { return none(valid & b); }
   
-  //__forceinline size_t movemask(const vboolf4& a) { return _mm_movemask_ps(a); }
+  __forceinline size_t movemask(const vboolf4& a) {
+    const bool x = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? a.v : false;
+    return intel_sub_group_ballot(x);
+  }
   __forceinline size_t popcnt(const vboolf4& a) {
     const int x = a.v ? 1 : 0;
     const int y = __spirv_BuiltInSubgroupLocalInvocationId < 4 ? x : 0;

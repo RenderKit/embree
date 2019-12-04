@@ -525,20 +525,18 @@ namespace embree
   __forceinline float reduce_max(const vfloat4& v) { return vreduce_max(v).v; }
   __forceinline float reduce_add(const vfloat4& v) { return vreduce_add(v).v; }
 
-/*
   __forceinline size_t select_min(const vboolf4& valid, const vfloat4& v) 
   { 
     const vfloat4 a = select(valid,v,vfloat4(pos_inf)); 
     const vbool4 valid_min = valid & (a == vreduce_min(a));
-    return bsf(movemask(any(valid_min) ? valid_min : valid)); 
+    return cl::sycl::intel::ctz(movemask(any(valid_min) ? valid_min : valid)); 
   }
   __forceinline size_t select_max(const vboolf4& valid, const vfloat4& v) 
   { 
     const vfloat4 a = select(valid,v,vfloat4(neg_inf)); 
     const vbool4 valid_max = valid & (a == vreduce_max(a));
-    return bsf(movemask(any(valid_max) ? valid_max : valid)); 
+    return cl::sycl::intel::ctz(movemask(any(valid_max) ? valid_max : valid)); 
   }
-*/
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "../math/math.h"
+#include "../../kernels/gpu/common.h"
 
 #if defined(EMBREE_SYCL_SIMD_LIBRARY) && defined(__SYCL_DEVICE_ONLY__)
 #  include "sycl.h"
