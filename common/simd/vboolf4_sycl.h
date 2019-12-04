@@ -75,6 +75,7 @@ namespace embree
     //}
 
     vboolf fix_upper(bool c) const {
+      if (N == 16) return c;
       return vboolf(__spirv_BuiltInSubgroupLocalInvocationId < N ? v : c);
     }
 
@@ -207,7 +208,7 @@ namespace embree
     for (int i=0; i<N; i++) {
       if (__spirv_BuiltInSubgroupLocalInvocationId == i) {
         cout << a.v;
-        if (i != 3) cout << ", ";
+        if (i != N-1) cout << ", ";
       }
     }
     return cout << ">";

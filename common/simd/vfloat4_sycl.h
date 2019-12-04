@@ -65,7 +65,13 @@ namespace embree
       }*/
 
     vfloat<N> fix_upper(float c) const {
+      if (N == 16) return c;
       return vfloat<N>(__spirv_BuiltInSubgroupLocalInvocationId < N ? v : c);
+    }
+
+    static uint sgid() {
+      if (N == 16) return __spirv_BuiltInSubgroupLocalInvocationId;
+      return cl::sycl::min(__spirv_BuiltInSubgroupLocalInvocationId,unsigned(N-1));
     }
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -84,22 +90,29 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    static __forceinline vfloat<N> load (const void* a) {
-      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      return lid < N ? ((float*)a)[lid] : 0.0f;
-      //return vfloat<N>(__spirv_SubgroupBlockReadINTEL<float>((const __attribute__((ocl_global)) uint32_t*) a));
+    static __forceinline vfloat<N> load (const void* a)
+    {
+      if (N == 16) {
+        return vfloat<N>(__spirv_SubgroupBlockReadINTEL<float>((const __attribute__((ocl_global)) uint32_t*) a));
+      } else {
+        return ((float*)a)[vfloat<N>::sgid()];
+      }
     }
+    
     static __forceinline vfloat<N> loadu(const void* a) {
-      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      return lid < N ? ((float*)a)[lid] : 0.0f;
+      return ((float*)a)[vfloat<N>::sgid()];
     }
 
-    static __forceinline void store (void* ptr, const vfloat<N>& v) {
-      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      if (lid < N) ((float*)ptr)[lid] = v.v;
-      //float x = lid < N ? v.v : 0.0f;
-      //if (lid < N) __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&x);
+    static __forceinline void store (void* ptr, const vfloat<N>& v)
+    {
+      if (N == 16) {
+        __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&v.v);
+      } else {
+        const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+        if (lid < N) ((float*)ptr)[lid] = v.v;
+      }
     }
+    
     static __forceinline void storeu(void* ptr, const vfloat<N>& v) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
       if (lid < N) ((float*)ptr)[lid] = v.v;
@@ -566,7 +579,7 @@ namespace embree
     for (int i=0; i<N; i++) {
       if (__spirv_BuiltInSubgroupLocalInvocationId == i) {
         cout << a.v;
-        if (i != 3) cout << ", ";
+        if (i != N-1) cout << ", ";
       }
     }
     return cout << ">";
