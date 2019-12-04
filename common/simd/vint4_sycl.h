@@ -82,119 +82,118 @@ namespace embree
 
     static __forceinline vint4 load (const void* a) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
-      return lid < 4 ? ((int*)a)[lid] : 0;
+      return lid < 4 ? ((int*)a)[lid] : 0.0f;
+      //return vint4(__spirv_SubgroupBlockReadINTEL<int>((const __attribute__((ocl_global)) uint32_t*) a));
     }
-    
-    //static __forceinline vint4 loadu(const void* a) { return _mm_loadu_si128((__m128i*)a); }
+    static __forceinline vint4 loadu(const void* a) {
+      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+      return lid < 4 ? ((int*)a)[lid] : 0.0f;
+    }
 
     static __forceinline void store (void* ptr, const vint4& v) {
       const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
       if (lid < 4) ((int*)ptr)[lid] = v.v;
+      //int x = lid < 4 ? v.v : 0.0f;
+      //if (lid < 4) __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&x);
     }
-    //static __forceinline void storeu(void* ptr, const vint4& v) { _mm_storeu_si128((__m128i*)ptr,v); }
-    
-    //static __forceinline vint4 compact(const vboolf4& mask, vint4 &v) { return _mm_mask_compress_epi32(v, mask, v); }
-    //static __forceinline vint4 compact(const vboolf4& mask, vint4 &a, const vint4& b) { return _mm_mask_compress_epi32(a, mask, b); }
+    static __forceinline void storeu(void* ptr, const vint4& v) {
+      const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
+      if (lid < 4) ((int*)ptr)[lid] = v.v;
+    }
 
-    //static __forceinline vint4 load (const vboolf4& mask, const void* ptr) { return _mm_mask_load_epi32 (_mm_setzero_si128(),mask,ptr); }
-    //static __forceinline vint4 loadu(const vboolf4& mask, const void* ptr) { return _mm_mask_loadu_epi32(_mm_setzero_si128(),mask,ptr); }
+    //static __forceinline vint4 compact(const vboolf4& mask, vint4 &v) {
+    //  return _mm_mask_compress_ps(v, mask, v);
+    //}
+    //static __forceinline vint4 compact(const vboolf4& mask, vint4 &a, const vint4& b) {
+    //  return _mm_mask_compress_ps(a, mask, b);
+    //}
 
-    //static __forceinline void store (const vboolf4& mask, void* ptr, const vint4& v) { _mm_mask_store_epi32 (ptr,mask,v); }
-    //static __forceinline void storeu(const vboolf4& mask, void* ptr, const vint4& v) { _mm_mask_storeu_epi32(ptr,mask,v); }
+    static __forceinline vint4 load (const vboolf4& mask, const void* ptr) {
+      if (mask.v) return loadu(ptr); else return vint4(0.0f);
+    }
+    static __forceinline vint4 loadu(const vboolf4& mask, const void* ptr) {
+      if (mask.v) return loadu(ptr); else return vint4(0.0f);
+    }
 
-    //static __forceinline vint4 load(const unsigned char* ptr) { return vint4(ptr[0],ptr[1],ptr[2],ptr[3]); } 
-    //static __forceinline vint4 loadu(const unsigned char* ptr) { return vint4(ptr[0],ptr[1],ptr[2],ptr[3]); }
+    static __forceinline void store (const vboolf4& mask, void* ptr, const vint4& v) {
+      if (mask.v) storeu(ptr,v);
+    }
+    static __forceinline void storeu(const vboolf4& mask, void* ptr, const vint4& v) {
+      if (mask.v) storeu(ptr,v);
+    }
 
-    //static __forceinline vint4 load(const unsigned short* ptr) { return vint4(ptr[0],ptr[1],ptr[2],ptr[3]); } 
+    static __forceinline vint4 broadcast(const void* a) {
+      return vint4(*(int*)a);
+    }
 
-    //static __forceinline void store(unsigned char* ptr, const vint4& v) { for (size_t i=0;i<4;i++) ptr[i] = (unsigned char)v[i]; }
+    static __forceinline vint4 load_nt (const int* ptr) {
+      return load(ptr);
+    }
 
-    //static __forceinline void store(unsigned short* ptr, const vint4& v) { for (size_t i=0;i<4;i++) ptr[i] = (unsigned short)v[i]; }
+    static __forceinline void store_nt(void* ptr, const vint4& v) {
+      store(ptr,v);
+    }
 
-    //static __forceinline vint4 load_nt(void* ptr) { return _mm_stream_load_si128((__m128i*)ptr); }
-    
-    //static __forceinline void store_nt(void* ptr, const vint4& v) { _mm_stream_ps((float*)ptr, _mm_castsi128_ps(v)); }
+    //static __forceinline vint4 load(const char* ptr) {
+    //  return _mm_cvtepi32_ps(_mm_cvtepi8_epi32(_mm_loadu_si128((__m128i*)ptr)));
+    //}
 
-#if 0
+    //static __forceinline vint4 load(const unsigned char* ptr) {
+    //  return _mm_cvtepi32_ps(_mm_cvtepu8_epi32(_mm_loadu_si128((__m128i*)ptr)));
+    //}
+
+    //static __forceinline vint4 load(const short* ptr) {
+    //  return _mm_cvtepi32_ps(_mm_cvtepi16_epi32(_mm_loadu_si128((__m128i*)ptr)));
+    //}
+
+    //static __forceinline vint4 load(const unsigned short* ptr) {
+    //  return _mm_mul_ps(vint4(vint4::load(ptr)),vint4(1.0f/65535.0f));
+    //}
+
     template<int scale = 4>
     static __forceinline vint4 gather(const int* ptr, const vint4& index) {
-#if defined(__AVX2__)
-      return _mm_i32gather_epi32(ptr, index, scale);
-#else
-      return vint4(
-          *(int*)(((char*)ptr)+scale*index[0]),
-          *(int*)(((char*)ptr)+scale*index[1]),
-          *(int*)(((char*)ptr)+scale*index[2]),
-          *(int*)(((char*)ptr)+scale*index[3]));
-#endif
+      return *(int*)((char*)ptr + scale*index.v);
     }
 
     template<int scale = 4>
-    static __forceinline vint4 gather(const vboolf4& mask, const int* ptr, const vint4& index) {
-      vint4 r = zero;
-#if defined(__AVX512VL__)
-      return _mm_mmask_i32gather_epi32(r, mask, index, ptr, scale);
-#elif defined(__AVX2__)
-      return _mm_mask_i32gather_epi32(r, ptr, index, mask, scale);
-#else
-      if (likely(mask[0])) r[0] = *(int*)(((char*)ptr)+scale*index[0]);
-      if (likely(mask[1])) r[1] = *(int*)(((char*)ptr)+scale*index[1]);
-      if (likely(mask[2])) r[2] = *(int*)(((char*)ptr)+scale*index[2]);
-      if (likely(mask[3])) r[3] = *(int*)(((char*)ptr)+scale*index[3]);
-      return r;
-#endif
+      static __forceinline vint4 gather(const vboolf4& mask, const int* ptr, const vint4& index) {
+      if (mask.v) return gather<scale>(ptr,index);
+      else        return vint4(0.0f);
     }
 
     template<int scale = 4>
-    static __forceinline void scatter(void* ptr, const vint4& index, const vint4& v)
-    {
-#if defined(__AVX512VL__)
-      _mm_i32scatter_epi32((int*)ptr, index, v, scale);
-#else
-      *(int*)(((char*)ptr)+scale*index[0]) = v[0];
-      *(int*)(((char*)ptr)+scale*index[1]) = v[1];
-      *(int*)(((char*)ptr)+scale*index[2]) = v[2];
-      *(int*)(((char*)ptr)+scale*index[3]) = v[3];
-#endif
+      static __forceinline void scatter(void* ptr, const vint4& index, const vint4& v) {
+      *(int*) ((char*)ptr + scale*index.v) = v.v;
     }
 
     template<int scale = 4>
-    static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vint4& v)
-    {
-#if defined(__AVX512VL__)
-      _mm_mask_i32scatter_epi32((int*)ptr, mask, index, v, scale);
-#else
-      if (likely(mask[0])) *(int*)(((char*)ptr)+scale*index[0]) = v[0];
-      if (likely(mask[1])) *(int*)(((char*)ptr)+scale*index[1]) = v[1];
-      if (likely(mask[2])) *(int*)(((char*)ptr)+scale*index[2]) = v[2];
-      if (likely(mask[3])) *(int*)(((char*)ptr)+scale*index[3]) = v[3];
-#endif
+    static __forceinline void scatter(const vboolf4& mask, void* ptr, const vint4& index, const vint4& v) {
+      if (mask.v) scatter<scale>(ptr,index,v);
     }
 
-#if defined(__x86_64__)
-    static __forceinline vint4 broadcast64(long long a) { return _mm_set1_epi64x(a); }
-#endif
-    
-#endif
+    static __forceinline void store(const vboolf4& mask, char* ptr, const vint4& ofs, const vint4& v) {
+      scatter<1>(mask,ptr,ofs,v);
+    }
+    static __forceinline void store(const vboolf4& mask, int* ptr, const vint4& ofs, const vint4& v) {
+      scatter<4>(mask,ptr,ofs,v);
+    }
     
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-    // __forceinline const int& operator [](size_t index) const { assert(index < 4); return i[index]; }
-    //__forceinline       int& operator [](size_t index)       { assert(index < 4); return i[index]; }
-
-#if 0
-    friend __forceinline vint4 select(const vboolf4& m, const vint4& t, const vint4& f) {
-#if defined(__AVX512VL__)
-      return _mm_mask_blend_epi32(m, (__m128i)f, (__m128i)t);
-#elif defined(__SSE4_1__)
-      return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m)); 
-#else
-      return _mm_or_si128(_mm_and_si128(m, t), _mm_andnot_si128(m, f)); 
-#endif
+    __forceinline const int operator [](size_t index) const {
+      assert(index < 4);
+      return __spirv_GroupBroadcast<int>(__spv::Scope::Subgroup, v, index);
     }
-#endif
+    __forceinline int operator [](size_t index) {
+      assert(index < 4);
+      return __spirv_GroupBroadcast<int>(__spv::Scope::Subgroup, v, index);
+    }
+
+    friend __forceinline vint4 select(const vboolf4& m, const vint4& t, const vint4& f) {
+      return m.v ? t : f;
+    }
   };
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -309,7 +308,7 @@ namespace embree
   //__forceinline vboolf4 gt(const vboolf4& mask, const vint4& a, const vint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GT); }
   //__forceinline vboolf4 le(const vboolf4& mask, const vint4& a, const vint4& b) { return _mm_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LE); }
 
-  /*
+/*
   template<int mask>
   __forceinline vint4 select(const vint4& t, const vint4& f) {
 #if defined(__SSE4_1__) 
