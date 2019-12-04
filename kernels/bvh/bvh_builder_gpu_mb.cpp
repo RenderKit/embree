@@ -213,7 +213,45 @@ namespace embree
 
 
       }
-      
+
+      size_t countLeafPrimitives(NodeRef node)
+      {
+	size_t prims = 0;
+	if (node.isAlignedNodeMB())
+	  {
+	    AlignedNodeMB* n = node.alignedNodeMB();
+	    for (size_t i=0;i<N;i++)
+	      if (n->child(i) != BVH::emptyNode)
+		prims += countLeafPrimitives(n->child(i));
+	  }
+	else if (node.isAlignedNodeMB4D())
+	  {
+	    AlignedNodeMB4D* n = node.alignedNodeMB4D();
+	    for (size_t i=0;i<N;i++)
+	      if (n->child(i) != BVH::emptyNode)	      
+		prims += countLeafPrimitives(n->child(i));
+	  }
+	else if (node.isLeaf())
+	  {
+	    size_t num; const char* tri = node.leaf(num);	    
+	    if (num)
+	      {
+		Triangle4vMB *tri_mb = (Triangle4vMB*)tri;
+
+		size_t numTris=0;
+		for (size_t i=0; i<num; i++)
+		  numTris += tri_mb[i].size();
+
+		assert(numTris <= BVH_MAX_NUM_ITEMS);
+		prims += numTris;		
+	      }	    
+	  }
+	else {
+	  throw std::runtime_error("not supported node type in bvh_statistics");
+	}		
+	return prims;
+      }
+
       void convertToGPULayout(NodeRef node,
 			      char* bvh_mem,
 			      gpu::Triangle1vMB *leaf_ptr,
@@ -388,12 +426,15 @@ namespace embree
         bvh->postBuild(t0);
 
 	const size_t numOrgBVHNodes = bvh->alloc.getUsedBytes() / sizeof(AlignedNodeMB);
-
+	/* count leaf primitives in original bvh */ 
+	const size_t leafPrimitives = countLeafPrimitives(bvh->root);
+	
 #if defined(EMBREE_DPCPP_SUPPORT)
+
 	DeviceGPU* deviceGPU = (DeviceGPU*)scene->device;
 	const uint leaf_primitive_size = sizeof(Triangle1vMB);
 	const uint node_size       = sizeof(gpu::QBVHNodeNMB) * numOrgBVHNodes;
-	const uint leaf_size       = 2 * numPrimitives * leaf_primitive_size;
+	const uint leaf_size       = leafPrimitives * leaf_primitive_size;
 	const uint totalSize       = sizeof(gpu::BVHBase) + node_size + leaf_size; 
 	const uint node_data_start = sizeof(gpu::BVHBase);
 	const uint leaf_data_start = sizeof(gpu::BVHBase) + node_size;
@@ -421,17 +462,18 @@ namespace embree
 	gpu_leaf_allocator.store(0);
 
 	convertToGPULayout(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator,N);
-
+       
 	if (unlikely(deviceGPU->verbosity(2)))
 	  {
 	    PRINT(gpu_node_allocator.load());	    
 	    PRINT(gpu_leaf_allocator.load());
 	    PRINT(numPrimitives);
+	    PRINT(leafPrimitives);
 	    PRINT("BVH MB BUILDING DONE");
 	  }
 	
 	assert(gpu_node_allocator.load() <= leaf_data_start);	
-	assert(gpu_leaf_allocator.load() <= 2*numPrimitives);
+	assert(gpu_leaf_allocator.load() <= leafPrimitives);
 
 	scene->gpu_bvh_mb_root = (size_t)bvh_mem;
 	

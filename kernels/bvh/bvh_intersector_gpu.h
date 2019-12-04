@@ -118,8 +118,8 @@ namespace embree
 									    void *bvh_mem,
 									    TraversalStats *tstats)
   {
-    unsigned int stack_offset[2*BVH_MAX_STACK_ENTRIES]; 
-    float        stack_dist[2*BVH_MAX_STACK_ENTRIES];  
+    unsigned int stack_offset[BVH_MAX_STACK_ENTRIES]; 
+    float        stack_dist[BVH_MAX_STACK_ENTRIES];  
 
     // === init local hit ===
     gpu::RTCHitGPU local_hit;
