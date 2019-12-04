@@ -51,16 +51,18 @@ namespace embree
       
 #if defined(EMBREE_DPCPP_SUPPORT)
       gpu::RTCRayHitGPU* inputRays = (gpu::RTCRayHitGPU*)_inputRays;
-      void *bvh_mem = (void*)(bvh->scene->gpu_bvh_mb_root);      
+      void *bvh_mem = (void*)(bvh->scene->gpu_bvh_mb_root);
       assert( sizeof(gpu::RTCRayHitGPU) == sizeof(RTCRayHit) );      
-      DBG(numRays = 1);      
+      //DBG(numRays = 1);      
       DeviceGPU* deviceGPU = (DeviceGPU*)bvh->device;
       cl::sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
 
       TraversalStats *tstats = nullptr;
       TSTATS(tstats = (TraversalStats *)cl::sycl::aligned_alloc(64,sizeof(TraversalStats),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),cl::sycl::usm::alloc::shared));
       TSTATS(tstats->reset());
+      //for (int ID=0;ID<numRays;ID++)
       {
+	//PRINT(ID);
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 
 	    //cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);	    
@@ -72,8 +74,7 @@ namespace embree
 		{
 		  uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);		  
 		  if (m_activeLanes == 0xffff)
-		    traceRayBVH16<gpu::QBVHNodeNMB,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
-		    //out << inputRays[globalID].hit << cl::sycl::endl;
+		  traceRayBVH16<gpu::QBVHNodeNMB,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
 		}
 		
 	      });		  

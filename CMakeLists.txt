@@ -27,21 +27,26 @@ PROJECT(embree${EMBREE_VERSION_MAJOR})
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
 
+# We use our own strip tool on macOS to sign during install. This is required as CMake modifies RPATH of the binary during install.
+IF (APPLE AND EMBREE_SIGN_FILE)
+  SET(EMBREE_STRIP ${CMAKE_STRIP})
+  SET(CMAKE_STRIP ${PROJECT_BINARY_DIR}/post_install_target.sh)
+  CONFIGURE_FILE(scripts/post_install_target.sh.in ${PROJECT_BINARY_DIR}/post_install_target.sh @ONLY)
+ENDIF()
+
 MACRO (SIGN_TARGET target)
   IF (EMBREE_SIGN_FILE)
     IF (WIN32)
-      # on Windows we only sign as debug symbols not included in binary
+      # on Windows we sign and do not strip as debug symbols not included in binary
       ADD_CUSTOM_COMMAND(TARGET ${target} POST_BUILD
         COMMAND ${EMBREE_SIGN_FILE} $<TARGET_FILE:${target}>)
     ELSEIF (APPLE)
-      # on MacOSX we strip and sign
+      # on MacOSX we strip and sign here for testing purposes but also during install, as CMake modifies binary during install
       ADD_CUSTOM_COMMAND(TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_STRIP} -x $<TARGET_FILE:${target}>
-        COMMAND ${EMBREE_SIGN_FILE} $<TARGET_FILE:${target}>)
+        COMMAND ${EMBREE_STRIP} -x $<TARGET_FILE:${target}>
+        COMMAND ${EMBREE_SIGN_FILE} -o runtime -e ${CMAKE_SOURCE_DIR}/common/cmake/embree.entitlements $<TARGET_FILE:${target}>)
     ELSE()
-      # on Linux just strip as signing not supported
-      ADD_CUSTOM_COMMAND(TARGET ${target} POST_BUILD
-        COMMAND ${CMAKE_STRIP} -x $<TARGET_FILE:${target}>)
+      # on Linux signing of binaries is not supported and stripping is done during install
     ENDIF()
   ENDIF()
 ENDMACRO()
@@ -519,4 +524,5 @@ SET_PROPERTY(TARGET uninstall PROPERTY FOLDER CMakePredefinedTargets)
 ##############################################################
 # Has to be last
 ##############################################################
+
 INCLUDE(CPack)
