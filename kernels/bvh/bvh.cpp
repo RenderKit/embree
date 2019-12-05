@@ -55,7 +55,7 @@ namespace embree
     if (node.isBarrier())
       node.clearBarrier();
     else if (!node.isLeaf()) {
-      BaseNode* n = node.baseNode(BVH_FLAG_ALIGNED_NODE); // FIXME: flags should be stored in BVH
+      BaseNode* n = node.baseNode(); // FIXME: flags should be stored in BVH
       for (size_t c=0; c<N; c++)
         clearBarrier(n->child(c));
     }
