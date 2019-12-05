@@ -82,7 +82,7 @@ namespace embree
     __forceinline vfloat(OneTy)    : v(1.0f) {}
     __forceinline vfloat(PosInfTy) : v(pos_inf) {}
     __forceinline vfloat(NegInfTy) : v(neg_inf) {}
-    //__forceinline vfloat(StepTy)   : v(_mm_set_ps(3.0f, 2.0f, 1.0f, 0.0f)) {}
+    __forceinline vfloat(StepTy)   : v(__spirv_BuiltInSubgroupLocalInvocationId) {}
     //__forceinline vfloat(NaNTy)    : v(_mm_set1_ps(nan)) {}
     //__forceinline vfloat(UndefinedTy) : v(_mm_undefined_ps()) {}
 
@@ -349,7 +349,11 @@ namespace embree
 #endif
   }
 */
-  
+
+  template<int N> __forceinline vfloat<N> lerp(const float& a, const float& b, const vfloat<N>& t) {
+    return vfloat<N>(madd(t.v,b-a,a));
+  }
+   
   template<int N> __forceinline vfloat<N> lerp(const vfloat<N>& a, const vfloat<N>& b, const vfloat<N>& t) {
     return vfloat<N>(madd(t.v,b.v-a.v,a.v));
   }

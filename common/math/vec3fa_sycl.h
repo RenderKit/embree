@@ -20,6 +20,8 @@
 #include "math.h"
 #include "../simd/sse.h"
 
+#include "../../kernels/gpu/common.h"
+
 namespace embree
 {
   ////////////////////////////////////////////////////////////////////////////////
@@ -41,8 +43,8 @@ namespace embree
     __forceinline Vec3fa( ) {}
     //__forceinline Vec3fa( const __m128 a ) : m128(a) {}
 
-    //__forceinline Vec3fa            ( const Vec3<float>& other  ) { x = other.x; y = other.y; z = other.z; }
-    //__forceinline Vec3fa& operator =( const Vec3<float>& other ) { x = other.x; y = other.y; z = other.z; return *this; }
+    __forceinline Vec3fa            ( const Vec3<float>& other  ) { x = other.x; y = other.y; z = other.z; }
+    __forceinline Vec3fa& operator =( const Vec3<float>& other ) { x = other.x; y = other.y; z = other.z; return *this; }
 
     //__forceinline Vec3fa            ( const Vec3fa& other ) { m128 = other.m128; }
 
@@ -70,17 +72,20 @@ namespace embree
     /// Loads and Stores
     ////////////////////////////////////////////////////////////////////////////////
 
-    //static __forceinline Vec3fa load( const void* const a ) {
-    //  return Vec3fa(_mm_and_ps(_mm_load_ps((float*)a),_mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1))));
-    //}
+    static __forceinline Vec3fa load( const void* const a ) {
+      const float* ptr = (const float*)a;
+      return Vec3fa(ptr[0],ptr[1],ptr[2],ptr[3]);
+    }
 
-    //static __forceinline Vec3fa loadu( const void* const a ) {
-    //  return Vec3fa(_mm_loadu_ps((float*)a));
-    //}
+    static __forceinline Vec3fa loadu( const void* const a ) {
+      const float* ptr = (const float*)a;
+      return Vec3fa(ptr[0],ptr[1],ptr[2],ptr[3]);
+    }
 
-    //static __forceinline void storeu ( void* ptr, const Vec3fa& v ) {
-    //  _mm_storeu_ps((float*)ptr,v);
-    //}
+    static __forceinline void storeu ( void* a, const Vec3fa& v ) {
+      float* ptr = (float*)a;
+      ptr[0] = v.x; ptr[1] = v.y; ptr[2] = v.z; ptr[3] = v.w;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////
     /// Constants
@@ -108,17 +113,18 @@ namespace embree
   __forceinline Vec3fa abs  ( const Vec3fa& a ) { return Vec3fa(cl::sycl::fabs(a.x),cl::sycl::fabs(a.y),cl::sycl::fabs(a.z)); }
   __forceinline Vec3fa sign ( const Vec3fa& a ) { return Vec3fa(cl::sycl::sign(a.x),cl::sycl::sign(a.y),cl::sycl::sign(a.z)); }
 
-  __forceinline Vec3fa rcp  ( const Vec3fa& a ) { return Vec3fa(cl::sycl::recip(a.x),cl::sycl::recip(a.y),cl::sycl::recip(a.z)); }
-  __forceinline Vec3fa sqrt ( const Vec3fa& a ) { return Vec3fa(cl::sycl::sqrt(a.x),cl::sycl::sqrt(a.y),cl::sycl::sqrt(a.z)) }
+  //__forceinline Vec3fa rcp  ( const Vec3fa& a ) { return Vec3fa(cl::sycl::recip(a.x),cl::sycl::recip(a.y),cl::sycl::recip(a.z)); }
+  __forceinline Vec3fa rcp  ( const Vec3fa& a ) { return Vec3fa(__sycl_std::__invoke_native_recip<float>(a.x),__sycl_std::__invoke_native_recip<float>(a.y),__sycl_std::__invoke_native_recip<float>(a.z)); }
+  __forceinline Vec3fa sqrt ( const Vec3fa& a ) { return Vec3fa(cl::sycl::sqrt(a.x),cl::sycl::sqrt(a.y),cl::sycl::sqrt(a.z)); }
   __forceinline Vec3fa sqr  ( const Vec3fa& a ) { return Vec3fa(a.x*a.x,a.y*a.y,a.z*a.z); }
 
   __forceinline Vec3fa rsqrt( const Vec3fa& a ) { return Vec3fa(cl::sycl::rsqrt(a.x),cl::sycl::rsqrt(a.y),cl::sycl::rsqrt(a.z)); }
 
   __forceinline Vec3fa zero_fix(const Vec3fa& a) {
-    const float x = cl::sycl::fabs(a.x) < min_rcp_input : min_rcp_input : a.x;
-    const float y = cl::sycl::fabs(a.y) < min_rcp_input : min_rcp_input : a.y;
-    const float z = cl::sycl::fabs(a.z) < min_rcp_input : min_rcp_input : a.z;
-    return Vec3fa(a.x,a.y,a.z);
+    const float x = cl::sycl::fabs(a.x) < min_rcp_input ? min_rcp_input : a.x;
+    const float y = cl::sycl::fabs(a.y) < min_rcp_input ? min_rcp_input : a.y;
+    const float z = cl::sycl::fabs(a.z) < min_rcp_input ? min_rcp_input : a.z;
+    return Vec3fa(x,y,z);
   }
   __forceinline Vec3fa rcp_safe(const Vec3fa& a) {
     return rcp(zero_fix(a));
@@ -216,13 +222,12 @@ namespace embree
   __forceinline bool operator ==( const Vec3fa& a, const Vec3fa& b ) { return a.x == b.x && a.y == b.y && a.z == b.z; }
   __forceinline bool operator !=( const Vec3fa& a, const Vec3fa& b ) { return a.x != b.x || a.y != b.y || a.z != b.z; }
 
-/*
-  __forceinline Vec3ba eq_mask( const Vec3fa& a, const Vec3fa& b ) { return _mm_cmpeq_ps (a.m128, b.m128); }
-  __forceinline Vec3ba neq_mask(const Vec3fa& a, const Vec3fa& b ) { return _mm_cmpneq_ps(a.m128, b.m128); }
-  __forceinline Vec3ba lt_mask( const Vec3fa& a, const Vec3fa& b ) { return _mm_cmplt_ps (a.m128, b.m128); }
-  __forceinline Vec3ba le_mask( const Vec3fa& a, const Vec3fa& b ) { return _mm_cmple_ps (a.m128, b.m128); }
-  __forceinline Vec3ba gt_mask( const Vec3fa& a, const Vec3fa& b ) { return _mm_cmpnle_ps(a.m128, b.m128); }
-  __forceinline Vec3ba ge_mask( const Vec3fa& a, const Vec3fa& b ) { return _mm_cmpnlt_ps(a.m128, b.m128); }
+  __forceinline Vec3ba eq_mask( const Vec3fa& a, const Vec3fa& b ) { return Vec3ba(a.x == b.x, a.y == b.y, a.z == b.z); }
+  __forceinline Vec3ba neq_mask(const Vec3fa& a, const Vec3fa& b ) { return Vec3ba(a.x != b.x, a.y != b.y, a.z != b.z); }
+  __forceinline Vec3ba lt_mask( const Vec3fa& a, const Vec3fa& b ) { return Vec3ba(a.x <  b.x, a.y <  b.y, a.z <  b.z); }
+  __forceinline Vec3ba le_mask( const Vec3fa& a, const Vec3fa& b ) { return Vec3ba(a.x <= b.x, a.y <= b.y, a.z <= b.z); }
+  __forceinline Vec3ba gt_mask( const Vec3fa& a, const Vec3fa& b ) { return Vec3ba(a.x >  b.x, a.y >  b.y, a.z >  b.z); }
+  __forceinline Vec3ba ge_mask( const Vec3fa& a, const Vec3fa& b ) { return Vec3ba(a.x >= b.x, a.y >= b.y, a.z >= b.z); }
 
   __forceinline bool isvalid ( const Vec3fa& v ) {
     return all(gt_mask(v,Vec3fa(-FLT_LARGE)) & lt_mask(v,Vec3fa(+FLT_LARGE)));
@@ -231,7 +236,7 @@ namespace embree
   __forceinline bool is_finite ( const Vec3fa& a ) {
     return all(ge_mask(a,Vec3fa(-FLT_MAX)) & le_mask(a,Vec3fa(+FLT_MAX)));
   }
-*/
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Euclidian Space Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -270,7 +275,7 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
   __forceinline Vec3fa select( bool s, const Vec3fa& t, const Vec3fa& f ) {
-    return Vec3fa(a ? t.x : f.x, a ? t.y : f.y, a ? t.z : f.z);
+    return Vec3fa(s ? t.x : f.x, s ? t.y : f.y, s ? t.z : f.z);
   }
 
 /*

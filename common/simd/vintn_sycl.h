@@ -78,7 +78,7 @@ namespace embree
     __forceinline vint(OneTy)         : v(1) {}
     __forceinline vint(PosInfTy)      : v(0x7FFFFFFF) {}
     __forceinline vint(NegInfTy)      : v(0x80000000) {}
-    //__forceinline vint(StepTy)        : v(_mm_set_epi32(3, 2, 1, 0)) {}
+    __forceinline vint(StepTy)        : v(__spirv_BuiltInSubgroupLocalInvocationId) {}
     //__forceinline vint(ReverseStepTy) : v(_mm_set_epi32(0, 1, 2, 3)) {}
 
     //__forceinline vint(TrueTy)   { v = _mm_cmpeq_epi32(v,v); }

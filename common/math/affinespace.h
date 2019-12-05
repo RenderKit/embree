@@ -192,7 +192,7 @@ namespace embree
     if (D) *D = sqrtf(D_x);
     return true;
   }
-
+  
   __forceinline void AffineSpace3fa_store_unaligned(const AffineSpace3fa &source, AffineSpace3fa* ptr)
   {
     Vec3fa::storeu(&ptr->l.vx, source.l.vx);
@@ -210,8 +210,6 @@ namespace embree
     space.p    = Vec3fa::loadu(&ptr->p);
     return space;
   }
-
-    
 
   #undef VectorT
   #undef ScalarT

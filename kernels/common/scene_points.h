@@ -156,8 +156,10 @@ namespace embree
 
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++) {
         const Vec3fa v0 = vertex(index + 0, itime);
+#if !defined(EMBREE_SYCL_SIMD_LIBRARY) && !defined(__SYCL_DEVICE_ONLY__)
         if (unlikely(!isvalid((vfloat4)v0)))
           return false;
+#endif
         if (v0.w < 0.0f)
           return false;
       }
