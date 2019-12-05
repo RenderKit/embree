@@ -15,7 +15,7 @@
 // ======================================================================== //
 #pragma once
 
-//#include "../common/ray.h"
+#include "../common/ray.h"
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 #include "common.h"
@@ -27,29 +27,29 @@ namespace embree
     // FIXME: can't use float3 here due to stupid size/alignment restriction
     
     /* Ray structure for a single ray */
-    struct RTCRayGPU : public RTCRay
+    struct RTCRayGPU : public Ray
     {
-      inline cl::sycl::float3 org() {
-	return cl::sycl::float3(org_x,org_y,org_z);	
+      inline cl::sycl::float3 get_org() {
+	return cl::sycl::float3(org.x,org.y,org.z);	
       }
 
-      inline cl::sycl::float3 dir() {
-	return cl::sycl::float3(dir_x,dir_y,dir_z);	
+      inline cl::sycl::float3 get_dir() {
+	return cl::sycl::float3(dir.x,dir.y,dir.z);	
       }
       
       inline cl::sycl::float3 broadcast_org(const cl::sycl::intel::sub_group &subgroup, const uint index) {
-	return cl::sycl::float3(subgroup.broadcast<float>(org_x,index),
-				subgroup.broadcast<float>(org_y,index),
-				subgroup.broadcast<float>(org_z,index));	
+	return cl::sycl::float3(subgroup.broadcast<float>(org.x,index),
+				subgroup.broadcast<float>(org.y,index),
+				subgroup.broadcast<float>(org.z,index));	
       }
 
       inline cl::sycl::float3 broadcast_dir(const cl::sycl::intel::sub_group &subgroup, const uint index) {
-	return cl::sycl::float3(subgroup.broadcast<float>(dir_x,index),
-				subgroup.broadcast<float>(dir_y,index),
-				subgroup.broadcast<float>(dir_z,index));	
+	return cl::sycl::float3(subgroup.broadcast<float>(dir.x,index),
+				subgroup.broadcast<float>(dir.y,index),
+				subgroup.broadcast<float>(dir.z,index));	
       }
 
-      inline float broadcast_tnear(const cl::sycl::intel::sub_group &subgroup, const uint index) { return subgroup.broadcast<float>(tnear,index); }
+      inline float broadcast_tnear(const cl::sycl::intel::sub_group &subgroup, const uint index) { return subgroup.broadcast<float>(tnear(),index); }
       inline float broadcast_tfar (const cl::sycl::intel::sub_group &subgroup, const uint index) { return subgroup.broadcast<float>(tfar ,index); }
       
       
@@ -57,7 +57,7 @@ namespace embree
     };
 
     /* Hit structure for a single ray */
-    struct RTCHitGPU : public RTCHit
+    struct RTCHitGPU : public Hit
     {
       inline void init()
       {
@@ -67,9 +67,9 @@ namespace embree
       
       inline void broadcast(const cl::sycl::intel::sub_group &subgroup, const uint index)
       {
-	Ng_x = subgroup.broadcast<float>(Ng_x,index);
-	Ng_y = subgroup.broadcast<float>(Ng_y,index);
-	Ng_z = subgroup.broadcast<float>(Ng_z,index);
+	Ng.x = subgroup.broadcast<float>(Ng.x,index);
+	Ng.y = subgroup.broadcast<float>(Ng.y,index);
+	Ng.z = subgroup.broadcast<float>(Ng.z,index);
 	u = subgroup.broadcast<float>(u,index);
 	v = subgroup.broadcast<float>(v,index);
 	primID = subgroup.broadcast<unsigned int>(primID,index);
@@ -79,9 +79,9 @@ namespace embree
       
       inline void store(RTCHit &dest)
       {
-	dest.Ng_x = Ng_x;
-	dest.Ng_y = Ng_y;
-	dest.Ng_z = Ng_z;
+	dest.Ng_x = Ng.x;
+	dest.Ng_y = Ng.y;
+	dest.Ng_z = Ng.z;
 	dest.u     = u;
 	dest.v     = v;
 	dest.primID = primID;
@@ -99,7 +99,7 @@ namespace embree
     };
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const RTCHitGPU& hit) {
-      return out << " Ng " << float3(hit.Ng_x,hit.Ng_y,hit.Ng_z)
+      return out << " Ng " << float3(hit.Ng.x,hit.Ng.y,hit.Ng.z)
 		 << " u " << hit.u
 		 << " v " << hit.v
 		 << " primID " << hit.primID
@@ -110,9 +110,9 @@ namespace embree
 
 
     inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const RTCRayGPU& ray) {
-      return out << " org   " << float3(ray.org_x,ray.org_y,ray.org_z)
-		 << " tnear " << ray.tnear
-		 << " dir   " << float3(ray.dir_x,ray.dir_y,ray.dir_z)
+      return out << " org   " << float3(ray.org.x,ray.org.y,ray.org.z)
+		 << " tnear " << ray.tnear()
+		 << " dir   " << float3(ray.dir.x,ray.dir.y,ray.dir.z)
 		 << " tnear " << ray.tfar;
       
     }

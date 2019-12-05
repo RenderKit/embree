@@ -154,9 +154,9 @@ namespace embree
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
-	      hit.Ng_x  = tri_Ng.x();
-	      hit.Ng_y  = tri_Ng.y();
-	      hit.Ng_z  = tri_Ng.z();	      
+	      hit.Ng.x  = tri_Ng.x();
+	      hit.Ng.y  = tri_Ng.y();
+	      hit.Ng.z  = tri_Ng.z();	      
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;
@@ -207,9 +207,9 @@ namespace embree
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
-	      hit.Ng_x  = tri_Ng.x();
-	      hit.Ng_y  = tri_Ng.y();
-	      hit.Ng_z  = tri_Ng.z();	      
+	      hit.Ng.x  = tri_Ng.x();
+	      hit.Ng.y  = tri_Ng.y();
+	      hit.Ng.z  = tri_Ng.z();	      
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;
@@ -299,9 +299,9 @@ namespace embree
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
-	      hit.Ng_x  = tri_Ng.x();
-	      hit.Ng_y  = tri_Ng.y();
-	      hit.Ng_z  = tri_Ng.z();	      
+	      hit.Ng.x  = tri_Ng.x();
+	      hit.Ng.y  = tri_Ng.y();
+	      hit.Ng.z  = tri_Ng.z();	      
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;

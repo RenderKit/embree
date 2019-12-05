@@ -130,11 +130,11 @@ namespace embree
     uint m_activeLanes = m_active;
     //m_activeLanes = gpu::cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
 
-    const float3 org16   = ray.org();
-    const float3 dir16   = ray.dir();
-    const float  tnear16 = ray.tnear;      
+    const float3 org16   = ray.get_org();
+    const float3 dir16   = ray.get_dir();
+    const float  tnear16 = ray.tnear();      
     const float  tfar16  = ray.tfar;
-    const float  time16  = ray.time;
+    const float  time16  = ray.time();
 #pragma nounroll      
     while(m_activeLanes)
       {

@@ -26,7 +26,7 @@
 namespace embree
 {
 
-#if defined(EMBREE_DPCPP_SUPPORT)   
+#if 0 && defined(EMBREE_DPCPP_SUPPORT)   
     
   [[cl::intel_reqd_sub_group_size(BVH_NODE_N)]]  SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
 											cl::sycl::global_ptr<RTCSceneTy> scene,
