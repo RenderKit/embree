@@ -164,13 +164,17 @@ namespace embree
     {
       const unsigned int index = segment(i);
       if (index+1 >= numVertices()) return false;
-      
+
+#if !defined(EMBREE_SYCL_SIMD_LIBRARY) && !defined(__SYCL_DEVICE_ONLY__)
+
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
       {
         const Vec3fa v0 = vertex(index+0,itime); if (unlikely(!isvalid((vfloat4)v0))) return false;
         const Vec3fa v1 = vertex(index+1,itime); if (unlikely(!isvalid((vfloat4)v1))) return false;
         if (min(v0.w,v1.w) < 0.0f) return false;
       }
+#endif
+      
       return true;
     }
 

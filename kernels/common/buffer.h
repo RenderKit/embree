@@ -246,6 +246,24 @@ namespace embree
   public:
     typedef Vec3fa value_type;
 
+#if defined(EMBREE_SYCL_SIMD_LIBRARY) && defined(__SYCL_DEVICE_ONLY__)
+
+     /*! access to the ith element of the buffer */
+    __forceinline const Vec3fa operator [](size_t i) const
+    {
+      assert(i<num);
+      return Vec3fa::loadu(ptr_ofs + i*stride);
+    }
+    
+    /*! writes the i'th element */
+    __forceinline void store(size_t i, const Vec3fa& v)
+    {
+      assert(i<num);
+      Vec3fa::storeu(ptr_ofs + i*stride, v);
+    }
+    
+#else
+
     /*! access to the ith element of the buffer */
     __forceinline const Vec3fa operator [](size_t i) const
     {
@@ -259,5 +277,6 @@ namespace embree
       assert(i<num);
       vfloat4::storeu((float*)(ptr_ofs + i*stride), (vfloat4)v);
     }
+#endif
   };
 }
