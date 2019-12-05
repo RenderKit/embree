@@ -601,7 +601,7 @@ namespace embree
 	assert(gpu_leaf_allocator.load() <= leafPrimitives);
 
 	scene->gpu_bvh_mb_root = (size_t)bvh_mem;
-	
+	//exit(0);
 #endif	
 
       }
