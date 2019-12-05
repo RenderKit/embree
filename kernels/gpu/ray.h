@@ -15,6 +15,8 @@
 // ======================================================================== //
 #pragma once
 
+//#include "../common/ray.h"
+
 #if defined(EMBREE_DPCPP_SUPPORT)
 #include "common.h"
 

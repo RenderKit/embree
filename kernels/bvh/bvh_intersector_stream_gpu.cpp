@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+//#define EMBREE_SYCL_SIMD_LIBRARY
+
 #include "bvh_intersector_gpu.h"
 
 #define DBG(x) 

@@ -193,6 +193,8 @@ namespace embree
     return true;
   }
 
+#if !defined(EMBREE_SYCL_SIMD_LIBRARY) || !defined(__SYCL_DEVICE_ONLY__)
+  
   __forceinline void AffineSpace3fa_store_unaligned(const AffineSpace3fa &source, AffineSpace3fa* ptr)
   {
     Vec3fa::storeu(&ptr->l.vx, source.l.vx);
@@ -210,8 +212,8 @@ namespace embree
     space.p    = Vec3fa::loadu(&ptr->p);
     return space;
   }
-
-    
+  
+#endif    
 
   #undef VectorT
   #undef ScalarT
