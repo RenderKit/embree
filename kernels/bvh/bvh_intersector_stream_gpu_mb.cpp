@@ -14,6 +14,8 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#define EMBREE_SYCL_SIMD_LIBRARY
+
 #include "bvh_intersector_gpu.h"
 
 #define DBG(x) 
@@ -26,11 +28,6 @@ namespace embree
 {  
   namespace isa
   {
-
-#if defined(EMBREE_DPCPP_SUPPORT)
-    
-#endif
-    
     /*! BVH ray stream GPU intersector */
     template<typename Primitive>
     class BVHNGPUIntersectorStreamMB
