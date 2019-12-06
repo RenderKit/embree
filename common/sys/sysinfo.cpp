@@ -542,13 +542,22 @@ namespace embree
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <pthread.h>
 
 namespace embree
 {
   unsigned int getNumberOfLogicalThreads() 
   {
     static int nThreads = -1;
-    if (nThreads == -1) nThreads = sysconf(_SC_NPROCESSORS_CONF);
+    if (nThreads != -1) return nThreads;
+
+    //nThreads = sysconf(_SC_NPROCESSORS_ONLN); // does not work in Linux LXC container
+    //assert(nThreads);
+
+    cpu_set_t set;
+    if (pthread_getaffinity_np(pthread_self(), sizeof(set), &set) == 0)
+      nThreads = CPU_COUNT(&set);
+
     assert(nThreads);
     return nThreads;
   }
