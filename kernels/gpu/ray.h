@@ -29,22 +29,22 @@ namespace embree
     /* Ray structure for a single ray */
     struct RTCRayGPU : public Ray
     {
-      inline cl::sycl::float3 get_org() {
-	return cl::sycl::float3(org.x,org.y,org.z);	
+      inline Vec3f get_org() {
+	return Vec3f(org.x,org.y,org.z);	
       }
 
-      inline cl::sycl::float3 get_dir() {
-	return cl::sycl::float3(dir.x,dir.y,dir.z);	
+      inline Vec3f get_dir() {
+	return Vec3f(dir.x,dir.y,dir.z);	
       }
       
-      inline cl::sycl::float3 broadcast_org(const cl::sycl::intel::sub_group &subgroup, const uint index) {
-	return cl::sycl::float3(subgroup.broadcast<float>(org.x,index),
+      inline Vec3f broadcast_org(const cl::sycl::intel::sub_group &subgroup, const uint index) {
+	return Vec3f(subgroup.broadcast<float>(org.x,index),
 				subgroup.broadcast<float>(org.y,index),
 				subgroup.broadcast<float>(org.z,index));	
       }
 
-      inline cl::sycl::float3 broadcast_dir(const cl::sycl::intel::sub_group &subgroup, const uint index) {
-	return cl::sycl::float3(subgroup.broadcast<float>(dir.x,index),
+      inline Vec3f broadcast_dir(const cl::sycl::intel::sub_group &subgroup, const uint index) {
+	return Vec3f(subgroup.broadcast<float>(dir.x,index),
 				subgroup.broadcast<float>(dir.y,index),
 				subgroup.broadcast<float>(dir.z,index));	
       }

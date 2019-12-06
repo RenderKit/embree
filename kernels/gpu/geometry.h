@@ -110,8 +110,8 @@ namespace embree
     inline float intersectPrimitive1v(const cl::sycl::intel::sub_group &sg,
 				      const gpu::Quad1v *const quad1v,
 				      const uint numQuads,
-				      const float3 &org,
-				      const float3 &dir,
+				      const Vec3f &org,
+				      const Vec3f &dir,
 				      const float time,
 				      const float tnear,
 				      const float tfar,
@@ -132,31 +132,31 @@ namespace embree
 	  const float4 _v1 = quad1v[quadID].v1;
 	  const float4 _v2 = quad1v[quadID].v3;
 	  const uint geomID = gpu::as_uint((float)_v1.w());
-	  const uint primID = gpu::as_uint((float)_v2.w());	  	  
-	  const float3 v0 = _v0.xyz();
-	  const float3 v1 = _v1.xyz();
-	  const float3 v2 = _v2.xyz();
+	  const uint primID = gpu::as_uint((float)_v2.w());
+          const Vec3f v0(_v0.x(), _v0.y(), _v0.z());
+	  const Vec3f v1(_v1.x(), _v1.y(), _v1.z());
+	  const Vec3f v2(_v2.x(), _v2.y(), _v2.z());
 
 	  /* moeller-trumbore test */	  
-	  const float3 e1 = v0 - v1;
-	  const float3 e2 = v2 - v0;
-	  const float3 tri_Ng = cl::sycl::cross(e1,e2);
-	  const float den = dot3(tri_Ng,dir);   			   
-	  const float inv_den = cl::sycl::native::recip(den); 
-	  const float3 tri_v0_org = v0 - org;
-	  const float3 R = cl::sycl::cross(dir,tri_v0_org);
-	  const float u = dot3(R,e2) * inv_den;
-	  const float v = dot3(R,e1) * inv_den;
-	  float t = dot3(tri_v0_org,tri_Ng) * inv_den; 
+	  const Vec3f e1 = v0 - v1;
+	  const Vec3f e2 = v2 - v0;
+	  const Vec3f tri_Ng = cross(e1,e2);
+	  const float den = dot(tri_Ng,dir);   			   
+	  const float inv_den = rcp(den); 
+	  const Vec3f tri_v0_org = v0 - org;
+	  const Vec3f R = cross(dir,tri_v0_org);
+	  const float u = dot(R,e2) * inv_den;
+	  const float v = dot(R,e1) * inv_den;
+	  float t = dot(tri_v0_org,tri_Ng) * inv_den; 
 	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
 	  //if (m_hit == 0) return; // early out
 	  m_hit &= (tnear <= t) & (t <= tfar); // den != 0.0f &&
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
-	      hit.Ng.x  = tri_Ng.x();
-	      hit.Ng.y  = tri_Ng.y();
-	      hit.Ng.z  = tri_Ng.z();	      
+	      hit.Ng.x  = tri_Ng.x;
+	      hit.Ng.y  = tri_Ng.y;
+	      hit.Ng.z  = tri_Ng.z;	      
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;
@@ -170,8 +170,8 @@ namespace embree
     inline float intersectPrimitive1v(const cl::sycl::intel::sub_group &sg,
 				      const gpu::Triangle1v *const tri1v,
 				      const uint numTris,
-				      const float3 &org,
-				      const float3 &dir,
+				      const Vec3f &org,
+				      const Vec3f &dir,
 				      const float time,
 				      const float tnear,
 				      const float tfar,
@@ -186,30 +186,30 @@ namespace embree
 	  const float4 _v2 = tri1v[slotID].v2;
 	  const uint geomID = gpu::as_uint(_v1.w());
 	  const uint primID = gpu::as_uint(_v2.w());
-	  const float3 v0 = _v0.xyz();
-	  const float3 v1 = _v1.xyz();
-	  const float3 v2 = _v2.xyz();
+	  const Vec3f v0(_v0.x(), _v0.y(), _v0.z());
+	  const Vec3f v1(_v1.x(), _v1.y(), _v1.z());
+	  const Vec3f v2(_v2.x(), _v2.y(), _v2.z());
 
 	  /* moeller-trumbore test */	  
-	  const float3 e1 = v0 - v1;
-	  const float3 e2 = v2 - v0;
-	  const float3 tri_Ng = cl::sycl::cross(e1,e2);
-	  const float den = dot3(tri_Ng,dir);   			   
-	  const float inv_den = cl::sycl::native::recip(den); 
-	  const float3 tri_v0_org = v0 - org;
-	  const float3 R = cl::sycl::cross(dir,tri_v0_org);
-	  const float u = dot3(R,e2) * inv_den;
-	  const float v = dot3(R,e1) * inv_den;
-	  float t = dot3(tri_v0_org,tri_Ng) * inv_den; 
+	  const Vec3f e1 = v0 - v1;
+	  const Vec3f e2 = v2 - v0;
+	  const Vec3f tri_Ng = cross(e1,e2);
+	  const float den = dot(tri_Ng,dir);   			   
+	  const float inv_den = rcp(den); 
+	  const Vec3f tri_v0_org = v0 - org;
+	  const Vec3f R = cross(dir,tri_v0_org);
+	  const float u = dot(R,e2) * inv_den;
+	  const float v = dot(R,e1) * inv_den;
+	  float t = dot(tri_v0_org,tri_Ng) * inv_den; 
 	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
 	  //if (m_hit == 0) return; // early out
 	  m_hit &= (tnear <= t) & (t <= tfar); // den != 0.0f &&
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
-	      hit.Ng.x  = tri_Ng.x();
-	      hit.Ng.y  = tri_Ng.y();
-	      hit.Ng.z  = tri_Ng.z();	      
+	      hit.Ng.x  = tri_Ng.x;
+	      hit.Ng.y  = tri_Ng.y;
+	      hit.Ng.z  = tri_Ng.z;	      
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;
@@ -235,8 +235,8 @@ namespace embree
     inline float intersectPrimitive1v(const cl::sycl::intel::sub_group &sg,
 				      const gpu::Triangle1vMB *const tri1v,
 				      const uint numTris,
-				      const float3 &org,
-				      const float3 &dir,
+				      const Vec3f &org,
+				      const Vec3f &dir,
 				      const float time,
 				      const float tnear,
 				      const float tfar,
@@ -277,31 +277,31 @@ namespace embree
 	      out << "_v2 " << _v2 << cl::sycl::endl;
 	    }
 #endif
-	  
-	  const float3 v0 = _v0.xyz();
-	  const float3 v1 = _v1.xyz();
-	  const float3 v2 = _v2.xyz();
+
+          const Vec3f v0(_v0.x(), _v0.y(), _v0.z());
+	  const Vec3f v1(_v1.x(), _v1.y(), _v1.z());
+	  const Vec3f v2(_v2.x(), _v2.y(), _v2.z());
 
 	  /* moeller-trumbore test */	  
-	  const float3 e1 = v0 - v1;
-	  const float3 e2 = v2 - v0;
-	  const float3 tri_Ng = cl::sycl::cross(e1,e2);
-	  const float den = dot3(tri_Ng,dir);   			   
-	  const float inv_den = cl::sycl::native::recip(den); 
-	  const float3 tri_v0_org = v0 - org;
-	  const float3 R = cl::sycl::cross(dir,tri_v0_org);
-	  const float u = dot3(R,e2) * inv_den;
-	  const float v = dot3(R,e1) * inv_den;
-	  float t = dot3(tri_v0_org,tri_Ng) * inv_den; 
+	  const Vec3f e1 = v0 - v1;
+	  const Vec3f e2 = v2 - v0;
+	  const Vec3f tri_Ng = cross(e1,e2);
+	  const float den = dot(tri_Ng,dir);   			   
+	  const float inv_den = rcp(den); 
+	  const Vec3f tri_v0_org = v0 - org;
+	  const Vec3f R = cross(dir,tri_v0_org);
+	  const float u = dot(R,e2) * inv_den;
+	  const float v = dot(R,e1) * inv_den;
+	  float t = dot(tri_v0_org,tri_Ng) * inv_den; 
 	  int m_hit = (u >= 0.0f) & (v >= 0.0f) & (u+v <= 1.0f);
 	  //if (m_hit == 0) return; // early out
 	  m_hit &= (tnear <= t) & (t <= tfar); // den != 0.0f &&
 	  if (m_hit) 
 	    {
 	      new_tfar = t;
-	      hit.Ng.x  = tri_Ng.x();
-	      hit.Ng.y  = tri_Ng.y();
-	      hit.Ng.z  = tri_Ng.z();	      
+	      hit.Ng.x  = tri_Ng.x;
+	      hit.Ng.y  = tri_Ng.y;
+	      hit.Ng.z  = tri_Ng.z;	      
 	      hit.u      = u;
 	      hit.v      = v;
 	      hit.primID = primID;
@@ -316,8 +316,8 @@ namespace embree
     inline float intersectPrimitive1v(const cl::sycl::intel::sub_group &sg,
 				      const gpu::Quad1vMB *const quad1v,
 				      const uint numTris,
-				      const float3 &org,
-				      const float3 &dir,
+				      const Vec3f &org,
+				      const Vec3f &dir,
 				      const float time,
 				      const float tnear,
 				      const float tfar,
