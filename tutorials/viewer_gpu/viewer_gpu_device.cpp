@@ -330,7 +330,7 @@ extern "C" void device_render (int* pixels,
 		ulong ext_fct = reinterpret_cast<ulong>(&external_fct);
 
 		/* test function calls */
-		rtcIntersectGPUTest(sg, sycl_scene, &rh, ext_fct);
+		rtcIntersectGPUTest(sg, sycl_scene, rh, ext_fct);
 
 		uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
 		rh.hit.primID = testfct(rh.hit.primID,rh.hit.primID); 
