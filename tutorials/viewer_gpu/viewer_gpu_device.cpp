@@ -30,7 +30,7 @@ namespace embree {
 #define SIMPLE_SHADING 1
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
 #define DBG_PRINT_LINE_SIZE 512
-#define USE_FCT_CALLS 0
+#define USE_FCT_CALLS 1
   
   extern "C" ISPCScene* g_ispc_scene;
   extern "C" int g_instancing_mode;
@@ -330,7 +330,7 @@ extern "C" void device_render (int* pixels,
 		ulong ext_fct = reinterpret_cast<ulong>(&external_fct);
 
 		/* test function calls */
-		rtcIntersectGPUTest(sg, sycl_scene, &rh, ext_fct);
+		rtcIntersectGPUTest(sg, sycl_scene, rh, ext_fct);
 
 		uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
 		rh.hit.primID = testfct(rh.hit.primID,rh.hit.primID); 
