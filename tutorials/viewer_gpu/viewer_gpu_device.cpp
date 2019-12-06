@@ -30,7 +30,7 @@ namespace embree {
 #define SIMPLE_SHADING 1
 #define DBG_PRINT_BUFFER_SIZE 1024*1024
 #define DBG_PRINT_LINE_SIZE 512
-#define USE_FCT_CALLS 1
+#define USE_FCT_CALLS 0
   
   extern "C" ISPCScene* g_ispc_scene;
   extern "C" int g_instancing_mode;
