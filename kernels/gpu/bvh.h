@@ -324,9 +324,9 @@ namespace embree
 
     __forceinline NodeIntersectionData intersectNode(const cl::sycl::intel::sub_group &sg,
 						     const QBVHNodeN &node,
-						     const uint3 &dir_mask,
-						     const float3 &inv_dir,
-						     const float3 &inv_dir_org,
+						     const Vec3i &dir_mask,
+						     const Vec3f &inv_dir,
+						     const Vec3f &inv_dir_org,
 						     const float time,
 						     const float tnear,
 						     const float tfar)
@@ -335,16 +335,16 @@ namespace embree
       const uint subgroupLocalID = sg.get_local_id()[0];      
       const gpu::QBVHNodeN &node = *(gpu::QBVHNodeN*)(bvh_base + cur);	      
       const uint  offset          = node.offset[subgroupLocalID];	      	      
-      const float3 org      = node.org.xyz();
-      const float3 scale    = node.scale.xyz();
+      const Vec3f org      = node.org.xyz();
+      const Vec3f scale    = node.scale.xyz();
 #else
       cl::sycl::multi_ptr<uint,cl::sycl::access::address_space::global_space> node_ptr((uint*)&node);
       const uint2 block0 = sg.load<2,uint>(node_ptr);
       const uint offset = (uint)block0.x();
-      const float3 org(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 0)),
+      const Vec3f org(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 0)),
 		       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 1)),
 		       gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 2)));
-      const float3 scale(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 4)),
+      const Vec3f scale(gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 4)),
 			 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 5)),
 			 gpu::as_float(sg.broadcast<uint>((uint)block0.y(), 6)));	      
 #endif
@@ -355,25 +355,27 @@ namespace embree
 
       const uchar3 ilower(block2.s2(),block2.s4(),block2.s6());
       const uchar3 iupper(block2.s3(),block2.s5(),block2.s7());
+      const float3 lowerf_  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
+      const float3 upperf_  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
 
-      const float3 lowerf  = ilower.convert<float,cl::sycl::rounding_mode::rtn>();
-      const float3 upperf  = iupper.convert<float,cl::sycl::rounding_mode::rtp>();
-      const float3 _lower  = cfma(lowerf,scale,org);
-      const float3 _upper  = cfma(upperf,scale,org);
+      const Vec3f lowerf(lowerf_.x(),lowerf_.y(),lowerf_.z());
+      const Vec3f upperf(upperf_.x(),upperf_.y(),upperf_.z());
+      const Vec3f _lower  = madd(lowerf,scale,org);
+      const Vec3f _upper  = madd(upperf,scale,org);
 
-      const float lower_x = cselect((uint)dir_mask.x(),(float)_upper.x(),(float)_lower.x());
-      const float upper_x = cselect((uint)dir_mask.x(),(float)_lower.x(),(float)_upper.x());
-      const float lower_y = cselect((uint)dir_mask.y(),(float)_upper.y(),(float)_lower.y());
-      const float upper_y = cselect((uint)dir_mask.y(),(float)_lower.y(),(float)_upper.y());
-      const float lower_z = cselect((uint)dir_mask.z(),(float)_upper.z(),(float)_lower.z());
-      const float upper_z = cselect((uint)dir_mask.z(),(float)_lower.z(),(float)_upper.z());	     
+      const float lower_x = cselect((uint)dir_mask.x,(float)_upper.x,(float)_lower.x);
+      const float upper_x = cselect((uint)dir_mask.x,(float)_lower.x,(float)_upper.x);
+      const float lower_y = cselect((uint)dir_mask.y,(float)_upper.y,(float)_lower.y);
+      const float upper_y = cselect((uint)dir_mask.y,(float)_lower.y,(float)_upper.y);
+      const float lower_z = cselect((uint)dir_mask.z,(float)_upper.z,(float)_lower.z);
+      const float upper_z = cselect((uint)dir_mask.z,(float)_lower.z,(float)_upper.z);	     
 	      
-      const float lowerX = cfma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
-      const float upperX = cfma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());
-      const float lowerY = cfma((float)inv_dir.y(), lower_y, (float)inv_dir_org.y());
-      const float upperY = cfma((float)inv_dir.y(), upper_y, (float)inv_dir_org.y());
-      const float lowerZ = cfma((float)inv_dir.z(), lower_z, (float)inv_dir_org.z());
-      const float upperZ = cfma((float)inv_dir.z(), upper_z, (float)inv_dir_org.z());
+      const float lowerX = madd((float)inv_dir.x, lower_x, (float)inv_dir_org.x);
+      const float upperX = madd((float)inv_dir.x, upper_x, (float)inv_dir_org.x);
+      const float lowerY = madd((float)inv_dir.y, lower_y, (float)inv_dir_org.y);
+      const float upperY = madd((float)inv_dir.y, upper_y, (float)inv_dir_org.y);
+      const float lowerZ = madd((float)inv_dir.z, lower_z, (float)inv_dir_org.z);
+      const float upperZ = madd((float)inv_dir.z, upper_z, (float)inv_dir_org.z);
 
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
@@ -384,9 +386,9 @@ namespace embree
 
     __forceinline NodeIntersectionData intersectNode(const cl::sycl::intel::sub_group &sg,
 						     const QBVHNodeNMB &node,
-						     const uint3 &dir_mask,
-						     const float3 &inv_dir,
-						     const float3 &inv_dir_org,
+						     const Vec3i &dir_mask,
+						     const Vec3f &inv_dir,
+						     const Vec3f &inv_dir_org,
 						     const float time,
 						     const float tnear,
 						     const float tfar)
@@ -397,39 +399,39 @@ namespace embree
       const float time0 = node.lower_t[subgroupLocalID];
       const float time1 = node.upper_t[subgroupLocalID];
       
-      const float3 lower0(node.lower_x[subgroupLocalID],node.lower_y[subgroupLocalID],node.lower_z[subgroupLocalID]);
-      const float3 upper0(node.upper_x[subgroupLocalID],node.upper_y[subgroupLocalID],node.upper_z[subgroupLocalID]);
-      const float3 lower1(node.lower_dx[subgroupLocalID],node.lower_dy[subgroupLocalID],node.lower_dz[subgroupLocalID]);
-      const float3 upper1(node.upper_dx[subgroupLocalID],node.upper_dy[subgroupLocalID],node.upper_dz[subgroupLocalID]);
+      const Vec3f lower0(node.lower_x[subgroupLocalID],node.lower_y[subgroupLocalID],node.lower_z[subgroupLocalID]);
+      const Vec3f upper0(node.upper_x[subgroupLocalID],node.upper_y[subgroupLocalID],node.upper_z[subgroupLocalID]);
+      const Vec3f lower1(node.lower_dx[subgroupLocalID],node.lower_dy[subgroupLocalID],node.lower_dz[subgroupLocalID]);
+      const Vec3f upper1(node.upper_dx[subgroupLocalID],node.upper_dy[subgroupLocalID],node.upper_dz[subgroupLocalID]);
             
-      const float lower0_x = cselect((uint)dir_mask.x(),(float)upper0.x(),(float)lower0.x());
-      const float upper0_x = cselect((uint)dir_mask.x(),(float)lower0.x(),(float)upper0.x());
-      const float lower1_x = cselect((uint)dir_mask.x(),(float)upper1.x(),(float)lower1.x());
-      const float upper1_x = cselect((uint)dir_mask.x(),(float)lower1.x(),(float)upper1.x());
+      const float lower0_x = cselect((uint)dir_mask.x,(float)upper0.x,(float)lower0.x);
+      const float upper0_x = cselect((uint)dir_mask.x,(float)lower0.x,(float)upper0.x);
+      const float lower1_x = cselect((uint)dir_mask.x,(float)upper1.x,(float)lower1.x);
+      const float upper1_x = cselect((uint)dir_mask.x,(float)lower1.x,(float)upper1.x);
       
-      const float lower0_y = cselect((uint)dir_mask.y(),(float)upper0.y(),(float)lower0.y());
-      const float upper0_y = cselect((uint)dir_mask.y(),(float)lower0.y(),(float)upper0.y());
-      const float lower1_y = cselect((uint)dir_mask.y(),(float)upper1.y(),(float)lower1.y());
-      const float upper1_y = cselect((uint)dir_mask.y(),(float)lower1.y(),(float)upper1.y());
+      const float lower0_y = cselect((uint)dir_mask.y,(float)upper0.y,(float)lower0.y);
+      const float upper0_y = cselect((uint)dir_mask.y,(float)lower0.y,(float)upper0.y);
+      const float lower1_y = cselect((uint)dir_mask.y,(float)upper1.y,(float)lower1.y);
+      const float upper1_y = cselect((uint)dir_mask.y,(float)lower1.y,(float)upper1.y);
       
-      const float lower0_z = cselect((uint)dir_mask.z(),(float)upper0.z(),(float)lower0.z());
-      const float upper0_z = cselect((uint)dir_mask.z(),(float)lower0.z(),(float)upper0.z());
-      const float lower1_z = cselect((uint)dir_mask.z(),(float)upper1.z(),(float)lower1.z());
-      const float upper1_z = cselect((uint)dir_mask.z(),(float)lower1.z(),(float)upper1.z());
+      const float lower0_z = cselect((uint)dir_mask.z,(float)upper0.z,(float)lower0.z);
+      const float upper0_z = cselect((uint)dir_mask.z,(float)lower0.z,(float)upper0.z);
+      const float lower1_z = cselect((uint)dir_mask.z,(float)upper1.z,(float)lower1.z);
+      const float upper1_z = cselect((uint)dir_mask.z,(float)lower1.z,(float)upper1.z);
 
-      const float lower_x = cfma(lower1_x,time,lower0_x);
-      const float upper_x = cfma(upper1_x,time,upper0_x);
-      const float lower_y = cfma(lower1_y,time,lower0_y);
-      const float upper_y = cfma(upper1_y,time,upper0_y);
-      const float lower_z = cfma(lower1_z,time,lower0_z);
-      const float upper_z = cfma(upper1_z,time,upper0_z);      
+      const float lower_x = madd(lower1_x,time,lower0_x);
+      const float upper_x = madd(upper1_x,time,upper0_x);
+      const float lower_y = madd(lower1_y,time,lower0_y);
+      const float upper_y = madd(upper1_y,time,upper0_y);
+      const float lower_z = madd(lower1_z,time,lower0_z);
+      const float upper_z = madd(upper1_z,time,upper0_z);      
 	      
-      const float lowerX = cfma((float)inv_dir.x(), lower_x, (float)inv_dir_org.x());
-      const float upperX = cfma((float)inv_dir.x(), upper_x, (float)inv_dir_org.x());
-      const float lowerY = cfma((float)inv_dir.y(), lower_y, (float)inv_dir_org.y());
-      const float upperY = cfma((float)inv_dir.y(), upper_y, (float)inv_dir_org.y());
-      const float lowerZ = cfma((float)inv_dir.z(), lower_z, (float)inv_dir_org.z());
-      const float upperZ = cfma((float)inv_dir.z(), upper_z, (float)inv_dir_org.z());
+      const float lowerX = madd((float)inv_dir.x, lower_x, (float)inv_dir_org.x);
+      const float upperX = madd((float)inv_dir.x, upper_x, (float)inv_dir_org.x);
+      const float lowerY = madd((float)inv_dir.y, lower_y, (float)inv_dir_org.y);
+      const float upperY = madd((float)inv_dir.y, upper_y, (float)inv_dir_org.y);
+      const float lowerZ = madd((float)inv_dir.z, lower_z, (float)inv_dir_org.z);
+      const float upperZ = madd((float)inv_dir.z, upper_z, (float)inv_dir_org.z);
 
       const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
       const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );

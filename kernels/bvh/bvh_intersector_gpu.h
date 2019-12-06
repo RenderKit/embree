@@ -130,8 +130,8 @@ namespace embree
     uint m_activeLanes = m_active;
     //m_activeLanes = gpu::cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
 
-    const float3 org16   = ray.get_org();
-    const float3 dir16   = ray.get_dir();
+    const Vec3f org16   = ray.get_org();
+    const Vec3f dir16   = ray.get_dir();
     const float  tnear16 = ray.tnear();      
     const float  tfar16  = ray.tfar;
     const float  time16  = ray.time();
@@ -142,18 +142,25 @@ namespace embree
 	m_activeLanes &= m_activeLanes-1;
 	  
 	local_hit.init();	  
-	const float3 org(sg.broadcast<float>(org16.x(),rayID),sg.broadcast<float>(org16.y(),rayID),sg.broadcast<float>(org16.z(),rayID));	  
-	const float3 dir(sg.broadcast<float>(dir16.x(),rayID),sg.broadcast<float>(dir16.y(),rayID),sg.broadcast<float>(dir16.z(),rayID));	  
+	const Vec3f org(sg.broadcast<float>(org16.x,rayID),sg.broadcast<float>(org16.y,rayID),sg.broadcast<float>(org16.z,rayID));	  
+	const Vec3f dir(sg.broadcast<float>(dir16.x,rayID),sg.broadcast<float>(dir16.y,rayID),sg.broadcast<float>(dir16.z,rayID));	  
 
 	const float time  = sg.broadcast<float>(time16 ,rayID);
 	const float tnear = sg.broadcast<float>(tnear16,rayID);
 	float tfar        = sg.broadcast<float>(tfar16 ,rayID);
 	float hit_tfar    = tfar;
-	
-	const uint3 dir_mask = gpu::cselect(dir >= 0.0f,uint3(0),uint3(1));
-	const float3 new_dir = gpu::cselect(dir != 0.0f, dir, float3(1E-18f));
-	const float3 inv_dir = cl::sycl::native::recip(new_dir);
-	const float3 inv_dir_org = -inv_dir * org; 
+
+        const int dir_mask_x = dir.x >= 0.0f ? 0 : 1;
+        const int dir_mask_y = dir.y >= 0.0f ? 0 : 1;
+        const int dir_mask_z = dir.z >= 0.0f ? 0 : 1;
+	const Vec3i dir_mask(dir_mask_x, dir_mask_y, dir_mask_z);
+	//const Vec3f new_dir = gpu::cselect(dir != 0.0f, dir, Vec3f(1E-18f));
+        const float new_dir_x = dir.x != 0.0f ? dir.x : 1E-18f;
+        const float new_dir_y = dir.y != 0.0f ? dir.y : 1E-18f;
+        const float new_dir_z = dir.z != 0.0f ? dir.z : 1E-18f;
+        const Vec3f new_dir(new_dir_x,new_dir_y,new_dir_z);
+	const Vec3f inv_dir = rcp(new_dir);
+	const Vec3f inv_dir_org = -inv_dir * org; 
             
 	const char *const bvh_base = (char*)bvh_mem;
 	stack_offset[0] = max_uint; // sentinel

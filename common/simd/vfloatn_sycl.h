@@ -229,8 +229,8 @@ namespace embree
   template<int N> __forceinline vfloat<N> sign(const vfloat<N>& a) { return vfloat<N>(cl::sycl::sign(a.v)); }
   template<int N> __forceinline vfloat<N> signmsk(const vfloat<N>& a) { return asFloat(asInt(a.v) & 0x80000000); }
   
-  //template<int N> __forceinline vfloat<N> rcp(const vfloat<N>& a) { return vfloat<N>(cl::sycl::recip(a.v)); } // FIXME: does not compile
-  template<int N> __forceinline vfloat<N> rcp(const vfloat<N>& a) { return vfloat<N>(__sycl_std::__invoke_native_recip<float>(a.v)); }
+  template<int N> __forceinline vfloat<N> rcp(const vfloat<N>& a) { return vfloat<N>(cl::sycl::native::recip(a.v)); } 
+  //template<int N> __forceinline vfloat<N> rcp(const vfloat<N>& a) { return vfloat<N>(__sycl_std::__invoke_native_recip<float>(a.v)); }
 
   template<int N> __forceinline vfloat<N> sqr (const vfloat<N>& a) { return vfloat<N>(a.v*a.v); }
   template<int N> __forceinline vfloat<N> sqrt(const vfloat<N>& a) { return vfloat<N>(cl::sycl::sqrt(a.v)); }
