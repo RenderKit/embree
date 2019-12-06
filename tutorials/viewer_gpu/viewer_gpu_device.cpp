@@ -235,9 +235,9 @@ extern "C" void device_init (char* cfg)
 [[intel::device_indirectly_callable]] uint external_fct(uint a, uint b) { return a + b; }
 
 [[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL void rtcIntersectGPUTest(cl::sycl::intel::sub_group &sg,
-										     cl::sycl::global_ptr<RTCSceneTy> scene,
-										     struct RTCRayHit &rayhit,
-										     ulong ext_fct);
+									     cl::sycl::global_ptr<RTCSceneTy> scene,
+									     struct RTCRayHit &rayhit,
+									     ulong ext_fct);
 
 #endif
 
@@ -330,7 +330,7 @@ extern "C" void device_render (int* pixels,
 		ulong ext_fct = reinterpret_cast<ulong>(&external_fct);
 
 		/* test function calls */
-		//rtcIntersectGPUTest(sg, sycl_scene, rh, ext_fct);
+		rtcIntersectGPUTest(sg, sycl_scene, &rh, ext_fct);
 
 		uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
 		rh.hit.primID = testfct(rh.hit.primID,rh.hit.primID); 
