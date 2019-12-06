@@ -21,6 +21,12 @@
 #include "constants.h"
 #include <cmath>
 
+#if defined(EMBREE_SYCL_SIMD_LIBRARY) && defined(__SYCL_DEVICE_ONLY__)
+
+#include "math_sycl.h"
+
+#else
+
 #include <emmintrin.h>
 #include <xmmintrin.h>
 #include <immintrin.h>
@@ -359,3 +365,5 @@ namespace embree
     return x | (y << 1) | (z << 2);
   }
 }
+
+#endif
