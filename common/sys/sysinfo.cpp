@@ -551,13 +551,15 @@ namespace embree
     static int nThreads = -1;
     if (nThreads != -1) return nThreads;
 
-    //nThreads = sysconf(_SC_NPROCESSORS_ONLN); // does not work in Linux LXC container
-    //assert(nThreads);
-
+#if defined(__MACOSX__)
+    nThreads = sysconf(_SC_NPROCESSORS_ONLN); // does not work in Linux LXC container
+    assert(nThreads);
+#else
     cpu_set_t set;
     if (pthread_getaffinity_np(pthread_self(), sizeof(set), &set) == 0)
       nThreads = CPU_COUNT(&set);
-
+#endif
+    
     assert(nThreads);
     return nThreads;
   }
