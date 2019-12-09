@@ -114,6 +114,7 @@ def runConfig(config):
     elif (compiler == "ICC17-VC14"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
+      ispc_ext = "-vs2015"
     elif (compiler == "ICC17-VC12"):
       conf.append("-G \"Visual Studio 12 2013"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
@@ -130,6 +131,7 @@ def runConfig(config):
       conf.append("-G \"Visual Studio 16 2019\"")
       conf.append("-A "+platform)
       conf.append("-T \"LLVM_v142\"")
+      ispc_ext = "-vs2015"
     elif (compiler == "V141_CLANG"):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"v141_clang_c2\"")

@@ -43,7 +43,7 @@ namespace embree
         const NodeRef parent = cur;
         size_t mask = movemask(vmask);
         assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = cur.baseNode();
 
         /*! one child is hit, continue with that child */
         const size_t r0 = bscf(mask);
@@ -132,7 +132,7 @@ namespace embree
         const NodeRef parent = cur;
         size_t mask = movemask(vmask);
         assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = cur.baseNode();
 
         /*! one child is hit, continue with that child */
         size_t r = bscf(mask);
