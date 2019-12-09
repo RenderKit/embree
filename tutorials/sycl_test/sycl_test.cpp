@@ -648,6 +648,46 @@ struct static_library_test : public Test
   }
 };
 
+
+struct pointer_performance_issue_test : public Test
+{
+  static const int size = 1000;
+
+  pointer_performance_issue_test ()
+    : Test("pointer_performance_issue_test") {}
+  
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
+  {
+    cl::sycl::int4* a = (cl::sycl::int4*) cl::sycl::aligned_alloc(64,size*sizeof(cl::sycl::int4),device,context,cl::sycl::usm::alloc::shared);
+    cl::sycl::int4* b = (cl::sycl::int4*) cl::sycl::aligned_alloc(64,size*sizeof(cl::sycl::int4),device,context,cl::sycl::usm::alloc::shared);
+    cl::sycl::int4* c = (cl::sycl::int4*) cl::sycl::aligned_alloc(64,size*sizeof(cl::sycl::int4),device,context,cl::sycl::usm::alloc::shared);
+
+    std::generate(a, a+size, std::rand);
+    std::generate(b, b+size, std::rand);
+    std::generate(c, c+size, std::rand);
+    
+    queue.submit([&](cl::sycl::handler& cgh) {
+        cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
+            int i = item.get(0);
+            c[i] = a[i] + b[i];
+          });
+      });
+    queue.wait_and_throw();
+   
+    for (int i=0; i<size; i++)
+    {
+      if (cl::sycl::all(a[i]+b[i] != c[i]))
+        return false;
+    }
+
+    cl::sycl::free(a, context);
+    cl::sycl::free(b, context);
+    cl::sycl::free(c, context);
+    
+    return true;
+  }
+};
+
 int main()
 {
   cl::sycl::device device = cl::sycl::device(NEOGPUDeviceSelector());
@@ -680,6 +720,8 @@ int main()
   tests.push_back(std::unique_ptr<Test>(new subgroup_library_test()));
 
   tests.push_back(std::unique_ptr<Test>(new static_library_test()));
+
+  tests.push_back(std::unique_ptr<Test>(new pointer_performance_issue_test()));
    
   /* invoke all tests */
   for (auto& test : tests)
