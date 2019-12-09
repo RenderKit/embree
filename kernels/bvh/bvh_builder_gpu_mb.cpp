@@ -215,14 +215,15 @@ namespace embree
 	tri1v.d2.z() = tri_block.dv2.z[slot];
       }
 
-      inline size_t convertToQBVHNodeNMB16(gpu::QBVHNodeNMB *gpu_node, AlignedNodeMB *n, NodeRef *refs, const size_t index_output, const size_t index_input)
+      inline size_t convertToQBVHNodeNMB16(gpu::QBVHNodeNMB *gpu_node, AlignedNodeMB *n, NodeRef *refs, const size_t index_output, const size_t index_input, const float time0, const float time1)
       {
 	refs[index_output] = n->child(index_input);	    	
 	if (n->child(index_input) == BVH::emptyNode) return 0;
 		    
 	gpu_node->offset[index_output]   = 0;
-	gpu_node->lower_t[index_output]  = neg_inf;
-	gpu_node->upper_t[index_output]  = pos_inf;	
+	gpu_node->lower_t[index_output]  = time0;
+	gpu_node->upper_t[index_output]  = time1;
+	
 	gpu_node->lower_x[index_output]  = n->lower_x[index_input];
 	gpu_node->upper_x[index_output]  = n->upper_x[index_input];
 	gpu_node->lower_y[index_output]  = n->lower_y[index_input];
@@ -409,11 +410,13 @@ namespace embree
 	    gpu_node->clear();	    
 	    const size_t slots = convertToQBVHNodeNMB(gpu_node,n,refs,0);
 
+	    PRINT(*n);
+	    
 	    for (size_t i=0;i<slots;i++)
 	      {
 		assert(refs[i] != BVH::emptyNode && refs[i] != BVH::invalidNode);		
 		convertToGPULayout(refs[i],bvh_mem,leaf_ptr,offset,i,gpu_node_allocator,gpu_leaf_allocator);
-	      }
+	      }	    
 	  }
 	else if (node.isUnalignedNodeMB())
 	  {
@@ -547,57 +550,86 @@ namespace embree
 	    const size_t gpu_node_offset = gpu_node_allocator.fetch_add(sizeof(gpu::QBVHNodeNMB));
 	    gpu::QBVHNodeNMB *gpu_node = (gpu::QBVHNodeNMB*)(bvh_mem + gpu_node_offset);
 	    gpu_node->clear();
-
+	    
 	    size_t slots = 0;
 	    for (size_t i=0;i<N;i++)
-	      {		
+	      {
+		DBG(
+		    PRINT(i);
+		    PRINT(slots);
+		    );
 		NodeRef child = node.baseNode()->child(i);
+		float time0 = neg_inf;
+		float time1 = pos_inf;
+		if (node.isAlignedNodeMB4D())
+		  {
+		    DBG(PRINT("MAIN node MB4D"));
+		    AlignedNodeMB4D* n = node.alignedNodeMB4D();					    
+		    time0 = n->lower_t[i];
+		    time1 = n->upper_t[i];
+		    DBG(PRINT(*n));
+		  }
+		else
+		  {
+		    DBG(PRINT("MAIN node MB"));
+		    AlignedNodeMB* n = node.alignedNodeMB();					    
+		    DBG(PRINT(*n));		    
+		  }
+	      
 		if (child != BVH::invalidNode && child != BVH::emptyNode)
 		  {
 		    if (child.isAlignedNodeMB())
 		      {
 			AlignedNodeMB* n = child.alignedNodeMB();						
-			PRINT("AlignedNodeMB");
-			PRINT(*n);			
+			DBG(
+			    PRINT("AlignedNodeMB");
+			    PRINT(*n);
+			    );
 			for (size_t j=0;j<N;j++)
-			  slots += convertToQBVHNodeNMB16(gpu_node,n,refs,slots,j);
+			  slots += convertToQBVHNodeNMB16(gpu_node,n,refs,slots,j,time0,time1);
 		      }
 		    else if (child.isAlignedNodeMB4D())
 		      {
-			AlignedNodeMB4D* n = child.alignedNodeMB4D();			
-			PRINT("AlignedNodeMB4D");
-			PRINT(*n);			
+			AlignedNodeMB4D* n = child.alignedNodeMB4D();
+			DBG(
+			    PRINT("AlignedNodeMB4D");
+			    PRINT(*n);
+			    );
 			for (size_t j=0;j<N;j++)			
-			  slots += convertToQBVHNodeNMB16(gpu_node,n,refs,slots,j);		      
+			  slots += convertToQBVHNodeNMB16(gpu_node,n,refs,slots,j);
 		      }
 		    else if (child.isLeaf())
 		      {
-			PRINT("direct leaf");
-			PRINT(slots);
-			PRINT(i);									
+#if 1
+			DBG(
+			    PRINT("direct leaf");
+			    PRINT(slots);
+			    PRINT(i);
+			    );
 			/* direct child is a leaf */
 			if (node.isAlignedNodeMB())
 			  {
-			    //PRINT("1");
+			    DBG(PRINT("1"));
 			    AlignedNodeMB* n = node.alignedNodeMB();
-			    //PRINT(*n);
-			    slots += convertToQBVHNodeNMB16(gpu_node,n,refs,slots,i);
+			    DBG(PRINT(*n));
+			    slots += convertToQBVHNodeNMB16(gpu_node,n,refs,slots,i,time0,time1);
 			  }
 			else if (node.isAlignedNodeMB4D())
 			  {
-			    //PRINT("2");			
+			    DBG(PRINT("2"));			
 			    AlignedNodeMB4D* n = node.alignedNodeMB4D();
-			    //PRINT(*n);
+			    DBG(PRINT(*n));
 			    slots += convertToQBVHNodeNMB16(gpu_node,n,refs,slots,i);
 			  }
 			else 
 			  throw std::runtime_error("not supported node type in bvh mb conversion");
+#endif			
 		      }
 		    else 
 		      throw std::runtime_error("not supported node type in bvh mb conversion");
 		  }
 	      }
-	    PRINT(slots);
+	    DBG(PRINT(slots));
 	    assert(slots <= BVH_NODE_N);
 
 	    /* set parent offset */	    
@@ -609,21 +641,25 @@ namespace embree
 	      }
 
 	    /* recursive continue with children of child(i) */
-	    PING;
 	    for (size_t i=0;i<slots;i++)
 	      {
 		assert(refs[i] != BVH::invalidNode);
 		assert(refs[i] != BVH::emptyNode);
 	      }
+
+	    for (size_t i=0;i<slots;i++)
+	      if (refs[i] != BVH::invalidNode && refs[i] != BVH::emptyNode)
+		convertToGPULayout16(refs[i],bvh_mem,leaf_ptr,gpu_node_offset,i,gpu_node_allocator,gpu_leaf_allocator);
+
 	    for (size_t i=0;i<BVH_NODE_N;i++)
 	      {
-#if 0	   
+DBG(		
 		PRINT(i);
+		PRINT(gpu_node->offset[i]);		
 		PRINT(refs[i]);
 		PRINT(refs[i].isLeaf());
-		PRINT(gpu_node->offset[i]);
 		PRINT(gpu_node->lower_t[i]);
-		PRINT(gpu_node->upper_t[i]);
+		PRINT(gpu_node->upper_t[i]);	   
 		PRINT(gpu_node->lower_x[i]);
 		PRINT(gpu_node->upper_x[i]);
 		PRINT(gpu_node->lower_y[i]);
@@ -636,8 +672,7 @@ namespace embree
 		PRINT(gpu_node->upper_dy[i]);
 		PRINT(gpu_node->lower_dz[i]);
 		PRINT(gpu_node->upper_dz[i]);
-#endif
-		
+		);
 		assert(!std::isnan( gpu_node->lower_t[i] ));
 		assert(!std::isnan( gpu_node->upper_t[i] ));
 		assert(!std::isnan( gpu_node->lower_x[i] ));
@@ -654,10 +689,7 @@ namespace embree
 		assert(!std::isnan( gpu_node->upper_dz[i] ));
 		
 	      }
-
-	    for (size_t i=0;i<slots;i++)
-	      if (refs[i] != BVH::invalidNode && refs[i] != BVH::emptyNode)
-		convertToGPULayout16(refs[i],bvh_mem,leaf_ptr,gpu_node_offset,i,gpu_node_allocator,gpu_leaf_allocator);
+	    
 	  }	
       }
       
@@ -712,8 +744,8 @@ namespace embree
 	gpu_node_allocator.store(node_data_start);
 	gpu_leaf_allocator.store(0);
 
-	convertToGPULayout(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator);
-	//convertToGPULayout16(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator);
+	//convertToGPULayout(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator);
+	convertToGPULayout16(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator);
        
 	if (unlikely(deviceGPU->verbosity(2)))
 	  {
@@ -728,7 +760,6 @@ namespace embree
 	assert(gpu_leaf_allocator.load() <= leafPrimitives);
 
 	scene->gpu_bvh_mb_root = (size_t)bvh_mem;
-	//exit(0);
 #endif	
 
       }
