@@ -18,3 +18,7 @@ SET(EMBREE_ISPC_SUPPORT OFF)
 INCLUDE(tutorial)
 ADD_TUTORIAL(viewer_gpu)
 
+IF (EMBREE_STATIC_LIB)
+  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -foffload-static-lib=../../libembree3.a")           # we do not need an executable stack      
+ENDIF()
+    
