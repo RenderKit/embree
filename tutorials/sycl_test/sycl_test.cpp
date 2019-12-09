@@ -600,6 +600,54 @@ struct subgroup_library_test : public Test
   }
 };
 
+SYCL_EXTERNAL int static_lib_add(int a, int b);
+
+struct static_library_test : public Test
+{
+  static const int size = 1000;
+
+  static_library_test ()
+    : Test("static_library_test") {}
+  
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
+  {
+    std::vector<int> A(size);
+    std::vector<int> B(size);
+    std::vector<int> C(size);
+
+    std::generate(A.begin(), A.end(), std::rand);
+    std::generate(B.begin(), B.end(), std::rand);
+    std::generate(C.begin(), C.end(), std::rand);
+
+    cl::sycl::buffer<int> bufA(A);
+    cl::sycl::buffer<int> bufB(B);
+    cl::sycl::buffer<int> bufC(C);
+    
+    queue.submit([&](cl::sycl::handler& cgh) {
+        
+        auto a = bufA.get_access<cl::sycl::access::mode::read>(cgh);
+        auto b = bufB.get_access<cl::sycl::access::mode::read>(cgh);
+        auto c = bufC.get_access<cl::sycl::access::mode::write>(cgh);
+        
+        cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
+            c[item] = static_lib_add(a[item],b[item]);
+          });
+      });
+    
+    auto hostA = bufA.get_access<cl::sycl::access::mode::read>();
+    auto hostB = bufB.get_access<cl::sycl::access::mode::read>();
+    auto hostC = bufC.get_access<cl::sycl::access::mode::read>();
+    
+    for (int i=0; i<size; i++)
+    {
+      if (hostA[i]+hostB[i] != hostC[i])
+        return false;
+    }
+    
+    return true;
+  }
+};
+
 int main()
 {
   cl::sycl::device device = cl::sycl::device(NEOGPUDeviceSelector());
@@ -630,6 +678,8 @@ int main()
   //tests.push_back(std::unique_ptr<Test>(new access_virtual_structure_test())); // FIXME: does not compile
 
   tests.push_back(std::unique_ptr<Test>(new subgroup_library_test()));
+
+  tests.push_back(std::unique_ptr<Test>(new static_library_test()));
    
   /* invoke all tests */
   for (auto& test : tests)
