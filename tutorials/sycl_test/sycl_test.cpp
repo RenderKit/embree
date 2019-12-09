@@ -662,6 +662,8 @@ struct pointer_performance_issue_test : public Test
     cl::sycl::int4* b = (cl::sycl::int4*) cl::sycl::aligned_alloc(64,size*sizeof(cl::sycl::int4),device,context,cl::sycl::usm::alloc::shared);
     cl::sycl::int4* c = (cl::sycl::int4*) cl::sycl::aligned_alloc(64,size*sizeof(cl::sycl::int4),device,context,cl::sycl::usm::alloc::shared);
 
+    cl::sycl::ulong a_ = (cl::sycl::ulong) a;
+
     std::generate(a, a+size, std::rand);
     std::generate(b, b+size, std::rand);
     std::generate(c, c+size, std::rand);
@@ -669,6 +671,7 @@ struct pointer_performance_issue_test : public Test
     queue.submit([&](cl::sycl::handler& cgh) {
         cgh.parallel_for<class test>(cl::sycl::range<1>(size), [=](cl::sycl::id<1> item) {
             int i = item.get(0);
+            //cl::sycl::int4* a = (cl::sycl::int4*) a_; // slow when enabled
             c[i] = a[i] + b[i];
           });
       });
