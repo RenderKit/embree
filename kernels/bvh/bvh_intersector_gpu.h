@@ -128,7 +128,7 @@ namespace embree
 
     /* cannot handle masked control flow yet */
     uint m_activeLanes = m_active;
-    //m_activeLanes = gpu::cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
+    m_activeLanes = gpu::cselect((uint)(m_activeLanes == (uint)(1<<BVH_NODE_N)-1),m_activeLanes,(uint)0);
 
     const Vec3f org16   = ray.get_org();
     const Vec3f dir16   = ray.get_dir();
