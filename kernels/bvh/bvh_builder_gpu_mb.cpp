@@ -549,7 +549,7 @@ namespace embree
 	    size_t slots = 0;
 	    for (size_t i=0;i<N;i++)
 	      {		
-		NodeRef child = node.baseNode(0)->child(i);
+		NodeRef child = node.baseNode()->child(i);
 		if (child != BVH::invalidNode && child != BVH::emptyNode)
 		  {
 		    if (child.isAlignedNodeMB())

@@ -39,8 +39,10 @@ namespace embree
     gpu::RTCHitGPU &hit = *(gpu::RTCHitGPU*)&rtc_rayhit.hit;
     uint m_active = intel_sub_group_ballot(true);
     traceRayBVH16<gpu::QBVHNodeN,gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
+#if 0    
     uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
-    hit.primID = testfct(hit.primID,hit.primID); 
+    hit.primID = testfct(hit.primID,hit.primID);
+#endif    
   }
 
 #endif
