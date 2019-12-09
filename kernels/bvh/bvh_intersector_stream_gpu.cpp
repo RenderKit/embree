@@ -38,9 +38,10 @@ namespace embree
     gpu::RTCRayGPU &ray = *(gpu::RTCRayGPU*)&rtc_rayhit.ray;
     gpu::RTCHitGPU &hit = *(gpu::RTCHitGPU*)&rtc_rayhit.hit;
     uint m_active = intel_sub_group_ballot(true);
-    traceRayBVH16<gpu::QBVHNodeN,gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
-    uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
-    hit.primID = testfct(hit.primID,hit.primID); 
+    if (m_active == 0xffff)
+      traceRayBVH16<gpu::QBVHNodeN,gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
+    //uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
+    //hit.primID = testfct(hit.primID,hit.primID); 
   }
 
 #endif
@@ -82,17 +83,24 @@ namespace embree
 	cl::sycl::event queue_event = gpu_queue.submit([&](cl::sycl::handler &cgh) {
 	    //cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);	    	    
 	    const cl::sycl::nd_range<1> nd_range(cl::sycl::range<1>(block_align(numRays,BVH_NODE_N)),cl::sycl::range<1>(BVH_NODE_N));
-	    
+            cl::sycl::global_ptr<RTCSceneTy> sycl_scene((RTCSceneTy*)bvh->scene);		
+
 	    cgh.parallel_for<class trace_ray_stream>(nd_range,[=](cl::sycl::nd_item<1> item) {
 		const uint globalID   = item.get_global_id(0);
 		cl::sycl::intel::sub_group sg = item.get_sub_group();
+
+#if 0
+                RTCRayHit* __inputRays = (RTCRayHit*)_inputRays;
+                rtcIntersectGPUTest(sg,sycl_scene,__inputRays[globalID],0);
+#else
 		//if (globalID < numRays)
 		{
 		  uint m_activeLanes = intel_sub_group_ballot(globalID < numRays);
 		  if (m_activeLanes == 0xffff)
 		    traceRayBVH16<gpu::QBVHNodeN,Primitive>(sg,m_activeLanes,inputRays[globalID].ray,inputRays[globalID].hit,bvh_mem,tstats);
 		}
-	      });		  
+#endif
+	      });
 	  });
 	try {
 	  gpu_queue.wait_and_throw();

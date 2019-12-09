@@ -277,13 +277,14 @@ extern "C" void device_render (int* pixels,
   int *fb = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*numPixels,*gpu_device,gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
   assert(fb);
 
+#if USE_FCT_CALLS == 1    
+    RTCScene scene = g_scene;
+#endif
+    
   double t0, t1;
   
   /* generate primary ray stream */    
   {
-#if USE_FCT_CALLS == 1    
-    RTCScene scene = g_scene;
-#endif    
     using namespace cl::sycl;	
     const float3 cam_p  = Vec3fa_to_float3(camera.xfm.p);
     const float3 cam_vx = Vec3fa_to_float3(camera.xfm.l.vx);
@@ -324,19 +325,6 @@ extern "C" void device_render (int* pixels,
 		rh.ray.tfar  = (float)INFINITY;		
 		rh.hit.primID = 0;
 		rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-#if USE_FCT_CALLS == 1
-		cl::sycl::global_ptr<RTCSceneTy> sycl_scene(scene);		
-		cl::sycl::intel::sub_group sg = item.get_sub_group();
-		ulong ext_fct = reinterpret_cast<ulong>(&external_fct);
-
-		/* test function calls */
-		rtcIntersectGPUTest(sg, sycl_scene, rh, ext_fct);
-
-		uint (*testfct)(uint, uint) = reinterpret_cast<uint (*)(uint, uint)>(ext_fct);
-		rh.hit.primID = testfct(rh.hit.primID,rh.hit.primID); 
-
-#endif
-		
 	      }
 	  });		  
       });
@@ -361,7 +349,40 @@ extern "C" void device_render (int* pixels,
   rtcIntersect1M(g_scene,&context,rtc_rays,numRays,sizeof(RTCRayHit));
 
   t1 = getSeconds();
+  
 #else
+
+  t0 = getSeconds();
+  {
+    
+    cl::sycl::event queue_event = gpu_queue->submit([&](cl::sycl::handler &cgh) {
+	const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(wg_width,wg_height),cl::sycl::range<2>(16,1));	
+	//const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(16,1),cl::sycl::range<2>(16,1));
+	
+	//cl::sycl::stream out(DBG_PRINT_BUFFER_SIZE, DBG_PRINT_LINE_SIZE, cgh);		
+	cgh.parallel_for<class init_rays>(nd_range,[=](cl::sycl::nd_item<2> item) {
+	    const uint x = item.get_global_id(0);
+	    const uint y = item.get_global_id(1);
+	    //if (x < width && y < height) // FIXME: causes 4x slowdown
+	      {
+                ulong ext_fct = reinterpret_cast<ulong>(&external_fct);
+                
+		cl::sycl::global_ptr<RTCSceneTy> sycl_scene(scene);		
+		cl::sycl::intel::sub_group sg = item.get_sub_group();
+		rtcIntersectGPUTest(sg, sycl_scene, rtc_rays[y*width+x], ext_fct);
+	      }
+	  });		  
+      });
+    try {
+      gpu_queue->wait_and_throw();
+    } catch (cl::sycl::exception const& e) {
+      std::cout << "Caught synchronous SYCL exception:\n"
+		<< e.what() << std::endl;
+      FATAL("OpenCL Exception");      
+    }
+  }
+  
+  t1 = getSeconds();
   
 #endif
   std::cout << (float)numRays * 0.000001f / (t1 - t0) << " mrays/s" << std::endl;
