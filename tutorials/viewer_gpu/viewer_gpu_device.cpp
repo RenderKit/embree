@@ -380,7 +380,13 @@ extern "C" void device_render (int* pixels,
 		<< e.what() << std::endl;
       FATAL("OpenCL Exception");      
     }
+
+    // FIXME: not implemented yet
+    //cl::sycl::cl_ulong c0 = queue_event.template get_profiling_info<cl::sycl::info::event_profiling::command_start>();
+    //cl::sycl::cl_ulong c1 = queue_event.template get_profiling_info<cl::sycl::info::event_profiling::command_end>();
+    //PRINT(c1-c0);
   }
+  
   
   t1 = getSeconds();
   
