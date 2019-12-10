@@ -449,7 +449,7 @@ namespace embree
 	float3 decode_scale1 = diff1 / (float3)((float)QUANT_MAX);
 
 	decode_scale0 = cselect( decode_scale0 != 0.0f, decode_scale0, float3(2.0f*FLT_MIN) );
-	decode_scale1 = cselect( decode_scale0 != 0.0f, decode_scale1, float3(2.0f*FLT_MIN) );
+	decode_scale1 = cselect( decode_scale1 != 0.0f, decode_scale1, float3(2.0f*FLT_MIN) );
 	
 	float3 encode_scale0 = (float3)((float)QUANT_MAX) / diff0;
 	float3 encode_scale1 = (float3)((float)QUANT_MAX) / diff1;
@@ -465,12 +465,13 @@ namespace embree
 	
 	for (uint i=0;i<BVH_NODE_N;i++)	  
 	  {
-	    if (offset[i] == BVH_INVALID_NODE_REF) continue;
-	    
 	    res.offset[i] = offset[i];
 	    res.lower_t[i] = lower_t[i];
 	    res.upper_t[i] = upper_t[i];
-	      
+
+	    if (offset[i] == BVH_INVALID_NODE_REF) continue;
+	    
+	    
 	    const AABB3f child0 = getBounds0(i);
 	    const AABB3f child1 = getBounds1(i);
 	    	  
@@ -505,6 +506,23 @@ namespace embree
 	    
 	    /* iupper0 = cselect(int3(m_valid),iupper0,int3(QUANT_MIN)); */
 	    /* iupper1 = cselect(int3(m_valid),iupper1,int3(QUANT_MIN)); */
+
+	    assert( (float)ilower0.x() * res.scale0.x() + res.org0.x() <= child0.lower.x() );
+	    assert( (float)ilower0.y() * res.scale0.y() + res.org0.y() <= child0.lower.y() );
+	    assert( (float)ilower0.z() * res.scale0.z() + res.org0.z() <= child0.lower.z() );
+
+	    assert( (float)iupper0.x() * res.scale0.x() + res.org0.x() >= child0.upper.x() );
+	    assert( (float)iupper0.y() * res.scale0.y() + res.org0.y() >= child0.upper.y() );
+	    assert( (float)iupper0.z() * res.scale0.z() + res.org0.z() >= child0.upper.z() );
+
+	    assert( (float)ilower1.x() * res.scale1.x() + res.org1.x() <= child1.lower.x() );
+	    assert( (float)ilower1.y() * res.scale1.y() + res.org1.y() <= child1.lower.y() );
+	    assert( (float)ilower1.z() * res.scale1.z() + res.org1.z() <= child1.lower.z() );
+
+	    assert( (float)iupper1.x() * res.scale1.x() + res.org1.x() >= child1.upper.x() );
+	    assert( (float)iupper1.y() * res.scale1.y() + res.org1.y() >= child1.upper.y() );
+	    assert( (float)iupper1.z() * res.scale1.z() + res.org1.z() >= child1.upper.z() );
+	    
 	    	    
 	    res.lower_x0[i] = ilower0.x();
 	    res.lower_y0[i] = ilower0.y();
@@ -674,6 +692,7 @@ namespace embree
       const float time0 = node.lower_t[subgroupLocalID];
       const float time1 = node.upper_t[subgroupLocalID];
 
+#if 0      
       const Vec3f org0(node.org0.x(),node.org0.y(),node.org0.z());
       const Vec3f org1(node.org1.x(),node.org1.y(),node.org1.z());      
       const Vec3f scale0(node.scale0.x(),node.scale0.y(),node.scale0.z());
@@ -688,13 +707,14 @@ namespace embree
 
 
       const float3 lowerf0_  = ilower0.convert<float,cl::sycl::rounding_mode::rtn>();
+      const float3 upperf0_  = iupper0.convert<float,cl::sycl::rounding_mode::rtp>();      
       const float3 lowerf1_  = ilower1.convert<float,cl::sycl::rounding_mode::rtn>();      
-      const float3 upperf0_  = iupper0.convert<float,cl::sycl::rounding_mode::rtp>();
       const float3 upperf1_  = iupper1.convert<float,cl::sycl::rounding_mode::rtp>();
 
       const Vec3f lowerf0(lowerf0_.x(),lowerf0_.y(),lowerf0_.z());
-      const Vec3f lowerf1(lowerf1_.x(),lowerf1_.y(),lowerf1_.z());      
       const Vec3f upperf0(upperf0_.x(),upperf0_.y(),upperf0_.z());
+
+      const Vec3f lowerf1(lowerf1_.x(),lowerf1_.y(),lowerf1_.z());      
       const Vec3f upperf1(upperf1_.x(),upperf1_.y(),upperf1_.z());
       
       const Vec3f lower0  = madd(lowerf0,scale0,org0);
@@ -702,7 +722,15 @@ namespace embree
       
       const Vec3f upper0  = madd(upperf0,scale0,org0);
       const Vec3f upper1  = madd(upperf1,scale1,org1);
-                            
+#else
+      const AABB bounds0 = node.getBounds0(subgroupLocalID);
+      const AABB bounds1 = node.getBounds1(subgroupLocalID);
+      const Vec3f lower0(bounds0.lower.x(),bounds0.lower.y(),bounds0.lower.z());
+      const Vec3f lower1(bounds1.lower.x(),bounds1.lower.y(),bounds1.lower.z());
+
+      const Vec3f upper0(bounds0.upper.x(),bounds0.upper.y(),bounds0.upper.z());
+      const Vec3f upper1(bounds1.upper.x(),bounds1.upper.y(),bounds1.upper.z());
+#endif      
       const float lower0_x = cselect((uint)dir_mask.x,(float)upper0.x,(float)lower0.x);
       const float upper0_x = cselect((uint)dir_mask.x,(float)lower0.x,(float)upper0.x);
       const float lower1_x = cselect((uint)dir_mask.x,(float)upper1.x,(float)lower1.x);
@@ -718,12 +746,12 @@ namespace embree
       const float lower1_z = cselect((uint)dir_mask.z,(float)upper1.z,(float)lower1.z);
       const float upper1_z = cselect((uint)dir_mask.z,(float)lower1.z,(float)upper1.z);
 
-      const float lower_x = madd(lower1_x,time,lower0_x);
-      const float upper_x = madd(upper1_x,time,upper0_x);
-      const float lower_y = madd(lower1_y,time,lower0_y);
-      const float upper_y = madd(upper1_y,time,upper0_y);
-      const float lower_z = madd(lower1_z,time,lower0_z);
-      const float upper_z = madd(upper1_z,time,upper0_z);      
+      const float lower_x = lerp(lower0_x,lower1_x,time);
+      const float upper_x = lerp(upper0_x,upper1_x,time);
+      const float lower_y = lerp(lower0_y,lower1_y,time);
+      const float upper_y = lerp(upper0_y,upper1_y,time);
+      const float lower_z = lerp(lower0_z,lower1_z,time); 
+      const float upper_z = lerp(upper0_z,upper1_z,time);      
 	      
       const float lowerX = madd((float)inv_dir.x, lower_x, (float)inv_dir_org.x);
       const float upperX = madd((float)inv_dir.x, upper_x, (float)inv_dir_org.x);
