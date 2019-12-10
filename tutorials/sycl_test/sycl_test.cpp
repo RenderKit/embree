@@ -691,6 +691,54 @@ struct pointer_performance_issue_test : public Test
   }
 };
 
+struct MyVec3fa
+{
+  float x,y,z,w;
+
+  __forceinline MyVec3fa () {}
+
+  __forceinline MyVec3fa ( const MyVec3fa& other ) {
+    x = other.x; y = other.y; z = other.z; w = other.w;
+  }
+};
+
+struct copy_constructor_bug_test : public Test
+{
+  copy_constructor_bug_test ()
+    : Test("copy_constructor_bug_test") {}
+  
+  bool run (cl::sycl::device& device, cl::sycl::context context, cl::sycl::queue& queue)
+  {
+    cl::sycl::float3* a = (cl::sycl::float3*) cl::sycl::aligned_alloc(64,sizeof(cl::sycl::float3),device,context,cl::sycl::usm::alloc::shared);
+    a->x() = a->y() = a->z() = 0;
+    
+    MyVec3fa vx;
+    vx.x = 1.0f;
+    vx.y = 2.0f;
+    vx.z = 3.0f;
+    
+    queue.submit([=](cl::sycl::handler &cgh) {
+        //cl::sycl::stream out(10000, 10000, cgh);	
+        cgh.single_task<class test>([=]() {
+            //out << "vx.x = " << vx.x << cl::sycl::endl;
+            //out << "vx.y = " << vx.y << cl::sycl::endl;
+            //out << "vx.z = " << vx.z << cl::sycl::endl;
+            a->x() = vx.x;
+            a->y() = vx.y;
+            a->z() = vx.z;
+          });
+      });
+    
+    queue.wait_and_throw();
+
+    if (a->x() != vx.x || a->y() != vx.y || a->z() != vx.z)
+      return false;
+
+    cl::sycl::free(a, context);
+    return true;
+  }
+};
+
 int main()
 {
   cl::sycl::device device = cl::sycl::device(NEOGPUDeviceSelector());
@@ -725,6 +773,8 @@ int main()
   tests.push_back(std::unique_ptr<Test>(new static_library_test()));
 
   tests.push_back(std::unique_ptr<Test>(new pointer_performance_issue_test()));
+
+  tests.push_back(std::unique_ptr<Test>(new copy_constructor_bug_test()));
    
   /* invoke all tests */
   for (auto& test : tests)
