@@ -161,8 +161,8 @@ namespace embree
 	
 	if (subgroupLocalID < BVH_NODE_N)
 	  {
-
-	    int m_valid = subgroupLocalID < numChildren;
+	    // workaround for compiler bug	  
+	    int m_valid = subgroupLocalID < numChildren ? -1 : 0;
 	  
 	    const float4 lower = child.lower;
 	    const float4 upper = child.upper;
@@ -182,18 +182,8 @@ namespace embree
 
 	    /* disable invalid lanes */	  
 
-#if 1 // workaround for compiler bug	  
-	    ilower.x() = cselect(m_valid,ilower.x(),QUANT_MAX);
-	    ilower.y() = cselect(m_valid,ilower.y(),QUANT_MAX);
-	    ilower.z() = cselect(m_valid,ilower.z(),QUANT_MAX);
-	  
-	    iupper.x() = cselect(m_valid,iupper.x(),QUANT_MIN);
-	    iupper.y() = cselect(m_valid,iupper.y(),QUANT_MIN);
-	    iupper.z() = cselect(m_valid,iupper.z(),QUANT_MIN);	  
-#else
 	    ilower = cselect(int4(m_valid),ilower,int4(QUANT_MAX)); 
 	    iupper = cselect(int4(m_valid),iupper,int4(QUANT_MIN));
-#endif	  
 	  
 	    node.offset[subgroupLocalID] = BVH_INVALID_NODE_REF;
 	    node.bounds_x[subgroupLocalID].lower = ilower.x();
@@ -240,12 +230,13 @@ namespace embree
 
     struct QBVHNodeNMB
     {              
-      NodeRef offset[BVH_NODE_N];
+
+      NodeRef offset[BVH_NODE_N];      
       float lower_t[BVH_NODE_N];
-      float upper_t[BVH_NODE_N];
+      float upper_t[BVH_NODE_N];      
       float4 org0, scale0;
       float4 org1, scale1;
-     
+      
       uchar lower_x0[BVH_NODE_N]; 
       uchar upper_x0[BVH_NODE_N]; 
       uchar lower_y0[BVH_NODE_N]; 
@@ -619,64 +610,6 @@ namespace embree
     }
 
 
-#if 0    
-    __forceinline NodeIntersectionData intersectNode(const cl::sycl::intel::sub_group &sg,
-						     const QBVHNodeNMB &node,
-						     const Vec3i &dir_mask,
-						     const Vec3f &inv_dir,
-						     const Vec3f &inv_dir_org,
-						     const float time,
-						     const float tnear,
-						     const float tfar)
-    {
-      const uint subgroupLocalID = sg.get_local_id()[0];      
-      const uint  offset = node.offset[subgroupLocalID];
-      
-      const float time0 = node.lower_t[subgroupLocalID];
-      const float time1 = node.upper_t[subgroupLocalID];
-      
-      const Vec3f lower0(node.lower_x[subgroupLocalID],node.lower_y[subgroupLocalID],node.lower_z[subgroupLocalID]);
-      const Vec3f upper0(node.upper_x[subgroupLocalID],node.upper_y[subgroupLocalID],node.upper_z[subgroupLocalID]);
-      const Vec3f lower1(node.lower_dx[subgroupLocalID],node.lower_dy[subgroupLocalID],node.lower_dz[subgroupLocalID]);
-      const Vec3f upper1(node.upper_dx[subgroupLocalID],node.upper_dy[subgroupLocalID],node.upper_dz[subgroupLocalID]);
-            
-      const float lower0_x = cselect((uint)dir_mask.x,(float)upper0.x,(float)lower0.x);
-      const float upper0_x = cselect((uint)dir_mask.x,(float)lower0.x,(float)upper0.x);
-      const float lower1_x = cselect((uint)dir_mask.x,(float)upper1.x,(float)lower1.x);
-      const float upper1_x = cselect((uint)dir_mask.x,(float)lower1.x,(float)upper1.x);
-      
-      const float lower0_y = cselect((uint)dir_mask.y,(float)upper0.y,(float)lower0.y);
-      const float upper0_y = cselect((uint)dir_mask.y,(float)lower0.y,(float)upper0.y);
-      const float lower1_y = cselect((uint)dir_mask.y,(float)upper1.y,(float)lower1.y);
-      const float upper1_y = cselect((uint)dir_mask.y,(float)lower1.y,(float)upper1.y);
-      
-      const float lower0_z = cselect((uint)dir_mask.z,(float)upper0.z,(float)lower0.z);
-      const float upper0_z = cselect((uint)dir_mask.z,(float)lower0.z,(float)upper0.z);
-      const float lower1_z = cselect((uint)dir_mask.z,(float)upper1.z,(float)lower1.z);
-      const float upper1_z = cselect((uint)dir_mask.z,(float)lower1.z,(float)upper1.z);
-
-      const float lower_x = madd(lower1_x,time,lower0_x);
-      const float upper_x = madd(upper1_x,time,upper0_x);
-      const float lower_y = madd(lower1_y,time,lower0_y);
-      const float upper_y = madd(upper1_y,time,upper0_y);
-      const float lower_z = madd(lower1_z,time,lower0_z);
-      const float upper_z = madd(upper1_z,time,upper0_z);      
-	      
-      const float lowerX = madd((float)inv_dir.x, lower_x, (float)inv_dir_org.x);
-      const float upperX = madd((float)inv_dir.x, upper_x, (float)inv_dir_org.x);
-      const float lowerY = madd((float)inv_dir.y, lower_y, (float)inv_dir_org.y);
-      const float upperY = madd((float)inv_dir.y, upper_y, (float)inv_dir_org.y);
-      const float lowerZ = madd((float)inv_dir.z, lower_z, (float)inv_dir_org.z);
-      const float upperZ = madd((float)inv_dir.z, upper_z, (float)inv_dir_org.z);
-
-      const float fnear = cl::sycl::fmax( cl::sycl::fmax(lowerX,lowerY), cl::sycl::fmax(lowerZ,tnear) );
-      const float ffar  = cl::sycl::fmin( cl::sycl::fmin(upperX,upperY), cl::sycl::fmin(upperZ,tfar)  );
-      const uint valid = (fnear <= ffar) & (offset != BVH_INVALID_NODE_REF) & (time0 <= time) & (time < time1);
-      
-      return NodeIntersectionData(fnear, valid, offset);
-    }
-#else
-
     __forceinline NodeIntersectionData intersectNode(const cl::sycl::intel::sub_group &sg,
 						     const QBVHNodeNMB &node,
 						     const Vec3i &dir_mask,
@@ -692,7 +625,6 @@ namespace embree
       const float time0 = node.lower_t[subgroupLocalID];
       const float time1 = node.upper_t[subgroupLocalID];
 
-#if 0      
       const Vec3f org0(node.org0.x(),node.org0.y(),node.org0.z());
       const Vec3f org1(node.org1.x(),node.org1.y(),node.org1.z());      
       const Vec3f scale0(node.scale0.x(),node.scale0.y(),node.scale0.z());
@@ -713,24 +645,14 @@ namespace embree
 
       const Vec3f lowerf0(lowerf0_.x(),lowerf0_.y(),lowerf0_.z());
       const Vec3f upperf0(upperf0_.x(),upperf0_.y(),upperf0_.z());
-
       const Vec3f lowerf1(lowerf1_.x(),lowerf1_.y(),lowerf1_.z());      
       const Vec3f upperf1(upperf1_.x(),upperf1_.y(),upperf1_.z());
       
       const Vec3f lower0  = madd(lowerf0,scale0,org0);
-      const Vec3f lower1  = madd(lowerf1,scale1,org1);
-      
+      const Vec3f lower1  = madd(lowerf1,scale1,org1);      
       const Vec3f upper0  = madd(upperf0,scale0,org0);
       const Vec3f upper1  = madd(upperf1,scale1,org1);
-#else
-      const AABB bounds0 = node.getBounds0(subgroupLocalID);
-      const AABB bounds1 = node.getBounds1(subgroupLocalID);
-      const Vec3f lower0(bounds0.lower.x(),bounds0.lower.y(),bounds0.lower.z());
-      const Vec3f lower1(bounds1.lower.x(),bounds1.lower.y(),bounds1.lower.z());
 
-      const Vec3f upper0(bounds0.upper.x(),bounds0.upper.y(),bounds0.upper.z());
-      const Vec3f upper1(bounds1.upper.x(),bounds1.upper.y(),bounds1.upper.z());
-#endif      
       const float lower0_x = cselect((uint)dir_mask.x,(float)upper0.x,(float)lower0.x);
       const float upper0_x = cselect((uint)dir_mask.x,(float)lower0.x,(float)upper0.x);
       const float lower1_x = cselect((uint)dir_mask.x,(float)upper1.x,(float)lower1.x);
@@ -765,11 +687,7 @@ namespace embree
       const uint valid = (fnear <= ffar) & (offset != BVH_INVALID_NODE_REF) & (time0 <= time) & (time < time1);
       
       return NodeIntersectionData(fnear, valid, offset);
-    }
-    
-#endif
-    
-    
+    }    
     
   };
 };
