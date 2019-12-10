@@ -147,38 +147,24 @@ extern "C" void device_init (char* cfg)
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(cl::sycl::intel::sub_group sg, float x, float y, const ISPCCamera camera, RTCScene scene) //, RayStats& stats)
 {
-  //RTCIntersectContext context;
-  //rtcInitIntersectContext(&context);
+  RTCIntersectContext context;
+  rtcInitIntersectContext(&context);
   
   /* initialize ray */
-  Vec3fa dir = normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz);
-  //Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, INFINITY, 0.0f);
-
-  RTCRayHit rh;
-  rh.ray.org_x = camera.xfm.p.x;
-  rh.ray.org_y = camera.xfm.p.y;
-  rh.ray.org_z = camera.xfm.p.z;
-  rh.ray.tnear = 0.0f;
-  rh.ray.dir_x = dir.x;
-  rh.ray.dir_y = dir.y;
-  rh.ray.dir_z = dir.z;
-  rh.ray.time  = 0.0f;
-  rh.ray.tfar  = (float)INFINITY;		
-  rh.hit.primID = 0;
-  rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, INFINITY, 0.0f);
 
   /* intersect ray with scene */
   //&context,
-  //RTCRayHit* rh = (RTCRayHit*) &ray;
-  rtcIntersectSYCL(sg,scene,rh);//RTCRayHit_(ray));
+  RTCRayHit* rh = (RTCRayHit*) &ray;
+  rtcIntersectSYCL(sg,scene,*rh);
   //RayStats_addRay(stats);
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
-  if (rh.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
 #if 1
-    color = Vec3fa(rh.hit.u, rh.hit.v, 1.0f-rh.hit.u-rh.hit.v);
+    color = Vec3fa(ray.u, ray.v, 1.0f-ray.u-ray.v);
 #else
     Vec3fa diffuse = face_colors[ray.primID];
     color = color + diffuse*0.5f;
