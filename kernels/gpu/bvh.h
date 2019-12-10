@@ -437,6 +437,7 @@ namespace embree
       __forceinline QBVHNodeNMB convert()
       {
 	QBVHNodeNMB res;
+	res.clear();
 	
 	const AABB3f aabb0 = bounds0();
 	const AABB3f aabb1 = bounds1();	
@@ -446,25 +447,15 @@ namespace embree
 	const float3 diff1 = aabb1.size()*(1.0f+2.0f*FLT_MIN);	
 	float3 decode_scale0 = diff0 / (float3)((float)QUANT_MAX);
 	float3 decode_scale1 = diff1 / (float3)((float)QUANT_MAX);
-	
-	decode_scale0.x() = (decode_scale0.x() != 0.0f) ? decode_scale0.x() : float(2.0f*FLT_MIN);
-	decode_scale0.y() = (decode_scale0.y() != 0.0f) ? decode_scale0.y() : float(2.0f*FLT_MIN);
-	decode_scale0.z() = (decode_scale0.z() != 0.0f) ? decode_scale0.z() : float(2.0f*FLT_MIN);
-	
-	decode_scale1.x() = (decode_scale1.x() != 0.0f) ? decode_scale1.x() : float(2.0f*FLT_MIN);
-	decode_scale1.y() = (decode_scale1.y() != 0.0f) ? decode_scale1.y() : float(2.0f*FLT_MIN);
-	decode_scale1.z() = (decode_scale1.z() != 0.0f) ? decode_scale1.z() : float(2.0f*FLT_MIN);
 
+	decode_scale0 = cselect( decode_scale0 != 0.0f, decode_scale0, float3(2.0f*FLT_MIN) );
+	decode_scale1 = cselect( decode_scale0 != 0.0f, decode_scale1, float3(2.0f*FLT_MIN) );
+	
 	float3 encode_scale0 = (float3)((float)QUANT_MAX) / diff0;
 	float3 encode_scale1 = (float3)((float)QUANT_MAX) / diff1;
 	
-	encode_scale0.x() = diff0.x() > 0.0f ? encode_scale0.x() : 0.0f;
-	encode_scale0.y() = diff0.y() > 0.0f ? encode_scale0.y() : 0.0f;
-	encode_scale0.z() = diff0.z() > 0.0f ? encode_scale0.z() : 0.0f;
-
-	encode_scale1.x() = diff1.x() > 0.0f ? encode_scale1.x() : 0.0f;
-	encode_scale1.y() = diff1.y() > 0.0f ? encode_scale1.y() : 0.0f;
-	encode_scale1.z() = diff1.z() > 0.0f ? encode_scale1.z() : 0.0f;
+	encode_scale0 = cselect( diff0 > 0.0f, encode_scale0, float3(0.0f));
+	encode_scale1 = cselect( diff1 > 0.0f, encode_scale1, float3(0.0f));
 	
 	res.org0 = float4(minF0.x(),minF0.y(),minF0.z(),0.0f);
 	res.org1 = float4(minF1.x(),minF1.y(),minF1.z(),0.0f);
@@ -474,8 +465,11 @@ namespace embree
 	
 	for (uint i=0;i<BVH_NODE_N;i++)	  
 	  {
+	    if (offset[i] == BVH_INVALID_NODE_REF) continue;
+	    
 	    res.offset[i] = offset[i];
-	    const uint m_valid = offset[i] != BVH_INVALID_NODE_REF;
+	    res.lower_t[i] = lower_t[i];
+	    res.upper_t[i] = upper_t[i];
 	      
 	    const AABB3f child0 = getBounds0(i);
 	    const AABB3f child1 = getBounds1(i);
@@ -506,21 +500,11 @@ namespace embree
 
 	    /* disable invalid lanes */	  
 
-	    ilower0.x() = cselect(m_valid,ilower0.x(),QUANT_MAX);
-	    ilower0.y() = cselect(m_valid,ilower0.y(),QUANT_MAX);
-	    ilower0.z() = cselect(m_valid,ilower0.z(),QUANT_MAX);
-
-	    ilower1.x() = cselect(m_valid,ilower1.x(),QUANT_MAX);
-	    ilower1.y() = cselect(m_valid,ilower1.y(),QUANT_MAX);
-	    ilower1.z() = cselect(m_valid,ilower1.z(),QUANT_MAX);
+	    /* ilower0 = cselect(int3(m_valid),ilower0,int3(QUANT_MAX)); */
+	    /* ilower1 = cselect(int3(m_valid),ilower1,int3(QUANT_MAX)); */
 	    
-	    iupper0.x() = cselect(m_valid,iupper0.x(),QUANT_MIN);
-	    iupper0.y() = cselect(m_valid,iupper0.y(),QUANT_MIN);
-	    iupper0.z() = cselect(m_valid,iupper0.z(),QUANT_MIN);	  
-
-	    iupper1.x() = cselect(m_valid,iupper1.x(),QUANT_MIN);
-	    iupper1.y() = cselect(m_valid,iupper1.y(),QUANT_MIN);
-	    iupper1.z() = cselect(m_valid,iupper1.z(),QUANT_MIN);	  
+	    /* iupper0 = cselect(int3(m_valid),iupper0,int3(QUANT_MIN)); */
+	    /* iupper1 = cselect(int3(m_valid),iupper1,int3(QUANT_MIN)); */
 	    	    
 	    res.lower_x0[i] = ilower0.x();
 	    res.lower_y0[i] = ilower0.y();
@@ -543,18 +527,6 @@ namespace embree
 	return res;
       }
     };
-
-    __forceinline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BVHNodeNMB& node) {
-      for (uint i=0;i<BVH_NODE_N;i++)
-	{
-	  out << " i " << i
-	      << " offset " << (uint)node.offset[i] << " offset " << node.offset[i].getLeafOffset() << " numPrims " << node.offset[i].getNumLeafPrims()	 
-	      << " time (" << node.lower_t[i] << "," << node.upper_t[i] << ") "
-	    << "bounds0 " << node.getBounds0(i) << " bounds1 " << node.getBounds1(i) << cl::sycl::endl;
-	}      
-      return out; 
-    }
-    
 
     /* =============================================================================== */
     /* ============================== NODE INTERSECTION =============================== */

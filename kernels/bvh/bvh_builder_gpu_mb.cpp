@@ -648,7 +648,7 @@ namespace embree
 	      {
 		assert(refs[i] != BVH::invalidNode);
 		assert(refs[i] != BVH::emptyNode);
-DBG(		
+
 		PRINT(i);
 		PRINT(bvh_node.offset[i]);		
 		PRINT(refs[i]);
@@ -656,18 +656,20 @@ DBG(
 		PRINT(bvh_node.lower_t[i]);
 		PRINT(bvh_node.upper_t[i]);	   
 		PRINT(bvh_node.lower_x[i]);
-		PRINT(bvh_node.upper_x[i]);
 		PRINT(bvh_node.lower_y[i]);
-		PRINT(bvh_node.upper_y[i]);
 		PRINT(bvh_node.lower_z[i]);
+		PRINT(bvh_node.upper_x[i]);
+		PRINT(bvh_node.upper_y[i]);		
 		PRINT(bvh_node.upper_z[i]);
-		PRINT(bvh_node.lower_dx[i]);
-		PRINT(bvh_node.upper_dx[i]);
-		PRINT(bvh_node.lower_dy[i]);
-		PRINT(bvh_node.upper_dy[i]);
-		PRINT(bvh_node.lower_dz[i]);
-		PRINT(bvh_node.upper_dz[i]);
-		);
+		
+		PRINT(bvh_node.lower_x[i]+bvh_node.lower_dx[i]);		
+		PRINT(bvh_node.lower_y[i]+bvh_node.lower_dy[i]);
+		PRINT(bvh_node.lower_z[i]+bvh_node.lower_dz[i]);
+		
+		PRINT(bvh_node.upper_x[i]+bvh_node.upper_dx[i]);		
+		PRINT(bvh_node.upper_y[i]+bvh_node.upper_dy[i]);
+		PRINT(bvh_node.upper_z[i]+bvh_node.upper_dz[i]);
+
 		assert(!std::isnan( bvh_node.lower_t[i] ));
 		assert(!std::isnan( bvh_node.upper_t[i] ));
 		assert(!std::isnan( bvh_node.lower_x[i] ));
@@ -687,6 +689,48 @@ DBG(
 
 	    /* convert to compressed layout */
 	    *gpu_node = bvh_node.convert();
+
+	    PING;
+	    
+	    PRINT(gpu_node->org0.x());
+	    PRINT(gpu_node->org0.y());
+	    PRINT(gpu_node->org0.z());
+
+	    PRINT(gpu_node->scale0.x());
+	    PRINT(gpu_node->scale0.y());
+	    PRINT(gpu_node->scale0.z());
+	    
+	    PRINT(gpu_node->org1.x());
+	    PRINT(gpu_node->org1.y());
+	    PRINT(gpu_node->org1.z());
+
+	    PRINT(gpu_node->scale1.x());
+	    PRINT(gpu_node->scale1.y());
+	    PRINT(gpu_node->scale1.z());
+	    
+	    for (size_t i=0;i<slots;i++)
+	      {
+		PRINT(i);
+		PRINT(gpu_node->offset[i]);
+		PRINT(gpu_node->lower_t[i]);
+		PRINT(gpu_node->upper_t[i]);		
+		const gpu::AABB bounds0 = gpu_node->getBounds0(i);
+		const gpu::AABB bounds1 = gpu_node->getBounds1(i);
+		PRINT(bounds0.lower.x());
+		PRINT(bounds0.lower.y());
+		PRINT(bounds0.lower.z());
+		PRINT(bounds0.upper.x());
+		PRINT(bounds0.upper.y());
+		PRINT(bounds0.upper.z());
+
+		PRINT(bounds1.lower.x());
+		PRINT(bounds1.lower.y());
+		PRINT(bounds1.lower.z());
+		PRINT(bounds1.upper.x());
+		PRINT(bounds1.upper.y());
+		PRINT(bounds1.upper.z());
+		
+	      };
 	    
 	    for (size_t i=0;i<slots;i++)
 	      if (refs[i] != BVH::invalidNode && refs[i] != BVH::emptyNode)
@@ -763,7 +807,7 @@ DBG(
 	assert(gpu_leaf_allocator.load() <= leafPrimitives);
 
 	scene->gpu_bvh_mb_root = (size_t)bvh_mem;
-	exit(0);
+	//exit(0);
 #endif	
 
       }
