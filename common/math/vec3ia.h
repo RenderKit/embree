@@ -21,7 +21,7 @@
 
 #if defined(EMBREE_SYCL_SIMD_LIBRARY) && defined(__SYCL_DEVICE_ONLY__)
 
-#include "vec3fa_sycl.h"
+#include "vec3ia_sycl.h"
 
 #else
 

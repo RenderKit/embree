@@ -61,7 +61,7 @@ namespace embree
     //__forceinline Vec3fa( const float x, const float y, const float z, const unsigned a) : x(x), y(y), z(z), u(a) {} // not working properly!
     __forceinline Vec3fa( const float x, const float y, const float z, const float w) : x(x), y(y), z(z), w(w) {}
 
-    //__forceinline explicit Vec3fa( const __m128i a ) : m128(_mm_cvtepi32_ps(a)) {}
+    __forceinline explicit Vec3fa( const Vec3ia& a ) : x((float)a.x), y((float)a.y), z((float)a.z), w(0.0f) {}
 
     //__forceinline operator const __m128&() const { return m128; }
     //__forceinline operator       __m128&()       { return m128; }
@@ -129,13 +129,13 @@ namespace embree
   __forceinline Vec3fa rcp_safe(const Vec3fa& a) {
     return rcp(zero_fix(a));
   }
-  //__forceinline Vec3fa log ( const Vec3fa& a ) {
-  //  return Vec3fa(logf(a.x),logf(a.y),logf(a.z));
-  //}
+  __forceinline Vec3fa log ( const Vec3fa& a ) {
+    return Vec3fa(cl::sycl::log(a.x),cl::sycl::log(a.y),cl::sycl::log(a.z));
+  }
 
-  //__forceinline Vec3fa exp ( const Vec3fa& a ) {
-  //  return Vec3fa(expf(a.x),expf(a.y),expf(a.z));
-  //}
+  __forceinline Vec3fa exp ( const Vec3fa& a ) {
+    return Vec3fa(cl::sycl::exp(a.x),cl::sycl::exp(a.y),cl::sycl::exp(a.z));
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Binary Operators

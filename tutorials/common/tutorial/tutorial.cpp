@@ -35,11 +35,16 @@
 #include "../scenegraph/xml_loader.h"
 #include "../image/image.h"
 
+#include <CL/sycl.hpp>
+
 namespace embree
 {
   extern "C"
   {
     RTCDevice g_device = nullptr;
+
+    cl::sycl::queue   *g_gpu_queue = nullptr;
+    cl::sycl::device  *g_gpu_device = nullptr;
     
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
@@ -1122,6 +1127,36 @@ namespace embree
     }
   }
 
+  class NEOGPUDeviceSelector : public cl::sycl::device_selector {
+  public:
+    int operator()(const cl::sycl::device &Device) const override {
+      using namespace cl::sycl::info;
+
+      const std::string DeviceName = Device.get_info<device::name>();
+      const std::string DeviceVendor = Device.get_info<device::vendor>();      
+      return Device.is_gpu() && DeviceName.find("HD Graphics NEO") ? 1 : -1;
+    }
+  };
+
+  class CPUDeviceSelector : public cl::sycl::device_selector {
+  public:
+    int operator()(const cl::sycl::device &Device) const override {
+      return Device.is_cpu() ? 1 : -1;
+    }
+  };
+
+  auto exception_handler = [] (cl::sycl::exception_list exceptions) {
+    for (std::exception_ptr const& e : exceptions) {
+      try {
+	std::rethrow_exception(e);
+      } catch(cl::sycl::exception const& e) {
+	std::cout << "Caught asynchronous SYCL exception:\n"
+	<< e.what() << std::endl;
+	FATAL("OpenCL Exception");	
+      }
+    }
+  };
+
   int TutorialApplication::main(int argc, char** argv) try
   {
     /* parse command line options */
@@ -1130,10 +1165,19 @@ namespace embree
     /* callback */
     postParseCommandLine();
 
-    /* create device */
-    g_device = rtcNewDevice(rtcore.c_str());
-    error_handler(nullptr,rtcGetDeviceError(g_device));
-
+    if (features & FEATURE_SYCL)
+    {
+      g_gpu_device = new cl::sycl::device(NEOGPUDeviceSelector());
+      g_gpu_queue = new cl::sycl::queue(NEOGPUDeviceSelector(), exception_handler);
+      g_device = rtcNewDeviceGPU(rtcore.c_str(),g_gpu_device,g_gpu_queue);
+    }
+    else
+    {
+      /* create device */
+      g_device = rtcNewDevice(rtcore.c_str());
+      error_handler(nullptr,rtcGetDeviceError(g_device));
+    }
+    
     /* set error handler */
     rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
   

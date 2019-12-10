@@ -17,8 +17,8 @@
 INCLUDE(tutorial)
 ADD_TUTORIAL(triangle_geometry)
 ADD_TUTORIAL_ISPC(triangle_geometry)
+ADD_TUTORIAL_SYCL(triangle_geometry)
 
 IF (EMBREE_TESTING_INTENSITY GREATER 0)
   ADD_EMBREE_TEST(triangle_geometry)
 ENDIF()
-

@@ -18,6 +18,10 @@
 
 #include "rtcore_device.h"
 
+#if defined(__cplusplus)
+#include <CL/sycl.hpp>
+#endif
+
 RTC_NAMESPACE_BEGIN
   
 /* Forward declarations for ray structures */
@@ -124,6 +128,11 @@ RTC_API void rtcIntersectNM(RTCScene scene, struct RTCIntersectContext* context,
 /* Intersects a stream of M ray packets of size N in SOA format with the scene. */
 RTC_API void rtcIntersectNp(RTCScene scene, struct RTCIntersectContext* context, const struct RTCRayHitNp* rayhit, unsigned int N);
 
+/* SYCL rtcIntersect interface */
+#if defined(__cplusplus)
+[[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL void rtcIntersectSYCL(cl::sycl::intel::sub_group& sg, cl::sycl::global_ptr<RTCSceneTy> scene, struct RTCRayHit& rayhit);
+#endif
+
 /* Tests a single ray for occlusion with the scene. */
 RTC_API void rtcOccluded1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray);
 
@@ -154,15 +163,6 @@ RTC_API void rtcOccludedNp(RTCScene scene, struct RTCIntersectContext* context, 
 inline RTCSceneFlags operator|(RTCSceneFlags a, RTCSceneFlags b) {
   return (RTCSceneFlags)((size_t)a | (size_t)b);
 }
-
-#endif
-
-#if 0 // defined(EMBREE_DPCPP_SUPPORT)
-
-/* Intersects a single ray with the scene. */
-//void rtcIntersectGPU(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit);
-
-[[intel::device_indirectly_callable]] void rtcIntersectGPU(struct RTCRayHit* rayhit);
 
 #endif
 

@@ -26,7 +26,8 @@ namespace embree
       start_time(getSeconds()),
       last_time(start_time),
       last_virtual_memory(0),
-      last_resident_memory(0)
+      last_resident_memory(0),
+      features((Features)features)
   {
     if (instance)
       throw std::runtime_error("internal error: applicaton already created");
