@@ -41,9 +41,13 @@ namespace embree
       ////////////////////////////////////////////////////////////////////////////////
 
       __forceinline AffineSpaceT           ( )                           { }
+#if !defined(__SYCL_DEVICE_ONLY__) // FIXME: workaround for SYCL bug
       __forceinline AffineSpaceT           ( const AffineSpaceT& other ) { l = other.l; p = other.p; }
+#endif
       __forceinline AffineSpaceT           ( const L           & other ) { l = other  ; p = VectorT(zero); }
+#if !defined(__SYCL_DEVICE_ONLY__) // FIXME: workaround for SYCL bug
       __forceinline AffineSpaceT& operator=( const AffineSpaceT& other ) { l = other.l; p = other.p; return *this; }
+#endif
 
       __forceinline AffineSpaceT( const VectorT& vx, const VectorT& vy, const VectorT& vz, const VectorT& p ) : l(vx,vy,vz), p(p) {}
       __forceinline AffineSpaceT( const L& l, const VectorT& p ) : l(l), p(p) {}

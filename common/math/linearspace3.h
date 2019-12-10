@@ -32,8 +32,11 @@ namespace embree
 
     /*! default matrix constructor */
     __forceinline LinearSpace3           ( ) {}
+
+#if !defined(__SYCL_DEVICE_ONLY__)  // FIXME: workaround for SYCL bug
     __forceinline LinearSpace3           ( const LinearSpace3& other ) { vx = other.vx; vy = other.vy; vz = other.vz; }
     __forceinline LinearSpace3& operator=( const LinearSpace3& other ) { vx = other.vx; vy = other.vy; vz = other.vz; return *this; }
+#endif
 
     template<typename L1> __forceinline LinearSpace3( const LinearSpace3<L1>& s ) : vx(s.vx), vy(s.vy), vz(s.vz) {}
 

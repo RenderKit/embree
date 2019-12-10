@@ -691,14 +691,14 @@ struct pointer_performance_issue_test : public Test
   }
 };
 
-struct MyVec3fa
+struct MyVec3f
 {
-  float x,y,z,w;
+  float x,y,z;
 
-  __forceinline MyVec3fa () {}
+  __forceinline MyVec3f () {}
 
-  __forceinline MyVec3fa ( const MyVec3fa& other ) {
-    x = other.x; y = other.y; z = other.z; w = other.w;
+  __forceinline MyVec3f ( const MyVec3f& other ) { // disabling copy constructor lets test pass !
+    x = other.x; y = other.y; z = other.z;
   }
 };
 
@@ -712,7 +712,7 @@ struct copy_constructor_bug_test : public Test
     cl::sycl::float3* a = (cl::sycl::float3*) cl::sycl::aligned_alloc(64,sizeof(cl::sycl::float3),device,context,cl::sycl::usm::alloc::shared);
     a->x() = a->y() = a->z() = 0;
     
-    MyVec3fa vx;
+    MyVec3f vx;
     vx.x = 1.0f;
     vx.y = 2.0f;
     vx.z = 3.0f;

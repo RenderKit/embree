@@ -28,14 +28,14 @@
 
 namespace embree {
 
-  extern "C" cl::sycl::queue   *g_gpu_queue;
-  extern "C" cl::sycl::device  *g_gpu_device;
+  extern cl::sycl::queue   *global_gpu_queue;
+  extern cl::sycl::device  *global_gpu_device;
 
 #define alignedMalloc(size,align) \
-  cl::sycl::aligned_alloc(align,size,*g_gpu_queue,cl::sycl::usm::alloc::shared)
+  cl::sycl::aligned_alloc(align,size,*global_gpu_queue,cl::sycl::usm::alloc::shared)
   
 #define alignedFree(ptr) \
-  cl::sycl::free(ptr,*g_gpu_queue)
+  cl::sycl::free(ptr,*global_gpu_queue)
   
 /* scene data */
 RTCScene g_scene = nullptr;
@@ -145,26 +145,40 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(cl::sycl::intel::sub_group sg, float x, float y, const ISPCCamera& camera, RTCScene scene) //, RayStats& stats)
+Vec3fa renderPixelStandard(cl::sycl::intel::sub_group sg, float x, float y, const ISPCCamera camera, RTCScene scene) //, RayStats& stats)
 {
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
+  //RTCIntersectContext context;
+  //rtcInitIntersectContext(&context);
   
   /* initialize ray */
-  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, INFINITY);
+  Vec3fa dir = normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz);
+  //Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, INFINITY, 0.0f);
+
+  RTCRayHit rh;
+  rh.ray.org_x = camera.xfm.p.x;
+  rh.ray.org_y = camera.xfm.p.y;
+  rh.ray.org_z = camera.xfm.p.z;
+  rh.ray.tnear = 0.0f;
+  rh.ray.dir_x = dir.x;
+  rh.ray.dir_y = dir.y;
+  rh.ray.dir_z = dir.z;
+  rh.ray.time  = 0.0f;
+  rh.ray.tfar  = (float)INFINITY;		
+  rh.hit.primID = 0;
+  rh.hit.geomID = RTC_INVALID_GEOMETRY_ID;
 
   /* intersect ray with scene */
   //&context,
-  RTCRayHit* rh = (RTCRayHit*) &ray;
-  rtcIntersectSYCL(sg,scene,*rh);//RTCRayHit_(ray));
+  //RTCRayHit* rh = (RTCRayHit*) &ray;
+  rtcIntersectSYCL(sg,scene,rh);//RTCRayHit_(ray));
   //RayStats_addRay(stats);
 
   /* shade pixels */
   Vec3fa color = Vec3fa(0.0f);
-  if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
+  if (rh.hit.geomID != RTC_INVALID_GEOMETRY_ID)
   {
 #if 1
-    color = Vec3fa(ray.u, ray.v, 1.0f-ray.u-ray.v);
+    color = Vec3fa(rh.hit.u, rh.hit.v, 1.0f-rh.hit.u-rh.hit.v);
 #else
     Vec3fa diffuse = face_colors[ray.primID];
     color = color + diffuse*0.5f;
@@ -237,24 +251,35 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
+  /* allocate temporary USM frame buffer */  
+  int *fb = (int*)cl::sycl::aligned_alloc(64,sizeof(int)*width*height,*global_gpu_device,global_gpu_queue->get_context(),cl::sycl::usm::alloc::shared);
+  assert(fb);
+ 
   RTCScene scene = g_scene;
-  g_gpu_queue->submit([&](cl::sycl::handler& cgh) {
-      const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(width,height),cl::sycl::range<2>(16,1));	
+  global_gpu_queue->submit([=](cl::sycl::handler& cgh) {
+      const cl::sycl::nd_range<2> nd_range(cl::sycl::range<2>(width,height),cl::sycl::range<2>(16,1));
       cgh.parallel_for<class renderloop>(nd_range,[=](cl::sycl::nd_item<2> item) {
           cl::sycl::intel::sub_group sg = item.get_sub_group();
           const uint x = item.get_global_id(0);
           const uint y = item.get_global_id(1);
+
           const Vec3fa color = renderPixelStandard(sg,(float)x,(float)y,camera,scene); //,stats);
           
           /* write color to framebuffer */
           unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
           unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
           unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-          pixels[y*width+x] = (b << 16) + (g << 8) + r;
+          fb[y*width+x] = (b << 16) + (g << 8) + r;
         });
     });
 
-  g_gpu_queue->wait_and_throw();
+  global_gpu_queue->wait_and_throw();
+  
+  /* copy to real framebuffer */
+  memcpy(pixels,fb,sizeof(int)*width*height);
+  
+  /* free USM allocated temporary framebuffer */  
+  cl::sycl::free(fb,global_gpu_queue->get_context());
 }
 
 /* called by the C++ code for cleanup */

@@ -39,13 +39,13 @@
 
 namespace embree
 {
+  extern cl::sycl::queue   *global_gpu_queue;
+  extern cl::sycl::device  *global_gpu_device;
+  
   extern "C"
   {
     RTCDevice g_device = nullptr;
 
-    cl::sycl::queue   *g_gpu_queue = nullptr;
-    cl::sycl::device  *g_gpu_device = nullptr;
-    
     float g_debug = 0.0f;
     Mode g_mode = MODE_NORMAL;
     ISPCScene* g_ispc_scene = nullptr;
@@ -1167,9 +1167,9 @@ namespace embree
 
     if (features & FEATURE_SYCL)
     {
-      g_gpu_device = new cl::sycl::device(NEOGPUDeviceSelector());
-      g_gpu_queue = new cl::sycl::queue(NEOGPUDeviceSelector(), exception_handler);
-      g_device = rtcNewDeviceGPU(rtcore.c_str(),g_gpu_device,g_gpu_queue);
+      global_gpu_device = new cl::sycl::device(NEOGPUDeviceSelector());
+      global_gpu_queue = new cl::sycl::queue(NEOGPUDeviceSelector(), exception_handler);
+      g_device = rtcNewDeviceGPU(rtcore.c_str(),global_gpu_device,global_gpu_queue);
     }
     else
     {
