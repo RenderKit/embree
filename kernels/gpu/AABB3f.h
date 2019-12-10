@@ -44,7 +44,7 @@ namespace embree
 	upper = (float3)(neg_inf);
       }
       
-      __forceinline void extend(class AABB3f &aabb)
+      __forceinline void extend(const class AABB3f &aabb)
       {
 	lower = min(lower,aabb.lower);
 	upper = max(upper,aabb.upper);	

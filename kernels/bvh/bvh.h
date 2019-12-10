@@ -935,8 +935,10 @@ namespace embree
           const BBox3fa b0 = n.bounds0(i);
           const BBox3fa b1 = n.bounds1(i);
           cout << "  child" << i << " " << n.child(i) << " { " << std::endl;
-          cout << "    bounds0 = " << lerp(b0,b1,n.lower_t[i]) << ", " << std::endl;
-          cout << "    bounds1 = " << lerp(b0,b1,n.upper_t[i]) << ", " << std::endl;
+          /* cout << "    bounds0 = " << lerp(b0,b1,n.lower_t[i]) << ", " << std::endl; */
+          /* cout << "    bounds1 = " << lerp(b0,b1,n.upper_t[i]) << ", " << std::endl; */
+          cout << "    bounds0 = " << b0 << ", " << std::endl;
+          cout << "    bounds1 = " << b1 << ", " << std::endl;	  
           cout << "    time_bounds = " << n.lower_t[i] << ", " << n.upper_t[i] << std::endl;
           cout << "  }";
         }

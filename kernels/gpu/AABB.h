@@ -33,8 +33,10 @@ namespace embree
       AABB(const AABB &aabb) : lower(aabb.lower),upper(aabb.upper) {} 
 
       AABB(const float4 &v) : lower(v),upper(v) {}
-      
-      inline void init()
+
+      __forceinline AABB(const float4 &lower, const float4 &upper) : lower(lower),upper(upper) {}
+
+      __forceinline void init()
       {
 	const float pos_inf =  INFINITY;
 	const float neg_inf = -INFINITY;
@@ -42,35 +44,35 @@ namespace embree
 	upper = float4(neg_inf,neg_inf,neg_inf,0.0f);	
       }
       
-      inline void extend(const AABB &aabb)
+      __forceinline void extend(const AABB &aabb)
       {
 	lower = min(lower,aabb.lower);
 	upper = max(upper,aabb.upper);	
       }
 
-      inline void extend(const float4 &v)
+      __forceinline void extend(const float4 &v)
       {
 	lower = min(lower,v);
 	upper = max(upper,v);	
       }
       
-      inline void enlarge(const float4 &v)
+      __forceinline void enlarge(const float4 &v)
       {
 	lower -= v;
 	upper += v;	
       }
 
-      inline float4 size() const
+      __forceinline float4 size() const
       {
 	return upper - lower;
       }
 
-      inline float4 centroid2() const
+      __forceinline float4 centroid2() const
       {
 	return upper + lower;
       }
 
-      inline void atomic_merge_global(AABB &dest) const
+      __forceinline void atomic_merge_global(AABB &dest) const
       {
 	atomic_min(((volatile GLOBAL float *)&dest) + 0,lower.x());
 	atomic_min(((volatile GLOBAL float *)&dest) + 1,lower.y());
@@ -81,7 +83,7 @@ namespace embree
 	atomic_max(((volatile GLOBAL float *)&dest) + 6,upper.z());	
       }
 
-      inline void atomic_merge_local(AABB &dest) const
+      __forceinline void atomic_merge_local(AABB &dest) const
       {
 	atomic_min(((volatile LOCAL float *)&dest) + 0,lower.x());
 	atomic_min(((volatile LOCAL float *)&dest) + 1,lower.y());
@@ -92,7 +94,7 @@ namespace embree
 	atomic_max(((volatile LOCAL float *)&dest) + 6,upper.z());	
       }
       
-      inline AABB sub_group_reduce(const cl::sycl::intel::sub_group& sg) const
+      __forceinline AABB sub_group_reduce(const cl::sycl::intel::sub_group& sg) const
       {
 	AABB result;
 	result.lower.x() = sg.reduce<float>(lower.x(), cl::sycl::intel::minimum<float>());
@@ -106,7 +108,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB sub_group_shuffle(const cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
+      __forceinline AABB sub_group_shuffle(const cl::sycl::intel::sub_group& sg, const cl::sycl::id<1> &localID) const
       {
 	AABB result;
 	result.lower.x() = sg.shuffle<float>(lower.x(),localID);
@@ -120,7 +122,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB sub_group_scan_exclusive_min_max(const cl::sycl::intel::sub_group& sg) const
+      __forceinline AABB sub_group_scan_exclusive_min_max(const cl::sycl::intel::sub_group& sg) const
       {
 	AABB result;
 	result.lower.x() = sg.exclusive_scan<float>(lower.x(), cl::sycl::intel::minimum<float>());
@@ -134,7 +136,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB sub_group_scan_inclusive_min_max(const cl::sycl::intel::sub_group& sg) const 
+      __forceinline AABB sub_group_scan_inclusive_min_max(const cl::sycl::intel::sub_group& sg) const 
       {
 	AABB result;
 	result.lower.x() = sg.inclusive_scan<float>(lower.x(), cl::sycl::intel::minimum<float>());
@@ -148,7 +150,7 @@ namespace embree
 	return result;	
       }
 
-      inline AABB work_group_reduce() const
+      __forceinline AABB work_group_reduce() const
       {
 	AABB result;
 	result.lower.x() = work_group_reduce_min(lower.x());
@@ -162,12 +164,12 @@ namespace embree
 	return result;	
       }
 
-      inline float     area() { return gpu::area(size()); }
-      inline float halfArea() { return gpu::halfarea(size()); }      
+      __forceinline float     area() { return gpu::area(size()); }
+      __forceinline float halfArea() { return gpu::halfarea(size()); }      
 	
     };
 
-    inline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB& aabb) {
+    __forceinline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const AABB& aabb) {
       return out << "lower " << (float3)aabb.lower.xyz() << " " << as_int((float)aabb.lower.w()) << "  upper " << (float3)aabb.upper.xyz() << " " << as_int((float)aabb.upper.w());
     }    
 
