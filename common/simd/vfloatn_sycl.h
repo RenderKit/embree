@@ -93,7 +93,7 @@ namespace embree
     static __forceinline vfloat<N> load (const void* a)
     {
       if (N == 16) {
-        return vfloat<N>(__spirv_SubgroupBlockReadINTEL<float>((const __attribute__((ocl_global)) uint32_t*) a));
+        return vfloat<N>(__spirv_SubgroupBlockReadINTEL<float>((const __attribute__((opencl_global)) uint32_t*) a));
       } else {
         return ((float*)a)[vfloat<N>::sgid()];
       }
@@ -106,7 +106,7 @@ namespace embree
     static __forceinline void store (void* ptr, const vfloat<N>& v)
     {
       if (N == 16) {
-        __spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((ocl_global)) uint32_t*) ptr, *(uint32_t*)&v.v);
+	__spirv_SubgroupBlockWriteINTEL<uint32_t>((__attribute__((opencl_global)) uint32_t*) ptr, *(uint32_t*)&v.v);
       } else {
         const uint lid = __spirv_BuiltInSubgroupLocalInvocationId;
         if (lid < N) ((float*)ptr)[lid] = v.v;

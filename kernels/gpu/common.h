@@ -23,8 +23,8 @@
 
 
 #ifdef __SYCL_DEVICE_ONLY__
-#define GLOBAL __attribute__((ocl_global))
-#define LOCAL  __attribute__((ocl_local))
+#define GLOBAL __attribute__((opencl_global))
+#define LOCAL  __attribute__((opencl_local))
 
 extern int   work_group_reduce_add(int x);
 extern float work_group_reduce_min(float x);
