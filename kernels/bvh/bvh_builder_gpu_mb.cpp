@@ -217,8 +217,8 @@ namespace embree
 
       inline size_t convertToQBVHNodeNMB16(gpu::QBVHNodeNMB *gpu_node, AlignedNodeMB *n, NodeRef *refs, const size_t index_output, const size_t index_input, const float time0, const float time1)
       {
-	refs[index_output] = n->child(index_input);	    	
 	if (n->child(index_input) == BVH::emptyNode) return 0;
+	refs[index_output] = n->child(index_input);	    	
 		    
 	gpu_node->offset[index_output]   = 0;
 	gpu_node->lower_t[index_output]  = time0;
@@ -254,8 +254,8 @@ namespace embree
 
       inline size_t convertToQBVHNodeNMB16(gpu::QBVHNodeNMB *gpu_node, AlignedNodeMB4D *n, NodeRef *refs, const size_t index_output, const size_t index_input)
       {
-	refs[index_output] = n->child(index_input);	    	
 	if (n->child(index_input) == BVH::emptyNode) return 0;
+	refs[index_output] = n->child(index_input);	    	
 		    
 	gpu_node->offset[index_output]   = 0;
 	gpu_node->lower_t[index_output]  = n->lower_t[index_input];
@@ -600,7 +600,6 @@ namespace embree
 		      }
 		    else if (child.isLeaf())
 		      {
-#if 1
 			DBG(
 			    PRINT("direct leaf");
 			    PRINT(slots);
@@ -623,7 +622,6 @@ namespace embree
 			  }
 			else 
 			  throw std::runtime_error("not supported node type in bvh mb conversion");
-#endif			
 		      }
 		    else 
 		      throw std::runtime_error("not supported node type in bvh mb conversion");
@@ -746,7 +744,9 @@ DBG(
 
 	//convertToGPULayout(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator);
 	convertToGPULayout16(bvh->root,bvh_mem,(gpu::Triangle1vMB*)(bvh_mem+leaf_data_start),0,0,gpu_node_allocator,gpu_leaf_allocator);
-       
+
+	PRINT(sizeof(gpu::QBVHNodeNMB));
+	
 	if (unlikely(deviceGPU->verbosity(2)))
 	  {
 	    PRINT(gpu_node_allocator.load());	    

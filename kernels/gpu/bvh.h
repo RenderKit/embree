@@ -234,6 +234,84 @@ namespace embree
 
 
     /* =========================================================================== */
+    /* ============================== BVH NODE MB =============================== */
+    /* =========================================================================== */
+
+    struct BVHNodeNMB
+    {              
+      NodeRef offset[BVH_NODE_N];
+      float lower_t[BVH_NODE_N];
+      float upper_t[BVH_NODE_N];             
+      float lower_x[BVH_NODE_N]; 
+      float upper_x[BVH_NODE_N]; 
+      float lower_y[BVH_NODE_N]; 
+      float upper_y[BVH_NODE_N]; 
+      float lower_z[BVH_NODE_N]; 
+      float upper_z[BVH_NODE_N];      
+      float lower_dx[BVH_NODE_N]; 
+      float upper_dx[BVH_NODE_N]; 
+      float lower_dy[BVH_NODE_N]; 
+      float upper_dy[BVH_NODE_N]; 
+      float lower_dz[BVH_NODE_N]; 
+      float upper_dz[BVH_NODE_N];
+
+      __forceinline AABB3f bounds0(size_t i) const {
+	AABB3f b( float3(lower_x[i],lower_y[i],lower_z[i]),
+		  float3(upper_x[i],upper_y[i],upper_z[i]) );
+	return b;
+      }
+
+      __forceinline AABB3f bounds1(size_t i) const {
+	AABB3f b( float3(lower_x[i]+lower_dx[i],lower_y[i]+lower_dy[i],lower_z[i]+lower_dz[i]),
+		  float3(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]) );
+	return b;
+      }
+
+      __forceinline AABB3f bounds_lower(size_t i) const {
+	const AABB3f b0 = bounds0(i);
+	const AABB3f b1 = bounds1(i);
+	const float t = lower_t[i];
+	const float3 lower = gpu::lerp<float3>(b0.lower,b1.lower,t);
+	const float3 upper = gpu::lerp<float3>(b0.upper,b1.upper,t);
+	return AABB3f( lower, upper );
+      }
+
+      __forceinline AABB3f bounds_upper(size_t i) const {
+	const AABB3f b0 = bounds0(i);
+	const AABB3f b1 = bounds1(i);
+	const float t = upper_t[i];
+	const float3 lower = gpu::lerp<float3>(b0.lower,b1.lower,t);
+	const float3 upper = gpu::lerp<float3>(b0.upper,b1.upper,t);
+	return AABB3f( lower, upper );
+      }
+      
+      __forceinline void clear()
+      {
+	for (size_t i=0;i<BVH_NODE_N;i++)
+	  {
+	    offset[i] = BVH_INVALID_NODE_REF;
+	    lower_t[i] = 1.0f;
+	    upper_t[i] = 0.0f;	    	    
+	    lower_x[i] = lower_y[i] = lower_z[i] = pos_inf;
+	    upper_x[i] = upper_y[i] = upper_z[i] = neg_inf;
+	    lower_dx[i] = lower_dy[i] = lower_dz[i] = pos_inf;
+	    upper_dx[i] = upper_dy[i] = upper_dz[i] = neg_inf;	    
+	  }
+      }
+    };
+
+    __forceinline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const BVHNodeNMB& node) {
+      for (uint i=0;i<BVH_NODE_N;i++)
+	{
+	  out << " i " << i
+	      << " offset " << (uint)node.offset[i] << " offset " << node.offset[i].getLeafOffset() << " numPrims " << node.offset[i].getNumLeafPrims()	 
+	      << " time (" << node.lower_t[i] << "," << node.upper_t[i] << ") "
+	    << "bounds0 " << node.bounds0(i) << " bounds1 " << node.bounds1(i) << cl::sycl::endl;
+	}      
+      return out; 
+    }
+    
+    /* =========================================================================== */
     /* ============================== QBVH NODE MB =============================== */
     /* =========================================================================== */
 
@@ -299,6 +377,7 @@ namespace embree
 	  }
       }
     };
+    
 
     __forceinline const cl::sycl::stream &operator<<(const cl::sycl::stream &out, const QBVHNodeNMB& node) {
       for (uint i=0;i<BVH_NODE_N;i++)
@@ -309,7 +388,8 @@ namespace embree
 	    << "bounds0 " << node.bounds0(i) << " bounds1 " << node.bounds1(i) << cl::sycl::endl;
 	}      
       return out; 
-    }    
+    }
+    
 
     /* =============================================================================== */
     /* ============================== NODE INTERSECTION =============================== */
