@@ -25,12 +25,12 @@
 
 [[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL void rtcIntersectSYCL(cl::sycl::intel::sub_group &sg,
                                                                           cl::sycl::global_ptr<RTCSceneTy> scene,
-                                                                          struct RTCRayHit &rayhit)
+                                                                          cl::sycl::global_ptr<struct RTCRayHit> rayhit)
 {
   size_t *scene_data = (size_t*)scene.get();
   void *bvh_root = (void*)scene_data[2]; // root node is at 16 bytes offset    
-  embree::gpu::RTCRayGPU &ray = *(embree::gpu::RTCRayGPU*)&rayhit.ray;
-  embree::gpu::RTCHitGPU &hit = *(embree::gpu::RTCHitGPU*)&rayhit.hit;
+  embree::gpu::RTCRayGPU &ray = *(embree::gpu::RTCRayGPU*)&rayhit->ray;
+  embree::gpu::RTCHitGPU &hit = *(embree::gpu::RTCHitGPU*)&rayhit->hit;
   uint m_active = intel_sub_group_ballot(true);
   embree::traceRayBVH16<embree::gpu::QBVHNodeN,embree::gpu::Triangle1v>(sg,m_active,ray,hit,bvh_root,nullptr);
 }

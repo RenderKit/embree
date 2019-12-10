@@ -154,9 +154,7 @@ Vec3fa renderPixelStandard(cl::sycl::intel::sub_group sg, float x, float y, cons
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, INFINITY, 0.0f);
 
   /* intersect ray with scene */
-  //&context,
-  RTCRayHit* rh = (RTCRayHit*) &ray;
-  rtcIntersectSYCL(sg,scene,*rh);
+  rtcIntersectSYCL(sg,scene,/*&context,*/RTCRayHit_(ray));
   //RayStats_addRay(stats);
 
   /* shade pixels */

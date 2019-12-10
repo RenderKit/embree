@@ -130,7 +130,7 @@ RTC_API void rtcIntersectNp(RTCScene scene, struct RTCIntersectContext* context,
 
 /* SYCL rtcIntersect interface */
 #if defined(__cplusplus)
-[[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL void rtcIntersectSYCL(cl::sycl::intel::sub_group& sg, cl::sycl::global_ptr<RTCSceneTy> scene, struct RTCRayHit& rayhit);
+[[cl::intel_reqd_sub_group_size(16)]] SYCL_EXTERNAL void rtcIntersectSYCL(cl::sycl::intel::sub_group& sg, cl::sycl::global_ptr<RTCSceneTy> scene, cl::sycl::global_ptr<struct RTCRayHit> rayhit);
 #endif
 
 /* Tests a single ray for occlusion with the scene. */
