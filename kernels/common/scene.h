@@ -217,7 +217,7 @@ namespace embree
       
       auto geometryIsModified = [this](size_t i)->bool { 
         auto g = geometries[i];
-        return (g && g->isEnabled ()) ? g->getModCounter() > geometryModCounters_[i] : false; 
+        return (g && g->isEnabled ()) ? g->getModCounter() - geometryModCounters_[i] > 0 : false; 
       };
 
       if (parallel_any_of (size_t(0), geometries.size (), geometryIsModified)) {
