@@ -62,7 +62,7 @@ namespace embree
                                                 StackItemT<NodeRef>* stackEnd)
     {
       assert(mask != 0);
-      const BaseNode* node = cur.baseNode(types);
+      const BaseNode* node = cur.baseNode();
 
       vllong8 children( vllong<N>::loadu((void*)node->children) );
       children = vllong8::compact((int)mask,children);
@@ -318,7 +318,7 @@ namespace embree
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<4,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = cur.baseNode();
 
         /*! one child is hit, continue with that child */
         size_t r = bscf(mask);
@@ -403,7 +403,7 @@ namespace embree
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = cur.baseNode();
 
         /*! one child is hit, continue with that child */
         size_t r = bscf(mask);
@@ -445,7 +445,7 @@ namespace embree
                                                               StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-        const BaseNode* node = (types == BVH_FLAG_ALIGNED_NODE) ? cur.alignedNode() : cur.baseNode(types);
+        const BaseNode* node = (types == BVH_FLAG_ALIGNED_NODE) ? cur.alignedNode() : cur.baseNode();
         const vllong4 n0 = vllong4::loadu((vllong4*)&node->children[0]);
         const vllong4 n1 = vllong4::loadu((vllong4*)&node->children[4]);
         vint8 distance_i = (asInt(tNear) & 0xfffffff8) | vint8(step);
@@ -569,7 +569,7 @@ namespace embree
         traverseClosestHitAVX512VL8<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
 
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = cur.baseNode();
 
         /*! one child is hit, continue with that child */
         size_t r = bscf(mask);
@@ -688,7 +688,7 @@ namespace embree
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = cur.baseNode();
 
         /*! one child is hit, continue with that child */
         size_t r = bscf(mask);

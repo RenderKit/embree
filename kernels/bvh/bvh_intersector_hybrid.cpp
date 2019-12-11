@@ -276,7 +276,7 @@ namespace embree
             const vbool<K> valid_node = tray.tfar > curDist;
             STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
-            const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+            const BaseNode* __restrict__ const node = nodeRef.baseNode();
 
             /* set cur to invalid */
             cur = BVH::emptyNode;
@@ -726,7 +726,7 @@ namespace embree
           const vbool<K> valid_node = tray.tfar > curDist;
           STAT3(shadow.trav_nodes, 1, popcnt(valid_node), K);
           const NodeRef nodeRef = cur;
-          const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+          const BaseNode* __restrict__ const node = nodeRef.baseNode();
 
           /* set cur to invalid */
           cur = BVH::emptyNode;
