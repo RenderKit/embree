@@ -217,7 +217,7 @@ namespace embree
       
       auto geometryIsModified = [this](size_t i)->bool { 
         auto g = geometries[i];
-        return (g && g->isEnabled ()) ? g->isModified () : false; 
+        return (g && g->isEnabled ()) ? g->getModCounter() > geometryModCounters_[i] : false; 
       };
 
       if (parallel_any_of (size_t(0), geometries.size (), geometryIsModified)) {
@@ -283,6 +283,7 @@ namespace embree
   public:
     IDPool<unsigned,0xFFFFFFFE> id_pool;
     vector<Ref<Geometry>> geometries; //!< list of all user geometries
+    vector<unsigned int> geometryModCounters_;
     vector<float*> vertices;
     
   public:

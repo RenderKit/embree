@@ -3874,6 +3874,15 @@ namespace embree
   struct SceneCheckModifiedGeometryTest : public VerifyApplication::Test
   {
 	  struct TestScene : public Scene {
+
+		  __forceinline void setGeomCounter(size_t geomID, unsigned int count) {
+			  geometryModCounters_[geomID] = count;
+		  }
+
+		  __forceinline unsigned int getGeomCount(size_t geomID) {
+			  return geometryModCounters_[geomID];
+		  }
+			 
 		  __forceinline void checkIfModifiedAndSet() {
 			  return Scene::checkIfModifiedAndSet();
 		  }
@@ -3912,6 +3921,10 @@ namespace embree
 		  auto geometry2 = (Geometry*) geom2;
 		  auto geometry3 = (Geometry*) geom3;
 
+		  for (size_t geomID = 0; geomID < 4; ++geomID) {
+			  scene0->setGeomCounter(geomID, 1);
+		  }
+
 		  scene0->setModified();
 		  scene0->checkIfModifiedAndSet();
 		  if (!scene0->isModified()) {
@@ -3923,19 +3936,13 @@ namespace embree
 		  geometry1->enable();
 		  geometry2->enable();
 		  geometry3->enable();
-		  geometry0->state = (unsigned)Geometry::State::BUILD;
-		  geometry1->state = (unsigned)Geometry::State::BUILD;
-		  geometry2->state = (unsigned)Geometry::State::BUILD;
-		  geometry3->state = (unsigned)Geometry::State::BUILD;
 		  scene0->checkIfModifiedAndSet();
 		  if (scene0->isModified()) {
 			  return VerifyApplication::FAILED;
 		  }
 
-		  geometry0->state = (unsigned)Geometry::State::BUILD;
-		  geometry1->state = (unsigned)Geometry::State::BUILD;
-		  geometry2->state = (unsigned)Geometry::State::MODIFIED;
-		  geometry3->state = (unsigned)Geometry::State::BUILD;
+		  geometry2->modCounter_ += 2;
+			
 		  scene0->checkIfModifiedAndSet();
 		  if (!scene0->isModified()) {
 			  return VerifyApplication::FAILED;

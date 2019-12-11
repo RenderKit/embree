@@ -620,8 +620,10 @@ namespace embree
     if (geomID >= geometries.size()) {
       geometries.resize(geomID+1);
       vertices.resize(geomID+1);
+      geometryModCounters_.resize(geomID+1);
     }
     geometries[geomID] = geometry->attach(this,geomID);
+    geometryModCounters_[geomID] = 0;
     if (geometry->isEnabled()) {
       setModified ();
     }
@@ -647,6 +649,7 @@ namespace embree
     id_pool.deallocate((unsigned)geomID);
     geometries[geomID] = null;
     vertices[geomID] = nullptr;
+    geometryModCounters_[geomID] = 0;
   }
 
   void Scene::updateInterface()
@@ -723,7 +726,7 @@ namespace embree
     accels_select(hasFilterFunction());
   
     /* build all hierarchies of this scene */
-    accels_build();
+	accels_build();
 
     /* make static geometry immutable */
     if (!isDynamicAccel()) {
@@ -736,6 +739,7 @@ namespace embree
         if (geometries[i] && geometries[i]->isEnabled()) {
           geometries[i]->postCommit();
           vertices[i] = geometries[i]->getCompactVertexArray();
+          geometryModCounters_[i] = geometries[i]->getModCounter();
         }
       });
       

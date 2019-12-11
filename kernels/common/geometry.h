@@ -427,6 +427,11 @@ namespace embree
       return nullptr;
     }
 
+    /*! Returns the modified counter - how many times the geo has been modified */
+    __forceinline unsigned int getModCounter () const {
+      return modCounter_;
+    }
+
     /*! for triangle meshes and bezier curves only */
   public:
 
@@ -558,7 +563,6 @@ namespace embree
     Device* device;             //!< device this geometry belongs to
 
     void* userPtr;              //!< user pointer
-    // unsigned int geomID;        //!< internal geometry ID
     unsigned int numPrimitives; //!< number of primitives of this geometry
     
     unsigned int numTimeSteps;  //!< number of time steps
@@ -566,6 +570,8 @@ namespace embree
     BBox1f time_range;          //!< motion blur time range
     
     unsigned int mask;             //!< for masking out geometry
+    unsigned int modCounter_ = 1; //!< counter for every modification - used to rebuild scenes when geo is modified
+    
     struct {
       GType gtype : 6;                //!< geometry type
       RTCBuildQuality quality : 3;    //!< build quality for geometry

@@ -18,19 +18,19 @@
 
 namespace embree
 {
-  struct Tutorial : public TutorialApplication
-  {
-    Tutorial()
-      : TutorialApplication("multiscene_geometry",FEATURE_RTCORE)
-    {
-      /* set default camera */
-      camera.from = Vec3fa(0.0f, 2.0f, 7.0f);
-      camera.to   = Vec3fa(0.0f,0.0f,0.0f);
-    }
-  };
+	struct Tutorial : public TutorialApplication
+	{
+		Tutorial()
+			: TutorialApplication("dynamic_scene", FEATURE_RTCORE)
+		{
+			/* set start camera */
+			camera.from = Vec3f(2, 2, 2);
+			camera.to = Vec3f(0, 0, 0);
+		}
+	};
 
 }
 
 int main(int argc, char** argv) {
-  return embree::Tutorial().main(argc,argv);
+	return embree::Tutorial().main(argc, argv);
 }
