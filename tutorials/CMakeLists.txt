@@ -80,6 +80,7 @@ ADD_SUBDIRECTORY(curve_geometry)
 ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
 ADD_SUBDIRECTORY(collide)
+ADD_SUBDIRECTORY(collide2)
 
 IF (EMBREE_RAY_PACKETS)
   ADD_SUBDIRECTORY(viewer_stream)
