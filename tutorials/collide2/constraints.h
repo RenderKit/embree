@@ -14,11 +14,16 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once;
+#pragma once
+
+#include <stddef.h>
+#include "../common/tutorial/tutorial_device.h"
 
 namespace embree { namespace collide2 {
 
-class ClothModel;
+float distance (Vertex const & v1, Vertex const & v2);
+
+struct ClothModel;
 
 class Constraint {
 public:
@@ -30,11 +35,9 @@ public:
         bodyIDs_ = new size_t[numConstrainedBodies_];
     }
 
-    virtual ~Constraint () {
-        delete[] bodyIDs_;
-    }
+    virtual ~Constraint () { delete[] bodyIDs_; }
 
-    virtual bool solvePositionConstraint (ClothModel & model, size_t iter) = 0;
+    virtual void solvePositionConstraint (ClothModel & model) = 0;
 
 protected:
 
@@ -50,8 +53,8 @@ public:
         Constraint (2)
     {}
 
-    virtual bool initConstraint (ClothModel & model, size_t p0ID, size_t p1ID);
-    virtual bool solvePositionConstraint (ClothModel & model, size_t iter);
+    virtual void initConstraint             (ClothModel const & model, size_t p0ID, size_t p1ID);
+    virtual void solvePositionConstraint    (ClothModel & model);
 
 protected:
 

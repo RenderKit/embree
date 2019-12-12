@@ -14,39 +14,57 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#pragma once
-
-#include <vector>
-#include "../common/tutorial/tutorial_device.h"
+#include "constraints.h"
+#include "clothModel.h"
 
 namespace embree { namespace collide2 {
 
-using vec_t = Vertex;
+float distance (Vertex const & v1, Vertex const & v2) {
+  return std::sqrt ((v1.x-v2.x)*(v1.x-v2.x)+(v1.y-v2.y)*(v1.y-v2.y)+(v1.z-v2.z)*(v1.z-v2.z));
+}
 
-class Constraint;
+void DistanceConstraint::initConstraint (ClothModel const & model, size_t p0ID, size_t p1ID) {
+    
+    bodyIDs_[0] = p0ID;
+    bodyIDs_[1] = p1ID;
 
-struct ClothModel {
+    auto & x0 = model.x_0_[p0ID];
+    auto & x1 = model.x_0_[p1ID];
 
-    // particle system
-    std::vector<Vertex>         x_;
-    std::vector<Vertex>         x_0_;
-    std::vector<Vertex>         x_old_;
-    std::vector<Vertex>         x_last_;
-    std::vector<vec_t>          v_;
-    std::vector<vec_t>          a_;
-    std::vector<float>          m_;
-    std::vector<float>          m_inv_;
+    rl_ = distance (x1, x0);
+}
 
-    // mesh connectivity
-    std::vector<Triangle>       tris_;
+void DistanceConstraint::solvePositionConstraint (ClothModel & model) {
 
-    // simulation constraints
-    std::vector<Constraint*>    constraints_;
+    auto mi0 = model.m_inv_[bodyIDs_[0]];
+    auto mi1 = model.m_inv_[bodyIDs_[1]];
+    auto wSum = mi0 + mi1;
+    if (0.f == wSum) {
+        return;
+    }
 
-    // material parameters
-    float                       k_stretch_ = 1.f;
-    //float                       k_bending_ = 1.f;
-};
+    auto & x0 = model.x_[bodyIDs_[0]];
+    auto & x1 = model.x_[bodyIDs_[1]];
+    auto ks = model.k_stretch_;
+
+    auto delta = distance (x1, x0) - rl_;
+    vec_t c;
+    c.x = ks * (x1.x - x0.x) * delta;
+    c.y = ks * (x1.y - x0.y) * delta;
+    c.z = ks * (x1.z - x0.z) * delta;
+
+    if (mi0 != 0.f) {
+        x0.x += mi0 * c.x;
+        x0.y += mi0 * c.y;
+        x0.z += mi0 * c.z;
+    }
+
+    if (mi1 != 0.f) {
+        x1.x -= mi1 * c.x;
+        x1.y -= mi1 * c.y;
+        x1.z -= mi1 * c.z;
+    }
+}
 
 } // namespace collide2
 } // namespace embree

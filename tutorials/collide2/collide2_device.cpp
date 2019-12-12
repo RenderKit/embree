@@ -19,6 +19,9 @@
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
 #include <set>
+#include "pbd.h"
+#include "clothModel.h"
+#include "constraints.h"
 
 namespace embree {
 
@@ -31,18 +34,14 @@ const int numTheta = 2*numPhi;
 
 const size_t NX = 20; 
 const size_t NZ = 20;
-const float strl = 4.f/(float)(NX-1);
-const float shrl = 1.41421356f * strl;
-const float brl = 2.f * strl;
+const float width = 4.f;
+const float height = 4.f;
 const float ks = 10000.f;
-const float ksh = 100.f;
-const float kb = 100.f;
 const float m = 1.f;
-const float cd = 100.f;
 const float h = 0.01*(1.f/24.f);
-unsigned int clothID;
 
-Vertex prevPos[NX*NZ];
+unsigned int clothID;
+collide2::ClothModel cloth;
 
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
@@ -104,29 +103,44 @@ unsigned int createClothSheet (RTCScene scene)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),NX*NZ);
-  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2*(NX-1)*(NZ-1));
+  cloth.x_0_.resize (NX*NZ);
+  cloth.x_.resize (NX*NZ);
+  cloth.x_old_.resize (NX*NZ);
+  cloth.x_last_.resize (NX*NZ);
+  collide2::vec_t nullvec {0.f, 0.f, 0.f, 0.f};
+  collide2::vec_t gravity {0.f, -9.8f, 0.f, 0.f};
+  cloth.v_.resize (NX*NZ, nullvec);
+  cloth.a_.resize (NX*NZ, gravity);
+  cloth.m_.resize (NX*NZ, m);
+  cloth.tris_.resize (2*(NX-1)*(NZ-1));
+
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth.x_.data(), 0, sizeof(Vertex), cloth.x_.size());
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  cloth.tris_.data(), 0, sizeof(Triangle), cloth.tris_.size());
 
   for (size_t i=0; i<NX; ++i) {
     for (size_t j=0; j<NZ; ++j) {
-      vertices[NX*i+j].x = -2.f + (float)i*(4.f/(float)(NX-1));
-      vertices[NX*i+j].y = +2.f;
-      vertices[NX*i+j].z = -2.f + (float)j*(4.f/(float)(NZ-1));
+      cloth.x_0_[NX*i+j].x = -2.f + (float)i*(width/(float)(NX-1));
+      cloth.x_0_[NX*i+j].y = +2.f;
+      cloth.x_0_[NX*i+j].z = -2.f + (float)j*(height/(float)(NZ-1));
     }
   }
+  cloth.x_ = cloth.x_0_;
+  cloth.x_old_ = cloth.x_0_;
+  cloth.x_last_ = cloth.x_0_;
+
   for (size_t i=0; i<NX-1; ++i) {
     for (size_t j=0; j<NZ-1; ++j) {
-      triangles[2*(i*(NZ-1)+j)].v0 = i*NZ+j;
-      triangles[2*(i*(NZ-1)+j)].v1 = i*NZ+j+1;
-      triangles[2*(i*(NZ-1)+j)].v2 = (i+1)*NZ+j+1;
+      cloth.tris_[2*(i*(NZ-1)+j)].v0 = i*NZ+j;
+      cloth.tris_[2*(i*(NZ-1)+j)].v1 = i*NZ+j+1;
+      cloth.tris_[2*(i*(NZ-1)+j)].v2 = (i+1)*NZ+j+1;
 
-      triangles[2*(i*(NZ-1)+j)+1].v0 = (i+1)*NZ+j+1;
-      triangles[2*(i*(NZ-1)+j)+1].v1 = (i+1)*NZ+j;
-      triangles[2*(i*(NZ-1)+j)+1].v2 = i*NZ+j;
+      cloth.tris_[2*(i*(NZ-1)+j)+1].v0 = (i+1)*NZ+j+1;
+      cloth.tris_[2*(i*(NZ-1)+j)+1].v1 = (i+1)*NZ+j;
+      cloth.tris_[2*(i*(NZ-1)+j)+1].v2 = i*NZ+j;
     }
   }
 
-  memcpy (prevPos, vertices, NX*NZ*sizeof(Vertex));
+  cloth.k_stretch_ = ks;
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -142,89 +156,89 @@ float norm (Vertex const & v1, Vertex const & v2) {
   return std::sqrt ((v1.x-v2.x)*(v1.x-v2.x)+(v1.y-v2.y)*(v1.y-v2.y)+(v1.z-v2.z)*(v1.z-v2.z));
 }
 
-force computeVertexAccels (size_t vID) 
-{
-  size_t i = vID/NZ;
-  size_t j = vID%NZ;
+// force computeVertexAccels (size_t vID) 
+// {
+//   size_t i = vID/NZ;
+//   size_t j = vID%NZ;
 
-  // std::cout << "i: " << i << std::endl;
-  // std::cout << "j: " << j << std::endl;
+//   // std::cout << "i: " << i << std::endl;
+//   // std::cout << "j: " << j << std::endl;
 
-  force out; out.x = 0.f; out.y = 0.f; out.z = 0.f;
+//   force out; out.x = 0.f; out.y = 0.f; out.z = 0.f;
 
-  if (0==i /*&& 0==j*/) return out;
-  if (0==i && NZ-1==j) return out;
+//   if (0==i /*&& 0==j*/) return out;
+//   if (0==i && NZ-1==j) return out;
 
-  // std::cout << "vID: " << vID << std::endl;
+//   // std::cout << "vID: " << vID << std::endl;
 
-  Vertex* vertices = (Vertex*) rtcGetGeometryBufferData (rtcGetGeometry(g_scene,clothID),RTC_BUFFER_TYPE_VERTEX,0);
-  Vertex& v0 = vertices[vID];
+//   Vertex* vertices = (Vertex*) rtcGetGeometryBufferData (rtcGetGeometry(g_scene,clothID),RTC_BUFFER_TYPE_VERTEX,0);
+//   Vertex& v0 = vertices[vID];
 
-  std::vector<size_t> sIDs;
-  if (i<NX-1)  sIDs.push_back (vID+NZ);
-  if (i>0) sIDs.push_back (vID-NZ);
-  if (j>0) sIDs.push_back (vID-1);
-  if (j<NZ-1) sIDs.push_back (vID+1);
+//   std::vector<size_t> sIDs;
+//   if (i<NX-1)  sIDs.push_back (vID+NZ);
+//   if (i>0) sIDs.push_back (vID-NZ);
+//   if (j>0) sIDs.push_back (vID-1);
+//   if (j<NZ-1) sIDs.push_back (vID+1);
 
-  for (auto id : sIDs) {
-    // std::cout << "id: " << id << std::endl;
-    Vertex& vs = vertices[id];
-    float k = ks*((strl/norm(v0,vs))-1.f);
-    out.x += k*(v0.x-vs.x);
-    out.y += k*(v0.y-vs.y);
-    out.z += k*(v0.z-vs.z);
+//   for (auto id : sIDs) {
+//     // std::cout << "id: " << id << std::endl;
+//     Vertex& vs = vertices[id];
+//     float k = ks*((strl/norm(v0,vs))-1.f);
+//     out.x += k*(v0.x-vs.x);
+//     out.y += k*(v0.y-vs.y);
+//     out.z += k*(v0.z-vs.z);
 
-    // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
-  }
+//     // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
+//   }
 
-  std::vector<size_t> shIDs;
-  if (i<NX-1) {
-    if (j>0) shIDs.push_back (vID+NZ-1);
-    if (j<NZ-1) shIDs.push_back (vID+NZ+1);
-  }
-  if (i>0) {
-    if (j>0) shIDs.push_back (vID-NZ-1);
-    if (j<NZ-1) shIDs.push_back (vID-NZ+1);
-  }
+//   std::vector<size_t> shIDs;
+//   if (i<NX-1) {
+//     if (j>0) shIDs.push_back (vID+NZ-1);
+//     if (j<NZ-1) shIDs.push_back (vID+NZ+1);
+//   }
+//   if (i>0) {
+//     if (j>0) shIDs.push_back (vID-NZ-1);
+//     if (j<NZ-1) shIDs.push_back (vID-NZ+1);
+//   }
 
-  for (auto id : shIDs) {
-    // std::cout << "id: " << id << std::endl;
-    Vertex& vs = vertices[id];
-    float k = ksh*((shrl/norm(v0,vs))-1.f);
-    out.x += k*(v0.x-vs.x);
-    out.y += k*(v0.y-vs.y);
-    out.z += k*(v0.z-vs.z);
+//   for (auto id : shIDs) {
+//     // std::cout << "id: " << id << std::endl;
+//     Vertex& vs = vertices[id];
+//     float k = ksh*((shrl/norm(v0,vs))-1.f);
+//     out.x += k*(v0.x-vs.x);
+//     out.y += k*(v0.y-vs.y);
+//     out.z += k*(v0.z-vs.z);
 
-    // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
-  }
+//     // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
+//   }
 
-  std::vector<size_t> bIDs;
-  if (i<NX-2)  bIDs.push_back (vID+2*NZ);
-  if (i>1) bIDs.push_back (vID-2*NZ);
-  if (j>1) bIDs.push_back (vID-2);
-  if (j<NZ-2) bIDs.push_back (vID+2);
+//   std::vector<size_t> bIDs;
+//   if (i<NX-2)  bIDs.push_back (vID+2*NZ);
+//   if (i>1) bIDs.push_back (vID-2*NZ);
+//   if (j>1) bIDs.push_back (vID-2);
+//   if (j<NZ-2) bIDs.push_back (vID+2);
 
-  for (auto id : bIDs) {
-    // std::cout << "id: " << id << std::endl;
-    Vertex& vs = vertices[id];
-    float k = kb*((brl/norm(v0,vs))-1.f);
-    out.x += k*(v0.x-vs.x);
-    out.y += k*(v0.y-vs.y);
-    out.z += k*(v0.z-vs.z);
+//   for (auto id : bIDs) {
+//     // std::cout << "id: " << id << std::endl;
+//     Vertex& vs = vertices[id];
+//     float k = kb*((brl/norm(v0,vs))-1.f);
+//     out.x += k*(v0.x-vs.x);
+//     out.y += k*(v0.y-vs.y);
+//     out.z += k*(v0.z-vs.z);
 
-    // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
-  }
+//     // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
+//   }
 
-  out.y -= 9.8f;
+//   out.y -= 9.8f;
 
-  out.x -= cd*(vertices[vID].x - prevPos[vID].x);
-  out.y -= cd*(vertices[vID].y - prevPos[vID].y);
-  out.z -= cd*(vertices[vID].z - prevPos[vID].z);
+//   out.x -= cd*(vertices[vID].x - prevPos[vID].x);
+//   out.y -= cd*(vertices[vID].y - prevPos[vID].y);
+//   out.z -= cd*(vertices[vID].z - prevPos[vID].z);
 
-  // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
+//   // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
 
-  return out;
-}
+//   return out;
+// }
 
 /* creates a ground plane */
 unsigned int createGroundPlane (RTCScene scene)
@@ -338,10 +352,6 @@ extern "C" void device_init (char* cfg)
   clothID = createClothSheet (g_scene);
   rtcCommitScene (g_scene);
 
-  for (size_t i=0; i<NX*NZ; ++i) {
-    computeVertexAccels (i);
-  }
-
   /* set error handler */
   rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
 
@@ -349,7 +359,7 @@ extern "C" void device_init (char* cfg)
   renderTile = renderTileStandard;
 }
 
-void updateScene () 
+/* void updateScene () 
 {
   Vertex* vertices = (Vertex*) rtcGetGeometryBufferData (rtcGetGeometry(g_scene,clothID),RTC_BUFFER_TYPE_VERTEX,0);
   for (size_t i=0; i<NX*NZ; ++i) {
@@ -370,7 +380,7 @@ void updateScene ()
   rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
   rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
   rtcCommitScene(g_scene);
-}
+} */
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -380,7 +390,7 @@ extern "C" void device_render (int* pixels,
                            const ISPCCamera& camera)
 {
 
-  /*if (!pause)*/ updateScene();
+  ///*if (!pause)*/ updateScene();
   //else PRINT(cur_time);
   //collision_candidates.clear();
   //rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
