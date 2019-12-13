@@ -99,6 +99,22 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
   return geomID;
 }
 
+void initializeClothPositions () {
+
+  for (size_t i=0; i<NX; ++i) {
+    for (size_t j=0; j<NZ; ++j) {
+      cloth.x_0_[NX*i+j].x = -2.f + (float)i*(width/(float)(NX-1));
+      cloth.x_0_[NX*i+j].y = +1.f;
+      cloth.x_0_[NX*i+j].z = -2.f + (float)j*(height/(float)(NZ-1));
+    }
+  }
+  cloth.x_ = cloth.x_0_;
+  cloth.x_old_ = cloth.x_0_;
+  cloth.x_last_ = cloth.x_0_;
+  collide2::vec_t nullvec {0.f, 0.f, 0.f, 0.f};
+  std::fill (cloth.v_.begin (), cloth.v_.end (), nullvec);
+}
+
 unsigned int createClothSheet (RTCScene scene)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -118,16 +134,7 @@ unsigned int createClothSheet (RTCScene scene)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth.x_.data(), 0, sizeof(Vertex), cloth.x_.size());
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  cloth.tris_.data(), 0, sizeof(Triangle), cloth.tris_.size());
 
-  for (size_t i=0; i<NX; ++i) {
-    for (size_t j=0; j<NZ; ++j) {
-      cloth.x_0_[NX*i+j].x = -2.f + (float)i*(width/(float)(NX-1));
-      cloth.x_0_[NX*i+j].y = +2.f;
-      cloth.x_0_[NX*i+j].z = -2.f + (float)j*(height/(float)(NZ-1));
-    }
-  }
-  cloth.x_ = cloth.x_0_;
-  cloth.x_old_ = cloth.x_0_;
-  cloth.x_last_ = cloth.x_0_;
+  initializeClothPositions ();
 
   for (size_t i=0; i<NX-1; ++i) {
     for (size_t j=0; j<NZ-1; ++j) {
@@ -166,10 +173,16 @@ unsigned int createClothSheet (RTCScene scene)
 
   cloth.m_[0] = 0.f;
   cloth.m_[(NX-1)*NZ] = 0.f;
+  cloth.m_[(NX-1)*NZ + NZ-1] = 0.f;
+  cloth.m_[NZ-1] = 0.f;
   cloth.m_inv_[0] = 0.f;
   cloth.m_inv_[(NX-1)*NZ] = 0.f;
+  cloth.m_inv_[(NX-1)*NZ + NZ-1] = 0.f;
+  cloth.m_inv_[NZ-1] = 0.f;
   cloth.a_[0].y = 0.f;
   cloth.a_[(NX-1)*NZ].y = 0.f;
+  cloth.a_[(NX-1)*NZ + NZ-1].y = 0.f;
+  cloth.a_[NZ-1].y = 0.f;
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -234,6 +247,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   return color*abs(dot(neg(ray.dir),normalize(ray.Ng)));
 }
 
+void device_key_pressed_handler(int key)
+{
+  if (key == 32  /* */) initializeClothPositions ();
+  else device_key_pressed_default(key);
+}
+
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
@@ -294,6 +313,7 @@ extern "C" void device_init (char* cfg)
 
   /* set start render mode */
   renderTile = renderTileStandard;
+  key_pressed_handler = device_key_pressed_handler;
 }
 
  void updateScene () 

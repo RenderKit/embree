@@ -46,7 +46,6 @@ struct ClothModel {
 
     // material parameters
     float                       k_stretch_ = 1.f;
-    //float                       k_bending_ = 1.f;
 
     virtual ~ClothModel () {
         for (auto c : constraints_) {
