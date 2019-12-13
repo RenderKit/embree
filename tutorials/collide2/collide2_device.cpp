@@ -273,7 +273,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 void device_key_pressed_handler(int key)
 {
   if (key == 32  /* */) initializeClothPositions ();
-  if (key == 80 /*p*/) { pause = !pause; std::cout << pause << std::endl;}
+  if (key == 80 /*p*/) { pause = !pause; }
   if (pause == true && key == 78 /*n*/) { updateScene (); std::cout << "current time: " << cur_time << std::endl;}
   else device_key_pressed_default(key);
 }
