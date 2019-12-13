@@ -46,7 +46,7 @@ void updatePositions (ClothModel & model, float h) {
     });
 }
 
-void constrainPositions (ClothModel & model, size_t maxNumIterations) {
+void constrainPositions (ClothModel & model, float timeStep, size_t maxNumIterations) {
 
     size_t nIters = 0;
 
@@ -54,7 +54,7 @@ void constrainPositions (ClothModel & model, size_t maxNumIterations) {
         //parallel_for (0, model.constraints_.size(), [&] (const range<size_t>& r) {
         //    for (size_t i=r.begin(); i<r.end(); i++) {
             for (size_t i=0; i<model.constraints_.size (); ++i) {
-                model.constraints_[i]->solvePositionConstraint (model);
+                model.constraints_[i]->solvePositionConstraint (model, timeStep, nIters);
             }
         //});
         ++nIters;

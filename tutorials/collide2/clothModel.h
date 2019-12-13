@@ -17,6 +17,7 @@
 #pragma once
 
 #include <vector>
+#include "constraints.h"
 #include "../common/tutorial/tutorial_device.h"
 
 namespace embree { namespace collide2 {
@@ -46,6 +47,13 @@ struct ClothModel {
     // material parameters
     float                       k_stretch_ = 1.f;
     //float                       k_bending_ = 1.f;
+
+    virtual ~ClothModel () {
+        for (auto c : constraints_) {
+            delete c;
+        }
+        constraints_.clear ();
+    }
 };
 
 } // namespace collide2

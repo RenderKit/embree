@@ -37,7 +37,7 @@ public:
 
     virtual ~Constraint () { delete[] bodyIDs_; }
 
-    virtual void solvePositionConstraint (ClothModel & model) = 0;
+    virtual void solvePositionConstraint (ClothModel & model, float timeStep, size_t iter) = 0;
 
 protected:
 
@@ -54,11 +54,12 @@ public:
     {}
 
     virtual void initConstraint             (ClothModel const & model, size_t p0ID, size_t p1ID);
-    virtual void solvePositionConstraint    (ClothModel & model);
+    virtual void solvePositionConstraint    (ClothModel & model, float timeStep, size_t iter);
 
 protected:
 
     float rl_ = 0.f;
+    float lambda_old_ = 0.f;
 };
 
 } // namespace collide2

@@ -34,7 +34,7 @@ void DistanceConstraint::initConstraint (ClothModel const & model, size_t p0ID, 
     rl_ = distance (x1, x0);
 }
 
-void DistanceConstraint::solvePositionConstraint (ClothModel & model) {
+void DistanceConstraint::solvePositionConstraint (ClothModel & model, float timeStep, size_t iter) {
 
     auto mi0 = model.m_inv_[bodyIDs_[0]];
     auto mi1 = model.m_inv_[bodyIDs_[1]];
@@ -45,13 +45,22 @@ void DistanceConstraint::solvePositionConstraint (ClothModel & model) {
 
     auto & x0 = model.x_[bodyIDs_[0]];
     auto & x1 = model.x_[bodyIDs_[1]];
-    auto ks = model.k_stretch_;
+    auto alpha = 1.f / (model.k_stretch_ * timeStep * timeStep);
 
-    auto delta = distance (x1, x0) - rl_;
+    auto d = distance (x1, x0);
+    auto delta = d - rl_;
+    auto normd = 1.f / d;
+
+    if (iter == 0) {
+        lambda_old_ = 0.f;
+    }
+    auto lambda = (delta - alpha * lambda_old_) / (wSum + alpha);
+    lambda_old_ = lambda;
+
     vec_t c;
-    c.x = ks * (x1.x - x0.x) * delta;
-    c.y = ks * (x1.y - x0.y) * delta;
-    c.z = ks * (x1.z - x0.z) * delta;
+    c.x = lambda * normd * (x1.x - x0.x);
+    c.y = lambda * normd * (x1.y - x0.y);
+    c.z = lambda * normd * (x1.z - x0.z);
 
     if (mi0 != 0.f) {
         x0.x += mi0 * c.x;

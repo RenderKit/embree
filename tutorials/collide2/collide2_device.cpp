@@ -32,13 +32,13 @@ extern std::set<std::pair<unsigned,unsigned>> collision_candidates;
 const int numPhi = 45;
 const int numTheta = 2*numPhi;
 
-const size_t NX = 20; 
-const size_t NZ = 20;
+const size_t NX = 50; 
+const size_t NZ = 50;
 const float width = 4.f;
 const float height = 4.f;
-const float ks = 10000.f;
+const float ks = 4000.f;
 const float m = 1.f;
-const float h = 0.01*(1.f/24.f);
+const float h = 1.*(1.f/24.f);
 
 unsigned int clothID;
 collide2::ClothModel cloth;
@@ -112,6 +112,7 @@ unsigned int createClothSheet (RTCScene scene)
   cloth.v_.resize (NX*NZ, nullvec);
   cloth.a_.resize (NX*NZ, gravity);
   cloth.m_.resize (NX*NZ, m);
+  cloth.m_inv_.resize (NX*NZ, 1.f / m);
   cloth.tris_.resize (2*(NX-1)*(NZ-1));
 
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth.x_.data(), 0, sizeof(Vertex), cloth.x_.size());
@@ -142,103 +143,39 @@ unsigned int createClothSheet (RTCScene scene)
 
   cloth.k_stretch_ = ks;
 
+  for (size_t vID=0; vID<NX*NZ; ++vID) {
+    
+    size_t i = vID/NZ;
+    size_t j = vID%NZ;
+
+    std::vector<size_t> sIDs;
+
+    if (i<NX-1) sIDs.push_back (vID+NZ);
+    if (j<NZ-1) sIDs.push_back (vID+1);
+
+    if (i<NX-1) {
+      if (j<NZ-1) sIDs.push_back (vID+NZ+1);
+    }
+
+    for (auto id : sIDs) {
+      auto c = new collide2::DistanceConstraint ();
+      c->initConstraint (cloth, vID, id);
+      cloth.constraints_.push_back (c);
+    }
+  }
+
+  cloth.m_[0] = 0.f;
+  cloth.m_[(NX-1)*NZ] = 0.f;
+  cloth.m_inv_[0] = 0.f;
+  cloth.m_inv_[(NX-1)*NZ] = 0.f;
+  cloth.a_[0].y = 0.f;
+  cloth.a_[(NX-1)*NZ].y = 0.f;
+
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
 }
-
-struct force {
-  float x,y,z = 0.f;
-};
-
-float norm (Vertex const & v1, Vertex const & v2) {
-  return std::sqrt ((v1.x-v2.x)*(v1.x-v2.x)+(v1.y-v2.y)*(v1.y-v2.y)+(v1.z-v2.z)*(v1.z-v2.z));
-}
-
-// force computeVertexAccels (size_t vID) 
-// {
-//   size_t i = vID/NZ;
-//   size_t j = vID%NZ;
-
-//   // std::cout << "i: " << i << std::endl;
-//   // std::cout << "j: " << j << std::endl;
-
-//   force out; out.x = 0.f; out.y = 0.f; out.z = 0.f;
-
-//   if (0==i /*&& 0==j*/) return out;
-//   if (0==i && NZ-1==j) return out;
-
-//   // std::cout << "vID: " << vID << std::endl;
-
-//   Vertex* vertices = (Vertex*) rtcGetGeometryBufferData (rtcGetGeometry(g_scene,clothID),RTC_BUFFER_TYPE_VERTEX,0);
-//   Vertex& v0 = vertices[vID];
-
-//   std::vector<size_t> sIDs;
-//   if (i<NX-1)  sIDs.push_back (vID+NZ);
-//   if (i>0) sIDs.push_back (vID-NZ);
-//   if (j>0) sIDs.push_back (vID-1);
-//   if (j<NZ-1) sIDs.push_back (vID+1);
-
-//   for (auto id : sIDs) {
-//     // std::cout << "id: " << id << std::endl;
-//     Vertex& vs = vertices[id];
-//     float k = ks*((strl/norm(v0,vs))-1.f);
-//     out.x += k*(v0.x-vs.x);
-//     out.y += k*(v0.y-vs.y);
-//     out.z += k*(v0.z-vs.z);
-
-//     // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
-//   }
-
-//   std::vector<size_t> shIDs;
-//   if (i<NX-1) {
-//     if (j>0) shIDs.push_back (vID+NZ-1);
-//     if (j<NZ-1) shIDs.push_back (vID+NZ+1);
-//   }
-//   if (i>0) {
-//     if (j>0) shIDs.push_back (vID-NZ-1);
-//     if (j<NZ-1) shIDs.push_back (vID-NZ+1);
-//   }
-
-//   for (auto id : shIDs) {
-//     // std::cout << "id: " << id << std::endl;
-//     Vertex& vs = vertices[id];
-//     float k = ksh*((shrl/norm(v0,vs))-1.f);
-//     out.x += k*(v0.x-vs.x);
-//     out.y += k*(v0.y-vs.y);
-//     out.z += k*(v0.z-vs.z);
-
-//     // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
-//   }
-
-//   std::vector<size_t> bIDs;
-//   if (i<NX-2)  bIDs.push_back (vID+2*NZ);
-//   if (i>1) bIDs.push_back (vID-2*NZ);
-//   if (j>1) bIDs.push_back (vID-2);
-//   if (j<NZ-2) bIDs.push_back (vID+2);
-
-//   for (auto id : bIDs) {
-//     // std::cout << "id: " << id << std::endl;
-//     Vertex& vs = vertices[id];
-//     float k = kb*((brl/norm(v0,vs))-1.f);
-//     out.x += k*(v0.x-vs.x);
-//     out.y += k*(v0.y-vs.y);
-//     out.z += k*(v0.z-vs.z);
-
-//     // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
-//   }
-
-//   out.y -= 9.8f;
-
-//   out.x -= cd*(vertices[vID].x - prevPos[vID].x);
-//   out.y -= cd*(vertices[vID].y - prevPos[vID].y);
-//   out.z -= cd*(vertices[vID].z - prevPos[vID].z);
-
-//   // std::cout << "out: " << out.x << " " << out.y << " " << out.z << " " << std::endl;
-
-//   return out;
-// }
 
 /* creates a ground plane */
 unsigned int createGroundPlane (RTCScene scene)
@@ -359,28 +296,16 @@ extern "C" void device_init (char* cfg)
   renderTile = renderTileStandard;
 }
 
-/* void updateScene () 
+ void updateScene () 
 {
-  Vertex* vertices = (Vertex*) rtcGetGeometryBufferData (rtcGetGeometry(g_scene,clothID),RTC_BUFFER_TYPE_VERTEX,0);
-  for (size_t i=0; i<NX*NZ; ++i) {
-    // std::cout << "id: " << i << std::endl;
-    auto a = computeVertexAccels (i);
-    // std::cout << "a: " << a.x << " " << a.y << " " << a.z << std::endl;
-    Vertex newPos;
-    newPos.x = 2*vertices[i].x - prevPos[i].x + h*h*a.x;
-    newPos.y = 2*vertices[i].y - prevPos[i].y + h*h*a.y;
-    newPos.z = 2*vertices[i].z - prevPos[i].z + h*h*a.z;
-    // std::cout << "prev: " << prevPos[i].x << " " << prevPos[i].y << " " << prevPos[i].z << std::endl;
-    // std::cout << "curr: " << vertices[i].x << " " << vertices[i].y << " " << vertices[i].z << std::endl;
-    // std::cout << "new: " << newPos.x << " " << newPos.y << " " << newPos.z << std::endl;
-    prevPos[i] = vertices[i];
-    vertices[i] = newPos;
-  }
+  collide2::updatePositions (cloth, h);
+  collide2::constrainPositions (cloth, h, 200);
+  collide2::updateVelocities (cloth, h);
 
   rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
   rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
   rtcCommitScene(g_scene);
-} */
+} 
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -390,7 +315,7 @@ extern "C" void device_render (int* pixels,
                            const ISPCCamera& camera)
 {
 
-  ///*if (!pause)*/ updateScene();
+ /*if (!pause)*/ updateScene();
   //else PRINT(cur_time);
   //collision_candidates.clear();
   //rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
