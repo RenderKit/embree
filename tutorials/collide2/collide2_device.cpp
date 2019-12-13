@@ -28,17 +28,23 @@ namespace embree {
 extern RTCDevice g_device;
 extern RTCScene g_scene;
 extern std::set<std::pair<unsigned,unsigned>> collision_candidates;
+extern void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions);
+extern size_t cur_time;
 
 const int numPhi = 45;
 const int numTheta = 2*numPhi;
 
 const size_t NX = 50; 
 const size_t NZ = 50;
-const float width = 4.f;
-const float height = 4.f;
+const float width = 5.f;
+const float height = 5.f;
 const float ks = 4000.f;
 const float m = 1.f;
-const float h = 1.*(1.f/24.f);
+const float nsub = 1.f;
+const float h = 1.f / (nsub * 24.f);
+const size_t nIters = 200;
+
+bool pause = true;
 
 unsigned int clothID;
 collide2::ClothModel cloth;
@@ -103,9 +109,9 @@ void initializeClothPositions () {
 
   for (size_t i=0; i<NX; ++i) {
     for (size_t j=0; j<NZ; ++j) {
-      cloth.x_0_[NX*i+j].x = -2.f + (float)i*(width/(float)(NX-1));
+      cloth.x_0_[NX*i+j].x = -(.5f*width) + (float)i*(width/(float)(NX-1));
       cloth.x_0_[NX*i+j].y = +1.f;
-      cloth.x_0_[NX*i+j].z = -2.f + (float)j*(height/(float)(NZ-1));
+      cloth.x_0_[NX*i+j].z = -(.5f*height) + (float)j*(height/(float)(NZ-1));
     }
   }
   cloth.x_ = cloth.x_0_;
@@ -113,6 +119,8 @@ void initializeClothPositions () {
   cloth.x_last_ = cloth.x_0_;
   collide2::vec_t nullvec {0.f, 0.f, 0.f, 0.f};
   std::fill (cloth.v_.begin (), cloth.v_.end (), nullvec);
+
+  cur_time = 0;
 }
 
 unsigned int createClothSheet (RTCScene scene)
@@ -136,6 +144,7 @@ unsigned int createClothSheet (RTCScene scene)
 
   initializeClothPositions ();
 
+  // init topology
   for (size_t i=0; i<NX-1; ++i) {
     for (size_t j=0; j<NZ-1; ++j) {
       cloth.tris_[2*(i*(NZ-1)+j)].v0 = i*NZ+j;
@@ -150,6 +159,7 @@ unsigned int createClothSheet (RTCScene scene)
 
   cloth.k_stretch_ = ks;
 
+  // set distance constraints
   for (size_t vID=0; vID<NX*NZ; ++vID) {
     
     size_t i = vID/NZ;
@@ -171,6 +181,7 @@ unsigned int createClothSheet (RTCScene scene)
     }
   }
 
+  // fix corners
   cloth.m_[0] = 0.f;
   cloth.m_[(NX-1)*NZ] = 0.f;
   cloth.m_[(NX-1)*NZ + NZ-1] = 0.f;
@@ -214,6 +225,18 @@ unsigned int createGroundPlane (RTCScene scene)
   return geomID;
 }
 
+void updateScene () 
+{
+  collide2::updatePositions (cloth, h);
+  collide2::constrainPositions (cloth, h, nIters);
+  collide2::updateVelocities (cloth, h);
+
+  rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
+  rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
+  rtcCommitScene(g_scene);
+  ++cur_time;
+}
+
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
@@ -250,6 +273,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 void device_key_pressed_handler(int key)
 {
   if (key == 32  /* */) initializeClothPositions ();
+  if (key == 80 /*p*/) { pause = !pause; std::cout << pause << std::endl;}
+  if (pause == true && key == 78 /*n*/) { updateScene (); std::cout << "current time: " << cur_time << std::endl;}
   else device_key_pressed_default(key);
 }
 
@@ -303,7 +328,7 @@ extern "C" void device_init (char* cfg)
   g_scene = rtcNewScene(g_device);
   rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
 
-  createTriangulatedSphere(g_scene,Vec3fa(0, -1., 0),1.f);
+  createTriangulatedSphere(g_scene,Vec3fa(0, 0., 0),1.f);
   createGroundPlane (g_scene);
   clothID = createClothSheet (g_scene);
   rtcCommitScene (g_scene);
@@ -314,17 +339,6 @@ extern "C" void device_init (char* cfg)
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
-}
-
- void updateScene () 
-{
-  collide2::updatePositions (cloth, h);
-  collide2::constrainPositions (cloth, h, 200);
-  collide2::updateVelocities (cloth, h);
-
-  rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
-  rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
-  rtcCommitScene(g_scene);
 } 
 
 /* called by the C++ code to render */
@@ -335,10 +349,10 @@ extern "C" void device_render (int* pixels,
                            const ISPCCamera& camera)
 {
 
- /*if (!pause)*/ updateScene();
+  if (!pause) updateScene();
   //else PRINT(cur_time);
-  //collision_candidates.clear();
-  //rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
+  collision_candidates.clear();
+  rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
