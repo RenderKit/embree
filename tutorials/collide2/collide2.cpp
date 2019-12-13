@@ -200,7 +200,8 @@ namespace embree
     Tutorial()
       : TutorialApplication("collide",FEATURE_RTCORE), pause(false)//, use_user_geometry(false)
     {
-
+      camera.from = Vec3fa(-2.5f,2.5f,-2.5f);
+      camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }
     
   };
