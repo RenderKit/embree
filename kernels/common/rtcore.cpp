@@ -1017,27 +1017,6 @@ RTC_NAMESPACE_BEGIN;
     }
   }
 
-  RTC_API void rtcSetGeometryTransformationInterpolation(RTCGeometry hgeometry, RTCInterpolation interpolation)
-  {
-    Geometry* geometry = (Geometry*) hgeometry;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcSetGeometryTransformationInterpolation);
-    RTC_VERIFY_HANDLE(hgeometry);
-    geometry->setTransformationInterpolation(interpolation);
-    RTC_CATCH_END2(geometry);
-  }
-  
-  RTC_API RTCInterpolation rtcGetGeometryTransformInterpolation(RTCGeometry hgeometry)
-  {
-    Geometry* geometry = (Geometry*) hgeometry;
-    RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcGetGeometryTransformInterpolation);
-    RTC_VERIFY_HANDLE(hgeometry);
-    return geometry->getTransformationInterpolation();
-    RTC_CATCH_END2(geometry);
-    return RTC_INTERPOLATION_LINEAR;
-  }
-
   RTC_API void rtcSetGeometryTransform(RTCGeometry hgeometry, unsigned int timeStep, RTCFormat format, const void* xfm)
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1045,10 +1024,36 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetGeometryTransform);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_HANDLE(xfm);
-    if (geometry->getTransformationInterpolation() == RTC_INTERPOLATION_NONLINEAR && format != RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"RTC_INTERPOLATE_NONLINEAR only allows RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR format.");
     const AffineSpace3fa transform = loadTransform(format, (const float*)xfm);
     geometry->setTransform(transform, timeStep);
+    RTC_CATCH_END2(geometry);
+  }
+
+  RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry hgeometry, unsigned int timeStep, const RTCQuaternionDecomposition* qd)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryTransform);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_VERIFY_HANDLE(qd);
+    AffineSpace3fa transform;
+    transform.l.vx.x = qd->scale_x;
+    transform.l.vy.y = qd->scale_y;
+    transform.l.vz.z = qd->scale_z;
+    transform.l.vy.x = qd->skew_xy;
+    transform.l.vz.x = qd->skew_xz;
+    transform.l.vz.y = qd->skew_yz;
+    transform.l.vx.y = qd->translation_x;
+    transform.l.vx.z = qd->translation_y;
+    transform.l.vy.z = qd->translation_z;
+    transform.p.x    = qd->shift_x;
+    transform.p.y    = qd->shift_y;
+    transform.p.z    = qd->shift_z;
+    transform.l.vx.w = qd->quaternion_r;
+    transform.l.vy.w = qd->quaternion_i;
+    transform.l.vz.w = qd->quaternion_j;
+    transform.p.w    = qd->quaternion_k;
+    geometry->setQuaternionDecomposition(transform, timeStep);
     RTC_CATCH_END2(geometry);
   }
 
@@ -1057,8 +1062,6 @@ RTC_NAMESPACE_BEGIN;
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryTransform);
-    if (geometry->getTransformationInterpolation() == RTC_INTERPOLATION_NONLINEAR && format != RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR)
-      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"RTC_INTERPOLATE_NONLINEAR only allows RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR format.");
     const AffineSpace3fa transform = geometry->getTransform(time);
     storeTransform(transform, format, (float*)xfm);
     RTC_CATCH_END2(geometry);

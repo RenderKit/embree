@@ -24,5 +24,6 @@
 #include "rtcore_ray.isph"
 #include "rtcore_geometry.isph"
 #include "rtcore_scene.isph"
+#include "rtcore_quaternion.isph"
 
 #endif
