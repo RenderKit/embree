@@ -71,6 +71,13 @@ enum RTCSubdivisionMode
   RTC_SUBDIVISION_MODE_PIN_ALL         = 4,
 };
 
+/* Interpolation modes for transformation matrizes */
+enum RTCInterpolation
+{
+  RTC_INTERPOLATION_LINEAR     = 0, // i.e. linear interpolation
+  RTC_INTERPOLATION_NONLINEAR  = 1, // i.e. (spherical) quaternion interpolation
+};
+
 /* Curve segment flags */
 enum RTCCurveFlags
 {
@@ -227,6 +234,12 @@ RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* args
 
 /* Sets the instanced scene of an instance geometry. */
 RTC_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
+
+/* Sets the interplation mode for the transformations of an instance. */
+RTC_API void rtcSetGeometryTransformationInterpolation(RTCGeometry geometry, enum RTCInterpolation interpolation);
+
+/* Gets the interplation mode for the transformations of an instance. */
+RTC_API enum RTCInterpolation rtcGetGeometryTransformationInterpolation(RTCGeometry geometry);
 
 /* Sets the transformation of an instance for the specified time step. */
 RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, unsigned int timeStep, enum RTCFormat format, const void* xfm);

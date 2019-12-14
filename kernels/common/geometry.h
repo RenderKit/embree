@@ -462,9 +462,20 @@ namespace embree
 
     /*! Sets the instanced scene */
     virtual void setInstancedScene(const Ref<Scene>& scene) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
     }
     
+    /*! Sets interpolation mode for transformation of the instance */
+    virtual void setTransformationInterpolation(RTCInterpolation interpolation) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
+    }
+
+    /*! Sets interpolation mode for transformation of the instance */
+    virtual RTCInterpolation getTransformationInterpolation() {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
+      return RTC_INTERPOLATION_LINEAR;
+    }
+
     /*! Sets transformation of the instance */
     virtual void setTransform(const AffineSpace3fa& transform, unsigned int timeStep) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 

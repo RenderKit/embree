@@ -26,7 +26,7 @@ namespace embree
   {
     ALIGNED_STRUCT_(16);
     static const Geometry::GTypeMask geom_type = Geometry::MTY_INSTANCE;
-    
+
   public:
     Instance (Device* device, Accel* object = nullptr, unsigned int numTimeSteps = 1);
     ~Instance();
@@ -34,12 +34,14 @@ namespace embree
   private:
     Instance (const Instance& other) DELETED; // do not implement
     Instance& operator= (const Instance& other) DELETED; // do not implement
-    
+
   public:
     virtual Geometry* attach(Scene* scene, unsigned int geomID);
     virtual void detach();
     virtual void setNumTimeSteps (unsigned int numTimeSteps);
     virtual void setInstancedScene(const Ref<Scene>& scene);
+    virtual void setTransformationInterpolation(RTCInterpolation i) { interpolation = i; }
+    virtual RTCInterpolation getTransformationInterpolation() { return interpolation; }
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep);
     virtual AffineSpace3fa getTransform(float time);
     virtual void setMask (unsigned mask);
@@ -79,10 +81,10 @@ namespace embree
       assert(i == 0);
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
         if (!isvalid(bounds(i,itime))) return false;
-      
+
       return true;
     }
-      
+
     __forceinline AffineSpace3fa getLocal2World() const {
       return local2world[0];
     }
@@ -90,7 +92,9 @@ namespace embree
     __forceinline AffineSpace3fa getLocal2World(float t) const
     {
       float ftime; const unsigned int itime = timeSegment(t, ftime);
-      return lerp(local2world[itime+0],local2world[itime+1],ftime);
+      return interpolation == RTC_INTERPOLATION_LINEAR
+        ? lerp (local2world[itime+0],local2world[itime+1],ftime)
+        : slerp(local2world[itime+0],local2world[itime+1],ftime);
     }
 
     __forceinline AffineSpace3fa getWorld2Local() const {
@@ -103,15 +107,52 @@ namespace embree
 
     template<int K>
     __forceinline AffineSpace3vf<K> getWorld2Local(const vbool<K>& valid, const vfloat<K>& t) const
-    { 
+    {
+      if (unlikely(interpolation == RTC_INTERPOLATION_NONLINEAR))
+        return getWorld2LocalSlerp(valid, t);
+      return getWorld2LocalLerp(valid, t);
+    }
+
+    private:
+
+    template<int K>
+    __forceinline AffineSpace3vf<K> getWorld2LocalSlerp(const vbool<K>& valid, const vfloat<K>& t) const
+    {
       vfloat<K> ftime;
       const vint<K> itime_k = timeSegment(t, ftime);
       assert(any(valid));
       const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];
-      const vfloat<K> t0 = vfloat<K>(1.0f)-ftime, t1 = ftime;
       if (likely(all(valid, itime_k == vint<K>(itime)))) {
-        return rcp(t0*AffineSpace3vf<K>(local2world[itime+0]) + t1*AffineSpace3vf<K>(local2world[itime+1]));
+        return rcp(slerp(AffineSpace3vfa<K>(local2world[itime+0]),
+                         AffineSpace3vfa<K>(local2world[itime+1]),
+                         ftime));
+      }
+      else {
+        AffineSpace3vfa<K> space0,space1;
+        vbool<K> valid1 = valid;
+        while (any(valid1)) {
+          vbool<K> valid2;
+          const int itime = next_unique(valid1, itime_k, valid2);
+          space0 = select(valid2, AffineSpace3vfa<K>(local2world[itime+0]), space0);
+          space1 = select(valid2, AffineSpace3vfa<K>(local2world[itime+1]), space1);
+        }
+        return rcp(slerp(space0, space1, ftime));
+      }
+    }
+
+    template<int K>
+    __forceinline AffineSpace3vf<K> getWorld2LocalLerp(const vbool<K>& valid, const vfloat<K>& t) const
+    {
+      vfloat<K> ftime;
+      const vint<K> itime_k = timeSegment(t, ftime);
+      assert(any(valid));
+      const size_t index = bsf(movemask(valid));
+      const int itime = itime_k[index];
+      if (likely(all(valid, itime_k == vint<K>(itime)))) {
+        return rcp(lerp(AffineSpace3vf<K>(local2world[itime+0]),
+                        AffineSpace3vf<K>(local2world[itime+1]),
+                        ftime));
       } else {
         AffineSpace3vf<K> space0,space1;
         vbool<K> valid1 = valid;
@@ -121,14 +162,15 @@ namespace embree
           space0 = select(valid2, AffineSpace3vf<K>(local2world[itime+0]), space0);
           space1 = select(valid2, AffineSpace3vf<K>(local2world[itime+1]), space1);
         }
-        return rcp(t0*space0 + t1*space1);
+        return rcp(lerp(space0, space1, ftime));
       }
     }
-    
+
   public:
     Accel* object;                 //!< pointer to instanced acceleration structure
     AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
+    RTCInterpolation interpolation;
   };
 
   namespace isa
@@ -142,11 +184,11 @@ namespace embree
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);
-        
+
         PrimInfo pinfo(empty);
         const BBox3fa b = bounds(0);
         if (!isvalid(b)) return pinfo;
-        
+
         const PrimRef prim(b,geomID,unsigned(0));
         pinfo.add_center2(prim);
         prims[k++] = prim;
@@ -157,7 +199,7 @@ namespace embree
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);
-        
+
         PrimInfo pinfo(empty);
         if (!valid(0,range<size_t>(itime))) return pinfo;
         const PrimRef prim(linearBounds(0,itime).bounds(),geomID,unsigned(0));
@@ -170,7 +212,7 @@ namespace embree
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);
-        
+
         PrimInfoMB pinfo(empty);
         if (!valid(0, timeSegmentRange(t0t1))) return pinfo;
         const PrimRefMB prim(linearBounds(0,t0t1),this->numTimeSegments(),this->time_range,this->numTimeSegments(),geomID,unsigned(0));
@@ -180,6 +222,6 @@ namespace embree
       }
     };
   }
-  
+
   DECLARE_ISA_FUNCTION(Instance*, createInstance, Device*);
 }

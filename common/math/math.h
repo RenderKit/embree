@@ -269,6 +269,7 @@ namespace embree
   __forceinline int   select(bool s, int   t,   int f) { return s ? t : f; }
   __forceinline float select(bool s, float t, float f) { return s ? t : f; }
 
+  __forceinline bool all(bool s) { return s; }
 
   __forceinline float lerp(const float v0, const float v1, const float t) {
     return madd(1.0f-t,v0,t*v1);
