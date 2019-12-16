@@ -104,11 +104,13 @@ namespace embree
   
   void Geometry::update() 
   {
+    ++modCounter_;
     state = (unsigned)State::MODIFIED;
   }
   
   void Geometry::commit() 
   {
+    ++modCounter_;
     state = (unsigned)State::COMMITTED;
   }
 
@@ -149,6 +151,7 @@ namespace embree
 
     state = (unsigned)State::COMMITTED;
     enabled = true;
+    ++modCounter_;
   }
 
   void Geometry::disable () 
@@ -158,6 +161,7 @@ namespace embree
     
     state = (unsigned)State::COMMITTED;
     enabled = false;
+    ++modCounter_;
   }
 
   void Geometry::setUserData (void* ptr)
