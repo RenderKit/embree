@@ -186,17 +186,15 @@ namespace embree
         const AffineSpaceT<LinearSpace3<Vec4<T>>>& M1,
         const T& t)
   {
-    AffineSpaceT<LinearSpace3<Vec3<T>>> S = lerp(M0, M1, t);
-
     QuaternionT<T> q0(M0.l.vx.w, M0.l.vy.w, M0.l.vz.w, M0.p.w);
     QuaternionT<T> q1(M1.l.vx.w, M1.l.vy.w, M1.l.vz.w, M1.p.w);
     QuaternionT<T> q = slerp(q0, q1, t);
 
+    AffineSpaceT<LinearSpace3<Vec3<T>>> S = lerp(M0, M1, t);
     AffineSpaceT<LinearSpace3<Vec3<T>>> D(one);
-    D.p = S.p;
-    S.p.x = S.l.vx.y;
-    S.p.y = S.l.vx.z;
-    S.p.z = S.l.vy.z;
+    D.p.x = S.l.vx.y;
+    D.p.y = S.l.vx.z;
+    D.p.z = S.l.vy.z;
     S.l.vx.y = 0;
     S.l.vx.z = 0;
     S.l.vy.z = 0;
@@ -211,17 +209,15 @@ namespace embree
                                      const AffineSpace3fa& M1,
                                      const float& t)
   {
-    AffineSpace3fa S = lerp(M0, M1, t);
-
     Quaternion3f q0(M0.l.vx.w, M0.l.vy.w, M0.l.vz.w, M0.p.w);
     Quaternion3f q1(M1.l.vx.w, M1.l.vy.w, M1.l.vz.w, M1.p.w);
     Quaternion3f q = slerp(q0, q1, t);
 
+    AffineSpace3fa S = lerp(M0, M1, t);
     AffineSpace3fa D(one);
-    D.p = S.p;
-    S.p.x = S.l.vx.y;
-    S.p.y = S.l.vx.z;
-    S.p.z = S.l.vy.z;
+    D.p.x = S.l.vx.y;
+    D.p.y = S.l.vx.z;
+    D.p.z = S.l.vy.z;
     S.l.vx.y = 0;
     S.l.vx.z = 0;
     S.l.vy.z = 0;

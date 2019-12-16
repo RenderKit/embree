@@ -132,6 +132,12 @@ namespace embree
     if (timeStep >= numTimeSteps)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
+    // invalidate quaternion decomposition for time step. This allows switching
+    // back to linear transformation. For nonlinear transformation,
+    // setQuaternionDecomposition will override this again direcly
+    if (quaternionDecomposition)
+      quaternionDecomposition[timeStep].l.vx.x = std::numeric_limits<float>::infinity();
+
     local2world[timeStep] = xfm;
     if (timeStep == 0)
       world2local0 = rcp(xfm);
@@ -143,13 +149,12 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
     // compute affine transform from quaternion decomposition
+    Quaternion3f q(qd.l.vx.w, qd.l.vy.w, qd.l.vz.w, qd.p.w);
     AffineSpace3fa M = qd;
-    Quaternion3f q(M.l.vx.w, M.l.vy.w, M.l.vz.w, M.p.w);
     AffineSpace3fa D(one);
-    D.p = M.p;
-    M.p.x = M.l.vx.y;
-    M.p.y = M.l.vx.z;
-    M.p.z = M.l.vy.z;
+    D.p.x = M.l.vx.y;
+    D.p.y = M.l.vx.z;
+    D.p.z = M.l.vy.z;
     M.l.vx.y = 0;
     M.l.vx.z = 0;
     M.l.vy.z = 0;
@@ -187,19 +192,44 @@ namespace embree
   {
     Geometry::commit();
 
-    interpolation = TransformationInterpolation::LINEAR;
+    // check with interpolation should be used
+    bool interpolate_nonlinear = false;
+    bool interpolate_linear = true;
 
-    // check if quaternion (nonlinear) interpolation should be used
     if (quaternionDecomposition) {
-      // check if all quaternion decomposition matrizes are set
+      interpolate_nonlinear = true;
+      // check if all quaternion decomposition matrizes are set -> quaternion interpolation
+      // or if all quaternion decomposition matrizes are invalid -> linear interpolation
       for (unsigned int i = 0; i < numTimeSteps; ++i) {
         if (quaternionDecomposition[i].l.vx.x == std::numeric_limits<float>::infinity()) {
-          throw_RTCError(RTC_ERROR_INVALID_OPERATION,"quaternion decomposition not set for each time step");
-          return;
+          interpolate_nonlinear = false;
+        }
+        else {
+          interpolate_linear = false;
         }
       }
+    }
 
-      interpolation = TransformationInterpolation::NONLINEAR;
+    if (!interpolate_linear && !interpolate_nonlinear) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,
+      "all transformation matrizes have to be set as either affine"
+      "transformation matrizes (rtcSetGeometryTransformation) or quaternion"
+      "decompositions (rtcSetGeometryTransformationQuaternion). Mixing both is"
+      "not allowed.");
+      return;
+    }
+
+    if (interpolate_linear && interpolate_nonlinear) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"this should not happen.");
+      return;
+    }
+
+    interpolation = interpolate_linear
+                  ? TransformationInterpolation::LINEAR
+                  : TransformationInterpolation::NONLINEAR;
+
+    if (interpolation == TransformationInterpolation::NONLINEAR)
+    {
       if (motionDerivCoeffs)
         alignedFree(motionDerivCoeffs);
       motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
