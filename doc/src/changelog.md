@@ -13,7 +13,6 @@ Version History
     for SAH heuristic were counted wrong due to some numerical issues.
 -   Improved performance of multi-segment motion blur, by improving the
     SAH heuristic used in the motion blur builder.
--   Improved shadow ray performance for instantiated curve geometries.
 -   Fixed a bug with rendering short fat curves.
 -   rtcCommitScene can now get called during rendering from multiple threads
     to lazily build geometry. When TBB is used this causes a much lower overhead
