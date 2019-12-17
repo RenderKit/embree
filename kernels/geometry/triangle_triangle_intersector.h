@@ -103,8 +103,8 @@ namespace embree
         if (min(db0,db1,db2) > +eps) return false;
         //CSTAT(bvh_collide_prim_intersections5++);
         
-        if (unlikely((da0 == 0.0f && da1 == 0.0f && da2 == 0.0f) ||
-                     (db0 == 0.0f && db1 == 0.0f && db2 == 0.0f)))
+        if (unlikely((std::fabs(da0) < eps && std::fabs(da1) < eps && std::fabs(da2) < eps) ||
+                     (std::fabs(db0) < eps && std::fabs(db1) < eps && std::fabs(db2) < eps)))
         {
           const size_t dz = maxDim(Na);
           const size_t dx = (dz+1)%3;
