@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -23,6 +23,7 @@ SET_PROPERTY(TARGET lexers PROPERTY FOLDER common)
 SET_PROPERTY(TARGET lexers APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
 IF (EMBREE_STATIC_LIB)
-  INSTALL(TARGETS lexers ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+  INSTALL(TARGETS lexers EXPORT lexers-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+  INSTALL(EXPORT lexers-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
   SIGN_TARGET(lexers)
 ENDIF()

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -696,6 +696,8 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
+  delete gmesh.normals;
   rtcReleaseGeometry(gmesh.geom);
+  rtcReleaseGeometry(gmesh.geomNormals);
   rtcReleaseScene (g_scene); g_scene = NULL;
 }

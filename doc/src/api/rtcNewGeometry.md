@@ -14,12 +14,18 @@
      RTC_GEOMETRY_TYPE_QUAD,
      RTC_GEOMETRY_TYPE_SUBDIVISION,
      RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,
-     RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,
      RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,
-     RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,
      RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE,
+     RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE,
+     RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE,
      RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE,
      RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE,
+     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE,
+     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE,
+     RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,
+     RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,
+     RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE,
+     RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE,
      RTC_GEOMETRY_TYPE_GRID,
      RTC_GEOMETRY_TYPE_SPHERE_POINT,
      RTC_GEOMETRY_TYPE_DISC_POINT,
@@ -47,30 +53,32 @@ Supported geometry types are triangle meshes
 (`RTC_GEOMETRY_TYPE_TRIANGLE` type), quad meshes (triangle pairs)
 (`RTC_GEOMETRY_TYPE_QUAD` type), Catmull-Clark subdivision surfaces
 (`RTC_GEOMETRY_TYPE_SUBDIVISION` type), curve geometries with different
-bases (`RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
-`RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
-`RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
-`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`,
-`RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`,
-`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE`,
-`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE` types),
+bases (`RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`, `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,     
+`RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`, `RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE`,    
+`RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE`, `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE`,
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE`, `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE`, `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, `RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE` types) 
 grid meshes (`RTC_GEOMETRY_TYPE_GRID`), point geometries
 (`RTC_GEOMETRY_TYPE_SPHERE_POINT`, `RTC_GEOMETRY_TYPE_DISC_POINT`,
 `RTC_TYPE_ORIENTED_DISC_POINT`),
 user-defined geometries (`RTC_GEOMETRY_TYPE_USER`), and instances
 (`RTC_GEOMETRY_TYPE_INSTANCE`).
 
-The types `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE` and
-`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE` will treat the curve as a
+The types `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, and
+`RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE` will treat the curve as a
 sweep surface of a varying-radius circle swept tangentially along the
-curve. The types `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE` and
-`RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE` use ray-facing ribbons as a
+curve. The types `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
+`RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`, and
+`RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE` use ray-facing ribbons as a
 faster-to-intersect approximation.
 
 After construction, geometries are enabled by default and not attached
 to any scene. Geometries can be disabled (`rtcDisableGeometry` call),
 and enabled again (`rtcEnableGeometry` call). A geometry can be
-attached to a single scene using the `rtcAttachGeometry` call (or
+attached to multiple scenes using the `rtcAttachGeometry` call (or
 `rtcAttachGeometryByID` call), and detached using the
 `rtcDetachGeometry` call. During attachment, a geometry ID is assigned
 to the geometry (or assigned by the user when using the
@@ -102,7 +110,7 @@ structure is built internally, which is the case if the
 #### EXIT STATUS
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 

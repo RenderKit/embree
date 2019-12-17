@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.4.0
+% Embree: High Performance Ray Tracing Kernels 3.6.1
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.4.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x64.vc12.msi). This
+[embree-3.6.1-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.6.1/embree-3.6.1.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.4.0 x64`.
+Files\Intel\Embree v3.6.1 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,20 +95,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.4.0 x64`.
+Files\Intel\Embree v3.6.1 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.4.0 x64` and uninstall it.
+3.6.1 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.4.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x64.vc12.windows.zip)
+[embree-3.6.1.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.6.1/embree-3.6.1.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.4.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x64.vc14.windows.zip)
+[embree-3.6.1.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.6.1/embree-3.6.1.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -122,17 +122,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.4.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x86_64.rpm.tar.gz)
+[embree-3.6.1.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.6.1/embree-3.6.1.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.4.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.6.1.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree3-lib-3.4.0-1.x86_64.rpm
-    sudo rpm --install embree3-devel-3.4.0-1.noarch.rpm
-    sudo rpm --install embree3-examples-3.4.0-1.x86_64.rpm
+    sudo rpm --install embree3-lib-3.6.1-1.x86_64.rpm
+    sudo rpm --install embree3-devel-3.6.1-1.noarch.rpm
+    sudo rpm --install embree3-examples-3.6.1-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -144,13 +144,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree3-lib-3.4.0-1.x86_64.rpm
-    sudo alien embree3-devel-3.4.0-1.noarch.rpm
-    sudo alien embree3-examples-3.4.0-1.x86_64.rpm
+    sudo alien embree3-lib-3.6.1-1.x86_64.rpm
+    sudo alien embree3-devel-3.6.1-1.noarch.rpm
+    sudo alien embree3-examples-3.6.1-1.x86_64.rpm
 
-    sudo dpkg -i embree3-lib_3.4.0-2_amd64.deb
-    sudo dpkg -i embree3-devel_3.4.0-2_all.deb
-    sudo dpkg -i embree3-examples_3.4.0-2_amd64.deb
+    sudo dpkg -i embree3-lib_3.6.1-2_amd64.deb
+    sudo dpkg -i embree3-devel_3.6.1-2_all.deb
+    sudo dpkg -i embree3-examples_3.6.1-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -176,20 +176,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree3-lib-3.4.0-1.x86_64
-    sudo rpm --erase embree3-devel-3.4.0-1.noarch
-    sudo rpm --erase embree3-examples-3.4.0-1.x86_64
+    sudo rpm --erase embree3-lib-3.6.1-1.x86_64
+    sudo rpm --erase embree3-devel-3.6.1-1.noarch
+    sudo rpm --erase embree3-examples-3.6.1-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.4.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.6.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.6.1/embree-3.6.1.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.4.0.x86_64.linux.tar.gz
-    source embree-3.4.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.6.1.x86_64.linux.tar.gz
+    source embree-3.6.1.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -202,7 +202,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.4.0.x86_64.dmg](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x86_64.dmg). This
+[embree-3.6.1.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.6.1/embree-3.6.1.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -224,12 +224,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.4.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.4.0/embree-3.4.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.6.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.6.1/embree-3.6.1.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.4.0.x64.macosx.tar.gz
-    source embree-3.4.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.6.1.x64.macosx.tar.gz
+    source embree-3.6.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -471,13 +471,18 @@ parameters that can be configured in CMake:
   is ON by default.
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
-  default). When using the statically compiled Embree library, you
-  have to define ENABLE_STATIC_LIB before including rtcore.h in your
-  application. Further multiple static libraries are generated for the
+  default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
   `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512knl.a`,
   `embree3_avx512skx.a`). You have to link these libraries in exactly
   this order of increasing ISA.
+
++ `EMBREE_API_NAMESPACE`: Specifies a namespace name to put all Embree
+  API symbols inside. By default no namespace is used and plain C symbols
+  exported.
+
++ `EMBREE_LIBRARY_NAME`: Specifies the name of the Embree library file
+  created. By default the name embree3 is used.
 
 + `EMBREE_IGNORE_CMAKE_CXX_FLAGS`: When enabled, Embree ignores
   default CMAKE_CXX_FLAGS. This option is turned ON by default.
@@ -557,6 +562,11 @@ parameters that can be configured in CMake:
   curve_radius*`EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR` to
   the ray origin are ignored. A value of 0.0f disables self
   intersection avoidance while 2.0f is the default value.
+
++ `EMBREE_MAX_INSTANCE_LEVEL_COUNT`: Specifies the maximum number of nested
+  instance levels. Should be greater than 0; the default value is 1.
+  Instances nested any deeper than this value will silently disappear in
+  release mode, and cause assertions in debug mode.
 
 
 Using Embree
@@ -676,7 +686,9 @@ If scene geometries get modified or attached or detached, the
 queries for the scene; otherwise the effect of the ray query is
 undefined. The modification of a geometry, committing the scene, and
 tracing of rays must always happen sequentially, and never at the same
-time.
+time. Any API call that sets a property of the scene or geometries
+contained in the scene count as scene modification, e.g. including
+setting of intersection filter functions.
 
 Scene flags can be used to configure a scene to use less memory
 (`RTC_SCENE_FLAG_COMPACT`), use more robust traversal algorithms
@@ -760,6 +772,19 @@ See tutorial [Triangle Geometry] for a complete example of how to
 trace single rays and ray packets. Also have a look at the tutorial
 [Stream Viewer] for an example of how to trace ray streams.
 
+Point Queries
+-------------
+
+The API supports traversal of the BVH using a point query object that
+specifies a location and a query radius. For all primitives
+intersecting the according domain, a user defined callback function is
+called which allows queries such as finding the closest point on the
+surface geometries of the scene (see Tutorial [ClosestPoint]) or
+nearest neighbour queries (see Tutorial [Voronoi]).
+
+See Section [rtcPointQuery] for a detailed description of how to set
+up point queries.
+
 Miscellaneous
 -------------
 
@@ -834,10 +859,10 @@ Device
 Scene
 -----
 
--   The API no longer distinguishes between a static and a
-    dynamic scene. Some users had issues as they wanted to do minor
-    modifications to static scenes, but maintain high
-    traversal performance.
+-   The API no longer distinguishes between a static and a dynamic
+    scene. Some users had issues as they wanted to do minor
+    modifications to static scenes, but maintain high traversal
+    performance.
 
     The new approach gives more flexibility, as each scene is
     changeable, and build quality settings can be changed on a commit
@@ -873,8 +898,8 @@ Geometry
     script does all required changed automatically. However, in some
     cases the script may introduce `rtcGetGeometry(scene, geomID)`
     calls to retrieve the geometry handle. Best store the geometry
-    handle inside your scene representation (and release it in
-    the destructor) and access the handle directly instead of calling
+    handle inside your scene representation (and release it in the
+    destructor) and access the handle directly instead of calling
     `rtcGetGeometry`.
 
 -   Geometries are not included inside a scene anymore but can be
@@ -887,8 +912,8 @@ Geometry
     earlier error checking and pre-calculating internal data per
     geometry object.
 
-    Such commit points were previously not required in the Embree
-    2 API. The upgrade script attempts to insert the commits
+    Such commit points were previously not required in the Embree 2
+    API. The upgrade script attempts to insert the commits
     automatically, but cannot do so properly under all circumstances.
     Thus please check if every `rtcCommitGeometry` call inserted by the
     script is properly placed, and if a `rtcCommitGeometry` call is
@@ -971,8 +996,8 @@ Miscellaneous
     by side. We made the headers C99 compliant.
 
 -   All API objects are now reference counted with release functions to
-    decrement and retain functions to increment the reference count
-    (if required).
+    decrement and retain functions to increment the reference count (if
+    required).
 
 -   Most callback functions no longer get different arguments as input,
     but a pointer to a structure containing all arguments. This results
@@ -991,8 +1016,8 @@ Miscellaneous
     the header (e.g. write `const int` instead of `int const` or
     convert the callback manually).
 
--   An intersection context is now required for each ray
-    query invocation. The context should be initialized using the
+-   An intersection context is now required for each ray query
+    invocation. The context should be initialized using the
     `rtcInitIntersectContext` function.
 
 -   The `rtcIntersect`-type functions get as input an `RTCRayHit` type,
@@ -1024,13 +1049,13 @@ Miscellaneous
     context with a pointer to that data.
 
     This change cannot be done by the script. Further, code will still
-    work if you extend the ray as the implementation did not
-    change yet.
+    work if you extend the ray as the implementation did not change
+    yet.
 
--   The ray structure now contains an additional `id` and
-    `flags` field. The `id` can be used to store the index of the ray
-    with respect to a ray packet or ray stream. The `flags` is reserved
-    for future use, and currently must be set to 0.
+-   The ray structure now contains an additional `id` and `flags`
+    field. The `id` can be used to store the index of the ray with
+    respect to a ray packet or ray stream. The `flags` is reserved for
+    future use, and currently must be set to 0.
 
 -   All previous intersection filter callback variants have been
     removed, except for the `RTCFilterFuncN` which gets a varying size
@@ -1041,25 +1066,25 @@ Miscellaneous
 
     We kept the guarantee that for `rtcIntersect1/4/8/16` and
     `rtcOccluded1/4/8/16` calls the packet size and ray order will not
-    change from the initial size and ordering when entering a
-    filter callback.
+    change from the initial size and ordering when entering a filter
+    callback.
 
 -   We no longer export ISPC-specific symbols. This has the advantage
     that certain linking issues went away, e.g. it is now possible to
     link an ISPC application compiled for any combination of ISAs, and
-    link this to an Embree library compiled with a different set
-    of ISAs. Previously the ISAs of the application had to be a subset
-    of the ISAs of Embree, and when the user enabled exactly one ISA,
-    they had to do this in Embree and the application.
+    link this to an Embree library compiled with a different set of
+    ISAs. Previously the ISAs of the application had to be a subset of
+    the ISAs of Embree, and when the user enabled exactly one ISA, they
+    had to do this in Embree and the application.
 
 -   We no longer export the ISPC tasking system, which means that the
     application has the responsibility to implement the ISPC tasking
     system itself. ISPC comes with example code on how to do this. This
     change is not performed by the script and must be done manually.
 
--   Fixed many naming inconsistencies, and changed names of further
-    API functions. All these renamings are properly done by the script
-    and need no further attention.
+-   Fixed many naming inconsistencies, and changed names of further API
+    functions. All these renamings are properly done by the script and
+    need no further attention.
 
 
 
@@ -1117,16 +1142,24 @@ The following configuration is supported:
     value of 0 enables all detected hardware threads. By default all
     hardware threads are used.
 
+-   `user_threads=[int]`: Sets the number of user threads that can be
+    used to join and participate in a scene commit using
+    `rtcJoinCommitScene`. The tasking system will only use
+    threads-user\_threads many worker threads, thus if the app wants to
+    solely use its threads to commit scenes, just set threads equal to
+    user\_threads. This option only has effect with the Intel(R)
+    Threading Building Blocks (TBB) tasking system.
+
 -   `set_affinity=[0/1]`: When enabled, build threads are affinitized
     to hardware threads. This option is disabled by default on standard
     CPUs, and enabled by default on Xeon Phi Processors.
 
--   `start_threads=[0/1]`: When enabled, the build threads are
-    started upfront. This can be useful for benchmarking to exclude
-    thread creation time. This option is disabled by default.
+-   `start_threads=[0/1]`: When enabled, the build threads are started
+    upfront. This can be useful for benchmarking to exclude thread
+    creation time. This option is disabled by default.
 
--   `isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Use
-    specified ISA. By default the ISA is selected automatically.
+-   `isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Use specified
+    ISA. By default the ISA is selected automatically.
 
 -   `max_isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Configures
     the automated ISA selection to use maximally the specified ISA.
@@ -1141,13 +1174,28 @@ The following configuration is supported:
     is ignored on other platforms. See Section [Huge Page Support]
     for more details.
 
--   `ignore_config_files=[0/1]`: When set to 1, configuration files
-    are ignored. Default is 0.
+-   `ignore_config_files=[0/1]`: When set to 1, configuration files are
+    ignored. Default is 0.
 
 -   `verbose=[0,1,2,3]`: Sets the verbosity of the output. When set to
     0, no output is printed by Embree, when set to a higher level more
-    output is printed. By default Embree does not print anything on
-    the console.
+    output is printed. By default Embree does not print anything on the
+    console.
+
+-   `frequency_level=[simd128,simd256,simd512]`: Specifies the
+    frequency level the application want to run on, which can be
+    either: a) simd128 for apps that do not use AVX instructions, b)
+    simd256 for apps that use heavy AVX instruction, c) simd512 for
+    apps that use heavy AVX-512 instructions. When some frequency level
+    is specified, Embree will avoid doing optimizations that may reduce
+    the frequency level below the level specified. E.g. if your app
+    does not use AVX instructions setting "frequency\_level=simd128"
+    will cause some CPUs to run at highest frequency, which may result
+    in higher application performance. However, this will prevent
+    Embree from using AVX optimizations to achieve higher ray tracing
+    performance, thus applications that trace many rays may still
+    perform better with the default setting of simd256, even though
+    this reduces frequency on some CPUs.
 
 Different configuration options should be separated by commas, e.g.:
 
@@ -1157,7 +1205,7 @@ Different configuration options should be separated by commas, e.g.:
 
 On success returns a handle of the created device. On failure returns
 `NULL` as device and sets a per-thread error code that can be queried
-using `rtcDeviceGetError(NULL)`.
+using `rtcGetDeviceError(NULL)`.
 
 #### SEE ALSO
 
@@ -1189,7 +1237,7 @@ ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1224,7 +1272,7 @@ unless these objects are destroyed first.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1256,9 +1304,9 @@ property is an integer of type `ssize_t`.
 
 Possible properties to query are:
 
--   `RTC_DEVICE_PROPERTY_VERSION`: Queries the combined version
-    number (MAJOR.MINOR.PATCH) with two decimal digits per component.
-    E.g. for Embree 2.8.3 the integer 208003 is returned.
+-   `RTC_DEVICE_PROPERTY_VERSION`: Queries the combined version number
+    (MAJOR.MINOR.PATCH) with two decimal digits per component. E.g. for
+    Embree 2.8.3 the integer 208003 is returned.
 
 -   `RTC_DEVICE_PROPERTY_VERSION_MAJOR`: Queries the major version
     number of Embree.
@@ -1342,6 +1390,7 @@ Possible properties to query are:
     0.  internal tasking system
     1.  Intel Threading Building Blocks (TBB)
     2.  Parallel Patterns Library (PPL)
+
 -   `RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED`: Queries whether
     `rtcJoinCommitScene` is supported. This is not the case when Embree
     is compiled with PPL or older versions of TBB.
@@ -1353,7 +1402,7 @@ returning a boolean value, the return value 0 denotes `false` and 1
 denotes `true`.
 
 On failure zero is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 
 
@@ -1460,7 +1509,7 @@ The error code is also set if an error callback function is registered.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1538,7 +1587,7 @@ happened and a deallocation will later free that data block.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1569,7 +1618,7 @@ scene handle can be released using the `rtcReleaseScene` API call.
 #### EXIT STATUS {#exit-status}
 
 On success a scene handle is returned. On failure `NULL` is returned
-and an error code is set that can be queried using `rtcDeviceGetError`.
+and an error code is set that can be queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1601,7 +1650,7 @@ ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1636,7 +1685,7 @@ count decremented.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1689,7 +1738,7 @@ map to its geometry representation. See `rtcSetGeometryUserData` and
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1741,7 +1790,7 @@ consumption and performance overhead.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1774,7 +1823,7 @@ geometries from a scene at the same time.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1811,7 +1860,7 @@ geometry handle from that representation directly.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1840,6 +1889,15 @@ spatial acceleration structure for the scene using all available worker
 threads. Ray queries can be performed only after committing all scene
 changes.
 
+If scene geometries get modified or attached or detached, the
+`rtcCommitScene` call must be invoked before performing any further ray
+queries for the scene; otherwise the effect of the ray query is
+undefined. The modification of a geometry, committing the scene, and
+tracing of rays must always happen sequentially, and never at the same
+time. Any API call that sets a property of the scene or geometries
+contained in the scene count as scene modification, e.g. including
+setting of intersection filter functions.
+
 The kind of acceleration structure built can be influenced using scene
 flags (see `rtcSetSceneFlags`), and the quality can be specified using
 the `rtcSetSceneBuildQuality` function.
@@ -1853,7 +1911,7 @@ causing overflows).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1925,7 +1983,7 @@ To detect whether `rtcJoinCommitScene` is supported, use the
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -1987,7 +2045,7 @@ allowed.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2038,7 +2096,7 @@ for a scene is `RTC_BUILD_QUALITY_MEDIUM`.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2075,8 +2133,8 @@ for the specified scene (`scene` argument). Possible scene flags are:
 -   `RTC_SCENE_FLAG_ROBUST`: Uses acceleration structures that allow
     for robust traversal, and avoids optimizations that reduce
     arithmetic accuracy. This mode is typically used for avoiding
-    artifacts caused by rays shooting through edges of
-    neighboring primitives.
+    artifacts caused by rays shooting through edges of neighboring
+    primitives.
 
 -   `RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION`: Enables support for a
     filter function inside the intersection context. See Section
@@ -2088,7 +2146,7 @@ Multiple flags can be enabled using an `or` operation, e.g.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2121,7 +2179,7 @@ other flags the following way:
 #### EXIT STATUS {#exit-status}
 
 On failure `RTC_SCENE_FLAG_NONE` is returned and an error code is set
-that can be queried using `rtcDeviceGetError`.
+that can be queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2166,7 +2224,7 @@ result is undefined.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2213,7 +2271,7 @@ result is undefined.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2276,19 +2334,24 @@ bases (`RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`,
+`RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE`,
-`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE` types), grid meshes
-(`RTC_GEOMETRY_TYPE_GRID`), point geometries
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE`,
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE` types), grid
+meshes (`RTC_GEOMETRY_TYPE_GRID`), point geometries
 (`RTC_GEOMETRY_TYPE_SPHERE_POINT`, `RTC_GEOMETRY_TYPE_DISC_POINT`,
 `RTC_TYPE_ORIENTED_DISC_POINT`), user-defined geometries
 (`RTC_GEOMETRY_TYPE_USER`), and instances
 (`RTC_GEOMETRY_TYPE_INSTANCE`).
 
-The types `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE` and
-`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE` will treat the curve as a sweep
-surface of a varying-radius circle swept tangentially along the curve.
-The types `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE` and
-`RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE` use ray-facing ribbons as a
+The types `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, and
+`RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE` will treat the curve as a
+sweep surface of a varying-radius circle swept tangentially along the
+curve. The types `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
+`RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`, and
+`RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE` use ray-facing ribbons as a
 faster-to-intersect approximation.
 
 After construction, geometries are enabled by default and not attached
@@ -2326,7 +2389,7 @@ is set as the scene build quality. See Section
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2364,10 +2427,10 @@ specified by setting an index buffer (`RTC_BUFFER_TYPE_INDEX` type) and
 the triangle vertices by setting a vertex buffer
 (`RTC_BUFFER_TYPE_VERTEX` type). See `rtcSetGeometryBuffer` and
 `rtcSetSharedGeometryBuffer` for more details on how to set buffers.
-The index buffer contains an array of three 32-bit indices per triangle
-(`RTC_FORMAT_UINT` format) and the number of primitives is inferred
-from the size of that buffer. The vertex buffer contains an array of
-single precision `x`, `y`, `z` floating point coordinates
+The index buffer must contain an array of three 32-bit indices per
+triangle (`RTC_FORMAT_UINT3` format) and the number of primitives is
+inferred from the size of that buffer. The vertex buffer must contain
+an array of single precision `x`, `y`, `z` floating point coordinates
 (`RTC_FORMAT_FLOAT3` format), and the number of vertices are inferred
 from the size of that buffer. The vertex buffer can be at most 16 GB
 large.
@@ -2397,7 +2460,7 @@ triangle meshes.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that be get
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2465,7 +2528,7 @@ all these buffers must have the same stride and size.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2515,7 +2578,7 @@ Each grid in the grid buffer is of the type `RTCGrid`:
 The `RTCGrid` structure describes a 2D grid of vertices (with respect
 to the vertex buffer of the grid mesh). The `width` and `height`
 members specify the number of vertices in u and v direction, e.g.
-setting both `width` and `height` to 3 sets up a 3x3 vertex grid. The
+setting both `width` and `height` to 3 sets up a 3×3 vertex grid. The
 maximum allowed `width` and `height` is 32767. The `startVertexID`
 specifies the ID of the top-left vertex in the vertex grid, while the
 `stride` parameter specifies a stride (in number of vertices) used to
@@ -2536,7 +2599,7 @@ all these buffers must have the same stride and size.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2712,7 +2775,7 @@ However, the indices of the topologies themselves may be different.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2737,6 +2800,9 @@ RTC\_GEOMETRY\_TYPE\_CURVE
     RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE - 
       flat curve geometry with cubic Hermite basis
 
+    RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE - 
+      flat curve geometry with Catmull-Rom basis
+
     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE -
       flat normal oriented curve geometry with cubic Bézier basis
 
@@ -2745,6 +2811,9 @@ RTC\_GEOMETRY\_TYPE\_CURVE
 
     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE - 
       flat normal oriented curve geometry with cubic Hermite basis
+
+    RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE - 
+      flat normal oriented curve geometry with Catmull-Rom basis
 
     RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE -
       sweep surface curve geometry with cubic Bézier basis
@@ -2755,6 +2824,9 @@ RTC\_GEOMETRY\_TYPE\_CURVE
     RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE -
       sweep surface curve geometry with cubic Hermite basis
 
+    RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE -
+      sweep surface curve geometry with Catmull-Rom basis
+
 #### SYNOPSIS {#synopsis}
 
     #include <embree3/rtcore.h>
@@ -2763,12 +2835,15 @@ RTC\_GEOMETRY\_TYPE\_CURVE
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE);
 
 #### DESCRIPTION {#description}
 
@@ -2778,18 +2853,22 @@ created by passing `RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_CATMULL_ROM_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
-`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, or
-`RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE` to the `rtcNewGeometry`
+`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE`, or
+`RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE` to the `rtcNewGeometry`
 function. The curve indices can be specified through an index buffer
 (`RTC_BUFFER_TYPE_INDEX`) and the curve vertices through a vertex
 buffer (`RTC_BUFFER_TYPE_VERTEX`). For the Hermite basis a tangent
-buffer (`RTC_BUFFER_TYPE_TANGENT`) and for normal oriented curves a
-normal buffer (`RTC_BUFFER_TYPE_NORMAL`) has to get specified
-additionally. See `rtcSetGeometryBuffer` and
+buffer (`RTC_BUFFER_TYPE_TANGENT`), normal oriented curves a normal
+buffer (`RTC_BUFFER_TYPE_NORMAL`), and for normal oriented Hermite
+curves a normal derivative buffer (`RTC_BUFFER_TYPE_NORMAL_DERIVATIVE`)
+has to get specified additionally. See `rtcSetGeometryBuffer` and
 `rtcSetSharedGeometryBuffer` for more details on how to set buffers.
 
 The index buffer contains an array of 32-bit indices (`RTC_FORMAT_UINT`
@@ -2843,6 +2922,10 @@ shared. Different versions of Catmull-Rom splines can be easily
 constructed usig the Hermite basis, by calculating a proper tangent
 buffer from the control points.
 
+For the Catmull-Rom basis the indices point to the first of 4
+consecutive control points in the vertex buffer. This basis goes
+through p0 and p3, with p0-p1 and p2-p3 tangents.
+
 The `RTC_GEOMETRY_TYPE_FLAT_*` flat mode is a fast mode designed to
 render distant hair. In this mode the curve is rendered as a connected
 sequence of ray facing quads. Individual quads are considered to have
@@ -2852,47 +2935,29 @@ through the `rtcSetGeometryTessellationRate` function. By default the
 tessellation rate is 4.
 
 The `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_*` mode is a mode designed to
-render blades of grass. In this mode the curve is rendered as a flat
-band whose center exactly follows the provided vertex spline, whose
-half width approximately follows the provided radius spline, and whose
-orientation follows the provided normals. For normal oriented curves,
-the indices point to the first of 2 consecutive normals in the normal
-buffer. The normal of the constructed curve will match the direction of
-the first normal at the beginning, and the direction of the second
-normal at the end of the curve. Please note that this layout of the
-normal buffer is independent of the used basis for the curve itself.
-For the cubic B-spline and cubic Hermite basis the stride from the
-first control vertex of the first and the next segment is typically 1,
-thus the normal buffer is compact and the curves share the normal at
-the begin and end. However, for the cubic Bézier basis, the stride is
-typically 3, thus begin and end normal cannot get shared. We recommend
-using the Hermite basis instead of the Bézier basis, as it allows a
-more compact layout.
+render blades of grass. In this mode a vertex spline has to get
+specified as for the previous modes, but additionally a normal spline
+is required. If the Hermite basis is used, the `RTC_BUFFER_TYPE_NORMAL`
+and `RTC_BUFFER_TYPE_NORMAL_DERIVATIVE` buffers have both to be set.
+
+The curve is rendered as a flat band whose center approximately follows
+the provided vertex spline, whose half width approximately follows the
+provided radius spline, and whose normal orientation approximately
+follows the provided normal spline.
 
 To intersect the normal oriented curve, we perform a newton-raphson
 style intersection of a ray with a tensor product surface of a linear
 basis (perpendicular to the curve) and cubic Bézier basis (along the
-curve). We construct the 8 control points of this surface in Bézier
-basis by calculating a normalized direction `d01=normalize(v1-v0,n0)`
-and `d23=normalize(v3-v2,n1)`. These directions are perpendicular to
-the tangent direction of the center curve and first and second
-specified normal. The 8 control vertices of the surface are constructed
-as:
-
-     p00 = v0-r0*d01, p10 = v0+r0*d01
-     p01 = v1-r1*d01, p11 = v1+r1*d01
-     p02 = v2-r2*d23, p12 = v2+r2*d23
-     p03 = v3-r3*d23, p13 = v3+r3*d23
-
-The center of this curve exactly follows the specified center spline,
-the normal at the start (and end) exactly match the fisrst (and second)
-specified normal, and the half width exactly matches the evaluated
-radius spline at the start (and end). In-between the radius and
-orientation of the curve changes smoothly. Note that the construction
-does not work when the provided normals are parallel to the curve
-direction, as then no well defined perpendicular direction `d01` or
-`d23` are defined. For this reason thus the provided normals should
-best be kept as perpendicular to the curve direction as possible.
+curve). We use a guide curve and its derivatives to construct the
+control points of that surface. The guide curve is defined by a sweep
+surface defined by sweeping a line centered at the vertex spline
+location along the curve. At each parameter value the half width of the
+line matches the radius spline, and the direction matches the cross
+product of the normal from the normal spline and tangent of the vertex
+spline. Note that this construction does not work when the provided
+normals are parallel to the curve direction. For this reason the
+provided normals should best be kept as perpendicular to the curve
+direction as possible.
 
 In the `RTC_GEOMETRY_TYPE_ROUND_*` round mode, a real geometric surface
 is rendered for the curve, which is more expensive but allows closeup
@@ -2905,9 +2970,10 @@ the linear basis.
 The intersection with the curve segment stores the parametric hit
 location along the curve segment as u-coordinate (range 0 to +1).
 
-For Bézier, B-spline, and Hermite curves, the v-coordinate is set to
-the normalized distance in the range -1 to +1. For the linear basis and
-in round mode the v-coordinate is set to zero.
+For flat curves, the v-coordinate is set to the normalized distance in
+the range -1 to +1. For normal oriented curves the v-coordinate is in
+the range 0 to 1. For the linear basis and in round mode the
+v-coordinate is set to zero.
 
 In flat mode, the geometry normal `Ng` is set to the tangent of the
 curve at the hit location. In round mode and for normal oriented
@@ -2928,7 +2994,7 @@ create and use curve geometries.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -2961,7 +3027,7 @@ RTC\_GEOMETRY\_TYPE\_POINT
 #### DESCRIPTION {#description}
 
 Points with per vertex radii are supported with sphere, ray-oriented
-discs, and normal-oriented discs geometric represetntations. Such point
+discs, and normal-oriented discs geometric representations. Such point
 geometries are created by passing `RTC_GEOMETRY_TYPE_SPHERE_POINT`,
 `RTC_GEOMETRY_TYPE_DISC_POINT`, or
 `RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT` to the `rtcNewGeometry`
@@ -2986,22 +3052,25 @@ The `RTC_GEOMETRY_TYPE_DISC_POINT` flat mode is a fast mode designed to
 render distant points. In this mode the point is rendered as a ray
 facing disc.
 
-The `RTC_GEOMETRY_TYPE__ORIENTED_DISC_POINT` mode is a mode designed as
+The `RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT` mode is a mode designed as
 a midpoint geometrically between ray facing discs and spheres. In this
 mode the point is rendered as a normal oriented disc.
+
+For all point types, only the hit distance and geometry normal is
+returned as hit information, u and v are set to zero.
 
 For multi-segment motion blur, the number of time steps must be first
 specified using the `rtcSetGeometryTimeStepCount` call. Then a vertex
 buffer for each time step can be set using different buffer slots, and
 all these buffers must have the same stride and size.
 
-Also see tutorials[Points] for an example of how to create and use
+Also see tutorial [Points] for an example of how to create and use
 point geometries.
 
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3063,7 +3132,7 @@ user-defined geometries.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3089,13 +3158,17 @@ RTC\_GEOMETRY\_TYPE\_INSTANCE
 
 #### DESCRIPTION {#description}
 
-Embree supports instancing of scenes using affine transformations (3x3
+Embree supports instancing of scenes using affine transformations (3×3
 matrix plus translation). As the instanced scene is stored only a
 single time, even if instanced to multiple locations, this feature can
-be used to create very complex scenes with small memory footprint. Only
-single-level instancing is supported natively by Embree, however,
-multi-level instancing can be manually implemented through user
-geometries.
+be used to create very complex scenes with small memory footprint.
+
+Embree supports both single-level instancing and multi-level
+instancing. The maximum instance nesting depth is
+`RTC_MAX_INSTANCE_LEVEL_COUNT`; it can be configured at compile-time
+using the constant `EMBREE_MAX_INSTANCE_LEVEL_COUNT`. Users should
+adapt this constant to their needs: instances nested any deeper are
+silently ignored in release mode, and cause assertions in debug mode.
 
 Instances are created by passing `RTC_GEOMETRY_TYPE_INSTANCE` to the
 `rtcNewGeometry` function call. The instanced scene can be set using
@@ -3125,13 +3198,13 @@ specified using the `rtcSetGeometryTimeStepCount` function. Then a
 transformation for each time step can be specified using the
 `rtcSetGeometryTransform` function.
 
-See tutorial [Instanced Geometry] for an example of how to use
-instances.
+See tutorials [Instanced Geometry] and [Multi Level Instancing] for
+examples of how to use instances.
 
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3164,7 +3237,7 @@ handle the ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3195,7 +3268,7 @@ geometry gets destroyed.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3227,7 +3300,7 @@ or to commit a scene containing the geometry using `rtcCommitScene`.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3260,7 +3333,7 @@ committed using `rtcCommitScene` for the change to have effect.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3293,7 +3366,7 @@ committed using `rtcCommitScene` for the change to have effect.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3345,7 +3418,7 @@ the motion-blurred geometry at the ray time.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3400,7 +3473,7 @@ to see how to define the time steps for the specified time range.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3440,7 +3513,7 @@ and subdivision geometries (`RTC_GEOMETRY_TYPE_SUBDIVISION`).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3485,7 +3558,7 @@ whether ray masks are enabled by querying the
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3520,8 +3593,8 @@ two-level acceleration structure is build, and geometries build a
 separate acceleration structure using the geometry build quality. The
 per-geometry build quality can be one of:
 
--   `RTC_BUILD_QUALITY_LOW`: Creates lower quality data
-    structures, e.g. for dynamic scenes.
+-   `RTC_BUILD_QUALITY_LOW`: Creates lower quality data structures,
+    e.g. for dynamic scenes.
 
 -   `RTC_BUILD_QUALITY_MEDIUM`: Default build quality for most usages.
     Gives a good compromise between build and render performance.
@@ -3536,7 +3609,7 @@ per-geometry build quality can be one of:
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3587,7 +3660,7 @@ reference to the buffer object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3653,7 +3726,7 @@ the vertex buffer, resulting in even higher memory savings.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3701,7 +3774,7 @@ element should be readable using 16-byte SSE load instructions.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3737,7 +3810,7 @@ argument).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3779,7 +3852,7 @@ modifications after the first `rtcCommitScene`.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3836,7 +3909,7 @@ a primitive and reject hits that are outside the silhouette. E.g. a
 tree leaf could be modeled with an alpha texture that decides whether
 hit points lie inside or outside the leaf.
 
-If the `RTC_SCENE_HIGH_QUALITY` mode is set, the filter functions may
+If the `RTC_BUILD_QUALITY_HIGH` mode is set, the filter functions may
 be called multiple times for the same primitive hit. Further, rays
 hitting exactly the edge might also report two hits for the same
 surface. For certain use cases, the application may have to work around
@@ -3894,7 +3967,7 @@ proper packet types.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -3944,7 +4017,7 @@ callback function.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4057,7 +4130,7 @@ set user data pointer of a geometry.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4088,7 +4161,7 @@ previously set with `rtcSetGeometryUserData`. When
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4122,7 +4195,7 @@ specified user-defined geometry (`geometry` parameter).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4192,7 +4265,7 @@ bounding box to the destination structure (`bounds_o` member).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4269,7 +4342,7 @@ user-defined primitive with the ray was found in the valid range (from
 (`tfar` member) and the hit (`u`, `v`, `Ng`, `instID`, `geomID`,
 `primID` members). In particular, the currently intersected instance is
 stored in the `instID` field of the intersection context, which must be
-copied into the `instID` member of the hit.
+deep copied into the `instID` member of the hit.
 
 As a primitive might have multiple intersections with a ray, the
 intersection filter function needs to be invoked by the user geometry
@@ -4301,7 +4374,7 @@ the per-ray data.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4403,12 +4476,141 @@ the per-ray data.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
 [rtcSetGeometryIntersectFunction], [rtcSetGeometryUserData],
 [rtcFilterOcclusion]
+
+
+
+rtcSetGeometryPointQueryFunction
+--------------------------------
+
+#### NAME {#name}
+
+    rtcSetGeometryPointQueryFunction - sets the point query callback function
+      for a geometry
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree3/rtcore.h>
+
+    struct RTCPointQueryFunctionArguments
+    {
+      // the (world space) query object that was passed as an argument of rtcPointQuery.
+      struct RTCPointQuery* query;
+
+      // used for user input/output data. Will not be read or modified internally.
+      void* userPtr;
+
+      // primitive and geometry ID of primitive
+      unsigned int  primID;        
+      unsigned int  geomID;    
+
+      // the context with transformation and instance ID stack
+      struct RTCPointQueryContext* context;
+
+      // scaling factor indicating whether the current instance transformation
+      // is a similarity transformation.
+      float similarityScale;
+    };
+
+    typedef bool (*RTCPointQueryFunction)(
+      struct RTCPointQueryFunctionArguments* args
+    );
+
+    void rtcSetGeometryPointQueryFunction(
+      RTCGeometry geometry,
+      RTCPointQueryFunction queryFunc
+    );
+
+#### DESCRIPTION {#description}
+
+The `rtcSetGeometryPointQueryFunction` function registers a point query
+callback function (`queryFunc` argument) for the specified geometry
+(`geometry` argument).
+
+Only a single callback function can be registered per geometry and
+further invocations overwrite the previously set callback function.
+Passing `NULL` as function pointer disables the registered callback
+function.
+
+The registered callback function is invoked by [rtcPointQuery] for
+every primitive of the geometry that intersects the corresponding point
+query domain. The callback function of type `RTCPointQueryFunction`
+gets passed a number of arguments through the
+`RTCPointQueryFunctionArguments` structure. The `query` object is the
+original point query object passed into [rtcPointQuery], `usrPtr` is
+an arbitrary pointer to pass input into and store results of the
+callback function. The `primID`, `geomID` and `context` (see
+[rtcInitPointQueryContext] for details) can be used to identify the
+geometry data of the primitive.
+
+A `RTCPointQueryFunction` can also be passed directly as an argument to
+[rtcPointQuery]. In this case the callback is invoked for all
+primitives in the scene that intersect the query domain. If a callback
+function is passed as an argument to [rtcPointQuery] and (a
+potentially different) callback function is set for a geometry with
+[rtcSetGeometryPointQueryFunction] both callback functions are
+invoked and the callback function passed to [rtcPointQuery] will be
+called before the geometry specific callback function.
+
+If instancing is used, the parameter `simliarityScale` indicates
+whether the current instance transform (top element of the stack in
+`context`) is a similarity transformation or not. Similarity
+transformations are composed of translation, rotation and uniform
+scaling and if a matrix M defines a similarity transformation, there is
+a scaling factor D such that for all x,y: dist(Mx, My) = D \* dist(x,
+y). In this case the parameter `scalingFactor` is this scaling factor D
+and otherwise it is 0. A valid similarity scale (`similarityScale` &gt;
+0) allows to compute distance information in instance space and scale
+the distances into world space (for example, to update the query
+radius, see below) by dividing the instance space distance with the
+similarity scale. If the current instance transform is not a similarity
+transform (`similarityScale` is 0), the distance computation has to be
+performed in world space to ensure correctness. In this case the
+instance to world transformations given with the `context` should be
+used to transform the primitive data into world space. Otherwise, the
+query location can be transformed into instance space which can be more
+efficient. If there is no instance transform, the similarity scale is
+1.
+
+The callback function will potentially be called for primitives outside
+the query domain for two resons: First, the callback is invoked for all
+primitives inside a BVH leaf node since no geometry data of primitives
+is determined internally and therefore individual primitives are not
+culled (only their (aggregated) bounding boxes). Second, in case non
+similarity transformations are used, the resulting ellipsoidal query
+domain (in instance space) is approximated by its axis aligned bounding
+box internally and therefore inner nodes that do not intersect the
+original domain might intersect the approximative bounding box which
+results in unneccessary callbacks. In any case, the callbacks are
+conservative, i.e. if a primitive is inside the query domain a callback
+will be invoked but the reverse is not neccessarily true.
+
+For efficiency, the radius of the `query` object can be decreased (in
+world space) inside the callback function to improve culling of
+geometry during BVH traversal. If the query radius was updated, the
+callback function should return `true` to issue an update of internal
+traversal information. Increasing the radius or modifying the time or
+position of the query results in undefined behaviour.
+
+Within the callback function, it is safe to call [rtcPointQuery]
+again, for example when implementing instancing manually. In this case
+the instance transformation should be pushed onto the stack in
+`context`. Embree will internally compute the point query information
+in instance space using the top element of the stack in `context` when
+[rtcPointQuery] is called.
+
+For a reference implementation of a closest point traversal of triangle
+meshes using instancing and user defined instancing see the tutorial
+[ClosestPoint].
+
+#### SEE ALSO {#see-also}
+
+[rtcPointQuery], [rtcInitPointQueryContext]
 
 
 
@@ -4438,7 +4640,7 @@ argument).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4487,7 +4689,7 @@ are supported:
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4530,13 +4732,13 @@ Possible formats for the returned matrix are:
     out in column-major form.
 
 -   `RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR`: The 3×4 float matrix is laid
-    out in column-major form as a 4x4 homogeneous matrix with last row
+    out in column-major form as a 4×4 homogeneous matrix with last row
     equal to (0, 0, 0, 1).
 
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4574,7 +4776,7 @@ quads along each edge.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4614,7 +4816,7 @@ specified, then the individual topologies can be configured using
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4671,7 +4873,7 @@ certain parts of the subdivision mesh:
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4718,7 +4920,7 @@ textures onto one subdivision geometry.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4807,7 +5009,7 @@ use the displacement mapping functions.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4854,7 +5056,7 @@ edge e5, etc.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4896,7 +5098,7 @@ function does not depend on the topology ID.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4937,7 +5139,7 @@ function does not depend on the topology ID.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -4979,7 +5181,7 @@ function does not depend on the topology ID.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5026,7 +5228,7 @@ have different index buffers assigned.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5218,7 +5420,7 @@ storage for at least one more float to the end of the buffer.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5253,7 +5455,7 @@ buffer can be released using the `rtcReleaseBuffer` function.
 At construction time, the pointer to the user-managed buffer data
 (`ptr` argument) including its size in bytes (`byteSize` argument) is
 provided to create the buffer. At buffer construction time no buffer
-data is allocated, but the buffer data provided be the application is
+data is allocated, but the buffer data provided by the application is
 used. The buffer data must remain valid for as long as the buffer may
 be used, and the user is responsible to free the buffer data when no
 longer required.
@@ -5271,7 +5473,7 @@ the `rtcNewSharedBuffer` function will fail.
 #### EXIT STATUS {#exit-status}
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5303,7 +5505,7 @@ ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5334,7 +5536,7 @@ destroyed.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5363,7 +5565,7 @@ the specified buffer object (`buffer` argument).
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -5450,15 +5652,15 @@ RTCHit
 
     struct RTCHit
     {
-      float Ng_x;          // x coordinate of geometry normal
-      float Ng_y;          // y coordinate of geometry normal
-      float Ng_z;          // z coordinate of geometry normal
+      float Ng_x;                                        // x coordinate of geometry normal
+      float Ng_y;                                        // y coordinate of geometry normal
+      float Ng_z;                                        // z coordinate of geometry normal
 
-      float u;             // barycentric u coordinate of hit
-      float v;             // barycentric v coordinate of hit
+      float u;                                           // barycentric u coordinate of hit
+      float v;                                           // barycentric v coordinate of hit
 
-      unsigned int primID; // geometry ID
-      unsigned int geomID; // primitive ID
+      unsigned int primID;                               // geometry ID
+      unsigned int geomID;                               // primitive ID
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // instance ID
     };
 
@@ -5469,7 +5671,7 @@ result. The hit contains the unnormalized geometric normal in object
 space at the hit location (`Ng_x`, `Ng_y`, `Ng_z` members), the
 barycentric u/v coordinates of the hit (`u` and `v` members), as well
 as the primitive ID (`primID` member), geometry ID (`geomID` member),
-and instance ID (`instID` member) of the hit. The parametric
+and instance ID stack (`instID` member) of the hit. The parametric
 intersection distance is not stored inside the hit, but stored inside
 the `tfar` member of the ray.
 
@@ -5483,7 +5685,7 @@ packets of an arbitrary compile-time size.
 
 #### SEE ALSO {#see-also}
 
-[RTCRay]
+[RTCRay], [Multi-Level Instancing]
 
 
 
@@ -5600,7 +5802,7 @@ RTCHitN
 
     unsigned& RTCHitN_primID(RTCHitN* hit, unsigned int N, unsigned int i);
     unsigned& RTCHitN_geomID(RTCHitN* hit, unsigned int N, unsigned int i);
-    unsigned& RTCHitN_instID(RTCHitN* hit, unsigned int N, unsigned int i, unsigned int l);
+    unsigned& RTCHitN_instID(RTCHitN* hit, unsigned int N, unsigned int i, unsigned int level);
 
 #### DESCRIPTION {#description}
 
@@ -5688,6 +5890,9 @@ rtcInitIntersectContext
     {
       enum RTCIntersectContextFlags flags;
       RTCFilterFunctionN filter;
+      #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+      unsigned int instStackSize;
+      #endif
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
     };
 
@@ -5700,8 +5905,9 @@ rtcInitIntersectContext
 A per ray-query intersection context (`RTCIntersectContext` type) is
 supported that can be used to configure intersection flags (`flags`
 member), specify a filter callback function (`filter` member), specify
-the ID of the current instance (`instID` member), and to attach
-arbitrary data to the query (e.g. per ray data).
+the chain of IDs of the current instance (`instID` and `instStackSize`
+members), and to attach arbitrary data to the query (e.g. per ray
+data).
 
 The `rtcInitIntersectContext` function initializes the context to
 default values and should be called to initialize every intersection
@@ -5786,9 +5992,8 @@ $[0, ∞]$, thus ranges that start behind the ray origin are not valid,
 but ranges can reach to infinity. See Section [RTCRay] for the ray
 layout description.
 
-The instance ID (`instID` hit member) and geometry ID (`geomID` hit
-member) of the hit data must be initialized to
-`RTC_INVALID_GEOMETRY_ID` (-1).
+The geometry ID (`geomID` hit member) of the hit data must be
+initialized to `RTC_INVALID_GEOMETRY_ID` (-1).
 
 Further, an intersection context for the ray query function must be
 created and initialized (see `rtcInitIntersectContext`).
@@ -5797,20 +6002,21 @@ When no intersection is found, the ray/hit data is not updated. When an
 intersection is found, the hit distance is written into the `tfar`
 member of the ray and all hit data is set, such as unnormalized
 geometry normal in object space (`Ng` hit member), local hit
-coordinates (`u`, `v` hit member), instance ID (`instID` hit member),
-geometry ID (`geomID` hit member), and primitive ID (`primID` hit
-member). See Section [RTCHit] for the hit layout description.
+coordinates (`u`, `v` hit member), instance ID stack (`instID` hit
+member), geometry ID (`geomID` hit member), and primitive ID (`primID`
+hit member). See Section [RTCHit] for the hit layout description.
 
-If the instance ID was set (thus it is not equal to
-`RTC_INVALID_GEOMETRY_ID`), the instance ID corresponds to the geometry
-ID of the hit instance of the top-level scene, the geometry ID
-corresponds to the hit geometry inside the hit instanced scene, and the
-primitive ID corresponds to the n-th primitive of that geometry.
+If the instance ID stack has a prefix of values not equal to
+`RTC_INVALID_GEOMETRY_ID`, the instance ID on each level corresponds to
+the geometry ID of the hit instance of the higher-level scene, the
+geometry ID corresponds to the hit geometry inside the hit instanced
+scene, and the primitive ID corresponds to the n-th primitive of that
+geometry.
 
-If the instance ID was not set (thus it is still equal to
-`RTC_INVALID_GEOMETRY_ID`), the geometry ID corresponds to the hit
-geometry inside the scene, and the primitive ID corresponds to the n-th
-primitive of that geometry.
+If level 0 of the instance ID stack is equal to
+`RTC_INVALID_GEOMETRY_ID`, the geometry ID corresponds to the hit
+geometry inside the top-level scene, and the primitive ID corresponds
+to the n-th primitive of that geometry.
 
 The implementation makes no guarantees that primitives whose hit
 distance is exactly at (or very close to) `tnear` or `tfar` are hit or
@@ -6573,6 +6779,170 @@ thus will not set any error flags on failure.
 
 
 
+rtcInitPointQueryContext
+------------------------
+
+#### NAME {#name}
+
+    rtcInitPointQueryContext - initializes the context information (e.g.
+      stack of (multilevel-)instance transformations) for point queries
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree3/rtcore.h>
+
+    struct RTC_ALIGN(16) RTCPointQueryContext
+    {
+      // accumulated 4x4 column major matrices from world to instance space.
+      float world2inst[RTC_MAX_INSTANCE_LEVEL_COUNT][16];
+      
+      // accumulated 4x4 column major matrices from instance to world space.
+      float inst2world[RTC_MAX_INSTANCE_LEVEL_COUNT][16];
+
+      // instance ids.
+      unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
+      
+      // number of instances currently on the stack.
+      unsigned int instStackSize;
+    };
+
+    void rtcInitPointQueryContext(
+      struct RTCPointQueryContext* context
+    );
+
+#### DESCRIPTION {#description}
+
+A stack (`RTCPointQueryContext` type) which stores the IDs and instance
+transformations during a BVH traversal for a point query. The
+transformations are assumed to be affine transformations (3×3 matrix
+plus translation) and therefore the last column is ignored (see
+[RTC\_GEOMETRY\_TYPE\_INSTANCE] for details).
+
+The `rtcInitPointContext` function initializes the context to default
+values and should be called for initialization.
+
+The context will be passed as an argument to the point query callback
+function (see [rtcSetGeometryPointQueryFunction]) and should be used
+to pass instance information down the instancing chain for user defined
+instancing (see tutorial [ClosestPoint] for a reference
+implementation of point queries with user defined instancing).
+
+The context is an necessary argument to [rtcPointQuery] and Embree
+internally uses the topmost instance tranformation of the stack to
+transform the point query into instance space.
+
+#### EXIT STATUS {#exit-status}
+
+No error code is set by this function.
+
+#### SEE ALSO {#see-also}
+
+[rtcPointQuery], [rtcSetGeometryPointQueryFunction]
+
+
+\#\# rtcPointQuery
+
+#### NAME {#name}
+
+    rtcPointQuery - traverses the BVH with a point query object
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree3/rtcore.h>
+
+    struct RTC_ALIGN(16) RTCPointQuery
+    {
+      // location of the query
+      float x;
+      float y;
+      float z;
+
+      // radius and time of the query
+      float radius;
+      float time;
+    };
+
+    void rtcPointQuery(
+      RTCScene scene,
+      struct RTCPointQuery* query,
+      struct RTCPointQueryContext* context,
+      struct RTCPointQueryFunction* queryFunc,
+      void* userPtr
+    );
+
+#### DESCRIPTION {#description}
+
+The `rtcPointQuery` function traverses the BVH using a `RTCPointQuery`
+object (`query` argument) and calls a user defined callback function
+(e.g `queryFunc` argument) for each primitive of the scene (`scene`
+argument) that intersects the query domain.
+
+The user has to initialize the query location (`x`, `y` and `z` member)
+and query radius in the range $[0, ∞]$. If the scene contains motion
+blur geometries, also the query time (`time` member) must be
+initialized to a value in the range $[0, 1]$.
+
+Further, a `RTCPointQueryContext` (`context` argument) must be created
+and initialized. It contains ID and transformation information of the
+instancing hierarchy if (multilevel-)instancing is used. See
+[rtcInitPointQueryContext] for further information.
+
+For every primitive that intersects the query domain, the callback
+function (`queryFunc` argument) is called, in which distance
+computations to the primitive can be implemented. The user will be
+provided with the primID and geomID of the according primitive,
+however, the geometry information (e.g. triangle index and vertex data)
+has to be determined manually. The `userPtr` argument can be used to
+input geometry data of the scene or output results of the point query
+(e.g. closest point currently found on surface geometry (see tutorial
+[ClosestPoint])).
+
+The parameter `queryFunc` is optional and can be NULL, in which case
+the callback function is not invoked. However, a callback function can
+still get attached to a specific `RTCGeometry` object using
+[rtcSetGeometryPointQueryFunction]. If a callback function is
+attached to a geometry and (a potentially different) callback function
+is passed as an argument to `rtcPointQuery`, both functions are called
+for the primitives of the according geometries.
+
+The query radius can be decreased inside the callback function, which
+allows to efficiently cull parts of the scene during BVH traversal.
+Increasing the query radius and modifying time or location of the query
+will result in undefined behaviour.
+
+The callback function will be called for all primitives in a leaf node
+of the BVH even if the primitive is outside the query domain, since
+Embree does not gather geometry information of primitives internally.
+
+Point queries can be used with (multilevel)-instancing. However, care
+has to be taken when the instance transformation contains anisotropic
+scaling or sheering. In these cases distance computations have to be
+performed in world space to ensure correctness and the ellipsoidal
+query domain (in instance space) will be approximated with its axis
+aligned bounding box interally. Therefore, the callback function might
+be invoked even for primitives in inner BVH nodes that do not intersect
+the query domain. See [rtcSetGeometryPointQueryFunction] for details.
+
+The point query structure must be aligned to 16 bytes.
+
+#### SUPPORTED PRIMITIVES
+
+Currenly, all primitive types are supported by the point query API
+except of points (see [RTC\_GEOMETRY\_TYPE\_POINT]), curves (see
+[RTC\_GEOMETRY\_TYPE\_CURVE]) and sudivision surfaces (see
+[RTC\_GEOMETRY\_SUBDIVISION]).
+
+#### EXIT STATUS {#exit-status}
+
+For performance reasons this function does not do any error checks,
+thus will not set any error flags on failure.
+
+#### SEE ALSO {#see-also}
+
+[rtcSetGeometryPointQueryFunction], [rtcInitPointQueryContext]
+
+
+
 rtcNewBVH
 ---------
 
@@ -6600,7 +6970,7 @@ over user-specified primitives. See the documentation of the
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -6632,7 +7002,7 @@ ownership of the object.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -6662,7 +7032,7 @@ argument). When the reference count falls to 0, the BVH gets destroyed.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -6864,7 +7234,7 @@ the build.
 #### EXIT STATUS {#exit-status}
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
@@ -7017,8 +7387,10 @@ Embree Tutorials
 ================
 
 Embree comes with a set of tutorials aimed at helping users understand
-how Embree can be used and extended. All tutorials exist in an ISPC and
-C++ version to demonstrate the two versions of the API. Look for files
+how Embree can be used and extended. There is a very basic minimal
+that can be compiled as both C and C++, which should get new users started quickly. 
+All other tutorials exist in an ISPC and C++ version to demonstrate 
+the two versions of the API. Look for files
 named `tutorialname_device.ispc` for the ISPC implementation of the
 tutorial, and files named `tutorialname_device.cpp` for the single ray C++
 version of the tutorial. To start the C++ version use the `tutorialname`
@@ -7026,9 +7398,10 @@ executables, to start the ISPC version use the `tutorialname_ispc`
 executables. All tutorials can print available command line options
 using the `--help` command line parameter.
 
-For all tutorials, you can select an initial camera using the `--vp`
-(camera position), `--vi` (camera look-at point), `--vu` (camera up
-vector), and `--fov` (vertical field of view) command line parameters:
+For all tutorials except minimal, you can select an initial camera using 
+the `--vp` (camera position), `--vi` (camera look-at point), `--vu` 
+(camera up vector), and `--fov` (vertical field of view) command line 
+parameters:
 
     ./triangle_geometry --vp 10 10 10 --vi 0 0 0
 
@@ -7098,6 +7471,14 @@ ESC
 q
 :   Exits the tutorial.
 
+Minimal
+-------
+
+This tutorial is designed to get new users started with Embree.
+It can be compiled as both C and C++. It demonstrates how to initialize
+a device and scene, and how to intersect rays with the scene.
+There is no image output to keep the tutorial as simple as possible.
+
 Triangle Geometry
 -----------------
 
@@ -7162,17 +7543,6 @@ tutorial to work:
 
     ./viewer_stream -i model.obj
 
-Instanced Geometry
-------------------
-
-![][imgInstancedGeometry]
-
-This tutorial demonstrates the in-build instancing feature of Embree, by
-instancing a number of other scenes built from triangulated spheres. The
-spheres are again colored using the instance ID and geometry ID of the
-hit sphere, to demonstrate how the same geometry instanced in different
-ways can be distinguished.
-
 Intersection Filter
 -------------------
 
@@ -7185,6 +7555,38 @@ transparent. Otherwise, the shading loop handles the transparency
 properly, by potentially shooting secondary rays. The filter function
 used for shadow rays accumulates the transparency of all surfaces along
 the ray, and terminates traversal if an opaque occluder is hit.
+
+Instanced Geometry
+------------------
+
+![][imgInstancedGeometry]
+
+This tutorial demonstrates the in-build instancing feature of Embree, by
+instancing a number of other scenes built from triangulated spheres. The
+spheres are again colored using the instance ID and geometry ID of the
+hit sphere, to demonstrate how the same geometry instanced in different
+ways can be distinguished.
+
+Multi Level Instancing
+----------------------
+
+![][imgMultiLevelInstancing]
+
+This tutorial demonstrates multi-level instancing, i.e., nesting instances
+into instances. To enable the tutorial, set the compile-time variable
+`EMBREE_MAX_INSTANCE_LEVEL_COUNT` to a value other than the default 1.
+This variable is available in the code as `RTC_MAX_INSTANCE_LEVEL_COUNT`.
+
+The renderer uses a basic path tracing approach, and the
+image will progressively refine over time.
+There are two levels of instances in this scene: multiple instances of
+the same tree nest instances of a twig.
+Intersections on up to `RTC_MAX_INSTANCE_LEVEL_COUNT` nested levels of
+instances work out of the box. Users may obtain the *instance ID stack* for
+a given hitpoint from the `instID` member.
+During shading, the instance ID stack is used to accumulate
+normal transformation matrices for each hit. The tutorial visualizes
+transformed normals as colors.
 
 Path Tracer
 -----------
@@ -7219,12 +7621,12 @@ Hair
 This tutorial demonstrates the use of the hair geometry to render a
 hairball.
 
-Bézier Curves
--------------
+Curve Geometry
+--------------
 
 ![][imgCurveGeometry]
 
-This tutorial demonstrates the use of the Bézier curve geometry.
+This tutorial demonstrates the use of the B-Spline and Catmull-Rom curve geometries.
 
 Subdivision Geometry
 --------------------
@@ -7283,6 +7685,28 @@ Interpolation
 
 This tutorial demonstrates interpolation of user-defined per-vertex data.
 
+Closest Point
+----------------------
+
+![][imgClosestPoint]
+
+This tutorial demonstrates a use-case of the point query API. The scene
+consists of a simple collection of objects that are instanced and for several
+point in the scene (red points) the closest point on the surfaces of the
+scene are computed (white points). The closest point functionality is
+implemented for Embree internal and for user-defined instancing. The tutorial
+also illustrates how to handle instance transformations that are not
+similarity transforms.
+
+Voronoi
+----------------------
+
+![][imgVoronoi]
+
+This tutorial demonstrates how to implement nearest neighbour lookups using
+the point query API. Several colored points are located on a plane and the
+corresponding voroni regions are illustrated.
+
 BVH Builder
 -----------
 
@@ -7316,6 +7740,7 @@ installation: `C:\Program Files\Intel\Embree3`.
 [Stream Viewer]: #stream-viewer
 [User Geometry]: #user-geometry
 [Instanced Geometry]: #instanced-geometry
+[Multi Level Instancing]: #multi-level-instancing
 [Intersection Filter]: #intersection-filter
 [Hair]: #hair
 [Curves]: #bézier-curves
@@ -7332,6 +7757,7 @@ installation: `C:\Program Files\Intel\Embree3`.
 [imgViewer]: https://embree.github.io/images/viewer.jpg
 [imgViewerStream]: https://embree.github.io/images/viewer_stream.jpg
 [imgInstancedGeometry]: https://embree.github.io/images/instanced_geometry.jpg
+[imgMultiLevelInstancing]: https://embree.github.io/images/multi_level_instancing.jpg
 [imgIntersectionFilter]: https://embree.github.io/images/intersection_filter.jpg
 [imgPathtracer]: https://embree.github.io/images/pathtracer.jpg
 [imgHairGeometry]: https://embree.github.io/images/hair_geometry.jpg
@@ -7342,3 +7768,5 @@ installation: `C:\Program Files\Intel\Embree3`.
 [imgPointGeometry]: https://embree.github.io/images/point_geometry.jpg
 [imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg
+[imgClosestPoint]: https://embree.github.io/images/closest_point.jpg
+[imgVoronoi]: https://embree.github.io/images/voronoi.jpg

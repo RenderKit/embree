@@ -31,7 +31,7 @@ rtcSetSceneFlags(scene,\ RTC_SCENE_FLAG_ROBUST\ |\ flags);
 .SS EXIT STATUS
 .PP
 On failure \f[C]RTC_SCENE_FLAG_NONE\f[] is returned and an error code is
-set that can be queried using \f[C]rtcDeviceGetError\f[].
+set that can be queried using \f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcSetSceneFlags]

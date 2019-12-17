@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -28,7 +28,8 @@ FIND_PATH(EMBREE_TESTING_MODEL_DIR
   DOC "Path to the folder containing the Embree models for regression testing."
   NO_DEFAULT_PATHS)
 
-SET(EMBREE_TESTING_INTENSITY 1 CACHE INT "Intensity of testing (0 = no testing, 1 = verify and tutorials, 2 = light testing, 3 = intensive testing.")
+SET(EMBREE_TESTING_INTENSITY 1 CACHE STRING "Intensity of testing (0 = no testing, 1 = verify and tutorials, 2 = light testing, 3 = intensive testing.")
+SET_PROPERTY(CACHE EMBREE_TESTING_INTENSITY PROPERTY STRINGS 0 1 2 3)
 SET(EMBREE_TESTING_MEMCHECK OFF CACHE BOOL "Turns on memory checking for some tests.")
 SET(EMBREE_TESTING_BENCHMARK OFF CACHE BOOL "Turns benchmarking on.")
 SET(EMBREE_TESTING_BENCHMARK_DATABASE "${PROJECT_BINARY_DIR}" CACHE PATH "Path to database for benchmarking.")
@@ -46,27 +47,23 @@ MACRO (ADD_EMBREE_NORMAL_TEST name reference executable args)
   IF (BUILD_TESTING)  
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                     --name ${name}
-                     --reference ${reference}
-                     --modeldir ${EMBREE_MODEL_DIR}
-                     --model default
-                     --sde ${EMBREE_TESTING_SDE}
-                     --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
+             COMMAND ${executable} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
   ENDIF()
   
-  IF (EMBREE_ISPC_SUPPORT AND NOT DISABLE_ISPC_TEST)
+  IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-               COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                       --name ${name}_ispc
-                       --reference ${reference}
-                       --modeldir ${EMBREE_MODEL_DIR}
-                       --model default
-                       --sde ${EMBREE_TESTING_SDE}
-                       --execute ${MY_PROJECT_BINARY_DIR}/${executable}_ispc ${args})
+               COMMAND ${executable} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
     ENDIF()
+  ENDIF()
+ENDMACRO()
+
+MACRO (ADD_EMBREE_TEST_WITHOUT_ISPC name)
+  IF (BUILD_TESTING)  
+    ADD_TEST(NAME ${name}
+             WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
+             COMMAND ${executable} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
   ENDIF()
 ENDMACRO()
 
@@ -75,104 +72,51 @@ MACRO (ADD_EMBREE_TEST name)
 ENDMACRO()
 
 MACRO (ADD_EMBREE_TEST2 name exe args)
-  ADD_EMBREE_MODEL_TEST(${name} ${exe} ${exe} "${args}" "default")
+  ADD_EMBREE_NORMAL_TEST(${name} ${exe} ${exe} "${args}")
 ENDMACRO()
 
 MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   IF (BUILD_TESTING)  
     ADD_TEST(NAME ${name}
              WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                     --name ${name}
-                     --reference ${reference}
-                     --modeldir ${EMBREE_MODEL_DIR}
-                     --model ${model}
-                     --sde ${EMBREE_TESTING_SDE}
-                     --execute ${MY_PROJECT_BINARY_DIR}/${executable} ${args})
+             COMMAND ${executable} -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
   ENDIF()
   
-  IF (EMBREE_ISPC_SUPPORT AND NOT DISABLE_ISPC_TEST)
+  IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-               COMMAND python ${PROJECT_SOURCE_DIR}/scripts/invoke_test.py
-                       --name ${name}_ispc
-                       --reference ${reference}
-                       --modeldir ${EMBREE_MODEL_DIR}
-                       --model ${model}
-                       --sde ${EMBREE_TESTING_SDE}
-                       --execute ${MY_PROJECT_BINARY_DIR}/${executable}_ispc ${args})
+               COMMAND COMMAND ${executable} -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
     ENDIF()
   ENDIF()
 ENDMACRO()
   
-IF (EMBREE_TESTING_MODEL_DIR AND EMBREE_TESTING_INTENSITY GREATER 0)
-  
-  IF(   NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/test-models-subdiv.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity2.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity3.txt"
-     OR NOT EXISTS "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity4.txt")
-    MESSAGE(FATAL_ERROR "Invalid Embree testing model repository.")
-  ENDIF()
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/test-models-subdiv.txt" models_subdiv)
-  STRING(REGEX REPLACE "\n" ";" models_subdiv "${models_subdiv}")
+MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
+  IF (BUILD_TESTING)  
 
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity2.txt" models_intensity2)
-  STRING(REGEX REPLACE "\n" ";" models_intensity2 "${models_intensity2}")
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity3.txt" models_intensity3)
-  STRING(REGEX REPLACE "\n" ";" models_intensity3 "${models_intensity3}")
-  
-  FILE(READ "${EMBREE_TESTING_MODEL_DIR}/test-models-intensity4.txt" models_intensity4)
-  STRING(REGEX REPLACE "\n" ";" models_intensity4 "${models_intensity4}")
+    SET(full_model_list_file ${EMBREE_TESTING_MODEL_DIR}/${model_list_file})
+    
+    IF(NOT EXISTS "${full_model_list_file}")
+      MESSAGE(FATAL_ERROR "File ${EMBREE_TESTING_MODEL_DIR}/${model_list_file} does not exist!")
+    ENDIF()
 
-  IF (EMBREE_TESTING_INTENSITY GREATER 1)
-    LIST(APPEND models ${models_intensity2})
-  ENDIF()
-
-  IF (EMBREE_TESTING_INTENSITY GREATER 2)
-    LIST(APPEND models ${models_intensity3})
-  ENDIF()
-
-  CMAKE_HOST_SYSTEM_INFORMATION(RESULT memory QUERY TOTAL_PHYSICAL_MEMORY)
-  IF (EMBREE_TESTING_INTENSITY GREATER 3 AND ${memory} GREATER 10000)
-    LIST(APPEND models ${models_intensity4})
-  ENDIF()
-
-  MACRO (ADD_EMBREE_MODELS_TEST name reference executable)
+    FILE(READ "${full_model_list_file}" models)
+    STRING(REGEX REPLACE "\n" ";" models "${models}")
+    
     FOREACH (model ${models})
       STRING(REGEX REPLACE "/" "_" modelname "${model}")
       STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
       ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
     ENDFOREACH()
-  ENDMACRO()
-
-  MACRO (ADD_EMBREE_SUBDIV_MODELS_TEST name reference executable)
-    FOREACH (model ${models_subdiv})
-      STRING(REGEX REPLACE "/" "_" modelname "${model}")
-      STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
-      ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
-    ENDFOREACH()
-  ENDMACRO()
-
-ELSE()
-
-  MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
-  ENDMACRO()
-
-  MACRO (ADD_EMBREE_SUBDIV_MODELS_TEST name reference executable)
-  ENDMACRO()
-
-  MACRO (ADD_EMBREE_MODELS_TEST name)
-  ENDMACRO()
-
-ENDIF()
+  ENDIF()
+ENDMACRO()
 
 # add klocwork test
 IF (EMBREE_TESTING_KLOCWORK)
-  ADD_TEST(NAME Klocwork WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/klocwork.sh)
-  SET_TESTS_PROPERTIES(Klocwork PROPERTIES TIMEOUT 2400)
+  ADD_TEST(NAME Klocwork-Build WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/klocwork_build.sh)
+  ADD_TEST(NAME Klocwork-Check WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/klocwork_check.sh)
+  SET_TESTS_PROPERTIES(Klocwork-Build PROPERTIES TIMEOUT 2400)
+  SET_TESTS_PROPERTIES(Klocwork-Check PROPERTIES TIMEOUT 300)
 ENDIF()
 
 # add valgrind test

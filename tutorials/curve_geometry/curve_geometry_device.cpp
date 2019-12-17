@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -27,7 +27,7 @@ RTCScene  g_scene  = nullptr;
 
 #define W 2.0f
 
-float hair_vertices[9][4] =
+float hair_vertices[NUM_VERTICES][4] =
 {
   { -1.0f, 0.0f, -   W, 0.2f },
 
@@ -42,7 +42,22 @@ float hair_vertices[9][4] =
   { +1.0f, 0.0f, +   W, 0.2f },
 };
 
-float hair_vertex_colors[9][4] =
+float hair_normals[NUM_VERTICES][4] =
+{
+  { -1.0f,  0.0f, 0.0f, 0.0f },
+
+  {  0.0f, +1.0f, 0.0f, 0.0f },
+  { +1.0f,  0.0f, 0.0f, 0.0f },
+  {  0.0f, -1.0f, 0.0f, 0.0f },
+  { -1.0f,  0.0f, 0.0f, 0.0f },
+  {  0.0f, +1.0f, 0.0f, 0.0f },
+  { +1.0f,  0.0f, 0.0f, 0.0f },
+
+  {  0.0f, -1.0f, 0.0f, 0.0f },
+  { -1.0f,  0.0f, 0.0f, 0.0f },
+};
+
+float hair_vertex_colors[NUM_VERTICES][4] =
 {
   {  1.0f,  1.0f,  0.0f, 0.0f },
 
@@ -57,17 +72,26 @@ float hair_vertex_colors[9][4] =
   {  1.0f,  1.0f,  0.0f, 0.0f },
 };
 
-unsigned int hair_indices[6] = {
+unsigned int hair_indices[NUM_CURVES] = {
   0, 1, 2, 3, 4, 5
 };
 
 /* add hair geometry */
-unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
+unsigned int addCurve (RTCScene scene, RTCGeometryType gtype, const Vec4f& pos)
 {
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+  RTCGeometry geom = rtcNewGeometry(g_device, gtype);
   rtcSetGeometryVertexAttributeCount(geom,1);
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(unsigned int), NUM_CURVES);
-  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,           0, RTC_FORMAT_FLOAT4, hair_vertices,      0, sizeof(Vec3fa),       NUM_VERTICES);
+  Vec4f *verts = (Vec4f*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), NUM_VERTICES);
+  for (int i = 0; i < NUM_VERTICES; i++) {
+    verts[i] = pos + Vec4f(hair_vertices[i][0],
+      hair_vertices[i][1], hair_vertices[i][2], hair_vertices[i][3]);
+  }
+  if (gtype == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE ||
+      gtype == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE ||
+      gtype == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE) {
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, 0, RTC_FORMAT_FLOAT3, hair_normals, 0, sizeof(Vec3fa), NUM_VERTICES);
+  }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, hair_vertex_colors, 0, sizeof(Vec3fa),       NUM_VERTICES);
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -108,8 +132,14 @@ extern "C" void device_init (char* cfg)
   /* add ground plane */
   addGroundPlane(g_scene);
 
-  /* add curve */
-  addCurve(g_scene,Vec3fa(0.0f,0.0f,0.0f));
+  /* add curves */
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE, Vec4f(-3.0f, 0.0f, 2.5f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE, Vec4f(0.0f, 0.0f, 2.5f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE, Vec4f(+3.0f, 0.0f, 2.5f, 0.0f));
+
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE, Vec4f(-3.0f, 0.0f, -2.5f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE, Vec4f(0.0f, 0.0f, -2.5f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE, Vec4f(+3.0f, 0.0f, -2.5f, 0.0f));
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);

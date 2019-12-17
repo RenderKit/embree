@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -88,7 +88,7 @@ RTC_FORCEINLINE varying float& RTCHitN_u   (const RTCHitN* uniform hit, uniform 
 RTC_FORCEINLINE varying float& RTCHitN_v   (const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i) { return *((varying float* uniform) &((float* uniform)hit)[4*N+i]); }
 RTC_FORCEINLINE varying unsigned int& RTCHitN_primID(const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )hit)[5*N+i]); }
 RTC_FORCEINLINE varying unsigned int& RTCHitN_geomID(const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )hit)[6*N+i]); }
-RTC_FORCEINLINE varying unsigned int& RTCHitN_instID(const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int* uniform) &((unsigned int* uniform)hit)[7*N+i+l*N]); }
+RTC_FORCEINLINE varying unsigned int& RTCHitN_instID(const RTCHitN* uniform hit, uniform unsigned int N, uniform unsigned int i, uniform unsigned int l) { return *((varying unsigned int* uniform) &((unsigned int* uniform  )hit)[7*N+i+l*N]); }
 
 /* Helper functions to extract RTCRayN and RTCHitN from RTCRayHitN */
 RTC_FORCEINLINE RTCRayN* uniform RTCRayHitN_RayN(RTCRayHitN* uniform rayhit, uniform unsigned int N) { return (RTCRayN* uniform)&((uniform float* uniform)rayhit)[0*N]; }

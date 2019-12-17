@@ -2,8 +2,10 @@ Embree Tutorials
 ================
 
 Embree comes with a set of tutorials aimed at helping users understand
-how Embree can be used and extended. All tutorials exist in an ISPC and
-C++ version to demonstrate the two versions of the API. Look for files
+how Embree can be used and extended. There is a very basic minimal
+that can be compiled as both C and C++, which should get new users started quickly. 
+All other tutorials exist in an ISPC and C++ version to demonstrate 
+the two versions of the API. Look for files
 named `tutorialname_device.ispc` for the ISPC implementation of the
 tutorial, and files named `tutorialname_device.cpp` for the single ray C++
 version of the tutorial. To start the C++ version use the `tutorialname`
@@ -11,9 +13,10 @@ executables, to start the ISPC version use the `tutorialname_ispc`
 executables. All tutorials can print available command line options
 using the `--help` command line parameter.
 
-For all tutorials, you can select an initial camera using the `--vp`
-(camera position), `--vi` (camera look-at point), `--vu` (camera up
-vector), and `--fov` (vertical field of view) command line parameters:
+For all tutorials except minimal, you can select an initial camera using 
+the `--vp` (camera position), `--vi` (camera look-at point), `--vu` 
+(camera up vector), and `--fov` (vertical field of view) command line 
+parameters:
 
     ./triangle_geometry --vp 10 10 10 --vi 0 0 0
 
@@ -83,6 +86,14 @@ ESC
 q
 :   Exits the tutorial.
 
+Minimal
+-------
+
+This tutorial is designed to get new users started with Embree.
+It can be compiled as both C and C++. It demonstrates how to initialize
+a device and scene, and how to intersect rays with the scene.
+There is no image output to keep the tutorial as simple as possible.
+
 Triangle Geometry
 -----------------
 
@@ -147,17 +158,6 @@ tutorial to work:
 
     ./viewer_stream -i model.obj
 
-Instanced Geometry
-------------------
-
-![][imgInstancedGeometry]
-
-This tutorial demonstrates the in-build instancing feature of Embree, by
-instancing a number of other scenes built from triangulated spheres. The
-spheres are again colored using the instance ID and geometry ID of the
-hit sphere, to demonstrate how the same geometry instanced in different
-ways can be distinguished.
-
 Intersection Filter
 -------------------
 
@@ -170,6 +170,38 @@ transparent. Otherwise, the shading loop handles the transparency
 properly, by potentially shooting secondary rays. The filter function
 used for shadow rays accumulates the transparency of all surfaces along
 the ray, and terminates traversal if an opaque occluder is hit.
+
+Instanced Geometry
+------------------
+
+![][imgInstancedGeometry]
+
+This tutorial demonstrates the in-build instancing feature of Embree, by
+instancing a number of other scenes built from triangulated spheres. The
+spheres are again colored using the instance ID and geometry ID of the
+hit sphere, to demonstrate how the same geometry instanced in different
+ways can be distinguished.
+
+Multi Level Instancing
+----------------------
+
+![][imgMultiLevelInstancing]
+
+This tutorial demonstrates multi-level instancing, i.e., nesting instances
+into instances. To enable the tutorial, set the compile-time variable
+`EMBREE_MAX_INSTANCE_LEVEL_COUNT` to a value other than the default 1.
+This variable is available in the code as `RTC_MAX_INSTANCE_LEVEL_COUNT`.
+
+The renderer uses a basic path tracing approach, and the
+image will progressively refine over time.
+There are two levels of instances in this scene: multiple instances of
+the same tree nest instances of a twig.
+Intersections on up to `RTC_MAX_INSTANCE_LEVEL_COUNT` nested levels of
+instances work out of the box. Users may obtain the *instance ID stack* for
+a given hitpoint from the `instID` member.
+During shading, the instance ID stack is used to accumulate
+normal transformation matrices for each hit. The tutorial visualizes
+transformed normals as colors.
 
 Path Tracer
 -----------
@@ -204,12 +236,12 @@ Hair
 This tutorial demonstrates the use of the hair geometry to render a
 hairball.
 
-Bézier Curves
--------------
+Curve Geometry
+--------------
 
 ![][imgCurveGeometry]
 
-This tutorial demonstrates the use of the Bézier curve geometry.
+This tutorial demonstrates the use of the B-Spline and Catmull-Rom curve geometries.
 
 Subdivision Geometry
 --------------------
@@ -268,6 +300,28 @@ Interpolation
 
 This tutorial demonstrates interpolation of user-defined per-vertex data.
 
+Closest Point
+----------------------
+
+![][imgClosestPoint]
+
+This tutorial demonstrates a use-case of the point query API. The scene
+consists of a simple collection of objects that are instanced and for several
+point in the scene (red points) the closest point on the surfaces of the
+scene are computed (white points). The closest point functionality is
+implemented for Embree internal and for user-defined instancing. The tutorial
+also illustrates how to handle instance transformations that are not
+similarity transforms.
+
+Voronoi
+----------------------
+
+![][imgVoronoi]
+
+This tutorial demonstrates how to implement nearest neighbour lookups using
+the point query API. Several colored points are located on a plane and the
+corresponding voroni regions are illustrated.
+
 BVH Builder
 -----------
 
@@ -291,4 +345,14 @@ to use an installed Embree. Under Linux and macOS the tutorial finds
 the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable must be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree3`.
+
+Next Hit
+-----------
+
+This tutorial demonstrates how to robustly enumerate all hits along
+the ray using multiple ray queries and an intersection filter
+function. To improve performance, the tutorial also supports
+collecting the next N hits in a single ray query.
+
+
 

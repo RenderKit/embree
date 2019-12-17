@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -28,6 +28,7 @@ struct Triangle { int v0, v1, v2; };
 
 /* include embree API */
 #include "../../../include/embree3/rtcore.h"
+RTC_NAMESPACE_OPEN
 
 /* include optional vector library */
 #include "../math/math.h"

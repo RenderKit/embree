@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -21,8 +21,11 @@
 
 namespace embree
 {
+  static const unsigned int RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS = 5;
+
   namespace isa
   {
+
     /*! mapping into bins */
     template<size_t BINS>
       struct SpatialBinMapping
@@ -177,7 +180,7 @@ namespace embree
         for (size_t i=0; i<N; i++)
         {
           const PrimRef prim = prims[i];
-          unsigned splits = prim.geomID() >> 24;
+          unsigned splits = prim.geomID() >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
 
           if (unlikely(splits == 1))
           {

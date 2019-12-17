@@ -3,10 +3,9 @@ Downloading Embree
 
 For Windows we provide Embree as MSI installer and ZIP files. For the
 ZIP files we have a version where Embree is linked against the Visual
-Studio 2013 (VC12) runtime and and Visual Studio 2015/2017 (VC14)
-runtime:
+Studio 2013 (VC12) runtime and Visual Studio 2015/2017 (VC14) runtime:
 
-[embree-<EMBREE_VERSION>-x64.vc12.msi](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc12.msi)  
+[embree-<EMBREE_VERSION>-x64.vc14.msi](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.msi)  
 [embree-<EMBREE_VERSION>.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc12.windows.zip)  
 [embree-<EMBREE_VERSION>.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.windows.zip)  
 
@@ -15,10 +14,10 @@ For Linux we provide Embree as RPMs or as a `tar.gz` file:
 [embree-<EMBREE_VERSION>.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.rpm.tar.gz)  
 [embree-<EMBREE_VERSION>.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.linux.tar.gz)  
 
-For macOS we provide Embree as PKG installer and as a `tar.gz` file:
+For macOS we provide Embree as PKG installer and as a ZIP file:
 
 [embree-<EMBREE_VERSION>.x86_64.pkg](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.pkg)  
-[embree-<EMBREE_VERSION>.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.macosx.tar.gz)
+[embree-<EMBREE_VERSION>.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.macosx.zip)
 
 For the first generation Intel® Xeon Phi™ coprocessor (codenamed Knights Corner) we provide Embree v2.9.0 precompiled for Linux as RPMs or as a `tar.gz` file:
 

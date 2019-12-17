@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,15 +33,11 @@ namespace embree
       __forceinline SubGridQuadHitPlueckerM(const vbool<M>& valid,
                                             const vfloat<M>& U,
                                             const vfloat<M>& V,
-                                            const vfloat<M>& W,
-                                            const vfloat<M>& T,
-                                            const vfloat<M>& absDen,
+                                            const vfloat<M>& UVW,
+                                            const vfloat<M>& t,
                                             const Vec3vf<M>& Ng,
-                                            const vbool<M>& flags) : valid(valid)
+                                            const vbool<M>& flags) : valid(valid), vt(t)
       {
-        const vfloat<M> rcpAbsDen = rcp(absDen);
-        vt = T * rcpAbsDen;
-        const vfloat<M> UVW = U+V+W;
         const vbool<M> invalid = abs(UVW) < min_rcp_input;
         const vfloat<M> rcpUVW = select(invalid,vfloat<M>(0.0f),rcp(UVW));
         const vfloat<M> u = U * rcpUVW;
@@ -120,34 +116,28 @@ namespace embree
         const vfloat<M> U = dot(cross(e0,v2+v0),D);
         const vfloat<M> V = dot(cross(e1,v0+v1),D);
         const vfloat<M> W = dot(cross(e2,v1+v2),D);
+        const vfloat<M> UVW = U+V+W;
+        const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
-        const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = maxUVW <= 0.0f;
+        vbool<M> valid = max(U,V,W) <= eps;
 #else
-        const vfloat<M> minUVW = min(U,V,W);
-        const vfloat<M> maxUVW = max(U,V,W);
-        vbool<M> valid = (maxUVW <= 0.0f) | (minUVW >= 0.0f);
+        vbool<M> valid = (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
 #endif
         if (unlikely(none(valid))) return false;
 
         /* calculate geometry normal and denominator */
         const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
         const vfloat<M> den = twice(dot(Ng,D));
-        const vfloat<M> absDen = abs(den);
-        const vfloat<M> sgnDen = signmsk(den);
 
         /* perform depth test */
         const vfloat<M> T = twice(dot(v0,Ng));
-        valid &= absDen*vfloat<M>(ray.tnear()) < (T^sgnDen);
-        valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar);
-        if (unlikely(none(valid))) return false;
-
-        /* avoid division by 0 */
+        const vfloat<M> t = rcp(den)*T;
+        valid &= vfloat<M>(ray.tnear()) <= t & t <= vfloat<M>(ray.tfar);
         valid &= den != vfloat<M>(zero);
         if (unlikely(none(valid))) return false;
 
         /* update hit information */
-        new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,W,T,den,Ng,flags);
+        new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,UVW,t,Ng,flags);
         return true;
       }
 
@@ -270,21 +260,17 @@ namespace embree
       {
          __forceinline SubGridQuadHitPlueckerK(const vfloat<K>& U,
                                                const vfloat<K>& V,
-                                               const vfloat<K>& W,
-                                               const vfloat<K>& T,
-                                               const vfloat<K>& absDen,
+                                               const vfloat<K>& UVW,
+                                               const vfloat<K>& t,
                                                const Vec3vf<K>& Ng,
                                                const vbool<K>& flags,
                                                const GridMesh::Grid &g, 
                                                const SubGrid& subgrid,
                                                const unsigned int i)
-         : U(U), V(V), W(W), T(T), absDen(absDen), flags(flags), tri_Ng(Ng), g(g), subgrid(subgrid), i(i) {}
+         : U(U), V(V), UVW(UVW), t(t), flags(flags), tri_Ng(Ng), g(g), subgrid(subgrid), i(i) {}
 
         __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
         {
-          const vfloat<K> rcpAbsDen = rcp(absDen);
-          const vfloat<K> t = T * rcpAbsDen;
-          const vfloat<K> UVW = U+V+W;
           const vbool<K> invalid = abs(UVW) < min_rcp_input;
           const vfloat<K> rcpUVW = select(invalid,vfloat<K>(0.0f),rcp(UVW));
           const vfloat<K> u0 = U * rcpUVW;
@@ -306,8 +292,8 @@ namespace embree
       private:
         const vfloat<K> U;
         const vfloat<K> V;
-        const vfloat<K> W;
-        const vfloat<K> T;
+        const vfloat<K> UVW;
+        const vfloat<K> t;
         const vfloat<K> absDen;
         const vbool<K> flags;
         const Vec3vf<K> tri_Ng;
@@ -354,34 +340,28 @@ namespace embree
           const vfloat<K> U = dot(Vec3vf<K>(cross(e0,v2+v0)),D);
           const vfloat<K> V = dot(Vec3vf<K>(cross(e1,v0+v1)),D);
           const vfloat<K> W = dot(Vec3vf<K>(cross(e2,v1+v2)),D);
+          const vfloat<K> UVW = U+V+W;
+          const vfloat<K> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
-          const vfloat<K> maxUVW = max(U,V,W);
-          valid &= maxUVW <= 0.0f;
+          valid &= max(U,V,W) <= eps;
 #else
-          const vfloat<K> minUVW = min(U,V,W);
-          const vfloat<K> maxUVW = max(U,V,W);
-          valid &= (maxUVW <= 0.0f) | (minUVW >= 0.0f);
+          valid &= (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
 #endif
           if (unlikely(none(valid))) return false;
           
-           /* calculate geometry normal and denominator */
+          /* calculate geometry normal and denominator */
           const Vec3vf<K> Ng = stable_triangle_normal(e0,e1,e2);
           const vfloat<K> den = twice(dot(Vec3vf<K>(Ng),D));
-          const vfloat<K> absDen = abs(den);
-          const vfloat<K> sgnDen = signmsk(den);
 
           /* perform depth test */
           const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
-          valid &= absDen*ray.tnear() < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*ray.tfar;
-          if (unlikely(none(valid))) return false;
-          
-          /* avoid division by 0 */
+          const vfloat<K> t = rcp(den)*T;
+          valid &= ray.tnear() <= t & t <= ray.tfar;
           valid &= den != vfloat<K>(zero);
           if (unlikely(none(valid))) return false;
-                  
+          
           /* calculate hit information */
-          SubGridQuadHitPlueckerK<K> hit(U,V,W,T,den,tri_Ng,flags,g,subgrid,i);
+          SubGridQuadHitPlueckerK<K> hit(U,V,UVW,t,tri_Ng,flags,g,subgrid,i);
           return epilog(valid,hit);
         }
       
@@ -446,33 +426,31 @@ namespace embree
           const vfloat<M> U = dot(cross(e0,v2+v0),D);
           const vfloat<M> V = dot(cross(e1,v0+v1),D);
           const vfloat<M> W = dot(cross(e2,v1+v2),D);
-          const vfloat<M> minUVW MAYBE_UNUSED = min(U,V,W);
-          const vfloat<M> maxUVW = max(U,V,W);
+          const vfloat<M> UVW = U+V+W;
+          const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
-          vbool<M> valid = maxUVW <= 0.0f;
+          vbool<M> valid = max(U,V,W) <= eps ;
 #else
-          vbool<M> valid = (minUVW >= 0.0f) | (maxUVW <= 0.0f);
+          vbool<M> valid = (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
 #endif
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
           const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
           const vfloat<M> den = twice(dot(Ng,D));
-          const vfloat<M> absDen = abs(den);
-          const vfloat<M> sgnDen = signmsk(den);
 
           /* perform depth test */
           const vfloat<M> T = twice(dot(v0,Ng));
-          valid &= absDen*vfloat<M>(ray.tnear()[k]) < (T^sgnDen);
-          valid &= (T^sgnDen) <= absDen*vfloat<M>(ray.tfar[k]);
+          const vfloat<M> t = rcp(den)*T;
+          valid &= vfloat<M>(ray.tnear()[k]) <= t & t <= vfloat<M>(ray.tfar[k]);
           if (unlikely(none(valid))) return false;
           
           /* avoid division by 0 */
           valid &= den != vfloat<M>(zero);
           if (unlikely(none(valid))) return false;
-        
-          /* calculate hit information */
-          new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,W,T,den,tri_Ng,flags);
+          
+          /* update hit information */
+          new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,UVW,t,tri_Ng,flags);
           return true;
         }
 
@@ -486,7 +464,7 @@ namespace embree
         {
           const Vec3vf<M> e1 = v0-v1;
           const Vec3vf<M> e2 = v2-v0;
-          const Vec3vf<M> Ng = cross(e2,e1);
+          const Vec3vf<M> Ng = cross(e2,e1); // FIXME: optimize!!!
           return intersect1(ray,k,v0,v1,v2,Ng,flags,hit);
         }
 

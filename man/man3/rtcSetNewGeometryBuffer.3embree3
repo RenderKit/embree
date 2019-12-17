@@ -44,7 +44,7 @@ should be readable using 16\-byte SSE load instructions.
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer]

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -27,11 +27,11 @@ namespace embree
     BVH4Factory(int bfeatures, int ifeatures);
 
   public:
-    Accel* BVH4OBBVirtualCurve4i(Scene* scene);
-    Accel* BVH4OBBVirtualCurve4v(Scene* scene);
-    Accel* BVH4OBBVirtualCurve8i(Scene* scene);
-    Accel* BVH4OBBVirtualCurve4iMB(Scene* scene);
-    Accel* BVH4OBBVirtualCurve8iMB(Scene* scene);
+    Accel* BVH4OBBVirtualCurve4i(Scene* scene, IntersectVariant ivariant);
+    Accel* BVH4OBBVirtualCurve4v(Scene* scene, IntersectVariant ivariant);
+    Accel* BVH4OBBVirtualCurve8i(Scene* scene, IntersectVariant ivariant);
+    Accel* BVH4OBBVirtualCurve4iMB(Scene* scene, IntersectVariant ivariant);
+    Accel* BVH4OBBVirtualCurve8iMB(Scene* scene, IntersectVariant ivariant);
     DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector4i);
     DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector8i);
     DEFINE_SYMBOL2(VirtualCurveIntersector*,VirtualCurveIntersector4v);
@@ -58,8 +58,8 @@ namespace embree
     Accel* BVH4UserGeometry(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
     Accel* BVH4UserGeometryMB(Scene* scene);
 
-    Accel* BVH4Instance(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC);
-    Accel* BVH4InstanceMB(Scene* scene);
+    Accel* BVH4Instance(Scene* scene, bool isExpensive, BuildVariant bvariant = BuildVariant::STATIC);
+    Accel* BVH4InstanceMB(Scene* scene, bool isExpensive);
 
     Accel* BVH4Grid(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
     Accel* BVH4GridMB(Scene* scene, BuildVariant bvariant = BuildVariant::STATIC, IntersectVariant ivariant = IntersectVariant::FAST);
@@ -69,8 +69,8 @@ namespace embree
     void selectIntersectors(int features);
     
   private:
-    Accel::Intersectors BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector);
-    Accel::Intersectors BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurveIntersector* leafIntersector);
+    Accel::Intersectors BVH4OBBVirtualCurveIntersectors(BVH4* bvh, VirtualCurveIntersector* leafIntersector, IntersectVariant ivariant);
+    Accel::Intersectors BVH4OBBVirtualCurveIntersectorsMB(BVH4* bvh, VirtualCurveIntersector* leafIntersector, IntersectVariant ivariant);
     
     Accel::Intersectors BVH4Triangle4Intersectors(BVH4* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH4Triangle4vIntersectors(BVH4* bvh, IntersectVariant ivariant);
@@ -97,17 +97,17 @@ namespace embree
     Accel::Intersectors BVH4GridIntersectors(BVH4* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH4GridMBIntersectors(BVH4* bvh, IntersectVariant ivariant);
     
-    static void createTriangleMeshTriangle4Morton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4vMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4iMorton(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4v(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4i(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4Morton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4iMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
+    static void createTriangleMeshTriangle4i(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
 
-    static void createQuadMeshQuad4v(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
-    static void createQuadMeshQuad4vMorton(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
+    static void createQuadMeshQuad4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
+    static void createQuadMeshQuad4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
 
-    static void createUserGeometryMesh(UserGeometry* mesh, AccelData*& accel, Builder*& builder);
+    static void createUserGeometryMesh(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
     
   private:
 
@@ -116,6 +116,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1MB);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersectorRobust1);
+    DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersectorRobust1MB);
     
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Triangle4Intersector1Moeller);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4Triangle4iIntersector1Moeller);
@@ -153,6 +155,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersector4Hybrid);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersector4HybridMB);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersectorRobust4Hybrid);
+    DEFINE_SYMBOL2(Accel::Intersector4,BVH4OBBVirtualCurveIntersectorRobust4HybridMB);
 
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Triangle4Intersector4HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector4,BVH4Triangle4Intersector4HybridMoellerNoFilter);
@@ -191,6 +195,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersector8Hybrid);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersector8HybridMB);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersectorRobust8Hybrid);
+    DEFINE_SYMBOL2(Accel::Intersector8,BVH4OBBVirtualCurveIntersectorRobust8HybridMB);
 
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Triangle4Intersector8HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector8,BVH4Triangle4Intersector8HybridMoellerNoFilter);
@@ -229,6 +235,8 @@ namespace embree
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersector16Hybrid);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersector16HybridMB);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersectorRobust16Hybrid);
+    DEFINE_SYMBOL2(Accel::Intersector16,BVH4OBBVirtualCurveIntersectorRobust16HybridMB);
 
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4Triangle4Intersector16HybridMoellerNoFilter);
@@ -309,8 +317,8 @@ namespace embree
     DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
 
-    DEFINE_ISA_FUNCTION(Builder*,BVH4InstanceSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4InstanceSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4InstanceMBSceneBuilderSAH,void* COMMA Scene* COMMA Geometry::GTypeMask);
 
     DEFINE_ISA_FUNCTION(Builder*,BVH4GridSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
     DEFINE_ISA_FUNCTION(Builder*,BVH4GridMBSceneBuilderSAH,void* COMMA Scene* COMMA size_t);
@@ -330,27 +338,27 @@ namespace embree
  
     // SAH mesh builders
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4GridMeshBuilderSAH,void* COMMA GridMesh* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4GridMeshBuilderSAH,void* COMMA GridMesh* COMMA unsigned int COMMA size_t);
 
     // mesh refitters
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
     
     // morton mesh builders
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA size_t)
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderMortonGeneral,void* COMMA QuadMesh* COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderMortonGeneral,void* COMMA UserGeometry* COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t)
+    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderMortonGeneral,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderMortonGeneral,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
   };
 }

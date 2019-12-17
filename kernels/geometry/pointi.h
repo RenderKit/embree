@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -60,9 +60,9 @@ namespace embree
     __forceinline PointMi() {}
 
     /* Construction from vertices and IDs */
-    __forceinline PointMi(const vuint<M>& geomIDs, const vuint<M>& primIDs, Geometry::GType gtype)
+    __forceinline PointMi(const vuint<M>& geomIDs, const vuint<M>& primIDs, Geometry::GType gtype, uint32_t numPrimitives)
         : gtype((unsigned char)gtype),
-          m((unsigned char)popcnt(vuint<M>(primIDs) != vuint<M>(-1))),
+          numPrimitives(numPrimitives),
           sharedGeomID(geomIDs[0]),
           primIDs(primIDs)
     {
@@ -72,27 +72,31 @@ namespace embree
     /* Returns a mask that tells which line segments are valid */
     __forceinline vbool<M> valid() const
     {
-      return primIDs != vuint<M>(-1);
+      //return primIDs != vuint<M>(-1);
+      return vint<M>(step) < vint<M>(numPrimitives);
     }
 
     /* Returns a mask that tells which line segments are valid */
     template<int Mx>
     __forceinline vbool<Mx> valid() const
     {
-      return vuint<Mx>(primIDs) != vuint<Mx>(-1);
+      //return vuint<Mx>(primIDs) != vuint<Mx>(-1);
+      return vint<Mx>(step) < vint<Mx>(numPrimitives);
     }
 
     /* Returns if the specified line segment is valid */
     __forceinline bool valid(const size_t i) const
     {
       assert(i < M);
-      return primIDs[i] != -1;
+      //return primIDs[i] != -1;
+      return i < numPrimitives;
     }
 
     /* Returns the number of stored line segments */
     __forceinline size_t size() const
     {
-      return bsf(~movemask(valid()));
+      //return bsf(~movemask(valid()));
+      return numPrimitives;
     }
 
     /* Returns the geometry IDs */
@@ -181,24 +185,24 @@ namespace embree
       vuint<M> v0;
       const PrimRefT* prim = &prims[begin];
 
+      int numPrimitives = 0;
       for (size_t i = 0; i < M; i++) {
         if (begin < end) {
-          /* encode the RTCCurveFlags into the two most significant bits */
-          // const unsigned int mask = geom->getStartEndBitMask(prim->primID());
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
           begin++;
+          numPrimitives++;
         } else {
           assert(i);
           if (i > 0) {
             geomID[i] = geomID[i - 1];
-            primID[i] = 0;
+            primID[i] = primID[i - 1];
           }
         }
         if (begin < end)
           prim = &prims[begin];  // FIXME: remove this line
       }
-      new (this) PointMi(geomID, primID, gty);  // FIXME: use non temporal store
+      new (this) PointMi(geomID, primID, gty, numPrimitives);  // FIXME: use non temporal store
     }
 
     template<typename BVH, typename Allocator>
@@ -267,7 +271,7 @@ namespace embree
 
    public:
     unsigned char gtype;
-    unsigned char m;
+    unsigned char numPrimitives;
     unsigned int sharedGeomID;
 
    private:

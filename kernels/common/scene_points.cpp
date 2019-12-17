@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -26,22 +26,6 @@ namespace embree
     vertices.resize(numTimeSteps);
     if (getType() == GTY_ORIENTED_DISC_POINT)
       normals.resize(numTimeSteps);
-  }
-
-  void Points::enabling()
-  {
-    if (numTimeSteps == 1)
-      scene->world.numPoints += numPrimitives;
-    else
-      scene->worldMB.numPoints += numPrimitives;
-  }
-
-  void Points::disabling()
-  {
-    if (numTimeSteps == 1)
-      scene->world.numPoints -= numPrimitives;
-    else
-      scene->worldMB.numPoints -= numPrimitives;
   }
 
   void Points::setMask(unsigned mask)
@@ -170,10 +154,16 @@ namespace embree
     Geometry::preCommit();
   }
 
+  void Points::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (numTimeSteps == 1)
+      counts.numPoints += numPrimitives;
+    else
+      counts.numMBPoints += numPrimitives;
+  }
+
   void Points::postCommit()
   {
-    scene->vertices[geomID] = (float*)vertices0.getPtr();
-
     for (auto& buf : vertices)
       buf.setModified(false);
     for (auto& buf : normals)

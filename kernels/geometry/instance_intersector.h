@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,6 +18,7 @@
 
 #include "instance.h"
 #include "../common/ray.h"
+#include "../common/point_query.h"
 
 namespace embree
 {
@@ -33,6 +34,7 @@ namespace embree
       
       static void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim);
       static bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim);
+      static bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim);
     };
 
     struct InstanceIntersector1MB
@@ -45,6 +47,7 @@ namespace embree
       
       static void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim);
       static bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim);
+      static bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim);
     };
 
     template<int K>

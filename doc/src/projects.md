@@ -1,7 +1,7 @@
 Projects that use Embree
 ========================
 
-This is an incomplete list of renderers that make use of Embree. If you
+This is an incomplete list of projects that make use of Embree. If you
 use Embree and would like your product to be listed here, please [drop us a
 note](mailto:embree_support@intel.com).
 

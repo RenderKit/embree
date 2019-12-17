@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -34,6 +34,11 @@ uniform bool g_subdiv_mode = false;
 #define MAX_EDGE_LEVEL 64.0f
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
+
+unmasked uniform bool monitorProgressFunction(void* uniform ptr, uniform double dn) 
+{
+  return true;
+}
 
 inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform unsigned int e0, const uniform unsigned int e1)
 {
@@ -127,6 +132,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+  rtcSetSceneProgressMonitorFunction(scene_out,monitorProgressFunction,NULL);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
@@ -201,7 +207,7 @@ typedef ISPCInstance* uniform ISPCInstancePtr;
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  foreach_unique (instID in ray.instID) {
+  foreach_unique (instID in ray.instID[0]) {
     foreach_unique (geomID in ray.geomID) {
       ISPCGeometry* uniform geometry = NULL;
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
@@ -216,7 +222,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
-    foreach_unique (instID in ray.instID)
+    foreach_unique (instID in ray.instID[0])
     {
       /* get instance and geometry pointers */
       ISPCInstance* uniform instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];

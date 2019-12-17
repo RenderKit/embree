@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,7 +33,8 @@
 // under Windows fails.
 #define __TBB_NO_IMPLICIT_LINKAGE 1
 #define __TBBMALLOC_NO_IMPLICIT_LINKAGE 1
-
+#define TBB_SUPPRESS_DEPRECATED_MESSAGES 1
+#define TBB_PREVIEW_ISOLATED_TASK_GROUP 1
 #include "tbb/tbb.h"
 #include "tbb/parallel_sort.h"
 

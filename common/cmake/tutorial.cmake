@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -28,7 +28,7 @@ ENDMACRO ()
 
 MACRO (ADD_TUTORIAL_ISPC TUTORIAL_NAME)
   IF (EMBREE_ISPC_SUPPORT)
-    ADD_EMBREE_ISPC_EXECUTABLE(${TUTORIAL_NAME}_ispc ${TUTORIAL_NAME}.cpp ${TUTORIAL_NAME}_device.ispc)
+    ADD_EMBREE_ISPC_EXECUTABLE(${TUTORIAL_NAME}_ispc ${TUTORIAL_NAME}.cpp ${TUTORIAL_NAME}_device.ispc ${ARGN})
     TARGET_LINK_LIBRARIES(${TUTORIAL_NAME}_ispc embree image tutorial_ispc noise noise_ispc)
     SET_PROPERTY(TARGET ${TUTORIAL_NAME}_ispc PROPERTY FOLDER tutorials/ispc)
     SET_PROPERTY(TARGET ${TUTORIAL_NAME}_ispc APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")

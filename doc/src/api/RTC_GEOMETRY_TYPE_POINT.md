@@ -22,7 +22,7 @@
 #### DESCRIPTION
 
 Points with per vertex radii are supported with sphere, ray-oriented
-discs, and normal-oriented discs geometric represetntations. Such
+discs, and normal-oriented discs geometric representations. Such
 point geometries are
 created by passing `RTC_GEOMETRY_TYPE_SPHERE_POINT`,
 `RTC_GEOMETRY_TYPE_DISC_POINT`, or
@@ -40,30 +40,33 @@ inferred from the size of this buffer. Similarly, the normal buffer
 stores a single precision normal per control vertex (`x`, `y`, `z`
 order and `RTC_FORMAT_FLOAT3` format).
 
-In the `RTC_GEOMETRY_TYPE_SPHERE_POINT` mode, a real geometric
-surface is rendered for the curve, which is more expensive but allows
-closeup views.
+In the `RTC_GEOMETRY_TYPE_SPHERE_POINT` mode, a real geometric surface
+is rendered for the curve, which is more expensive but allows closeup
+views.
 
 The `RTC_GEOMETRY_TYPE_DISC_POINT` flat mode is a fast mode designed to
 render distant points. In this mode the point is rendered as a ray
 facing disc.
 
-The `RTC_GEOMETRY_TYPE__ORIENTED_DISC_POINT` mode is a mode designed as
-a midpoint geometrically between ray facing discs and spheres.  In this
+The `RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT` mode is a mode designed as
+a midpoint geometrically between ray facing discs and spheres. In this
 mode the point is rendered as a normal oriented disc.
+
+For all point types, only the hit distance and geometry normal is
+returned as hit information, u and v are set to zero.
 
 For multi-segment motion blur, the number of time steps must be first
 specified using the `rtcSetGeometryTimeStepCount` call. Then a vertex
 buffer for each time step can be set using different buffer slots, and
 all these buffers must have the same stride and size.
 
-Also see tutorials[Points] for an example of how to create and
+Also see tutorial [Points] for an example of how to create and
 use point geometries.
 
 #### EXIT STATUS
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 

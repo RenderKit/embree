@@ -112,6 +112,10 @@ Possible properties to query are:
     `rtcJoinCommitScene` is supported. This is not the case when Embree is
     compiled with PPL or older versions of TBB.
 
++   `RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED`: Queries whether
+    `rtcCommitScene` can get invoked from multiple TBB worker threads
+    concurrently. This feature is only supported starting with TBB 2019 Update 9.
+
 #### EXIT STATUS
 
 On success returns the value of the queried property. For properties
@@ -119,4 +123,4 @@ returning a boolean value, the return value 0 denotes `false` and 1
 denotes `true`.
 
 On failure zero is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.

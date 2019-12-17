@@ -29,12 +29,13 @@ the specified geometry (\f[C]geometry\f[] parameter).
 This function is supported only for triangle meshes
 (\f[C]RTC_GEOMETRY_TYPE_TRIANGLE\f[]), quad meshes
 (\f[C]RTC_GEOMETRY_TYPE_QUAD\f[]), curves
-(\f[C]RTC_GEOMETRY_TYPE_CURVE\f[]), and subdivision geometries
+(\f[C]RTC_GEOMETRY_TYPE_CURVE\f[]), points
+(\f[C]RTC_GEOMETRY_TYPE_POINT\f[]), and subdivision geometries
 (\f[C]RTC_GEOMETRY_TYPE_SUBDIVISION\f[]).
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcNewGeometry], [RTCBufferType]

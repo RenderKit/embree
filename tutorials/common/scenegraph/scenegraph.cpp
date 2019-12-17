@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -487,6 +487,21 @@ namespace embree
         THROW_RUNTIME_ERROR("tangent array not supported for this geometry type");
     }
 
+    if (type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE)
+    {
+      if (!dnormals.size())
+        THROW_RUNTIME_ERROR("normal derivative array required for oriented hermite curve");
+
+      for (const auto& n : dnormals) 
+        if (n.size() != N) 
+          THROW_RUNTIME_ERROR("incompatible normal derivative array size");
+    }
+    else
+    {
+      if (dnormals.size())
+        THROW_RUNTIME_ERROR("normal derivative array not supported for this geometry type");
+    }
+
     if (type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE ||
         //type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE ||
         //type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_LINEAR_CURVE ||
@@ -899,6 +914,9 @@ namespace embree
       for (auto P : mesh->positions.back())
         positions1.push_back(P+dP);
       mesh->positions.push_back(std::move(positions1));
+
+      if (mesh->normals.size())
+        mesh->normals.push_back(mesh->normals[0]);
     }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
     {
@@ -967,6 +985,10 @@ namespace embree
         avector<Vec3fa> tpositions(positions.size());
         for (size_t i=0; i<positions.size(); i++) tpositions[i] = positions[i] + motion_vector[t];
         mesh->positions.push_back(std::move(tpositions));
+      }
+      if (mesh->normals.size()) {
+        for (size_t t=1; t<motion_vector.size(); t++)
+          mesh->normals.push_back(mesh->normals[0]);
       }
     }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>())
@@ -1655,6 +1677,7 @@ namespace embree
       if (mesh->positions.size()) mesh->positions.resize(1);
       if (mesh->normals.size())   mesh->normals.resize(1);
       if (mesh->tangents.size())  mesh->tangents.resize(1);
+      if (mesh->dnormals.size())  mesh->dnormals.resize(1);
     }
     else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>()) {
       if (mesh->positions.size()) mesh->positions.resize(1);

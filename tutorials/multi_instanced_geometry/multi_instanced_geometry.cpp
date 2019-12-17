@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,8 +14,22 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define RTC_VERSION_MAJOR 3
-#define RTC_VERSION_MINOR 4
-#define RTC_VERSION_PATCH 0
-#define RTC_VERSION 30400
-#define RTC_VERSION_STRING "3.4.0"
+#include "../common/tutorial/tutorial.h"
+
+namespace embree
+{
+  struct Tutorial : public TutorialApplication 
+  {
+    Tutorial()
+      : TutorialApplication("multi_instanced_geometry", FEATURE_RTCORE | FEATURE_STREAM) 
+    {
+      camera.from = Vec3fa(130.f, 50.f, 130.f);
+      camera.to   = Vec3fa(0.0f, 0.0f, 0.0f);
+    }
+  };
+
+}
+
+int main(int argc, char** argv) {
+  return embree::Tutorial().main(argc,argv);
+}

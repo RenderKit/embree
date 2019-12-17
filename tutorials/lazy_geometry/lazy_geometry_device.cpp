@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -117,6 +117,9 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 
 void lazyCreate(LazyGeometry* instance)
 {
+  const bool join_commit_supported = rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED);
+  const bool parallel_commit_supported = rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED);
+    
   /* one thread will switch the object from the LAZY_INVALID state to the LAZY_CREATE state */
   if (atomic_cmpxchg((int32_t*)&instance->state,LAZY_INVALID,LAZY_CREATE) == 0)
   {
@@ -125,8 +128,8 @@ void lazyCreate(LazyGeometry* instance)
     instance->object = rtcNewScene(g_device);
     createTriangulatedSphere(instance->object,instance->center,instance->radius);
 
-    /* when join mode is not supported we let only a single thread build */
-    if (!rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED))
+    /* when no parallel commit mode at all is supported let only a single thread build */
+    if (!join_commit_supported && !parallel_commit_supported)
       rtcCommitScene(instance->object);
 
     /* now switch to the LAZY_COMMIT state */
@@ -141,9 +144,12 @@ void lazyCreate(LazyGeometry* instance)
     }
   }
 
-  /* multiple threads might enter the rtcJoinCommitScene function to jointly
-   * build the internal data structures */
-  if (rtcGetDeviceProperty(g_device,RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED))
+  /* if we support rtcCommit to get called from multiple threads, then this should be preferred for performance reasons */
+  if (parallel_commit_supported)
+    rtcCommitScene(instance->object);
+  
+  /* otherwise we could fallback to rtcJoinCommit scene, which has lower performance */
+  else if (join_commit_supported)
     rtcJoinCommitScene(instance->object);
 
   /* switch to LAZY_VALID state */
@@ -182,7 +188,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   ray->geomID = RTC_INVALID_GEOMETRY_ID;
   rtcIntersect1(instance->object,context,RTCRayHit_(*ray));
   if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;
-  else ray->instID = instance->userID;
+  else ray->instID[0] = instance->userID;
 }
 
 void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
@@ -285,7 +291,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   rtcInitIntersectContext(&context);
   
   /* initialize ray */
-  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID, 4);
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
+  ray.instID[0] = 4;
 
   /* intersect ray with scene */
   rtcIntersect1(g_scene,&context,RTCRayHit_(ray));

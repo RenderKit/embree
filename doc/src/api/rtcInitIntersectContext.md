@@ -19,6 +19,9 @@
     {
       enum RTCIntersectContextFlags flags;
       RTCFilterFunctionN filter;
+      #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+      unsigned int instStackSize;
+      #endif
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
     };
 
@@ -31,8 +34,8 @@
 A per ray-query intersection context (`RTCIntersectContext` type) is
 supported that can be used to configure intersection flags (`flags`
 member), specify a filter callback function (`filter` member), specify
-the ID of the current instance (`instID` member), and to attach
-arbitrary data to the query (e.g. per ray data).
+the chain of IDs of the current instance (`instID` and `instStackSize` members), 
+and to attach arbitrary data to the query (e.g. per ray data).
 
 The `rtcInitIntersectContext` function initializes the context to
 default values and should be called to initialize every intersection

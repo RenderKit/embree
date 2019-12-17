@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -20,28 +20,32 @@
 #include "../subdiv/bezier_curve.h"
 #include "../subdiv/hermite_curve.h"
 #include "../subdiv/bspline_curve.h"
+#include "../subdiv/catmullrom_curve.h"
 #include "../subdiv/linear_bezier_patch.h"
 
 namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
+  void CurveGeometry::resizeBuffers(unsigned int numSteps)
+  {
+     vertices.resize(numSteps);
+
+    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+    {
+      normals.resize(numSteps);
+
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+        dnormals.resize(numSteps);
+    }
+    if (getCurveBasis() == GTY_BASIS_HERMITE)
+      tangents.resize(numSteps);
+  }
+
   CurveGeometry::CurveGeometry (Device* device, GType gtype)
     : Geometry(device,gtype,0,1), tessellationRate(4)
   {
-    vertices.resize(numTimeSteps);
-  }
-
-  void CurveGeometry::enabling() 
-  {
-    if (numTimeSteps == 1) scene->world.numBezierCurves += numPrimitives; 
-    else                   scene->worldMB.numBezierCurves += numPrimitives; 
-  }
-  
-  void CurveGeometry::disabling() 
-  {
-    if (numTimeSteps == 1) scene->world.numBezierCurves -= numPrimitives; 
-    else                   scene->worldMB.numBezierCurves -= numPrimitives;
+    resizeBuffers(numTimeSteps);
   }
   
   void CurveGeometry::setMask (unsigned mask) 
@@ -52,11 +56,7 @@ namespace embree
 
   void CurveGeometry::setNumTimeSteps (unsigned int numTimeSteps)
   {
-    vertices.resize(numTimeSteps);
-    if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
-      normals.resize(numTimeSteps);
-    if (getCurveBasis() == GTY_BASIS_HERMITE)
-      tangents.resize(numTimeSteps);
+    resizeBuffers(numTimeSteps);
     Geometry::setNumTimeSteps(numTimeSteps);
   }
   
@@ -110,6 +110,20 @@ namespace embree
       
       tangents[slot].set(buffer, offset, stride, num, format);
       tangents[slot].checkPadding16();
+    }
+    else if (type == RTC_BUFFER_TYPE_NORMAL_DERIVATIVE)
+    {
+      if (getCurveType() != GTY_SUBTYPE_ORIENTED_CURVE)
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown buffer type");
+        
+      if (format != RTC_FORMAT_FLOAT3)
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal derivative buffer format");
+
+      if (slot >= dnormals.size())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid normal derivative buffer slot");
+      
+      dnormals[slot].set(buffer, offset, stride, num, format);
+      dnormals[slot].checkPadding16();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
@@ -171,6 +185,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       return tangents[slot].getPtr();
     }
+    else if (type == RTC_BUFFER_TYPE_NORMAL_DERIVATIVE)
+    {
+      if (slot >= dnormals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      return dnormals[slot].getPtr();
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -216,7 +236,12 @@ namespace embree
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
       tangents[slot].setModified(true);
     }
-    
+    else if (type == RTC_BUFFER_TYPE_NORMAL_DERIVATIVE)
+    {
+      if (slot >= dnormals.size())
+        throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
+      dnormals[slot].setModified(true);
+    }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
@@ -242,6 +267,12 @@ namespace embree
     tessellationRate = clamp((int)N,1,16);
   }
 
+  void CurveGeometry::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (numTimeSteps == 1) counts.numBezierCurves += numPrimitives; 
+    else                   counts.numMBBezierCurves += numPrimitives;
+  }
+
   bool CurveGeometry::verify () 
   {
     /*! verify consistent size of vertex arrays */
@@ -254,12 +285,27 @@ namespace embree
 
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
     {
-      if (normals.size() == 0)
+      if (!normals.size())
         return false;
         
       for (const auto& buffer : normals)
         if (vertices[0].size() != buffer.size())
           return false;
+
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+      {
+        if (!dnormals.size())
+          return false;
+        
+        for (const auto& buffer : dnormals)
+          if (vertices[0].size() != buffer.size())
+            return false;
+      }
+      else
+      {
+        if (dnormals.size())
+          return false;
+      }
     }
     else
     {
@@ -323,9 +369,17 @@ namespace embree
       if (buffer.getStride() != tangents[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of tangent buffers have to be identical for each time step");
 
+    for (const auto& buffer : dnormals)
+      if (buffer.getStride() != dnormals[0].getStride())
+        throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of normal derivative buffers have to be identical for each time step");
+    
     vertices0 = vertices[0];
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
+    {
       normals0 = normals[0];
+      if (getCurveBasis() == GTY_BASIS_HERMITE)
+        dnormals0 = dnormals[0];
+    }
     if (getCurveBasis() == GTY_BASIS_HERMITE)
       tangents0 = tangents[0];
 
@@ -338,6 +392,7 @@ namespace embree
     for (auto& buf : vertices) buf.setModified(false);
     for (auto& buf : normals)  buf.setModified(false);
     for (auto& buf : tangents) buf.setModified(false);
+    for (auto& buf : dnormals)  buf.setModified(false);
     for (auto& attrib : vertexAttribs) attrib.setModified(false);
     flags.setModified(false);
 
@@ -348,6 +403,13 @@ namespace embree
 
   namespace isa
   {
+    BBox3fa enlarge_bounds(const BBox3fa& bounds)
+    {
+      const float size = reduce_max(max(abs(bounds.lower),abs(bounds.upper)));
+      assert(std::isfinite(size));
+      return enlarge(bounds,Vec3fa(4.0f*float(ulp)*size));
+    }
+    
     template<typename Curve3fa, typename Curve4f>
     struct CurveGeometryInterface : public CurveGeometry
     {
@@ -378,7 +440,7 @@ namespace embree
         return Curve3fa(w0,w1,w2,w3);
       }
 
-      __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+       __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const float r_scale = r_scale0*scale;
         const unsigned int index = curve(i);
@@ -393,13 +455,21 @@ namespace embree
         return Curve3fa(w0,w1,w2,w3);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      __forceinline const Curve3fa getNormalCurve(size_t i, size_t itime = 0) const 
       {
-        const Curve3fa center = getCurve(i,itime);
         const unsigned int index = curve(i);
         const Vec3fa n0 = normal(index+0,itime);
         const Vec3fa n1 = normal(index+1,itime);
-        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterCurveAndNormals(center,n0,n1);
+        const Vec3fa n2 = normal(index+2,itime);
+        const Vec3fa n3 = normal(index+3,itime);
+        return Curve3fa (n0,n1,n2,n3);
+      }
+
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      {
+        const Curve3fa center = getCurve(i,itime);
+        const Curve3fa normal = getNormalCurve(i,itime);
+        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
       }
 
@@ -531,13 +601,21 @@ namespace embree
         return HermiteCurve3fa(V0,T0,V1,T1);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      __forceinline const HermiteCurve3fa getNormalCurve(size_t i, size_t itime = 0) const 
       {
-        const HermiteCurve3fa center = getCurve(i,itime);
         const unsigned int index = curve(i);
         const Vec3fa n0 = normal(index+0,itime);
         const Vec3fa n1 = normal(index+1,itime);
-        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterCurveAndNormals(center,n0,n1);
+        const Vec3fa dn0 = dnormal(index+0,itime);
+        const Vec3fa dn1 = dnormal(index+1,itime);
+        return HermiteCurve3fa (n0,dn0,n1,dn1);
+      }
+
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      {
+        const HermiteCurve3fa center = getCurve(i,itime);
+        const HermiteCurve3fa normal = getNormalCurve(i,itime);
+        const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
       }
 
@@ -572,6 +650,11 @@ namespace embree
             const Vec3fa n0 = normal(index+0,itime);
             const Vec3fa n1 = normal(index+1,itime);
             if (!isvalid(n0) || !isvalid(n1))
+              return false;
+
+            const Vec3fa dn0 = dnormal(index+0,itime);
+            const Vec3fa dn1 = dnormal(index+1,itime);
+            if (!isvalid(dn0) || !isvalid(dn1))
               return false;
           }
         }
@@ -738,9 +821,9 @@ namespace embree
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(i,itime).accurateFlatBounds(tessellationRate);
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(i,itime).accurateRoundBounds();
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(i,itime).accurateBounds());
         default: return empty;
         }
       }
@@ -749,9 +832,9 @@ namespace embree
       __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(space,i,itime).accurateFlatBounds(tessellationRate);
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(space,i,itime).accurateRoundBounds();
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(space,i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(space,i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(space,i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(space,i,itime).accurateBounds());
         default: return empty;
         }
       }
@@ -760,9 +843,9 @@ namespace embree
       __forceinline BBox3fa bounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate);
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return getCurve(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds();
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return getOrientedCurve(ofs,scale,space,i,itime).accurateBounds();
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(ofs,scale,space,i,itime).accurateBounds());
         default: return empty;
         }
       }
@@ -782,7 +865,7 @@ namespace embree
         return LBBox3fa([&] (size_t itime) { return bounds(ofs, scale, r_scale0, space, primID, itime); }, dt, this->time_range, fnumTimeSegments);
       }
       
-      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfo pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -790,14 +873,14 @@ namespace embree
           if (!valid(ctype, j, make_range<size_t>(0, numTimeSegments()))) continue;
           const BBox3fa box = bounds(j);
           if (box.empty()) continue; // checks oriented curves with invalid normals which cause NaNs here
-          const PrimRef prim(box,this->geomID,unsigned(j));
+          const PrimRef prim(box,geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
         }
         return pinfo;
       }
 
-      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const
+      PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfoMB pinfo(empty);
         for (size_t j=r.begin(); j<r.end(); j++)
@@ -805,7 +888,7 @@ namespace embree
           if (!valid(ctype, j, this->timeSegmentRange(t0t1))) continue;
           const LBBox3fa lbox = linearBounds(j,t0t1);
           if (lbox.bounds0.empty() || lbox.bounds1.empty()) continue; // checks oriented curves with invalid normals which cause NaNs here
-          const PrimRefMB prim(lbox,this->numTimeSegments(),this->time_range,this->numTimeSegments(),this->geomID,unsigned(j));
+          const PrimRefMB prim(lbox,this->numTimeSegments(),this->time_range,this->numTimeSegments(),geomID,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;
         }
@@ -851,6 +934,10 @@ namespace embree
       case Geometry::GTY_ROUND_HERMITE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_FLAT_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
       case Geometry::GTY_ORIENTED_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
+
+      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
      
       default: throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry type");
       }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -55,6 +55,16 @@ namespace embree
         Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
       }
+      
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
+      {
+        STAT3(point_query.trav_prims,1,1,1);
+        AccelSet* accel = (AccelSet*)context->scene->get(subgrid.geomID());
+        assert(accel);
+        context->geomID = subgrid.geomID();
+        context->primID = subgrid.primID();
+        return accel->pointQuery(query, context);
+      }
 
       template<int Nx, bool robust>
         static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
@@ -78,9 +88,9 @@ namespace embree
           }
         }
       }
-
       template<int Nx, bool robust>        
         static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+
       {
         BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
 
@@ -99,9 +109,29 @@ namespace embree
         }
         return false;
       }
+    
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      {
+        bool changed = false;
+        for (size_t i=0;i<num;i++)
+        {
+          vfloat<N> dist;
+          size_t mask;
+          if (likely(context->query_type == POINT_QUERY_TYPE_SPHERE)) {
+            mask = BVHNQuantizedBaseNodePointQuerySphere1<N>::pointQuery(&prim[i].qnode,tquery,dist);
+          } else {
+            mask = BVHNQuantizedBaseNodePointQueryAABB1<N>::pointQuery(&prim[i].qnode,tquery,dist);
+          }
+          while(mask != 0)
+          {
+            const size_t ID = bscf(mask); 
+            assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
+            changed |= pointQuery(query, context, prim[i].subgrid(ID));
+          }
+        }
+        return changed;
+      }
     };
-
-
 
     template<int N, bool filter>
     struct SubGridIntersector1Pluecker
@@ -128,6 +158,15 @@ namespace embree
         Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
         return pre.occluded(ray,context,v0,v1,v2,v3,g,subgrid);
       }
+      
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const SubGrid& subgrid)
+      {
+        STAT3(point_query.trav_prims,1,1,1);
+        AccelSet* accel = (AccelSet*)context->scene->get(subgrid.geomID());
+        context->geomID = subgrid.geomID();
+        context->primID = subgrid.primID();
+        return accel->pointQuery(query, context);
+      }
 
       template<int Nx, bool robust>
         static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
@@ -172,8 +211,32 @@ namespace embree
         }
         return false;
       }
+      
+      static __forceinline bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context, const Primitive* prim, size_t num, const TravPointQuery<N> &tquery, size_t& lazy_node)
+      {
+        bool changed = false;
+        for (size_t i=0;i<num;i++)
+        {
+          vfloat<N> dist;
+          size_t mask;
+          if (likely(context->query_type == POINT_QUERY_TYPE_SPHERE)) {
+            mask = BVHNQuantizedBaseNodePointQuerySphere1<N>::pointQuery(&prim[i].qnode,tquery,dist);
+          } else {
+            mask = BVHNQuantizedBaseNodePointQueryAABB1<N>::pointQuery(&prim[i].qnode,tquery,dist);
+          }
+#if defined(__AVX__)
+          STAT3(point_query.trav_hit_boxes[popcnt(mask)],1,1,1);
+#endif
+          while(mask != 0)
+          {
+            const size_t ID = bscf(mask); 
+            assert(((size_t)1 << ID) & movemask(prim[i].qnode.validMask()));
+            changed |= pointQuery(query, context, prim[i].subgrid(ID));
+          }
+        }
+        return changed;
+      }
     };
-
 
     template<int N, int K, bool filter>
     struct SubGridIntersectorKMoeller
@@ -219,7 +282,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const SubGrid& subgrid)
       {
         STAT3(normal.trav_prims,1,1,1);
@@ -275,7 +338,7 @@ namespace embree
           }
           return !valid0;
         }
-
+        
         template<int Nx, bool robust>        
           static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {
@@ -363,7 +426,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const SubGrid& subgrid)
       {
         STAT3(normal.trav_prims,1,1,1);
@@ -382,7 +445,7 @@ namespace embree
         Vec3vf4 v0,v1,v2,v3; subgrid.gather(v0,v1,v2,v3,context->scene);
         return pre.occluded1(ray,k,context,v0,v1,v2,v3,g,subgrid);
       }
-
+      
         template<bool robust>
           static __forceinline void intersect(const vbool<K>& valid, const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRayK<K, robust> &tray, size_t& lazy_node)
         {
@@ -419,7 +482,7 @@ namespace embree
           }
           return !valid0;
         }
-
+        
         template<int Nx, bool robust>        
           static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {

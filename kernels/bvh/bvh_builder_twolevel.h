@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,7 +33,7 @@ namespace embree
 
     public:
 
-      typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
+      typedef void (*createMeshAccelTy)(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
 
       struct BuildRef : public PrimRef
       {

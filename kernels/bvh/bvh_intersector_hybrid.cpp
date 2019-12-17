@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -276,7 +276,7 @@ namespace embree
             const vbool<K> valid_node = tray.tfar > curDist;
             STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
-            const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+            const BaseNode* __restrict__ const node = nodeRef.baseNode();
 
             /* set cur to invalid */
             cur = BVH::emptyNode;
@@ -726,7 +726,7 @@ namespace embree
           const vbool<K> valid_node = tray.tfar > curDist;
           STAT3(shadow.trav_nodes, 1, popcnt(valid_node), K);
           const NodeRef nodeRef = cur;
-          const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+          const BaseNode* __restrict__ const node = nodeRef.baseNode();
 
           /* set cur to invalid */
           cur = BVH::emptyNode;

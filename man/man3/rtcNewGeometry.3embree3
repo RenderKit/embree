@@ -25,6 +25,9 @@ enum\ RTCGeometryType
 \ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE,
 \ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE,
 \ RTC_GEOMETRY_TYPE_GRID,
+\ RTC_GEOMETRY_TYPE_SPHERE_POINT,
+\ RTC_GEOMETRY_TYPE_DISC_POINT,
+\ RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT,
 \ RTC_GEOMETRY_TYPE_USER,
 \ RTC_GEOMETRY_TYPE_INSTANCE
 };
@@ -56,19 +59,27 @@ with different bases (\f[C]RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE\f[],
-\f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE\f[] types), grid
-meshes (\f[C]RTC_GEOMETRY_TYPE_GRID\f[]), user\-defined geometries
+\f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE\f[] types),
+grid meshes (\f[C]RTC_GEOMETRY_TYPE_GRID\f[]), point geometries
+(\f[C]RTC_GEOMETRY_TYPE_SPHERE_POINT\f[],
+\f[C]RTC_GEOMETRY_TYPE_DISC_POINT\f[],
+\f[C]RTC_TYPE_ORIENTED_DISC_POINT\f[]), user\-defined geometries
 (\f[C]RTC_GEOMETRY_TYPE_USER\f[]), and instances
 (\f[C]RTC_GEOMETRY_TYPE_INSTANCE\f[]).
 .PP
-The types \f[C]RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE\f[] and
-\f[C]RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\f[] will treat the curve as a
-sweep surface of a varying\-radius circle swept tangentially along the
-curve.
-The types \f[C]RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE\f[] and
-\f[C]RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE\f[] use ray\-facing ribbons as
-a faster\-to\-intersect approximation.
+The types \f[C]RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\f[], and
+\f[C]RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE\f[] will treat the curve
+as a sweep surface of a varying\-radius circle swept tangentially along
+the curve.
+The types \f[C]RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE\f[], and
+\f[C]RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE\f[] use ray\-facing
+ribbons as a faster\-to\-intersect approximation.
 .PP
 After construction, geometries are enabled by default and not attached
 to any scene.
@@ -109,7 +120,7 @@ See Section [rtcSetSceneBuildQuality] for more details.
 .SS EXIT STATUS
 .PP
 On failure \f[C]NULL\f[] is returned and an error code is set that can
-be queried using \f[C]rtcDeviceGetError\f[].
+be queried using \f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcEnableGeometry], [rtcDisableGeometry], [rtcAttachGeometry],
@@ -119,4 +130,5 @@ be queried using \f[C]rtcDeviceGetError\f[].
 [rtcSetSceneBuildQuality], [RTC_GEOMETRY_TYPE_TRIANGLE],
 [RTC_GEOMETRY_TYPE_QUAD], [RTC_GEOMETRY_TYPE_SUBDIVISION],
 [RTC_GEOMETRY_TYPE_CURVE], [RTC_GEOMETRY_TYPE_GRID],
-[RTC_GEOMETRY_TYPE_USER], [RTC_GEOMETRY_TYPE_INSTANCE]
+[RTC_GEOMETRY_TYPE_POINT], [RTC_GEOMETRY_TYPE_USER],
+[RTC_GEOMETRY_TYPE_INSTANCE]

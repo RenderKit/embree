@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,11 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifdef _WIN32
-#  define RTC_API extern "C" __declspec(dllexport)
-#else
-#  define RTC_API extern "C" __attribute__ ((visibility ("default")))
-#endif
+#define RTC_EXPORT_API
 
 #include "default.h"
 #include "device.h"
@@ -51,17 +47,6 @@ namespace embree
       mvector<BVHBuilderMorton::BuildPrim> morton_src;
       mvector<BVHBuilderMorton::BuildPrim> morton_tmp;
     };
-
-    RTC_API RTCBVH rtcNewBVH(RTCDevice device)
-    {
-      RTC_CATCH_BEGIN;
-      RTC_TRACE(rtcNewAllocator);
-      RTC_VERIFY_HANDLE(device);
-      BVH* bvh = new BVH((Device*)device);
-      return (RTCBVH) bvh->refInc();
-      RTC_CATCH_END((Device*)device);
-      return nullptr;
-    }
 
     void* rtcBuildBVHMorton(const RTCBuildArguments* arguments)
     {
@@ -134,9 +119,15 @@ namespace embree
         /* lambda function that creates BVH leaves */
         [&]( const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc) -> std::pair<void*,BBox3fa>
         {
-          const size_t id = morton_src[current.begin()].index;
-          const BBox3fa bounds = prims[id].bounds(); 
-          void* node = createLeaf((RTCThreadLocalAllocator)&alloc,prims_i+current.begin(),current.size(),userPtr);
+	  RTCBuildPrimitive localBuildPrims[RTC_BUILD_MAX_PRIMITIVES_PER_LEAF];
+	  BBox3fa bounds = empty;
+	  for (size_t i=0;i<current.size();i++)
+	    {
+	      const size_t id = morton_src[current.begin()+i].index;
+	      bounds.extend(prims[id].bounds());
+	      localBuildPrims[i] = prims_i[id];
+	    }
+          void* node = createLeaf((RTCThreadLocalAllocator)&alloc,localBuildPrims,current.size(),userPtr);
           return std::make_pair(node,bounds);
         },
         
@@ -230,6 +221,12 @@ namespace embree
       return root;
     }
 
+    static __forceinline const std::pair<CentGeomBBox3fa,unsigned int> mergePair(const std::pair<CentGeomBBox3fa,unsigned int>& a, const std::pair<CentGeomBBox3fa,unsigned int>& b) {
+      CentGeomBBox3fa centBounds = CentGeomBBox3fa::merge2(a.first,b.first);
+      unsigned int maxGeomID = max(a.second,b.second); 
+      return std::pair<CentGeomBBox3fa,unsigned int>(centBounds,maxGeomID);
+    }
+
     void* rtcBuildBVHSpatialSAH(const RTCBuildArguments* arguments)
     {
       BVH* bvh = (BVH*) arguments->bvh;
@@ -246,15 +243,31 @@ namespace embree
       std::atomic<size_t> progress(0);
   
       /* calculate priminfo */
-      auto computeBounds = [&](const range<size_t>& r) -> CentGeomBBox3fa
+
+      auto computeBounds = [&](const range<size_t>& r) -> std::pair<CentGeomBBox3fa,unsigned int>
         {
           CentGeomBBox3fa bounds(empty);
+          unsigned maxGeomID = 0;
           for (size_t j=r.begin(); j<r.end(); j++)
+          {
             bounds.extend((BBox3fa&)prims[j]);
-          return bounds;
+            maxGeomID = max(maxGeomID,prims[j].geomID);
+          }
+          return std::pair<CentGeomBBox3fa,unsigned int>(bounds,maxGeomID);
         };
-      const CentGeomBBox3fa bounds = 
-        parallel_reduce(size_t(0),primitiveCount,size_t(1024),size_t(1024),CentGeomBBox3fa(empty), computeBounds, CentGeomBBox3fa::merge2);
+
+
+      const std::pair<CentGeomBBox3fa,unsigned int> pair = 
+        parallel_reduce(size_t(0),primitiveCount,size_t(1024),size_t(1024),std::pair<CentGeomBBox3fa,unsigned int>(CentGeomBBox3fa(empty),0), computeBounds, mergePair);
+
+      CentGeomBBox3fa bounds = pair.first;
+      const unsigned int maxGeomID = pair.second;
+      
+      if (unlikely(maxGeomID >= ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS))))
+        {
+          /* fallback code for max geomID larger than threshold */
+          return rtcBuildBVHBinnedSAH(arguments);
+        }
 
       const PrimInfo pinfo(0,primitiveCount,bounds);
 
@@ -332,6 +345,24 @@ namespace embree
         
       bvh->allocator.cleanup();
       return root;
+    }
+  }
+}
+
+using namespace embree;
+using namespace embree::isa;
+
+RTC_NAMESPACE_BEGIN
+
+    RTC_API RTCBVH rtcNewBVH(RTCDevice device)
+    {
+      RTC_CATCH_BEGIN;
+      RTC_TRACE(rtcNewAllocator);
+      RTC_VERIFY_HANDLE(device);
+      BVH* bvh = new BVH((Device*)device);
+      return (RTCBVH) bvh->refInc();
+      RTC_CATCH_END((Device*)device);
+      return nullptr;
     }
 
     RTC_API void* rtcBuildBVH(const RTCBuildArguments* arguments)
@@ -420,6 +451,5 @@ namespace embree
       bvh->refDec();
       RTC_CATCH_END(device);
     }
-  }
-}
 
+RTC_NAMESPACE_END

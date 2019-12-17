@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -52,10 +52,10 @@
 #  define isa sse42
 #  define ISA SSE42
 #  define ISA_STR "SSE4.2"
-#elif defined (__SSE4_1__)
-#  define isa sse41
-#  define ISA SSE41
-#  define ISA_STR "SSE4.1"
+//#elif defined (__SSE4_1__) //  we demote this to SSE2, MacOSX code compiles with SSE41 by default with XCode 11
+//#  define isa sse41
+//#  define ISA SSE41
+//#  define ISA_STR "SSE4.1"
 //#elif defined(__SSSE3__) // we demote this to SSE2, MacOSX code compiles with SSSE3 by default with ICC
 //#  define isa ssse3
 //#  define ISA SSSE3
@@ -86,7 +86,7 @@ namespace embree
     CPU_CORE_SANDYBRIDGE,
     CPU_HASWELL,
     CPU_KNIGHTS_LANDING,
-    CPU_SKYLAKE
+    CPU_SKYLAKE_SERVER
   };
 
   /*! get the full path to the running executable */
@@ -136,7 +136,8 @@ namespace embree
   static const int CPU_FEATURE_YMM_ENABLED = 1 << 26;
   static const int CPU_FEATURE_ZMM_ENABLED = 1 << 27;
  
-  
+  static const int CPU_FEATURE_PSEUDO_HIFREQ256BIT = 1 << 30;
+ 
   /*! get CPU features */
   int getCPUFeatures();
 
@@ -158,6 +159,9 @@ namespace embree
   static const int AVX2   = AVXI | CPU_FEATURE_AVX2 | CPU_FEATURE_FMA3 | CPU_FEATURE_BMI1 | CPU_FEATURE_BMI2 | CPU_FEATURE_LZCNT;
   static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD | CPU_FEATURE_ZMM_ENABLED;
   static const int AVX512SKX = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
+
+  static const int AVX_FAST = AVX | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
+  static const int AVX2_FAST = AVX2 | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
 
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);

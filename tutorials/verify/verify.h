@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,6 +18,7 @@
  * always compile without any internal Embree specific stuff. */
 #include "../../include/embree3/rtcore.h"
 #include "../../include/embree3/rtcore_ray.h"
+RTC_NAMESPACE_OPEN
 
 /* now we include all Embree internal files we need for testing */
 #include "../../kernels/common/default.h"

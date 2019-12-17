@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,6 +18,7 @@
 
 #include "bvh.h"
 #include "../common/ray.h"
+#include "../common/point_query.h"
 
 namespace embree
 {
@@ -41,8 +42,9 @@ namespace embree
       static const size_t Nx = (types == BVH_AN1 || types == BVH_QN1) ? vextend<N>::size : N;
 
     public:
-      static void intersect(const Accel::Intersectors* This, RayHit& ray, IntersectContext* context);
-      static void occluded (const Accel::Intersectors* This, Ray& ray, IntersectContext* context);
+      static void intersect (const Accel::Intersectors* This, RayHit& ray, IntersectContext* context);
+      static void occluded  (const Accel::Intersectors* This, Ray& ray, IntersectContext* context);
+      static bool pointQuery(const Accel::Intersectors* This, PointQuery* query, PointQueryContext* context);
     };
   }
 }

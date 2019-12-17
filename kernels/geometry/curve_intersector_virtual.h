@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -39,7 +39,7 @@ namespace embree
     
     typedef void (*Intersect16Ty)(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive);
     typedef bool (*Occluded16Ty) (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive);
-    
+
   public:
     struct Intersectors
     {
@@ -65,8 +65,8 @@ namespace embree
     Intersectors vtbl[Geometry::GTY_END];
   };
 
-  template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<1>(void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(intersect1); intersect1(pre,ray,context,primitive); }
-  template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<1> (void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(occluded1); return occluded1(pre,ray,context,primitive); }
+  template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<1> (void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(intersect1); intersect1(pre,ray,context,primitive); }
+  template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<1>  (void* pre, void* ray, IntersectContext* context, const void* primitive) { assert(occluded1); return occluded1(pre,ray,context,primitive); }
       
   template<> __forceinline void VirtualCurveIntersector::Intersectors::intersect<4>(void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(intersect4); intersect4(pre,ray,k,context,primitive); }
   template<> __forceinline bool VirtualCurveIntersector::Intersectors::occluded<4> (void* pre, void* ray, size_t k, IntersectContext* context, const void* primitive) { assert(occluded4); return occluded4(pre,ray,k,context,primitive); }
@@ -142,7 +142,7 @@ namespace embree
           }
           return valid_o;
         }
-
+        
         template<int N, int Nx, bool robust>              
         static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
         {

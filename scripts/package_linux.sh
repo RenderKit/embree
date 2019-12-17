@@ -40,26 +40,25 @@ function check_symbols
 }
 
 # read embree version
-#EMBREE_VERSION_MAJOR=`sed -n 's/#define __EMBREE_VERSION_MAJOR__ \(.*\)/\1/p' version.h`
-#EMBREE_VERSION_MINOR=`sed -n 's/#define __EMBREE_VERSION_MINOR__ \(.*\)/\1/p' version.h`
-#EMBREE_VERSION_PATCH=`sed -n 's/#define __EMBREE_VERSION_PATCH__ \(.*\)/\1/p' version.h`
-#EMBREE_VERSION=${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}
-EMBREE_VERSION=$2
-EMBREE_VERSION_MAJOR=$3
-EMBREE_SIGN_FILE=$4
+EMBREE_ZIP_MODE=$1
+EMBREE_LIBRARY_NAME=$2
+EMBREE_VERSION=$3
+EMBREE_VERSION_MAJOR=$4
+EMBREE_SIGN_FILE=$5
 
 # create package
 make -j 16 preinstall
-check_symbols libembree${EMBREE_VERSION_MAJOR}.so GLIBC 2 4 0
-check_symbols libembree${EMBREE_VERSION_MAJOR}.so GLIBCXX 3 4 11
-check_symbols libembree${EMBREE_VERSION_MAJOR}.so CXXABI 1 3 0
+#check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBC 2 4 0
+check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBC 2 14 0    # GCC 4.8
+check_symbols lib${EMBREE_LIBRARY_NAME}.so GLIBCXX 3 4 11
+check_symbols lib${EMBREE_LIBRARY_NAME}.so CXXABI 1 3 0
 make -j 16 package
 
-if [ "$1" == "OFF" ]; then
+if [ "$EMBREE_ZIP_MODE" == "OFF" ]; then
 
   # sign all RPM files
-  if [ $# -eq 4 ]; then
-    ${EMBREE_SIGN_FILE} -c embree_rpm -vv embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
+  if [ $# -eq 5 ]; then
+    ${EMBREE_SIGN_FILE} embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
   fi
     
   # create TGZ of RPMs
@@ -67,7 +66,3 @@ if [ "$1" == "OFF" ]; then
   tar czf ${embree_tgz} embree${EMBREE_VERSION_MAJOR}-*-${EMBREE_VERSION}-*.rpm
 
 fi
-
-  # sign ZIP file
-  #embree_zip=embree-${EMBREE_VERSION}.x86_64.linux.tar.gz
-  #/NAS/packages/apps/signfile/linux/SignFile -vv ${embree_zip}

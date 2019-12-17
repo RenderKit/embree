@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -37,5 +37,26 @@ namespace embree
 
     /*! Returns the number of bytes of block. */
     virtual size_t getBytes(const char* This) const = 0;
+  };
+  
+  template<typename Primitive>
+  struct PrimitivePointQuery1
+  {
+    static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
+    {
+      bool changed = false;
+      for (size_t i = 0; i < Primitive::max_size(); i++)
+      {
+        if (!prim.valid(i)) break;
+        STAT3(point_query.trav_prims,1,1,1);
+        AccelSet* accel = (AccelSet*)context->scene->get(prim.geomID(i));
+        context->geomID = prim.geomID(i);
+        context->primID = prim.primID(i);
+        changed |= accel->pointQuery(query, context);
+      }
+      return changed;
+    }
+    
+    static __forceinline void pointQueryNoop(PointQuery* query, PointQueryContext* context, const Primitive& prim) { }
   };
 }

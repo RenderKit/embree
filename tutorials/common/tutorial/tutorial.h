@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -98,6 +98,9 @@ namespace embree
     /* render to file mode */
     void renderToFile(const FileName& fileName);
 
+    /* compare rendering to reference image */
+    void compareToReferenceImage(const FileName& fileName);
+
     /* passes parameters to the backend */
     void set_parameter(size_t parm, ssize_t val);
 
@@ -139,6 +142,8 @@ namespace embree
 
     /* image output settings */
     FileName outputImageFilename;
+    FileName referenceImageFilename;
+    float referenceImageThreshold; // threshold when we consider images to differ
 
     /* benchmark mode settings */
     size_t skipBenchmarkFrames;
@@ -219,7 +224,7 @@ namespace embree
     unsigned grid_resX, grid_resY;
     bool remove_mblur;
     bool remove_non_mblur;
-    FileName sceneFilename;
+    std::vector<FileName> sceneFilename;
     std::vector<FileName> keyFramesFilenames;
     SceneGraph::InstancingMode instancing_mode;
     std::string subdiv_mode;

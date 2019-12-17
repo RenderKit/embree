@@ -24,7 +24,7 @@ over user-specified primitives. See the documentation of the
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

@@ -76,8 +76,8 @@ update the hit distance of the ray (\f[C]tfar\f[] member) and the hit
 (\f[C]u\f[], \f[C]v\f[], \f[C]Ng\f[], \f[C]instID\f[], \f[C]geomID\f[],
 \f[C]primID\f[] members).
 In particular, the currently intersected instance is stored in the
-\f[C]instID\f[] field of the intersection context, which must be copied
-into the \f[C]instID\f[] member of the hit.
+\f[C]instID\f[] field of the intersection context, which must be deep
+copied into the \f[C]instID\f[] member of the hit.
 .PP
 As a primitive might have multiple intersections with a ray, the
 intersection filter function needs to be invoked by the user geometry
@@ -95,7 +95,7 @@ rays and create new scenes and geometries.
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcSetGeometryOccludedFunction], [rtcSetGeometryUserData],

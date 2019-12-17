@@ -10,7 +10,7 @@ Linux and macOS
 To compile Embree you need a modern C++ compiler that supports C++11.
 Embree is tested with Intel® Compiler 17.0 (Update\ 1), Intel®
 Compiler 16.0 (Update\ 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
-(supports AVX512) and GCC 5.4.0. If the GCC that comes with your
+(supports AVX512) and GCC 5.4.0 (Linux only). If the GCC that comes with your
 Fedora/Red Hat/CentOS distribution is too old then you can run the
 provided script `scripts/install_linux_gcc.sh` to locally install a
 recent GCC into `$HOME/devtools-2`.
@@ -231,13 +231,18 @@ parameters that can be configured in CMake:
   is ON by default.
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
-  default). When using the statically compiled Embree library, you
-  have to define ENABLE_STATIC_LIB before including rtcore.h in your
-  application. Further multiple static libraries are generated for the
+  default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
   `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512knl.a`,
   `embree3_avx512skx.a`). You have to link these libraries in exactly
   this order of increasing ISA.
+
++ `EMBREE_API_NAMESPACE`: Specifies a namespace name to put all Embree
+  API symbols inside. By default no namespace is used and plain C symbols
+  exported.
+
++ `EMBREE_LIBRARY_NAME`: Specifies the name of the Embree library file
+  created. By default the name embree3 is used.
 
 + `EMBREE_IGNORE_CMAKE_CXX_FLAGS`: When enabled, Embree ignores
   default CMAKE_CXX_FLAGS. This option is turned ON by default.
@@ -317,6 +322,11 @@ parameters that can be configured in CMake:
   curve_radius*`EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR` to
   the ray origin are ignored. A value of 0.0f disables self
   intersection avoidance while 2.0f is the default value.
+
++ `EMBREE_MAX_INSTANCE_LEVEL_COUNT`: Specifies the maximum number of nested
+  instance levels. Should be greater than 0; the default value is 1.
+  Instances nested any deeper than this value will silently disappear in
+  release mode, and cause assertions in debug mode.
 
 
 Using Embree

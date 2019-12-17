@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,8 +16,11 @@
 
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+#include <thread>
 
 namespace embree {
+
+  extern uint32_t g_num_user_threads;
 
   static const MAYBE_UNUSED size_t skip_iterations               = 5;
   static const MAYBE_UNUSED size_t iterations_dynamic_deformable = 200;
@@ -29,6 +32,7 @@ namespace embree {
 
   /* scene data */
   RTCScene g_scene = nullptr;
+
 
   void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCBuildQuality quality)
   {
@@ -268,10 +272,16 @@ namespace embree {
     size_t objects = getNumObjects(scene_in);
     size_t iterations = 0;
     double time = 0.0;
+
+
     for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
     {
       g_scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
       convertScene(g_scene,scene_in,quality);
+
+      const size_t numThreads = TaskScheduler::threadCount();
+      std::vector<std::thread> threads;
+      threads.reserve(numThreads);
 
       double t0 = getSeconds();
       rtcCommitScene (g_scene);
@@ -305,6 +315,92 @@ namespace embree {
     g_scene = nullptr;
   }
 
+  BarrierSys barrier;
+  volatile bool term = false;
+  
+  void perform_work(size_t threadID)
+  {
+    setAffinity(threadID); 
+    while (true) {
+      barrier.wait();
+      if (term) return;
+      rtcJoinCommitScene(g_scene);
+      barrier.wait();
+    }
+  }
+
+  void Benchmark_Static_Create_UserThreads(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality, RTCBuildQuality qflags)
+  {
+    assert(g_scene == nullptr);
+    size_t primitives = getNumPrimitives(scene_in);
+    size_t objects = getNumObjects(scene_in);
+    size_t iterations = 0;
+    double time = 0.0;
+    const size_t numThreads = g_num_user_threads;
+
+    barrier.init(numThreads);
+
+    std::vector<std::thread> threads;
+    threads.reserve(numThreads);
+    
+    /* ramp up threads */
+    setAffinity(0); 
+    for (size_t i=1; i<numThreads; i++) 
+      threads.push_back(std::thread(perform_work,i));
+    
+    for (size_t i=0; i<benchmark_iterations+skip_iterations; i++)
+    {
+      g_scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
+      convertScene(g_scene,scene_in,quality);
+
+      double t0 = getSeconds();
+      
+      barrier.wait();
+      rtcJoinCommitScene(g_scene);
+      barrier.wait();
+      
+      double t1 = getSeconds();
+
+      if (i >= skip_iterations)
+      {
+        time += t1 - t0;
+        iterations++;
+      }
+      std::cout << primitives << " primitives, " << objects << " objects, "
+                << time/iterations << " s, "
+                << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+
+      rtcReleaseScene (g_scene);
+    }
+
+    /* terminate task loop */
+    term = true;
+    barrier.wait();
+    for (auto& thread: threads)
+      thread.join();
+
+    if (qflags == RTC_BUILD_QUALITY_HIGH)
+      std::cout << "BENCHMARK_CREATE_HQ_STATIC_";
+    else
+      std::cout << "BENCHMARK_CREATE_STATIC_";
+
+    if (quality == RTC_BUILD_QUALITY_MEDIUM)
+      std::cout << "STATIC ";
+    else if (quality == RTC_BUILD_QUALITY_LOW)
+      std::cout << "DYNAMIC ";
+    else if (quality == RTC_BUILD_QUALITY_REFIT)
+      std::cout << "DEFORMABLE ";
+    else
+      FATAL("unknown flags");
+
+    std::cout << primitives << " primitives, " << objects << " objects, "
+              << time/iterations << " s, "
+              << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+
+    g_scene = nullptr;
+  }
+
+
   void Pause()
   {
     std::cout << "sleeping..." << std::flush;
@@ -316,22 +412,29 @@ namespace embree {
   /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
-    /* set error handler */
-    Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_REFIT);
-    Pause();
-    Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_LOW);
-    Pause();
-    Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_static ,RTC_BUILD_QUALITY_MEDIUM);
-    Pause();
-    Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_REFIT);
-    Pause();
-    Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_LOW);
-    Pause();
-    Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static ,RTC_BUILD_QUALITY_MEDIUM);
-    Pause();
-    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
-    Pause();
-    Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_HIGH);
+    if (g_num_user_threads == 0)
+    {
+      /* set error handler */
+      Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_REFIT);
+      Pause();
+      Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_LOW);
+      Pause();
+      Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_static ,RTC_BUILD_QUALITY_MEDIUM);
+      Pause();
+      Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_REFIT);
+      Pause();
+      Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_LOW);
+      Pause();
+      Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static ,RTC_BUILD_QUALITY_MEDIUM);
+      Pause();
+      Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
+      Pause();
+      Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_HIGH);
+    }
+    else
+    {
+      Benchmark_Static_Create_UserThreads(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
+    }
   }
 
   /* called by the C++ code to render */
@@ -360,5 +463,4 @@ namespace embree {
   extern "C" void device_cleanup ()
   {
   }
-
 } // namespace embree

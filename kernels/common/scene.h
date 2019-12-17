@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -19,6 +19,7 @@
 #include "default.h"
 #include "device.h"
 #include "builder.h"
+#include "../../common/algorithms/parallel_any_of.h"
 #include "scene_triangle_mesh.h"
 #include "scene_quad_mesh.h"
 #include "scene_user_geometry.h"
@@ -70,7 +71,7 @@ namespace embree
       }
       
       __forceinline size_t numPrimitives() const {
-        return scene->getNumPrimitives<Ty,mblur>();
+        return scene->getNumPrimitives(Ty::geom_type,mblur);
       }
 
       __forceinline size_t maxPrimitivesPerGeometry() 
@@ -80,6 +81,17 @@ namespace embree
           Ty* mesh = at(i);
           if (mesh == nullptr) continue;
           ret = max(ret,mesh->size());
+        }
+        return ret;
+      }
+
+      __forceinline unsigned int maxGeomID() 
+      {
+        unsigned int ret = 0;
+        for (size_t i=0; i<scene->size(); i++) {
+          Ty* mesh = at(i);
+          if (mesh == nullptr) continue;
+          ret = max(ret,(unsigned int)i);
         }
         return ret;
       }
@@ -158,6 +170,8 @@ namespace embree
     void createUserGeometryMBAccel();
     void createInstanceAccel();
     void createInstanceMBAccel();
+    void createInstanceExpensiveAccel();
+    void createInstanceExpensiveMBAccel();
     void createGridAccel();
     void createGridMBAccel();
 
@@ -195,6 +209,23 @@ namespace embree
     __forceinline void setModified(bool f = true) { 
       modified = f; 
     }
+
+  protected:
+    __forceinline void checkIfModifiedAndSet () 
+    {
+      if (isModified ()) return;
+      
+      auto geometryIsModified = [this](size_t i)->bool { 
+        auto g = geometries[i];
+        return (g && g->isEnabled ()) ? g->getModCounter() - geometryModCounters_[i] > 0 : false; 
+      };
+
+      if (parallel_any_of (size_t(0), geometries.size (), geometryIsModified)) {
+        setModified ();
+      }
+    }
+    
+  public:
 
     /* get mesh by ID */
     __forceinline       Geometry* get(size_t i)       { assert(i < geometries.size()); return geometries[i].ptr; }
@@ -237,9 +268,11 @@ namespace embree
     __forceinline bool hasContextFilterFunction() const {
       return scene_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
     }
+    
     __forceinline bool hasGeometryFilterFunction() {
-      return numIntersectionFiltersN != 0;
+      return world.numFilterFunctions != 0;
     }
+      
     __forceinline bool hasFilterFunction() {
       return hasContextFilterFunction() || hasGeometryFilterFunction();
     }
@@ -250,6 +283,7 @@ namespace embree
   public:
     IDPool<unsigned,0xFFFFFFFE> id_pool;
     vector<Ref<Geometry>> geometries; //!< list of all user geometries
+    vector<unsigned int> geometryModCounters_;
     vector<float*> vertices;
     
   public:
@@ -264,18 +298,21 @@ namespace embree
     MutexSys buildMutex;
     SpinLock geometriesMutex;
     bool is_build;
+  private:
     bool modified;                   //!< true if scene got modified
+
+  public:
     
     /*! global lock step task scheduler */
 #if defined(TASKING_INTERNAL) 
     MutexSys schedulerMutex;
     Ref<TaskScheduler> scheduler;
+#elif defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
+    tbb::isolated_task_group* group;
 #elif defined(TASKING_TBB)
     tbb::task_group* group;
-    BarrierActiveAutoReset group_barrier;
 #elif defined(TASKING_PPL)
     concurrency::task_group* group;
-    BarrierActiveAutoReset group_barrier;
 #endif
     
   public:
@@ -294,54 +331,53 @@ namespace embree
     void setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr);
 
   public:
-    struct GeometryCounts 
-    {
-      __forceinline GeometryCounts()
-        : numTriangles(0), numQuads(0), numBezierCurves(0), numLineSegments(0), numSubdivPatches(0), numUserGeometries(0), numInstances(0), numGrids(0), numPoints(0) {}
-
-      __forceinline size_t size() const {
-        return numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstances + numGrids + numPoints;
-      }
-
-      __forceinline unsigned int enabledGeometryTypesMask() const
-      {
-        unsigned int mask = 0;
-        if (numTriangles) mask |= 1 << 0;
-        if (numQuads) mask |= 1 << 1;
-        if (numBezierCurves+numLineSegments) mask |= 1 << 2;
-        if (numSubdivPatches) mask |= 1 << 3;
-        if (numUserGeometries) mask |= 1 << 4;
-        if (numInstances) mask |= 1 << 5;
-        if (numGrids) mask |= 1 << 6;
-        if (numPoints) mask |= 1 << 7;
-        return mask;
-      }
-
-      std::atomic<size_t> numTriangles;             //!< number of enabled triangles
-      std::atomic<size_t> numQuads;                 //!< number of enabled quads
-      std::atomic<size_t> numBezierCurves;          //!< number of enabled curves
-      std::atomic<size_t> numLineSegments;          //!< number of enabled line segments
-      std::atomic<size_t> numSubdivPatches;         //!< number of enabled subdivision patches
-      std::atomic<size_t> numUserGeometries;        //!< number of enabled user geometries
-      std::atomic<size_t> numInstances;             //!< number of enabled instances
-      std::atomic<size_t> numGrids;                 //!< number of enabled grid geometries
-      std::atomic<size_t> numPoints;                //!< number of enabled points
-    };
-
-     __forceinline unsigned int enabledGeometryTypesMask() const {
-       return (world.enabledGeometryTypesMask() << 8) + worldMB.enabledGeometryTypesMask();
-     }
     
-    GeometryCounts world;               //!< counts for non-motion blurred geometry
-    GeometryCounts worldMB;             //!< counts for motion blurred geometry
+  private:
 
-    std::atomic<size_t> numSubdivEnableDisableEvents; //!< number of enable/disable calls for any subdiv geometry
+    GeometryCounts world;               //!< counts for geometry
+
+  public:
 
     __forceinline size_t numPrimitives() const {
-      return world.size() + worldMB.size();
+      return world.size();
     }
 
-    template<typename Mesh, bool mblur> __forceinline size_t getNumPrimitives() const;
+    __forceinline size_t getNumPrimitives(Geometry::GTypeMask mask, bool mblur) const
+    {
+      size_t count = 0;
+      
+      if (mask & Geometry::MTY_TRIANGLE_MESH)
+        count += mblur ? world.numMBTriangles : world.numTriangles;
+      
+      if (mask & Geometry::MTY_QUAD_MESH)
+        count += mblur ? world.numMBQuads : world.numQuads;
+      
+      if (mask & Geometry::MTY_CURVE2)
+        count += mblur ? world.numMBLineSegments : world.numLineSegments;
+      
+      if (mask & Geometry::MTY_CURVE4)
+        count += mblur ? world.numMBBezierCurves : world.numBezierCurves;
+      
+      if (mask & Geometry::MTY_POINTS)
+        count += mblur ? world.numMBPoints : world.numPoints;
+      
+      if (mask & Geometry::MTY_SUBDIV_MESH)
+        count += mblur ? world.numMBSubdivPatches : world.numSubdivPatches;
+      
+      if (mask & Geometry::MTY_USER_GEOMETRY)
+        count += mblur ? world.numMBUserGeometries : world.numUserGeometries;
+      
+      if (mask & Geometry::MTY_INSTANCE_CHEAP)
+        count += mblur ? world.numMBInstancesCheap : world.numInstancesCheap;
+      
+      if (mask & Geometry::MTY_INSTANCE_EXPENSIVE)
+        count += mblur  ? world.numMBInstancesExpensive : world.numInstancesExpensive;
+      
+      if (mask & Geometry::MTY_GRID_MESH)
+        count += mblur  ? world.numMBGrids : world.numGrids;
+      
+      return count;
+    }
     
     template<typename Mesh, bool mblur>
     __forceinline unsigned getNumTimeSteps()
@@ -352,24 +388,12 @@ namespace embree
       Scene::Iterator<Mesh,mblur> iter(this);
       return iter.maxTimeStepsPerGeometry();
     }
-   
-    std::atomic<size_t> numIntersectionFiltersN;   //!< number of enabled intersection/occlusion filters for N-wide ray packets
-  };
 
-  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,false>() const { return world.numTriangles; }
-  template<> __forceinline size_t Scene::getNumPrimitives<TriangleMesh,true>() const { return worldMB.numTriangles; }
-  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,false>() const { return world.numQuads; }
-  template<> __forceinline size_t Scene::getNumPrimitives<QuadMesh,true>() const { return worldMB.numQuads; }
-  template<> __forceinline size_t Scene::getNumPrimitives<CurveGeometry,false>() const { return world.numBezierCurves+world.numLineSegments+world.numPoints; }
-  template<> __forceinline size_t Scene::getNumPrimitives<CurveGeometry,true>() const { return worldMB.numBezierCurves+worldMB.numLineSegments+worldMB.numPoints; }
-  template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,false>() const { return world.numLineSegments; }
-  template<> __forceinline size_t Scene::getNumPrimitives<LineSegments,true>() const { return worldMB.numLineSegments; }
-  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,false>() const { return world.numSubdivPatches; }
-  template<> __forceinline size_t Scene::getNumPrimitives<SubdivMesh,true>() const { return worldMB.numSubdivPatches; }
-  template<> __forceinline size_t Scene::getNumPrimitives<UserGeometry,false>() const { return world.numUserGeometries; }
-  template<> __forceinline size_t Scene::getNumPrimitives<UserGeometry,true>() const { return worldMB.numUserGeometries; }
-  template<> __forceinline size_t Scene::getNumPrimitives<Instance,false>() const { return world.numInstances; }
-  template<> __forceinline size_t Scene::getNumPrimitives<Instance,true>() const { return worldMB.numInstances; }
-  template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,false>() const { return world.numGrids; }
-  template<> __forceinline size_t Scene::getNumPrimitives<GridMesh,true>() const { return worldMB.numGrids; }
+    template<typename Mesh, bool mblur>
+    __forceinline unsigned int getMaxGeomID()
+    {
+      Scene::Iterator<Mesh,mblur> iter(this);
+      return iter.maxGeomID();
+    }
+  };
 }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -28,7 +28,7 @@ namespace embree
     struct SphereMiIntersector1
     {
       typedef PointMi<M> Primitive;
-      typedef SpherePrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre,
                                           RayHit& ray,
@@ -54,6 +54,13 @@ namespace embree
         const vbool<Mx> valid = sphere.template valid<Mx>();
         return SphereIntersector1<Mx>::intersect(
             valid, ray, pre, v0, Occluded1EpilogM<M, Mx, filter>(ray, context, sphere.geomID(), sphere.primID()));
+      }
+      
+      static __forceinline bool pointQuery(PointQuery* query,
+                                           PointQueryContext* context,
+                                           const Primitive& sphere)
+      {
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, sphere);
       }
     };
 
@@ -61,7 +68,7 @@ namespace embree
     struct SphereMiMBIntersector1
     {
       typedef PointMi<M> Primitive;
-      typedef SpherePrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre,
                                           RayHit& ray,
@@ -88,13 +95,20 @@ namespace embree
         return SphereIntersector1<Mx>::intersect(
             valid, ray, pre, v0, Occluded1EpilogM<M, Mx, filter>(ray, context, sphere.geomID(), sphere.primID()));
       }
+
+      static __forceinline bool pointQuery(PointQuery* query,
+                                           PointQueryContext* context,
+                                           const Primitive& sphere)
+      {
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, sphere);
+      }
     };
 
     template<int M, int Mx, int K, bool filter>
     struct SphereMiIntersectorK
     {
       typedef PointMi<M> Primitive;
-      typedef SpherePrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(
           const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& sphere)
@@ -133,7 +147,7 @@ namespace embree
     struct SphereMiMBIntersectorK
     {
       typedef PointMi<M> Primitive;
-      typedef SpherePrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(
           const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& sphere)

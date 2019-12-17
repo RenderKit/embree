@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -72,6 +72,7 @@ namespace embree
           void clear () {
             normal.clear();
             shadow.clear();
+            point_query.clear();
           }
 
 	  /* normal and shadow ray statistics */
@@ -101,7 +102,7 @@ namespace embree
 	    std::atomic<size_t> trav_stack_nodes; 
             std::atomic<size_t> trav_xfm_nodes; 
             
-	  } normal, shadow;
+	  } normal, shadow, point_query;
 	} all, active, code; 
 
         std::atomic<size_t> user[10];

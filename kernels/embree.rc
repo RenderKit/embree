@@ -1,4 +1,4 @@
-#include "../include/embree3/rtcore_version.h"
+#include "../include/embree3/rtcore_config.h"
 
 1 VERSIONINFO
  FILEVERSION RTC_VERSION_MAJOR,RTC_VERSION_MINOR,RTC_VERSION_PATCH,0
@@ -22,9 +22,9 @@ BEGIN
             VALUE "FileVersion", RTC_VERSION_STRING
             VALUE "ProductVersion", RTC_VERSION_STRING
             VALUE "LegalCopyright", "www.apache.org/licenses/LICENSE-2.0"
-            VALUE "OriginalFilename", "embree.dll"
+            VALUE "OriginalFilename", "embree3.dll"
             VALUE "InternalName", "Embree"
-            VALUE "ProductName", "Embree Ray Tracing Kernels"
+            VALUE "ProductName", "Intel(R) Embree"
         END
     END
     BLOCK "VarFileInfo"

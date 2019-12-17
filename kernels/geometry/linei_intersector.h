@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -45,6 +45,11 @@ namespace embree
         const vbool<Mx> valid = line.template valid<Mx>();
         return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
+      
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
+      {
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, line);
+      }
     };
 
     template<int M, int Mx, bool filter>
@@ -67,6 +72,11 @@ namespace embree
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time());
         const vbool<Mx> valid = line.template valid<Mx>();
         return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+      }
+      
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
+      {
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, line);
       }
     };
 

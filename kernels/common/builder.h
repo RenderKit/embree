@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -65,9 +65,9 @@ namespace embree
 
   class Scene;
 
-  typedef void (*createLineSegmentsAccelTy)(LineSegments* mesh, AccelData*& accel, Builder*& builder);
-  typedef void (*createTriangleMeshAccelTy)(TriangleMesh* mesh, AccelData*& accel, Builder*& builder);
-  typedef void (*createQuadMeshAccelTy)(QuadMesh* mesh, AccelData*& accel, Builder*& builder);
-  typedef void (*createUserGeometryAccelTy)(UserGeometry* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createLineSegmentsAccelTy)(Scene* scene, LineSegments* mesh, AccelData*& accel, Builder*& builder);
+  typedef void (*createTriangleMeshAccelTy)(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
+  typedef void (*createQuadMeshAccelTy)(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
+  typedef void (*createUserGeometryAccelTy)(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
 
 }

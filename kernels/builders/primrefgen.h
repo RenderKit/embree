@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -26,7 +26,7 @@ namespace embree
 {
   namespace isa
   {
-    PrimInfo createPrimRefArray(Geometry* geometry, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
+    PrimInfo createPrimRefArray(Geometry* geometry, unsigned int geomID, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
    
     PrimInfo createPrimRefArray(Scene* scene, Geometry::GTypeMask types, bool mblur, mvector<PrimRef>& prims, BuildProgressMonitor& progressMonitor);
    

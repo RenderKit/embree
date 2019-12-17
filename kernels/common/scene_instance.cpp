@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -22,7 +22,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   Instance::Instance (Device* device, Accel* object, unsigned int numTimeSteps) 
-    : Geometry(device,Geometry::GTY_INSTANCE,1,numTimeSteps), object(object), local2world(nullptr)
+    : Geometry(device,Geometry::GTY_INSTANCE_CHEAP,1,numTimeSteps), object(object), local2world(nullptr)
   {
     if (object) object->refInc();
     world2local0 = one;
@@ -37,14 +37,14 @@ namespace embree
     if (object) object->refDec();
   }
 
-  void Instance::enabling () {
-    if (numTimeSteps == 1) scene->world.numInstances += numPrimitives;
-    else                   scene->worldMB.numInstances += numPrimitives;
+  Geometry* Instance::attach(Scene* scene, unsigned int geomID)
+  {
+    return Geometry::attach (scene, geomID);
   }
-  
-  void Instance::disabling() { 
-    if (numTimeSteps == 1) scene->world.numInstances -= numPrimitives;
-    else                   scene->worldMB.numInstances -= numPrimitives;
+
+  void Instance::detach()
+  {
+    Geometry::detach ();
   }
   
   void Instance::setNumTimeSteps (unsigned int numTimeSteps_in)
@@ -72,6 +72,38 @@ namespace embree
     object = scene.ptr;
     if (object) object->refInc();
     Geometry::update();
+  }
+
+  void Instance::preCommit()
+  {
+#if 0 // disable expensive instance optimization for now
+    // decide whether we're an expensive instnace or not
+    auto numExpensiveGeo =  static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, false)
+                          + static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, true)
+                          + static_cast<Scene*> (object)->getNumPrimitives(UserGeometry::geom_type, false)
+                          + static_cast<Scene*> (object)->getNumPrimitives(UserGeometry::geom_type, true);
+    if (numExpensiveGeo > 0) {
+      this->gtype = GTY_INSTANCE_EXPENSIVE;
+    }
+#endif
+    Geometry::preCommit();
+  }
+
+  void Instance::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (Geometry::GTY_INSTANCE_CHEAP == this->gtype) {
+      if (1 == numTimeSteps) {
+        counts.numInstancesCheap += numPrimitives;
+      } else {
+        counts.numMBInstancesCheap += numPrimitives;
+      }
+    } else {
+      if (1 == numTimeSteps) {
+        counts.numInstancesExpensive += numPrimitives;
+      } else {
+        counts.numMBInstancesExpensive += numPrimitives;
+      }
+    }
   }
   
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)

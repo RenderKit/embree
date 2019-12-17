@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -37,6 +37,10 @@ namespace embree
     "round_hermite_curve",
     "oriented_hermite_curve",
     "",
+    "flat_catmull_rom_curve",
+    "round_catmull_rom_curve",
+    "oriented_catmull_rom_curve",
+    "",    
     "triangles",
     "quads",
     "grid",
@@ -47,19 +51,20 @@ namespace embree
     "oriented_disc",
     "",
     "usergeom",
-    "instance",
+    "instance_cheap",
+    "instance_expensive",
   };
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 
-    : device(device), scene(nullptr), userPtr(nullptr),
-      geomID(0), numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
+    : device(device), userPtr(nullptr),
+      numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
       mask(-1),
       gtype(gtype),
       quality(RTC_BUILD_QUALITY_MEDIUM),
-      state(MODIFIED),
+      state((unsigned)State::MODIFIED),
       numPrimitivesChanged(false),
       enabled(true),
-      intersectionFilterN(nullptr), occlusionFilterN(nullptr)
+      intersectionFilterN(nullptr), occlusionFilterN(nullptr), pointQueryFunc(nullptr)
   {
     device->refInc();
   }
@@ -73,23 +78,20 @@ namespace embree
   {      
     if (numPrimitives_in == numPrimitives) return;
     
-    if (isEnabled() && scene) disabling();
     numPrimitives = numPrimitives_in;
     numPrimitivesChanged = true;
-    if (isEnabled() && scene) enabling();
     
     Geometry::update();
   }
 
   void Geometry::setNumTimeSteps (unsigned int numTimeSteps_in)
   {
-    if (numTimeSteps_in == numTimeSteps)
+    if (numTimeSteps_in == numTimeSteps) {
       return;
+    }
     
-    if (isEnabled() && scene) disabling();
     numTimeSteps = numTimeSteps_in;
     fnumTimeSegments = float(numTimeSteps_in-1);
-    if (isEnabled() && scene) enabling();
     
     Geometry::update();
   }
@@ -102,24 +104,21 @@ namespace embree
   
   void Geometry::update() 
   {
-    if (scene)
-      scene->setModified();
-
-    state = MODIFIED;
+    ++modCounter_;
+    state = (unsigned)State::MODIFIED;
   }
   
   void Geometry::commit() 
   {
-    if (scene)
-      scene->setModified();
-
-    state = COMMITTED;
+    ++modCounter_;
+    state = (unsigned)State::COMMITTED;
   }
 
   void Geometry::preCommit()
   {
-    if (state == MODIFIED)
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry got not committed");
+    if (State::MODIFIED == (State)state) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry not committed");
+    }
   }
 
   void Geometry::postCommit()
@@ -127,43 +126,22 @@ namespace embree
     numPrimitivesChanged = false;
     
     /* set state to build */
-    if (isEnabled())
-      state = BUILD;
-  }
-
-  void Geometry::updateIntersectionFilters(bool enable)
-  {
-    const size_t numN  = (intersectionFilterN  != nullptr) + (occlusionFilterN  != nullptr);
-
-    if (enable) {
-      scene->numIntersectionFiltersN += numN;
-    } else {
-      scene->numIntersectionFiltersN -= numN;
+    if (isEnabled()) {
+      state = (unsigned)State::BUILD;
     }
   }
 
   Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
   {
-    assert(scene);
-    this->scene = scene;
-    this->geomID = geomID;
-    if (isEnabled()) {
-      scene->setModified();
-      updateIntersectionFilters(true);
-      enabling();
-    }
+
+    // this->geomID = geomID;
+
     return this;
   }
 
   void Geometry::detach()
   {
-    if (isEnabled()) {
-      scene->setModified();
-      updateIntersectionFilters(false);
-      disabling();
-    }
-    this->scene = nullptr;
-    this->geomID = -1;
+    // this->geomID = -1;
   }
   
   void Geometry::enable () 
@@ -171,27 +149,19 @@ namespace embree
     if (isEnabled()) 
       return;
 
-    if (scene) {
-      updateIntersectionFilters(true);
-      scene->setModified();
-      enabling();
-    }
-
+    state = (unsigned)State::COMMITTED;
     enabled = true;
+    ++modCounter_;
   }
 
   void Geometry::disable () 
   {
     if (isDisabled()) 
       return;
-
-    if (scene) {
-      updateIntersectionFilters(false);
-      scene->setModified();
-      disabling();
-    }
     
+    state = (unsigned)State::COMMITTED;
     enabled = false;
+    ++modCounter_;
   }
 
   void Geometry::setUserData (void* ptr)
@@ -204,10 +174,6 @@ namespace embree
     if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFiltersN -= intersectionFilterN != nullptr;
-      scene->numIntersectionFiltersN += filter != nullptr;
-    }
     intersectionFilterN = filter;
   }
 
@@ -216,11 +182,12 @@ namespace embree
     if (!(getTypeMask() & (MTY_TRIANGLE_MESH | MTY_QUAD_MESH | MTY_CURVES | MTY_SUBDIV_MESH | MTY_USER_GEOMETRY | MTY_GRID_MESH)))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"filter functions not supported for this geometry"); 
 
-    if (scene && isEnabled()) {
-      scene->numIntersectionFiltersN -= occlusionFilterN != nullptr;
-      scene->numIntersectionFiltersN += filter != nullptr;
-    }
     occlusionFilterN = filter;
+  }
+  
+  void Geometry::setPointQueryFunction (RTCPointQueryFunction func) 
+  {
+    pointQueryFunc = func;
   }
 
   void Geometry::interpolateN(const RTCInterpolateNArguments* const args)
@@ -295,5 +262,34 @@ namespace embree
         }
       }
     }
+  }
+    
+  bool Geometry::pointQuery(PointQuery* query, PointQueryContext* context)
+  {
+    assert(context->primID < size());
+   
+    RTCPointQueryFunctionArguments args;
+    args.query           = (RTCPointQuery*)context->query_ws;
+    args.userPtr         = context->userPtr;
+    args.primID          = context->primID;
+    args.geomID          = context->geomID;
+    args.context         = context->userContext;
+    args.similarityScale = context->similarityScale;
+    
+    bool update = false;
+    if(context->func)  update |= context->func(&args);
+    if(pointQueryFunc) update |= pointQueryFunc(&args);
+
+    if (update && context->userContext->instStackSize > 0)
+    {
+      // update point query
+      if (context->query_type == POINT_QUERY_TYPE_AABB) {
+        context->updateAABB();
+      } else {
+        assert(context->similarityScale > 0.f);
+        query->radius = context->query_ws->radius * context->similarityScale;
+      }
+    }
+    return update;
   }
 }

@@ -51,7 +51,7 @@ into the vertex buffer, resulting in even higher memory savings.
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

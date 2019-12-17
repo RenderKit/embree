@@ -38,7 +38,7 @@ e4, the next edge e5, etc.
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

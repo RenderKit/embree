@@ -18,11 +18,9 @@
 The `rtcAttachGeometry` function attaches a geometry (`geometry`
 argument) to a scene (`scene` argument) and assigns a geometry ID to
 that geometry. All geometries attached to a scene are defined to be
-included inside the scene. A geometry can only get attached to a
-single scene at a given time. However, it is possible to detach and
-re-attach a geometry to a different scene. The geometry ID is unique
-for the scene, and is used to identify the geometry when hit by a ray
-during ray queries.
+included inside the scene. A geometry can get attached to multiplee scene.
+The geometry ID is unique for the scene, and is used to identify the
+geometry when hit by a ray during ray queries.
 
 This function is thread-safe, thus multiple threads can attach
 geometries to a scene in parallel.
@@ -42,7 +40,7 @@ map to its geometry representation. See `rtcSetGeometryUserData` and
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -14,16 +14,18 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_LIBRARY(c99_compile_test STATIC api_c99.c)
+IF(NOT EMBREE_API_NAMESPACE)
+  ADD_LIBRARY(c99_compile_test STATIC api_c99.c)
+ENDIF()
 
-ADD_EXECUTABLE(verify verify.cpp ../common/tutorial/application.cpp)
+ADD_EXECUTABLE(verify verify.cpp ../common/tutorial/application.cpp ../../kernels/common/geometry.cpp)
 TARGET_LINK_LIBRARIES(verify sys math scenegraph embree)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tutorials)
 SET_PROPERTY(TARGET verify APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 INSTALL(TARGETS verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 SIGN_TARGET(verify)
 
-IF (EMBREE_TESTING_INTENSITY GREATER 0)
+IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
 
   IF (EMBREE_TESTING_INTENSITY GREATER 1)
     ADD_TEST(NAME verify COMMAND verify --no-colors --intensity 2)

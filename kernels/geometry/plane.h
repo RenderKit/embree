@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -59,7 +59,7 @@ namespace embree
           Vec3vf<M> D = Vec3vf<M>(ray_dir);
           vfloat<M> ON = dot(O,N);
           vfloat<M> DN = dot(D,N);
-          vboolx eps = abs(DN) < min_rcp_input;
+          vbool<M> eps = abs(DN) < min_rcp_input;
           vfloat<M> t = -ON*rcp(DN);
           vfloat<M> lower = select(eps | DN < 0.0f, vfloat<M>(neg_inf), t);
           vfloat<M> upper = select(eps | DN > 0.0f, vfloat<M>(pos_inf), t);

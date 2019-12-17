@@ -1,4 +1,4 @@
-images_jpg := $(addprefix images/, $(addsuffix .jpg, displacement_geometry instanced_geometry pathtracer dynamic_scene subdivision_geometry user_geometry hair_geometry intersection_filter triangle_geometry viewer viewer_stream interpolation motion_blur_geometry curve_geometry))
+images_jpg := $(addprefix images/, $(addsuffix .jpg, displacement_geometry instanced_geometry pathtracer dynamic_scene subdivision_geometry user_geometry hair_geometry intersection_filter triangle_geometry viewer viewer_stream interpolation motion_blur_geometry curve_geometry voronoi closest_point multi_level_instancing point_geometry grid_geometry))
 images_png := $(addprefix images/, $(addsuffix .png, quad_uv triangle_uv half_edges))
 images_pdf := $(addprefix images/, $(addsuffix .pdf, quad_uv triangle_uv half_edges))
 
@@ -23,9 +23,9 @@ PANDOC := pandoc
 ### add version
 ########################################################################
 
-tmp/version: ../include/embree3/rtcore_version.h
+tmp/version: ../include/embree3/rtcore_config.h
 	sed -n 's/#define RTC_VERSION_STRING \"\(.*\)\".*/\1/p' $< > $@
-tmp/version_major: ../include/embree3/rtcore_version.h
+tmp/version_major: ../include/embree3/rtcore_config.h
 	sed -n 's/#define RTC_VERSION_MAJOR \([0-9]\)/\1/p' $< > $@
 
 replace_version = sed -e "s/<EMBREE_VERSION>/`cat tmp/version`/g" $< | sed -e "s/<EMBREE_VERSION_MAJOR>/`cat tmp/version_major`/g" > $@
@@ -61,13 +61,13 @@ tmpdir:
 	@mkdir -p tmp
 
 
+convertbsp = sed -e 's@\\\[@[@g' -e 's@\\\]@]@g' -e 's@\\_]@_@g'
+
 ########################################################################
 ### webpages
 ########################################################################
 
-markdown2web = $(PANDOC) --smart --email-obfuscation=none -f markdown $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
-
-markdown2web2 = $(PANDOC) $(filter-out tmp/webtemplate.html,$+) --filter src/IncludeFilter.py -t markdown | $(PANDOC) --smart --email-obfuscation=none -f markdown --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
+markdown2web = $(PANDOC) --email-obfuscation=none -f markdown $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@
 
 $(webpages): tmp/links_web.md tmp/images_local_png.md tmp/webtemplate.html
 
@@ -83,7 +83,8 @@ www/legal.html: tmp/legal.md
 	$(markdown2web) --indented-code-classes=cpp
 
 www/api.html: tmp/api.md
-	$(markdown2web2) --indented-code-classes=cpp
+	$(PANDOC) $(filter-out tmp/webtemplate.html,$+) --filter src/IncludeFilter.py -t markdown | $(convertbsp) > tmp/api_webinc.md
+	$(PANDOC) --email-obfuscation=none -f markdown --template tmp/webtemplate tmp/api_webinc.md  tmp/links_web.md tmp/images_local_png.md --indented-code-classes=cpp -V select_$(basename $(@F)) -o $@
 
 www/images/%.jpg: images/%.jpg
 	cp $< $@ 
@@ -121,33 +122,36 @@ images/%.pdf: images/%.fig
 ### markdown
 ########################################################################
 
-convertnbsp = sed -e 's@\\ @ @g'
-convertpagebreak = sed -e 's@\\pagebreak@@g'
+convertnbsppagebreak = sed -e 's@\\ @ @g' -e 's@\\pagebreak@@g'
 
-doc/README.md: tmp/metadata.md tmp/overview.md tmp/platforms.md tmp/support.md tmp/acknowledgement.md tmp/install.md tmp/compilation.md tmp/api_inc1.md tmp/tutorials.md tmp/links_local.md tmp/images_url.md
-	cat $+ | $(convertnbsp) | $(convertpagebreak) > $@
+pandoc_version_major := $(shell $(PANDOC) --version | head -n 1 | sed -e 's/[^0-9]*\([0-9]*\).*/\1/')
+ifeq ($(pandoc_version_major),1)
+top_level_chapter = --chapters
+else
+top_level_chapter = --top-level-division=chapter
+endif
+
+tmp/api_inc.md: tmp/api.md
+	$(PANDOC) --columns=71 $+ --filter src/IncludeFilter.py -t markdown | $(convertbsp) > $@
+
+doc/README.md: tmp/metadata.md tmp/overview.md tmp/platforms.md tmp/support.md tmp/acknowledgement.md tmp/install.md tmp/compilation.md tmp/api_inc.md tmp/tutorials.md tmp/links_local.md tmp/images_url.md
+	cat $+ | $(convertnbsppagebreak) > $@
 
 doc/CHANGELOG.md: tmp/changelog.md
-	$(convertnbsp) $+ | $(convertpagebreak) > $@
+	$(convertnbsppagebreak) $+ > $@
 
 ########################################################################
 ### pdf
 ########################################################################
 
-convertbsp0 = sed -e 's@\\\[@[@g'
-convertbsp1 = sed -e 's@\\\]@]@g'
-convertbsp2 = sed -e 's@\\_]@_@g'
-
 tmp/readme.tex: src/readme.tex
 	cp src/readme.tex tmp
 
 tmp/%.tex: tmp/%.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) --smart $+ -t latex --columns=72 --chapters -o $@
+	$(PANDOC) $+ -t latex --columns=72 $(top_level_chapter) -o $@
 
-tmp/api.tex: tmp/api.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) tmp/api.md --filter src/IncludeFilter.py -t markdown -o tmp/api_inc.md
-	cat tmp/api_inc.md | $(convertbsp0) | $(convertbsp1) | $(convertbsp2) > tmp/api_inc1.md
-	$(PANDOC) tmp/api_inc1.md tmp/links_local.md tmp/images_local_pdf.md -f markdown --indented-code-classes=cpp --smart -t latex --columns=72 --chapters -o $@
+tmp/api.tex: tmp/api_inc.md tmp/links_local.md tmp/images_local_pdf.md
+	$(PANDOC) $+ --indented-code-classes=cpp -t latex --columns=72 $(top_level_chapter) -o $@
 
 doc/readme.pdf: preamble.tex tmp/version
 

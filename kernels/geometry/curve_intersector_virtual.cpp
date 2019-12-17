@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -20,6 +20,7 @@
 #include "../subdiv/bezier_curve.h"
 #include "../subdiv/bspline_curve.h"
 #include "../subdiv/hermite_curve.h"
+#include "../subdiv/catmullrom_curve.h"
 
 #include "spherei_intersector.h"
 #include "disci_intersector.h"
@@ -43,10 +44,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors LinearRibbonNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&FlatLinearCurveMiIntersector1<N,N,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &FlatLinearCurveMiIntersector1<N,N,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&FlatLinearCurveMiIntersectorK<N,N,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &FlatLinearCurveMiIntersectorK<N,N,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &FlatLinearCurveMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &FlatLinearCurveMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &FlatLinearCurveMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &FlatLinearCurveMiIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&FlatLinearCurveMiIntersectorK<N,N,8,true>::intersect;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &FlatLinearCurveMiIntersectorK<N,N,8,true>::occluded;
@@ -62,10 +63,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors LinearRibbonNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&FlatLinearCurveMiMBIntersector1<N,N,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &FlatLinearCurveMiMBIntersector1<N,N,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&FlatLinearCurveMiMBIntersectorK<N,N,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &FlatLinearCurveMiMBIntersectorK<N,N,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &FlatLinearCurveMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &FlatLinearCurveMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &FlatLinearCurveMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &FlatLinearCurveMiMBIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&FlatLinearCurveMiMBIntersectorK<N,N,8,true>::intersect;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &FlatLinearCurveMiMBIntersectorK<N,N,8,true>::occluded;
@@ -81,10 +82,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors SphereNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&SphereMiIntersector1<N,N,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &SphereMiIntersector1<N,N,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&SphereMiIntersectorK<N,N,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &SphereMiIntersectorK<N,N,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &SphereMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &SphereMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &SphereMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &SphereMiIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&SphereMiIntersectorK<N,N,8,true>::intersect;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &SphereMiIntersectorK<N,N,8,true>::occluded;
@@ -100,10 +101,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors SphereNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&SphereMiMBIntersector1<N,N,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &SphereMiMBIntersector1<N,N,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&SphereMiMBIntersectorK<N,N,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &SphereMiMBIntersectorK<N,N,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &SphereMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &SphereMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &SphereMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &SphereMiMBIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&SphereMiMBIntersectorK<N,N,8,true>::intersect;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &SphereMiMBIntersectorK<N,N,8,true>::occluded;
@@ -119,10 +120,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors DiscNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&DiscMiIntersector1<N,N,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &DiscMiIntersector1<N,N,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&DiscMiIntersectorK<N,N,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &DiscMiIntersectorK<N,N,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &DiscMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &DiscMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &DiscMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &DiscMiIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&DiscMiIntersectorK<N,N,8,true>::intersect;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &DiscMiIntersectorK<N,N,8,true>::occluded;
@@ -138,10 +139,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors DiscNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&DiscMiMBIntersector1<N,N,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &DiscMiMBIntersector1<N,N,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&DiscMiMBIntersectorK<N,N,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &DiscMiMBIntersectorK<N,N,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &DiscMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &DiscMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &DiscMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &DiscMiMBIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&DiscMiMBIntersectorK<N,N,8,true>::intersect;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &DiscMiMBIntersectorK<N,N,8,true>::occluded;
@@ -157,10 +158,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors OrientedDiscNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&OrientedDiscMiIntersector1<N,N,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &OrientedDiscMiIntersector1<N,N,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&OrientedDiscMiIntersectorK<N,N,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &OrientedDiscMiIntersectorK<N,N,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &OrientedDiscMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &OrientedDiscMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &OrientedDiscMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &OrientedDiscMiIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&OrientedDiscMiIntersectorK<N,N,8,true>::intersect;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &OrientedDiscMiIntersectorK<N,N,8,true>::occluded;
@@ -176,10 +177,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors OrientedDiscNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&OrientedDiscMiMBIntersector1<N,N,true>::intersect;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &OrientedDiscMiMBIntersector1<N,N,true>::occluded;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&OrientedDiscMiMBIntersectorK<N,N,4,true>::intersect;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &OrientedDiscMiMBIntersectorK<N,N,4,true>::occluded;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &OrientedDiscMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &OrientedDiscMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &OrientedDiscMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &OrientedDiscMiMBIntersectorK<N,N,4,true>::occluded;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&OrientedDiscMiMBIntersectorK<N,N,8,true>::intersect;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &OrientedDiscMiMBIntersectorK<N,N,8,true>::occluded;
@@ -195,10 +196,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors RibbonNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNiIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNiIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
@@ -214,10 +215,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors RibbonNvIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNvIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNvIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNvIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNvIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNvIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNvIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNvIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNvIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNvIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNvIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
@@ -233,10 +234,10 @@ namespace embree
     static VirtualCurveIntersector::Intersectors RibbonNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiMBIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiMBIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNiMBIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNiMBIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
       intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
       intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
@@ -252,8 +253,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors CurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
@@ -271,8 +272,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors CurveNvIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNvIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNvIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNvIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNvIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNvIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNvIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
@@ -290,8 +291,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors CurveNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiMBIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiMBIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
@@ -309,8 +310,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors OrientedCurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiIntersector1<N>::template intersect_n<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiIntersector1<N>::template occluded_n <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_n<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_n <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_n<OrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_n <OrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
@@ -328,8 +329,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors OrientedCurveNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiMBIntersector1<N>::template intersect_n<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiMBIntersector1<N>::template occluded_n <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_n<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_n <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_n<OrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_n <OrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
@@ -347,8 +348,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors HermiteRibbonNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiIntersector1<N>::template intersect_h<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiIntersector1<N>::template occluded_h <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_h<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_h <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_h<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_h <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
@@ -366,8 +367,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors HermiteRibbonNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiMBIntersector1<N>::template intersect_h<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiMBIntersector1<N>::template occluded_h <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_h<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_h <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_h<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_h <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
@@ -385,8 +386,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors HermiteCurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiIntersector1<N>::template intersect_h<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiIntersector1<N>::template occluded_h <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_h<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_h <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_h<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_h <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
@@ -404,8 +405,8 @@ namespace embree
     static VirtualCurveIntersector::Intersectors HermiteCurveNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiMBIntersector1<N>::template intersect_h<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiMBIntersector1<N>::template occluded_h <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_h<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_h <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
       intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_h<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
       intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_h <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
@@ -423,17 +424,17 @@ namespace embree
     static VirtualCurveIntersector::Intersectors HermiteOrientedCurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiIntersector1<N>::template intersect_hn<HermiteOrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiIntersector1<N>::template occluded_hn <HermiteOrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_hn<HermiteOrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_hn <HermiteOrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_hn<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_hn <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_hn<HermiteOrientedCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_hn <HermiteOrientedCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_hn<HermiteOrientedCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_hn <HermiteOrientedCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
@@ -442,17 +443,17 @@ namespace embree
     static VirtualCurveIntersector::Intersectors HermiteOrientedCurveNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty)&CurveNiMBIntersector1<N>::template intersect_hn<HermiteOrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty) &CurveNiMBIntersector1<N>::template occluded_hn <HermiteOrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_hn<HermiteOrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_hn <HermiteOrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_hn<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_hn <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_hn<HermiteOrientedCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_hn <HermiteOrientedCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_hn<HermiteOrientedCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_hn <HermiteOrientedCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
@@ -473,6 +474,9 @@ namespace embree
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_HERMITE_CURVE] = HermiteCurveNiIntersectors <HermiteCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_HERMITE_CURVE ] = HermiteRibbonNiIntersectors<HermiteCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_HERMITE_CURVE] = HermiteOrientedCurveNiIntersectors<HermiteCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ROUND_CATMULL_ROM_CURVE] = CurveNiIntersectors <CatmullRomCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_CATMULL_ROM_CURVE ] = RibbonNiIntersectors<CatmullRomCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE] = OrientedCurveNiIntersectors<CatmullRomCurve3fa,4>();
       return &function_local_static_prim;
     }
 
@@ -492,6 +496,9 @@ namespace embree
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_HERMITE_CURVE] = HermiteCurveNiIntersectors <HermiteCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_HERMITE_CURVE ] = HermiteRibbonNiIntersectors<HermiteCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_HERMITE_CURVE] = HermiteOrientedCurveNiIntersectors<HermiteCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ROUND_CATMULL_ROM_CURVE] = CurveNiIntersectors <CatmullRomCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_CATMULL_ROM_CURVE ] = RibbonNiIntersectors<CatmullRomCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE] = OrientedCurveNiIntersectors<CatmullRomCurve3fa,4>();
       return &function_local_static_prim;
     }
 
@@ -511,6 +518,9 @@ namespace embree
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_HERMITE_CURVE] = HermiteCurveNiMBIntersectors <HermiteCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_HERMITE_CURVE ] = HermiteRibbonNiMBIntersectors<HermiteCurve3fa,4>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_HERMITE_CURVE] = HermiteOrientedCurveNiMBIntersectors<HermiteCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ROUND_CATMULL_ROM_CURVE] = CurveNiMBIntersectors <CatmullRomCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_CATMULL_ROM_CURVE ] = RibbonNiMBIntersectors<CatmullRomCurve3fa,4>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE] = OrientedCurveNiMBIntersectors<CatmullRomCurve3fa,4>();
       return &function_local_static_prim;
     }
 
@@ -532,6 +542,9 @@ namespace embree
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_HERMITE_CURVE] = HermiteCurveNiIntersectors <HermiteCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_HERMITE_CURVE ] = HermiteRibbonNiIntersectors<HermiteCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_HERMITE_CURVE] = HermiteOrientedCurveNiIntersectors<HermiteCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ROUND_CATMULL_ROM_CURVE] = CurveNiIntersectors <CatmullRomCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_CATMULL_ROM_CURVE ] = RibbonNiIntersectors<CatmullRomCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE] = OrientedCurveNiIntersectors<CatmullRomCurve3fa,8>();
       return &function_local_static_prim;
     }
 
@@ -551,6 +564,9 @@ namespace embree
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_HERMITE_CURVE] = HermiteCurveNiIntersectors <HermiteCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_HERMITE_CURVE ] = HermiteRibbonNiIntersectors<HermiteCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_HERMITE_CURVE] = HermiteOrientedCurveNiIntersectors<HermiteCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ROUND_CATMULL_ROM_CURVE] = CurveNiIntersectors <CatmullRomCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_CATMULL_ROM_CURVE ] = RibbonNiIntersectors<CatmullRomCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE] = OrientedCurveNiIntersectors<CatmullRomCurve3fa,8>();
       return &function_local_static_prim;
     }
     
@@ -570,6 +586,9 @@ namespace embree
       function_local_static_prim.vtbl[Geometry::GTY_ROUND_HERMITE_CURVE] = HermiteCurveNiMBIntersectors <HermiteCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_FLAT_HERMITE_CURVE ] = HermiteRibbonNiMBIntersectors<HermiteCurve3fa,8>();
       function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_HERMITE_CURVE] = HermiteOrientedCurveNiMBIntersectors<HermiteCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ROUND_CATMULL_ROM_CURVE] = CurveNiMBIntersectors <CatmullRomCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_FLAT_CATMULL_ROM_CURVE ] = RibbonNiMBIntersectors<CatmullRomCurve3fa,8>();
+      function_local_static_prim.vtbl[Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE] = OrientedCurveNiMBIntersectors<CatmullRomCurve3fa,8>();
       return &function_local_static_prim;
     }
   

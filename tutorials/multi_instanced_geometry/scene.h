@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -14,8 +14,20 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#define RTC_VERSION_MAJOR @EMBREE_VERSION_MAJOR@
-#define RTC_VERSION_MINOR @EMBREE_VERSION_MINOR@
-#define RTC_VERSION_PATCH @EMBREE_VERSION_PATCH@
-#define RTC_VERSION @EMBREE_VERSION_NUMBER@
-#define RTC_VERSION_STRING "@EMBREE_VERSION_MAJOR@.@EMBREE_VERSION_MINOR@.@EMBREE_VERSION_PATCH@@EMBREE_VERSION_NOTE@"
+#pragma once
+
+#include "../common/tutorial/tutorial_device.h"
+#include "../common/math/linearspace.h"
+#include "../../include/embree3/rtcore.h"
+
+extern "C" struct InstanceLevels
+{
+  unsigned int numLevels;
+  const unsigned int* numInstancesOnLevel;
+  embree::LinearSpace3fa** normalTransforms;
+};
+
+extern "C" RTCScene initializeScene(RTCDevice device,
+                                    struct InstanceLevels* levels);
+
+extern "C" void cleanupScene();

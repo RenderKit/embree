@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -1428,7 +1428,7 @@ unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform a
   //const float tfar          = RTCHitN_t(hit,N,rayID);
   const float tfar          = ray->tfar;
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.instID = RTCHitN_instID(hit,N,rayID, 0);
   dg.geomID = RTCHitN_geomID(hit,N,rayID);
   dg.primID = RTCHitN_primID(hit,N,rayID);
   dg.u = RTCHitN_u(hit,N,rayID);
@@ -1503,7 +1503,7 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args
   const float tfar          = ray->tfar;
 
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(hit,N,rayID,0);
+  dg.instID = RTCHitN_instID(hit,N,rayID, 0);
   dg.geomID = RTCHitN_geomID(hit,N,rayID);
   dg.primID = RTCHitN_primID(hit,N,rayID);
   dg.u = RTCHitN_u(hit,N,rayID);
@@ -1619,7 +1619,7 @@ Vec3f renderPixelFunction(float x, float y, RandomSampler& sampler, const unifor
     Vec3f Ns = normalize(ray.Ng);
 
     /* compute differential geometry */
-    dg.instID = ray.instID;
+    dg.instID = ray.instID[0];
     dg.geomID = ray.geomID;
     dg.primID = ray.primID;
     dg.u = ray.u;

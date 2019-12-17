@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -43,11 +43,11 @@ inline Sample3f make_Sample3f(const Vec3fa& v, const float pdf) {
 }
 #endif
 
-
 inline Vec3fa cartesian(const float phi, const float sinTheta, const float cosTheta)
 {
-  float sinPhi, cosPhi;
-  sincosf(phi, &sinPhi, &cosPhi);
+  const float sinPhi = sinf(phi);
+  const float cosPhi = cosf(phi);
+  //sincosf(phi, &sinPhi, &cosPhi);
   return Vec3fa(cosPhi * sinTheta,
                     sinPhi * sinTheta,
                     cosTheta);
@@ -138,8 +138,9 @@ inline Vec3fa uniformSampleDisk(const float radius, const Vec2f &s)
 {
   const float r = sqrtf(s.x) * radius;
   const float phi =float(two_pi) * s.y;
-  float sinPhi, cosPhi;
-  sincosf(phi, &sinPhi, &cosPhi);
+  const float sinPhi = sinf(phi);
+  const float cosPhi = cosf(phi);
+  //sincosf(phi, &sinPhi, &cosPhi);
   return Vec3fa(r * cosPhi, r * sinPhi, 0.f);
 }
 

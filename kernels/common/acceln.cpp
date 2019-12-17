@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -43,7 +43,17 @@ namespace embree
     
     accels.clear();
   }
-  
+
+  bool AccelN::pointQuery (Accel::Intersectors* This_in, PointQuery* query, PointQueryContext* context)
+  {
+    bool changed = false;
+    AccelN* This = (AccelN*)This_in->ptr;
+    for (size_t i=0; i<This->accels.size(); i++)
+      if (!This->accels[i]->isEmpty())
+        changed |= This->accels[i]->intersectors.pointQuery(query,context);
+    return changed;
+  }
+
   void AccelN::intersect (Accel::Intersectors* This_in, RTCRayHit& ray, IntersectContext* context) 
   {
     AccelN* This = (AccelN*)This_in->ptr;
@@ -200,7 +210,7 @@ namespace embree
     {
       type = AccelData::TY_ACCELN;
       intersectors.ptr = this;
-      intersectors.intersector1  = Intersector1(&intersect,&occluded,valid1 ? "AccelN::intersector1": nullptr);
+      intersectors.intersector1  = Intersector1(&intersect,&occluded,&pointQuery,valid1 ? "AccelN::intersector1": nullptr);
       intersectors.intersector4  = Intersector4(&intersect4,&occluded4,valid4 ? "AccelN::intersector4" : nullptr);
       intersectors.intersector8  = Intersector8(&intersect8,&occluded8,valid8 ? "AccelN::intersector8" : nullptr);
       intersectors.intersector16 = Intersector16(&intersect16,&occluded16,valid16 ? "AccelN::intersector16": nullptr);

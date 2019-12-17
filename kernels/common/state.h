@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -117,6 +117,7 @@ namespace embree
 
   public:
     float max_spatial_split_replications;  //!< maximally replications*N many primitives in accel for spatial splits
+    bool useSpatialPreSplits;              //!< use spatial pre-splits instead of the full spatial split builder
     size_t tessellation_cache_size;        //!< size of the shared tessellation cache 
 
   public:
@@ -136,10 +137,16 @@ namespace embree
     
   public:
     size_t numThreads;                     //!< number of threads to use in builders
+    size_t numUserThreads;                 //!< number of user provided threads to use in builders
     bool set_affinity;                     //!< sets affinity for worker threads
     bool start_threads;                    //!< true when threads should be started at device creation time
     int enabled_cpu_features;              //!< CPU ISA features to use
     int enabled_builder_cpu_features;      //!< CPU ISA features to use for builders only
+    enum FREQUENCY_LEVEL {
+      FREQUENCY_SIMD128,
+      FREQUENCY_SIMD256,
+      FREQUENCY_SIMD512
+    } frequency_level;                     //!< frequency level the app wants to run on (default is SIMD256)
     bool enable_selockmemoryprivilege;     //!< configures the SeLockMemoryPrivilege under Windows to enable huge pages
     bool hugepages;                        //!< true if huge pages should get used
     bool hugepages_success;                //!< status for enabling huge pages
@@ -151,6 +158,17 @@ namespace embree
     int alloc_single_thread_alloc;         //!< in single mode nodes and leaves use same thread local allocator
 
   public:
+
+    /*! checks if we can use AVX */
+    bool canUseAVX() {
+      return hasISA(AVX) && frequency_level != FREQUENCY_SIMD128;
+    }
+
+    /*! checks if we can use AVX2 */
+    bool canUseAVX2() {
+      return hasISA(AVX2) && frequency_level != FREQUENCY_SIMD128;
+    }
+    
     struct ErrorHandler
     {
     public:

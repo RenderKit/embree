@@ -44,7 +44,7 @@ to see how to define the time steps for the specified time range.
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

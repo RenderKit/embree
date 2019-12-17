@@ -45,7 +45,7 @@ first edge is edge e4, the next edge e5, etc.
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [rtcGetGeometryFirstHalfEdge], [rtcGetGeometryFace],

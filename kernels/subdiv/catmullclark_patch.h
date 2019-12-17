@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -296,7 +296,7 @@ namespace embree
     typedef BezierCurveT<Vertex> BezierCurve;
 
     static const unsigned SIZE = MAX_PATCH_VALENCE;
-    array_t<GeneralCatmullClark1RingT<Vertex,Vertex_t>,SIZE> ring;
+    DynamicStackArray<GeneralCatmullClark1RingT<Vertex,Vertex_t>,8,SIZE> ring;
     unsigned N;
     
     __forceinline GeneralCatmullClarkPatchT () 

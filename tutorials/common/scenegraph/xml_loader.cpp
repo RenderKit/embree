@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -1124,6 +1124,17 @@ namespace embree
         }
       } else if (Ref<XML> tangents = xml->childOpt("tangents")) {
         mesh->tangents.push_back(loadVec4fArray(tangents));
+      }
+    }
+
+    if (type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE)
+    {
+      if (Ref<XML> animation = xml->childOpt("animated_normal_derivatives")) {
+        for (size_t i=0; i<animation->size(); i++) {
+          mesh->dnormals.push_back(loadVec3faArray(animation->child(i)));
+        }
+      } else if (Ref<XML> dnormals = xml->childOpt("normal_derivatives")) {
+        mesh->dnormals.push_back(loadVec3faArray(dnormals));
       }
     }
 

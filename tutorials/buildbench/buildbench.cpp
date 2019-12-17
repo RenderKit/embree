@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,18 +18,27 @@
 
 namespace embree
 {
+  uint32_t g_num_user_threads = 0;
+  
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
       : SceneLoadingTutorialApplication("build_bench",FEATURE_RTCORE) 
     {
       interactive = false;
+
+      registerOption("user_threads", [this] (Ref<ParseStream> cin, const FileName& path) {
+          g_num_user_threads = cin->getInt();
+          rtcore += ",threads=" + toString(g_num_user_threads);
+          rtcore += ",user_threads=" + toString(g_num_user_threads);
+          rtcore += ",start_threads=0,set_affinity=0";
+        }, "--user_threads <int>: invokes user thread benchmark with specified number of application provided build threads");
     }
     
     void postParseCommandLine() 
     {
       /* load default scene if none specified */
-      if (sceneFilename.ext() == "") {
+      if (sceneFilename.size() == 0) {
         FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -33,7 +33,7 @@ struct Ray1
   uniform float v;       //!< Barycentric v coordinate of hit
   uniform int primID;    //!< primitive ID
   uniform int geomID;    //!< geometry ID
-  uniform int instID;    //!< instance ID
+  uniform int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];    //!< instance ID
   varying int align[0];  //!< aligns ray on stack to at least 16 bytes
 };
 
@@ -60,7 +60,7 @@ struct Ray
   float v;       //!< Barycentric v coordinate of hit
   int primID;    //!< primitive ID
   int geomID;    //!< geometry ID
-  int instID;    //!< instance ID
+  int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];    //!< instance ID
 };
 
 inline varying RTCRayHit* uniform RTCRayHit_(varying Ray& ray)
@@ -90,8 +90,7 @@ inline Ray make_Ray(const Vec3f org,
                     const float time = 0.0f,
                     const int mask   = -1,
                     const int geomID = -1,
-                    const int primID = -1,
-                    const int instID = -1)
+                    const int primID = -1)
 {
   Ray ray;
   ray.org   = org;
@@ -102,7 +101,7 @@ inline Ray make_Ray(const Vec3f org,
   ray.mask  = -1;
   ray.geomID = geomID;
   ray.primID = primID;
-  ray.instID = instID;
+  ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
   return ray;
 }
 
@@ -114,8 +113,7 @@ inline void init_Ray(Ray &ray,
                      const float time = 0.0f,
                      const int mask   = -1,
                      const int geomID = -1,
-                     const int primID = -1,
-                     const int instID = -1)
+                     const int primID = -1)
 {
   ray.org   = org;
   ray.tnear = tnear;
@@ -125,7 +123,7 @@ inline void init_Ray(Ray &ray,
   ray.mask  = -1;
   ray.geomID = geomID;
   ray.primID = primID;
-  ray.instID = instID;
+  ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
 }
 
 inline bool noHit(const Ray& r) { return r.geomID < 0; }

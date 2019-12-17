@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,6 +23,9 @@
 #include "../../common/algorithms/parallel_prefix_sum.h"
 #include "../../common/algorithms/parallel_for.h"
 
+/*! maximum number of user vertex buffers for subdivision surfaces */
+#define RTC_MAX_USER_VERTEX_BUFFERS 65536
+
 namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
@@ -44,18 +47,10 @@ namespace embree
     topology[0] = Topology(this);
   }
 
-  void SubdivMesh::enabling() 
-  { 
-    scene->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) scene->world.numSubdivPatches += numPrimitives;
-    else                   scene->worldMB.numSubdivPatches += numPrimitives;
-  }
-  
-  void SubdivMesh::disabling() 
-  { 
-    scene->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) scene->world.numSubdivPatches -= numPrimitives;
-    else                   scene->worldMB.numSubdivPatches -= numPrimitives;
+  void SubdivMesh::addElementsToCount (GeometryCounts & counts) const
+  {
+    if (numTimeSteps == 1) counts.numSubdivPatches += numPrimitives;
+    else                   counts.numMBSubdivPatches += numPrimitives;
   }
 
   void SubdivMesh::setMask (unsigned mask) 
@@ -654,11 +649,11 @@ namespace embree
     else if (update) updateHalfEdges();
    
     /* cleanup some state for static scenes */
-    if (mesh->scene == nullptr || mesh->scene->isStaticAccel()) 
+    /* if (mesh->scene_ == nullptr || mesh->scene_->isStaticAccel()) 
     {
       halfEdges0.clear();
       halfEdges1.clear();
-    }
+    } */
 
     /* clear modified state of all buffers */
     vertexIndices.setModified(false); 
@@ -732,11 +727,11 @@ namespace embree
       if (vertexAttribs[i]) vertex_attrib_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertexAttribs[i].getStride()));
 
     /* cleanup some state for static scenes */
-    if (scene == nullptr || scene->isStaticAccel()) 
+    /* if (scene_ == nullptr || scene_->isStaticAccel()) 
     {
       vertexCreaseMap.clear();
       edgeCreaseMap.clear();
-    }
+    } */
 
     /* clear modified state of all buffers */
     faceVertices.setModified(false);

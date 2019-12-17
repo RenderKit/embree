@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -108,6 +108,10 @@ namespace embree
         return 0.25f*(v0+v1+v2+v3);
       }
 
+      __forceinline BBox<Vertex> bounds() const {
+        return merge(BBox<Vertex>(v0),BBox<Vertex>(v1),BBox<Vertex>(v2),BBox<Vertex>(v3));
+      }
+      
       __forceinline friend BSplineCurveT operator -( const BSplineCurveT& a, const Vertex& b ) {
         return BSplineCurveT(a.v0-b,a.v1-b,a.v2-b,a.v3-b);
       }

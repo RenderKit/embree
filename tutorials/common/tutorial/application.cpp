@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -47,7 +47,7 @@ namespace embree
       registerOption("threads", [this] (Ref<ParseStream> cin, const FileName& path) {
           rtcore += ",threads=" + toString(cin->getInt());
         }, "--threads <int>: number of threads to use");
-      
+
       registerOption("affinity", [this] (Ref<ParseStream> cin, const FileName& path) {
           rtcore += ",set_affinity=1";
         }, "--affinity: affinitize threads");

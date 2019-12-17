@@ -107,6 +107,10 @@ compiled with \f[C]EMBREE_GEOMETRY_SUBDIVISION\f[] enabled.
 curves are supported, which is the case if Embree is compiled with
 \f[C]EMBREE_GEOMETRY_CURVE\f[] enabled.
 .IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_POINT_GEOMETRY_SUPPORTED\f[]: Queries whether
+points are supported, which is the case if Embree is compiled with
+\f[C]EMBREE_GEOMETRY_POINT\f[] enabled.
+.IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED\f[]: Queries whether
 user geometries are supported, which is the case if Embree is compiled
 with \f[C]EMBREE_GEOMETRY_USER\f[] enabled.
@@ -134,4 +138,4 @@ For properties returning a boolean value, the return value 0 denotes
 \f[C]false\f[] and 1 denotes \f[C]true\f[].
 .PP
 On failure zero is returned and an error code is set that can be queried
-using \f[C]rtcDeviceGetError\f[].
+using \f[C]rtcGetDeviceError\f[].

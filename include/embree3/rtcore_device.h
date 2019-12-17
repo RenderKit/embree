@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,9 +18,7 @@
 
 #include "rtcore_common.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
 
 /* Opaque device type */
 typedef struct RTCDeviceTy* RTCDevice;
@@ -60,7 +58,8 @@ enum RTCDeviceProperty
   RTC_DEVICE_PROPERTY_POINT_GEOMETRY_SUPPORTED       = 101,
 
   RTC_DEVICE_PROPERTY_TASKING_SYSTEM        = 128,
-  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129
+  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129,
+  RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED = 130
 };
 
 /* Gets a device property. */
@@ -96,6 +95,4 @@ typedef bool (*RTCMemoryMonitorFunction)(void* ptr, ssize_t bytes, bool post);
 /* Sets the memory monitor callback function. */
 RTC_API void rtcSetDeviceMemoryMonitorFunction(RTCDevice device, RTCMemoryMonitorFunction memoryMonitor, void* userPtr);
 
-#if defined(__cplusplus)
-}
-#endif
+RTC_NAMESPACE_END

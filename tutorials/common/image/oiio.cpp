@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -28,7 +28,7 @@ namespace embree
 {
   Ref<Image> loadOIIO(const FileName& fileName)
   {
-    ImageInput* in = ImageInput::open(fileName.str().c_str());
+    std::unique_ptr<ImageInput> in = ImageInput::open(fileName.str().c_str());
     if (!in)
       THROW_RUNTIME_ERROR("error opening file " + fileName.str());
 
@@ -39,8 +39,6 @@ namespace embree
     std::vector<unsigned char> pixels(width*height*channels);
     in->read_image(TypeDesc::UINT8, pixels.data());
     in->close();
-    delete in;
-    //ImageInput::destroy(in);
 
     Image* out = new Image4uc(width, height, fileName);
     const float rcpMaxColor = 1.f/255.f;
@@ -61,7 +59,7 @@ namespace embree
 
   void storeOIIO(const Ref<Image>& img, const FileName& fileName)
   {
-    ImageOutput* out = ImageOutput::create(fileName.c_str());
+    std::unique_ptr<ImageOutput> out = ImageOutput::create(fileName.c_str());
     if (!out) THROW_RUNTIME_ERROR("unsupported output file format " + fileName.str());
 
     std::vector<unsigned char> pixels(img->width*img->height*3);
@@ -80,14 +78,10 @@ namespace embree
     ImageSpec spec(int(img->width), int(img->height), 3, TypeDesc::UINT8);
     if (!out->open(fileName.c_str(), spec))
     {
-      delete out;
-      //ImageOutput::destroy(out);
       THROW_RUNTIME_ERROR("error opening file " + fileName.str());
     }
     out->write_image(TypeDesc::UINT8, pixels.data());
     out->close();
-    //ImageOutput::destroy(out);
-    delete out;
   }
 }
 

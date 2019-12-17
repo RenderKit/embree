@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -83,6 +83,35 @@ RTC_API void rtcGetSceneBounds(RTCScene scene, uniform RTCBounds* uniform bounds
 
 /* Returns the linear axis-aligned bounds of the scene. */
 RTC_API void rtcGetSceneLinearBounds(RTCScene scene, uniform RTCLinearBounds* uniform bounds_o);
+
+/* perform a closest point query of the scene. */
+RTC_API bool rtcPointQuery(RTCScene scene, uniform RTCPointQuery* uniform query, uniform RTCPointQueryContext* uniform context, RTCPointQueryFunction queryFunc, void* uniform userPtr);
+
+/* Perform a closest point query with a packet of 4 points with the scene. */
+RTC_API bool rtcPointQuery4(const int* uniform valid, RTCScene scene, void* uniform query, uniform RTCPointQueryContext* uniform context, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
+
+/* Perform a closest point query with a packet of 4 points with the scene. */
+RTC_API bool rtcPointQuery8(const int* uniform valid, RTCScene scene, void* uniform query, uniform RTCPointQueryContext* uniform context, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
+
+/* Perform a closest point query with a packet of 4 points with the scene. */
+RTC_API bool rtcPointQuery16(const int* uniform valid, RTCScene scene, void* uniform query, uniform RTCPointQueryContext* uniform context, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr);
+
+/* Intersects a varying ray with the scene. */
+RTC_FORCEINLINE bool rtcPointQueryV(RTCScene scene, varying RTCPointQuery* uniform query, uniform RTCPointQueryContext* uniform context, RTCPointQueryFunction queryFunc, void * varying * uniform userPtr)
+{
+  varying bool mask = __mask;
+  unmasked {
+    varying int imask = mask ? -1 : 0;
+  }
+  if (sizeof(varying float) == 16)
+    return rtcPointQuery4((uniform int* uniform)&imask, scene, query, context, queryFunc, userPtr);
+  else if (sizeof(varying float) == 32)
+    return rtcPointQuery8((uniform int* uniform)&imask, scene, query, context, queryFunc, userPtr);
+  else if (sizeof(varying float) == 64)
+    return rtcPointQuery16((uniform int* uniform)&imask, scene, query, context, queryFunc, userPtr);
+  else
+    return false;
+}
 
 /* Intersects a single ray with the scene. */
 RTC_API void rtcIntersect1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHit* uniform rayhit);

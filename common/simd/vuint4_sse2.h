@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -24,6 +24,8 @@ namespace embree
   template<>
   struct vuint<4>
   {
+    ALIGNED_STRUCT_(16);
+    
     typedef vboolf4 Bool;
     typedef vuint4   Int;
     typedef vfloat4 Float;

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,9 +18,7 @@
 
 #include "rtcore_device.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
   
 /* Forward declarations for ray structures */
 struct RTCRayHit;
@@ -90,6 +88,18 @@ RTC_API void rtcGetSceneBounds(RTCScene scene, struct RTCBounds* bounds_o);
 /* Returns the linear axis-aligned bounds of the scene. */
 RTC_API void rtcGetSceneLinearBounds(RTCScene scene, struct RTCLinearBounds* bounds_o);
 
+/* Perform a closest point query of the scene. */
+RTC_API bool rtcPointQuery(RTCScene scene, struct RTCPointQuery* query, struct RTCPointQueryContext* context, RTCPointQueryFunction queryFunc, void* userPtr);
+
+/* Perform a closest point query with a packet of 4 points with the scene. */
+RTC_API bool rtcPointQuery4(const int* valid, RTCScene scene, struct RTCPointQuery4* query, struct RTCPointQueryContext* context, RTCPointQueryFunction queryFunc, void** userPtr);
+
+/* Perform a closest point query with a packet of 4 points with the scene. */
+RTC_API bool rtcPointQuery8(const int* valid, RTCScene scene, struct RTCPointQuery8* query, struct RTCPointQueryContext* context, RTCPointQueryFunction queryFunc, void** userPtr);
+
+/* Perform a closest point query with a packet of 4 points with the scene. */
+RTC_API bool rtcPointQuery16(const int* valid, RTCScene scene, struct RTCPointQuery16* query, struct RTCPointQueryContext* context, RTCPointQueryFunction queryFunc, void** userPtr);
+
 /* Intersects a single ray with the scene. */
 RTC_API void rtcIntersect1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit);
 
@@ -152,6 +162,7 @@ typedef void (*RTCCollideFunc) (void* userPtr, RTCCollision* collisions, size_t 
 /*! Performs collision detection of two scenes */
 RTC_API void rtcCollide (RTCScene scene0, RTCScene scene1, RTCCollideFunc callback, void* userPtr);
  
-  
-}
 #endif
+
+RTC_NAMESPACE_END
+

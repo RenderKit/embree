@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,47 +16,41 @@
 
 #pragma once
 
-#include "../common/geometry.h"
-#include "../common/ray.h"
+#include <functional>
+#include "parallel_reduce.h"
 
 namespace embree
 {
-  namespace isa
-  {
-    struct SpherePrecalculations1
+
+    template<typename Index, class UnaryPredicate>
+    __forceinline bool parallel_any_of (Index first, Index last, UnaryPredicate pred)
     {
-      float one_over_raydir2;
+        bool ret = false;
 
-      __forceinline SpherePrecalculations1() {}
+#if defined(TASKING_TBB)
+        tbb::parallel_for(tbb::blocked_range<size_t>{first, last}, [&ret,pred](const tbb::blocked_range<size_t>& r) {
+            if (tbb::task::self().is_cancelled()) return;
+            for (size_t i = r.begin(); i != r.end(); ++i) {
+                if (pred(i)) {
+                    ret = true;
+                    tbb::task::self().cancel_group_execution();
+                }
+            }
+        });
+#else
+        ret = parallel_reduce (first, last, false, 
+            [pred](const range<size_t>& r)->bool {
+                bool localret = false;
+                for (auto i=r.begin(); i<r.end(); ++i) {
+                    localret |= pred(i);
+                }
+                return localret;
+            },
+            std::bit_or<bool>()
+        );
+#endif
 
-      __forceinline SpherePrecalculations1(const Ray& ray, const void* ptr)
-      {
-        one_over_raydir2 = rcp(dot(ray.dir, ray.dir));
-      }
-    };
+        return ret;
+    }
 
-    template<int K>
-    struct SpherePrecalculationsK
-    {
-      vfloat<K> one_over_raydir2;
-
-      __forceinline SpherePrecalculationsK(const vbool<K>& valid, const RayK<K>& ray)
-      {
-        one_over_raydir2 = rsqrt(dot(ray.dir, ray.dir));
-      }
-    };
-
-    struct DiscPrecalculations1
-    {
-      __forceinline DiscPrecalculations1() {}
-
-      __forceinline DiscPrecalculations1(const Ray& ray, const void* ptr) {}
-    };
-
-    template<int K>
-    struct DiscPrecalculationsK
-    {
-      __forceinline DiscPrecalculationsK(const vbool<K>& valid, const RayK<K>& ray) {}
-    };
-  }  // namespace isa
-}  // namespace embree
+} // end namespace

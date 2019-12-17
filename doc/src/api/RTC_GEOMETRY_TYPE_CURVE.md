@@ -14,6 +14,9 @@
     RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE - 
       flat curve geometry with cubic Hermite basis
 
+    RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE - 
+      flat curve geometry with Catmull-Rom basis
+
     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE -
       flat normal oriented curve geometry with cubic Bézier basis
 
@@ -22,6 +25,9 @@
 
     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE - 
       flat normal oriented curve geometry with cubic Hermite basis
+
+    RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE - 
+      flat normal oriented curve geometry with Catmull-Rom basis
 
     RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE -
       sweep surface curve geometry with cubic Bézier basis
@@ -32,6 +38,9 @@
     RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE -
       sweep surface curve geometry with cubic Hermite basis
 
+    RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE -
+      sweep surface curve geometry with Catmull-Rom basis
+
 #### SYNOPSIS
 
     #include <embree3/rtcore.h>
@@ -40,12 +49,15 @@
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE);
 
 #### DESCRIPTION
 
@@ -55,17 +67,22 @@ created by passing `RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_HERMITE_CURVE`,
+`RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_CATMULL_ROM_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
-`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`, or
-`RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE` to the `rtcNewGeometry`
+`RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE`, or
+`RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE` to the `rtcNewGeometry`
 function. The curve indices can be specified through an index buffer
 (`RTC_BUFFER_TYPE_INDEX`) and the curve vertices through a vertex
 buffer (`RTC_BUFFER_TYPE_VERTEX`). For the Hermite basis a tangent
-buffer (`RTC_BUFFER_TYPE_TANGENT`) and for normal oriented curves a
-normal buffer (`RTC_BUFFER_TYPE_NORMAL`) has to get specified
+buffer (`RTC_BUFFER_TYPE_TANGENT`), normal oriented curves a normal
+buffer (`RTC_BUFFER_TYPE_NORMAL`), and for normal oriented Hermite
+curves a normal derivative buffer
+(`RTC_BUFFER_TYPE_NORMAL_DERIVATIVE`) has to get specified
 additionally. See `rtcSetGeometryBuffer` and
 `rtcSetSharedGeometryBuffer` for more details on how to set buffers.
 
@@ -121,6 +138,10 @@ shared. Different versions of Catmull-Rom splines can be easily
 constructed usig the Hermite basis, by calculating a proper tangent
 buffer from the control points.
 
+For the Catmull-Rom basis the indices point to the first of 4
+consecutive control points in the vertex buffer.  This basis goes
+through p1 and p2, with tangents (p2-p0)/2 and (p3-p2)/2.
+
 The `RTC_GEOMETRY_TYPE_FLAT_*` flat mode is a fast mode designed to
 render distant hair. In this mode the curve is rendered as a connected
 sequence of ray facing quads. Individual quads are considered to have
@@ -130,48 +151,30 @@ through the `rtcSetGeometryTessellationRate` function. By default the
 tessellation rate is 4.
 
 The `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_*` mode is a mode designed to
-render blades of grass. In this mode the curve is rendered as a flat band
-whose center exactly follows the provided vertex spline, whose half
-width approximately follows the provided radius spline, and whose
-orientation follows the provided normals. For normal
-oriented curves, the indices point to the first of 2 consecutive
-normals in the normal buffer. The normal of the constructed curve will
-match the direction of the first normal at the beginning, and the
-direction of the second normal at the end of the curve. Please note
-that this layout of the normal buffer is independent of the used basis
-for the curve itself. For the cubic B-spline and cubic Hermite basis
-the stride from the first control vertex of the first and the next
-segment is typically 1, thus the normal buffer is compact and the
-curves share the normal at the begin and end. However, for the cubic
-Bézier basis, the stride is typically 3, thus begin and end normal
-cannot get shared. We recommend using the Hermite basis instead of the
-Bézier basis, as it allows a more compact layout.
+render blades of grass. In this mode a vertex spline has to get
+specified as for the previous modes, but additionally a normal spline
+is required. If the Hermite basis is used, the
+`RTC_BUFFER_TYPE_NORMAL` and `RTC_BUFFER_TYPE_NORMAL_DERIVATIVE`
+buffers have both to be set.
+
+The curve is rendered as a flat band whose center approximately
+follows the provided vertex spline, whose half width approximately
+follows the provided radius spline, and whose normal orientation
+approximately follows the provided normal spline.
 
 To intersect the normal oriented curve, we perform a newton-raphson
 style intersection of a ray with a tensor product surface of a linear
 basis (perpendicular to the curve) and cubic Bézier basis (along the
-curve). We construct the 8 control points of this surface in Bézier
-basis by calculating a normalized direction `d01=normalize(v1-v0,n0)`
-and `d23=normalize(v3-v2,n1)`. These directions are perpendicular to
-the tangent direction of the center curve and first and second
-specified normal. The 8 control vertices of the surface are
-constructed as:
-
-     p00 = v0-r0*d01, p10 = v0+r0*d01
-     p01 = v1-r1*d01, p11 = v1+r1*d01
-     p02 = v2-r2*d23, p12 = v2+r2*d23
-     p03 = v3-r3*d23, p13 = v3+r3*d23
-
-The center of this curve exactly follows the specified center spline,
-the normal at the start (and end) exactly match the fisrst (and
-second) specified normal, and the half width exactly matches the
-evaluated radius spline at the start (and end). In-between the radius
-and orientation of the curve changes smoothly. Note that the
-construction does not work when the provided normals are parallel to
-the curve direction, as then no well defined perpendicular direction
-`d01` or `d23` are defined. For this reason thus the provided normals
-should best be kept as perpendicular to the curve direction as
-possible.
+curve). We use a guide curve and its derivatives to construct the
+control points of that surface. The guide curve is defined by a sweep
+surface defined by sweeping a line centered at the vertex spline
+location along the curve. At each parameter value the half width of
+the line matches the radius spline, and the direction matches the
+cross product of the normal from the normal spline and tangent of the
+vertex spline. Note that this construction does not work when the
+provided normals are parallel to the curve direction. For this reason
+the provided normals should best be kept as perpendicular to the curve
+direction as possible.
 
 In the `RTC_GEOMETRY_TYPE_ROUND_*` round mode, a real geometric
 surface is rendered for the curve, which is more expensive but allows
@@ -184,9 +187,10 @@ supported for the linear basis.
 The intersection with the curve segment stores the parametric hit
 location along the curve segment as u-coordinate (range 0 to +1).
 
-For Bézier, B-spline, and Hermite curves, the v-coordinate is set to
-the normalized distance in the range -1 to +1. For the linear basis
-and in round mode the v-coordinate is set to zero.
+For flat curves, the v-coordinate is set to the normalized distance in
+the range -1 to +1. For normal oriented curves the v-coordinate is in
+the range 0 to 1. For the linear basis and in round mode the
+v-coordinate is set to zero.
 
 In flat mode, the geometry normal `Ng` is set to the tangent of the
 curve at the hit location. In round mode and for normal oriented
@@ -207,7 +211,7 @@ use curve geometries.
 #### EXIT STATUS
 
 On failure `NULL` is returned and an error code is set that can be
-queried using `rtcDeviceGetError`.
+queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 

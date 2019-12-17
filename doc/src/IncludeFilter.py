@@ -10,8 +10,9 @@ def include(key, val):
         for kv in keyvals:
             if kv[0] == 'include':
                 src0 = subprocess.check_output(['pandoc', '-s', kv[1], '-t', 'json'])
-                [j0,j1] = json.loads(src0)
-                return recurse(j1)
+                j = json.loads(src0)
+                if type(j) is list: return recurse(j[1])
+                else              : return recurse(j['blocks'])
             elif kv[0] == 'image':
                 return {"t":"Para","c":[{"t":"Str","c":"![][" + kv[1] + "]"}]}
     return None
@@ -20,7 +21,7 @@ def recurse(x):
     if isinstance(x, list):
         lst = []
         for item in x:
-            if isinstance(item, dict) and 't' in item:
+            if isinstance(item, dict) and 't' in item and 'c' in item:
                 res = include(item['t'], item['c'])
                 if res is None:
                     lst.append(recurse(item))

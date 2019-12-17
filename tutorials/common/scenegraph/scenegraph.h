@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,6 +18,7 @@
 
 #include "lights.h"
 #include "../../../include/embree3/rtcore.h"
+RTC_NAMESPACE_OPEN
 #include "../math/random_sampler.h"
 
 namespace embree
@@ -956,6 +957,7 @@ namespace embree
         positions(transformMSMBlurBuffer(imesh->positions,spaces)),
         normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
         tangents(transformMSMBlurVectorBuffer(imesh->tangents,spaces)),
+        dnormals(transformMSMBlurVectorBuffer(imesh->dnormals,spaces)),
         hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -1016,6 +1018,7 @@ namespace embree
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
       std::vector<avector<Vertex>> normals;   //!< hair control normals (nx,ny,nz) for multiple timesteps
       std::vector<avector<Vertex>> tangents;  //!< hair control tangents (tx,ty,tz,tr) for multiple timesteps
+      std::vector<avector<Vertex>> dnormals;  //!< hair control normal derivatives (nx,ny,nz) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
       std::vector<unsigned char> flags;       //!< left, right end cap flags
 

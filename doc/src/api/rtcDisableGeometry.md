@@ -22,7 +22,7 @@ committed using `rtcCommitScene` for the change to have effect.
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

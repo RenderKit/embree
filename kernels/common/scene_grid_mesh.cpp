@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,18 +25,6 @@ namespace embree
     : Geometry(device,GTY_GRID_MESH,0,1)
   {
     vertices.resize(numTimeSteps);
-  }
-
-  void GridMesh::enabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numGrids += numPrimitives;
-    else                   scene->worldMB.numGrids += numPrimitives;
-  }
-  
-  void GridMesh::disabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numGrids -= numPrimitives;
-    else                   scene->worldMB.numGrids -= numPrimitives;
   }
 
   void GridMesh::setMask (unsigned mask) 
@@ -169,10 +157,14 @@ namespace embree
     Geometry::preCommit();
   }
 
+  void GridMesh::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (numTimeSteps == 1) counts.numGrids += numPrimitives;
+    else                   counts.numMBGrids += numPrimitives;
+  }
+
   void GridMesh::postCommit() 
   {
-    scene->vertices[geomID] = (float*) vertices0.getPtr();
-
     grids.setModified(false);
     for (auto& buf : vertices)
       buf.setModified(false);

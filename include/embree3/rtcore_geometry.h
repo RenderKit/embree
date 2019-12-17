@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,9 +18,7 @@
 
 #include "rtcore_buffer.h"
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
+RTC_NAMESPACE_BEGIN
 
 /* Opaque scene type */
 typedef struct RTCSceneTy* RTCScene;
@@ -54,6 +52,10 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_SPHERE_POINT = 50,
   RTC_GEOMETRY_TYPE_DISC_POINT = 51,
   RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT = 52,
+
+  RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE = 58, // round (tube-like) Catmull-Rom curves
+  RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE  = 59, // flat (ribbon-like) Catmull-Rom curves
+  RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE  = 60, // flat normal-oriented Catmull-Rom curves
 
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
   RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
@@ -201,6 +203,8 @@ RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* ptr);
 /* Gets the user-defined data pointer of the geometry. */
 RTC_API void* rtcGetGeometryUserData(RTCGeometry geometry);
 
+/* Set the point query callback function of a geometry. */
+RTC_API void rtcSetGeometryPointQueryFunction(RTCGeometry geometry, RTCPointQueryFunction pointQuery);
 
 /* Sets the number of primitives of a user geometry. */
 RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimitiveCount);
@@ -376,7 +380,6 @@ struct RTCGrid
   unsigned short width,height; // max is a 32k x 32k grid
 };
 
-#if defined(__cplusplus)
-}
-#endif
+RTC_NAMESPACE_END
+
 

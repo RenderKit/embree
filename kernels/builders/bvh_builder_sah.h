@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -45,12 +45,12 @@ namespace embree
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(7),
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf) {}
 
         /*! initialize settings from API settings */
         Settings (const RTCBuildArguments& settings)
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(7),
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf)
         {
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
@@ -60,11 +60,16 @@ namespace embree
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,traversalCost     )) travCost        = settings.traversalCost;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,intersectionCost  )) intCost         = settings.intersectionCost;
+
+          minLeafSize = min(minLeafSize,maxLeafSize);
         }
 
         Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)
         : branchingFactor(2), maxDepth(32), logBlockSize(bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc)
+        {
+          minLeafSize = min(minLeafSize,maxLeafSize);
+        }
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -411,8 +416,8 @@ namespace embree
       typedef GeneralBVHBuilder::BuildRecordT<Set,Split> BuildRecord;
       typedef GeneralBVHBuilder::Settings Settings;
 
-      static const unsigned GEOMID_MASK = 0x00FFFFFF;
-      static const unsigned SPLITS_MASK = 0xFF000000;
+      static const unsigned int GEOMID_MASK = 0xFFFFFFFF >>     RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS;
+      static const unsigned int SPLITS_MASK = 0xFFFFFFFF << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
 
       template<typename ReductionTy, typename UserCreateLeaf>
       struct CreateLeafExt
@@ -425,7 +430,7 @@ namespace embree
         __noinline ReductionTy operator() (PrimRef* prims, const range<size_t>& range, Allocator alloc) const
         {
           for (size_t i=range.begin(); i<range.end(); i++)
-            prims[i].lower.a &= GEOMID_MASK;
+            prims[i].lower.u &= GEOMID_MASK;
 
           return userCreateLeaf(prims,range,alloc);
         }
@@ -469,19 +474,22 @@ namespace embree
               return A;
             },std::plus<double>());
 
+
           /* calculate maximum number of spatial splits per primitive */
+          const unsigned int maxSplits = ((size_t)1 << RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)-1;
           const float f = 10.0f;
+
           const float invA = 1.0f / A;
           parallel_for( size_t(0), pinfo.size(), [&](const range<size_t>& r) {
 
               for (size_t i=r.begin(); i<r.end(); i++)
               {
                 PrimRef& prim = prims[i];
-                assert((prim.lower.a & SPLITS_MASK) == 0);
-                const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
+                assert((prim.geomID() & SPLITS_MASK) == 0);
                 // FIXME: is there a better general heuristic ?
-                size_t n = 4+min(ssize_t(127-4), max(ssize_t(1), ssize_t(nf)));
-                prim.lower.a |= n << 24;
+                const float nf = ceilf(f*pinfo.size()*area(prim.bounds()) * invA);
+                unsigned int n = 4+min((int)maxSplits-4, max(1, (int)(nf)));
+                prim.lower.u |= n << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
               }
             });
 

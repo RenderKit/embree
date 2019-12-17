@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -37,6 +37,11 @@ bool g_subdiv_mode = false;
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
+bool monitorProgressFunction(void* ptr, double dn) 
+{
+  return true;
+}
+  
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const unsigned int e0, const unsigned int e1)
 {
   const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
@@ -137,6 +142,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+  rtcSetSceneProgressMonitorFunction(scene_out,monitorProgressFunction,nullptr);
 
   /* commit individual objects in case of instancing */
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
@@ -211,7 +217,7 @@ typedef ISPCInstance* ISPCInstancePtr;
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned int instID = ray.instID; {
+  unsigned int instID = ray.instID[0]; {
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
@@ -226,7 +232,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
-    unsigned int instID = ray.instID;
+    unsigned int instID = ray.instID[0];
     {
       /* get instance and geometry pointers */
       ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];

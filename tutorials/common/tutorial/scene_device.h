@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -211,6 +211,7 @@ namespace embree
     Vec3fa** positions;       //!< hair control points (x,y,z,r)
     Vec3fa** normals;         //!< normal control points (x,y,z,r)
     Vec3fa** tangents;        //!< tangent control points (x,y,z,r)
+    Vec3fa** dnormals;         //!< normal derivative control points (x,y,z,r)
     ISPCHair* hairs;          //!< for each hair, index to first control point
 #if !defined(ISPC)
     unsigned char* flags;     //!< end cap flags per segment

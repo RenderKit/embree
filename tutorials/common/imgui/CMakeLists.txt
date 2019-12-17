@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -17,7 +17,6 @@
 ADD_LIBRARY(imgui STATIC
   imgui.cpp
   imgui_impl_glfw_gl2.cpp
-  imgui_demo.cpp
   imgui_draw.cpp
 )
 

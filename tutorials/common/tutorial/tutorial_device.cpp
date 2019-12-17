@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -566,7 +566,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera, R
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.tfar >=0.0f)
+    if (shadow.tfar >= 0.0f)
       intensity += 1.0f;
   }
   intensity *= 1.0f/AMBIENT_OCCLUSION_SAMPLES;

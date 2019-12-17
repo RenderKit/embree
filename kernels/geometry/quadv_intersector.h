@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -44,6 +44,11 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
       }
+      
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      {
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
+      }
     };
 
     /*! Intersects M triangles with K rays. */
@@ -86,7 +91,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad)
       {
@@ -121,6 +126,11 @@ namespace embree
       {
         STAT3(shadow.trav_prims,1,1,1);
         return pre.occluded(ray,context, quad.v0,quad.v1,quad.v2,quad.v3,quad.geomID(),quad.primID());
+      }
+      
+      static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& quad)
+      {
+        return PrimitivePointQuery1<Primitive>::pointQuery(query, context, quad);
       }
     };
 
@@ -164,7 +174,7 @@ namespace embree
         }
         return !valid0;
       }
-
+      
       /*! Intersect a ray with M triangles and updates the hit. */
       static __forceinline void intersect(Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const QuadMv<M>& quad)
       {

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -24,14 +24,10 @@ namespace embree
   UserGeometry::UserGeometry (Device* device, unsigned int items, unsigned int numTimeSteps) 
     : AccelSet(device,Geometry::GTY_USER_GEOMETRY,items,numTimeSteps) {}
 
-  void UserGeometry::enabling () {
-    if (numTimeSteps == 1) scene->world.numUserGeometries += numPrimitives;
-    else                   scene->worldMB.numUserGeometries += numPrimitives;
-  }
-  
-  void UserGeometry::disabling() { 
-    if (numTimeSteps == 1) scene->world.numUserGeometries -= numPrimitives;
-    else                   scene->worldMB.numUserGeometries -= numPrimitives;
+  void UserGeometry::addElementsToCount (GeometryCounts & counts) const
+  {
+    if (numTimeSteps == 1) counts.numUserGeometries += numPrimitives;
+    else                   counts.numMBUserGeometries += numPrimitives;
   }
   
   void UserGeometry::setMask (unsigned mask) 

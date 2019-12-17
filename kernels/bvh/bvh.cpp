@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -55,7 +55,7 @@ namespace embree
     if (node.isBarrier())
       node.clearBarrier();
     else if (!node.isLeaf()) {
-      BaseNode* n = node.baseNode(BVH_FLAG_ALIGNED_NODE); // FIXME: flags should be stored in BVH
+      BaseNode* n = node.baseNode(); // FIXME: flags should be stored in BVH
       for (size_t c=0; c<N; c++)
         clearBarrier(n->child(c));
     }

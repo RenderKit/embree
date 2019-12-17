@@ -1,0 +1,82 @@
+.TH "RTC_GEOMETRY_TYPE_*_POINT" "3" "" "" "Embree Ray Tracing Kernels 3"
+.SS NAME
+.IP
+.nf
+\f[C]
+RTC_GEOMETRY_TYPE_SPHERE_POINT\ \-
+\ \ point\ geometry\ spheres
+
+RTC_GEOMETRY_TYPE_DISC_POINT\ \-
+\ \ point\ geometry\ with\ ray\-oriented\ discs
+
+RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT\ \-
+\ \ point\ geometry\ with\ normal\-oriented\ discs
+\f[]
+.fi
+.SS SYNOPSIS
+.IP
+.nf
+\f[C]
+#include\ <embree3/rtcore.h>
+
+rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_SPHERE_POINT);
+rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_DISC_POINT);
+rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT);
+\f[]
+.fi
+.SS DESCRIPTION
+.PP
+Points with per vertex radii are supported with sphere, ray\-oriented
+discs, and normal\-oriented discs geometric represetntations.
+Such point geometries are created by passing
+\f[C]RTC_GEOMETRY_TYPE_SPHERE_POINT\f[],
+\f[C]RTC_GEOMETRY_TYPE_DISC_POINT\f[], or
+\f[C]RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT\f[] to the
+\f[C]rtcNewGeometry\f[] function.
+The point vertices can be specified t through a vertex buffer
+(\f[C]RTC_BUFFER_TYPE_VERTEX\f[]).
+For the normal oriented discs a normal buffer
+(\f[C]RTC_BUFFER_TYPE_NORMAL\f[]) has to get specified additionally.
+See \f[C]rtcSetGeometryBuffer\f[] and
+\f[C]rtcSetSharedGeometryBuffer\f[] for more details on how to set
+buffers.
+.PP
+The vertex buffer stores each control vertex in the form of a single
+precision position and radius stored in (\f[C]x\f[], \f[C]y\f[],
+\f[C]z\f[], \f[C]r\f[]) order in memory (\f[C]RTC_FORMAT_FLOAT4\f[]
+format).
+The number of vertices is inferred from the size of this buffer.
+Similarly, the normal buffer stores a single precision normal per
+control vertex (\f[C]x\f[], \f[C]y\f[], \f[C]z\f[] order and
+\f[C]RTC_FORMAT_FLOAT3\f[] format).
+.PP
+In the \f[C]RTC_GEOMETRY_TYPE_SPHERE_POINT\f[] mode, a real geometric
+surface is rendered for the curve, which is more expensive but allows
+closeup views.
+.PP
+The \f[C]RTC_GEOMETRY_TYPE_DISC_POINT\f[] flat mode is a fast mode
+designed to render distant points.
+In this mode the point is rendered as a ray facing disc.
+.PP
+The \f[C]RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT\f[] mode is a mode
+designed as a midpoint geometrically between ray facing discs and
+spheres.
+In this mode the point is rendered as a normal oriented disc.
+.PP
+For all point types, only the hit distance and geometry normal is
+returned as hit information, u and v are set to zero.
+.PP
+For multi\-segment motion blur, the number of time steps must be first
+specified using the \f[C]rtcSetGeometryTimeStepCount\f[] call.
+Then a vertex buffer for each time step can be set using different
+buffer slots, and all these buffers must have the same stride and size.
+.PP
+Also see tutorial [Points] for an example of how to create and use point
+geometries.
+.SS EXIT STATUS
+.PP
+On failure \f[C]NULL\f[] is returned and an error code is set that can
+be queried using \f[C]rtcGetDeviceError\f[].
+.SS SEE ALSO
+.PP
+[rtcNewGeometry]

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,18 +25,6 @@ namespace embree
     : Geometry(device,gtype,0,1), tessellationRate(4)
   {
     vertices.resize(numTimeSteps);
-  }
-
-  void LineSegments::enabling()
-  {
-    if (numTimeSteps == 1) scene->world.numLineSegments += numPrimitives;
-    else                   scene->worldMB.numLineSegments += numPrimitives;
-  }
-
-  void LineSegments::disabling()
-  {
-    if (numTimeSteps == 1) scene->world.numLineSegments -= numPrimitives;
-    else                   scene->worldMB.numLineSegments -= numPrimitives;
   }
 
   void LineSegments::setMask (unsigned mask)
@@ -226,10 +214,14 @@ namespace embree
     Geometry::preCommit();
   }
 
+  void LineSegments::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (numTimeSteps == 1) counts.numLineSegments += numPrimitives;
+    else                   counts.numMBLineSegments += numPrimitives;
+  }
+
   void LineSegments::postCommit() 
   {
-    scene->vertices[geomID] = (float*) vertices0.getPtr();
-
     segments.setModified(false);
     for (auto& buf : vertices) buf.setModified(false);
     for (auto& buf : normals)  buf.setModified(false);

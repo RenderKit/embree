@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -64,8 +64,6 @@ namespace embree
     SubdivMesh(Device* device);
 
   public:
-    void enabling();
-    void disabling();
     void setMask (unsigned mask);
     void setSubdivisionMode (unsigned int topologyID, RTCSubdivisionMode mode);
     void setVertexAttributeTopology(unsigned int vertexAttribID, unsigned int topologyID);
@@ -78,6 +76,7 @@ namespace embree
     void setTessellationRate(float N);
     bool verify();
     void commit();
+    void addElementsToCount (GeometryCounts & counts) const;
     void setDisplacementFunction (RTCDisplacementFunctionN func);
     unsigned int getFirstHalfEdge(unsigned int faceID);
     unsigned int getFace(unsigned int edgeID);

@@ -1,6 +1,70 @@
 Version History
 ---------------
 
+### New Features in Embree 3.6.2
+-   Depth test consistently uses tnear <= t <= tfar now in order
+    to support robustly continue traversal at a previous hit point
+    in a way that guarentees reaching all hits.
+-   Fixed depth test in robust mode to be precise at tnear and tfar.
+-   Added next_hit tutorial to demonstrate robustly collecting all hits
+    along a ray using multiple ray queries.
+-   Implemented robust mode for curves.
+-   Implemented issue with motion blur builder where number of time segments
+    for SAH heuristic were counted wrong due to some numerical issues.
+-   Improved performance of multi-segment motion blur, by improving the
+    SAH heuristic used in the motion blur builder.
+-   Fixed a bug with rendering short fat curves.
+-   rtcCommitScene can now get called during rendering from multiple threads
+    to lazily build geometry. When TBB is used this causes a much lower overhead
+    than using rtcJoinCommitScene.
+-   Geometries can now get attached to multiple scenes.
+-   Updated to TBB 2019.9 for release builds.
+-   Fixed a bug in the BVH builder for Grid geometries.
+-   Added macOS Catalina support to Embree releases.
+
+### New Features in Embree 3.6.1
+-   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
+-   Fixed bug in subgrid intersector
+-   Removed point query alignment in ISPC header
+
+### New Features in Embree 3.6
+-   Added Catmull-Rom curve types.
+-   Added support for multi-level instancing.
+-   Added support for point queries.
+-   Fixed a bug preventing normal oriented curves being used unless timesteps were
+    specified.
+-   Fixed bug in external BVH builder when configured for dynamic build.
+-   Added support for new config flag "user_threads=N" to device initialization
+    which sets the number of threads used by TBB but created by the user.
+-   Fixed automatic vertex buffer padding when using rtcSetNewGeometry API function.
+
+### New Features in Embree 3.5.2
+-   Added EMBREE_API_NAMESPACE cmake option that allows to put all Embree API functions
+    inside a user defined namespace.
+-   Added EMBREE_LIBRARY_NAME cmake option that allows to rename the Embree library.
+-   When Embree is compiled as static library, EMBREE_STATIC_LIB has no longer to get
+    defined before including the Embree API headers.
+-   Added CPU frequency_level device configuration to allow an application to specify the
+    frequency level it wants to run on. This forces Embree to not use optimizations that
+    may reduce the CPU frequency below that level. By default Embree is configured to the
+    the AVX-heavy frequency level, thus if the application uses solely non-AVX code, configuring
+    the Embree device with "frequency_level=simd128" may give better performance.
+-   Fixed a bug in the spatial split builder which caused it to fail
+    for scenes with more than 2^24 geometries.
+
+### New Features in Embree 3.5.1
+-   Fixed ray/sphere intersector to work also for non-normalized rays.
+-   Fixed self intersection avoidance for ray oriented discs when
+    non-normalized rays were used.
+-   Increased maximal face valence for subdiv patch to 64 and reduced stack size
+    requirement for subdiv patch evaluation.
+
+### New Features in Embree 3.5.0
+-   Changed normal oriented curve definition to fix waving artefacts.
+-   Fixed bounding issue for normal oriented motion blurred curves.
+-   Fixed performance issue with motion blurred point geometry.
+-   Fixed generation of documentation with new pandoc versions.
+
 ### New Features in Embree 3.4.0
 -   Added point primitives (spheres, ray-oriented discs, normal-oriented discs).
 -   Fixed crash triggered by scenes with only invalid primitives.

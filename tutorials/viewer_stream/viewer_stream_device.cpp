@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -255,7 +255,7 @@ typedef ISPCInstance* ISPCInstancePtr;
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned int instID = ray.instID; {
+  unsigned int instID = ray.instID[0]; {
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
@@ -270,7 +270,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
-    unsigned int instID = ray.instID;
+    unsigned int instID = ray.instID[0];
     {
       /* get instance and geometry pointers */
       ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];

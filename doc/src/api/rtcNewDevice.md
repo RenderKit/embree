@@ -49,6 +49,14 @@ The following configuration is supported:
   of 0 enables all detected hardware threads. By default all hardware
   threads are used.
 
++ `user_threads=[int]`: Sets the number of user threads that can be
+  used to join and participate in a scene commit using
+  `rtcJoinCommitScene`. The tasking system will only use
+  threads-user_threads many worker threads, thus if the app wants to
+  solely use its threads to commit scenes, just set threads equal to
+  user_threads. This option only has effect with the Intel(R)
+  Threading Building Blocks (TBB) tasking system.
+
 + `set_affinity=[0/1]`: When enabled, build threads are affinitized to
   hardware threads. This option is disabled by default on standard
   CPUs, and enabled by default on Xeon Phi Processors.
@@ -81,6 +89,21 @@ The following configuration is supported:
    output is printed. By default Embree does not print anything on the
    console.
 
++ `frequency_level=[simd128,simd256,simd512]`: Specifies the
+   frequency level the application want to run on, which can be
+   either: a) simd128 for apps that do not use AVX instructions, b)
+   simd256 for apps that use heavy AVX instruction, c) simd512 for
+   apps that use heavy AVX-512 instructions. When some frequency level
+   is specified, Embree will avoid doing optimizations that may reduce
+   the frequency level below the level specified. E.g. if your app
+   does not use AVX instructions setting "frequency_level=simd128"
+   will cause some CPUs to run at highest frequency, which may result
+   in higher application performance. However, this will prevent
+   Embree from using AVX optimizations to achieve higher ray tracing
+   performance, thus applications that trace many rays may still
+   perform better with the default setting of simd256, even though
+   this reduces frequency on some CPUs.
+
 Different configuration options should be separated by commas, e.g.:
 
     rtcNewDevice("threads=1,isa=avx");
@@ -89,7 +112,7 @@ Different configuration options should be separated by commas, e.g.:
 
 On success returns a handle of the created device. On failure returns
 `NULL` as device and sets a per-thread error code that can be queried
-using `rtcDeviceGetError(NULL)`.
+using `rtcGetDeviceError(NULL)`.
 
 #### SEE ALSO
 

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,6 +18,7 @@
 #include "bvh_builder.h"
 
 #include "../builders/primrefgen.h"
+#include "../builders/primrefgen_presplit.h"
 #include "../builders/splitter.h"
 
 #include "../geometry/linei.h"
@@ -72,14 +73,15 @@ namespace embree
       mvector<PrimRef> prims0;
       GeneralBVHBuilder::Settings settings;
       const float splitFactor;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
           splitFactor(scene->device->max_spatial_split_replications) {}
 
-      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
+      BVHNBuilderFastSpatialSAH (BVH* bvh, Mesh* mesh, const unsigned int geomID, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(nullptr), mesh(mesh), prims0(bvh->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
-          splitFactor(scene->device->max_spatial_split_replications) {}
+          splitFactor(scene->device->max_spatial_split_replications), geomID_(geomID) {}
 
       // FIXME: shrink bvh->alloc in destructor here and in other builders too
 
@@ -91,46 +93,78 @@ namespace embree
         }
 
 	/* skip build for empty scene */
-        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives<Mesh,false>();
+        const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(Mesh::geom_type,false);
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();
           return;
         }
 
-        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + "BuilderFastSpatialSAH");
+        const unsigned int maxGeomID = mesh ? geomID_ : scene->getMaxGeomID<Mesh,false>();
+        const bool usePreSplits = scene->device->useSpatialPreSplits || (maxGeomID >= ((unsigned int)1 << (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS)));
+        double t0 = bvh->preBuild(mesh ? "" : TOSTRING(isa) "::BVH" + toString(N) + (usePreSplits ? "BuilderFastSpatialPresplitSAH" : "BuilderFastSpatialSAH"));
 
         /* create primref array */
         const size_t numSplitPrimitives = max(numOriginalPrimitives,size_t(splitFactor*numOriginalPrimitives));
         prims0.resize(numSplitPrimitives);
-        PrimInfo pinfo = mesh ?
-          createPrimRefArray(mesh,prims0,bvh->scene->progressInterface) :
-          createPrimRefArray(scene,Mesh::geom_type,false,prims0,bvh->scene->progressInterface);
-
-        Splitter splitter(scene);
 
         /* enable os_malloc for two level build */
         if (mesh)
           bvh->alloc.setOSallocation(true);
+	
+	NodeRef root(0);
+	PrimInfo pinfo;
+	
 
-        const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
-        const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
-        bvh->alloc.init_estimate(node_bytes+leaf_bytes);
-        settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
+        if (likely(usePreSplits))
+	  {		     
+            /* spatial presplit SAH BVH builder */
+	    pinfo = mesh ?
+	      createPrimRefArray_presplit<Mesh,Splitter>(mesh,maxGeomID,numOriginalPrimitives,prims0,bvh->scene->progressInterface) :
+	      createPrimRefArray_presplit<Mesh,Splitter>(scene,Mesh::geom_type,false,numOriginalPrimitives,prims0,bvh->scene->progressInterface);
 
-        settings.branchingFactor = N;
-        settings.maxDepth = BVH::maxBuildDepthLeaf;
+	    const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
+	    const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
+	    bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+	    settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
 
-        NodeRef root = BVHBuilderBinnedFastSpatialSAH::build<NodeRef>(
-          typename BVH::CreateAlloc(bvh),
-          typename BVH::AlignedNode::Create2(),
-          typename BVH::AlignedNode::Set2(),
-          CreateLeafSpatial<N,Primitive>(bvh),
-          splitter,
-          bvh->scene->progressInterface,
-          prims0.data(),
-          numSplitPrimitives,
-          pinfo,settings);
+	    settings.branchingFactor = N;
+	    settings.maxDepth = BVH::maxBuildDepthLeaf;
+
+	    /* call BVH builder */
+	    root = BVHNBuilderVirtual<N>::build(&bvh->alloc,CreateLeafSpatial<N,Primitive>(bvh),bvh->scene->progressInterface,prims0.data(),pinfo,settings);
+	  }
+	else
+	  {
+            /* standard spatial split SAH BVH builder */
+	    pinfo = mesh ?
+	      createPrimRefArray(mesh,geomID_,/*numSplitPrimitives,*/prims0,bvh->scene->progressInterface) :
+	      createPrimRefArray(scene,Mesh::geom_type,false,/*numSplitPrimitives,*/prims0,bvh->scene->progressInterface);
+	
+	    Splitter splitter(scene);
+
+	    const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
+	    const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
+	    bvh->alloc.init_estimate(node_bytes+leaf_bytes);
+	    settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
+
+	    settings.branchingFactor = N;
+	    settings.maxDepth = BVH::maxBuildDepthLeaf;
+
+	    /* call BVH builder */
+	    root = BVHBuilderBinnedFastSpatialSAH::build<NodeRef>(
+								  typename BVH::CreateAlloc(bvh),
+								  typename BVH::AlignedNode::Create2(),
+								  typename BVH::AlignedNode::Set2(),
+								  CreateLeafSpatial<N,Primitive>(bvh),
+								  splitter,
+								  bvh->scene->progressInterface,
+								  prims0.data(),
+								  numSplitPrimitives,
+								  pinfo,settings);
+
+	    /* ==================== */
+	  }
 
         bvh->set(root,LBBox3fa(pinfo.geomBounds),pinfo.size());
         bvh->layoutLargeNodes(size_t(pinfo.size()*0.005f));

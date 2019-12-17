@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -45,7 +45,7 @@ namespace embree
     void postParseCommandLine() 
     {
       /* load default scene if none specified */
-      if (scene->size() == 0 && sceneFilename.ext() == "") {
+      if (scene->size() == 0 && sceneFilename.size() == 0) {
         FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }

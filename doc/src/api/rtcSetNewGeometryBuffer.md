@@ -37,7 +37,7 @@ element should be readable using 16-byte SSE load instructions.
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using
-`rtcDeviceGetError`.
+`rtcGetDeviceError`.
 
 #### SEE ALSO
 

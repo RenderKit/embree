@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -56,6 +56,7 @@ SET(EMBREE_LIBRARY_FILES
 
   subdiv/bezier_curve.cpp
   subdiv/bspline_curve.cpp
+  subdiv/catmullrom_curve.cpp
 
   geometry/primitive4.cpp
   geometry/instance_intersector.cpp
@@ -257,7 +258,8 @@ IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
   CheckGlobals(embree_sse42)
   IF (EMBREE_STATIC_LIB)
-    INSTALL(TARGETS embree_sse42 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(TARGETS embree_sse42 EXPORT embree_sse42-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(EXPORT embree_sse42-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
   ENDIF()
 ENDIF ()
 
@@ -269,7 +271,8 @@ IF (EMBREE_ISA_AVX  AND EMBREE_LIBRARY_FILES_AVX)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx)
   CheckGlobals(embree_avx)
   IF (EMBREE_STATIC_LIB)
-    INSTALL(TARGETS embree_avx ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(TARGETS embree_avx EXPORT embree_avx-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(EXPORT embree_avx-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
   ENDIF()
 ENDIF()
 
@@ -281,7 +284,8 @@ IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
   CheckGlobals(embree_avx2)
   IF (EMBREE_STATIC_LIB)
-    INSTALL(TARGETS embree_avx2 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(TARGETS embree_avx2 EXPORT embree_avx2-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(EXPORT embree_avx2-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
   ENDIF()
 ENDIF()
 
@@ -293,7 +297,8 @@ IF (EMBREE_ISA_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512knl)
   CheckGlobals(embree_avx512knl)
   IF (EMBREE_STATIC_LIB)
-    INSTALL(TARGETS embree_avx512knl ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(TARGETS embree_avx512knl EXPORT embree_avx512knl-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(EXPORT embree_avx512knl-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
   ENDIF()
 ENDIF()
 
@@ -305,13 +310,14 @@ IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512skx)
   CheckGlobals(embree_avx512skx)
   IF (EMBREE_STATIC_LIB)
-    INSTALL(TARGETS embree_avx512skx ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(TARGETS embree_avx512skx EXPORT embree_avx512skx-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(EXPORT embree_avx512skx-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
   ENDIF()
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree ${EMBREE_LIBRARIES} sys math simd lexers tasking)
+TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers PUBLIC tasking)
 SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "") # no RPATH for installed libembree
-SET_TARGET_PROPERTIES(embree PROPERTIES OUTPUT_NAME embree${EMBREE_VERSION_MAJOR})
+SET_TARGET_PROPERTIES(embree PROPERTIES OUTPUT_NAME ${EMBREE_LIBRARY_NAME})
 
 IF (WIN32)
 ELSEIF (APPLE)
@@ -328,13 +334,17 @@ ELSE()
   SET_TARGET_PROPERTIES(embree PROPERTIES VERSION ${EMBREE_VERSION} SOVERSION ${EMBREE_VERSION_MAJOR})
 ENDIF()
 
-INSTALL(TARGETS embree
+INSTALL(TARGETS embree EXPORT embree-targets
   LIBRARY NAMELINK_SKIP DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib
   # on Windows put the dlls into bin
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples
   # ... and the import lib into the devel package
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel
 )
+
+IF (EMBREE_STATIC_LIB)
+  INSTALL(EXPORT embree-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
+ENDIF()
 
 IF (NOT EMBREE_STATIC_LIB)
   INSTALL(TARGETS embree

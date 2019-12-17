@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -23,8 +23,6 @@
 
 namespace embree
 {
-#if (_WIN32_WINNT >= 0x0600)
-
   struct ConditionImplementation
   {
     __forceinline ConditionImplementation () {
@@ -45,58 +43,6 @@ namespace embree
   public:
     CONDITION_VARIABLE cond;
   };
-
-#else
-
-#pragma message ("WARNING: This condition variable implementation has known performance issues!")
-
-  struct ConditionImplementation
-  {
-    __forceinline ConditionImplementation () : count(0) {
-      event = CreateEvent(nullptr,TRUE,FALSE,nullptr);
-    }
-
-    __forceinline ~ConditionImplementation () {
-      CloseHandle(event);
-    }
-
-    __forceinline void wait(MutexSys& mutex_in)
-    {
-      /* atomically increment thread count */
-      ssize_t cnt0 = atomic_add(&count,+1);
-      mutex_in.unlock();
-
-      /* all threads except the last one are wait in the barrier */
-      if (WaitForSingleObject(event, INFINITE) != WAIT_OBJECT_0)
-        THROW_RUNTIME_ERROR("WaitForSingleObject failed");
-
-      /* atomically decrement thread count */
-      mutex_in.lock();
-      ssize_t cnt1 = atomic_add(&count,-1);
-
-      /* the last thread that left the barrier resets the event again */
-      if (cnt1 == 1) {
-        if (ResetEvent(event) == 0)
-          THROW_RUNTIME_ERROR("ResetEvent failed");
-      }
-    }
-
-    __forceinline void notify_all() 
-    {
-      /* we support only one broadcast at a given time */
-      bool hasWaiters = count > 0;
-
-      /* if threads are waiting, let them continue */
-      if (hasWaiters) 
-        if (SetEvent(event) == 0)
-          THROW_RUNTIME_ERROR("SetEvent failed");
-    }
-
-  public:
-    HANDLE event;
-    volatile atomic_t count;
-  };
-#endif
 }
 #endif
 

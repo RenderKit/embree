@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -28,7 +28,7 @@ namespace embree
     struct DiscMiIntersector1
     {
       typedef PointMi<M> Primitive;
-      typedef DiscPrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre,
                                           RayHit& ray,
@@ -61,7 +61,7 @@ namespace embree
     struct DiscMiMBIntersector1
     {
       typedef PointMi<M> Primitive;
-      typedef DiscPrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre,
                                           RayHit& ray,
@@ -94,7 +94,7 @@ namespace embree
     struct DiscMiIntersectorK
     {
       typedef PointMi<M> Primitive;
-      typedef DiscPrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(
           const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& Disc)
@@ -128,7 +128,7 @@ namespace embree
     struct DiscMiMBIntersectorK
     {
       typedef PointMi<M> Primitive;
-      typedef DiscPrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(
           const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& Disc)
@@ -162,7 +162,7 @@ namespace embree
     struct OrientedDiscMiIntersector1
     {
       typedef PointMi<M> Primitive;
-      typedef DiscPrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre,
                                           RayHit& ray,
@@ -197,7 +197,7 @@ namespace embree
     struct OrientedDiscMiMBIntersector1
     {
       typedef PointMi<M> Primitive;
-      typedef DiscPrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre,
                                           RayHit& ray,
@@ -232,7 +232,7 @@ namespace embree
     struct OrientedDiscMiIntersectorK
     {
       typedef PointMi<M> Primitive;
-      typedef DiscPrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(
           const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& Disc)
@@ -275,7 +275,7 @@ namespace embree
     struct OrientedDiscMiMBIntersectorK
     {
       typedef PointMi<M> Primitive;
-      typedef DiscPrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(
           const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& Disc)

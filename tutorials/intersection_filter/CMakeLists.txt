@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -18,7 +18,7 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(intersection_filter)
 ADD_TUTORIAL_ISPC(intersection_filter)
 
-IF (EMBREE_TESTING_INTENSITY GREATER 0)
+IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
   ADD_EMBREE_TEST(intersection_filter)
   IF(EMBREE_RAY_PACKETS)
     ADD_EMBREE_TEST2(intersection_filter_stream_coherent   intersection_filter "--mode stream --coherent")

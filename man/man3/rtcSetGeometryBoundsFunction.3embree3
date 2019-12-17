@@ -66,7 +66,7 @@ destination structure (\f[C]bounds_o\f[] member).
 .SS EXIT STATUS
 .PP
 On failure an error code is set that can be queried using
-\f[C]rtcDeviceGetError\f[].
+\f[C]rtcGetDeviceError\f[].
 .SS SEE ALSO
 .PP
 [RTC_GEOMETRY_TYPE_USER]

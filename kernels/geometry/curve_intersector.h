@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -24,6 +24,8 @@
 #include "bezier_curve_intersector.h"
 #include "oriented_curve_intersector.h"
 #include "../bvh/node_intersector1.h"
+
+// FIXME: this file seems replicate of curve_intersector_virtual.h
 
 namespace embree
 {

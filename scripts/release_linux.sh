@@ -40,9 +40,9 @@ function check_symbols
 }
 
 # read embree version
-EMBREE_VERSION_MAJOR=`sed -n 's/#define RTC_VERSION_MAJOR \(.*\)/\1/p' include/embree2/rtcore_version.h`
-EMBREE_VERSION_MINOR=`sed -n 's/#define RTC_VERSION_MINOR \(.*\)/\1/p' include/embree2/rtcore_version.h`
-EMBREE_VERSION_PATCH=`sed -n 's/#define RTC_VERSION_PATCH \(.*\)/\1/p' include/embree2/rtcore_version.h`
+EMBREE_VERSION_MAJOR=`sed -n 's/#define RTC_VERSION_MAJOR \(.*\)/\1/p' include/embree2/rtcore_config.h`
+EMBREE_VERSION_MINOR=`sed -n 's/#define RTC_VERSION_MINOR \(.*\)/\1/p' include/embree2/rtcore_config.h`
+EMBREE_VERSION_PATCH=`sed -n 's/#define RTC_VERSION_PATCH \(.*\)/\1/p' include/embree2/rtcore_config.h`
 EMBREE_VERSION=${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH}
 
 mkdir -p build

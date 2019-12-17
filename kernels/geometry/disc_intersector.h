@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,7 +17,7 @@
 #pragma once
 
 #include "../common/ray.h"
-#include "point_precalculations.h"
+#include "curve_intersector_precalculations.h"
 
 namespace embree
 {
@@ -58,7 +58,7 @@ namespace embree
     template<int M>
     struct DiscIntersector1
     {
-      typedef DiscPrecalculations1 Precalculations;
+      typedef CurvePrecalculations1 Precalculations;
 
       template<typename Epilog>
       static __forceinline bool intersect(
@@ -75,12 +75,12 @@ namespace embree
         const Vec3vf<M> c0     = center - ray_org;
         const vfloat<M> projC0 = dot(c0, ray_dir) * rd2;
 
-        valid &= (vfloat<M>(ray.tnear()) < projC0) & (projC0 <= vfloat<M>(ray.tfar));
+        valid &= (vfloat<M>(ray.tnear()) <= projC0) & (projC0 <= vfloat<M>(ray.tfar));
         if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
-          valid &= projC0 > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius;  // ignore self intersections
+          valid &= projC0 > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius * pre.depth_scale;  // ignore self intersections
         if (unlikely(none(valid)))
           return false;
-
+        
         const Vec3vf<M> perp   = c0 - projC0 * ray_dir;
         const vfloat<M> l2     = dot(perp, perp);
         const vfloat<M> r2     = radius * radius;
@@ -111,7 +111,7 @@ namespace embree
 
         vfloat<M> t = dot(center - Vec3vf<M>(ray.org), Vec3vf<M>(normal)) / divisor;
 
-        valid &= (vfloat<M>(ray.tnear()) < t) & (t <= vfloat<M>(ray.tfar));
+        valid &= (vfloat<M>(ray.tnear()) <= t) & (t <= vfloat<M>(ray.tfar));
         if (unlikely(none(valid)))
           return false;
 
@@ -129,7 +129,7 @@ namespace embree
     template<int M, int K>
     struct DiscIntersectorK
     {
-      typedef DiscPrecalculationsK<K> Precalculations;
+      typedef CurvePrecalculationsK<K> Precalculations;
 
       template<typename Epilog>
       static __forceinline bool intersect(const vbool<M>& valid_i,
@@ -150,9 +150,9 @@ namespace embree
         const Vec3vf<M> c0     = center - ray_org;
         const vfloat<M> projC0 = dot(c0, ray_dir) * rd2;
 
-        valid &= (vfloat<M>(ray.tnear()[k]) < projC0) & (projC0 <= vfloat<M>(ray.tfar[k]));
+        valid &= (vfloat<M>(ray.tnear()[k]) <= projC0) & (projC0 <= vfloat<M>(ray.tfar[k]));
         if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
-          valid &= projC0 > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius;  // ignore self intersections
+          valid &= projC0 > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR) * radius * pre.depth_scale[k];  // ignore self intersections
         if (unlikely(none(valid)))
           return false;
 
@@ -189,7 +189,7 @@ namespace embree
 
         vfloat<M> t = dot(center - Vec3vf<M>(ray_org), Vec3vf<M>(normal)) / divisor;
 
-        valid &= (vfloat<M>(ray.tnear()[k]) < t) & (t <= vfloat<M>(ray.tfar[k]));
+        valid &= (vfloat<M>(ray.tnear()[k]) <= t) & (t <= vfloat<M>(ray.tfar[k]));
         if (unlikely(none(valid)))
           return false;
 

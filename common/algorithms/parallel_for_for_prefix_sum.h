@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -53,7 +53,7 @@ namespace embree
       for (size_t i=i0; k<k1; i++) {
 	const size_t size = array2[i] ? array2[i]->size() : 0;
         const size_t r0 = j0, r1 = min(size,r0+k1-k);
-        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k));
+        if (r1 > r0) N = reduction(N, func(array2[i],range<Index>((Index)r0,(Index)r1),(Index)k,(Index)i));
         k+=r1-r0; j0 = 0;
       }
       state.prefix_state.counts[taskIndex] = N;
@@ -91,7 +91,7 @@ namespace embree
       for (size_t i=i0; k<k1; i++) {
 	const size_t size = array2[i] ? array2[i]->size() : 0;
         const size_t r0 = j0, r1 = min(size,r0+k1-k);
-        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k,reduction(state.prefix_state.sums[taskIndex],N)));
+        if (r1 > r0) N = reduction(N, func(array2[i],range<Index>((Index)r0,(Index)r1),(Index)k,(Index)i,reduction(state.prefix_state.sums[taskIndex],N)));
         k+=r1-r0; j0 = 0;
       }
       state.prefix_state.counts[taskIndex] = N;

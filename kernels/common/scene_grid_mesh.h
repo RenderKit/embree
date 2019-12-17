@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -59,8 +59,6 @@ namespace embree
 
     /* geometry interface */
   public:
-    void enabling();
-    void disabling();
     void setMask(unsigned mask);
     void setNumTimeSteps (unsigned int numTimeSteps);
     void setVertexAttributeCount (unsigned int N);
@@ -71,11 +69,17 @@ namespace embree
     void postCommit();
     bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
+    void addElementsToCount (GeometryCounts & counts) const;
 
     __forceinline unsigned int getNumSubGrids(const size_t gridID)
     {
       const Grid &g = grid(gridID);
       return max((unsigned int)1,((unsigned int)g.resX >> 1) * ((unsigned int)g.resY >> 1));
+    }
+
+    /*! get fast access to first vertex buffer */
+    __forceinline float * getCompactVertexArray () const {
+      return (float*) vertices0.getPtr();
     }
 
   public:

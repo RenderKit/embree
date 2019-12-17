@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -21,8 +21,8 @@
 namespace embree
 {
   static const size_t MAX_PATCH_VALENCE = 16;         //!< maximum number of vertices of a patch
-  static const size_t MAX_RING_FACE_VALENCE = 32;     //!< maximum number of faces per ring
-  static const size_t MAX_RING_EDGE_VALENCE = 2*32;   //!< maximum number of edges per ring
+  static const size_t MAX_RING_FACE_VALENCE = 64;     //!< maximum number of faces per ring
+  static const size_t MAX_RING_EDGE_VALENCE = 2*64;   //!< maximum number of edges per ring
 
   class CatmullClarkPrecomputedCoefficients 
   {

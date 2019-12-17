@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -25,18 +25,6 @@ namespace embree
     : Geometry(device,GTY_TRIANGLE_MESH,0,1)
   {
     vertices.resize(numTimeSteps);
-  }
-
-  void TriangleMesh::enabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numTriangles += numPrimitives;
-    else                   scene->worldMB.numTriangles += numPrimitives;
-  }
-  
-  void TriangleMesh::disabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numTriangles -= numPrimitives;
-    else                   scene->worldMB.numTriangles -= numPrimitives;
   }
 
   void TriangleMesh::setMask (unsigned mask) 
@@ -169,10 +157,14 @@ namespace embree
     Geometry::preCommit();
   }
 
+  void TriangleMesh::addElementsToCount (GeometryCounts & counts) const 
+  {
+    if (numTimeSteps == 1) counts.numTriangles += numPrimitives;
+    else                   counts.numMBTriangles += numPrimitives;
+  }
+
   void TriangleMesh::postCommit() 
   {
-    scene->vertices[geomID] = (float*) vertices0.getPtr();
-
     triangles.setModified(false);
     for (auto& buf : vertices)
       buf.setModified(false);

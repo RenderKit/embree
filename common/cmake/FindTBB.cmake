@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
+## Copyright 2009-2019 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -122,7 +122,14 @@ ELSE ()
       FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc PATHS ${EMBREE_TBB_ROOT}/lib NO_DEFAULT_PATH)
     ELSE()
       FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h PATHS ${EMBREE_TBB_ROOT}/include NO_DEFAULT_PATH)
-      SET(TBB_HINTS HINTS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4 ${EMBREE_TBB_ROOT}/lib ${EMBREE_TBB_ROOT}/lib64 PATHS /usr/libx86_64-linux-gnu/)
+      SET(TBB_HINTS HINTS
+          ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.8
+          ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.7
+          ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4
+          ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.1
+          ${EMBREE_TBB_ROOT}/lib
+          ${EMBREE_TBB_ROOT}/lib64
+        PATHS /usr/libx86_64-linux-gnu/)
       FIND_LIBRARY(TBB_LIBRARY tbb ${TBB_HINTS})
       FIND_LIBRARY(TBB_LIBRARY_MALLOC tbbmalloc ${TBB_HINTS})
     ENDIF()
@@ -151,9 +158,9 @@ IF (EMBREE_INSTALL_DEPENDENCIES)
     INSTALL(PROGRAMS ${TBB_BINDIR}/tbb.dll ${TBB_BINDIR}/tbbmalloc.dll DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
     INSTALL(PROGRAMS ${TBB_LIBDIR}/tbb.lib ${TBB_LIBDIR}/tbbmalloc.lib DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
   ELSEIF (APPLE)
-    INSTALL(PROGRAMS ${EMBREE_TBB_ROOT}/lib/libtbb.dylib ${EMBREE_TBB_ROOT}/lib/libtbbmalloc.dylib DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
+    INSTALL(PROGRAMS ${TBB_LIBRARY} ${TBB_LIBRARY_MALLOC} DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
   ELSE()
-    INSTALL(PROGRAMS ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4/libtbb.so.2 ${EMBREE_TBB_ROOT}/lib/intel64/gcc4.4/libtbbmalloc.so.2 DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
+    INSTALL(PROGRAMS ${TBB_LIBRARY}.2 ${TBB_LIBRARY_MALLOC}.2 DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT lib)
   ENDIF()
 ENDIF()
 

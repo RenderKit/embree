@@ -7,6 +7,7 @@
 [Stream Viewer]: #stream-viewer
 [User Geometry]: #user-geometry
 [Instanced Geometry]: #instanced-geometry
+[Multi Level Instancing]: #multi-level-instancing
 [Intersection Filter]: #intersection-filter
 [Hair]: #hair
 [Curves]: #bézier-curves

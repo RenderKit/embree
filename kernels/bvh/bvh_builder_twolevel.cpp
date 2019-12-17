@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
+// Copyright 2009-2019 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -68,7 +68,7 @@ namespace embree
       bvh->alloc.reset();
       
       /* skip build for empty scene */
-      const size_t numPrimitives = scene->getNumPrimitives<Mesh,false>();
+      const size_t numPrimitives = scene->getNumPrimitives(Mesh::geom_type,false);
 
       if (numPrimitives == 0) {
         prims.resize(0);
@@ -98,7 +98,7 @@ namespace embree
           /* create BVH and builder for new meshes */
           if (objects[objectID] == nullptr) {
             Builder* builder = nullptr;
-            createMeshAccel(mesh,(AccelData*&)objects[objectID],builder);
+            createMeshAccel(scene, unsigned(objectID),(AccelData*&)objects[objectID],builder);
             builders[objectID] = BuilderState(builder,mesh->quality);
           }
 
@@ -106,7 +106,7 @@ namespace embree
           else if (mesh->quality != builders[objectID].quality) {
             Builder* builder = nullptr;
             delete objects[objectID]; 
-            createMeshAccel(mesh,(AccelData*&)objects[objectID],builder);
+            createMeshAccel(scene, unsigned(objectID),(AccelData*&)objects[objectID],builder);
             builders[objectID] = BuilderState(builder,mesh->quality);
           }
         }
