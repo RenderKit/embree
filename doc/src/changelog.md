@@ -13,12 +13,13 @@ Version History
     for SAH heuristic were counted wrong due to some numerical issues.
 -   Improved performance of multi-segment motion blur, by improving the
     SAH heuristic used in the motion blur builder.
--   Improved shadow ray performance for instantiated curve geometries.
 -   Fixed a bug with rendering short fat curves.
 -   rtcCommitScene can now get called during rendering from multiple threads
     to lazily build geometry. When TBB is used this causes a much lower overhead
     than using rtcJoinCommitScene.
+-   Geometries can now get attached to multiple scenes.
 -   Updated to TBB 2019.9 for release builds.
+-   Fixed a bug in the BVH builder for Grid geometries.
 -   Added macOS Catalina support to Embree releases.
 
 ### New Features in Embree 3.6.1

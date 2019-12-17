@@ -21,12 +21,10 @@ The `rtcAttachGeometryByID` function attaches a geometry (`geometry`
 argument) to a scene (`scene` argument) and assigns a user provided
 geometry ID (`geomID` argument) to that geometry. All geometries
 attached to a scene are defined to be included inside the scene. A
-geometry can only get attached to a single scene at a given
-time. However, it is possible to detach and re-attach a geometry to a
-different scene. The passed user-defined geometry ID is used to
-identify the geometry when hit by a ray during ray queries. Using this
-function, it is possible to share the same IDs to refer to geometries
-inside the application and Embree.
+geometry can get attached to multiple scenes. The passed user-defined
+geometry ID is used to identify the geometry when hit by a ray during
+ray queries. Using this function, it is possible to share the same IDs
+to refer to geometries inside the application and Embree.
 
 This function is thread-safe, thus multiple threads can attach
 geometries to a scene in parallel.

@@ -109,8 +109,8 @@ Changes to the geometry always must be committed using the
 a geometry is not included in any scene. A geometry can be added to
 a scene by using the `rtcAttachGeometry` function (to automatically
 assign a geometry ID) or using the `rtcAttachGeometryById` function
-(to specify the geometry ID manually). A geometry can only be attached
-to a single scene at a time.
+(to specify the geometry ID manually). A geometry can get attached
+to multiple scenes.
 
 All geometry types support multi-segment motion blur with an arbitrary
 number of equidistant time steps (in the range of 2 to 129) inside a
@@ -298,7 +298,7 @@ Geometry
     `rtcGetGeometry`.
 
 *   Geometries are not included inside a scene anymore but can be
-    attached to a single scene using the `rtcAttachGeomety` or
+    attached to a multiple scenes using the `rtcAttachGeomety` or
     `rtcAttachGeometryByID` functions.
 
 *   As geometries are separate objects, commit semantics got introduced
