@@ -74,8 +74,9 @@ namespace embree
     Geometry::update();
   }
 
-  void Instance::preCommit() {
-
+  void Instance::preCommit()
+  {
+#if 0 // disable expensive instance optimization for now
     // decide whether we're an expensive instnace or not
     auto numExpensiveGeo =  static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, false)
                           + static_cast<Scene*> (object)->getNumPrimitives(CurveGeometry::geom_type, true)
@@ -84,7 +85,7 @@ namespace embree
     if (numExpensiveGeo > 0) {
       this->gtype = GTY_INSTANCE_EXPENSIVE;
     }
-
+#endif
     Geometry::preCommit();
   }
 
