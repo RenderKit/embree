@@ -35,7 +35,10 @@ namespace embree {
 	RTCScene  g_scene_2 = nullptr;
 	RTCScene* g_curr_scene = nullptr;
 	Vec3fa position[numSpheres];
-	Vec3fa colors[numSpheres + 1];
+	Vec3fa colors0[numSpheres + 1];
+	Vec3fa colors1[numSpheres/2 + 1];
+	Vec3fa colors2[numSpheres/2 + 1];
+	Vec3fa* colors;
 	float radius[numSpheres];
 	int disabledID = -1;
 	int g_buffer_state = 0;
@@ -129,14 +132,17 @@ namespace embree {
 			case 0:
 				g_buffer_state = 1;
 				g_curr_scene = &g_scene_1;
+				colors = &(colors1[0]);
 				break;
 			case 1:
 				g_buffer_state = 2;
 				g_curr_scene = &g_scene_2;
+				colors = &(colors2[0]);
 				break;
 			case 2:
 				g_buffer_state = 0;
 				g_curr_scene = &g_scene_0;
+				colors = &(colors0[0]);
 				break;
 			}
 		}
@@ -162,26 +168,29 @@ namespace embree {
 			//RTCBuildQuality quality = i%3 == 0 ? RTC_BUILD_QUALITY_MEDIUM : i%3 == 1 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
 			RTCBuildQuality quality = i % 2 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
 			//RTCBuildQuality quality = RTC_BUILD_QUALITY_REFIT;
-			int id = createSphere(g_scene_0, quality, p, r);
+			int id0 = createSphere(g_scene_0, quality, p, r);
+			position[id0] = p;
+			radius[id0] = r;
+			colors0[id0].x = (i % 16 + 1) / 17.0f;
+			colors0[id0].y = (i % 8 + 1) / 9.0f;
+			colors0[id0].z = (i % 4 + 1) / 5.0f;
 			if (i < (numSpheres / 2)) {
-				rtcAttachGeometry(g_scene_1, rtcGetGeometry (g_scene_0, id));
+				int id1 = rtcAttachGeometry(g_scene_1, rtcGetGeometry (g_scene_0, id0));
+				colors1[id1] = colors0[id0];
 			}
 			else {
-				rtcAttachGeometry(g_scene_2, rtcGetGeometry(g_scene_0, id));
+				int id2 = rtcAttachGeometry(g_scene_2, rtcGetGeometry(g_scene_0, id0));
+				colors2[id2] = colors0[id0];
 			}
-
-			position[id] = p;
-			radius[id] = r;
-			colors[id].x = (i % 16 + 1) / 17.0f;
-			colors[id].y = (i % 8 + 1) / 9.0f;
-			colors[id].z = (i % 4 + 1) / 5.0f;
 		}
 
 		/* add ground plane to scene */
-		int id = addGroundPlane(g_scene_0);
-		rtcAttachGeometry(g_scene_1, rtcGetGeometry(g_scene_0, id));
-		rtcAttachGeometry(g_scene_2, rtcGetGeometry(g_scene_0, id));
-		colors[id] = Vec3fa(1.0f, 1.0f, 1.0f);
+		int id0 = addGroundPlane(g_scene_0);
+		int id1 = rtcAttachGeometry(g_scene_1, rtcGetGeometry(g_scene_0, id0));
+		int id2 = rtcAttachGeometry(g_scene_2, rtcGetGeometry(g_scene_0, id0));
+		colors0[id0] = Vec3fa(1.0f, 1.0f, 1.0f);
+		colors1[id1] = colors0[id0];
+		colors2[id2] = colors0[id0];
 
 		/* commit changes to scene */
 		rtcCommitScene(g_scene_0);
@@ -189,6 +198,7 @@ namespace embree {
 		rtcCommitScene(g_scene_2);
 
 		g_curr_scene = &g_scene_0;
+		colors = &(colors0[0]);
 
 		/* set start render mode */
 		renderTile = renderTileStandard;
