@@ -118,7 +118,7 @@ to use a refitting strategy for these spheres, the other half uses the
 performance rebuild of their spatial data structure each frame. The
 spheres are colored based on the ID of the hit sphere geometry.
 
-Dynamic Scene
+Multi Scene Geometry
 -------------
 
 ![][imgDynamicScene]
