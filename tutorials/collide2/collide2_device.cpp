@@ -55,48 +55,69 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* map triangle and vertex buffers */
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numTheta*(numPhi+1));
+  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numTheta*(numPhi-1)+2);
   Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2*numTheta*(numPhi-1));
 
   /* create sphere */
   int tri = 0;
   const float rcpNumTheta = rcp((float)numTheta);
   const float rcpNumPhi   = rcp((float)numPhi);
-  for (int phi=0; phi<=numPhi; phi++)
+  vertices[0].x = p.x;
+  vertices[0].y = p.y + r;
+  vertices[0].z = p.z;
+
+  for (int phi=0; phi<numPhi-1; phi++)
+  {
+    const float phif   = (phi+1)*float(pi)*rcpNumPhi;
+    const float sinp   = sin(phif);
+    const float cosp   = cos(phif);
+    for (int theta=0; theta<numTheta; theta++)
+    {
+      const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+
+      Vertex& v = vertices[phi*(numTheta)+theta+1];
+      v.x = p.x + r*sinp*sin(thetaf);
+      v.y = p.y + r*cosp;
+      v.z = p.z + r*sinp*cos(thetaf);
+    }
+  }
+  vertices[numTheta*(numPhi-1)+1].x = p.x;
+  vertices[numTheta*(numPhi-1)+1].y = p.y - r;
+  vertices[numTheta*(numPhi-1)+1].z = p.z;
+
+  for (int theta=0; theta<numTheta; theta++) {
+    triangles[tri].v0 = theta+1;
+    triangles[tri].v1 = 0;
+    triangles[theta].v2 = (theta+1)%numTheta + 1;
+    tri++;
+  }
+
+  for (int phi=0; phi<numPhi-2; phi++)
   {
     for (int theta=0; theta<numTheta; theta++)
     {
-      const float phif   = phi*float(pi)*rcpNumPhi;
-      const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
+      int p00 = phi*numTheta + 1 + theta;
+      int p01 = phi*numTheta + 1 + (theta+1)%numTheta;
+      int p10 = (phi+1)*numTheta + 1 + theta;
+      int p11 = (phi+1)*numTheta + 1 + (theta+1)%numTheta;
 
-      Vertex& v = vertices[phi*numTheta+theta];
-      v.x = p.x + r*sin(phif)*sin(thetaf);
-      v.y = p.y + r*cos(phif);
-      v.z = p.z + r*sin(phif)*cos(thetaf);
+      triangles[tri].v0 = p10;
+      triangles[tri].v1 = p01;
+      triangles[tri].v2 = p00;
+      tri++;
+
+      triangles[tri].v0 = p11;
+      triangles[tri].v1 = p01;
+      triangles[tri].v2 = p10;
+      tri++;
     }
-    if (phi == 0) continue;
+  }
 
-    for (int theta=1; theta<=numTheta; theta++)
-    {
-      int p00 = (phi-1)*numTheta+theta-1;
-      int p01 = (phi-1)*numTheta+theta%numTheta;
-      int p10 = phi*numTheta+theta-1;
-      int p11 = phi*numTheta+theta%numTheta;
-
-      if (phi > 1) {
-        triangles[tri].v0 = p10;
-        triangles[tri].v1 = p01;
-        triangles[tri].v2 = p00;
-        tri++;
-      }
-
-      if (phi < numPhi) {
-        triangles[tri].v0 = p11;
-        triangles[tri].v1 = p01;
-        triangles[tri].v2 = p10;
-        tri++;
-      }
-    }
+  for (int theta=0; theta<numTheta; theta++) {
+    triangles[tri].v0 = (theta+1)%numTheta + numTheta*(numPhi-2) + 1;
+    triangles[tri].v1 = numTheta*(numPhi-1)+1;
+    triangles[tri].v2 = theta + numTheta*(numPhi-2) + 1;
+    tri++;
   }
 
   rtcCommitGeometry(geom);
