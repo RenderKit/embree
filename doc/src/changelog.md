@@ -18,7 +18,9 @@ Version History
 -   rtcCommitScene can now get called during rendering from multiple threads
     to lazily build geometry. When TBB is used this causes a much lower overhead
     than using rtcJoinCommitScene.
+-   Geometries can now get attached to multiple scenes.
 -   Updated to TBB 2019.9 for release builds.
+-   Fixed a bug in the BVH builder for Grid geometries.
 -   Added macOS Catalina support to Embree releases.
 
 ### New Features in Embree 3.6.1

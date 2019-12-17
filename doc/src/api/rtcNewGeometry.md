@@ -75,7 +75,7 @@ faster-to-intersect approximation.
 After construction, geometries are enabled by default and not attached
 to any scene. Geometries can be disabled (`rtcDisableGeometry` call),
 and enabled again (`rtcEnableGeometry` call). A geometry can be
-attached to a single scene using the `rtcAttachGeometry` call (or
+attached to multiple scenes using the `rtcAttachGeometry` call (or
 `rtcAttachGeometryByID` call), and detached using the
 `rtcDetachGeometry` call. During attachment, a geometry ID is assigned
 to the geometry (or assigned by the user when using the
