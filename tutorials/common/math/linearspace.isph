@@ -17,6 +17,7 @@
 #pragma once
 
 #include "vec.isph"
+#include "quaternion.isph"
 
 struct LinearSpace3f 
 {
@@ -52,6 +53,25 @@ inline varying LinearSpace3f make_LinearSpace3f(const varying LinearSpace3fa &s)
   varying LinearSpace3f l; l.vx = make_Vec3f(s.vx); l.vy = make_Vec3f(s.vy); l.vz = make_Vec3f(s.vz); return l; 
 }
 
+/*! construction from quaternion */
+inline uniform LinearSpace3f make_LinearSpace3f(const uniform Quaternion3f& q)
+{
+  uniform LinearSpace3f l;
+  l.vx = make_Vec3f(q.r*q.r + q.i*q.i - q.j*q.j - q.k*q.k, 2.0f*(q.i*q.j + q.r*q.k), 2.0f*(q.i*q.k - q.r*q.j));
+  l.vy = make_Vec3f(2.0f*(q.i*q.j - q.r*q.k), (q.r*q.r - q.i*q.i + q.j*q.j - q.k*q.k), 2.0f*(q.j*q.k + q.r*q.i));
+  l.vz = make_Vec3f(2.0f*(q.i*q.k + q.r*q.j), 2.0f*(q.j*q.k - q.r*q.i), q.r*q.r - q.i*q.i - q.j*q.j + q.k*q.k);
+  return l;
+}
+
+inline varying LinearSpace3f make_LinearSpace3f(const varying Quaternion3f& q)
+{
+  LinearSpace3f l;
+  l.vx = make_Vec3f(q.r*q.r + q.i*q.i - q.j*q.j - q.k*q.k, 2.0f*(q.i*q.j + q.r*q.k), 2.0f*(q.i*q.k - q.r*q.j));
+  l.vy = make_Vec3f(2.0f*(q.i*q.j - q.r*q.k), (q.r*q.r - q.i*q.i + q.j*q.j - q.k*q.k), 2.0f*(q.j*q.k + q.r*q.i));
+  l.vz = make_Vec3f(2.0f*(q.i*q.k + q.r*q.j), 2.0f*(q.j*q.k - q.r*q.i), q.r*q.r - q.i*q.i - q.j*q.j + q.k*q.k);
+  return l;
+}
+
 inline uniform LinearSpace3f make_LinearSpace3f_identity()
 {
   return make_LinearSpace3f(make_Vec3f(1.f,0.f,0.f),
@@ -68,10 +88,30 @@ inline uniform LinearSpace3f make_LinearSpace3f_scale(const uniform Vec3f& s)
 }
 
 /*! return matrix for rotation around arbitrary axis */
-inline uniform LinearSpace3f make_LinearSpace3f_rotate(const uniform Vec3f& _u, const uniform float& r) 
+inline uniform LinearSpace3f make_LinearSpace3f_rotate(const uniform Vec3f& _u, const uniform float& r)
 {
   uniform Vec3f u = normalize(_u);
   uniform float s = sin(r), c = cos(r);
+  return make_LinearSpace3f(make_Vec3f(u.x*u.x+(1-u.x*u.x)*c, u.x*u.y*(1-c)+u.z*s,  u.x*u.z*(1-c)-u.y*s),
+                            make_Vec3f(u.x*u.y*(1-c)-u.z*s, u.y*u.y+(1-u.y*u.y)*c, u.y*u.z*(1-c)+u.x*s),
+                            make_Vec3f(u.x*u.z*(1-c)+u.y*s, u.y*u.z*(1-c)-u.x*s, u.z*u.z+(1-u.z*u.z)*c));
+}
+
+/*! return matrix for rotation around arbitrary axis */
+inline varying LinearSpace3f make_LinearSpace3f_rotate(const varying Vec3f& _u, const varying float& r)
+{
+  varying Vec3f u = normalize(_u);
+  varying float s = sin(r), c = cos(r);
+  return make_LinearSpace3f(make_Vec3f(u.x*u.x+(1-u.x*u.x)*c, u.x*u.y*(1-c)+u.z*s,  u.x*u.z*(1-c)-u.y*s),
+                            make_Vec3f(u.x*u.y*(1-c)-u.z*s, u.y*u.y+(1-u.y*u.y)*c, u.y*u.z*(1-c)+u.x*s),
+                            make_Vec3f(u.x*u.z*(1-c)+u.y*s, u.y*u.z*(1-c)-u.x*s, u.z*u.z+(1-u.z*u.z)*c));
+}
+
+/*! return matrix for rotation around arbitrary axis */
+inline varying LinearSpace3f make_LinearSpace3f_rotate(const uniform Vec3f& _u, const varying float& r)
+{
+  varying Vec3f u = normalize(_u);
+  varying float s = sin(r), c = cos(r);
   return make_LinearSpace3f(make_Vec3f(u.x*u.x+(1-u.x*u.x)*c, u.x*u.y*(1-c)+u.z*s,  u.x*u.z*(1-c)-u.y*s),
                             make_Vec3f(u.x*u.y*(1-c)-u.z*s, u.y*u.y+(1-u.y*u.y)*c, u.y*u.z*(1-c)+u.x*s),
                             make_Vec3f(u.x*u.z*(1-c)+u.y*s, u.y*u.z*(1-c)-u.x*s, u.z*u.z+(1-u.z*u.z)*c));
@@ -149,6 +189,9 @@ inline varying LinearSpace3f operator*(const varying float         &a, const var
 inline varying LinearSpace3f operator*(const varying LinearSpace3f &a, const varying float         &b) { return make_LinearSpace3f(a.vx*b, a.vy*b, a.vz*b); }
 inline varying LinearSpace3f operator*(const varying LinearSpace3f &a, const varying LinearSpace3f &b) { return make_LinearSpace3f(a*b.vx, a*b.vy, a*b.vz); }
 
+inline varying LinearSpace3f operator*(const varying float         &a, const uniform LinearSpace3f &b) { return make_LinearSpace3f(a*b.vx, a*b.vy, a*b.vz); }
+inline varying LinearSpace3f operator*(const uniform LinearSpace3f &a, const varying float         &b) { return make_LinearSpace3f(a.vx*b, a.vy*b, a.vz*b); }
+
 inline uniform Vec3f xfmVector(const uniform LinearSpace3f l, const uniform Vec3f v) { return v.x*l.vx + v.y*l.vy + v.z*l.vz; }
 inline varying Vec3f xfmVector(const uniform LinearSpace3f l, const varying Vec3f v) { return v.x*l.vx + v.y*l.vy + v.z*l.vz; }
 inline varying Vec3f xfmVector(const varying LinearSpace3f l, const varying Vec3f v) { return v.x*l.vx + v.y*l.vy + v.z*l.vz; }
@@ -170,3 +213,111 @@ inline varying bool ne(const varying LinearSpace3f &a, const varying LinearSpace
 /*! compute inverse matrix */
 inline uniform LinearSpace3f rcp(const uniform LinearSpace3f &l) { return rcp(det(l))*adjoint(l); }
 inline varying LinearSpace3f rcp(const varying LinearSpace3f &l) { return rcp(det(l))*adjoint(l); }
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Interpolation
+////////////////////////////////////////////////////////////////////////////////
+
+inline uniform LinearSpace3f lerp(uniform float factor, const uniform LinearSpace3f& a,  const uniform LinearSpace3f& b) {
+  return make_LinearSpace3f(lerp(factor, a.vx, b.vx), lerp(factor, a.vy, b.vy), lerp(factor, a.vz, b.vz));
+}
+
+inline varying LinearSpace3f lerp(varying float factor, const uniform LinearSpace3f& a,  const uniform LinearSpace3f& b) {
+  return make_LinearSpace3f(lerp(factor, a.vx, b.vx), lerp(factor, a.vy, b.vy), lerp(factor, a.vz, b.vz));
+}
+
+inline varying LinearSpace3f lerp(varying float factor, const varying LinearSpace3f& a,  const varying LinearSpace3f& b) {
+  return make_LinearSpace3f(lerp(factor, a.vx, b.vx), lerp(factor, a.vy, b.vy), lerp(factor, a.vz, b.vz));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Norms
+////////////////////////////////////////////////////////////////////////////////
+
+inline uniform float norm_1(const uniform LinearSpace3f& l) 
+{
+  uniform float sum = 0;
+  sum += reduce_add(abs(l.vx));
+  sum += reduce_add(abs(l.vy));
+  sum += reduce_add(abs(l.vz));
+  return sum / 9.f;
+}
+
+inline uniform Quaternion3f make_Quaternion3f(const uniform LinearSpace3f & l)
+{
+  uniform Quaternion3f q;
+  const uniform float tr = l.vx.x + l.vy.y + l.vz.z;
+  if (tr > 0) 
+  { 
+    const uniform float S = sqrt(tr+1.0) * 2;
+    q.r = 0.25 * S;
+    q.i = (l.vy.z - l.vz.y) / S;
+    q.j = (l.vz.x - l.vx.z) / S; 
+    q.k = (l.vx.y - l.vy.x) / S; 
+  }
+  else if ((l.vx.x > l.vy.y)&(l.vx.x > l.vz.z)) 
+  { 
+    const uniform float S = sqrt(1.0 + l.vx.x - l.vy.y - l.vz.z) * 2;
+    q.r = (l.vy.z - l.vz.y) / S;
+    q.i = 0.25 * S;
+    q.j = (l.vy.x + l.vx.y) / S; 
+    q.k = (l.vz.x + l.vx.z) / S; 
+  }
+  else if (l.vy.y > l.vz.z) 
+  { 
+    const uniform float S = sqrt(1.0 + l.vy.y - l.vx.x - l.vz.z) * 2;
+    q.r = (l.vz.x - l.vx.z) / S;
+    q.i = (l.vy.x + l.vx.y) / S; 
+    q.j = 0.25 * S;
+    q.k = (l.vz.y + l.vy.z) / S; 
+  } 
+  else
+  { 
+    const uniform float S = sqrt(1.0 + l.vz.z - l.vx.x - l.vy.y) * 2;
+    q.r = (l.vx.y - l.vy.x) / S;
+    q.i = (l.vz.x + l.vx.z) / S;
+    q.j = (l.vz.y + l.vy.z) / S;
+    q.k = 0.25 * S;
+  }
+  return q;
+}
+
+inline varying Quaternion3f make_Quaternion3f(const varying LinearSpace3f & l)
+{
+  Quaternion3f q;
+  const float tr = l.vx.x + l.vy.y + l.vz.z;
+  if (tr > 0) 
+  { 
+    const float S = sqrt(tr+1.0) * 2;
+    q.r = 0.25 * S;
+    q.i = (l.vy.z - l.vz.y) / S;
+    q.j = (l.vz.x - l.vx.z) / S; 
+    q.k = (l.vx.y - l.vy.x) / S; 
+  }
+  else if ((l.vx.x > l.vy.y)&(l.vx.x > l.vz.z)) 
+  { 
+    const float S = sqrt(1.0 + l.vx.x - l.vy.y - l.vz.z) * 2;
+    q.r = (l.vy.z - l.vz.y) / S;
+    q.i = 0.25 * S;
+    q.j = (l.vy.x + l.vx.y) / S; 
+    q.k = (l.vz.x + l.vx.z) / S; 
+  }
+  else if (l.vy.y > l.vz.z) 
+  { 
+    const float S = sqrt(1.0 + l.vy.y - l.vx.x - l.vz.z) * 2;
+    q.r = (l.vz.x - l.vx.z) / S;
+    q.i = (l.vy.x + l.vx.y) / S; 
+    q.j = 0.25 * S;
+    q.k = (l.vz.y + l.vy.z) / S; 
+  } 
+  else
+  { 
+    const float S = sqrt(1.0 + l.vz.z - l.vx.x - l.vy.y) * 2;
+    q.r = (l.vx.y - l.vy.x) / S;
+    q.i = (l.vz.x + l.vx.z) / S;
+    q.j = (l.vz.y + l.vy.z) / S;
+    q.k = 0.25 * S;
+  }
+  return q;
+}

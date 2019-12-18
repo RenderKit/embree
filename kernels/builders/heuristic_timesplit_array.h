@@ -151,7 +151,6 @@ namespace embree
                 bestPos = center_time;
               }
             }
-            assert(bestSAH != float(inf));
             return Split(bestSAH*MBLUR_TIME_SPLIT_THRESHOLD,(unsigned)Split::SPLIT_TEMPORAL,0,bestPos);
           }
           
@@ -175,6 +174,9 @@ namespace embree
 
         __forceinline std::unique_ptr<mvector<PrimRefMB>> split(const Split& tsplit, const SetMB& set, SetMB& lset, SetMB& rset)
         {
+          assert(tsplit.fpos > set.time_range.lower);
+          assert(tsplit.fpos < set.time_range.upper);
+
           float center_time = tsplit.fpos;
           const BBox1f time_range0(set.time_range.lower,center_time);
           const BBox1f time_range1(center_time,set.time_range.upper);

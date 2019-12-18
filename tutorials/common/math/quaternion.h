@@ -14,16 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#ifndef __RTC_ISPH__
-#define __RTC_ISPH__
+#pragma once
 
-#include "rtcore_config.h"
-#include "rtcore_common.isph"
-#include "rtcore_device.isph"
-#include "rtcore_buffer.isph"
-#include "rtcore_ray.isph"
-#include "rtcore_geometry.isph"
-#include "rtcore_scene.isph"
-#include "rtcore_quaternion.isph"
+#include "../../../common/math/quaternion.h"
 
-#endif

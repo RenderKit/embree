@@ -17,6 +17,7 @@
 #pragma once
 
 #include "rtcore_buffer.h"
+#include "rtcore_quaternion.h"
 
 RTC_NAMESPACE_BEGIN
 
@@ -230,6 +231,9 @@ RTC_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 
 /* Sets the transformation of an instance for the specified time step. */
 RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, unsigned int timeStep, enum RTCFormat format, const void* xfm);
+
+/* Sets the transformation of an instance for the specified time step. */
+RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry geometry, unsigned int timeStep, const struct RTCQuaternionDecomposition* qd);
 
 /* Returns the interpolated transformation of an instance for the specified time. */
 RTC_API void rtcGetGeometryTransform(RTCGeometry geometry, float time, enum RTCFormat format, void* xfm);

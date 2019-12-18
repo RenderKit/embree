@@ -974,10 +974,10 @@ RTC_NAMESPACE_BEGIN;
       break;
 
     case RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR:
-      space = AffineSpace3fa(Vec3fa(xfm[ 0], xfm[ 1], xfm[ 2]),
-                             Vec3fa(xfm[ 4], xfm[ 5], xfm[ 6]),
-                             Vec3fa(xfm[ 8], xfm[ 9], xfm[10]),
-                             Vec3fa(xfm[12], xfm[13], xfm[14]));
+      space.l.vx.x = xfm[ 0]; space.l.vx.y = xfm[ 1]; space.l.vx.z = xfm[ 2]; space.l.vx.w = xfm[ 3];
+      space.l.vy.x = xfm[ 4]; space.l.vy.y = xfm[ 5]; space.l.vy.z = xfm[ 6]; space.l.vy.w = xfm[ 7];
+      space.l.vz.x = xfm[ 8]; space.l.vz.y = xfm[ 9]; space.l.vz.z = xfm[10]; space.l.vz.w = xfm[11];
+      space.p.x    = xfm[12]; space.p.y    = xfm[13]; space.p.z    = xfm[14]; space.p.w    = xfm[15];
       break;
 
     default: 
@@ -1026,6 +1026,34 @@ RTC_NAMESPACE_BEGIN;
     RTC_VERIFY_HANDLE(xfm);
     const AffineSpace3fa transform = loadTransform(format, (const float*)xfm);
     geometry->setTransform(transform, timeStep);
+    RTC_CATCH_END2(geometry);
+  }
+
+  RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry hgeometry, unsigned int timeStep, const RTCQuaternionDecomposition* qd)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryTransform);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_VERIFY_HANDLE(qd);
+    AffineSpace3fa transform;
+    transform.l.vx.x = qd->scale_x;
+    transform.l.vy.y = qd->scale_y;
+    transform.l.vz.z = qd->scale_z;
+    transform.l.vy.x = qd->skew_xy;
+    transform.l.vz.x = qd->skew_xz;
+    transform.l.vz.y = qd->skew_yz;
+    transform.l.vx.y = qd->translation_x;
+    transform.l.vx.z = qd->translation_y;
+    transform.l.vy.z = qd->translation_z;
+    transform.p.x    = qd->shift_x;
+    transform.p.y    = qd->shift_y;
+    transform.p.z    = qd->shift_z;
+    transform.l.vx.w = qd->quaternion_r;
+    transform.l.vy.w = qd->quaternion_i;
+    transform.l.vz.w = qd->quaternion_j;
+    transform.p.w    = qd->quaternion_k;
+    geometry->setQuaternionDecomposition(transform, timeStep);
     RTC_CATCH_END2(geometry);
   }
 

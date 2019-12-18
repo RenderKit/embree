@@ -20,6 +20,7 @@
 #include "linearspace3.h"
 #include "quaternion.h"
 #include "bbox.h"
+#include "vec4.h"
 
 namespace embree
 {
@@ -140,12 +141,6 @@ namespace embree
     return AffineSpaceT<L>(select(s,t.l,f.l),select(s,t.p,f.p));
   }
 
-  /*! blending */
-  template<typename T>
-    __forceinline AffineSpaceT<T> lerp(const AffineSpaceT<T>& l0, const AffineSpaceT<T>& l1, const float t) {
-    return AffineSpaceT<T>(lerp(l0.l,l1.l,t),lerp(l0.p,l1.p,t));
-  }
-
   ////////////////////////////////////////////////////////////////////////////////
   // Output Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -163,15 +158,89 @@ namespace embree
   typedef AffineSpaceT<LinearSpace3fa> AffineSpace3fa;
   typedef AffineSpaceT<Quaternion3f > OrthonormalSpace3f;
 
+  template<int N> using AffineSpace3vf = AffineSpaceT<LinearSpace3<Vec3<vfloat<N>>>>;
+  typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<4>>>>  AffineSpace3vf4;
+  typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<8>>>>  AffineSpace3vf8;
+  typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<16>>>> AffineSpace3vf16;
+
+  template<int N> using AffineSpace3vfa = AffineSpaceT<LinearSpace3<Vec4<vfloat<N>>>>;
+  typedef AffineSpaceT<LinearSpace3<Vec4<vfloat<4>>>>  AffineSpace3vfa4;
+  typedef AffineSpaceT<LinearSpace3<Vec4<vfloat<8>>>>  AffineSpace3vfa8;
+  typedef AffineSpaceT<LinearSpace3<Vec4<vfloat<16>>>> AffineSpace3vfa16;
+
+  //////////////////////////////////////////////////////////////////////////////
+  /// Interpolation
+  //////////////////////////////////////////////////////////////////////////////
+  template<typename T, typename R>
+  __forceinline AffineSpaceT<T> lerp(const AffineSpaceT<T>& M0,
+                                     const AffineSpaceT<T>& M1,
+                                     const R& t)
+  {
+    return AffineSpaceT<T>(lerp(M0.l,M1.l,t),lerp(M0.p,M1.p,t));
+  }
+
+  // slerp interprets the 16 floats of the matrix M = D * R * S as components of
+  // three matrizes (D, R, S) that are interpolated individually.
+  template<typename T> __forceinline AffineSpaceT<LinearSpace3<Vec3<T>>>
+  slerp(const AffineSpaceT<LinearSpace3<Vec4<T>>>& M0,
+        const AffineSpaceT<LinearSpace3<Vec4<T>>>& M1,
+        const T& t)
+  {
+    QuaternionT<T> q0(M0.l.vx.w, M0.l.vy.w, M0.l.vz.w, M0.p.w);
+    QuaternionT<T> q1(M1.l.vx.w, M1.l.vy.w, M1.l.vz.w, M1.p.w);
+    QuaternionT<T> q = slerp(q0, q1, t);
+
+    AffineSpaceT<LinearSpace3<Vec3<T>>> S = lerp(M0, M1, t);
+    AffineSpaceT<LinearSpace3<Vec3<T>>> D(one);
+    D.p.x = S.l.vx.y;
+    D.p.y = S.l.vx.z;
+    D.p.z = S.l.vy.z;
+    S.l.vx.y = 0;
+    S.l.vx.z = 0;
+    S.l.vy.z = 0;
+
+    AffineSpaceT<LinearSpace3<Vec3<T>>> R = LinearSpace3<Vec3<T>>(q);
+    return D * R * S;
+  }
+
+  // this is a specialized version for Vec3fa because that does
+  // not play along nicely with the other templated Vec3/Vec4 types
+  __forceinline AffineSpace3fa slerp(const AffineSpace3fa& M0,
+                                     const AffineSpace3fa& M1,
+                                     const float& t)
+  {
+    Quaternion3f q0(M0.l.vx.w, M0.l.vy.w, M0.l.vz.w, M0.p.w);
+    Quaternion3f q1(M1.l.vx.w, M1.l.vy.w, M1.l.vz.w, M1.p.w);
+    Quaternion3f q = slerp(q0, q1, t);
+
+    AffineSpace3fa S = lerp(M0, M1, t);
+    AffineSpace3fa D(one);
+    D.p.x = S.l.vx.y;
+    D.p.y = S.l.vx.z;
+    D.p.z = S.l.vy.z;
+    S.l.vx.y = 0;
+    S.l.vx.z = 0;
+    S.l.vy.z = 0;
+
+    AffineSpace3fa R = LinearSpace3fa(q);
+    return D * R * S;
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
-  /*! Template Specialization for 2D: return matrix for rotation around point (rotation around arbitrarty vector is not meaningful in 2D) */
-  template<> __forceinline AffineSpace2f AffineSpace2f::rotate(const Vec2f& p, const float& r) { return translate(+p) * AffineSpace2f(LinearSpace2f::rotate(r)) * translate(-p); }
-  
+  /*
+   * ! Template Specialization for 2D: return matrix for rotation around point
+   * (rotation around arbitrarty vector is not meaningful in 2D)
+   */
+  template<> __forceinline
+  AffineSpace2f AffineSpace2f::rotate(const Vec2f& p, const float& r) {
+    return translate(+p)*AffineSpace2f(LinearSpace2f::rotate(r))*translate(-p);
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   // Similarity Transform
   //
   // checks, if M is a similarity transformation, i.e if there exists a factor D
-  // such that for all x,y: distance(Mx, My) = D * distance(x, y) 
+  // such that for all x,y: distance(Mx, My) = D * distance(x, y)
   ////////////////////////////////////////////////////////////////////////////////
   __forceinline bool similarityTransform(const AffineSpace3fa& M, float* D)
   {
@@ -184,8 +253,8 @@ namespace embree
     const float D_y = dot(M.l.vy, M.l.vy);
     const float D_z = dot(M.l.vz, M.l.vz);
 
-    if (abs(D_x - D_y) > 1e-5f || 
-        abs(D_x - D_z) > 1e-5f || 
+    if (abs(D_x - D_y) > 1e-5f ||
+        abs(D_x - D_z) > 1e-5f ||
         abs(D_y - D_z) > 1e-5f)
       return false;
 
@@ -210,8 +279,6 @@ namespace embree
     space.p    = Vec3fa::loadu(&ptr->p);
     return space;
   }
-
-    
 
   #undef VectorT
   #undef ScalarT

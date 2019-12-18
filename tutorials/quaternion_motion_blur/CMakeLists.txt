@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2019 Intel Corporation                                    ##
+## Copyright 2009-2018 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -14,5 +14,10 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-set(CTEST_PROJECT_NAME "Embree")
-set(TEST_MODELS_HASH 7562c001db0c9461ede615312155e1054dde6a21)
+INCLUDE(tutorial)
+ADD_TUTORIAL(quaternion_motion_blur)
+ADD_TUTORIAL_ISPC(quaternion_motion_blur)
+
+IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
+  ADD_EMBREE_TEST(quaternion_motion_blur)
+ENDIF()
