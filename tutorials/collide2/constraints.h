@@ -59,7 +59,8 @@ public:
 protected:
 
     float rl_ = 0.f;
-    float lambda_old_ = 0.f;
+    float lambda_old_0_ = 0.f;
+    float lambda_old_1_ = 0.f;
 };
 
 } // namespace collide2

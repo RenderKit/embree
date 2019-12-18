@@ -39,6 +39,7 @@ const size_t NZ = 50;
 const float width = 5.f;
 const float height = 5.f;
 const float ks = 4000.f;
+const float damping = 1.f;
 const float m = 1.f;
 const float nsub = 1.f;
 const float h = 1.f / (nsub * 24.f);
@@ -179,6 +180,7 @@ unsigned int createClothSheet (RTCScene scene)
   }
 
   cloth.k_stretch_ = ks;
+  cloth.k_damp_ = damping;
 
   // set distance constraints
   for (size_t vID=0; vID<NX*NZ; ++vID) {

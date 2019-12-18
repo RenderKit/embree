@@ -45,7 +45,8 @@ struct ClothModel {
     std::vector<Constraint*>    constraints_;
 
     // material parameters
-    float                       k_stretch_ = 1.f;
+    float                       k_stretch_  = 1.f;
+    float                       k_damp_     = 1.f;
 
     virtual ~ClothModel () {
         for (auto c : constraints_) {

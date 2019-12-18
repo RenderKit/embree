@@ -46,32 +46,41 @@ void DistanceConstraint::solvePositionConstraint (ClothModel & model, float time
     auto & x0 = model.x_[bodyIDs_[0]];
     auto & x1 = model.x_[bodyIDs_[1]];
     auto alpha = 1.f / (model.k_stretch_ * timeStep * timeStep);
+    auto gamma = model.k_damp_ / (model.k_stretch_ * timeStep);
 
     auto d = distance (x1, x0);
     auto delta = d - rl_;
     auto normd = 1.f / d;
 
     if (iter == 0) {
-        lambda_old_ = 0.f;
+        lambda_old_0_ = 0.f;
+        lambda_old_1_ = 0.f;
     }
-    auto lambda = (delta - alpha * lambda_old_) / (wSum + alpha);
-    lambda_old_ = lambda;
+    auto norml = 1.f / ((1.f+gamma)*wSum + alpha);
 
-    vec_t c;
-    c.x = lambda * normd * (x1.x - x0.x);
-    c.y = lambda * normd * (x1.y - x0.y);
-    c.z = lambda * normd * (x1.z - x0.z);
+    vec_t jac;
+    jac.x = normd * (x1.x - x0.x);
+    jac.y = normd * (x1.y - x0.y);
+    jac.z = normd * (x1.z - x0.z);
 
     if (mi0 != 0.f) {
-        x0.x += mi0 * c.x;
-        x0.y += mi0 * c.y;
-        x0.z += mi0 * c.z;
+        auto & xl = model.x_last_[bodyIDs_[0]];
+        auto dot = jac.x*(x0.x-xl.x) + jac.y*(x0.y-xl.y) + jac.z*(x0.z-xl.z);
+        auto lambda = norml * (delta - alpha*lambda_old_0_ - gamma*dot);
+        x0.x += mi0 * jac.x * lambda;
+        x0.y += mi0 * jac.y * lambda;
+        x0.z += mi0 * jac.z * lambda;
+        lambda_old_0_ = lambda;
     }
 
     if (mi1 != 0.f) {
-        x1.x -= mi1 * c.x;
-        x1.y -= mi1 * c.y;
-        x1.z -= mi1 * c.z;
+        auto & xl = model.x_last_[bodyIDs_[1]];
+        auto dot = jac.x*(x1.x-xl.x) + jac.y*(x1.y-xl.y) + jac.z*(x1.z-xl.z);
+        auto lambda = norml * (-delta - alpha*lambda_old_1_ - gamma*dot);
+        x1.x += mi1 * jac.x * lambda;
+        x1.y += mi1 * jac.y * lambda;
+        x1.z += mi1 * jac.z * lambda;
+        lambda_old_1_ = lambda;
     }
 }
 
