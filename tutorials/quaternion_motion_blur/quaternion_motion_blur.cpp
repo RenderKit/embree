@@ -35,7 +35,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("user_geometry",FEATURE_RTCORE | FEATURE_STREAM) 
+      : TutorialApplication("quaternion motion blur",FEATURE_RTCORE | FEATURE_STREAM)
     {
       registerOption("spp", [] (Ref<ParseStream> cin, const FileName& path) {
           g_spp = cin->getInt();
