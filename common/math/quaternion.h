@@ -17,6 +17,7 @@
 #pragma once
 
 #include "vec3.h"
+#include "vec4.h"
 
 #include "transcendental.h"
 
@@ -41,6 +42,7 @@ namespace embree
 
     __forceinline          QuaternionT( const T& r       ) : r(r), i(zero), j(zero), k(zero) {}
     __forceinline explicit QuaternionT( const Vec3<T>& v ) : r(zero), i(v.x), j(v.y), k(v.z) {}
+    __forceinline explicit QuaternionT( const Vec4<T>& v ) : r(v.x), i(v.y), j(v.z), k(v.w) {}
     __forceinline          QuaternionT( const T& r, const T& i, const T& j, const T& k ) : r(r), i(i), j(j), k(k) {}
     __forceinline          QuaternionT( const T& r, const Vec3<T>& v ) : r(r), i(v.x), j(v.y), k(v.z) {}
 
