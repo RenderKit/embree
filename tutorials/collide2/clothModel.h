@@ -42,17 +42,22 @@ struct ClothModel {
     std::vector<Triangle>       tris_;
 
     // simulation constraints
-    std::vector<Constraint*>    constraints_;
+    std::vector<Constraint*>    m_constraints_;
+    std::vector<Constraint*>    c_constraints_;
 
     // material parameters
     float                       k_stretch_  = 1.f;
     float                       k_damp_     = 1.f;
 
     virtual ~ClothModel () {
-        for (auto c : constraints_) {
+        for (auto c : m_constraints_) {
             delete c;
         }
-        constraints_.clear ();
+        m_constraints_.clear ();
+        for (auto c : c_constraints_) {
+            delete c;
+        }
+        c_constraints_.clear ();
     }
 };
 

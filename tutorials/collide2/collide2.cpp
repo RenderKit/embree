@@ -23,12 +23,14 @@
 
 namespace embree
 {
+
   RTCDevice g_device = nullptr;
   RTCScene g_scene = nullptr;
   std::shared_ptr<TutorialScene> g_tutorial_scene = nullptr;
   size_t cur_time = 0;
   std::vector<std::shared_ptr<TutorialScene>> g_animation;
   std::set<std::pair<unsigned,unsigned>> collision_candidates;
+  std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,unsigned>>> sim_collisions;
   //RTCScene g_scene0 = nullptr;
   //RTCScene g_scene1 = nullptr;
   //TutorialScene g_tutorial_scene0;
@@ -101,6 +103,7 @@ namespace embree
     //numTotalCollisions+=num_collisions;
 
     Lock<SpinLock> lock(mutex);
+    sim_collisions.reserve (num_collisions);
     for (size_t i=0; i<num_collisions; i++)
     {
       const unsigned geomID0 = collisions[i].geomID0;
@@ -110,6 +113,7 @@ namespace embree
       //PRINT4(geomID0,primID0,geomID1,primID1);
       collision_candidates.insert(std::make_pair(geomID0,primID0));
       collision_candidates.insert(std::make_pair(geomID1,primID1));
+      sim_collisions.push_back(std::make_pair(std::make_pair(geomID0,primID0),std::make_pair(geomID1,primID1)));
       //set0.insert(std::make_pair(geomID0,primID0));
       //set1.insert(std::make_pair(geomID1,primID1));
 

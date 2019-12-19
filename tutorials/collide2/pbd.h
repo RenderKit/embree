@@ -53,8 +53,20 @@ void constrainPositions (ClothModel & model, float timeStep, size_t maxNumIterat
     while (nIters < maxNumIterations) {
         //parallel_for (0, model.constraints_.size(), [&] (const range<size_t>& r) {
         //    for (size_t i=r.begin(); i<r.end(); i++) {
-            for (size_t i=0; i<model.constraints_.size (); ++i) {
-                model.constraints_[i]->solvePositionConstraint (model, timeStep, nIters);
+            for (size_t i=0; i<model.m_constraints_.size (); ++i) {
+                model.m_constraints_[i]->solvePositionConstraint (model, timeStep, nIters);
+            }
+        //});
+        ++nIters;
+    }
+
+    nIters = 0;
+
+    while (nIters < 1) {
+        //parallel_for (0, model.constraints_.size(), [&] (const range<size_t>& r) {
+        //    for (size_t i=r.begin(); i<r.end(); i++) {
+            for (size_t i=0; i<model.c_constraints_.size (); ++i) {
+                model.c_constraints_[i]->solvePositionConstraint (model, timeStep, nIters);
             }
         //});
         ++nIters;
@@ -67,9 +79,14 @@ void updateVelocities (ClothModel & model, float h) {
     parallel_for ((size_t)0, model.x_.size (), [&] (const range<size_t>& r) {
         for (size_t i=r.begin(); i<r.end(); i++) {
             if (model.m_[i] != 0.f) {
-                model.v_[i].x = hinv * (1.5f * model.x_[i].x - 2.f * model.x_old_[i].x + .5f * model.x_last_[i].x);
-                model.v_[i].y = hinv * (1.5f * model.x_[i].y - 2.f * model.x_old_[i].y + .5f * model.x_last_[i].y);
-                model.v_[i].z = hinv * (1.5f * model.x_[i].z - 2.f * model.x_old_[i].z + .5f * model.x_last_[i].z);
+
+                model.v_[i].x = hinv * (model.x_[i].x - model.x_old_[i].x);
+                model.v_[i].y = hinv * (model.x_[i].y - model.x_old_[i].y);
+                model.v_[i].z = hinv * (model.x_[i].z - model.x_old_[i].z);
+
+                // model.v_[i].x = hinv * (1.5f * model.x_[i].x - 2.f * model.x_old_[i].x + .5f * model.x_last_[i].x);
+                // model.v_[i].y = hinv * (1.5f * model.x_[i].y - 2.f * model.x_old_[i].y + .5f * model.x_last_[i].y);
+                // model.v_[i].z = hinv * (1.5f * model.x_[i].z - 2.f * model.x_old_[i].z + .5f * model.x_last_[i].z);
             }
         }
     });    

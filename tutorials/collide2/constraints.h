@@ -21,7 +21,11 @@
 
 namespace embree { namespace collide2 {
 
+using vec_t = Vertex;
+float dot (vec_t const & v1, vec_t const & v2);
+vec_t cross (vec_t const & v1, vec_t const & v2);
 float distance (Vertex const & v1, Vertex const & v2);
+void normalize (vec_t & v);
 
 struct ClothModel;
 
@@ -58,9 +62,27 @@ public:
 
 protected:
 
-    float rl_ = 0.f;
-    float lambda_old_0_ = 0.f;
-    float lambda_old_1_ = 0.f;
+    float rl_ {0.f};
+    float lambda_old_0_ {0.f};
+    float lambda_old_1_ {0.f};
+};
+
+class CollisionConstraint : public Constraint {
+public:
+
+    CollisionConstraint ()
+    :
+        Constraint (1)
+    {}
+
+    virtual void initConstraint             (size_t qID, vec_t x0, vec_t n, float d);
+    virtual void solvePositionConstraint    (ClothModel & model, float timeStep, size_t iter);
+
+protected:
+
+    vec_t x0_ {0.f, 0.f, 0.f, 0.f};
+    vec_t n_ {0.f, 0.f, 0.f, 0.f};
+    float d_ {1.e5f};
 };
 
 } // namespace collide2

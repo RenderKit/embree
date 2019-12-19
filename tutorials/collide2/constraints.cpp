@@ -16,11 +16,30 @@
 
 #include "constraints.h"
 #include "clothModel.h"
+#include <cmath>
 
 namespace embree { namespace collide2 {
 
+float dot (vec_t const & v1, vec_t const & v2) {
+    return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
+}
+vec_t cross (vec_t const & v1, vec_t const & v2) {
+    vec_t ret;
+    ret.x = v1.y*v2.z - v1.z*v2.y;
+    ret.y = v1.z*v2.x - v1.x*v2.z;
+    ret.z = v1.x*v2.y - v1.y*v2.x;
+    return ret;
+}
+
+void normalize (vec_t & v) {
+    auto norm = 1.f / sqrtf (dot(v,v));
+    v.x *= norm;
+    v.y *= norm;
+    v.z *= norm;
+}
+
 float distance (Vertex const & v1, Vertex const & v2) {
-  return std::sqrt ((v1.x-v2.x)*(v1.x-v2.x)+(v1.y-v2.y)*(v1.y-v2.y)+(v1.z-v2.z)*(v1.z-v2.z));
+  return sqrtf ((v1.x-v2.x)*(v1.x-v2.x)+(v1.y-v2.y)*(v1.y-v2.y)+(v1.z-v2.z)*(v1.z-v2.z));
 }
 
 void DistanceConstraint::initConstraint (ClothModel const & model, size_t p0ID, size_t p1ID) {
@@ -64,7 +83,7 @@ void DistanceConstraint::solvePositionConstraint (ClothModel & model, float time
     jac.z = normd * (x1.z - x0.z);
 
     if (mi0 != 0.f) {
-        auto & xl = model.x_last_[bodyIDs_[0]];
+        auto & xl = model.x_old_[bodyIDs_[0]];
         auto dot = jac.x*(x0.x-xl.x) + jac.y*(x0.y-xl.y) + jac.z*(x0.z-xl.z);
         auto lambda = norml * (delta - alpha*lambda_old_0_ - gamma*dot);
         x0.x += mi0 * jac.x * lambda;
@@ -74,13 +93,36 @@ void DistanceConstraint::solvePositionConstraint (ClothModel & model, float time
     }
 
     if (mi1 != 0.f) {
-        auto & xl = model.x_last_[bodyIDs_[1]];
+        auto & xl = model.x_old_[bodyIDs_[1]];
         auto dot = jac.x*(x1.x-xl.x) + jac.y*(x1.y-xl.y) + jac.z*(x1.z-xl.z);
         auto lambda = norml * (-delta - alpha*lambda_old_1_ - gamma*dot);
         x1.x += mi1 * jac.x * lambda;
         x1.y += mi1 * jac.y * lambda;
         x1.z += mi1 * jac.z * lambda;
         lambda_old_1_ = lambda;
+    }
+}
+
+void CollisionConstraint::initConstraint (size_t qID, vec_t x0, vec_t n, float d) {
+
+    bodyIDs_[0] = qID;
+    x0_ = x0;
+    n_ = n;
+    d_ = d;
+}
+
+void CollisionConstraint::solvePositionConstraint (ClothModel & model, float timeStep, size_t iter) {
+
+    if (0.f == model.m_inv_[bodyIDs_[0]]) {
+        return;
+    }
+
+    auto & q = model.x_[bodyIDs_[0]];
+    float proj = (q.x - x0_.x) * n_.x + (q.y - x0_.y) * n_.y + (q.z - x0_.z) * n_.z - d_;
+    if (proj < -d_) {
+        q.x += -n_.x * proj;
+        q.y += -n_.y * proj;
+        q.z += -n_.z * proj;
     }
 }
 

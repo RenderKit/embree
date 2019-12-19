@@ -28,6 +28,7 @@ namespace embree {
 extern RTCDevice g_device;
 extern RTCScene g_scene;
 extern std::set<std::pair<unsigned,unsigned>> collision_candidates;
+extern std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,unsigned>>> sim_collisions;
 extern void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions);
 extern size_t cur_time;
 
@@ -39,11 +40,12 @@ const size_t NZ = 50;
 const float width = 5.f;
 const float height = 5.f;
 const float ks = 4000.f;
-const float damping = 1.f;
+const float damping = .25f;
 const float m = 1.f;
-const float nsub = 1.f;
+const float nsub = 2.f;
 const float h = 1.f / (nsub * 24.f);
-const size_t nIters = 200;
+const size_t nIters = 50;
+const float collDelta = 1.e-3f;
 
 bool pause = true;
 
@@ -132,7 +134,7 @@ void initializeClothPositions () {
   for (size_t i=0; i<NX; ++i) {
     for (size_t j=0; j<NZ; ++j) {
       cloth.x_0_[NX*i+j].x = -(.5f*width) + (float)i*(width/(float)(NX-1));
-      cloth.x_0_[NX*i+j].y = +1.f;
+      cloth.x_0_[NX*i+j].y = +1.5f;
       cloth.x_0_[NX*i+j].z = -(.5f*height) + (float)j*(height/(float)(NZ-1));
     }
   }
@@ -194,34 +196,108 @@ unsigned int createClothSheet (RTCScene scene)
     if (j<NZ-1) sIDs.push_back (vID+1);
 
     if (i<NX-1) {
-      if (j<NZ-1) sIDs.push_back (vID+NZ+1);
+      if (j<NZ-1) {
+        sIDs.push_back (vID+NZ+1);
+      }
+    }
+
+    if (i>0) {
+      if (j<NZ-1) {
+        sIDs.push_back (vID-NZ+1);
+      }
     }
 
     for (auto id : sIDs) {
       auto c = new collide2::DistanceConstraint ();
       c->initConstraint (cloth, vID, id);
-      cloth.constraints_.push_back (c);
+      cloth.m_constraints_.push_back (c);
     }
   }
 
   // fix corners
-  cloth.m_[0] = 0.f;
-  cloth.m_[(NX-1)*NZ] = 0.f;
-  cloth.m_[(NX-1)*NZ + NZ-1] = 0.f;
-  cloth.m_[NZ-1] = 0.f;
-  cloth.m_inv_[0] = 0.f;
-  cloth.m_inv_[(NX-1)*NZ] = 0.f;
-  cloth.m_inv_[(NX-1)*NZ + NZ-1] = 0.f;
-  cloth.m_inv_[NZ-1] = 0.f;
-  cloth.a_[0].y = 0.f;
-  cloth.a_[(NX-1)*NZ].y = 0.f;
-  cloth.a_[(NX-1)*NZ + NZ-1].y = 0.f;
-  cloth.a_[NZ-1].y = 0.f;
+  // cloth.m_[0] = 0.f;
+  // cloth.m_[(NX-1)*NZ] = 0.f;
+  // cloth.m_[(NX-1)*NZ + NZ-1] = 0.f;
+  // cloth.m_[NZ-1] = 0.f;
+  // cloth.m_inv_[0] = 0.f;
+  // cloth.m_inv_[(NX-1)*NZ] = 0.f;
+  // cloth.m_inv_[(NX-1)*NZ + NZ-1] = 0.f;
+  // cloth.m_inv_[NZ-1] = 0.f;
+  // cloth.a_[0].y = 0.f;
+  // cloth.a_[(NX-1)*NZ].y = 0.f;
+  // cloth.a_[(NX-1)*NZ + NZ-1].y = 0.f;
+  // cloth.a_[NZ-1].y = 0.f;
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
+}
+
+collide2::CollisionConstraint * makeCollisionConstraint (RTCScene scene, unsigned qID, unsigned cGeomID, unsigned cPrimID) {
+  auto collGeo = rtcGetGeometry (scene, cGeomID);
+  auto collTris = (Triangle*) rtcGetGeometryBufferData (collGeo,RTC_BUFFER_TYPE_INDEX,0);
+  auto collVerts = (collide2::vec_t*) rtcGetGeometryBufferData (collGeo,RTC_BUFFER_TYPE_VERTEX,0);
+  auto x0 = collVerts[collTris[cPrimID].v0];
+  auto x1 = collVerts[collTris[cPrimID].v1];
+  auto x2 = collVerts[collTris[cPrimID].v2];
+  collide2::vec_t e0, e1;
+  e0.x = x1.x - x0.x;
+  e0.y = x1.y - x0.y;
+  e0.z = x1.z - x0.z;
+  e1.x = x2.x - x1.x;
+  e1.y = x2.y - x1.y;
+  e1.z = x2.z - x1.z;
+  auto collNorm = collide2::cross (e0, e1);
+  collide2::normalize (collNorm);
+  auto c = new collide2::CollisionConstraint ();
+  // std::cout << "qID: " << qID << std::endl;
+  // std::cout << "x0: " << x0.x << " " << x0.y << " " << x0.z << std::endl;
+  // std::cout << "collNorm: " << collNorm.x << " " << collNorm.y << " " << collNorm.z << std::endl;
+  c->initConstraint (qID, x0, collNorm, collDelta);
+  return c;
+}
+
+void addCollisionConstraints (RTCScene scene)
+{
+  cloth.c_constraints_.clear ();
+  for (auto const & coll : sim_collisions) {
+    auto & c0 = coll.first;
+    auto & c1 = coll.second;
+
+    // throw out self collisions for now
+    if (clothID == c0.first && clothID == c1.first) continue;
+
+    // if (clothID == c0.first) {
+    //   if (cloth.m_inv_[cloth.tris_[c0.second].v0] != 0) {
+    //     auto c = makeCollisionConstraint (scene, cloth.tris_[c0.second].v0, c1.first, c1.second);
+    //     cloth.c_constraints_.push_back (c);
+    //   }
+    //   if (cloth.m_inv_[cloth.tris_[c0.second].v1] != 0) {
+    //     auto c = makeCollisionConstraint (scene, cloth.tris_[c0.second].v1, c1.first, c1.second);
+    //     cloth.c_constraints_.push_back (c);
+    //   }
+    //   if (cloth.m_inv_[cloth.tris_[c0.second].v2] != 0) {
+    //     auto c = makeCollisionConstraint (scene, cloth.tris_[c0.second].v2, c1.first, c1.second);
+    //     cloth.c_constraints_.push_back (c);
+    //   }
+    // }
+
+    if (clothID == c1.first) {
+      if (cloth.m_inv_[cloth.tris_[c1.second].v0] != 0) {
+        auto c = makeCollisionConstraint (scene, cloth.tris_[c1.second].v0, c0.first, c0.second);
+        cloth.c_constraints_.push_back (c);
+      }
+      if (cloth.m_inv_[cloth.tris_[c1.second].v1] != 0) {
+        auto c = makeCollisionConstraint (scene, cloth.tris_[c1.second].v1, c0.first, c0.second);
+        cloth.c_constraints_.push_back (c);
+      }
+      if (cloth.m_inv_[cloth.tris_[c1.second].v2] != 0) {
+        auto c = makeCollisionConstraint (scene, cloth.tris_[c1.second].v2, c0.first, c0.second);
+        cloth.c_constraints_.push_back (c);
+      }
+    }
+  }
 }
 
 /* creates a ground plane */
@@ -250,13 +326,25 @@ unsigned int createGroundPlane (RTCScene scene)
 
 void updateScene () 
 {
-  collide2::updatePositions (cloth, h);
-  collide2::constrainPositions (cloth, h, nIters);
-  collide2::updateVelocities (cloth, h);
+    collide2::updatePositions (cloth, h);
+
+    rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
+    rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
+    rtcCommitScene(g_scene);
+
+    collision_candidates.clear();
+    rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
+    addCollisionConstraints (g_scene);
+
+    collide2::constrainPositions (cloth, h, nIters);
+    collide2::updateVelocities (cloth, h);
 
   rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
   rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
   rtcCommitScene(g_scene);
+
+  // collision_candidates.clear();
+  // rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
   ++cur_time;
 }
 
@@ -287,6 +375,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   /* shade all rays that hit something */
   Vec3fa color(0,0,0);
   color = Vec3fa(1.0f,0.0f,0.0f);
+  if (ray.geomID == clothID) {
+    color = Vec3fa(0.0f,1.0f,0.0f);
+  }
   if (collision_candidates.find(std::make_pair(ray.geomID,ray.primID)) != collision_candidates.end())
     color = Vec3fa(1.0f,1.0f,0.0f);
 
@@ -352,7 +443,7 @@ extern "C" void device_init (char* cfg)
   rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
 
   createTriangulatedSphere(g_scene,Vec3fa(0, 0., 0),1.f);
-  createGroundPlane (g_scene);
+  //createGroundPlane (g_scene);
   clothID = createClothSheet (g_scene);
   rtcCommitScene (g_scene);
 
@@ -374,8 +465,8 @@ extern "C" void device_render (int* pixels,
 
   if (!pause) updateScene();
   //else PRINT(cur_time);
-  collision_candidates.clear();
-  rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
+  // collision_candidates.clear();
+  // rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
