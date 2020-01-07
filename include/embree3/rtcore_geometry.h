@@ -232,7 +232,7 @@ RTC_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 /* Sets the transformation of an instance for the specified time step. */
 RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, unsigned int timeStep, enum RTCFormat format, const void* xfm);
 
-/* Sets the transformation of an instance for the specified time step. */
+/* Sets the transformation quaternian of an instance for the specified time step. */
 RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry geometry, unsigned int timeStep, const struct RTCQuaternionDecomposition* qd);
 
 /* Returns the interpolated transformation of an instance for the specified time. */
