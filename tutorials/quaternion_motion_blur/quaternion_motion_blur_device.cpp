@@ -66,13 +66,23 @@ AffineSpace3fa fromQuaternionDecomposition(const RTCQuaternionDecomposition& qdc
 void updateTransformation()
 {
   // transformation matrizes for instance 0 (rotation around axis through sphere center)
-  Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), 0.5f * float(pi));
-  rtcSetGeometryTimeStepCount(g_instance_linear_0, 2);
-  rtcSetGeometryTimeStepCount(g_instance_quaternion_0, 2);
-  RTCQuaternionDecomposition qdc0, qdc1;
-  rtcInitQuaternionDecomposition(&qdc0);
-  rtcInitQuaternionDecomposition(&qdc1);
-  rtcQuaternionDecompositionSetQuaternion(&qdc1, q.r, q.i, q.j, q.k);
+  rtcSetGeometryTimeStepCount(g_instance_linear_0, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(g_instance_quaternion_0, g_numTimeSteps);
+  for (int i = 0; i < g_numTimeSteps; ++i)
+  {
+    // scale/skew, rotation, transformation data for quaternion motion blur
+    float K = g_numTimeSteps > 0 ? (((float)i)/(g_numTimeSteps-1)) : 0.f;
+    Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), K * 2.0 * float(pi));
+    rtcInitQuaternionDecomposition(qdc+i);
+    rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
+    rtcQuaternionDecompositionSetScale(qdc+i, 3.f, 3.f, 3.f);
+    rtcQuaternionDecompositionSetTranslation(qdc+i, -5.5f, 0.f, -5.5f);
+    rtcSetGeometryTransformQuaternion(g_instance_quaternion_0, i, qdc+i);
+
+    rtcQuaternionDecompositionSetTranslation(qdc+i, -5.5f, 0.f, 5.5f);
+    AffineSpace3fa xfm = fromQuaternionDecomposition(qdc[i]);
+    rtcSetGeometryTransform(g_instance_linear_0, i, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(xfm.l.vx.x));
+  }
 
   // transformation matrizes for instance 1 (translation and rotation around origin)
   rtcSetGeometryTimeStepCount(g_instance_linear_1, g_numTimeSteps);
@@ -92,20 +102,6 @@ void updateTransformation()
     AffineSpace3fa xfm = fromQuaternionDecomposition(qdc[i]);
     rtcSetGeometryTransform(g_instance_linear_1, i, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(xfm.l.vx.x));
   }
-
-  rtcQuaternionDecompositionSetTranslation(&qdc0, -5.5f, 0.f, -5.5f);
-  rtcQuaternionDecompositionSetTranslation(&qdc1, -5.5f, 0.f, -5.5f);
-  rtcQuaternionDecompositionSetScale(&qdc0, 3.f, 3.f, 3.f);
-  rtcQuaternionDecompositionSetScale(&qdc1, 3.f, 3.f, 3.f);
-  rtcSetGeometryTransformQuaternion(g_instance_quaternion_0, 0, &qdc0);
-  rtcSetGeometryTransformQuaternion(g_instance_quaternion_0, 1, &qdc1);
-
-  rtcQuaternionDecompositionSetTranslation(&qdc0, -5.5f, 0.f, 5.5f);
-  rtcQuaternionDecompositionSetTranslation(&qdc1, -5.5f, 0.f, 5.5f);
-  AffineSpace3fa xfm0 = fromQuaternionDecomposition(qdc0);
-  AffineSpace3fa xfm1 = fromQuaternionDecomposition(qdc1);
-  rtcSetGeometryTransform(g_instance_linear_0, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(xfm0.l.vx.x));
-  rtcSetGeometryTransform(g_instance_linear_0, 1, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(xfm1.l.vx.x));
 
   rtcCommitGeometry(g_instance_linear_0);
   rtcCommitGeometry(g_instance_linear_1);
