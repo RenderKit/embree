@@ -2,7 +2,8 @@
 
 #### NAME
 
-    RTCQuaternianDecomposition - structure that represents a quaternian decomposition of an affine transformation
+    RTCQuaternianDecomposition - structure that represents a quaternian
+      decomposition of an affine transformation
 
 #### SYNOPSIS
 
@@ -17,7 +18,9 @@
 
 #### DESCRIPTION
 
-The struct `RTCQuaternionDecomposition` represents an affine transformation decomposed into three parts. An upper triangular scaling/skew/shift matrix 
+The struct `RTCQuaternionDecomposition` represents an affine
+transformation decomposed into three parts. An upper triangular
+scaling/skew/shift matrix
 
 $$
 S = \left( \begin{array}{cccc}
