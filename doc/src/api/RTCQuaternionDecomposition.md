@@ -1,8 +1,8 @@
-% RTCQuaternianDecomposition(3) | Embree Ray Tracing Kernels 3
+% RTCQuaternionDecomposition(3) | Embree Ray Tracing Kernels 3
 
 #### NAME
 
-    RTCQuaternianDecomposition - structure that represents a quaternian
+    RTCQuaternionDecomposition - structure that represents a quaternion
       decomposition of an affine transformation
 
 #### SYNOPSIS

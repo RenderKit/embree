@@ -2,7 +2,7 @@
 
 #### NAME
 
-    rtcInitQuaternionDecomposition - initializes quaternian decomposition
+    rtcInitQuaternionDecomposition - initializes quaternion decomposition
 
 #### SYNOPSIS
 
@@ -22,4 +22,4 @@ No error code is set by this function.
 
 #### SEE ALSO
 
-[rtcSetGeometryTransformQuaternion], [RTCQuaternianDecomposition]
+[rtcSetGeometryTransformQuaternion], [RTCQuaternionDecomposition]
