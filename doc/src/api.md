@@ -1005,6 +1005,11 @@ Embree API Reference
 ```
 \pagebreak
 
+## RTCQuaternionDecomposition
+``` {include=src/api/RTCQuaternionDecomposition.md}
+```
+\pagebreak
+
 ## rtcInitQuaternionDecomposition
 ``` {include=src/api/rtcInitQuaternionDecomposition.md}
 ```

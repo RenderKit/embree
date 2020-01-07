@@ -18,12 +18,22 @@
 
 #### DESCRIPTION
 
-The `rtcSetGeometryTransformQuaternion` function sets the local-to-world affine transformation (`qd` parameter) of an instance geometry (`geometry` parameter) for a particular time step (`timeStep` parameter). The transformation is specified as a [RTCQuaternionDecomposition], which is a decomposition of an affine transformation which represents the rotational component of an affine transformation as a quaternion. This allows interpolate rotational transformations exactly using
-spherical linear interpolation (such as a turning wheel).
+The `rtcSetGeometryTransformQuaternion` function sets the
+local-to-world affine transformation (`qd` parameter) of an instance
+geometry (`geometry` parameter) for a particular time step (`timeStep`
+parameter). The transformation is specified as a
+[RTCQuaternionDecomposition], which is a decomposition of an affine
+transformation which represents the rotational component of an affine
+transformation as a quaternion. This allows interpolating rotational
+transformations exactly using spherical linear interpolation (such as
+a turning wheel).
 
 For more information about the decomposition see [RTCQuaternionDecomposition].
 
-Before commiting an instance geometry, the transformation matrices must be set either using `rtcSetGeometryTransform` or `rtcSetGeometryTransformQuaternion` for all time steps. Mixing both representations is not allowed.
+Before commiting an instance geometry, the transformation matrices
+must be set either using `rtcSetGeometryTransform` or
+`rtcSetGeometryTransformQuaternion` for all time steps. Mixing both
+representations is not allowed.
 
 For an example of this feature see the tutorial [Quaternion Motion Blur].
 
