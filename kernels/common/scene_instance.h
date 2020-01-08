@@ -129,7 +129,8 @@ namespace embree
       float ftime; const unsigned int itime = timeSegment(t, ftime);
       if (unlikely(interpolation == TransformationInterpolation::NONLINEAR))
         return slerp(quaternionDecomposition[itime+0],quaternionDecomposition[itime+1],ftime);
-      return lerp(local2world[itime+0],local2world[itime+1],ftime);
+      else
+        return lerp(local2world[itime+0],local2world[itime+1],ftime);
     }
 
     __forceinline AffineSpace3fa getWorld2Local() const {
@@ -145,7 +146,8 @@ namespace embree
     {
       if (unlikely(interpolation == TransformationInterpolation::NONLINEAR))
         return getWorld2LocalSlerp(valid, t);
-      return getWorld2LocalLerp(valid, t);
+      else
+        return getWorld2LocalLerp(valid, t);
     }
 
     private:
