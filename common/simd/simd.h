@@ -35,6 +35,13 @@
 
 namespace embree
 {
+  template <int N>
+  __forceinline vbool<N> isfinite(const vfloat<N>& v)
+  {
+    return (v >= vfloat<N>(-std::numeric_limits<float>::max()))
+         & (v <= vfloat<N>( std::numeric_limits<float>::max()));
+  }
+  
   /* foreach unique */
   template<typename vbool, typename vint, typename Closure>
   __forceinline void foreach_unique(const vbool& valid0, const vint& vi, const Closure& closure)

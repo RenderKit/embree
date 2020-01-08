@@ -50,6 +50,9 @@ namespace embree
     union { float f; int i; } v; v.i = i; return v.f;
   }
 
+  __forceinline int   toInt  (const float& a) { return int(a); }
+  __forceinline float toFloat(const int&   a) { return float(a); }
+
 #if defined(__WIN32__)
   __forceinline bool finite ( const float x ) { return _finite(x) != 0; }
 #endif
