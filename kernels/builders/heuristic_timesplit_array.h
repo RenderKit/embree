@@ -174,6 +174,7 @@ namespace embree
 
         __forceinline std::unique_ptr<mvector<PrimRefMB>> split(const Split& tsplit, const SetMB& set, SetMB& lset, SetMB& rset)
         {
+          assert(tsplit.sah != float(inf));
           assert(tsplit.fpos > set.time_range.lower);
           assert(tsplit.fpos < set.time_range.upper);
 
