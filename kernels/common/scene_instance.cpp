@@ -26,7 +26,7 @@ namespace embree
     , object(object)
     , local2world(nullptr)
     , interpolation(LINEAR)
-    , motionDerivCoeffs(nullptr)
+      //, motionDerivCoeffs(nullptr)
   {
     if (object) object->refInc();
     world2local0 = one;
@@ -38,7 +38,7 @@ namespace embree
   Instance::~Instance()
   {
     alignedFree(local2world);
-    alignedFree(motionDerivCoeffs);
+    //alignedFree(motionDerivCoeffs);
     if (object) object->refDec();
   }
 
@@ -92,13 +92,13 @@ namespace embree
     }
 #endif
 
-    if (interpolation == TransformationInterpolation::NONLINEAR && numTimeSteps > 1)
+    /*if (interpolation == TransformationInterpolation::NONLINEAR && numTimeSteps > 1)
     {
       alignedFree(motionDerivCoeffs);
       motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
       for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
         motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(local2world[timeStep+0], local2world[timeStep+1]);
-    }
+        }*/
 
     Geometry::preCommit();
   }
@@ -122,7 +122,7 @@ namespace embree
 
   void Instance::postCommit() 
   {
-    alignedFree(motionDerivCoeffs); motionDerivCoeffs = nullptr;
+    //alignedFree(motionDerivCoeffs); motionDerivCoeffs = nullptr;
     Geometry::postCommit();
   }
     
@@ -353,7 +353,8 @@ namespace embree
     if (unlikely(interpolation == TransformationInterpolation::NONLINEAR)) {
       auto const& xfm0 = local2world[itime];
       auto const& xfm1 = local2world[itime+1];
-      return boundSegmentNonlinear(motionDerivCoeffs[itime], xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
+      MotionDerivativeCoefficients motionDerivCoeffs(local2world[itime+0], local2world[itime+1]);
+      return boundSegmentNonlinear(motionDerivCoeffs, xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
     } else {
       auto const& xfm0 = local2world[itime];
       auto const& xfm1 = local2world[itime+1];
