@@ -368,10 +368,11 @@ f'(A0, A1, p0, p1, t) = (lerp(A0,A1,t) lerp(p0,p1,t))`
       auto const& xfm0 = quaternionDecomposition[itime];
       auto const& xfm1 = quaternionDecomposition[itime+1];
       return boundSegmentNonlinear(motionDerivCoeffs[itime], xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
+    } else {
+      auto const& xfm0 = local2world[itime];
+      auto const& xfm1 = local2world[itime+1];
+      return boundSegmentLinear(xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
     }
-    auto const& xfm0 = local2world[itime];
-    auto const& xfm1 = local2world[itime+1];
-    return boundSegmentLinear(xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
   }
 
   LBBox3fa Instance::nonlinearBounds(const BBox1f& time_range_in,
