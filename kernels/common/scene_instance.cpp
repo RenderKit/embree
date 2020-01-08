@@ -106,6 +106,15 @@ namespace embree
       this->gtype = GTY_INSTANCE_EXPENSIVE;
     }
 #endif
+
+    if (interpolation == TransformationInterpolation::NONLINEAR)
+    {
+      alignedFree(motionDerivCoeffs);
+      motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
+      for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
+        motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(quaternionDecomposition[timeStep], quaternionDecomposition[timeStep+1]);
+    }
+    
     Geometry::preCommit();
   }
 
@@ -128,6 +137,7 @@ namespace embree
 
   void Instance::postCommit() 
   {
+    alignedFree(motionDerivCoeffs); motionDerivCoeffs = nullptr;
     Geometry::postCommit();
   }
     
@@ -234,14 +244,6 @@ namespace embree
   {
     updateInterpolationMode();
     Geometry::commit();
-    
-    if (interpolation == TransformationInterpolation::NONLINEAR)
-    {
-      alignedFree(motionDerivCoeffs);
-      motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
-      for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
-        motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(quaternionDecomposition[timeStep], quaternionDecomposition[timeStep+1]);
-    }
   }
 
   /* 
