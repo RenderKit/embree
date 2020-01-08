@@ -302,8 +302,7 @@ This tutorial demonstrates rendering of motion blur using quaternion
 interpolation. Shown is motion blur using spherical linear interpolation of
 the rotational component of the instance transformation on the left and
 simple linear interpolation of the instance transformation on the right. The
-number of time steps used to create the circular motion of the sphere in the
-upper part of the image can be modified as well.
+number of time steps can be modified as well.
 
 
 Interpolation
