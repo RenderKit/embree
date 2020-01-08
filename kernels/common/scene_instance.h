@@ -27,6 +27,23 @@ namespace embree
     NONLINEAR = 1
   };
 
+  __forceinline AffineSpace3fa quaternionDecompositionToAffineSpace(const AffineSpace3fa& qd)
+  {
+    // compute affine transform from quaternion decomposition
+    Quaternion3f q(qd.l.vx.w, qd.l.vy.w, qd.l.vz.w, qd.p.w);
+    AffineSpace3fa M = qd;
+    AffineSpace3fa D(one);
+    D.p.x = M.l.vx.y;
+    D.p.y = M.l.vx.z;
+    D.p.z = M.l.vy.z;
+    M.l.vx.y = 0;
+    M.l.vx.z = 0;
+    M.l.vy.z = 0;
+    AffineSpace3fa R = LinearSpace3fa(q);
+    return D * R * M;
+  }
+
+
   struct MotionDerivativeCoefficients;
 
   /*! Instanced acceleration structure */
@@ -57,10 +74,11 @@ namespace embree
     __forceinline BBox3fa bounds(size_t itime0, size_t itime1, float f) const
     {
       if (unlikely(interpolation == TransformationInterpolation::NONLINEAR))
-        return xfmBounds(slerp(quaternionDecomposition[itime0], quaternionDecomposition[itime1], f),
-                          lerp(getObjectBounds(itime0), getObjectBounds(itime1), f));
-      return xfmBounds(lerp(local2world[itime0], local2world[itime1], f),
-                       lerp(getObjectBounds(itime0), getObjectBounds(itime1), f));
+        return xfmBounds(slerp(local2world[itime0], local2world[itime1], f),
+                         lerp(getObjectBounds(itime0), getObjectBounds(itime1), f));
+      else
+        return xfmBounds(lerp(local2world[itime0], local2world[itime1], f),
+                         lerp(getObjectBounds(itime0), getObjectBounds(itime1), f));
     }
 
   public:
@@ -123,15 +141,19 @@ namespace embree
       return true;
     }
 
-    __forceinline AffineSpace3fa getLocal2World() const {
-      return local2world[0];
+    __forceinline AffineSpace3fa getLocal2World() const
+    {
+      if (unlikely(interpolation == TransformationInterpolation::NONLINEAR))
+        return quaternionDecompositionToAffineSpace(local2world[0]);
+      else
+        return local2world[0];
     }
 
     __forceinline AffineSpace3fa getLocal2World(float t) const
     {
       float ftime; const unsigned int itime = timeSegment(t, ftime);
       if (unlikely(interpolation == TransformationInterpolation::NONLINEAR))
-        return slerp(quaternionDecomposition[itime+0],quaternionDecomposition[itime+1],ftime);
+        return slerp(local2world[itime+0],local2world[itime+1],ftime);
       else
         return lerp(local2world[itime+0],local2world[itime+1],ftime);
     }
@@ -164,8 +186,8 @@ namespace embree
       const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];
       if (likely(all(valid, itime_k == vint<K>(itime)))) {
-        return rcp(slerp(AffineSpace3vfa<K>(quaternionDecomposition[itime+0]),
-                         AffineSpace3vfa<K>(quaternionDecomposition[itime+1]),
+        return rcp(slerp(AffineSpace3vfa<K>(local2world[itime+0]),
+                         AffineSpace3vfa<K>(local2world[itime+1]),
                          ftime));
       }
       else {
@@ -174,8 +196,8 @@ namespace embree
         while (any(valid1)) {
           vbool<K> valid2;
           const int itime = next_unique(valid1, itime_k, valid2);
-          space0 = select(valid2, AffineSpace3vfa<K>(quaternionDecomposition[itime+0]), space0);
-          space1 = select(valid2, AffineSpace3vfa<K>(quaternionDecomposition[itime+1]), space1);
+          space0 = select(valid2, AffineSpace3vfa<K>(local2world[itime+0]), space0);
+          space1 = select(valid2, AffineSpace3vfa<K>(local2world[itime+1]), space1);
         }
         return rcp(slerp(space0, space1, ftime));
       }
@@ -208,10 +230,9 @@ namespace embree
 
   public:
     Accel* object;                 //!< pointer to instanced acceleration structure
-    AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep
+    AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep (either normal matrix or quaternion decomposition)
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
     TransformationInterpolation interpolation;
-    AffineSpace3fa* quaternionDecomposition; //!< the quaternion decomposition matrices if specified
     MotionDerivativeCoefficients* motionDerivCoeffs; //!< coefficients of motion derivative for each timestep (for non-linear interpolation)
   };
 
