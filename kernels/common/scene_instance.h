@@ -118,12 +118,6 @@ namespace embree
       return xfmBounds(local2world[itime],getObjectBounds(itime));
     }
 
-     /*! calculates the linear bounds at the itimeGlobal'th time segment */
-    __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const {
-      assert(i == 0);
-      return LBBox3fa(bounds(i,itime+0),bounds(i,itime+1));
-    }
-
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline LBBox3fa linearBounds(size_t i, const BBox1f& dt) const {
       assert(i == 0);
