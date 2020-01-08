@@ -136,6 +136,13 @@ struct MotionDerivative
 /******************************************************************************
  *                       Code generated with sympy 1.4                        *
  *              See http://www.sympy.org/ for more information.               *
+ *                                                                            *
+ * see                                                                        *
+ *                                                                            *
+ *     scripts/generate_motion_derivative_coefficients.py                     *
+ *                                                                            *
+ * for how this code is generated                                             *
+ *                                                                            *
  ******************************************************************************/
 static void motion_derivative_coefficients(const float *p, float *coeff)
 {
