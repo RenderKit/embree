@@ -92,7 +92,7 @@ namespace embree
     }
 #endif
 
-    if (interpolation == TransformationInterpolation::NONLINEAR)
+    if (interpolation == TransformationInterpolation::NONLINEAR && numTimeSteps > 1)
     {
       alignedFree(motionDerivCoeffs);
       motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
