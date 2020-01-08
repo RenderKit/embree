@@ -125,7 +125,12 @@ namespace embree
       }
     }
   }
-  
+
+  void Instance::postCommit() 
+  {
+    Geometry::postCommit();
+  }
+    
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
     if (timeStep >= numTimeSteps)
@@ -185,7 +190,6 @@ namespace embree
     this->mask = mask;
     Geometry::update();
   }
-
 
   void Instance::commit()
   {

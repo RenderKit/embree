@@ -75,6 +75,7 @@ namespace embree
     virtual void build() {}
     virtual void preCommit() override;
     virtual void addElementsToCount (GeometryCounts & counts) const override;
+    virtual void postCommit() override;
     virtual void commit() override;
 
   public:
