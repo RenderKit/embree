@@ -114,7 +114,7 @@ namespace embree
       for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
         motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(quaternionDecomposition[timeStep], quaternionDecomposition[timeStep+1]);
     }
-    
+
     Geometry::preCommit();
   }
 
@@ -153,8 +153,6 @@ namespace embree
       quaternionDecomposition[timeStep].l.vx.x = std::numeric_limits<float>::infinity();
 
     local2world[timeStep] = xfm;
-    if (timeStep == 0)
-      world2local0 = rcp(xfm);
   }
 
   void Instance::setQuaternionDecomposition(const AffineSpace3fa& qd, unsigned int timeStep)
@@ -243,6 +241,7 @@ namespace embree
   void Instance::commit()
   {
     updateInterpolationMode();
+    world2local0 = rcp(local2world[0]);
     Geometry::commit();
   }
 
