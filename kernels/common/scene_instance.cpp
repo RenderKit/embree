@@ -314,6 +314,18 @@ namespace embree
     }
     return delta;
   }
+
+  /* 
+     This function calculates the correction for the linear bounds
+     bbox0/bbox1 to properly bound the motion obtained by linearly
+     blending the quaternion transformations and applying the
+     resulting transformation to the linearly blended positions. The
+     extrema of the error to the linearly blended bounds has to get
+     calclated, the the linear bounds get corrected at the extremal
+     points. In difference to the previous function the extremal
+     points cannot get calculated analytically, thus we fall back to
+     some root solver. 
+  */
  
   BBox3fa boundSegmentNonlinear(MotionDerivativeCoefficients const& motionDerivCoeffs,
                                 AffineSpace3fa const& xfm0,
