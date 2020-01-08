@@ -117,6 +117,9 @@ namespace embree
       Node (const std::string& name) 
         : name(name), indegree(0), closed(false), id(-1), geometry(nullptr) {}
 
+      /* prints scenegraph */
+      virtual void print(std::ostream& cout, int depth = 0) = 0;
+
       /* sets material */
       virtual void setMaterial(Ref<MaterialNode> material) {};
 
@@ -405,6 +408,8 @@ namespace embree
       PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
         : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
 
+      virtual void print(std::ostream& cout, int depth);
+      
       virtual void calculateStatistics(Statistics& stat);
       virtual bool calculateClosed(bool group_instancing);
             
@@ -435,6 +440,8 @@ namespace embree
         child->setMaterial(material);
       }
 
+      virtual void print(std::ostream& cout, int depth);
+      
       virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual bool calculateClosed(bool group_instancing);
@@ -579,6 +586,8 @@ namespace embree
         for (auto& child : children) child->setMaterial(material);
       }
 
+      virtual void print(std::ostream& cout, int depth);
+      
       virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual bool calculateClosed(bool group_instancing);
@@ -593,6 +602,7 @@ namespace embree
       LightNode (Ref<Light> light)
         : light(light) {}
 
+      virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual bool calculateClosed(bool group_instancing);
       
@@ -608,6 +618,7 @@ namespace embree
 
       virtual Material* material() = 0;
 
+      virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
     };
 
@@ -695,6 +706,7 @@ namespace embree
 
       void verify() const;
 
+      virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual void resetInDegree();
@@ -781,6 +793,7 @@ namespace embree
       
       void verify() const;
 
+      virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual void resetInDegree();
@@ -896,6 +909,7 @@ namespace embree
       
       void verify() const;
 
+      virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual void resetInDegree();
@@ -1008,6 +1022,7 @@ namespace embree
 
       void verify() const;
 
+      virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual void resetInDegree();
@@ -1094,6 +1109,7 @@ namespace embree
 
       void verify() const;
 
+      virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual void resetInDegree();
@@ -1186,6 +1202,7 @@ namespace embree
 
       void verify() const;
 
+      virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual void calculateInDegree();
       virtual void resetInDegree();

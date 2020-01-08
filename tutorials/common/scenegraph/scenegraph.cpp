@@ -43,6 +43,64 @@ namespace embree
       throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
+  void tab(std::ostream& cout, int n) {
+    for (int i=0; i<n; i++) cout << "  ";
+  }
+
+  void SceneGraph::PerspectiveCameraNode::print(std::ostream& cout, int depth) {
+    cout << "PerspectiveCameraNode { closed = " << closed << " }" << std::endl;
+  }
+
+  void SceneGraph::TransformNode::print(std::ostream& cout, int depth)
+  {
+    cout << "TransformNode { " << std::endl;
+    tab(cout, depth+1); cout << "closed = " << closed << std::endl;
+    tab(cout, depth+1); cout << "child = "; child->print(cout,depth+1);
+    tab(cout, depth); cout << "}" << std::endl;
+  }
+
+  void SceneGraph::GroupNode::print(std::ostream& cout, int depth)
+  {
+    cout << "GroupNode { " << std::endl;
+    tab(cout, depth+1); cout << "closed = " << closed << std::endl;
+    for (size_t i=0; i<children.size(); i++) {
+      tab(cout, depth+1); cout << "child" << i << " = "; children[i]->print(cout,depth+1);
+    }
+    tab(cout, depth); cout << "}" << std::endl;
+  }
+
+  void SceneGraph::MaterialNode::print(std::ostream& cout, int depth) {
+    cout << "MaterialNode { closed = " << closed << " }" << std::endl;
+  }
+
+  void SceneGraph::LightNode::print(std::ostream& cout, int depth) {
+    cout << "LightNode { closed = " << closed << " }" << std::endl;
+  }
+
+  void SceneGraph::TriangleMeshNode::print(std::ostream& cout, int depth) {
+    cout << "TriangleMeshNode { closed = " << closed << " }" << std::endl;
+  }
+
+  void SceneGraph::QuadMeshNode::print(std::ostream& cout, int depth) {
+    cout << "QuadMeshNode { closed = " << closed << " }" << std::endl;
+  }
+
+  void SceneGraph::SubdivMeshNode::print(std::ostream& cout, int depth) {
+    cout << "SubdivMeshNode { closed = " << closed << " }" << std::endl;
+  }
+
+  void SceneGraph::HairSetNode::print(std::ostream& cout, int depth) {
+    cout << "HairSetNode { closed = " << closed << " }" << std::endl;
+  }
+
+  void SceneGraph::PointSetNode::print(std::ostream& cout, int depth) {
+    cout << "PointSetNode { closed = " << closed << " }" << std::endl;
+  }
+
+  void SceneGraph::GridMeshNode::print(std::ostream& cout, int depth) {
+    cout << "GridMeshNode { closed = " << closed << " }" << std::endl;
+  }
+    
   void SceneGraph::Node::calculateStatistics(Statistics& stat) {
     indegree++;
   }
