@@ -88,7 +88,7 @@ namespace embree
 
     /*! gets the bounds of the instanced scene */
     __forceinline BBox3fa getObjectBounds(size_t itime) const {
-      return object->getBounds(itime/fnumTimeSegments*time_range.size()+time_range.lower);
+      return object->getBounds(timeStep(itime));
     }
 
      /*! calculates the bounds of instance */

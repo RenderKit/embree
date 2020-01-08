@@ -241,6 +241,23 @@ namespace embree
     }
   }
 
+  /* 
+
+     This function corrects linear bounds bbox0/bbox1
+
+
+f'(A0, A1, p0, p1, t) = (lerp(A0,A1,t) lerp(p0,p1,t))`
+                      = lerp'(A0,A1,t) lerp(p0,p1,t) + lerp(A0,A1,t) lerp'(p0,p1,t)
+                      = (A1-A0) lerp(p0,p1,t) + lerp(A0,A1,t) (p1-p0)
+                      = (A1-A0) (p0 + t*(p1-p0)) + (A0 + t*(A1-A0)) (p1-p0)
+                      = (A1-A0) * p0 + t*(A1-A0)*(p1-p0) + A0*(p1-p0) + t*(A1-A0)*(p1-p0)
+                      = (A1-A0) * p0 + A0*(p1-p0) + t* ((A1-A0)*(p1-p0) + (A1-A0)*(p1-p0))
+=> t = - ((A1-A0) * p0 + A0*(p1-p0)) / (2*(A1-A0)*(p1-p0))
+     = (2*A0*p0 - A1*p0 - A0*p1) / (2*(A1-A0)*(p1-p0))
+
+
+   */
+
   BBox3fa boundSegmentLinear(AffineSpace3fa const& xfm0,
                              AffineSpace3fa const& xfm1,
                              BBox3fa const& obbox0,
