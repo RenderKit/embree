@@ -17,15 +17,11 @@
 #pragma once
 
 #include <stddef.h>
-#include "../common/tutorial/tutorial_device.h"
+#include "../common/math/vec.h"
 
 namespace embree { namespace collide2 {
 
-using vec_t = Vertex;
-float dot (vec_t const & v1, vec_t const & v2);
-vec_t cross (vec_t const & v1, vec_t const & v2);
-float distance (Vertex const & v1, Vertex const & v2);
-void normalize (vec_t & v);
+using vec_t = Vec3fa;
 
 struct ClothModel;
 
@@ -80,9 +76,9 @@ public:
 
 protected:
 
-    vec_t x0_ {0.f, 0.f, 0.f, 0.f};
-    vec_t n_ {0.f, 0.f, 0.f, 0.f};
-    float d_ {1.e5f};
+    vec_t x0_   {0.f, 0.f, 0.f, 0.f};
+    vec_t n_    {0.f, 0.f, 0.f, 0.f};
+    float d_    {1.e5f};
 };
 
 } // namespace collide2

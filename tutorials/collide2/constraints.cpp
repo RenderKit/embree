@@ -20,28 +20,6 @@
 
 namespace embree { namespace collide2 {
 
-float dot (vec_t const & v1, vec_t const & v2) {
-    return v1.x*v2.x + v1.y*v2.y + v1.z*v2.z;
-}
-vec_t cross (vec_t const & v1, vec_t const & v2) {
-    vec_t ret;
-    ret.x = v1.y*v2.z - v1.z*v2.y;
-    ret.y = v1.z*v2.x - v1.x*v2.z;
-    ret.z = v1.x*v2.y - v1.y*v2.x;
-    return ret;
-}
-
-void normalize (vec_t & v) {
-    auto norm = 1.f / sqrtf (dot(v,v));
-    v.x *= norm;
-    v.y *= norm;
-    v.z *= norm;
-}
-
-float distance (Vertex const & v1, Vertex const & v2) {
-  return sqrtf ((v1.x-v2.x)*(v1.x-v2.x)+(v1.y-v2.y)*(v1.y-v2.y)+(v1.z-v2.z)*(v1.z-v2.z));
-}
-
 void DistanceConstraint::initConstraint (ClothModel const & model, size_t p0ID, size_t p1ID) {
     
     bodyIDs_[0] = p0ID;

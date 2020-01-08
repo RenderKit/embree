@@ -80,10 +80,12 @@ void updateVelocities (ClothModel & model, float h) {
         for (size_t i=r.begin(); i<r.end(); i++) {
             if (model.m_[i] != 0.f) {
 
+                // first order
                 model.v_[i].x = hinv * (model.x_[i].x - model.x_old_[i].x);
                 model.v_[i].y = hinv * (model.x_[i].y - model.x_old_[i].y);
                 model.v_[i].z = hinv * (model.x_[i].z - model.x_old_[i].z);
 
+                // second order
                 // model.v_[i].x = hinv * (1.5f * model.x_[i].x - 2.f * model.x_old_[i].x + .5f * model.x_last_[i].x);
                 // model.v_[i].y = hinv * (1.5f * model.x_[i].y - 2.f * model.x_old_[i].y + .5f * model.x_last_[i].y);
                 // model.v_[i].z = hinv * (1.5f * model.x_[i].z - 2.f * model.x_old_[i].z + .5f * model.x_last_[i].z);

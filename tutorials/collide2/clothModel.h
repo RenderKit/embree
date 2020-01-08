@@ -22,17 +22,15 @@
 
 namespace embree { namespace collide2 {
 
-using vec_t = Vertex;
-
 class Constraint;
 
 struct ClothModel {
 
     // particle system
-    std::vector<Vertex>         x_;
-    std::vector<Vertex>         x_0_;
-    std::vector<Vertex>         x_old_;
-    std::vector<Vertex>         x_last_;
+    std::vector<vec_t>          x_;
+    std::vector<vec_t>          x_0_;
+    std::vector<vec_t>          x_old_;
+    std::vector<vec_t>          x_last_;
     std::vector<vec_t>          v_;
     std::vector<vec_t>          a_;
     std::vector<float>          m_;
