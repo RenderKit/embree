@@ -80,7 +80,9 @@ namespace embree
 
   public:
 
-
+    /* computes the interpolation mode to use by looking at the type of matrices set by the user */
+    void updateInterpolationMode();
+   
      /*! calculates the bounds of instance */
     __forceinline BBox3fa bounds(size_t i) const {
       assert(i == 0);

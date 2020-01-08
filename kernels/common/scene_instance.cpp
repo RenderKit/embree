@@ -191,10 +191,8 @@ namespace embree
     Geometry::update();
   }
 
-  void Instance::commit()
+  void Instance::updateInterpolationMode()
   {
-    Geometry::commit();
-
     // check which interpolation should be used
     bool interpolate_nonlinear = false;
     bool interpolate_linear = true;
@@ -230,7 +228,13 @@ namespace embree
     interpolation = interpolate_linear
                   ? TransformationInterpolation::LINEAR
                   : TransformationInterpolation::NONLINEAR;
+  }
 
+  void Instance::commit()
+  {
+    updateInterpolationMode();
+    Geometry::commit();
+    
     if (interpolation == TransformationInterpolation::NONLINEAR)
     {
       alignedFree(motionDerivCoeffs);
