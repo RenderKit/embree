@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -28,48 +28,6 @@ namespace embree
 namespace fastapprox
 {
 
-namespace transcendental {
-  template <int N>
-  __forceinline vint<N> toInt(const vfloat<N> &v)
-  {
-    vint<N> res;
-    for (int i = 0; i < N; ++i)
-      res[i] = (int)(v[i]);
-    return res;
-  }
-
-  __forceinline int toInt(const float v) {
-    return (int)v;
-  }
-
-  template <int N>
-  __forceinline vfloat<N> toFloat(const vint<N> &v)
-  {
-    vfloat<N> res;
-    for (int i = 0; i < N; ++i)
-      res[i] = (float)(v[i]);
-    return res;
-  }
-
-  __forceinline float toFloat(const int v)
-  {
-    return (float)v;
-  }
-
-  template <int N>
-  __forceinline vfloat<N> signBit(const vfloat<N> &v)
-  {
-    return v & asFloat(vint<N>(0x80000000));
-  }
-
-  template <int N>
-  __forceinline vbool<N> isfinite(const vfloat<N>& v)
-  {
-    return (v >= vfloat<N>(-std::numeric_limits<float>::max()))
-         & (v <= vfloat<N>( std::numeric_limits<float>::max()));
-  }
-}
-
 template <typename T>
 __forceinline T sin(const T &v)
 {
@@ -77,7 +35,7 @@ __forceinline T sin(const T &v)
   static const float twoOverPiVec = 0.636619746685028076171875;
   auto scaled = v * twoOverPiVec;
   auto kReal = floor(scaled);
-  auto k = transcendental::toInt(kReal);
+  auto k = toInt(kReal);
 
   // Reduced range version of x
   auto x = v - kReal * piOverTwoVec;
@@ -125,7 +83,7 @@ __forceinline T cos(const T &v)
   static const float twoOverPiVec = 0.636619746685028076171875;
   auto scaled = v * twoOverPiVec;
   auto kReal = floor(scaled);
-  auto k = transcendental::toInt(kReal);
+  auto k = toInt(kReal);
 
   // Reduced range version of x
   auto x = v - kReal * piOverTwoVec;
@@ -172,7 +130,7 @@ __forceinline void sincos(const T &v, T &sinResult, T &cosResult)
   const float twoOverPiVec = 0.636619746685028076171875;
   auto scaled = v * twoOverPiVec;
   auto kReal = floor(scaled);
-  auto k = transcendental::toInt(kReal);
+  auto k = toInt(kReal);
 
   // Reduced range version of x
   auto x = v - kReal * piOverTwoVec;
@@ -231,7 +189,7 @@ __forceinline T tan(const T &v)
   auto scaled = y * fourOverPiVec;
 
   auto kReal = floor(scaled);
-  auto k = transcendental::toInt(kReal);
+  auto k = toInt(kReal);
 
   auto x = y - kReal * piOverFourVec;
 
@@ -394,7 +352,7 @@ __forceinline T exp(const T &v)
 
   auto scaled = v * oneOverLn2;
   auto kReal = floor(scaled);
-  auto k = transcendental::toInt(kReal);
+  auto k = toInt(kReal);
 
   // Reduced range version of x
   auto x = v - kReal * ln2Part1;
@@ -519,7 +477,7 @@ __forceinline T log(const T &v)
 
   // Equation was for -(ln(red)/(1-red))
   result *= -x1;
-  result += transcendental::toFloat(exponent) * ln2;
+  result += toFloat(exponent) * ln2;
 
   return select(exceptional,
                 select(useNan, T(nan), T(negInf)),
@@ -539,7 +497,7 @@ __forceinline T pow(const T &x, const T &y)
 
   // x == 0
   z = select(x == 0.0f,
-      select(y < 0.0f, T(inf) | transcendental::signBit(x),
+      select(y < 0.0f, T(inf) | signmsk(x),
       select(y == 0.0f, T(1.0f), asFloat(yOddInt) & x)), z);
 
   // x < 0
@@ -551,8 +509,8 @@ __forceinline T pow(const T &x, const T &y)
     z = select(xNegative, z1, z);
   }
 
-  auto xFinite = transcendental::isfinite(x);
-  auto yFinite = transcendental::isfinite(y);
+  auto xFinite = isfinite(x);
+  auto yFinite = isfinite(y);
   if (all(xFinite & yFinite))
     return z;
 

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -174,6 +174,7 @@ namespace embree
 
         __forceinline std::unique_ptr<mvector<PrimRefMB>> split(const Split& tsplit, const SetMB& set, SetMB& lset, SetMB& rset)
         {
+          assert(tsplit.sah != float(inf));
           assert(tsplit.fpos > set.time_range.lower);
           assert(tsplit.fpos < set.time_range.upper);
 

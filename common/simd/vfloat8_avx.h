@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -244,9 +244,8 @@ namespace embree
   __forceinline vfloat8 asFloat(const vint8&   a) { return _mm256_castsi256_ps(a); }
   __forceinline vint8   asInt  (const vfloat8& a) { return _mm256_castps_si256(a); }
 
-#if defined(__AVX512VL__)
-
-#endif
+  __forceinline vint8   toInt  (const vfloat8& a) { return vint8(a); }
+  __forceinline vfloat8 toFloat(const vint8&   a) { return vfloat8(a); }
 
   __forceinline vfloat8 operator +(const vfloat8& a) { return a; }
   __forceinline vfloat8 operator -(const vfloat8& a) {

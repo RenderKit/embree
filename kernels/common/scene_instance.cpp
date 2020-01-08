@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -26,22 +26,19 @@ namespace embree
     , object(object)
     , local2world(nullptr)
     , interpolation(LINEAR)
-    , quaternionDecomposition(nullptr)
-    , motionDerivCoeffs(nullptr)
+      //, motionDerivCoeffs(nullptr)
   {
     if (object) object->refInc();
     world2local0 = one;
     local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa),16);
     for (size_t i = 0; i < numTimeSteps; i++)
       local2world[i] = one;
-    motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
   }
 
   Instance::~Instance()
   {
     alignedFree(local2world);
-    if (quaternionDecomposition) alignedFree(quaternionDecomposition);
-    if (motionDerivCoeffs) alignedFree(motionDerivCoeffs);
+    //alignedFree(motionDerivCoeffs);
     if (object) object->refDec();
   }
 
@@ -71,19 +68,6 @@ namespace embree
     alignedFree(local2world);
     local2world = local2world2;
 
-    if (quaternionDecomposition) {
-      AffineSpace3fa* qd2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa),16);
-
-      for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++)
-        qd2[i] = quaternionDecomposition[i];
-
-      for (size_t i = numTimeSteps; i < numTimeSteps_in; i++)
-        qd2[i].l.vx.x = std::numeric_limits<float>::infinity();
-
-      alignedFree(quaternionDecomposition);
-      quaternionDecomposition = qd2;
-    }
-
     Geometry::setNumTimeSteps(numTimeSteps_in);
   }
 
@@ -107,6 +91,15 @@ namespace embree
       this->gtype = GTY_INSTANCE_EXPENSIVE;
     }
 #endif
+
+    /*if (interpolation == TransformationInterpolation::NONLINEAR && numTimeSteps > 1)
+    {
+      alignedFree(motionDerivCoeffs);
+      motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
+      for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
+        motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(local2world[timeStep+0], local2world[timeStep+1]);
+        }*/
+
     Geometry::preCommit();
   }
 
@@ -126,21 +119,20 @@ namespace embree
       }
     }
   }
-  
+
+  void Instance::postCommit() 
+  {
+    //alignedFree(motionDerivCoeffs); motionDerivCoeffs = nullptr;
+    Geometry::postCommit();
+  }
+    
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
     if (timeStep >= numTimeSteps)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
-    // invalidate quaternion decomposition for time step. This allows switching
-    // back to linear transformation. For nonlinear transformation,
-    // setQuaternionDecomposition will override this again direcly
-    if (quaternionDecomposition)
-      quaternionDecomposition[timeStep].l.vx.x = std::numeric_limits<float>::infinity();
-
     local2world[timeStep] = xfm;
-    if (timeStep == 0)
-      world2local0 = rcp(xfm);
+    local2world[timeStep].l.vx.w = std::numeric_limits<float>::infinity(); // mark as standard transformation
   }
 
   void Instance::setQuaternionDecomposition(const AffineSpace3fa& qd, unsigned int timeStep)
@@ -148,29 +140,8 @@ namespace embree
     if (timeStep >= numTimeSteps)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
-    // compute affine transform from quaternion decomposition
-    Quaternion3f q(qd.l.vx.w, qd.l.vy.w, qd.l.vz.w, qd.p.w);
-    AffineSpace3fa M = qd;
-    AffineSpace3fa D(one);
-    D.p.x = M.l.vx.y;
-    D.p.y = M.l.vx.z;
-    D.p.z = M.l.vy.z;
-    M.l.vx.y = 0;
-    M.l.vx.z = 0;
-    M.l.vy.z = 0;
-    AffineSpace3fa R = LinearSpace3fa(q);
-
-    // set affine matrix
-    setTransform(D * R * M, timeStep);
-
-    // lazily allocate memory for quaternion decomposition
-    if (!quaternionDecomposition) {
-      quaternionDecomposition = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa),16);
-      // set flag to test if all quaternion decompositions are set once commit() is called
-      for (unsigned int i = 0; i < numTimeSteps; ++i)
-        quaternionDecomposition[i].l.vx.x = std::numeric_limits<float>::infinity();
-    }
-    quaternionDecomposition[timeStep] = qd;
+    local2world[timeStep] = qd;
+    assert(std::isfinite(local2world[timeStep].l.vx.w));
   }
 
   AffineSpace3fa Instance::getTransform(float time)
@@ -187,29 +158,22 @@ namespace embree
     Geometry::update();
   }
 
-
-  void Instance::commit()
+  void Instance::updateInterpolationMode()
   {
-    Geometry::commit();
-
-    // check with interpolation should be used
+    // check which interpolation should be used
     bool interpolate_nonlinear = false;
-    bool interpolate_linear = true;
+    bool interpolate_linear = false;
 
-    if (quaternionDecomposition) {
-      interpolate_nonlinear = true;
-      // check if all quaternion decomposition matrizes are set -> quaternion interpolation
-      // or if all quaternion decomposition matrizes are invalid -> linear interpolation
-      for (unsigned int i = 0; i < numTimeSteps; ++i) {
-        if (quaternionDecomposition[i].l.vx.x == std::numeric_limits<float>::infinity()) {
-          interpolate_nonlinear = false;
-        }
-        else {
-          interpolate_linear = false;
-        }
+    // check if all quaternion decomposition matrizes are set -> quaternion interpolation
+    // or if all quaternion decomposition matrizes are invalid -> linear interpolation
+    for (unsigned int i = 0; i < numTimeSteps; ++i) {
+      if (local2world[i].l.vx.w == std::numeric_limits<float>::infinity()) {
+        interpolate_linear = true;
+      } else {
+        interpolate_nonlinear = true;
       }
     }
-
+  
     if (!interpolate_linear && !interpolate_nonlinear) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,
       "all transformation matrizes have to be set as either affine"
@@ -227,19 +191,46 @@ namespace embree
     interpolation = interpolate_linear
                   ? TransformationInterpolation::LINEAR
                   : TransformationInterpolation::NONLINEAR;
-
-    if (interpolation == TransformationInterpolation::NONLINEAR)
-    {
-      if (motionDerivCoeffs)
-        alignedFree(motionDerivCoeffs);
-      motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
-      for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
-      {
-        motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(
-          quaternionDecomposition[timeStep], quaternionDecomposition[timeStep+1]);
-      }
-    }
   }
+
+  void Instance::commit()
+  {
+    updateInterpolationMode();
+
+    if (unlikely(interpolation == TransformationInterpolation::NONLINEAR))
+      world2local0 = rcp(quaternionDecompositionToAffineSpace(local2world[0]));
+    else
+      world2local0 = rcp(local2world[0]);
+      
+    Geometry::commit();
+  }
+
+  /* 
+
+     This function calculates the correction for the linear bounds
+     bbox0/bbox1 to properly bound the motion obtained when linearly
+     blending the transformation and applying the resulting
+     transformation to the linearly blended positions
+     lerp(xfm0,xfm1,t)*lerp(p0,p1,t). The extrema of the error to the
+     linearly blended bounds have to get calculates
+     f = lerp(xfm0,xfm1,t)*lerp(p0,p1,t) - lerp(bounds0,bounds1,t). For
+     the position where this error gets extreme we have to correct the
+     linear bounds. The derivative of this function f can get
+     calculates as
+
+     f' = (lerp(A0,A1,t) lerp(p0,p1,t))` - (lerp(bounds0,bounds1,t))`
+        = lerp'(A0,A1,t) lerp(p0,p1,t) + lerp(A0,A1,t) lerp'(p0,p1,t) - (bounds1-bounds0)
+        = (A1-A0) lerp(p0,p1,t) + lerp(A0,A1,t) (p1-p0) - (bounds1-bounds0)
+        = (A1-A0) (p0 + t*(p1-p0)) + (A0 + t*(A1-A0)) (p1-p0) - (bounds1-bounds0)
+        = (A1-A0) * p0 + t*(A1-A0)*(p1-p0) + A0*(p1-p0) + t*(A1-A0)*(p1-p0) - (bounds1-bounds0)
+        = (A1-A0) * p0 + A0*(p1-p0) - (bounds1-bounds0) + t* ((A1-A0)*(p1-p0) + (A1-A0)*(p1-p0))
+
+   The t value where this function has an extremal point is thus:
+
+    => t = - ((A1-A0) * p0 + A0*(p1-p0) + (bounds1-bounds0)) / (2*(A1-A0)*(p1-p0))
+         = (2*A0*p0 - A1*p0 - A0*p1 + (bounds1-bounds0)) / (2*(A1-A0)*(p1-p0))
+
+   */
 
   BBox3fa boundSegmentLinear(AffineSpace3fa const& xfm0,
                              AffineSpace3fa const& xfm1,
@@ -272,13 +263,13 @@ namespace embree
         if (!(std::abs(denom[dim]) > 0)) continue;
 
         const float tl = (nom[dim] + (bbox1.lower[dim] - bbox0.lower[dim])) / denom[dim];
-        if (tl <= tmax && tl >= tmin) {
+        if (tmin <= tl && tl <= tmax) {
           const BBox3fa bt = lerp(bbox0, bbox1, tl);
           const Vec3fa  pt = xfmPoint (lerp(xfm0, xfm1, tl), lerp(p0, p1, tl));
           delta.lower[dim] = std::min(delta.lower[dim], pt[dim] - bt.lower[dim]);
         }
         const float tu = (nom[dim] + (bbox1.upper[dim] - bbox0.upper[dim])) / denom[dim];
-        if (tu <= tmax && tu >= tmin) {
+        if (tmin <= tu && tu <= tmax) {
           const BBox3fa bt = lerp(bbox0, bbox1, tu);
           const Vec3fa  pt = xfmPoint(lerp(xfm0, xfm1, tu), lerp(p0, p1, tu));
           delta.upper[dim] = std::max(delta.upper[dim], pt[dim] - bt.upper[dim]);
@@ -287,6 +278,18 @@ namespace embree
     }
     return delta;
   }
+
+  /* 
+     This function calculates the correction for the linear bounds
+     bbox0/bbox1 to properly bound the motion obtained by linearly
+     blending the quaternion transformations and applying the
+     resulting transformation to the linearly blended positions. The
+     extrema of the error to the linearly blended bounds has to get
+     calclated, the the linear bounds get corrected at the extremal
+     points. In difference to the previous function the extremal
+     points cannot get calculated analytically, thus we fall back to
+     some root solver. 
+  */
  
   BBox3fa boundSegmentNonlinear(MotionDerivativeCoefficients const& motionDerivCoeffs,
                                 AffineSpace3fa const& xfm0,
@@ -348,13 +351,15 @@ namespace embree
       float tmin, float tmax) const
   {
     if (unlikely(interpolation == TransformationInterpolation::NONLINEAR)) {
-      auto const& xfm0 = quaternionDecomposition[itime];
-      auto const& xfm1 = quaternionDecomposition[itime+1];
-      return boundSegmentNonlinear(motionDerivCoeffs[itime], xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
+      auto const& xfm0 = local2world[itime];
+      auto const& xfm1 = local2world[itime+1];
+      MotionDerivativeCoefficients motionDerivCoeffs(local2world[itime+0], local2world[itime+1]);
+      return boundSegmentNonlinear(motionDerivCoeffs, xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
+    } else {
+      auto const& xfm0 = local2world[itime];
+      auto const& xfm1 = local2world[itime+1];
+      return boundSegmentLinear(xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
     }
-    auto const& xfm0 = local2world[itime];
-    auto const& xfm1 = local2world[itime+1];
-    return boundSegmentLinear(xfm0, xfm1, obbox0, obbox1, bbox0, bbox1, tmin, tmax);
   }
 
   LBBox3fa Instance::nonlinearBounds(const BBox1f& time_range_in,

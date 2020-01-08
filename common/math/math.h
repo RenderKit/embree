@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -49,6 +49,9 @@ namespace embree
   __forceinline float cast_i2f(int i) {
     union { float f; int i; } v; v.i = i; return v.f;
   }
+
+  __forceinline int   toInt  (const float& a) { return int(a); }
+  __forceinline float toFloat(const int&   a) { return float(a); }
 
 #if defined(__WIN32__)
   __forceinline bool finite ( const float x ) { return _finite(x) != 0; }

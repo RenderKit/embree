@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -145,8 +145,8 @@ struct RayStats
 
 #if defined(RAY_STATS)
 #if defined(ISPC)
-inline void RayStats_addRay(RayStats& stats)       { stats.numRays += popcnt(lanemask()); }
-inline void RayStats_addShadowRay(RayStats& stats) { stats.numRays += popcnt(lanemask()); }
+inline void RayStats_addRay(RayStats& stats)       { stats.numRays += popcnt(1); }
+inline void RayStats_addShadowRay(RayStats& stats) { stats.numRays += popcnt(1); }
 #else // C++
 __forceinline void RayStats_addRay(RayStats& stats)        { stats.numRays++; }
 __forceinline void RayStats_addShadowRay(RayStats& stats)  { stats.numRays++; }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -196,6 +196,9 @@ namespace embree
   __forceinline vfloat16 asFloat(const vint16&   a) { return _mm512_castsi512_ps(a); }
   __forceinline vint16   asInt  (const vfloat16& a) { return _mm512_castps_si512(a); }
   __forceinline vuint16  asUInt (const vfloat16& a) { return _mm512_castps_si512(a); }
+
+  __forceinline vint16   toInt  (const vfloat16& a) { return vint16(a); }
+  __forceinline vfloat16 toFloat(const vint16&   a) { return vfloat16(a); }
 
   __forceinline vfloat16 operator +(const vfloat16& a) { return a; }
   __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a,vfloat16(-1)); }
