@@ -34,14 +34,13 @@ namespace embree
     local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa),16);
     for (size_t i = 0; i < numTimeSteps; i++)
       local2world[i] = one;
-    motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
   }
 
   Instance::~Instance()
   {
     alignedFree(local2world);
-    if (quaternionDecomposition) alignedFree(quaternionDecomposition);
-    if (motionDerivCoeffs) alignedFree(motionDerivCoeffs);
+    alignedFree(quaternionDecomposition);
+    alignedFree(motionDerivCoeffs);
     if (object) object->refDec();
   }
 
@@ -230,14 +229,10 @@ namespace embree
 
     if (interpolation == TransformationInterpolation::NONLINEAR)
     {
-      if (motionDerivCoeffs)
-        alignedFree(motionDerivCoeffs);
+      alignedFree(motionDerivCoeffs);
       motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
       for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
-      {
-        motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(
-          quaternionDecomposition[timeStep], quaternionDecomposition[timeStep+1]);
-      }
+        motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(quaternionDecomposition[timeStep], quaternionDecomposition[timeStep+1]);
     }
   }
 
