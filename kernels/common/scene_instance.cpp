@@ -192,7 +192,7 @@ namespace embree
   {
     Geometry::commit();
 
-    // check with interpolation should be used
+    // check which interpolation should be used
     bool interpolate_nonlinear = false;
     bool interpolate_linear = true;
 
@@ -272,13 +272,13 @@ namespace embree
         if (!(std::abs(denom[dim]) > 0)) continue;
 
         const float tl = (nom[dim] + (bbox1.lower[dim] - bbox0.lower[dim])) / denom[dim];
-        if (tl <= tmax && tl >= tmin) {
+        if (tmin <= tl && tl <= tmax) {
           const BBox3fa bt = lerp(bbox0, bbox1, tl);
           const Vec3fa  pt = xfmPoint (lerp(xfm0, xfm1, tl), lerp(p0, p1, tl));
           delta.lower[dim] = std::min(delta.lower[dim], pt[dim] - bt.lower[dim]);
         }
         const float tu = (nom[dim] + (bbox1.upper[dim] - bbox0.upper[dim])) / denom[dim];
-        if (tu <= tmax && tu >= tmin) {
+        if (tmin <= tu && tu <= tmax) {
           const BBox3fa bt = lerp(bbox0, bbox1, tu);
           const Vec3fa  pt = xfmPoint(lerp(xfm0, xfm1, tu), lerp(p0, p1, tu));
           delta.upper[dim] = std::max(delta.upper[dim], pt[dim] - bt.upper[dim]);

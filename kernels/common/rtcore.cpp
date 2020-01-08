@@ -1033,7 +1033,7 @@ RTC_NAMESPACE_BEGIN;
   {
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
-    RTC_TRACE(rtcSetGeometryTransform);
+    RTC_TRACE(rtcSetGeometryTransformQuaternion);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_HANDLE(qd);
     AffineSpace3fa transform;
