@@ -246,23 +246,25 @@ namespace embree
      This function calculates the correction for the linear bounds
      bbox0/bbox1 to properly bound the motion obtained when linearly
      blending the transformation and applying the resulting
-     transformation to the linearly blended positions.  The extrema of
-     this function f(xfm0,xfm1,obbox0,obbox1,t) =
-     lerp(xfm0,xfm1,t)*lerp(obbox0,obbox1,t) have to get calculated,
-     and the linear bounds get corrected for these extreme points. The
-     derivative of this function f can get calculates as
+     transformation to the linearly blended positions
+     lerp(xfm0,xfm1,t)*lerp(p0,p1,t). The extrema of the error to the
+     linearly blended bounds have to get calculates
+     f = lerp(xfm0,xfm1,t)*lerp(p0,p1,t) - lerp(bounds0,bounds1,t). For
+     the position where this error gets extreme we have to correct the
+     linear bounds. The derivative of this function f can get
+     calculates as
 
-     f'(A0, A1, p0, p1, t) = (lerp(A0,A1,t) lerp(p0,p1,t))`
-                           = lerp'(A0,A1,t) lerp(p0,p1,t) + lerp(A0,A1,t) lerp'(p0,p1,t)
-                           = (A1-A0) lerp(p0,p1,t) + lerp(A0,A1,t) (p1-p0)
-                           = (A1-A0) (p0 + t*(p1-p0)) + (A0 + t*(A1-A0)) (p1-p0)
-                           = (A1-A0) * p0 + t*(A1-A0)*(p1-p0) + A0*(p1-p0) + t*(A1-A0)*(p1-p0)
-                           = (A1-A0) * p0 + A0*(p1-p0) + t* ((A1-A0)*(p1-p0) + (A1-A0)*(p1-p0))
+     f' = (lerp(A0,A1,t) lerp(p0,p1,t))` - (lerp(bounds0,bounds1,t))`
+        = lerp'(A0,A1,t) lerp(p0,p1,t) + lerp(A0,A1,t) lerp'(p0,p1,t) - (bounds1-bounds0)
+        = (A1-A0) lerp(p0,p1,t) + lerp(A0,A1,t) (p1-p0) - (bounds1-bounds0)
+        = (A1-A0) (p0 + t*(p1-p0)) + (A0 + t*(A1-A0)) (p1-p0) - (bounds1-bounds0)
+        = (A1-A0) * p0 + t*(A1-A0)*(p1-p0) + A0*(p1-p0) + t*(A1-A0)*(p1-p0) - (bounds1-bounds0)
+        = (A1-A0) * p0 + A0*(p1-p0) - (bounds1-bounds0) + t* ((A1-A0)*(p1-p0) + (A1-A0)*(p1-p0))
 
    The t value where this function has an extremal point is thus:
 
-    => t = - ((A1-A0) * p0 + A0*(p1-p0)) / (2*(A1-A0)*(p1-p0))
-         = (2*A0*p0 - A1*p0 - A0*p1) / (2*(A1-A0)*(p1-p0))
+    => t = - ((A1-A0) * p0 + A0*(p1-p0) + (bounds1-bounds0)) / (2*(A1-A0)*(p1-p0))
+         = (2*A0*p0 - A1*p0 - A0*p1 + (bounds1-bounds0)) / (2*(A1-A0)*(p1-p0))
 
    */
 
