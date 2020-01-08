@@ -145,8 +145,8 @@ struct RayStats
 
 #if defined(RAY_STATS)
 #if defined(ISPC)
-inline void RayStats_addRay(RayStats& stats)       { stats.numRays += popcnt(lanemask()); }
-inline void RayStats_addShadowRay(RayStats& stats) { stats.numRays += popcnt(lanemask()); }
+inline void RayStats_addRay(RayStats& stats)       { stats.numRays += popcnt(1); }
+inline void RayStats_addShadowRay(RayStats& stats) { stats.numRays += popcnt(1); }
 #else // C++
 __forceinline void RayStats_addRay(RayStats& stats)        { stats.numRays++; }
 __forceinline void RayStats_addShadowRay(RayStats& stats)  { stats.numRays++; }

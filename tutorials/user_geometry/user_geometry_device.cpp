@@ -31,6 +31,22 @@ void renderTileStandardStream(int taskIndex,
                               const int numTilesX,
                               const int numTilesY);
 
+/*
+ * Safely invalidate a packet of rays.
+ */
+inline void invalidateRay(Ray& ray)
+{
+  // Initialize the whole ray so that it is invalid. This is important because
+  // in streamed mode, active state of lanes is forgotten between ray
+  // generation and traversal.
+  {
+    ray.org = Vec3fa(0.f);
+    ray.dir = Vec3fa(0.f);
+    ray.tnear() = pos_inf;
+    ray.tfar = neg_inf;
+  }
+}
+
 inline void pushInstanceId(RTCIntersectContext* ctx, unsigned int id)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
@@ -187,6 +203,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 
     /* create transformed ray */
     Ray ray;
+    invalidateRay(ray);
     const Vec3fa ray_org = Vec3fa(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
@@ -234,14 +251,15 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 
     /* create transformed ray */
     Ray ray;
+    invalidateRay(ray);
     const Vec3fa ray_org = Vec3fa(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
     ray.org = xfmPoint (instance->world2local,ray_org);
     ray.dir = xfmVector(instance->world2local,ray_dir);
     ray.tnear() = RTCRayN_tnear(rays,N,ui);
     ray.tfar = RTCRayN_tfar(rays,N,ui);
-    ray.time() = RTCRayN_time(rays,N,ui);
-    ray.mask = RTCRayN_mask(rays,N,ui);
+    ray.time()  = RTCRayN_time(rays,N,ui);
+    ray.mask  = RTCRayN_mask(rays,N,ui);
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
@@ -729,7 +747,8 @@ void sphereFilterFunction(const RTCFilterFunctionNArguments* args)
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
-  assert(args->N == 1);
+  const unsigned int N = args->N;
+  assert(N == 1);
 
 
   /* avoid crashing when debug visualizations are used */
@@ -850,7 +869,6 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-  unsigned int geomID = rtcAttachGeometry(scene,geom);
 
   /* map triangle and vertex buffers */
   Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numTheta*(numPhi+1));
@@ -898,6 +916,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
   }
 
   rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   return geomID;
 }
@@ -1047,7 +1066,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa diffuse = Vec3fa(0.0f);
     if      (ray.instID[0] ==  0) diffuse = colors[ray.instID[0]][ray.primID];
     else if (ray.instID[0] == -1) diffuse = colors[4][ray.primID];
-    else                          diffuse = colors[ray.instID[0]][ray.geomID];
+    else                       diffuse = colors[ray.instID[0]][ray.geomID];
     color = color + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -1085,6 +1104,8 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
+    
+
     /* calculate pixel color */
     Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
@@ -1134,7 +1155,10 @@ void renderTileStandardStream(int taskIndex,
 
     /* initialize ray */
     Ray& primary = primary_stream[N];
-    init_Ray(primary, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.f, pos_inf, 0.0f, -1,
+    invalidateRay(primary);
+
+    init_Ray(primary, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx +
+    (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.f, pos_inf, 0.0f, -1,
              RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
     N++;
     RayStats_addRay(stats);
@@ -1159,6 +1183,8 @@ void renderTileStandardStream(int taskIndex,
     /* invalidate shadow rays by default */
     Ray& shadow = shadow_stream[N];
     {
+      shadow.org = Vec3fa(0.f);
+      shadow.dir = Vec3fa(0.f);
       shadow.tnear() = (float)(pos_inf);
       shadow.tfar  = (float)(neg_inf);
     }

@@ -79,10 +79,10 @@ unsigned int hair_indices[NUM_CURVES] = {
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, RTCGeometryType gtype, const Vec4f& pos)
 {
-  RTCGeometry geom = rtcNewGeometry(g_device, gtype);
+  RTCGeometry geom = rtcNewGeometry (g_device, gtype);
   rtcSetGeometryVertexAttributeCount(geom,1);
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(unsigned int), NUM_CURVES);
-  Vec4f *verts = (Vec4f*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), NUM_VERTICES);
+  Vec4f* verts = (Vec4f*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(Vec4f), NUM_VERTICES);
   for (int i = 0; i < NUM_VERTICES; i++) {
     verts[i] = pos + Vec4f(hair_vertices[i][0],
       hair_vertices[i][1], hair_vertices[i][2], hair_vertices[i][3]);

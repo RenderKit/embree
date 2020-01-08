@@ -43,8 +43,9 @@ inline Sample3f make_Sample3f(const Vec3f& v, const float pdf) {
 
 inline Vec3f cartesian(const float phi, const float sinTheta, const float cosTheta)
 {
-  float sinPhi, cosPhi;
-  sincos(phi, &sinPhi, &cosPhi);
+  const float sinPhi = sinf(phi);
+  const float cosPhi = cosf(phi);
+  //sincos(phi, &sinPhi, &cosPhi);
   return make_Vec3f(cosPhi * sinTheta,
                     sinPhi * sinTheta,
                     cosTheta);
@@ -135,8 +136,9 @@ inline Vec3f uniformSampleDisk(const float radius, const Vec2f &s)
 {
   const float r = sqrtf(s.x) * radius;
   const float phi = two_pi * s.y;
-  float sinPhi, cosPhi;
-  sincos(phi, &sinPhi, &cosPhi);
+  const float sinPhi = sinf(phi);
+  const float cosPhi = cosf(phi);
+  //sincos(phi, &sinPhi, &cosPhi);
   return make_Vec3f(r * cosPhi, r * sinPhi, 0.f);
 }
 
