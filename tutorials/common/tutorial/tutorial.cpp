@@ -1252,7 +1252,7 @@ namespace embree
       SceneGraph::calculateStatistics(flattened_scene.dynamicCast<SceneGraph::Node>()).print();
       std::cout << std::endl;
     }
-   
+
     /* convert model */
     obj_scene.add(flattened_scene);
     flattened_scene = nullptr;

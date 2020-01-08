@@ -55,6 +55,7 @@ namespace embree
   {
     cout << "TransformNode { " << std::endl;
     tab(cout, depth+1); cout << "closed = " << closed << std::endl;
+    tab(cout, depth+1); cout << "numTimeSteps = " << spaces.size() << std::endl;
     tab(cout, depth+1); cout << "child = "; child->print(cout,depth+1);
     tab(cout, depth); cout << "}" << std::endl;
   }
@@ -1760,7 +1761,7 @@ namespace embree
     {
        in->calculateInDegree();
        in->calculateClosed(instancing == SceneGraph::INSTANCING_GROUP);
-               
+
       std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
