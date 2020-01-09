@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -16,5 +16,5 @@
 
 #pragma once
 
-// Maximum number of instancing levels.
-#define RTC_MAX_INSTANCE_LEVEL_COUNT @EMBREE_MAX_INSTANCE_LEVEL_COUNT@
+#include "../../../common/math/quaternion.h"
+

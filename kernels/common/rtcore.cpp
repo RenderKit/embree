@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -1026,6 +1026,34 @@ RTC_NAMESPACE_BEGIN;
     RTC_VERIFY_HANDLE(xfm);
     const AffineSpace3fa transform = loadTransform(format, (const float*)xfm);
     geometry->setTransform(transform, timeStep);
+    RTC_CATCH_END2(geometry);
+  }
+
+  RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry hgeometry, unsigned int timeStep, const RTCQuaternionDecomposition* qd)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryTransformQuaternion);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_VERIFY_HANDLE(qd);
+    AffineSpace3fa transform;
+    transform.l.vx.x = qd->scale_x;
+    transform.l.vy.y = qd->scale_y;
+    transform.l.vz.z = qd->scale_z;
+    transform.l.vy.x = qd->skew_xy;
+    transform.l.vz.x = qd->skew_xz;
+    transform.l.vz.y = qd->skew_yz;
+    transform.l.vx.y = qd->translation_x;
+    transform.l.vx.z = qd->translation_y;
+    transform.l.vy.z = qd->translation_z;
+    transform.p.x    = qd->shift_x;
+    transform.p.y    = qd->shift_y;
+    transform.p.z    = qd->shift_z;
+    transform.l.vx.w = qd->quaternion_r;
+    transform.l.vy.w = qd->quaternion_i;
+    transform.l.vz.w = qd->quaternion_j;
+    transform.p.w    = qd->quaternion_k;
+    geometry->setQuaternionDecomposition(transform, timeStep);
     RTC_CATCH_END2(geometry);
   }
 

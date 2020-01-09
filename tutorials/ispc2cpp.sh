@@ -51,10 +51,10 @@ sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]
 sed -i.backup  's/foreach[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++) for (int \4=\5; \4<\6; \4++)/g' $2
 sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*\,[ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]*\.\.\.[ ]*\([^ ),]*\)[ ]*)/for (unsigned int \1=\2; \1<\3; \1++) for (unsigned int \4=\5; \4<\6; \4++)/g' $2
 
-sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([[:alnum:]._]*\))/unsigned int \1 = \2;/g' $2
+sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([][[:alnum:]._]*\))/unsigned int \1 = \2;/g' $2
 
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedMalloc(\2\*sizeof(\1),16)/g' $2
-sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_]*\)/alignedFree(\1)/g' $2
+sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_.]*\)/alignedFree(\1)/g' $2
 
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*;/(\1\*) alignedMalloc(sizeof(\1),16);/g' $2
 sed -i.backup  's/delete[ ]*\([a-zA-Z0-9_]*\)[ ]*;/alignedFree(\1);/g' $2
@@ -86,6 +86,7 @@ sed -i.backup 's/make_AffineSpace3fa_rotate/AffineSpace3fa::rotate/g' $2
 sed -i.backup 's/make_AffineSpace3fa_translate/AffineSpace3fa::translate/g' $2
 sed -i.backup 's/make_LinearSpace3fa_identity()/LinearSpace3fa(one)/g' $2
 sed -i.backup 's/make_LinearSpace3fa\([^_]\)/LinearSpace3fa\1/g' $2
+sed -i.backup 's/make_Quaternion3f_rotate/Quaternion3f::rotate/g' $2
 
 sed -i.backup  's/M_PI/float(pi)/g' $2
 sed -i.backup  's/\*pi\*/\*float(pi)\*/g' $2
@@ -101,6 +102,9 @@ sed -i.backup  's/make_Vec3f/Vec3f/g' $2
 sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Vec4f/Vec4f/g' $2
 #sed -i.backup  's/make_Sample3f/Sample3f/g' $2
+sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
+
+sed -i.backup  's/make_Quaternion3f/Quaternion3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
 
 sed -i.backup 's/sincos/sincosf/g' $2

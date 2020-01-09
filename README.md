@@ -7748,6 +7748,9 @@ installation: `C:\Program Files\Intel\Embree3`.
 [Displacement Geometry]: #displacement-geometry
 [BVH Builder]: #bvh-builder
 [Interpolation]: #interpolation
+[Quaternion Motion Blur]: #quaternion-motion_blur
+[Closest Point]: #closest-point
+[Voronoi]: #voronoi
 [imgHalfEdges]: https://embree.github.io/images/half_edges.png
 [imgTriangleUV]: https://embree.github.io/images/triangle_uv.png
 [imgQuadUV]: https://embree.github.io/images/quad_uv.png
@@ -7767,6 +7770,7 @@ installation: `C:\Program Files\Intel\Embree3`.
 [imgGridGeometry]: https://embree.github.io/images/grid_geometry.jpg
 [imgPointGeometry]: https://embree.github.io/images/point_geometry.jpg
 [imgMotionBlurGeometry]: https://embree.github.io/images/motion_blur_geometry.jpg
+[imgQuaternionMotionBlur]: https://embree.github.io/images/quaternion_motion_blur.jpg
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg
 [imgClosestPoint]: https://embree.github.io/images/closest_point.jpg
 [imgVoronoi]: https://embree.github.io/images/voronoi.jpg

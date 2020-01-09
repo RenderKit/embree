@@ -172,7 +172,7 @@ The API supports traversal of the BVH using a point query object that
 specifies a location and a query radius. For all primitives intersecting the
 according domain, a user defined callback function is called which allows
 queries such as finding the closest point on the surface geometries of the
-scene (see Tutorial [ClosestPoint]) or nearest neighbour queries (see
+scene (see Tutorial [Closest Point]) or nearest neighbour queries (see
 Tutorial [Voronoi]).
 
 See Section [rtcPointQuery] for a detailed description of how to set up
@@ -783,6 +783,11 @@ Embree API Reference
 ```
 \pagebreak
 
+## rtcSetGeometryTransformQuaternion
+``` {include=src/api/rtcSetGeometryTransformQuaternion.md}
+```
+\pagebreak
+
 ## rtcGetGeometryTransform
 ``` {include=src/api/rtcGetGeometryTransform.md}
 ```
@@ -997,6 +1002,16 @@ Embree API Reference
 
 ## rtcBuildBVH
 ``` {include=src/api/rtcBuildBVH.md}
+```
+\pagebreak
+
+## RTCQuaternionDecomposition
+``` {include=src/api/RTCQuaternionDecomposition.md}
+```
+\pagebreak
+
+## rtcInitQuaternionDecomposition
+``` {include=src/api/rtcInitQuaternionDecomposition.md}
 ```
 \pagebreak
 

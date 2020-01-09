@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,6 +18,7 @@
 #define __EMBREE_GEOMETRY_ISPH__
 
 #include "rtcore_buffer.isph"
+#include "rtcore_quaternion.isph"
 
 /* Opaque scene type */
 typedef uniform struct RTCSceneTy* uniform RTCScene;
@@ -229,6 +230,9 @@ RTC_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
 
 /* Sets the transformation of an instance for the specified time step. */
 RTC_API void rtcSetGeometryTransform(RTCGeometry geometry, uniform unsigned int timeStep, uniform RTCFormat format, const void* uniform xfm);
+
+/* Sets the transformation quaternion of an instance for the specified time step. */
+RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry geometry, uniform unsigned int timeStep, const uniform RTCQuaternionDecomposition* uniform qd);
 
 /* Returns the interpolated transformation of an instance for the specified time. */
 RTC_API void rtcGetGeometryTransform(RTCGeometry geometry, uniform float time, uniform RTCFormat format, void* uniform xfm);

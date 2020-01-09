@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -244,9 +244,8 @@ namespace embree
   __forceinline vfloat8 asFloat(const vint8&   a) { return _mm256_castsi256_ps(a); }
   __forceinline vint8   asInt  (const vfloat8& a) { return _mm256_castps_si256(a); }
 
-#if defined(__AVX512VL__)
-
-#endif
+  __forceinline vint8   toInt  (const vfloat8& a) { return vint8(a); }
+  __forceinline vfloat8 toFloat(const vint8&   a) { return vfloat8(a); }
 
   __forceinline vfloat8 operator +(const vfloat8& a) { return a; }
   __forceinline vfloat8 operator -(const vfloat8& a) {
@@ -315,10 +314,10 @@ namespace embree
   __forceinline vfloat8 operator /(const vfloat8& a, float          b) { return a / vfloat8(b); }
   __forceinline vfloat8 operator /(float          a, const vfloat8& b) { return vfloat8(a) / b; }
 
+  __forceinline vfloat8 operator &(const vfloat8& a, const vfloat8& b) { return _mm256_and_ps(a,b); }
+  __forceinline vfloat8 operator |(const vfloat8& a, const vfloat8& b) { return _mm256_or_ps(a,b); }
   __forceinline vfloat8 operator ^(const vfloat8& a, const vfloat8& b) { return _mm256_xor_ps(a,b); }
   __forceinline vfloat8 operator ^(const vfloat8& a, const vint8&   b) { return _mm256_xor_ps(a,_mm256_castsi256_ps(b)); }
-
-  __forceinline vfloat8 operator &(const vfloat8& a, const vfloat8& b) { return _mm256_and_ps(a,b); }
 
   __forceinline vfloat8 min(const vfloat8& a, const vfloat8& b) { return _mm256_min_ps(a, b); }
   __forceinline vfloat8 min(const vfloat8& a, float          b) { return _mm256_min_ps(a, vfloat8(b)); }
@@ -491,14 +490,15 @@ namespace embree
   __forceinline bool is_finite (const vboolf8& valid, const vfloat8& a) {
     return all(valid, (a >= vfloat8(-FLT_MAX)) & (a <= vfloat8(+FLT_MAX)));
   }
-      
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-  __forceinline vfloat8 floor(const vfloat8& a) { return _mm256_round_ps(a, _MM_FROUND_TO_NEG_INF   ); }
-  __forceinline vfloat8 ceil (const vfloat8& a) { return _mm256_round_ps(a, _MM_FROUND_TO_POS_INF   ); }
-  __forceinline vfloat8 trunc(const vfloat8& a) { return _mm256_round_ps(a, _MM_FROUND_TO_ZERO      ); }
+  __forceinline vfloat8 floor(const vfloat8& a) { return _mm256_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
+  __forceinline vfloat8 ceil (const vfloat8& a) { return _mm256_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
+  __forceinline vfloat8 trunc(const vfloat8& a) { return _mm256_round_ps(a, _MM_FROUND_TO_ZERO       ); }
+  __forceinline vfloat8 round(const vfloat8& a) { return _mm256_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
   __forceinline vfloat8 frac (const vfloat8& a) { return a-floor(a); }
 
   ////////////////////////////////////////////////////////////////////////////////

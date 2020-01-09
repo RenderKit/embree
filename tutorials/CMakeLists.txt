@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2019 Intel Corporation                                    ##
+## Copyright 2009-2020 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -89,6 +89,7 @@ ADD_SUBDIRECTORY(closest_point)
 ADD_SUBDIRECTORY(voronoi)
 ADD_SUBDIRECTORY(next_hit)
 ADD_SUBDIRECTORY(multiscene_geometry)
+ADD_SUBDIRECTORY(quaternion_motion_blur)
 
 IF (EMBREE_RAY_PACKETS)
   ADD_SUBDIRECTORY(viewer_stream)

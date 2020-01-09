@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -35,6 +35,13 @@
 
 namespace embree
 {
+  template <int N>
+  __forceinline vbool<N> isfinite(const vfloat<N>& v)
+  {
+    return (v >= vfloat<N>(-std::numeric_limits<float>::max()))
+         & (v <= vfloat<N>( std::numeric_limits<float>::max()));
+  }
+  
   /* foreach unique */
   template<typename vbool, typename vint, typename Closure>
   __forceinline void foreach_unique(const vbool& valid0, const vint& vi, const Closure& closure)

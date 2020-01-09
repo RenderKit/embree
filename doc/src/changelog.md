@@ -1,7 +1,10 @@
 Version History
 ---------------
 
-### New Features in Embree 3.6.2
+### New Features in Embree 3.7.0
+-   Added quaternion motion blur for correct interpolation of rotational transformations.
+-   Fixed wrong bounding calculations when a motion blurred instance
+    instantiated a motion blurred scene.
 -   Depth test consistently uses tnear <= t <= tfar now in order
     to support robustly continue traversal at a previous hit point
     in a way that guarentees reaching all hits.
@@ -11,8 +14,6 @@ Version History
 -   Implemented robust mode for curves.
 -   Implemented issue with motion blur builder where number of time segments
     for SAH heuristic were counted wrong due to some numerical issues.
--   Improved performance of multi-segment motion blur, by improving the
-    SAH heuristic used in the motion blur builder.
 -   Fixed a bug with rendering short fat curves.
 -   rtcCommitScene can now get called during rendering from multiple threads
     to lazily build geometry. When TBB is used this causes a much lower overhead

@@ -13,5 +13,8 @@
 [Curves]: #bézier-curves
 [Subdivision Geometry]: #subdivision-geometry
 [Displacement Geometry]: #displacement-geometry
+[Quaternion Motion Blur]: #quaternion-motion-blur
 [BVH Builder]: #bvh-builder
 [Interpolation]: #interpolation
+[Closest Point]: #closest-point
+[Voronoi]: #voronoi
