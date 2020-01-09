@@ -131,19 +131,6 @@ namespace embree
     }
   }
 
-  Geometry* Geometry::attach(Scene* scene, unsigned int geomID)
-  {
-
-    // this->geomID = geomID;
-
-    return this;
-  }
-
-  void Geometry::detach()
-  {
-    // this->geomID = -1;
-  }
-  
   void Geometry::enable () 
   {
     if (isEnabled()) 

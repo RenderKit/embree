@@ -82,8 +82,6 @@ namespace embree
     }
 
   public:
-    virtual Geometry* attach(Scene* scene, unsigned int geomID) override;
-    virtual void detach() override;
     virtual void setNumTimeSteps (unsigned int numTimeSteps) override;
     virtual void setInstancedScene(const Ref<Scene>& scene) override;
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep) override;

@@ -64,14 +64,6 @@ namespace embree
 #if defined(TASKING_TBB) || defined(TASKING_PPL)
     delete group; group = nullptr;
 #endif
-
-    /* detach all geometries */
-    for (auto& geometry : geometries) {
-      if (geometry) {
-        geometry->detach();
-      }
-  }
-
     device->refDec();
   }
   
@@ -622,7 +614,7 @@ namespace embree
       vertices.resize(geomID+1);
       geometryModCounters_.resize(geomID+1);
     }
-    geometries[geomID] = geometry->attach(this,geomID);
+    geometries[geomID] = geometry;
     geometryModCounters_[geomID] = 0;
     if (geometry->isEnabled()) {
       setModified ();
@@ -641,7 +633,6 @@ namespace embree
     if (geometry == null)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry");
     
-    geometry->detach();
     if (geometry->isEnabled()) {
       setModified ();
     }
