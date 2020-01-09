@@ -147,25 +147,20 @@ namespace embree
     Geometry::update();
   }
 
-  void TriangleMesh::preCommit() 
+  void TriangleMesh::commit() 
   {
     /* verify that stride of all time steps are identical */
     for (unsigned int t=0; t<numTimeSteps; t++)
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
-    Geometry::preCommit();
+    Geometry::commit();
   }
 
   void TriangleMesh::addElementsToCount (GeometryCounts & counts) const 
   {
     if (numTimeSteps == 1) counts.numTriangles += numPrimitives;
     else                   counts.numMBTriangles += numPrimitives;
-  }
-
-  void TriangleMesh::postCommit() 
-  {
-    Geometry::postCommit();
   }
 
   bool TriangleMesh::verify() 

@@ -196,7 +196,7 @@ namespace embree
     tessellationRate = clamp((int)N,1,16);
   }
 
-  void LineSegments::preCommit() 
+  void LineSegments::commit() 
   {
     /* verify that stride of all time steps are identical */
     for (unsigned int t=0; t<numTimeSteps; t++)
@@ -211,18 +211,13 @@ namespace embree
     if (getCurveType() == GTY_SUBTYPE_ORIENTED_CURVE)
       normals0 = normals[0];
         
-    Geometry::preCommit();
+    Geometry::commit();
   }
-
+  
   void LineSegments::addElementsToCount (GeometryCounts & counts) const 
   {
     if (numTimeSteps == 1) counts.numLineSegments += numPrimitives;
     else                   counts.numMBLineSegments += numPrimitives;
-  }
-
-  void LineSegments::postCommit() 
-  {
-    Geometry::postCommit();
   }
 
   bool LineSegments::verify ()

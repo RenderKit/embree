@@ -354,7 +354,7 @@ namespace embree
     return true;
   }
 
-  void CurveGeometry::preCommit()
+  void CurveGeometry::commit()
   {
     /* verify that stride of all time steps are identical */
     for (const auto& buffer : vertices)
@@ -383,12 +383,7 @@ namespace embree
     if (getCurveBasis() == GTY_BASIS_HERMITE)
       tangents0 = tangents[0];
 
-    Geometry::preCommit();
-  }
-
-  void CurveGeometry::postCommit() 
-  {
-    Geometry::postCommit();
+    Geometry::commit();
   }
 
 #endif

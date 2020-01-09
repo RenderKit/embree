@@ -69,6 +69,7 @@ namespace embree
     Geometry::update();
   }
 
+#if 0
   void Instance::preCommit()
   {
 #if 0 // disable expensive instance optimization for now
@@ -92,6 +93,7 @@ namespace embree
 
     Geometry::preCommit();
   }
+#endif
 
   void Instance::addElementsToCount (GeometryCounts & counts) const 
   {
@@ -110,11 +112,13 @@ namespace embree
     }
   }
 
+#if 0
   void Instance::postCommit() 
   {
     //alignedFree(motionDerivCoeffs); motionDerivCoeffs = nullptr;
     Geometry::postCommit();
   }
+#endif
     
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {

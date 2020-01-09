@@ -136,7 +136,7 @@ namespace embree
     Geometry::update();
   }
 
-  void Points::preCommit()
+  void Points::commit()
   {
     /* verify that stride of all time steps are identical */
     for (unsigned int t = 0; t < numTimeSteps; t++)
@@ -151,7 +151,7 @@ namespace embree
     if (getType() == GTY_ORIENTED_DISC_POINT)
       normals0 = normals[0];
 
-    Geometry::preCommit();
+    Geometry::commit();
   }
 
   void Points::addElementsToCount (GeometryCounts & counts) const 
@@ -160,11 +160,6 @@ namespace embree
       counts.numPoints += numPrimitives;
     else
       counts.numMBPoints += numPrimitives;
-  }
-
-  void Points::postCommit()
-  {
-    Geometry::postCommit();
   }
 
   bool Points::verify()
