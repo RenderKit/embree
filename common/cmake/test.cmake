@@ -54,7 +54,7 @@ MACRO (ADD_EMBREE_NORMAL_TEST name reference executable args)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-               COMMAND ${executable} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+               COMMAND ${executable}_ispc --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
     ENDIF()
   ENDIF()
 ENDMACRO()
@@ -86,7 +86,7 @@ MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
                WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-               COMMAND COMMAND ${executable} -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+               COMMAND COMMAND ${executable}_ispc -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
     ENDIF()
   ENDIF()
 ENDMACRO()
