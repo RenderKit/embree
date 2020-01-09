@@ -118,6 +118,17 @@ to use a refitting strategy for these spheres, the other half uses the
 performance rebuild of their spatial data structure each frame. The
 spheres are colored based on the ID of the hit sphere geometry.
 
+Multi Scene Geometry
+-------------
+
+![][imgDynamicScene]
+
+This tutorial demonstrates the creation of multiple scenes sharing the
+same geometry objects.  Here, three scenes are built.  One with all
+the dynamic spheres of the Dynamic Scene test and two others each with
+half.  The ground plane is shared by all three scenes.  The space bar
+is used to cycle the scene chosen for rendering.
+
 User Geometry
 -------------
 

@@ -88,6 +88,7 @@ ADD_SUBDIRECTORY(buildbench)
 ADD_SUBDIRECTORY(closest_point)
 ADD_SUBDIRECTORY(voronoi)
 ADD_SUBDIRECTORY(next_hit)
+ADD_SUBDIRECTORY(multiscene_geometry)
 ADD_SUBDIRECTORY(quaternion_motion_blur)
 
 IF (EMBREE_RAY_PACKETS)
