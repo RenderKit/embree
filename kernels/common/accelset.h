@@ -145,9 +145,14 @@ namespace embree
         return true;
       }
 
+      /* gets version info of topology */
+      unsigned int getTopologyVersion() const {
+        return numPrimitives;
+      }
+    
       /* returns true if topology changed */
-      bool topologyChanged() const {
-        return numPrimitivesChanged;
+      bool topologyChanged(unsigned int otherVersion) const {
+        return numPrimitives != otherVersion;
       }
 
   public:

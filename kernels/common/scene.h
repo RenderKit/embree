@@ -210,14 +210,22 @@ namespace embree
       modified = f; 
     }
 
+    __forceinline bool isGeometryModified(size_t geomID)
+    {
+      Ref<Geometry>& g = geometries[geomID];
+      if (!g) return false;
+      if (!g->isEnabled()) return false;
+      return g->getModCounter() > geometryModCounters_[geomID];
+    }
+
   protected:
+    
     __forceinline void checkIfModifiedAndSet () 
     {
       if (isModified ()) return;
       
-      auto geometryIsModified = [this](size_t i)->bool { 
-        auto g = geometries[i];
-        return (g && g->isEnabled ()) ? g->getModCounter() - geometryModCounters_[i] > 0 : false; 
+      auto geometryIsModified = [this](size_t geomID)->bool {
+        return isGeometryModified(geomID);
       };
 
       if (parallel_any_of (size_t(0), geometries.size (), geometryIsModified)) {

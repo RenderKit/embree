@@ -397,11 +397,12 @@ namespace embree
       void build() 
       {
         /* we reset the allocator when the mesh size changed */
-        if (mesh->numPrimitivesChanged) {
+        if (mesh->numPrimitives != numPreviousPrimitives) {
           bvh->alloc.clear();
           morton.clear();
         }
         size_t numPrimitives = mesh->size();
+        numPreviousPrimitives = numPrimitives;
         
         /* skip build for empty scene */
         if (numPrimitives == 0) {
@@ -460,6 +461,7 @@ namespace embree
       mvector<BVHBuilderMorton::BuildPrim> morton;
       BVHBuilderMorton::Settings settings;
       unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
+      unsigned int numPreviousPrimitives = 0;
     };
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)

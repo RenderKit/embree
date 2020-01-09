@@ -125,19 +125,19 @@ namespace embree
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      quads.setModified(true);
+      quads.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX)
     {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertices[slot].setModified(true);
+      vertices[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertexAttribs[slot].setModified(true);
+      vertexAttribs[slot].setModified();
     }
     else
     {
@@ -165,12 +165,6 @@ namespace embree
 
   void QuadMesh::postCommit() 
   {
-    quads.setModified(false);
-    for (auto& buf : vertices)
-      buf.setModified(false);
-    for (auto& attrib : vertexAttribs)
-      attrib.setModified(false);
-
     Geometry::postCommit();
   }
 

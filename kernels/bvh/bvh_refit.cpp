@@ -180,7 +180,7 @@ namespace embree
 
     template<int N, typename Mesh, typename Primitive>
     BVHNRefitT<N,Mesh,Primitive>::BVHNRefitT (BVH* bvh, Builder* builder, Mesh* mesh, size_t mode)
-      : bvh(bvh), builder(builder), refitter(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this)), mesh(mesh) {}
+      : bvh(bvh), builder(builder), refitter(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this)), mesh(mesh), topologyVersion(0) {}
 
     template<int N, typename Mesh, typename Primitive>
     void BVHNRefitT<N,Mesh,Primitive>::clear()
@@ -192,7 +192,8 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNRefitT<N,Mesh,Primitive>::build()
     {
-      if (mesh->topologyChanged()) {
+      if (mesh->topologyChanged(topologyVersion)) {
+        topologyVersion = mesh->getTopologyVersion();
         builder->build();
       }
       else

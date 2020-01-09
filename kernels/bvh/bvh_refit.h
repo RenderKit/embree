@@ -102,6 +102,7 @@ namespace embree
       std::unique_ptr<Builder> builder;
       std::unique_ptr<BVHNRefitter<N>> refitter;
       Mesh* mesh;
+      unsigned int topologyVersion;
     };
   }
 }

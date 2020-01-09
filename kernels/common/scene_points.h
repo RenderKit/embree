@@ -214,12 +214,6 @@ namespace embree
       return (float*) vertices0.getPtr();
     }
 
-    /* returns true if topology changed */
-    bool topologyChanged() const
-    {
-      return numPrimitivesChanged;
-    }
-
    public:
     BufferView<Vec3fa> vertices0;            //!< fast access to first vertex buffer
     BufferView<Vec3fa> normals0;             //!< fast access to first normal buffer

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -18,19 +18,27 @@
 
 namespace embree
 {
-	struct Tutorial : public TutorialApplication
-	{
-		Tutorial()
-			: TutorialApplication("dynamic_scene", FEATURE_RTCORE)
-		{
-			/* set start camera */
-			camera.from = Vec3f(2, 2, 2);
-			camera.to = Vec3f(0, 0, 0);
-		}
-	};
+  extern int g_scene_id;
+  
+  struct Tutorial : public TutorialApplication
+  {
+    Tutorial()
+      : TutorialApplication("dynamic_scene", FEATURE_RTCORE)
+    {
+      /* set start camera */
+      camera.from = Vec3f(2, 2, 2);
+      camera.to = Vec3f(0, 0, 0);
+    }
 
+    void drawGUI()
+    {
+      static const char* items[] = { "full scene", "right half", "left half" };
+      ImGui::Combo("",&g_scene_id,items,IM_ARRAYSIZE(items));
+    }
+  };
+  
 }
 
 int main(int argc, char** argv) {
-	return embree::Tutorial().main(argc, argv);
+  return embree::Tutorial().main(argc, argv);
 }

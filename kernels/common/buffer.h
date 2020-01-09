@@ -145,7 +145,7 @@ namespace embree
   public:
     /*! Buffer construction */
     RawBufferView()
-      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), modified(true), userData(0) {}
+      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), modCounter(1), modified(true), userData(0) {}
 
   public:
     /*! sets the buffer view */
@@ -158,6 +158,7 @@ namespace embree
       stride = stride_in;
       num = num_in;
       format = format_in;
+      modCounter++;
       modified = true;
       buffer = buffer_in;
     }
@@ -197,13 +198,24 @@ namespace embree
     }
 
     /*! mark buffer as modified or unmodified */
-    __forceinline void setModified(bool b) {
-      modified = b;
+    __forceinline void setModified() {
+      modCounter++;
+      modified = true;
     }
 
     /*! mark buffer as modified or unmodified */
-    __forceinline bool isModified() const {
+    __forceinline bool isModified(unsigned int otherModCounter) const {
+      return modCounter > otherModCounter;
+    }
+
+     /*! mark buffer as modified or unmodified */
+    __forceinline bool isLocalModified() const {
       return modified;
+    }
+
+    /*! clear local modified flag */
+    __forceinline void clearLocalModified() {
+      modified = false;
     }
 
     /*! returns true of the buffer is not empty */
@@ -223,7 +235,8 @@ namespace embree
     size_t stride;      //!< stride of the buffer in bytes
     size_t num;         //!< number of elements in the buffer
     RTCFormat format;   //!< format of the buffer
-    bool modified;      //!< true if the buffer got modified
+    unsigned int modCounter; //!< version ID of this buffer
+    bool modified;      //!< local modified data
     int userData;       //!< special data
     Ref<Buffer> buffer; //!< reference to the parent buffer
   };

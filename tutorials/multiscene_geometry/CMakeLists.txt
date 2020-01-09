@@ -1,5 +1,5 @@
 ## ======================================================================== ##
-## Copyright 2009-2019 Intel Corporation                                    ##
+## Copyright 2009-2020 Intel Corporation                                    ##
 ##                                                                          ##
 ## Licensed under the Apache License, Version 2.0 (the "License");          ##
 ## you may not use this file except in compliance with the License.         ##
@@ -14,5 +14,11 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
+SET(EMBREE_ISPC_SUPPORT OFF)
+
 INCLUDE(tutorial)
 ADD_TUTORIAL(multiscene_geometry)
+
+IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
+  ADD_EMBREE_TEST(multiscene_geometry)
+ENDIF()
