@@ -126,7 +126,7 @@ namespace embree
           Ref<Builder>& builder = builders[objectID].builder; assert(builder);
 
           /* build object if it got modified */
-          if (mesh->isModified())
+          if (scene->isGeometryModified(objectID))
             builder->build();
 
           /* create build primitive */

@@ -688,8 +688,8 @@ namespace embree
 
       /* we need to make all geometries modified, otherwise two level builder will 
         not rebuild currently not modified geometries */
-      parallel_for(geometries.size(), [&] ( const size_t i ) {
-          if (geometries[i]) geometries[i]->setModified();
+      parallel_for(geometryModCounters_.size(), [&] ( const size_t i ) {
+          geometryModCounters_[i] = 0;
         });
       
       if (getNumPrimitives(TriangleMesh::geom_type,false)) createTriangleAccel();

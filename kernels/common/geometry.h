@@ -234,7 +234,6 @@ namespace embree
     enum class State : unsigned {
       MODIFIED = 0,
       COMMITTED = 1,
-      BUILD = 2
     };
 
   public:
@@ -253,14 +252,7 @@ namespace embree
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
-    /*! tests if geometry is modified */
-    __forceinline bool isModified() const { return State::BUILD != (State)state; }
-
-    /*! marks geometry modified */
-    __forceinline void setModified() {
-      if (State::BUILD == (State)state) state = (unsigned)State::COMMITTED;
-    }
-
+    /*! tests if that geometry has some filter function set */
     __forceinline bool hasFilterFunctions () const {
       return (intersectionFilterN  != nullptr) || (occlusionFilterN  != nullptr);
     }

@@ -100,9 +100,9 @@ namespace embree
     Geometry::update();
   }
   
-  void Geometry::update() 
+  void Geometry::update()
   {
-    ++modCounter_;
+    ++modCounter_; // FIXME: required?
     state = (unsigned)State::MODIFIED;
   }
   
@@ -114,17 +114,12 @@ namespace embree
 
   void Geometry::preCommit()
   {
-    if (State::MODIFIED == (State)state) {
+    if (State::MODIFIED == (State)state)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"geometry not committed");
-    }
   }
 
   void Geometry::postCommit()
   {
-    /* set state to build */
-    if (isEnabled()) {
-      state = (unsigned)State::BUILD;
-    }
   }
 
   void Geometry::enable () 
@@ -132,7 +127,6 @@ namespace embree
     if (isEnabled()) 
       return;
 
-    state = (unsigned)State::COMMITTED;
     enabled = true;
     ++modCounter_;
   }
@@ -142,7 +136,6 @@ namespace embree
     if (isDisabled()) 
       return;
     
-    state = (unsigned)State::COMMITTED;
     enabled = false;
     ++modCounter_;
   }

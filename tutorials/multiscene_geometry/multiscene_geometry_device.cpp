@@ -158,6 +158,7 @@ namespace embree {
       //RTCBuildQuality quality = i%3 == 0 ? RTC_BUILD_QUALITY_MEDIUM : i%3 == 1 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
       RTCBuildQuality quality = i % 2 ? RTC_BUILD_QUALITY_REFIT : RTC_BUILD_QUALITY_LOW;
       //RTCBuildQuality quality = RTC_BUILD_QUALITY_REFIT;
+      //RTCBuildQuality quality = RTC_BUILD_QUALITY_LOW;
       int id0 = createSphere(g_scene_0, quality, p, r);
       position[id0] = p;
       radius[id0] = r;
