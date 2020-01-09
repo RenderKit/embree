@@ -89,9 +89,7 @@ namespace embree
     virtual AffineSpace3fa getTransform(float time) override;
     virtual void setMask (unsigned mask) override;
     virtual void build() {}
-    virtual void preCommit() override;
     virtual void addElementsToCount (GeometryCounts & counts) const override;
-    virtual void postCommit() override;
     virtual void commit() override;
 
   public:

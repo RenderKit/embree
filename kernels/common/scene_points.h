@@ -45,8 +45,7 @@ namespace embree
                    unsigned int num);
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
-    void preCommit();
-    void postCommit();
+    void commit();
     bool verify();
     void addElementsToCount (GeometryCounts & counts) const;
 
