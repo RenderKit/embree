@@ -209,11 +209,6 @@ namespace embree
       return LBBox3fa([&] (size_t itime) { return bounds(g,sx,sy,itime); }, dt, time_range, fnumTimeSegments);
     }
 
-    /* returns true if topology changed */
-    bool topologyChanged() const {
-      return grids.isModified() || numPrimitivesChanged;
-    }
-
   public:
     BufferView<Grid> grids;      //!< array of triangles
     BufferView<Vec3fa> vertices0;        //!< fast access to first vertex buffer

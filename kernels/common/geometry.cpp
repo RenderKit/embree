@@ -62,7 +62,6 @@ namespace embree
       gtype(gtype),
       quality(RTC_BUILD_QUALITY_MEDIUM),
       state((unsigned)State::MODIFIED),
-      numPrimitivesChanged(false),
       enabled(true),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr), pointQueryFunc(nullptr)
   {
@@ -79,7 +78,6 @@ namespace embree
     if (numPrimitives_in == numPrimitives) return;
     
     numPrimitives = numPrimitives_in;
-    numPrimitivesChanged = true;
     
     Geometry::update();
   }
@@ -123,8 +121,6 @@ namespace embree
 
   void Geometry::postCommit()
   {
-    numPrimitivesChanged = false;
-    
     /* set state to build */
     if (isEnabled()) {
       state = (unsigned)State::BUILD;

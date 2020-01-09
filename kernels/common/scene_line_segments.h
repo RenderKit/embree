@@ -218,11 +218,6 @@ namespace embree
       return (float*) vertices0.getPtr();
     }
 
-    /* returns true if topology changed */
-    bool topologyChanged() const {
-      return segments.isModified() || numPrimitivesChanged;
-    }
-
   public:
     BufferView<unsigned int> segments;      //!< array of line segment indices
     BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer

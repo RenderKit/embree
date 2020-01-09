@@ -216,43 +216,43 @@ namespace embree
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      curves.setModified(true);
+      curves.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX)
     {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertices[slot].setModified(true);
+      vertices[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_NORMAL)
     {
       if (slot >= normals.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      normals[slot].setModified(true);
+      normals[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_TANGENT)
     {
       if (slot >= tangents.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      tangents[slot].setModified(true);
+      tangents[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_NORMAL_DERIVATIVE)
     {
       if (slot >= dnormals.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      dnormals[slot].setModified(true);
+      dnormals[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertexAttribs[slot].setModified(true);
+      vertexAttribs[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_FLAGS) 
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      flags.setModified(true);
+      flags.setModified();
     }
     else
     {
@@ -388,14 +388,6 @@ namespace embree
 
   void CurveGeometry::postCommit() 
   {
-    curves.setModified(false);
-    for (auto& buf : vertices) buf.setModified(false);
-    for (auto& buf : normals)  buf.setModified(false);
-    for (auto& buf : tangents) buf.setModified(false);
-    for (auto& buf : dnormals)  buf.setModified(false);
-    for (auto& attrib : vertexAttribs) attrib.setModified(false);
-    flags.setModified(false);
-
     Geometry::postCommit();
   }
 

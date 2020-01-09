@@ -209,9 +209,14 @@ namespace embree
       return (float*) vertices0.getPtr();
     }
 
+    /* gets version info of topology */
+    unsigned int getTopologyVersion() const {
+      return quads.modCounter;
+    }
+    
     /* returns true if topology changed */
-    bool topologyChanged() const {
-      return quads.isModified() || numPrimitivesChanged;
+    bool topologyChanged(unsigned int otherVersion) const {
+      return quads.isModified(otherVersion); // || numPrimitivesChanged;
     }
 
     /* returns the projected area */

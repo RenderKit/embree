@@ -124,7 +124,7 @@ namespace embree
         
           BVH*     object  = objects [objectID]; assert(object);
           Ref<Builder>& builder = builders[objectID].builder; assert(builder);
-          
+
           /* build object if it got modified */
           if (mesh->isModified())
             builder->build();

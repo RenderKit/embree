@@ -74,6 +74,7 @@ namespace embree
       GeneralBVHBuilder::Settings settings;
       const float splitFactor;
       unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
+      unsigned int numPreviousPrimitives = 0;
 
       BVHNBuilderFastSpatialSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims0(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD),
@@ -88,12 +89,13 @@ namespace embree
       void build()
       {
         /* we reset the allocator when the mesh size changed */
-        if (mesh && mesh->numPrimitivesChanged) {
+        if (mesh && mesh->numPrimitives != numPreviousPrimitives) {
           bvh->alloc.clear();
         }
 
 	/* skip build for empty scene */
         const size_t numOriginalPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(Mesh::geom_type,false);
+        numPreviousPrimitives = numOriginalPrimitives;
         if (numOriginalPrimitives == 0) {
           prims0.clear();
           bvh->clear();
