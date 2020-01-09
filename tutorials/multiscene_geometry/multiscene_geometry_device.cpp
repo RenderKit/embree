@@ -139,6 +139,15 @@ namespace embree {
     g_scene_0 = rtcNewScene(g_device);
     g_scene_1 = rtcNewScene(g_device);
     g_scene_2 = rtcNewScene(g_device);
+
+    rtcSetSceneFlags(g_scene_0,RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST);
+    rtcSetSceneBuildQuality(g_scene_0,RTC_BUILD_QUALITY_LOW);
+
+    rtcSetSceneFlags(g_scene_1,RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST);
+    rtcSetSceneBuildQuality(g_scene_1,RTC_BUILD_QUALITY_LOW);
+    
+    //rtcSetSceneFlags(g_scene_2,RTC_SCENE_FLAG_DYNAMIC | RTC_SCENE_FLAG_ROBUST);
+    //rtcSetSceneBuildQuality(g_scene_2,RTC_BUILD_QUALITY_LOW);
     
     /* create some triangulated spheres */
     for (int i = 0; i < numSpheres; i++)
@@ -350,7 +359,10 @@ namespace embree {
       animateSphere(i, time + i);
     
     /* commit changes to scene */
-    rtcCommitScene(*g_curr_scene);
+    //rtcCommitScene(*g_curr_scene);
+    rtcCommitScene(g_scene_0);
+    rtcCommitScene(g_scene_1);
+    rtcCommitScene(g_scene_2);
     
     /* render all pixels */
     const int numTilesX = (width + TILE_SIZE_X - 1) / TILE_SIZE_X;
