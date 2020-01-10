@@ -67,8 +67,8 @@ convertbsp = sed -e 's@\\\[@[@g' -e 's@\\\]@]@g' -e 's@\\_]@_@g'
 ### webpages
 ########################################################################
 
-#markdown2web = $(PANDOC) --email-obfuscation=none -f markdown $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@ -s --mathjax=https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
-markdown2web = $(PANDOC) $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@ -s --mathjax=https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+markdown2web = $(PANDOC) --email-obfuscation=none -f markdown $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@ -s --mathjax=https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+#markdown2web = $(PANDOC) $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@ -s --mathjax=https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
 
 
 $(webpages): tmp/links_web.md tmp/images_local_png.md tmp/webtemplate.html
