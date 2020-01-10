@@ -24,10 +24,17 @@ namespace embree { namespace collide2 {
 
 class Constraint;
 
-struct ClothModel {
+struct Mesh {
+    
+    virtual ~Mesh() {};
+    
+    std::vector<vec_t>          x_;
+    std::vector<Triangle>       tris_;
+};
+
+struct ClothModel : public Mesh {
 
     // particle system
-    std::vector<vec_t>          x_;
     std::vector<vec_t>          x_0_;
     std::vector<vec_t>          x_old_;
     std::vector<vec_t>          x_last_;
@@ -35,9 +42,6 @@ struct ClothModel {
     std::vector<vec_t>          a_;
     std::vector<float>          m_;
     std::vector<float>          m_inv_;
-
-    // mesh connectivity
-    std::vector<Triangle>       tris_;
 
     // simulation constraints
     std::vector<Constraint*>    m_constraints_;

@@ -28,9 +28,14 @@ namespace embree {
 extern RTCDevice g_device;
 extern RTCScene g_scene;
 size_t cur_time = 0;
-std::set<std::pair<unsigned,unsigned>> collision_candidates;
-std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,unsigned>>> sim_collisions;
-bool use_user_geometry = true;
+extern std::set<std::pair<unsigned,unsigned>> collision_candidates;
+extern std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,unsigned>>> sim_collisions;
+extern bool use_user_geometry;
+extern std::vector<std::unique_ptr<collide2::Mesh>> meshes;
+extern unsigned int clothID;
+extern void triangle_bounds_func(const struct RTCBoundsFunctionArguments* args);
+extern void triangle_intersect_func(const RTCIntersectFunctionNArguments* args);
+extern void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions);
 
 const int numPhi = 45;
 const int numTheta = 2*numPhi;
@@ -49,153 +54,22 @@ const float collDelta = 1.e-3f;
 
 bool pause = true;
 
-unsigned int clothID;
-collide2::ClothModel cloth;
-
-SpinLock mutex;
-
-bool intersect_triangle_triangle (RTCScene scene, unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
-{
-  // //CSTAT(bvh_collide_prim_intersections1++);
-  // const SceneGraph::TriangleMeshNode* mesh0 = (SceneGraph::TriangleMeshNode*) scene0->geometries[geomID0].ptr;
-  // const SceneGraph::TriangleMeshNode* mesh1 = (SceneGraph::TriangleMeshNode*) scene1->geometries[geomID1].ptr;
-  // const SceneGraph::TriangleMeshNode::Triangle& tri0 = mesh0->triangles[primID0];
-  // const SceneGraph::TriangleMeshNode::Triangle& tri1 = mesh1->triangles[primID1];
-  
-  // /* special culling for scene intersection with itself */
-  // if (geomID0 == geomID1 && primID0 == primID1) {
-  //   return false;
-  // }
-  // //CSTAT(bvh_collide_prim_intersections2++);
-
-  // auto geo0 = rtcGetGeometry (scene, geomID0);
-  // auto geo1 = rtcGetGeometry (scene, geomID1);
-  // auto tri0 = (Triangle) rtcGetGeometryBufferData (geo0,RTC_BUFFER_TYPE_INDEX,0)[primID0];
-  // auto tri1 = (Triangle) rtcGetGeometryBufferData (geo1,RTC_BUFFER_TYPE_INDEX,0)[primID1];
-  // auto collVerts = (collide2::vec_t*) rtcGetGeometryBufferData (geo0,RTC_BUFFER_TYPE_VERTEX,0);
-  // auto x0 = collVerts[collTris[cPrimID].v0];
-  // auto x1 = collVerts[collTris[cPrimID].v1];
-  // auto x2 = collVerts[collTris[cPrimID].v2];
-  
-  // if (geomID0 == geomID1)
-  // {
-  //   /* ignore intersection with topological neighbors */
-  //   const vint4 t0(tri0.v0,tri0.v1,tri0.v2,tri0.v2);
-  //   if (any(vint4(tri1.v0) == t0)) return false;
-  //   if (any(vint4(tri1.v1) == t0)) return false;
-  //   if (any(vint4(tri1.v2) == t0)) return false;
-  // }
-  // //CSTAT(bvh_collide_prim_intersections3++);
-  
-  // const Vec3fa a0 = mesh0->positions[0][tri0.v0];
-  // const Vec3fa a1 = mesh0->positions[0][tri0.v1];
-  // const Vec3fa a2 = mesh0->positions[0][tri0.v2];
-  // const Vec3fa b0 = mesh1->positions[0][tri1.v0];
-  // const Vec3fa b1 = mesh1->positions[0][tri1.v1];
-  // const Vec3fa b2 = mesh1->positions[0][tri1.v2];
-  
-  // return isa::TriangleTriangleIntersector::intersect_triangle_triangle(a0,a1,a2,b0,b1,b2);
-}
-
-void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
-{
-  if (use_user_geometry)
-  {
-    // for (size_t i=0; i<num_collisions;)
-    // {
-    //   bool intersect = intersect_triangle_triangle(g_tutorial_scene.get(),collisions[i].geomID0,collisions[i].primID0,
-    //                                                g_tutorial_scene.get(),collisions[i].geomID1,collisions[i].primID1);
-    //   if (intersect) i++;
-    //   else collisions[i] = collisions[--num_collisions];
-    // }
-  }
-  
-  if (num_collisions == 0) 
-    return;
-
-  Lock<SpinLock> lock(mutex);
-  for (size_t i=0; i<num_collisions; i++)
-  {
-    const unsigned geomID0 = collisions[i].geomID0;
-    const unsigned primID0 = collisions[i].primID0;
-    const unsigned geomID1 = collisions[i].geomID1;
-    const unsigned primID1 = collisions[i].primID1;
-    //PRINT4(geomID0,primID0,geomID1,primID1);
-    collision_candidates.insert(std::make_pair(geomID0,primID0));
-    collision_candidates.insert(std::make_pair(geomID1,primID1));
-    sim_collisions.push_back(std::make_pair(std::make_pair(geomID0,primID0),std::make_pair(geomID1,primID1)));
-  }
-}
-
-void triangle_bounds_func(const struct RTCBoundsFunctionArguments* args)
-{
-  BBox3fa bounds = empty;
-  bounds.extend(cloth.x_[cloth.tris_[args->primID].v0]);
-  bounds.extend(cloth.x_[cloth.tris_[args->primID].v1]);
-  bounds.extend(cloth.x_[cloth.tris_[args->primID].v2]);
-  *(BBox3fa*) args->bounds_o = bounds;
-}
-
-void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
-{
-  void* ptr  = args->geometryUserPtr;
-  ::Ray* ray = (::Ray*)args->rayhit;
-  unsigned int primID = args->primID;
-  unsigned geomID = (unsigned) (size_t) ptr;
-  
-  auto & v0 = cloth.x_[cloth.tris_[args->primID].v0];
-  auto & v1 = cloth.x_[cloth.tris_[args->primID].v1];
-  auto & v2 = cloth.x_[cloth.tris_[args->primID].v2];
-  auto e1 = v0-v1;
-  auto e2 = v2-v0;
-  auto Ng = cross(e1,e2);
-
-  /* calculate denominator */
-  auto O = Vec3fa(ray->org);
-  auto D = Vec3fa(ray->dir);
-  auto C = v0 - O;
-  auto R = cross(D,C);
-  float den = dot(Ng,D);
-  float rcpDen = rcp(den);
-      
-  /* perform edge tests */
-  float u = dot(R,e2)*rcpDen;
-  float v = dot(R,e1)*rcpDen;
-          
-  /* perform backface culling */        
-  bool valid = (den != 0.0f) & (u >= 0.0f) & (v >= 0.0f) & (u+v<=1.0f);
-  if (likely(!valid)) return;
-      
-  /* perform depth test */
-  float t = dot(Vec3fa(Ng),C)*rcpDen;
-  valid &= (t > ray->tnear()) & (t < ray->tfar);
-  if (likely(!valid)) return;
-  
-  /* update hit */
-  ray->tfar = t;
-  ray->u = u;
-  ray->v = v;
-  ray->geomID = geomID;
-  ray->primID = primID;
-  ray->Ng = Ng;
-}
-
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
-  /* map triangle and vertex buffers */
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numTheta*(numPhi-1)+2);
-  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2*numTheta*(numPhi-1));
+  std::unique_ptr<collide2::Mesh> sphere (new collide2::Mesh());
+  sphere->x_.resize (numTheta*(numPhi-1)+2);
+  sphere->tris_.resize (2*numTheta*(numPhi-1));
 
   /* create sphere */
   int tri = 0;
   const float rcpNumTheta = rcp((float)numTheta);
   const float rcpNumPhi   = rcp((float)numPhi);
-  vertices[0].x = p.x;
-  vertices[0].y = p.y + r;
-  vertices[0].z = p.z;
+  sphere->x_[0].x = p.x;
+  sphere->x_[0].y = p.y + r;
+  sphere->x_[0].z = p.z;
 
   for (int phi=0; phi<numPhi-1; phi++)
   {
@@ -206,20 +80,20 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
     {
       const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
 
-      Vertex& v = vertices[phi*(numTheta)+theta+1];
+      auto& v = sphere->x_[phi*(numTheta)+theta+1];
       v.x = p.x + r*sinp*sin(thetaf);
       v.y = p.y + r*cosp;
       v.z = p.z + r*sinp*cos(thetaf);
     }
   }
-  vertices[numTheta*(numPhi-1)+1].x = p.x;
-  vertices[numTheta*(numPhi-1)+1].y = p.y - r;
-  vertices[numTheta*(numPhi-1)+1].z = p.z;
+  sphere->x_[numTheta*(numPhi-1)+1].x = p.x;
+  sphere->x_[numTheta*(numPhi-1)+1].y = p.y - r;
+  sphere->x_[numTheta*(numPhi-1)+1].z = p.z;
 
   for (int theta=0; theta<numTheta; theta++) {
-    triangles[tri].v0 = theta+1;
-    triangles[tri].v1 = 0;
-    triangles[theta].v2 = (theta+1)%numTheta + 1;
+    sphere->tris_[tri].v0 = theta+1;
+    sphere->tris_[tri].v1 = 0;
+    sphere->tris_[theta].v2 = (theta+1)%numTheta + 1;
     tri++;
   }
 
@@ -232,32 +106,70 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
       int p10 = (phi+1)*numTheta + 1 + theta;
       int p11 = (phi+1)*numTheta + 1 + (theta+1)%numTheta;
 
-      triangles[tri].v0 = p10;
-      triangles[tri].v1 = p01;
-      triangles[tri].v2 = p00;
+      sphere->tris_[tri].v0 = p10;
+      sphere->tris_[tri].v1 = p01;
+      sphere->tris_[tri].v2 = p00;
       tri++;
 
-      triangles[tri].v0 = p11;
-      triangles[tri].v1 = p01;
-      triangles[tri].v2 = p10;
+      sphere->tris_[tri].v0 = p11;
+      sphere->tris_[tri].v1 = p01;
+      sphere->tris_[tri].v2 = p10;
       tri++;
     }
   }
 
   for (int theta=0; theta<numTheta; theta++) {
-    triangles[tri].v0 = (theta+1)%numTheta + numTheta*(numPhi-2) + 1;
-    triangles[tri].v1 = numTheta*(numPhi-1)+1;
-    triangles[tri].v2 = theta + numTheta*(numPhi-2) + 1;
+    sphere->tris_[tri].v0 = (theta+1)%numTheta + numTheta*(numPhi-2) + 1;
+    sphere->tris_[tri].v1 = numTheta*(numPhi-1)+1;
+    sphere->tris_[tri].v2 = theta + numTheta*(numPhi-2) + 1;
     tri++;
   }
 
-  rtcCommitGeometry(geom);
-  unsigned int geomID = rtcAttachGeometry(scene,geom);
-  rtcReleaseGeometry(geom);
-  return geomID;
+  if (use_user_geometry) {
+    RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
+    unsigned int geomID = rtcAttachGeometry(scene,geom);
+    rtcSetGeometryUserPrimitiveCount(geom, sphere->tris_.size());
+    rtcSetGeometryUserData(geom,(void*)(size_t)geomID);
+    rtcSetGeometryBoundsFunction   (geom, triangle_bounds_func, nullptr);
+    rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
+    rtcCommitGeometry(geom);
+    rtcReleaseGeometry(geom);
+    meshes.push_back (std::move (sphere));
+    return geomID;
+  } else {
+    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sphere->x_.data(),0,sizeof(collide2::vec_t),sphere->x_.size());
+    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sphere->tris_.data(),0,sizeof(Triangle),sphere->tris_.size ());
+    rtcCommitGeometry(geom);
+    unsigned int geomID = rtcAttachGeometry(scene,geom);
+    rtcReleaseGeometry(geom);
+    meshes.push_back (std::move (sphere));
+    return geomID;
+  }
+
+  // if (use_user_geometry) {
+  //   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
+  //   unsigned int geomID = rtcAttachGeometry(scene,geom);
+  //   rtcSetGeometryUserPrimitiveCount(geom, cloth->tris_.size());
+  //   rtcSetGeometryUserData(geom,(void*)(size_t)geomID);
+  //   rtcSetGeometryBoundsFunction   (geom, triangle_bounds_func, nullptr);
+  //   rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
+  //   rtcCommitGeometry(geom);
+  //   rtcReleaseGeometry(geom);
+  //   meshes.push_back (std::move (cloth));
+  //   return geomID;
+  // } else {
+  //   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  //   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth->x_.data(), 0, sizeof(collide2::vec_t), cloth->x_.size());
+  //   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  cloth->tris_.data(), 0, sizeof(Triangle), cloth->tris_.size());
+  //   rtcCommitGeometry(geom);
+  //   unsigned int geomID = rtcAttachGeometry(scene,geom);
+  //   rtcReleaseGeometry(geom);
+  //   meshes.push_back (std::move (cloth));
+  //   return geomID;
+  // }
 }
 
-void initializeClothPositions () {
+void initializeClothPositions (collide2::ClothModel & cloth) {
 
   for (size_t i=0; i<NX; ++i) {
     for (size_t j=0; j<NZ; ++j) {
@@ -278,35 +190,36 @@ void initializeClothPositions () {
 
 unsigned int createClothSheet (RTCScene scene)
 {
-  cloth.x_0_.resize (NX*NZ);
-  cloth.x_.resize (NX*NZ);
-  cloth.x_old_.resize (NX*NZ);
-  cloth.x_last_.resize (NX*NZ);
+  std::unique_ptr<collide2::ClothModel> cloth (new collide2::ClothModel());
+  cloth->x_0_.resize (NX*NZ);
+  cloth->x_.resize (NX*NZ);
+  cloth->x_old_.resize (NX*NZ);
+  cloth->x_last_.resize (NX*NZ);
   collide2::vec_t nullvec {0.f, 0.f, 0.f, 0.f};
   collide2::vec_t gravity {0.f, -9.8f, 0.f, 0.f};
-  cloth.v_.resize (NX*NZ, nullvec);
-  cloth.a_.resize (NX*NZ, gravity);
-  cloth.m_.resize (NX*NZ, m);
-  cloth.m_inv_.resize (NX*NZ, 1.f / m);
-  cloth.tris_.resize (2*(NX-1)*(NZ-1));
+  cloth->v_.resize (NX*NZ, nullvec);
+  cloth->a_.resize (NX*NZ, gravity);
+  cloth->m_.resize (NX*NZ, m);
+  cloth->m_inv_.resize (NX*NZ, 1.f / m);
+  cloth->tris_.resize (2*(NX-1)*(NZ-1));
 
-  initializeClothPositions ();
+  initializeClothPositions (*cloth);
 
   // init topology
   for (size_t i=0; i<NX-1; ++i) {
     for (size_t j=0; j<NZ-1; ++j) {
-      cloth.tris_[2*(i*(NZ-1)+j)].v0 = i*NZ+j;
-      cloth.tris_[2*(i*(NZ-1)+j)].v1 = i*NZ+j+1;
-      cloth.tris_[2*(i*(NZ-1)+j)].v2 = (i+1)*NZ+j+1;
+      cloth->tris_[2*(i*(NZ-1)+j)].v0 = i*NZ+j;
+      cloth->tris_[2*(i*(NZ-1)+j)].v1 = i*NZ+j+1;
+      cloth->tris_[2*(i*(NZ-1)+j)].v2 = (i+1)*NZ+j+1;
 
-      cloth.tris_[2*(i*(NZ-1)+j)+1].v0 = (i+1)*NZ+j+1;
-      cloth.tris_[2*(i*(NZ-1)+j)+1].v1 = (i+1)*NZ+j;
-      cloth.tris_[2*(i*(NZ-1)+j)+1].v2 = i*NZ+j;
+      cloth->tris_[2*(i*(NZ-1)+j)+1].v0 = (i+1)*NZ+j+1;
+      cloth->tris_[2*(i*(NZ-1)+j)+1].v1 = (i+1)*NZ+j;
+      cloth->tris_[2*(i*(NZ-1)+j)+1].v2 = i*NZ+j;
     }
   }
 
-  cloth.k_stretch_ = ks;
-  cloth.k_damp_ = damping;
+  cloth->k_stretch_ = ks;
+  cloth->k_damp_ = damping;
 
   // set distance constraints
   for (size_t vID=0; vID<NX*NZ; ++vID) {
@@ -333,53 +246,53 @@ unsigned int createClothSheet (RTCScene scene)
 
     for (auto id : sIDs) {
       auto c = new collide2::DistanceConstraint ();
-      c->initConstraint (cloth, vID, id);
-      cloth.m_constraints_.push_back (c);
+      c->initConstraint (*cloth, vID, id);
+      cloth->m_constraints_.push_back (c);
     }
   }
 
   // fix corners
-  // cloth.m_[0] = 0.f;
-  // cloth.m_[(NX-1)*NZ] = 0.f;
-  // cloth.m_[(NX-1)*NZ + NZ-1] = 0.f;
-  // cloth.m_[NZ-1] = 0.f;
-  // cloth.m_inv_[0] = 0.f;
-  // cloth.m_inv_[(NX-1)*NZ] = 0.f;
-  // cloth.m_inv_[(NX-1)*NZ + NZ-1] = 0.f;
-  // cloth.m_inv_[NZ-1] = 0.f;
-  // cloth.a_[0].y = 0.f;
-  // cloth.a_[(NX-1)*NZ].y = 0.f;
-  // cloth.a_[(NX-1)*NZ + NZ-1].y = 0.f;
-  // cloth.a_[NZ-1].y = 0.f;
+  // cloth->m_[0] = 0.f;
+  // cloth->m_[(NX-1)*NZ] = 0.f;
+  // cloth->m_[(NX-1)*NZ + NZ-1] = 0.f;
+  // cloth->m_[NZ-1] = 0.f;
+  // cloth->m_inv_[0] = 0.f;
+  // cloth->m_inv_[(NX-1)*NZ] = 0.f;
+  // cloth->m_inv_[(NX-1)*NZ + NZ-1] = 0.f;
+  // cloth->m_inv_[NZ-1] = 0.f;
+  // cloth->a_[0].y = 0.f;
+  // cloth->a_[(NX-1)*NZ].y = 0.f;
+  // cloth->a_[(NX-1)*NZ + NZ-1].y = 0.f;
+  // cloth->a_[NZ-1].y = 0.f;
 
   if (use_user_geometry) {
     RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene,geom);
-    rtcSetGeometryUserPrimitiveCount(geom, cloth.tris_.size());
+    rtcSetGeometryUserPrimitiveCount(geom, cloth->tris_.size());
     rtcSetGeometryUserData(geom,(void*)(size_t)geomID);
     rtcSetGeometryBoundsFunction   (geom, triangle_bounds_func, nullptr);
     rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
     rtcCommitGeometry(geom);
     rtcReleaseGeometry(geom);
+    meshes.push_back (std::move (cloth));
     return geomID;
   } else {
     RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth.x_.data(), 0, sizeof(Vertex), cloth.x_.size());
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  cloth.tris_.data(), 0, sizeof(Triangle), cloth.tris_.size());
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth->x_.data(), 0, sizeof(collide2::vec_t), cloth->x_.size());
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  cloth->tris_.data(), 0, sizeof(Triangle), cloth->tris_.size());
     rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene,geom);
     rtcReleaseGeometry(geom);
+    meshes.push_back (std::move (cloth));
     return geomID;
   }
 }
 
-collide2::CollisionConstraint * makeCollisionConstraint (RTCScene scene, unsigned qID, unsigned cGeomID, unsigned cPrimID) {
-  auto collGeo = rtcGetGeometry (scene, cGeomID);
-  auto collTris = (Triangle*) rtcGetGeometryBufferData (collGeo,RTC_BUFFER_TYPE_INDEX,0);
-  auto collVerts = (collide2::vec_t*) rtcGetGeometryBufferData (collGeo,RTC_BUFFER_TYPE_VERTEX,0);
-  auto x0 = collVerts[collTris[cPrimID].v0];
-  auto x1 = collVerts[collTris[cPrimID].v1];
-  auto x2 = collVerts[collTris[cPrimID].v2];
+collide2::CollisionConstraint * makeCollisionConstraint (RTCScene scene, unsigned qID, unsigned cGeomID, unsigned cPrimID) 
+{
+  auto x0 = meshes[cGeomID]->x_[meshes[cGeomID]->tris_[cPrimID].v0];
+  auto x1 = meshes[cGeomID]->x_[meshes[cGeomID]->tris_[cPrimID].v1];
+  auto x2 = meshes[cGeomID]->x_[meshes[cGeomID]->tris_[cPrimID].v2];
   collide2::vec_t e0, e1;
   e0.x = x1.x - x0.x;
   e0.y = x1.y - x0.y;
@@ -395,6 +308,7 @@ collide2::CollisionConstraint * makeCollisionConstraint (RTCScene scene, unsigne
 
 void addCollisionConstraints (RTCScene scene)
 {
+  auto & cloth = (collide2::ClothModel &) (*meshes[clothID]);
   cloth.c_constraints_.clear ();
   for (auto const & coll : sim_collisions) {
     auto & c0 = coll.first;
@@ -423,6 +337,7 @@ void addCollisionConstraints (RTCScene scene)
 
 void updateScene () 
 {
+  auto & cloth = (collide2::ClothModel &) (*meshes[clothID]);
   collide2::updatePositions (cloth, h);
 
   // rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
@@ -482,7 +397,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 
 void device_key_pressed_handler(int key)
 {
-  if (key == 32  /* */) initializeClothPositions ();
+  if (key == 32  /* */) initializeClothPositions ((collide2::ClothModel &) (*meshes[clothID]));
   if (key == 80 /*p*/) { pause = !pause; }
   if (pause == true && key == 78 /*n*/) { updateScene (); std::cout << "current time: " << cur_time << std::endl;}
   else device_key_pressed_default(key);
