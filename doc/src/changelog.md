@@ -3,7 +3,7 @@ Version History
 
 ### New Features in Embree 3.7.0
 -   Added quaternion motion blur for correct interpolation of rotational transformations.
--   Fixed wrong bounding calculations when a motion blurred instance di
+-   Fixed wrong bounding calculations when a motion blurred instance did
     instantiate a motion blurred scene.
 -   In robust mode the depth test consistently uses tnear <= t <= tfar now in order
     to robustly continue traversal at a previous hit point
