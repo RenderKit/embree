@@ -96,11 +96,9 @@ void CollisionConstraint::solvePositionConstraint (ClothModel & model, float tim
     }
 
     auto & q = model.x_[bodyIDs_[0]];
-    float proj = (q.x - x0_.x) * n_.x + (q.y - x0_.y) * n_.y + (q.z - x0_.z) * n_.z - d_;
+    float proj = dot (q-x0_, n_) - d_;//(q.x - x0_.x) * n_.x + (q.y - x0_.y) * n_.y + (q.z - x0_.z) * n_.z - d_;
     if (proj < -d_) {
-        q.x += -n_.x * proj;
-        q.y += -n_.y * proj;
-        q.z += -n_.z * proj;
+        q += -n_*proj;
     }
 }
 

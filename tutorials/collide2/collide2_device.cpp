@@ -47,18 +47,44 @@ const float height = 5.f;
 const float ks = 4000.f;
 const float damping = .2f;
 const float m = 1.f;
-const float nsub = 2.f;
+const float nsub = 5.f;
 const float h = 1.f / (nsub * 24.f);
-const size_t nIters = 50;
-const float collDelta = 1.e-3f;
+const size_t nIters = 20;
+const float collDelta = 1.e-6f;
 
 bool pause = true;
+
+/* creates a ground plane */
+unsigned int createGroundPlane (RTCScene scene)
+{
+  /* create a triangulated plane with 2 triangles and 4 vertices */
+  std::unique_ptr<collide2::Mesh> plane (new collide2::Mesh());
+  plane->x_.resize (4);
+  plane->tris_.resize (2);
+
+  /* set plane->x_ */
+  plane->x_[0].x = -10; plane->x_[0].y = -2; plane->x_[0].z = -10;
+  plane->x_[1].x = -10; plane->x_[1].y = -2; plane->x_[1].z = +10;
+  plane->x_[2].x = +10; plane->x_[2].y = -2; plane->x_[2].z = -10;
+  plane->x_[3].x = +10; plane->x_[3].y = -2; plane->x_[3].z = +10;
+
+  /* set plane->tris_ */
+  plane->tris_[0].v0 = 0; plane->tris_[0].v1 = 1; plane->tris_[0].v2 = 2;
+  plane->tris_[1].v0 = 1; plane->tris_[1].v1 = 3; plane->tris_[1].v2 = 2;
+
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,plane->x_.data(),0,sizeof(collide2::vec_t),plane->x_.size());
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,plane->tris_.data(),0,sizeof(Triangle),plane->tris_.size ());
+  rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  meshes.push_back (std::move (plane));
+  return geomID;
+}
 
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
   std::unique_ptr<collide2::Mesh> sphere (new collide2::Mesh());
   sphere->x_.resize (numTheta*(numPhi-1)+2);
   sphere->tris_.resize (2*numTheta*(numPhi-1));
@@ -137,6 +163,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
     meshes.push_back (std::move (sphere));
     return geomID;
   } else {
+    RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sphere->x_.data(),0,sizeof(collide2::vec_t),sphere->x_.size());
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sphere->tris_.data(),0,sizeof(Triangle),sphere->tris_.size ());
     rtcCommitGeometry(geom);
@@ -145,28 +172,6 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
     meshes.push_back (std::move (sphere));
     return geomID;
   }
-
-  // if (use_user_geometry) {
-  //   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
-  //   unsigned int geomID = rtcAttachGeometry(scene,geom);
-  //   rtcSetGeometryUserPrimitiveCount(geom, cloth->tris_.size());
-  //   rtcSetGeometryUserData(geom,(void*)(size_t)geomID);
-  //   rtcSetGeometryBoundsFunction   (geom, triangle_bounds_func, nullptr);
-  //   rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
-  //   rtcCommitGeometry(geom);
-  //   rtcReleaseGeometry(geom);
-  //   meshes.push_back (std::move (cloth));
-  //   return geomID;
-  // } else {
-  //   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-  //   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth->x_.data(), 0, sizeof(collide2::vec_t), cloth->x_.size());
-  //   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  cloth->tris_.data(), 0, sizeof(Triangle), cloth->tris_.size());
-  //   rtcCommitGeometry(geom);
-  //   unsigned int geomID = rtcAttachGeometry(scene,geom);
-  //   rtcReleaseGeometry(geom);
-  //   meshes.push_back (std::move (cloth));
-  //   return geomID;
-  // }
 }
 
 void initializeClothPositions (collide2::ClothModel & cloth) {
@@ -252,20 +257,21 @@ unsigned int createClothSheet (RTCScene scene)
   }
 
   // fix corners
-  // cloth->m_[0] = 0.f;
-  // cloth->m_[(NX-1)*NZ] = 0.f;
+  cloth->m_[0] = 0.f;
+  cloth->m_[(NX-1)*NZ] = 0.f;
   // cloth->m_[(NX-1)*NZ + NZ-1] = 0.f;
   // cloth->m_[NZ-1] = 0.f;
-  // cloth->m_inv_[0] = 0.f;
-  // cloth->m_inv_[(NX-1)*NZ] = 0.f;
+  cloth->m_inv_[0] = 0.f;
+  cloth->m_inv_[(NX-1)*NZ] = 0.f;
   // cloth->m_inv_[(NX-1)*NZ + NZ-1] = 0.f;
   // cloth->m_inv_[NZ-1] = 0.f;
-  // cloth->a_[0].y = 0.f;
-  // cloth->a_[(NX-1)*NZ].y = 0.f;
+  cloth->a_[0].y = 0.f;
+  cloth->a_[(NX-1)*NZ].y = 0.f;
   // cloth->a_[(NX-1)*NZ + NZ-1].y = 0.f;
   // cloth->a_[NZ-1].y = 0.f;
 
   if (use_user_geometry) {
+    std::cout << "hello\n";
     RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene,geom);
     rtcSetGeometryUserPrimitiveCount(geom, cloth->tris_.size());
@@ -453,6 +459,7 @@ extern "C" void device_init (char* cfg)
   g_scene = rtcNewScene(g_device);
   rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
 
+  // createGroundPlane (g_scene);
   createTriangulatedSphere(g_scene,Vec3fa(0, 0., 0),1.f);
   clothID = createClothSheet (g_scene);
   rtcCommitScene (g_scene);

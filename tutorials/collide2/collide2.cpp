@@ -29,7 +29,7 @@ namespace embree
 
   std::set<std::pair<unsigned,unsigned>> collision_candidates;
   std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,unsigned>>> sim_collisions;
-  bool use_user_geometry = true;
+  bool use_user_geometry = false;
   std::vector<std::unique_ptr<collide2::Mesh>> meshes;
   unsigned int clothID;
 
@@ -164,6 +164,10 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
     Tutorial()
       : TutorialApplication("collide",FEATURE_RTCORE), pause(false)//, use_user_geometry(false)
     {
+      registerOption("use-user-geometry", [] (Ref<ParseStream> cin, const FileName& path) {
+          use_user_geometry = true;
+        }, "--use-user-geometry: use user geometries for collision detection");    
+        
       camera.from = Vec3fa(-2.5f,2.5f,-2.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }
