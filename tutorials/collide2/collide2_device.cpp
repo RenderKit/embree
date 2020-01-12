@@ -271,7 +271,6 @@ unsigned int createClothSheet (RTCScene scene)
   // cloth->a_[NZ-1].y = 0.f;
 
   if (use_user_geometry) {
-    std::cout << "hello\n";
     RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene,geom);
     rtcSetGeometryUserPrimitiveCount(geom, cloth->tris_.size());
