@@ -178,6 +178,22 @@ Tutorial [Voronoi]).
 See Section [rtcPointQuery] for a detailed description of how to set up
 point queries.
 
+Collision Detection
+-----------
+
+The Embree API also supports collision detection queries between two scenes.
+For scenes entirely composed of triangle geometries or entirely of user
+geometries, Embree can compute static, broadphase collision detection.  For 
+scenes of triangle geometries only, narrow phase detection is also performed. 
+A user defined callback function can be passed in to the collider along with 
+a user defined data pointer. 
+
+See Section [rtcCollide] for a detailed description of how to set up collision
+detection.
+
+Seen tutorial [Collision Detection] for a complete example of collsion 
+detection being used on a simple cloth solver.
+
 
 Miscellaneous
 -------------
@@ -976,6 +992,12 @@ Embree API Reference
 \pagebreak
 ## rtcPointQuery
 ``` {include=src/api/rtcPointQuery.md}
+```
+
+\pagebreak
+
+## rtcCollide
+``` {include=src/api/rtcCollide.md}
 ```
 
 \pagebreak
