@@ -257,16 +257,16 @@ unsigned int createClothSheet (RTCScene scene)
   }
 
   // fix corners
-  cloth->m_[0] = 0.f;
-  cloth->m_[(NX-1)*NZ] = 0.f;
+  // cloth->m_[0] = 0.f;
+  // cloth->m_[(NX-1)*NZ] = 0.f;
   // cloth->m_[(NX-1)*NZ + NZ-1] = 0.f;
   // cloth->m_[NZ-1] = 0.f;
-  cloth->m_inv_[0] = 0.f;
-  cloth->m_inv_[(NX-1)*NZ] = 0.f;
+  // cloth->m_inv_[0] = 0.f;
+  // cloth->m_inv_[(NX-1)*NZ] = 0.f;
   // cloth->m_inv_[(NX-1)*NZ + NZ-1] = 0.f;
   // cloth->m_inv_[NZ-1] = 0.f;
-  cloth->a_[0].y = 0.f;
-  cloth->a_[(NX-1)*NZ].y = 0.f;
+  // cloth->a_[0].y = 0.f;
+  // cloth->a_[(NX-1)*NZ].y = 0.f;
   // cloth->a_[(NX-1)*NZ + NZ-1].y = 0.f;
   // cloth->a_[NZ-1].y = 0.f;
 
@@ -350,7 +350,7 @@ void updateScene ()
   rtcCommitScene(g_scene);
 
   collision_candidates.clear();
-  sim_collisions.clear();
+  // sim_collisions.clear();
   rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
   addCollisionConstraints (g_scene);
 
