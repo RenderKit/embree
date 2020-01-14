@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -45,8 +45,7 @@ namespace embree
                    unsigned int num);
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
-    void preCommit();
-    void postCommit();
+    void commit();
     bool verify();
     void addElementsToCount (GeometryCounts & counts) const;
 
@@ -212,12 +211,6 @@ namespace embree
     /*! get fast access to first vertex buffer */
     __forceinline float * getCompactVertexArray () const {
       return (float*) vertices0.getPtr();
-    }
-
-    /* returns true if topology changed */
-    bool topologyChanged() const
-    {
-      return numPrimitivesChanged;
     }
 
    public:

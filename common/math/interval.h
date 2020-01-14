@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -140,4 +140,35 @@ namespace embree
   typedef Interval<float> Interval1f;
   typedef Vec2<Interval<float>> Interval2f;
   typedef Vec3<Interval<float>> Interval3f;
+
+inline void swap(float& a, float& b) { float tmp = a; a = b; b = tmp; }
+
+inline Interval1f shift(const Interval1f& v, float shift) { return Interval1f(v.lower + shift, v.upper + shift); }
+
+#define TWO_PI (2.0*M_PI)
+inline Interval1f sin(Interval1f interval)
+{
+  if (interval.upper-interval.lower >= M_PI) { return Interval1f(-1.0, 1.0); }
+  if (interval.upper > TWO_PI)                 { interval = shift(interval, -TWO_PI*floor(interval.upper/TWO_PI)); }
+  if (interval.lower < 0)                      { interval = shift(interval, -TWO_PI*floor(interval.lower/TWO_PI)); }
+  float sinLower = sin(interval.lower);
+  float sinUpper = sin(interval.upper);
+  if (sinLower > sinUpper) swap(sinLower, sinUpper);
+  if (interval.lower <       M_PI / 2.0 && interval.upper >       M_PI / 2.0) sinUpper =  1.0;
+  if (interval.lower < 3.0 * M_PI / 2.0 && interval.upper > 3.0 * M_PI / 2.0) sinLower = -1.0;
+  return Interval1f(sinLower, sinUpper);
+}
+
+inline Interval1f cos(Interval1f interval)
+{
+  if (interval.upper-interval.lower >= M_PI) { return Interval1f(-1.0, 1.0); }
+  if (interval.upper > TWO_PI)                 { interval = shift(interval, -TWO_PI*floor(interval.upper/TWO_PI)); }
+  if (interval.lower < 0)                      { interval = shift(interval, -TWO_PI*floor(interval.lower/TWO_PI)); }
+  float cosLower = cos(interval.lower);
+  float cosUpper = cos(interval.upper);
+  if (cosLower > cosUpper) swap(cosLower, cosUpper);
+  if (interval.lower < M_PI && interval.upper > M_PI) cosLower = -1.0;
+  return Interval1f(cosLower, cosUpper);
+}
+#undef TWO_PI
 }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -17,6 +17,9 @@
 #pragma once
 
 #include "vec3.h"
+#include "vec4.h"
+
+#include "transcendental.h"
 
 namespace embree
 {
@@ -39,6 +42,7 @@ namespace embree
 
     __forceinline          QuaternionT( const T& r       ) : r(r), i(zero), j(zero), k(zero) {}
     __forceinline explicit QuaternionT( const Vec3<T>& v ) : r(zero), i(v.x), j(v.y), k(v.z) {}
+    __forceinline explicit QuaternionT( const Vec4<T>& v ) : r(v.x), i(v.y), j(v.z), k(v.w) {}
     __forceinline          QuaternionT( const T& r, const T& i, const T& j, const T& k ) : r(r), i(i), j(j), k(k) {}
     __forceinline          QuaternionT( const T& r, const Vec3<T>& v ) : r(r), i(v.x), j(v.y), k(v.z) {}
 
@@ -78,6 +82,25 @@ namespace embree
   template<typename T> __forceinline QuaternionT<T> rcp       ( const QuaternionT<T>& a ) { return conj(a)*rcp(a.r*a.r + a.i*a.i + a.j*a.j + a.k*a.k); }
   template<typename T> __forceinline QuaternionT<T> normalize ( const QuaternionT<T>& a ) { return a*rsqrt(a.r*a.r + a.i*a.i + a.j*a.j + a.k*a.k); }
 
+  // evaluates a*q-r
+  template<typename T> __forceinline QuaternionT<T>
+  msub(const T& a, const QuaternionT<T>& q, const QuaternionT<T>& p)
+  {
+    return QuaternionT<T>(msub(a, q.r, p.r),
+                          msub(a, q.i, p.i),
+                          msub(a, q.j, p.j),
+                          msub(a, q.k, p.k));
+  }
+  // evaluates a*q-r
+  template<typename T> __forceinline QuaternionT<T>
+  madd (const T& a, const QuaternionT<T>& q, const QuaternionT<T>& p)
+  {
+    return QuaternionT<T>(madd(a, q.r, p.r),
+                          madd(a, q.i, p.i),
+                          madd(a, q.j, p.j),
+                          madd(a, q.k, p.k));
+  }
+
   ////////////////////////////////////////////////////////////////
   // Binary Operators
   ////////////////////////////////////////////////////////////////
@@ -109,9 +132,21 @@ namespace embree
   template<typename T> __forceinline QuaternionT<T>& operator /=( QuaternionT<T>& a, const T             & b ) { return a = a*rcp(b); }
   template<typename T> __forceinline QuaternionT<T>& operator /=( QuaternionT<T>& a, const QuaternionT<T>& b ) { return a = a*rcp(b); }
 
+  template<typename T, typename M> __forceinline QuaternionT<T>
+  select(const M& m, const QuaternionT<T>& q, const QuaternionT<T>& p)
+  {
+    return QuaternionT<T>(select(m, q.r, p.r),
+                          select(m, q.i, p.i),
+                          select(m, q.j, p.j),
+                          select(m, q.k, p.k));
+  }
+
+
   template<typename T> __forceinline Vec3<T> xfmPoint ( const QuaternionT<T>& a, const Vec3<T>&       b ) { return (a*QuaternionT<T>(b)*conj(a)).v(); }
   template<typename T> __forceinline Vec3<T> xfmVector( const QuaternionT<T>& a, const Vec3<T>&       b ) { return (a*QuaternionT<T>(b)*conj(a)).v(); }
   template<typename T> __forceinline Vec3<T> xfmNormal( const QuaternionT<T>& a, const Vec3<T>&       b ) { return (a*QuaternionT<T>(b)*conj(a)).v(); }
+
+  template<typename T> __forceinline T dot(const QuaternionT<T>& a, const QuaternionT<T>& b) { return a.r*b.r + a.i*b.i + a.j*b.j + a.k*b.k; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators
@@ -179,9 +214,9 @@ namespace embree
     k = sro*cya*cpi - cro*sya*spi;
   }
 
-  ////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
   /// Output Operators
-  ////////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
 
   template<typename T> static std::ostream& operator<<(std::ostream& cout, const QuaternionT<T>& q) {
     return cout << "{ r = " << q.r << ", i = " << q.i << ", j = " << q.j << ", k = " << q.k << " }";
@@ -190,4 +225,43 @@ namespace embree
   /*! default template instantiations */
   typedef QuaternionT<float>  Quaternion3f;
   typedef QuaternionT<double> Quaternion3d;
+
+  template<int N> using Quaternion3vf = QuaternionT<vfloat<N>>;
+  typedef QuaternionT<vfloat<4>>  Quaternion3vf4;
+  typedef QuaternionT<vfloat<8>>  Quaternion3vf8;
+  typedef QuaternionT<vfloat<16>> Quaternion3vf16;
+
+  //////////////////////////////////////////////////////////////////////////////
+  /// Interpolation
+  //////////////////////////////////////////////////////////////////////////////
+  template<typename T>
+  __forceinline QuaternionT<T>lerp(const QuaternionT<T>& q0,
+                                   const QuaternionT<T>& q1,
+                                   const T& factor)
+  {
+    QuaternionT<T> q;
+    q.r = lerp(q0.r, q1.r, factor);
+    q.i = lerp(q0.i, q1.i, factor);
+    q.j = lerp(q0.j, q1.j, factor);
+    q.k = lerp(q0.k, q1.k, factor);
+    return q;
+  }
+
+  template<typename T>
+  __forceinline QuaternionT<T> slerp(const QuaternionT<T>& q0,
+                                     const QuaternionT<T>& q1_,
+                                     const T& t)
+  {
+    T cosTheta = dot(q0, q1_);
+    QuaternionT<T> q1 = select(cosTheta < 0.f, -q1_, q1_);
+    cosTheta          = select(cosTheta < 0.f, -cosTheta, cosTheta);
+    if (unlikely(all(cosTheta > 0.9995f))) {
+      return normalize(lerp(q0, q1, t));
+    }
+    const T phi = t * fastapprox::acos(cosTheta);
+    T sinPhi, cosPhi;
+    fastapprox::sincos(phi, sinPhi, cosPhi);
+    QuaternionT<T> qperp = sinPhi * normalize(msub(cosTheta, q0, q1));
+    return msub(cosPhi, q0, qperp);
+  }
 }

@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -145,9 +145,14 @@ namespace embree
         return true;
       }
 
+      /* gets version info of topology */
+      unsigned int getTopologyVersion() const {
+        return numPrimitives;
+      }
+    
       /* returns true if topology changed */
-      bool topologyChanged() const {
-        return numPrimitivesChanged;
+      bool topologyChanged(unsigned int otherVersion) const {
+        return numPrimitives != otherVersion;
       }
 
   public:

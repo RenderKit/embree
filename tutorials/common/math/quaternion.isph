@@ -1,0 +1,137 @@
+// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#pragma once
+
+#include "vec.isph"
+
+struct Quaternion3f
+{
+  float r, i, j, k;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+/// Constructors
+////////////////////////////////////////////////////////////////////////////////
+
+inline uniform Quaternion3f make_Quaternion3f(const uniform Vec4f& v) {
+  uniform Quaternion3f q; q.r = v.x; q.i = v.y; q.j = v.z; q.k = v.w; return q;
+}
+inline varying Quaternion3f make_Quaternion3f(const varying Vec4f& v) {
+  Quaternion3f q; q.r = v.x; q.i = v.y; q.j = v.z; q.k = v.w; return q;
+}
+
+/*! return quaternion for rotation around arbitrary axis */
+inline varying Quaternion3f make_Quaternion3f_rotate(const varying Vec3f& u, const varying float r) {
+  Quaternion3f q;
+  Vec3f uu = sin(0.5*r)*normalize(u);
+
+  q.r = cos(0.5*r);
+  q.i = uu.x;
+  q.j = uu.y;
+  q.k = uu.z;
+  return q;
+}
+
+/*! return quaternion for rotation around arbitrary axis */
+inline uniform Quaternion3f make_Quaternion3f_rotate(const uniform Vec3f& u, const uniform float r) {
+  uniform Quaternion3f q;
+  uniform Vec3f uu = sin(0.5*r)*normalize(u);
+
+  q.r = cos(0.5*r);
+  q.i = uu.x;
+  q.j = uu.y;
+  q.k = uu.z;
+  return q;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Unary Operators
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+/// Binary Operators
+////////////////////////////////////////////////////////////////////////////////
+inline uniform Quaternion3f operator*(const uniform float a, const uniform Quaternion3f& q) { return make_Quaternion3f(a * make_Vec4f(q.r, q.i, q.j, q.k)); }
+inline uniform Quaternion3f operator*(const uniform Quaternion3f& q,  const uniform float a) { return make_Quaternion3f(a * make_Vec4f(q.r, q.i, q.j, q.k)); }
+inline varying Quaternion3f operator*(const varying float a, const uniform Quaternion3f& q) { return make_Quaternion3f(a * make_Vec4f(q.r, q.i, q.j, q.k)); }
+inline varying Quaternion3f operator*(const uniform Quaternion3f& q,  const varying float a) { return make_Quaternion3f(a * make_Vec4f(q.r, q.i, q.j, q.k)); }
+inline varying Quaternion3f operator*(const varying float a, const varying Quaternion3f& q) { return make_Quaternion3f(a * make_Vec4f(q.r, q.i, q.j, q.k)); }
+inline varying Quaternion3f operator*(const varying Quaternion3f& q,  const varying float a) { return make_Quaternion3f(a * make_Vec4f(q.r, q.i, q.j, q.k)); }
+inline uniform Quaternion3f operator+(const uniform Quaternion3f& q0, const uniform Quaternion3f& q1) { return make_Quaternion3f(make_Vec4f(q0.r+q1.r, q0.i+q1.i, q0.j+q1.j, q0.k+q1.k)); }
+inline uniform Quaternion3f operator-(const uniform Quaternion3f& q0, const uniform Quaternion3f& q1) { return make_Quaternion3f(make_Vec4f(q0.r-q1.r, q0.i-q1.i, q0.j-q1.j, q0.k-q1.k)); }
+inline varying Quaternion3f operator+(const varying Quaternion3f& q0, const varying Quaternion3f& q1) { return make_Quaternion3f(make_Vec4f(q0.r+q1.r, q0.i+q1.i, q0.j+q1.j, q0.k+q1.k)); }
+inline varying Quaternion3f operator-(const varying Quaternion3f& q0, const varying Quaternion3f& q1) { return make_Quaternion3f(make_Vec4f(q0.r-q1.r, q0.i-q1.i, q0.j-q1.j, q0.k-q1.k)); }
+
+inline uniform float dot(const uniform Quaternion3f& q0, const uniform Quaternion3f& q1) { return q0.r*q1.r + q0.i*q1.i + q0.j*q1.j + q0.k*q1.k; }
+inline varying float dot(const varying Quaternion3f& q0, const varying Quaternion3f& q1) { return q0.r*q1.r + q0.i*q1.i + q0.j*q1.j + q0.k*q1.k; }
+inline uniform Quaternion3f normalize(const uniform Quaternion3f& q) { uniform const float len = sqrt(dot(q, q)); return make_Quaternion3f(make_Vec4f(q.r/len, q.i/len, q.j/len, q.k/len)); }
+inline varying Quaternion3f normalize(const varying Quaternion3f& q) { varying const float len = sqrt(dot(q, q)); return make_Quaternion3f(make_Vec4f(q.r/len, q.i/len, q.j/len, q.k/len)); }
+
+////////////////////////////////////////////////////////////////////////////////
+/// Comparison Operators
+////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////
+// Interpolation
+////////////////////////////////////////////////////////////////////////////////
+
+inline uniform Quaternion3f lerp(const uniform factor, const uniform Quaternion3f& a,  const uniform Quaternion3f& b) {
+  return make_Quaternion3f(lerp(factor, make_Vec4f(a.r, a.i, a.j, a.k), make_Vec4f(b.r, b.i, b.j, b.k)));
+}
+
+inline varying Quaternion3f lerp(const varying factor, const uniform Quaternion3f& a,  const uniform Quaternion3f& b) {
+  return make_Quaternion3f(lerp(factor, make_Vec4f(a.r, a.i, a.j, a.k), make_Vec4f(b.r, b.i, b.j, b.k)));
+}
+
+inline uniform Quaternion3f slerp(const uniform float factor, const uniform Quaternion3f& q1, const uniform Quaternion3f& q2)
+{
+    uniform const float cosTheta = dot(q1, q2);
+    if (cosTheta > .9995f)
+        return normalize((1 - factor) * q1 + factor * q2);
+    else {
+        uniform const float theta = acos(clamp(cosTheta, -1.f, 1.f));
+        uniform const float thetap = theta * factor;
+        uniform Quaternion3f qperp = normalize(q2 - q1 * cosTheta);
+        return q1 * cos(thetap) + qperp * sin(thetap);
+    }
+}
+
+inline varying Quaternion3f slerp(const varying float factor, const uniform Quaternion3f& q1, const uniform Quaternion3f& q2)
+{
+    uniform const float cosTheta = dot(q1, q2);
+    if (cosTheta > .9995f)
+        return normalize((1 - factor) * q1 + factor * q2);
+    else {
+        const float theta = acos(clamp(cosTheta, -1.f, 1.f));
+        const float thetap = theta * factor;
+        Quaternion3f qperp = normalize(q2 - q1 * cosTheta);
+        return q1 * cos(thetap) + qperp * sin(thetap);
+    }
+}
+
+inline varying Quaternion3f slerp(const varying float factor, const varying Quaternion3f& q1, const varying Quaternion3f& q2)
+{
+    const float cosTheta = dot(q1, q2);
+    if (cosTheta > .9995f)
+        return normalize((1 - factor) * q1 + factor * q2);
+    else {
+        const float theta = acos(clamp(cosTheta, -1.f, 1.f));
+        const float thetap = theta * factor;
+        Quaternion3f qperp = normalize(q2 - q1 * cosTheta);
+        return q1 * cos(thetap) + qperp * sin(thetap);
+    }
+}

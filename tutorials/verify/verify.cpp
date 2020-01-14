@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -3766,106 +3766,48 @@ namespace embree
         return VerifyApplication::FAILED;
       }
 
-      // test setModified
-      geometry->state = (unsigned)Geometry::State::BUILD;
-      geometry->setModified ();
-      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
-        return VerifyApplication::FAILED;
-      }
-      geometry->setModified ();
-      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
-        return VerifyApplication::FAILED;
-      }
-      geometry->state = (unsigned)Geometry::State::MODIFIED;
-      if (geometry->state != (unsigned)Geometry::State::MODIFIED) {
-        return VerifyApplication::FAILED;
-      }
-
-      // test isModified
-      geometry->state = (unsigned)Geometry::State::BUILD;
-      if (geometry->isModified ()) {
-        return VerifyApplication::FAILED;
-      }
-      geometry->state = (unsigned)Geometry::State::MODIFIED;
-      if (!geometry->isModified ()) {
-        return VerifyApplication::FAILED;
-      }
-      geometry->state = (unsigned)Geometry::State::COMMITTED;
-      if (!geometry->isModified ()) {
-        return VerifyApplication::FAILED;
-      }
-
       //test update
-      geometry->state = (unsigned)Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::COMMITTED;
       geometry->update();
       if (geometry->state != (unsigned)Geometry::State::MODIFIED) {
         return VerifyApplication::FAILED;
       }
 
       //test commit
-      geometry->state = (unsigned)Geometry::State::BUILD;
+      geometry->state = (unsigned)Geometry::State::MODIFIED;
       geometry->commit();
       if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
         return VerifyApplication::FAILED;
       }
 
-      // test postCommit
-      geometry->state = (unsigned)Geometry::State::COMMITTED;
-      geometry->enabled = false;
-      geometry->postCommit ();
-      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
-        return VerifyApplication::FAILED;
-      }
-      geometry->enabled = true;
-      geometry->postCommit ();
-      if (geometry->state != (unsigned)Geometry::State::BUILD) {
-        return VerifyApplication::FAILED;
-      }
-
       // test disable
-      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->enabled = false;
       geometry->disable ();
-      if (geometry->state != (unsigned)Geometry::State::BUILD) {
-        return VerifyApplication::FAILED;
-      }
       if (geometry->isEnabled ()) {
         return VerifyApplication::FAILED;
       }
 
-      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->enabled = true;
       geometry->disable ();
-      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
-        return VerifyApplication::FAILED;
-      }
       if (geometry->isEnabled ()) {
         return VerifyApplication::FAILED;
       }
 
       // test enable
-      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->enabled = true;
       geometry->enable ();
-      if (geometry->state != (unsigned)Geometry::State::BUILD) {
-        return VerifyApplication::FAILED;
-      }
       if (!geometry->isEnabled ()) {
         return VerifyApplication::FAILED;
       }
 
-      geometry->state = (unsigned)Geometry::State::BUILD;
       geometry->enabled = false;
       geometry->enable ();
-      if (geometry->state != (unsigned)Geometry::State::COMMITTED) {
-        return VerifyApplication::FAILED;
-      }
       if (!geometry->isEnabled ()) {
         return VerifyApplication::FAILED;
       }
 
-	  rtcReleaseGeometry(geom0);
-	  AssertNoError(device);
+      rtcReleaseGeometry(geom0);
+      AssertNoError(device);
 
       return VerifyApplication::PASSED;
     }

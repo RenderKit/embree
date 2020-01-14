@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -109,6 +109,7 @@ namespace embree
       Geometry::GTypeMask gtype_;
       unsigned int geomID_ = std::numeric_limits<unsigned int>::max ();
       bool primrefarrayalloc;
+      unsigned int numPreviousPrimitives = 0;
 
       BVHNBuilderSAH (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize,
                       const Geometry::GTypeMask gtype, bool primrefarrayalloc = false)
@@ -123,7 +124,7 @@ namespace embree
       void build()
       {
         /* we reset the allocator when the mesh size changed */
-        if (mesh && mesh->numPrimitivesChanged) {
+        if (mesh && mesh->numPrimitives != numPreviousPrimitives) {
           bvh->alloc.clear();
         }
 
@@ -133,6 +134,7 @@ namespace embree
 
 	/* skip build for empty scene */
         const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(gtype_,false);
+        numPreviousPrimitives = numPrimitives;
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
@@ -220,6 +222,7 @@ namespace embree
       GeneralBVHBuilder::Settings settings;
       Geometry::GTypeMask gtype_;
       unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
+      unsigned int numPreviousPrimitives = 0;
 
       BVHNBuilderSAHQuantized (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const Geometry::GTypeMask gtype)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,Primitive::max_size()*BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD), gtype_(gtype) {}
@@ -232,12 +235,13 @@ namespace embree
       void build()
       {
         /* we reset the allocator when the mesh size changed */
-        if (mesh && mesh->numPrimitivesChanged) {
+        if (mesh && mesh->numPrimitives != numPreviousPrimitives) {
           bvh->alloc.clear();
         }
 
 	/* skip build for empty scene */
         const size_t numPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(gtype_,false);
+        numPreviousPrimitives = numPrimitives;
         if (numPrimitives == 0) {
           prims.clear();
           bvh->clear();
@@ -367,6 +371,7 @@ namespace embree
       mvector<SubGridBuildData> sgrids;
       GeneralBVHBuilder::Settings settings;
       unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
+      unsigned int numPreviousPrimitives = 0;
 
       BVHNBuilderSAHGrid (BVH* bvh, Scene* scene, const size_t sahBlockSize, const float intCost, const size_t minLeafSize, const size_t maxLeafSize, const size_t mode)
         : bvh(bvh), scene(scene), mesh(nullptr), prims(scene->device,0), sgrids(scene->device,0), settings(sahBlockSize, minLeafSize, min(maxLeafSize,BVH::maxLeafBlocks), travCost, intCost, DEFAULT_SINGLE_THREAD_THRESHOLD) {}
@@ -377,14 +382,17 @@ namespace embree
       void build()
       {
         /* we reset the allocator when the mesh size changed */
-        if (mesh && mesh->numPrimitivesChanged) {
+        if (mesh && mesh->numPrimitives != numPreviousPrimitives) {
           bvh->alloc.clear();
         }
-
+        
         /* if we use the primrefarray for allocations we have to take it back from the BVH */
         if (settings.primrefarrayalloc != size_t(inf))
           bvh->alloc.unshare(prims);
-        
+
+        const size_t numGridPrimitives = mesh ? mesh->size() : scene->getNumPrimitives(GridMesh::geom_type,false);
+        numPreviousPrimitives = numGridPrimitives;
+               
         PrimInfo pinfo(empty);
         size_t numPrimitives = 0;
 
@@ -486,7 +494,6 @@ namespace embree
                                        }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 
         }
-
 
         /* no primitives */
         if (numPrimitives == 0) {

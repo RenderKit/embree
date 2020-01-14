@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -36,6 +36,9 @@ struct AffineSpace3fa
 
 inline uniform AffineSpace3f make_AffineSpace3f(const uniform LinearSpace3f l) {
   uniform AffineSpace3f xfm; xfm.l = l; xfm.p = make_Vec3f(0,0,0); return xfm;
+}
+inline varying AffineSpace3f make_AffineSpace3f(const varying LinearSpace3f l) {
+  varying AffineSpace3f xfm; xfm.l = l; xfm.p = make_Vec3f(0,0,0); return xfm;
 }
 inline uniform AffineSpace3f make_AffineSpace3f(const uniform LinearSpace3f l, const uniform Vec3f p) {
   uniform AffineSpace3f xfm; xfm.l = l; xfm.p = p; return xfm;
@@ -87,6 +90,9 @@ inline varying AffineSpace3f operator*( const varying float         a, const var
 inline varying AffineSpace3f operator*( const varying AffineSpace3f a, const varying float         b ) { return make_AffineSpace3f(a.l*b,a.p*b); }
 inline varying AffineSpace3f operator*( const varying AffineSpace3f a, const varying AffineSpace3f b ) { return make_AffineSpace3f(a.l*b.l,a.l*b.p + a.p); }
 
+inline varying AffineSpace3f operator*( const varying float         a, const uniform AffineSpace3f b ) { return make_AffineSpace3f(a*b.l,a*b.p); }
+inline varying AffineSpace3f operator*( const uniform AffineSpace3f a, const varying float         b ) { return make_AffineSpace3f(a.l*b,a.p*b); }
+
 inline uniform Vec3f xfmPoint (const uniform AffineSpace3f a, const uniform Vec3f v) { return xfmVector(a.l,v)+a.p; }
 inline varying Vec3f xfmPoint (const uniform AffineSpace3f a, const varying Vec3f v) { return xfmVector(a.l,v)+a.p; }
 inline varying Vec3f xfmPoint (const varying AffineSpace3f a, const varying Vec3f v) { return xfmVector(a.l,v)+a.p; }
@@ -105,6 +111,17 @@ inline varying bool eq(const varying AffineSpace3f a, const varying AffineSpace3
 inline uniform bool ne(const uniform AffineSpace3f a, const uniform AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
 inline varying bool ne(const varying AffineSpace3f a, const varying AffineSpace3f b) { return ne(a.l,b.l) | ne(a.p,b.p); }
 
+////////////////////////////////////////////////////////////////////////////////
+// Interpolation
+////////////////////////////////////////////////////////////////////////////////
+
+inline uniform AffineSpace3f lerp(uniform float factor, const uniform AffineSpace3f& a, const uniform AffineSpace3f& b) {
+  return make_AffineSpace3f(lerp(factor, a.l, b.l), lerp(factor, a.p, b.p));
+}
+
+inline varying AffineSpace3f lerp(varying float factor, const uniform AffineSpace3f& a, const uniform AffineSpace3f& b) {
+  return make_AffineSpace3f(lerp(factor, a.l, b.l), lerp(factor, a.p, b.p));
+}
 
 /*! return scale matrix */
 inline uniform AffineSpace3f make_AffineSpace3f_scale(const uniform Vec3f& s) {

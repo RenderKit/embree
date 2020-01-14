@@ -118,6 +118,17 @@ to use a refitting strategy for these spheres, the other half uses the
 performance rebuild of their spatial data structure each frame. The
 spheres are colored based on the ID of the hit sphere geometry.
 
+Multi Scene Geometry
+-------------
+
+![][imgDynamicScene]
+
+This tutorial demonstrates the creation of multiple scenes sharing the
+same geometry objects.  Here, three scenes are built.  One with all
+the dynamic spheres of the Dynamic Scene test and two others each with
+half.  The ground plane is shared by all three scenes.  The space bar
+is used to cycle the scene chosen for rendering.
+
 User Geometry
 -------------
 
@@ -292,6 +303,18 @@ The number of time steps used can be configured using the `--time-steps
 <int>` and `--time-steps2 <int>` command line parameters, and the
 geometry can be rendered at a specific time using the the `--time
 <float>` command line parameter.
+
+Quaternion Motion Blur
+----------------------
+
+![][imgQuaternionMotionBlur]
+
+This tutorial demonstrates rendering of motion blur using quaternion
+interpolation. Shown is motion blur using spherical linear interpolation of
+the rotational component of the instance transformation on the left and
+simple linear interpolation of the instance transformation on the right. The
+number of time steps can be modified as well.
+
 
 Interpolation
 -------------

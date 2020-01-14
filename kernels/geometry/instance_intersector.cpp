@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -60,7 +60,7 @@ namespace embree
     void InstanceIntersector1::intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const InstancePrimitive& prim)
     {
       const Instance* instance = prim.instance;
-      
+
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
       if ((ray.mask & instance->mask) == 0) 
@@ -239,6 +239,7 @@ namespace embree
     {
       vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
+      //ray.geomID = 10;
       
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)

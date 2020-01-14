@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -234,7 +234,6 @@ namespace embree
     enum class State : unsigned {
       MODIFIED = 0,
       COMMITTED = 1,
-      BUILD = 2
     };
 
   public:
@@ -253,14 +252,7 @@ namespace embree
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
-    /*! tests if geometry is modified */
-    __forceinline bool isModified() const { return State::BUILD != (State)state; }
-
-    /*! marks geometry modified */
-    __forceinline void setModified() {
-      if (State::BUILD == (State)state) state = (unsigned)State::COMMITTED;
-    }
-
+    /*! tests if that geometry has some filter function set */
     __forceinline bool hasFilterFunctions () const {
       return (intersectionFilterN  != nullptr) || (occlusionFilterN  != nullptr);
     }
@@ -329,9 +321,6 @@ namespace embree
     
     /*! for all geometries */
   public:
-
-    virtual Geometry* attach(Scene* scene, unsigned int geomID);
-    virtual void detach();
 
     /*! Enable geometry. */
     virtual void enable();
@@ -462,11 +451,16 @@ namespace embree
 
     /*! Sets the instanced scene */
     virtual void setInstancedScene(const Ref<Scene>& scene) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
     }
-    
+
     /*! Sets transformation of the instance */
     virtual void setTransform(const AffineSpace3fa& transform, unsigned int timeStep) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! Sets transformation of the instance */
+    virtual void setQuaternionDecomposition(const AffineSpace3fa& qd, unsigned int timeStep) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -576,7 +570,6 @@ namespace embree
       GType gtype : 6;                //!< geometry type
       RTCBuildQuality quality : 3;    //!< build quality for geometry
       unsigned state : 2;
-      bool numPrimitivesChanged : 1; //!< true if number of primitives changed
       bool enabled : 1;              //!< true if geometry is enabled
     };
        

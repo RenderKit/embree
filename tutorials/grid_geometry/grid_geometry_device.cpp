@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -166,10 +166,8 @@ Vec3fa getVertex(GridMesh& gmesh, Grid& grid, int x, int y)
   int startVertexID = grid.startVertexID;
   int strideX = grid.strideX;
   int strideY = grid.strideY;
-  MAYBE_UNUSED int width = (int)grid.width;
-  MAYBE_UNUSED int height = (int)grid.height;
-  assert(x >= 0 && x < width);
-  assert(y >= 0 && y < height);
+  assert(x >= 0 && x < (int)grid.width);
+  assert(y >= 0 && y < (int)grid.height);
   return Vec3fa(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 
@@ -179,10 +177,8 @@ Vec3fa getVertex(GridMesh& gmesh, Grid& grid, int x, int y)
   int startVertexID = grid.startVertexID;
   int strideX = grid.strideX;
   int strideY = grid.strideY;
-  int width   = (int)grid.width;
-  int height  = (int)grid.height;
-  assert(x >= 0 && x < (int)width);
-  assert(y >= 0 && y < (int)height);
+  assert(x >= 0 && x < (int)grid.width);
+  assert(y >= 0 && y < (int)grid.height);
   return Vec3fa(gmesh.vertices[startVertexID + y*strideY + x*strideX]);
 }
 #endif
@@ -703,8 +699,8 @@ extern "C" void device_render (int* pixels,
 extern "C" void device_cleanup ()
 {
   alignedFree(gmesh.normals);
-  rtcReleaseGeometry (gmesh.geom);
-  rtcReleaseGeometry (gmesh.geomNormals);
+  rtcReleaseGeometry(gmesh.geom);
+  rtcReleaseGeometry(gmesh.geomNormals);
   rtcReleaseScene (g_scene); g_scene = nullptr;
 }
 

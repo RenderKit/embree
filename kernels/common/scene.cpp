@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -64,14 +64,6 @@ namespace embree
 #if defined(TASKING_TBB) || defined(TASKING_PPL)
     delete group; group = nullptr;
 #endif
-
-    /* detach all geometries */
-    for (auto& geometry : geometries) {
-      if (geometry) {
-        geometry->detach();
-      }
-  }
-
     device->refDec();
   }
   
@@ -638,7 +630,7 @@ namespace embree
       vertices.resize(geomID+1);
       geometryModCounters_.resize(geomID+1);
     }
-    geometries[geomID] = geometry->attach(this,geomID);
+    geometries[geomID] = geometry;
     geometryModCounters_[geomID] = 0;
     if (geometry->isEnabled()) {
       setModified ();
@@ -657,7 +649,6 @@ namespace embree
     if (geometry == null)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry");
     
-    geometry->detach();
     if (geometry->isEnabled()) {
       setModified ();
     }
@@ -713,8 +704,8 @@ namespace embree
 
       /* we need to make all geometries modified, otherwise two level builder will 
         not rebuild currently not modified geometries */
-      parallel_for(geometries.size(), [&] ( const size_t i ) {
-          if (geometries[i]) geometries[i]->setModified();
+      parallel_for(geometryModCounters_.size(), [&] ( const size_t i ) {
+          geometryModCounters_[i] = 0;
         });
       
       if (getNumPrimitives(TriangleMesh::geom_type,false)) createTriangleAccel();

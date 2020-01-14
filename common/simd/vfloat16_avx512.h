@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -197,6 +197,9 @@ namespace embree
   __forceinline vint16   asInt  (const vfloat16& a) { return _mm512_castps_si512(a); }
   __forceinline vuint16  asUInt (const vfloat16& a) { return _mm512_castps_si512(a); }
 
+  __forceinline vint16   toInt  (const vfloat16& a) { return vint16(a); }
+  __forceinline vfloat16 toFloat(const vint16&   a) { return vfloat16(a); }
+
   __forceinline vfloat16 operator +(const vfloat16& a) { return a; }
   __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a,vfloat16(-1)); }
 
@@ -246,6 +249,8 @@ namespace embree
   __forceinline vfloat16 operator /(const vfloat16& a, float           b) { return a/vfloat16(b); }
   __forceinline vfloat16 operator /(float           a, const vfloat16& b) { return vfloat16(a)/b; }
   
+  __forceinline vfloat16 operator &(const vfloat16& a, const vfloat16& b) { return _mm512_and_ps(a,b); }
+  __forceinline vfloat16 operator |(const vfloat16& a, const vfloat16& b) { return _mm512_or_ps(a,b); }
   __forceinline vfloat16 operator ^(const vfloat16& a, const vfloat16& b) {
     return  _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b))); 
   }
@@ -428,6 +433,9 @@ namespace embree
   }
   __forceinline vfloat16 ceil (const vfloat16& a) {
     return _mm512_ceil_ps(a);
+  }
+  __forceinline vfloat16 round (const vfloat16& a) {
+    return _mm512_roundscale_ps(a, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
   }
   __forceinline vint16 floori (const vfloat16& a) {
     return _mm512_cvt_roundps_epi32(a, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC);

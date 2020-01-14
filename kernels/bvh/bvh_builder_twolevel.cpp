@@ -1,5 +1,5 @@
 // ======================================================================== //
-// Copyright 2009-2019 Intel Corporation                                    //
+// Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
 // you may not use this file except in compliance with the License.         //
@@ -124,9 +124,9 @@ namespace embree
         
           BVH*     object  = objects [objectID]; assert(object);
           Ref<Builder>& builder = builders[objectID].builder; assert(builder);
-          
+
           /* build object if it got modified */
-          if (mesh->isModified())
+          if (scene->isGeometryModified(objectID))
             builder->build();
 
           /* create build primitive */
