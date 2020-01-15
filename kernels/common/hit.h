@@ -24,7 +24,7 @@ namespace embree
 {
   /* Hit structure for K hits */
   template<int K>
-  struct HitK
+    struct HitK
   {
     /* Default construction does nothing */
     __forceinline HitK() {}
@@ -52,7 +52,7 @@ namespace embree
 
   /* Specialization for a single hit */
   template<>
-  struct HitK<1>
+    struct __aligned(16) HitK<1>
   {
      /* Default construction does nothing */
     __forceinline HitK() {}

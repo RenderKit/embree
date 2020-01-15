@@ -3,6 +3,7 @@ Version History
 
 ### New Features in Embree 3.8.0
 -   RTCIntersectContext always non-const in Embree API
+-   Made RTCHit aligned to 16 bytes in Embree API
 
 ### New Features in Embree 3.7.0
 -   Added quaternion motion blur for correct interpolation of rotational transformations.
