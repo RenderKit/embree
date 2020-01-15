@@ -17,6 +17,7 @@ Version History
     along a ray using multiple ray queries.
 -   Implemented robust mode for curves. This has a small performance impact but
     fixes bounding problems with flat curves.
+-   Improved quality of motion blur BVH by using linear bounds during binning.
 -   Implemented issue with motion blur builder where number of time segments
     for SAH heuristic were counted wrong due to some numerical issues.
 -   Fixed an accuracy issue with rendering very short fat curves.
