@@ -193,7 +193,7 @@ struct RTCFilterFunctionNArguments
 {
   int* valid;
   void* geometryUserPtr;
-  const struct RTCIntersectContext* context;
+  struct RTCIntersectContext* context;
   struct RTCRayN* ray;
   struct RTCHitN* hit;
   unsigned int N;

@@ -198,7 +198,7 @@ struct RTCFilterFunctionNArguments
 {
   uniform int* uniform valid;
   void* uniform geometryUserPtr;
-  const RTCIntersectContext* uniform context;
+  RTCIntersectContext* uniform context;
   struct RTCRayN* uniform ray;
   struct RTCHitN* uniform hit;
   uniform unsigned int N;
