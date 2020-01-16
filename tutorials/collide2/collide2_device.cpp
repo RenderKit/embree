@@ -344,7 +344,7 @@ void updateScene ()
   auto & cloth = (collide2::ClothModel &) (*meshes[clothID]);
   collide2::updatePositions (cloth, h);
 
-  // rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
+  rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
   rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
   rtcCommitScene(g_scene);
 
@@ -355,7 +355,7 @@ void updateScene ()
   collide2::constrainPositions (cloth, h, nIters);
   collide2::updateVelocities (cloth, h);
 
-  // // rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
+  rtcUpdateGeometryBuffer(rtcGetGeometry(g_scene, clothID), RTC_BUFFER_TYPE_VERTEX, 0);
   rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
   rtcCommitScene(g_scene);
 
