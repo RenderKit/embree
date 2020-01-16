@@ -28,7 +28,6 @@ namespace embree {
 extern RTCDevice g_device;
 extern RTCScene g_scene;
 size_t cur_time = 0;
-extern std::set<std::pair<unsigned,unsigned>> collision_candidates;
 extern std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,unsigned>>> sim_collisions;
 extern bool use_user_geometry;
 extern std::vector<std::unique_ptr<collide2::Mesh>> meshes;
@@ -349,9 +348,8 @@ void updateScene ()
   rtcCommitGeometry(rtcGetGeometry(g_scene, clothID));
   rtcCommitScene(g_scene);
 
-  collision_candidates.clear();
   // sim_collisions.clear();
-  rtcCollide(g_scene,g_scene,CollideFunc,nullptr);
+  rtcCollide(g_scene,g_scene,CollideFunc,&sim_collisions);
   addCollisionConstraints (g_scene);
 
   collide2::constrainPositions (cloth, h, nIters);
@@ -394,8 +392,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   if (ray.geomID == clothID) {
     color = Vec3fa(0.0f,1.0f,0.0f);
   }
-  if (collision_candidates.find(std::make_pair(ray.geomID,ray.primID)) != collision_candidates.end())
-    color = Vec3fa(1.0f,1.0f,0.0f);
 
   return color*abs(dot(neg(ray.dir),normalize(ray.Ng)));
 }

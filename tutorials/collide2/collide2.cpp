@@ -27,8 +27,10 @@ namespace embree
   // RTCDevice g_device = nullptr;
   RTCScene g_scene = nullptr;
 
-  std::set<std::pair<unsigned,unsigned>> collision_candidates;
-  std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,unsigned>>> sim_collisions;
+  using SurfacePoint = std::pair<unsigned,unsigned>;
+  using Collision = std::pair<SurfacePoint, SurfacePoint>;
+  using Collisions = std::vector<Collision>;
+  Collisions sim_collisions;
   bool use_user_geometry = false;
   std::vector<std::unique_ptr<collide2::Mesh>> meshes;
   unsigned int clothID;
@@ -93,10 +95,8 @@ void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions
     const unsigned primID0 = collisions[i].primID0;
     const unsigned geomID1 = collisions[i].geomID1;
     const unsigned primID1 = collisions[i].primID1;
-    //PRINT4(geomID0,primID0,geomID1,primID1);
-    collision_candidates.insert(std::make_pair(geomID0,primID0));
-    collision_candidates.insert(std::make_pair(geomID1,primID1));
-    sim_collisions.push_back(std::make_pair(std::make_pair(geomID0,primID0),std::make_pair(geomID1,primID1)));
+
+    static_cast<Collisions*>(userPtr)->push_back(std::make_pair(std::make_pair(geomID0,primID0),std::make_pair(geomID1,primID1)));
   }
 }
 
