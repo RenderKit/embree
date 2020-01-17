@@ -526,8 +526,8 @@ namespace embree
 
         distance_i = align_shift_right<3>(distance_i,distance_i);
         const size_t hits = 4 + popcnt(mask);
-        vint8 dist(-1);
-
+        vint8 dist(INT_MIN+1);
+	
         isort_quick_update(dist,dist_A2);
         isort_quick_update(dist,dist_B2);
         isort_quick_update(dist,dist_C2);
