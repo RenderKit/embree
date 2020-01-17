@@ -565,8 +565,8 @@ namespace embree
         assert(mask != 0);
 #if defined(__AVX512ER__)
         traverseClosestHitAVX512<8,Nx,types,NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
-#elif defined(__AVX512VL__)
-        traverseClosestHitAVX512VL8<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
+//#elif defined(__AVX512VL__)
+//        traverseClosestHitAVX512VL8<NodeRef,BaseNode>(cur,mask,tNear,stackPtr,stackEnd);
 #else
 
         const BaseNode* node = cur.baseNode();
