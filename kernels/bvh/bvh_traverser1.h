@@ -526,7 +526,7 @@ namespace embree
 
         distance_i = align_shift_right<3>(distance_i,distance_i);
         const size_t hits = 4 + popcnt(mask);
-        vint8 dist(INT_MIN+1);
+        vint8 dist(INT_MIN); // this will work with -0.0f (0x80000000) as distance, isort_update uses >= to insert
 	
         isort_quick_update(dist,dist_A2);
         isort_quick_update(dist,dist_B2);
