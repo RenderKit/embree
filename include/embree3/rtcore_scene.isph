@@ -117,13 +117,13 @@ RTC_FORCEINLINE bool rtcPointQueryV(RTCScene scene, varying RTCPointQuery* unifo
 RTC_API void rtcIntersect1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHit* uniform rayhit);
 
 /* Intersects a packet of 4 rays with the scene. */
-RTC_API void rtcIntersect4(const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform rayhit);
+RTC_API void rtcIntersect4(const int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform rayhit);
 
 /* Intersects a packet of 8 rays with the scene. */
-RTC_API void rtcIntersect8(const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform rayhit);
+RTC_API void rtcIntersect8(const int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform rayhit);
 
 /* Intersects a packet of 16 rays with the scene. */
-RTC_API void rtcIntersect16(const int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform rayhit);
+RTC_API void rtcIntersect16(const int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform rayhit);
 
 /* Intersects a varying ray with the scene. */
 RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform rayhit) 
@@ -161,13 +161,13 @@ RTC_API void rtcIntersectNp(RTCScene scene, uniform RTCIntersectContext* uniform
 RTC_API void rtcOccluded1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform ray);
 
 /* Tests a packet of 4 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded4(const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTC_API void rtcOccluded4(const uniform int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform ray);
 
 /* Tests a packet of 8 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded8(const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTC_API void rtcOccluded8(const uniform int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform ray);
 
 /* Tests a packet of 16 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, const RTCIntersectContext* uniform context, void* uniform ray);
+RTC_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform ray);
 
 /* Tests a varying ray for occlusion with the scene. */
 RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray)

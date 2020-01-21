@@ -18,6 +18,11 @@
 #include "intrinsics.h"
 #include "string.h"
 #include "ref.h"
+#if defined(__FREEBSD__)
+#include <sys/cpuset.h>
+#include <pthread_np.h>
+typedef cpuset_t cpu_set_t;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms

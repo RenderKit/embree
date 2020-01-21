@@ -238,19 +238,6 @@ namespace embree
 #if defined(__AVX512VL__) // SKX
 
     template<int N>
-    __forceinline void isort_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
-    {
-      const vfloat<N> dist_shift = align_shift_right<N-1>(dist,dist);
-      const vint<N>  ptr_shift  = align_shift_right<N-1>(ptr,ptr);
-      const vboolf<N> m_geq = d >= dist;
-      const vboolf<N> m_geq_shift = m_geq << 1;
-      dist = select(m_geq,d,dist);
-      ptr  = select(m_geq,p,ptr);
-      dist = select(m_geq_shift,dist_shift,dist);
-      ptr  = select(m_geq_shift,ptr_shift,ptr);
-    }
-
-    template<int N>
     __forceinline void isort_update(vint<N> &dist, const vint<N> &d)
     {
       const vint<N> dist_shift = align_shift_right<N-1>(dist,dist);
@@ -261,37 +248,15 @@ namespace embree
     }
 
     template<int N>
-    __forceinline void isort_quick_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
-    {
-      dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
-      ptr  = align_shift_right<N-1>(ptr,permute(p,vint<N>(zero)));
-    }
-
-    template<int N>
-    __forceinline void isort_quick_update(vint<N> &dist, const vint<N> &d)
-    {
+    __forceinline void isort_quick_update(vint<N> &dist, const vint<N> &d) {
       dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
     }
 
-
-    __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0, const vllong4& n1)
-    {
+    __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0, const vllong4& n1) {
       return toScalar(permutex2var((__m256i)index,n0,n1));
     }
 
-    __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0)
-    {
-      return toScalar(permute(n0,(__m256i)index));
-    }
-
-    __forceinline size_t permuteExtract(const vint4& index, const vllong4& n0)
-    {
-      return permuteExtract(_mm256_castsi128_si256(index),n0);
-    }
-
-    template<int N>
-    __forceinline float permuteExtract(const vint<N>& index, const vfloat<N>& n)
-    {
+    __forceinline float permuteExtract(const vint8& index, const vfloat8& n) {
       return toScalar(permute(n,index));
     }
 
@@ -445,7 +410,7 @@ namespace embree
                                                               StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-        const BaseNode* node = (types == BVH_FLAG_ALIGNED_NODE) ? cur.alignedNode() : cur.baseNode();
+        const BaseNode* node = cur.baseNode();
         const vllong4 n0 = vllong4::loadu((vllong4*)&node->children[0]);
         const vllong4 n1 = vllong4::loadu((vllong4*)&node->children[4]);
         vint8 distance_i = (asInt(tNear) & 0xfffffff8) | vint8(step);
@@ -464,6 +429,7 @@ namespace embree
 
         const vint8 dist_A0 = min(d0, d1);
         const vint8 dist_B0 = max(d0, d1);
+        assert(dist_A0[0] < dist_B0[0]);
 
         mask &= mask-1;
         if (likely(mask == 0)) {
@@ -483,7 +449,9 @@ namespace embree
         const vint8 dist_A1     = min(dist_A0,d2);
         const vint8 dist_tmp_B1 = max(dist_A0,d2);
         const vint8 dist_B1     = min(dist_B0,dist_tmp_B1);
-        const vint8 dist_C1     = max(dist_B0,dist_tmp_B1);        
+        const vint8 dist_C1     = max(dist_B0,dist_tmp_B1);
+        assert(dist_A1[0] < dist_B1[0]);
+        assert(dist_B1[0] < dist_C1[0]);
 
         mask &= mask-1;
         if (likely(mask == 0)) {
@@ -508,7 +476,10 @@ namespace embree
         const vint8 dist_tmp_C2 = max(dist_B1,dist_tmp_B2);
         const vint8 dist_C2     = min(dist_C1,dist_tmp_C2);
         const vint8 dist_D2     = max(dist_C1,dist_tmp_C2);
-
+        assert(dist_A2[0] < dist_B2[0]);
+        assert(dist_B2[0] < dist_C2[0]);
+        assert(dist_C2[0] < dist_D2[0]);
+        
         mask &= mask-1;
         if (likely(mask == 0)) {
           cur                        = permuteExtract(dist_A2,n0,n1);
@@ -526,8 +497,8 @@ namespace embree
 
         distance_i = align_shift_right<3>(distance_i,distance_i);
         const size_t hits = 4 + popcnt(mask);
-        vint8 dist(-1);
-
+        vint8 dist(INT_MIN); // this will work with -0.0f (0x80000000) as distance, isort_update uses >= to insert
+	
         isort_quick_update(dist,dist_A2);
         isort_quick_update(dist,dist_B2);
         isort_quick_update(dist,dist_C2);
@@ -543,6 +514,9 @@ namespace embree
           isort_update(dist,new_dist);
 
         } while(mask);
+
+        for (size_t i=0; i<7; i++)
+          assert(dist[i+0]>=dist[i+1]);
 
         for (size_t i=0;i<hits-1;i++)
         {

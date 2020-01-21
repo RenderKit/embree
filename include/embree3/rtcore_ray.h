@@ -40,7 +40,7 @@ struct RTC_ALIGN(16) RTCRay
 };
 
 /* Hit structure for a single ray */
-struct RTCHit
+struct RTC_ALIGN(16) RTCHit
 {
   float Ng_x;          // x coordinate of geometry normal
   float Ng_y;          // y coordinate of geometry normal
