@@ -353,10 +353,6 @@ Collision Detection
 This tutorial demonstrates how to implement collision detection using
 the collide API. A simple cloth solver is setup to collide with a sphere.
 
-The choice of triangle geometries or user geometries can be configured with
-the `-use-user-geometries` command line parameter.  If present, user
-geometries are used; if missing, triangles.
-
 The cloth can be reset with the `space` bar.  The sim stepped once with `n` 
 and continuous simulation started and paused with `p`.
 

@@ -29,7 +29,7 @@ extern RTCDevice g_device;
 extern RTCScene g_scene;
 size_t cur_time = 0;
 extern std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,unsigned>>> sim_collisions;
-extern bool use_user_geometry;
+// extern bool use_user_geometry;
 extern std::vector<std::unique_ptr<collide2::Mesh>> meshes;
 extern unsigned int clothID;
 extern void triangle_bounds_func(const struct RTCBoundsFunctionArguments* args);
@@ -150,7 +150,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
     tri++;
   }
 
-  if (use_user_geometry) {
+  // if (use_user_geometry) {
     RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene,geom);
     rtcSetGeometryUserPrimitiveCount(geom, sphere->tris_.size());
@@ -161,16 +161,16 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
     rtcReleaseGeometry(geom);
     meshes.push_back (std::move (sphere));
     return geomID;
-  } else {
-    RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sphere->x_.data(),0,sizeof(collide2::vec_t),sphere->x_.size());
-    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sphere->tris_.data(),0,sizeof(Triangle),sphere->tris_.size ());
-    rtcCommitGeometry(geom);
-    unsigned int geomID = rtcAttachGeometry(scene,geom);
-    rtcReleaseGeometry(geom);
-    meshes.push_back (std::move (sphere));
-    return geomID;
-  }
+  // } else {
+  //   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  //   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sphere->x_.data(),0,sizeof(collide2::vec_t),sphere->x_.size());
+  //   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sphere->tris_.data(),0,sizeof(Triangle),sphere->tris_.size ());
+  //   rtcCommitGeometry(geom);
+  //   unsigned int geomID = rtcAttachGeometry(scene,geom);
+  //   rtcReleaseGeometry(geom);
+  //   meshes.push_back (std::move (sphere));
+  //   return geomID;
+  // }
 }
 
 void initializeClothPositions (collide2::ClothModel & cloth) {
@@ -269,7 +269,7 @@ unsigned int createClothSheet (RTCScene scene)
   // cloth->a_[(NX-1)*NZ + NZ-1].y = 0.f;
   // cloth->a_[NZ-1].y = 0.f;
 
-  if (use_user_geometry) {
+  // if (use_user_geometry) {
     RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_USER);
     unsigned int geomID = rtcAttachGeometry(scene,geom);
     rtcSetGeometryUserPrimitiveCount(geom, cloth->tris_.size());
@@ -280,16 +280,16 @@ unsigned int createClothSheet (RTCScene scene)
     rtcReleaseGeometry(geom);
     meshes.push_back (std::move (cloth));
     return geomID;
-  } else {
-    RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth->x_.data(), 0, sizeof(collide2::vec_t), cloth->x_.size());
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  cloth->tris_.data(), 0, sizeof(Triangle), cloth->tris_.size());
-    rtcCommitGeometry(geom);
-    unsigned int geomID = rtcAttachGeometry(scene,geom);
-    rtcReleaseGeometry(geom);
-    meshes.push_back (std::move (cloth));
-    return geomID;
-  }
+  // } else {
+  //   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
+  //   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cloth->x_.data(), 0, sizeof(collide2::vec_t), cloth->x_.size());
+  //   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX , 0, RTC_FORMAT_UINT3,  cloth->tris_.data(), 0, sizeof(Triangle), cloth->tris_.size());
+  //   rtcCommitGeometry(geom);
+  //   unsigned int geomID = rtcAttachGeometry(scene,geom);
+  //   rtcReleaseGeometry(geom);
+  //   meshes.push_back (std::move (cloth));
+  //   return geomID;
+  // }
 }
 
 collide2::CollisionConstraint * makeCollisionConstraint (RTCScene scene, unsigned qID, unsigned cGeomID, unsigned cPrimID) 

@@ -24,17 +24,17 @@ A user defined data pointer (e.g. `userPtr` argument) can also be passed in.
 
 For every pair of intersecting primitives that intersect each other, the 
 callback function (`callback` argument) is called. Any other computation the 
-user may wish to do and be done through that interface.  The user will be 
-provided with the primID's and geomID's of the intersecting pairs.  For 
-scenes entirely composed of triangle geometries the intersection will be of
-the triangles themselves.  For user geometries, the leaf node bounding volumes.
+user may wish to do can be done through that interface.  The user will be 
+provided with the primID's and geomID's of the intersecting pairs.  Currently,
+only scene entirely composed of user geometries are supported.  The primID
+will be the ID of the leaf node bounding volume.
 The `userPtr` argument can be used to input geometry data of the scene or 
 output results of the intersection query.
 
 #### SUPPORTED PRIMITIVES
 
-Currently, the only types supported are triangles (see [RTC_GEOMETRY_TYPE_TRIANGLE])
-and user geometries (see [RTC_GEOMETRY_TYPE_USER]).
+Currently, the only supported type is the user geometry type 
+(see [RTC_GEOMETRY_TYPE_USER]).
 
 #### EXIT STATUS
 
