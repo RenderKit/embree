@@ -238,19 +238,6 @@ namespace embree
 #if defined(__AVX512VL__) // SKX
 
     template<int N>
-    __forceinline void isort_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
-    {
-      const vfloat<N> dist_shift = align_shift_right<N-1>(dist,dist);
-      const vint<N>  ptr_shift  = align_shift_right<N-1>(ptr,ptr);
-      const vboolf<N> m_geq = d >= dist;
-      const vboolf<N> m_geq_shift = m_geq << 1;
-      dist = select(m_geq,d,dist);
-      ptr  = select(m_geq,p,ptr);
-      dist = select(m_geq_shift,dist_shift,dist);
-      ptr  = select(m_geq_shift,ptr_shift,ptr);
-    }
-
-    template<int N>
     __forceinline void isort_update(vint<N> &dist, const vint<N> &d)
     {
       const vint<N> dist_shift = align_shift_right<N-1>(dist,dist);
@@ -261,37 +248,15 @@ namespace embree
     }
 
     template<int N>
-    __forceinline void isort_quick_update(vfloat<N> &dist, vint<N> &ptr, const vfloat<N> &d, const vint<N> &p)
-    {
-      dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
-      ptr  = align_shift_right<N-1>(ptr,permute(p,vint<N>(zero)));
-    }
-
-    template<int N>
-    __forceinline void isort_quick_update(vint<N> &dist, const vint<N> &d)
-    {
+    __forceinline void isort_quick_update(vint<N> &dist, const vint<N> &d) {
       dist = align_shift_right<N-1>(dist,permute(d,vint<N>(zero)));
     }
 
-
-    __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0, const vllong4& n1)
-    {
+    __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0, const vllong4& n1) {
       return toScalar(permutex2var((__m256i)index,n0,n1));
     }
 
-    __forceinline size_t permuteExtract(const vint8& index, const vllong4& n0)
-    {
-      return toScalar(permute(n0,(__m256i)index));
-    }
-
-    __forceinline size_t permuteExtract(const vint4& index, const vllong4& n0)
-    {
-      return permuteExtract(_mm256_castsi128_si256(index),n0);
-    }
-
-    template<int N>
-    __forceinline float permuteExtract(const vint<N>& index, const vfloat<N>& n)
-    {
+    __forceinline float permuteExtract(const vint8& index, const vfloat8& n) {
       return toScalar(permute(n,index));
     }
 
