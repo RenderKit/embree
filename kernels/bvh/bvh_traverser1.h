@@ -445,7 +445,7 @@ namespace embree
                                                               StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-        const BaseNode* node = (types == BVH_FLAG_ALIGNED_NODE) ? cur.alignedNode() : cur.baseNode(); // FIXME: why this?
+        const BaseNode* node = cur.baseNode();
         const vllong4 n0 = vllong4::loadu((vllong4*)&node->children[0]);
         const vllong4 n1 = vllong4::loadu((vllong4*)&node->children[4]);
         vint8 distance_i = (asInt(tNear) & 0xfffffff8) | vint8(step);
