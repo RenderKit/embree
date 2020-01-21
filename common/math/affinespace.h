@@ -82,6 +82,10 @@ namespace embree
       }
 
     };
+  
+  // template specialization to get correct identity matrix for type AffineSpace3fa
+  template<>
+    __forceinline AffineSpaceT<LinearSpace3fa>::AffineSpaceT( OneTy )  : l(one),  p(0.f, 0.f, 0.f, 1.f) {}
 
   ////////////////////////////////////////////////////////////////////////////////
   // Unary Operators
