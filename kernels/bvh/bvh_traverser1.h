@@ -445,7 +445,7 @@ namespace embree
                                                               StackItemT<NodeRef>* stackEnd)
       {
         assert(mask != 0);
-        const BaseNode* node = (types == BVH_FLAG_ALIGNED_NODE) ? cur.alignedNode() : cur.baseNode();
+        const BaseNode* node = (types == BVH_FLAG_ALIGNED_NODE) ? cur.alignedNode() : cur.baseNode(); // FIXME: why this?
         const vllong4 n0 = vllong4::loadu((vllong4*)&node->children[0]);
         const vllong4 n1 = vllong4::loadu((vllong4*)&node->children[4]);
         vint8 distance_i = (asInt(tNear) & 0xfffffff8) | vint8(step);
@@ -464,6 +464,7 @@ namespace embree
 
         const vint8 dist_A0 = min(d0, d1);
         const vint8 dist_B0 = max(d0, d1);
+        assert(dist_A0[0] < dist_B0[0]);
 
         mask &= mask-1;
         if (likely(mask == 0)) {
@@ -483,7 +484,9 @@ namespace embree
         const vint8 dist_A1     = min(dist_A0,d2);
         const vint8 dist_tmp_B1 = max(dist_A0,d2);
         const vint8 dist_B1     = min(dist_B0,dist_tmp_B1);
-        const vint8 dist_C1     = max(dist_B0,dist_tmp_B1);        
+        const vint8 dist_C1     = max(dist_B0,dist_tmp_B1);
+        assert(dist_A1[0] < dist_B1[0]);
+        assert(dist_B1[0] < dist_C1[0]);
 
         mask &= mask-1;
         if (likely(mask == 0)) {
@@ -508,7 +511,10 @@ namespace embree
         const vint8 dist_tmp_C2 = max(dist_B1,dist_tmp_B2);
         const vint8 dist_C2     = min(dist_C1,dist_tmp_C2);
         const vint8 dist_D2     = max(dist_C1,dist_tmp_C2);
-
+        assert(dist_A2[0] < dist_B2[0]);
+        assert(dist_B2[0] < dist_C2[0]);
+        assert(dist_C2[0] < dist_D2[0]);
+        
         mask &= mask-1;
         if (likely(mask == 0)) {
           cur                        = permuteExtract(dist_A2,n0,n1);
@@ -543,6 +549,9 @@ namespace embree
           isort_update(dist,new_dist);
 
         } while(mask);
+
+        for (size_t i=0; i<7; i++)
+          assert(dist[i+0]>=dist[i+1]);
 
         for (size_t i=0;i<hits-1;i++)
         {
