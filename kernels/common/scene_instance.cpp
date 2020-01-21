@@ -26,7 +26,6 @@ namespace embree
     , object(object)
     , local2world(nullptr)
     , interpolation(LINEAR)
-      //, motionDerivCoeffs(nullptr)
   {
     if (object) object->refInc();
     world2local0 = one;
@@ -38,7 +37,6 @@ namespace embree
   Instance::~Instance()
   {
     alignedFree(local2world);
-    //alignedFree(motionDerivCoeffs);
     if (object) object->refDec();
   }
 
@@ -83,14 +81,6 @@ namespace embree
     }
 #endif
 
-    /*if (interpolation == TransformationInterpolation::NONLINEAR && numTimeSteps > 1)
-    {
-      alignedFree(motionDerivCoeffs);
-      motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
-      for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
-        motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(local2world[timeStep+0], local2world[timeStep+1]);
-        }*/
-
     Geometry::preCommit();
   }
 #endif
@@ -112,13 +102,6 @@ namespace embree
     }
   }
 
-#if 0
-  void Instance::postCommit() 
-  {
-    //alignedFree(motionDerivCoeffs); motionDerivCoeffs = nullptr;
-    Geometry::postCommit();
-  }
-#endif
     
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {

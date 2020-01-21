@@ -223,7 +223,6 @@ namespace embree
     AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep (either normal matrix or quaternion decomposition)
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
     TransformationInterpolation interpolation;
-    //MotionDerivativeCoefficients* motionDerivCoeffs; //!< coefficients of motion derivative for each timestep (for non-linear interpolation)
   };
 
   namespace isa
