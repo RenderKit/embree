@@ -51,7 +51,7 @@ const float h = 1.f / (nsub * 24.f);
 const size_t nIters = 20;
 const float collDelta = 1.e-6f;
 
-bool pause = true;
+bool pause = false;
 
 /* creates a ground plane */
 unsigned int createGroundPlane (RTCScene scene)
