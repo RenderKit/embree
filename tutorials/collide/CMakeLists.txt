@@ -14,8 +14,8 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(collide2 collide2.cpp collide2_device.cpp constraints.cpp ../common/tutorial/application.cpp)
-TARGET_LINK_LIBRARIES(collide2 embree image tutorial noise)
-SET_PROPERTY(TARGET collide2 PROPERTY FOLDER tutorials)
-INSTALL(TARGETS collide2 DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
+ADD_EXECUTABLE(collide collide.cpp collide_device.cpp constraints.cpp ../common/tutorial/application.cpp)
+TARGET_LINK_LIBRARIES(collide embree image tutorial noise)
+SET_PROPERTY(TARGET collide PROPERTY FOLDER tutorials)
+INSTALL(TARGETS collide DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
