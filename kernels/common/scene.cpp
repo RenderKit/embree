@@ -115,6 +115,7 @@ namespace embree
 
   void Scene::createTriangleAccel()
   {
+#if 0
     /* the collision code only works for BVH4Triangle4v acceleration structure */
     if (quality_flags != RTC_BUILD_QUALITY_LOW) {
       accels_add(device->bvh4_factory->BVH4Triangle4v(this,BVH4Factory::BuildVariant::STATIC,BVH4Factory::IntersectVariant::ROBUST));
@@ -122,6 +123,7 @@ namespace embree
       accels_add(device->bvh4_factory->BVH4Triangle4v(this,BVH4Factory::BuildVariant::DYNAMIC,BVH4Factory::IntersectVariant::ROBUST));
     }
     return;
+#endif
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
     if (device->tri_accel == "default") 
@@ -449,14 +451,6 @@ namespace embree
 
   void Scene::createUserGeometryAccel()
   {
-    /* the collision code only works for BVH4Triangle4v acceleration structure */
-    if (quality_flags != RTC_BUILD_QUALITY_LOW) {
-      accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::STATIC));
-    } else {
-      accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC)); // FIXME: only enable when memory consumption issue with instancing is solved
-    }
-    return;
-    
 #if defined(EMBREE_GEOMETRY_USER)
     if (device->object_accel == "default") 
     {

@@ -376,6 +376,7 @@ namespace embree
 
 #if defined(__AVX__)
     DEFINE_COLLIDER(BVH8ColliderTriangle4v,BVHNColliderTriangle4v<8>);
+    DEFINE_COLLIDER(BVH8ColliderUserGeom,BVHNColliderUserGeom<8>);
 #endif
   }
 }

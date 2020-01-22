@@ -99,6 +99,8 @@ namespace embree
     Accel::Intersectors BVH8GridMBIntersectors(BVH8* bvh, IntersectVariant ivariant);
 
   private:
+    DEFINE_SYMBOL2(Accel::Collider,BVH8ColliderUserGeom);
+    
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8OBBVirtualCurveIntersector1);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8OBBVirtualCurveIntersector1MB);
     DEFINE_SYMBOL2(Accel::Intersector1,BVH8OBBVirtualCurveIntersectorRobust1);
