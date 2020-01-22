@@ -39,22 +39,28 @@ IF (WIN32)
   )
 
 ELSE (WIN32)
-  
-  FIND_PACKAGE(PkgConfig REQUIRED)
-  PKG_SEARCH_MODULE(GLFW QUIET glfw3)
-  IF (NOT GLFW_FOUND)
-    MESSAGE(FATAL_ERROR "GLFW not found! Please either install GLFW or disable EMBREE_TUTORIALS.")
-  ENDIF()
-
-  LINK_DIRECTORIES(${GLFW_LIBRARY_DIRS})
+  FIND_PACKAGE(glfw3 REQUIRED)
 ENDIF (WIN32)
+
+# NOTE(jda) - Build a GLFW interface library to combine Windows/Unix code paths
+#             for tutorial targets. Only necessary if Windows has the library
+#             committed in the repostiory, otherwise all platforms could do
+#             find_package(glfw3).
+ADD_LIBRARY(embree_glfw INTERFACE)
+IF (WIN32)
+  TARGET_LINK_LIBRARIES(embree_glfw INTERFACE ${GLFW_LIBRARY})
+  TARGET_INCLUDE_DIRECTORIES(embree_glfw INTERFACE ${GLFW_INCLUDE_DIRS})
+ELSE()
+  TARGET_LINK_LIBRARIES(embree_glfw INTERFACE glfw)
+ENDIF()
+
 
 FIND_PACKAGE(OpenGL)
 IF (NOT OPENGL_FOUND)
   MESSAGE(FATAL_ERROR "OpenGL not found! Please either install OpenGL or disable EMBREE_TUTORIALS.")
 ENDIF()
 
-INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLFW_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR})
 
 ADD_SUBDIRECTORY(common)
 
