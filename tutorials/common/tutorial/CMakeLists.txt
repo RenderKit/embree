@@ -15,7 +15,7 @@
 ## ======================================================================== ##
 
 ADD_LIBRARY(tutorial STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.cpp scene_device.cpp)
-TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree imgui ${OPENGL_LIBRARIES} ${GLFW_STATIC_LIBRARIES})
+TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree imgui ${OPENGL_LIBRARIES} embree_glfw)
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
 SET_PROPERTY(TARGET tutorial APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
@@ -25,7 +25,7 @@ SET_PROPERTY(TARGET noise APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
 IF (EMBREE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(tutorial_ispc STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.ispc scene_device.cpp tasksys.cpp)
-  TARGET_LINK_LIBRARIES(tutorial_ispc sys math lexers scenegraph lights_ispc embree imgui ${OPENGL_LIBRARIES} ${GLFW_STATIC_LIBRARIES})
+  TARGET_LINK_LIBRARIES(tutorial_ispc sys math lexers scenegraph lights_ispc embree imgui ${OPENGL_LIBRARIES} embree_glfw)
   SET_PROPERTY(TARGET tutorial_ispc PROPERTY FOLDER tutorials/common)
   SET_PROPERTY(TARGET tutorial_ispc APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
