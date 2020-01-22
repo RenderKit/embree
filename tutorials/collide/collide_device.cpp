@@ -32,6 +32,9 @@ extern std::vector<std::pair<std::pair<unsigned,unsigned>, std::pair<unsigned,un
 // extern bool use_user_geometry;
 extern std::vector<std::unique_ptr<collide2::Mesh>> meshes;
 extern unsigned int clothID;
+extern bool benchmark;
+double total_collision_time = 0.0f;
+  
 extern void triangle_bounds_func(const struct RTCBoundsFunctionArguments* args);
 extern void triangle_intersect_func(const RTCIntersectFunctionNArguments* args);
 extern void CollideFunc (void* userPtr, RTCCollision* collisions, unsigned int num_collisions);
@@ -349,7 +352,10 @@ void updateScene ()
   rtcCommitScene(g_scene);
 
   // sim_collisions.clear();
+  double t0 = getSeconds();
   rtcCollide(g_scene,g_scene,CollideFunc,&sim_collisions);
+  double t1 = getSeconds();
+  total_collision_time += t1-t0;
   addCollisionConstraints (g_scene);
 
   collide2::constrainPositions (cloth, h, nIters);
@@ -477,6 +483,11 @@ extern "C" void device_render (int* pixels,
 
   if (!pause) updateScene();
   //else PRINT(cur_time);
+
+  if (benchmark && cur_time == 128) {
+    std::cout << "collision time = " << 1000.0f*total_collision_time << " ms" << std::endl;
+    exit(1);
+  }
 
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;

@@ -34,6 +34,7 @@ namespace embree
   // bool use_user_geometry = false;
   std::vector<std::unique_ptr<collide2::Mesh>> meshes;
   unsigned int clothID;
+  bool benchmark = false;
 
   SpinLock mutex;
 
@@ -159,6 +160,10 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
     Tutorial()
       : TutorialApplication("collide",FEATURE_RTCORE)
     {
+      registerOption("benchmark", [] (Ref<ParseStream> cin, const FileName& path) {
+          benchmark = true;
+        }, "--benchmark: benchmarks collision detection");
+                 
       camera.from = Vec3fa(-2.5f,2.5f,-2.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }   

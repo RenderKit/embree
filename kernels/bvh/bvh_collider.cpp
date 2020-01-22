@@ -227,7 +227,7 @@ namespace embree
       }
     }
 
-     template<int N>
+    template<int N>
     void BVHNCollider<N>::collide_recurse_entry(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, size_t depth)
     {
       CSTAT(bvh_collide_traversal_steps = 0);
