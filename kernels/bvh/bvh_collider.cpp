@@ -258,8 +258,7 @@ namespace embree
         collide_recurse_entry(bvh0->root,bvh0->bounds.bounds(),bvh1->root,bvh1->bounds.bounds(),0);
     }
 
-#if 0
-#if !defined (__SSE4_1__)
+#if defined (EMBREE_LOWEST_ISA)
     struct collision_regression_test : public RegressionTest
     {
       collision_regression_test(const char* name) : RegressionTest(name) {
@@ -294,7 +293,6 @@ namespace embree
     };
 
     collision_regression_test collision_regression("collision_regression_test");
-#endif
 #endif
 
     ////////////////////////////////////////////////////////////////////////////////
