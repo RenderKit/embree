@@ -111,7 +111,6 @@ namespace embree
     
   private:
 
-    DEFINE_SYMBOL2(Accel::Collider,BVH4ColliderTriangle4v);
     DEFINE_SYMBOL2(Accel::Collider,BVH4ColliderUserGeom);
 
     DEFINE_SYMBOL2(Accel::Intersector1,BVH4OBBVirtualCurveIntersector1);

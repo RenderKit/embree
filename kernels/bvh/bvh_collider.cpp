@@ -121,68 +121,6 @@ namespace embree
     }
     
     template<int N>
-    __forceinline void BVHNColliderTriangle4v<N>::processLeaf(const Triangle4v& __restrict__ tris0, const Triangle4v& __restrict__ tris1)
-    {
-      Collision collisions[4*4];
-      size_t num_collisions = 0;
-
-      size_t size0 = tris0.size();
-      size_t size1 = tris1.size();
-      BBox<Vec3vf4> bounds0(min(tris0.v0,tris0.v1,tris0.v2),max(tris0.v0,tris0.v1,tris0.v2));
-      BBox<Vec3vf4> bounds1(min(tris1.v0,tris1.v1,tris1.v2),max(tris1.v0,tris1.v1,tris1.v2));
-     
-      if (size0 < size1)
-      {
-        for (size_t i=0; i<size0; i++) 
-        {
-          CSTAT(bvh_collide_leaf_iterations++);
-          size_t mask = movemask(tris1.valid()) & overlap(bounds0,i,bounds1);
-          for (size_t m=mask, j=bsf(m); m!=0; m=btc(m,j), j=bsf(m)) 
-          {
-            const unsigned geomID0 = tris0.geomID(i);
-            const unsigned primID0 = tris0.primID(i);
-            const unsigned geomID1 = tris1.geomID(j);
-            const unsigned primID1 = tris1.primID(j);
-            if (intersect_triangle_triangle(this->scene0,geomID0,primID0,this->scene1,geomID1,primID1)) {
-              CSTAT(bvh_collide_prim_intersections++);
-              collisions[num_collisions++] = Collision(geomID0,primID0,geomID1,primID1);
-            }
-          }
-        }
-      } 
-      else 
-      {
-        for (size_t j=0; j<size1; j++) 
-        {
-          CSTAT(bvh_collide_leaf_iterations++);
-          size_t mask = movemask(tris0.valid()) & overlap(bounds1,j,bounds0);
-          for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
-            const unsigned geomID0 = tris0.geomID(i);
-            const unsigned primID0 = tris0.primID(i);
-            const unsigned geomID1 = tris1.geomID(j);
-            const unsigned primID1 = tris1.primID(j);
-            if (intersect_triangle_triangle(this->scene0,geomID0,primID0,this->scene1,geomID1,primID1)) {
-              CSTAT(bvh_collide_prim_intersections++);
-              collisions[num_collisions++] = Collision(geomID0,primID0,geomID1,primID1);
-            }
-          }
-        }
-      }
-      if (num_collisions)
-        this->callback(this->userPtr,(RTCCollision*)&collisions,num_collisions);
-    }
-
-    template<int N>
-    __forceinline void BVHNColliderTriangle4v<N>::processLeaf(NodeRef node0, NodeRef node1)
-    {
-      size_t N0; Triangle4v* leaf0 = (Triangle4v*) node0.leaf(N0);
-      size_t N1; Triangle4v* leaf1 = (Triangle4v*) node1.leaf(N1);
-      for (size_t i=0; i<N0; i++)
-        for (size_t j=0; j<N1; j++)
-          processLeaf(leaf0[i],leaf1[j]);
-    }
-
-    template<int N>
     __forceinline void BVHNColliderUserGeom<N>::processLeaf(NodeRef node0, NodeRef node1)
     {
       Collision collisions[16];
@@ -313,14 +251,6 @@ namespace embree
       CSTAT(PRINT(bvh_collide_prim_intersections));
     }
    
-
-    template<int N>
-    void BVHNColliderTriangle4v<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
-    { 
-      BVHNColliderTriangle4v<N>(bvh0->scene,bvh1->scene,callback,userPtr).
-        collide_recurse_entry(bvh0->root,bvh0->bounds.bounds(),bvh1->root,bvh1->bounds.bounds(),0);
-    }
-
     template<int N>
     void BVHNColliderUserGeom<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
     { 
@@ -371,11 +301,9 @@ namespace embree
     /// Collider Definitions
     ////////////////////////////////////////////////////////////////////////////////
 
-    DEFINE_COLLIDER(BVH4ColliderTriangle4v,BVHNColliderTriangle4v<4>);
     DEFINE_COLLIDER(BVH4ColliderUserGeom,BVHNColliderUserGeom<4>);
 
 #if defined(__AVX__)
-    DEFINE_COLLIDER(BVH8ColliderTriangle4v,BVHNColliderTriangle4v<8>);
     DEFINE_COLLIDER(BVH8ColliderUserGeom,BVHNColliderUserGeom<8>);
 #endif
   }

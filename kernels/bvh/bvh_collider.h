@@ -48,22 +48,6 @@ namespace embree
     };
 
     template<int N>
-      class BVHNColliderTriangle4v : public BVHNCollider<N>
-    {
-      typedef BVHN<N> BVH;
-      typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::AlignedNode AlignedNode;
-
-      __forceinline BVHNColliderTriangle4v (Scene* scene0, Scene* scene1, RTCCollideFunc callback, void* userPtr)
-        : BVHNCollider<N>(scene0,scene1,callback,userPtr) {}
-
-      void processLeaf(const Triangle4v& tris0, const Triangle4v& tris1);
-      virtual void processLeaf(NodeRef leaf0, NodeRef leaf1);
-    public:
-      static void collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr);
-    };
-
-    template<int N>
       class BVHNColliderUserGeom : public BVHNCollider<N>
     {
       typedef BVHN<N> BVH;
