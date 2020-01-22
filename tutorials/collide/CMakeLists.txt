@@ -17,5 +17,6 @@
 ADD_EXECUTABLE(collide collide.cpp collide_device.cpp constraints.cpp ../common/tutorial/application.cpp)
 TARGET_LINK_LIBRARIES(collide embree image tutorial noise)
 SET_PROPERTY(TARGET collide PROPERTY FOLDER tutorials)
+SET_PROPERTY(TARGET collide APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 INSTALL(TARGETS collide DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 
