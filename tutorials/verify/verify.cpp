@@ -3903,6 +3903,106 @@ namespace embree
 	  }
   };
 
+  struct SphereFilterMultiHitTest : public VerifyApplication::Test
+  {
+    struct IntersectContext
+    {
+      RTCIntersectContext context;
+      void* userRayExt;         
+    };
+
+	  SphereFilterMultiHitTest (std::string name, int isa) 
+		: VerifyApplication::Test(name, isa, VerifyApplication::TEST_SHOULD_PASS)
+	  {}
+
+    void createSphere(RTCDevice device, RTCScene scene, float x, float y, float z, float r)
+    {
+        RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
+
+        float* vertices = (float*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, 4 * sizeof(float), 1);
+        vertices[0] = x; vertices[1] = y; vertices[2] = z; vertices[3] = r;
+
+        rtcCommitGeometry(geom);
+        rtcAttachGeometry(scene, geom);
+        rtcReleaseGeometry(geom);
+    }
+
+    static void countHits(const RTCFilterFunctionNArguments* args)
+    {
+        assert(args->N == 1);
+        RTCRay* ray = (RTCRay*) args->ray;
+        auto pos = embree::Vec3f(ray->org_x, ray->org_y, ray->org_z) + embree::Vec3f(ray->dir_x, ray->dir_y, ray->dir_z) * ray->tfar;
+        static_cast<std::vector<embree::Vec3f>*>(((IntersectContext*)args->context)->userRayExt)->push_back (pos);
+        args->valid[0] = 0;
+    }
+
+	  VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+	  {
+		  RTCDevice device = rtcNewDevice(nullptr);
+      RTCScene scene = rtcNewScene(device);
+      rtcSetSceneFlags(scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION | RTC_SCENE_FLAG_ROBUST);
+
+      createSphere(device, scene, 0, 0, 0, 1);
+      createSphere(device, scene, 0, 0, 3, 1);
+
+      rtcCommitScene(scene);
+
+      IntersectContext intersectContext;
+      std::vector<embree::Vec3f> hits;
+      intersectContext.userRayExt = &hits;
+      rtcInitIntersectContext(&(intersectContext.context));
+      intersectContext.context.filter = &countHits;
+
+      RTCRayHit rayHit;
+      rayHit.ray.org_x = 0;
+      rayHit.ray.org_y = 0;
+      rayHit.ray.org_z = -5;
+      rayHit.ray.dir_x = 0;
+      rayHit.ray.dir_y = 0;
+      rayHit.ray.dir_z = 1;
+      rayHit.ray.tnear = 0;
+      rayHit.ray.tfar = 100000;
+      rayHit.ray.mask = 0u;
+      rayHit.ray.flags = 0u;
+      rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+      rayHit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
+
+      rtcIntersect1(scene, &(intersectContext.context), &rayHit);
+
+      bool cullingEnabled = rtcGetDeviceProperty(device, RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED);
+
+      if (cullingEnabled) {
+        if (hits.size() != 2) {
+          return VerifyApplication::FAILED;
+        }
+        if(std::fabs(hits[0].z + 1.f) > 1.e-6) {
+          return VerifyApplication::FAILED;
+        }
+        if(std::fabs(hits[1].z - 1.f) > 1.e-6) {
+          return VerifyApplication::FAILED;
+        }
+      } else {
+        if (hits.size() != 4) {
+          return VerifyApplication::FAILED;
+        }
+        if(std::fabs(hits[0].z + 1.f) > 1.e-6) {
+          return VerifyApplication::FAILED;
+        }
+        if(std::fabs(hits[1].z - 1.f) > 1.e-6) {
+          return VerifyApplication::FAILED;
+        }
+        if(std::fabs(hits[2].z - 2.f) > 1.e-6) {
+          return VerifyApplication::FAILED;
+        }
+        if(std::fabs(hits[3].z - 4.f) > 1.e-6) {
+          return VerifyApplication::FAILED;
+        }
+      }
+
+		  return VerifyApplication::PASSED;
+	  }
+  };
+
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -5513,7 +5613,8 @@ namespace embree
       /**************************************************************************/
 
       groups.top()->add(new GeometryStateTest("geometry_state_tests", isa));
-	  groups.top()->add(new SceneCheckModifiedGeometryTest("scene_modified_geometry_tests", isa));
+	    groups.top()->add(new SceneCheckModifiedGeometryTest("scene_modified_geometry_tests", isa));
+      groups.top()->add(new SphereFilterMultiHitTest("sphere_filter_multi_hit_tests", isa));
 
       
       /**************************************************************************/
