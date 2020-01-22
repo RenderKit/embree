@@ -166,7 +166,7 @@ trace single rays and ray packets. Also have a look at the tutorial
 [Stream Viewer] for an example of how to trace ray streams.
 
 Point Queries
------------
+-------------
 
 The API supports traversal of the BVH using a point query object that
 specifies a location and a query radius. For all primitives intersecting the
@@ -179,14 +179,12 @@ See Section [rtcPointQuery] for a detailed description of how to set up
 point queries.
 
 Collision Detection
------------
+-------------------
 
-The Embree API also supports collision detection queries between two scenes.
-For scenes entirely composed of triangle geometries or entirely of user
-geometries, Embree can compute static, broadphase collision detection.  For 
-scenes of triangle geometries only, narrow phase detection is also performed. 
-A user defined callback function can be passed in to the collider along with 
-a user defined data pointer. 
+The Embree API also supports collision detection queries between two
+scenes consisting only of user geometries. Embree only performs
+broadphase collision detection, the narrow phase detection can be
+performed through a callback function.
 
 See Section [rtcCollide] for a detailed description of how to set up collision
 detection.
