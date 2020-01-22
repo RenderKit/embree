@@ -202,4 +202,11 @@ RTC_FORCEINLINE void rtcOccludedVM(RTCScene scene, uniform RTCIntersectContext* 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
 RTC_API void rtcOccludedNp(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayNp* uniform ray, uniform unsigned int N);
 
+/*! collision callback */
+struct RTCCollision { unsigned int geomID0; unsigned int primID0; unsigned int geomID1; unsigned int primID1; };
+typedef unmasked void (* uniform RTCCollideFunc) (void* uniform userPtr, uniform RTCCollision* uniform collisions, uniform size_t num_collisions);
+
+/*! Performs collision detection of two scenes */
+RTC_API void rtcCollide (RTCScene scene0, RTCScene scene1, RTCCollideFunc callback, void* userPtr);
+
 #endif
