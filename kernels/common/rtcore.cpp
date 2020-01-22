@@ -306,9 +306,9 @@ RTC_NAMESPACE_BEGIN;
     if (scene0->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     if (scene1->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
     if (scene0->device != scene1->device) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes are from different devices");
-    auto nUserPrims0 = scene0->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false) + scene0->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, true);
-    auto nUserPrims1 = scene1->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false) + scene1->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, true);
-    if (scene0->numPrimitives() != nUserPrims0 && scene1->numPrimitives() != nUserPrims1) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes must only contain user geometries");
+    auto nUserPrims0 = scene0->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false);
+    auto nUserPrims1 = scene1->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false);
+    if (scene0->numPrimitives() != nUserPrims0 && scene1->numPrimitives() != nUserPrims1) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes must only contain user geometries with a single timestep");
 #endif
     scene0->intersectors.collide(scene0,scene1,callback,userPtr);
     RTC_CATCH_END(scene0->device);
