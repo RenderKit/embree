@@ -41,20 +41,20 @@ struct MotionDerivativeCoefficients
                          + xfm0.l.vz.w * xfm1.l.vz.w
                          + xfm0.p.w * xfm1.p.w;
     theta = std::acos(cosTheta);
-    Vec4f qperp(xfm1.l.vx.w, xfm1.l.vy.w, xfm1.l.vz.w, xfm1.p.w);
+    Vec4f qperp(xfm1.p.w, xfm1.l.vx.w, xfm1.l.vy.w, xfm1.l.vz.w);
     if (cosTheta < 0.995f) {
       // compute perpendicular quaternion
-      qperp.x = xfm1.l.vx.w - cosTheta * xfm0.l.vx.w;
-      qperp.y = xfm1.l.vy.w - cosTheta * xfm0.l.vy.w;
-      qperp.z = xfm1.l.vz.w - cosTheta * xfm0.l.vz.w;
-      qperp.w = xfm1.p.w    - cosTheta * xfm0.p.w;
+      qperp.x = qperp.x - cosTheta * xfm0.p.w;
+      qperp.y = qperp.y - cosTheta * xfm0.l.vx.w;
+      qperp.z = qperp.z - cosTheta * xfm0.l.vy.w;
+      qperp.w = qperp.w - cosTheta * xfm0.l.vz.w;
       qperp = normalize(qperp);
     }
     const float p[33] = {
       theta,
       xfm0.l.vx.y, xfm0.l.vx.z, xfm0.l.vy.z, // translation component of xfm0
       xfm1.l.vx.y, xfm1.l.vx.z, xfm1.l.vy.z, // translation component of xfm1
-      xfm0.l.vx.w, xfm0.l.vy.w, xfm0.l.vz.w, xfm0.p.w, // quaternion of xfm0
+      xfm0.p.w, xfm0.l.vx.w, xfm0.l.vy.w, xfm0.l.vz.w, // quaternion of xfm0
       qperp.x, qperp.y, qperp.z, qperp.w,
       xfm0.l.vx.x, xfm0.l.vy.x, xfm0.l.vz.x, xfm0.p.x, // scale/skew component of xfm0
                    xfm0.l.vy.y, xfm0.l.vz.y, xfm0.p.y,
