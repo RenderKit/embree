@@ -72,10 +72,8 @@ namespace embree
   return isa::TriangleTriangleIntersector::intersect_triangle_triangle(a0,a1,a2,b0,b1,b2);
 }
 
-void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions)
+void CollideFunc (void* userPtr, RTCCollision* collisions, unsigned int num_collisions)
 {
-  // if (use_user_geometry)
-  // {
     for (size_t i=0; i<num_collisions;)
     {
       bool intersect = intersect_triangle_triangle(collisions[i].geomID0,collisions[i].primID0,
@@ -83,7 +81,6 @@ void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions
       if (intersect) i++;
       else collisions[i] = collisions[--num_collisions];
     }
-  // }
   
   if (num_collisions == 0) 
     return;

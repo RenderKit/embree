@@ -34,7 +34,7 @@ extern std::vector<std::unique_ptr<collide2::Mesh>> meshes;
 extern unsigned int clothID;
 extern void triangle_bounds_func(const struct RTCBoundsFunctionArguments* args);
 extern void triangle_intersect_func(const RTCIntersectFunctionNArguments* args);
-extern void CollideFunc (void* userPtr, RTCCollision* collisions, size_t num_collisions);
+extern void CollideFunc (void* userPtr, RTCCollision* collisions, unsigned int num_collisions);
 
 const int numPhi = 45;
 const int numTheta = 2*numPhi;
