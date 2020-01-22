@@ -77,6 +77,8 @@ namespace embree
 
     /*! Type of collide function */
     typedef void (*CollideFunc)(void* bvh0, void* bvh1, RTCCollideFunc callback, void* userPtr);
+
+    /*! Type of point query function */
     typedef bool(*PointQueryFunc)(Intersectors* This,          /*!< this pointer to accel */
                                   PointQuery* query,        /*!< point query for lookup */
                                   PointQueryContext* context); /*!< point query context */
