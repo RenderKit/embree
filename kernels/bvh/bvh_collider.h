@@ -37,8 +37,8 @@ namespace embree
 
     public:
       virtual void processLeaf(NodeRef leaf0, NodeRef leaf1) = 0;
-      void collide_recurse(NodeRef node0, const BBox3fa& bounds0, NodeRef node1, const BBox3fa& bounds1, size_t depth);
-      void collide_recurse_entry(NodeRef node0, const BBox3fa& bounds0, NodeRef node1, const BBox3fa& bounds1, size_t depth);
+      void collide_recurse(NodeRef node0, const BBox3fa& bounds0, NodeRef node1, const BBox3fa& bounds1, size_t depth0, size_t depth1);
+      void collide_recurse_entry(NodeRef node0, const BBox3fa& bounds0, NodeRef node1, const BBox3fa& bounds1);
     
     protected:
       Scene* scene0;

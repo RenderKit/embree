@@ -23,7 +23,7 @@ namespace embree
   {
 #define CSTAT(x)
 
-    size_t parallel_depth_threshold = 8;
+    size_t parallel_depth_threshold = 3;
     CSTAT(std::atomic<size_t> bvh_collide_traversal_steps(0));
     CSTAT(std::atomic<size_t> bvh_collide_leaf_pairs(0));
     CSTAT(std::atomic<size_t> bvh_collide_leaf_iterations(0));
@@ -147,7 +147,7 @@ namespace embree
     }
 
     template<int N>
-    void BVHNCollider<N>::collide_recurse(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, size_t depth)
+    void BVHNCollider<N>::collide_recurse(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, size_t depth0, size_t depth1)
     {
       CSTAT(bvh_collide_traversal_steps++);
       if (unlikely(ref0.isLeaf())) {
@@ -161,17 +161,11 @@ namespace embree
         if (unlikely(ref1.isLeaf())) {
           goto recurse_node0;
         } else {
-          //if (area(bounds0) > area(bounds1)) {
-          if (depth < parallel_depth_threshold) { 
-            goto recurse_node0; // for some reason this parallel work distribution works well
+          if (area(bounds0) > area(bounds1)) {
+            goto recurse_node0;
           }
-          else
-          {
-            if (depth % 2) {
-              goto recurse_node0;
-            } else {
-              goto recurse_node1;
-            }
+          else {
+            goto recurse_node1;
           }
         }
       }
@@ -182,12 +176,12 @@ namespace embree
         size_t mask = overlap<N>(bounds1,*node0);
         //for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
         //for (size_t i=0; i<N; i++) {
-        if (depth < parallel_depth_threshold) 
+        if (depth0 < parallel_depth_threshold) 
         {
           parallel_for(size_t(N), [&] ( size_t i ) {
               if (mask & ( 1 << i)) {
                 node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,depth+1);
+                collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,depth0+1,depth1);
               }
             });
         } 
@@ -195,7 +189,7 @@ namespace embree
         {
           for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
             node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-            collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,depth+1);
+            collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,depth0+1,depth1);
           }
         }
         return;
@@ -207,12 +201,12 @@ namespace embree
         size_t mask = overlap<N>(bounds0,*node1);
         //for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
         //for (size_t i=0; i<N; i++) {
-        if (depth < parallel_depth_threshold) 
+        if (depth1 < parallel_depth_threshold) 
         {
           parallel_for(size_t(N), [&] ( size_t i ) {
               if (mask & ( 1 << i)) {
                 node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-                collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),depth+1);
+                collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),depth0,depth1+1);
               }
             });
         }
@@ -220,7 +214,7 @@ namespace embree
         {
           for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
             node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
-            collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),depth+1);
+            collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),depth0,depth1+1);
           }
         }
         return;
@@ -228,7 +222,7 @@ namespace embree
     }
 
     template<int N>
-    void BVHNCollider<N>::collide_recurse_entry(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1, size_t depth)
+    void BVHNCollider<N>::collide_recurse_entry(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1)
     {
       CSTAT(bvh_collide_traversal_steps = 0);
       CSTAT(bvh_collide_leaf_pairs = 0);
@@ -239,7 +233,7 @@ namespace embree
       CSTAT(bvh_collide_prim_intersections4 = 0);
       CSTAT(bvh_collide_prim_intersections5 = 0);
       CSTAT(bvh_collide_prim_intersections = 0);
-      collide_recurse(ref0,bounds0,ref1,bounds1,depth);
+      collide_recurse(ref0,bounds0,ref1,bounds1,0,0);
       CSTAT(PRINT(bvh_collide_traversal_steps));
       CSTAT(PRINT(bvh_collide_leaf_pairs));
       CSTAT(PRINT(bvh_collide_leaf_iterations));
@@ -255,7 +249,7 @@ namespace embree
     void BVHNColliderUserGeom<N>::collide(BVH* __restrict__ bvh0, BVH* __restrict__ bvh1, RTCCollideFunc callback, void* userPtr)
     { 
       BVHNColliderUserGeom<N>(bvh0->scene,bvh1->scene,callback,userPtr).
-        collide_recurse_entry(bvh0->root,bvh0->bounds.bounds(),bvh1->root,bvh1->bounds.bounds(),0);
+        collide_recurse_entry(bvh0->root,bvh0->bounds.bounds(),bvh1->root,bvh1->bounds.bounds());
     }
 
 #if defined (EMBREE_LOWEST_ISA)

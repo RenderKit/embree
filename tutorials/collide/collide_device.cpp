@@ -39,11 +39,11 @@ extern void triangle_bounds_func(const struct RTCBoundsFunctionArguments* args);
 extern void triangle_intersect_func(const RTCIntersectFunctionNArguments* args);
 extern void CollideFunc (void* userPtr, RTCCollision* collisions, unsigned int num_collisions);
 
-const int numPhi = 45;
-const int numTheta = 2*numPhi;
+extern int numPhi;
+extern int numTheta;
 
-const size_t NX = 50; 
-const size_t NZ = 50;
+extern size_t NX; 
+extern size_t NZ;
 const float width = 5.f;
 const float height = 5.f;
 const float ks = 4000.f;

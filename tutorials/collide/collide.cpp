@@ -36,6 +36,12 @@ namespace embree
   unsigned int clothID;
   bool benchmark = false;
 
+  int numPhi = 45;
+  int numTheta = 2*numPhi;
+
+  size_t NX = 50; 
+  size_t NZ = 50;
+
   SpinLock mutex;
 
   bool intersect_triangle_triangle (unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
@@ -163,7 +169,15 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
       registerOption("benchmark", [] (Ref<ParseStream> cin, const FileName& path) {
           benchmark = true;
         }, "--benchmark: benchmarks collision detection");
-                 
+
+      registerOption("complexity", [] (Ref<ParseStream> cin, const FileName& path) {
+          int N = cin->getInt();
+          numPhi = N;
+          numTheta = 2*numPhi;
+          NX = N;
+          NZ = N;
+        }, "--complexity: sets grid and sphere geometric complexity");
+                       
       camera.from = Vec3fa(-2.5f,2.5f,-2.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }   
