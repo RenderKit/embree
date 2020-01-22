@@ -256,7 +256,7 @@ namespace embree
 
   BVH8Factory::BVH8Factory(int bfeatures, int ifeatures)
   {
-    SELECT_SYMBOL_DEFAULT_AVX_AVX2(ifeatures,BVH8ColliderUserGeom);
+    SELECT_SYMBOL_INIT_AVX(ifeatures,BVH8ColliderUserGeom);
     
     selectBuilders(bfeatures);
     selectIntersectors(ifeatures);
