@@ -103,6 +103,7 @@ namespace embree
 
         SphereIntersectorHitM<M> hit(zero, zero, t, Ng);
         if (unlikely(!epilog(valid, hit))) {
+          // filter reported miss for first hit - evaluate second hit
           td = select(valid, -1.0f * td, td);
           Ng = td * ray_dir - perp;
           t = select(valid, t_out, t);
