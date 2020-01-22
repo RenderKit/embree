@@ -486,7 +486,7 @@ extern "C" void device_render (int* pixels,
 
   if (benchmark && cur_time == 128) {
     std::cout << "collision time = " << 1000.0f*total_collision_time << " ms" << std::endl;
-    exit(1);
+    exit(0);
   }
 
   /* render image */
