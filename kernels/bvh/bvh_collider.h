@@ -31,6 +31,26 @@ namespace embree
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::AlignedNode AlignedNode;
 
+      struct CollideJob
+      {
+        CollideJob () {}
+        
+        CollideJob (NodeRef ref0, const BBox3fa& bounds0, size_t depth0,
+                    NodeRef ref1, const BBox3fa& bounds1, size_t depth1)
+        : ref0(ref0), bounds0(bounds0), depth0(depth0), ref1(ref1), bounds1(bounds1), depth1(depth1) {}
+        
+        NodeRef ref0;
+        BBox3fa bounds0;
+        size_t depth0;
+        NodeRef ref1;
+        BBox3fa bounds1;
+        size_t depth1;
+      };
+
+      typedef vector_t<CollideJob, aligned_allocator<CollideJob,16>> jobvector;
+
+      void split(const CollideJob& job, jobvector& jobs);
+      
     public:
       __forceinline BVHNCollider (Scene* scene0, Scene* scene1, RTCCollideFunc callback, void* userPtr)
         : scene0(scene0), scene1(scene1), callback(callback), userPtr(userPtr) {}

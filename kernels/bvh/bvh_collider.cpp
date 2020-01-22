@@ -176,6 +176,7 @@ namespace embree
         size_t mask = overlap<N>(bounds1,*node0);
         //for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
         //for (size_t i=0; i<N; i++) {
+#if 0
         if (depth0 < parallel_depth_threshold) 
         {
           parallel_for(size_t(N), [&] ( size_t i ) {
@@ -185,7 +186,8 @@ namespace embree
               }
             });
         } 
-        else 
+        else
+#endif
         {
           for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
             node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
@@ -201,6 +203,7 @@ namespace embree
         size_t mask = overlap<N>(bounds0,*node1);
         //for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
         //for (size_t i=0; i<N; i++) {
+#if 0
         if (depth1 < parallel_depth_threshold) 
         {
           parallel_for(size_t(N), [&] ( size_t i ) {
@@ -211,6 +214,7 @@ namespace embree
             });
         }
         else
+#endif
         {
           for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
             node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
@@ -221,6 +225,48 @@ namespace embree
       }
     }
 
+    template<int N>
+    void BVHNCollider<N>::split(const CollideJob& job, jobvector& jobs)
+    {
+      if (unlikely(job.ref0.isLeaf())) {
+        if (unlikely(job.ref1.isLeaf())) {
+          jobs.push_back(job);
+          return;
+        } else goto recurse_node1;
+      } else {
+        if (unlikely(job.ref1.isLeaf())) {
+          goto recurse_node0;
+        } else {
+          if (area(job.bounds0) > area(job.bounds1)) {
+            goto recurse_node0;
+          }
+          else {
+            goto recurse_node1;
+          }
+        }
+      }
+      
+      {
+      recurse_node0:
+        const AlignedNode* node0 = job.ref0.alignedNode();
+        size_t mask = overlap<N>(job.bounds1,*node0);
+        for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
+          jobs.push_back(CollideJob(node0->child(i),node0->bounds(i),job.depth0+1,job.ref1,job.bounds1,job.depth1));
+        }
+        return;
+      }
+      
+      {
+      recurse_node1:
+        const AlignedNode* node1 = job.ref1.alignedNode();
+        size_t mask = overlap<N>(job.bounds0,*node1);
+        for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
+          jobs.push_back(CollideJob(job.ref0,job.bounds0,job.depth0,node1->child(i),node1->bounds(i),job.depth1+1));
+        }
+        return;
+      }
+    }
+    
     template<int N>
     void BVHNCollider<N>::collide_recurse_entry(NodeRef ref0, const BBox3fa& bounds0, NodeRef ref1, const BBox3fa& bounds1)
     {
@@ -233,7 +279,47 @@ namespace embree
       CSTAT(bvh_collide_prim_intersections4 = 0);
       CSTAT(bvh_collide_prim_intersections5 = 0);
       CSTAT(bvh_collide_prim_intersections = 0);
+#if 0
       collide_recurse(ref0,bounds0,ref1,bounds1,0,0);
+#else
+      const int M = 2048;
+      jobvector jobs[2];
+      jobs[0].reserve(M);
+      jobs[1].reserve(M);
+      jobs[0].push_back(CollideJob(ref0,bounds0,0,ref1,bounds1,0));
+      int source = 0;
+      int target = 1;
+
+      /* try to split job until job list is full */
+      while (jobs[source].size()+8 <= M)
+      {
+        for (size_t i=0; i<jobs[source].size(); i++)
+        {
+          const CollideJob& job = jobs[source][i];
+          size_t remaining = jobs[source].size()-i;
+          if (jobs[target].size()+remaining+8 > M) {
+            jobs[target].push_back(job);
+          } else {
+            split(job,jobs[target]);
+          }
+        }
+
+        /* stop splitting jobs if we reached only leaves and cannot make progress anymore */
+        if (jobs[target].size() == jobs[source].size())
+          break;
+
+        jobs[source].resize(0);
+        std::swap(source,target);
+      }
+
+      /* parallel processing of all jobs */
+      parallel_for(size_t(jobs[source].size()), [&] ( size_t i ) {
+          CollideJob& j = jobs[source][i];
+          collide_recurse(j.ref0,j.bounds0,j.ref1,j.bounds1,j.depth0,j.depth1);
+        });
+      
+      
+#endif
       CSTAT(PRINT(bvh_collide_traversal_steps));
       CSTAT(PRINT(bvh_collide_leaf_pairs));
       CSTAT(PRINT(bvh_collide_leaf_iterations));
