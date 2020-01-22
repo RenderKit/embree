@@ -99,10 +99,18 @@ namespace embree
         if (unlikely(none(valid)))
           return false;
 
-        const Vec3vf<M> Ng = td * ray_dir - perp;
+        Vec3vf<M> Ng = td * ray_dir - perp;
 
         SphereIntersectorHitM<M> hit(zero, zero, t, Ng);
-        return epilog(valid, hit);
+        if (unlikely(!epilog(valid, hit))) {
+          td = select(valid, -1.0f * td, td);
+          Ng = td * ray_dir - perp;
+          t = select(valid, t_out, t);
+          hit = SphereIntersectorHitM<M> (zero, zero, t, Ng);
+          return epilog(valid, hit);
+        }
+
+        return true;
       }
     };
 
