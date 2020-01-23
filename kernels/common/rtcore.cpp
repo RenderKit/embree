@@ -1069,10 +1069,10 @@ RTC_NAMESPACE_BEGIN;
     transform.p.x    = qd->shift_x;
     transform.p.y    = qd->shift_y;
     transform.p.z    = qd->shift_z;
-    transform.l.vx.w = qd->quaternion_r;
-    transform.l.vy.w = qd->quaternion_i;
-    transform.l.vz.w = qd->quaternion_j;
-    transform.p.w    = qd->quaternion_k;
+    transform.l.vx.w = qd->quaternion_i;
+    transform.l.vy.w = qd->quaternion_j;
+    transform.l.vz.w = qd->quaternion_k;
+    transform.p.w    = qd->quaternion_r;
     geometry->setQuaternionDecomposition(transform, timeStep);
     RTC_CATCH_END2(geometry);
   }

@@ -30,7 +30,7 @@ namespace embree
   __forceinline AffineSpace3fa quaternionDecompositionToAffineSpace(const AffineSpace3fa& qd)
   {
     // compute affine transform from quaternion decomposition
-    Quaternion3f q(qd.l.vx.w, qd.l.vy.w, qd.l.vz.w, qd.p.w);
+    Quaternion3f q(qd.p.w, qd.l.vx.w, qd.l.vy.w, qd.l.vz.w);
     AffineSpace3fa M = qd;
     AffineSpace3fa D(one);
     D.p.x = M.l.vx.y;
@@ -223,7 +223,7 @@ namespace embree
     AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep (either normal matrix or quaternion decomposition)
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
     TransformationInterpolation interpolation;
-    //MotionDerivativeCoefficients* motionDerivCoeffs; //!< coefficients of motion derivative for each timestep (for non-linear interpolation)
+    bool* isQuaternionDecomp; //!< flag indicating if the i-th transformation matrix is a quaternion decomposition
   };
 
   namespace isa

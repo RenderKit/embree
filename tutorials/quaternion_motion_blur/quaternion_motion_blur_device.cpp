@@ -71,8 +71,11 @@ void updateTransformation()
   for (int i = 0; i < g_numTimeSteps; ++i)
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
-    float K = g_numTimeSteps > 0 ? (((float)i)/(g_numTimeSteps-1)) : 0.f;
-    Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), K * 2.0 * float(pi));
+    float K = g_numTimeSteps > 0 ? ((float)i)/(g_numTimeSteps-1) : 0.f;
+    float R = K * 2.0 * float(pi);
+    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * float(pi);
+
+    Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), R);
     rtcInitQuaternionDecomposition(qdc+i);
     rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
     rtcQuaternionDecompositionSetScale(qdc+i, 3.f, 3.f, 3.f);
@@ -90,8 +93,11 @@ void updateTransformation()
   for (int i = 0; i < g_numTimeSteps; ++i)
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
-    float K = g_numTimeSteps > 0 ? (((float)i)/(g_numTimeSteps-1)) : 0.f;
-    Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), K * 2.0 * float(pi));
+    float K = g_numTimeSteps > 0 ? ((float)i)/(g_numTimeSteps-1) : 0.f;
+    float R = K * 2.0 * float(pi);
+    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * float(pi);
+
+    Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), R);
     rtcInitQuaternionDecomposition(qdc+i);
     rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
     rtcQuaternionDecompositionSetShift(qdc+i, 3.f, 0.f, 3.f);

@@ -26,19 +26,23 @@ namespace embree
     , object(object)
     , local2world(nullptr)
     , interpolation(LINEAR)
-      //, motionDerivCoeffs(nullptr)
+    , isQuaternionDecomp(nullptr)
   {
     if (object) object->refInc();
     world2local0 = one;
     local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa),16);
     for (size_t i = 0; i < numTimeSteps; i++)
       local2world[i] = one;
+
+    isQuaternionDecomp= (bool*) alignedMalloc(numTimeSteps*sizeof(bool),16);
+    for (size_t i = 0; i < numTimeSteps; i++)
+      isQuaternionDecomp[i] = false;
   }
 
   Instance::~Instance()
   {
     alignedFree(local2world);
-    //alignedFree(motionDerivCoeffs);
+    alignedFree(isQuaternionDecomp);
     if (object) object->refDec();
   }
 
@@ -48,15 +52,23 @@ namespace embree
       return;
 
     AffineSpace3fa* local2world2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa),16);
+    bool* isQuaternionDecomp2 = (bool*) alignedMalloc(numTimeSteps_in*sizeof(bool),16);
 
-    for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++)
+    for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++) {
       local2world2[i] = local2world[i];
+      isQuaternionDecomp2[i] = isQuaternionDecomp[i];
+    }
 
-    for (size_t i = numTimeSteps; i < numTimeSteps_in; i++)
+    for (size_t i = numTimeSteps; i < numTimeSteps_in; i++) {
       local2world2[i] = one;
+      isQuaternionDecomp2[i] = isQuaternionDecomp[0];
+    }
 
     alignedFree(local2world);
     local2world = local2world2;
+
+    alignedFree(isQuaternionDecomp);
+    isQuaternionDecomp = isQuaternionDecomp2;
 
     Geometry::setNumTimeSteps(numTimeSteps_in);
   }
@@ -83,14 +95,6 @@ namespace embree
     }
 #endif
 
-    /*if (interpolation == TransformationInterpolation::NONLINEAR && numTimeSteps > 1)
-    {
-      alignedFree(motionDerivCoeffs);
-      motionDerivCoeffs = (MotionDerivativeCoefficients*) alignedMalloc((numTimeSteps-1)*sizeof(MotionDerivativeCoefficients),16);
-      for (int timeStep = 0; timeStep < numTimeSteps - 1; ++timeStep)
-        motionDerivCoeffs[timeStep] = MotionDerivativeCoefficients(local2world[timeStep+0], local2world[timeStep+1]);
-        }*/
-
     Geometry::preCommit();
   }
 #endif
@@ -112,21 +116,13 @@ namespace embree
     }
   }
 
-#if 0
-  void Instance::postCommit() 
-  {
-    //alignedFree(motionDerivCoeffs); motionDerivCoeffs = nullptr;
-    Geometry::postCommit();
-  }
-#endif
-    
   void Instance::setTransform(const AffineSpace3fa& xfm, unsigned int timeStep)
   {
     if (timeStep >= numTimeSteps)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
     local2world[timeStep] = xfm;
-    local2world[timeStep].l.vx.w = std::numeric_limits<float>::infinity(); // mark as standard transformation
+    isQuaternionDecomp[timeStep] = false; // mark as standard transformation
   }
 
   void Instance::setQuaternionDecomposition(const AffineSpace3fa& qd, unsigned int timeStep)
@@ -135,7 +131,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
     local2world[timeStep] = qd;
-    assert(std::isfinite(local2world[timeStep].l.vx.w));
+    isQuaternionDecomp[timeStep] = true; // mark as quaternion decomposition transformation
   }
 
   AffineSpace3fa Instance::getTransform(float time)
@@ -158,14 +154,11 @@ namespace embree
     bool interpolate_nonlinear = false;
     bool interpolate_linear = false;
 
-    // check if all quaternion decomposition matrizes are set -> quaternion interpolation
-    // or if all quaternion decomposition matrizes are invalid -> linear interpolation
+    // check if all matrizes are quaternion decomposition matrizes -> quaternion interpolation
+    // or if all matrizes are regular transformation matrizes -> linear interpolation
     for (unsigned int i = 0; i < numTimeSteps; ++i) {
-      if (local2world[i].l.vx.w == std::numeric_limits<float>::infinity()) {
-        interpolate_linear = true;
-      } else {
-        interpolate_nonlinear = true;
-      }
+      interpolate_linear    |= (isQuaternionDecomp[i] == false);
+      interpolate_nonlinear |= (isQuaternionDecomp[i] == true);
     }
   
     if (!interpolate_linear && !interpolate_nonlinear) {
