@@ -2,6 +2,7 @@ Version History
 ---------------
 
 ### New Features in Embree 3.8.0
+-   Added collision detection support for user geometries (see rtcCollide API function)
 -   RTCIntersectContext always non-const in Embree API
 -   Made RTCHit aligned to 16 bytes in Embree API
 -   Bugfix in AVX512VL codepath for rtcIntersect1
