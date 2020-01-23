@@ -166,9 +166,9 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
     Tutorial()
       : TutorialApplication("collide",FEATURE_RTCORE)
     {
-      registerOption("benchmark", [] (Ref<ParseStream> cin, const FileName& path) {
+      registerOption("benchmark-collision", [] (Ref<ParseStream> cin, const FileName& path) {
           benchmark = true;
-        }, "--benchmark: benchmarks collision detection");
+        }, "--benchmark-collision: benchmarks collision detection");
 
       registerOption("complexity", [] (Ref<ParseStream> cin, const FileName& path) {
           int N = cin->getInt();
