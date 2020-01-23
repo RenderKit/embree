@@ -111,6 +111,7 @@ namespace embree
           if (unlikely(none(valid_second)))
             return false;
 
+          /* construct second hit */
           const vfloat<M> t_second  = select(valid_front, t_back, t_front);
           const Vec3vf<M> Ng_second = select(valid_front, td_back, td_front) * ray_dir - perp;
           hit = SphereIntersectorHitM<M> (zero, zero, t_second, Ng_second);
@@ -151,25 +152,41 @@ namespace embree
         if (unlikely(none(valid)))
           return false;
 
-        vfloat<M> td          = sqrt((r2 - l2) * rd2);
-        const vfloat<M> t_in  = projC0 - td;
-        const vfloat<M> t_out = projC0 + td;
+        const vfloat<M> td      = sqrt((r2 - l2) * rd2);
+        const vfloat<M> t_front = projC0 - td;
+        const vfloat<M> t_back  = projC0 + td;
 
-        const vbool<M> valid_in  = valid & (ray.tnear()[k] <= t_in) & (t_in <= ray.tfar[k]);
-        const vbool<M> valid_out = valid & !valid_in & (ray.tnear()[k] <= t_out) & (t_out <= ray.tfar[k]);
+        const vbool<M> valid_front = valid & (ray.tnear()[k] <= t_front) & (t_front <= ray.tfar[k]);
+        const vbool<M> valid_back  = valid & (ray.tnear()[k] <= t_back ) & (t_back  <= ray.tfar[k]);
 
-        td          = select(valid_in, -1.0f * td, td);
-        vfloat<M> t = 0.f;
-        t           = select(valid_in, t_in, t);
-        t           = select(valid_out, t_out, t);
-        valid &= valid_in | valid_out;
-        if (unlikely(none(valid)))
+        /* check if there is a first hit */
+        const vbool<M> valid_first = valid_front | valid_back;
+        if (unlikely(none(valid_first)))
           return false;
 
-        const Vec3vf<M> Ng = td * ray_dir - perp;
+        /* construct first hit */
+        const vfloat<M> td_front = -td;
+        const vfloat<M> td_back  = +td;
+        const vfloat<M> t_first  = select(valid_front, t_front, t_back);
+        const Vec3vf<M> Ng_first = select(valid_front, td_front, td_back) * ray_dir - perp;
+        SphereIntersectorHitM<M> hit(zero, zero, t_first, Ng_first);
 
-        SphereIntersectorHitM<M> hit(zero, zero, t, Ng);
-        return epilog(valid, hit);
+        /* if filter reports a miss, then continue with second hit */
+        if (unlikely(!epilog(valid_first, hit)))
+        {
+          /* check if there is s second hit */
+          const vbool<M> valid_second = valid_front & valid_back;
+          if (unlikely(none(valid_second)))
+            return false;
+
+          /* construct second hit */
+          const vfloat<M> t_second  = select(valid_front, t_back, t_front);
+          const Vec3vf<M> Ng_second = select(valid_front, td_back, td_front) * ray_dir - perp;
+          hit = SphereIntersectorHitM<M> (zero, zero, t_second, Ng_second);
+          return epilog(valid_second, hit);
+        }
+
+        return true;
       }
     };
   }  // namespace isa

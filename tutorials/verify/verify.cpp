@@ -5613,7 +5613,7 @@ namespace embree
       /**************************************************************************/
 
       groups.top()->add(new GeometryStateTest("geometry_state_tests", isa));
-	    groups.top()->add(new SceneCheckModifiedGeometryTest("scene_modified_geometry_tests", isa));
+      groups.top()->add(new SceneCheckModifiedGeometryTest("scene_modified_geometry_tests", isa));
       groups.top()->add(new SphereFilterMultiHitTest("sphere_filter_multi_hit_tests", isa));
 
       
