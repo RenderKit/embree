@@ -178,6 +178,8 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 
 void initializeClothPositions (collide2::ClothModel & cloth) {
 
+  sim_collisions.clear();
+
   for (size_t i=0; i<NX; ++i) {
     for (size_t j=0; j<NZ; ++j) {
       cloth.x_0_[NX*i+j].x = -(.5f*width) + (float)i*(width/(float)(NX-1));
