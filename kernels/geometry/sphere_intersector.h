@@ -28,32 +28,22 @@ namespace embree
     {
       __forceinline SphereIntersectorHitM() {}
 
-      __forceinline SphereIntersectorHitM(const vfloat<M>& u,
-                                          const vfloat<M>& v,
-                                          const vfloat<M>& t,
-                                          const Vec3vf<M>& Ng)
-          : vu(u), vv(v), vt(t), vNg(Ng)
-      {
-      }
+      __forceinline SphereIntersectorHitM(const vfloat<M>& t, const Vec3vf<M>& Ng)
+        : vt(t), vNg(Ng) {}
 
       __forceinline void finalize() {}
 
-      __forceinline Vec2f uv(const size_t i) const
-      {
-        return Vec2f(vu[i], vv[i]);
+      __forceinline Vec2f uv(const size_t i) const {
+        return Vec2f(0.0f, 0.0f);
       }
-      __forceinline float t(const size_t i) const
-      {
+      __forceinline float t(const size_t i) const {
         return vt[i];
       }
-      __forceinline Vec3fa Ng(const size_t i) const
-      {
+      __forceinline Vec3fa Ng(const size_t i) const {
         return Vec3fa(vNg.x[i], vNg.y[i], vNg.z[i]);
       }
 
      public:
-      vfloat<M> vu;
-      vfloat<M> vv;
       vfloat<M> vt;
       Vec3vf<M> vNg;
     };
@@ -84,7 +74,7 @@ namespace embree
         if (unlikely(none(valid)))
           return false;
 
-        const vfloat<M> td       = sqrt((r2 - l2) * rd2);
+        const vfloat<M> td      = sqrt((r2 - l2) * rd2);
         const vfloat<M> t_front = projC0 - td;
         const vfloat<M> t_back  = projC0 + td;
 
@@ -101,7 +91,7 @@ namespace embree
         const vfloat<M> td_back  = +td;
         const vfloat<M> t_first  = select(valid_front, t_front, t_back);
         const Vec3vf<M> Ng_first = select(valid_front, td_front, td_back) * ray_dir - perp;
-        SphereIntersectorHitM<M> hit(zero, zero, t_first, Ng_first);
+        SphereIntersectorHitM<M> hit(t_first, Ng_first);
 
         /* if filter reports a miss, then continue with second hit */
         if (unlikely(!epilog(valid_first, hit)))
@@ -114,7 +104,7 @@ namespace embree
           /* construct second hit */
           const vfloat<M> t_second  = select(valid_front, t_back, t_front);
           const Vec3vf<M> Ng_second = select(valid_front, td_back, td_front) * ray_dir - perp;
-          hit = SphereIntersectorHitM<M> (zero, zero, t_second, Ng_second);
+          hit = SphereIntersectorHitM<M> (t_second, Ng_second);
           return epilog(valid_second, hit);
         }
 
@@ -169,7 +159,7 @@ namespace embree
         const vfloat<M> td_back  = +td;
         const vfloat<M> t_first  = select(valid_front, t_front, t_back);
         const Vec3vf<M> Ng_first = select(valid_front, td_front, td_back) * ray_dir - perp;
-        SphereIntersectorHitM<M> hit(zero, zero, t_first, Ng_first);
+        SphereIntersectorHitM<M> hit(t_first, Ng_first);
 
         /* if filter reports a miss, then continue with second hit */
         if (unlikely(!epilog(valid_first, hit)))
@@ -182,7 +172,7 @@ namespace embree
           /* construct second hit */
           const vfloat<M> t_second  = select(valid_front, t_back, t_front);
           const Vec3vf<M> Ng_second = select(valid_front, td_back, td_front) * ray_dir - perp;
-          hit = SphereIntersectorHitM<M> (zero, zero, t_second, Ng_second);
+          hit = SphereIntersectorHitM<M> (t_second, Ng_second);
           return epilog(valid_second, hit);
         }
 
