@@ -3938,8 +3938,8 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
-      RTCDevice device = rtcNewDevice(nullptr);
-      RTCScene scene = rtcNewScene(device);
+      RTCDeviceRef device = rtcNewDevice(nullptr);
+      RTCSceneRef scene = rtcNewScene(device);
       rtcSetSceneFlags(scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION | RTC_SCENE_FLAG_ROBUST);
       
       createSphere(device, scene, 0, 0, 0, 1);
