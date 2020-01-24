@@ -88,7 +88,7 @@ namespace embree
         if (unlikely(none(valid)))
           return false;
 
-        SphereIntersectorHitM<M> hit(zero, zero, projC0, -ray_dir);
+        DiscIntersectorHitM<M> hit(zero, zero, projC0, -ray_dir);
         return epilog(valid, hit);
       }
 
@@ -163,7 +163,7 @@ namespace embree
         if (unlikely(none(valid)))
           return false;
 
-        SphereIntersectorHitM<M> hit(zero, zero, projC0, -ray_dir);
+        DiscIntersectorHitM<M> hit(zero, zero, projC0, -ray_dir);
         return epilog(valid, hit);
       }
 
