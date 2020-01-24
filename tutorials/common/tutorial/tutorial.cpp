@@ -648,7 +648,7 @@ namespace embree
       {
         initRayStats();
         double t0 = getSeconds();
-        device_render(pixels,width,height,0.0f,ispccamera);
+        render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
       }
@@ -657,7 +657,7 @@ namespace embree
       {
         initRayStats();
         double t0 = getSeconds();
-        device_render(pixels,width,height,0.0f,ispccamera);
+        render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
 
         float fps = float(1.0/(t1-t0));
@@ -707,7 +707,7 @@ namespace embree
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
     initRayStats();
-    device_render(pixels,width,height,0.0f,ispccamera);
+    render(pixels,width,height,0.0f,ispccamera);
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
   }
@@ -939,7 +939,7 @@ namespace embree
     /* render image using ISPC */
     initRayStats();
     double t0 = getSeconds();
-    device_render(pixels,width,height,float(time0-t0),ispccamera);
+    render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
     avg_render_time.add(dt0);
     double mrayps = double(getNumRays())/(1000000.0*dt0);
@@ -1020,6 +1020,10 @@ namespace embree
     resize(width,height);
     glViewport(0, 0, width, height);
     this->width = width; this->height = height;
+  }
+
+  void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) {
+    device_render(pixels,width,height,time,camera);
   }
 
   void TutorialApplication::run(int argc, char** argv)

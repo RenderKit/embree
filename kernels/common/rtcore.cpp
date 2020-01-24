@@ -294,6 +294,26 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
+  RTC_API void rtcCollide (RTCScene hscene0, RTCScene hscene1, RTCCollideFunc callback, void* userPtr)
+  {
+    Scene* scene0 = (Scene*) hscene0;
+    Scene* scene1 = (Scene*) hscene1;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcCollide);
+#if defined(DEBUG)
+    RTC_VERIFY_HANDLE(hscene0);
+    RTC_VERIFY_HANDLE(hscene1);
+    if (scene0->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
+    if (scene1->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
+    if (scene0->device != scene1->device) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes are from different devices");
+    auto nUserPrims0 = scene0->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false);
+    auto nUserPrims1 = scene1->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false);
+    if (scene0->numPrimitives() != nUserPrims0 && scene1->numPrimitives() != nUserPrims1) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes must only contain user geometries with a single timestep");
+#endif
+    scene0->intersectors.collide(scene0,scene1,callback,userPtr);
+    RTC_CATCH_END(scene0->device);
+  }
+  
   inline bool pointQuery(Scene* scene, RTCPointQuery* query, RTCPointQueryContext* userContext, RTCPointQueryFunction queryFunc, void* userPtr)
   {
     bool changed = false;

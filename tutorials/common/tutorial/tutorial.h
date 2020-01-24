@@ -126,6 +126,9 @@ namespace embree
     virtual void drawGUI() {}; 
 
   public:
+    virtual void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera);
+  
+  public:
     std::string tutorialName;
 
     /* render settings */

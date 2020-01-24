@@ -39,6 +39,8 @@
 
 namespace embree
 {
+  DECLARE_SYMBOL2(Accel::Collider,BVH8ColliderUserGeom);
+  
   DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8v,void);
   DECLARE_ISA_FUNCTION(VirtualCurveIntersector*,VirtualCurveIntersector8iMB,void);
   
@@ -254,6 +256,8 @@ namespace embree
 
   BVH8Factory::BVH8Factory(int bfeatures, int ifeatures)
   {
+    SELECT_SYMBOL_INIT_AVX(ifeatures,BVH8ColliderUserGeom);
+    
     selectBuilders(bfeatures);
     selectIntersectors(ifeatures);
   }
@@ -955,6 +959,7 @@ namespace embree
     intersectors.intersector16 = BVH8VirtualIntersector16Chunk();
     intersectors.intersectorN  = BVH8VirtualIntersectorStream();
 #endif
+    intersectors.collider      = BVH8ColliderUserGeom();
     return intersectors;
   }
 

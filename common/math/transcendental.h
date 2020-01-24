@@ -135,10 +135,10 @@ __forceinline void sincos(const T &v, T &sinResult, T &cosResult)
   // Reduced range version of x
   auto x = v - kReal * piOverTwoVec;
   auto kMod4 = k & 3;
-  auto cosUseCos = (kMod4 == 0 | kMod4 == 2);
-  auto sinUseCos = (kMod4 == 1 | kMod4 == 3);
+  auto cosUseCos = ((kMod4 == 0) | (kMod4 == 2));
+  auto sinUseCos = ((kMod4 == 1) | (kMod4 == 3));
   auto sinFlipSign = (kMod4 > 1);
-  auto cosFlipSign = (kMod4 == 1 | kMod4 == 2);
+  auto cosFlipSign = ((kMod4 == 1) | (kMod4 == 2));
 
   const float oneVec = +1.;
   const float sinC2  = -0.16666667163372039794921875;
@@ -266,7 +266,7 @@ __forceinline T asin(const T &x0)
                                x * (-4.3095736764371395111083984375e-3f)))));
 
   v *= -sqrt(1.f - x);
-  v = v + 1.57079637050628662109375;
+  v = v + 1.57079637050628662109375f;
 
   v = select(v < 0.f, T(0.f), v);
   v = select(isneg, -v, v);
@@ -278,7 +278,7 @@ __forceinline T asin(const T &x0)
 template <typename T>
 __forceinline T acos(const T &v)
 {
-  return 1.57079637050628662109375 - asin(v);
+  return 1.57079637050628662109375f - asin(v);
 }
 
 template <typename T>
