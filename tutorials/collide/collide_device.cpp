@@ -194,7 +194,7 @@ void initializeClothPositions (collide2::ClothModel & cloth) {
   std::fill (cloth.v_.begin (), cloth.v_.end (), nullvec);
 
   cur_time = 0;
-  cloth.c_constraints_.clear ();
+  cloth.clearCollisionConstraints();
 }
 
 unsigned int createClothSheet (RTCScene scene)
@@ -318,7 +318,8 @@ collide2::CollisionConstraint * makeCollisionConstraint (RTCScene scene, unsigne
 void addCollisionConstraints (RTCScene scene)
 {
   auto & cloth = (collide2::ClothModel &) (*meshes[clothID]);
-  cloth.c_constraints_.clear ();
+  cloth.clearCollisionConstraints();
+  
   for (auto const & coll : sim_collisions) {
     auto & c0 = coll.first;
     auto & c1 = coll.second;
