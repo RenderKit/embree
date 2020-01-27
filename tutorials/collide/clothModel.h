@@ -51,15 +51,25 @@ struct ClothModel : public Mesh {
     float                       k_stretch_  = 1.f;
     float                       k_damp_     = 1.f;
 
+    void clearMotionConstraints()
+    {
+      for (auto c : m_constraints_) {
+        delete c;
+      }
+      m_constraints_.clear ();
+    }
+
+    void clearCollisionConstraints()
+    {
+      for (auto c : c_constraints_) {
+        delete c;
+      }
+      c_constraints_.clear ();
+    }
+      
     virtual ~ClothModel () {
-        for (auto c : m_constraints_) {
-            delete c;
-        }
-        m_constraints_.clear ();
-        for (auto c : c_constraints_) {
-            delete c;
-        }
-        c_constraints_.clear ();
+      clearMotionConstraints();
+      clearCollisionConstraints();
     }
 };
 
