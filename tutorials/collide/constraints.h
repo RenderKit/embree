@@ -64,6 +64,7 @@ protected:
 };
 
 class CollisionConstraint : public Constraint {
+  ALIGNED_CLASS_(16);
 public:
 
     CollisionConstraint ()
@@ -71,7 +72,7 @@ public:
         Constraint (1)
     {}
 
-    virtual void initConstraint             (size_t qID, vec_t x0, vec_t n, float d);
+    virtual void initConstraint             (size_t qID, const vec_t& x0, const vec_t& n, float d);
     virtual void solvePositionConstraint    (ClothModel & model, float timeStep, size_t iter);
 
 protected:

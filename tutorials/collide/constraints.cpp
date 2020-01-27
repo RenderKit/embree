@@ -81,7 +81,7 @@ void DistanceConstraint::solvePositionConstraint (ClothModel & model, float time
     }
 }
 
-void CollisionConstraint::initConstraint (size_t qID, vec_t x0, vec_t n, float d) {
+void CollisionConstraint::initConstraint (size_t qID, const vec_t& x0, const vec_t& n, float d) {
 
     bodyIDs_[0] = qID;
     x0_ = x0;
