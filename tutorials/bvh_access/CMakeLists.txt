@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(bvh_access bvh_access.cpp)
+ADD_EXECUTABLE(bvh_access ../../kernels/embree.rc bvh_access.cpp)
 TARGET_LINK_LIBRARIES(bvh_access embree math sys)
 SET_PROPERTY(TARGET bvh_access PROPERTY FOLDER tutorials/single)
 SET_PROPERTY(TARGET bvh_access APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
