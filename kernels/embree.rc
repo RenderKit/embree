@@ -22,7 +22,6 @@ BEGIN
             VALUE "FileVersion", RTC_VERSION_STRING
             VALUE "ProductVersion", RTC_VERSION_STRING
             VALUE "LegalCopyright", "www.apache.org/licenses/LICENSE-2.0"
-            VALUE "OriginalFilename", "embree3.dll"
             VALUE "InternalName", "Embree"
             VALUE "ProductName", "Intel(R) Embree"
         END

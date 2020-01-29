@@ -14,7 +14,7 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-ADD_EXECUTABLE(convert convert.cpp distribution1d.cpp distribution2d.cpp)
+ADD_EXECUTABLE(convert ../../kernels/embree.rc convert.cpp distribution1d.cpp distribution2d.cpp)
 TARGET_LINK_LIBRARIES(convert scenegraph image tasking)
 SET_PROPERTY(TARGET convert PROPERTY FOLDER tutorials/single)
 SET_PROPERTY(TARGET convert APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
