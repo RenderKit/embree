@@ -8,6 +8,7 @@ Version History
 -   Bugfix in AVX512VL codepath for rtcIntersect1
 -   For sphere geometries the intersection filter gets now invoked for
     front and back hit.
+-   Passing geomID to user geometry callbacks.
 
 ### New Features in Embree 3.7.0
 -   Added quaternion motion blur for correct interpolation of rotational transformations.

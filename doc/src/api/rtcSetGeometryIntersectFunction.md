@@ -17,6 +17,7 @@
       struct RTCIntersectContext* context;
       struct RTCRayHitN* rayhit;
       unsigned int N;
+      unsigned int geomID;
     };
 
     typedef void (*RTCIntersectFunctionN)(
@@ -49,8 +50,9 @@ specify whether the corresponding ray is valid (-1) or invalid (0), the
 `geometryUserPtr` member points to the geometry user data previously set
 through `rtcSetGeometryUserData`, the `context` member points to the
 intersection context passed to the ray query, the `rayhit` member points
-to a ray and hit packet of variable size `N`, and the `primID` member
-identifies the primitive ID of the primitive to intersect.
+to a ray and hit packet of variable size `N`, and the `geomID` and
+`primID` member identifies the geometry ID and primitive ID of the
+primitive to intersect.
 
 The `ray` component of the `rayhit` structure contains valid data, in
 particular the `tfar` value is the current closest hit distance
