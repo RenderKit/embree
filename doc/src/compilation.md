@@ -272,6 +272,22 @@ parameters that can be configured in CMake:
   only), or an internal tasking system (INTERNAL). By default TBB is
   used.
 
++ `EMBREE_TBB_ROOT`: If Intel® Threading TBB Building Blocks (TBB)
+  is used as a tasking system, search the library in this directory
+  tree.
+
++ `EMBREE_TBB_POSTFIX`: If Intel® Threading TBB Building Blocks (TBB)
+  is used as a tasking system, link to tbb<EMBREE_TBB_POSTFIX>.(so,dll,lib).
+  Defaults to the empty string.
+
++ `EMBREE_TBB_DEBUG_ROOT`: If Intel® Threading TBB Building Blocks (TBB)
+  is used as a tasking system, search the library in this directory
+  tree in Debug mode. Defaults to `EMBREE_TBB_ROOT`.
+
++ `EMBREE_TBB_DEBUG_POSTFIX`: If Intel® Threading TBB Building Blocks (TBB)
+  is used as a tasking system, link to tbb<EMBREE_TBB_DEBUG_POSTFIX>.(so,dll,lib)
+  in Debug mode. Defaults to "_debug".
+
 + `EMBREE_MAX_ISA`: Select highest supported ISA (SSE2, SSE4.2, AVX,
   AVX2, AVX512KNL, AVX512SKX, or NONE). When set to NONE the
   EMBREE_ISA_* variables can be used to enable ISAs individually. By
