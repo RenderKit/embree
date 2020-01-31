@@ -36,10 +36,12 @@ struct MotionDerivativeCoefficients
   MotionDerivativeCoefficients(AffineSpace3fa const& xfm0, AffineSpace3fa const& xfm1)
   {
     // cosTheta of the two quaternions
-    const float cosTheta = xfm0.l.vx.w * xfm1.l.vx.w
+    const float cosTheta = min(1.f, max(-1.f,
+                           xfm0.l.vx.w * xfm1.l.vx.w
                          + xfm0.l.vy.w * xfm1.l.vy.w
                          + xfm0.l.vz.w * xfm1.l.vz.w
-                         + xfm0.p.w * xfm1.p.w;
+                         + xfm0.p.w * xfm1.p.w));
+
     theta = std::acos(cosTheta);
     Vec4f qperp(xfm1.p.w, xfm1.l.vx.w, xfm1.l.vy.w, xfm1.l.vz.w);
     if (cosTheta < 0.995f) {
