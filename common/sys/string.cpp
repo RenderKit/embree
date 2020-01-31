@@ -42,4 +42,14 @@ namespace embree
     const float z = std::stof(str,&next); 
     return Vec3f(x,y,z);
   }
+  
+  Vec4f string_to_Vec4f ( std::string str )
+  {
+    size_t next = 0;
+    const float x = std::stof(str,&next); str = str.substr(next+1);
+    const float y = std::stof(str,&next); str = str.substr(next+1);
+    const float z = std::stof(str,&next); str = str.substr(next+1);
+    const float w = std::stof(str,&next);
+    return Vec4f(x,y,z,w);
+  }
 }

@@ -21,23 +21,6 @@
 
 namespace embree
 {
-  __forceinline AffineSpace3fa toAffineSpace(const AffineSpace3fa& qd)
-  {
-    // compute affine transform from quaternion decomposition
-    Quaternion3f q(qd.p.w, qd.l.vx.w, qd.l.vy.w, qd.l.vz.w);
-    AffineSpace3fa M = qd;
-    AffineSpace3fa D(one);
-    D.p.x = M.l.vx.y;
-    D.p.y = M.l.vx.z;
-    D.p.z = M.l.vy.z;
-    M.l.vx.y = 0;
-    M.l.vx.z = 0;
-    M.l.vy.z = 0;
-    AffineSpace3fa R = LinearSpace3fa(q);
-    return D * R * M;
-  }
-
-
   struct MotionDerivativeCoefficients;
 
   /*! Instanced acceleration structure */
@@ -91,7 +74,7 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i) const {
       assert(i == 0);
       if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION))
-        return xfmBounds(toAffineSpace(local2world[0]),object->bounds.bounds());
+        return xfmBounds(quaternionDecompositionToAffineSpace(local2world[0]),object->bounds.bounds());
       return xfmBounds(local2world[0],object->bounds.bounds());
     }
 
@@ -104,7 +87,7 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime) const {
       assert(i == 0);
       if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION))
-        return xfmBounds(toAffineSpace(local2world[itime]),getObjectBounds(itime));
+        return xfmBounds(quaternionDecompositionToAffineSpace(local2world[itime]),getObjectBounds(itime));
       return xfmBounds(local2world[itime],getObjectBounds(itime));
     }
 
@@ -128,7 +111,7 @@ namespace embree
     __forceinline AffineSpace3fa getLocal2World() const
     {
       if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION))
-        return toAffineSpace(local2world[0]);
+        return quaternionDecompositionToAffineSpace(local2world[0]);
       return local2world[0];
     }
 

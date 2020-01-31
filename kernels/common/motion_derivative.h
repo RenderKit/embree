@@ -46,10 +46,10 @@ struct MotionDerivativeCoefficients
     Vec4f qperp(xfm1.p.w, xfm1.l.vx.w, xfm1.l.vy.w, xfm1.l.vz.w);
     if (cosTheta < 0.995f) {
       // compute perpendicular quaternion
-      qperp.x = qperp.x - cosTheta * xfm0.p.w;
-      qperp.y = qperp.y - cosTheta * xfm0.l.vx.w;
-      qperp.z = qperp.z - cosTheta * xfm0.l.vy.w;
-      qperp.w = qperp.w - cosTheta * xfm0.l.vz.w;
+      qperp.x = xfm1.p.w    - cosTheta * xfm0.p.w;
+      qperp.y = xfm1.l.vx.w - cosTheta * xfm0.l.vx.w;
+      qperp.z = xfm1.l.vy.w - cosTheta * xfm0.l.vy.w;
+      qperp.w = xfm1.l.vz.w - cosTheta * xfm0.l.vz.w;
       qperp = normalize(qperp);
     }
     const float p[33] = {

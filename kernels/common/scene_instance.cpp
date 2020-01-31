@@ -139,7 +139,7 @@ namespace embree
   void Instance::commit()
   {
     if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION))
-      world2local0 = rcp(toAffineSpace(local2world[0]));
+      world2local0 = rcp(quaternionDecompositionToAffineSpace(local2world[0]));
     else
       world2local0 = rcp(local2world[0]);
 
