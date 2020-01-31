@@ -29,6 +29,8 @@ transformations exactly using spherical linear interpolation (such as
 a turning wheel).
 
 For more information about the decomposition see [RTCQuaternionDecomposition].
+The quaternion given in the `RTCQuaternionDecomposition` struct will be normalized
+internally.
 
 For correct results, the transformation matrices for all time steps must be
 set either using `rtcSetGeometryTransform` or
