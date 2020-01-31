@@ -90,6 +90,8 @@ namespace embree
      /*! calculates the bounds of instance */
     __forceinline BBox3fa bounds(size_t i) const {
       assert(i == 0);
+      if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION))
+        return xfmBounds(toAffineSpace(local2world[0]),object->bounds.bounds());
       return xfmBounds(local2world[0],object->bounds.bounds());
     }
 
@@ -101,6 +103,8 @@ namespace embree
      /*! calculates the bounds of instance */
     __forceinline BBox3fa bounds(size_t i, size_t itime) const {
       assert(i == 0);
+      if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION))
+        return xfmBounds(toAffineSpace(local2world[itime]),getObjectBounds(itime));
       return xfmBounds(local2world[itime],getObjectBounds(itime));
     }
 
