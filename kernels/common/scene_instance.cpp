@@ -25,24 +25,18 @@ namespace embree
     : Geometry(device,Geometry::GTY_INSTANCE_CHEAP,1,numTimeSteps)
     , object(object)
     , local2world(nullptr)
-    , interpolation(LINEAR)
-    , isQuaternionDecomp(nullptr)
   {
     if (object) object->refInc();
+    gsubtype = GTY_SUBTYPE_INSTANCE_LINEAR;
     world2local0 = one;
     local2world = (AffineSpace3fa*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3fa),16);
     for (size_t i = 0; i < numTimeSteps; i++)
       local2world[i] = one;
-
-    isQuaternionDecomp= (bool*) alignedMalloc(numTimeSteps*sizeof(bool),16);
-    for (size_t i = 0; i < numTimeSteps; i++)
-      isQuaternionDecomp[i] = false;
   }
 
   Instance::~Instance()
   {
     alignedFree(local2world);
-    alignedFree(isQuaternionDecomp);
     if (object) object->refDec();
   }
 
@@ -52,23 +46,17 @@ namespace embree
       return;
 
     AffineSpace3fa* local2world2 = (AffineSpace3fa*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3fa),16);
-    bool* isQuaternionDecomp2 = (bool*) alignedMalloc(numTimeSteps_in*sizeof(bool),16);
 
     for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++) {
       local2world2[i] = local2world[i];
-      isQuaternionDecomp2[i] = isQuaternionDecomp[i];
     }
 
     for (size_t i = numTimeSteps; i < numTimeSteps_in; i++) {
       local2world2[i] = one;
-      isQuaternionDecomp2[i] = isQuaternionDecomp[0];
     }
 
     alignedFree(local2world);
     local2world = local2world2;
-
-    alignedFree(isQuaternionDecomp);
-    isQuaternionDecomp = isQuaternionDecomp2;
 
     Geometry::setNumTimeSteps(numTimeSteps_in);
   }
@@ -122,7 +110,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
     local2world[timeStep] = xfm;
-    isQuaternionDecomp[timeStep] = false; // mark as standard transformation
+    gsubtype = GTY_SUBTYPE_INSTANCE_LINEAR;
   }
 
   void Instance::setQuaternionDecomposition(const AffineSpace3fa& qd, unsigned int timeStep)
@@ -131,7 +119,7 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid timestep");
 
     local2world[timeStep] = qd;
-    isQuaternionDecomp[timeStep] = true; // mark as quaternion decomposition transformation
+    gsubtype = GTY_SUBTYPE_INSTANCE_QUATERNION;
   }
 
   AffineSpace3fa Instance::getTransform(float time)
@@ -148,47 +136,13 @@ namespace embree
     Geometry::update();
   }
 
-  void Instance::updateInterpolationMode()
-  {
-    // check which interpolation should be used
-    bool interpolate_nonlinear = false;
-    bool interpolate_linear = false;
-
-    // check if all matrizes are quaternion decomposition matrizes -> quaternion interpolation
-    // or if all matrizes are regular transformation matrizes -> linear interpolation
-    for (unsigned int i = 0; i < numTimeSteps; ++i) {
-      interpolate_linear    |= (isQuaternionDecomp[i] == false);
-      interpolate_nonlinear |= (isQuaternionDecomp[i] == true);
-    }
-  
-    if (!interpolate_linear && !interpolate_nonlinear) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,
-      "all transformation matrizes have to be set as either affine"
-      "transformation matrizes (rtcSetGeometryTransformation) or quaternion"
-      "decompositions (rtcSetGeometryTransformationQuaternion). Mixing both is"
-      "not allowed.");
-      return;
-    }
-
-    if (interpolate_linear && interpolate_nonlinear) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"this should not happen.");
-      return;
-    }
-
-    interpolation = interpolate_linear
-                  ? TransformationInterpolation::LINEAR
-                  : TransformationInterpolation::NONLINEAR;
-  }
-
   void Instance::commit()
   {
-    updateInterpolationMode();
-
-    if (unlikely(interpolation == TransformationInterpolation::NONLINEAR))
+    if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION))
       world2local0 = rcp(quaternionDecompositionToAffineSpace(local2world[0]));
     else
       world2local0 = rcp(local2world[0]);
-      
+
     Geometry::commit();
   }
 
@@ -337,7 +291,7 @@ namespace embree
       BBox3fa const& bbox0, BBox3fa const& bbox1,
       float tmin, float tmax) const
   {
-    if (unlikely(interpolation == TransformationInterpolation::NONLINEAR)) {
+    if (unlikely(gsubtype == GTY_SUBTYPE_INSTANCE_QUATERNION)) {
       auto const& xfm0 = local2world[itime];
       auto const& xfm1 = local2world[itime+1];
       MotionDerivativeCoefficients motionDerivCoeffs(local2world[itime+0], local2world[itime+1]);

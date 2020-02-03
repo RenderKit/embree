@@ -36,18 +36,20 @@ struct MotionDerivativeCoefficients
   MotionDerivativeCoefficients(AffineSpace3fa const& xfm0, AffineSpace3fa const& xfm1)
   {
     // cosTheta of the two quaternions
-    const float cosTheta = xfm0.l.vx.w * xfm1.l.vx.w
+    const float cosTheta = min(1.f, max(-1.f,
+                           xfm0.l.vx.w * xfm1.l.vx.w
                          + xfm0.l.vy.w * xfm1.l.vy.w
                          + xfm0.l.vz.w * xfm1.l.vz.w
-                         + xfm0.p.w * xfm1.p.w;
+                         + xfm0.p.w * xfm1.p.w));
+
     theta = std::acos(cosTheta);
     Vec4f qperp(xfm1.p.w, xfm1.l.vx.w, xfm1.l.vy.w, xfm1.l.vz.w);
     if (cosTheta < 0.995f) {
       // compute perpendicular quaternion
-      qperp.x = qperp.x - cosTheta * xfm0.p.w;
-      qperp.y = qperp.y - cosTheta * xfm0.l.vx.w;
-      qperp.z = qperp.z - cosTheta * xfm0.l.vy.w;
-      qperp.w = qperp.w - cosTheta * xfm0.l.vz.w;
+      qperp.x = xfm1.p.w    - cosTheta * xfm0.p.w;
+      qperp.y = xfm1.l.vx.w - cosTheta * xfm0.l.vx.w;
+      qperp.z = xfm1.l.vy.w - cosTheta * xfm0.l.vy.w;
+      qperp.w = xfm1.l.vz.w - cosTheta * xfm0.l.vz.w;
       qperp = normalize(qperp);
     }
     const float p[33] = {

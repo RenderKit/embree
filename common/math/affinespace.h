@@ -229,6 +229,89 @@ namespace embree
     AffineSpace3fa R = LinearSpace3fa(q);
     return D * R * S;
   }
+  
+  __forceinline AffineSpace3fa quaternionDecompositionToAffineSpace(const AffineSpace3fa& qd)
+  {
+    // compute affine transform from quaternion decomposition
+    Quaternion3f q(qd.p.w, qd.l.vx.w, qd.l.vy.w, qd.l.vz.w);
+    AffineSpace3fa M = qd;
+    AffineSpace3fa D(one);
+    D.p.x = M.l.vx.y;
+    D.p.y = M.l.vx.z;
+    D.p.z = M.l.vy.z;
+    M.l.vx.y = 0;
+    M.l.vx.z = 0;
+    M.l.vy.z = 0;
+    AffineSpace3fa R = LinearSpace3fa(q);
+    return D * R * M;
+  }
+  
+  __forceinline void quaternionDecomposition(const AffineSpace3fa& qd, Vec3fa& T, Quaternion3f& q, AffineSpace3fa& S)
+  {
+    q = Quaternion3f(qd.p.w, qd.l.vx.w, qd.l.vy.w, qd.l.vz.w);
+    S = qd;
+    T.x = qd.l.vx.y;
+    T.y = qd.l.vx.z;
+    T.z = qd.l.vy.z;
+    S.l.vx.y = 0;
+    S.l.vx.z = 0;
+    S.l.vy.z = 0;
+  }
+
+  __forceinline AffineSpace3fa quaternionDecomposition(Vec3fa const& T, Quaternion3f const& q, AffineSpace3fa const& S)
+  {
+    AffineSpace3fa M = S;
+    M.l.vx.w = q.i;
+    M.l.vy.w = q.j;
+    M.l.vz.w = q.k;
+    M.p.w    = q.r;
+    M.l.vx.y = T.x;
+    M.l.vx.z = T.y;
+    M.l.vy.z = T.z;
+    return M;
+  }
+
+  struct __aligned(16) QuaternionDecomposition
+  {
+    float scale_x = 1.f;
+    float scale_y = 1.f;
+    float scale_z = 1.f;
+    float skew_xy = 0.f;
+    float skew_xz = 0.f;
+    float skew_yz = 0.f;
+    float shift_x = 0.f;
+    float shift_y = 0.f;
+    float shift_z = 0.f;
+    float quaternion_r = 1.f;
+    float quaternion_i = 0.f;
+    float quaternion_j = 0.f;
+    float quaternion_k = 0.f;
+    float translation_x = 0.f;
+    float translation_y = 0.f;
+    float translation_z = 0.f;
+  };
+
+  __forceinline QuaternionDecomposition quaternionDecomposition(AffineSpace3fa const& M)
+  {
+    QuaternionDecomposition qd;
+    qd.scale_x       = M.l.vx.x;
+    qd.scale_y       = M.l.vy.y;
+    qd.scale_z       = M.l.vz.z;
+    qd.shift_x       = M.p.x;
+    qd.shift_y       = M.p.y;
+    qd.shift_z       = M.p.z;
+    qd.translation_x = M.l.vx.y;
+    qd.translation_y = M.l.vx.z;
+    qd.translation_z = M.l.vy.z;
+    qd.skew_xy       = M.l.vy.x;
+    qd.skew_xz       = M.l.vz.x;
+    qd.skew_yz       = M.l.vz.y;
+    qd.quaternion_r  = M.p.w;
+    qd.quaternion_i  = M.l.vx.w;
+    qd.quaternion_j  = M.l.vy.w;
+    qd.quaternion_k  = M.l.vz.w;
+    return qd;
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   /*

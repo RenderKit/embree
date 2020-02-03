@@ -293,6 +293,7 @@ namespace embree
     float startTime;
     float endTime;
     unsigned int numTimeSteps;
+    bool quaternion;
     AffineSpace3fa* spaces;
   };
 
