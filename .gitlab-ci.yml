@@ -528,7 +528,7 @@ release-macosx-x64-Release-ICC2019.4-ISPC1.12.0-TBB-PACKAGE-PKG:
 
 release-linux-x64-Release-ICC2019.4-ISPC1.12.0-TBB2019.9-PACKAGE-ZIP:
   image: embreedocker/centos:7.4
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC2017.1 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2019.9 intensity:4 package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2019.9 intensity:4 package:ZIP"
   tags:   [docker]
   only:   [web]
   artifacts:
@@ -539,7 +539,7 @@ release-linux-x64-Release-ICC2019.4-ISPC1.12.0-TBB2019.9-PACKAGE-ZIP:
 
 release-linux-x64-Release-ICC2019.4-ISPC1.12.0-TBB-PACKAGE-RPM:
   image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC2017.1 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB intensity:4 package:RPM"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB intensity:4 package:RPM"
   tags:   [docker]
   only:   [web]
   artifacts:
