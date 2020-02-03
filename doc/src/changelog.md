@@ -9,6 +9,7 @@ Version History
 -   For sphere geometries the intersection filter gets now invoked for
     front and back hit.
 -   Passing geomID to user geometry callbacks.
+-   Fixed some bugs for quaternion motion blur.
 
 ### New Features in Embree 3.7.0
 -   Added quaternion motion blur for correct interpolation of rotational transformations.
