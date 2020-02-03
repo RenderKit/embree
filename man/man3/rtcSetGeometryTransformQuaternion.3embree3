@@ -31,18 +31,22 @@ local\-to\-world affine transformation (\f[C]qd\f[] parameter) of an
 instance geometry (\f[C]geometry\f[] parameter) for a particular time
 step (\f[C]timeStep\f[] parameter).
 The transformation is specified as a [RTCQuaternionDecomposition], which
-is a decomposition of an affine transformation which represents the
+is a decomposition of an affine transformation that represents the
 rotational component of an affine transformation as a quaternion.
 This allows interpolating rotational transformations exactly using
 spherical linear interpolation (such as a turning wheel).
 .PP
 For more information about the decomposition see
 [RTCQuaternionDecomposition].
+The quaternion given in the \f[C]RTCQuaternionDecomposition\f[] struct
+will be normalized internally.
 .PP
-Before commiting an instance geometry, the transformation matrices must
+For correct results, the transformation matrices for all time steps must
 be set either using \f[C]rtcSetGeometryTransform\f[] or
-\f[C]rtcSetGeometryTransformQuaternion\f[] for all time steps.
+\f[C]rtcSetGeometryTransformQuaternion\f[].
 Mixing both representations is not allowed.
+Spherical linear interpolation will be used, iff the transformation
+matizes are set with \f[C]rtcSetGeometryTransformQuaternion\f[].
 .PP
 For an example of this feature see the tutorial [Quaternion Motion
 Blur].
