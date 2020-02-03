@@ -60,8 +60,7 @@ and a rotation matrix \f[I]R\f[], represented as a quaternion
 .PP
 where \f[B]i\f[], \f[B]j\f[] \f[B]k\f[] are the imaginary quaternion
 units.
-The passed quaternion has to be a properly normalized unit quaternion,
-as only these represent rotations.
+The passed quaternion will be normalized internally.
 .PP
 The affine transformation matrix corresponding to a
 \f[C]RTCQuaternionDecomposition\f[] is \f[I]T\f[]\f[I]R\f[]\f[I]S\f[]
