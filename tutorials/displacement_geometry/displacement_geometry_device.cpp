@@ -182,7 +182,7 @@ extern "C" void device_init (char* cfg)
   rtcCommitScene (g_scene);
 
   /* set start render mode */
-  renderTile = renderTileStandard;
+  renderFrame = renderFrameStandard;
   key_pressed_handler = device_key_pressed_default;
 }
 
@@ -276,15 +276,14 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-/* called by the C++ code to render */
-extern "C" void device_render (int* pixels,
-                           const unsigned int width,
-                           const unsigned int height,
-                           const float time,
-                           const ISPCCamera& camera)
+void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
 {
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
@@ -294,6 +293,16 @@ extern "C" void device_render (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+}
+
+/* called by the C++ code to render */
+extern "C" void device_render (int* pixels,
+                           const unsigned int width,
+                           const unsigned int height,
+                           const float time,
+                           const ISPCCamera& camera)
+{
+  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

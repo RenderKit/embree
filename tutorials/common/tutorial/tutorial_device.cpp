@@ -32,7 +32,124 @@ extern "C" bool g_changed;
 extern "C" float g_debug;
 
 /* stores pointer to currently used rendePixel function */
-renderTileFunc renderTile;
+renderFrameFunc renderFrame;
+
+#if defined(ISPC)
+
+#define RENDER_FRAME_FUNCTION(Name)                             \
+  void renderTile##Name(int taskIndex,                  \
+                        int threadIndex,                \
+                        int* pixels,            \
+                        const unsigned int width,       \
+                        const unsigned int height,      \
+                        const float time,               \
+                        const ISPCCamera& camera,       \
+                        const int numTilesX,            \
+                        const int numTilesY)            \
+  {                                                             \
+    const int t = taskIndex;                            \
+    const unsigned int tileY = t / numTilesX;           \
+    const unsigned int tileX = t - tileY * numTilesX;   \
+    const unsigned int x0 = tileX * TILE_SIZE_X;        \
+    const unsigned int x1 = min(x0+TILE_SIZE_X,width);  \
+    const unsigned int y0 = tileY * TILE_SIZE_Y;        \
+    const unsigned int y1 = min(y0+TILE_SIZE_Y,height); \
+                                                                \
+    for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)                        \
+    {                                                                   \
+      Vec3fa color = renderPixel##Name((float)x,(float)y,camera,g_stats[threadIndex]);   \
+                                                                        \
+      /* write color to framebuffer */                                  \
+      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
+      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
+      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
+      pixels[y*width+x] = (b << 16) + (g << 8) + r;                     \
+    }                                                                   \
+  }                                                                     \
+                                                                        \
+task void renderTileTask##Name(int* pixels,           \
+                                 const unsigned int width,      \
+                                 const unsigned int height,     \
+                                 const float time,              \
+                                 const ISPCCamera& camera,      \
+                                 const int numTilesX,           \
+                                 const int numTilesY)           \
+  {                                                                     \
+    renderTile##Name(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY); \
+  }                                                                     \
+                                                                        \
+  void renderFrame##Name (int* pixels,                  \
+                          const unsigned int width,             \
+                          const unsigned int height,            \
+                          const float time,                     \
+                          const ISPCCamera& camera)             \
+  {                                                                     \
+    const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;   \
+    const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;   \
+    launch[numTilesX*numTilesY] renderTileTask##Name(pixels,width,height,time,camera,numTilesX,numTilesY);  \
+  }
+
+#else
+
+#define RENDER_FRAME_FUNCTION(Name)                             \
+  void renderTile##Name(int taskIndex,                  \
+                        int threadIndex,                \
+                        int* pixels,            \
+                        const unsigned int width,       \
+                        const unsigned int height,      \
+                        const float time,               \
+                        const ISPCCamera& camera,       \
+                        const int numTilesX,            \
+                        const int numTilesY)            \
+  {                                                             \
+    const int t = taskIndex;                            \
+    const unsigned int tileY = t / numTilesX;           \
+    const unsigned int tileX = t - tileY * numTilesX;   \
+    const unsigned int x0 = tileX * TILE_SIZE_X;        \
+    const unsigned int x1 = min(x0+TILE_SIZE_X,width);  \
+    const unsigned int y0 = tileY * TILE_SIZE_Y;        \
+    const unsigned int y1 = min(y0+TILE_SIZE_Y,height); \
+                                                                \
+    for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)                        \
+    {                                                                   \
+      Vec3fa color = renderPixel##Name((float)x,(float)y,camera,g_stats[threadIndex]);   \
+                                                                        \
+      /* write color to framebuffer */                                  \
+      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
+      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
+      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
+      pixels[y*width+x] = (b << 16) + (g << 8) + r;                     \
+    }                                                                   \
+  }                                                                     \
+                                                                        \
+  void renderTileTask##Name(int taskIndex, int threadIndex,\
+                            int* pixels,                \
+                                 const unsigned int width,      \
+                                 const unsigned int height,     \
+                                 const float time,              \
+                                 const ISPCCamera& camera,      \
+                                 const int numTilesX,           \
+                                 const int numTilesY)           \
+  {                                                                     \
+    renderTile##Name(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY); \
+  }                                                                     \
+                                                                        \
+  void renderFrame##Name (int* pixels,                  \
+                          const unsigned int width,             \
+                          const unsigned int height,            \
+                          const float time,                     \
+                          const ISPCCamera& camera)             \
+  {                                                                     \
+    const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;   \
+    const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;   \
+    parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) { \
+      const int threadIndex = (int)TaskScheduler::threadIndex();        \
+      for (size_t i=range.begin(); i<range.end(); i++)                  \
+        renderTileTask##Name((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY); \
+      });                                                               \
+  }
+
+#endif
 
 /* renders a single pixel with eyelight shading */
 Vec3fa renderPixelEyeLight(float x, float y, const ISPCCamera& camera, RayStats& stats)
@@ -63,35 +180,7 @@ Vec3fa renderPixelEyeLight(float x, float y, const ISPCCamera& camera, RayStats&
     return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))),0.0f,0.0f);
 }
 
-void renderTileEyeLight(int taskIndex,
-                        int threadIndex,
-                        int* pixels,
-                        const unsigned int width,
-                        const unsigned int height,
-                        const float time,
-                        const ISPCCamera& camera,
-                        const int numTilesX,
-                        const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelEyeLight((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(EyeLight)
 
 /* renders a single pixel with occlusion shading */
 Vec3fa renderPixelOcclusion(float x, float y, const ISPCCamera& camera, RayStats& stats)
@@ -120,35 +209,7 @@ Vec3fa renderPixelOcclusion(float x, float y, const ISPCCamera& camera, RayStats
     return Vec3fa(1.0f,1.0f,1.0f);
 }
 
-void renderTileOcclusion(int taskIndex,
-                         int threadIndex,
-                         int* pixels,
-                         const unsigned int width,
-                         const unsigned int height,
-                         const float time,
-                         const ISPCCamera& camera,
-                         const int numTilesX,
-                         const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelOcclusion((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(Occlusion)
 
 /* renders a single pixel with UV shading */
 Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera, RayStats& stats)
@@ -175,35 +236,7 @@ Vec3fa renderPixelUV(float x, float y, const ISPCCamera& camera, RayStats& stats
   else return Vec3fa(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
-void renderTileUV(int taskIndex,
-                  int threadIndex,
-                  int* pixels,
-                  const unsigned int width,
-                  const unsigned int height,
-                  const float time,
-                  const ISPCCamera& camera,
-                  const int numTilesX,
-                  const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelUV((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(UV)
 
 unsigned int render_texcoords_mode = 0;
 
@@ -247,35 +280,7 @@ Vec3fa renderPixelTexCoords(float x, float y, const ISPCCamera& camera, RayStats
   return Vec3fa(1.0f);
 }
 
-void renderTileTexCoords(int taskIndex,
-                         int threadIndex,
-                         int* pixels,
-                         const unsigned int width,
-                         const unsigned int height,
-                         const float time,
-                         const ISPCCamera& camera,
-                         const int numTilesX,
-                         const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelTexCoords((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(TexCoords)
 
 /* renders a single pixel with geometry normal shading */
 Vec3fa renderPixelNg(float x, float y, const ISPCCamera& camera, RayStats& stats)
@@ -303,35 +308,7 @@ Vec3fa renderPixelNg(float x, float y, const ISPCCamera& camera, RayStats& stats
   //else return normalize(Vec3fa(ray.Ng.x,ray.Ng.y,ray.Ng.z));
 }
 
-void renderTileNg(int taskIndex,
-                  int threadIndex,
-                  int* pixels,
-                  const unsigned int width,
-                  const unsigned int height,
-                  const float time,
-                  const ISPCCamera& camera,
-                  const int numTilesX,
-                  const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelNg((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(Ng)
 
 Vec3fa randomColor(const int ID)
 {
@@ -367,35 +344,7 @@ Vec3fa renderPixelGeomID(float x, float y, const ISPCCamera& camera, RayStats& s
   else return randomColor(ray.geomID);
 }
 
-void renderTileGeomID(int taskIndex,
-                      int threadIndex,
-                      int* pixels,
-                      const unsigned int width,
-                      const unsigned int height,
-                      const float time,
-                      const ISPCCamera& camera,
-                      const int numTilesX,
-                      const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelGeomID((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(GeomID)
 
 /* geometry ID and primitive ID shading */
 Vec3fa renderPixelGeomIDPrimID(float x, float y, const ISPCCamera& camera, RayStats& stats)
@@ -422,35 +371,7 @@ Vec3fa renderPixelGeomIDPrimID(float x, float y, const ISPCCamera& camera, RaySt
   else return randomColor(ray.geomID ^ ray.primID)*Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileGeomIDPrimID(int taskIndex,
-                            int threadIndex,
-                            int* pixels,
-                            const unsigned int width,
-                            const unsigned int height,
-                            const float time,
-                            const ISPCCamera& camera,
-                            const int numTilesX,
-                            const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelGeomIDPrimID((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(GeomIDPrimID)
 
 /* vizualizes the traversal cost of a pixel */
 Vec3fa renderPixelCycles(float x, float y, const ISPCCamera& camera, RayStats& stats)
@@ -478,35 +399,7 @@ Vec3fa renderPixelCycles(float x, float y, const ISPCCamera& camera, RayStats& s
   return Vec3fa((float)(c1-c0)*scale,0.0f,0.0f);
 }
 
-void renderTileCycles(int taskIndex,
-                      int threadIndex,
-                      int* pixels,
-                      const unsigned int width,
-                      const unsigned int height,
-                      const float time,
-                      const ISPCCamera& camera,
-                      const int numTilesX,
-                      const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelCycles((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(Cycles)
 
 /* renders a single pixel with ambient occlusion */
 Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera, RayStats& stats)
@@ -575,35 +468,7 @@ Vec3fa renderPixelAmbientOcclusion(float x, float y, const ISPCCamera& camera, R
   return col * intensity;
 }
 
-void renderTileAmbientOcclusion(int taskIndex,
-                                int threadIndex,
-                                int* pixels,
-                                const unsigned int width,
-                                const unsigned int height,
-                                const float time,
-                                const ISPCCamera& camera,
-                                const int numTilesX,
-                                const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelAmbientOcclusion((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(AmbientOcclusion)
 
 /* differential visualization */
 static int differentialMode = 0;
@@ -688,35 +553,7 @@ Vec3fa renderPixelDifferentials(float x, float y, const ISPCCamera& camera, RayS
   return clamp(color,Vec3fa(0.0f),Vec3fa(1.0f));
 }
 
-void renderTileDifferentials(int taskIndex,
-                             int threadIndex,
-                             int* pixels,
-                             const unsigned int width,
-                             const unsigned int height,
-                             const float time,
-                             const ISPCCamera& camera,
-                             const int numTilesX,
-                             const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelDifferentials((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(Differentials)
 
 /* returns the point seen through specified pixel */
 extern "C" bool device_pick(const float x,
@@ -755,57 +592,57 @@ extern "C" bool device_pick(const float x,
 extern "C" void device_key_pressed_default(int key)
 {
   if (key == GLFW_KEY_F1) {
-    renderTile = renderTileStandard;
+    renderFrame = renderFrameStandard;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F2) {
-    renderTile = renderTileEyeLight;
+    renderFrame = renderFrameEyeLight;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F3) {
-    renderTile = renderTileOcclusion;
+    renderFrame = renderFrameOcclusion;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F4) {
-    renderTile = renderTileUV;
+    renderFrame = renderFrameUV;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F5) {
-    renderTile = renderTileNg;
+    renderFrame = renderFrameNg;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F6) {
-    renderTile = renderTileGeomID;
+    renderFrame = renderFrameGeomID;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F7) {
-    renderTile = renderTileGeomIDPrimID;
+    renderFrame = renderFrameGeomIDPrimID;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F8) {
-    if (renderTile == renderTileTexCoords) render_texcoords_mode++;
-    renderTile = renderTileTexCoords;
+    if (renderFrame == renderFrameTexCoords) render_texcoords_mode++;
+    renderFrame = renderFrameTexCoords;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F9) {
-    if (renderTile == renderTileCycles) scale *= 2.0f;
-    renderTile = renderTileCycles;
+    if (renderFrame == renderFrameCycles) scale *= 2.0f;
+    renderFrame = renderFrameCycles;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F10) {
-    if (renderTile == renderTileCycles) scale *= 0.5f;
-    renderTile = renderTileCycles;
+    if (renderFrame == renderFrameCycles) scale *= 0.5f;
+    renderFrame = renderFrameCycles;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F11) {
-    renderTile = renderTileAmbientOcclusion;
+    renderFrame = renderFrameAmbientOcclusion;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F12) {
-    if (renderTile == renderTileDifferentials) {
+    if (renderFrame == renderFrameDifferentials) {
       differentialMode = (differentialMode+1)%17;
     } else {
-      renderTile = renderTileDifferentials;
+      renderFrame = renderFrameDifferentials;
       differentialMode = 0;
     }
     g_changed = true;

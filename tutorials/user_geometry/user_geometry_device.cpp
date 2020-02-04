@@ -1024,8 +1024,7 @@ extern "C" void device_init (char* cfg)
   colors[4][3] = Vec3fa(1.0f, 1.0f, 1.0f);
 
   /* set start render mode */
-  if (g_mode == MODE_NORMAL) renderTile = renderTileStandard;
-  else                       renderTile = renderTileStandardStream;
+  renderFrame = renderFrameStandard;
   key_pressed_handler = device_key_pressed_default;
 }
 
@@ -1276,8 +1275,29 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  if (g_mode == MODE_NORMAL)
+    renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  else
+    renderTileStandardStream(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  
 }
+
+void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
+{
+  /* render all pixels */
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
+}
+
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -1309,13 +1329,7 @@ extern "C" void device_render (int* pixels,
   rtcCommitScene (g_scene);
 
   /* render all pixels */
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    const int threadIndex = (int)TaskScheduler::threadIndex();
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
+  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

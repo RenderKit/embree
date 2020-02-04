@@ -1022,8 +1022,7 @@ export void device_init (uniform int8* uniform cfg)
   colors[4][3] = make_Vec3f(1.0f, 1.0f, 1.0f);
 
   /* set start render mode */
-  if (g_mode == MODE_NORMAL) renderTile = renderTileStandard;
-  else                       renderTile = renderTileStandardStream;
+  renderFrame = renderFrameStandard;
   key_pressed_handler = device_key_pressed_default;
 }
 
@@ -1274,8 +1273,25 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  if (g_mode == MODE_NORMAL)
+    renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  else
+    renderTileStandardStream(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  
 }
+
+void renderFrameStandard (uniform int* uniform pixels,
+                          const uniform unsigned int width,
+                          const uniform unsigned int height,
+                          const uniform float time,
+                          const uniform ISPCCamera& camera)
+{
+  /* render all pixels */
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+}
+
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
@@ -1307,9 +1323,7 @@ export void device_render (uniform int* uniform pixels,
   rtcCommitScene (g_scene);
 
   /* render all pixels */
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

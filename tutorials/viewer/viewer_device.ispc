@@ -341,7 +341,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 uniform Vec3fa old_p;
@@ -350,9 +350,21 @@ uniform Vec3fa old_p;
 export void device_init (uniform int8* uniform cfg)
 {
   /* set start render mode */
-  renderTile = renderTileStandard;
+  renderFrame = renderFrameStandard;
   key_pressed_handler = device_key_pressed_handler;
   old_p = make_Vec3fa(1E10);
+}
+
+void renderFrameStandard (uniform int* uniform pixels,
+                          const uniform unsigned int width,
+                          const uniform unsigned int height,
+                          const uniform float time,
+                          const uniform ISPCCamera& camera)
+{
+  /* render image */
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
 /* called by the C++ code to render */
@@ -388,10 +400,7 @@ export void device_render (uniform int* uniform pixels,
   }
 
   /* render image */
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
-  //rtcDebug();
+  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

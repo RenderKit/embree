@@ -30,7 +30,124 @@ extern uniform bool g_changed;
 extern uniform float g_debug;
 
 /* stores pointer to currently used rendePixel function */
-renderTileFunc renderTile;
+renderFrameFunc renderFrame;
+
+#if defined(ISPC)
+
+#define RENDER_FRAME_FUNCTION(Name)                             \
+  void renderTile##Name(uniform int taskIndex,                  \
+                        uniform int threadIndex,                \
+                        uniform int* uniform pixels,            \
+                        const uniform unsigned int width,       \
+                        const uniform unsigned int height,      \
+                        const uniform float time,               \
+                        const uniform ISPCCamera& camera,       \
+                        const uniform int numTilesX,            \
+                        const uniform int numTilesY)            \
+  {                                                             \
+    const uniform int t = taskIndex;                            \
+    const uniform unsigned int tileY = t / numTilesX;           \
+    const uniform unsigned int tileX = t - tileY * numTilesX;   \
+    const uniform unsigned int x0 = tileX * TILE_SIZE_X;        \
+    const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);  \
+    const uniform unsigned int y0 = tileY * TILE_SIZE_Y;        \
+    const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height); \
+                                                                \
+    foreach_tiled (y = y0 ... y1, x = x0 ... x1)                        \
+    {                                                                   \
+      Vec3f color = renderPixel##Name((float)x,(float)y,camera,g_stats[threadIndex]);   \
+                                                                        \
+      /* write color to framebuffer */                                  \
+      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
+      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
+      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
+      pixels[y*width+x] = (b << 16) + (g << 8) + r;                     \
+    }                                                                   \
+  }                                                                     \
+                                                                        \
+task void renderTileTask##Name(uniform int* uniform pixels,           \
+                                 const uniform unsigned int width,      \
+                                 const uniform unsigned int height,     \
+                                 const uniform float time,              \
+                                 const uniform ISPCCamera& camera,      \
+                                 const uniform int numTilesX,           \
+                                 const uniform int numTilesY)           \
+  {                                                                     \
+    renderTile##Name(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY); \
+  }                                                                     \
+                                                                        \
+  void renderFrame##Name (uniform int* uniform pixels,                  \
+                          const uniform unsigned int width,             \
+                          const uniform unsigned int height,            \
+                          const uniform float time,                     \
+                          const uniform ISPCCamera& camera)             \
+  {                                                                     \
+    const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;   \
+    const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;   \
+    launch[numTilesX*numTilesY] renderTileTask##Name(pixels,width,height,time,camera,numTilesX,numTilesY); sync; \
+  }
+
+#else
+
+#define RENDER_FRAME_FUNCTION(Name)                             \
+  void renderTile##Name(uniform int taskIndex,                  \
+                        uniform int threadIndex,                \
+                        uniform int* uniform pixels,            \
+                        const uniform unsigned int width,       \
+                        const uniform unsigned int height,      \
+                        const uniform float time,               \
+                        const uniform ISPCCamera& camera,       \
+                        const uniform int numTilesX,            \
+                        const uniform int numTilesY)            \
+  {                                                             \
+    const uniform int t = taskIndex;                            \
+    const uniform unsigned int tileY = t / numTilesX;           \
+    const uniform unsigned int tileX = t - tileY * numTilesX;   \
+    const uniform unsigned int x0 = tileX * TILE_SIZE_X;        \
+    const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);  \
+    const uniform unsigned int y0 = tileY * TILE_SIZE_Y;        \
+    const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height); \
+                                                                \
+    foreach_tiled (y = y0 ... y1, x = x0 ... x1)                        \
+    {                                                                   \
+      Vec3f color = renderPixel##Name((float)x,(float)y,camera,g_stats[threadIndex]);   \
+                                                                        \
+      /* write color to framebuffer */                                  \
+      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
+      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
+      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
+      pixels[y*width+x] = (b << 16) + (g << 8) + r;                     \
+    }                                                                   \
+  }                                                                     \
+                                                                        \
+  void renderTileTask##Name(int taskIndex, int threadIndex,\
+                            uniform int* uniform pixels,                \
+                                 const uniform unsigned int width,      \
+                                 const uniform unsigned int height,     \
+                                 const uniform float time,              \
+                                 const uniform ISPCCamera& camera,      \
+                                 const uniform int numTilesX,           \
+                                 const uniform int numTilesY)           \
+  {                                                                     \
+    renderTile##Name(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY); \
+  }                                                                     \
+                                                                        \
+  void renderFrame##Name (uniform int* uniform pixels,                  \
+                          const uniform unsigned int width,             \
+                          const uniform unsigned int height,            \
+                          const uniform float time,                     \
+                          const uniform ISPCCamera& camera)             \
+  {                                                                     \
+    const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;   \
+    const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;   \
+    parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) { \
+      const int threadIndex = (int)TaskScheduler::threadIndex();        \
+      for (size_t i=range.begin(); i<range.end(); i++)                  \
+        renderTileTask##Name((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);  \
+      });                                                               \
+  }
+
+#endif
 
 /* renders a single pixel with eyelight shading */
 Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -61,35 +178,7 @@ Vec3f renderPixelEyeLight(float x, float y, const uniform ISPCCamera& camera, un
     return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))),0.0f,0.0f);
 }
 
-void renderTileEyeLight(uniform int taskIndex,
-                        uniform int threadIndex,
-                        uniform int* uniform pixels,
-                        const uniform unsigned int width,
-                        const uniform unsigned int height,
-                        const uniform float time,
-                        const uniform ISPCCamera& camera,
-                        const uniform int numTilesX,
-                        const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelEyeLight((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(EyeLight)
 
 /* renders a single pixel with occlusion shading */
 Vec3f renderPixelOcclusion(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -118,35 +207,7 @@ Vec3f renderPixelOcclusion(float x, float y, const uniform ISPCCamera& camera, u
     return make_Vec3f(1.0f,1.0f,1.0f);
 }
 
-void renderTileOcclusion(uniform int taskIndex,
-                         uniform int threadIndex,
-                         uniform int* uniform pixels,
-                         const uniform unsigned int width,
-                         const uniform unsigned int height,
-                         const uniform float time,
-                         const uniform ISPCCamera& camera,
-                         const uniform int numTilesX,
-                         const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelOcclusion((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(Occlusion)
 
 /* renders a single pixel with UV shading */
 Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -173,35 +234,7 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera, uniform 
   else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
 }
 
-void renderTileUV(uniform int taskIndex,
-                  uniform int threadIndex,
-                  uniform int* uniform pixels,
-                  const uniform unsigned int width,
-                  const uniform unsigned int height,
-                  const uniform float time,
-                  const uniform ISPCCamera& camera,
-                  const uniform int numTilesX,
-                  const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelUV((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(UV)
 
 uniform unsigned int render_texcoords_mode = 0;
 
@@ -245,35 +278,7 @@ Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera, u
   return make_Vec3f(1.0f);
 }
 
-void renderTileTexCoords(uniform int taskIndex,
-                         uniform int threadIndex,
-                         uniform int* uniform pixels,
-                         const uniform unsigned int width,
-                         const uniform unsigned int height,
-                         const uniform float time,
-                         const uniform ISPCCamera& camera,
-                         const uniform int numTilesX,
-                         const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelTexCoords((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(TexCoords)
 
 /* renders a single pixel with geometry normal shading */
 Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -301,35 +306,7 @@ Vec3f renderPixelNg(float x, float y, const uniform ISPCCamera& camera, uniform 
   //else return normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z));
 }
 
-void renderTileNg(uniform int taskIndex,
-                  uniform int threadIndex,
-                  uniform int* uniform pixels,
-                  const uniform unsigned int width,
-                  const uniform unsigned int height,
-                  const uniform float time,
-                  const uniform ISPCCamera& camera,
-                  const uniform int numTilesX,
-                  const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelNg((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(Ng)
 
 Vec3f randomColor(const int ID)
 {
@@ -365,35 +342,7 @@ Vec3f renderPixelGeomID(float x, float y, const uniform ISPCCamera& camera, unif
   else return randomColor(ray.geomID);
 }
 
-void renderTileGeomID(uniform int taskIndex,
-                      uniform int threadIndex,
-                      uniform int* uniform pixels,
-                      const uniform unsigned int width,
-                      const uniform unsigned int height,
-                      const uniform float time,
-                      const uniform ISPCCamera& camera,
-                      const uniform int numTilesX,
-                      const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelGeomID((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(GeomID)
 
 /* geometry ID and primitive ID shading */
 Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -420,35 +369,7 @@ Vec3f renderPixelGeomIDPrimID(float x, float y, const uniform ISPCCamera& camera
   else return randomColor(ray.geomID ^ ray.primID)*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
 }
 
-void renderTileGeomIDPrimID(uniform int taskIndex,
-                            uniform int threadIndex,
-                            uniform int* uniform pixels,
-                            const uniform unsigned int width,
-                            const uniform unsigned int height,
-                            const uniform float time,
-                            const uniform ISPCCamera& camera,
-                            const uniform int numTilesX,
-                            const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelGeomIDPrimID((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(GeomIDPrimID)
 
 /* vizualizes the traversal cost of a pixel */
 Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -476,35 +397,7 @@ Vec3f renderPixelCycles(float x, float y, const uniform ISPCCamera& camera, unif
   return make_Vec3f((uniform float)(c1-c0)*scale,0.0f,0.0f);
 }
 
-void renderTileCycles(uniform int taskIndex,
-                      uniform int threadIndex,
-                      uniform int* uniform pixels,
-                      const uniform unsigned int width,
-                      const uniform unsigned int height,
-                      const uniform float time,
-                      const uniform ISPCCamera& camera,
-                      const uniform int numTilesX,
-                      const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelCycles((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(Cycles)
 
 /* renders a single pixel with ambient occlusion */
 Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -573,35 +466,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
   return col * intensity;
 }
 
-void renderTileAmbientOcclusion(uniform int taskIndex,
-                                uniform int threadIndex,
-                                uniform int* uniform pixels,
-                                const uniform unsigned int width,
-                                const uniform unsigned int height,
-                                const uniform float time,
-                                const uniform ISPCCamera& camera,
-                                const uniform int numTilesX,
-                                const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelAmbientOcclusion((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(AmbientOcclusion)
 
 /* differential visualization */
 static uniform int differentialMode = 0;
@@ -686,35 +551,7 @@ Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camer
   return clamp(color,make_Vec3f(0.0f),make_Vec3f(1.0f));
 }
 
-void renderTileDifferentials(uniform int taskIndex,
-                             uniform int threadIndex,
-                             uniform int* uniform pixels,
-                             const uniform unsigned int width,
-                             const uniform unsigned int height,
-                             const uniform float time,
-                             const uniform ISPCCamera& camera,
-                             const uniform int numTilesX,
-                             const uniform int numTilesY)
-{
-  const uniform int t = taskIndex;
-  const uniform unsigned int tileY = t / numTilesX;
-  const uniform unsigned int tileX = t - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    Vec3f color = renderPixelDifferentials((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
-}
+RENDER_FRAME_FUNCTION(Differentials)
 
 /* returns the point seen through specified pixel */
 export uniform bool device_pick(const uniform float x,
@@ -753,57 +590,57 @@ export uniform bool device_pick(const uniform float x,
 extern void device_key_pressed_default(uniform int key)
 {
   if (key == GLFW_KEY_F1) {
-    renderTile = renderTileStandard;
+    renderFrame = renderFrameStandard;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F2) {
-    renderTile = renderTileEyeLight;
+    renderFrame = renderFrameEyeLight;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F3) {
-    renderTile = renderTileOcclusion;
+    renderFrame = renderFrameOcclusion;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F4) {
-    renderTile = renderTileUV;
+    renderFrame = renderFrameUV;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F5) {
-    renderTile = renderTileNg;
+    renderFrame = renderFrameNg;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F6) {
-    renderTile = renderTileGeomID;
+    renderFrame = renderFrameGeomID;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F7) {
-    renderTile = renderTileGeomIDPrimID;
+    renderFrame = renderFrameGeomIDPrimID;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F8) {
-    if (renderTile == renderTileTexCoords) render_texcoords_mode++;
-    renderTile = renderTileTexCoords;
+    if (renderFrame == renderFrameTexCoords) render_texcoords_mode++;
+    renderFrame = renderFrameTexCoords;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F9) {
-    if (renderTile == renderTileCycles) scale *= 2.0f;
-    renderTile = renderTileCycles;
+    if (renderFrame == renderFrameCycles) scale *= 2.0f;
+    renderFrame = renderFrameCycles;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F10) {
-    if (renderTile == renderTileCycles) scale *= 0.5f;
-    renderTile = renderTileCycles;
+    if (renderFrame == renderFrameCycles) scale *= 0.5f;
+    renderFrame = renderFrameCycles;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F11) {
-    renderTile = renderTileAmbientOcclusion;
+    renderFrame = renderFrameAmbientOcclusion;
     g_changed = true;
   }
   else if (key == GLFW_KEY_F12) {
-    if (renderTile == renderTileDifferentials) {
+    if (renderFrame == renderFrameDifferentials) {
       differentialMode = (differentialMode+1)%17;
     } else {
-      renderTile = renderTileDifferentials;
+      renderFrame = renderFrameDifferentials;
       differentialMode = 0;
     }
     g_changed = true;
