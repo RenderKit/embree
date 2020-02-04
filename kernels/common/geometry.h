@@ -183,6 +183,7 @@ namespace embree
 
     enum GSubType
     {
+      GTY_SUBTYPE_DEFAULT= 0,
       GTY_SUBTYPE_INSTANCE_LINEAR = 0,
       GTY_SUBTYPE_INSTANCE_QUATERNION = 1
     };
