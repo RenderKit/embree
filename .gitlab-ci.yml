@@ -194,7 +194,7 @@ nightly-linux-x64-RelWithDebInfo-CLANG4.0.0-ISPC1.12.0-AVX-TBB2019.9-VALGRIND:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:RelWithDebInfo compiler:CLANG4.0.0 ispc:ispc1.12.0 isa:AVX tasking:TBB2019.9 intensity:4 memcheck:ON"
   tags:   [docker] # avx
-  only:   [schedules]
+  only:   [pushes]
 
 nightly-linux-x64-RelWithDebInfo-CLANG5.0.0-ISPC1.12.0-AVX2-INT-ADDRSANITIZER:
   image: embreedocker/fedora:26
