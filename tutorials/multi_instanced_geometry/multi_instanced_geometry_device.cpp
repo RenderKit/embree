@@ -424,10 +424,9 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 extern "C" void device_init(char* cfg)
 {
   g_scene = initializeScene(g_device, &g_instanceLevels);
-  key_pressed_handler = device_key_pressed_default;
 }
 
-void renderFrameStandard(int* pixels,
+extern "C" void renderFrameStandard(int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
@@ -475,8 +474,6 @@ extern "C" void device_render(int* pixels,
   }
   else
     g_accu_count++;
-
-  renderFrameStandard(pixels,width,height,time,camera);
 }
 
 /*

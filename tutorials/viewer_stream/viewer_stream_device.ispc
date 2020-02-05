@@ -404,12 +404,9 @@ task void renderTileTask(uniform int* uniform pixels,
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* set render tile function to use */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
-void renderFrameStandard (uniform int* uniform pixels,
+export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform unsigned int width,
                           const uniform unsigned int height,
                           const uniform float time,
@@ -433,9 +430,6 @@ export void device_render (uniform int* uniform pixels,
     updateEdgeLevels(g_ispc_scene, camera.xfm.p);
     rtcCommitScene (g_scene);
   }
-  
-  /* render image */
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

@@ -171,10 +171,6 @@ export void device_init (uniform int8* uniform cfg)
   colors[3][1] = make_Vec3f(0.50f, 0.50f, 0.f);
   colors[3][2] = make_Vec3f(0.75f, 0.75f, 0.f);
   colors[3][3] = make_Vec3f(1.00f, 1.00f, 0.f);
-
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 /* task that renders a single screen tile */
@@ -424,7 +420,7 @@ task void renderTileTask(uniform int* uniform pixels,
     renderTileStandardStream(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-void renderFrameStandard (uniform int* uniform pixels,
+export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform unsigned int width,
                           const uniform unsigned int height,
                           const uniform float time,
@@ -474,9 +470,6 @@ export void device_render (uniform int* uniform pixels,
   rtcCommitGeometry(g_instance2);
   rtcCommitGeometry(g_instance3);
   rtcCommitScene (g_scene);
-
-  /* render all pixels */
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

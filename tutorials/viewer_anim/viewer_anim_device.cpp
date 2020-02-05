@@ -372,15 +372,6 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-void device_key_pressed_handler(int key)
-{
-  if (key == 111 /*o*/) {
-  }
-  else if (key == 112 /*p*/) {
-  }
-  else device_key_pressed_default(key);
-}
-
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
@@ -394,9 +385,6 @@ extern "C" void device_init (char* cfg)
     createObject(i,g_ispc_scene,g_scene);
 
   rtcCommitScene (g_scene);
-
-  /* set render tile function to use */
-  key_pressed_handler = device_key_pressed_handler;
 }
 
 #define TICKS_PER_SECOND 2000000000
@@ -404,7 +392,7 @@ extern "C" void device_init (char* cfg)
 inline double getTime() { return (double)clock() / TICKS_PER_SECOND; }
 
 
-void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -451,13 +439,7 @@ extern "C" void device_render (int* pixels,
     }
   }
 
-  /* ============ */
-  /* render image */
-  /* ============ */
-
-  renderFrameStandard(pixels,width,height,time,camera);
-
-  /* =============== */
+   /* =============== */
   /* update geometry */
   /* =============== */
 

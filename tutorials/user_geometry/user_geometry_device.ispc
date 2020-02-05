@@ -1020,10 +1020,6 @@ export void device_init (uniform int8* uniform cfg)
   colors[4][1] = make_Vec3f(1.0f, 1.0f, 1.0f);
   colors[4][2] = make_Vec3f(1.0f, 1.0f, 1.0f);
   colors[4][3] = make_Vec3f(1.0f, 1.0f, 1.0f);
-
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
@@ -1280,7 +1276,7 @@ task void renderTileTask(uniform int* uniform pixels,
   
 }
 
-void renderFrameStandard (uniform int* uniform pixels,
+export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform unsigned int width,
                           const uniform unsigned int height,
                           const uniform float time,
@@ -1321,9 +1317,6 @@ export void device_render (uniform int* uniform pixels,
   updateInstance(g_scene,g_instance[2]);
   updateInstance(g_scene,g_instance[3]);
   rtcCommitScene (g_scene);
-
-  /* render all pixels */
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

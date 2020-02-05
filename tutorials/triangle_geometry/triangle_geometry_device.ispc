@@ -216,7 +216,6 @@ export void device_render (uniform int* uniform pixels,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
-  //renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

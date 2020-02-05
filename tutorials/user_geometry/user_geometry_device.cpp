@@ -1022,10 +1022,6 @@ extern "C" void device_init (char* cfg)
   colors[4][1] = Vec3fa(1.0f, 1.0f, 1.0f);
   colors[4][2] = Vec3fa(1.0f, 1.0f, 1.0f);
   colors[4][3] = Vec3fa(1.0f, 1.0f, 1.0f);
-
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
@@ -1282,7 +1278,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   
 }
 
-void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -1327,9 +1323,6 @@ extern "C" void device_render (int* pixels,
   updateInstance(g_scene,g_instance[2]);
   updateInstance(g_scene,g_instance[3]);
   rtcCommitScene (g_scene);
-
-  /* render all pixels */
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

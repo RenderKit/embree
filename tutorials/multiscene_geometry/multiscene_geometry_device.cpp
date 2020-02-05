@@ -124,14 +124,6 @@ namespace embree {
     return geomID;
   }
   
-  void device_key_pressed_handler(int key)
-  {
-    if (key == ' ')
-      g_scene_id = (g_scene_id+1)%3;
-    else
-      device_key_pressed_default(key);
-  }
-  
   /* called by the C++ code for initialization */
   extern "C" void device_init(char* cfg)
   {
@@ -192,10 +184,6 @@ namespace embree {
      * committed even though scene_0 containing all
      * geometries got already build. */
     g_scene_id = 1;
-    
-    /* set start render mode */
-    renderFrame = renderFrameStandard;
-    key_pressed_handler = device_key_pressed_handler;
   }
   
   /* animates the sphere */
@@ -331,7 +319,7 @@ namespace embree {
     rtcCommitGeometry(geom);
   }
 
-  void renderFrameStandard(int* pixels,
+  extern "C" void renderFrameStandard(int* pixels,
                            const unsigned int width,
                            const unsigned int height,
                            const float time,
@@ -380,9 +368,6 @@ namespace embree {
     rtcCommitScene(g_scene_0);
     rtcCommitScene(g_scene_1);
     rtcCommitScene(g_scene_2);
-    
-    /* render all pixels */
-    renderFrame(pixels,width,height,time,camera);
   }
   
   /* called by the C++ code for cleanup */

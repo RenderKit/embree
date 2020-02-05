@@ -297,10 +297,6 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommitGeometry(g_instance_quaternion_1);
 
   rtcCommitScene (g_scene);
-
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
@@ -410,7 +406,7 @@ task void renderTileTask(uniform int* uniform pixels,
   renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-void renderFrameStandard (uniform int* uniform pixels,
+export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform unsigned int width,
                           const uniform unsigned int height,
                           const uniform float time,
@@ -465,8 +461,6 @@ export void device_render (uniform int* uniform pixels,
   else {
     g_accu_count++;
   }
-
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

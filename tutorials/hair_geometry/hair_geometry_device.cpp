@@ -449,15 +449,11 @@ extern "C" void device_init (char* cfg)
   hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
   hair_Kt = 0.8f*hair_K;    //!< transparency of hair
 
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
-
   /* create scene */
   g_scene = convertScene(g_ispc_scene);
 }
 
-void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -501,9 +497,6 @@ extern "C" void device_render (int* pixels,
     for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
   }
-
-  /* render frame */
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

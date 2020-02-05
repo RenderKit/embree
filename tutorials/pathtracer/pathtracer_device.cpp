@@ -882,12 +882,14 @@ extern "C" int g_instancing_mode;
 
 bool g_animation = true;
 bool g_use_smooth_normals = false;
+#if 0
 void device_key_pressed_handler(int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
   if (key == 110 /*n*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
   else device_key_pressed_default(key);
 }
+#endif
 
 void assignShaders(ISPCGeometry* geometry)
 {
@@ -1813,13 +1815,9 @@ extern "C" void device_init (char* cfg)
   g_accu_vz = Vec3fa(0.0f);
   g_accu_p  = Vec3fa(0.0f);
 
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_handler;
-
 } // device_init
 
-void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -1879,9 +1877,6 @@ extern "C" void device_render (int* pixels,
   }
   else
     g_accu_count++;
-
-  /* render image */
-  renderFrame(pixels,width,height,time,camera);
 
 } // device_render
 

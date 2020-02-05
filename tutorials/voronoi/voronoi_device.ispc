@@ -130,8 +130,6 @@ export void device_init (uniform int8* uniform cfg)
       for (uniform int b = 0; b < 3; ++b) 
         g_colors[r * 9 + g * 3 + b] = make_Vec3fa(0.2f + 0.3f * r, 0.2f + 0.3f * g, 0.2f + 0.3f * b); 
 
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 /* renders a single screen tile */
@@ -230,7 +228,7 @@ task void drawPoints(uniform int* uniform pixels,
   splat_color(pixels, width, height, 2, p.p.x, p.p.z, color);
 }
 
-void renderFrameStandard (uniform int* uniform pixels,
+export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform unsigned int width,
                           const uniform unsigned int height,
                           const uniform float time,
@@ -259,9 +257,6 @@ export void device_render (uniform int* uniform pixels,
     g_points = createPoints(g_scene, g_num_points);
     rtcCommitScene(g_scene);
   }
-
-  /* render all pixels */
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

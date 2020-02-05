@@ -125,12 +125,14 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 }
 
 bool g_use_smooth_normals = false;
+#if 0
 void device_key_pressed_handler(int key)
 {
   if (key == 110 /*n*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
 }
-
+#endif
+  
 RTCScene convertScene(ISPCScene* scene_in)
 {
   for (unsigned int i=0; i<scene_in->numGeometries; i++)
@@ -359,13 +361,10 @@ Vec3fa old_p;
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_handler;
   old_p = Vec3fa(1E10);
 }
 
-void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -412,9 +411,6 @@ extern "C" void device_render (int* pixels,
       rtcCommitScene (g_scene);
     }
   }
-
-  /* render image */
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

@@ -422,11 +422,10 @@ task void renderTileTask(uniform int* uniform pixels,
 export void device_init(uniform int8* uniform cfg)
 {
   g_scene = initializeScene(g_device, &g_instanceLevels);
-  key_pressed_handler = device_key_pressed_default;
 }
 
 
-void renderFrameStandard(uniform int* uniform pixels,
+export void renderFrameStandard(uniform int* uniform pixels,
                                 const uniform unsigned int width,
                                 const uniform unsigned int height,
                                 const uniform float time,
@@ -470,8 +469,6 @@ export void device_render(uniform int* uniform pixels,
   }
   else
     g_accu_count++;
-
-  renderFrameStandard(pixels,width,height,time,camera);
 }
 
 /*

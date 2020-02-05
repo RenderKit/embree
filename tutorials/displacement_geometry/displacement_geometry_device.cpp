@@ -180,10 +180,6 @@ extern "C" void device_init (char* cfg)
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
-
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 /* task that renders a single screen tile */
@@ -279,7 +275,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -302,7 +298,6 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

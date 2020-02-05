@@ -222,7 +222,6 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
-  //renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */
