@@ -689,10 +689,6 @@ export void device_init (uniform int8* uniform cfg)
   addVisualizationSpheres(g_sceneEmbreeInstance, &g_visDataEmbreeInstance);
   addVisualizationSpheres(g_sceneUserDefinedInstance, &g_visDataUserDefinedInstance);
 
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
-
   updateGeometryAndQueries(0.f);
 }
 
@@ -796,7 +792,7 @@ task void renderTileTask(uniform int* uniform pixels,
   renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-void renderFrameStandard (uniform int* uniform pixels,
+export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform unsigned int width,
                           const uniform unsigned int height,
                           const uniform float time,
@@ -816,7 +812,6 @@ export void device_render (uniform int* uniform pixels,
                            const uniform ISPCCamera& camera)
 {
   updateGeometryAndQueries(time);
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

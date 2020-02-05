@@ -117,10 +117,6 @@ export void device_init (uniform int8* uniform cfg)
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
-
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 /* task that renders a single screen tile */
@@ -202,7 +198,7 @@ task void renderTileTask(uniform int* uniform pixels,
 }
 
 /* called by the C++ code to render */
-void renderFrameStandard (uniform int* uniform pixels,
+export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform unsigned int width,
                           const uniform unsigned int height,
                           const uniform float time,
@@ -220,7 +216,7 @@ export void device_render (uniform int* uniform pixels,
                            const uniform float time,
                            const uniform ISPCCamera& camera)
 {
-  renderFrame(pixels,width,height,time,camera);
+  //renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

@@ -97,7 +97,7 @@ extern "C" renderFrameFunc renderFrame;
 extern "C" void device_key_pressed_default(int key);
 extern "C" void (* key_pressed_handler)(int key);
 
-void renderFrameStandard(int* pixels,
+extern "C" void renderFrameStandard(int* pixels,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,

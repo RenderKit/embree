@@ -74,4 +74,7 @@ struct ClothModel : public Mesh {
 };
 
 } // namespace collide2
+
+  void initializeClothPositions (collide2::ClothModel & cloth);
+
 } // namespace embree

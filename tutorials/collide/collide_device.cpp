@@ -54,7 +54,7 @@ const float h = 1.f / (nsub * 24.f);
 const size_t nIters = 20;
 const float collDelta = 1.e-6f;
 
-bool pause = false;
+extern bool pause;
 
 /* creates a ground plane */
 unsigned int createGroundPlane (RTCScene scene)
@@ -405,14 +405,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   return color*abs(dot(neg(ray.dir),normalize(ray.Ng)));
 }
 
-void device_key_pressed_handler(int key)
-{
-  if (key == 32  /* */) initializeClothPositions ((collide2::ClothModel &) (*meshes[clothID]));
-  if (key == 80 /*p*/) { pause = !pause; }
-  if (pause == true && key == 78 /*n*/) { updateScene (); std::cout << "current time: " << cur_time << std::endl;}
-  else device_key_pressed_default(key);
-}
-
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
@@ -470,13 +462,9 @@ extern "C" void device_init (char* cfg)
 
   /* set error handler */
   rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
-
-  /* set start render mode */
-  renderFrame = renderFrameStandard;
-  key_pressed_handler = device_key_pressed_handler;
 }
 
-void renderFrameStandard (int* pixels,
+extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
@@ -507,8 +495,6 @@ extern "C" void device_render (int* pixels,
     std::cout << "collision time = " << 1000.0f*total_collision_time << " ms" << std::endl;
     exit(0);
   }
-
-  renderFrame(pixels,width,height,time,camera);
 }
 
 /* called by the C++ code for cleanup */

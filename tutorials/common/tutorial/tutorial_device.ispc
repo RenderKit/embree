@@ -29,9 +29,6 @@ extern uniform bool g_changed;
 
 extern uniform float g_debug;
 
-/* stores pointer to currently used rendePixel function */
-renderFrameFunc renderFrame;
-
 #if defined(ISPC)
 
 #define RENDER_FRAME_FUNCTION(Name)                             \
@@ -76,7 +73,7 @@ task void renderTileTask##Name(uniform int* uniform pixels,           \
     renderTile##Name(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY); \
   }                                                                     \
                                                                         \
-  void renderFrame##Name (uniform int* uniform pixels,                  \
+  export void renderFrame##Name (uniform int* uniform pixels,                  \
                           const uniform unsigned int width,             \
                           const uniform unsigned int height,            \
                           const uniform float time,                     \
@@ -132,7 +129,7 @@ task void renderTileTask##Name(uniform int* uniform pixels,           \
     renderTile##Name(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY); \
   }                                                                     \
                                                                         \
-  void renderFrame##Name (uniform int* uniform pixels,                  \
+  extern "C" void renderFrame##Name (uniform int* uniform pixels,                  \
                           const uniform unsigned int width,             \
                           const uniform unsigned int height,            \
                           const uniform float time,                     \
@@ -236,7 +233,7 @@ Vec3f renderPixelUV(float x, float y, const uniform ISPCCamera& camera, uniform 
 
 RENDER_FRAME_FUNCTION(UV)
 
-uniform unsigned int render_texcoords_mode = 0;
+extern uniform unsigned int render_texcoords_mode;
 
 /* renders a single pixel with TexCoords shading */
 Vec3f renderPixelTexCoords(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
@@ -469,7 +466,7 @@ Vec3f renderPixelAmbientOcclusion(float x, float y, const uniform ISPCCamera& ca
 RENDER_FRAME_FUNCTION(AmbientOcclusion)
 
 /* differential visualization */
-static uniform int differentialMode = 0;
+extern uniform int differentialMode;
 Vec3f renderPixelDifferentials(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
@@ -584,74 +581,6 @@ export uniform bool device_pick(const uniform float x,
     hitPos = ray.org + ray.tfar*ray.dir;
     return true;
   }
-}
-
-/* called when a key is pressed */
-extern void device_key_pressed_default(uniform int key)
-{
-  if (key == GLFW_KEY_F1) {
-    renderFrame = renderFrameStandard;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F2) {
-    renderFrame = renderFrameEyeLight;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F3) {
-    renderFrame = renderFrameOcclusion;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F4) {
-    renderFrame = renderFrameUV;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F5) {
-    renderFrame = renderFrameNg;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F6) {
-    renderFrame = renderFrameGeomID;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F7) {
-    renderFrame = renderFrameGeomIDPrimID;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F8) {
-    if (renderFrame == renderFrameTexCoords) render_texcoords_mode++;
-    renderFrame = renderFrameTexCoords;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F9) {
-    if (renderFrame == renderFrameCycles) scale *= 2.0f;
-    renderFrame = renderFrameCycles;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F10) {
-    if (renderFrame == renderFrameCycles) scale *= 0.5f;
-    renderFrame = renderFrameCycles;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F11) {
-    renderFrame = renderFrameAmbientOcclusion;
-    g_changed = true;
-  }
-  else if (key == GLFW_KEY_F12) {
-    if (renderFrame == renderFrameDifferentials) {
-      differentialMode = (differentialMode+1)%17;
-    } else {
-      renderFrame = renderFrameDifferentials;
-      differentialMode = 0;
-    }
-    g_changed = true;
-  }
-}
-
-/* called when a key is pressed */
-void (* uniform key_pressed_handler)(uniform int key) = NULL;
-
-export void device_key_pressed(uniform int key) {
-  if (key_pressed_handler) key_pressed_handler(key);
 }
 
 Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int primID, const float u, const float v)
