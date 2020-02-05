@@ -105,6 +105,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 export void device_init (uniform int8* uniform cfg)
 { 
   /* create scene */
+  TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
 
   /* add cube */

@@ -107,6 +107,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
 extern "C" void device_init (char* cfg)
 { 
   /* create scene */
+  TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
 
   /* add cube */
