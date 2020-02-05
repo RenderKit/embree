@@ -567,10 +567,6 @@ extern "C" void device_init (char* cfg)
    
   /* commit changes to scene */
   rtcCommitScene (g_scene);
-
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 Vec3fa mylerp(float f, const Vec3fa& a, const Vec3fa& b) { // FIXME: use lerpr, need to make ISPC lerpr and C++ lerpr compatible first
@@ -675,15 +671,14 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
-/* called by the C++ code to render */
-extern "C" void device_render (int* pixels,
-                           const unsigned int width,
-                           const unsigned int height,
-                           const float time,
-                           const ISPCCamera& camera)
+extern "C" void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
 {
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
@@ -693,6 +688,15 @@ extern "C" void device_render (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+}
+
+/* called by the C++ code to render */
+extern "C" void device_render (int* pixels,
+                           const unsigned int width,
+                           const unsigned int height,
+                           const float time,
+                           const ISPCCamera& camera)
+{
 }
 
 /* called by the C++ code for cleanup */

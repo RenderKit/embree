@@ -35,6 +35,15 @@ namespace embree
       static const char* items[] = { "full scene", "right half", "left half" };
       ImGui::Combo("",&g_scene_id,items,IM_ARRAYSIZE(items));
     }
+
+    void keypressed(int key)
+    {
+      if (key == ' ')
+        g_scene_id = (g_scene_id+1)%3;
+      else
+        TutorialApplication::keypressed(key);
+    }
+  
   };
   
 }

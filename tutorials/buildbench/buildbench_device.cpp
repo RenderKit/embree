@@ -437,6 +437,15 @@ namespace embree {
     }
   }
 
+
+  void renderFrameStandard (int* pixels,
+                            const unsigned int width,
+                            const unsigned int height,
+                            const float time,
+                            const ISPCCamera& camera)
+  {
+  }
+  
   /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
                                  const unsigned int width,

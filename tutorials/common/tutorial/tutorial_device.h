@@ -87,30 +87,21 @@ inline Vec3fa faceforward( const Vec3fa& N, const Vec3fa& I, const Vec3fa& Ng ) 
 #define GLFW_KEY_F12                301
 #endif
 
-/* standard shading function */
-typedef void (* renderTileFunc)(int taskIndex,
-                                        int threadIndex,
-                                        int* pixels,
-                                        const unsigned int width,
-                                        const unsigned int height,
-                                        const float time,
-                                        const ISPCCamera& camera,
-                                        const int numTilesX,
-                                        const int numTilesY);
-extern "C" renderTileFunc renderTile;
+typedef void (* renderFrameFunc)(int* pixels,
+                                 const unsigned int width,
+                                 const unsigned int height,
+                                 const float time,
+                                 const ISPCCamera& camera);
+extern "C" renderFrameFunc renderFrame;
 
 extern "C" void device_key_pressed_default(int key);
 extern "C" void (* key_pressed_handler)(int key);
 
-void renderTileStandard(int taskIndex,
-                        int threadIndex,
-                        int* pixels,
-                        const unsigned int width,
-                        const unsigned int height,
-                        const float time,
-                        const ISPCCamera& camera,
-                        const int numTilesX,
-                        const int numTilesY);
+extern "C" void renderFrameStandard(int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera);
 
 unsigned int getNumHWThreads();
 
