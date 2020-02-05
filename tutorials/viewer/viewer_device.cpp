@@ -14,20 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/math/random_sampler.h"
-#include "../common/core/differential_geometry.h"
-#include "../common/tutorial/tutorial_device.h"
-#include "../common/tutorial/scene_device.h"
+#include "viewer_device.h"
 
 namespace embree {
 
-extern "C" ISPCScene* g_ispc_scene;
-extern "C" bool g_changed;
-extern "C" int g_instancing_mode;
-
-/* scene data */
 RTCScene g_scene = nullptr;
-bool g_subdiv_mode = false;
+extern "C" bool g_changed;
+TutorialData data;
 
 #define SPP 1
 
@@ -137,7 +130,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
-      g_subdiv_mode = true; break;
+      data.subdiv_mode = true; break;
     }
   }
 
@@ -267,7 +260,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
-  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersect1(data.scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade background black */
@@ -293,7 +286,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     {
       Vec3fa dPdu,dPdv;
       unsigned int geomID = ray.geomID; {
-        rtcInterpolate1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
+        rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       dg.Ns = cross(dPdv,dPdu);
     }
@@ -359,6 +352,8 @@ Vec3fa old_p;
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
+  TutorialData_Constructor(&data);
+  
   /* set start render mode */
   renderTile = renderTileStandard;
   key_pressed_handler = device_key_pressed_handler;
@@ -375,10 +370,10 @@ extern "C" void device_render (int* pixels,
   bool camera_changed = g_changed; g_changed = false;
 
   /* create scene */
-  if (g_scene == nullptr) {
-    g_scene = convertScene(g_ispc_scene);
-    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-    rtcCommitScene (g_scene);
+  if (data.scene == nullptr) {
+    g_scene = data.scene = convertScene(g_ispc_scene);
+    if (data.subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
+    rtcCommitScene (data.scene);
     old_p = camera.xfm.p;
   }
 
@@ -391,9 +386,9 @@ extern "C" void device_render (int* pixels,
     }
 
     /* update edge levels if camera changed */
-    if (camera_changed && g_subdiv_mode) {
+    if (camera_changed && data.subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-      rtcCommitScene (g_scene);
+      rtcCommitScene (data.scene);
     }
   }
 
@@ -411,7 +406,7 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

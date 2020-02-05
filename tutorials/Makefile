@@ -20,6 +20,7 @@ ispc2cpp:
 	@./ispc2cpp.sh triangle_geometry/triangle_geometry_device.ispc triangle_geometry/triangle_geometry_device.cpp
 	@./ispc2cpp.sh dynamic_scene/dynamic_scene_device.ispc dynamic_scene/dynamic_scene_device.cpp
 	@./ispc2cpp.sh user_geometry/user_geometry_device.ispc user_geometry/user_geometry_device.cpp
+	@./ispc2cpp.sh viewer/viewer_device.isph viewer/viewer_device.h
 	@./ispc2cpp.sh viewer/viewer_device.ispc viewer/viewer_device.cpp
 	@./ispc2cpp.sh viewer_stream/viewer_stream_device.ispc viewer_stream/viewer_stream_device.cpp
 	@./ispc2cpp.sh viewer_anim/viewer_anim_device.ispc viewer_anim/viewer_anim_device.cpp
