@@ -92,8 +92,9 @@ def runConfig(config):
     if platform == "x64":
       ext = " Win64"
     if (compiler == "V142"):
-      conf.append("-G \"Visual Studio 16 2019"+ext+"\"")
+      conf.append("-G \"Visual Studio 16 2019\"")
       conf.append("-T \"V142\"")
+      conf.append("-A \"x64\"")
       ispc_ext = "-vs2015"
     elif (compiler == "V141"):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
@@ -112,9 +113,11 @@ def runConfig(config):
     elif (compiler == "ICC19-VC14"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 19.0\"")
+      ispc_ext = "-vs2015"
     elif (compiler == "ICC18-VC14"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 18.0\"")
+      ispc_ext = "-vs2015"
     elif (compiler == "ICC17-VC14"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"Intel C++ Compiler 17.0\"")
