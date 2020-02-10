@@ -120,13 +120,11 @@ struct MotionDerivative
     if (interval.upper-interval.lower < 1e-7f || abs(split-interval.lower) < 1e-7f ||  abs(split-interval.upper) < 1e-7f)
     {
       // check if the root already exists
-      for (int k = 0; k < numRoots; ++k) { if (abs(roots[k]-split) < 1e-6f) return; }
-      roots[numRoots] = split;
-      numRoots++;
-      if (numRoots >= maxNumRoots) {
-        printf("error: more roots than expected\n");
-        numRoots--;
+      for (int k = 0; k < numRoots; ++k) { if (abs(roots[k]-split) < 1e-4f) return; }
+      if (numRoots < maxNumRoots) {
+        roots[numRoots] = split;
       }
+      numRoots++;
       return;
     }
 
