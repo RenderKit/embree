@@ -554,12 +554,6 @@ Sphere* sphere1 = nullptr;
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* initialize last seen camera */
-  g_accu_vx = Vec3fa(0.0f);
-  g_accu_vy = Vec3fa(0.0f);
-  g_accu_vz = Vec3fa(0.0f);
-  g_accu_p  = Vec3fa(0.0f);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
 

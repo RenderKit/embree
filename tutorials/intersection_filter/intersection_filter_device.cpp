@@ -14,13 +14,12 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/tutorial/tutorial_device.h"
+#include "intersection_filter_device.h"
 
 namespace embree {
 
-/* scene data */
 RTCScene g_scene = nullptr;
-Vec3fa* colors = nullptr;
+TutorialData data;
 
 // FIXME: fast path for occlusionFilter
 
@@ -87,7 +86,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     context.userRayExt = &primary;
 
     /* intersect ray with scene */
-    rtcIntersect1(g_scene,&context.context,RTCRayHit_(primary));
+    rtcIntersect1(data.g_scene,&context.context,RTCRayHit_(primary));
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -95,7 +94,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       break;
 
     float opacity = 1.0f-primary.transparency;
-    Vec3fa diffuse = colors[primary.ray.primID];
+    Vec3fa diffuse = data.colors[primary.ray.primID];
     Vec3fa La = diffuse*0.5f;
     color = color + weight*opacity*La;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -110,7 +109,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     context.userRayExt = &shadow;
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context.context,RTCRay_(shadow));
+    rtcOccluded1(data.g_scene,&context.context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -452,7 +451,7 @@ void renderTileStandardStream(int taskIndex,
     InitIntersectionContext(&primary_context);
     primary_context.context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
-    rtcIntersect1M(g_scene,&primary_context.context,(RTCRayHit*)&primary_stream,N,sizeof(Ray2));
+    rtcIntersect1M(data.g_scene,&primary_context.context,(RTCRayHit*)&primary_stream,N,sizeof(Ray2));
 
     /* terminate rays and update color */
     N = -1;
@@ -481,7 +480,7 @@ void renderTileStandardStream(int taskIndex,
       /* update color */
       Ray2& primary = primary_stream[N];
       float opacity = 1.0f-primary.transparency;
-      Vec3fa diffuse = colors[primary.ray.primID];
+      Vec3fa diffuse = data.colors[primary.ray.primID];
       Vec3fa La = diffuse*0.5f;
       color_stream[N] = color_stream[N] + weight_stream[N]*opacity*La;
 
@@ -504,7 +503,7 @@ void renderTileStandardStream(int taskIndex,
     InitIntersectionContext(&shadow_context);
     shadow_context.context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
-    rtcOccluded1M(g_scene,&shadow_context.context,(RTCRay*)&shadow_stream,N,sizeof(Ray2));
+    rtcOccluded1M(data.g_scene,&shadow_context.context,(RTCRay*)&shadow_stream,N,sizeof(Ray2));
 
     /* add light contribution and generate transmission ray */
     N = -1;
@@ -529,7 +528,7 @@ void renderTileStandardStream(int taskIndex,
 
       /* add light contrinution */
       float opacity = 1.0f-primary.transparency;
-      Vec3fa diffuse = colors[primary.ray.primID];
+      Vec3fa diffuse = data.colors[primary.ray.primID];
       Ray2& shadow = shadow_stream[N];
       if (shadow.ray.tfar >= 0.0f) {
         Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
@@ -627,19 +626,19 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_tri_indices, 0, 3*sizeof(unsigned int), NUM_TRI_FACES);
 
   /* create per-triangle color array */
-  colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa),16);
-  colors[0] = Vec3fa(1,0,0); // left side
-  colors[1] = Vec3fa(1,0,0);
-  colors[2] = Vec3fa(0,1,0); // right side
-  colors[3] = Vec3fa(0,1,0);
-  colors[4] = Vec3fa(0.5f);  // bottom side
-  colors[5] = Vec3fa(0.5f);
-  colors[6] = Vec3fa(1.0f);  // top side
-  colors[7] = Vec3fa(1.0f);
-  colors[8] = Vec3fa(0,0,1); // front side
-  colors[9] = Vec3fa(0,0,1);
-  colors[10] = Vec3fa(1,1,0); // back side
-  colors[11] = Vec3fa(1,1,0);
+  data.colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa),16);
+  data.colors[0] = Vec3fa(1,0,0); // left side
+  data.colors[1] = Vec3fa(1,0,0);
+  data.colors[2] = Vec3fa(0,1,0); // right side
+  data.colors[3] = Vec3fa(0,1,0);
+  data.colors[4] = Vec3fa(0.5f);  // bottom side
+  data.colors[5] = Vec3fa(0.5f);
+  data.colors[6] = Vec3fa(1.0f);  // top side
+  data.colors[7] = Vec3fa(1.0f);
+  data.colors[8] = Vec3fa(0,0,1); // front side
+  data.colors[9] = Vec3fa(0,0,1);
+  data.colors[10] = Vec3fa(1,1,0); // back side
+  data.colors[11] = Vec3fa(1,1,0);
 
   /* set intersection filter for the cube */
   if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
@@ -671,13 +670,13 @@ unsigned int addSubdivCube (RTCScene scene_i)
   for (unsigned int i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
 
   /* create face color array */
-  colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa),16);
-  colors[0] = Vec3fa(1,0,0); // left side
-  colors[1] = Vec3fa(0,1,0); // right side
-  colors[2] = Vec3fa(0.5f);  // bottom side
-  colors[3] = Vec3fa(1.0f);  // top side
-  colors[4] = Vec3fa(0,0,1); // front side
-  colors[5] = Vec3fa(1,1,0); // back side
+  data.colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa),16);
+  data.colors[0] = Vec3fa(1,0,0); // left side
+  data.colors[1] = Vec3fa(0,1,0); // right side
+  data.colors[2] = Vec3fa(0.5f);  // bottom side
+  data.colors[3] = Vec3fa(1.0f);  // top side
+  data.colors[4] = Vec3fa(0,0,1); // front side
+  data.colors[5] = Vec3fa(1,1,0); // back side
 
   /* set intersection filter for the cube */
   if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
@@ -725,18 +724,18 @@ unsigned int addGroundPlane (RTCScene scene_i)
 extern "C" void device_init (char* cfg)
 {
   /* create scene */
-  g_scene = rtcNewScene(g_device);
-  rtcSetSceneBuildQuality(g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
+  g_scene = data.g_scene = rtcNewScene(g_device);
+  rtcSetSceneBuildQuality(data.g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
 
   /* add cube */
-  addCube(g_scene,Vec3fa(0.0f,0.0f,0.0f),Vec3fa(10.0f,1.0f,1.0f),45.0f);
-  //addSubdivCube(g_scene);
+  addCube(data.g_scene,Vec3fa(0.0f,0.0f,0.0f),Vec3fa(10.0f,1.0f,1.0f),45.0f);
+  //addSubdivCube(data.g_scene);
 
   /* add ground plane */
-  addGroundPlane(g_scene);
+  addGroundPlane(data.g_scene);
 
   /* commit changes to scene */
-  rtcCommitScene (g_scene);
+  rtcCommitScene (data.g_scene);
 }
 
 /* task that renders a single screen tile */
@@ -781,8 +780,7 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = nullptr;
-  alignedFree(colors); colors = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

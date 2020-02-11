@@ -552,12 +552,6 @@ uniform Sphere* uniform sphere1 = NULL;
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* initialize last seen camera */
-  g_accu_vx = make_Vec3fa(0.0f);
-  g_accu_vy = make_Vec3fa(0.0f);
-  g_accu_vz = make_Vec3fa(0.0f);
-  g_accu_p  = make_Vec3fa(0.0f);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
 
