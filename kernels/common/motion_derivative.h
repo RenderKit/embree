@@ -132,7 +132,7 @@ struct MotionDerivative
     if (interval.upper-interval.lower < 1e-7f || abs(split-interval.lower) < 1e-7f ||  abs(split-interval.upper) < 1e-7f)
     {
       // check if the root already exists
-      for (int k = 0; k < numRoots; ++k) {
+      for (int k = 0; k < min(numRoots, maxNumRoots); ++k) {
         if (abs(roots[k]-split) < MOTION_DERIVATIVE_ROOT_EPSILON)
         return;
       }
