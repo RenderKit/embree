@@ -23,6 +23,8 @@
 
 namespace embree {
 
+#define MOTION_DERIVATIVE_ROOT_EPSILON 1e-4f
+
 static void motion_derivative_coefficients(const float *p, float *coeff);
 
 struct MotionDerivativeCoefficients
@@ -88,12 +90,20 @@ struct MotionDerivative
   }
 
   template<typename T>
-  T eval(T const& time, float offset) {
-    return c[0] + c[1] * time
-        + (c[2] + c[3] * time + c[4] * time * time) * cos(twoTheta * time)
-        + (c[5] + c[6] * time + c[7] * time * time) * sin(twoTheta * time)
-        + offset;
-  }
+  struct EvalMotionDerivative
+  {
+    MotionDerivative const& md;
+    float offset;
+
+    EvalMotionDerivative(MotionDerivative const& md, float offset) : md(md), offset(offset) {}
+
+    T operator()(T const& time) const {
+      return md.c[0] + md.c[1] * time
+          + (md.c[2] + md.c[3] * time + md.c[4] * time * time) * cos(md.twoTheta * time)
+          + (md.c[5] + md.c[6] * time + md.c[7] * time * time) * sin(md.twoTheta * time)
+          + offset;
+    }
+  };
 
   unsigned int findRoots(
     Interval1f const& interval,
@@ -102,25 +112,30 @@ struct MotionDerivative
     unsigned int maxNumRoots)
   {
     unsigned int numRoots = 0;
-    findRoots(interval, offset, numRoots, roots, maxNumRoots);
+    EvalMotionDerivative<Interval1f> eval(*this, offset);
+    findRoots(eval, interval, numRoots, roots, maxNumRoots);
     return numRoots;
   }
-
-  void findRoots(
+  
+  template<typename Eval>
+  static void findRoots(
+    Eval const& eval,
     Interval1f const& interval,
-    float offset,
     unsigned int& numRoots,
     float* roots,
     unsigned int maxNumRoots)
   {
-    Interval1f range = eval(interval, offset);
+    Interval1f range = eval(interval);
     if (range.lower > 0 || range.upper < 0 || range.lower >= range.upper) return;
 
     const float split = 0.5f * (interval.upper + interval.lower);
     if (interval.upper-interval.lower < 1e-7f || abs(split-interval.lower) < 1e-7f ||  abs(split-interval.upper) < 1e-7f)
     {
       // check if the root already exists
-      for (int k = 0; k < numRoots; ++k) { if (abs(roots[k]-split) < 1e-4f) return; }
+      for (int k = 0; k < numRoots; ++k) {
+        if (abs(roots[k]-split) < MOTION_DERIVATIVE_ROOT_EPSILON)
+        return;
+      }
       if (numRoots < maxNumRoots) {
         roots[numRoots] = split;
       }
@@ -128,8 +143,8 @@ struct MotionDerivative
       return;
     }
 
-    findRoots(Interval1f(interval.lower, split), offset, numRoots, roots, maxNumRoots);
-    findRoots(Interval1f(split, interval.upper), offset, numRoots, roots, maxNumRoots);
+    findRoots(eval, Interval1f(interval.lower, split), numRoots, roots, maxNumRoots);
+    findRoots(eval, Interval1f(split, interval.upper), numRoots, roots, maxNumRoots);
   }
 };
 
