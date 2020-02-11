@@ -422,7 +422,18 @@ task void renderTileTask(uniform int* uniform pixels,
 export void device_init(uniform int8* uniform cfg)
 {
   g_scene = initializeScene(g_device, &g_instanceLevels);
-  key_pressed_handler = device_key_pressed_default;
+}
+
+
+export void renderFrameStandard(uniform int* uniform pixels,
+                                const uniform unsigned int width,
+                                const uniform unsigned int height,
+                                const uniform float time,
+                                const uniform ISPCCamera& camera)
+{
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
 /* 
@@ -458,10 +469,6 @@ export void device_render(uniform int* uniform pixels,
   }
   else
     g_accu_count++;
-
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
 /*

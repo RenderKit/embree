@@ -594,10 +594,6 @@ export void device_init (uniform int8* uniform cfg)
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
-
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 uniform int frameID = 50;
@@ -698,7 +694,19 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+}
+
+export void renderFrameStandard (uniform int* uniform pixels,
+                          const uniform unsigned int width,
+                          const uniform unsigned int height,
+                          const uniform float time,
+                          const uniform ISPCCamera& camera)
+{
+  /* render next frame */
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
 /* called by the C++ code to render */
@@ -733,9 +741,6 @@ export void device_render (uniform int* uniform pixels,
 
   /* render next frame */
   frameID++;
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
 /* called by the C++ code for cleanup */

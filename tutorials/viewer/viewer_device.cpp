@@ -118,12 +118,14 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 }
 
 bool g_use_smooth_normals = false;
+#if 0
 void device_key_pressed_handler(int key)
 {
   if (key == 110 /*n*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
 }
-
+#endif
+  
 RTCScene convertScene(ISPCScene* scene_in)
 {
   for (unsigned int i=0; i<scene_in->numGeometries; i++)
@@ -344,7 +346,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 Vec3fa old_p;
@@ -353,11 +355,23 @@ Vec3fa old_p;
 extern "C" void device_init (char* cfg)
 {
   TutorialData_Constructor(&data);
-  
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_handler;
   old_p = Vec3fa(1E10);
+}
+
+extern "C" void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
+{
+  /* render image */
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
 }
 
 /* called by the C++ code to render */
@@ -391,16 +405,6 @@ extern "C" void device_render (int* pixels,
       rtcCommitScene (data.scene);
     }
   }
-
-  /* render image */
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    const int threadIndex = (int)TaskScheduler::threadIndex();
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
-  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */

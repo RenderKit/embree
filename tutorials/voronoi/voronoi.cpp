@@ -27,6 +27,7 @@ namespace embree
     bool g_point_repulsion = false;
     float g_tmax = inf;
     DrawGUI g_drawGUI = nullptr;
+    Vec3fa g_query_point(0.7f, 0.0f, 0.3f);
   }
 
   struct Tutorial : public TutorialApplication 
@@ -41,6 +42,19 @@ namespace embree
       if (g_drawGUI)
         g_drawGUI();
     }
+
+    void keypressed(int key) override
+    {
+      if (key == GLFW_KEY_RIGHT) g_query_point.x += 0.01f;
+      if (key == GLFW_KEY_LEFT)  g_query_point.x -= 0.01f;
+      if (key == GLFW_KEY_UP)    g_query_point.z += 0.01f;
+      if (key == GLFW_KEY_DOWN)  g_query_point.z -= 0.01f;
+      g_query_point = max(g_query_point, Vec3fa(0.f));
+      g_query_point = min(g_query_point, Vec3fa(1.f));
+      
+      TutorialApplication::keypressed(key);
+    }
+
   };
 
 }

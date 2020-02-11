@@ -62,13 +62,14 @@ namespace embree
       __forceinline vector_t& operator=(const vector_t& other) 
       {
         resize(other.size_active);
-        for (size_t i=0; i<size_active; i++) 
-          ::new (&items[i]) value_type(other.items[i]);
+        for (size_t i=0; i<size_active; i++)
+          items[i] = value_type(other.items[i]);
         return *this;
       }
 
       __forceinline vector_t& operator=(vector_t&& other) 
       {
+        clear();
         alloc = std::move(other.alloc);
         size_active = other.size_active; other.size_active = 0;
         size_alloced = other.size_alloced; other.size_alloced = 0;

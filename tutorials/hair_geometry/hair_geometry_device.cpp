@@ -431,7 +431,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
@@ -449,14 +449,25 @@ extern "C" void device_init (char* cfg)
   hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
   hair_Kt = 0.8f*hair_K;    //!< transparency of hair
 
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_default;
-
   /* create scene */
   g_scene = convertScene(g_ispc_scene);
 }
 
+extern "C" void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
+{
+  /* render frame */
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
+}
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -486,15 +497,6 @@ extern "C" void device_render (int* pixels,
     for (unsigned int i=0; i<width*height; i++)
       g_accu[i] = Vec3fa(0.0f);
   }
-
-  /* render frame */
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    const int threadIndex = (int)TaskScheduler::threadIndex();
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
 }
 
 /* called by the C++ code for cleanup */

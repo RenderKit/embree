@@ -54,7 +54,7 @@ const float h = 1.f / (nsub * 24.f);
 const size_t nIters = 20;
 const float collDelta = 1.e-6f;
 
-bool pause = false;
+extern bool pause;
 
 /* creates a ground plane */
 unsigned int createGroundPlane (RTCScene scene)
@@ -405,14 +405,6 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   return color*abs(dot(neg(ray.dir),normalize(ray.Ng)));
 }
 
-void device_key_pressed_handler(int key)
-{
-  if (key == 32  /* */) initializeClothPositions ((collide2::ClothModel &) (*meshes[clothID]));
-  if (key == 80 /*p*/) { pause = !pause; }
-  if (pause == true && key == 78 /*n*/) { updateScene (); std::cout << "current time: " << cur_time << std::endl;}
-  else device_key_pressed_default(key);
-}
-
 /* renders a single screen tile */
 void renderTileStandard(int taskIndex,
                         int threadIndex,
@@ -453,7 +445,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 /* called by the C++ code for initialization */
@@ -470,11 +462,23 @@ extern "C" void device_init (char* cfg)
 
   /* set error handler */
   rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
+}
 
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_handler;
-} 
+extern "C" void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
+{
+  /* render image */
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
+}
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -491,15 +495,6 @@ extern "C" void device_render (int* pixels,
     std::cout << "collision time = " << 1000.0f*total_collision_time << " ms" << std::endl;
     exit(0);
   }
-
-  /* render image */
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    const int threadIndex = (int)TaskScheduler::threadIndex();
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
 }
 
 /* called by the C++ code for cleanup */

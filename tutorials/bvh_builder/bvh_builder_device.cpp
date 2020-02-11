@@ -154,9 +154,6 @@ namespace embree
   /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
-    /* set start render mode */
-    renderTile = renderTileStandard;
-
     /* create random bounding boxes */
     const size_t N = 2300000;
     const size_t extraSpace = 1000000;
@@ -192,28 +189,14 @@ namespace embree
     build(RTC_BUILD_QUALITY_HIGH,prims,cfg,extraSpace);
   }
 
-  /* task that renders a single screen tile */
-  void renderTileStandard(int taskIndex, int threadIndex, int* pixels,
+  void renderFrameStandard (int* pixels,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
-                          const ISPCCamera& camera,
-                          const int numTilesX,
-                          const int numTilesY)
+                          const ISPCCamera& camera)
   {
   }
-
-  /* task that renders a single screen tile */
-  void renderTileTask(int taskIndex, int threadIndex, int* pixels,
-                      const unsigned int width,
-                      const unsigned int height,
-                      const float time,
-                      const ISPCCamera& camera,
-                      const int numTilesX,
-                      const int numTilesY)
-  {
-  }
-
+  
   /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
                                  const int width,

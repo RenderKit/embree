@@ -24,6 +24,8 @@
 
 namespace embree
 {
+  void updateScene ();
+    
   // RTCDevice g_device = nullptr;
   RTCScene g_scene = nullptr;
 
@@ -43,6 +45,8 @@ namespace embree
   size_t NZ = 50;
 
   SpinLock mutex;
+
+  bool pause = false;
 
   bool intersect_triangle_triangle (unsigned geomID0, unsigned primID0, unsigned geomID1, unsigned primID1)
 {
@@ -180,7 +184,15 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
                        
       camera.from = Vec3fa(-2.5f,2.5f,-2.5f);
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
-    }   
+    }
+
+    void keypressed(int key) override
+    {
+      if (key == 32  /* */) initializeClothPositions ((collide2::ClothModel &) (*meshes[clothID]));
+      if (key == 80 /*p*/) { pause = !pause; }
+      if (pause == true && key == 78 /*n*/) { updateScene (); }
+      else TutorialApplication::keypressed(key);
+    }
   };
 }
 
