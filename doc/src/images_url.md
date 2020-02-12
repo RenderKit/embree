@@ -21,3 +21,4 @@
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg
 [imgClosestPoint]: https://embree.github.io/images/closest_point.jpg
 [imgVoronoi]: https://embree.github.io/images/voronoi.jpg
+[imgCollision]: https://embree.github.io/images/collide.jpg
