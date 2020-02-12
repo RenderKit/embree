@@ -1,0 +1,68 @@
+// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#include "../common/tutorial/tutorial_device.isph"
+
+struct TutorialData
+{
+  RTCScene g_scene = NULL;
+  uniform Vec3f face_colors[12];
+  
+  /* accumulation buffer */
+  uniform Vec3fa* uniform g_accu = NULL;
+  uniform unsigned int g_accu_width;
+  uniform unsigned int g_accu_height;
+  uniform unsigned int g_accu_count;
+  uniform Vec3fa g_accu_vx;
+  uniform Vec3fa g_accu_vy;
+  uniform Vec3fa g_accu_vz;
+  uniform Vec3fa g_accu_p;
+  
+  extern uniform float g_time;
+  extern uniform unsigned int g_num_time_steps;
+  extern uniform unsigned int g_num_time_steps2;
+};
+
+inline void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->g_scene = NULL;
+  This->g_accu = NULL;
+  This->g_accu_width = 0;
+  This->g_accu_height = 0;
+  This->g_accu_count = 0;
+  This->g_accu_vx = make_Vec3fa(0.0f);
+  This->g_accu_vy = make_Vec3fa(0.0f);
+  This->g_accu_vz = make_Vec3fa(0.0f);
+  This->g_accu_p  = make_Vec3fa(0.0f);
+  This->g_time = -1;
+  This->g_num_time_steps = 8;
+  This->g_num_time_steps2 = 30;
+}
+
+inline void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  delete This->sphere0; This->sphere0 = NULL;
+  delete This->sphere1; This->sphere1 = NULL;
+  rtcReleaseScene(This->scene0); This->scene0 = NULL;
+  rtcReleaseScene(This->scene1); This->scene1 = NULL;
+  rtcReleaseScene(This->scene2); This->scene2 = NULL;
+  rtcReleaseScene(This->scene3); This->scene3 = NULL;
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+  delete[] This->g_accu; This->g_accu = NULL;
+  This->g_accu_width = 0;
+  This->g_accu_height = 0;
+  This->g_accu_count = 0;
+}

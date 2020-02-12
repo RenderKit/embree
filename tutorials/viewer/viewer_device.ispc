@@ -14,18 +14,11 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/math/random_sampler.isph"
-#include "../common/core/differential_geometry.isph"
-#include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/scene_device.h"
+#include "viewer_device.isph"
 
-extern uniform ISPCScene* uniform g_ispc_scene;
-extern uniform bool g_changed;
-extern uniform int g_instancing_mode;
-
-/* scene data */
 RTCScene g_scene = NULL;
-uniform bool g_subdiv_mode = false;
+extern uniform bool g_changed;
+uniform TutorialData data;
 
 #define SPP 1
 
@@ -129,7 +122,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   {
     uniform ISPCGeometry* uniform geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
-      g_subdiv_mode = true; break;
+      data.subdiv_mode = true; break;
     }
   }
 
@@ -259,7 +252,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   context.flags = g_iflags_coherent;
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(data.scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade background black */
@@ -285,7 +278,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     {
       Vec3f dPdu,dPdv;
       foreach_unique (geomID in ray.geomID) {
-        rtcInterpolateV1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
+        rtcInterpolateV1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
       }
       dg.Ns = cross(dPdv,dPdu);
     }
@@ -351,6 +344,7 @@ uniform Vec3fa old_p;
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
+  TutorialData_Constructor(&data);
   old_p = make_Vec3fa(1E10);
 }
 
@@ -376,10 +370,10 @@ export void device_render (uniform int* uniform pixels,
   uniform bool camera_changed = g_changed; g_changed = false;
 
   /* create scene */
-  if (g_scene == NULL) {
-    g_scene = convertScene(g_ispc_scene);
-    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-    rtcCommitScene (g_scene);
+  if (data.scene == NULL) {
+    g_scene = data.scene = convertScene(g_ispc_scene);
+    if (data.subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
+    rtcCommitScene (data.scene);
     old_p = camera.xfm.p;
   }
 
@@ -392,9 +386,9 @@ export void device_render (uniform int* uniform pixels,
     }
 
     /* update edge levels if camera changed */
-    if (camera_changed && g_subdiv_mode) {
+    if (camera_changed && data.subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-      rtcCommitScene (g_scene);
+      rtcCommitScene (data.scene);
     }
   }
 }
@@ -402,5 +396,5 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = NULL;
+  TutorialData_Destructor(&data);
 }
