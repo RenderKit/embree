@@ -243,8 +243,8 @@ namespace embree
                                 float tmax)
   {
     BBox3fa delta(Vec3fa(0.f), Vec3fa(0.f));
-    float roots[8];
-    unsigned int maxNumRoots = 8;
+    float roots[32];
+    unsigned int maxNumRoots = 32;
     unsigned int numRoots;
     const Interval1f interval(tmin, tmax);
 
