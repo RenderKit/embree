@@ -456,7 +456,7 @@ extern "C" void device_render (int* pixels,
 
   /* calculate transformations to move instances in cirle */
   for (int i=0; i<4; i++) {
-    float t = t0+i*2.0f*float(pi)/4.0f;
+    float t = t0+i*2.0f*float(M_PI)/4.0f;
     instance_xfm[i] = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t),0.0f,+sin(t)));
   }
 

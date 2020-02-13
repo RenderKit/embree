@@ -3,7 +3,7 @@ ispc2cpp:
 	@./ispc2cpp.sh common/tutorial/tutorial_device.isph common/tutorial/tutorial_device.h
 	@./ispc2cpp.sh common/tutorial/tutorial_device.ispc common/tutorial/tutorial_device.cpp
 	@./ispc2cpp.sh common/core/differential_geometry.isph common/core/differential_geometry.h
-        #@./ispc2cpp.sh common/math/random_sampler.isph common/math/random_sampler.h # manual optimizations
+#	@./ispc2cpp.sh common/math/random_sampler.isph common/math/random_sampler.h # manual optimizations
 	@./ispc2cpp.sh common/math/sampling.isph common/math/sampling.h
 	@./ispc2cpp.sh common/tutorial/optics.isph common/tutorial/optics.h
 	@./ispc2cpp.sh common/lights/light.isph common/lights/light.h
@@ -41,7 +41,7 @@ ispc2cpp:
 
 osp2emb:
 	@./osp2emb.sh ../../ospray/ospray/math/math.ih common/math/math.isph
-	#@./osp2emb.sh ../../ospray/ospray/math/vec.ih common/math/vec.isph # requires manual changes
+#	@./osp2emb.sh ../../ospray/ospray/math/vec.ih common/math/vec.isph # requires manual changes
 	@./osp2emb.sh ../../ospray/ospray/math/sampling.ih common/math/sampling.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ih common/lights/light.isph
 	@./osp2emb.sh ../../ospray/ospray/lights/Light.ispc common/lights/light.ispc

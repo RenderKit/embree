@@ -274,7 +274,7 @@ extern "C" void device_init (char* cfg)
   /* instantiate geometry */
   createGroundPlane(g_scene);
   for (int i=0; i<numSpheres; i++) {
-    float a = 2.0f*float(pi)*(float)i/(float)numSpheres;
+    float a = 2.0f*float(M_PI)*(float)i/(float)numSpheres;
     g_objects[i] = createLazyObject(g_scene,i,10.0f*Vec3fa(cosf(a),0,sinf(a)),1);
   }
   rtcCommitScene (g_scene);

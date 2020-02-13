@@ -240,7 +240,7 @@ struct Lambertian
 inline Vec3fa Lambertian__eval(const Lambertian* This,
                               const Vec3fa &wo, const DifferentialGeometry &dg, const Vec3fa &wi)
 {
-  return This->R * (1.0f/(float)(float(pi))) * clamp(dot(wi,dg.Ns));
+  return This->R * (1.0f/(float)(float(M_PI))) * clamp(dot(wi,dg.Ns));
 }
 
 inline Vec3fa Lambertian__sample(const Lambertian* This,
@@ -509,7 +509,7 @@ Vec3fa OBJMaterial__eval(ISPCOBJMaterial* material, const BRDF& brdf, const Vec3
   const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
   const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
   if (Md > 0.0f) {
-    R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
+    R = R + (1.0f/float(M_PI)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
   }
   if (Ms > 0.0f) {
     const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);

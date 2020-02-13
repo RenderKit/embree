@@ -439,7 +439,7 @@ extern "C" void device_render (int* pixels,
     }
   }
 
-   /* =============== */
+  /* =============== */
   /* update geometry */
   /* =============== */
 
