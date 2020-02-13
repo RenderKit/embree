@@ -14,9 +14,9 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
+#include "../common/tutorial/tutorial_device.isph"
 #include "../common/math/random_sampler.isph"
 #include "../common/core/differential_geometry.isph"
-#include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.h"
 
 extern uniform ISPCScene* uniform g_ispc_scene;
@@ -26,7 +26,8 @@ struct TutorialData
 {
   uniform ISPCScene* uniform ispc_scene;
   uniform int instancing_mode;
-
+  RTCIntersectContextFlags iflags_coherent;
+  
   /* scene data */
   RTCScene scene;
   uniform bool subdiv_mode;
@@ -36,6 +37,7 @@ void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->ispc_scene = g_ispc_scene;
   This->instancing_mode = g_instancing_mode;
+  This->iflags_coherent = g_iflags_coherent;
   This->scene = NULL;
   This->subdiv_mode = false;
 }

@@ -66,7 +66,13 @@ inline float transparencyFunction(Vec3fa& h)
 
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+void renderPixelStandard(const TutorialData& data,
+                         int x, int y, 
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera, RayStats& stats)
 {
   float weight = 1.0f;
   Vec3fa color = Vec3fa(0.0f);
@@ -126,7 +132,12 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
     primary.transparency = 0.0f;
   }
-  return color;
+
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* renders a single screen tile */
@@ -149,14 +160,7 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
 

@@ -72,8 +72,8 @@ void updateTransformation()
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
     float K = g_numTimeSteps > 0 ? ((float)i)/(g_numTimeSteps-1) : 0.f;
-    float R = K * 2.0 * float(pi);
-    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * float(pi);
+    float R = K * 2.0 * float(M_PI);
+    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * float(M_PI);
 
     Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), R);
     rtcInitQuaternionDecomposition(qdc+i);
@@ -94,8 +94,8 @@ void updateTransformation()
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
     float K = g_numTimeSteps > 0 ? ((float)i)/(g_numTimeSteps-1) : 0.f;
-    float R = K * 2.0 * float(pi);
-    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * float(pi);
+    float R = K * 2.0 * float(M_PI);
+    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * float(M_PI);
 
     Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), R);
     rtcInitQuaternionDecomposition(qdc+i);
@@ -332,8 +332,8 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
 
     // shade sphere
     Vec3fa Ng = normalize(ray.Ng);
-    float u = (atan2(Ng.z, Ng.x) + float(pi)) / (2.f * float(pi));
-    float v = acos(Ng.y) / float(pi);
+    float u = (atan2(Ng.z, Ng.x) + float(M_PI)) / (2.f * float(M_PI));
+    float v = acos(Ng.y) / float(M_PI);
     u = 16*u+0.5f;
     v = 19*v+0.5f;
     color = ((u-(int)u) < 0.9 && (v-(int)v) < 0.9) ? Vec3fa(0.5f) : Vec3fa(0.2f);

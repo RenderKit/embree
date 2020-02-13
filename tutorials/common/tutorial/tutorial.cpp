@@ -37,6 +37,22 @@
 
 namespace embree
 {
+  /* access to debug shader render frame functions */
+  typedef void (* renderFrameFunc)(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  renderFrameFunc renderFrame;
+  
+  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameEyeLight(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameUV      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameNg      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameGeomID  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameGeomIDPrimID(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameTexCoords(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameCycles  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameAmbientOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameDifferentials(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  
   extern "C"
   {
     RTCDevice g_device = nullptr;
@@ -57,9 +73,6 @@ namespace embree
     RTCIntersectContextFlags g_iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
     RayStats* g_stats = nullptr;
-
-    /* stores pointer to currently used rendePixel function */
-    renderFrameFunc renderFrame;
 
     unsigned int render_texcoords_mode = 0;
 
@@ -805,18 +818,6 @@ namespace embree
     return window;
   }
 
-  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameEyeLight(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameUV      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameNg      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameGeomID  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameGeomIDPrimID(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameTexCoords(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameCycles  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameAmbientOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameDifferentials(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  
   /* called when a key is pressed */
   void TutorialApplication::keypressed(int key)
   {
@@ -1122,19 +1123,19 @@ namespace embree
 
     /* set shader mode */
     switch (shader) {
-    case SHADER_DEFAULT  : break;
-    case SHADER_EYELIGHT : keypressed(GLFW_KEY_F2); break;
-    case SHADER_OCCLUSION: keypressed(GLFW_KEY_F3); break;
-    case SHADER_UV       : keypressed(GLFW_KEY_F4); break;
-    case SHADER_TEXCOORDS: keypressed(GLFW_KEY_F8); break;
-    case SHADER_TEXCOORDS_GRID: keypressed(GLFW_KEY_F8); keypressed(GLFW_KEY_F8); break;
-    case SHADER_NG       : keypressed(GLFW_KEY_F5); break;
-    case SHADER_CYCLES   : keypressed(GLFW_KEY_F9); break;
-    case SHADER_GEOMID   : keypressed(GLFW_KEY_F6); break;
-    case SHADER_GEOMID_PRIMID: keypressed(GLFW_KEY_F7); break;
-    case SHADER_AMBIENT_OCCLUSION: keypressed(GLFW_KEY_F11); break;
+    case SHADER_DEFAULT  : renderFrame = renderFrameStandard; break;
+    case SHADER_EYELIGHT : renderFrame = renderFrameEyeLight; break;
+    case SHADER_OCCLUSION: renderFrame = renderFrameOcclusion; break;
+    case SHADER_UV       : renderFrame = renderFrameUV; break;
+    case SHADER_TEXCOORDS: renderFrame = renderFrameTexCoords; render_texcoords_mode = 0; break;
+    case SHADER_TEXCOORDS_GRID: renderFrame = renderFrameTexCoords; render_texcoords_mode = 1; break;
+    case SHADER_NG       : renderFrame = renderFrameNg; break;
+    case SHADER_CYCLES   : renderFrame = renderFrameCycles; break;
+    case SHADER_GEOMID   : renderFrame = renderFrameGeomID; break;
+    case SHADER_GEOMID_PRIMID: renderFrame = renderFrameGeomIDPrimID; break;
+    case SHADER_AMBIENT_OCCLUSION: renderFrame = renderFrameAmbientOcclusion; break;
     };
-
+    
     /* benchmark mode */
     if (numBenchmarkFrames) {
       renderBenchmark();

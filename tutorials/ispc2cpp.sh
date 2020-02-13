@@ -18,6 +18,7 @@ sed -i.backup  's/ varying//g' $2
 sed -i.backup  's/unmasked //g' $2
 sed -i.backup  's/extern \"C\"/__EXTERN_C/g' $2
 sed -i.backup  's/extern/extern \"C\"/g' $2
+sed -i.backup  's/typedef export/typedef/g' $2
 sed -i.backup  's/export/extern \"C\"/g' $2
 sed -i.backup  's/extern \"C\" RTCScene g_scene/extern RTCScene g_scene/g' $2
 sed -i.backup  's/__EXTERN_C/extern \"C\"/g' $2
@@ -88,7 +89,7 @@ sed -i.backup 's/make_LinearSpace3fa_identity()/LinearSpace3fa(one)/g' $2
 sed -i.backup 's/make_LinearSpace3fa\([^_]\)/LinearSpace3fa\1/g' $2
 sed -i.backup 's/make_Quaternion3f_rotate/Quaternion3f::rotate/g' $2
 
-sed -i.backup  's/M_PI/float(pi)/g' $2
+sed -i.backup  's/M_PI/float(M_PI)/g' $2
 sed -i.backup  's/\*pi\*/\*float(pi)\*/g' $2
 sed -i.backup  's/\*pi\//\*float(pi)\//g' $2
 sed -i.backup  's/one_over_pi/float(one_over_pi)/g' $2
@@ -143,6 +144,8 @@ sed -i.backup 's/const Vec3fa defaultValue/const Vec3fa\& defaultValue/g' $2
 
 # to make static analysis happy
 sed -i.backup 's/if (all(1 == 0)) continue;//g' $2
+
+sed -i.backup  's/^RENDER_FRAME_FUNCTION_ISPC/RENDER_FRAME_FUNCTION_CPP/g' $2
 
 # add Embree namespace
 ln=`grep -n -E "#include|#pragma" $2 | tail -1 | cut -d: -f1`

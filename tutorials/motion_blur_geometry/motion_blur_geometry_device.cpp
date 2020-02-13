@@ -103,7 +103,7 @@ unsigned int addSphere(RTCScene scene, const Vec3fa& pos, RTCGeometryType type, 
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa *vertex = (Vec3fa*)rtcSetNewGeometryBuffer(geom, bufType, t, RTC_FORMAT_FLOAT4, sizeof(Vec3fa), 1);
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0), Vec3fa(0,1,0), 2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0), Vec3fa(0,1,0), 2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     *vertex = Vec3fa(xfmPoint(rotation, Vec3fa(1, 0, 0)) + pos);
     vertex->w = 1.f;
 
@@ -133,7 +133,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa), 8);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<8; i++) {
@@ -175,7 +175,7 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_ti
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa), 8);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<8; i++) {
@@ -215,7 +215,7 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa),8);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<8; i++) {
@@ -248,7 +248,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryType type, 
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(Vec3fa),16);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<16; i++)
@@ -283,7 +283,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(Vec3fa),16);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<16; i++)
@@ -319,7 +319,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
   
   for (unsigned int t=0; t<num_time_steps; t++)
   {
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation*scale;
@@ -345,7 +345,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa),8);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<8; i++) {
@@ -365,7 +365,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
 
   for (unsigned int t=0; t<num_time_steps; t++)
   {
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation;
     rtcSetGeometryTransform(inst,t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&xfm);
@@ -396,7 +396,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
   RTCBounds* bounds_o = args->bounds_o;
   const unsigned int time = args->timeStep;
   const Sphere& sphere = spheres[args->primID];
-  float ft = 2.0f*float(pi) * (float) time / (float) (sphere.num_time_steps-1);
+  float ft = 2.0f*float(M_PI) * (float) time / (float) (sphere.num_time_steps-1);
   Vec3fa p = sphere.p + Vec3fa(cos(ft),0.0f,sin(ft));
   bounds_o->lower_x = p.x-sphere.r;
   bounds_o->lower_y = p.y-sphere.r;
@@ -425,8 +425,8 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   const float time = ray->time()*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
   const float ftime = time - (float)(itime);
-  const float ft0 = 2.0f*float(pi) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
-  const float ft1 = 2.0f*float(pi) * (float) (itime+1) / (float) (sphere.num_time_steps-1);
+  const float ft0 = 2.0f*float(M_PI) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
+  const float ft1 = 2.0f*float(M_PI) * (float) (itime+1) / (float) (sphere.num_time_steps-1);
   const Vec3fa p0 = sphere.p + Vec3fa(cos(ft0),0.0f,sin(ft0));
   const Vec3fa p1 = sphere.p + Vec3fa(cos(ft1),0.0f,sin(ft1));
   const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
@@ -477,8 +477,8 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
   const float time = ray->time()*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
   const float ftime = time - (float)(itime);
-  const float ft0 = 2.0f*float(pi) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
-  const float ft1 = 2.0f*float(pi) * (float) (itime+1) / (float) (sphere.num_time_steps-1);
+  const float ft0 = 2.0f*float(M_PI) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
+  const float ft1 = 2.0f*float(M_PI) * (float) (itime+1) / (float) (sphere.num_time_steps-1);
   const Vec3fa p0 = sphere.p + Vec3fa(cos(ft0),0.0f,sin(ft0));
   const Vec3fa p1 = sphere.p + Vec3fa(cos(ft1),0.0f,sin(ft1));
   const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;

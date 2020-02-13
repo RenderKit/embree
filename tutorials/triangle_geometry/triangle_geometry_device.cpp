@@ -121,7 +121,13 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(TutorialData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
+void renderPixelStandard(const TutorialData& data,
+                         int x, int y, 
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera, RayStats& stats)
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
@@ -152,38 +158,12 @@ Vec3fa renderPixelStandard(TutorialData& data, float x, float y, const ISPCCamer
     if (shadow.tfar >= 0.0f)
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
   }
-  return color;
-}
 
-/* renders a single screen tile */
-void renderTileStandard(int taskIndex,
-                        int threadIndex,
-                        int* pixels,
-                        const unsigned int width,
-                        const unsigned int height,
-                        const float time,
-                        const ISPCCamera& camera,
-                        const int numTilesX,
-                        const int numTilesY)
-{
-  const unsigned int tileY = taskIndex / numTilesX;
-  const unsigned int tileX = taskIndex - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    /* calculate pixel color */
-    Vec3fa color = renderPixelStandard(data,(float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* task that renders a single screen tile */
@@ -195,7 +175,17 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
+  {
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+  }
 }
 
 /* called by the C++ code to render */
