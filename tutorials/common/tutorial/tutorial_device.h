@@ -87,13 +87,6 @@ inline Vec3fa faceforward( const Vec3fa& N, const Vec3fa& I, const Vec3fa& Ng ) 
 #define GLFW_KEY_F12                301
 #endif
 
-typedef void (* renderFrameFunc)(int* pixels,
-                                 const unsigned int width,
-                                 const unsigned int height,
-                                 const float time,
-                                 const ISPCCamera& camera);
-extern "C" renderFrameFunc renderFrame;
-
 extern "C" void device_key_pressed_default(int key);
 extern "C" void (* key_pressed_handler)(int key);
 

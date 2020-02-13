@@ -37,6 +37,22 @@
 
 namespace embree
 {
+  /* access to debug shader render frame functions */
+  typedef void (* renderFrameFunc)(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  renderFrameFunc renderFrame;
+  
+  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameEyeLight(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameUV      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameNg      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameGeomID  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameGeomIDPrimID(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameTexCoords(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameCycles  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameAmbientOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameDifferentials(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  
   extern "C"
   {
     RTCDevice g_device = nullptr;
@@ -57,9 +73,6 @@ namespace embree
     RTCIntersectContextFlags g_iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
     RayStats* g_stats = nullptr;
-
-    /* stores pointer to currently used rendePixel function */
-    renderFrameFunc renderFrame;
 
     unsigned int render_texcoords_mode = 0;
 
@@ -805,18 +818,6 @@ namespace embree
     return window;
   }
 
-  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameEyeLight(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameUV      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameNg      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameGeomID  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameGeomIDPrimID(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameTexCoords(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameCycles  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameAmbientOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  extern "C" void renderFrameDifferentials(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
-  
   /* called when a key is pressed */
   void TutorialApplication::keypressed(int key)
   {
