@@ -393,7 +393,6 @@ namespace embree
     BBox3fa enlarge_bounds(const BBox3fa& bounds)
     {
       const float size = reduce_max(max(abs(bounds.lower),abs(bounds.upper)));
-      assert(std::isfinite(size));
       return enlarge(bounds,Vec3fa(4.0f*float(ulp)*size));
     }
     

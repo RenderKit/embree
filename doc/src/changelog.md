@@ -1,6 +1,14 @@
 Version History
 ---------------
 
+### Embree 3.8.1
+
+#### New Features:
+
+#### Fixed Issues:
+-   Fixed wrong assertion that triggered for invalid curves which
+    anyway get filtered out.
+
 ### Embree 3.8.0
 
 #### New Features:
