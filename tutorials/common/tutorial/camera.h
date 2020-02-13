@@ -63,9 +63,15 @@ namespace embree
       return stream.str();
     }
     
-    AffineSpace3fa camera2world () {
+    AffineSpace3fa camera2world ()
+    {
       AffineSpace3fa local2world = AffineSpace3fa::lookat(from, to, up);
-      if (handedness == RIGHT_HANDED) local2world.l.vx = -local2world.l.vx;
+      if (!(local2world == local2world))
+        throw std::runtime_error("invalid camera specified");
+      
+      if (handedness == RIGHT_HANDED)
+        local2world.l.vx = -local2world.l.vx;
+      
       return local2world;
     }
     AffineSpace3fa world2camera () { return rcp(camera2world()); }
