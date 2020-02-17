@@ -37,6 +37,22 @@
 
 namespace embree
 {
+  /* access to debug shader render frame functions */
+  typedef void (* renderFrameFunc)(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  renderFrameFunc renderFrame;
+  
+  extern "C" void renderFrameStandard(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameEyeLight(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameUV      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameNg      (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameGeomID  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameGeomIDPrimID(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameTexCoords(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameCycles  (int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameAmbientOcclusion(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  extern "C" void renderFrameDifferentials(int* pixels, const unsigned int width, const unsigned int height, const float time, const ISPCCamera& camera);
+  
   extern "C"
   {
     RTCDevice g_device = nullptr;
@@ -57,6 +73,10 @@ namespace embree
     RTCIntersectContextFlags g_iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
     RayStats* g_stats = nullptr;
+
+    unsigned int render_texcoords_mode = 0;
+
+    int differentialMode = 0;
   }
 
   extern "C" int g_instancing_mode;
@@ -648,7 +668,7 @@ namespace embree
       {
         initRayStats();
         double t0 = getSeconds();
-        device_render(pixels,width,height,0.0f,ispccamera);
+        render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
         std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
       }
@@ -657,7 +677,7 @@ namespace embree
       {
         initRayStats();
         double t0 = getSeconds();
-        device_render(pixels,width,height,0.0f,ispccamera);
+        render(pixels,width,height,0.0f,ispccamera);
         double t1 = getSeconds();
 
         float fps = float(1.0/(t1-t0));
@@ -707,7 +727,7 @@ namespace embree
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
     initRayStats();
-    device_render(pixels,width,height,0.0f,ispccamera);
+    render(pixels,width,height,0.0f,ispccamera);
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
   }
@@ -718,6 +738,7 @@ namespace embree
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
     initRayStats();
     device_render(pixels,width,height,0.0f,ispccamera);
+    renderFrame((int*)pixels,width,height,0.0f,ispccamera);
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     Ref<Image> reference = loadImage(fileName);
     const double error = compareImages(image,reference);
@@ -797,6 +818,67 @@ namespace embree
     return window;
   }
 
+  /* called when a key is pressed */
+  void TutorialApplication::keypressed(int key)
+  {
+    if (key == GLFW_KEY_F1) {
+      renderFrame = renderFrameStandard;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F2) {
+      renderFrame = renderFrameEyeLight;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F3) {
+      renderFrame = renderFrameOcclusion;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F4) {
+      renderFrame = renderFrameUV;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F5) {
+      renderFrame = renderFrameNg;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F6) {
+      renderFrame = renderFrameGeomID;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F7) {
+      renderFrame = renderFrameGeomIDPrimID;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F8) {
+      if (renderFrame == renderFrameTexCoords) render_texcoords_mode++;
+      renderFrame = renderFrameTexCoords;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F9) {
+      if (renderFrame == renderFrameCycles) scale *= 2.0f;
+      renderFrame = renderFrameCycles;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F10) {
+      if (renderFrame == renderFrameCycles) scale *= 0.5f;
+      renderFrame = renderFrameCycles;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F11) {
+      renderFrame = renderFrameAmbientOcclusion;
+      g_changed = true;
+    }
+    else if (key == GLFW_KEY_F12) {
+      if (renderFrame == renderFrameDifferentials) {
+        differentialMode = (differentialMode+1)%17;
+      } else {
+        renderFrame = renderFrameDifferentials;
+        differentialMode = 0;
+      }
+      g_changed = true;
+    }
+  }
+
   void TutorialApplication::keyboardFunc(GLFWwindow* window_in, int key, int scancode, int action, int mods)
   {
     ImGui_ImplGlfw_KeyCallback(window_in,key,scancode,action,mods);
@@ -805,7 +887,7 @@ namespace embree
     if (action == GLFW_PRESS)
     {
       /* call tutorial keyboard handler */
-      device_key_pressed(key);
+      keypressed(key);
 
       if (mods & GLFW_MOD_CONTROL)
       {
@@ -939,7 +1021,7 @@ namespace embree
     /* render image using ISPC */
     initRayStats();
     double t0 = getSeconds();
-    device_render(pixels,width,height,float(time0-t0),ispccamera);
+    render(pixels,width,height,float(time0-t0),ispccamera);
     double dt0 = getSeconds()-t0;
     avg_render_time.add(dt0);
     double mrayps = double(getNumRays())/(1000000.0*dt0);
@@ -1022,6 +1104,11 @@ namespace embree
     this->width = width; this->height = height;
   }
 
+  void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) {
+    device_render(pixels,width,height,time,camera);
+    renderFrame((int*)pixels,width,height,time,camera);
+  }
+
   void TutorialApplication::run(int argc, char** argv)
   {
     /* set debug values */
@@ -1031,23 +1118,24 @@ namespace embree
     rtcSetDeviceProperty(nullptr,(RTCDeviceProperty) 1000003, debug3);
 
     /* initialize ray tracing core */
+    renderFrame = renderFrameStandard;
     device_init(rtcore.c_str());
 
     /* set shader mode */
     switch (shader) {
-    case SHADER_DEFAULT  : break;
-    case SHADER_EYELIGHT : device_key_pressed(GLFW_KEY_F2); break;
-    case SHADER_OCCLUSION: device_key_pressed(GLFW_KEY_F3); break;
-    case SHADER_UV       : device_key_pressed(GLFW_KEY_F4); break;
-    case SHADER_TEXCOORDS: device_key_pressed(GLFW_KEY_F8); break;
-    case SHADER_TEXCOORDS_GRID: device_key_pressed(GLFW_KEY_F8); device_key_pressed(GLFW_KEY_F8); break;
-    case SHADER_NG       : device_key_pressed(GLFW_KEY_F5); break;
-    case SHADER_CYCLES   : device_key_pressed(GLFW_KEY_F9); break;
-    case SHADER_GEOMID   : device_key_pressed(GLFW_KEY_F6); break;
-    case SHADER_GEOMID_PRIMID: device_key_pressed(GLFW_KEY_F7); break;
-    case SHADER_AMBIENT_OCCLUSION: device_key_pressed(GLFW_KEY_F11); break;
+    case SHADER_DEFAULT  : renderFrame = renderFrameStandard; break;
+    case SHADER_EYELIGHT : renderFrame = renderFrameEyeLight; break;
+    case SHADER_OCCLUSION: renderFrame = renderFrameOcclusion; break;
+    case SHADER_UV       : renderFrame = renderFrameUV; break;
+    case SHADER_TEXCOORDS: renderFrame = renderFrameTexCoords; render_texcoords_mode = 0; break;
+    case SHADER_TEXCOORDS_GRID: renderFrame = renderFrameTexCoords; render_texcoords_mode = 1; break;
+    case SHADER_NG       : renderFrame = renderFrameNg; break;
+    case SHADER_CYCLES   : renderFrame = renderFrameCycles; break;
+    case SHADER_GEOMID   : renderFrame = renderFrameGeomID; break;
+    case SHADER_GEOMID_PRIMID: renderFrame = renderFrameGeomIDPrimID; break;
+    case SHADER_AMBIENT_OCCLUSION: renderFrame = renderFrameAmbientOcclusion; break;
     };
-
+    
     /* benchmark mode */
     if (numBenchmarkFrames) {
       renderBenchmark();

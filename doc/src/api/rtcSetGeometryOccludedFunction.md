@@ -17,6 +17,7 @@
       struct RTCIntersectContext* context;
       struct RTCRayN* ray;
       unsigned int N;
+      unsigned int geomID;
     };
   
     typedef void (*RTCOccludedFunctionN)(
@@ -49,8 +50,9 @@ whether the corresponding ray is valid (-1) or invalid (0), the
 `geometryUserPtr` member points to the geometry user data previously set
 through `rtcSetGeometryUserData`, the `context` member points to the
 intersection context passed to the ray query, the `ray` member points
-to a ray packet of variable size `N`, and the `primID` member identifies
-the primitive ID of the primitive to test for occlusion.
+to a ray packet of variable size `N`, and the `geomID` and
+`primID` member identifies the geometry ID and primitive ID of the
+primitive to intersect.
 
 The task of the callback function is to intersect each active ray from
 the ray packet with the specified user primitive. If the user-defined

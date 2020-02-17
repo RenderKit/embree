@@ -1,6 +1,20 @@
 Version History
 ---------------
 
+### Embree 3.8.0
+
+#### New Features:
+-   Added collision detection support for user geometries (see rtcCollide API function)
+-   Passing geomID to user geometry callbacks.
+
+#### Fixed Issues:
+-   Bugfix in AVX512VL codepath for rtcIntersect1
+-   For sphere geometries the intersection filter gets now invoked for
+    front and back hit.
+-   Fixed some bugs for quaternion motion blur.
+-   RTCIntersectContext always non-const in Embree API
+-   Made RTCHit aligned to 16 bytes in Embree API
+
 ### New Features in Embree 3.7.0
 -   Added quaternion motion blur for correct interpolation of rotational transformations.
 -   Fixed wrong bounding calculations when a motion blurred instance did
@@ -13,6 +27,7 @@ Version History
     along a ray using multiple ray queries.
 -   Implemented robust mode for curves. This has a small performance impact but
     fixes bounding problems with flat curves.
+-   Improved quality of motion blur BVH by using linear bounds during binning.
 -   Implemented issue with motion blur builder where number of time segments
     for SAH heuristic were counted wrong due to some numerical issues.
 -   Fixed an accuracy issue with rendering very short fat curves.

@@ -139,13 +139,13 @@ struct PowerCosineDistribution {
 };
 
 inline float eval(const PowerCosineDistribution &This, const float cosThetaH) {
-  return (This.exp+2) * (1.0f/(2.0f*(float(pi)))) * pow(abs(cosThetaH), This.exp);
+  return (This.exp+2) * (1.0f/(2.0f*(float(M_PI)))) * pow(abs(cosThetaH), This.exp);
 }
 
 #if defined(ISPC)
 
 inline float eval(const PowerCosineDistribution &This, const float cosThetaH) {
-  return (This.exp+2) * (1.0f/(2.0f*(float(pi)))) * pow(abs(cosThetaH), This.exp);
+  return (This.exp+2) * (1.0f/(2.0f*(float(M_PI)))) * pow(abs(cosThetaH), This.exp);
 }
 #endif
 

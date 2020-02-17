@@ -285,6 +285,7 @@ namespace embree
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
     std::vector<Vec4i> loadVec4iArray(const Ref<XML>& xml);
+    AffineSpace3fa loadQuaternion(const Ref<XML>& xml);
 
   private:
     FileName path;         //!< path to XML file
@@ -409,6 +410,41 @@ namespace embree
                                            xml->body[8].Float(),xml->body[9].Float(),xml->body[10].Float()),
                             Vec3fa(xml->body[3].Float(),xml->body[7].Float(),xml->body[11].Float()));
     }
+  }
+
+  AffineSpace3fa XMLLoader::loadQuaternion(const Ref<XML>& xml)
+  {
+    Vec3f scale(1.f, 1.f, 1.f);
+    Vec3f shift(0.f, 0.f, 0.f);
+    Vec3f skew(0.f, 0.f, 0.f);
+    Vec3f translate(0.f, 0.f, 0.f);
+    Vec4f q(0.f, 0.f, 0.f, 1.f);
+
+    if (xml->parm("translate") != "")
+      translate = string_to_Vec3f(xml->parm("translate"));
+    if (xml->parm("scale") != "")
+      scale = string_to_Vec3f(xml->parm("scale"));
+    if (xml->parm("skew") != "")
+      skew = string_to_Vec3f(xml->parm("skew"));
+    if (xml->parm("shift") != "")
+      shift = string_to_Vec3f(xml->parm("shift"));
+    if (xml->parm("quaternion") != "") {
+      q = string_to_Vec4f(xml->parm("quaternion"));
+    }
+
+    AffineSpace3fa res(LinearSpace3fa(
+      Vec3fa(scale.x, skew.x, skew.y, q.x),
+      Vec3fa(shift.x, scale.y, skew.z, q.y),
+      Vec3fa(shift.y, shift.z, scale.z, q.z)),
+      Vec3fa(translate.x, translate.y, translate.z, q.w));
+
+    if (xml->body.size() == 16) {
+      res = AffineSpace3fa(LinearSpace3fa(Vec3fa(xml->body[ 0].Float(),xml->body[ 4].Float(),xml->body[ 8].Float(),xml->body[12].Float()),
+                                          Vec3fa(xml->body[ 1].Float(),xml->body[ 5].Float(),xml->body[ 9].Float(),xml->body[13].Float()),
+                                          Vec3fa(xml->body[ 2].Float(),xml->body[ 6].Float(),xml->body[10].Float(),xml->body[14].Float())),
+                                          Vec3fa(xml->body[ 3].Float(),xml->body[ 7].Float(),xml->body[11].Float(),xml->body[15].Float()));
+    }
+    return res;
   }
 
   template<typename Vector>
@@ -1169,18 +1205,34 @@ namespace embree
     std::string str_time_steps = xml->parm("time_steps");
     if (str_time_steps != "") time_steps = max(1,std::stoi(str_time_steps));
 
+    bool quaternion = false;
+    AffineSpace3fa space;
     avector<AffineSpace3fa> spaces(time_steps);
-    AffineSpace3fa space = load<AffineSpace3fa>(xml->children[0]);
+    if (xml->children[0]->name == "AffineSpace") {
+      space = load<AffineSpace3fa>(xml->children[0]);
+    }
+    else if (xml->children[0]->name == "Quaternion") {
+      space = loadQuaternion(xml->children[0]);
+      quaternion = true;
+    }
+    else {
+      THROW_RUNTIME_ERROR(xml->loc.str()+": unknown transformation representation");
+    }
     for (size_t i=0; i<time_steps; i++) spaces[i] = space;
     
-    if (xml->size() == 2)
-      return new SceneGraph::TransformNode(spaces,loadNode(xml->children[1]));
+    if (xml->size() == 2) {
+      auto node = new SceneGraph::TransformNode(spaces,loadNode(xml->children[1]));
+      node->spaces.quaternion = quaternion;
+      return node;
+    }
   
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
     for (size_t i=1; i<xml->size(); i++)
       group->add(loadNode(xml->children[i]));
     
-    return new SceneGraph::TransformNode(spaces,group.dynamicCast<SceneGraph::Node>());
+    auto node = new  SceneGraph::TransformNode(spaces,group.dynamicCast<SceneGraph::Node>());
+    node->spaces.quaternion = quaternion;
+    return node;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadMultiTransformNode(const Ref<XML>& xml) 
@@ -1215,12 +1267,26 @@ namespace embree
   {
     if (xml->size() < 2) THROW_RUNTIME_ERROR(xml->loc.str()+": invalid TransformAnimation node");
 
+    bool quaternion = false;
     avector<AffineSpace3fa> spaces(xml->size()-1);
     for (size_t i=0; i<xml->size()-1; i++)
-      spaces[i] = load<AffineSpace3fa>(xml->children[i]);
+    {
+      if (xml->children[0]->name == "AffineSpace") {
+        spaces[i] = load<AffineSpace3fa>(xml->children[i]);
+      }
+      else if (xml->children[0]->name == "Quaternion") {
+        spaces[i] = loadQuaternion(xml->children[i]);
+        quaternion = true;
+      }
+      else {
+        THROW_RUNTIME_ERROR(xml->loc.str()+": unknown transformation representation");
+      }
+    }
 
     Ref<SceneGraph::Node> child = loadNode(xml->children[xml->size()-1]);
-    return new SceneGraph::TransformNode(spaces,child);
+    auto tnode = new SceneGraph::TransformNode(spaces,child);
+    tnode->spaces.quaternion = quaternion;
+    return tnode;
   }
 
   Ref<SceneGraph::Node> XMLLoader::loadAnimation2Node(const Ref<XML>& xml) 

@@ -72,12 +72,12 @@ inline Vec3fa cosineSampleHemisphere(const Vec2f s)
 
 inline float cosineSampleHemispherePDF(const Vec3fa &dir)
 {
-  return dir.z / float(pi);
+  return dir.z / float(M_PI);
 }
 
 inline float cosineSampleHemispherePDF(float cosTheta)
 {
-  return cosTheta / float(pi);
+  return cosTheta / float(M_PI);
 }
 
 /*! Cosine weighted hemisphere sampling. Up direction is provided as argument. */
@@ -102,12 +102,12 @@ inline Vec3fa powerCosineSampleHemisphere(const float n, const Vec2f &s)
 
 inline float powerCosineSampleHemispherePDF(const float cosTheta, const float n) // TODO: order of arguments
 {
-  return (n + 1.0f) * (0.5f / float(pi)) * pow(cosTheta, n);
+  return (n + 1.0f) * (0.5f / float(M_PI)) * pow(cosTheta, n);
 }
 
 inline float powerCosineSampleHemispherePDF(const Vec3fa& dir, const float n) // TODO: order of arguments
 {
-  return (n + 1.0f) * (0.5f / float(pi)) * pow(dir.z, n);
+  return (n + 1.0f) * (0.5f / float(M_PI)) * pow(dir.z, n);
 }
 
 /// sampling of cone of directions oriented along the +z-axis
@@ -146,12 +146,12 @@ inline Vec3fa uniformSampleDisk(const float radius, const Vec2f &s)
 
 inline float uniformSampleDiskPDF(const float radius)
 {
-  return rcp(float(pi) * sqr(radius));
+  return rcp(float(M_PI) * sqr(radius));
 }
 
 inline float _uniformSampleDiskPDF(const float radius)
 {
-  return rcp(float(pi) * sqr(radius));
+  return rcp(float(M_PI) * sqr(radius));
 }
 
 

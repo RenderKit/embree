@@ -36,7 +36,7 @@ namespace embree
   extern "C" void device_resize(int width, int height);
   extern "C" void device_render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera);
   extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
-  extern "C" void device_key_pressed (int key);
+  //extern "C" void device_key_pressed (int key);
   extern "C" void device_cleanup();
 
   template<typename Ty>
@@ -118,6 +118,7 @@ namespace embree
  
     /* GLFW callback functions */
   public:
+    virtual void keypressed(int key);
     virtual void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods);
     virtual void clickFunc(GLFWwindow* window, int button, int action, int mods);
     virtual void motionFunc(GLFWwindow* window, double x, double y);
@@ -125,6 +126,9 @@ namespace embree
     virtual void reshapeFunc(GLFWwindow* window, int width, int height);
     virtual void drawGUI() {}; 
 
+  public:
+    virtual void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera);
+  
   public:
     std::string tutorialName;
 

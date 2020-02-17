@@ -240,7 +240,7 @@ struct Lambertian
 inline Vec3fa Lambertian__eval(const Lambertian* This,
                               const Vec3fa &wo, const DifferentialGeometry &dg, const Vec3fa &wi)
 {
-  return This->R * (1.0f/(float)(float(pi))) * clamp(dot(wi,dg.Ns));
+  return This->R * (1.0f/(float)(float(M_PI))) * clamp(dot(wi,dg.Ns));
 }
 
 inline Vec3fa Lambertian__sample(const Lambertian* This,
@@ -509,7 +509,7 @@ Vec3fa OBJMaterial__eval(ISPCOBJMaterial* material, const BRDF& brdf, const Vec3
   const float Ms = max(max(brdf.Ks.x,brdf.Ks.y),brdf.Ks.z);
   const float Mt = max(max(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z);
   if (Md > 0.0f) {
-    R = R + (1.0f/float(pi)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
+    R = R + (1.0f/float(M_PI)) * clamp(dot(wi,dg.Ns)) * brdf.Kd;
   }
   if (Ms > 0.0f) {
     const Sample3f refl = make_Sample3f(reflect(wo,dg.Ns),1.0f);
@@ -882,12 +882,14 @@ extern "C" int g_instancing_mode;
 
 bool g_animation = true;
 bool g_use_smooth_normals = false;
+#if 0
 void device_key_pressed_handler(int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
   if (key == 110 /*n*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
   else device_key_pressed_default(key);
 }
+#endif
 
 void assignShaders(ISPCGeometry* geometry)
 {
@@ -1739,7 +1741,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 
@@ -1813,11 +1815,23 @@ extern "C" void device_init (char* cfg)
   g_accu_vz = Vec3fa(0.0f);
   g_accu_p  = Vec3fa(0.0f);
 
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_handler;
-
 } // device_init
+
+extern "C" void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
+{
+  /* render image */
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
+}
 
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
@@ -1864,15 +1878,6 @@ extern "C" void device_render (int* pixels,
   else
     g_accu_count++;
 
-  /* render image */
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    const int threadIndex = (int)TaskScheduler::threadIndex();
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
-  //rtcDebug();
 } // device_render
 
 /* called by the C++ code for cleanup */

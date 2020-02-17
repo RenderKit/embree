@@ -181,6 +181,13 @@ namespace embree
       GTY_SUBTYPE_MASK = 3,
     };
 
+    enum GSubType
+    {
+      GTY_SUBTYPE_DEFAULT= 0,
+      GTY_SUBTYPE_INSTANCE_LINEAR = 0,
+      GTY_SUBTYPE_INSTANCE_QUATERNION = 1
+    };
+
     enum GTypeMask
     {
       MTY_FLAT_LINEAR_CURVE = 1ul << GTY_FLAT_LINEAR_CURVE,
@@ -567,7 +574,8 @@ namespace embree
     unsigned int modCounter_ = 1; //!< counter for every modification - used to rebuild scenes when geo is modified
     
     struct {
-      GType gtype : 6;                //!< geometry type
+      GType gtype : 8;                //!< geometry type
+      GSubType gsubtype : 8;          //!< geometry subtype
       RTCBuildQuality quality : 3;    //!< build quality for geometry
       unsigned state : 2;
       bool enabled : 1;              //!< true if geometry is enabled

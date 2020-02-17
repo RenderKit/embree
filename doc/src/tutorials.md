@@ -345,6 +345,17 @@ This tutorial demonstrates how to implement nearest neighbour lookups using
 the point query API. Several colored points are located on a plane and the
 corresponding voroni regions are illustrated.
 
+Collision Detection
+----------------------
+
+![][imgCollision]
+
+This tutorial demonstrates how to implement collision detection using
+the collide API. A simple cloth solver is setup to collide with a sphere.
+
+The cloth can be reset with the `space` bar.  The sim stepped once with `n` 
+and continuous simulation started and paused with `p`.
+
 BVH Builder
 -----------
 

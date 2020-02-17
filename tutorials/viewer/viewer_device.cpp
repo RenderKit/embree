@@ -14,20 +14,13 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "../common/math/random_sampler.h"
-#include "../common/core/differential_geometry.h"
-#include "../common/tutorial/tutorial_device.h"
-#include "../common/tutorial/scene_device.h"
+#include "viewer_device.h"
 
 namespace embree {
 
-extern "C" ISPCScene* g_ispc_scene;
-extern "C" bool g_changed;
-extern "C" int g_instancing_mode;
-
-/* scene data */
 RTCScene g_scene = nullptr;
-bool g_subdiv_mode = false;
+extern "C" bool g_changed;
+TutorialData data;
 
 #define SPP 1
 
@@ -124,12 +117,14 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
   }
 }
 
+#if 0
 bool g_use_smooth_normals = false;
 void device_key_pressed_handler(int key)
 {
   if (key == 110 /*n*/) g_use_smooth_normals = !g_use_smooth_normals;
   else device_key_pressed_default(key);
 }
+#endif
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
@@ -137,7 +132,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   {
     ISPCGeometry* geometry = scene_in->geometries[i];
     if (geometry->type == SUBDIV_MESH) {
-      g_subdiv_mode = true; break;
+      data.subdiv_mode = true; break;
     }
   }
 
@@ -214,28 +209,28 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 
 typedef ISPCInstance* ISPCInstancePtr;
 
-inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
+inline int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
   unsigned int instID = ray.instID[0]; {
     unsigned int geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
-      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
+      if (data.instancing_mode != ISPC_INSTANCING_NONE) {
+        ISPCInstance* instance = (ISPCInstancePtr) data.ispc_scene->geometries[instID];
         geometry = instance->child;
       } else {
-        geometry = g_ispc_scene->geometries[geomID];
+        geometry = data.ispc_scene->geometries[geomID];
       }
       postIntersectGeometry(ray,dg,geometry,materialID);
     }
   }
 
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
+  if (data.instancing_mode != ISPC_INSTANCING_NONE)
   {
     unsigned int instID = ray.instID[0];
     {
       /* get instance and geometry pointers */
-      ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
+      ISPCInstance* instance = (ISPCInstancePtr) data.ispc_scene->geometries[instID];
 
       /* convert normals */
       //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
@@ -254,7 +249,13 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+void renderPixelStandard(const TutorialData& data,
+                         int x, int y, 
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize sampler */
   RandomSampler sampler;
@@ -266,13 +267,14 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   /* intersect ray with scene */
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  context.flags = g_iflags_coherent;
-  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
+  context.flags = data.iflags_coherent;
+  rtcIntersect1(data.scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-    return Vec3fa(0.0f);
+    pixels[y*width+x] = 0;
+    return;
   }
 
   /* shade all rays that hit something */
@@ -288,58 +290,35 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   dg.Ng = ray.Ng;
   dg.Ns = ray.Ng;
 
-  if (g_use_smooth_normals)
+#if 0
+  if (data.use_smooth_normals)
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3fa dPdu,dPdv;
       unsigned int geomID = ray.geomID; {
-        rtcInterpolate1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
+        rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       dg.Ns = cross(dPdv,dPdu);
     }
+#endif
 
-  int materialID = postIntersect(ray,dg);
+  int materialID = postIntersect(data,ray,dg);
   dg.Ng = face_forward(ray.dir,normalize(dg.Ng));
   dg.Ns = face_forward(ray.dir,normalize(dg.Ns));
 
   /* shade */
-  if (g_ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
-    ISPCOBJMaterial* material = (ISPCOBJMaterial*) g_ispc_scene->materials[materialID];
+  if (data.ispc_scene->materials[materialID]->type == MATERIAL_OBJ) {
+    ISPCOBJMaterial* material = (ISPCOBJMaterial*) data.ispc_scene->materials[materialID];
     color = Vec3fa(material->Kd);
   }
 
-  return color*dot(neg(ray.dir),dg.Ns);
-}
+  color = color*dot(neg(ray.dir),dg.Ns);
 
-/* renders a single screen tile */
-void renderTileStandard(int taskIndex,
-                        int threadIndex,
-                        int* pixels,
-                        const unsigned int width,
-                        const unsigned int height,
-                        const float time,
-                        const ISPCCamera& camera,
-                        const int numTilesX,
-                        const int numTilesY)
-{
-  const int t = taskIndex;
-  const unsigned int tileY = t / numTilesX;
-  const unsigned int tileX = t - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* task that renders a single screen tile */
@@ -351,7 +330,18 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  const int t = taskIndex;
+  const unsigned int tileY = t / numTilesX;
+  const unsigned int tileX = t - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
+  {
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+  }
 }
 
 Vec3fa old_p;
@@ -359,10 +349,24 @@ Vec3fa old_p;
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_handler;
+  TutorialData_Constructor(&data);
   old_p = Vec3fa(1E10);
+}
+
+extern "C" void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
+{
+  /* render image */
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
 }
 
 /* called by the C++ code to render */
@@ -375,10 +379,10 @@ extern "C" void device_render (int* pixels,
   bool camera_changed = g_changed; g_changed = false;
 
   /* create scene */
-  if (g_scene == nullptr) {
-    g_scene = convertScene(g_ispc_scene);
-    if (g_subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
-    rtcCommitScene (g_scene);
+  if (data.scene == nullptr) {
+    g_scene = data.scene = convertScene(g_ispc_scene);
+    if (data.subdiv_mode) updateEdgeLevels(g_ispc_scene, camera.xfm.p);
+    rtcCommitScene (data.scene);
     old_p = camera.xfm.p;
   }
 
@@ -391,27 +395,17 @@ extern "C" void device_render (int* pixels,
     }
 
     /* update edge levels if camera changed */
-    if (camera_changed && g_subdiv_mode) {
+    if (camera_changed && data.subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
-      rtcCommitScene (g_scene);
+      rtcCommitScene (data.scene);
     }
   }
-
-  /* render image */
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    const int threadIndex = (int)TaskScheduler::threadIndex();
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
-  //rtcDebug();
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

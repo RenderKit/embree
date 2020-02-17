@@ -100,6 +100,7 @@ struct RTCIntersectFunctionNArguments
   struct RTCIntersectContext* context;
   struct RTCRayHitN* rayhit;
   unsigned int N;
+  unsigned int geomID;
 };
 
 /* Intersection callback function */
@@ -114,6 +115,7 @@ struct RTCOccludedFunctionNArguments
   struct RTCIntersectContext* context;
   struct RTCRayN* ray;
   unsigned int N;
+  unsigned int geomID;
 };
 
 /* Occlusion callback function */

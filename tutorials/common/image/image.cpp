@@ -27,8 +27,8 @@ namespace embree
     /* compare image size */
     const size_t width = image0->width;
     const size_t height = image0->height;
-    if (image1->width != width) return 1;
-    if (image1->height != height) return 1;
+    if (image1->width != width) return inf;
+    if (image1->height != height) return inf;
 
     /* compare both images */
     double diff = 0.0;

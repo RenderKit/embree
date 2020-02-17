@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.7.0
+% Embree: High Performance Ray Tracing Kernels 3.8.0
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.7.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.7.0/embree-3.7.0.x64.vc12.msi). This
+[embree-3.8.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.7.0 x64`.
+Files\Intel\Embree v3.8.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,20 +95,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.7.0 x64`.
+Files\Intel\Embree v3.8.0 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.7.0 x64` and uninstall it.
+3.8.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.7.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.7.0/embree-3.7.0.x64.vc12.windows.zip)
+[embree-3.8.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.7.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.7.0/embree-3.7.0.x64.vc14.windows.zip)
+[embree-3.8.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -122,17 +122,17 @@ Linux RPMs
 ----------
 
 Uncompress the `tar.gz` file
-[embree-3.7.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.7.0/embree-3.7.0.x86_64.rpm.tar.gz)
+[embree-3.8.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x86_64.rpm.tar.gz)
 to obtain the individual RPM files:
 
-    tar xzf embree-3.7.0.x86_64.rpm.tar.gz
+    tar xzf embree-3.8.0.x86_64.rpm.tar.gz
 
 To install Embree using the RPM packages on your Linux system, type
 the following:
 
-    sudo rpm --install embree3-lib-3.7.0-1.x86_64.rpm
-    sudo rpm --install embree3-devel-3.7.0-1.noarch.rpm
-    sudo rpm --install embree3-examples-3.7.0-1.x86_64.rpm
+    sudo rpm --install embree3-lib-3.8.0-1.x86_64.rpm
+    sudo rpm --install embree3-devel-3.8.0-1.noarch.rpm
+    sudo rpm --install embree3-examples-3.8.0-1.x86_64.rpm
 
 You also have to install the Intel® Threading Building Blocks (TBB)
 using `yum`:
@@ -144,13 +144,13 @@ filed into DEB files using the `alien` tool:
 
     sudo apt-get install alien dpkg-dev debhelper build-essential
 
-    sudo alien embree3-lib-3.7.0-1.x86_64.rpm
-    sudo alien embree3-devel-3.7.0-1.noarch.rpm
-    sudo alien embree3-examples-3.7.0-1.x86_64.rpm
+    sudo alien embree3-lib-3.8.0-1.x86_64.rpm
+    sudo alien embree3-devel-3.8.0-1.noarch.rpm
+    sudo alien embree3-examples-3.8.0-1.x86_64.rpm
 
-    sudo dpkg -i embree3-lib_3.7.0-2_amd64.deb
-    sudo dpkg -i embree3-devel_3.7.0-2_all.deb
-    sudo dpkg -i embree3-examples_3.7.0-2_amd64.deb
+    sudo dpkg -i embree3-lib_3.8.0-2_amd64.deb
+    sudo dpkg -i embree3-devel_3.8.0-2_all.deb
+    sudo dpkg -i embree3-examples_3.8.0-2_amd64.deb
 
 Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
 
@@ -176,20 +176,20 @@ the tutorials to start them.
 
 To uninstall Embree, just execute the following:
 
-    sudo rpm --erase embree3-lib-3.7.0-1.x86_64
-    sudo rpm --erase embree3-devel-3.7.0-1.noarch
-    sudo rpm --erase embree3-examples-3.7.0-1.x86_64
+    sudo rpm --erase embree3-lib-3.8.0-1.x86_64
+    sudo rpm --erase embree3-devel-3.8.0-1.noarch
+    sudo rpm --erase embree3-examples-3.8.0-1.x86_64
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.7.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.7.0/embree-3.7.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.8.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.7.0.x86_64.linux.tar.gz
-    source embree-3.7.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.8.0.x86_64.linux.tar.gz
+    source embree-3.8.0.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -202,7 +202,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.7.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.7.0/embree-3.7.0.x86_64.pkg). This
+[embree-3.8.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -224,12 +224,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.7.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.7.0/embree-3.7.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.8.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.7.0.x64.macosx.tar.gz
-    source embree-3.7.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.8.0.x64.macosx.tar.gz
+    source embree-3.8.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -512,6 +512,22 @@ parameters that can be configured in CMake:
   only), or an internal tasking system (INTERNAL). By default TBB is
   used.
 
++ `EMBREE_TBB_ROOT`: If Intel® Threading TBB Building Blocks (TBB)
+  is used as a tasking system, search the library in this directory
+  tree.
+
++ `EMBREE_TBB_POSTFIX`: If Intel® Threading TBB Building Blocks (TBB)
+  is used as a tasking system, link to tbb<EMBREE_TBB_POSTFIX>.(so,dll,lib).
+  Defaults to the empty string.
+
++ `EMBREE_TBB_DEBUG_ROOT`: If Intel® Threading TBB Building Blocks (TBB)
+  is used as a tasking system, search the library in this directory
+  tree in Debug mode. Defaults to `EMBREE_TBB_ROOT`.
+
++ `EMBREE_TBB_DEBUG_POSTFIX`: If Intel® Threading TBB Building Blocks (TBB)
+  is used as a tasking system, link to tbb<EMBREE_TBB_DEBUG_POSTFIX>.(so,dll,lib)
+  in Debug mode. Defaults to "_debug".
+
 + `EMBREE_MAX_ISA`: Select highest supported ISA (SSE2, SSE4.2, AVX,
   AVX2, AVX512KNL, AVX512SKX, or NONE). When set to NONE the
   EMBREE_ISA_* variables can be used to enable ISAs individually. By
@@ -784,6 +800,21 @@ nearest neighbour queries (see Tutorial [Voronoi]).
 
 See Section [rtcPointQuery] for a detailed description of how to set
 up point queries.
+
+Collision Detection
+-------------------
+
+The Embree API also supports collision detection queries between two
+scenes consisting only of user geometries. Embree only performs
+broadphase collision detection, the narrow phase detection can be
+performed through a callback function.
+
+See Section [rtcCollide](#rtccollide) for a detailed description of how
+to set up collision detection.
+
+Seen tutorial [Collision Detection](#collision-detection) for a
+complete example of collsion detection being used on a simple cloth
+solver.
 
 Miscellaneous
 -------------
@@ -2949,7 +2980,7 @@ buffer from the control points.
 
 For the Catmull-Rom basis the indices point to the first of 4
 consecutive control points in the vertex buffer. This basis goes
-through p1 and p2, with tangents (p2-p0)/2 and (p3-p2)/2.
+through p1 and p2, with tangents (p2-p0)/2 and (p3-p1)/2.
 
 The `RTC_GEOMETRY_TYPE_FLAT_*` flat mode is a fast mode designed to
 render distant hair. In this mode the curve is rendered as a connected
@@ -4318,6 +4349,7 @@ rtcSetGeometryIntersectFunction
       struct RTCIntersectContext* context;
       struct RTCRayHitN* rayhit;
       unsigned int N;
+      unsigned int geomID;
     };
 
     typedef void (*RTCIntersectFunctionN)(
@@ -4350,8 +4382,9 @@ whether the corresponding ray is valid (-1) or invalid (0), the
 `geometryUserPtr` member points to the geometry user data previously
 set through `rtcSetGeometryUserData`, the `context` member points to
 the intersection context passed to the ray query, the `rayhit` member
-points to a ray and hit packet of variable size `N`, and the `primID`
-member identifies the primitive ID of the primitive to intersect.
+points to a ray and hit packet of variable size `N`, and the `geomID`
+and `primID` member identifies the geometry ID and primitive ID of the
+primitive to intersect.
 
 The `ray` component of the `rayhit` structure contains valid data, in
 particular the `tfar` value is the current closest hit distance found.
@@ -4428,6 +4461,7 @@ rtcSetGeometryOccludedFunction
       struct RTCIntersectContext* context;
       struct RTCRayN* ray;
       unsigned int N;
+      unsigned int geomID;
     };
 
     typedef void (*RTCOccludedFunctionN)(
@@ -4460,8 +4494,9 @@ whether the corresponding ray is valid (-1) or invalid (0), the
 `geometryUserPtr` member points to the geometry user data previously
 set through `rtcSetGeometryUserData`, the `context` member points to
 the intersection context passed to the ray query, the `ray` member
-points to a ray packet of variable size `N`, and the `primID` member
-identifies the primitive ID of the primitive to test for occlusion.
+points to a ray packet of variable size `N`, and the `geomID` and
+`primID` member identifies the geometry ID and primitive ID of the
+primitive to intersect.
 
 The task of the callback function is to intersect each active ray from
 the ray packet with the specified user primitive. If the user-defined
@@ -4748,18 +4783,21 @@ local-to-world affine transformation (`qd` parameter) of an instance
 geometry (`geometry` parameter) for a particular time step (`timeStep`
 parameter). The transformation is specified as a
 [RTCQuaternionDecomposition], which is a decomposition of an affine
-transformation which represents the rotational component of an affine
+transformation that represents the rotational component of an affine
 transformation as a quaternion. This allows interpolating rotational
 transformations exactly using spherical linear interpolation (such as a
 turning wheel).
 
 For more information about the decomposition see
-[RTCQuaternionDecomposition].
+[RTCQuaternionDecomposition]. The quaternion given in the
+`RTCQuaternionDecomposition` struct will be normalized internally.
 
-Before commiting an instance geometry, the transformation matrices must
-be set either using `rtcSetGeometryTransform` or
-`rtcSetGeometryTransformQuaternion` for all time steps. Mixing both
-representations is not allowed.
+For correct results, the transformation matrices for all time steps
+must be set either using `rtcSetGeometryTransform` or
+`rtcSetGeometryTransformQuaternion`. Mixing both representations is not
+allowed. Spherical linear interpolation will be used, iff the
+transformation matizes are set with
+`rtcSetGeometryTransformQuaternion`.
 
 For an example of this feature see the tutorial [Quaternion Motion
 Blur].
@@ -7021,6 +7059,66 @@ thus will not set any error flags on failure.
 
 
 
+rtcCollide
+----------
+
+#### NAME {#name}
+
+    rtcCollide - intersects one BVH with another
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree3/rtcore.h>
+
+    struct RTCCollision {
+      unsigned int geomID0, primID0;
+      unsigned int geomID1, primID1;
+    };
+
+    typedef void (*RTCCollideFunc) (
+      void* userPtr,
+      RTCCollision* collisions,
+      size_t num_collisions);
+
+    void rtcCollide (
+        RTCScene hscene0, 
+        RTCScene hscene1, 
+        RTCCollideFunc callback, 
+        void* userPtr
+    );
+
+#### DESCRIPTION {#description}
+
+The `rtcCollide` function intersects the BVH of `hscene0` with the BVH
+of scene `hscene1` and calls a user defined callback function (e.g
+`callback` argument) for each pair of intersecting primitives between
+the two scenes. A user defined data pointer (`userPtr` argument) can
+also be passed in.
+
+For every pair of primitives that may intersect each other, the
+callback function (`callback` argument) is called. The user will be
+provided with the primID's and geomID's of multiple potentially
+intersecting primitive pairs. Currently, only scene entirely composed
+of user geometries are supported, thus the user is expected to
+implement a primitive/primitive intersection to filter out false
+positives in the callback function. The `userPtr` argument can be used
+to input geometry data of the scene or output results of the
+intersection query.
+
+#### SUPPORTED PRIMITIVES {#supported-primitives}
+
+Currently, the only supported type is the user geometry type (see
+[RTC\_GEOMETRY\_TYPE\_USER]).
+
+#### EXIT STATUS {#exit-status}
+
+On failure an error code is set that can be queried using
+`rtcGetDeviceError`.
+
+#### SEE ALSO {#see-also}
+
+
+
 rtcNewBVH
 ---------
 
@@ -7370,8 +7468,7 @@ and a rotation matrix $R$, represented as a quaternion
 $quaternion_r + quaternion_i  \mathbf{i} + quaternion_j  \mathbf{i} + quaternion_k  \mathbf{k}$
 
 where $\mathbf{i}$, $\mathbf{j}$ $\mathbf{k}$ are the imaginary
-quaternion units. The passed quaternion has to be a properly normalized
-unit quaternion, as only these represent rotations.
+quaternion units. The passed quaternion will be normalized internally.
 
 \noindent
 The affine transformation matrix corresponding to a
@@ -7914,6 +8011,17 @@ Voronoi
 This tutorial demonstrates how to implement nearest neighbour lookups using
 the point query API. Several colored points are located on a plane and the
 corresponding voroni regions are illustrated.
+
+Collision Detection
+----------------------
+
+![][imgCollision]
+
+This tutorial demonstrates how to implement collision detection using
+the collide API. A simple cloth solver is setup to collide with a sphere.
+
+The cloth can be reset with the `space` bar.  The sim stepped once with `n` 
+and continuous simulation started and paused with `p`.
 
 BVH Builder
 -----------

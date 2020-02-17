@@ -336,8 +336,9 @@ namespace embree
     spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
     geom.geomID = scene->geometryID(in->child);
     child = ISPCScene::convertGeometry(scene,in->child);
-    startTime = in->spaces.time_range.lower;
-    endTime   = in->spaces.time_range.upper;
+    startTime  = in->spaces.time_range.lower;
+    endTime    = in->spaces.time_range.upper;
+    quaternion = in->spaces.quaternion;
     for (size_t i=0; i<numTimeSteps; i++)
       spaces[i] = in->spaces[i];
   }
@@ -605,7 +606,12 @@ namespace embree
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
       rtcSetGeometryInstancedScene(geom,scene_inst);
       rtcSetGeometryTimeStepCount(geom,1);
-      rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[0].l.vx.x);
+      if (instance->quaternion) {
+        QuaternionDecomposition qd = quaternionDecomposition(instance->spaces[0]);
+        rtcSetGeometryTransformQuaternion(geom,0,(RTCQuaternionDecomposition*)&qd);
+      } else {
+        rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[0].l.vx.x);
+      }
       rtcSetGeometryUserData(geom, instance);
       rtcCommitGeometry(geom);
       rtcAttachGeometryByID(scene_out,geom,geomID);
@@ -620,8 +626,14 @@ namespace embree
       rtcSetGeometryInstancedScene(geom,scene_inst);
       rtcSetGeometryTimeStepCount(geom,instance->numTimeSteps);
       rtcSetGeometryTimeRange(geom,instance->startTime,instance->endTime);
-      for (size_t t=0; t<instance->numTimeSteps; t++)
-        rtcSetGeometryTransform(geom,(unsigned int)t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[t].l.vx.x);
+      for (size_t t=0; t<instance->numTimeSteps; t++) {
+        if (instance->quaternion) {
+          QuaternionDecomposition qd = quaternionDecomposition(instance->spaces[t]);
+          rtcSetGeometryTransformQuaternion(geom,t,(RTCQuaternionDecomposition*)&qd);
+        } else {
+          rtcSetGeometryTransform(geom,(unsigned int)t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[t].l.vx.x);
+        }
+      }
       rtcSetGeometryUserData(geom, instance);
       rtcCommitGeometry(geom);
       rtcAttachGeometryByID(scene_out,geom,geomID);

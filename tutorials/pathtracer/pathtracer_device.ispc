@@ -880,12 +880,14 @@ extern uniform int g_instancing_mode;
 
 uniform bool g_animation = true;
 uniform bool g_use_smooth_normals = false;
+#if 0
 void device_key_pressed_handler(uniform int key)
 {
   if (key == 32  /* */) g_animation = !g_animation;
   if (key == 110 /*n*/) { g_use_smooth_normals = !g_use_smooth_normals; g_changed = true; }
   else device_key_pressed_default(key);
 }
+#endif
 
 void assignShaders(ISPCGeometry* uniform geometry)
 {
@@ -1737,7 +1739,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 
@@ -1807,11 +1809,19 @@ export void device_init (uniform int8* uniform cfg)
   g_accu_vz = make_Vec3fa(0.0f);
   g_accu_p  = make_Vec3fa(0.0f);
 
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_handler;
-
 } // device_init
+
+export void renderFrameStandard (uniform int* uniform pixels,
+                          const uniform unsigned int width,
+                          const uniform unsigned int height,
+                          const uniform float time,
+                          const uniform ISPCCamera& camera)
+{
+  /* render image */
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+}
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
@@ -1858,11 +1868,6 @@ export void device_render (uniform int* uniform pixels,
   else
     g_accu_count++;
 
-  /* render image */
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
-  //rtcDebug();
 } // device_render
 
 /* called by the C++ code for cleanup */

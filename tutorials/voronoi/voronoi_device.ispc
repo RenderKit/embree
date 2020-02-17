@@ -130,8 +130,6 @@ export void device_init (uniform int8* uniform cfg)
       for (uniform int b = 0; b < 3; ++b) 
         g_colors[r * 9 + g * 3 + b] = make_Vec3fa(0.2f + 0.3f * r, 0.2f + 0.3f * g, 0.2f + 0.3f * b); 
 
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 /* renders a single screen tile */
@@ -199,7 +197,7 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
 
 void splat_color(uniform int* pixels, 
@@ -230,6 +228,20 @@ task void drawPoints(uniform int* uniform pixels,
   splat_color(pixels, width, height, 2, p.p.x, p.p.z, color);
 }
 
+export void renderFrameStandard (uniform int* uniform pixels,
+                          const uniform unsigned int width,
+                          const uniform unsigned int height,
+                          const uniform float time,
+                          const uniform ISPCCamera& camera)
+{
+  /* render all pixels */
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+
+  launch[g_num_points] drawPoints(pixels, width, height); sync;
+}
+
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform unsigned int width,
@@ -245,13 +257,6 @@ export void device_render (uniform int* uniform pixels,
     g_points = createPoints(g_scene, g_num_points);
     rtcCommitScene(g_scene);
   }
-
-  /* render all pixels */
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
-
-  launch[g_num_points] drawPoints(pixels, width, height); sync;
 }
 
 /* called by the C++ code for cleanup */

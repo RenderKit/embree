@@ -103,7 +103,7 @@ unsigned int addSphere(RTCScene scene, const Vec3fa& pos, RTCGeometryType type, 
   {
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa *vertex = (Vec3fa*)rtcSetNewGeometryBuffer(geom, bufType, t, RTC_FORMAT_FLOAT4, sizeof(Vec3fa), 1);
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0), Vec3fa(0,1,0), 2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0), Vec3fa(0,1,0), 2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     *vertex = Vec3fa(xfmPoint(rotation, Vec3fa(1, 0, 0)) + pos);
     vertex->w = 1.f;
 
@@ -133,7 +133,7 @@ unsigned int addTriangleCube (RTCScene scene, const Vec3fa& pos, unsigned int nu
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa), 8);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<8; i++) {
@@ -175,7 +175,7 @@ unsigned int addQuadCube (RTCScene scene, const Vec3fa& pos, unsigned int num_ti
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa), 8);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<8; i++) {
@@ -215,7 +215,7 @@ unsigned int addSubdivCube (RTCScene scene, const Vec3fa& pos, unsigned int num_
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa),8);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<8; i++) {
@@ -248,7 +248,7 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos, RTCGeometryType type, 
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(Vec3fa),16);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<16; i++)
@@ -283,7 +283,7 @@ unsigned int addLines (RTCScene scene, const Vec3fa& pos, unsigned int num_time_
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(Vec3fa),16);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<16; i++)
@@ -319,7 +319,7 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const Vec3fa& pos, uns
   
   for (unsigned int t=0; t<num_time_steps; t++)
   {
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation*scale;
@@ -345,7 +345,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
     RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
     Vec3fa* vertices = (Vec3fa*) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT3,sizeof(Vec3fa),8);
 
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa scale = AffineSpace3fa::scale(Vec3fa(2.0f,1.0f,1.0f));
 
     for (int i=0; i<8; i++) {
@@ -365,7 +365,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const Vec3fa& pos, unsigne
 
   for (unsigned int t=0; t<num_time_steps; t++)
   {
-    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(pi)*(float)t/(float)(num_time_steps-1));
+    AffineSpace3fa rotation = AffineSpace3fa::rotate(Vec3fa(0,0,0),Vec3fa(0,1,0),0.5f*2.0f*float(M_PI)*(float)t/(float)(num_time_steps-1));
     AffineSpace3fa translation = AffineSpace3fa::translate(pos);
     AffineSpace3fa xfm = translation*rotation;
     rtcSetGeometryTransform(inst,t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&xfm);
@@ -396,7 +396,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
   RTCBounds* bounds_o = args->bounds_o;
   const unsigned int time = args->timeStep;
   const Sphere& sphere = spheres[args->primID];
-  float ft = 2.0f*float(pi) * (float) time / (float) (sphere.num_time_steps-1);
+  float ft = 2.0f*float(M_PI) * (float) time / (float) (sphere.num_time_steps-1);
   Vec3fa p = sphere.p + Vec3fa(cos(ft),0.0f,sin(ft));
   bounds_o->lower_x = p.x-sphere.r;
   bounds_o->lower_y = p.y-sphere.r;
@@ -425,8 +425,8 @@ void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   const float time = ray->time()*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
   const float ftime = time - (float)(itime);
-  const float ft0 = 2.0f*float(pi) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
-  const float ft1 = 2.0f*float(pi) * (float) (itime+1) / (float) (sphere.num_time_steps-1);
+  const float ft0 = 2.0f*float(M_PI) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
+  const float ft1 = 2.0f*float(M_PI) * (float) (itime+1) / (float) (sphere.num_time_steps-1);
   const Vec3fa p0 = sphere.p + Vec3fa(cos(ft0),0.0f,sin(ft0));
   const Vec3fa p1 = sphere.p + Vec3fa(cos(ft1),0.0f,sin(ft1));
   const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
@@ -477,8 +477,8 @@ void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
   const float time = ray->time()*(float)(time_segments);
   const int itime = clamp((int)(floor(time)),(int)0,time_segments-1);
   const float ftime = time - (float)(itime);
-  const float ft0 = 2.0f*float(pi) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
-  const float ft1 = 2.0f*float(pi) * (float) (itime+1) / (float) (sphere.num_time_steps-1);
+  const float ft0 = 2.0f*float(M_PI) * (float) (itime+0) / (float) (sphere.num_time_steps-1);
+  const float ft1 = 2.0f*float(M_PI) * (float) (itime+1) / (float) (sphere.num_time_steps-1);
   const Vec3fa p0 = sphere.p + Vec3fa(cos(ft0),0.0f,sin(ft0));
   const Vec3fa p1 = sphere.p + Vec3fa(cos(ft1),0.0f,sin(ft1));
   const Vec3fa sphere_p = (1.0f-ftime)*p0 + ftime*p1;
@@ -554,12 +554,6 @@ Sphere* sphere1 = nullptr;
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* initialize last seen camera */
-  g_accu_vx = Vec3fa(0.0f);
-  g_accu_vy = Vec3fa(0.0f);
-  g_accu_vz = Vec3fa(0.0f);
-  g_accu_p  = Vec3fa(0.0f);
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
 
@@ -602,10 +596,6 @@ extern "C" void device_init (char* cfg)
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);
-
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 int frameID = 50;
@@ -706,7 +696,23 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+}
+
+extern "C" void renderFrameStandard (int* pixels,
+                          const unsigned int width,
+                          const unsigned int height,
+                          const float time,
+                          const ISPCCamera& camera)
+{
+  /* render next frame */
+  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+    const int threadIndex = (int)TaskScheduler::threadIndex();
+    for (size_t i=range.begin(); i<range.end(); i++)
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
 }
 
 /* called by the C++ code to render */
@@ -741,13 +747,6 @@ extern "C" void device_render (int* pixels,
 
   /* render next frame */
   frameID++;
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
-    const int threadIndex = (int)TaskScheduler::threadIndex();
-    for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
-  }); 
 }
 
 /* called by the C++ code for cleanup */

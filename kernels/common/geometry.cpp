@@ -60,6 +60,7 @@ namespace embree
       numPrimitives(numPrimitives), numTimeSteps(unsigned(numTimeSteps)), fnumTimeSegments(float(numTimeSteps-1)), time_range(0.0f,1.0f),
       mask(-1),
       gtype(gtype),
+      gsubtype(GTY_SUBTYPE_DEFAULT),
       quality(RTC_BUILD_QUALITY_MEDIUM),
       state((unsigned)State::MODIFIED),
       enabled(true),

@@ -53,6 +53,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_line_segments.cpp
   common/scene_grid_mesh.cpp
   common/scene_points.cpp
+  common/motion_derivative.cpp
 
   subdiv/bezier_curve.cpp
   subdiv/bspline_curve.cpp
@@ -68,6 +69,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh4_factory.cpp
   bvh/bvh8_factory.cpp
 
+  bvh/bvh_collider.cpp
   bvh/bvh_rotate.cpp
   bvh/bvh_refit.cpp
   bvh/bvh_builder.cpp
@@ -123,7 +125,8 @@ MACRO(embree_files TARGET ISA)
       common/scene_line_segments.cpp
       common/scene_grid_mesh.cpp
       common/scene_points.cpp
-      
+
+      bvh/bvh_collider.cpp
       bvh/bvh_refit.cpp
       bvh/bvh_builder.cpp
       bvh/bvh_builder_hair.cpp

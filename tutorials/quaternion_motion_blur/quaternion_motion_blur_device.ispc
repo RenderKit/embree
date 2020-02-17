@@ -69,8 +69,11 @@ void updateTransformation()
   for (uniform int i = 0; i < g_numTimeSteps; ++i)
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
-    uniform float K = g_numTimeSteps > 0 ? (((float)i)/(g_numTimeSteps-1)) : 0.f;
-    uniform Quaternion3f q = make_Quaternion3f_rotate(make_Vec3f(0.f, 1.f, 0.f), K * 2.0 * M_PI);
+    uniform float K = g_numTimeSteps > 0 ? ((float)i)/(g_numTimeSteps-1) : 0.f;
+    uniform float R = K * 2.0 * M_PI;
+    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * M_PI;
+
+    uniform Quaternion3f q = make_Quaternion3f_rotate(make_Vec3f(0.f, 1.f, 0.f), R);
     rtcInitQuaternionDecomposition(qdc+i);
     rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
     rtcQuaternionDecompositionSetScale(qdc+i, 3.f, 3.f, 3.f);
@@ -88,8 +91,11 @@ void updateTransformation()
   for (uniform int i = 0; i < g_numTimeSteps; ++i)
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
-    uniform float K = g_numTimeSteps > 0 ? (((float)i)/(g_numTimeSteps-1)) : 0.f;
-    uniform Quaternion3f q = make_Quaternion3f_rotate(make_Vec3f(0.f, 1.f, 0.f), K * 2.0 * M_PI);
+    uniform float K = g_numTimeSteps > 0 ? ((float)i)/(g_numTimeSteps-1) : 0.f;
+    uniform float R = K * 2.0 * M_PI;
+    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * M_PI;
+
+    uniform Quaternion3f q = make_Quaternion3f_rotate(make_Vec3f(0.f, 1.f, 0.f), R);
     rtcInitQuaternionDecomposition(qdc+i);
     rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
     rtcQuaternionDecompositionSetShift(qdc+i, 3.f, 0.f, 3.f);
@@ -291,10 +297,6 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommitGeometry(g_instance_quaternion_1);
 
   rtcCommitScene (g_scene);
-
-  /* set start render mode */
-  renderTile = renderTileStandard;
-  key_pressed_handler = device_key_pressed_default;
 }
 
 inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
@@ -401,8 +403,20 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTile(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
 }
+
+export void renderFrameStandard (uniform int* uniform pixels,
+                          const uniform unsigned int width,
+                          const uniform unsigned int height,
+                          const uniform float time,
+                          const uniform ISPCCamera& camera)
+{
+  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+}
+
 
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
@@ -447,10 +461,6 @@ export void device_render (uniform int* uniform pixels,
   else {
     g_accu_count++;
   }
-
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
 /* called by the C++ code for cleanup */

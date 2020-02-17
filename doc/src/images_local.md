@@ -21,4 +21,4 @@
 [imgInterpolation]: images/interpolation.jpg
 [imgClosestPoint]: images/closest_point.jpg
 [imgVoronoi]: images/voronoi.jpg
-
+[imgCollision]: images/collide.jpg

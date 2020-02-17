@@ -24,6 +24,7 @@ struct\ RTCIntersectFunctionNArguments
 \ \ struct\ RTCIntersectContext*\ context;
 \ \ struct\ RTCRayHitN*\ rayhit;
 \ \ unsigned\ int\ N;
+\ \ unsigned\ int\ geomID;
 };
 
 typedef\ void\ (*RTCIntersectFunctionN)(
@@ -60,8 +61,8 @@ points to the geometry user data previously set through
 \f[C]rtcSetGeometryUserData\f[], the \f[C]context\f[] member points to
 the intersection context passed to the ray query, the \f[C]rayhit\f[]
 member points to a ray and hit packet of variable size \f[C]N\f[], and
-the \f[C]primID\f[] member identifies the primitive ID of the primitive
-to intersect.
+the \f[C]geomID\f[] and \f[C]primID\f[] member identifies the geometry
+ID and primitive ID of the primitive to intersect.
 .PP
 The \f[C]ray\f[] component of the \f[C]rayhit\f[] structure contains
 valid data, in particular the \f[C]tfar\f[] value is the current closest
