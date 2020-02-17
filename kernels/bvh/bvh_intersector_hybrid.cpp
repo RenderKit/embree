@@ -477,7 +477,7 @@ namespace embree
               {                                
                 const vfloat<K> childDist = fmin[i];
                 const NodeRef child = node->child(i);
-                child.prefetch();
+                BVHN<N>::prefetch(child);
                 if (any(childDist < curDist))
                 {
                   if (likely(cur != BVH::emptyNode)) {
@@ -888,7 +888,7 @@ namespace embree
               {                                
                 const NodeRef child = node->child(i);
                 assert(child != BVH::emptyNode);
-                child.prefetch();
+                BVHN<N>::prefetch(child);
                 if (likely(cur != BVH::emptyNode)) {
                   num_child_hits++;
                   stackPtr->ptr  = cur;

@@ -181,7 +181,7 @@ namespace embree
         {
           parallel_for(size_t(N), [&] ( size_t i ) {
               if (mask & ( 1 << i)) {
-                node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+                BVHN<N>::prefetch(node0->child(i),BVH_FLAG_ALIGNED_NODE);
                 collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,depth0+1,depth1);
               }
             });
@@ -190,7 +190,7 @@ namespace embree
 #endif
         {
           for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
-            node0->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+            BVHN<N>::prefetch(node0->child(i),BVH_FLAG_ALIGNED_NODE);
             collide_recurse(node0->child(i),node0->bounds(i),ref1,bounds1,depth0+1,depth1);
           }
         }
@@ -208,7 +208,7 @@ namespace embree
         {
           parallel_for(size_t(N), [&] ( size_t i ) {
               if (mask & ( 1 << i)) {
-                node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+                BVHN<N>::prefetch(node1->child(i),BVH_FLAG_ALIGNED_NODE);
                 collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),depth0,depth1+1);
               }
             });
@@ -217,7 +217,7 @@ namespace embree
 #endif
         {
           for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
-            node1->child(i).prefetch(BVH_FLAG_ALIGNED_NODE);
+            BVHN<N>::prefetch(node1->child(i),BVH_FLAG_ALIGNED_NODE);
             collide_recurse(ref0,bounds0,node1->child(i),node1->bounds(i),depth0,depth1+1);
           }
         }

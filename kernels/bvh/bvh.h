@@ -144,6 +144,8 @@ namespace embree
     /*! Pointer that points to a node or a list of primitives */
     struct NodeRef
     {
+      friend class BVHN;
+      
       /*! Default constructor */
       __forceinline NodeRef () {}
 
@@ -152,125 +154,7 @@ namespace embree
 
       /*! Cast to size_t */
       __forceinline operator size_t() const { return ptr; }
-
-      /*! Prefetches the node this reference points to */
-      __forceinline void prefetch(int types=0) const {
-#if  defined(__AVX512PF__) // MIC
-          if (types != BVH_FLAG_QUANTIZED_NODE) {
-            prefetchL2(((char*)ptr)+0*64);
-            prefetchL2(((char*)ptr)+1*64);
-            if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-              prefetchL2(((char*)ptr)+2*64);
-              prefetchL2(((char*)ptr)+3*64);
-            }
-            if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-              /* KNL still needs L2 prefetches for large nodes */
-              prefetchL2(((char*)ptr)+4*64);
-              prefetchL2(((char*)ptr)+5*64);
-              prefetchL2(((char*)ptr)+6*64);
-              prefetchL2(((char*)ptr)+7*64);
-            }
-          }
-          else
-          {
-            /* todo: reduce if 32bit offsets are enabled */
-            prefetchL2(((char*)ptr)+0*64);
-            prefetchL2(((char*)ptr)+1*64);
-            prefetchL2(((char*)ptr)+2*64);
-          }
-#else
-          if (types != BVH_FLAG_QUANTIZED_NODE) {
-            prefetchL1(((char*)ptr)+0*64);
-            prefetchL1(((char*)ptr)+1*64);
-            if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-              prefetchL1(((char*)ptr)+2*64);
-              prefetchL1(((char*)ptr)+3*64);
-            }
-            if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-              /* deactivate for large nodes on Xeon, as it introduces regressions */
-              //prefetchL1(((char*)ptr)+4*64);
-              //prefetchL1(((char*)ptr)+5*64);
-              //prefetchL1(((char*)ptr)+6*64);
-              //prefetchL1(((char*)ptr)+7*64);
-            }
-          }
-          else
-          {
-            /* todo: reduce if 32bit offsets are enabled */
-            prefetchL1(((char*)ptr)+0*64);
-            prefetchL1(((char*)ptr)+1*64);
-            prefetchL1(((char*)ptr)+2*64);
-          }
-#endif
-      }
-
-      __forceinline void prefetchLLC(int types=0) const {
-        embree::prefetchL2(((char*)ptr)+0*64);
-        embree::prefetchL2(((char*)ptr)+1*64);
-        if (types != BVH_FLAG_QUANTIZED_NODE) {
-          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-            embree::prefetchL2(((char*)ptr)+2*64);
-            embree::prefetchL2(((char*)ptr)+3*64);
-          }
-          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-            embree::prefetchL2(((char*)ptr)+4*64);
-            embree::prefetchL2(((char*)ptr)+5*64);
-            embree::prefetchL2(((char*)ptr)+6*64);
-            embree::prefetchL2(((char*)ptr)+7*64);
-          }
-        }
-      }
-
-      __forceinline void prefetch_L1(int types=0) const {
-        embree::prefetchL1(((char*)ptr)+0*64);
-        embree::prefetchL1(((char*)ptr)+1*64);
-        if (types != BVH_FLAG_QUANTIZED_NODE) {
-          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-            embree::prefetchL1(((char*)ptr)+2*64);
-            embree::prefetchL1(((char*)ptr)+3*64);
-          }
-          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-            embree::prefetchL1(((char*)ptr)+4*64);
-            embree::prefetchL1(((char*)ptr)+5*64);
-            embree::prefetchL1(((char*)ptr)+6*64);
-            embree::prefetchL1(((char*)ptr)+7*64);
-          }
-        }
-      }
-
-      __forceinline void prefetch_L2(int types=0) const {
-        embree::prefetchL2(((char*)ptr)+0*64);
-        embree::prefetchL2(((char*)ptr)+1*64);
-        if (types != BVH_FLAG_QUANTIZED_NODE) {
-          if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-            embree::prefetchL2(((char*)ptr)+2*64);
-            embree::prefetchL2(((char*)ptr)+3*64);
-          }
-          if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-            embree::prefetchL2(((char*)ptr)+4*64);
-            embree::prefetchL2(((char*)ptr)+5*64);
-            embree::prefetchL2(((char*)ptr)+6*64);
-            embree::prefetchL2(((char*)ptr)+7*64);
-          }
-        }
-      }
-
-
-      __forceinline void prefetchW(int types=0) const {
-        embree::prefetchEX(((char*)ptr)+0*64);
-        embree::prefetchEX(((char*)ptr)+1*64);
-        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
-          embree::prefetchEX(((char*)ptr)+2*64);
-          embree::prefetchEX(((char*)ptr)+3*64);
-        }
-        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
-          embree::prefetchEX(((char*)ptr)+4*64);
-          embree::prefetchEX(((char*)ptr)+5*64);
-          embree::prefetchEX(((char*)ptr)+6*64);
-          embree::prefetchEX(((char*)ptr)+7*64);
-        }
-      }
-
+    
       /*! Sets the barrier bit. */
       __forceinline void setBarrier() {
 #if defined(__X86_64__)
@@ -1518,7 +1402,132 @@ namespace embree
       return NodeRef((size_t)ptr | (tyLeaf+ty));
     }
 
-    /*! bvh type information */
+  public:
+
+      /*! Prefetches the node this reference points to */
+    __forceinline static void prefetch(const NodeRef ref, int types=0)
+    {
+#if  defined(__AVX512PF__) // MIC
+      if (types != BVH_FLAG_QUANTIZED_NODE) {
+      prefetchL2(((char*)ref.ptr)+0*64);
+      prefetchL2(((char*)ref.ptr)+1*64);
+      if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+        prefetchL2(((char*)ref.ptr)+2*64);
+        prefetchL2(((char*)ref.ptr)+3*64);
+      }
+      if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+        /* KNL still needs L2 prefetches for large nodes */
+        prefetchL2(((char*)ref.ptr)+4*64);
+        prefetchL2(((char*)ref.ptr)+5*64);
+        prefetchL2(((char*)ref.ptr)+6*64);
+        prefetchL2(((char*)ref.ptr)+7*64);
+      }
+    }
+      else
+      {
+        /* todo: reduce if 32bit offsets are enabled */
+        prefetchL2(((char*)ref.ptr)+0*64);
+        prefetchL2(((char*)ref.ptr)+1*64);
+        prefetchL2(((char*)ref.ptr)+2*64);
+      }
+#else
+      if (types != BVH_FLAG_QUANTIZED_NODE) {
+        prefetchL1(((char*)ref.ptr)+0*64);
+        prefetchL1(((char*)ref.ptr)+1*64);
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+          prefetchL1(((char*)ref.ptr)+2*64);
+          prefetchL1(((char*)ref.ptr)+3*64);
+        }
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+          /* deactivate for large nodes on Xeon, as it introduces regressions */
+          //prefetchL1(((char*)ref.ptr)+4*64);
+          //prefetchL1(((char*)ref.ptr)+5*64);
+          //prefetchL1(((char*)ref.ptr)+6*64);
+          //prefetchL1(((char*)ref.ptr)+7*64);
+        }
+      }
+      else
+      {
+        /* todo: reduce if 32bit offsets are enabled */
+        prefetchL1(((char*)ref.ptr)+0*64);
+        prefetchL1(((char*)ref.ptr)+1*64);
+        prefetchL1(((char*)ref.ptr)+2*64);
+      }
+#endif
+  }
+    
+    __forceinline static void prefetchLLC(const NodeRef ref, int types=0)
+    {
+      embree::prefetchL2(((char*)ref.ptr)+0*64);
+      embree::prefetchL2(((char*)ref.ptr)+1*64);
+      if (types != BVH_FLAG_QUANTIZED_NODE) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+          embree::prefetchL2(((char*)ref.ptr)+2*64);
+          embree::prefetchL2(((char*)ref.ptr)+3*64);
+        }
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+          embree::prefetchL2(((char*)ref.ptr)+4*64);
+          embree::prefetchL2(((char*)ref.ptr)+5*64);
+          embree::prefetchL2(((char*)ref.ptr)+6*64);
+          embree::prefetchL2(((char*)ref.ptr)+7*64);
+        }
+      }
+    }
+    
+    __forceinline static void prefetch_L1(const NodeRef ref, int types=0)
+    {
+      embree::prefetchL1(((char*)ref.ptr)+0*64);
+      embree::prefetchL1(((char*)ref.ptr)+1*64);
+      if (types != BVH_FLAG_QUANTIZED_NODE) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+          embree::prefetchL1(((char*)ref.ptr)+2*64);
+          embree::prefetchL1(((char*)ref.ptr)+3*64);
+        }
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+          embree::prefetchL1(((char*)ref.ptr)+4*64);
+          embree::prefetchL1(((char*)ref.ptr)+5*64);
+          embree::prefetchL1(((char*)ref.ptr)+6*64);
+          embree::prefetchL1(((char*)ref.ptr)+7*64);
+        }
+      }
+    }
+    
+    __forceinline static void prefetch_L2(const NodeRef ref, int types=0)
+    {
+      embree::prefetchL2(((char*)ref.ptr)+0*64);
+      embree::prefetchL2(((char*)ref.ptr)+1*64);
+      if (types != BVH_FLAG_QUANTIZED_NODE) {
+        if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+          embree::prefetchL2(((char*)ref.ptr)+2*64);
+          embree::prefetchL2(((char*)ref.ptr)+3*64);
+        }
+        if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+          embree::prefetchL2(((char*)ref.ptr)+4*64);
+          embree::prefetchL2(((char*)ref.ptr)+5*64);
+          embree::prefetchL2(((char*)ref.ptr)+6*64);
+          embree::prefetchL2(((char*)ref.ptr)+7*64);
+        }
+      }
+    }
+    
+    __forceinline static void prefetchW(const NodeRef ref, int types=0)
+    {
+      embree::prefetchEX(((char*)ref.ptr)+0*64);
+      embree::prefetchEX(((char*)ref.ptr)+1*64);
+      if ((N >= 8) || (types > BVH_FLAG_ALIGNED_NODE)) {
+        embree::prefetchEX(((char*)ref.ptr)+2*64);
+        embree::prefetchEX(((char*)ref.ptr)+3*64);
+      }
+      if ((N >= 8) && (types > BVH_FLAG_ALIGNED_NODE)) {
+        embree::prefetchEX(((char*)ref.ptr)+4*64);
+        embree::prefetchEX(((char*)ref.ptr)+5*64);
+        embree::prefetchEX(((char*)ref.ptr)+6*64);
+        embree::prefetchEX(((char*)ref.ptr)+7*64);
+      }
+    }
+    
+    
+      /*! bvh type information */
   public:
     const PrimitiveType* primTy;       //!< primitive type stored in the BVH
 

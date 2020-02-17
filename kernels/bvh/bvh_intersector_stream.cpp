@@ -363,7 +363,7 @@ namespace embree
           size_t r = bscf(mask);
           assert(r < N);
           cur = node->child(r);         
-          cur.prefetch(types);
+          BVHN<N>::prefetch(cur,types);
           cur_mask = child_mask[r];
 
           /* simple in order sequence */
@@ -379,7 +379,7 @@ namespace embree
             assert(r < N);
 
             cur = node->child(r);          
-            cur.prefetch(types);
+            BVHN<N>::prefetch(cur,types);
             cur_mask = child_mask[r];            
             assert(cur != BVH::emptyNode);
             if (likely(mask == 0)) break;
