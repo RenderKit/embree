@@ -32,7 +32,6 @@ IF (WIN32)
 
   FIND_PATH(GLFW_INCLUDE_DIRS NAMES GLFW/glfw3.h PATHS common/glfw/include)
   FIND_LIBRARY(GLFW_LIBRARY glfw3 common/glfw/${ARCH}/${VCVER})
-  SET(GLFW_STATIC_LIBRARIES ${GLFW_LIBRARY})
   MARK_AS_ADVANCED(
     GLFW_INCLUDE_DIR
     GLFW_LIBRARY
@@ -40,27 +39,16 @@ IF (WIN32)
 
 ELSE (WIN32)
   FIND_PACKAGE(glfw3 REQUIRED)
+  SET(GLFW_LIBRARY glfw)
+  SET(GLFW_INCLUDE_DIRS)
 ENDIF (WIN32)
-
-# NOTE(jda) - Build a GLFW interface library to combine Windows/Unix code paths
-#             for tutorial targets. Only necessary if Windows has the library
-#             committed in the repostiory, otherwise all platforms could do
-#             find_package(glfw3).
-ADD_LIBRARY(embree_glfw INTERFACE)
-IF (WIN32)
-  TARGET_LINK_LIBRARIES(embree_glfw INTERFACE ${GLFW_LIBRARY})
-  TARGET_INCLUDE_DIRECTORIES(embree_glfw INTERFACE ${GLFW_INCLUDE_DIRS})
-ELSE()
-  TARGET_LINK_LIBRARIES(embree_glfw INTERFACE glfw)
-ENDIF()
-
 
 FIND_PACKAGE(OpenGL)
 IF (NOT OPENGL_FOUND)
   MESSAGE(FATAL_ERROR "OpenGL not found! Please either install OpenGL or disable EMBREE_TUTORIALS.")
 ENDIF()
 
-INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR} ${GLFW_INCLUDE_DIRS})
 
 ADD_SUBDIRECTORY(common)
 
