@@ -154,6 +154,39 @@ namespace embree
       std::swap(upper_y[i],upper_y[j]);
       std::swap(upper_z[i],upper_z[j]);
     }
+
+    /*! swap the children of two nodes */
+    __forceinline static void swap(AlignedNode_t* a, size_t i, AlignedNode_t* b, size_t j)
+    {
+      assert(i<N && j<N);
+      std::swap(a->children[i],b->children[j]);
+      std::swap(a->lower_x[i],b->lower_x[j]);
+      std::swap(a->lower_y[i],b->lower_y[j]);
+      std::swap(a->lower_z[i],b->lower_z[j]);
+      std::swap(a->upper_x[i],b->upper_x[j]);
+      std::swap(a->upper_y[i],b->upper_y[j]);
+      std::swap(a->upper_z[i],b->upper_z[j]);
+    }
+
+    /*! compacts a node (moves empty children to the end) */
+    __forceinline static void compact(AlignedNode_t* a)
+    {
+      /* find right most filled node */
+      ssize_t j=N;
+      for (j=j-1; j>=0; j--)
+        if (a->child(j) != NodeRefPtr<N>::emptyNode)
+          break;
+
+      /* replace empty nodes with filled nodes */
+      for (ssize_t i=0; i<j; i++) {
+        if (a->child(i) == NodeRefPtr<N>::emptyNode) {
+          a->swap(i,j);
+          for (j=j-1; j>i; j--)
+            if (a->child(j) != NodeRefPtr<N>::emptyNode)
+              break;
+        }
+      }
+    }
     
     /*! Returns reference to specified child */
     __forceinline       NodeRefPtr<N>& child(size_t i)       { assert(i<N); return children[i]; }
