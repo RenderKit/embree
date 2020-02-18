@@ -143,58 +143,14 @@ namespace embree
   public:
     
     /*! Encodes a node */
-    static __forceinline NodeRef encodeNode(AlignedNode* node) {
-      assert(!((size_t)node & NodeRef::align_mask));
-      return NodeRef((size_t) node);
-    }
+    static __forceinline NodeRef encodeNode(AlignedNode* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(AlignedNodeMB* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(AlignedNodeMB4D* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(UnalignedNode* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeLeaf(void* tri, size_t num) { return NodeRef::encodeLeaf(tri,num); }
+    static __forceinline NodeRef encodeTypedLeaf(void* ptr, size_t ty) { return NodeRef::encodeTypedLeaf(ptr,ty); }
     
-    static __forceinline unsigned int encodeQuantizedNode(size_t base, size_t node) {
-      assert(!((size_t)node & NodeRef::align_mask));
-      ssize_t node_offset = (ssize_t)node-(ssize_t)base;
-      assert(node_offset != 0);
-      assert((int64_t)node_offset >= -int64_t(0x80000000) && (int64_t)node_offset <= (int64_t)0x7fffffff);
-      return (unsigned int)node_offset | NodeRef::tyQuantizedNode;
-    }
-    
-    static __forceinline int encodeQuantizedLeaf(size_t base, size_t node) {
-      ssize_t leaf_offset = (ssize_t)node-(ssize_t)base;
-      assert((int64_t)leaf_offset >= -int64_t(0x80000000) && (int64_t)leaf_offset <= (int64_t)0x7fffffff);
-      return (int)leaf_offset;
-    }
-    
-    static __forceinline NodeRef encodeNode(AlignedNodeMB* node) {
-      assert(!((size_t)node & NodeRef::align_mask));
-      return NodeRef((size_t) node | NodeRef::tyAlignedNodeMB);
-    }
-    
-    static __forceinline NodeRef encodeNode(AlignedNodeMB4D* node) {
-      assert(!((size_t)node & NodeRef::align_mask));
-      return NodeRef((size_t) node | NodeRef::tyAlignedNodeMB4D);
-    }
-    
-    /*! Encodes an unaligned node */
-    static __forceinline NodeRef encodeNode(UnalignedNode* node) {
-      return NodeRef((size_t) node | NodeRef::tyUnalignedNode);
-    }
-    
-    /*! Encodes an unaligned motion blur node */
-    static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) {
-      return NodeRef((size_t) node | NodeRef::tyUnalignedNodeMB);
-    }
-    
-    /*! Encodes a leaf */
-    static __forceinline NodeRef encodeLeaf(void* tri, size_t num) {
-      assert(!((size_t)tri & NodeRef::align_mask));
-      assert(num <= maxLeafBlocks);
-      return NodeRef((size_t)tri | (NodeRef::tyLeaf+min(num,(size_t)maxLeafBlocks)));
-    }
-    
-    /*! Encodes a leaf */
-    static __forceinline NodeRef encodeTypedLeaf(void* ptr, size_t ty) {
-      assert(!((size_t)ptr & NodeRef::align_mask));
-      return NodeRef((size_t)ptr | (NodeRef::tyLeaf+ty));
-    }
-
   public:
     
     /*! Prefetches the node this reference points to */

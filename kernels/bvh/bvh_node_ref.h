@@ -164,20 +164,6 @@ namespace embree
       return NodeRefPtr((size_t) node);
     }
 
-    static __forceinline unsigned int encodeQuantizedNode(size_t base, size_t node) {
-      assert(!((size_t)node & align_mask));
-      ssize_t node_offset = (ssize_t)node-(ssize_t)base;
-      assert(node_offset != 0);
-      assert((int64_t)node_offset >= -int64_t(0x80000000) && (int64_t)node_offset <= (int64_t)0x7fffffff);
-      return (unsigned int)node_offset | tyQuantizedNode;
-    }
-
-    static __forceinline int encodeQuantizedLeaf(size_t base, size_t node) {
-      ssize_t leaf_offset = (ssize_t)node-(ssize_t)base;
-      assert((int64_t)leaf_offset >= -int64_t(0x80000000) && (int64_t)leaf_offset <= (int64_t)0x7fffffff);
-      return (int)leaf_offset;
-    }
-
     static __forceinline NodeRefPtr encodeNode(AlignedNodeMB_t<N>* node) {
       assert(!((size_t)node & align_mask));
       return NodeRefPtr((size_t) node | tyAlignedNodeMB);
