@@ -140,7 +140,7 @@ namespace embree
     }
     
     /*! Returns bounds of all children (implemented later as specializations) */
-    __forceinline void bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {} // N = 4
+    __forceinline void bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const;
     
     /*! swap two children of the node */
     __forceinline void swap(size_t i, size_t j)
@@ -217,4 +217,10 @@ namespace embree
     vfloat<N> lower_z;           //!< Z dimension of lower bounds of all N children.
     vfloat<N> upper_z;           //!< Z dimension of upper bounds of all N children.
   };
+
+  template<>
+    __forceinline void AlignedNode_t<4>::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
+    transpose(lower_x,lower_y,lower_z,vfloat4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
+    transpose(upper_x,upper_y,upper_z,vfloat4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
+  }
 }
