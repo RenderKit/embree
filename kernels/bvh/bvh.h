@@ -291,12 +291,6 @@ namespace embree
     vector_t<char,aligned_allocator<char,32>> subdiv_patches;
   };
   
-  template<>
-    __forceinline void BVHN<4>::AlignedNode::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
-    transpose(lower_x,lower_y,lower_z,vfloat4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
-    transpose(upper_x,upper_y,upper_z,vfloat4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
-  }
-  
   typedef BVHN<4> BVH4;
   typedef BVHN<8> BVH8;
 }
