@@ -174,7 +174,6 @@ namespace embree
 	/* clear temporary data for static geometry */
 	if (scene && scene->isStaticAccel()) {
           prims0.clear();
-          bvh->shrink();
         }
 	bvh->cleanup();
         bvh->postBuild(t0);

@@ -192,7 +192,6 @@ namespace embree
 
         /* for static geometries we can do some cleanups */
         else if (scene && scene->isStaticAccel()) {
-          bvh->shrink();
           prims.clear();
         }
 	bvh->cleanup();
@@ -278,7 +277,6 @@ namespace embree
 	/* clear temporary data for static geometry */
 	if (scene && scene->isStaticAccel()) {
           prims.clear();
-          bvh->shrink();
         }
 	bvh->cleanup();
         bvh->postBuild(t0);
@@ -544,7 +542,6 @@ namespace embree
 
         /* for static geometries we can do some cleanups */
         else if (scene && scene->isStaticAccel()) {
-          bvh->shrink();
           prims.clear();
         }
 	bvh->cleanup();

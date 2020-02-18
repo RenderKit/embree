@@ -135,10 +135,6 @@ namespace embree
       }
     };
     
-    /*! shrink allocated memory */
-    void shrink() { // FIXME: remove
-    }
-    
     /*! post build cleanup */
     void cleanup() {
       alloc.cleanup();

@@ -120,7 +120,6 @@ namespace embree
         /* clear temporary data for static geometry */
         if (scene->isStaticAccel()) {
           prims.clear();
-          bvh->shrink();
         }
         bvh->cleanup();
         bvh->postBuild(t0);

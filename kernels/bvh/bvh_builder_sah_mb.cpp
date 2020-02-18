@@ -146,7 +146,6 @@ namespace embree
 #endif
 
 	/* clear temporary data for static geometry */
-        if (scene->isStaticAccel()) bvh->shrink();
 	bvh->cleanup();
         bvh->postBuild(t0);
       }
@@ -572,7 +571,6 @@ namespace embree
         buildMultiSegment(numPrimitives);
 
 	/* clear temporary data for static geometry */
-        if (scene->isStaticAccel()) bvh->shrink();
 	bvh->cleanup();
         bvh->postBuild(t0);
       }
