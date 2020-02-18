@@ -152,7 +152,7 @@ namespace embree
 
       /* enable exclusive prefetch for >= AVX platforms */      
 #if defined(__AVX__)      
-      ref.prefetchW();
+      BVH::prefetchW(ref);
 #endif      
       BBox3fa bounds[N];
 

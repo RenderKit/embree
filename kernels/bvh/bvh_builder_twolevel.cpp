@@ -303,7 +303,7 @@ namespace embree
       {
         NodeRef ref = refs[i].node;
         if (ref.isAlignedNode())
-          ref.prefetch();
+          BVH::prefetch(ref);
       }
 #endif
 
