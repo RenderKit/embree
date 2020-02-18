@@ -16,10 +16,39 @@
 
 #pragma once
 
-#include "bvh_noderef.h"
+/* include all node types */
+#include "bvh_node_aabb.h"
+#include "bvh_node_aabb_mb.h"
+#include "bvh_node_aabb_mb4d.h"
+#include "bvh_node_obb.h"
+#include "bvh_node_obb_mb.h"
+#include "bvh_node_qaabb.h"
 
 namespace embree
 {
+   /*! flags used to enable specific node types in intersectors */
+  enum BVHNodeFlags
+  {
+    BVH_FLAG_ALIGNED_NODE = 0x00001,
+    BVH_FLAG_ALIGNED_NODE_MB = 0x00010,
+    BVH_FLAG_UNALIGNED_NODE = 0x00100,
+    BVH_FLAG_UNALIGNED_NODE_MB = 0x01000,
+    BVH_FLAG_QUANTIZED_NODE = 0x100000,
+    BVH_FLAG_ALIGNED_NODE_MB4D = 0x1000000,
+
+    /* short versions */
+    BVH_AN1 = BVH_FLAG_ALIGNED_NODE,
+    BVH_AN2 = BVH_FLAG_ALIGNED_NODE_MB,
+    BVH_AN2_AN4D = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D,
+    BVH_UN1 = BVH_FLAG_UNALIGNED_NODE,
+    BVH_UN2 = BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_MB = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D,
+    BVH_AN1_UN1 = BVH_FLAG_ALIGNED_NODE | BVH_FLAG_UNALIGNED_NODE,
+    BVH_AN2_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_AN2_AN4D_UN2 = BVH_FLAG_ALIGNED_NODE_MB | BVH_FLAG_ALIGNED_NODE_MB4D | BVH_FLAG_UNALIGNED_NODE_MB,
+    BVH_QN1 = BVH_FLAG_QUANTIZED_NODE
+  };
+  
   /*! Multi BVH with N children. Each node stores the bounding box of
    * it's N children as well as N child references. */
   template<int N>

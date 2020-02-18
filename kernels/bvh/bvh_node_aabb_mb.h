@@ -1,0 +1,261 @@
+// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation                                    //
+//                                                                          //
+// Licensed under the Apache License, Version 2.0 (the "License");          //
+// you may not use this file except in compliance with the License.         //
+// You may obtain a copy of the License at                                  //
+//                                                                          //
+//     http://www.apache.org/licenses/LICENSE-2.0                           //
+//                                                                          //
+// Unless required by applicable law or agreed to in writing, software      //
+// distributed under the License is distributed on an "AS IS" BASIS,        //
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
+// See the License for the specific language governing permissions and      //
+// limitations under the License.                                           //
+// ======================================================================== //
+
+#pragma once
+
+#include "bvh_node_base.h"
+
+namespace embree
+{
+  /*! Motion Blur AlignedNode */
+  template<int N>
+    struct AlignedNodeMB_t : public BaseNode_t<N>
+  {
+    using BaseNode_t<N>::children;
+    typedef BVHNodeRecord<NodeRefPtr<N>>     NodeRecord;
+    typedef BVHNodeRecordMB<NodeRefPtr<N>>   NodeRecordMB;
+    typedef BVHNodeRecordMB4D<NodeRefPtr<N>> NodeRecordMB4D;
+        
+    struct Create
+    {
+      __forceinline NodeRefPtr<N> operator() (const FastAllocator::CachedAllocator& alloc) const
+      {
+        AlignedNodeMB_t<N>* node = (AlignedNodeMB_t<N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
+        return NodeRefPtr<N>::encodeNode(node);
+      }
+    };
+    
+    struct Set
+    {
+      __forceinline void operator() (NodeRefPtr<N> node, size_t i, const NodeRecordMB4D& child) const {
+        node.alignedNodeMB()->set(i,child);
+      }
+    };
+    
+    struct Create2
+    {
+      template<typename BuildRecord>
+      __forceinline NodeRefPtr<N> operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
+      {
+        AlignedNodeMB_t<N>* node = (AlignedNodeMB_t<N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
+        return NodeRefPtr<N>::encodeNode(node);
+      }
+    };
+    
+    struct Set2
+    { 
+      template<typename BuildRecord>
+      __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRefPtr<N> ref, NodeRecordMB* children, const size_t num) const
+      {
+        AlignedNodeMB_t<N>* node = ref.alignedNodeMB();
+        
+        LBBox3fa bounds = empty;
+        for (size_t i=0; i<num; i++) {
+          node->setRef(i,children[i].ref);
+          node->setBounds(i,children[i].lbounds);
+          bounds.extend(children[i].lbounds);
+        }
+        return NodeRecordMB(ref,bounds);
+      }
+    };
+    
+    struct Set2TimeRange
+    {
+      __forceinline Set2TimeRange(BBox1f tbounds) : tbounds(tbounds) {}
+      
+      template<typename BuildRecord>
+      __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRefPtr<N> ref, NodeRecordMB* children, const size_t num) const
+      {
+        AlignedNodeMB_t<N>* node = ref.alignedNodeMB();
+        
+        LBBox3fa bounds = empty;
+        for (size_t i=0; i<num; i++) {
+          node->setRef(i, children[i].ref);
+          node->setBounds(i, children[i].lbounds, tbounds);
+          bounds.extend(children[i].lbounds);
+        }
+        return NodeRecordMB(ref,bounds);
+      }
+      
+      BBox1f tbounds;
+    };
+    
+    /*! Clears the node. */
+    __forceinline void clear()  {
+      lower_x = lower_y = lower_z = vfloat<N>(nan);
+      upper_x = upper_y = upper_z = vfloat<N>(nan);
+      lower_dx = lower_dy = lower_dz = vfloat<N>(nan); // initialize with NAN and update during refit
+      upper_dx = upper_dy = upper_dz = vfloat<N>(nan);
+      BaseNode_t<N>::clear();
+    }
+    
+    /*! Sets ID of child. */
+    __forceinline void setRef(size_t i, NodeRefPtr<N> ref) {
+      children[i] = ref;
+    }
+    
+    /*! Sets bounding box of child. */
+    __forceinline void setBounds(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
+    {
+      /*! for empty bounds we have to avoid inf-inf=nan */
+      BBox3fa bounds0(min(bounds0_i.lower,Vec3fa(+FLT_MAX)),max(bounds0_i.upper,Vec3fa(-FLT_MAX)));
+      BBox3fa bounds1(min(bounds1_i.lower,Vec3fa(+FLT_MAX)),max(bounds1_i.upper,Vec3fa(-FLT_MAX)));
+      bounds0 = bounds0.enlarge_by(4.0f*float(ulp));
+      bounds1 = bounds1.enlarge_by(4.0f*float(ulp));
+      Vec3fa dlower = bounds1.lower-bounds0.lower;
+      Vec3fa dupper = bounds1.upper-bounds0.upper;
+      
+      lower_x[i] = bounds0.lower.x; lower_y[i] = bounds0.lower.y; lower_z[i] = bounds0.lower.z;
+      upper_x[i] = bounds0.upper.x; upper_y[i] = bounds0.upper.y; upper_z[i] = bounds0.upper.z;
+      
+      lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
+      upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
+    }
+    
+    /*! Sets bounding box of child. */
+    __forceinline void setBounds(size_t i, const LBBox3fa& bounds) {
+      setBounds(i, bounds.bounds0, bounds.bounds1);
+    }
+    
+    /*! Sets bounding box of child. */
+    __forceinline void setBounds(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds) {
+      setBounds(i, bounds.global(tbounds));
+    }
+    
+    /*! Sets bounding box and ID of child. */
+    __forceinline void set(size_t i, NodeRefPtr<N> ref, const BBox3fa& bounds) {
+      lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
+      upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
+      children[i] = ref;
+    }
+    
+    /*! Sets bounding box and ID of child. */
+    __forceinline void set(size_t i, const NodeRecordMB4D& child)
+    {
+      setRef(i, child.ref);
+      setBounds(i, child.lbounds, child.dt);
+    }
+    
+    /*! tests if the node has valid bounds */
+    __forceinline bool hasBounds() const {
+      return lower_dx.i[0] != cast_f2i(float(nan));
+    }
+    
+    /*! Return bounding box for time 0 */
+    __forceinline BBox3fa bounds0(size_t i) const {
+      return BBox3fa(Vec3fa(lower_x[i],lower_y[i],lower_z[i]),
+                     Vec3fa(upper_x[i],upper_y[i],upper_z[i]));
+    }
+    
+    /*! Return bounding box for time 1 */
+    __forceinline BBox3fa bounds1(size_t i) const {
+      return BBox3fa(Vec3fa(lower_x[i]+lower_dx[i],lower_y[i]+lower_dy[i],lower_z[i]+lower_dz[i]),
+                     Vec3fa(upper_x[i]+upper_dx[i],upper_y[i]+upper_dy[i],upper_z[i]+upper_dz[i]));
+    }
+    
+    /*! Returns bounds of node. */
+    __forceinline BBox3fa bounds() const {
+      return BBox3fa(Vec3fa(reduce_min(min(lower_x,lower_x+lower_dx)),
+                            reduce_min(min(lower_y,lower_y+lower_dy)),
+                            reduce_min(min(lower_z,lower_z+lower_dz))),
+                     Vec3fa(reduce_max(max(upper_x,upper_x+upper_dx)),
+                            reduce_max(max(upper_y,upper_y+upper_dy)),
+                            reduce_max(max(upper_z,upper_z+upper_dz))));
+    }
+    
+    /*! Return bounding box of child i */
+    __forceinline BBox3fa bounds(size_t i) const {
+      return merge(bounds0(i),bounds1(i));
+    }
+    
+    /*! Return linear bounding box of child i */
+    __forceinline LBBox3fa lbounds(size_t i) const {
+      return LBBox3fa(bounds0(i),bounds1(i));
+    }
+    
+    /*! Return bounding box of child i at specified time */
+    __forceinline BBox3fa bounds(size_t i, float time) const {
+      return lerp(bounds0(i),bounds1(i),time);
+    }
+    
+    /*! Returns the expected surface area when randomly sampling the time. */
+    __forceinline float expectedHalfArea(size_t i) const {
+      return lbounds(i).expectedHalfArea();
+    }
+    
+    /*! Returns the expected surface area when randomly sampling the time. */
+    __forceinline float expectedHalfArea(size_t i, const BBox1f& t0t1) const {
+      return lbounds(i).expectedHalfArea(t0t1); 
+    }
+    
+    /*! swap two children of the node */
+    __forceinline void swap(size_t i, size_t j)
+    {
+      assert(i<N && j<N);
+      std::swap(children[i],children[j]);
+      
+      std::swap(lower_x[i],lower_x[j]);
+      std::swap(upper_x[i],upper_x[j]);
+      std::swap(lower_y[i],lower_y[j]);
+      std::swap(upper_y[i],upper_y[j]);
+      std::swap(lower_z[i],lower_z[j]);
+      std::swap(upper_z[i],upper_z[j]);
+      
+      std::swap(lower_dx[i],lower_dx[j]);
+      std::swap(upper_dx[i],upper_dx[j]);
+      std::swap(lower_dy[i],lower_dy[j]);
+      std::swap(upper_dy[i],upper_dy[j]);
+      std::swap(lower_dz[i],lower_dz[j]);
+      std::swap(upper_dz[i],upper_dz[j]);
+    }
+    
+    /*! Returns reference to specified child */
+    __forceinline       NodeRefPtr<N>& child(size_t i)       { assert(i<N); return children[i]; }
+    __forceinline const NodeRefPtr<N>& child(size_t i) const { assert(i<N); return children[i]; }
+    
+    /*! stream output operator */
+    friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB_t<N>& n) 
+    {
+      cout << "AlignedNodeMB {" << std::endl;
+      for (size_t i=0; i<N; i++) 
+      {
+        const BBox3fa b0 = n.bounds0(i);
+        const BBox3fa b1 = n.bounds1(i);
+        cout << "  child" << i << " { " << std::endl;
+        cout << "    bounds0 = " << b0 << ", " << std::endl;
+        cout << "    bounds1 = " << b1 << ", " << std::endl;
+        cout << "  }";
+      }
+      cout << "}";
+      return cout;
+    }
+    
+  public:
+    vfloat<N> lower_x;        //!< X dimension of lower bounds of all N children.
+    vfloat<N> upper_x;        //!< X dimension of upper bounds of all N children.
+    vfloat<N> lower_y;        //!< Y dimension of lower bounds of all N children.
+    vfloat<N> upper_y;        //!< Y dimension of upper bounds of all N children.
+    vfloat<N> lower_z;        //!< Z dimension of lower bounds of all N children.
+    vfloat<N> upper_z;        //!< Z dimension of upper bounds of all N children.
+    
+    vfloat<N> lower_dx;        //!< X dimension of lower bounds of all N children.
+    vfloat<N> upper_dx;        //!< X dimension of upper bounds of all N children.
+    vfloat<N> lower_dy;        //!< Y dimension of lower bounds of all N children.
+    vfloat<N> upper_dy;        //!< Y dimension of upper bounds of all N children.
+    vfloat<N> lower_dz;        //!< Z dimension of lower bounds of all N children.
+    vfloat<N> upper_dz;        //!< Z dimension of upper bounds of all N children.
+  };
+}
