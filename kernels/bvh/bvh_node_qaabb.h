@@ -97,7 +97,7 @@ namespace embree
 #endif
     }
     
-    __forceinline void init_dim(AlignedNode_t<N>& node)
+    __forceinline void init_dim(AlignedNode_t<NodeRefPtr<N>,N>& node)
     {
       init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
       init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
@@ -162,10 +162,10 @@ namespace embree
     
   };
 
-  template<int N>
-    struct __aligned(8) QuantizedNode_t : public BaseNode_t<N>, QuantizedBaseNode_t<N>
+  template<typename NodeRef, int N>
+    struct __aligned(8) QuantizedNode_t : public BaseNode_t<NodeRef, N>, QuantizedBaseNode_t<N>
   {
-    using BaseNode_t<N>::children;
+    using BaseNode_t<NodeRef,N>::children;
     using QuantizedBaseNode_t<N>::lower_x;
     using QuantizedBaseNode_t<N>::upper_x;
     using QuantizedBaseNode_t<N>::lower_y;
@@ -176,7 +176,7 @@ namespace embree
     using QuantizedBaseNode_t<N>::scale;
     using QuantizedBaseNode_t<N>::init_dim;
     
-    __forceinline void setRef(size_t i, const NodeRefPtr<N>& ref) {
+    __forceinline void setRef(size_t i, const NodeRef& ref) {
       assert(i < N);
       children[i] = ref;
     }
@@ -184,24 +184,24 @@ namespace embree
     struct Create2
     {
       template<typename BuildRecord>
-      __forceinline NodeRefPtr<N> operator() (BuildRecord* children, const size_t n, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t n, const FastAllocator::CachedAllocator& alloc) const
       {
-        __aligned(64) AlignedNode_t<N> node;
+        __aligned(64) AlignedNode_t<NodeRef,N> node;
         node.clear();
         for (size_t i=0; i<n; i++) {
           node.setBounds(i,children[i].bounds());
         }
-        QuantizedNode_t *qnode = (QuantizedNode_t*) alloc.malloc0(sizeof(QuantizedNode_t), NodeRefPtr<N>::byteAlignment);
+        QuantizedNode_t *qnode = (QuantizedNode_t*) alloc.malloc0(sizeof(QuantizedNode_t), NodeRef::byteAlignment);
         qnode->init(node);
         
-        return (size_t)qnode | NodeRefPtr<N>::tyQuantizedNode;
+        return (size_t)qnode | NodeRef::tyQuantizedNode;
       }
     };
     
     struct Set2
     {
       template<typename BuildRecord>
-      __forceinline NodeRefPtr<N> operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRefPtr<N> ref, NodeRefPtr<N>* children, const size_t num) const
+      __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
       {
         QuantizedNode_t* node = ref.quantizedNode();
         for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
@@ -209,14 +209,13 @@ namespace embree
       }
     };
     
-    __forceinline void init(AlignedNode_t<N>& node)
+    __forceinline void init(AlignedNode_t<NodeRef,N>& node)
     {
-      for (size_t i=0;i<N;i++) children[i] = NodeRefPtr<N>::emptyNode;
+      for (size_t i=0;i<N;i++) children[i] = NodeRef::emptyNode;
       init_dim(node);
     }
     
-  };
-  
+  }; 
   
   /*! BVHN Quantized Node */
   template<int N>

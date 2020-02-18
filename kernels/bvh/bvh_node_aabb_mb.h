@@ -21,26 +21,26 @@
 namespace embree
 {
   /*! Motion Blur AlignedNode */
-  template<int N>
-    struct AlignedNodeMB_t : public BaseNode_t<N>
+  template<typename NodeRef, int N>
+    struct AlignedNodeMB_t : public BaseNode_t<NodeRef, N>
   {
-    using BaseNode_t<N>::children;
-    typedef BVHNodeRecord<NodeRefPtr<N>>     NodeRecord;
-    typedef BVHNodeRecordMB<NodeRefPtr<N>>   NodeRecordMB;
-    typedef BVHNodeRecordMB4D<NodeRefPtr<N>> NodeRecordMB4D;
+    using BaseNode_t<NodeRef,N>::children;
+    typedef BVHNodeRecord<NodeRef>     NodeRecord;
+    typedef BVHNodeRecordMB<NodeRef>   NodeRecordMB;
+    typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
         
     struct Create
     {
-      __forceinline NodeRefPtr<N> operator() (const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
       {
-        AlignedNodeMB_t<N>* node = (AlignedNodeMB_t<N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
-        return NodeRefPtr<N>::encodeNode(node);
+        AlignedNodeMB_t* node = (AlignedNodeMB_t*) alloc.malloc0(sizeof(AlignedNodeMB_t),NodeRef::byteNodeAlignment); node->clear();
+        return NodeRef::encodeNode(node);
       }
     };
     
     struct Set
     {
-      __forceinline void operator() (NodeRefPtr<N> node, size_t i, const NodeRecordMB4D& child) const {
+      __forceinline void operator() (NodeRef node, size_t i, const NodeRecordMB4D& child) const {
         node.alignedNodeMB()->set(i,child);
       }
     };
@@ -48,19 +48,19 @@ namespace embree
     struct Create2
     {
       template<typename BuildRecord>
-      __forceinline NodeRefPtr<N> operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
       {
-        AlignedNodeMB_t<N>* node = (AlignedNodeMB_t<N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
-        return NodeRefPtr<N>::encodeNode(node);
+        AlignedNodeMB_t* node = (AlignedNodeMB_t*) alloc.malloc0(sizeof(AlignedNodeMB_t),NodeRef::byteNodeAlignment); node->clear();
+        return NodeRef::encodeNode(node);
       }
     };
     
     struct Set2
     { 
       template<typename BuildRecord>
-      __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRefPtr<N> ref, NodeRecordMB* children, const size_t num) const
+      __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
       {
-        AlignedNodeMB_t<N>* node = ref.alignedNodeMB();
+        AlignedNodeMB_t* node = ref.alignedNodeMB();
         
         LBBox3fa bounds = empty;
         for (size_t i=0; i<num; i++) {
@@ -77,9 +77,9 @@ namespace embree
       __forceinline Set2TimeRange(BBox1f tbounds) : tbounds(tbounds) {}
       
       template<typename BuildRecord>
-      __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRefPtr<N> ref, NodeRecordMB* children, const size_t num) const
+      __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
       {
-        AlignedNodeMB_t<N>* node = ref.alignedNodeMB();
+        AlignedNodeMB_t* node = ref.alignedNodeMB();
         
         LBBox3fa bounds = empty;
         for (size_t i=0; i<num; i++) {
@@ -99,11 +99,11 @@ namespace embree
       upper_x = upper_y = upper_z = vfloat<N>(nan);
       lower_dx = lower_dy = lower_dz = vfloat<N>(nan); // initialize with NAN and update during refit
       upper_dx = upper_dy = upper_dz = vfloat<N>(nan);
-      BaseNode_t<N>::clear();
+      BaseNode_t<NodeRef,N>::clear();
     }
     
     /*! Sets ID of child. */
-    __forceinline void setRef(size_t i, NodeRefPtr<N> ref) {
+    __forceinline void setRef(size_t i, NodeRef ref) {
       children[i] = ref;
     }
     
@@ -136,7 +136,7 @@ namespace embree
     }
     
     /*! Sets bounding box and ID of child. */
-    __forceinline void set(size_t i, NodeRefPtr<N> ref, const BBox3fa& bounds) {
+    __forceinline void set(size_t i, NodeRef ref, const BBox3fa& bounds) {
       lower_x[i] = bounds.lower.x; lower_y[i] = bounds.lower.y; lower_z[i] = bounds.lower.z;
       upper_x[i] = bounds.upper.x; upper_y[i] = bounds.upper.y; upper_z[i] = bounds.upper.z;
       children[i] = ref;
@@ -228,26 +228,26 @@ namespace embree
       /* find right most filled node */
       ssize_t j=N;
       for (j=j-1; j>=0; j--)
-        if (a->child(j) != NodeRefPtr<N>::emptyNode)
+        if (a->child(j) != NodeRef::emptyNode)
           break;
 
       /* replace empty nodes with filled nodes */
       for (ssize_t i=0; i<j; i++) {
-        if (a->child(i) == NodeRefPtr<N>::emptyNode) {
+        if (a->child(i) == NodeRef::emptyNode) {
           a->swap(i,j);
           for (j=j-1; j>i; j--)
-            if (a->child(j) != NodeRefPtr<N>::emptyNode)
+            if (a->child(j) != NodeRef::emptyNode)
               break;
         }
       }
     }
     
     /*! Returns reference to specified child */
-    __forceinline       NodeRefPtr<N>& child(size_t i)       { assert(i<N); return children[i]; }
-    __forceinline const NodeRefPtr<N>& child(size_t i) const { assert(i<N); return children[i]; }
+    __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+    __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! stream output operator */
-    friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB_t<N>& n) 
+    friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB_t& n) 
     {
       cout << "AlignedNodeMB {" << std::endl;
       for (size_t i=0; i<N; i++) 

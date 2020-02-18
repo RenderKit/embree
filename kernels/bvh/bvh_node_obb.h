@@ -21,23 +21,23 @@
 namespace embree
 {
   /*! Node with unaligned bounds */
-  template<int N>
-    struct UnalignedNode_t : public BaseNode_t<N>
+  template<typename NodeRef, int N>
+    struct UnalignedNode_t : public BaseNode_t<NodeRef, N>
   {
-    using BaseNode_t<N>::children;
+    using BaseNode_t<NodeRef,N>::children;
     
     struct Create
     {
-      __forceinline NodeRefPtr<N> operator() (const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
       {
-        UnalignedNode_t<N>* node = (UnalignedNode_t<N>*) alloc.malloc0(sizeof(UnalignedNode_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
-        return NodeRefPtr<N>::encodeNode(node);
+        UnalignedNode_t* node = (UnalignedNode_t*) alloc.malloc0(sizeof(UnalignedNode_t),NodeRef::byteNodeAlignment); node->clear();
+        return NodeRef::encodeNode(node);
       }
     };
     
     struct Set
     {
-      __forceinline void operator() (NodeRefPtr<N> node, size_t i, NodeRefPtr<N> child, const OBBox3fa& bounds) const {
+      __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const OBBox3fa& bounds) const {
         node.unalignedNode()->setRef(i,child);
         node.unalignedNode()->setBounds(i,bounds);
       }
@@ -50,7 +50,7 @@ namespace embree
       naabb.l.vy = Vec3fa(nan);
       naabb.l.vz = Vec3fa(nan);
       naabb.p    = Vec3fa(nan);
-      BaseNode_t<N>::clear();
+      BaseNode_t<NodeRef,N>::clear();
     }
     
     /*! Sets bounding box. */
@@ -80,7 +80,7 @@ namespace embree
     }
     
     /*! Sets ID of child. */
-    __forceinline void setRef(size_t i, const NodeRefPtr<N>& ref) {
+    __forceinline void setRef(size_t i, const NodeRef& ref) {
       assert(i < N);
       children[i] = ref;
     }
@@ -95,11 +95,11 @@ namespace embree
     }
     
     /*! Returns reference to specified child */
-    __forceinline       NodeRefPtr<N>& child(size_t i)       { assert(i<N); return children[i]; }
-    __forceinline const NodeRefPtr<N>& child(size_t i) const { assert(i<N); return children[i]; }
+    __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+    __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! output operator */
-    friend std::ostream& operator<<(std::ostream& o, const UnalignedNode_t<N>& n)
+    friend std::ostream& operator<<(std::ostream& o, const UnalignedNode_t& n)
     {
       o << "UnAlignedNode { " << n.naabb << " } " << std::endl;
       return o;

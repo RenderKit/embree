@@ -22,27 +22,27 @@ namespace embree
 {
   
   /*! BVHN Base Node */
-  template<int N>
+  template<typename NodeRef, int N>
     struct BaseNode_t
   {
     /*! Clears the node. */
     __forceinline void clear()
     {
       for (size_t i=0; i<N; i++)
-        children[i] = NodeRefPtr<N>::emptyNode;
+        children[i] = NodeRef::emptyNode;
     }
     
     /*! Returns reference to specified child */
-    __forceinline       NodeRefPtr<N>& child(size_t i)       { assert(i<N); return children[i]; }
-    __forceinline const NodeRefPtr<N>& child(size_t i) const { assert(i<N); return children[i]; }
+    __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+    __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! verifies the node */
     __forceinline bool verify() const
     {
       for (size_t i=0; i<N; i++) {
-        if (child(i) == NodeRefPtr<N>::emptyNode) {
+        if (child(i) == NodeRef::emptyNode) {
           for (; i<N; i++) {
-            if (child(i) != NodeRefPtr<N>::emptyNode)
+            if (child(i) != NodeRef::emptyNode)
               return false;
           }
           break;
@@ -51,6 +51,6 @@ namespace embree
       return true;
     }
     
-    NodeRefPtr<N> children[N];    //!< Pointer to the N children (can be a node or leaf)
+    NodeRef children[N];    //!< Pointer to the N children (can be a node or leaf)
   };
 }

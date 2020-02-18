@@ -21,49 +21,49 @@
 namespace embree
 {
   /*! Aligned 4D Motion Blur Node */
-  template<int N>
-    struct AlignedNodeMB4D_t : public AlignedNodeMB_t<N>
+  template<typename NodeRef, int N>
+    struct AlignedNodeMB4D_t : public AlignedNodeMB_t<NodeRef, N>
   {
-    using BaseNode_t<N>::children;
-    using AlignedNodeMB_t<N>::set;
-    using AlignedNodeMB_t<N>::bounds;
-    using AlignedNodeMB_t<N>::lower_x;
-    using AlignedNodeMB_t<N>::lower_y;
-    using AlignedNodeMB_t<N>::lower_z;
-    using AlignedNodeMB_t<N>::upper_x;
-    using AlignedNodeMB_t<N>::upper_y;
-    using AlignedNodeMB_t<N>::upper_z;
-    using AlignedNodeMB_t<N>::lower_dx;
-    using AlignedNodeMB_t<N>::lower_dy;
-    using AlignedNodeMB_t<N>::lower_dz;
-    using AlignedNodeMB_t<N>::upper_dx;
-    using AlignedNodeMB_t<N>::upper_dy;
-    using AlignedNodeMB_t<N>::upper_dz;
+    using BaseNode_t<NodeRef,N>::children;
+    using AlignedNodeMB_t<NodeRef,N>::set;
+    using AlignedNodeMB_t<NodeRef,N>::bounds;
+    using AlignedNodeMB_t<NodeRef,N>::lower_x;
+    using AlignedNodeMB_t<NodeRef,N>::lower_y;
+    using AlignedNodeMB_t<NodeRef,N>::lower_z;
+    using AlignedNodeMB_t<NodeRef,N>::upper_x;
+    using AlignedNodeMB_t<NodeRef,N>::upper_y;
+    using AlignedNodeMB_t<NodeRef,N>::upper_z;
+    using AlignedNodeMB_t<NodeRef,N>::lower_dx;
+    using AlignedNodeMB_t<NodeRef,N>::lower_dy;
+    using AlignedNodeMB_t<NodeRef,N>::lower_dz;
+    using AlignedNodeMB_t<NodeRef,N>::upper_dx;
+    using AlignedNodeMB_t<NodeRef,N>::upper_dy;
+    using AlignedNodeMB_t<NodeRef,N>::upper_dz;
 
-    typedef BVHNodeRecord<NodeRefPtr<N>>     NodeRecord;
-    typedef BVHNodeRecordMB<NodeRefPtr<N>>   NodeRecordMB;
-    typedef BVHNodeRecordMB4D<NodeRefPtr<N>> NodeRecordMB4D;
+    typedef BVHNodeRecord<NodeRef>     NodeRecord;
+    typedef BVHNodeRecordMB<NodeRef>   NodeRecordMB;
+    typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
     
     struct Create
     {
-      __forceinline NodeRefPtr<N> operator() (const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
+      __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
       {
         if (hasTimeSplits)
         {
-          AlignedNodeMB4D_t<N>* node = (AlignedNodeMB4D_t<N>*) alloc.malloc0(sizeof(AlignedNodeMB4D_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
-          return NodeRefPtr<N>::encodeNode(node);
+          AlignedNodeMB4D_t* node = (AlignedNodeMB4D_t*) alloc.malloc0(sizeof(AlignedNodeMB4D_t),NodeRef::byteNodeAlignment); node->clear();
+          return NodeRef::encodeNode(node);
         }
         else
         {
-          AlignedNodeMB_t<N>* node = (AlignedNodeMB_t<N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
-          return NodeRefPtr<N>::encodeNode(node);
+          AlignedNodeMB_t<NodeRef,N>* node = (AlignedNodeMB_t<NodeRef,N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<NodeRef,N>),NodeRef::byteNodeAlignment); node->clear();
+          return NodeRef::encodeNode(node);
         }
       }
     };
     
     struct Set
     {
-      __forceinline void operator() (NodeRefPtr<N> ref, size_t i, const NodeRecordMB4D& child) const
+      __forceinline void operator() (NodeRef ref, size_t i, const NodeRecordMB4D& child) const
       {
         if (likely(ref.isAlignedNodeMB())) {
           ref.alignedNodeMB()->set(i, child);
@@ -77,7 +77,7 @@ namespace embree
     __forceinline void clear()  {
       lower_t = vfloat<N>(pos_inf);
       upper_t = vfloat<N>(neg_inf);
-      AlignedNodeMB_t<N>::clear();
+      AlignedNodeMB_t<NodeRef,N>::clear();
     }
     
     /*! Sets bounding box of child. */
@@ -112,9 +112,9 @@ namespace embree
     }
     
     /*! Sets bounding box and ID of child. */
-    __forceinline void set(size_t i, NodeRefPtr<N> childID, const LBBox3fa& bounds, const BBox1f& tbounds) 
+    __forceinline void set(size_t i, NodeRef childID, const LBBox3fa& bounds, const BBox1f& tbounds) 
     {
-      AlignedNodeMB_t<N>::setRef(i,childID);
+      AlignedNodeMB_t<NodeRef,N>::setRef(i,childID);
       setBounds(i, bounds, tbounds);
     }
     
@@ -124,12 +124,12 @@ namespace embree
     }
     
     /*! Returns reference to specified child */
-    __forceinline       NodeRefPtr<N>& child(size_t i)       { assert(i<N); return children[i]; }
-    __forceinline const NodeRefPtr<N>& child(size_t i) const { assert(i<N); return children[i]; }
+    __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+    __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! Returns the expected surface area when randomly sampling the time. */
     __forceinline float expectedHalfArea(size_t i) const {
-      return AlignedNodeMB_t<N>::lbounds(i).expectedHalfArea(timeRange(i));
+      return AlignedNodeMB_t<NodeRef,N>::lbounds(i).expectedHalfArea(timeRange(i));
     }
     
     /*! returns time range for specified child */
@@ -138,7 +138,7 @@ namespace embree
     }
     
     /*! stream output operator */
-    friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB4D_t<N>& n) 
+    friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB4D_t& n) 
     {
       cout << "AlignedNodeMB4D {" << std::endl;
       for (size_t i=0; i<N; i++) 

@@ -21,23 +21,23 @@
 namespace embree
 {
   /*! BVHN AlignedNode */
-  template<int N>
-    struct AlignedNode_t : public BaseNode_t<N>
+  template<typename NodeRef, int N>
+    struct AlignedNode_t : public BaseNode_t<NodeRef, N>
   {
-    using BaseNode_t<N>::children;
+    using BaseNode_t<NodeRef,N>::children;
     
     struct Create
     {
-      __forceinline NodeRefPtr<N> operator() (const FastAllocator::CachedAllocator& alloc, size_t numChildren = 0) const
+      __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc, size_t numChildren = 0) const
       {
-        AlignedNode_t<N>* node = (AlignedNode_t<N>*) alloc.malloc0(sizeof(AlignedNode_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
-        return NodeRefPtr<N>::encodeNode(node);
+        AlignedNode_t* node = (AlignedNode_t*) alloc.malloc0(sizeof(AlignedNode_t),NodeRef::byteNodeAlignment); node->clear();
+        return NodeRef::encodeNode(node);
       }
     };
     
     struct Set
     {
-      __forceinline void operator() (NodeRefPtr<N> node, size_t i, NodeRefPtr<N> child, const BBox3fa& bounds) const {
+      __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const BBox3fa& bounds) const {
         node.alignedNode()->setRef(i,child);
         node.alignedNode()->setBounds(i,bounds);
       }
@@ -46,20 +46,20 @@ namespace embree
     struct Create2
     {
       template<typename BuildRecord>
-      __forceinline NodeRefPtr<N> operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
       {
-        AlignedNode_t<N>* node = (AlignedNode_t<N>*) alloc.malloc0(sizeof(AlignedNode_t<N>), NodeRefPtr<N>::byteNodeAlignment); node->clear();
+        AlignedNode_t* node = (AlignedNode_t*) alloc.malloc0(sizeof(AlignedNode_t), NodeRef::byteNodeAlignment); node->clear();
         for (size_t i=0; i<num; i++) node->setBounds(i,children[i].bounds());
-        return NodeRefPtr<N>::encodeNode(node);
+        return NodeRef::encodeNode(node);
       }
     };
     
     struct Set2
     {
       template<typename BuildRecord>
-      __forceinline NodeRefPtr<N> operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRefPtr<N> ref, NodeRefPtr<N>* children, const size_t num) const
+      __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
       {
-        AlignedNode_t<N>* node = ref.alignedNode();
+        AlignedNode_t* node = ref.alignedNode();
         for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
         return ref;
       }
@@ -71,9 +71,9 @@ namespace embree
       : allocator(allocator), prims(prims) {}
       
       template<typename BuildRecord>
-      __forceinline NodeRefPtr<N> operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRefPtr<N> ref, NodeRefPtr<N>* children, const size_t num) const
+      __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
       {
-        AlignedNode_t<N>* node = ref.alignedNode();
+        AlignedNode_t* node = ref.alignedNode();
         for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
         
         if (unlikely(precord.alloc_barrier))
@@ -95,11 +95,11 @@ namespace embree
     __forceinline void clear() {
       lower_x = lower_y = lower_z = pos_inf;
       upper_x = upper_y = upper_z = neg_inf;
-      BaseNode_t<N>::clear();
+      BaseNode_t<NodeRef,N>::clear();
     }
     
     /*! Sets bounding box and ID of child. */
-    __forceinline void setRef(size_t i, const NodeRefPtr<N>& ref) {
+    __forceinline void setRef(size_t i, const NodeRef& ref) {
       assert(i < N);
       children[i] = ref;
     }
@@ -113,7 +113,7 @@ namespace embree
     }
     
     /*! Sets bounding box and ID of child. */
-    __forceinline void set(size_t i, const NodeRefPtr<N>& ref, const BBox3fa& bounds) {
+    __forceinline void set(size_t i, const NodeRef& ref, const BBox3fa& bounds) {
       setBounds(i,bounds);
       children[i] = ref;
     }
@@ -174,26 +174,26 @@ namespace embree
       /* find right most filled node */
       ssize_t j=N;
       for (j=j-1; j>=0; j--)
-        if (a->child(j) != NodeRefPtr<N>::emptyNode)
+        if (a->child(j) != NodeRef::emptyNode)
           break;
 
       /* replace empty nodes with filled nodes */
       for (ssize_t i=0; i<j; i++) {
-        if (a->child(i) == NodeRefPtr<N>::emptyNode) {
+        if (a->child(i) == NodeRef::emptyNode) {
           a->swap(i,j);
           for (j=j-1; j>i; j--)
-            if (a->child(j) != NodeRefPtr<N>::emptyNode)
+            if (a->child(j) != NodeRef::emptyNode)
               break;
         }
       }
     }
     
     /*! Returns reference to specified child */
-    __forceinline       NodeRefPtr<N>& child(size_t i)       { assert(i<N); return children[i]; }
-    __forceinline const NodeRefPtr<N>& child(size_t i) const { assert(i<N); return children[i]; }
+    __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
+    __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! output operator */
-    friend std::ostream& operator<<(std::ostream& o, const AlignedNode_t<N>& n)
+    friend std::ostream& operator<<(std::ostream& o, const AlignedNode_t& n)
     {
       o << "AlignedNode { " << std::endl;
       o << "  lower_x " << n.lower_x << std::endl;
@@ -219,7 +219,7 @@ namespace embree
   };
 
   template<>
-    __forceinline void AlignedNode_t<4>::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
+    __forceinline void AlignedNode_t<NodeRefPtr<4>,4>::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
     transpose(lower_x,lower_y,lower_z,vfloat4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
     transpose(upper_x,upper_y,upper_z,vfloat4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
   }

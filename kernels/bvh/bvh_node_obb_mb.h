@@ -20,23 +20,23 @@
 
 namespace embree
 {
-  template<int N>
-    struct UnalignedNodeMB_t : public BaseNode_t<N>
+  template<typename NodeRef, int N>
+    struct UnalignedNodeMB_t : public BaseNode_t<NodeRef, N>
   {
-    using BaseNode_t<N>::children;
+    using BaseNode_t<NodeRef,N>::children;
     
     struct Create
     {
-      __forceinline NodeRefPtr<N> operator() (const FastAllocator::CachedAllocator& alloc) const
+      __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
       {
-        UnalignedNodeMB_t<N>* node = (UnalignedNodeMB_t<N>*) alloc.malloc0(sizeof(UnalignedNodeMB_t<N>),NodeRefPtr<N>::byteNodeAlignment); node->clear();
-        return NodeRefPtr<N>::encodeNode(node);
+        UnalignedNodeMB_t* node = (UnalignedNodeMB_t*) alloc.malloc0(sizeof(UnalignedNodeMB_t),NodeRef::byteNodeAlignment); node->clear();
+        return NodeRef::encodeNode(node);
       }
     };
     
     struct Set
     {
-      __forceinline void operator() (NodeRefPtr<N> node, size_t i, NodeRefPtr<N> child, const LinearSpace3fa& space, const LBBox3fa& lbounds, const BBox1f dt) const {
+      __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const LinearSpace3fa& space, const LBBox3fa& lbounds, const BBox1f dt) const {
         node.unalignedNodeMB()->setRef(i,child);
         node.unalignedNodeMB()->setBounds(i,space,lbounds.global(dt));
       }
@@ -48,7 +48,7 @@ namespace embree
       space0 = one;
       //b0.lower = b0.upper = Vec3fa(nan);
       b1.lower = b1.upper = Vec3fa(nan);
-      BaseNode_t<N>::clear();
+      BaseNode_t<NodeRef,N>::clear();
     }
     
     /*! Sets space and bounding boxes. */
@@ -81,7 +81,7 @@ namespace embree
     }
     
     /*! Sets ID of child. */
-    __forceinline void setRef(size_t i, const NodeRefPtr<N>& ref) {
+    __forceinline void setRef(size_t i, const NodeRef& ref) {
       assert(i < N);
       children[i] = ref;
     }

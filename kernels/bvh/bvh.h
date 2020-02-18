@@ -59,15 +59,15 @@ namespace embree
     
     /*! forward declaration of node ref type */
     typedef NodeRefPtr<N> NodeRef;
-    typedef BaseNode_t<N> BaseNode;
-    typedef AlignedNode_t<N> AlignedNode;
-    typedef AlignedNodeMB_t<N> AlignedNodeMB;
-    typedef AlignedNodeMB4D_t<N> AlignedNodeMB4D;
-    typedef UnalignedNode_t<N> UnalignedNode;
-    typedef UnalignedNodeMB_t<N> UnalignedNodeMB;
+    typedef BaseNode_t<NodeRef,N> BaseNode;
+    typedef AlignedNode_t<NodeRef,N> AlignedNode;
+    typedef AlignedNodeMB_t<NodeRef,N> AlignedNodeMB;
+    typedef AlignedNodeMB4D_t<NodeRef,N> AlignedNodeMB4D;
+    typedef UnalignedNode_t<NodeRef,N> UnalignedNode;
+    typedef UnalignedNodeMB_t<NodeRef,N> UnalignedNodeMB;
     typedef QuantizedBaseNode_t<N> QuantizedBaseNode;
     typedef QuantizedBaseNodeMB_t<N> QuantizedBaseNodeMB;
-    typedef QuantizedNode_t<N> QuantizedNode;
+    typedef QuantizedNode_t<NodeRef,N> QuantizedNode;
     
     /*! Number of bytes the nodes and primitives are minimally aligned to.*/
     static const size_t byteAlignment = 16;
