@@ -24,4 +24,3 @@
 #include "../../common/math/affinespace.h"
 #include "../../common/sys/filename.h"
 #include "../../common/sys/string.h"
-#include "../common/tutorial/tutorial.h"
