@@ -99,26 +99,6 @@ namespace embree
     typedef BVHNodeRecordMB<NodeRef>   NodeRecordMB;
     typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
 
-    /*! compacts a node (moves empty children to the end) */
-    __forceinline static void compact(AlignedNodeMB* a)
-    {
-      /* find right most filled node */
-      ssize_t j=N;
-      for (j=j-1; j>=0; j--)
-        if (a->child(j) != emptyNode)
-          break;
-
-      /* replace empty nodes with filled nodes */
-      for (ssize_t i=0; i<j; i++) {
-        if (a->child(i) == emptyNode) {
-          a->swap(i,j);
-          for (j=j-1; j>i; j--)
-            if (a->child(j) != emptyNode)
-              break;
-        }
-      }
-    }
-
   public:
 
     /*! BVHN default constructor. */

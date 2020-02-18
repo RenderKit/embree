@@ -221,6 +221,26 @@ namespace embree
       std::swap(lower_dz[i],lower_dz[j]);
       std::swap(upper_dz[i],upper_dz[j]);
     }
+
+    /*! compacts a node (moves empty children to the end) */
+    __forceinline static void compact(AlignedNodeMB_t* a)
+    {
+      /* find right most filled node */
+      ssize_t j=N;
+      for (j=j-1; j>=0; j--)
+        if (a->child(j) != NodeRefPtr<N>::emptyNode)
+          break;
+
+      /* replace empty nodes with filled nodes */
+      for (ssize_t i=0; i<j; i++) {
+        if (a->child(i) == NodeRefPtr<N>::emptyNode) {
+          a->swap(i,j);
+          for (j=j-1; j>i; j--)
+            if (a->child(j) != NodeRefPtr<N>::emptyNode)
+              break;
+        }
+      }
+    }
     
     /*! Returns reference to specified child */
     __forceinline       NodeRefPtr<N>& child(size_t i)       { assert(i<N); return children[i]; }
