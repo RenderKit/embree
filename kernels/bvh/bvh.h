@@ -74,11 +74,11 @@ namespace embree
     static const size_t byteNodeAlignment = 4*N;
 
     /*! Empty node */
-    static const size_t emptyNode = NodeRef::tyLeaf;
+    static const size_t emptyNode = NodeRef::emptyNode;
 
     /*! Invalid node, used as marker in traversal */
-    static const size_t invalidNode = (((size_t)-1) & (~NodeRef::items_mask)) | (NodeRef::tyLeaf+0);
-    static const size_t popRay      = (((size_t)-1) & (~NodeRef::items_mask)) | (NodeRef::tyLeaf+1);
+    static const size_t invalidNode = NodeRef::invalidNode;
+    static const size_t popRay      = NodeRef::popRay;
 
     /*! Maximum depth of the BVH. */
     static const size_t maxBuildDepth = 32;
@@ -86,7 +86,7 @@ namespace embree
     static const size_t maxDepth = 2*maxBuildDepthLeaf; // 2x because of two level builder
 
     /*! Maximum number of primitive blocks in a leaf. */
-    static const size_t maxLeafBlocks = NodeRef::items_mask-NodeRef::tyLeaf;
+    static const size_t maxLeafBlocks = NodeRef::maxLeafBlocks;
 
   public:
 
