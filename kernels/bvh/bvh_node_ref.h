@@ -71,7 +71,7 @@ namespace embree
   template<int N>
     struct NodeRefPtr
   {
-    template<int NN> friend class BVHN;
+    //template<int NN> friend class BVHN;
 
     /*! Number of bytes the nodes and primitives are minimally aligned to.*/
     static const size_t byteAlignment = 16;
@@ -248,7 +248,7 @@ namespace embree
      /*! returns the wideness */
     __forceinline size_t getN() const { return N; }
     
-  private:
+  public:
     size_t ptr;
   };
 }
