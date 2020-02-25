@@ -275,7 +275,7 @@ namespace embree
       quad.vtx[3] = (Vertex_t)ring[3].vtx;
     };
     
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClarkPatchT &p)
+    friend __forceinline embree_ostream operator<<(embree_ostream o, const CatmullClarkPatchT &p)
     {
       o << "CatmullClarkPatch { " << embree_endl;
       for (size_t i=0; i<4; i++)
@@ -561,7 +561,7 @@ namespace embree
       new (&curves[1]) BezierCurve(b33,b22,b11,b00);
     }
     
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatchT &p)
+    friend __forceinline embree_ostream operator<<(embree_ostream o, const GeneralCatmullClarkPatchT &p)
     {
       o << "GeneralCatmullClarkPatch { " << embree_endl;
       for (unsigned i=0; i<p.N; i++)

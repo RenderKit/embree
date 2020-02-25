@@ -513,7 +513,7 @@ namespace embree
       return true;
     }
 
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1RingT &c)
+    friend __forceinline embree_ostream operator<<(embree_ostream o, const CatmullClark1RingT &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", " << 
 	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
@@ -822,7 +822,7 @@ namespace embree
       return cc_vtx.getLimitVertex();
     }
 
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
+    friend __forceinline embree_ostream operator<<(embree_ostream o, const GeneralCatmullClark1RingT &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", border_face = " << c.border_face << ", " << " face_valence = " << c.face_valence << 
 	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << embree_endl;

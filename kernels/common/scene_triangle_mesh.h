@@ -33,7 +33,7 @@ namespace embree
       uint32_t v[3];
 
       /*! outputs triangle indices */
-      __forceinline friend std::ostream &operator<<(embree_ostream cout, const Triangle& t) {
+      __forceinline friend embree_ostream operator<<(embree_ostream cout, const Triangle& t) {
         return cout << "Triangle { " << t.v[0] << ", " << t.v[1] << ", " << t.v[2] << " }";
       }
     };
