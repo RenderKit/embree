@@ -110,7 +110,7 @@ namespace embree
     }
 
     /*! Outputs primitive reference to a stream. */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRef& ref) {
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const PrimRef& ref) {
       return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
     }
 

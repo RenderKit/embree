@@ -145,18 +145,18 @@ namespace embree
     Vec3f start;
     Vec3f scale;
     
-    friend std::ostream& operator<<(std::ostream& o, const QuantizedBaseNode_t& n)
+    friend embree_ostream operator<<(embree_ostream o, const QuantizedBaseNode_t& n)
     {
-      o << "QuantizedBaseNode { " << std::endl;
-      o << "  start   " << n.start << std::endl;
-      o << "  scale   " << n.scale << std::endl;
-      o << "  lower_x " << vuint<N>::loadu(n.lower_x) << std::endl;
-      o << "  upper_x " << vuint<N>::loadu(n.upper_x) << std::endl;
-      o << "  lower_y " << vuint<N>::loadu(n.lower_y) << std::endl;
-      o << "  upper_y " << vuint<N>::loadu(n.upper_y) << std::endl;
-      o << "  lower_z " << vuint<N>::loadu(n.lower_z) << std::endl;
-      o << "  upper_z " << vuint<N>::loadu(n.upper_z) << std::endl;
-      o << "}" << std::endl;
+      o << "QuantizedBaseNode { " << embree_endl;
+      o << "  start   " << n.start << embree_endl;
+      o << "  scale   " << n.scale << embree_endl;
+      o << "  lower_x " << vuint<N>::loadu(n.lower_x) << embree_endl;
+      o << "  upper_x " << vuint<N>::loadu(n.upper_x) << embree_endl;
+      o << "  lower_y " << vuint<N>::loadu(n.lower_y) << embree_endl;
+      o << "  upper_y " << vuint<N>::loadu(n.upper_y) << embree_endl;
+      o << "  lower_z " << vuint<N>::loadu(n.lower_z) << embree_endl;
+      o << "  upper_z " << vuint<N>::loadu(n.upper_z) << embree_endl;
+      o << "}" << embree_endl;
       return o;
     }
     

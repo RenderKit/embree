@@ -247,16 +247,16 @@ namespace embree
     __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! stream output operator */
-    friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB_t& n) 
+    friend embree_ostream operator<<(embree_ostream cout, const AlignedNodeMB_t& n) 
     {
-      cout << "AlignedNodeMB {" << std::endl;
+      cout << "AlignedNodeMB {" << embree_endl;
       for (size_t i=0; i<N; i++) 
       {
         const BBox3fa b0 = n.bounds0(i);
         const BBox3fa b1 = n.bounds1(i);
-        cout << "  child" << i << " { " << std::endl;
-        cout << "    bounds0 = " << b0 << ", " << std::endl;
-        cout << "    bounds1 = " << b1 << ", " << std::endl;
+        cout << "  child" << i << " { " << embree_endl;
+        cout << "    bounds0 = " << b0 << ", " << embree_endl;
+        cout << "    bounds1 = " << b1 << ", " << embree_endl;
         cout << "  }";
       }
       cout << "}";

@@ -161,7 +161,7 @@ namespace embree
       }
       
       /*! stream output */
-      friend std::ostream& operator<<(std::ostream& cout, const PrimInfoT& pinfo) {
+      friend embree_ostream operator<<(embree_ostream cout, const PrimInfoT& pinfo) {
 	return cout << "PrimInfo { begin = " << pinfo.begin << ", end = " << pinfo.end << ", geomBounds = " << pinfo.geomBounds << ", centBounds = " << pinfo.centBounds << "}";
       }
       
@@ -253,7 +253,7 @@ namespace embree
       }
       
       /*! stream output */
-      friend std::ostream& operator<<(std::ostream& cout, const PrimInfoMBT& pinfo) 
+      friend embree_ostream operator<<(embree_ostream cout, const PrimInfoMBT& pinfo) 
       {
 	return cout << "PrimInfo { " << 
           "object_range = " << pinfo.object_range << 

@@ -446,11 +446,11 @@ namespace embree
         }
       }
 
-      friend __forceinline std::ostream& operator<<(std::ostream& o, const BSplinePatchT& p)
+      friend __forceinline embree_ostream operator<<(embree_ostream o, const BSplinePatchT& p)
       {
         for (size_t y=0; y<4; y++)
           for (size_t x=0; x<4; x++)
-            o << "[" << y << "][" << x << "] " << p.v[y][x] << std::endl;
+            o << "[" << y << "][" << x << "] " << p.v[y][x] << embree_endl;
         return o;
       } 
 

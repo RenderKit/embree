@@ -108,7 +108,7 @@ namespace embree
       
       bool hasRoot() const;
       
-      friend std::ostream& operator<<(std::ostream& cout, const LinearBezierCurve& a) {
+      friend embree_ostream operator<<(embree_ostream cout, const LinearBezierCurve& a) {
         return cout << "LinearBezierCurve (" << a.v0 << ", " << a.v1 << ")";
       }
     };
@@ -145,7 +145,7 @@ namespace embree
         return merge(BBox<V>(v0),BBox<V>(v1),BBox<V>(v2));
       }
       
-      friend std::ostream& operator<<(std::ostream& cout, const QuadraticBezierCurve& a) {
+      friend embree_ostream operator<<(embree_ostream cout, const QuadraticBezierCurve& a) {
         return cout << "QuadraticBezierCurve ( (" << a.u.lower << ", " << a.u.upper << "), " << a.v0 << ", " << a.v1 << ", " << a.v2 << ")";
       }
     };
@@ -618,7 +618,7 @@ namespace embree
         }
       }
       
-      friend inline std::ostream& operator<<(std::ostream& cout, const CubicBezierCurve& curve) {
+      friend inline embree_ostream operator<<(embree_ostream cout, const CubicBezierCurve& curve) {
         return cout << "CubicBezierCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };

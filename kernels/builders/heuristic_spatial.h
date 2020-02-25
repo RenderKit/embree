@@ -113,7 +113,7 @@ namespace embree
         __forceinline float splitSAH() const { return sah; }
         
         /*! stream output */
-        friend std::ostream& operator<<(std::ostream& cout, const SpatialBinSplit& split) {
+        friend embree_ostream operator<<(embree_ostream cout, const SpatialBinSplit& split) {
           return cout << "SpatialBinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << ", left = " << split.left << ", right = " << split.right << ", factor = " << split.factor << "}";
         }
         

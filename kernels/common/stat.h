@@ -118,7 +118,7 @@ namespace embree
       instance.cntrs.clear();
     }
     
-    static void print(std::ostream& cout);
+    static void print(embree_ostream cout);
 
   private: 
     Counters cntrs;

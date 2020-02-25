@@ -277,10 +277,10 @@ namespace embree
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClarkPatchT &p)
     {
-      o << "CatmullClarkPatch { " << std::endl;
+      o << "CatmullClarkPatch { " << embree_endl;
       for (size_t i=0; i<4; i++)
-	o << "ring" << i << ": " << p.ring[i] << std::endl;
-      o << "}" << std::endl;
+	o << "ring" << i << ": " << p.ring[i] << embree_endl;
+      o << "}" << embree_endl;
       return o;
     }
     };
@@ -563,10 +563,10 @@ namespace embree
     
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatchT &p)
     {
-      o << "GeneralCatmullClarkPatch { " << std::endl;
+      o << "GeneralCatmullClarkPatch { " << embree_endl;
       for (unsigned i=0; i<p.N; i++)
-	o << "ring" << i << ": " << p.ring[i] << std::endl;
-      o << "}" << std::endl;
+	o << "ring" << i << ": " << p.ring[i] << embree_endl;
+      o << "}" << embree_endl;
       return o;
     }
     };

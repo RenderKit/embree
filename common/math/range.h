@@ -87,7 +87,7 @@ namespace embree
         return r0.size() < r1.size();
       }
 	
-      friend std::ostream& operator<<(std::ostream& cout, const range& r) {
+      friend embree_ostream operator<<(embree_ostream cout, const range& r) {
         return cout << "range [" << r.begin() << ", " << r.end() << "]";
       }
       
@@ -141,7 +141,7 @@ namespace embree
         _ext_end += plus;
       }
 
-      friend std::ostream& operator<<(std::ostream& cout, const extended_range& r) {
+      friend embree_ostream operator<<(embree_ostream cout, const extended_range& r) {
         return cout << "extended_range [" << r.begin() << ", " << r.end() <<  " (" << r.ext_end() << ")]";
       }
       

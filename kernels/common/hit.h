@@ -84,20 +84,20 @@ namespace embree
 
   /* Outputs hit to stream */
   template<int K>
-  inline std::ostream& operator<<(std::ostream& cout, const HitK<K>& ray)
+  inline embree_ostream operator<<(embree_ostream cout, const HitK<K>& ray)
   {
-    cout << "{ " << std::endl
-         << "  Ng = " << ray.Ng <<  std::endl
-         << "  u = " << ray.u <<  std::endl
-         << "  v = " << ray.v << std::endl
-         << "  primID = " << ray.primID <<  std::endl
-         << "  geomID = " << ray.geomID << std::endl
+    cout << "{ " << embree_endl
+         << "  Ng = " << ray.Ng <<  embree_endl
+         << "  u = " << ray.u <<  embree_endl
+         << "  v = " << ray.v << embree_endl
+         << "  primID = " << ray.primID <<  embree_endl
+         << "  geomID = " << ray.geomID << embree_endl
          << "  instID =";
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     {
       cout << " " << ray.instID[l];
     }
-    cout << std::endl;
+    cout << embree_endl;
     return cout << "}";
   }
 

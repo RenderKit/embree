@@ -119,7 +119,7 @@ namespace embree
         if (shouldhit) failed |= std::isinf(t0) ? t0 != t.lower : abs(t0-t.lower) > eps;
         if (shouldhit) failed |= std::isinf(t1) ? t1 != t.upper : abs(t1-t.upper) > eps;
         if (!failed) return true;
-        std::cout << "Cylinder test " << id << " failed: cylinder = " << cylinder << ", ray = " << ray << ", hit = " << hit << ", t = " << t << std::endl; 
+        embree_cout << "Cylinder test " << id << " failed: cylinder = " << cylinder << ", ray = " << ray << ", hit = " << hit << ", t = " << t << embree_endl; 
         return false;
       }
 
@@ -139,7 +139,7 @@ namespace embree
       }
 
       /*! output operator */
-      friend __forceinline std::ostream& operator<<(std::ostream& cout, const Cylinder& c) {
+      friend __forceinline embree_ostream operator<<(embree_ostream cout, const Cylinder& c) {
         return cout << "Cylinder { p0 = " << c.p0 << ", p1 = " << c.p1 << ", r = " << sqrtf(c.rr) << "}";
       }
     };

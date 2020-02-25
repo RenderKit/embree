@@ -264,7 +264,7 @@ namespace embree
     }
 
     /*! output operator */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PointMi& line)
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const PointMi& line)
     {
       return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomID() << ", " << line.primID() << "}";
     }

@@ -299,7 +299,6 @@ namespace embree
               for (size_t i=r.begin();i<r.end();i++)
               {
                 const unsigned int splits = prims0[i].geomID() >> (32-RESERVED_NUM_SPATIAL_SPLITS_GEOMID_BITS);
-                //std::cout << "i " << i << " splits " << splits << std::endl;
 
                 if (likely(splits <= 1)) continue; /* todo: does this ever happen ? */
 

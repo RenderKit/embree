@@ -138,17 +138,17 @@ namespace embree
     }
     
     /*! stream output operator */
-    friend std::ostream& operator<<(std::ostream& cout, const AlignedNodeMB4D_t& n) 
+    friend embree_ostream operator<<(embree_ostream cout, const AlignedNodeMB4D_t& n) 
     {
-      cout << "AlignedNodeMB4D {" << std::endl;
+      cout << "AlignedNodeMB4D {" << embree_endl;
       for (size_t i=0; i<N; i++) 
       {
         const BBox3fa b0 = n.bounds0(i);
         const BBox3fa b1 = n.bounds1(i);
-        cout << "  child" << i << " { " << std::endl;
-        cout << "    bounds0 = " << lerp(b0,b1,n.lower_t[i]) << ", " << std::endl;
-        cout << "    bounds1 = " << lerp(b0,b1,n.upper_t[i]) << ", " << std::endl;
-        cout << "    time_bounds = " << n.lower_t[i] << ", " << n.upper_t[i] << std::endl;
+        cout << "  child" << i << " { " << embree_endl;
+        cout << "    bounds0 = " << lerp(b0,b1,n.lower_t[i]) << ", " << embree_endl;
+        cout << "    bounds1 = " << lerp(b0,b1,n.upper_t[i]) << ", " << embree_endl;
+        cout << "    time_bounds = " << n.lower_t[i] << ", " << n.upper_t[i] << embree_endl;
         cout << "  }";
       }
       cout << "}";

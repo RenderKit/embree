@@ -193,19 +193,19 @@ namespace embree
     __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! output operator */
-    friend std::ostream& operator<<(std::ostream& o, const AlignedNode_t& n)
+    friend embree_ostream operator<<(embree_ostream o, const AlignedNode_t& n)
     {
-      o << "AlignedNode { " << std::endl;
-      o << "  lower_x " << n.lower_x << std::endl;
-      o << "  upper_x " << n.upper_x << std::endl;
-      o << "  lower_y " << n.lower_y << std::endl;
-      o << "  upper_y " << n.upper_y << std::endl;
-      o << "  lower_z " << n.lower_z << std::endl;
-      o << "  upper_z " << n.upper_z << std::endl;
+      o << "AlignedNode { " << embree_endl;
+      o << "  lower_x " << n.lower_x << embree_endl;
+      o << "  upper_x " << n.upper_x << embree_endl;
+      o << "  lower_y " << n.lower_y << embree_endl;
+      o << "  upper_y " << n.upper_y << embree_endl;
+      o << "  lower_z " << n.lower_z << embree_endl;
+      o << "  upper_z " << n.upper_z << embree_endl;
       o << "  children = ";
       for (size_t i=0; i<N; i++) o << n.children[i] << " ";
-      o << std::endl;
-      o << "}" << std::endl;
+      o << embree_endl;
+      o << "}" << embree_endl;
       return o;
     }
     

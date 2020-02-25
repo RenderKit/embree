@@ -405,43 +405,43 @@ namespace embree
 
   /* Outputs ray to stream */
   template<int K>
-  inline std::ostream& operator <<(std::ostream& cout, const RayK<K>& ray)
+  inline embree_ostream operator <<(embree_ostream cout, const RayK<K>& ray)
   {
-    return cout << "{ " << std::endl
-                << "  org = " << ray.org << std::endl
-                << "  dir = " << ray.dir << std::endl
-                << "  near = " << ray.tnear() << std::endl
-                << "  far = " << ray.tfar << std::endl
-                << "  time = " << ray.time() << std::endl
-                << "  mask = " << ray.mask << std::endl
-                << "  id = " << ray.id << std::endl
-                << "  flags = " << ray.flags << std::endl
+    return cout << "{ " << embree_endl
+                << "  org = " << ray.org << embree_endl
+                << "  dir = " << ray.dir << embree_endl
+                << "  near = " << ray.tnear() << embree_endl
+                << "  far = " << ray.tfar << embree_endl
+                << "  time = " << ray.time() << embree_endl
+                << "  mask = " << ray.mask << embree_endl
+                << "  id = " << ray.id << embree_endl
+                << "  flags = " << ray.flags << embree_endl
                 << "}";
   }
 
   template<int K>
-  inline std::ostream& operator <<(std::ostream& cout, const RayHitK<K>& ray)
+  inline embree_ostream operator <<(embree_ostream cout, const RayHitK<K>& ray)
   {
-    cout << "{ " << std::endl
-         << "  org = " << ray.org << std::endl
-         << "  dir = " << ray.dir << std::endl
-         << "  near = " << ray.tnear() << std::endl
-         << "  far = " << ray.tfar << std::endl
-         << "  time = " << ray.time() << std::endl
-         << "  mask = " << ray.mask << std::endl
-         << "  id = " << ray.id << std::endl
-         << "  flags = " << ray.flags << std::endl
+    cout << "{ " << embree_endl
+         << "  org = " << ray.org << embree_endl
+         << "  dir = " << ray.dir << embree_endl
+         << "  near = " << ray.tnear() << embree_endl
+         << "  far = " << ray.tfar << embree_endl
+         << "  time = " << ray.time() << embree_endl
+         << "  mask = " << ray.mask << embree_endl
+         << "  id = " << ray.id << embree_endl
+         << "  flags = " << ray.flags << embree_endl
          << "  Ng = " << ray.Ng
-         << "  u = " << ray.u <<  std::endl
-         << "  v = " << ray.v << std::endl
-         << "  primID = " << ray.primID <<  std::endl
-         << "  geomID = " << ray.geomID << std::endl
+         << "  u = " << ray.u <<  embree_endl
+         << "  v = " << ray.v << embree_endl
+         << "  primID = " << ray.primID <<  embree_endl
+         << "  geomID = " << ray.geomID << embree_endl
          << "  instID =";
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     {
       cout << " " << ray.instID[l];
     }
-    cout << std::endl;
+    cout << embree_endl;
     return cout << "}";
   }
 

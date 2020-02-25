@@ -84,7 +84,7 @@ namespace embree
       __forceinline friend const Interval intersect( const Interval& a, const Interval& b, const Interval& c ) { return intersect(a,intersect(b,c)); }
       __forceinline friend const Interval intersect( const Interval& a, const Interval& b, const Interval& c, const Interval& d ) { return intersect(intersect(a,b),intersect(c,d)); }       
       
-      friend std::ostream& operator<<(std::ostream& cout, const Interval& a) {
+      friend embree_ostream operator<<(embree_ostream cout, const Interval& a) {
         return cout << "[" << a.lower << ", " << a.upper << "]";
       }
       

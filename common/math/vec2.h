@@ -203,7 +203,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<typename T> inline std::ostream& operator<<(std::ostream& cout, const Vec2<T>& a) {
+  template<typename T> inline embree_ostream operator<<(embree_ostream cout, const Vec2<T>& a) {
     return cout << "(" << a.x << ", " << a.y << ")";
   }
 

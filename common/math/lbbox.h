@@ -238,7 +238,7 @@ namespace embree
     template<typename TT> friend __forceinline bool operator!=( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
 
     /*! output operator */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const LBBox& box) {
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const LBBox& box) {
       return cout << "LBBox { " << box.bounds0 << "; " << box.bounds1 << " }";
     }
 

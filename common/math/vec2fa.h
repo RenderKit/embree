@@ -302,7 +302,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  inline std::ostream& operator<<(std::ostream& cout, const Vec2fa& a) {
+  inline embree_ostream operator<<(embree_ostream cout, const Vec2fa& a) {
     return cout << "(" << a.x << ", " << a.y << ")";
   }
 

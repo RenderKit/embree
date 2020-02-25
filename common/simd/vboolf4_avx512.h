@@ -145,7 +145,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  inline std::ostream& operator <<(std::ostream& cout, const vboolf4& a)
+  inline embree_ostream operator <<(embree_ostream cout, const vboolf4& a)
   {
     cout << "<";
     for (size_t i=0; i<4; i++) {

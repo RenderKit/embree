@@ -146,7 +146,7 @@ namespace embree
     }
 
     /*! Outputs primitive reference to a stream. */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRefMB& ref) {
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const PrimRefMB& ref) {
       return cout << "{ bounds = " << ref.bounds() << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << ", active_segments = " << ref.size() << ",  total_segments = " << ref.totalTimeSegments() << " }";
     }
 
@@ -260,7 +260,7 @@ namespace embree
     }
 
     /*! Outputs primitive reference to a stream. */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRefMB& ref) {
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const PrimRefMB& ref) {
       return cout << "{ bounds = " << ref.bounds() << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << ", active_segments = " << ref.size() << ",  total_segments = " << ref.totalTimeSegments() << " }";
     }
 

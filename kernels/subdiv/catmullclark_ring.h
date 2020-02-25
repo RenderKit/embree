@@ -517,12 +517,12 @@ namespace embree
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", " << 
 	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
-	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", eval_start_index: " << c.eval_start_index << ", ring: " << std::endl;
+	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", eval_start_index: " << c.eval_start_index << ", ring: " << embree_endl;
       
       for (unsigned int i=0; i<min(c.edge_valence,(unsigned int)MAX_RING_FACE_VALENCE); i++) {
         o << i << " -> " << c.ring[i];
         if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
-        o << std::endl;
+        o << embree_endl;
       }
       return o;
     } 
@@ -825,12 +825,12 @@ namespace embree
     friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", border_face = " << c.border_face << ", " << " face_valence = " << c.face_valence << 
-	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
+	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << embree_endl;
       for (size_t v=0, f=0; f<c.face_valence; v+=c.faces[f++].size) {
         for (size_t i=v; i<v+c.faces[f].size; i++) {
           o << i << " -> " << c.ring[i];
           if (i == v) o << " crease = " << c.faces[f].crease_weight;
-          o << std::endl;
+          o << embree_endl;
         }
       }
       return o;

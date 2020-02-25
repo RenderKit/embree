@@ -151,7 +151,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<typename T> static std::ostream& operator<<(std::ostream& cout, const LinearSpace2<T>& m) {
+  template<typename T> static embree_ostream operator<<(embree_ostream cout, const LinearSpace2<T>& m) {
     return cout << "{ vx = " << m.vx << ", vy = " << m.vy << "}";
   }
 

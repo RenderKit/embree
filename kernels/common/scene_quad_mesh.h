@@ -33,7 +33,7 @@ namespace embree
       uint32_t v[4];
 
       /*! outputs triangle indices */
-      __forceinline friend std::ostream &operator<<(std::ostream& cout, const Quad& q) {
+      __forceinline friend std::ostream &operator<<(embree_ostream cout, const Quad& q) {
         return cout << "Quad {" << q.v[0] << ", " << q.v[1] << ", " << q.v[2] << ", " << q.v[3] << " }";
       }
     };

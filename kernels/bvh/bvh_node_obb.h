@@ -99,9 +99,9 @@ namespace embree
     __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! output operator */
-    friend std::ostream& operator<<(std::ostream& o, const UnalignedNode_t& n)
+    friend embree_ostream operator<<(embree_ostream o, const UnalignedNode_t& n)
     {
-      o << "UnAlignedNode { " << n.naabb << " } " << std::endl;
+      o << "UnAlignedNode { " << n.naabb << " } " << embree_endl;
       return o;
     }
     

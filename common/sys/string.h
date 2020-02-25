@@ -26,7 +26,7 @@ namespace embree
   class IOStreamStateRestorer 
   {
   public:
-    IOStreamStateRestorer(std::ostream& iostream)
+    IOStreamStateRestorer(embree_ostream iostream)
       : iostream(iostream), flags(iostream.flags()), precision(iostream.precision()) {
     }
 
@@ -36,7 +36,7 @@ namespace embree
     }
     
   private:
-    std::ostream& iostream;
+    embree_ostream iostream;
     std::ios::fmtflags flags;
     std::streamsize precision;
   };

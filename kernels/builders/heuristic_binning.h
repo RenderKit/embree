@@ -115,7 +115,7 @@ namespace embree
         }
         
         /*! stream output */
-        friend std::ostream& operator<<(std::ostream& cout, const BinMapping& mapping) {
+        friend embree_ostream operator<<(embree_ostream cout, const BinMapping& mapping) {
           return cout << "BinMapping { num = " << mapping.num << ", ofs = " << mapping.ofs << ", scale = " << mapping.scale << "}";
         }
         
@@ -155,7 +155,7 @@ namespace embree
         __forceinline float splitSAH() const { return sah; }
         
         /*! stream output */
-        friend std::ostream& operator<<(std::ostream& cout, const BinSplit& split) {
+        friend embree_ostream operator<<(embree_ostream cout, const BinSplit& split) {
           return cout << "BinSplit { sah = " << split.sah << ", dim = " << split.dim << ", pos = " << split.pos << "}";
         }
         

@@ -270,7 +270,7 @@ namespace embree
       return linearBounds(scene, time_range);
     }
 
-    friend std::ostream& operator<<(std::ostream& cout, const QuadMi& quad) {
+    friend embree_ostream operator<<(embree_ostream cout, const QuadMi& quad) {
       return cout << "QuadMi<" << M << ">( v0 = " << quad.v0 << ", v1 = " << quad.v1 << ", v2 = " << quad.v2 << ", v3 = " << quad.v3 << ", geomID = " << quad.geomIDs << ", primID = " << quad.primIDs << " )";
     }
 

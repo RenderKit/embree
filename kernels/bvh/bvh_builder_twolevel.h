@@ -68,7 +68,7 @@ namespace embree
           return a.bounds_area < b.bounds_area;
         }
 
-        friend __forceinline std::ostream& operator<<(std::ostream& cout, const BuildRef& ref) {
+        friend __forceinline embree_ostream operator<<(embree_ostream cout, const BuildRef& ref) {
           return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID() << ", numPrimitives = " << ref.numPrimitives() << ", bounds_area = " << ref.bounds_area << " }";
         }
 

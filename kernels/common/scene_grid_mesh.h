@@ -47,7 +47,7 @@ namespace embree
       }
 
       /*! outputs grid structure */
-      __forceinline friend std::ostream &operator<<(std::ostream& cout, const Grid& t) {
+      __forceinline friend std::ostream &operator<<(embree_ostream cout, const Grid& t) {
         return cout << "Grid { startVtxID " << t.startVtxID << ", lineVtxOffset " << t.lineVtxOffset << ", resX " << t.resX << ", resY " << t.resY << " }";
       }
     };

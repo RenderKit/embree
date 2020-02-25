@@ -152,7 +152,7 @@ namespace embree
         if (shouldhit) failed |= std::isinf(t0) ? t0 != t.lower : (t0 == -1E6) ? t.lower > -1E6f : abs(t0-t.lower) > eps;
         if (shouldhit) failed |= std::isinf(t1) ? t1 != t.upper : (t1 == +1E6) ? t.upper < +1E6f : abs(t1-t.upper) > eps;
         if (!failed) return true;
-        std::cout << "Cone test " << id << " failed: cone = " << cone << ", ray = " << ray << ", hit = " << hit << ", t = " << t << std::endl; 
+        embree_cout << "Cone test " << id << " failed: cone = " << cone << ", ray = " << ray << ", hit = " << hit << ", t = " << t << embree_endl; 
         return false;
       }
 
@@ -186,7 +186,7 @@ namespace embree
       }
 
       /*! output operator */
-      friend __forceinline std::ostream& operator<<(std::ostream& cout, const Cone& c) {
+      friend __forceinline embree_ostream operator<<(embree_ostream cout, const Cone& c) {
         return cout << "Cone { p0 = " << c.p0 << ", r0 = " << c.r0 << ", p1 = " << c.p1 << ", r1 = " << c.r1 << "}";
       }
     };

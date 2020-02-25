@@ -290,7 +290,7 @@ namespace embree
         }
       }
       
-      friend inline std::ostream& operator<<(std::ostream& cout, const CatmullRomCurveT& curve) {
+      friend inline embree_ostream operator<<(embree_ostream cout, const CatmullRomCurveT& curve) {
         return cout << "CatmullRomCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };

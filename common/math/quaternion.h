@@ -218,7 +218,7 @@ namespace embree
   /// Output Operators
   //////////////////////////////////////////////////////////////////////////////
 
-  template<typename T> static std::ostream& operator<<(std::ostream& cout, const QuaternionT<T>& q) {
+  template<typename T> static embree_ostream operator<<(embree_ostream cout, const QuaternionT<T>& q) {
     return cout << "{ r = " << q.r << ", i = " << q.i << ", j = " << q.j << ", k = " << q.k << " }";
   }
 

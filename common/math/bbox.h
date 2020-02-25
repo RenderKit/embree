@@ -207,7 +207,7 @@ namespace embree
   }
 
   /*! output operator */
-  template<typename T> __forceinline std::ostream& operator<<(std::ostream& cout, const BBox<T>& box) {
+  template<typename T> __forceinline embree_ostream operator<<(embree_ostream cout, const BBox<T>& box) {
     return cout << "[" << box.lower << "; " << box.upper << "]";
   }
 

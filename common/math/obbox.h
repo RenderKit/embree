@@ -38,8 +38,8 @@ namespace embree
     __forceinline OBBox (const LinearSpace3<T>& space, const BBox<T>& bounds) 
       : space(space), bounds(bounds) {}
     
-    friend std::ostream& operator<<(std::ostream& cout, const OBBox& p) {
-      return std::cout << "{ space = " << p.space << ", bounds = " << p.bounds << "}";
+    friend embree_ostream operator<<(embree_ostream cout, const OBBox& p) {
+      return cout << "{ space = " << p.space << ", bounds = " << p.bounds << "}";
     }
     
   public:

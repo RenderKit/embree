@@ -434,7 +434,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  inline std::ostream& operator <<(std::ostream& cout, const vuint4& a) {
+  inline embree_ostream operator <<(embree_ostream cout, const vuint4& a) {
     return cout << "<" << a[0] << ", " << a[1] << ", " << a[2] << ", " << a[3] << ">";
   }
 }

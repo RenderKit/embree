@@ -854,15 +854,15 @@ namespace embree
       return bounds;
     }
     
-    friend std::ostream& operator<<(std::ostream& o, const GregoryPatchT& p)
+    friend embree_ostream operator<<(embree_ostream o, const GregoryPatchT& p)
     {
       for (size_t y=0; y<4; y++)
 	for (size_t x=0; x<4; x++)
-	  o << "v[" << y << "][" << x << "] " << p.v[y][x] << std::endl;
+	  o << "v[" << y << "][" << x << "] " << p.v[y][x] << embree_endl;
       
       for (size_t y=0; y<2; y++)
 	for (size_t x=0; x<2; x++)
-	  o << "f[" << y << "][" << x << "] " << p.f[y][x] << std::endl;
+	  o << "f[" << y << "][" << x << "] " << p.f[y][x] << embree_endl;
       return o;
     } 
   };

@@ -149,7 +149,7 @@ namespace embree
   // Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<typename L> static std::ostream& operator<<(std::ostream& cout, const AffineSpaceT<L>& m) {
+  template<typename L> static embree_ostream operator<<(embree_ostream cout, const AffineSpaceT<L>& m) {
     return cout << "{ l = " << m.l << ", p = " << m.p << " }";
   }
 

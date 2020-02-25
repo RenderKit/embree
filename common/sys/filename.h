@@ -86,7 +86,7 @@ namespace embree
     friend bool operator!=(const FileName& a, const FileName& b);
 
     /*! output operator */
-    friend std::ostream& operator<<(std::ostream& cout, const FileName& filename);
+    friend embree_ostream operator<<(embree_ostream cout, const FileName& filename);
    
   private:
     std::string filename;

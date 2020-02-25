@@ -137,12 +137,12 @@ namespace embree
 
   /* Outputs point query to stream */
   template<int K>
-  inline std::ostream& operator <<(std::ostream& cout, const PointQueryK<K>& query)
+  inline embree_ostream operator <<(embree_ostream cout, const PointQueryK<K>& query)
   {
-    cout << "{ " << std::endl
-        << "  p = "    << query.p      << std::endl
-        << "  r = "    << query.radius << std::endl
-        << "  time = " << query.time   << std::endl
+    cout << "{ " << embree_endl
+        << "  p = "    << query.p      << embree_endl
+        << "  r = "    << query.radius << embree_endl
+        << "  time = " << query.time   << embree_endl
         << "}";
     return cout;
   }

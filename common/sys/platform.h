@@ -173,11 +173,11 @@
 /* debug printing macros */
 #define STRING(x) #x
 #define TOSTRING(x) STRING(x)
-#define PING std::cout << __FILE__ << " (" << __LINE__ << "): " << __FUNCTION__ << std::endl
-#define PRINT(x) std::cout << STRING(x) << " = " << (x) << std::endl
-#define PRINT2(x,y) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << std::endl
-#define PRINT3(x,y,z) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << std::endl
-#define PRINT4(x,y,z,w) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << std::endl
+#define PING embree_cout << __FILE__ << " (" << __LINE__ << "): " << __FUNCTION__ << embree_endl
+#define PRINT(x) embree_cout << STRING(x) << " = " << (x) << embree_endl
+#define PRINT2(x,y) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << embree_endl
+#define PRINT3(x,y,z) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << embree_endl
+#define PRINT4(x,y,z,w) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << embree_endl
 
 #if defined(DEBUG) // only report file and line in debug mode
   #define THROW_RUNTIME_ERROR(str) \
@@ -188,7 +188,7 @@
 #endif
 
 #define FATAL(x)   THROW_RUNTIME_ERROR(x)
-#define WARNING(x) { std::cerr << "Warning: " << x << std::endl << std::flush; }
+#define WARNING(x) { std::cerr << "Warning: " << x << embree_endl << std::flush; }
 
 #define NOT_IMPLEMENTED FATAL(std::string(__FUNCTION__) + " not implemented")
 
@@ -317,6 +317,12 @@ __forceinline std::string toString(long long value) {
 #define ENABLE_DEPRECATED_WARNING  __pragma(warning (enable : 4996)) // warning: function was declared deprecated
 #endif
 
+/* embree output stream */
+#define embree_ostream std::ostream&
+#define embree_cout std::cout
+#define embree_cout_uniform std::cout
+#define embree_endl std::endl
+  
 ////////////////////////////////////////////////////////////////////////////////
 /// Some macros for static profiling
 ////////////////////////////////////////////////////////////////////////////////

@@ -244,12 +244,12 @@ namespace embree
           return (R.begin()-L.begin())+(R.end()-L.end());
         }
         
-        friend std::ostream& operator<<(std::ostream& cout, const TensorLinearCubicBezierSurface& a)
+        friend embree_ostream operator<<(embree_ostream cout, const TensorLinearCubicBezierSurface& a)
         {
-          return cout << "TensorLinearCubicBezierSurface" << std::endl
-                      << "{" << std::endl
-                      << "  L = " << a.L << ", " << std::endl
-                      << "  R = " << a.R << std::endl
+          return cout << "TensorLinearCubicBezierSurface" << embree_endl
+                      << "{" << embree_endl
+                      << "  L = " << a.L << ", " << embree_endl
+                      << "  R = " << a.R << embree_endl
                       << "}";
         }
 
@@ -399,12 +399,12 @@ namespace embree
         return (R.begin()-L.begin())+(R.end()-L.end());
       }
       
-      friend std::ostream& operator<<(std::ostream& cout, const TensorLinearCubicBezierSurface& a)
+      friend embree_ostream operator<<(embree_ostream cout, const TensorLinearCubicBezierSurface& a)
       {
-        return cout << "TensorLinearCubicBezierSurface" << std::endl
-                    << "{" << std::endl
-                    << "  L = " << a.getL() << ", " << std::endl
-                    << "  R = " << a.getR() << std::endl
+        return cout << "TensorLinearCubicBezierSurface" << embree_endl
+                    << "{" << embree_endl
+                    << "  L = " << a.getL() << ", " << embree_endl
+                    << "  R = " << a.getR() << embree_endl
                     << "}";
       }
     };
