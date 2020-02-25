@@ -84,7 +84,7 @@ namespace embree
         /* calculates u and Ng for near hit */
         {
           u0_o = madd(t0,dOz,Oz)*rl;
-          const Vec3fa Pr = t_o.lower*dir;
+          const Vec3fa Pr = t0*dir;
           const Vec3fa Pl = madd(u0_o,p1-p0,p0);
           Ng0_o = Pr-Pl;
         }
@@ -92,7 +92,7 @@ namespace embree
         /* calculates u and Ng for far hit */
         {
           u1_o = madd(t1,dOz,Oz)*rl;
-          const Vec3fa Pr = t_o.lower*dir;
+          const Vec3fa Pr = t1*dir;
           const Vec3fa Pl = madd(u1_o,p1-p0,p0);
           Ng1_o = Pr-Pl;
         }
