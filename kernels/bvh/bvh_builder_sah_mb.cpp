@@ -215,8 +215,8 @@ namespace embree
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                             RecalculatePrimRef<Mesh>(scene),
                                             typename BVH::CreateAlloc(bvh),
-                                            typename BVH::AlignedNodeMB4D::Create(),
-                                            typename BVH::AlignedNodeMB4D::Set(),
+                                            typename BVH::AlignedNodeMB4D::Create2(),
+                                            typename BVH::AlignedNodeMB4D::Set2(),
                                             CreateMSMBlurLeaf<N,Mesh,Primitive>(bvh),
                                             bvh->scene->progressInterface,
                                             settings);
@@ -652,8 +652,8 @@ namespace embree
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                             recalculatePrimRef,
                                             typename BVH::CreateAlloc(bvh),
-                                            typename BVH::AlignedNodeMB4D::Create(),
-                                            typename BVH::AlignedNodeMB4D::Set(),
+                                            typename BVH::AlignedNodeMB4D::Create2(),
+                                            typename BVH::AlignedNodeMB4D::Set2(),
                                             CreateMSMBlurLeafGrid<N>(scene,bvh,sgrids.data()),
                                             bvh->scene->progressInterface,
                                             settings);
