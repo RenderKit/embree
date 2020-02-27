@@ -503,15 +503,16 @@ namespace embree
             }
 
             /* create node */
-            auto node = createNode(alloc, hasTimeSplits);
+            auto node = createNode(children.children.data(),children.numChildren,alloc,hasTimeSplits);
 
             /* recurse into each child and perform reduction */
             LBBox3fa gbounds = empty;
             for (size_t i=0; i<children.size(); i++) {
               values[i] = createLargeLeaf(children[i],alloc);
               gbounds.extend(values[i].lbounds);
-              setNode(node,i,values[i]);
             }
+
+            setNode(current,children.children.data(),node,values,children.numChildren);
 
             /* calculate geometry bounds of this node */
             if (hasTimeSplits)
@@ -592,7 +593,7 @@ namespace embree
             //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
 
             /*! create an inner node */
-            auto node = createNode(alloc, hasTimeSplits);
+            auto node = createNode(children.children.data(), children.numChildren, alloc, hasTimeSplits);
             LBBox3fa gbounds = empty;
 
             /* spawn tasks */
@@ -602,7 +603,6 @@ namespace embree
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     values[i] = recurse(children[i],nullptr,true);
-                    setNode(node,i,values[i]);
                     _mm_mfence(); // to allow non-temporal stores during build
                   }
                 });
@@ -618,9 +618,10 @@ namespace embree
               for (ssize_t i=children.size()-1; i>=0; i--) {
                 values[i] = recurse(children[i],alloc,false);
                 gbounds.extend(values[i].lbounds);
-                setNode(node,i,values[i]);
               }
             }
+
+            setNode(current,children.children.data(),node,values,children.numChildren);
 
             /* calculate geometry bounds of this node */
             if (unlikely(hasTimeSplits))

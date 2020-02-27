@@ -61,6 +61,24 @@ namespace embree
       }
     };
     
+    struct Create2
+    {
+      template<typename BuildRecord>
+      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
+      {
+        if (hasTimeSplits)
+        {
+          AlignedNodeMB4D_t* node = (AlignedNodeMB4D_t*) alloc.malloc0(sizeof(AlignedNodeMB4D_t),NodeRef::byteNodeAlignment); node->clear();
+          return NodeRef::encodeNode(node);
+        }
+        else
+        {
+          AlignedNodeMB_t<NodeRef,N>* node = (AlignedNodeMB_t<NodeRef,N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<NodeRef,N>),NodeRef::byteNodeAlignment); node->clear();
+          return NodeRef::encodeNode(node);
+        }
+      }
+    };
+
     struct Set
     {
       __forceinline void operator() (NodeRef ref, size_t i, const NodeRecordMB4D& child) const
@@ -72,7 +90,22 @@ namespace embree
         }
       }
     };
-    
+
+    struct Set2
+    {
+      template<typename BuildRecord>
+      __forceinline void operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB4D* children, const size_t num) const
+      {
+        if (likely(ref.isAlignedNodeMB())) {
+          for (size_t i=0; i<num; i++)
+            ref.alignedNodeMB()->set(i, children[i]);
+        } else {
+          for (size_t i=0; i<num; i++)
+            ref.alignedNodeMB4D()->set(i, children[i]);
+        }
+      }
+    };
+
     /*! Clears the node. */
     __forceinline void clear()  {
       lower_t = vfloat<N>(pos_inf);
