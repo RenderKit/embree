@@ -1,4 +1,3 @@
-// ======================================================================== //
 // Copyright 2009-2020 Intel Corporation                                    //
 //                                                                          //
 // Licensed under the Apache License, Version 2.0 (the "License");          //
@@ -28,24 +27,8 @@ namespace embree
     typedef BVHNodeRecord<NodeRef>     NodeRecord;
     typedef BVHNodeRecordMB<NodeRef>   NodeRecordMB;
     typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
-        
+    
     struct Create
-    {
-      __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
-      {
-        AlignedNodeMB_t* node = (AlignedNodeMB_t*) alloc.malloc0(sizeof(AlignedNodeMB_t),NodeRef::byteNodeAlignment); node->clear();
-        return NodeRef::encodeNode(node);
-      }
-    };
-    
-    struct Set
-    {
-      __forceinline void operator() (NodeRef node, size_t i, const NodeRecordMB4D& child) const {
-        node.alignedNodeMB()->set(i,child);
-      }
-    };
-    
-    struct Create2
     {
       template<typename BuildRecord>
       __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
@@ -55,7 +38,7 @@ namespace embree
       }
     };
     
-    struct Set2
+    struct Set
     { 
       template<typename BuildRecord>
       __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
@@ -72,9 +55,9 @@ namespace embree
       }
     };
     
-    struct Set2TimeRange
+    struct SetTimeRange
     {
-      __forceinline Set2TimeRange(BBox1f tbounds) : tbounds(tbounds) {}
+      __forceinline SetTimeRange(BBox1f tbounds) : tbounds(tbounds) {}
       
       template<typename BuildRecord>
       __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const

@@ -33,25 +33,8 @@ namespace embree
     
     struct Create
     {
-      __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
-      {
-        if (hasTimeSplits)
-        {
-          AlignedNodeMB4D_t* node = (AlignedNodeMB4D_t*) alloc.malloc0(sizeof(AlignedNodeMB4D_t),NodeRef::byteNodeAlignment); node->clear();
-          return NodeRef::encodeNode(node);
-        }
-        else
-        {
-          AlignedNodeMB_t<NodeRef,N>* node = (AlignedNodeMB_t<NodeRef,N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<NodeRef,N>),NodeRef::byteNodeAlignment); node->clear();
-          return NodeRef::encodeNode(node);
-        }
-      }
-    };
-    
-    struct Create2
-    {
       template<typename BuildRecord>
-      __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
+      __forceinline NodeRef operator() (BuildRecord*, const size_t, const FastAllocator::CachedAllocator& alloc, bool hasTimeSplits = true) const
       {
         if (hasTimeSplits)
         {
@@ -68,20 +51,8 @@ namespace embree
 
     struct Set
     {
-      __forceinline void operator() (NodeRef ref, size_t i, const NodeRecordMB4D& child) const
-      {
-        if (likely(ref.isAlignedNodeMB())) {
-          ref.alignedNodeMB()->set(i, child);
-        } else {
-          ref.alignedNodeMB4D()->set(i, child);
-        }
-      }
-    };
-
-    struct Set2
-    {
       template<typename BuildRecord>
-      __forceinline void operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB4D* children, const size_t num) const
+      __forceinline void operator() (const BuildRecord&, const BuildRecord*, NodeRef ref, NodeRecordMB4D* children, const size_t num) const
       {
         if (likely(ref.isAlignedNodeMB())) {
           for (size_t i=0; i<num; i++)

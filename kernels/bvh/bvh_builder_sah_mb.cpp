@@ -176,7 +176,7 @@ namespace embree
 
         /* build hierarchy */
         auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
-          (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create2(),typename BVH::AlignedNodeMB::Set2(),
+          (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create(),typename BVH::AlignedNodeMB::Set(),
            CreateMBlurLeaf<N,Primitive>(bvh,prims.data(),0),bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
 
@@ -215,8 +215,8 @@ namespace embree
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                             RecalculatePrimRef<Mesh>(scene),
                                             typename BVH::CreateAlloc(bvh),
-                                            typename BVH::AlignedNodeMB4D::Create2(),
-                                            typename BVH::AlignedNodeMB4D::Set2(),
+                                            typename BVH::AlignedNodeMB4D::Create(),
+                                            typename BVH::AlignedNodeMB4D::Set(),
                                             CreateMSMBlurLeaf<N,Mesh,Primitive>(bvh),
                                             bvh->scene->progressInterface,
                                             settings);
@@ -604,8 +604,8 @@ namespace embree
         /* build hierarchy */
         auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
           (typename BVH::CreateAlloc(bvh),
-           typename BVH::AlignedNodeMB::Create2(),
-           typename BVH::AlignedNodeMB::Set2(),
+           typename BVH::AlignedNodeMB::Create(),
+           typename BVH::AlignedNodeMB::Set(),
            CreateLeafGridMB<N>(scene,bvh,sgrids.data()),
            bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
@@ -652,8 +652,8 @@ namespace embree
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                             recalculatePrimRef,
                                             typename BVH::CreateAlloc(bvh),
-                                            typename BVH::AlignedNodeMB4D::Create2(),
-                                            typename BVH::AlignedNodeMB4D::Set2(),
+                                            typename BVH::AlignedNodeMB4D::Create(),
+                                            typename BVH::AlignedNodeMB4D::Set(),
                                             CreateMSMBlurLeafGrid<N>(scene,bvh,sgrids.data()),
                                             bvh->scene->progressInterface,
                                             settings);
