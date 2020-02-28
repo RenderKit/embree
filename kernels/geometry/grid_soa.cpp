@@ -227,7 +227,11 @@ namespace embree
         std::pair<BVH4::NodeRef,LBBox3fa> node_bounds = buildMSMBlurBVH(make_range(begin,end),allocator,bounds_o);
         const float t0 = float(begin)/float(time_steps-1);
         const float t1 = float(end  )/float(time_steps-1);
-        node->set(j,node_bounds.first,node_bounds.second,BBox1f(t0,t1));
+        BVH4::NodeRecordMB4D nodeRecord;
+        nodeRecord.ref = node_bounds.first;
+        nodeRecord.lbounds = node_bounds.second;
+        nodeRecord.dt = BBox1f(t0, t1);
+        node->set(j,nodeRecord);
         j++;
       }
 

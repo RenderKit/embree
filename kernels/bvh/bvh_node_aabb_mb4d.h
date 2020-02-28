@@ -26,19 +26,6 @@ namespace embree
   {
     using BaseNode_t<NodeRef,N>::children;
     using AlignedNodeMB_t<NodeRef,N>::set;
-    using AlignedNodeMB_t<NodeRef,N>::bounds;
-    using AlignedNodeMB_t<NodeRef,N>::lower_x;
-    using AlignedNodeMB_t<NodeRef,N>::lower_y;
-    using AlignedNodeMB_t<NodeRef,N>::lower_z;
-    using AlignedNodeMB_t<NodeRef,N>::upper_x;
-    using AlignedNodeMB_t<NodeRef,N>::upper_y;
-    using AlignedNodeMB_t<NodeRef,N>::upper_z;
-    using AlignedNodeMB_t<NodeRef,N>::lower_dx;
-    using AlignedNodeMB_t<NodeRef,N>::lower_dy;
-    using AlignedNodeMB_t<NodeRef,N>::lower_dz;
-    using AlignedNodeMB_t<NodeRef,N>::upper_dx;
-    using AlignedNodeMB_t<NodeRef,N>::upper_dy;
-    using AlignedNodeMB_t<NodeRef,N>::upper_dz;
 
     typedef BVHNodeRecord<NodeRef>     NodeRecord;
     typedef BVHNodeRecordMB<NodeRef>   NodeRecordMB;
@@ -114,51 +101,18 @@ namespace embree
     }
     
     /*! Sets bounding box of child. */
-    __forceinline void setBounds(size_t i, const BBox3fa& bounds0_i, const BBox3fa& bounds1_i)
-    {
-      /*! for empty bounds we have to avoid inf-inf=nan */
-      BBox3fa bounds0(min(bounds0_i.lower,Vec3fa(+FLT_MAX)),max(bounds0_i.upper,Vec3fa(-FLT_MAX)));
-      BBox3fa bounds1(min(bounds1_i.lower,Vec3fa(+FLT_MAX)),max(bounds1_i.upper,Vec3fa(-FLT_MAX)));
-      bounds0 = bounds0.enlarge_by(4.0f*float(ulp));
-      bounds1 = bounds1.enlarge_by(4.0f*float(ulp));
-      Vec3fa dlower = bounds1.lower-bounds0.lower;
-      Vec3fa dupper = bounds1.upper-bounds0.upper;
-      
-      lower_x[i] = bounds0.lower.x; lower_y[i] = bounds0.lower.y; lower_z[i] = bounds0.lower.z;
-      upper_x[i] = bounds0.upper.x; upper_y[i] = bounds0.upper.y; upper_z[i] = bounds0.upper.z;
-      
-      lower_dx[i] = dlower.x; lower_dy[i] = dlower.y; lower_dz[i] = dlower.z;
-      upper_dx[i] = dupper.x; upper_dy[i] = dupper.y; upper_dz[i] = dupper.z;
-    }
-    
-    /*! Sets bounding box of child. */
-    __forceinline void setBounds(size_t i, const LBBox3fa& bounds) {
-      setBounds(i, bounds.bounds0, bounds.bounds1);
-    }
-    
-    /*! Sets bounding box of child. */
     __forceinline void setBounds(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds)
     {
-      setBounds(i, bounds.global(tbounds));
+      AlignedNodeMB_t<NodeRef,N>::setBounds(i, bounds.global(tbounds));
       lower_t[i] = tbounds.lower;
       upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
     }
     
     /*! Sets bounding box and ID of child. */
-    __forceinline void set(size_t i, NodeRef childID, const LBBox3fa& bounds, const BBox1f& tbounds) 
-    {
-      AlignedNodeMB_t<NodeRef,N>::setRef(i,childID);
-      setBounds(i, bounds, tbounds);
-    }
-    
-    /*! Sets bounding box and ID of child. */
     __forceinline void set(size_t i, const NodeRecordMB4D& child) {
-      set(i, child.ref, child.lbounds, child.dt);
+      AlignedNodeMB_t<NodeRef,N>::setRef(i,child.ref);
+      setBounds(i, child.lbounds, child.dt);
     }
-    
-    /*! Returns reference to specified child */
-    __forceinline       NodeRef& child(size_t i)       { assert(i<N); return children[i]; }
-    __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! Returns the expected surface area when randomly sampling the time. */
     __forceinline float expectedHalfArea(size_t i) const {
