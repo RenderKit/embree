@@ -3966,7 +3966,7 @@ namespace embree
       rayHit.ray.dir_z = 1;
       rayHit.ray.tnear = 0;
       rayHit.ray.tfar = 100000;
-      rayHit.ray.mask = 0u;
+      rayHit.ray.mask = -1;
       rayHit.ray.flags = 0u;
       rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
       rayHit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
