@@ -2544,6 +2544,10 @@ namespace embree
       rtcSetGeometryMask(hgeom1,2);
       rtcSetGeometryMask(hgeom2,4);
       rtcSetGeometryMask(hgeom3,8);
+      rtcCommitGeometry(hgeom0);
+      rtcCommitGeometry(hgeom1);
+      rtcCommitGeometry(hgeom2);
+      rtcCommitGeometry(hgeom3);
       rtcCommitScene (scene);
       AssertNoError(device);
       
