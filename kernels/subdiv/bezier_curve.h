@@ -618,7 +618,7 @@ namespace embree
         }
       }
       
-      friend inline embree_ostream operator<<(embree_ostream cout, const CubicBezierCurve& curve) {
+      friend __forceinline embree_ostream operator<<(embree_ostream cout, const CubicBezierCurve& curve) {
         return cout << "CubicBezierCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
@@ -657,7 +657,7 @@ namespace embree
   typedef CubicBezierCurve<Vec3fa> CubicBezierCurve3fa;
   typedef CubicBezierCurve<Vec3fa> BezierCurve3fa;
   
-  template<> inline int CubicBezierCurve<float>::maxRoots() const
+  template<> __forceinline int CubicBezierCurve<float>::maxRoots() const
   {
     float eps = 1E-4f;
     bool neg0 = v0 <= 0.0f; bool zero0 = fabs(v0) < eps;

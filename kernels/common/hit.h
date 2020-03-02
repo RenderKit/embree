@@ -84,7 +84,7 @@ namespace embree
 
   /* Outputs hit to stream */
   template<int K>
-  inline embree_ostream operator<<(embree_ostream cout, const HitK<K>& ray)
+  __forceinline embree_ostream operator<<(embree_ostream cout, const HitK<K>& ray)
   {
     cout << "{ " << embree_endl
          << "  Ng = " << ray.Ng <<  embree_endl

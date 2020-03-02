@@ -284,7 +284,7 @@ namespace embree
         }
       }
       
-      friend inline embree_ostream operator<<(embree_ostream cout, const BSplineCurveT& curve) {
+      friend __forceinline embree_ostream operator<<(embree_ostream cout, const BSplineCurveT& curve) {
         return cout << "BSplineCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };

@@ -180,7 +180,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  inline embree_ostream operator <<(embree_ostream cout, const vboolf4& a) {
+  __forceinline embree_ostream operator <<(embree_ostream cout, const vboolf4& a) {
     return cout << "<" << a[0] << ", " << a[1] << ", " << a[2] << ", " << a[3] << ">";
   }
 }

@@ -50,7 +50,7 @@ namespace embree
   };
 
   /*! output operator */
-  template<typename T> inline embree_ostream operator<<(embree_ostream cout, const Col4<T>& a) {
+  template<typename T> __forceinline embree_ostream operator<<(embree_ostream cout, const Col4<T>& a) {
     return cout << "(" << a.r << ", " << a.g << ", " << a.b << ", " << a.a << ")";
   }
 

@@ -121,7 +121,7 @@ __forceinline RTCRay* RTCRay1_(Ray& ray) {
 }
 
   /*! Outputs ray to stream. */ 
-  inline embree_ostream operator<<(embree_ostream cout, const Ray& ray) {
+  __forceinline embree_ostream operator<<(embree_ostream cout, const Ray& ray) {
     return cout << "{ " << 
       "org = " << ray.org << ", dir = " << ray.dir << ", near = " << ray.tnear() << ", far = " << ray.tfar << ", time = " << ray.time() << ", " <<
       //"instID = " << ray.instID 
