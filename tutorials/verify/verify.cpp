@@ -2560,8 +2560,27 @@ namespace embree
         RTCRayHit ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.ray.mask = mask3;
         RTCRayHit rays[4] = { ray0, ray1, ray2, ray3 };
         IntersectWithMode(imode,ivariant,scene,rays,4);
-        for (size_t j=0; j<4; j++)
-          passed &= masks[j] & (1<<j) ? rays[j].hit.geomID != RTC_INVALID_GEOMETRY_ID : rays[j].hit.geomID == RTC_INVALID_GEOMETRY_ID;
+
+        switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK)
+        {
+          case VARIANT_INTERSECT:
+          case VARIANT_INTERSECT_OCCLUDED:
+          {
+            for (size_t j = 0; j < 4; j++)
+              passed &= masks[j] & (1 << j) ? rays[j].hit.geomID != RTC_INVALID_GEOMETRY_ID : rays[j].hit.geomID == RTC_INVALID_GEOMETRY_ID;
+            break;
+          }
+          case VARIANT_OCCLUDED:
+          {
+            // There's not much we can verify here. 'hit' information is only available when calling rtcIntersect, not on rtcOccluded.
+            // We can only identify that something was hit by testing rays[j].ray.tfar == -inf.
+            break;
+          }
+          default:
+          {
+            assert(false);
+          }
+        }
       }
       AssertNoError(device);
 
