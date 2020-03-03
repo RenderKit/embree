@@ -193,7 +193,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  inline embree_ostream operator<<(embree_ostream cout, const Vec3ia& a) {
+  __forceinline embree_ostream operator<<(embree_ostream cout, const Vec3ia& a) {
     return cout << "(" << a.x << ", " << a.y << ", " << a.z << ")";
   }
 }

@@ -405,7 +405,7 @@ namespace embree
 
   /* Outputs ray to stream */
   template<int K>
-  inline embree_ostream operator <<(embree_ostream cout, const RayK<K>& ray)
+  __forceinline embree_ostream operator <<(embree_ostream cout, const RayK<K>& ray)
   {
     return cout << "{ " << embree_endl
                 << "  org = " << ray.org << embree_endl
@@ -420,7 +420,7 @@ namespace embree
   }
 
   template<int K>
-  inline embree_ostream operator <<(embree_ostream cout, const RayHitK<K>& ray)
+  __forceinline embree_ostream operator <<(embree_ostream cout, const RayHitK<K>& ray)
   {
     cout << "{ " << embree_endl
          << "  org = " << ray.org << embree_endl
