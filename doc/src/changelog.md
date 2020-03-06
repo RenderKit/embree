@@ -8,6 +8,8 @@ Version History
 #### Fixed Issues:
 -   Fixed wrong assertion that triggered for invalid curves which
     anyway get filtered out.
+-   RelWithDebInfo mode no longer enables assertions.
+-   Fixed an issue in FindTBB.cmake that caused compile error with Debug build under Linux.
 
 ### Embree 3.8.0
 
