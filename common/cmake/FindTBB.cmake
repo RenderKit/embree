@@ -187,31 +187,31 @@ macro(find_tbb TARGET
 
   # Create an imported library target for TBB.
   if(${TARGET}_FOUND)
-    add_library(${TARGET}::${TBB_LIBRARY_NAME} SHARED IMPORTED)
-    set_target_properties(${TARGET}::${TBB_LIBRARY_NAME} PROPERTIES
+    add_library(${TARGET}::tbb SHARED IMPORTED)
+    set_target_properties(${TARGET}::tbb PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES ${${INCLUDE_DIR_VAR}}
       INTERFACE_COMPILE_DEFINITIONS "__TBB_NO_IMPLICIT_LINKAGE=1"
     )
-    add_library(${TARGET}::${TBBMALLOC_LIBRARY_NAME} SHARED IMPORTED)
-    set_target_properties(${TARGET}::${TBBMALLOC_LIBRARY_NAME} PROPERTIES
+    add_library(${TARGET}::tbbmalloc SHARED IMPORTED)
+    set_target_properties(${TARGET}::tbbmalloc PROPERTIES
       INTERFACE_COMPILE_DEFINITIONS "__TBBMALLOC_NO_IMPLICIT_LINKAGE=1"
     )
     if(WIN32)
-      set_target_properties(${TARGET}::${TBB_LIBRARY_NAME} PROPERTIES
+      set_target_properties(${TARGET}::tbb PROPERTIES
         IMPORTED_IMPLIB ${${TBB_LIBRARY_VAR}}
       )
-      set_target_properties(${TARGET}::${TBBMALLOC_LIBRARY_NAME} PROPERTIES
+      set_target_properties(${TARGET}::tbbmalloc PROPERTIES
         IMPORTED_IMPLIB ${${TBBMALLOC_LIBRARY_VAR}}
       )
     else()
       # Note: IMPORTED_NO_SONAME must be set or cmake will attempt
       #       to link to the full path of libtbb.so. Instead, we
       #       rely on the linker to find libtbb.so.2.
-      set_target_properties(${TARGET}::${TBB_LIBRARY_NAME} PROPERTIES
+      set_target_properties(${TARGET}::tbb PROPERTIES
         IMPORTED_LOCATION ${${TBB_LIBRARY_VAR}}
         IMPORTED_NO_SONAME TRUE
       )
-      set_target_properties(${TARGET}::${TBBMALLOC_LIBRARY_NAME} PROPERTIES
+      set_target_properties(${TARGET}::tbbmalloc PROPERTIES
         IMPORTED_LOCATION ${${TBBMALLOC_LIBRARY_VAR}}
         IMPORTED_NO_SONAME TRUE
       )
@@ -275,7 +275,7 @@ if (NOT EMBREE_TBBMALLOC_DEBUG_LIBRARY_NAME)
     set(EMBREE_TBBMALLOC_DEBUG_LIBRARY_NAME "tbbmalloc${EMBREE_TBB_DEBUG_POSTFIX}")
   endif()
 endif()
-               
+
 find_tbb(TBB
   EMBREE_TBB_ROOT 
   EMBREE_TBB_INCLUDE_DIR 
