@@ -9,9 +9,8 @@ Studio 2013 (VC12) runtime and Visual Studio 2015/2017 (VC14) runtime:
 [embree-<EMBREE_VERSION>.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc12.windows.zip)  
 [embree-<EMBREE_VERSION>.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.windows.zip)  
 
-For Linux we provide Embree as RPMs or as a `tar.gz` file:
+For Linux we provide Embree as a `tar.gz` file:
 
-[embree-<EMBREE_VERSION>.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.rpm.tar.gz)  
 [embree-<EMBREE_VERSION>.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.linux.tar.gz)  
 
 For macOS we provide Embree as PKG installer and as a ZIP file:
@@ -19,9 +18,8 @@ For macOS we provide Embree as PKG installer and as a ZIP file:
 [embree-<EMBREE_VERSION>.x86_64.pkg](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.pkg)  
 [embree-<EMBREE_VERSION>.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x86_64.macosx.zip)
 
-For the first generation Intel® Xeon Phi™ coprocessor (codenamed Knights Corner) we provide Embree v2.9.0 precompiled for Linux as RPMs or as a `tar.gz` file:
+For the first generation Intel® Xeon Phi™ coprocessor (codenamed Knights Corner) we provide Embree v2.9.0 precompiled for Linux as a `tar.gz` file:
 
-[embree-knc-2.9.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v2.9.0/embree-knc-2.9.0.x86_64.rpm.tar.gz)  
 [embree-knc-2.9.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v2.9.0/embree-knc-2.9.0.x86_64.linux.tar.gz)  
 
 The source code of the latest Embree version can be downloaded here:

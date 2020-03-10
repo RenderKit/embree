@@ -10,6 +10,8 @@ Version History
     anyway get filtered out.
 -   RelWithDebInfo mode no longer enables assertions.
 -   Fixed an issue in FindTBB.cmake that caused compile error with Debug build under Linux.
+-   Embree releases no longer provide RPMs for Linux. Please use the RPMs coming with the package
+    manager of your Linux distribution.
 
 ### Embree 3.8.0
 
