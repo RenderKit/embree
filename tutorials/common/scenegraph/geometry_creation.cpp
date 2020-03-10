@@ -359,6 +359,18 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> SceneGraph::createSphere (const Vec3fa& center, const float radius, Ref<MaterialNode> material)
+  {
+    RTCGeometryType type = RTC_GEOMETRY_TYPE_SPHERE_POINT;
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(type, material, BBox1f(0,1), 1);
+    mesh->positions[0].resize(1);
+    mesh->positions[0][0].x = center.x;
+    mesh->positions[0][0].y = center.y;
+    mesh->positions[0][0].z = center.z;
+    mesh->positions[0][0].w = radius;
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> SceneGraph::createPointSphere (const Vec3fa& center, const float radius, const float pointRadius,
                                                        size_t N, PointSubtype subtype, Ref<MaterialNode> material)
   {

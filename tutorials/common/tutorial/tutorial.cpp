@@ -552,6 +552,12 @@ namespace embree
         scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::ROUND_CURVE,new OBJMaterial));
       }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");
 
+     registerOption("sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
+         const Vec3fa p = cin->getVec3fa();
+        const float  r = cin->getFloat();
+        scene->add(SceneGraph::createSphere(p, r, new OBJMaterial));
+      }, "--sphere p.x p.y p.z r: adds a sphere at position p with radius r");
+     
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3fa p = cin->getVec3fa();
         const float  r = cin->getFloat();
