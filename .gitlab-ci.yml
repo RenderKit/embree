@@ -245,31 +245,31 @@ nightly-linux-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB2019.9:
 # ICC compilation and testing of different ISAs
 
 nightly-linux-x64-Debug-ICC2015.3-ISPC1.12.0-SSE2-TBB2019.2:
-  image: embreedocker/centos:6.0
+  image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2015.3 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2019.2 intensity:4"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-ICC2016.3-ISPC1.12.0-AVX-TBB2019.2:
-  image: embreedocker/centos:6.0
+  image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2016.3 ispc:ispc1.12.0 isa:AVX tasking:TBB2019.2 intensity:4"
   tags:   [docker] # avx
   only:   [schedules]
 
 nightly-linux-x64-Debug-ICC2017.1-ISPC1.12.0-AVX2-TBB2019.2:
-  image: embreedocker/centos:6.0
+  image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2017.1 ispc:ispc1.12.0 isa:AVX2 tasking:TBB2019.2 intensity:4"
   tags:   [docker] # avx2
   only:   [schedules]
 
 nightly-linux-knl-x64-Debug-ICC2017.1-ISPC1.12.0-AVX512KNL-TBB2019.2:
-  image: embreedocker/centos:6.0
+  image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2017.1 ispc:ispc1.12.0 isa:AVX512KNL tasking:TBB2019.2 intensity:3"
   tags:   [docker-knl]
   only:   [schedules]
 
 nightly-linux-avx512vl-x64-Debug-ICC2017.1-ISPC1.12.0-AVX512SKX-TBB2019.2:
-  image: embreedocker/centos:6.0
+  image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2017.1 ispc:ispc1.12.0 isa:AVX512SKX tasking:TBB2019.2 intensity:4"
   tags:   [docker, avx512vl]
   only:   [schedules]
@@ -311,12 +311,6 @@ nightly-centos7.4-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB:
 #  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:3"
 #  tags:   [docker]
 #  only:   [schedules]
-
-nightly-centos6.0-x64-Debug-GCC4.8.2-ISPC1.12.0-AVX2-TBB:
-  image: embreedocker/centos:6.0
-  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:3"
-  tags:   [docker]
-  only:   [schedules]
 
 nightly-fedora28-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
   image: embreedocker/fedora:28
@@ -538,7 +532,7 @@ release-linux-x64-Release-ICC2019.4-ISPC1.12.0-TBB2019.9-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-linux-x64-Release-ICC2019.4-ISPC1.12.0-TBB-PACKAGE-RPM:
-  image: embreedocker/centos:6.0
+  image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB intensity:4 package:RPM"
   tags:   [docker, avx512vl]
   only:   [web]
