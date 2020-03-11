@@ -101,8 +101,8 @@ continuous-linux-x64-PROTEX:
 # Intensive Nightly Tests
 ####################################################################
 
-nightly-windows-x64-Debug-V120-ISPC1.9.2-SSE2-INT:
-  script: "python scripts\\test.py platform:x64 build:Debug compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:2"
+nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-INT:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:2"
   tags:   [win10, v120]
   only:   [schedules]
 
