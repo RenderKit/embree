@@ -108,7 +108,20 @@ namespace embree
           return epilog(valid_second, hit);
         }
 
-        return true;
+        // check for possible second hits between accepted filter hit
+        const vbool<M> valid_second = valid_front & valid_back;
+        if (unlikely(none(valid_second)))
+          return true;
+        const float furthestHit = reduce_max(select(valid_first, hit.vt, ray.tnear()));
+        const vbool<M> valid_between = valid_second & (select(valid_front, t_back, t_front) < furthestHit);
+        if (unlikely(none(valid_between)))
+          return true;
+
+        const vfloat<M> t_second  = select(valid_between, t_back, t_first);
+        const Vec3vf<M> Ng_second = select(valid_between, td_back* ray_dir - perp, Ng_first);
+        hit = SphereIntersectorHitM<M> (t_second, Ng_second);
+
+        return epilog(valid_second, hit);
       }
     };
 
@@ -176,7 +189,20 @@ namespace embree
           return epilog(valid_second, hit);
         }
 
-        return true;
+        // check for possible second hits between accepted filter hit
+        const vbool<M> valid_second = valid_front & valid_back;
+        if (unlikely(none(valid_second)))
+          return true;
+        const float furthestHit = reduce_max(select(valid_first, hit.vt, ray.tnear()[k]));
+        const vbool<M> valid_between = valid_second & (select(valid_front, t_back, t_front) < furthestHit);
+        if (unlikely(none(valid_between)))
+          return true;
+
+        const vfloat<M> t_second  = select(valid_between, t_back, t_first);
+        const Vec3vf<M> Ng_second = select(valid_between, td_back* ray_dir - perp, Ng_first);
+        hit = SphereIntersectorHitM<M> (t_second, Ng_second);
+
+        return epilog(valid_second, hit);
       }
     };
   }  // namespace isa
