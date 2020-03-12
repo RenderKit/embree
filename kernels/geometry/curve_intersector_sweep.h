@@ -147,7 +147,7 @@ namespace embree
 
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
     bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve,
-                                             const float u0, const float u1, const size_t depth, const Epilog& epilog)
+                                             float u0, float u1, uint depth, const Epilog& epilog)
     {
 #if defined(__AVX__)
       typedef vbool8 vboolx; // maximally 8-wide to work around KNL issues
@@ -159,93 +159,143 @@ namespace embree
       typedef Vec3<vfloatx> Vec3vfx;
       typedef Vec4<vfloatx> Vec4vfx;
     
-      int maxDepth = numBezierSubdivisions;
-      //int maxDepth = Device::debug_int1+1;
+      uint maxDepth = numBezierSubdivisions;
+      bool found = false;
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
 
-      /* subdivide curve */
-      const float dscale = (u1-u0)*(1.0f/(3.0f*(vfloatx::size-1)));
-      const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(vfloatx::size-1)));
-      Vec4vfx P0, dP0du; curve.veval(vu0,P0,dP0du); dP0du = dP0du * Vec4vfx(dscale);
-      const Vec4vfx P3 = shift_right_1(P0);
-      const Vec4vfx dP3du = shift_right_1(dP0du); 
-      const Vec4vfx P1 = P0 + dP0du; 
-      const Vec4vfx P2 = P3 - dP3du;
+      unsigned int sptr = 0;
+      const uint stack_size = numBezierSubdivisions+1; // +1 because of unstable workaround below
+      struct StackEntry {
+        vboolx valid;
+        vfloatx tlower;
+        float u0;
+        float u1;
+        uint depth;
+      };
+      StackEntry stack[stack_size];
+      goto entry;
 
-      /* calculate bounding cylinders */
-      const vfloatx rr1 = sqr_point_to_line_distance(Vec3vfx(dP0du),Vec3vfx(P3-P0));
-      const vfloatx rr2 = sqr_point_to_line_distance(Vec3vfx(dP3du),Vec3vfx(P3-P0));
-      const vfloatx maxr12 = sqrt(max(rr1,rr2));
-      const vfloatx one_plus_ulp  = 1.0f+2.0f*float(ulp);
-      const vfloatx one_minus_ulp = 1.0f-2.0f*float(ulp);
-      vfloatx r_outer = max(P0.w,P1.w,P2.w,P3.w)+maxr12;
-      vfloatx r_inner = min(P0.w,P1.w,P2.w,P3.w)-maxr12;
-      r_outer = one_plus_ulp*r_outer;
-      r_inner = max(0.0f,one_minus_ulp*r_inner);
-      const CylinderN<vfloatx::size> cylinder_outer(Vec3vfx(P0),Vec3vfx(P3),r_outer);
-      const CylinderN<vfloatx::size> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
-      vboolx valid = true; clear(valid,vfloatx::size-1);
-
-      /* intersect with outer cylinder */
-      BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
-      valid &= cylinder_outer.intersect(org,dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
-      if (none(valid)) return false;
-     
-      /* intersect with cap-planes */
-      BBox<vfloatx> tp(ray.tnear()-dt,ray.tfar-dt);
-      tp = embree::intersect(tp,tc_outer);
-      BBox<vfloatx> h0 = HalfPlaneN<vfloatx::size>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(org,dir);
-      tp = embree::intersect(tp,h0);
-      BBox<vfloatx> h1 = HalfPlaneN<vfloatx::size>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(org,dir);
-      tp = embree::intersect(tp,h1);
-      valid &= tp.lower <= tp.upper;
-      if (none(valid)) return false;
-
-      /* clamp and correct u parameter */
-      u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
-      u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
-      u_outer0 = lerp(u0,u1,(vfloatx(step)+u_outer0)*(1.0f/float(vfloatx::size)));
-      u_outer1 = lerp(u0,u1,(vfloatx(step)+u_outer1)*(1.0f/float(vfloatx::size)));
-
-      /* intersect with inner cylinder */
-      BBox<vfloatx> tc_inner;
-      vfloatx u_inner0; Vec3vfx Ng_inner0; vfloatx u_inner1; Vec3vfx Ng_inner1;
-      const vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
-
-      /* at the unstable area we subdivide deeper */
-      const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner0))) < 0.3f);
-      const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner1))) < 0.3f);
-      
-      /* subtract the inner interval from the current hit interval */
-      BBox<vfloatx> tp0, tp1;
-      subtract(tp,tc_inner,tp0,tp1);
-      vboolx valid0 = valid & (tp0.lower <= tp0.upper);
-      vboolx valid1 = valid & (tp1.lower <= tp1.upper);
-      if (none(valid0 | valid1)) return false;
-
-      /* iterate over all first hits front to back */
-      bool found = false;
-      while (any(valid0))
+       /* terminate if stack is empty */
+      while (sptr)
       {
-        const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
-        const size_t termDepth = unstable0[i] ? maxDepth+1 : maxDepth;
-        if (depth >= termDepth) found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
-        //if (depth >= maxDepth) found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
-        else                   found = found | intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
-        valid0 &= tp0.lower+dt <= ray.tfar;
-      }
-      valid1 &= tp1.lower+dt <= ray.tfar;
+        /* pop from stack */
+        {
+          sptr--;
+          vboolx valid = stack[sptr].valid;
+          const vfloatx tlower = stack[sptr].tlower;
+          valid &= tlower+dt <= ray.tfar;
+          if (none(valid)) continue;
+          u0 = stack[sptr].u0;
+          u1 = stack[sptr].u1;
+          depth = stack[sptr].depth;
+          const size_t i = select_min(valid,tlower); clear(valid,i);
+          stack[sptr].valid = valid;
+          if (any(valid)) sptr++; // there are still items on the stack
 
-      /* iterate over all second hits front to back */
-      while (any(valid1))
-      {
-        const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
-        const size_t termDepth = unstable1[i] ? maxDepth+1 : maxDepth;
-        if (depth >= termDepth) found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
-        //if (depth >= maxDepth) found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
-        else                   found = found | intersect_bezier_recursive_jacobian(ray,dt,curve,vu0[i+0],vu0[i+1],depth+1,epilog);
+          /* process next segment */
+          const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(vfloatx::size-1)));
+          u0 = vu0[i+0];
+          u1 = vu0[i+1];
+        }
+      entry:
+
+        /* subdivide curve */
+        const float dscale = (u1-u0)*(1.0f/(3.0f*(vfloatx::size-1)));
+        const vfloatx vu0 = lerp(u0,u1,vfloatx(step)*(1.0f/(vfloatx::size-1)));
+        Vec4vfx P0, dP0du; curve.veval(vu0,P0,dP0du); dP0du = dP0du * Vec4vfx(dscale);
+        const Vec4vfx P3 = shift_right_1(P0);
+        const Vec4vfx dP3du = shift_right_1(dP0du); 
+        const Vec4vfx P1 = P0 + dP0du; 
+        const Vec4vfx P2 = P3 - dP3du;
+        
+        /* calculate bounding cylinders */
+        const vfloatx rr1 = sqr_point_to_line_distance(Vec3vfx(dP0du),Vec3vfx(P3-P0));
+        const vfloatx rr2 = sqr_point_to_line_distance(Vec3vfx(dP3du),Vec3vfx(P3-P0));
+        const vfloatx maxr12 = sqrt(max(rr1,rr2));
+        const vfloatx one_plus_ulp  = 1.0f+2.0f*float(ulp);
+        const vfloatx one_minus_ulp = 1.0f-2.0f*float(ulp);
+        vfloatx r_outer = max(P0.w,P1.w,P2.w,P3.w)+maxr12;
+        vfloatx r_inner = min(P0.w,P1.w,P2.w,P3.w)-maxr12;
+        r_outer = one_plus_ulp*r_outer;
+        r_inner = max(0.0f,one_minus_ulp*r_inner);
+        const CylinderN<vfloatx::size> cylinder_outer(Vec3vfx(P0),Vec3vfx(P3),r_outer);
+        const CylinderN<vfloatx::size> cylinder_inner(Vec3vfx(P0),Vec3vfx(P3),r_inner);
+        vboolx valid = true; clear(valid,vfloatx::size-1);
+        
+        /* intersect with outer cylinder */
+        BBox<vfloatx> tc_outer; vfloatx u_outer0; Vec3vfx Ng_outer0; vfloatx u_outer1; Vec3vfx Ng_outer1;
+        valid &= cylinder_outer.intersect(org,dir,tc_outer,u_outer0,Ng_outer0,u_outer1,Ng_outer1);
+        if (none(valid)) continue;
+        
+        /* intersect with cap-planes */
+        BBox<vfloatx> tp(ray.tnear()-dt,ray.tfar-dt);
+        tp = embree::intersect(tp,tc_outer);
+        BBox<vfloatx> h0 = HalfPlaneN<vfloatx::size>(Vec3vfx(P0),+Vec3vfx(dP0du)).intersect(org,dir);
+        tp = embree::intersect(tp,h0);
+        BBox<vfloatx> h1 = HalfPlaneN<vfloatx::size>(Vec3vfx(P3),-Vec3vfx(dP3du)).intersect(org,dir);
+        tp = embree::intersect(tp,h1);
+        valid &= tp.lower <= tp.upper;
+        if (none(valid)) continue;
+        
+        /* clamp and correct u parameter */
+        u_outer0 = clamp(u_outer0,vfloatx(0.0f),vfloatx(1.0f));
+        u_outer1 = clamp(u_outer1,vfloatx(0.0f),vfloatx(1.0f));
+        u_outer0 = lerp(u0,u1,(vfloatx(step)+u_outer0)*(1.0f/float(vfloatx::size)));
+        u_outer1 = lerp(u0,u1,(vfloatx(step)+u_outer1)*(1.0f/float(vfloatx::size)));
+        
+        /* intersect with inner cylinder */
+        BBox<vfloatx> tc_inner;
+        vfloatx u_inner0; Vec3vfx Ng_inner0; vfloatx u_inner1; Vec3vfx Ng_inner1;
+        const vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
+        
+        /* at the unstable area we subdivide deeper */
+        const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner0))) < 0.3f);
+        const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner1))) < 0.3f);
+        
+        /* subtract the inner interval from the current hit interval */
+        BBox<vfloatx> tp0, tp1;
+        subtract(tp,tc_inner,tp0,tp1);
+        vboolx valid0 = valid & (tp0.lower <= tp0.upper);
+        vboolx valid1 = valid & (tp1.lower <= tp1.upper);
+        if (none(valid0 | valid1)) continue;
+        
+        /* iterate over all first hits front to back */
+        const vintx termDepth0 = select(unstable0,vintx(maxDepth+1),vintx(maxDepth));
+        const vboolx recursion_valid0 = valid0 & (depth < termDepth0);
+        valid0 &= depth >= termDepth0;
+        while (any(valid0))
+        {
+          const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
+          found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer0[i],tp0.lower[i],epilog);
+          //found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer0,tp0,h0,h1,Ng_outer0,dP0du,dP3du,epilog);
+          valid0 &= tp0.lower+dt <= ray.tfar;
+        }
         valid1 &= tp1.lower+dt <= ray.tfar;
+        
+        /* iterate over all second hits front to back */
+        const vintx termDepth1 = select(unstable1,vintx(maxDepth+1),vintx(maxDepth));
+        const vboolx recursion_valid1 = valid1 & (depth < termDepth1);
+        valid1 &= depth >= termDepth1;
+        while (any(valid1))
+        {
+          const size_t i = select_min(valid1,tp1.lower); clear(valid1,i);
+          found = found | intersect_bezier_iterative_jacobian(ray,dt,curve,u_outer1[i],tp1.upper[i],epilog);
+          //found = found | intersect_bezier_iterative_debug   (ray,dt,curve,i,u_outer1,tp1,h0,h1,Ng_outer1,dP0du,dP3du,epilog);
+          valid1 &= tp1.lower+dt <= ray.tfar;
+        }
+
+        /* push valid segments to stack */
+        if (any(recursion_valid0 | recursion_valid1))
+        {
+          assert(sptr < stack_size);
+          stack[sptr].valid = recursion_valid0 | recursion_valid1;
+          stack[sptr].tlower = select(recursion_valid0,tp0.lower,tp1.lower);
+          stack[sptr].u0 = u0;
+          stack[sptr].u1 = u1;
+          stack[sptr].depth = depth+1;
+          sptr++;
+        }
       }
       return found;
     }

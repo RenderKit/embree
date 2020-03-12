@@ -12,6 +12,7 @@ Version History
 -   Fixed an issue in FindTBB.cmake that caused compile error with Debug build under Linux.
 -   Embree releases no longer provide RPMs for Linux. Please use the RPMs coming with the package
     manager of your Linux distribution.
+-   Improved performance of round curve rendering by up to 1.8x.
 
 ### Embree 3.8.0
 
