@@ -262,7 +262,7 @@ namespace embree
         
         /* iterate over all first hits front to back */
         const vintx termDepth0 = select(unstable0,vintx(maxDepth+1),vintx(maxDepth));
-        const vboolx recursion_valid0 = valid0 & (depth < termDepth0);
+        vboolx recursion_valid0 = valid0 & (depth < termDepth0);
         valid0 &= depth >= termDepth0;
         while (any(valid0))
         {
@@ -275,7 +275,7 @@ namespace embree
         
         /* iterate over all second hits front to back */
         const vintx termDepth1 = select(unstable1,vintx(maxDepth+1),vintx(maxDepth));
-        const vboolx recursion_valid1 = valid1 & (depth < termDepth1);
+        vboolx recursion_valid1 = valid1 & (depth < termDepth1);
         valid1 &= depth >= termDepth1;
         while (any(valid1))
         {
@@ -286,10 +286,13 @@ namespace embree
         }
 
         /* push valid segments to stack */
-        if (any(recursion_valid0 | recursion_valid1))
+        recursion_valid0 &= tp0.lower+dt <= ray.tfar;
+        recursion_valid1 &= tp1.lower+dt <= ray.tfar;
+        const vboolx recursion_valid = recursion_valid0 | recursion_valid1;
+        if (any(recursion_valid))
         {
           assert(sptr < stack_size);
-          stack[sptr].valid = recursion_valid0 | recursion_valid1;
+          stack[sptr].valid = recursion_valid;
           stack[sptr].tlower = select(recursion_valid0,tp0.lower,tp1.lower);
           stack[sptr].u0 = u0;
           stack[sptr].u1 = u1;
