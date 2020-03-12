@@ -151,9 +151,11 @@ namespace embree
     {
 #if defined(__AVX__)
       typedef vbool8 vboolx; // maximally 8-wide to work around KNL issues
-      typedef vfloat8 vfloatx; // maximally 8-wide
+      typedef vint8 vintx; 
+      typedef vfloat8 vfloatx;
 #else
-      typedef vbool4 vboolx; // maximally 8-wide
+      typedef vbool4 vboolx;
+      typedef vint4 vintx; 
       typedef vfloat4 vfloatx;
 #endif
       typedef Vec3<vfloatx> Vec3vfx;
