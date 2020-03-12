@@ -147,7 +147,7 @@ namespace embree
 
     template<typename NativeCurve3fa, typename Ray, typename Epilog>
     bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve,
-                                             float u0, float u1, uint depth, const Epilog& epilog)
+                                             float u0, float u1, unsigned int depth, const Epilog& epilog)
     {
 #if defined(__AVX__)
       typedef vbool8 vboolx; // maximally 8-wide to work around KNL issues
@@ -159,19 +159,19 @@ namespace embree
       typedef Vec3<vfloatx> Vec3vfx;
       typedef Vec4<vfloatx> Vec4vfx;
     
-      uint maxDepth = numBezierSubdivisions;
+      unsigned int maxDepth = numBezierSubdivisions;
       bool found = false;
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
 
       unsigned int sptr = 0;
-      const uint stack_size = numBezierSubdivisions+1; // +1 because of unstable workaround below
+      const unsigned int stack_size = numBezierSubdivisions+1; // +1 because of unstable workaround below
       struct StackEntry {
         vboolx valid;
         vfloatx tlower;
         float u0;
         float u1;
-        uint depth;
+        unsigned int depth;
       };
       StackEntry stack[stack_size];
       goto entry;

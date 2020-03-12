@@ -252,8 +252,8 @@ namespace embree
         __forceinline void solve_newton_raphson_recursion(BBox1f cu, BBox1f cv)
         {
           unsigned int sptr = 0;
-          const uint stack_size = 4;
-          uint mask_stack[stack_size];
+          const unsigned int stack_size = 4;
+          unsigned int mask_stack[stack_size];
           BBox1f cu_stack[stack_size];
           BBox1f cv_stack[stack_size];
           goto entry;
