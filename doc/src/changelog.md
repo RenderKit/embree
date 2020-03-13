@@ -13,6 +13,7 @@ Version History
 -   Embree releases no longer provide RPMs for Linux. Please use the RPMs coming with the package
     manager of your Linux distribution.
 -   Improved performance of round curve rendering by up to 1.8x.
+-   Bugfix to sphere intersection filter invokation for back hit.
 
 ### Embree 3.8.0
 
