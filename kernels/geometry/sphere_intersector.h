@@ -93,34 +93,21 @@ namespace embree
         const Vec3vf<M> Ng_first = select(valid_front, td_front, td_back) * ray_dir - perp;
         SphereIntersectorHitM<M> hit(t_first, Ng_first);
 
-        /* if filter reports a miss, then continue with second hit */
-        if (unlikely(!epilog(valid_first, hit)))
-        {
-          /* check if there is s second hit */
-          const vbool<M> valid_second = valid_front & valid_back;
-          if (unlikely(none(valid_second)))
-            return false;
-
-          /* construct second hit */
-          const vfloat<M> t_second  = select(valid_front, t_back, t_front);
-          const Vec3vf<M> Ng_second = select(valid_front, td_back, td_front) * ray_dir - perp;
-          hit = SphereIntersectorHitM<M> (t_second, Ng_second);
-          return epilog(valid_second, hit);
-        }
-
-        // check for possible second hits between accepted filter hit
-        const vbool<M> valid_second = valid_front & valid_back;
+        /* invoke intersection filter for first hit */
+        const bool is_hit_first = epilog(valid_first, hit);
+                
+        /* check for possible second hits before potentially accepted hit */
+        const vfloat<M> t_second = t_back;
+        const vbool<M> valid_second = valid_front & valid_back & (t_second <= ray.tfar);
         if (unlikely(none(valid_second)))
-          return true;
-        const vbool<M> valid_between = valid_second & (select(valid_front, t_back, t_front) < ray.tfar);
-        if (unlikely(none(valid_between)))
-          return true;
+          return is_hit_first;
 
-        const vfloat<M> t_second  = select(valid_between, t_back, t_first);
-        const Vec3vf<M> Ng_second = select(valid_between, td_back* ray_dir - perp, Ng_first);
+        /* invoke intersection filter for second hit */
+        const Vec3vf<M> Ng_second = td_back * ray_dir - perp;
         hit = SphereIntersectorHitM<M> (t_second, Ng_second);
-
-        return epilog(valid_second, hit);
+        const bool is_hit_second = epilog(valid_second, hit);
+        
+        return is_hit_first | is_hit_second;
       }
     };
 
@@ -173,34 +160,21 @@ namespace embree
         const Vec3vf<M> Ng_first = select(valid_front, td_front, td_back) * ray_dir - perp;
         SphereIntersectorHitM<M> hit(t_first, Ng_first);
 
-        /* if filter reports a miss, then continue with second hit */
-        if (unlikely(!epilog(valid_first, hit)))
-        {
-          /* check if there is s second hit */
-          const vbool<M> valid_second = valid_front & valid_back;
-          if (unlikely(none(valid_second)))
-            return false;
-
-          /* construct second hit */
-          const vfloat<M> t_second  = select(valid_front, t_back, t_front);
-          const Vec3vf<M> Ng_second = select(valid_front, td_back, td_front) * ray_dir - perp;
-          hit = SphereIntersectorHitM<M> (t_second, Ng_second);
-          return epilog(valid_second, hit);
-        }
-
-        // check for possible second hits between accepted filter hit
-        const vbool<M> valid_second = valid_front & valid_back;
+        /* invoke intersection filter for first hit */
+        const bool is_hit_first = epilog(valid_first, hit);
+                
+        /* check for possible second hits before potentially accepted hit */
+        const vfloat<M> t_second = t_back;
+        const vbool<M> valid_second = valid_front & valid_back & (t_second <= ray.tfar[k]);
         if (unlikely(none(valid_second)))
-          return true;
-        const vbool<M> valid_between = valid_second & (select(valid_front, t_back, t_front) < ray.tfar[k]);
-        if (unlikely(none(valid_between)))
-          return true;
+          return is_hit_first;
 
-        const vfloat<M> t_second  = select(valid_between, t_back, t_first);
-        const Vec3vf<M> Ng_second = select(valid_between, td_back* ray_dir - perp, Ng_first);
+        /* invoke intersection filter for second hit */
+        const Vec3vf<M> Ng_second = td_back * ray_dir - perp;
         hit = SphereIntersectorHitM<M> (t_second, Ng_second);
-
-        return epilog(valid_second, hit);
+        const bool is_hit_second = epilog(valid_second, hit);
+        
+        return is_hit_first | is_hit_second;
       }
     };
   }  // namespace isa
