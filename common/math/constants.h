@@ -23,6 +23,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h> // using cmath causes issues under Windows
 #include <cfloat>
+#include <climits>
 
 namespace embree
 {
