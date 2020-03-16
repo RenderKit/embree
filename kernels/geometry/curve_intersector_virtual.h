@@ -23,6 +23,26 @@
 #include "../bvh/node_intersector1.h"
 #include "../bvh/node_intersector_packet.h"
 
+#include "intersector_epilog.h"
+
+#include "../subdiv/bezier_curve.h"
+#include "../subdiv/bspline_curve.h"
+#include "../subdiv/hermite_curve.h"
+#include "../subdiv/catmullrom_curve.h"
+
+#include "spherei_intersector.h"
+#include "disci_intersector.h"
+
+#include "linei_intersector.h"
+
+#include "curveNi_intersector.h"
+#include "curveNv_intersector.h"
+#include "curveNi_mb_intersector.h"
+
+#include "curve_intersector_distance.h"
+#include "curve_intersector_ribbon.h"
+#include "curve_intersector_oriented.h"
+#include "curve_intersector_sweep.h"
 
 namespace embree
 {
