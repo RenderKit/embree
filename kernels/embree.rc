@@ -37,9 +37,9 @@ BEGIN
             VALUE "FileDescription", "Embree Ray Tracing Kernels"
             VALUE "FileVersion", RTC_VERSION_STRING
             VALUE "ProductVersion", RTC_VERSION_STRING
-            VALUE "LegalCopyright", "Copyright 2009-2020 Intel Corporation"
+            VALUE "LegalCopyright", "© 2009-2020 Intel Corporation"
             VALUE "InternalName", "Embree"
-            VALUE "ProductName", "Intel(R) Embree"
+            VALUE "ProductName", "Intel® Embree"
         END
     END
     BLOCK "VarFileInfo"
