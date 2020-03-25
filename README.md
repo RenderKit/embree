@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.8.0
+% Embree: High Performance Ray Tracing Kernels 3.8.1
 % Intel Corporation
 
 Embree Overview
@@ -85,9 +85,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.8.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x64.vc12.msi). This
+[embree-3.8.1-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.8.1/embree-3.8.1.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.8.0 x64`.
+Files\Intel\Embree v3.8.1 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -95,20 +95,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.8.0 x64`.
+Files\Intel\Embree v3.8.1 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.8.0 x64` and uninstall it.
+3.8.1 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.8.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x64.vc12.windows.zip)
+[embree-3.8.1.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.8.1/embree-3.8.1.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.8.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x64.vc14.windows.zip)
+[embree-3.8.1.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.8.1/embree-3.8.1.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -118,78 +118,16 @@ Studio to the `include` folder of the Embree installation.
 If you plan to ship Embree with your application, best use the Embree
 version from this ZIP file.
 
-Linux RPMs
-----------
-
-Uncompress the `tar.gz` file
-[embree-3.8.0.x86_64.rpm.tar.gz](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x86_64.rpm.tar.gz)
-to obtain the individual RPM files:
-
-    tar xzf embree-3.8.0.x86_64.rpm.tar.gz
-
-To install Embree using the RPM packages on your Linux system, type
-the following:
-
-    sudo rpm --install embree3-lib-3.8.0-1.x86_64.rpm
-    sudo rpm --install embree3-devel-3.8.0-1.noarch.rpm
-    sudo rpm --install embree3-examples-3.8.0-1.x86_64.rpm
-
-You also have to install the Intel® Threading Building Blocks (TBB)
-using `yum`:
-
-    sudo yum install tbb.x86_64 tbb-devel.x86_64
-
-On Debian-based Linux distributions you first need to convert the RPM
-filed into DEB files using the `alien` tool:
-
-    sudo apt-get install alien dpkg-dev debhelper build-essential
-
-    sudo alien embree3-lib-3.8.0-1.x86_64.rpm
-    sudo alien embree3-devel-3.8.0-1.noarch.rpm
-    sudo alien embree3-examples-3.8.0-1.x86_64.rpm
-
-    sudo dpkg -i embree3-lib_3.8.0-2_amd64.deb
-    sudo dpkg -i embree3-devel_3.8.0-2_all.deb
-    sudo dpkg -i embree3-examples_3.8.0-2_amd64.deb
-
-Also install the Intel® Threading Building Blocks (TBB) using `apt-get`:
-
-    sudo apt-get install libtbb-dev
-
-Alternatively you can download the latest TBB version from
-[https://www.threadingbuildingblocks.org/download](https://www.threadingbuildingblocks.org/download)
-and set the `LD_LIBRARY_PATH` environment variable to point
-to the TBB library.
-
-Note that the Embree RPMs are linked against the TBB version coming
-with CentOS. This older TBB version is missing some features required
-to get optimal build performance, and does not support building of
-scenes lazily during rendering. To get a full featured Embree, please
-install using the `tar.gz` files, which always ship with the latest TBB
-version.
-
-Under Linux, Embree is installed by default in the `/usr/lib64` and
-`/usr/include` directories. This way applications will find Embree
-automatically. The Embree tutorials are installed into the
-`/usr/bin/embree3` folder. Specify the full path to
-the tutorials to start them.
-
-To uninstall Embree, just execute the following:
-
-    sudo rpm --erase embree3-lib-3.8.0-1.x86_64
-    sudo rpm --erase embree3-devel-3.8.0-1.noarch
-    sudo rpm --erase embree3-examples-3.8.0-1.x86_64
-
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.8.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.8.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.8.1/embree-3.8.1.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.8.0.x86_64.linux.tar.gz
-    source embree-3.8.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.8.1.x86_64.linux.tar.gz
+    source embree-3.8.1.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -202,7 +140,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.8.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x86_64.pkg). This
+[embree-3.8.1.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.8.1/embree-3.8.1.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -224,12 +162,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.8.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.8.0/embree-3.8.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.8.1.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.8.1/embree-3.8.1.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.8.0.x64.macosx.tar.gz
-    source embree-3.8.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.8.1.x64.macosx.tar.gz
+    source embree-3.8.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -8100,3 +8038,4 @@ collecting the next N hits in a single ray query.
 [imgInterpolation]: https://embree.github.io/images/interpolation.jpg
 [imgClosestPoint]: https://embree.github.io/images/closest_point.jpg
 [imgVoronoi]: https://embree.github.io/images/voronoi.jpg
+[imgCollision]: https://embree.github.io/images/collide.jpg

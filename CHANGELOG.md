@@ -1,6 +1,19 @@
 Version History
 ---------------
 
+### Embree 3.8.1
+
+#### New Features:
+
+#### Fixed Issues:
+-   Improved performance of round curve rendering by up to 1.8x.
+-   Bugfix to sphere intersection filter invokation for back hit.
+-   Fixed wrong assertion that triggered for invalid curves which anyway get filtered out.
+-   RelWithDebInfo mode no longer enables assertions.
+-   Fixed an issue in FindTBB.cmake that caused compile error with Debug build under Linux.
+-   Embree releases no longer provide RPMs for Linux. Please use the RPMs coming with the package
+    manager of your Linux distribution.
+
 ### Embree 3.8.0
 
 #### New Features:
