@@ -460,7 +460,7 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.12.0-AVX2-TBB2019.9-INSTANCE:
 release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC12 ispc:ispc1.9.2 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.2 intensity:4 package:ZIP"
   tags:   [win10, icc17, avx512vl]
-  only:   [web]
+  only:   [web, schedules]
   artifacts:
     name: "$env:CI_JOB_NAME"
     paths: [build/*.zip]
@@ -470,7 +470,7 @@ release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
 release-windows-x64-Release-ICC17-VC14-ISPC1.12.0-TBB2019.9-PACKAGE-ZIP:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.9 intensity:4 package:ZIP"
   tags:   [win10, icc17, avx512vl]
-  only:   [web]
+  only:   [web, schedules]
   artifacts:
     name: "$env:CI_JOB_NAME"
     paths: [build/*.zip]
@@ -480,7 +480,7 @@ release-windows-x64-Release-ICC17-VC14-ISPC1.12.0-TBB2019.9-PACKAGE-ZIP:
 release-windows-x64-Release-ICC17-VC14-ISPC1.12.0-TBB2019.9-PACKAGE-MSI:
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.9 intensity:4 package:MSI"
   tags:   [win10, icc17, avx512vl]
-  only:   [web]
+  only:   [web, schedules]
   artifacts:
     name: "$env:CI_JOB_NAME"
     paths: [build/*.msi]
@@ -490,7 +490,7 @@ release-windows-x64-Release-ICC17-VC14-ISPC1.12.0-TBB2019.9-PACKAGE-MSI:
 release-macosx-x64-Release-ICC2019.4-ISPC1.12.0-TBB2019.9-PACKAGE-ZIP:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2019.9 intensity:4 package:ZIP"
   tags:   [mac]
-  only:   [web]
+  only:   [web, schedules]
   artifacts:
     name: "$CI_JOB_NAME"
     paths: [build/*.zip]
@@ -500,7 +500,7 @@ release-macosx-x64-Release-ICC2019.4-ISPC1.12.0-TBB2019.9-PACKAGE-ZIP:
 release-macosx-x64-Release-ICC2019.4-ISPC1.12.0-TBB-PACKAGE-PKG:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
   tags:   [mac]
-  only:   [web]
+  only:   [web, schedules]
   artifacts:
     name: "$CI_JOB_NAME"
     paths: [build/*.pkg]
@@ -511,7 +511,7 @@ release-linux-x64-Release-ICC2019.4-ISPC1.12.0-TBB2019.9-PACKAGE-ZIP:
   image: embreedocker/centos:7.4
   script: "scripts/test.py platform:x64 build:Release compiler:ICC2019.4 ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2019.9 intensity:4 package:ZIP"
   tags:   [docker, avx512vl]
-  only:   [web]
+  only:   [web, schedules]
   artifacts:
     name: "$CI_JOB_NAME"
     paths: [build/*.tar.gz]
