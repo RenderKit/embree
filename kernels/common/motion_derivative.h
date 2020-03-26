@@ -103,9 +103,10 @@ struct MotionDerivative
     findRoots(eval, interval, numRoots, roots, maxNumRoots);
     return numRoots;
   }
-  
+
   template<typename Eval>
   static void findRoots(
+
     Eval const& eval,
     Interval1f const& interval,
     unsigned int& numRoots,
@@ -124,9 +125,12 @@ struct MotionDerivative
         return;
       }
       if (numRoots < maxNumRoots) {
-        roots[numRoots] = split;
+        roots[numRoots++] = split;
       }
-      numRoots++;
+      if (numRoots > maxNumRoots) {
+        printf("error: more roots than expected\n"); // FIXME: workaround for ICC2019.4 compiler bug under macOS
+        return;
+      }
       return;
     }
 
