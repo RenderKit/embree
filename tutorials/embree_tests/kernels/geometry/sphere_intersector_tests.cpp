@@ -65,7 +65,6 @@ TEST_CASE	("Overlapping spheres with filtering - Issue 676 fix-intersection-epil
 
 	sse2::SphereIntersector1<4>::intersect (valid, ray, pre, v0, epilog);
 	int id = ray.id;
-	std::cout << ray.tfar << std::endl;
 	REQUIRE (id == 0);
 	REQUIRE (ray.tfar == Approx (10.2983));
 }
