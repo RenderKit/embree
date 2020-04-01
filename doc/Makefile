@@ -76,7 +76,7 @@ $(webpages): tmp/links_web.md tmp/images_local_png.md tmp/webtemplate.html
 www/%.html:
 	$(markdown2web)
 
-www/index.html: tmp/overview.md src/resources.html tmp/support.md tmp/changelog.md tmp/acknowledgement.md
+www/index.html: tmp/overview.md src/resources.html tmp/support.md tmp/changelog.md
 www/downloads.html: tmp/platforms.md tmp/downloading.md tmp/install.md tmp/compilation.md
 www/tutorials.html: tmp/tutorials.md
 www/renderer.html: tmp/renderer.md
@@ -136,7 +136,7 @@ endif
 tmp/api_inc.md: tmp/api.md
 	$(PANDOC) --columns=71 $+ --filter src/IncludeFilter.py -t markdown | $(convertbsp) > $@
 
-doc/README.md: tmp/metadata.md tmp/overview.md tmp/platforms.md tmp/support.md tmp/acknowledgement.md tmp/install.md tmp/compilation.md tmp/api_inc.md tmp/tutorials.md tmp/links_local.md tmp/images_url.md
+doc/README.md: tmp/metadata.md tmp/overview.md tmp/platforms.md tmp/support.md tmp/install.md tmp/compilation.md tmp/api_inc.md tmp/tutorials.md tmp/links_local.md tmp/images_url.md
 	cat $+ | $(convertnbsppagebreak) > $@
 
 doc/CHANGELOG.md: tmp/changelog.md
@@ -157,7 +157,7 @@ tmp/api.tex: tmp/api_inc.md tmp/links_local.md tmp/images_local_pdf.md
 
 doc/readme.pdf: preamble.tex tmp/version
 
-doc/readme.pdf: tmp/readme.tex tmp/overview.tex tmp/changelog.tex tmp/platforms.tex tmp/support.tex tmp/acknowledgement.tex tmp/install.tex tmp/compilation.tex tmp/api.tex tmp/tutorials.tex $(images_jpg) $(images_pdf)
+doc/readme.pdf: tmp/readme.tex tmp/overview.tex tmp/changelog.tex tmp/platforms.tex tmp/support.tex tmp/install.tex tmp/compilation.tex tmp/api.tex tmp/tutorials.tex $(images_jpg) $(images_pdf)
 	xelatex -output-directory=tmp $<
 	xelatex -output-directory=tmp $<
 	cp tmp/readme.pdf $@
