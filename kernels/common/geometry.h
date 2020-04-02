@@ -22,6 +22,7 @@ namespace embree
         numQuads(0), numMBQuads(0), 
         numBezierCurves(0), numMBBezierCurves(0), 
         numLineSegments(0), numMBLineSegments(0), 
+        numRoundLineSegments(0), numMBRoundLineSegments(0), 
         numSubdivPatches(0), numMBSubdivPatches(0), 
         numUserGeometries(0), numMBUserGeometries(0), 
         numInstancesCheap(0), numMBInstancesCheap(0), 
@@ -30,8 +31,8 @@ namespace embree
         numPoints(0), numMBPoints(0) {}
 
     __forceinline size_t size() const {
-      return    numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numGrids + numPoints
-              + numMBTriangles + numMBQuads + numMBBezierCurves + numMBLineSegments + numMBSubdivPatches + numMBUserGeometries + numMBInstancesCheap + numMBInstancesExpensive + numMBGrids + numMBPoints;
+      return    numTriangles + numQuads + numBezierCurves + numLineSegments + numRoundLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numGrids + numPoints
+              + numMBTriangles + numMBQuads + numMBBezierCurves + numMBLineSegments + numMBRoundLineSegments + numMBSubdivPatches + numMBUserGeometries + numMBInstancesCheap + numMBInstancesExpensive + numMBGrids + numMBPoints;
     }
 
     __forceinline unsigned int enabledGeometryTypesMask() const
@@ -39,7 +40,7 @@ namespace embree
       unsigned int mask = 0;
       if (numTriangles) mask |= 1 << 0;
       if (numQuads) mask |= 1 << 1;
-      if (numBezierCurves+numLineSegments) mask |= 1 << 2;
+      if (numBezierCurves+numLineSegments+numRoundLineSegments) mask |= 1 << 2;
       if (numSubdivPatches) mask |= 1 << 3;
       if (numUserGeometries) mask |= 1 << 4;
       if (numInstancesCheap) mask |= 1 << 5;
@@ -50,7 +51,7 @@ namespace embree
       unsigned int maskMB = 0;
       if (numMBTriangles) maskMB |= 1 << 0;
       if (numMBQuads) maskMB |= 1 << 1;
-      if (numMBBezierCurves+numMBLineSegments) maskMB |= 1 << 2;
+      if (numMBBezierCurves+numMBLineSegments+numMBRoundLineSegments) maskMB |= 1 << 2;
       if (numMBSubdivPatches) maskMB |= 1 << 3;
       if (numMBUserGeometries) maskMB |= 1 << 4;
       if (numMBInstancesCheap) maskMB |= 1 << 5;
@@ -73,6 +74,8 @@ namespace embree
       ret.numMBBezierCurves = numMBBezierCurves + rhs.numMBBezierCurves;
       ret.numLineSegments = numLineSegments + rhs.numLineSegments;
       ret.numMBLineSegments = numMBLineSegments + rhs.numMBLineSegments;
+      ret.numRoundLineSegments = numRoundLineSegments + rhs.numRoundLineSegments;
+      ret.numMBRoundLineSegments = numMBRoundLineSegments + rhs.numMBRoundLineSegments;
       ret.numSubdivPatches = numSubdivPatches + rhs.numSubdivPatches;
       ret.numMBSubdivPatches = numMBSubdivPatches + rhs.numMBSubdivPatches;
       ret.numUserGeometries = numUserGeometries + rhs.numUserGeometries;
@@ -98,6 +101,8 @@ namespace embree
     size_t numMBBezierCurves;        //!< number of enabled motion blurred curves
     size_t numLineSegments;          //!< number of enabled line segments
     size_t numMBLineSegments;        //!< number of enabled line motion blurred segments
+    size_t numRoundLineSegments;       //!< number of enabled Round line segments
+    size_t numMBRoundLineSegments;     //!< number of enabled Round line motion blurred segments
     size_t numSubdivPatches;         //!< number of enabled subdivision patches
     size_t numMBSubdivPatches;       //!< number of enabled motion blured subdivision patches
     size_t numUserGeometries;        //!< number of enabled user geometries

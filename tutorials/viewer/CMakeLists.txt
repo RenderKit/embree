@@ -35,6 +35,7 @@ ENDIF()
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_MODELS_TEST(test-models-subdiv.txt     viewer viewer viewer)
+  ADD_EMBREE_MODELS_TEST(test-models-curves.txt     viewer viewer viewer)
   ADD_EMBREE_MODELS_TEST(test-models-intensity2.txt viewer viewer viewer)
 ENDIF()
 

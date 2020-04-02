@@ -36,3 +36,8 @@ IF (WIN32)
   ENDIF()
   INSTALL(PROGRAMS $<TARGET_FILE_DIR:tutorial>/glfw3.dll DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
 ENDIF (WIN32)
+
+ADD_CUSTOM_COMMAND(TARGET tutorial POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/tutorials/models $<TARGET_FILE_DIR:tutorial>/models
+  COMMENT "Copying example models")
+

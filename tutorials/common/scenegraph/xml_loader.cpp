@@ -1164,11 +1164,23 @@ namespace embree
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
     std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
     curveid.resize(indices.size(),0);
-    mesh->hairs.resize(indices.size()); 
-    for (size_t i=0; i<indices.size(); i++) 
-      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],curveid[i]);
+    mesh->hairs.resize(indices.size());
+    for (size_t i=0; i<indices.size(); i++) {
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],
+                                                     curveid[i]);
+    }
 
     mesh->flags = loadUCharArray(xml->childOpt("flags"));
+    if (mesh->flags.empty() && type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
+      mesh->flags.resize (indices.size());
+      bool hasLeft = false;
+      for (size_t i=0; i<indices.size(); i++) {
+        bool hasRight = (i==indices.size()-1) ? false : indices[i+1] == indices[i]+1;
+        mesh->flags[i] |= hasLeft << 0;
+        mesh->flags[i] |= hasRight << 1;
+        hasLeft = hasRight;
+      }
+    }
 
     if (type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
         type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE ||
@@ -1341,24 +1353,25 @@ namespace embree
         const bool subdiv_mode = xml->parm("subdiv") == "1";
         node = state.sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
       }
-      else if (xml->name == "ref"             ) node = state.sceneMap[id] = state.sceneMap[xml->parm("id")];
-      else if (xml->name == "PointLight"      ) node = state.sceneMap[id] = loadPointLight      (xml);
-      else if (xml->name == "SpotLight"       ) node = state.sceneMap[id] = loadSpotLight       (xml);
-      else if (xml->name == "DirectionalLight") node = state.sceneMap[id] = loadDirectionalLight(xml);
-      else if (xml->name == "DistantLight"    ) node = state.sceneMap[id] = loadDistantLight    (xml);
-      else if (xml->name == "AmbientLight"    ) node = state.sceneMap[id] = loadAmbientLight    (xml);
-      else if (xml->name == "TriangleLight"   ) node = state.sceneMap[id] = loadTriangleLight   (xml);
-      else if (xml->name == "QuadLight"       ) node = state.sceneMap[id] = loadQuadLight       (xml);
-      else if (xml->name == "TriangleMesh"    ) node = state.sceneMap[id] = loadTriangleMesh    (xml);
-      else if (xml->name == "QuadMesh"        ) node = state.sceneMap[id] = loadQuadMesh        (xml);
-      else if (xml->name == "GridMesh"        ) node = state.sceneMap[id] = loadGridMesh        (xml);
-      else if (xml->name == "SubdivisionMesh" ) node = state.sceneMap[id] = loadSubdivMesh      (xml);
-      else if (xml->name == "Hair"            ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "LineSegments"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
-      else if (xml->name == "BezierHair"      ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "BSplineHair"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
-      else if (xml->name == "BezierCurves"    ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
-      else if (xml->name == "BSplineCurves"   ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+      else if (xml->name == "ref"              ) node = state.sceneMap[id] = state.sceneMap[xml->parm("id")];
+      else if (xml->name == "PointLight"       ) node = state.sceneMap[id] = loadPointLight      (xml);
+      else if (xml->name == "SpotLight"        ) node = state.sceneMap[id] = loadSpotLight       (xml);
+      else if (xml->name == "DirectionalLight" ) node = state.sceneMap[id] = loadDirectionalLight(xml);
+      else if (xml->name == "DistantLight"     ) node = state.sceneMap[id] = loadDistantLight    (xml);
+      else if (xml->name == "AmbientLight"     ) node = state.sceneMap[id] = loadAmbientLight    (xml);
+      else if (xml->name == "TriangleLight"    ) node = state.sceneMap[id] = loadTriangleLight   (xml);
+      else if (xml->name == "QuadLight"        ) node = state.sceneMap[id] = loadQuadLight       (xml);
+      else if (xml->name == "TriangleMesh"     ) node = state.sceneMap[id] = loadTriangleMesh    (xml);
+      else if (xml->name == "QuadMesh"         ) node = state.sceneMap[id] = loadQuadMesh        (xml);
+      else if (xml->name == "GridMesh"         ) node = state.sceneMap[id] = loadGridMesh        (xml);
+      else if (xml->name == "SubdivisionMesh"  ) node = state.sceneMap[id] = loadSubdivMesh      (xml);
+      else if (xml->name == "Hair"             ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "LineSegments"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
+      else if (xml->name == "RoundLineSegments") node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
+      else if (xml->name == "BezierHair"       ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "BSplineHair"      ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
+      else if (xml->name == "BezierCurves"     ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
+      else if (xml->name == "BSplineCurves"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
       
       else if (xml->name == "Curves")
       {

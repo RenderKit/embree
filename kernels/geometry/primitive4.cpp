@@ -6,6 +6,7 @@
 #include "curveNi.h"
 #include "curveNi_mb.h"
 #include "linei.h"
+#include "roundlinei.h"
 #include "triangle.h"
 #include "trianglev.h"
 #include "trianglev_mb.h"
@@ -30,7 +31,10 @@ namespace embree
   size_t Curve4v::Type::sizeActive(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line4i*)This)->size();
+      if ((*This & Geometry::GType::GTY_SUBTYPE_MASK) == Geometry::GType::GTY_SUBTYPE_ROUND_CURVE)
+        return ((RoundLine4i*)This)->size();
+      else
+        return ((Line4i*)This)->size();
     else
       return ((Curve4v*)This)->N;
   }
@@ -48,9 +52,12 @@ namespace embree
   size_t Curve4v::Type::getBytes(const char* This) const
   {
      if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
+      if ((*This & Geometry::GType::GTY_SUBTYPE_MASK) == Geometry::GType::GTY_SUBTYPE_ROUND_CURVE)
+        return RoundLine4i::bytes(sizeActive(This));
+      else
+        return Line4i::bytes(sizeActive(This));
      else
-       return Curve4v::bytes(sizeActive(This));
+        return Curve4v::bytes(sizeActive(This));
   }
 
   /********************** Curve4i **************************/
@@ -64,7 +71,10 @@ namespace embree
   size_t Curve4i::Type::sizeActive(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line4i*)This)->size();
+      if ((*This & Geometry::GType::GTY_SUBTYPE_MASK) == Geometry::GType::GTY_SUBTYPE_ROUND_CURVE)
+        return ((RoundLine4i*)This)->size();
+      else
+        return ((Line4i*)This)->size();
     else
       return ((Curve4i*)This)->N;
   }
@@ -82,9 +92,12 @@ namespace embree
   size_t Curve4i::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
+      if ((*This & Geometry::GType::GTY_SUBTYPE_MASK) == Geometry::GType::GTY_SUBTYPE_ROUND_CURVE)
+        return RoundLine4i::bytes(sizeActive(This));
+      else
+        return Line4i::bytes(sizeActive(This));
      else
-       return Curve4i::bytes(sizeActive(This));
+        return Curve4i::bytes(sizeActive(This));
   }
 
   /********************** Curve4iMB **************************/
@@ -98,7 +111,10 @@ namespace embree
   size_t Curve4iMB::Type::sizeActive(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-      return ((Line4i*)This)->size();
+      if ((*This & Geometry::GType::GTY_SUBTYPE_MASK) == Geometry::GType::GTY_SUBTYPE_ROUND_CURVE)
+        return ((RoundLine4i*)This)->size();
+      else
+        return ((Line4i*)This)->size();
     else
       return ((Curve4iMB*)This)->N;
   }
@@ -116,9 +132,12 @@ namespace embree
   size_t Curve4iMB::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
+      if ((*This & Geometry::GType::GTY_SUBTYPE_MASK) == Geometry::GType::GTY_SUBTYPE_ROUND_CURVE)
+        return RoundLine4i::bytes(sizeActive(This));
+      else
+        return Line4i::bytes(sizeActive(This));
      else
-       return Curve4iMB::bytes(sizeActive(This));
+        return Curve4iMB::bytes(sizeActive(This));
   }
 
   /********************** Line4i **************************/
@@ -141,6 +160,28 @@ namespace embree
   template<>
   size_t Line4i::Type::getBytes(const char* This) const {
     return sizeof(Line4i);
+  }
+
+  /********************** RoundLine4i **************************/
+
+  template<>
+  const char* RoundLine4i::Type::name () const {
+    return "roundline4i";
+  }
+
+  template<>
+  size_t RoundLine4i::Type::sizeActive(const char* This) const {
+    return ((RoundLine4i*)This)->size();
+  }
+
+  template<>
+  size_t RoundLine4i::Type::sizeTotal(const char* This) const {
+    return 4;
+  }
+
+  template<>
+  size_t RoundLine4i::Type::getBytes(const char* This) const {
+    return sizeof(RoundLine4i);
   }
 
   /********************** Triangle4 **************************/

@@ -29,17 +29,20 @@
     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE - 
       flat normal oriented curve geometry with Catmull-Rom basis
 
+    RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE -
+      capped cone curve geometry with linear basis and spherical ending
+
     RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE -
-      sweep surface curve geometry with cubic Bézier basis
+      swept surface curve geometry with cubic Bézier basis
 
     RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE -
-      sweep surface curve geometry with cubic B-spline basis
+      swept surface curve geometry with cubic B-spline basis
 
     RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE -
-      sweep surface curve geometry with cubic Hermite basis
+      swept surface curve geometry with cubic Hermite basis
 
     RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE -
-      sweep surface curve geometry with Catmull-Rom basis
+      swept surface curve geometry with Catmull-Rom basis
 
 #### SYNOPSIS
 
@@ -54,6 +57,7 @@
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE);
@@ -72,6 +76,7 @@ created by passing `RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_HERMITE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_CATMULL_ROM_CURVE`,
+`RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE`, or
