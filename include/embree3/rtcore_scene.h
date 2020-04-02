@@ -27,6 +27,10 @@ enum RTCSceneFlags
 /* Creates a new scene. */
 RTC_API RTCScene rtcNewScene(RTCDevice device);
 
+/* Returns the device the scene got created in. The reference count of
+ * the device is incremented by this function. */
+RTC_API RTCDevice rtcGetSceneDevice(RTCScene hscene);
+   
 /* Retains the scene (increments the reference count). */
 RTC_API void rtcRetainScene(RTCScene scene);
 

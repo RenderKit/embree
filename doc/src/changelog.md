@@ -1,9 +1,10 @@
 Version History
 ---------------
 
-### Embree 3.8.1
+### Embree 3.9.0
 
 #### New Features:
+-  Added rtcGetSceneDevice API function, that returns the device a scene got created in.
 
 #### Fixed Issues:
 -   Improved performance of round curve rendering by up to 1.8x.

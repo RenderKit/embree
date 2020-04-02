@@ -540,6 +540,11 @@ Embree API Reference
 ```
 \pagebreak
 
+## rtcGetSceneDevice
+``` {include=src/api/rtcGetSceneDevice.md}
+```
+\pagebreak
+
 ## rtcRetainScene
 ``` {include=src/api/rtcRetainScene.md}
 ```

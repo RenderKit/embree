@@ -166,6 +166,17 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
+  RTC_API RTCDevice rtcGetSceneDevice(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetSceneDevice);
+    RTC_VERIFY_HANDLE(hscene);
+    return (RTCDevice)scene->device->refInc(); // user will own one additional device reference
+    RTC_CATCH_END2(scene);
+    return (RTCDevice)nullptr;
+  }
+
   RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;
@@ -1262,7 +1273,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(device);
     return nullptr;
   }
-  
+
   RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int userPrimitiveCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
