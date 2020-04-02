@@ -504,14 +504,17 @@ namespace embree
 
     if (type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE ||
         type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE ||
-        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE)
+        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE ||
+        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE)
     {
       if (!normals.size())
         THROW_RUNTIME_ERROR("normal array required for oriented curve");
 
       for (const auto& n : normals) 
-        if (n.size() != N) 
+        if (n.size() != N) {
+          std::cout << n.size() << " " << N << std::endl;
           THROW_RUNTIME_ERROR("incompatible normal array size");
+        }
     }
     else
     {

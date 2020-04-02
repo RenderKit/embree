@@ -1172,7 +1172,10 @@ namespace embree
 
     if (type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
         type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE ||
-        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE) {
+        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE ||
+        type == RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE ||
+        type == RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE ||
+        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE) {
       for (auto& vertices : mesh->positions)
         fix_bspline_end_points(indices,vertices);
     }
@@ -1357,8 +1360,10 @@ namespace embree
       else if (xml->name == "LineSegments"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
       else if (xml->name == "BezierHair"      ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
       else if (xml->name == "BSplineHair"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
+      else if (xml->name == "CatmullRomHair"  ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE);
       else if (xml->name == "BezierCurves"    ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
       else if (xml->name == "BSplineCurves"   ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+      else if (xml->name == "CatmullRomCurves") node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE);
       
       else if (xml->name == "Curves")
       {
@@ -1399,6 +1404,17 @@ namespace embree
             type = RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE;
           else if (str_subtype == "normal_oriented")
             type = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE;
+          else
+            THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
+        }
+        else if (str_type == "catmull_rom")
+        {
+          if (str_subtype == "flat" || str_subtype == "ribbon")
+            type = RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE;
+          else if (str_subtype == "round" || str_subtype == "surface")
+            type = RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE;
+          else if (str_subtype == "normal_oriented")
+            type = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE;
           else
             THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
         }
