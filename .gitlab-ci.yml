@@ -66,8 +66,8 @@ continuous-centos7.4-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB:
   tags:   [docker]
   only:   [pushes]
 
-continuous-fedora27-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
-  image: embreedocker/fedora:27
+continuous-fedora28-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
+  image: embreedocker/fedora:28
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB intensity:2"
   tags:   [docker, avx512vl]
   only:   [pushes]
