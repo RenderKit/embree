@@ -6,7 +6,6 @@
 
 #include "../geometry/pointi.h"
 #include "../geometry/linei.h"
-#include "../geometry/roundlinei.h"
 #include "../geometry/curveNi.h"
 #include "../geometry/curveNv.h"
 
@@ -16,7 +15,7 @@ namespace embree
 {
   namespace isa
   {
-    template<int N, typename CurvePrimitive, typename LinePrimitive, typename RoundLinePrimitive, typename PointPrimitive>
+    template<int N, typename CurvePrimitive, typename LinePrimitive, typename PointPrimitive>
     struct BVHNHairBuilderSAH : public Builder
     {
       typedef BVHN<N> BVH;
@@ -75,12 +74,7 @@ namespace embree
           if (scene->get(geomID0)->getTypeMask() & Geometry::MTY_POINTS)
             return PointPrimitive::createLeaf(bvh,prims,set,alloc);
           else if (scene->get(geomID0)->getCurveBasis() == Geometry::GTY_BASIS_LINEAR)
-          {
-            if (scene->get(geomID0)->getTypeMask() & Geometry::MTY_ROUND_LINEAR_CURVE)
-              return RoundLinePrimitive::createLeaf(bvh,prims,set,alloc);
-            else 
-              return LinePrimitive::createLeaf(bvh,prims,set,alloc);
-          }
+            return LinePrimitive::createLeaf(bvh,prims,set,alloc);
           else
             return CurvePrimitive::createLeaf(bvh,prims,set,alloc);
         };
@@ -124,12 +118,12 @@ namespace embree
     };
     
     /*! entry functions for the builder */
-    Builder* BVH4Curve4vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4v,Line4i,RoundLine4i,Point4i>((BVH4*)bvh,scene); }
-    Builder* BVH4Curve4iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4i,Line4i,RoundLine4i,Point4i>((BVH4*)bvh,scene); }
+    Builder* BVH4Curve4vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4v,Line4i,Point4i>((BVH4*)bvh,scene); }
+    Builder* BVH4Curve4iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve4i,Line4i,Point4i>((BVH4*)bvh,scene); }
 
 #if defined(__AVX__)
-    Builder* BVH8Curve8vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Curve8v,Line8i,RoundLine8i,Point8i>((BVH8*)bvh,scene); }
-    Builder* BVH4Curve8iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve8i,Line8i,RoundLine8i,Point8i>((BVH4*)bvh,scene); }
+    Builder* BVH8Curve8vBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<8,Curve8v,Line8i,Point8i>((BVH8*)bvh,scene); }
+    Builder* BVH4Curve8iBuilder_OBB_New   (void* bvh, Scene* scene, size_t mode) { return new BVHNHairBuilderSAH<4,Curve8i,Line8i,Point8i>((BVH4*)bvh,scene); }
 #endif
 
   }

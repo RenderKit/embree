@@ -27,7 +27,7 @@ namespace embree
     template<int M, int Mx, bool filter>
     struct RoundLinearCurveMiIntersector1
     {
-      typedef RoundLineMi<M> Primitive;
+      typedef LineMi<M> Primitive;
       typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
@@ -55,7 +55,7 @@ namespace embree
     template<int M, int Mx, bool filter>
     struct RoundLinearCurveMiMBIntersector1
     {
-      typedef RoundLineMi<M> Primitive;
+      typedef LineMi<M> Primitive;
       typedef CurvePrecalculations1 Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
@@ -83,7 +83,7 @@ namespace embree
     template<int M, int Mx, int K, bool filter>
     struct RoundLinearCurveMiIntersectorK
     {
-      typedef RoundLineMi<M> Primitive;
+      typedef LineMi<M> Primitive;
       typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
@@ -106,7 +106,7 @@ namespace embree
     template<int M, int Mx, int K, bool filter>
     struct RoundLinearCurveMiMBIntersectorK
     {
-      typedef RoundLineMi<M> Primitive;
+      typedef LineMi<M> Primitive;
       typedef CurvePrecalculationsK<K> Precalculations;
 
       static __forceinline void intersect(const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line)
