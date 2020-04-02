@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "roundlinei.h"
 #include "roundline_intersector.h"
 #include "intersector_epilog.h"
 
