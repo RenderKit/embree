@@ -11,7 +11,7 @@
 
 #include <immintrin.h>
 
-#if defined(__BMI__) && defined(__GNUC__)
+#if defined(__BMI__) && defined(__GNUC__) && !defined(__INTEL_COMPILER)
   #if !defined(_tzcnt_u32)
     #define _tzcnt_u32 __tzcnt_u32
   #endif
