@@ -115,9 +115,9 @@ namespace embree
 
     __forceinline vuint<M> getVertexID(const VertexIDs id, const Scene* const scene) const 
     {
+#if !defined(EMBREE_COMPACT_POLYS)
       switch (id)
       {
-#if !defined(EMBREE_COMPACT_POLYS)
         case V0:
           return v0_;
           break;
@@ -127,11 +127,28 @@ namespace embree
         case V2:
           return v2_;
           break;
-#endif
         default:
           assert(false);
           break;
       }
+#else 
+      vuint<M> v = zero;
+      for (size_t i=0; i<M; i++)
+      {
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomIDs[i]);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primIDs[i]);
+        if (-1 != primIDs[i]) {
+          unsigned int int_stride = mesh->vertices0.getStride()/4;
+          v[i] = tri.v[(size_t)id] * int_stride;
+        } else {
+          assert(i);
+          if (likely(i > 0)) {
+            v[i] = v[0];
+          }
+        }
+      }
+      return v;
+#endif
     }
 
     /* Gather the triangles */
@@ -235,36 +252,45 @@ namespace embree
     template<typename PrimRefT>
     __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
-      vuint<M> geomID = -1, primID = -1;
+#if !defined(EMBREE_COMPACT_POLYS)
       vuint<M> v0 = zero, v1 = zero, v2 = zero;
+#endif
+      vuint<M> geomID = -1, primID = -1;
       const PrimRefT* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
       {
-        const TriangleMesh* mesh = scene->get<TriangleMesh>(prim->geomID());
-        const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
         if (begin<end) {
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
+#if !defined(EMBREE_COMPACT_POLYS)
+          const TriangleMesh* mesh = scene->get<TriangleMesh>(prim->geomID());
+          const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
           unsigned int int_stride = mesh->vertices0.getStride()/4;
           v0[i] = tri.v[0] * int_stride;
           v1[i] = tri.v[1] * int_stride;
           v2[i] = tri.v[2] * int_stride;
+#endif
           begin++;
         } else {
           assert(i);
           if (likely(i > 0)) {
             geomID[i] = geomID[0];
             primID[i] = -1;
+#if !defined(EMBREE_COMPACT_POLYS)
             v0[i] = v0[0];
             v1[i] = v0[0];
             v2[i] = v0[0];
+#endif
           }
         }
         if (begin<end) prim = &prims[begin];
       }
-
+#if !defined(EMBREE_COMPACT_POLYS)
       new (this) TriangleMi(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
+#else 
+      new (this) TriangleMi(geomID,primID); // FIXME: use non temporal store
+#endif
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
