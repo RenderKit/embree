@@ -107,11 +107,15 @@ control vertex (`x`, `y`, `z`, `r` order and `RTC_FORMAT_FLOAT4`
 format) and the normal buffer stores a single precision normal per
 control vertex (`x`, `y`, `z` order and `RTC_FORMAT_FLOAT3` format).
 
+##### Linear Basis
+
 For the linear basis the indices point to the first of 2 consecutive
 control points in the vertex buffer. The first control point is the
 start and the second control point the end of the line segment. When
 constructing hair strands in this basis, the end-point can be shared
 with the start of the next line segment.
+
+##### Bézier Basis
 
 For the cubic Bézier basis the indices point to the first of 4
 consecutive control points in the vertex buffer. These control points
@@ -119,6 +123,8 @@ use the cubic Bézier basis, where the first control point represents
 the start point of the curve, and the 4th control point the end point
 of the curve. The Bézier basis is interpolating, thus the curve does
 go exactly through the first and fourth control vertex.
+
+##### B-spline Basis
 
 For the cubic B-spline basis the indices point to the first of 4
 consecutive control points in the vertex buffer. These control points
@@ -130,6 +136,8 @@ continuous neighboring curve segments, e.g. the curves (p0,p1,p2,p3)
 and (p1,p2,p3,p4) are C1 continuous. This feature make this basis a
 good choise to construct continuous multi-segment curves, as memory
 consumption can be kept minimal.
+
+##### Hermite Basis
 
 For the cubic Hermite basis the indices point to the first of 2
 consecutive points in the vertex buffer, and the first of 2
@@ -143,9 +151,13 @@ shared. Different versions of Catmull-Rom splines can be easily
 constructed usig the Hermite basis, by calculating a proper tangent
 buffer from the control points.
 
+##### Catmull-Rom Basis
+
 For the Catmull-Rom basis the indices point to the first of 4
 consecutive control points in the vertex buffer.  This basis goes
 through p1 and p2, with tangents (p2-p0)/2 and (p3-p1)/2.
+
+##### Flat Curves
 
 The `RTC_GEOMETRY_TYPE_FLAT_*` flat mode is a fast mode designed to
 render distant hair. In this mode the curve is rendered as a connected
@@ -154,6 +166,8 @@ subpixel size, and zooming onto the curve might show geometric
 artifacts. The number of quads to subdivide into can be specified
 through the `rtcSetGeometryTessellationRate` function. By default the
 tessellation rate is 4.
+
+##### Normal Oriented Curves
 
 The `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_*` mode is a mode designed to
 render blades of grass. In this mode a vertex spline has to get
@@ -181,13 +195,23 @@ provided normals are parallel to the curve direction. For this reason
 the provided normals should best be kept as perpendicular to the curve
 direction as possible.
 
+##### Round Curves
+
 In the `RTC_GEOMETRY_TYPE_ROUND_*` round mode, a real geometric
 surface is rendered for the curve, which is more expensive but allows
-closeup views. This mode renders a sweep surface by sweeping a varying
-radius circle tangential along the curve. As a limitation, the radius
-of the curve has to be smaller than the curvature radius of the curve
-at each location on the curve. The round mode is currently not
-supported for the linear basis.
+closeup views.
+
+For the linear basis the round mode renders cones that tangentially
+touch spheres with the proper radius put at vertex start and end
+positions. The geometry clips away parts of the spheres that lie
+inside the neighboring segments, thus the curve interiour will also
+render properly as long as only neighboring segments penetrate into a
+segment.
+
+For the cubic polynomial bases, the round mode renders a sweep surface
+by sweeping a varying radius circle tangential along the curve. As a
+limitation, the radius of the curve has to be smaller than the
+curvature radius of the curve at each location on the curve.
 
 The intersection with the curve segment stores the parametric hit
 location along the curve segment as u-coordinate (range 0 to +1).
