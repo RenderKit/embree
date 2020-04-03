@@ -30,9 +30,9 @@ continuous-macosx-x64-Debug-CLANG-ISPC1.12.0-SSE2-TBB2019.9:
   tags:   [mac]
   only:   [pushes]
 
-continuous-linux-avx512vl-x64-Debug-ICC2020.0-ISPC1.12.0-AVX512SKX-TBB2019.9:
+continuous-linux-avx512vl-x64-Debug-ICC2019.4-ISPC1.12.0-AVX512SKX-TBB2019.9:
   image: embreedocker/fedora:27
-  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.0 ispc:ispc1.12.0 isa:AVX512SKX tasking:TBB2019.9 intensity:2 maxinstancelevelcount:4"
+  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.12.0 isa:AVX512SKX tasking:TBB2019.9 intensity:2 maxinstancelevelcount:4"
   tags:   [docker, avx512vl]
   only:   [pushes]
 
@@ -278,11 +278,6 @@ nightly-linux-x64-Debug-ICC2019.4-ISPC1.12.0-AVX2-TBB2019.9:
   tags:   [docker] # avx2
   only:   [schedules]
 
-nightly-linux-x64-Debug-ICC2020.0-ISPC1.12.0-AVX2-TBB2019.9:
-  image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.0 ispc:ispc1.12.0 isa:AVX2 tasking:TBB2019.9 intensity:4"
-  tags:   [docker] # avx2
-  only:   [schedules]
 
 # Testing on different Linux distributions
 
