@@ -142,6 +142,9 @@ namespace embree
 #if defined(EMBREE_FILTER_FUNCTION)
     v += "intersection_filter ";
 #endif
+#if defined (EMBREE_COMPACT_POLYS)
+    v += "compact_polys ";
+#endif
     return v;
   }
 
@@ -424,6 +427,12 @@ namespace embree
     case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED: return 1;
 #else
     case RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED: return 0;
+#endif
+
+#if defined(EMBREE_COMPACT_POLYS)
+    case RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED: return 1;
+#else
+    case RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED: return 0;
 #endif
 
 #if defined(EMBREE_FILTER_FUNCTION)

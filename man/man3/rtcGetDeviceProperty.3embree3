@@ -86,6 +86,11 @@ back face culling is enabled.
 This is only the case if Embree is compiled with
 \f[C]EMBREE_BACKFACE_CULLING\f[] enabled.
 .IP \[bu] 2
+\f[C]RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED\f[]: Queries whether
+compact polys is enabled.
+This is only the case if Embree is compiled with
+\f[C]EMBREE_COMPACT_POLYS\f[] enabled.
+.IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED\f[]: Queries whether
 filter functions are supported, which is the case if Embree is compiled
 with \f[C]EMBREE_FILTER_FUNCTION\f[] enabled.

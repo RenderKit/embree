@@ -69,6 +69,10 @@ Possible properties to query are:
     back face culling is enabled. This is only the case if Embree is
     compiled with `EMBREE_BACKFACE_CULLING` enabled.
 
++   `RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED`: Queries whether
+    compact polys is enabled. This is only the case if Embree is
+    compiled with `EMBREE_COMPACT_POLYS` enabled.
+
 +   `RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED`: Queries whether
     filter functions are supported, which is the case if Embree is
     compiled with `EMBREE_FILTER_FUNCTION` enabled.

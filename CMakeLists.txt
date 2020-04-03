@@ -126,6 +126,7 @@ OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)
 OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
+OPTION(EMBREE_COMPACT_POLYS "Enables double indexed poly layout." OFF)
 
 OPTION(EMBREE_GEOMETRY_TRIANGLE "Enables support for triangle geometries." ON)
 OPTION(EMBREE_GEOMETRY_QUAD "Enables support for quad geometries." ON)

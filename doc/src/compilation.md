@@ -253,6 +253,9 @@ parameters that can be configured in CMake:
   surfaces facing a ray can be hit. This option is turned OFF by
   default.
 
++ `EMBREE_COMPACT_POLYS`: Enables compact tris/quads, i.e. only
+  geomIDs and primIDs are stored inside the leaf nodes.  
+
 + `EMBREE_FILTER_FUNCTION`: Enables the intersection filter function
   feature (ON by default).
 

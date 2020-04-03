@@ -22,6 +22,12 @@ namespace embree
     };
     static Type type;
 
+    enum VertexIDs {
+      V0 = 0,
+      V1,
+      V2,
+    };
+
   public:
 
     /* primitive supports multiple time segments */
@@ -39,12 +45,18 @@ namespace embree
     __forceinline TriangleMi() {  }
 
     /* Construction from vertices and IDs */
+#if !defined(EMBREE_COMPACT_POLYS)
     __forceinline TriangleMi(const vuint<M>& v0,
                              const vuint<M>& v1,
                              const vuint<M>& v2,
                              const vuint<M>& geomIDs,
                              const vuint<M>& primIDs)
-      : v0(v0), v1(v1), v2(v2), geomIDs(geomIDs), primIDs(primIDs) {}
+      : v0_(v0), v1_(v1), v2_(v2), geomIDs(geomIDs), primIDs(primIDs) {}
+#else 
+    __forceinline TriangleMi(const vuint<M>& geomIDs,
+                             const vuint<M>& primIDs)
+      : geomIDs(geomIDs), primIDs(primIDs) {}
+#endif
 
     /* Returns a mask that tells which triangles are valid */
     __forceinline vbool<M> valid() const { return primIDs != vuint<M>(-1); }
@@ -101,6 +113,27 @@ namespace embree
       return (T(one)-ftime)*p0 + ftime*p1;
     }
 
+    __forceinline vuint<M> getVertexID(const VertexIDs id, const Scene* const scene) const 
+    {
+      switch (id)
+      {
+#if !defined(EMBREE_COMPACT_POLYS)
+        case V0:
+          return v0_;
+          break;
+        case V1:
+          return v1_;
+          break;
+        case V2:
+          return v2_;
+          break;
+#endif
+        default:
+          assert(false);
+          break;
+      }
+    }
+
     /* Gather the triangles */
     __forceinline void gather(Vec3vf<M>& p0, Vec3vf<M>& p1, Vec3vf<M>& p2, const Scene* const scene) const;
 
@@ -121,13 +154,13 @@ namespace embree
       const size_t first = bsf(movemask(valid));
       if (likely(all(valid,itime[first] == itime)))
       {
-        p0 = getVertex(v0, index, scene, itime[first], ftime);
-        p1 = getVertex(v1, index, scene, itime[first], ftime);
-        p2 = getVertex(v2, index, scene, itime[first], ftime);
+        p0 = getVertex(getVertexID(V0, scene), index, scene, itime[first], ftime);
+        p1 = getVertex(getVertexID(V1, scene), index, scene, itime[first], ftime);
+        p2 = getVertex(getVertexID(V2, scene), index, scene, itime[first], ftime);
       } else {
-        p0 = getVertex(valid, v0, index, scene, itime, ftime);
-        p1 = getVertex(valid, v1, index, scene, itime, ftime);
-        p2 = getVertex(valid, v2, index, scene, itime, ftime);
+        p0 = getVertex(valid, getVertexID(V0, scene), index, scene, itime, ftime);
+        p1 = getVertex(valid, getVertexID(V1, scene), index, scene, itime, ftime);
+        p2 = getVertex(valid, getVertexID(V2, scene), index, scene, itime, ftime);
       }
     }
 
@@ -135,6 +168,7 @@ namespace embree
                               Vec3vf<M>& p1,
                               Vec3vf<M>& p2,
                               const TriangleMesh* mesh,
+                              const Scene *const scene,
                               const int itime) const;
 
     __forceinline void gather(Vec3vf<M>& p0,
@@ -149,10 +183,11 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const float* vertices = (const float*) scene->get<TriangleMesh>(geomID(i))->vertexPtr(0,itime);
-        bounds.extend(Vec3fa::loadu(vertices+v0[i]));
-        bounds.extend(Vec3fa::loadu(vertices+v1[i]));
-        bounds.extend(Vec3fa::loadu(vertices+v2[i]));
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
+        const float* vertices = (const float*) mesh->vertexPtr(0,itime);
+        bounds.extend(Vec3fa::loadu(vertices+getVertexID(V0, mesh)[i]));
+        bounds.extend(Vec3fa::loadu(vertices+getVertexID(V1, mesh)[i]));
+        bounds.extend(Vec3fa::loadu(vertices+getVertexID(V2, mesh)[i]));
       }
       return bounds;
     }
@@ -187,9 +222,11 @@ namespace embree
     /* Non-temporal store */
     __forceinline static void store_nt(TriangleMi* dst, const TriangleMi& src)
     {
-      vuint<M>::store_nt(&dst->v0,src.v0);
-      vuint<M>::store_nt(&dst->v1,src.v1);
-      vuint<M>::store_nt(&dst->v2,src.v2);
+#if !defined(EMBREE_COMPACT_POLYS)
+      vuint<M>::store_nt(&dst->v0_,src.v0_);
+      vuint<M>::store_nt(&dst->v1_,src.v1_);
+      vuint<M>::store_nt(&dst->v2_,src.v2_);
+#endif
       vuint<M>::store_nt(&dst->geomIDs,src.geomIDs);
       vuint<M>::store_nt(&dst->primIDs,src.primIDs);
     }
@@ -259,11 +296,12 @@ namespace embree
       return bounds;
     }
 
-  public:
-    vuint<M> v0;         // 4 byte offset of 1st vertex
-    vuint<M> v1;         // 4 byte offset of 2nd vertex
-    vuint<M> v2;         // 4 byte offset of 3rd vertex
   private:
+#if !defined(EMBREE_COMPACT_POLYS)
+    vuint<M> v0_;         // 4 byte offset of 1st vertex
+    vuint<M> v1_;         // 4 byte offset of 2nd vertex
+    vuint<M> v2_;         // 4 byte offset of 3rd vertex
+#endif
     vuint<M> geomIDs;    // geometry ID of mesh
     vuint<M> primIDs;    // primitive ID of primitive inside mesh
   };
@@ -278,6 +316,9 @@ namespace embree
     const float* vertices1 = scene->vertices[geomID(1)];
     const float* vertices2 = scene->vertices[geomID(2)];
     const float* vertices3 = scene->vertices[geomID(3)];
+    const auto v0 = getVertexID(V0, scene);
+    const auto v1 = getVertexID(V1, scene);
+    const auto v2 = getVertexID(V2, scene);
     const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
@@ -300,9 +341,13 @@ namespace embree
                                            Vec3vf4& p1,
                                            Vec3vf4& p2,
                                            const TriangleMesh* mesh,
+                                           const Scene *const scene,
                                            const int itime) const
   {
     const float* vertices = (const float*) mesh->vertexPtr(0,itime);
+    const auto v0 = getVertexID(V0, scene);
+    const auto v1 = getVertexID(V1, scene);
+    const auto v2 = getVertexID(V2, scene);
     const vfloat4 a0 = vfloat4::loadu(vertices + v0[0]);
     const vfloat4 a1 = vfloat4::loadu(vertices + v0[1]);
     const vfloat4 a2 = vfloat4::loadu(vertices + v0[2]);
@@ -332,8 +377,8 @@ namespace embree
     float ftime;
     const int itime = mesh->timeSegment(time, ftime);
 
-    Vec3vf4 a0,a1,a2; gather(a0,a1,a2,mesh,itime);
-    Vec3vf4 b0,b1,b2; gather(b0,b1,b2,mesh,itime+1);
+    Vec3vf4 a0,a1,a2; gather(a0,a1,a2,mesh,scene,itime);
+    Vec3vf4 b0,b1,b2; gather(b0,b1,b2,mesh,scene,itime+1);
     p0 = lerp(a0,b0,vfloat4(ftime));
     p1 = lerp(a1,b1,vfloat4(ftime));
     p2 = lerp(a2,b2,vfloat4(ftime));
