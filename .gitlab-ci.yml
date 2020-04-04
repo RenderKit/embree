@@ -305,13 +305,19 @@ nightly-centos7.4-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB:
 #  tags:   [docker]
 #  only:   [schedules]
 
+nightly-fedora32-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
+  image: embreedocker/fedora:32
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isas:AVX512SKX tasking:TBB intensity:3"
+  tags:   [docker, avx512vl]
+  only:   [schedules]
+
 nightly-fedora28-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
   image: embreedocker/fedora:28
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB intensity:3" # AVX512KNL triggers internal compiler bug in GCC 8.0.1
   tags:   [docker, avx512vl]
   only:   [schedules]
   
-nightly-fedora27-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
+nightly-fedora27-x64-Debug-GCC-ISPC-AVX2-TBB:
   image: embreedocker/fedora:27
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB intensity:3"
   tags:   [docker, avx512vl]
