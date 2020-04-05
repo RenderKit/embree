@@ -377,7 +377,7 @@ def runConfig(config):
     if OS == "windows":
       try:
         subprocess.check_call(cmd, stderr=subprocess.STDOUT, shell=True)
-      except subprocess.CalledProcessError, e:
+      except subprocess.CalledProcessError as e:
         sys.stderr.write("windows test invokation failed with return code "+str(e.returncode))
         sys.exit(1)
     else:
