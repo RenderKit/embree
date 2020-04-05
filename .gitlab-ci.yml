@@ -319,8 +319,8 @@ nightly-fedora28-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
   
 nightly-fedora27-x64-Debug-GCC-ISPC-AVX2-TBB:
   image: embreedocker/fedora:27
-  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB intensity:3"
-  tags:   [docker, avx512vl]
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX2 tasking:TBB intensity:3"
+  tags:   [docker]
   only:   [schedules]
 
 nightly-fedora26-x64-Debug-GCC-ISPC-AVX2-TBB:
