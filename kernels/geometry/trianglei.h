@@ -138,9 +138,9 @@ namespace embree
       vuint<M> v = zero;
       for (size_t i=0; i<M; i++)
       {
-        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomIDs[i]);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primIDs[i]);
         if (-1 != primIDs[i]) {
+          const TriangleMesh* mesh = scene->get<TriangleMesh>(geomIDs[i]);
+          const TriangleMesh::Triangle& tri = mesh->triangle(primIDs[i]);
           unsigned int int_stride = mesh->vertices0.getStride()/4;
           v[i] = tri.v[(size_t)id] * int_stride;
         } else {
