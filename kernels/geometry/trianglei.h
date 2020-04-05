@@ -113,9 +113,9 @@ namespace embree
       return (T(one)-ftime)*p0 + ftime*p1;
     }
 
-    __forceinline vuint<M> getVertexID(const VertexIDs id, const Scene* const scene) const 
-    {
 #if !defined(EMBREE_COMPACT_POLYS)
+    __forceinline const vuint<M>& getVertexID(const VertexIDs id, const Scene* const scene) const 
+    {
       switch (id)
       {
         case V0:
@@ -131,7 +131,10 @@ namespace embree
           assert(false);
           break;
       }
+    }
 #else 
+    __forceinline vuint<M> getVertexID(const VertexIDs id, const Scene* const scene) const 
+    {
       vuint<M> v = zero;
       for (size_t i=0; i<M; i++)
       {
@@ -148,8 +151,8 @@ namespace embree
         }
       }
       return v;
-#endif
     }
+#endif
 
     /* Gather the triangles */
     __forceinline void gather(Vec3vf<M>& p0, Vec3vf<M>& p1, Vec3vf<M>& p2, const Scene* const scene) const;
@@ -198,13 +201,16 @@ namespace embree
     __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
     {
       BBox3fa bounds = empty;
+      const auto v0 = getVertexID(V0, scene);
+      const auto v1 = getVertexID(V1, scene);
+      const auto v2 = getVertexID(V2, scene);
       for (size_t i=0; i<M && valid(i); i++)
       {
         const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
         const float* vertices = (const float*) mesh->vertexPtr(0,itime);
-        bounds.extend(Vec3fa::loadu(vertices+getVertexID(V0, mesh)[i]));
-        bounds.extend(Vec3fa::loadu(vertices+getVertexID(V1, mesh)[i]));
-        bounds.extend(Vec3fa::loadu(vertices+getVertexID(V2, mesh)[i]));
+        bounds.extend(Vec3fa::loadu(vertices+v0[i]));
+        bounds.extend(Vec3fa::loadu(vertices+v1[i]));
+        bounds.extend(Vec3fa::loadu(vertices+v2[i]));
       }
       return bounds;
     }
