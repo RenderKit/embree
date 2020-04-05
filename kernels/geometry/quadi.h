@@ -277,8 +277,6 @@ namespace embree
       const PrimRefT* prim = &prims[begin];
 #if !defined(EMBREE_COMPACT_POLYS)
       vuint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-      const QuadMesh* mesh = scene->get<QuadMesh>(prim->geomID());
-      const QuadMesh::Quad& q = mesh->quad(prim->primID());
 #endif
 
       for (size_t i=0; i<M; i++)
@@ -287,6 +285,8 @@ namespace embree
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
 #if !defined(EMBREE_COMPACT_POLYS)
+          const QuadMesh* mesh = scene->get<QuadMesh>(prim->geomID());
+          const QuadMesh::Quad& q = mesh->quad(prim->primID());
           unsigned int_stride = mesh->vertices0.getStride()/4;
           v0[i] = q.v[0] * int_stride;
           v1[i] = q.v[1] * int_stride;
