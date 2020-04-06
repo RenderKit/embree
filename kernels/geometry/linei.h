@@ -164,8 +164,6 @@ namespace embree
       {
         const LineSegments* geom = scene->get<LineSegments>(prim->geomID());
         if (begin<end) {
-          /* encode the RTCCurveFlags into the two most significant bits */
-          //const unsigned int mask = geom->getStartEndBitMask(prim->primID());
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
           v0[i] = geom->segment(prim->primID());         

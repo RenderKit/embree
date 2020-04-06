@@ -44,14 +44,6 @@ namespace embree
       return curves[i];
     }
 
-    /*! returns the i'th segment */
-    __forceinline unsigned int getStartEndBitMask(size_t i) const {
-      unsigned int mask = 0;
-      if (flags) 
-        mask |= (flags[i] & 0x3) << 30;
-      return mask;
-    }
-
     /*! returns i'th vertex of the first time step */
     __forceinline Vec3fa vertex(size_t i) const {
       return vertices0[i];

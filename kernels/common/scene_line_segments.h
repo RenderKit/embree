@@ -48,21 +48,13 @@ namespace embree
     /*! returns the segment to the left of the i'th segment */
     __forceinline bool segmentLeftExists(size_t i) const {
       assert (flags);
-      return ((flags[i] & 0x1) != 0);
+      return (flags[i] & RTC_CURVE_FLAG_NEIGHBOR_LEFT) != 0;
     }
 
     /*! returns the segment to the right of the i'th segment */
     __forceinline bool segmentRightExists(size_t i) const {
       assert (flags);
-      return ((flags[i] & 0x2) != 0);
-    }
-
-    /*! returns the i'th segment */
-    __forceinline unsigned int getStartEndBitMask(size_t i) const {
-      unsigned int mask = 0;
-      if (flags) 
-        mask |= (flags[i] & 0x3) << 30;
-      return mask;
+      return (flags[i] & RTC_CURVE_FLAG_NEIGHBOR_RIGHT) != 0;
     }
 
      /*! returns i'th vertex of the first time step */

@@ -1171,20 +1171,26 @@ namespace embree
     }
 
     mesh->flags = loadUCharArray(xml->childOpt("flags"));
-    if (mesh->flags.empty() && type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
-      mesh->flags.resize (indices.size());
-      bool hasLeft = false;
-      for (size_t i=0; i<indices.size(); i++) {
-        bool hasRight = (i==indices.size()-1) ? false : indices[i+1] == indices[i]+1;
-        mesh->flags[i] |= hasLeft << 0;
-        mesh->flags[i] |= hasRight << 1;
-        hasLeft = hasRight;
+    if (mesh->flags.empty())
+    {
+      if (type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE ||
+          type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE)
+      {
+        mesh->flags.resize (indices.size());
+        bool hasLeft = false;
+        for (size_t i=0; i<indices.size(); i++) {
+          bool hasRight = (i==indices.size()-1) ? false : indices[i+1] == indices[i]+1;
+          mesh->flags[i] |= hasLeft  * RTC_CURVE_FLAG_NEIGHBOR_LEFT;
+          mesh->flags[i] |= hasRight * RTC_CURVE_FLAG_NEIGHBOR_RIGHT;
+          hasLeft = hasRight;
+        }
       }
     }
 
     if (type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
         type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE ||
-        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE) {
+        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE)
+    {
       for (auto& vertices : mesh->positions)
         fix_bspline_end_points(indices,vertices);
     }
