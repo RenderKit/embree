@@ -115,6 +115,22 @@ start and the second control point the end of the line segment. When
 constructing hair strands in this basis, the end-point can be shared
 with the start of the next line segment.
 
+For the linear basis the user has to additionally provide a flags
+buffer of type `RTC_BUFFER_TYPE_FLAGS` which contains bytes that
+encode if the left neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_LEFT`
+flag) and/or right neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_RIGHT`
+flags) exist (see [RTCCurveFlags]).
+
+A left neighbor segment is assumed to end at the start vertex of the
+current segement, and to start at the previous vertex in the vertex
+buffer. Similarly, the right neighbor segment is assumed to start at
+the end vertex of the current segment, and to end at the next vertex
+in the vertex buffer.
+
+Only when the left and right bits are properly specified the current
+segment can properly attach to the left and/or right neighbor,
+otherwise the touching area may not get rendererd properly.
+
 ##### Bézier Basis
 
 For the cubic Bézier basis the indices point to the first of 4
@@ -201,12 +217,14 @@ In the `RTC_GEOMETRY_TYPE_ROUND_*` round mode, a real geometric
 surface is rendered for the curve, which is more expensive but allows
 closeup views.
 
-For the linear basis the round mode renders cones that tangentially
-touch spheres with the proper radius put at vertex start and end
-positions. The geometry clips away parts of the spheres that lie
-inside the neighboring segments, thus the curve interiour will also
-render properly as long as only neighboring segments penetrate into a
-segment.
+For the linear basis the round mode renders an end sphere for a
+segment and a cone that tangentially touches that ending sphere (and
+an imaginary start sphere). The geometry clips away parts of the
+end spheres that lies inside the neighboring segments, thus the curve
+interiour will also render properly as long as only neighboring
+segments penetrate into a segment. For this to work properly it is
+important that the flags buffer is properly populated with neighbor
+information.
 
 For the cubic polynomial bases, the round mode renders a sweep surface
 by sweeping a varying radius circle tangential along the curve. As a
@@ -244,4 +262,4 @@ queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 
-[rtcNewGeometry]
+[rtcNewGeometry, RTCCurveFlags]
