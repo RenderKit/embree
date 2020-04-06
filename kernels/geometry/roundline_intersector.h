@@ -470,8 +470,8 @@ namespace embree
       
       template<int M, typename Epilog, typename ray_tfar_func>
         static __forceinline bool intersectConeSphere(const vbool<M>& valid_i,
-                                                      Vec3vf<M> ray_org, const Vec3vf<M> ray_dir, 
-                                                      const vfloat<M> ray_tnear, ray_tfar_func ray_tfar,
+                                                      const Vec3vf<M>& ray_org_in, const Vec3vf<M>& ray_dir, 
+                                                      const vfloat<M>& ray_tnear, const ray_tfar_func& ray_tfar,
                                                       const Vec4vf<M>& v0, const Vec4vf<M>& v1,
                                                       const Vec4vf<M>& vL, const Vec4vf<M>& vR,
                                                       const Epilog& epilog)
@@ -482,8 +482,8 @@ namespace embree
         const vfloat<M> dOdO = sqr(ray_dir);
         const vfloat<M> rcp_dOdO = rcp(dOdO);
         const Vec3vf<M> center = vfloat<M>(0.5f)*(v0.xyz()+v1.xyz());
-        const vfloat<M> dt = dot(center-ray_org,ray_dir)*rcp_dOdO;
-        ray_org += dt*ray_dir;
+        const vfloat<M> dt = dot(center-ray_org_in,ray_dir)*rcp_dOdO;
+        const Vec3vf<M> ray_org = ray_org_in + dt*ray_dir;
         
         /* intersect with cone from v0 to v1 */
         vfloat<M> t_cone_lower, t_cone_upper;
@@ -552,7 +552,7 @@ namespace embree
         struct ray_tfar {
           Ray& ray;
           __forceinline ray_tfar(Ray& ray) : ray(ray) {}
-          __forceinline vfloat<M> operator() () { return ray.tfar; };
+          __forceinline vfloat<M> operator() () const { return ray.tfar; };
         };
 	
         template<typename Epilog>
@@ -565,7 +565,6 @@ namespace embree
           const Vec3vf<M> ray_org(ray.org.x, ray.org.y, ray.org.z);
           const Vec3vf<M> ray_dir(ray.dir.x, ray.dir.y, ray.dir.z);
           const vfloat<M> ray_tnear(ray.tnear());
-          //const vfloat<M> ray_tfar(ray.tfar);
           return  __roundline_internal::intersectConeSphere(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),_v0,_v1,vL,vR,epilog);
         }
       };
@@ -579,7 +578,7 @@ namespace embree
           RayK<K>& ray;
           size_t k;
           __forceinline ray_tfar(RayK<K>& ray, size_t k) : ray(ray), k(k) {}
-          __forceinline vfloat<M> operator() () { return ray.tfar[k]; };
+          __forceinline vfloat<M> operator() () const { return ray.tfar[k]; };
         };
         
         template<typename Epilog>
@@ -592,7 +591,6 @@ namespace embree
           const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
           const Vec3vf<M> ray_dir(ray.dir.x[k], ray.dir.y[k], ray.dir.z[k]);
           const vfloat<M> ray_tnear = ray.tnear()[k];
-          //const vfloat<M> ray_tfar = ray.tfar[k];
           return __roundline_internal::intersectConeSphere(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),_v0,_v1,vL,vR,epilog);
         }
       };
