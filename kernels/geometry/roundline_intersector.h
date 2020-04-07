@@ -346,7 +346,7 @@ namespace embree
         */
         
         __forceinline void intersectEndSphere(vbool<M>& valid, 
-                                              const ConeGeometry<M> coneR, 
+                                              const ConeGeometry<M>& coneR, 
                                               vfloat<M>& lower, vfloat<M>& upper)
         {
           /* calculate front and back hit with end sphere */
