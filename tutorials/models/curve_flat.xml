@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+
+<scene>
+  <Group>
+    <TriangleMesh>
+      <positions>
+        -20 0 -20
+        -20 0 +20
+        +20 0 +20
+        +20 0 -20
+      </positions>
+      <triangles>
+        0 2 1
+        0 3 2
+      </triangles>
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 1 1</float3>
+        </parameters>
+      </material>
+    </TriangleMesh>
+
+    <BezierHair tessellation_rate="16">
+
+      <positions>
+        0 0 -2 0.2
+        8 4 -2 0.2
+       -4 4 -2 0.2
+        4 0 -3 0.2
+      </positions>
+
+      <indices>
+        0 0
+      </indices>
+
+      <material>
+        <code>"OBJ"</code>
+        <parameters>
+          <float3 name="Kd">1 0 0</float3>
+        </parameters>
+      </material>
+
+    </BezierHair>
+  </Group>
+</scene>
