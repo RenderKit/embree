@@ -294,7 +294,7 @@ nightly-ubuntu16.04-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
 
 nightly-centos7.4-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
   image: embreedocker/centos:7.4
-  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB intensity:3"
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB COMPACT_POLYS:ON intensity:3"
   tags:   [docker]
   only:   [schedules]
 
