@@ -512,7 +512,6 @@ namespace embree
 
       for (const auto& n : normals) 
         if (n.size() != N) {
-          std::cout << n.size() << " " << N << std::endl;
           THROW_RUNTIME_ERROR("incompatible normal array size");
         }
     }

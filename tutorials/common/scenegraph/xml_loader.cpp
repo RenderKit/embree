@@ -1172,10 +1172,8 @@ namespace embree
 
     if (type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
         type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE ||
-        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE ||
-        type == RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE ||
-        type == RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE ||
-        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE) {
+        type == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE)
+    {
       for (auto& vertices : mesh->positions)
         fix_bspline_end_points(indices,vertices);
     }
@@ -1356,14 +1354,14 @@ namespace embree
       else if (xml->name == "QuadMesh"        ) node = state.sceneMap[id] = loadQuadMesh        (xml);
       else if (xml->name == "GridMesh"        ) node = state.sceneMap[id] = loadGridMesh        (xml);
       else if (xml->name == "SubdivisionMesh" ) node = state.sceneMap[id] = loadSubdivMesh      (xml);
+
+      /* just for compatibility, use Curves XML node instead */
       else if (xml->name == "Hair"            ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
       else if (xml->name == "LineSegments"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
       else if (xml->name == "BezierHair"      ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
       else if (xml->name == "BSplineHair"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
-      else if (xml->name == "CatmullRomHair"  ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE);
       else if (xml->name == "BezierCurves"    ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
       else if (xml->name == "BSplineCurves"   ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
-      else if (xml->name == "CatmullRomCurves") node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE);
       
       else if (xml->name == "Curves")
       {
