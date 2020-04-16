@@ -118,18 +118,10 @@ namespace embree
     {
       switch (id)
       {
-        case V0:
-          return v0_;
-          break;
-        case V1:
-          return v1_;
-          break;
-        case V2:
-          return v2_;
-          break;
-        default:
-          assert(false);
-          break;
+        case V0: return v0_;
+        case V1: return v1_;
+        case V2: return v2_;
+        default: assert(false); break;
       }
     }
 #else 

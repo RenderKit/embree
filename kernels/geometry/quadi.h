@@ -121,21 +121,11 @@ namespace embree
     {
       switch (id)
       {
-        case V0:
-          return v0_;
-          break;
-        case V1:
-          return v1_;
-          break;
-        case V2:
-          return v2_;
-          break;
-        case V3:
-          return v3_;
-          break;
-        default:
-          assert(false);
-          break;
+        case V0: return v0_;
+        case V1: return v1_;
+        case V2: return v2_;
+        case V3: return v3_;
+        default: assert(false); break;
       }
     }
 #else 
@@ -358,10 +348,12 @@ namespace embree
 
 
   private:
+#if !defined(EMBREE_COMPACT_POLYS)
     vuint<M> v0_;         // 4 byte offset of 1st vertex
     vuint<M> v1_;         // 4 byte offset of 2nd vertex
     vuint<M> v2_;         // 4 byte offset of 3rd vertex
     vuint<M> v3_;         // 4 byte offset of 4th vertex
+#endif
     vuint<M> geomIDs;    // geometry ID of mesh
     vuint<M> primIDs;    // primitive ID of primitive inside mesh
   };
