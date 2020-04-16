@@ -1164,11 +1164,28 @@ namespace embree
     std::vector<unsigned> indices = loadUIntArray(xml->childOpt("indices"));
     std::vector<unsigned> curveid = loadUIntArray(xml->childOpt("curveid"));
     curveid.resize(indices.size(),0);
-    mesh->hairs.resize(indices.size()); 
-    for (size_t i=0; i<indices.size(); i++) 
-      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],curveid[i]);
+    mesh->hairs.resize(indices.size());
+    for (size_t i=0; i<indices.size(); i++) {
+      mesh->hairs[i] = SceneGraph::HairSetNode::Hair(indices[i],
+                                                     curveid[i]);
+    }
 
     mesh->flags = loadUCharArray(xml->childOpt("flags"));
+    if (mesh->flags.empty())
+    {
+      if (type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE ||
+          type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE)
+      {
+        mesh->flags.resize (indices.size());
+        bool hasLeft = false;
+        for (size_t i=0; i<indices.size(); i++) {
+          bool hasRight = (i==indices.size()-1) ? false : indices[i+1] == indices[i]+1;
+          mesh->flags[i] |= hasLeft  * RTC_CURVE_FLAG_NEIGHBOR_LEFT;
+          mesh->flags[i] |= hasRight * RTC_CURVE_FLAG_NEIGHBOR_RIGHT;
+          hasLeft = hasRight;
+        }
+      }
+    }
 
     if (type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE ||
         type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE ||
@@ -1342,6 +1359,7 @@ namespace embree
         const bool subdiv_mode = xml->parm("subdiv") == "1";
         node = state.sceneMap[id] = loadOBJ(path + xml->parm("src"),subdiv_mode);
       }
+
       else if (xml->name == "ref"             ) node = state.sceneMap[id] = state.sceneMap[xml->parm("id")];
       else if (xml->name == "PointLight"      ) node = state.sceneMap[id] = loadPointLight      (xml);
       else if (xml->name == "SpotLight"       ) node = state.sceneMap[id] = loadSpotLight       (xml);

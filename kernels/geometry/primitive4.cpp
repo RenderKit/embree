@@ -48,9 +48,9 @@ namespace embree
   size_t Curve4v::Type::getBytes(const char* This) const
   {
      if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
+      return Line4i::bytes(sizeActive(This));
      else
-       return Curve4v::bytes(sizeActive(This));
+        return Curve4v::bytes(sizeActive(This));
   }
 
   /********************** Curve4i **************************/
@@ -82,9 +82,9 @@ namespace embree
   size_t Curve4i::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
-     else
-       return Curve4i::bytes(sizeActive(This));
+      return Line4i::bytes(sizeActive(This));
+    else
+      return Curve4i::bytes(sizeActive(This));
   }
 
   /********************** Curve4iMB **************************/
@@ -116,9 +116,9 @@ namespace embree
   size_t Curve4iMB::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
-     else
-       return Curve4iMB::bytes(sizeActive(This));
+      return Line4i::bytes(sizeActive(This));
+    else
+      return Curve4iMB::bytes(sizeActive(This));
   }
 
   /********************** Line4i **************************/

@@ -89,7 +89,7 @@ namespace embree
           if (num_roots >= maxNumRoots) {
             return false;
           }
-          for (int i = 0; i < min(num_roots, maxNumRoots); ++i) {
+          for (unsigned int i = 0; i < min(num_roots, maxNumRoots); ++i) {
             if(!valid(roots[i])) return false;
             if(!(roots[i] >= tmin && roots[i] <= tmax)) return false;
           }
@@ -129,7 +129,7 @@ namespace embree
       }
       {
         struct EvalFunc { Interval1f operator()(Interval1f const& t) const {
-            return (t - 1.0) * (t + 1.0) * (t + 0.99999);
+          return (t - 1.0f) * (t + 1.0f) * (t + 0.99999f);
         }};
         Interval1f I(-2.f, 2.f);
         unsigned int numRoots = 0;
@@ -138,7 +138,7 @@ namespace embree
       }
       {
         struct EvalFunc { Interval1f operator()(Interval1f const& t) const {
-            return (t - 1.0) * (t + 1.0) * (t + 0.9999);
+          return (t - 1.0f) * (t + 1.0f) * (t + 0.9999f);
         }};
         Interval1f I(-2.f, 2.f);
         unsigned int numRoots = 0;
@@ -147,9 +147,9 @@ namespace embree
       }
       {
         struct EvalFunc { Interval1f operator()(Interval1f const& t) const {
-          return (-7.831048) + (70.619041) + (-116.007454) * t
-          + ((-198.235809) + ( 411.193054) * t + (-160.020020) * t * t) * cos(5.438017 * t)
-          + ((-320.571472) + ( 786.181946) * t + (-559.993164) * t * t) * sin(5.438017 * t);
+          return (-7.831048f) + (70.619041f) + (-116.007454f) * t
+            + ((-198.235809f) + ( 411.193054f) * t + (-160.020020f) * t * t) * cos(5.438017f * t)
+            + ((-320.571472f) + ( 786.181946f) * t + (-559.993164f) * t * t) * sin(5.438017f * t);
         }};
         Interval1f I(0.5, 1.4f);
         unsigned int numRoots = 0;
@@ -158,7 +158,7 @@ namespace embree
       }
       {
         struct EvalFunc { Interval1f operator()(Interval1f const& t) const {
-          return sin(t) * cos(t-1) * 50 * (t-2) * (t-4);
+          return sin(t) * cos(t-1.0f) * 50 * (t-2.0f) * (t-4.0f);
         }};
         Interval1f I(0.0, 7.0f);
         unsigned int numRoots = 0;
@@ -167,7 +167,7 @@ namespace embree
       }
       {
         struct EvalFunc { Interval1f operator()(Interval1f const& t) const {
-          return sin(t) * cos(t-1) * 0.0000001 * (t-2) * (t-4);
+          return sin(t) * cos(t-1) * 0.0000001f * (t-2.0f) * (t-4.0f);
         }};
         Interval1f I(0.0, 7.0f);
         unsigned int numRoots = 0;
@@ -179,7 +179,7 @@ namespace embree
         // the function values vary from 0 to 3000
         // in a plot everything from 0 to 0.5 looks like constant zero
         struct EvalFunc { Interval1f operator()(Interval1f const& t) const {
-          return sin(10.f * t) * 100 * t*t*t*t*t;
+          return sin(10.0f * t) * 100.0f * t*t*t*t*t;
         }};
         Interval1f I(0.0, 2.0f);
         unsigned int numRoots = 0;

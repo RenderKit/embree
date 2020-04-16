@@ -249,7 +249,7 @@ namespace embree
         hugepages = true;
         return ptr;
       }
-#else
+#elif defined(MAP_HUGETLB)
       void* ptr = mmap(0, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_HUGETLB, -1, 0);
       if (ptr != MAP_FAILED) {
         hugepages = true;

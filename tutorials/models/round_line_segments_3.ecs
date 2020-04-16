@@ -1,0 +1,5 @@
+-i round_line_segments_3.xml
+--vp 0.2962214649 -1.530802488 0.3209196329 --vi 0 2 0 --vu 0 1 0 --fov 90 --righthanded
+#-vp 4 4 4 -vi 0 2 0 -vu 0 1 0 -fov 90
+--shader uv
+

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<scene>
+  <assign type="scene" id="mesh1">
+    <RoundLineSegments>
+      <material>
+        <code>"Hair"</code>
+        <parameters>
+          <float3 name="Kr">0.16 0.144 0.064</float3>
+          <float3 name="Kt">0.64 0.456 0.256</float3>
+          <float name="nx">20</float>
+          <float name="ny">2</float>
+        </parameters>
+      </material>
+      <indices ofs="0" size="455505"/>
+      <positions ofs="1822020" size="485872"/>
+    </RoundLineSegments>
+  </assign>
+  <Group>
+    <ref id="mesh1"/>
+  </Group>
+</scene>

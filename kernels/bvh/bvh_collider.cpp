@@ -335,26 +335,26 @@ namespace embree
       bool run ()
       {
         bool passed = true;
-        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(-0.008815, 0.041848, -2.49875e-06), Vec3fa(-0.008276, 0.053318, -2.49875e-06), Vec3fa(0.003023, 0.048969, -2.49875e-06),
-                                               Vec3fa(0.00245, 0.037612, -2.49875e-06), Vec3fa(0.01434, 0.042634, -2.49875e-06), Vec3fa(0.013499, 0.031309, -2.49875e-06)) == false;
+        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(-0.008815f, 0.041848f, -2.49875e-06f), Vec3fa(-0.008276f, 0.053318f, -2.49875e-06f), Vec3fa(0.003023f, 0.048969f, -2.49875e-06f),
+                                                                            Vec3fa(0.00245f, 0.037612f, -2.49875e-06f), Vec3fa(0.01434f, 0.042634f, -2.49875e-06f), Vec3fa(0.013499f, 0.031309f, -2.49875e-06f)) == false;
         passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true;
         passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,1),Vec3fa(1,0,1),Vec3fa(0,1,1)) == false;
         passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,1),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true;
         passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true;
-        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true;
-        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,-0.1),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true;
+        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1f,0.1f,0),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true;
+        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1f,0.1f,-0.1f),Vec3fa(1,0,1),Vec3fa(0,1,1)) == true;
         passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0)) == true;
-        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(0.5,0,0),Vec3fa(0,0.5,0)) == true;
-        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(0.5,0,0),Vec3fa(0,0.5,0)) == true;
-        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true;
-        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1,-0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true;
-        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(-0.1,0.1,0),Vec3fa(0.5,0.1,0),Vec3fa(0.1,0.5,0)) == true;
+        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0,0,0),Vec3fa(0.5f,0,0),Vec3fa(0,0.5f,0)) == true;
+        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1f,0.1f,0),Vec3fa(0.5f,0,0),Vec3fa(0,0.5f,0)) == true;
+        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1f,0.1f,0),Vec3fa(0.5f,0.1f,0),Vec3fa(0.1f,0.5f,0)) == true;
+        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(0.1f,-0.1f,0),Vec3fa(0.5f,0.1f,0),Vec3fa(0.1f,0.5f,0)) == true;
+        passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), Vec3fa(-0.1f,0.1f,0),Vec3fa(0.5f,0.1f,0),Vec3fa(0.1f,0.5f,0)) == true;
         passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), 
-                                               Vec3fa(-1,1,0) + Vec3fa(0,0,0),Vec3fa(-1,1,0) + Vec3fa(0.1,0,0),Vec3fa(-1,1,0) + Vec3fa(0,0.1,0)) == false;
+                                               Vec3fa(-1,1,0) + Vec3fa(0,0,0),Vec3fa(-1,1,0) + Vec3fa(0.1f,0,0),Vec3fa(-1,1,0) + Vec3fa(0,0.1f,0)) == false;
         passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), 
-                                               Vec3fa( 2,0.5,0) + Vec3fa(0,0,0),Vec3fa( 2,0.5,0) + Vec3fa(0.1,0,0),Vec3fa( 2,0.5,0) + Vec3fa(0,0.1,0)) == false;
+                                               Vec3fa( 2,0.5f,0) + Vec3fa(0,0,0),Vec3fa( 2,0.5f,0) + Vec3fa(0.1f,0,0),Vec3fa( 2,0.5f,0) + Vec3fa(0,0.1f,0)) == false;
         passed &= TriangleTriangleIntersector::intersect_triangle_triangle (Vec3fa(0,0,0),Vec3fa(1,0,0),Vec3fa(0,1,0), 
-                                               Vec3fa(0.5,-2.0f,0) + Vec3fa(0,0,0),Vec3fa(0.5f,-2.0f,0) + Vec3fa(0.1,0,0),Vec3fa(0.5f,-2.0f,0) + Vec3fa(0,0.1,0)) == false;
+                                               Vec3fa(0.5f,-2.0f,0) + Vec3fa(0,0,0),Vec3fa(0.5f,-2.0f,0) + Vec3fa(0.1f,0,0),Vec3fa(0.5f,-2.0f,0) + Vec3fa(0,0.1f,0)) == false;
         return passed;
       }
     };

@@ -1,11 +1,12 @@
 Version History
 ---------------
 
-### Embree 3.8.1
+### Embree 3.9.0
 
-#### New Features:
-
-#### Fixed Issues:
+-   Added round linear curve geometry support. In this mode a real geometric surface for curves
+    with linear basis is rendered using capped cones with spherical filling between
+    the curve segments.
+-   Added rtcGetSceneDevice API function, that returns the device a scene got created in.
 -   Improved performance of round curve rendering by up to 1.8x.
 -   Bugfix to sphere intersection filter invokation for back hit.
 -   Fixed wrong assertion that triggered for invalid curves which anyway get filtered out.
@@ -16,11 +17,8 @@ Version History
 
 ### Embree 3.8.0
 
-#### New Features:
 -   Added collision detection support for user geometries (see rtcCollide API function)
 -   Passing geomID to user geometry callbacks.
-
-#### Fixed Issues:
 -   Bugfix in AVX512VL codepath for rtcIntersect1
 -   For sphere geometries the intersection filter gets now invoked for
     front and back hit.

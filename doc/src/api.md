@@ -661,6 +661,11 @@ Embree API Reference
 ```
 \pagebreak
 
+## RTCCurveFlags
+``` {include=src/api/RTCCurveFlags.md}
+```
+\pagebreak
+
 ## rtcRetainGeometry
 ``` {include=src/api/rtcRetainGeometry.md}
 ```

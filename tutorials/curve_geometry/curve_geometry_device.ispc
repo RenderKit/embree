@@ -61,22 +61,39 @@ uniform unsigned int hair_indices[NUM_CURVES] = {
   0, 1, 2, 3, 4, 5
 };
 
+uniform unsigned int hair_indices_linear[NUM_CURVES] = {
+  1, 2, 3, 4, 5, 6
+};
+
+uniform int8 hair_flags_linear[NUM_CURVES] = {
+  0x3, 0x3, 0x3, 0x3, 0x3, 0x3
+};
+
 /* add hair geometry */
 uniform unsigned int addCurve (RTCScene scene, uniform RTCGeometryType gtype, const uniform Vec4f& pos)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, gtype);
   rtcSetGeometryVertexAttributeCount(geom,1);
-  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(uniform unsigned int), NUM_CURVES);
+
+  if (gtype == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE || gtype == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE)
+    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,   hair_indices_linear,0, sizeof(uniform unsigned int), NUM_CURVES);
+  else
+    rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(uniform unsigned int), NUM_CURVES);
+      
   uniform Vec4f* uniform verts = (uniform Vec4f* uniform)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(uniform Vec4f), NUM_VERTICES);
   for (uniform int i = 0; i < NUM_VERTICES; i++) {
-    verts[i] = pos + make_Vec4f(hair_vertices[i][0],
-      hair_vertices[i][1], hair_vertices[i][2], hair_vertices[i][3]);
+    verts[i] = pos + make_Vec4f(hair_vertices[i][0],hair_vertices[i][1], hair_vertices[i][2], hair_vertices[i][3]);
   }
   if (gtype == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE ||
       gtype == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE ||
       gtype == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE) {
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, 0, RTC_FORMAT_FLOAT3, hair_normals, 0, sizeof(uniform Vec3fa), NUM_VERTICES);
   }
+  
+  if (gtype == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
+    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, hair_flags_linear, 0, sizeof(uniform int8), NUM_CURVES);
+  }
+
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, hair_vertex_colors, 0, sizeof(uniform Vec3fa),       NUM_VERTICES);
   rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -92,10 +109,10 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 
   /* set vertices */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vertex), 4);
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
-  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
+  vertices[0].x = -15; vertices[0].y = -2; vertices[0].z = -15;
+  vertices[1].x = -15; vertices[1].y = -2; vertices[1].z = +15;
+  vertices[2].x = +15; vertices[2].y = -2; vertices[2].z = -15;
+  vertices[3].x = +15; vertices[3].y = -2; vertices[3].z = +15;
 
   /* set triangles */
   uniform Triangle* uniform triangles = (uniform Triangle* uniform) rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, sizeof(uniform Triangle), 2);
@@ -118,13 +135,15 @@ export void device_init (uniform int8* uniform cfg)
   addGroundPlane(g_scene);
 
   /* add curves */
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE, make_Vec4f(-3.0f, 0.0f, 2.5f, 0.0f));
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE, make_Vec4f(0.0f, 0.0f, 2.5f, 0.0f));
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE, make_Vec4f(+3.0f, 0.0f, 2.5f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE, make_Vec4f(-4.5f, 0.0f, 3.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE, make_Vec4f(-1.5f, 0.0f, 3.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE, make_Vec4f(1.5f, 0.0f, 3.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE, make_Vec4f(+4.5f, 0.0f, 3.f, 0.0f));
 
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE, make_Vec4f(-3.0f, 0.0f, -2.5f, 0.0f));
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE, make_Vec4f(0.0f, 0.0f, -2.5f, 0.0f));
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE, make_Vec4f(+3.0f, 0.0f, -2.5f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE, make_Vec4f(-4.5f, 0.0f, -2.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE, make_Vec4f(-1.5f, 0.0f, -2.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE, make_Vec4f(1.5f, 0.0f, -2.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE, make_Vec4f(+4.5f, 0.0f, -2.f, 0.0f));
 
   /* commit changes to scene */
   rtcCommitScene (g_scene);

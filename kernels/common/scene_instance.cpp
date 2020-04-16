@@ -253,7 +253,7 @@ namespace embree
         MotionDerivative motionDerivative(motionDerivCoeffs, dim, p0, p1);
 
         numRoots = motionDerivative.findRoots(interval, bbox0.lower[dim] - bbox1.lower[dim], roots, maxNumRoots);
-        for (int r = 0; r < numRoots; ++r) {
+        for (unsigned int r = 0; r < numRoots; ++r) {
           float t = roots[r];
           const BBox3fa bt = lerp(bbox0, bbox1, t);
           const Vec3fa  pt = xfmPoint(slerp(xfm0, xfm1, t), lerp(p0, p1, t));
@@ -261,7 +261,7 @@ namespace embree
         }
 
         numRoots = motionDerivative.findRoots(interval, bbox0.upper[dim] - bbox1.upper[dim], roots, maxNumRoots);
-        for (int r = 0; r < numRoots; ++r) {
+        for (unsigned int r = 0; r < numRoots; ++r) {
           float t = roots[r];
           const BBox3fa bt = lerp(bbox0, bbox1, t);
           const Vec3fa  pt = xfmPoint(slerp(xfm0, xfm1, t), lerp(p0, p1, t));

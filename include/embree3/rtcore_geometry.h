@@ -23,6 +23,7 @@ enum RTCGeometryType
 
   RTC_GEOMETRY_TYPE_SUBDIVISION = 8, // Catmull-Clark subdivision surface
 
+  RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE  = 16, // Round (rounded cone like) linear curves 
   RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE   = 17, // flat (ribbon-like) linear curves
 
   RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE  = 24, // round (tube-like) Bezier curves
@@ -62,8 +63,8 @@ enum RTCSubdivisionMode
 /* Curve segment flags */
 enum RTCCurveFlags
 {
-  RTC_CURVE_FLAG_NEIGHBOR_LEFT  = (1 << 0), 
-  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1) 
+  RTC_CURVE_FLAG_NEIGHBOR_LEFT  = (1 << 0), // left segments exists
+  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1)  // right segment exists
 };
 
 /* Arguments for RTCBoundsFunction */
