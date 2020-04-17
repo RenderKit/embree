@@ -1268,6 +1268,11 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     ISPCGridMesh* mesh = (ISPCGridMesh*) geometry;
     materialID = mesh->geom.materialID;
   }
+  else if (geometry->type == POINTS)
+  {
+    ISPCPointSet* mesh = (ISPCPointSet*) geometry;
+    materialID = mesh->geom.materialID;
+  }
   else if (geometry->type == CURVES)
   {
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;

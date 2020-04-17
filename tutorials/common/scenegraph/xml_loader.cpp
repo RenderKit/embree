@@ -236,6 +236,7 @@ namespace embree
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, SceneGraph::CurveSubtype subtype); // only for compatibility
     Ref<SceneGraph::Node> loadCurves(const Ref<XML>& xml, RTCGeometryType type);
+    Ref<SceneGraph::Node> loadPoints(const Ref<XML>& xml, RTCGeometryType type);
  
   private:
     Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
@@ -1203,6 +1204,31 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadPoints(const Ref<XML>& xml, RTCGeometryType type)
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(type,material,BBox1f(0,1),0);
+
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++) {
+        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
+      }
+    } else {
+      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
+    }
+
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++) {
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+      }
+    } else if (Ref<XML> normals = xml->childOpt("normals")) {
+      mesh->normals.push_back(loadVec3faArray(normals));
+    }
+
+    mesh->verify();
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
   {
     /* parse number of time steps to use for instanced geometry */
@@ -1374,14 +1400,25 @@ namespace embree
       else if (xml->name == "SubdivisionMesh" ) node = state.sceneMap[id] = loadSubdivMesh      (xml);
 
       /* just for compatibility, use Curves XML node instead */
-      else if (xml->name == "Hair"            ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "LineSegments"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
+      else if (xml->name == "Hair"             ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "LineSegments"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
       else if (xml->name == "RoundLineSegments") node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
-      else if (xml->name == "BezierHair"      ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "BSplineHair"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
-      else if (xml->name == "BezierCurves"    ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
-      else if (xml->name == "BSplineCurves"   ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
-      
+      else if (xml->name == "BezierHair"       ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "BSplineHair"      ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
+      else if (xml->name == "BezierCurves"     ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
+      else if (xml->name == "BSplineCurves"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+
+      else if (xml->name == "Points")
+      {
+        RTCGeometryType type;
+        std::string str_type = xml->parm("type");
+        if      (str_type == "sphere")   { type = RTC_GEOMETRY_TYPE_SPHERE_POINT; }
+        else if (str_type == "disc")     { type = RTC_GEOMETRY_TYPE_DISC_POINT; }
+        else if (str_type == "oriented") { type = RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT; }
+        else { THROW_RUNTIME_ERROR(xml->loc.str()+": unknown point type: "+str_type); }
+        node = state.sceneMap[id] = loadPoints(xml,type);
+      }
+
       else if (xml->name == "Curves")
       {
         RTCGeometryType type;

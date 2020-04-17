@@ -215,6 +215,11 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     ISPCHairSet* mesh = (ISPCHairSet*) geometry;
     materialID = mesh->geom.materialID;
   }
+  else if (geometry->type == POINTS)
+  {
+    ISPCPointSet* mesh = (ISPCPointSet*) geometry;
+    materialID = mesh->geom.materialID;
+  }
   else if (geometry->type == GROUP) {
     unsigned int geomID = ray.geomID; {
       postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
