@@ -22,12 +22,6 @@ namespace embree
     };
     static Type type;
 
-    enum VertexIDs {
-      V0 = 0,
-      V1,
-      V2,
-    };
-
   public:
 
     /* primitive supports multiple time segments */
@@ -76,74 +70,116 @@ namespace embree
     __forceinline unsigned int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
     /* loads a single vertex */
-    __forceinline Vec3f& getVertex(const vuint<M>& v, const size_t index, const Scene *const scene) const
+    template<int vid>
+    __forceinline Vec3f getVertex(const size_t index, const Scene *const scene) const
     {
+#if defined(EMBREE_COMPACT_POLYS)
+      const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID(index));
+      return (Vec3f) mesh->vertices[0][tri.v[vid]];
+#else
+      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
       const float* vertices = scene->vertices[geomID(index)];
       return (Vec3f&) vertices[v[index]];
+#endif
     }
 
-    template<typename T>
-    __forceinline Vec3<T> getVertex(const vuint<M>& v, const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
+    template<int vid, typename T>
+    __forceinline Vec3<T> getVertex(const size_t index, const Scene *const scene, const size_t itime, const T& ftime) const
     {
+#if defined(EMBREE_COMPACT_POLYS)
+      const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID(index));
+      const Vec3fa v0 = mesh->vertices[itime+0][tri.v[vid]];
+      const Vec3fa v1 = mesh->vertices[itime+1][tri.v[vid]];
+#else
+      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
       const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
       const float* vertices0 = (const float*) mesh->vertexPtr(0,itime+0);
       const float* vertices1 = (const float*) mesh->vertexPtr(0,itime+1);
       const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
       const Vec3fa v1 = Vec3fa::loadu(vertices1+v[index]);
+#endif
       const Vec3<T> p0(v0.x,v0.y,v0.z);
       const Vec3<T> p1(v1.x,v1.y,v1.z);
       return lerp(p0,p1,ftime);
     }
 
-    template<int K, typename T>
-    __forceinline Vec3<T> getVertex(const vbool<K>& valid, const vuint<M>& v, const size_t index, const Scene *const scene, const vint<K>& itime, const T& ftime) const
+    template<int vid, int K, typename T>
+    __forceinline Vec3<T> getVertex(const vbool<K>& valid, const size_t index, const Scene *const scene, const vint<K>& itime, const T& ftime) const
     {
       Vec3<T> p0, p1;
       const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
-
+      
       for (size_t mask=movemask(valid), i=bsf(mask); mask; mask=btc(mask,i), i=bsf(mask))
       {
+#if defined(EMBREE_COMPACT_POLYS)
+        const TriangleMesh::Triangle& tri = mesh->triangle(primID(index));
+        const Vec3fa v0 = mesh->vertices[itime[i]+0][tri.v[vid]];
+        const Vec3fa v1 = mesh->vertices[itime[i]+1][tri.v[vid]];
+#else
+        const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
         const float* vertices0 = (const float*) mesh->vertexPtr(0,itime[i]+0);
         const float* vertices1 = (const float*) mesh->vertexPtr(0,itime[i]+1);
         const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
         const Vec3fa v1 = Vec3fa::loadu(vertices1+v[index]);
+#endif
         p0.x[i] = v0.x; p0.y[i] = v0.y; p0.z[i] = v0.z;
         p1.x[i] = v1.x; p1.y[i] = v1.y; p1.z[i] = v1.z;
       }
       return (T(one)-ftime)*p0 + ftime*p1;
     }
 
-#if !defined(EMBREE_COMPACT_POLYS)
-    __forceinline const vuint<M>& getVertexID(const VertexIDs id, const Scene* const scene) const 
+    struct Triangle {
+      vfloat4 v0,v1,v2;
+    };
+    
+#if defined(EMBREE_COMPACT_POLYS)
+    
+    __forceinline Triangle loadTriangle(const int i, const Scene* const scene) const 
     {
-      switch (id)
-      {
-        case V0: return v0_;
-        case V1: return v1_;
-        case V2: return v2_;
-        default: assert(false); break;
-      }
+      const unsigned int geomID = geomIDs[i];
+      const unsigned int primID = primIDs[i];
+      if (unlikely(primID == -1)) return { zero, zero, zero };
+      const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID);
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+      const vfloat4 v0 = (vfloat4) mesh->vertices0[tri.v[0]];
+      const vfloat4 v1 = (vfloat4) mesh->vertices0[tri.v[1]];
+      const vfloat4 v2 = (vfloat4) mesh->vertices0[tri.v[2]];
+      return { v0, v1, v2 };
     }
-#else 
-    __forceinline vuint<M> getVertexID(const VertexIDs id, const Scene* const scene) const 
+
+    __forceinline Triangle loadTriangle(const int i, const int itime, const TriangleMesh* const mesh) const 
     {
-      vuint<M> v = zero;
-      for (size_t i=0; i<M; i++)
-      {
-        if (-1 != primIDs[i]) {
-          const TriangleMesh* mesh = scene->get<TriangleMesh>(geomIDs[i]);
-          const TriangleMesh::Triangle& tri = mesh->triangle(primIDs[i]);
-          unsigned int int_stride = mesh->vertices0.getStride()/4;
-          v[i] = tri.v[(size_t)id] * int_stride;
-        } else {
-          assert(i);
-          if (likely(i > 0)) {
-            v[i] = v[0];
-          }
-        }
-      }
-      return v;
+      const unsigned int primID = primIDs[i];
+      if (unlikely(primID == -1)) return { zero, zero, zero };
+      const TriangleMesh::Triangle& tri = mesh->triangle(primID);
+      const vfloat4 v0 = (vfloat4) mesh->vertices[itime][tri.v[0]];
+      const vfloat4 v1 = (vfloat4) mesh->vertices[itime][tri.v[1]];
+      const vfloat4 v2 = (vfloat4) mesh->vertices[itime][tri.v[2]];
+      return { v0, v1, v2 };
     }
+    
+#else
+
+    __forceinline Triangle loadTriangle(const int i, const Scene* const scene) const 
+    {
+      const float* vertices = scene->vertices[geomID(i)];
+      const vfloat4 v0 = vfloat4::loadu(vertices + v0_[i]);
+      const vfloat4 v1 = vfloat4::loadu(vertices + v1_[i]);
+      const vfloat4 v2 = vfloat4::loadu(vertices + v2_[i]);
+      return { v0, v1, v2 };
+    }
+
+    __forceinline Triangle loadTriangle(const int i, const int itime, const TriangleMesh* const mesh) const 
+    {
+      const float* vertices = (const float*) mesh->vertexPtr(0,itime);
+      const vfloat4 v0 = vfloat4::loadu(vertices + v0_[i]);
+      const vfloat4 v1 = vfloat4::loadu(vertices + v1_[i]);
+      const vfloat4 v2 = vfloat4::loadu(vertices + v2_[i]);
+      return { v0, v1, v2 };
+    }
+    
 #endif
 
     /* Gather the triangles */
@@ -166,13 +202,13 @@ namespace embree
       const size_t first = bsf(movemask(valid));
       if (likely(all(valid,itime[first] == itime)))
       {
-        p0 = getVertex(getVertexID(V0, scene), index, scene, itime[first], ftime);
-        p1 = getVertex(getVertexID(V1, scene), index, scene, itime[first], ftime);
-        p2 = getVertex(getVertexID(V2, scene), index, scene, itime[first], ftime);
+        p0 = getVertex<0>(index, scene, itime[first], ftime);
+        p1 = getVertex<1>(index, scene, itime[first], ftime);
+        p2 = getVertex<2>(index, scene, itime[first], ftime);
       } else {
-        p0 = getVertex(valid, getVertexID(V0, scene), index, scene, itime, ftime);
-        p1 = getVertex(valid, getVertexID(V1, scene), index, scene, itime, ftime);
-        p2 = getVertex(valid, getVertexID(V2, scene), index, scene, itime, ftime);
+        p0 = getVertex<0>(valid, index, scene, itime, ftime);
+        p1 = getVertex<1>(valid, index, scene, itime, ftime);
+        p2 = getVertex<2>(valid, index, scene, itime, ftime);
       }
     }
 
@@ -193,16 +229,9 @@ namespace embree
     __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
     {
       BBox3fa bounds = empty;
-      const auto v0 = getVertexID(V0, scene);
-      const auto v1 = getVertexID(V1, scene);
-      const auto v2 = getVertexID(V2, scene);
-      for (size_t i=0; i<M && valid(i); i++)
-      {
+      for (size_t i=0; i<M && valid(i); i++) {
         const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
-        const float* vertices = (const float*) mesh->vertexPtr(0,itime);
-        bounds.extend(Vec3fa::loadu(vertices+v0[i]));
-        bounds.extend(Vec3fa::loadu(vertices+v1[i]));
-        bounds.extend(Vec3fa::loadu(vertices+v2[i]));
+        bounds.extend(mesh->bounds(primID(i),itime));
       }
       return bounds;
     }
@@ -233,7 +262,7 @@ namespace embree
       }
       return allBounds;
     }
-
+    
     /* Non-temporal store */
     __forceinline static void store_nt(TriangleMi* dst, const TriangleMi& src)
     {
@@ -336,28 +365,13 @@ namespace embree
                                            Vec3vf4& p2,
                                            const Scene* const scene) const
   {
-    const float* vertices0 = scene->vertices[geomID(0)];
-    const float* vertices1 = scene->vertices[geomID(1)];
-    const float* vertices2 = scene->vertices[geomID(2)];
-    const float* vertices3 = scene->vertices[geomID(3)];
-    const auto v0 = getVertexID(V0, scene);
-    const auto v1 = getVertexID(V1, scene);
-    const auto v2 = getVertexID(V2, scene);
-    const vfloat4 a0 = vfloat4::loadu(vertices0 + v0[0]);
-    const vfloat4 a1 = vfloat4::loadu(vertices1 + v0[1]);
-    const vfloat4 a2 = vfloat4::loadu(vertices2 + v0[2]);
-    const vfloat4 a3 = vfloat4::loadu(vertices3 + v0[3]);
-    const vfloat4 b0 = vfloat4::loadu(vertices0 + v1[0]);
-    const vfloat4 b1 = vfloat4::loadu(vertices1 + v1[1]);
-    const vfloat4 b2 = vfloat4::loadu(vertices2 + v1[2]);
-    const vfloat4 b3 = vfloat4::loadu(vertices3 + v1[3]);
-    const vfloat4 c0 = vfloat4::loadu(vertices0 + v2[0]);
-    const vfloat4 c1 = vfloat4::loadu(vertices1 + v2[1]);
-    const vfloat4 c2 = vfloat4::loadu(vertices2 + v2[2]);
-    const vfloat4 c3 = vfloat4::loadu(vertices3 + v2[3]);
-    transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-    transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-    transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
+    const Triangle tri0 = loadTriangle(0,scene);
+    const Triangle tri1 = loadTriangle(1,scene);
+    const Triangle tri2 = loadTriangle(2,scene);
+    const Triangle tri3 = loadTriangle(3,scene);
+    transpose(tri0.v0,tri1.v0,tri2.v0,tri3.v0,p0.x,p0.y,p0.z);
+    transpose(tri0.v1,tri1.v1,tri2.v1,tri3.v1,p1.x,p1.y,p1.z);
+    transpose(tri0.v2,tri1.v2,tri2.v2,tri3.v2,p2.x,p2.y,p2.z);
   }
 
   template<>
@@ -368,25 +382,13 @@ namespace embree
                                            const Scene *const scene,
                                            const int itime) const
   {
-    const float* vertices = (const float*) mesh->vertexPtr(0,itime);
-    const auto v0 = getVertexID(V0, scene);
-    const auto v1 = getVertexID(V1, scene);
-    const auto v2 = getVertexID(V2, scene);
-    const vfloat4 a0 = vfloat4::loadu(vertices + v0[0]);
-    const vfloat4 a1 = vfloat4::loadu(vertices + v0[1]);
-    const vfloat4 a2 = vfloat4::loadu(vertices + v0[2]);
-    const vfloat4 a3 = vfloat4::loadu(vertices + v0[3]);
-    const vfloat4 b0 = vfloat4::loadu(vertices + v1[0]);
-    const vfloat4 b1 = vfloat4::loadu(vertices + v1[1]);
-    const vfloat4 b2 = vfloat4::loadu(vertices + v1[2]);
-    const vfloat4 b3 = vfloat4::loadu(vertices + v1[3]);
-    const vfloat4 c0 = vfloat4::loadu(vertices + v2[0]);
-    const vfloat4 c1 = vfloat4::loadu(vertices + v2[1]);
-    const vfloat4 c2 = vfloat4::loadu(vertices + v2[2]);
-    const vfloat4 c3 = vfloat4::loadu(vertices + v2[3]);
-    transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z);
-    transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z);
-    transpose(c0,c1,c2,c3,p2.x,p2.y,p2.z);
+    const Triangle tri0 = loadTriangle(0,itime,mesh);
+    const Triangle tri1 = loadTriangle(1,itime,mesh);
+    const Triangle tri2 = loadTriangle(2,itime,mesh);
+    const Triangle tri3 = loadTriangle(3,itime,mesh);
+    transpose(tri0.v0,tri1.v0,tri2.v0,tri3.v0,p0.x,p0.y,p0.z);
+    transpose(tri0.v1,tri1.v1,tri2.v1,tri3.v1,p1.x,p1.y,p1.z);
+    transpose(tri0.v2,tri1.v2,tri2.v2,tri3.v2,p2.x,p2.y,p2.z);
   }
 
   template<>
