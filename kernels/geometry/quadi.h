@@ -178,6 +178,7 @@ namespace embree
 
     __forceinline Quad loadQuad(const int i, const int itime, const Scene* const scene) const 
     {
+      const unsigned int geomID = geomIDs[i];
       const QuadMesh* mesh = scene->get<QuadMesh>(geomID);
       const float* vertices = (const float*) mesh->vertexPtr(0,itime);
       const vfloat4 v0 = vfloat4::loadu(vertices + v0_[i]);
