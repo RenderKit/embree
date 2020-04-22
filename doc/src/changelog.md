@@ -2,6 +2,8 @@ Version History
 ---------------
 
 ### Embree 3.9.1
+-   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
+    leaves to reduce memory consumption in compact mode even more.
 -   Compile fix for oneTBB 2021.1-beta05
 -   Releases upgrade to TBB 2020.2
 -   Compile fix for ISPC v1.13.0
