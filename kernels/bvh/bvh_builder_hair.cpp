@@ -50,7 +50,7 @@ namespace embree
         const PrimInfo pinfo = createPrimRefArray(scene,Geometry::MTY_CURVES,false,prims,scene->progressInterface);
 
         /* estimate acceleration structure size */
-        const size_t node_bytes = pinfo.size()*sizeof(typename BVH::UnalignedNode)/(4*N);
+        const size_t node_bytes = pinfo.size()*sizeof(typename BVH::OBBNode)/(4*N);
         const size_t leaf_bytes = CurvePrimitive::bytes(pinfo.size());
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
         
@@ -90,10 +90,10 @@ namespace embree
         /* build hierarchy */
         typename BVH::NodeRef root = BVHBuilderHair::build<NodeRef>
           (typename BVH::CreateAlloc(bvh),
-           typename BVH::AlignedNode::Create(),
-           typename BVH::AlignedNode::Set(),
-           typename BVH::UnalignedNode::Create(),
-           typename BVH::UnalignedNode::Set(),
+           typename BVH::AABBNode::Create(),
+           typename BVH::AABBNode::Set(),
+           typename BVH::OBBNode::Create(),
+           typename BVH::OBBNode::Set(),
            createLeaf,scene->progressInterface,
            reportFinishedRange,
            scene,prims.data(),pinfo,settings);

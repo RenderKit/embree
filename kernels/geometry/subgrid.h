@@ -351,7 +351,7 @@ namespace embree
           clear();
           _geomID = geomID;
 
-          __aligned(64) typename BVHN<N>::AlignedNode node;
+          __aligned(64) typename BVHN<N>::AABBNode node;
           node.clear();          
           for (size_t i=0;i<items;i++)
           {
@@ -451,7 +451,7 @@ namespace embree
           time_offset = toffset;
           time_scale  = tscale;
 
-          __aligned(64) typename BVHN<N>::AlignedNode node0,node1;
+          __aligned(64) typename BVHN<N>::AABBNode node0,node1;
           node0.clear();          
           node1.clear();          
           for (size_t i=0;i<items;i++)

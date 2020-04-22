@@ -74,8 +74,8 @@ namespace embree
     {
       std::pop_heap(lst.begin(), lst.end());
       NodeArea n = lst.back(); lst.pop_back();
-      if (!n.node->isAlignedNode()) break;
-      AlignedNode* node = n.node->alignedNode();
+      if (!n.node->isAABBNode()) break;
+      AABBNode* node = n.node->getAABBNode();
       for (size_t i=0; i<N; i++) {
         if (node->child(i) == BVHN::emptyNode) continue;
         lst.push_back(NodeArea(node->child(i),node->bounds(i)));
@@ -97,10 +97,10 @@ namespace embree
       node.clearBarrier();
       return node;
     }
-    else if (node.isAlignedNode()) 
+    else if (node.isAABBNode()) 
     {
-      AlignedNode* oldnode = node.alignedNode();
-      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc0(sizeof(BVHN::AlignedNode),byteNodeAlignment);
+      AABBNode* oldnode = node.getAABBNode();
+      AABBNode* newnode = (BVHN::AABBNode*) allocator.malloc0(sizeof(BVHN::AABBNode),byteNodeAlignment);
       *newnode = *oldnode;
       for (size_t c=0; c<N; c++)
         newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c),allocator);

@@ -112,7 +112,7 @@ namespace embree
 	      createPrimRefArray_presplit<Mesh,Splitter>(mesh,maxGeomID,numOriginalPrimitives,prims0,bvh->scene->progressInterface) :
 	      createPrimRefArray_presplit<Mesh,Splitter>(scene,Mesh::geom_type,false,numOriginalPrimitives,prims0,bvh->scene->progressInterface);
 
-	    const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
+	    const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AABBNode)/(4*N);
 	    const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
 	    bvh->alloc.init_estimate(node_bytes+leaf_bytes);
 	    settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
@@ -132,7 +132,7 @@ namespace embree
 	
 	    Splitter splitter(scene);
 
-	    const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AlignedNode)/(4*N);
+	    const size_t node_bytes = pinfo.size()*sizeof(typename BVH::AABBNode)/(4*N);
 	    const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
 	    bvh->alloc.init_estimate(node_bytes+leaf_bytes);
 	    settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,pinfo.size(),node_bytes+leaf_bytes);
@@ -143,8 +143,8 @@ namespace embree
 	    /* call BVH builder */
 	    root = BVHBuilderBinnedFastSpatialSAH::build<NodeRef>(
 								  typename BVH::CreateAlloc(bvh),
-								  typename BVH::AlignedNode::Create2(),
-								  typename BVH::AlignedNode::Set2(),
+								  typename BVH::AABBNode::Create2(),
+								  typename BVH::AABBNode::Set2(),
 								  CreateLeafSpatial<N,Primitive>(bvh),
 								  splitter,
 								  bvh->scene->progressInterface,

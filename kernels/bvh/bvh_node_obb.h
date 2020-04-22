@@ -9,7 +9,7 @@ namespace embree
 {
   /*! Node with unaligned bounds */
   template<typename NodeRef, int N>
-    struct UnalignedNode_t : public BaseNode_t<NodeRef, N>
+    struct OBBNode_t : public BaseNode_t<NodeRef, N>
   {
     using BaseNode_t<NodeRef,N>::children;
     
@@ -17,7 +17,7 @@ namespace embree
     {
       __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
       {
-        UnalignedNode_t* node = (UnalignedNode_t*) alloc.malloc0(sizeof(UnalignedNode_t),NodeRef::byteNodeAlignment); node->clear();
+        OBBNode_t* node = (OBBNode_t*) alloc.malloc0(sizeof(OBBNode_t),NodeRef::byteNodeAlignment); node->clear();
         return NodeRef::encodeNode(node);
       }
     };
@@ -25,8 +25,8 @@ namespace embree
     struct Set
     {
       __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const OBBox3fa& bounds) const {
-        node.unalignedNode()->setRef(i,child);
-        node.unalignedNode()->setBounds(i,bounds);
+        node.ungetAABBNode()->setRef(i,child);
+        node.ungetAABBNode()->setBounds(i,bounds);
       }
     };
     
@@ -86,9 +86,9 @@ namespace embree
     __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! output operator */
-    friend embree_ostream operator<<(embree_ostream o, const UnalignedNode_t& n)
+    friend embree_ostream operator<<(embree_ostream o, const OBBNode_t& n)
     {
-      o << "UnAlignedNode { " << n.naabb << " } " << embree_endl;
+      o << "UnAABBNode { " << n.naabb << " } " << embree_endl;
       return o;
     }
     

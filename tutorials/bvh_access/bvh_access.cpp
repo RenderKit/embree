@@ -132,11 +132,11 @@ namespace embree
   /* prints the bvh4.triangle4v data structure */
   void print_bvh4_triangle4v(BVH4::NodeRef node, size_t depth)
   {
-    if (node.isAlignedNode())
+    if (node.isAABBNode())
     {
-      BVH4::AlignedNode* n = node.alignedNode();
+      BVH4::AABBNode* n = node.getAABBNode();
       
-      std::cout << "AlignedNode {" << std::endl;
+      std::cout << "AABBNode {" << std::endl;
       for (size_t i=0; i<4; i++)
       {
         for (size_t k=0; k<depth; k++) std::cout << "  ";

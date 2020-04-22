@@ -33,14 +33,14 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
 
       BVH* bvh;
       __forceinline SetBVHNBounds (BVH* bvh) : bvh(bvh) {}
 
       __forceinline NodeRecord operator() (NodeRef ref, const NodeRecord* children, size_t num)
       {
-        AlignedNode* node = ref.alignedNode();
+        AABBNode* node = ref.getAABBNode();
 
         BBox3fa res = empty;
         for (size_t i=0; i<num; i++) {
@@ -371,7 +371,7 @@ namespace embree
     class BVHNMeshBuilderMorton : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecord NodeRecord;
 
@@ -399,7 +399,7 @@ namespace embree
         
         /* preallocate arrays */
         morton.resize(numPrimitives);
-        size_t bytesEstimated = numPrimitives*sizeof(AlignedNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
+        size_t bytesEstimated = numPrimitives*sizeof(AABBNode)/(4*N) + size_t(1.2f*Primitive::blocks(numPrimitives)*sizeof(Primitive));
         size_t bytesMortonCodes = numPrimitives*sizeof(BVHBuilderMorton::BuildPrim);
         bytesEstimated = max(bytesEstimated,bytesMortonCodes); // the first allocation block is reused to sort the morton codes
         bvh->alloc.init(bytesMortonCodes,bytesMortonCodes,bytesEstimated);
@@ -414,7 +414,7 @@ namespace embree
         CalculateMeshBounds<Mesh> calculateBounds(mesh);
         auto root = BVHBuilderMorton::build<NodeRecord>(
           typename BVH::CreateAlloc(bvh), 
-          typename BVH::AlignedNode::Create(),
+          typename BVH::AABBNode::Create(),
           setBounds,createLeaf,calculateBounds,bvh->scene->progressInterface,
           morton.data(),dest,numPrimitivesGen,settings);
         

@@ -81,7 +81,7 @@ namespace embree
       struct BVHNBuilderMblurVirtual
       {
         typedef BVHN<N> BVH;
-        typedef typename BVH::AlignedNodeMB AlignedNodeMB;
+        typedef typename BVH::AABBNodeMB AABBNodeMB;
         typedef typename BVH::NodeRef NodeRef;
         typedef typename BVH::NodeRecordMB NodeRecordMB;
         typedef FastAllocator::CachedAllocator Allocator;

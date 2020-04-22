@@ -47,11 +47,11 @@ namespace embree
     /*! forward declaration of node ref type */
     typedef NodeRefPtr<N> NodeRef;
     typedef BaseNode_t<NodeRef,N> BaseNode;
-    typedef AlignedNode_t<NodeRef,N> AlignedNode;
-    typedef AlignedNodeMB_t<NodeRef,N> AlignedNodeMB;
-    typedef AlignedNodeMB4D_t<NodeRef,N> AlignedNodeMB4D;
-    typedef UnalignedNode_t<NodeRef,N> UnalignedNode;
-    typedef UnalignedNodeMB_t<NodeRef,N> UnalignedNodeMB;
+    typedef AABBNode_t<NodeRef,N> AABBNode;
+    typedef AABBNodeMB_t<NodeRef,N> AABBNodeMB;
+    typedef AABBNodeMB4D_t<NodeRef,N> AABBNodeMB4D;
+    typedef OBBNode_t<NodeRef,N> OBBNode;
+    typedef OBBNodeMB_t<NodeRef,N> OBBNodeMB;
     typedef QuantizedBaseNode_t<N> QuantizedBaseNode;
     typedef QuantizedBaseNodeMB_t<N> QuantizedBaseNodeMB;
     typedef QuantizedNode_t<NodeRef,N> QuantizedNode;
@@ -130,11 +130,11 @@ namespace embree
   public:
     
     /*! Encodes a node */
-    static __forceinline NodeRef encodeNode(AlignedNode* node) { return NodeRef::encodeNode(node); }
-    static __forceinline NodeRef encodeNode(AlignedNodeMB* node) { return NodeRef::encodeNode(node); }
-    static __forceinline NodeRef encodeNode(AlignedNodeMB4D* node) { return NodeRef::encodeNode(node); }
-    static __forceinline NodeRef encodeNode(UnalignedNode* node) { return NodeRef::encodeNode(node); }
-    static __forceinline NodeRef encodeNode(UnalignedNodeMB* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(AABBNode* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(AABBNodeMB* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(AABBNodeMB4D* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(OBBNode* node) { return NodeRef::encodeNode(node); }
+    static __forceinline NodeRef encodeNode(OBBNodeMB* node) { return NodeRef::encodeNode(node); }
     static __forceinline NodeRef encodeLeaf(void* tri, size_t num) { return NodeRef::encodeLeaf(tri,num); }
     static __forceinline NodeRef encodeTypedLeaf(void* ptr, size_t ty) { return NodeRef::encodeTypedLeaf(ptr,ty); }
     

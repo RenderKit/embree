@@ -73,11 +73,11 @@ namespace embree
     using TravRayKStreamRobust = TravRayKStream<K, true>;
 
     //////////////////////////////////////////////////////////////////////////////////////
-    // Fast AlignedNode intersection
+    // Fast AABBNode intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, int Nx, int K>
-    __forceinline size_t intersectNode1(const typename BVHN<N>::AlignedNode* __restrict__ node,
+    __forceinline size_t intersectNode1(const typename BVHN<N>::AABBNode* __restrict__ node,
                                         const TravRayKStreamFast<K>& ray, size_t k, const NearFarPrecalculations& nf)
     {
       const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
@@ -102,7 +102,7 @@ namespace embree
     }
 
     template<int N, int K>
-    __forceinline size_t intersectNodeK(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t i,
+    __forceinline size_t intersectNodeK(const typename BVHN<N>::AABBNode* __restrict__ node, size_t i,
                                         const TravRayKStreamFast<K>& ray, const NearFarPrecalculations& nf)
     {
       char* ptr = (char*)&node->lower_x + i*sizeof(float);
@@ -129,11 +129,11 @@ namespace embree
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
-    // Robust AlignedNode intersection
+    // Robust AABBNode intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, int Nx, int K>
-    __forceinline size_t intersectNode1(const typename BVHN<N>::AlignedNode* __restrict__ node,
+    __forceinline size_t intersectNode1(const typename BVHN<N>::AABBNode* __restrict__ node,
                                         const TravRayKStreamRobust<K>& ray, size_t k, const NearFarPrecalculations& nf)
     {
       const vfloat<Nx> bminX = vfloat<Nx>(*(const vfloat<N>*)((const char*)&node->lower_x + nf.nearX));
@@ -159,7 +159,7 @@ namespace embree
     }
 
     template<int N, int K>
-    __forceinline size_t intersectNodeK(const typename BVHN<N>::AlignedNode* __restrict__ node, size_t i,
+    __forceinline size_t intersectNodeK(const typename BVHN<N>::AABBNode* __restrict__ node, size_t i,
                                         const TravRayKStreamRobust<K>& ray, const NearFarPrecalculations& nf)
     {
       char *ptr = (char*)&node->lower_x + i*sizeof(float);

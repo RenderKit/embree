@@ -67,9 +67,9 @@ namespace embree
         return;
       }
 
-      if (ref.isAlignedNode())
+      if (ref.isAABBNode())
       {
-        AlignedNode* node = ref.alignedNode();
+        AABBNode* node = ref.getAABBNode();
         for (size_t i=0; i<N; i++) {
           NodeRef& child = node->child(i);
           if (unlikely(child == BVH::emptyNode)) continue;
@@ -91,9 +91,9 @@ namespace embree
         return subTreeBounds[subtrees++];
       }
 
-      if (ref.isAlignedNode())
+      if (ref.isAABBNode())
       {
-        AlignedNode* node = ref.alignedNode();
+        AABBNode* node = ref.getAABBNode();
         BBox3fa bounds[N];
 
         for (size_t i=0; i<N; i++)
@@ -135,7 +135,7 @@ namespace embree
         return leafBounds.leafBounds(ref);
       
       /* recurse if this is an internal node */
-      AlignedNode* node = ref.alignedNode();
+      AABBNode* node = ref.getAABBNode();
 
       /* enable exclusive prefetch for >= AVX platforms */      
 #if defined(__AVX__)      

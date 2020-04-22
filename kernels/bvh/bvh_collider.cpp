@@ -35,7 +35,7 @@ namespace embree
     };
     
     template<int N>
-    __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::AlignedNode& node1)
+    __forceinline size_t overlap(const BBox3fa& box0, const typename BVHN<N>::AABBNode& node1)
     {
       const vfloat<N> lower_x = max(vfloat<N>(box0.lower.x),node1.lower_x);
       const vfloat<N> lower_y = max(vfloat<N>(box0.lower.y),node1.lower_y);
@@ -159,7 +159,7 @@ namespace embree
 
       {
       recurse_node0:
-        AlignedNode* node0 = ref0.alignedNode();
+        AABBNode* node0 = ref0.getAABBNode();
         size_t mask = overlap<N>(bounds1,*node0);
         //for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
         //for (size_t i=0; i<N; i++) {
@@ -186,7 +186,7 @@ namespace embree
       
       {
       recurse_node1:
-        AlignedNode* node1 = ref1.alignedNode();
+        AABBNode* node1 = ref1.getAABBNode();
         size_t mask = overlap<N>(bounds0,*node1);
         //for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
         //for (size_t i=0; i<N; i++) {
@@ -235,7 +235,7 @@ namespace embree
       
       {
       recurse_node0:
-        const AlignedNode* node0 = job.ref0.alignedNode();
+        const AABBNode* node0 = job.ref0.getAABBNode();
         size_t mask = overlap<N>(job.bounds1,*node0);
         for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
           jobs.push_back(CollideJob(node0->child(i),node0->bounds(i),job.depth0+1,job.ref1,job.bounds1,job.depth1));
@@ -245,7 +245,7 @@ namespace embree
       
       {
       recurse_node1:
-        const AlignedNode* node1 = job.ref1.alignedNode();
+        const AABBNode* node1 = job.ref1.getAABBNode();
         size_t mask = overlap<N>(job.bounds0,*node1);
         for (size_t m=mask, i=bsf(m); m!=0; m=btc(m,i), i=bsf(m)) {
           jobs.push_back(CollideJob(job.ref0,job.bounds0,job.depth0,node1->child(i),node1->bounds(i),job.depth1+1));

@@ -46,11 +46,11 @@ namespace embree
   };
 
   template<typename NodeRef, int N> struct BaseNode_t;
-  template<typename NodeRef, int N> struct AlignedNode_t;
-  template<typename NodeRef, int N> struct AlignedNodeMB_t;
-  template<typename NodeRef, int N> struct AlignedNodeMB4D_t;
-  template<typename NodeRef, int N> struct UnalignedNode_t;
-  template<typename NodeRef, int N> struct UnalignedNodeMB_t;
+  template<typename NodeRef, int N> struct AABBNode_t;
+  template<typename NodeRef, int N> struct AABBNodeMB_t;
+  template<typename NodeRef, int N> struct AABBNodeMB4D_t;
+  template<typename NodeRef, int N> struct OBBNode_t;
+  template<typename NodeRef, int N> struct OBBNodeMB_t;
   template<typename NodeRef, int N> struct QuantizedNode_t;
   template<typename NodeRef, int N> struct QuantizedNodeMB_t;
   
@@ -72,11 +72,11 @@ namespace embree
     static const size_t items_mask = byteAlignment-1;
 
     /*! different supported node types */
-    static const size_t tyAlignedNode = 0;
-    static const size_t tyAlignedNodeMB = 1;
-    static const size_t tyAlignedNodeMB4D = 6;
-    static const size_t tyUnalignedNode = 2;
-    static const size_t tyUnalignedNodeMB = 3;
+    static const size_t tyAABBNode = 0;
+    static const size_t tyAABBNodeMB = 1;
+    static const size_t tyAABBNodeMB4D = 6;
+    static const size_t tyOBBNode = 2;
+    static const size_t tyOBBNodeMB = 3;
     static const size_t tyQuantizedNode = 5;
     static const size_t tyLeaf = 8;
 
@@ -128,47 +128,47 @@ namespace embree
     __forceinline int type() const { return ptr & (size_t)align_mask; }
     
     /*! checks if this is a node */
-    __forceinline int isAlignedNode() const { return (ptr & (size_t)align_mask) == tyAlignedNode; }
+    __forceinline int isAABBNode() const { return (ptr & (size_t)align_mask) == tyAABBNode; }
     
     /*! checks if this is a motion blur node */
-    __forceinline int isAlignedNodeMB() const { return (ptr & (size_t)align_mask) == tyAlignedNodeMB; }
+    __forceinline int isAABBNodeMB() const { return (ptr & (size_t)align_mask) == tyAABBNodeMB; }
     
     /*! checks if this is a 4D motion blur node */
-    __forceinline int isAlignedNodeMB4D() const { return (ptr & (size_t)align_mask) == tyAlignedNodeMB4D; }
+    __forceinline int isAABBNodeMB4D() const { return (ptr & (size_t)align_mask) == tyAABBNodeMB4D; }
     
     /*! checks if this is a node with unaligned bounding boxes */
-    __forceinline int isUnalignedNode() const { return (ptr & (size_t)align_mask) == tyUnalignedNode; }
+    __forceinline int isOBBNode() const { return (ptr & (size_t)align_mask) == tyOBBNode; }
     
     /*! checks if this is a motion blur node with unaligned bounding boxes */
-    __forceinline int isUnalignedNodeMB() const { return (ptr & (size_t)align_mask) == tyUnalignedNodeMB; }
+    __forceinline int isOBBNodeMB() const { return (ptr & (size_t)align_mask) == tyOBBNodeMB; }
     
     /*! checks if this is a quantized node */
     __forceinline int isQuantizedNode() const { return (ptr & (size_t)align_mask) == tyQuantizedNode; }
 
     /*! Encodes a node */
-    static __forceinline NodeRefPtr encodeNode(AlignedNode_t<NodeRefPtr,N>* node) {
+    static __forceinline NodeRefPtr encodeNode(AABBNode_t<NodeRefPtr,N>* node) {
       assert(!((size_t)node & align_mask));
       return NodeRefPtr((size_t) node);
     }
 
-    static __forceinline NodeRefPtr encodeNode(AlignedNodeMB_t<NodeRefPtr,N>* node) {
+    static __forceinline NodeRefPtr encodeNode(AABBNodeMB_t<NodeRefPtr,N>* node) {
       assert(!((size_t)node & align_mask));
-      return NodeRefPtr((size_t) node | tyAlignedNodeMB);
+      return NodeRefPtr((size_t) node | tyAABBNodeMB);
     }
 
-    static __forceinline NodeRefPtr encodeNode(AlignedNodeMB4D_t<NodeRefPtr,N>* node) {
+    static __forceinline NodeRefPtr encodeNode(AABBNodeMB4D_t<NodeRefPtr,N>* node) {
       assert(!((size_t)node & align_mask));
-      return NodeRefPtr((size_t) node | tyAlignedNodeMB4D);
+      return NodeRefPtr((size_t) node | tyAABBNodeMB4D);
     }
 
     /*! Encodes an unaligned node */
-    static __forceinline NodeRefPtr encodeNode(UnalignedNode_t<NodeRefPtr,N>* node) {
-      return NodeRefPtr((size_t) node | tyUnalignedNode);
+    static __forceinline NodeRefPtr encodeNode(OBBNode_t<NodeRefPtr,N>* node) {
+      return NodeRefPtr((size_t) node | tyOBBNode);
     }
 
     /*! Encodes an unaligned motion blur node */
-    static __forceinline NodeRefPtr encodeNode(UnalignedNodeMB_t<NodeRefPtr,N>* node) {
-      return NodeRefPtr((size_t) node | tyUnalignedNodeMB);
+    static __forceinline NodeRefPtr encodeNode(OBBNodeMB_t<NodeRefPtr,N>* node) {
+      return NodeRefPtr((size_t) node | tyOBBNodeMB);
     }
 
     /*! Encodes a leaf */
@@ -197,24 +197,24 @@ namespace embree
     }
     
     /*! returns node pointer */
-    __forceinline       AlignedNode_t<NodeRefPtr,N>* alignedNode()       { assert(isAlignedNode()); return (      AlignedNode_t<NodeRefPtr,N>*)ptr; }
-    __forceinline const AlignedNode_t<NodeRefPtr,N>* alignedNode() const { assert(isAlignedNode()); return (const AlignedNode_t<NodeRefPtr,N>*)ptr; }
+    __forceinline       AABBNode_t<NodeRefPtr,N>* getAABBNode()       { assert(isAABBNode()); return (      AABBNode_t<NodeRefPtr,N>*)ptr; }
+    __forceinline const AABBNode_t<NodeRefPtr,N>* getAABBNode() const { assert(isAABBNode()); return (const AABBNode_t<NodeRefPtr,N>*)ptr; }
     
     /*! returns motion blur node pointer */
-    __forceinline       AlignedNodeMB_t<NodeRefPtr,N>* alignedNodeMB()       { assert(isAlignedNodeMB() || isAlignedNodeMB4D()); return (      AlignedNodeMB_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
-    __forceinline const AlignedNodeMB_t<NodeRefPtr,N>* alignedNodeMB() const { assert(isAlignedNodeMB() || isAlignedNodeMB4D()); return (const AlignedNodeMB_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
+    __forceinline       AABBNodeMB_t<NodeRefPtr,N>* getAABBNodeMB()       { assert(isAABBNodeMB() || isAABBNodeMB4D()); return (      AABBNodeMB_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
+    __forceinline const AABBNodeMB_t<NodeRefPtr,N>* getAABBNodeMB() const { assert(isAABBNodeMB() || isAABBNodeMB4D()); return (const AABBNodeMB_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
     
     /*! returns 4D motion blur node pointer */
-    __forceinline       AlignedNodeMB4D_t<NodeRefPtr,N>* alignedNodeMB4D()       { assert(isAlignedNodeMB4D()); return (      AlignedNodeMB4D_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
-    __forceinline const AlignedNodeMB4D_t<NodeRefPtr,N>* alignedNodeMB4D() const { assert(isAlignedNodeMB4D()); return (const AlignedNodeMB4D_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
+    __forceinline       AABBNodeMB4D_t<NodeRefPtr,N>* getAABBNodeMB4D()       { assert(isAABBNodeMB4D()); return (      AABBNodeMB4D_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
+    __forceinline const AABBNodeMB4D_t<NodeRefPtr,N>* getAABBNodeMB4D() const { assert(isAABBNodeMB4D()); return (const AABBNodeMB4D_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
     
     /*! returns unaligned node pointer */
-    __forceinline       UnalignedNode_t<NodeRefPtr,N>* unalignedNode()       { assert(isUnalignedNode()); return (      UnalignedNode_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
-    __forceinline const UnalignedNode_t<NodeRefPtr,N>* unalignedNode() const { assert(isUnalignedNode()); return (const UnalignedNode_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
+    __forceinline       OBBNode_t<NodeRefPtr,N>* ungetAABBNode()       { assert(isOBBNode()); return (      OBBNode_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
+    __forceinline const OBBNode_t<NodeRefPtr,N>* ungetAABBNode() const { assert(isOBBNode()); return (const OBBNode_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
     
     /*! returns unaligned motion blur node pointer */
-    __forceinline       UnalignedNodeMB_t<NodeRefPtr,N>* unalignedNodeMB()       { assert(isUnalignedNodeMB()); return (      UnalignedNodeMB_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
-    __forceinline const UnalignedNodeMB_t<NodeRefPtr,N>* unalignedNodeMB() const { assert(isUnalignedNodeMB()); return (const UnalignedNodeMB_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
+    __forceinline       OBBNodeMB_t<NodeRefPtr,N>* ungetAABBNodeMB()       { assert(isOBBNodeMB()); return (      OBBNodeMB_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
+    __forceinline const OBBNodeMB_t<NodeRefPtr,N>* ungetAABBNodeMB() const { assert(isOBBNodeMB()); return (const OBBNodeMB_t<NodeRefPtr,N>*)(ptr & ~(size_t)align_mask); }
     
     /*! returns quantized node pointer */
     __forceinline       QuantizedNode_t<NodeRefPtr,N>* quantizedNode()       { assert(isQuantizedNode()); return (      QuantizedNode_t<NodeRefPtr,N>*)(ptr  & ~(size_t)align_mask ); }

@@ -112,8 +112,8 @@ namespace embree
       else 
       {
         /* allocate new bvh4 node */
-        BVH4::AlignedNode* node = (BVH4::AlignedNode *)&bvhData()[allocator];
-        allocator += sizeof(BVH4::AlignedNode);
+        BVH4::AABBNode* node = (BVH4::AABBNode *)&bvhData()[allocator];
+        allocator += sizeof(BVH4::AABBNode);
         node->clear();
         
         /* split range */
@@ -161,8 +161,8 @@ namespace embree
       else 
       {
         /* allocate new bvh4 node */
-        BVH4::AlignedNodeMB* node = (BVH4::AlignedNodeMB *)&bvhData()[allocator];
-        allocator += sizeof(BVH4::AlignedNodeMB);
+        BVH4::AABBNodeMB* node = (BVH4::AABBNodeMB *)&bvhData()[allocator];
+        allocator += sizeof(BVH4::AABBNodeMB);
         node->clear();
         
         /* split range */
@@ -202,8 +202,8 @@ namespace embree
       }
 
       /* allocate new bvh4 node */
-      BVH4::AlignedNodeMB4D* node = (BVH4::AlignedNodeMB4D*)&bvhData()[allocator];
-      allocator += sizeof(BVH4::AlignedNodeMB4D);
+      BVH4::AABBNodeMB4D* node = (BVH4::AABBNodeMB4D*)&bvhData()[allocator];
+      allocator += sizeof(BVH4::AABBNodeMB4D);
       node->clear();
 
       for (int i=0, j=0; i<4; i++) 

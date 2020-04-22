@@ -23,8 +23,8 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
-      typedef typename BVH::AlignedNode AlignedNode;
-      typedef typename BVH::AlignedNodeMB AlignedNodeMB;
+      typedef typename BVH::AABBNode AABBNode;
+      typedef typename BVH::AABBNodeMB AABBNodeMB;
 
       template<int K>
       __forceinline static size_t initPacketsAndFrustum(RayK<K>** inputPackets, size_t numOctantRays,
@@ -104,9 +104,9 @@ namespace embree
       }
 
       template<int K>
-      __forceinline static size_t intersectAlignedNodePacket(size_t m_active,
+      __forceinline static size_t intersectAABBNodePacket(size_t m_active,
                                                              const TravRayKStream<K,robust>* packets,
-                                                             const AlignedNode* __restrict__ node,
+                                                             const AABBNode* __restrict__ node,
                                                              size_t boxID,
                                                              const NearFarPrecalculations& nf)
       {
@@ -125,7 +125,7 @@ namespace embree
       template<int K>
       __forceinline static size_t traverseCoherentStream(size_t m_active,
                                                          TravRayKStream<K, robust>* packets,
-                                                         const AlignedNode* __restrict__ node,
+                                                         const AABBNode* __restrict__ node,
                                                          const Frustum<robust>& frustum,
                                                          size_t* maskK,
                                                          vfloat<Nx>& dist)
@@ -141,7 +141,7 @@ namespace embree
         while (unlikely(m_node))
         {
           const size_t boxID = bscf(m_node);
-          const size_t m_current = m_active & intersectAlignedNodePacket(m_active, packets, node, boxID, frustum.nf);
+          const size_t m_current = m_active & intersectAABBNodePacket(m_active, packets, node, boxID, frustum.nf);
           m_node_hit ^= m_current ? (size_t)0 : ((size_t)1 << boxID);
           maskK[boxID] = m_current;
         }
@@ -152,7 +152,7 @@ namespace embree
       template<int K>
       __forceinline static vint<Nx> traverseIncoherentStream(size_t m_active,
                                                              TravRayKStreamFast<K>* __restrict__ packets,
-                                                             const AlignedNode* __restrict__ node,
+                                                             const AABBNode* __restrict__ node,
                                                              const NearFarPrecalculations& nf,
                                                              const int shiftTable[32])
       {
@@ -200,7 +200,7 @@ namespace embree
       template<int K>
       __forceinline static vint<Nx> traverseIncoherentStream(size_t m_active,
                                                              TravRayKStreamRobust<K>* __restrict__ packets,
-                                                             const AlignedNode* __restrict__ node,
+                                                             const AABBNode* __restrict__ node,
                                                              const NearFarPrecalculations& nf,
                                                              const int shiftTable[32])
       {

@@ -34,10 +34,10 @@ namespace embree
         const GridRange range(0,width-1,0,height-1);
         size_t bvhBytes = 0;
         if (time_steps == 1) 
-          bvhBytes = getBVHBytes(range,sizeof(BVH4::AlignedNode),0);
+          bvhBytes = getBVHBytes(range,sizeof(BVH4::AABBNode),0);
         else {
-          bvhBytes = (time_steps-1)*getBVHBytes(range,sizeof(BVH4::AlignedNodeMB),0);
-          bvhBytes += getTemporalBVHBytes(make_range(0,int(time_steps-1)),sizeof(BVH4::AlignedNodeMB4D));
+          bvhBytes = (time_steps-1)*getBVHBytes(range,sizeof(BVH4::AABBNodeMB),0);
+          bvhBytes += getTemporalBVHBytes(make_range(0,int(time_steps-1)),sizeof(BVH4::AABBNodeMB4D));
         }
         const size_t gridBytes = 4*size_t(width)*size_t(height)*sizeof(float);  
         size_t rootBytes = time_steps*sizeof(BVH4::NodeRef);

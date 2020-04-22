@@ -15,7 +15,7 @@ namespace embree
     class BVHNBuilderTwoLevel : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
       typedef typename BVH::NodeRef NodeRef;
 
     public:
@@ -76,7 +76,7 @@ namespace embree
         NodeRef ref = bref.node;
         unsigned int geomID   = bref.geomID();
         unsigned int numPrims = max((unsigned int)bref.numPrimitives() / N,(unsigned int)1);
-        AlignedNode* node = ref.alignedNode();
+        AABBNode* node = ref.getAABBNode();
         size_t n = 0;
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
