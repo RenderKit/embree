@@ -39,17 +39,15 @@ namespace embree
     __forceinline TriangleMi() {  }
 
     /* Construction from vertices and IDs */
-#if !defined(EMBREE_COMPACT_POLYS)
     __forceinline TriangleMi(const vuint<M>& v0,
                              const vuint<M>& v1,
                              const vuint<M>& v2,
                              const vuint<M>& geomIDs,
                              const vuint<M>& primIDs)
-      : v0_(v0), v1_(v1), v2_(v2), geomIDs(geomIDs), primIDs(primIDs) {}
-#else 
-    __forceinline TriangleMi(const vuint<M>& geomIDs,
-                             const vuint<M>& primIDs)
+#if defined(EMBREE_COMPACT_POLYS)
       : geomIDs(geomIDs), primIDs(primIDs) {}
+#else
+    : v0_(v0), v1_(v1), v2_(v2), geomIDs(geomIDs), primIDs(primIDs) {}
 #endif
 
     /* Returns a mask that tells which triangles are valid */
@@ -279,9 +277,7 @@ namespace embree
     template<typename PrimRefT>
     __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
     {
-#if !defined(EMBREE_COMPACT_POLYS)
       vuint<M> v0 = zero, v1 = zero, v2 = zero;
-#endif
       vuint<M> geomID = -1, primID = -1;
       const PrimRefT* prim = &prims[begin];
 
@@ -304,20 +300,14 @@ namespace embree
           if (likely(i > 0)) {
             geomID[i] = geomID[0];
             primID[i] = -1;
-#if !defined(EMBREE_COMPACT_POLYS)
             v0[i] = v0[0];
             v1[i] = v0[0];
             v2[i] = v0[0];
-#endif
           }
         }
         if (begin<end) prim = &prims[begin];
       }
-#if !defined(EMBREE_COMPACT_POLYS)
       new (this) TriangleMi(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
-#else 
-      new (this) TriangleMi(geomID,primID); // FIXME: use non temporal store
-#endif
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)

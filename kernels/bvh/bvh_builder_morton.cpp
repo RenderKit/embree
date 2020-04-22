@@ -209,9 +209,7 @@ namespace embree
         Triangle4i* accel = (Triangle4i*) alloc.malloc1(sizeof(Triangle4i),BVH::byteAlignment);
         NodeRef ref = BVH::encodeLeaf((char*)accel,1);
         
-#if !defined(EMBREE_COMPACT_POLYS)
         vuint4 v0 = zero, v1 = zero, v2 = zero;
-#endif
         vuint4 vgeomID = -1, vprimID = -1;
         const TriangleMesh* __restrict__ const mesh = this->mesh;
         
@@ -226,29 +224,21 @@ namespace embree
           upper = max(upper,(vfloat4)p0,(vfloat4)p1,(vfloat4)p2);
           vgeomID[i] = geomID_;
           vprimID[i] = primID;
-#if !defined(EMBREE_COMPACT_POLYS)
           unsigned int int_stride = mesh->vertices0.getStride()/4;
-	        v0[i] = tri.v[0] * int_stride; 
-	        v1[i] = tri.v[1] * int_stride;
-	        v2[i] = tri.v[2] * int_stride;
-#endif
+          v0[i] = tri.v[0] * int_stride; 
+          v1[i] = tri.v[1] * int_stride;
+          v2[i] = tri.v[2] * int_stride;
         }
         
         for (size_t i=items; i<4; i++)
         {
           vgeomID[i] = vgeomID[0];
           vprimID[i] = -1;
-#if !defined(EMBREE_COMPACT_POLYS)
           v0[i] = 0;
           v1[i] = 0; 
           v2[i] = 0;
-#endif
         }
-#if !defined(EMBREE_COMPACT_POLYS)
         Triangle4i::store_nt(accel,Triangle4i(v0,v1,v2,vgeomID,vprimID));
-#else 
-        Triangle4i::store_nt(accel,Triangle4i(vgeomID,vprimID));
-#endif
         BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
 #if ROTATE_TREE
         if (N == 4)

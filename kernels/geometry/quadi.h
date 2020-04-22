@@ -39,18 +39,16 @@ namespace embree
     __forceinline QuadMi() {  }
 
     /* Construction from vertices and IDs */
-#if !defined(EMBREE_COMPACT_POLYS)
     __forceinline QuadMi(const vuint<M>& v0,
                          const vuint<M>& v1,
                          const vuint<M>& v2,
                          const vuint<M>& v3,
                          const vuint<M>& geomIDs,
                          const vuint<M>& primIDs)
-      : v0_(v0),v1_(v1), v2_(v2), v3_(v3), geomIDs(geomIDs), primIDs(primIDs) {}
-#else
-    __forceinline QuadMi(const vuint<M>& geomIDs,
-                         const vuint<M>& primIDs)
+#if defined(EMBREE_COMPACT_POLYS)
       : geomIDs(geomIDs), primIDs(primIDs) {}
+#else
+     : v0_(v0),v1_(v1), v2_(v2), v3_(v3), geomIDs(geomIDs), primIDs(primIDs) {}
 #endif
 
     /* Returns a mask that tells which quads are valid */
@@ -297,9 +295,7 @@ namespace embree
     {
       vuint<M> geomID = -1, primID = -1;
       const PrimRefT* prim = &prims[begin];
-#if !defined(EMBREE_COMPACT_POLYS)
       vuint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-#endif
 
       for (size_t i=0; i<M; i++)
       {
@@ -321,21 +317,15 @@ namespace embree
           if (likely(i > 0)) {
             geomID[i] = geomID[0]; // always valid geomIDs
             primID[i] = -1;        // indicates invalid data
-#if !defined(EMBREE_COMPACT_POLYS)
             v0[i] = v0[0];
             v1[i] = v0[0];
             v2[i] = v0[0];
             v3[i] = v0[0];
-#endif
           }
         }
         if (begin<end) prim = &prims[begin];
       }
-#if !defined(EMBREE_COMPACT_POLYS)
       new (this) QuadMi(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
-#else 
-      new (this) QuadMi(geomID,primID); // FIXME: use non temporal store
-#endif
     }
 
     __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
@@ -350,15 +340,13 @@ namespace embree
       return linearBounds(scene, time_range);
     }
 
+    friend embree_ostream operator<<(embree_ostream cout, const QuadMi& quad) {
+      return cout << "QuadMi<" << M << ">( "
 #if !defined(EMBREE_COMPACT_POLYS)
-    friend embree_ostream operator<<(embree_ostream cout, const QuadMi& quad) {
-      return cout << "QuadMi<" << M << ">( v0 = " << quad.v0_ << ", v1 = " << quad.v1_ << ", v2 = " << quad.v2_ << ", v3 = " << quad.v3_ << ", geomID = " << quad.geomIDs << ", primID = " << quad.primIDs << " )";
-    }
-#else
-    friend embree_ostream operator<<(embree_ostream cout, const QuadMi& quad) {
-      return cout << "QuadMi<" << M << ">( geomID = " << quad.geomIDs << ", primID = " << quad.primIDs << " )";
-    }
+                  << "v0 = " << quad.v0_ << ", v1 = " << quad.v1_ << ", v2 = " << quad.v2_ << ", v3 = " << quad.v3_ << ", "
 #endif
+                  << "geomID = " << quad.geomIDs << ", primID = " << quad.primIDs << " )";
+    }
 
     /* Updates the primitive */
     __forceinline BBox3fa update(QuadMesh* mesh)
