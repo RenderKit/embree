@@ -78,7 +78,7 @@ namespace embree
       const QuadMesh::Quad& quad = mesh->quad(primID(index));
       return (Vec3f) mesh->vertices[0][quad.v[vid]];
 #else
-      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
+      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : vid == 2 ? v2_ : v3_;
       const float* vertices = scene->vertices[geomID(index)];
       return (Vec3f&) vertices[v[index]];
 #endif
@@ -93,7 +93,7 @@ namespace embree
       const Vec3fa v0 = mesh->vertices[itime+0][quad.v[vid]];
       const Vec3fa v1 = mesh->vertices[itime+1][quad.v[vid]];
 #else
-      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
+      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : vid == 2 ? v2_ : v3_;
       const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
       const float* vertices0 = (const float*) mesh->vertexPtr(0,itime+0);
       const float* vertices1 = (const float*) mesh->vertexPtr(0,itime+1);
@@ -118,7 +118,7 @@ namespace embree
         const Vec3fa v0 = mesh->vertices[itime[i]+0][quad.v[vid]];
         const Vec3fa v1 = mesh->vertices[itime[i]+1][quad.v[vid]];
 #else
-        const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
+        const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : vid == 2 ? v2_ : v3_;
         const float* vertices0 = (const float*) mesh->vertexPtr(0,itime[i]+0);
         const float* vertices1 = (const float*) mesh->vertexPtr(0,itime[i]+1);
         const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
