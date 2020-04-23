@@ -20,15 +20,26 @@ void addPoints (RTCScene scene, uniform RTCGeometryType gtype, const uniform Vec
   RTCGeometry geom = rtcNewGeometry (g_device, gtype);
   uniform Vec4f* uniform point_vertices = (uniform Vec4f* uniform)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(uniform Vec4f), NUM_POINTS);
 
-  for (uniform int i = 0; i < NUM_POINTS; i++) {
-    point_vertices[i] = make_Vec4f(pos) + make_Vec4f(COORD, COORD, COORD, RADIUS);
-    data.point_colors[i] = make_Vec3f(COLOR, COLOR, COLOR);
+  for (uniform int i = 0; i < NUM_POINTS; i++)
+  {
+    const uniform float vx = COORD;
+    const uniform float vy = COORD;
+    const uniform float vz = COORD;
+    const uniform float vr = RADIUS;
+    point_vertices[i] = make_Vec4f(pos) + make_Vec4f(vx, vy, vz, vr);
+    const uniform float cr = COLOR;
+    const uniform float cg = COLOR;
+    const uniform float cb = COLOR;
+    data.point_colors[i] = make_Vec3f(cr,cg,cb);
   }
 
   if (gtype == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT) {
     uniform Vec3fa* uniform point_normals = (uniform Vec3fa* uniform)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_NORMAL, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_POINTS);
     for (uniform int i = 0; i < NUM_POINTS; i++) {
-      point_normals[i] = make_Vec3fa(NORMAL, NORMAL, NORMAL);
+      const uniform float nx = NORMAL;
+      const uniform float ny = NORMAL;
+      const uniform float nz = NORMAL;
+      point_normals[i] = make_Vec3fa(nx,ny,nz);
       point_normals[i] = normalize(point_normals[i]);
     }
   }

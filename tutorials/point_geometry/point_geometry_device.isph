@@ -15,12 +15,12 @@ struct TutorialData
 
 inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
-  This->g_scene = nullptr;
+  This->g_scene = NULL;
   This->point_colors = uniform new uniform Vec3f[NUM_POINTS];
 }
 
 inline void TutorialData_Destructor(uniform TutorialData* uniform This)
 {
-  rtcReleaseScene (This->g_scene); This->g_scene = nullptr;
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
   delete[] This->point_colors; This->point_colors = NULL;
 }
