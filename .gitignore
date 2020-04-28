@@ -9,6 +9,4 @@ kernels/config.h
 kernels/hash.h
 include/embree3/rtcore_config.h
 build
-models
-tbb
 doc/intelstyle
