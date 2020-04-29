@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.9.1
+-   Compile fix for ISPC v1.13.0
+
 ### Embree 3.9.0
 
 -   Added round linear curve geometry support. In this mode a real geometric surface for curves
