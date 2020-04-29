@@ -319,7 +319,7 @@ namespace embree
             bounds1[pos] = newBounds.bounds1;
             pos++;
           }
-          assert(pos < N);
+          assert(pos <= N);
           new (&accel[g]) SubGridMBQBVHN<N>(x,y,primID,bounds0,bounds1,geomIDs[g],current.prims.time_range.lower,1.0f/current.prims.time_range.size(),pos);
         }
         return NodeRecordMB4D(node,allBounds,current.prims.time_range);       

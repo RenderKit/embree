@@ -332,7 +332,7 @@ namespace embree
             bounds[pos] = prims[start+i].bounds();
             pos++;
           }
-          assert(pos < N);
+          assert(pos <= N);
           new (&accel[g]) SubGridQBVHN<N>(x,y,primID,bounds,geomIDs[g],pos);
         }
 
