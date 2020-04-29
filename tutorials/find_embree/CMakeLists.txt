@@ -6,9 +6,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.2.0)
 
 FIND_PACKAGE(embree 3.0 REQUIRED)
 
-INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
 ADD_EXECUTABLE(find_embree find_embree.cpp)
-TARGET_LINK_LIBRARIES(find_embree ${EMBREE_LIBRARY})
+TARGET_LINK_LIBRARIES(find_embree embree)
 
 OPTION(EMBREE_ISPC_SUPPORT "Build Embree with support for ISPC applications." OFF)
 
@@ -18,7 +17,8 @@ IF (EMBREE_ISPC_SUPPORT)
   SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../common/cmake ${CMAKE_MODULE_PATH})
   INCLUDE(ispc)
 
-  INCLUDE_DIRECTORIES_ISPC(${EMBREE_INCLUDE_DIRS})
+  get_target_property(embree_include_dir embree INTERFACE_INCLUDE_DIRECTORIES)
+  INCLUDE_DIRECTORIES_ISPC(${embree_include_dir})
   ADD_EMBREE_ISPC_EXECUTABLE(find_embree_ispc find_embree_ispc.cpp find_embree_ispc.ispc)
-  TARGET_LINK_LIBRARIES(find_embree_ispc ${EMBREE_LIBRARY})
+  TARGET_LINK_LIBRARIES(find_embree_ispc embree)
 ENDIF()

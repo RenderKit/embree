@@ -417,6 +417,14 @@ ENDIF ()
 INCLUDE (ispc)
 
 ##############################################################
+# Find TBB
+##############################################################
+IF (TASKING_TBB)
+  FIND_PACKAGE(TBB REQUIRED)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
+ENDIF()
+
+##############################################################
 # Create Binary Packages (uses above config options)
 ##############################################################
 include(package)
@@ -448,13 +456,6 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map"
 )
 
-##############################################################
-# Search paths
-##############################################################
-IF (TASKING_TBB)
-  FIND_PACKAGE(TBB REQUIRED)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
-ENDIF()
 
 ##############################################################
 # Output paths
