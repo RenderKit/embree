@@ -325,13 +325,14 @@ namespace embree
           {
             if (unlikely(prims[start+i].geomID() != geomIDs[g])) continue;
 
-            const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];                      
+            const SubGridBuildData& sgrid_bd = sgrids[prims[start+i].primID()];
             x[pos] = sgrid_bd.sx;
             y[pos] = sgrid_bd.sy;
             primID[pos] = sgrid_bd.primID;
             bounds[pos] = prims[start+i].bounds();
             pos++;
           }
+          assert(pos <= N);
           new (&accel[g]) SubGridQBVHN<N>(x,y,primID,bounds,geomIDs[g],pos);
         }
 

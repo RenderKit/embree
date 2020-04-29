@@ -151,7 +151,7 @@ namespace embree
         
         try {
           return Texture::load(path+src);
-        } catch (std::runtime_error e) {
+        } catch (const std::runtime_error& e) {
           std::cerr << "failed to load " << path+src << ": " << e.what() << std::endl;
         }
       }
