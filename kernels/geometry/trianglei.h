@@ -76,7 +76,7 @@ namespace embree
       const TriangleMesh::Triangle& tri = mesh->triangle(primID(index));
       return (Vec3f) mesh->vertices[0][tri.v[vid]];
 #else
-      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
+      const vuint<M>& v = getVertexOffset<vid>();
       const float* vertices = scene->vertices[geomID(index)];
       return (Vec3f&) vertices[v[index]];
 #endif
@@ -91,7 +91,7 @@ namespace embree
       const Vec3fa v0 = mesh->vertices[itime+0][tri.v[vid]];
       const Vec3fa v1 = mesh->vertices[itime+1][tri.v[vid]];
 #else
-      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
+      const vuint<M>& v = getVertexOffset<vid>();
       const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
       const float* vertices0 = (const float*) mesh->vertexPtr(0,itime+0);
       const float* vertices1 = (const float*) mesh->vertexPtr(0,itime+1);
@@ -116,7 +116,7 @@ namespace embree
         const Vec3fa v0 = mesh->vertices[itime[i]+0][tri.v[vid]];
         const Vec3fa v1 = mesh->vertices[itime[i]+1][tri.v[vid]];
 #else
-        const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : v2_;
+        const vuint<M>& v = getVertexOffset<vid>();
         const float* vertices0 = (const float*) mesh->vertexPtr(0,itime[i]+0);
         const float* vertices1 = (const float*) mesh->vertexPtr(0,itime[i]+1);
         const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
@@ -341,6 +341,7 @@ namespace embree
 
   private:
 #if !defined(EMBREE_COMPACT_POLYS)
+    template<int N> const vuint<M>& getVertexOffset() const;
     vuint<M> v0_;         // 4 byte offset of 1st vertex
     vuint<M> v1_;         // 4 byte offset of 2nd vertex
     vuint<M> v2_;         // 4 byte offset of 3rd vertex
@@ -349,6 +350,12 @@ namespace embree
     vuint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
+#if !defined(EMBREE_COMPACT_POLYS)
+  template<> template<> __forceinline const vuint<4>& TriangleMi<4>::getVertexOffset<0>() const { return v0_; }
+  template<> template<> __forceinline const vuint<4>& TriangleMi<4>::getVertexOffset<1>() const { return v1_; }
+  template<> template<> __forceinline const vuint<4>& TriangleMi<4>::getVertexOffset<2>() const { return v2_; }
+#endif
+  
   template<>
   __forceinline void TriangleMi<4>::gather(Vec3vf4& p0,
                                            Vec3vf4& p1,

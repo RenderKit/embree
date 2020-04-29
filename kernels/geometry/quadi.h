@@ -78,7 +78,7 @@ namespace embree
       const QuadMesh::Quad& quad = mesh->quad(primID(index));
       return (Vec3f) mesh->vertices[0][quad.v[vid]];
 #else
-      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : vid == 2 ? v2_ : v3_;
+      const vuint<M>& v = getVertexOffset<vid>();
       const float* vertices = scene->vertices[geomID(index)];
       return (Vec3f&) vertices[v[index]];
 #endif
@@ -93,7 +93,7 @@ namespace embree
       const Vec3fa v0 = mesh->vertices[itime+0][quad.v[vid]];
       const Vec3fa v1 = mesh->vertices[itime+1][quad.v[vid]];
 #else
-      const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : vid == 2 ? v2_ : v3_;
+      const vuint<M>& v = getVertexOffset<vid>();
       const QuadMesh* mesh = scene->get<QuadMesh>(geomID(index));
       const float* vertices0 = (const float*) mesh->vertexPtr(0,itime+0);
       const float* vertices1 = (const float*) mesh->vertexPtr(0,itime+1);
@@ -118,7 +118,7 @@ namespace embree
         const Vec3fa v0 = mesh->vertices[itime[i]+0][quad.v[vid]];
         const Vec3fa v1 = mesh->vertices[itime[i]+1][quad.v[vid]];
 #else
-        const vuint<M>& v = vid == 0 ? v0_ : vid == 1 ? v1_ : vid == 2 ? v2_ : v3_;
+        const vuint<M>& v = getVertexOffset<vid>();
         const float* vertices0 = (const float*) mesh->vertexPtr(0,itime[i]+0);
         const float* vertices1 = (const float*) mesh->vertexPtr(0,itime[i]+1);
         const Vec3fa v0 = Vec3fa::loadu(vertices0+v[index]);
@@ -367,9 +367,9 @@ namespace embree
       return bounds;
     }
 
-
   private:
 #if !defined(EMBREE_COMPACT_POLYS)
+    template<int N> const vuint<M>& getVertexOffset() const;
     vuint<M> v0_;         // 4 byte offset of 1st vertex
     vuint<M> v1_;         // 4 byte offset of 2nd vertex
     vuint<M> v2_;         // 4 byte offset of 3rd vertex
@@ -378,6 +378,13 @@ namespace embree
     vuint<M> geomIDs;    // geometry ID of mesh
     vuint<M> primIDs;    // primitive ID of primitive inside mesh
   };
+
+#if !defined(EMBREE_COMPACT_POLYS)
+  template<> template<> __forceinline const vuint<4>& QuadMi<4>::getVertexOffset<0>() const { return v0_; }
+  template<> template<> __forceinline const vuint<4>& QuadMi<4>::getVertexOffset<1>() const { return v1_; }
+  template<> template<> __forceinline const vuint<4>& QuadMi<4>::getVertexOffset<2>() const { return v2_; }
+  template<> template<> __forceinline const vuint<4>& QuadMi<4>::getVertexOffset<3>() const { return v3_; }
+#endif
 
   template<>
   __forceinline void QuadMi<4>::gather(Vec3vf4& p0,
