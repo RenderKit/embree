@@ -311,6 +311,14 @@ target_include_directories(embree PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
   $<INSTALL_INTERFACE:include>)
 
+# libtbb is located in same install folder as libembree
+IF(WIN32)
+ELSEIF(APPLE)
+  SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "@rpath") # On MacOSX the app is supposed to already have an rpath set to that folder
+ELSE()
+  SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "$ORIGIN")  # Linux we tell ld to find libtbb in the folder libembree is places.
+ENDIF()
+
 IF (WIN32)
 ELSEIF (APPLE)
   SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,-exported_symbols_list,${PROJECT_SOURCE_DIR}/kernels/export.macosx.map)
