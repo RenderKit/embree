@@ -307,9 +307,11 @@ ENDIF()
 
 TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)
 SET_TARGET_PROPERTIES(embree PROPERTIES OUTPUT_NAME ${EMBREE_LIBRARY_NAME})
+SET_TARGET_PROPERTIES(embree PROPERTIES LINK_INTERFACE_LIBRARIES "")
 target_include_directories(embree PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
   $<INSTALL_INTERFACE:include>)
+
 
 # libtbb is located in same install folder as libembree
 IF(WIN32)
