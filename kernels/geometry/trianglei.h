@@ -206,8 +206,8 @@ namespace embree
     using embree::TriangleMi<M>::primIDs;
     using embree::TriangleMi<M>::geomID;
     using embree::TriangleMi<M>::primID;
-    
-    
+    using embree::TriangleMi<M>::valid;
+        
     /* loads a single vertex */
     template<int vid>
     __forceinline Vec3f getVertex(const size_t index, const Scene *const scene) const

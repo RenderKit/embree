@@ -192,6 +192,7 @@ namespace embree
     using embree::QuadMi<M>::primIDs;
     using embree::QuadMi<M>::geomID;
     using embree::QuadMi<M>::primID;
+    using embree::QuadMi<M>::valid;
     
     template<int vid>
     __forceinline Vec3f getVertex(const size_t index, const Scene *const scene) const
