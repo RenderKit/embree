@@ -67,6 +67,147 @@ namespace embree
     __forceinline vuint<M> primID() const { return primIDs; }
     __forceinline unsigned int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
+    /* Calculate the bounds of the triangles */
+    __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
+    {
+      BBox3fa bounds = empty;
+      for (size_t i=0; i<M && valid(i); i++) {
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
+        bounds.extend(mesh->bounds(primID(i),itime));
+      }
+      return bounds;
+    }
+
+    /* Calculate the linear bounds of the primitive */
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime) {
+      return LBBox3fa(bounds(scene,itime+0),bounds(scene,itime+1));
+    }
+
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps)
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
+      }
+      return allBounds;
+    }
+
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range)
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), time_range));
+      }
+      return allBounds;
+    }
+    
+    /* Non-temporal store */
+    __forceinline static void store_nt(TriangleMi* dst, const TriangleMi& src)
+    {
+#if !defined(EMBREE_COMPACT_POLYS)
+      vuint<M>::store_nt(&dst->v0_,src.v0_);
+      vuint<M>::store_nt(&dst->v1_,src.v1_);
+      vuint<M>::store_nt(&dst->v2_,src.v2_);
+#endif
+      vuint<M>::store_nt(&dst->geomIDs,src.geomIDs);
+      vuint<M>::store_nt(&dst->primIDs,src.primIDs);
+    }
+
+    /* Fill triangle from triangle list */
+    template<typename PrimRefT>
+    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
+    {
+      vuint<M> v0 = zero, v1 = zero, v2 = zero;
+      vuint<M> geomID = -1, primID = -1;
+      const PrimRefT* prim = &prims[begin];
+
+      for (size_t i=0; i<M; i++)
+      {
+        if (begin<end) {
+          geomID[i] = prim->geomID();
+          primID[i] = prim->primID();
+#if !defined(EMBREE_COMPACT_POLYS)
+          const TriangleMesh* mesh = scene->get<TriangleMesh>(prim->geomID());
+          const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
+          unsigned int int_stride = mesh->vertices0.getStride()/4;
+          v0[i] = tri.v[0] * int_stride;
+          v1[i] = tri.v[1] * int_stride;
+          v2[i] = tri.v[2] * int_stride;
+#endif
+          begin++;
+        } else {
+          assert(i);
+          if (likely(i > 0)) {
+            geomID[i] = geomID[0];
+            primID[i] = -1;
+            v0[i] = v0[0];
+            v1[i] = v0[0];
+            v2[i] = v0[0];
+          }
+        }
+        if (begin<end) prim = &prims[begin];
+      }
+      new (this) TriangleMi(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
+    }
+
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
+    {
+      fill(prims, begin, end, scene);
+      return linearBounds(scene, itime);
+    }
+
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      fill(prims, begin, end, scene);
+      return linearBounds(scene, time_range);
+    }
+
+    /* Updates the primitive */
+    __forceinline BBox3fa update(TriangleMesh* mesh)
+    {
+      BBox3fa bounds = empty;
+      for (size_t i=0; i<M; i++)
+      {
+        if (primID(i) == -1) break;
+        const unsigned int primId = primID(i);
+        const TriangleMesh::Triangle& tri = mesh->triangle(primId);
+        const Vec3fa p0 = mesh->vertex(tri.v[0]);
+        const Vec3fa p1 = mesh->vertex(tri.v[1]);
+        const Vec3fa p2 = mesh->vertex(tri.v[2]);
+        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
+      }
+      return bounds;
+    }
+
+  protected:
+#if !defined(EMBREE_COMPACT_POLYS)
+    vuint<M> v0_;         // 4 byte offset of 1st vertex
+    vuint<M> v1_;         // 4 byte offset of 2nd vertex
+    vuint<M> v2_;         // 4 byte offset of 3rd vertex
+#endif
+    vuint<M> geomIDs;    // geometry ID of mesh
+    vuint<M> primIDs;    // primitive ID of primitive inside mesh
+  };
+
+  namespace isa
+  {
+    
+  template<int M>
+    struct TriangleMi : public embree::TriangleMi<M>
+  {
+    using embree::TriangleMi<M>::v0_;
+    using embree::TriangleMi<M>::v1_;
+    using embree::TriangleMi<M>::v2_;
+    using embree::TriangleMi<M>::geomIDs;
+    using embree::TriangleMi<M>::primIDs;
+    using embree::TriangleMi<M>::geomID;
+    using embree::TriangleMi<M>::primID;
+    
+    
     /* loads a single vertex */
     template<int vid>
     __forceinline Vec3f getVertex(const size_t index, const Scene *const scene) const
@@ -228,131 +369,10 @@ namespace embree
                               const Scene *const scene,
                               const float time) const;
 
-    /* Calculate the bounds of the triangles */
-    __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
-    {
-      BBox3fa bounds = empty;
-      for (size_t i=0; i<M && valid(i); i++) {
-        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
-        bounds.extend(mesh->bounds(primID(i),itime));
-      }
-      return bounds;
-    }
 
-    /* Calculate the linear bounds of the primitive */
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime) {
-      return LBBox3fa(bounds(scene,itime+0),bounds(scene,itime+1));
-    }
-
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps)
-    {
-      LBBox3fa allBounds = empty;
-      for (size_t i=0; i<M && valid(i); i++)
-      {
-        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
-        allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
-      }
-      return allBounds;
-    }
-
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range)
-    {
-      LBBox3fa allBounds = empty;
-      for (size_t i=0; i<M && valid(i); i++)
-      {
-        const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(i));
-        allBounds.extend(mesh->linearBounds(primID(i), time_range));
-      }
-      return allBounds;
-    }
-    
-    /* Non-temporal store */
-    __forceinline static void store_nt(TriangleMi* dst, const TriangleMi& src)
-    {
-#if !defined(EMBREE_COMPACT_POLYS)
-      vuint<M>::store_nt(&dst->v0_,src.v0_);
-      vuint<M>::store_nt(&dst->v1_,src.v1_);
-      vuint<M>::store_nt(&dst->v2_,src.v2_);
-#endif
-      vuint<M>::store_nt(&dst->geomIDs,src.geomIDs);
-      vuint<M>::store_nt(&dst->primIDs,src.primIDs);
-    }
-
-    /* Fill triangle from triangle list */
-    template<typename PrimRefT>
-    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
-    {
-      vuint<M> v0 = zero, v1 = zero, v2 = zero;
-      vuint<M> geomID = -1, primID = -1;
-      const PrimRefT* prim = &prims[begin];
-
-      for (size_t i=0; i<M; i++)
-      {
-        if (begin<end) {
-          geomID[i] = prim->geomID();
-          primID[i] = prim->primID();
-#if !defined(EMBREE_COMPACT_POLYS)
-          const TriangleMesh* mesh = scene->get<TriangleMesh>(prim->geomID());
-          const TriangleMesh::Triangle& tri = mesh->triangle(prim->primID());
-          unsigned int int_stride = mesh->vertices0.getStride()/4;
-          v0[i] = tri.v[0] * int_stride;
-          v1[i] = tri.v[1] * int_stride;
-          v2[i] = tri.v[2] * int_stride;
-#endif
-          begin++;
-        } else {
-          assert(i);
-          if (likely(i > 0)) {
-            geomID[i] = geomID[0];
-            primID[i] = -1;
-            v0[i] = v0[0];
-            v1[i] = v0[0];
-            v2[i] = v0[0];
-          }
-        }
-        if (begin<end) prim = &prims[begin];
-      }
-      new (this) TriangleMi(v0,v1,v2,geomID,primID); // FIXME: use non temporal store
-    }
-
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
-    {
-      fill(prims, begin, end, scene);
-      return linearBounds(scene, itime);
-    }
-
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
-    {
-      fill(prims, begin, end, scene);
-      return linearBounds(scene, time_range);
-    }
-
-    /* Updates the primitive */
-    __forceinline BBox3fa update(TriangleMesh* mesh)
-    {
-      BBox3fa bounds = empty;
-      for (size_t i=0; i<M; i++)
-      {
-        if (primID(i) == -1) break;
-        const unsigned int primId = primID(i);
-        const TriangleMesh::Triangle& tri = mesh->triangle(primId);
-        const Vec3fa p0 = mesh->vertex(tri.v[0]);
-        const Vec3fa p1 = mesh->vertex(tri.v[1]);
-        const Vec3fa p2 = mesh->vertex(tri.v[2]);
-        bounds.extend(merge(BBox3fa(p0),BBox3fa(p1),BBox3fa(p2)));
-      }
-      return bounds;
-    }
-
-  private:
 #if !defined(EMBREE_COMPACT_POLYS)
     template<int N> const vuint<M>& getVertexOffset() const;
-    vuint<M> v0_;         // 4 byte offset of 1st vertex
-    vuint<M> v1_;         // 4 byte offset of 2nd vertex
-    vuint<M> v2_;         // 4 byte offset of 3rd vertex
 #endif
-    vuint<M> geomIDs;    // geometry ID of mesh
-    vuint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
 #if !defined(EMBREE_COMPACT_POLYS)
@@ -410,6 +430,7 @@ namespace embree
     p0 = lerp(a0,b0,vfloat4(ftime));
     p1 = lerp(a1,b1,vfloat4(ftime));
     p2 = lerp(a2,b2,vfloat4(ftime));
+  }
   }
 
   template<int M>

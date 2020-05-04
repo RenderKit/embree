@@ -70,6 +70,129 @@ namespace embree
     __forceinline const vuint<M>& primID() const { return primIDs; }
     __forceinline unsigned int primID(const size_t i) const { assert(i<M); return primIDs[i]; }
 
+    /* Calculate the bounds of the quads */
+    __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
+    {
+      BBox3fa bounds = empty;
+      for (size_t i=0; i<M && valid(i); i++) {
+        const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
+        bounds.extend(mesh->bounds(primID(i),itime));
+      }
+      return bounds;
+    }
+
+    /* Calculate the linear bounds of the primitive */
+    __forceinline LBBox3fa linearBounds(const Scene* const scene, const size_t itime) {
+      return LBBox3fa(bounds(scene,itime+0),bounds(scene,itime+1));
+    }
+
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps)
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
+      }
+      return allBounds;
+    }
+
+    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range)
+    {
+      LBBox3fa allBounds = empty;
+      for (size_t i=0; i<M && valid(i); i++)
+      {
+        const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
+        allBounds.extend(mesh->linearBounds(primID(i), time_range));
+      }
+      return allBounds;
+    }
+
+    /* Fill quad from quad list */
+    template<typename PrimRefT>
+    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
+    {
+      vuint<M> geomID = -1, primID = -1;
+      const PrimRefT* prim = &prims[begin];
+      vuint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
+
+      for (size_t i=0; i<M; i++)
+      {
+        if (begin<end) {
+          geomID[i] = prim->geomID();
+          primID[i] = prim->primID();
+#if !defined(EMBREE_COMPACT_POLYS)
+          const QuadMesh* mesh = scene->get<QuadMesh>(prim->geomID());
+          const QuadMesh::Quad& q = mesh->quad(prim->primID());
+          unsigned int_stride = mesh->vertices0.getStride()/4;
+          v0[i] = q.v[0] * int_stride;
+          v1[i] = q.v[1] * int_stride;
+          v2[i] = q.v[2] * int_stride;
+          v3[i] = q.v[3] * int_stride;
+#endif
+          begin++;
+        } else {
+          assert(i);
+          if (likely(i > 0)) {
+            geomID[i] = geomID[0]; // always valid geomIDs
+            primID[i] = -1;        // indicates invalid data
+            v0[i] = v0[0];
+            v1[i] = v0[0];
+            v2[i] = v0[0];
+            v3[i] = v0[0];
+          }
+        }
+        if (begin<end) prim = &prims[begin];
+      }
+      new (this) QuadMi(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
+    }
+
+    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
+    {
+      fill(prims, begin, end, scene);
+      return linearBounds(scene, itime);
+    }
+
+    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
+    {
+      fill(prims, begin, end, scene);
+      return linearBounds(scene, time_range);
+    }
+
+    friend embree_ostream operator<<(embree_ostream cout, const QuadMi& quad) {
+      return cout << "QuadMi<" << M << ">( "
+#if !defined(EMBREE_COMPACT_POLYS)
+                  << "v0 = " << quad.v0_ << ", v1 = " << quad.v1_ << ", v2 = " << quad.v2_ << ", v3 = " << quad.v3_ << ", "
+#endif
+                  << "geomID = " << quad.geomIDs << ", primID = " << quad.primIDs << " )";
+    }
+
+  protected:
+#if !defined(EMBREE_COMPACT_POLYS)
+    vuint<M> v0_;         // 4 byte offset of 1st vertex
+    vuint<M> v1_;         // 4 byte offset of 2nd vertex
+    vuint<M> v2_;         // 4 byte offset of 3rd vertex
+    vuint<M> v3_;         // 4 byte offset of 4th vertex
+#endif
+    vuint<M> geomIDs;    // geometry ID of mesh
+    vuint<M> primIDs;    // primitive ID of primitive inside mesh
+  };
+
+  namespace isa
+  {
+    
+  template<int M>
+    struct QuadMi : public embree::QuadMi<M>
+  {
+    using embree::QuadMi<M>::v0_;
+    using embree::QuadMi<M>::v1_;
+    using embree::QuadMi<M>::v2_;
+    using embree::QuadMi<M>::v3_;
+    using embree::QuadMi<M>::geomIDs;
+    using embree::QuadMi<M>::primIDs;
+    using embree::QuadMi<M>::geomID;
+    using embree::QuadMi<M>::primID;
+    
     template<int vid>
     __forceinline Vec3f getVertex(const size_t index, const Scene *const scene) const
     {
@@ -257,103 +380,6 @@ namespace embree
                               const Scene *const scene,
                               const float time) const;
 
-    /* Calculate the bounds of the quads */
-    __forceinline const BBox3fa bounds(const Scene *const scene, const size_t itime=0) const
-    {
-      BBox3fa bounds = empty;
-      for (size_t i=0; i<M && valid(i); i++) {
-        const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
-        bounds.extend(mesh->bounds(primID(i),itime));
-      }
-      return bounds;
-    }
-
-    /* Calculate the linear bounds of the primitive */
-    __forceinline LBBox3fa linearBounds(const Scene* const scene, const size_t itime) {
-      return LBBox3fa(bounds(scene,itime+0),bounds(scene,itime+1));
-    }
-
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, size_t itime, size_t numTimeSteps)
-    {
-      LBBox3fa allBounds = empty;
-      for (size_t i=0; i<M && valid(i); i++)
-      {
-        const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
-        allBounds.extend(mesh->linearBounds(primID(i), itime, numTimeSteps));
-      }
-      return allBounds;
-    }
-
-    __forceinline LBBox3fa linearBounds(const Scene *const scene, const BBox1f time_range)
-    {
-      LBBox3fa allBounds = empty;
-      for (size_t i=0; i<M && valid(i); i++)
-      {
-        const QuadMesh* mesh = scene->get<QuadMesh>(geomID(i));
-        allBounds.extend(mesh->linearBounds(primID(i), time_range));
-      }
-      return allBounds;
-    }
-
-    /* Fill quad from quad list */
-    template<typename PrimRefT>
-    __forceinline void fill(const PrimRefT* prims, size_t& begin, size_t end, Scene* scene)
-    {
-      vuint<M> geomID = -1, primID = -1;
-      const PrimRefT* prim = &prims[begin];
-      vuint<M> v0 = zero, v1 = zero, v2 = zero, v3 = zero;
-
-      for (size_t i=0; i<M; i++)
-      {
-        if (begin<end) {
-          geomID[i] = prim->geomID();
-          primID[i] = prim->primID();
-#if !defined(EMBREE_COMPACT_POLYS)
-          const QuadMesh* mesh = scene->get<QuadMesh>(prim->geomID());
-          const QuadMesh::Quad& q = mesh->quad(prim->primID());
-          unsigned int_stride = mesh->vertices0.getStride()/4;
-          v0[i] = q.v[0] * int_stride;
-          v1[i] = q.v[1] * int_stride;
-          v2[i] = q.v[2] * int_stride;
-          v3[i] = q.v[3] * int_stride;
-#endif
-          begin++;
-        } else {
-          assert(i);
-          if (likely(i > 0)) {
-            geomID[i] = geomID[0]; // always valid geomIDs
-            primID[i] = -1;        // indicates invalid data
-            v0[i] = v0[0];
-            v1[i] = v0[0];
-            v2[i] = v0[0];
-            v3[i] = v0[0];
-          }
-        }
-        if (begin<end) prim = &prims[begin];
-      }
-      new (this) QuadMi(v0,v1,v2,v3,geomID,primID); // FIXME: use non temporal store
-    }
-
-    __forceinline LBBox3fa fillMB(const PrimRef* prims, size_t& begin, size_t end, Scene* scene, size_t itime)
-    {
-      fill(prims, begin, end, scene);
-      return linearBounds(scene, itime);
-    }
-
-    __forceinline LBBox3fa fillMB(const PrimRefMB* prims, size_t& begin, size_t end, Scene* scene, const BBox1f time_range)
-    {
-      fill(prims, begin, end, scene);
-      return linearBounds(scene, time_range);
-    }
-
-    friend embree_ostream operator<<(embree_ostream cout, const QuadMi& quad) {
-      return cout << "QuadMi<" << M << ">( "
-#if !defined(EMBREE_COMPACT_POLYS)
-                  << "v0 = " << quad.v0_ << ", v1 = " << quad.v1_ << ", v2 = " << quad.v2_ << ", v3 = " << quad.v3_ << ", "
-#endif
-                  << "geomID = " << quad.geomIDs << ", primID = " << quad.primIDs << " )";
-    }
-
     /* Updates the primitive */
     __forceinline BBox3fa update(QuadMesh* mesh)
     {
@@ -375,13 +401,7 @@ namespace embree
   private:
 #if !defined(EMBREE_COMPACT_POLYS)
     template<int N> const vuint<M>& getVertexOffset() const;
-    vuint<M> v0_;         // 4 byte offset of 1st vertex
-    vuint<M> v1_;         // 4 byte offset of 2nd vertex
-    vuint<M> v2_;         // 4 byte offset of 3rd vertex
-    vuint<M> v3_;         // 4 byte offset of 4th vertex
 #endif
-    vuint<M> geomIDs;    // geometry ID of mesh
-    vuint<M> primIDs;    // primitive ID of primitive inside mesh
   };
 
 #if !defined(EMBREE_COMPACT_POLYS)
@@ -450,6 +470,7 @@ namespace embree
     p1 = lerp(a1,b1,vfloat4(ftime));
     p2 = lerp(a2,b2,vfloat4(ftime));
     p3 = lerp(a3,b3,vfloat4(ftime));
+  }
   }
 
   template<int M>
