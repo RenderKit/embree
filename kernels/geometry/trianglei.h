@@ -184,13 +184,18 @@ namespace embree
     __forceinline void gather(Vec3vf<M>& p0, Vec3vf<M>& p1, Vec3vf<M>& p2, const Scene* const scene) const;
 
     template<int K>
-    __forceinline void gather(const vbool<K>& valid,
-                              Vec3vf<K>& p0,
-                              Vec3vf<K>& p1,
-                              Vec3vf<K>& p2,
-                              const size_t index,
-                              const Scene* const scene,
-                              const vfloat<K>& time) const
+#if defined(__INTEL_COMPILER) && (__INTEL_COMPILER < 2000) // workaround for compiler bug in ICC 2019
+    __noinline
+#else
+    __forceinline
+#endif
+    void gather(const vbool<K>& valid,
+                Vec3vf<K>& p0,
+                Vec3vf<K>& p1,
+                Vec3vf<K>& p2,
+                const size_t index,
+                const Scene* const scene,
+                const vfloat<K>& time) const
     {
       const TriangleMesh* mesh = scene->get<TriangleMesh>(geomID(index));
 
