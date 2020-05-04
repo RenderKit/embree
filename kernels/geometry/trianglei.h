@@ -199,9 +199,11 @@ namespace embree
   template<int M>
     struct TriangleMi : public embree::TriangleMi<M>
   {
+#if !defined(EMBREE_COMPACT_POLYS)
     using embree::TriangleMi<M>::v0_;
     using embree::TriangleMi<M>::v1_;
     using embree::TriangleMi<M>::v2_;
+#endif
     using embree::TriangleMi<M>::geomIDs;
     using embree::TriangleMi<M>::primIDs;
     using embree::TriangleMi<M>::geomID;

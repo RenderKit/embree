@@ -184,10 +184,12 @@ namespace embree
   template<int M>
     struct QuadMi : public embree::QuadMi<M>
   {
+#if !defined(EMBREE_COMPACT_POLYS)
     using embree::QuadMi<M>::v0_;
     using embree::QuadMi<M>::v1_;
     using embree::QuadMi<M>::v2_;
     using embree::QuadMi<M>::v3_;
+#endif
     using embree::QuadMi<M>::geomIDs;
     using embree::QuadMi<M>::primIDs;
     using embree::QuadMi<M>::geomID;
