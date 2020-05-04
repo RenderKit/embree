@@ -35,7 +35,7 @@ namespace embree
       __forceinline bool operator() (Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
@@ -86,7 +86,7 @@ namespace embree
       __forceinline bool operator() (Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
 
@@ -131,7 +131,7 @@ namespace embree
       __forceinline bool operator() (Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask[k]) == 0)
@@ -186,7 +186,7 @@ namespace embree
       __forceinline bool operator() (Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask[k]) == 0)
@@ -228,7 +228,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         vbool<Mx> valid = valid_i;
         if (Mx > M) valid &= (1<<M)-1;
         hit.finalize();
@@ -312,7 +312,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* MAYBE_UNUSED scene = context->scene;
         vbool<Mx> valid = valid_i;
         if (Mx > M) valid &= (1<<M)-1;
         hit.finalize();
@@ -391,7 +391,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
         if (unlikely(filter))
@@ -460,7 +460,7 @@ namespace embree
       __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
@@ -529,7 +529,7 @@ namespace embree
       __forceinline bool operator() (const vbool<M>& valid, Hit& hit) const
       {
         /* ray mask test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         if ((geometry->mask & ray.mask) == 0) return false;
@@ -575,7 +575,7 @@ namespace embree
       template<typename Hit>
       __forceinline vbool<K> operator() (const vbool<K>& valid_i, const Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
 
         vfloat<K> u, v, t;
         Vec3vf<K> Ng;
@@ -645,7 +645,7 @@ namespace embree
         vbool<K> valid = valid_i;
 
         /* ray masking test */
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         const unsigned int geomID = geomIDs[i];
         const unsigned int primID = primIDs[i];
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
@@ -699,7 +699,7 @@ namespace embree
         Vec3vf<K> Ng;
         std::tie(u,v,t,Ng) = hit();
 
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
         /* ray masking test */
@@ -757,7 +757,7 @@ namespace embree
       __forceinline vbool<K> operator() (const vbool<K>& valid_i, const Hit& hit) const
       {
         vbool<K> valid = valid_i;
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 
 #if defined(EMBREE_RAY_MASK)
@@ -806,7 +806,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         vbool<Mx> valid = valid_i;
         hit.finalize();
         if (Mx > M) valid &= (1<<M)-1;
@@ -894,7 +894,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<Mx>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
 
         /* intersection filter test */
 #if defined(EMBREE_FILTER_FUNCTION) || defined(EMBREE_RAY_MASK)
@@ -963,7 +963,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         /* ray mask test */
@@ -1040,7 +1040,7 @@ namespace embree
       template<typename Hit>
       __forceinline bool operator() (const vbool<M>& valid_i, Hit& hit) const
       {
-        Scene* scene = context->scene;
+        Scene* scene MAYBE_UNUSED = context->scene;
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         /* ray mask test */
