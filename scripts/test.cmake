@@ -43,7 +43,7 @@ MACRO(update_test_models)
   IF(NOT EXISTS "${TEST_MODELS_DIRECTORY}")
     MESSAGE("cloning test models ...")
     EXECUTE_PROCESS(
-      COMMAND ${CTEST_GIT_COMMAND} "clone" "git@vis-gitolite:2222/embree-models" embree-models
+      COMMAND ${CTEST_GIT_COMMAND} "clone" "git@vis-gitolite:embree-models" embree-models
       WORKING_DIRECTORY ${TEST_MODELS_PARENT_DIRECTORY}
       RESULT_VARIABLE retcode)
     check_return_code()
