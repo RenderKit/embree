@@ -11,7 +11,7 @@ namespace embree
   const std::string TokenStream::ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const std::string TokenStream::numbers = "0123456789";
   const std::string TokenStream::separators = "\n\t\r ";
-  const std::string TokenStream::stringChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _.,+-/*\\";
+  const std::string TokenStream::stringChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _.,+-=:/*\\";
 
   /* creates map for fast categorization of characters */
   static void createCharMap(bool map[256], const std::string& chrs) {

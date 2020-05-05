@@ -5,7 +5,7 @@
 
 namespace embree
 {
-  static const std::string stringChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _.,+-/*\\";
+  static const std::string stringChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _.,+-=:/*\\";
   
   /* creates map for fast categorization of characters */
   static void createCharMap(bool map[256], const std::string& chrs) {
