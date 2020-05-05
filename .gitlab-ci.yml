@@ -272,9 +272,9 @@ nightly-linux-x64-Debug-ICC2019.4-ISPC1.13.0-AVX2-TBB2019.9:
   tags:   [docker] # avx2
   only:   [schedules]
 
-nightly-linux-x64-Debug-ICC2020.1-ISPC1.13.0-AVX2-TBB2019.2:
+nightly-linux-x64-Debug-ICC2020.1-ISPC1.13.0-AVX2-TBB2019.9:
   image: embreedocker/centos:7.4
-  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.2 intensity:4"
+  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 intensity:4"
   tags:   [docker] # avx2
   only:   [schedules]
 
