@@ -12,7 +12,7 @@ SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
 PROJECT(embree${EMBREE_VERSION_MAJOR})
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
 # We use our own strip tool on macOS to sign during install. This is required as CMake modifies RPATH of the binary during install.
 IF (APPLE AND EMBREE_SIGN_FILE)
@@ -62,6 +62,9 @@ IF(COMMAND cmake_policy)
   endif()
   if(POLICY CMP0072)
     cmake_policy(SET CMP0072 OLD)
+  endif()
+  if(POLICY CMP0022)
+    cmake_policy(SET CMP0022 NEW)
   endif()
 ENDIF(COMMAND cmake_policy)
 
