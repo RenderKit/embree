@@ -2,6 +2,7 @@ Version History
 ---------------
 
 ### Embree 3.9.1
+-   Compile fix for oneTBB 2021.1-beta05
 -   Compile fix for ISPC v1.13.0
 -   Adding RPATH to libembree.so in releases
 -   Increased required CMake version to 3.1
