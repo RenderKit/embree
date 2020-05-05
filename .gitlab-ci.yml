@@ -5,8 +5,8 @@
 # Continuous Test
 ####################################################################
 
-continuous-macosx-x64-Debug-ICC2020.1-ISPC1.12.0-SSE2-TBB2019.9:
-  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2019.9 intensity:2"
+continuous-macosx-x64-Debug-ICC2020.1-ISPC1.12.0-SSE2-TBB2020.2:
+  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:2"
   tags:   [mac]
   only:   [pushes]
 
@@ -15,36 +15,36 @@ continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-TBB2019.2:
   tags:   [win10, v120]
   only:   [pushes]
 
-#continuous-windows-Win32-RelWithDebInfoDebug-V140-ISPC1.12.0-SSE2-TBB2019.9:
-#  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2019.9 intensity:2"
+#continuous-windows-Win32-RelWithDebInfoDebug-V140-ISPC1.12.0-SSE2-TBB2020.2:
+#  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:2"
 #  tags:   [win10, v140]
 #  only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V141-ISPC1.13.0-SSE2-TBB2019.9:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.13.0 isa:SSE2 tasking:TBB2019.9 intensity:2 maxinstancelevelcount:8"
+continuous-windows-x64-RelWithDebInfo-V141-ISPC1.13.0-SSE2-TBB2020.2:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.13.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8"
   tags:   [win10, v141]
   only:   [pushes]
  
-continuous-macosx-x64-Debug-CLANG-ISPC1.13.0-SSE2-TBB2019.9:
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG ispc:ispc1.13.0 isa:SSE2 tasking:TBB2019.9 intensity:2"
+continuous-macosx-x64-Debug-CLANG-ISPC1.13.0-SSE2-TBB2020.2:
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG ispc:ispc1.13.0 isa:SSE2 tasking:TBB2020.2 intensity:2"
   tags:   [mac]
   only:   [pushes]
 
-continuous-linux-avx512vl-x64-Debug-ICC2020.1-ISPC1.12.0-AVX512SKX-TBB2019.9:
+continuous-linux-avx512vl-x64-Debug-ICC2020.1-ISPC1.12.0-AVX512SKX-TBB2020.2:
   image: embreedocker/fedora:27
-  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.12.0 isa:AVX512SKX tasking:TBB2019.9 intensity:2 maxinstancelevelcount:4"
+  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.12.0 isa:AVX512SKX tasking:TBB2020.2 intensity:2 maxinstancelevelcount:4"
   tags:   [docker, avx512vl]
   only:   [pushes]
 
-continuous-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512SKX-TBB2019.9:
+continuous-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512SKX-TBB2020.2:
   image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2019.9 intensity:2"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2020.2 intensity:2"
   tags:   [docker, avx512vl]
   only:   [pushes]
 
-#continuous-linux-knl-x64-Debug-CLANG4.0.0-ISPC1.12.0-AVX512KNL-TBB2019.9:
+#continuous-linux-knl-x64-Debug-CLANG4.0.0-ISPC1.12.0-AVX512KNL-TBB2020.2:
 #  image: embreedocker/fedora:26
-#  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.12.0 isa:AVX512KNL tasking:TBB2019.9 intensity:2"
+#  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.12.0 isa:AVX512KNL tasking:TBB2020.2 intensity:2"
 #  tags:   [docker-knl]
 #  only:   [pushes]
 
@@ -98,8 +98,8 @@ nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX-TBB2019.2:
   tags:   [win10, v120, avx]
   only:   [schedules]
 
-nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.12.0-SSE2-TBB2019.9:
-  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2019.9 intensity:2"
+nightly-windows-Win32-RelWithDebInfo-V140-ISPC1.12.0-SSE2-TBB2020.2:
+  script: "python scripts\\test.py platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:2"
   tags:   [win10, v140]
   only:   [schedules]
   
@@ -113,8 +113,8 @@ nightly-windows-x64-RelWithDebInfo-V141-ISPC1.13.0-AVX2-TBB2019.9-STATIC:
   tags:   [win10, v141]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-V142-ISPC1.13.0-AVX2-TBB2019.9-STATIC:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 intensity:2"
+nightly-windows-x64-RelWithDebInfo-V142-ISPC1.13.0-AVX2-TBB2020.2-STATIC:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:2"
   tags:   [win10, v142]
   only:   [schedules]
 
@@ -128,8 +128,8 @@ nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.13.0-AVX2-TBB2019.2:
   tags:   [win10, icc17]
   only:   [schedules]
   
-#nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.13.0-AVX512SKX-TBB2019.9:
-#  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18-VC14 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2019.9 intensity:2"
+#nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1.13.0-AVX512SKX-TBB2020.2:
+#  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:ICC18-VC14 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2020.2 intensity:2"
 #  tags:   [win10, icc18, avx512vl]
 #  only:   [schedules]
 
@@ -141,8 +141,8 @@ nightly-windows-x64-RelWithDebInfo-ICC19-ISPC1.13.0-AVX512SKX-TBB2019.9:
 
 # CLANG compilation and testing of different ISAs
 
-nightly-macosx-x64-Debug-CLANG-ISPC1.12.0-SSE2-TBB2019.9-NAMESPACE:
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG ispc:ispc1.12.0 isa:SSE2 tasking:TBB2019.9 intensity:4 api_namespace:myembree maxinstancelevelcount:4"
+nightly-macosx-x64-Debug-CLANG-ISPC1.12.0-SSE2-TBB2020.2-NAMESPACE:
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:4 api_namespace:myembree maxinstancelevelcount:4"
   tags:   [mac]
   only:   [schedules]
 
@@ -163,8 +163,8 @@ nightly-macosx-x64-Debug-CLANG-ISPC1.13.0-SSE2-TBB2019.9-STATIC:
 #  tags:   [mac, icc15]
 #  only:   [schedules]
 
-nightly-macosx-x64-Debug-ICC2019.4-ISPC1.13.0-AVX2-TBB2019.9:
-  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 intensity:4"
+nightly-macosx-x64-Debug-ICC2019.4-ISPC1.13.0-AVX2-TBB2020.2:
+  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:4"
   tags:   [mac]
   only:   [schedules]
 
@@ -194,9 +194,9 @@ nightly-linux-x64-Debug-CLANG5.0.0-ISPC1.13.0-AVX2-INT-ADDRSANITIZER:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-STATIC:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-STATIC:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 intensity:4 STATIC_LIB:ON"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:4 STATIC_LIB:ON"
   tags:   [docker] # avx2
   only:   [schedules]
 
@@ -206,18 +206,18 @@ nightly-linux-knl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512KNL-TBB2019.9:
   tags:   [docker-knl]
   only:   [schedules]
   
-nightly-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512SKX-TBB2019.9:
+nightly-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512SKX-TBB2020.2:
   image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2019.9 intensity:3"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2020.2 intensity:3"
   tags:   [docker, avx512vl]
   only:   [schedules]
 
 
 # GCC compilation and testing of different ISAs
 
-nightly-linux-x64-Debug-GCC-ISPC1.13.0-SSE2-TBB2019.9:
+nightly-linux-x64-Debug-GCC-ISPC1.13.0-SSE2-TBB2020.2:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:SSE2 tasking:TBB2019.9 intensity:4"
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:SSE2 tasking:TBB2020.2 intensity:4"
   tags:   [docker]         
   only:   [schedules]
 
@@ -227,9 +227,9 @@ nightly-linux-x64-Debug-GCC-ISPC1.13.0-AVX-TBB2019.9:
   tags:   [docker] # avx
   only:   [schedules]
 
-nightly-linux-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB2019.9:
+nightly-linux-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB2020.2:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 intensity:4"
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:4"
   tags:   [docker] # avx2
   only:   [schedules]
 
@@ -266,9 +266,9 @@ nightly-linux-avx512vl-x64-Debug-ICC2018.0-ISPC1.13.0-AVX512SKX-TBB2019.9:
   tags:   [docker, avx512vl]
   only:   [schedules]
 
-nightly-linux-x64-Debug-ICC2019.4-ISPC1.13.0-AVX2-TBB2019.9:
+nightly-linux-x64-Debug-ICC2019.4-ISPC1.13.0-AVX2-TBB2020.2:
   image: embreedocker/fedora:26
-  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 intensity:4"
+  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:4"
   tags:   [docker] # avx2
   only:   [schedules]
 
@@ -343,9 +343,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-AVX2-TBB2019.9-NO-ISPC:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-NO-TUTORIALS:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-NO-TUTORIALS:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 TUTORIALS:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TUTORIALS:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -355,9 +355,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-BACKFACECULLING:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-IGNORE-INVALID-RAYS:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-IGNORE-INVALID-RAYS:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 IGNORE_INVALID_RAYS:ON intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 IGNORE_INVALID_RAYS:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -367,9 +367,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-NO-FILTER-FUNCTION:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-RAYMASKS:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-RAYMASKS:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 RAY_MASK:ON intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 RAY_MASK:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -379,9 +379,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-NO-PACKETS:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-STATCOUNTER:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-STATCOUNTER:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 STAT_COUNTER:ON intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 STAT_COUNTER:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -394,9 +394,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-SSE2-TBB2019.9:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-SSE42-TBB2019.9:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-SSE42-TBB2020.2:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:SSE42 tasking:TBB2019.9 intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:SSE42 tasking:TBB2020.2 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -406,9 +406,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-AVX-TBB2019.9:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-AVX2-TBB2019.9:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-AVX2-TBB2020.2:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:AVX2 tasking:TBB2019.9 intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:AVX2 tasking:TBB2020.2 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -421,9 +421,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-AVX512SKX-TBB2019.9:
 
 # Compilation test of individual primitive types enabled
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-TRI:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-TRI:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -433,9 +433,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-QUAD:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-GRID:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-GRID:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 TRI:OFF QUAD:OFF GRID:ON CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TRI:OFF QUAD:OFF GRID:ON CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -445,9 +445,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-CURVE:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-SUBDIV:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-SUBDIV:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:ON USERGEOM:OFF INSTANCE:OFF intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:ON USERGEOM:OFF INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -457,9 +457,9 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-USERGEOM:
   tags:   [docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-INSTANCE:
+nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-INSTANCE:
   image: embreedocker/fedora:25
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:ON intensity:0"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
 
@@ -478,8 +478,8 @@ release-windows-x64-Release-ICC17-VC12-ISPC1.9.2-TBB2019.2-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2019.9-PACKAGE-ZIP:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.9 intensity:4 package:ZIP"
+release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
   tags:   [win10, icc17, avx512vl]
   only:   [web, schedules]
   artifacts:
@@ -488,8 +488,8 @@ release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2019.9-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2019.9-PACKAGE-MSI:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2019.9 intensity:4 package:MSI"
+release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2020.2-PACKAGE-MSI:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:MSI"
   tags:   [win10, icc17, avx512vl]
   only:   [web, schedules]
   artifacts:
@@ -498,8 +498,8 @@ release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2019.9-PACKAGE-MSI:
     when:  always
     expire_in: 2 mos
 
-release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2019.9-PACKAGE-ZIP:
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2019.9 intensity:4 package:ZIP"
+release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2020.2 intensity:4 package:ZIP"
   tags:   [mac]
   only:   [web, schedules]
   artifacts:
@@ -518,9 +518,9 @@ release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG:
     when:  always
     expire_in: 2 mos
 
-release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2019.9-PACKAGE-ZIP:
+release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
   image: embreedocker/centos:7.4
-  script: "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2019.9 intensity:4 package:ZIP"
+  script: "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
   tags:   [docker, avx512vl]
   only:   [web, schedules]
   artifacts:
