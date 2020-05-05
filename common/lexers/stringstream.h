@@ -17,10 +17,12 @@ namespace embree
     ParseLocation location() { return cin->loc(); }
     std::string next();
   private:
-    __forceinline bool isSeparator(int c) const { return c<256 && isSepMap[c]; }
+    __forceinline bool isSeparator(unsigned int c) const { return c<256 && isSepMap[c]; }
+    __forceinline bool isValidChar(unsigned int c) const { return c<256 && isValidCharMap[c]; }
   private:
     Ref<Stream<int> > cin; /*! source character stream */
     bool isSepMap[256];    /*! map for fast classification of separators */
+    bool isValidCharMap[256];  /*! map for valid characters */
     std::string endl;      /*! the token of the end of line */
     bool multiLine;        /*! whether to parse lines wrapped with \ */
   };
