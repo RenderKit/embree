@@ -31,11 +31,11 @@ namespace embree
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR16(BVH4Quad4iMBIntersector16HybridMoeller, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA ArrayIntersectorK_1<16 COMMA QuadMiMBIntersectorKMoeller <4 COMMA 16 COMMA true> > >));
     IF_ENABLED_QUADS(DEFINE_INTERSECTOR16(BVH4Quad4iMBIntersector16HybridPluecker,BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA true  COMMA ArrayIntersectorK_1<16 COMMA QuadMiMBIntersectorKPluecker<4 COMMA 16 COMMA true> > >));
 
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4OBBVirtualCurveIntersector16Hybrid, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersectorK<16> >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4OBBVirtualCurveIntersector16HybridMB,BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersectorK<16> >));
+    IF_ENABLED_CURVES_OR_POINTS(DEFINE_INTERSECTOR16(BVH4OBBVirtualCurveIntersector16Hybrid, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA false COMMA VirtualCurveIntersectorK<16> >));
+    IF_ENABLED_CURVES_OR_POINTS(DEFINE_INTERSECTOR16(BVH4OBBVirtualCurveIntersector16HybridMB,BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA false COMMA VirtualCurveIntersectorK<16> >));
  
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4OBBVirtualCurveIntersectorRobust16Hybrid, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA true COMMA VirtualCurveIntersectorK<16> >));
-    IF_ENABLED_CURVES(DEFINE_INTERSECTOR16(BVH4OBBVirtualCurveIntersectorRobust16HybridMB,BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA true COMMA VirtualCurveIntersectorK<16> >));
+    IF_ENABLED_CURVES_OR_POINTS(DEFINE_INTERSECTOR16(BVH4OBBVirtualCurveIntersectorRobust16Hybrid, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1_UN1 COMMA true COMMA VirtualCurveIntersectorK<16> >));
+    IF_ENABLED_CURVES_OR_POINTS(DEFINE_INTERSECTOR16(BVH4OBBVirtualCurveIntersectorRobust16HybridMB,BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D_UN2 COMMA true COMMA VirtualCurveIntersectorK<16> >));
  
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1Intersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN1 COMMA true COMMA SubdivPatch1Intersector16>));
     IF_ENABLED_SUBDIV(DEFINE_INTERSECTOR16(BVH4SubdivPatch1MBIntersector16, BVHNIntersectorKHybrid<4 COMMA 16 COMMA BVH_AN2_AN4D COMMA false COMMA SubdivPatch1MBIntersector16>));
