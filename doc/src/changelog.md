@@ -1,7 +1,7 @@
 Version History
 ---------------
 
-### Embree 3.9.1
+### Embree 3.10.0
 -   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
     leaves to reduce memory consumption in compact mode by an additional 40% at about
     15% performance impact. This new mode is disabled by default.
