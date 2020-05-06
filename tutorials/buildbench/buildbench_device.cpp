@@ -1,26 +1,29 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+#include "buildbench.h"
+
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/scene_device.h"
+
+#ifdef USE_GOOGLE_BENCHMARK
+#include <benchmark/benchmark.h>
+#endif
+
 #include <thread>
 
 namespace embree {
 
   extern uint32_t g_num_user_threads;
+  
+  RTCScene g_scene; // do not use!
 
-  static const MAYBE_UNUSED size_t skip_iterations               = 5;
+  // for legacy reasons
   static const MAYBE_UNUSED size_t iterations_dynamic_deformable = 200;
   static const MAYBE_UNUSED size_t iterations_dynamic_dynamic    = 200;
   static const MAYBE_UNUSED size_t iterations_dynamic_static     = 50;
   static const MAYBE_UNUSED size_t iterations_static_static      = 30;
-
-  extern "C" ISPCScene* g_ispc_scene;
-
-  /* scene data */
-  RTCScene g_scene = nullptr;
-
-
+  
   void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out, RTCBuildQuality quality)
   {
     RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -120,7 +123,7 @@ namespace embree {
         assert(false);
     }
   }
-
+  
   size_t getNumPrimitives(ISPCScene* scene_in)
   {
     size_t numPrimitives = 0;
@@ -172,23 +175,38 @@ namespace embree {
       rtcDetachGeometry(scene_out,geometry->geomID);
     }
   }
-
-  void Benchmark_Dynamic_Update(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality = RTC_BUILD_QUALITY_LOW)
+  
+#ifdef USE_GOOGLE_BENCHMARK
+  inline void addCounter(BenchState& state, size_t numPrims, size_t numObjects)
   {
-    assert(g_scene == nullptr);
-    g_scene = createScene(RTC_SCENE_FLAG_DYNAMIC, RTC_BUILD_QUALITY_LOW);
-    convertScene(g_scene, scene_in, quality);
+    state.state->SetItemsProcessed(state.state->iterations() * numPrims);
+    state.state->counters["Prims"] = ::benchmark::Counter(numPrims);
+    state.state->counters["Objects"] = ::benchmark::Counter(numObjects);
+  }
+#endif
+  
+  void Benchmark_Dynamic_Update_Legacy(ISPCScene* scene_in, BenchParams& params, RTCBuildQuality quality = RTC_BUILD_QUALITY_LOW)
+  {
+    size_t benchmark_iterations = params.minTimeOrIterations;
+    if (benchmark_iterations <= 0) {
+      benchmark_iterations = (quality == RTC_BUILD_QUALITY_MEDIUM) 
+                           ? iterations_dynamic_static 
+                           : iterations_dynamic_dynamic;
+    }
+
+    RTCScene scene = createScene(RTC_SCENE_FLAG_DYNAMIC, RTC_BUILD_QUALITY_LOW);
+    convertScene(scene, scene_in, quality);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
     size_t iterations = 0;
     double time = 0.0;
-    for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
+    for(size_t i=0;i<benchmark_iterations+params.skipIterations;i++)
     {
-      updateObjects(scene_in,g_scene);
+      updateObjects(scene_in,scene);
       double t0 = getSeconds();
-      rtcCommitScene (g_scene);
+      rtcCommitScene (scene);
       double t1 = getSeconds();
-      if (i >= skip_iterations)
+      if (i >= params.skipIterations)
       {
         time += t1 - t0;
         iterations++;
@@ -205,31 +223,78 @@ namespace embree {
       FATAL("unknown flags");
 
     if (iterations == 0) iterations = 1;
-    std::cout << primitives << " primitives, " << objects << " objects, "
+    std::cout << iterations << " iterations, " << primitives << " primitives, " << objects << " objects, "
               << time/iterations << " s, "
               << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
-    rtcReleaseScene (g_scene);
-    g_scene = nullptr;
+    rtcReleaseScene (scene);
   }
-
-  void Benchmark_Dynamic_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality = RTC_BUILD_QUALITY_MEDIUM)
+  
+  void Benchmark_Dynamic_Update(
+    BenchState& state, 
+    BenchParams& params, 
+    BuildBenchParams& buildParams, 
+    ISPCScene* ispc_scene, 
+    RTCBuildQuality quality)
   {
-    assert(g_scene == nullptr);
-    g_scene = createScene(RTC_SCENE_FLAG_DYNAMIC, RTC_BUILD_QUALITY_LOW);
-    convertScene(g_scene, scene_in,quality);
+#ifdef USE_GOOGLE_BENCHMARK
+    if (params.legacy) {
+      Benchmark_Dynamic_Update_Legacy(ispc_scene, params, quality);
+      return;
+    }
+
+    RTCScene scene = createScene(RTC_SCENE_FLAG_DYNAMIC, RTC_BUILD_QUALITY_LOW);
+    convertScene(scene, ispc_scene, quality);
+    const size_t primitives = getNumPrimitives(ispc_scene);
+    const size_t objects = getNumObjects(ispc_scene);
+
+    // warmup
+    for (int i = 0; i < params.minTimeOrIterations; ++i) {
+      updateObjects(ispc_scene,scene);
+      rtcCommitScene(scene);
+    }
+
+    for (auto _ : *state.state) {
+      state.state->PauseTiming();
+
+      updateObjects(ispc_scene,scene);
+
+      state.state->ResumeTiming();
+
+      rtcCommitScene (scene);
+    }
+    
+    addCounter(state, primitives, objects);
+    
+    rtcReleaseScene (scene);
+#else
+    Benchmark_Dynamic_Update_Legacy(ispc_scene, params, quality);
+#endif
+  }
+  
+  void Benchmark_Dynamic_Create_Legacy(ISPCScene* scene_in, BenchParams& params, RTCBuildQuality quality = RTC_BUILD_QUALITY_MEDIUM)
+  {
+    size_t benchmark_iterations = params.minTimeOrIterations;
+    if (benchmark_iterations <= 0) {
+      benchmark_iterations = (quality == RTC_BUILD_QUALITY_MEDIUM) 
+                           ? iterations_dynamic_static 
+                           : iterations_dynamic_dynamic;
+    }
+
+    RTCScene scene = createScene(RTC_SCENE_FLAG_DYNAMIC, RTC_BUILD_QUALITY_LOW);
+    convertScene(scene, scene_in,quality);
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
     size_t iterations = 0;
     double time = 0.0;
-    for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
+    for(size_t i=0;i<benchmark_iterations+params.skipIterations;i++)
     {
-      deleteObjects(scene_in,g_scene);
-      convertScene(g_scene, scene_in,quality);
+      deleteObjects(scene_in,scene);
+      convertScene(scene, scene_in,quality);
       double t0 = getSeconds();
-      rtcCommitScene (g_scene);
+      rtcCommitScene (scene);
       double t1 = getSeconds();
-      if (i >= skip_iterations)
+      if (i >= params.skipIterations)
       {
         time += t1 - t0;
         iterations++;
@@ -246,41 +311,86 @@ namespace embree {
       FATAL("unknown flags");
 
     if (iterations == 0) iterations = 1;
-    std::cout << primitives << " primitives, " << objects << " objects, "
+    std::cout << iterations << " iterations, " << primitives << " primitives, " << objects << " objects, "
               << time/iterations << " s, "
               << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
-    rtcReleaseScene (g_scene);
-    g_scene = nullptr;
+    rtcReleaseScene (scene);
   }
 
-  void Benchmark_Static_Create(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality, RTCBuildQuality qflags)
+  void Benchmark_Dynamic_Create(
+    BenchState& state, 
+    BenchParams& params, 
+    BuildBenchParams& buildParams, 
+    ISPCScene* ispc_scene, 
+    RTCBuildQuality quality)
   {
-    assert(g_scene == nullptr);
+#ifdef USE_GOOGLE_BENCHMARK
+    if (params.legacy) {
+      Benchmark_Dynamic_Create_Legacy(ispc_scene, params, quality);
+      return;
+    }
+
+    RTCScene scene = createScene(RTC_SCENE_FLAG_DYNAMIC, RTC_BUILD_QUALITY_LOW);
+    convertScene(scene, ispc_scene, quality);
+    const size_t primitives = getNumPrimitives(ispc_scene);
+    const size_t objects = getNumObjects(ispc_scene);
+    
+    // warmup
+    for (int i = 0; i < params.minTimeOrIterations; ++i) {
+      deleteObjects(ispc_scene, scene);
+      convertScene(scene, ispc_scene, quality);
+      rtcCommitScene(scene);
+    }
+    
+    for (auto _ : *state.state) {
+      state.state->PauseTiming(); 
+
+      deleteObjects(ispc_scene, scene);
+      convertScene(scene, ispc_scene, quality);
+
+      state.state->ResumeTiming(); 
+
+      rtcCommitScene(scene);
+    }
+    
+    addCounter(state, primitives, objects);
+
+    rtcReleaseScene (scene);
+#else
+    Benchmark_Dynamic_Create_Legacy(ispc_scene, params, quality);
+#endif
+  }
+
+  void Benchmark_Static_Create_Legacy(ISPCScene* scene_in, BenchParams& params, RTCBuildQuality quality, RTCBuildQuality qflags)
+  {
+    size_t benchmark_iterations = params.minTimeOrIterations;
+    if (benchmark_iterations <= 0)
+      benchmark_iterations = iterations_static_static;
+
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
     size_t iterations = 0;
     double time = 0.0;
 
-
-    for(size_t i=0;i<benchmark_iterations+skip_iterations;i++)
+    for(size_t i=0;i<benchmark_iterations+params.skipIterations;i++)
     {
-      g_scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
-      convertScene(g_scene,scene_in,quality);
+      RTCScene scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
+      convertScene(scene,scene_in,quality);
 
       const size_t numThreads = TaskScheduler::threadCount();
       std::vector<std::thread> threads;
       threads.reserve(numThreads);
 
       double t0 = getSeconds();
-      rtcCommitScene (g_scene);
+      rtcCommitScene (scene);
       double t1 = getSeconds();
-      if (i >= skip_iterations)
+      if (i >= params.skipIterations)
       {
         time += t1 - t0;
         iterations++;
       }
-      rtcReleaseScene (g_scene);
+      rtcReleaseScene (scene);
     }
 
     if (qflags == RTC_BUILD_QUALITY_HIGH)
@@ -298,37 +408,96 @@ namespace embree {
       FATAL("unknown flags");
 
     if (iterations == 0) iterations = 1;
-    std::cout << primitives << " primitives, " << objects << " objects, "
+    std::cout << iterations << " iterations, " << primitives << " primitives, " << objects << " objects, "
               << time/iterations << " s, "
               << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
-
-    g_scene = nullptr;
   }
 
-  BarrierSys barrier;
-  volatile bool term = false;
-  
-  void perform_work(size_t threadID)
+  void Benchmark_Static_Create(
+    BenchState& state, 
+    BenchParams& params, 
+    BuildBenchParams& buildParams, 
+    ISPCScene* ispc_scene, 
+    RTCBuildQuality quality, 
+    RTCBuildQuality qflags)
   {
-    setAffinity(threadID); 
-    while (true) {
-      barrier.wait();
-      if (term) return;
-      rtcJoinCommitScene(g_scene);
-      barrier.wait();
+#ifdef USE_GOOGLE_BENCHMARK
+    if (params.legacy) {
+      Benchmark_Static_Create_Legacy(ispc_scene, params, quality, qflags);
+      return;
     }
-  }
 
-  void Benchmark_Static_Create_UserThreads(ISPCScene* scene_in, size_t benchmark_iterations, RTCBuildQuality quality, RTCBuildQuality qflags)
+    const size_t primitives = getNumPrimitives(ispc_scene);
+    const size_t objects = getNumObjects(ispc_scene);
+    
+    // warmup
+    for (int i = 0; i < params.minTimeOrIterations; ++i) {
+      RTCScene scene = createScene(RTC_SCENE_FLAG_NONE, qflags);
+      convertScene(scene, ispc_scene, quality);
+      const size_t numThreads = TaskScheduler::threadCount();
+      std::vector<std::thread> threads;
+      threads.reserve(numThreads);
+      rtcCommitScene(scene);
+      rtcReleaseScene(scene);
+    }
+
+    for(auto _ : *state.state) {
+      state.state->PauseTiming();
+
+      RTCScene scene = createScene(RTC_SCENE_FLAG_NONE, qflags);
+      convertScene(scene, ispc_scene, quality);
+
+      const size_t numThreads = TaskScheduler::threadCount();
+      std::vector<std::thread> threads;
+      threads.reserve(numThreads);
+
+      state.state->ResumeTiming();
+
+      rtcCommitScene(scene);
+
+      state.state->PauseTiming();
+
+      rtcReleaseScene(scene);
+      
+      state.state->ResumeTiming();
+    }
+
+    addCounter(state, primitives, objects);
+#else
+    Benchmark_Static_Create_Legacy(ispc_scene, params, quality, qflags);
+#endif
+  }
+  struct Helper {
+    BarrierSys barrier;
+    volatile bool term = false;
+    RTCScene scene;
+
+    void perform_work(size_t threadID) {
+      setAffinity(threadID);
+      while (true) {
+        barrier.wait();
+        if (term)
+          return;
+        rtcJoinCommitScene(scene);
+        barrier.wait();
+      }
+    }
+  } helper;
+
+  void Benchmark_Static_Create_UserThreads_Legacy(ISPCScene* scene_in, BenchParams& params, RTCBuildQuality quality, RTCBuildQuality qflags)
   {
-    assert(g_scene == nullptr);
+    size_t benchmark_iterations = params.minTimeOrIterations;
+    if (benchmark_iterations <= 0)
+      benchmark_iterations = iterations_static_static;
+
     size_t primitives = getNumPrimitives(scene_in);
     size_t objects = getNumObjects(scene_in);
     size_t iterations = 0;
     double time = 0.0;
     const size_t numThreads = g_num_user_threads;
 
-    barrier.init(numThreads);
+    Helper helper;
+    helper.barrier.init(numThreads);
 
     std::vector<std::thread> threads;
     threads.reserve(numThreads);
@@ -336,22 +505,22 @@ namespace embree {
     /* ramp up threads */
     setAffinity(0); 
     for (size_t i=1; i<numThreads; i++) 
-      threads.push_back(std::thread(perform_work,i));
+      threads.push_back(std::thread(&Helper::perform_work, &helper, i));
     
-    for (size_t i=0; i<benchmark_iterations+skip_iterations; i++)
+    for (size_t i=0; i<benchmark_iterations+params.skipIterations; i++)
     {
-      g_scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
-      convertScene(g_scene,scene_in,quality);
+      helper.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
+      convertScene(helper.scene,scene_in,quality);
 
       double t0 = getSeconds();
       
-      barrier.wait();
-      rtcJoinCommitScene(g_scene);
-      barrier.wait();
+      helper.barrier.wait();
+      rtcJoinCommitScene(helper.scene);
+      helper.barrier.wait();
       
       double t1 = getSeconds();
 
-      if (i >= skip_iterations)
+      if (i >= params.skipIterations)
       {
         time += t1 - t0;
         iterations++;
@@ -362,12 +531,12 @@ namespace embree {
                 << time/iterations << " s, "
                 << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
-      rtcReleaseScene (g_scene);
+      rtcReleaseScene(helper.scene);
     }
 
     /* terminate task loop */
-    term = true;
-    barrier.wait();
+    helper.term = true;
+    helper.barrier.wait();
     for (auto& thread: threads)
       thread.join();
 
@@ -386,50 +555,84 @@ namespace embree {
       FATAL("unknown flags");
 
     if (iterations == 0) iterations = 1;
-    std::cout << primitives << " primitives, " << objects << " objects, "
+    std::cout << iterations << " iterations, " << primitives << " primitives, " << objects << " objects, "
               << time/iterations << " s, "
               << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
-
-    g_scene = nullptr;
   }
 
-
-  void Pause()
+  void Benchmark_Static_Create_UserThreads(
+    BenchState& state, 
+    BenchParams& params, 
+    BuildBenchParams& buildParams, 
+    ISPCScene* ispc_scene, 
+    RTCBuildQuality quality, 
+    RTCBuildQuality qflags)
   {
-    std::cout << "sleeping..." << std::flush;
-    sleepSeconds(3);
-    std::cout << "done" << std::endl;
+#ifdef USE_GOOGLE_BENCHMARK
+    if (params.legacy) {
+      Benchmark_Static_Create_UserThreads_Legacy(ispc_scene, params, quality, qflags);
+      return;
+    }
+    
+    size_t primitives = getNumPrimitives(ispc_scene);
+    const size_t objects = getNumObjects(ispc_scene);
+    const size_t numThreads = g_num_user_threads;
+
+    Helper helper;
+    helper.barrier.init(numThreads);
+
+    std::vector<std::thread> threads;
+    threads.reserve(numThreads);
+    
+    /* ramp up threads */
+    setAffinity(0); 
+    for (size_t i=1; i<numThreads; i++) 
+      threads.push_back(std::thread(&Helper::perform_work, &helper, i));
+    
+    // warmup
+    for (int i = 0; i < params.minTimeOrIterations; ++i) {
+      helper.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
+      convertScene(helper.scene,ispc_scene,quality);
+      helper.barrier.wait();
+      rtcJoinCommitScene(helper.scene);
+      helper.barrier.wait();
+      rtcReleaseScene(helper.scene);
+    }
+
+    for (auto _ : *state.state) {
+      state.state->PauseTiming();
+
+      helper.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
+      convertScene(helper.scene,ispc_scene,quality);
+
+      state.state->ResumeTiming();
+      
+      helper.barrier.wait();
+      rtcJoinCommitScene(helper.scene);
+      helper.barrier.wait();
+      
+      state.state->PauseTiming();
+
+      rtcReleaseScene(helper.scene);
+      
+      state.state->ResumeTiming();
+    }
+
+    /* terminate task loop */
+    helper.term = true;
+    helper.barrier.wait();
+    for (auto& thread: threads)
+      thread.join();
+
+    addCounter(state, primitives, objects);
+#else
+    Benchmark_Static_Create_UserThreads_Legacy(ispc_scene, params, quality, qflags);
+#endif
   }
 
-
-  /* called by the C++ code for initialization */
   extern "C" void device_init (char* cfg)
   {
-    if (g_num_user_threads == 0)
-    {
-      /* set error handler */
-      Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_REFIT);
-      Pause();
-      Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_LOW);
-      Pause();
-      Benchmark_Dynamic_Update(g_ispc_scene,iterations_dynamic_static ,RTC_BUILD_QUALITY_MEDIUM);
-      Pause();
-      Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_REFIT);
-      Pause();
-      Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_dynamic,RTC_BUILD_QUALITY_LOW);
-      Pause();
-      Benchmark_Dynamic_Create(g_ispc_scene,iterations_dynamic_static ,RTC_BUILD_QUALITY_MEDIUM);
-      Pause();
-      Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
-      Pause();
-      Benchmark_Static_Create(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_HIGH);
-    }
-    else
-    {
-      Benchmark_Static_Create_UserThreads(g_ispc_scene,iterations_static_static,RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
-    }
   }
-
 
   void renderFrameStandard (int* pixels,
                             const unsigned int width,

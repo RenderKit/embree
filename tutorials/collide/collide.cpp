@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../common/tutorial/tutorial.h"
+#include "../common/tutorial/benchmark_render.h"
 #include "../common/tutorial/statistics.h"
 #include <set>
 #include "../../common/sys/mutex.h"
@@ -188,5 +189,8 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
 }
 
 int main(int argc, char** argv) {
+  if (embree::TutorialBenchmark::benchmark(argc, argv)) {
+    return embree::TutorialBenchmark(embree::renderBenchFunc<embree::Tutorial>).main(argc, argv, "collide");
+  }
   return embree::Tutorial().main(argc,argv);
 }

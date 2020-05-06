@@ -113,9 +113,6 @@ namespace embree
       referenceImageFilename(""),
       referenceImageThreshold(32.0f),
 
-      skipBenchmarkFrames(0),
-      numBenchmarkFrames(0),
-
       interactive(true),
       fullscreen(false),
 
@@ -215,19 +212,6 @@ namespace embree
     registerOption("fullscreen", [this] (Ref<ParseStream> cin, const FileName& path) {
         fullscreen = true;
       }, "--fullscreen: starts in fullscreen mode");
-
-    registerOption("benchmark", [this] (Ref<ParseStream> cin, const FileName& path) {
-        skipBenchmarkFrames = cin->getInt();
-        numBenchmarkFrames  = cin->getInt();
-        interactive = false;
-        rtcore += ",benchmark=1,start_threads=1";
-      }, "--benchmark <N> <M>: enabled benchmark mode, builds scene, skips N frames, renders M frames");
-
-    registerOption("nodisplay", [this] (Ref<ParseStream> cin, const FileName& path) {
-        skipBenchmarkFrames = 0;
-        numBenchmarkFrames  = 2048;
-        interactive = false;
-      }, "--nodisplay: enabled benchmark mode, continously renders frames");
 
     registerOption("print-frame-rate", [this] (Ref<ParseStream> cin, const FileName& path) {
         print_frame_rate = true;
@@ -644,84 +628,6 @@ namespace embree
     for (size_t i = 0; i < TaskScheduler::threadCount(); i++)
       numRays += g_stats[i].numRays;
     return numRays;
-  }
-
-  void TutorialApplication::renderBenchmark()
-  {
-    IOStreamStateRestorer cout_state(std::cout);
-    std::cout.setf(std::ios::fixed, std::ios::floatfield);
-    std::cout.precision(4);
-
-    resize(width,height);
-    ISPCCamera ispccamera = camera.getISPCCamera(width,height);
-
-    //Statistics stat;
-    FilteredStatistics fpsStat(0.5f,0.0f);
-    FilteredStatistics mraypsStat(0.5f,0.0f);
-    {
-      size_t numTotalFrames = skipBenchmarkFrames + numBenchmarkFrames;
-      for (size_t i=0; i<skipBenchmarkFrames; i++)
-      {
-        initRayStats();
-        double t0 = getSeconds();
-        render(pixels,width,height,0.0f,ispccamera);
-        double t1 = getSeconds();
-        std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
-      }
-
-      for (size_t i=skipBenchmarkFrames; i<numTotalFrames; i++)
-      {
-        initRayStats();
-        double t0 = getSeconds();
-        render(pixels,width,height,0.0f,ispccamera);
-        double t1 = getSeconds();
-
-        float fps = float(1.0/(t1-t0));
-        fpsStat.add(fps);
-
-        float mrayps = float(double(getNumRays())/(1000000.0*(t1-t0)));
-        mraypsStat.add(mrayps);
-
-        if (numTotalFrames >= 1024 && (i % 64 == 0))
-        {
-          double rate = 0;
-          if (fpsStat.getAvg()) rate = 100.0f*fpsStat.getSigma()/fpsStat.getAvg();
-          
-          std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: "
-                    << std::setw(8) << fps << " fps, "
-                    << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
-                    << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
-                    << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
-                    << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << rate << "%)" << std::endl << std::flush;
-        }
-      }
-
-      double rate = 0;
-      if (fpsStat.getAvg()) rate = 100.0f*fpsStat.getAvgSigma()/fpsStat.getAvg();
-      
-      std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: "
-                << "              "
-                << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
-                << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
-                << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
-                << "sigma = " << std::setw(6) << fpsStat.getAvgSigma() << " (" << rate << "%)" << std::endl;
-    }
-
-    std::cout << "BENCHMARK_RENDER_MIN " << fpsStat.getMin() << std::endl;
-    std::cout << "BENCHMARK_RENDER_AVG " << fpsStat.getAvg() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MAX " << fpsStat.getMax() << std::endl;
-    std::cout << "BENCHMARK_RENDER_SIGMA " << fpsStat.getSigma() << std::endl;
-    std::cout << "BENCHMARK_RENDER_AVG_SIGMA " << fpsStat.getAvgSigma() << std::endl;
-
-#if defined(RAY_STATS)
-    std::cout << "BENCHMARK_RENDER_MRAYPS_MIN " << mraypsStat.getMin() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MRAYPS_AVG " << mraypsStat.getAvg() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MRAYPS_MAX " << mraypsStat.getMax() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MRAYPS_SIGMA " << mraypsStat.getSigma() << std::endl;
-    std::cout << "BENCHMARK_RENDER_MRAYPS_AVG_SIGMA " << mraypsStat.getAvgSigma() << std::endl;
-#endif
-
-    std::cout << std::flush;
   }
 
   void TutorialApplication::renderToFile(const FileName& fileName)
@@ -1207,11 +1113,6 @@ namespace embree
     case SHADER_AMBIENT_OCCLUSION: renderFrame = renderFrameAmbientOcclusion; break;
     };
     
-    /* benchmark mode */
-    if (numBenchmarkFrames) {
-      renderBenchmark();
-    }
-
     /* render to disk */
     if (outputImageFilename.str() != "")
       renderToFile(outputImageFilename);

@@ -3,6 +3,7 @@
 
 ADD_EXECUTABLE(bvh_access ../../kernels/embree.rc bvh_access.cpp)
 TARGET_LINK_LIBRARIES(bvh_access embree math sys tasking tutorial ${GLFW_LIBRARY})
+
 SET_PROPERTY(TARGET bvh_access PROPERTY FOLDER tutorials/single)
 SET_PROPERTY(TARGET bvh_access APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 INSTALL(TARGETS bvh_access DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)

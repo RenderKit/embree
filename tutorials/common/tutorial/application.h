@@ -8,33 +8,30 @@
 namespace embree
 {
   void waitForKeyPressedUnderWindows();
- 
-  class Application
+  
+  struct CommandLineParser
   {
-  public:
-    enum Features { FEATURE_RTCORE = 1, FEATURE_STREAM = 2 };
-
-    Application (int features);
-    virtual ~Application();
-
-    static Application* instance;
+    enum Verbosity {
+      NORMAL = 0,
+      SILENT
+    };
     
+    CommandLineParser(Verbosity verbosity = NORMAL) : verbosity(verbosity) {}
+
     /* virtual interface for command line option processing */
     struct CommandLineOption : public RefCount 
     {
-    public:
       CommandLineOption (const std::string& description) 
         : description(description) {}
 
       virtual void parse(Ref<ParseStream> cin, const FileName& path) = 0;
       
-    public:
       std::string description;
     };
-    
+
     /* helper class to provide parsing function via lambda function */
     template<typename F>
-      struct CommandLineOptionClosure : public CommandLineOption
+    struct CommandLineOptionClosure : public CommandLineOption
     {
       CommandLineOptionClosure (std::string description, const F& f) 
         : CommandLineOption(description), f(f) {}
@@ -43,10 +40,9 @@ namespace embree
         f(cin,path);
       }
       
-    public:
       F f;
     };
-    
+
     /* registers a command line option */
     template<typename F>
       void registerOption(const std::string& name, const F& f, const std::string& description) 
@@ -66,13 +62,49 @@ namespace embree
     /* prints help for all supported command line options */
     void printCommandLineHelp();
 
+    /* command line options database */
+    std::vector<         Ref<CommandLineOption> > commandLineOptionList;
+    std::map<std::string,Ref<CommandLineOption> > commandLineOptionMap;
+    
+    Verbosity verbosity;
+  };
+ 
+  class Application
+  {
+  public:
+    enum Features { FEATURE_RTCORE = 1, FEATURE_STREAM = 2 };
+
+    Application (int features);
+    virtual ~Application();
+
+    static Application* instance;
+    
     /* print log message */
     void log(int verbose, const std::string& str);
     
-    /* command line options database */
-  public:
-    std::vector<         Ref<CommandLineOption> > commandLineOptionList;
-    std::map<std::string,Ref<CommandLineOption> > commandLineOptionMap;
+    template<typename F>
+    void registerOption(const std::string& name, const F& f, const std::string& description) {
+      commandLineParser.registerOption<F>(name, f, description);
+    }
+    
+    /* registers an alias for a command line option */
+    void registerOptionAlias(const std::string& name, const std::string& alternativeName) {
+      commandLineParser.registerOptionAlias(name, alternativeName);
+    }
+    
+    /* command line parsing */
+    void parseCommandLine(int argc, char** argv) {
+      commandLineParser.parseCommandLine(argc, argv);
+    }
+
+    void parseCommandLine(Ref<ParseStream> cin, const FileName& path) {
+      commandLineParser.parseCommandLine(cin, path);
+    }
+
+    /* prints help for all supported command line options */
+    void printCommandLineHelp() {
+      commandLineParser.printCommandLineHelp();
+    }
  
   public:
 
@@ -82,6 +114,8 @@ namespace embree
   public:
     std::string rtcore;      // embree configuration
     int verbosity;           // verbosity of output
+    
+    CommandLineParser commandLineParser;
 
   public:
     bool log_delta;       // whether to print delta stats

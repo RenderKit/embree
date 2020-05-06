@@ -10,6 +10,28 @@ TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree ${IMGUI_
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
 SET_PROPERTY(TARGET tutorial APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
+option(EMBREE_USE_GOOGLE_BENCHMARK "Use google benchmark (note: set benchmark_DIR to benchmark_install_dir/lib/cmake/benchmark)" OFF)
+
+IF(EMBREE_USE_GOOGLE_BENCHMARK)
+  IF (NOT DEFINED benchmark_DIR)
+    message(FATAL_ERROR "set benchmark_DIR to benchmark_install_dir/lib/cmake/benchmark")
+  ENDIF()
+  FIND_PACKAGE(benchmark REQUIRED)
+  IF (NOT TARGET benchmark::benchmark)
+    message(FATAL_ERROR "benchmark not found")
+  ENDIF()
+ENDIF()
+
+ADD_LIBRARY(benchmark STATIC benchmark.cpp)
+SET_PROPERTY(TARGET benchmark PROPERTY FOLDER tutorials/common)
+SET_PROPERTY(TARGET benchmark APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+TARGET_COMPILE_DEFINITIONS(benchmark PUBLIC SCENE_DIR="${EMBREE_MODEL_DIR}")
+IF(EMBREE_USE_GOOGLE_BENCHMARK)
+  TARGET_COMPILE_DEFINITIONS(benchmark PUBLIC USE_GOOGLE_BENCHMARK)
+  TARGET_LINK_LIBRARIES(benchmark benchmark::benchmark benchmark::benchmark_main)
+ENDIF()
+TARGET_LINK_LIBRARIES(tutorial benchmark)
+
 ADD_LIBRARY(noise STATIC noise.cpp)
 SET_PROPERTY(TARGET noise PROPERTY FOLDER tutorials/common)
 SET_PROPERTY(TARGET noise APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
@@ -24,6 +46,8 @@ IF (EMBREE_ISPC_SUPPORT)
   SET_TARGET_PROPERTIES(noise_ispc PROPERTIES LINKER_LANGUAGE CXX)
   SET_PROPERTY(TARGET noise_ispc PROPERTY FOLDER tutorials/common)
   SET_PROPERTY(TARGET noise_ispc APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+
+  TARGET_LINK_LIBRARIES(tutorial_ispc benchmark)
 ENDIF()
 
 IF (WIN32 AND NOT EMBREE_EXTERNAL_GLFW)

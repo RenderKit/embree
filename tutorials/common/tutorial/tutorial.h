@@ -84,9 +84,6 @@ namespace embree
     /* callback called after command line parsing finished */
     virtual void postParseCommandLine() {}
 
-    /* benchmark mode */
-    void renderBenchmark();
-
     /* render to file mode */
     void renderToFile(const FileName& fileName);
 
@@ -150,10 +147,6 @@ namespace embree
     FileName referenceImageFilename;
     float referenceImageThreshold; // threshold when we consider images to differ
 
-    /* benchmark mode settings */
-    size_t skipBenchmarkFrames;
-    size_t numBenchmarkFrames;
-
     /* window settings */
     bool interactive;
     bool fullscreen;
@@ -187,8 +180,7 @@ namespace embree
     RTCIntersectContextFlags iflags_incoherent;
 
     std::unique_ptr<ISPCScene> ispc_scene;
-
-  private:
+    
     /* ray statistics */
     void initRayStats();
     int64_t getNumRays();

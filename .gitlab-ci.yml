@@ -5,7 +5,7 @@ stages:
   - test
   - release
   - scan
-
+  - benchmark
 
 #####################################################################
 # Continuous Test
@@ -585,3 +585,16 @@ av:
     - clamscan -va --max-filesize=512M --max-scansize=2048M --alert-broken --alert-exceeds-max build/embree* | tee -a /tmp/av_scan.log
     - scripts/store_files.sh $CI_PROJECT_NAME $CI_PIPELINE_ID av /tmp/av_scan.log
   only:   [web, schedules]
+
+#####################################################################
+# Preliminary benchmark setup
+####################################################################
+benchmark:
+  stage:  benchmark
+  when:   manual
+  tags:
+    - vis-perf-x8280-1
+  script:
+    - "scripts/test.py platform:x64 build:Release compiler:GCC ispc:ispc1.12.0 isas:NONE-AVX2 tasking:TBB2020.2 intensity:1 --benchmark"
+    - "chmod +x scripts/run-benchmark.sh"
+    - "scripts/run-benchmark.sh"
