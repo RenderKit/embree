@@ -317,7 +317,7 @@ IF(WIN32)
 ELSEIF(APPLE)
   SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "@rpath") # On MacOSX the app is supposed to already have an rpath set to that folder
 ELSE()
-  SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "$ORIGIN")  # Linux we tell ld to find libtbb in the folder libembree is places.
+  SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "$ORIGIN")  # Linux we tell ld to find libtbb in the folder libembree is placed.
 ENDIF()
 
 IF (WIN32)
