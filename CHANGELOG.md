@@ -1,6 +1,17 @@
 Version History
 ---------------
 
+### Embree 3.10.0
+-   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
+    leaves to reduce memory consumption in compact mode by an additional 40% at about
+    15% performance impact. This new mode is disabled by default.
+-   Compile fix for oneTBB 2021.1-beta05
+-   Releases upgrade to TBB 2020.2
+-   Compile fix for ISPC v1.13.0
+-   Adding RPATH to libembree.so in releases
+-   Increased required CMake version to 3.1.0
+-   Made instID member for array of pointers ray stream layout optional again.
+
 ### Embree 3.9.0
 
 -   Added round linear curve geometry support. In this mode a real geometric surface for curves
