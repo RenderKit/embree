@@ -364,16 +364,10 @@ the folder you extracted Embree to. If you used the Windows MSI
 installer, you need to set `embree_DIR` to point to the Embree install
 location (e.g. `C:\Program Files\Intel\Embree3`).
 
-The `FIND_PACKAGE` CMake function will set the `EMBREE_INCLUDE_DIRS`
-variable to point to the directory containing the Embree headers. You
-should add this folder to the include directories of your build:
+The `FIND_PACKAGE` function will create an embree target that
+you can add to your target link libraries:
 
-    INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
-
-Further, the `EMBREE_LIBRARY` variable will point to the Embree
-library to link against. Link against Embree the following way:
-
-    TARGET_LINK_LIBRARIES(application ${EMBREE_LIBRARY})
+    TARGET_LINK_LIBRARIES(application embree)
 
 Now please have a look at the [Embree Tutorials] source code and the
 [Embree API] section to get started.
