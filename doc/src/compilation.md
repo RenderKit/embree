@@ -11,6 +11,7 @@ To compile Embree you need a modern C++ compiler that supports
 C++11. Embree is tested with the following compilers:
 
 Linux
+
   - Intel® Compiler 2020 Update 1
   - Intel® Compiler 2019 Update 4
   - Intel® Compiler 2017 Update 1
@@ -25,6 +26,7 @@ Linux
   - GCC  6.4.1 (Fedora 25)
 
 macOS
+
   - Intel® Compiler 2020 Update 1
   - Intel® Compiler 2019 Update 4
   - Apple LLVM 10.0.1 (macOS 10.14.6)
