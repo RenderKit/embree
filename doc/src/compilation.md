@@ -7,13 +7,27 @@ optimizations; these might break Embree.
 Linux and macOS
 ---------------
 
-To compile Embree you need a modern C++ compiler that supports C++11.
-Embree is tested with Intel® Compiler 17.0 (Update\ 1), Intel®
-Compiler 16.0 (Update\ 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
-(supports AVX512) and GCC 5.4.0 (Linux only). If the GCC that comes with your
-Fedora/Red Hat/CentOS distribution is too old then you can run the
-provided script `scripts/install_linux_gcc.sh` to locally install a
-recent GCC into `$HOME/devtools-2`.
+To compile Embree you need a modern C++ compiler that supports
+C++11. Embree is tested with the following compilers:
+
+Linux
+  - Intel® Compiler 2020 Update 1
+  - Intel® Compiler 2019 Update 4
+  - Intel® Compiler 2017 Update 1
+  - Intel® Compiler 2016 Update 3
+  - Intel® Compiler 2015 Update 3
+  - Clang 5.0.0
+  - Clang 4.0.0
+  - GCC 10.0.1 (Fedora 32)
+  - GCC  8.3.1 (Fedora 28)
+  - GCC  7.3.1 (Fedora 27)
+  - GCC  7.3.1 (Fedora 26)
+  - GCC  6.4.1 (Fedora 25)
+
+macOS
+  - Intel® Compiler 2020 Update 1
+  - Intel® Compiler 2019 Update 4
+  - Apple LLVM 10.0.1 (macOS 10.14.6)
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -31,7 +45,7 @@ installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
 `ISPC_EXECUTABLE` variable during CMake configuration.
 
-You additionally have to install CMake 2.8.11 or higher and the developer
+You additionally have to install CMake 3.1.0 or higher and the developer
 version of GLUT.
 
 Under macOS, all these dependencies can be installed
@@ -107,14 +121,17 @@ your `LD_LIBRARY_PATH`.
 Windows
 -------
 
-Embree is tested under Windows using the Visual Studio 2017, Visual
-Studio 2015 (Update\ 1) compiler (Win32 and x64), Visual Studio 2013
-(Update\ 5) compiler (Win32 and x64), Intel® Compiler 17.0 (Update\ 1)
-(Win32 and x64), Intel® Compiler 16.0 (Update\ 1) (Win32 and x64), and
-Clang 3.9 (Win32 and x64). Using the Visual Studio 2015 compiler,
-Visual Studio 2013 compiler, Intel® Compiler, and Clang you can
-compile Embree for AVX2. To compile Embree for AVX-512 you have to use
-the Intel® Compiler.
+Embree is tested using the following compilers under Windows:
+
+  - Visual Studio 2019
+  - Visual Studio 2017
+  - Visual Studio 2015 (Update\ 1)
+  - Visual Studio 2013 (Update\ 5)
+  - Intel® Compiler 2019 Update 6
+  - Intel® Compiler 2017 Update 8
+  - LLVM Clang 9.0.0
+
+To compile Embree for AVX-512 you have to use the Intel® Compiler.
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -159,7 +176,7 @@ for a 64-bit build.
 To use a different compiler than the Microsoft Visual C++ compiler, you
 additionally need to specify the proper compiler toolset through the
 option "Optional toolset to use (-T parameter)". E.g. to use Clang for
-compilation set the toolset to "LLVM-vs2013", to use the Intel®
+compilation set the toolset to "LLVM_v142", to use the Intel®
 Compiler 2017 for compilation set the toolset to "Intel C++
 Compiler 17.0".
 
