@@ -21,6 +21,19 @@ ELSE()
 ENDIF()
 
 ##############################################################
+# Install MSVC runtime
+##############################################################
+
+IF (WIN32)
+  SET(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+  INCLUDE(InstallRequiredSystemLibraries)
+  message("files = ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}")
+  LIST(FILTER CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS INCLUDE REGEX ".*msvcp[0-9]+\.dll|.*vcruntime[0-9]+\.dll|.*vcruntime[0-9]+_[0-9]+\.dll")
+  message("filtered = ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}")
+  INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT lib)
+ENDIF()
+
+##############################################################
 # Install Headers
 ##############################################################
 
