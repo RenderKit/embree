@@ -124,7 +124,7 @@ namespace embree
     std::vector<Crease> ec;
 
     std::vector<std::vector<Vertex> > curGroup;
-    std::vector<avector<Vec3fa> > curGroupHair;
+    std::vector<avector<Vec3ff> > curGroupHair;
 
     /*! Material handling. */
     std::string curMaterialName;
@@ -217,9 +217,9 @@ namespace embree
         else continue;
 
         unsigned int N = getInt(token);
-        avector<Vec3fa> hair;
+        avector<Vec3ff> hair;
         for (unsigned int i=0; i<3*N+1; i++) {
-          hair.push_back(getVec3fa(token));
+          hair.push_back((Vec3ff)getVec3fa(token));
         }
         
         for (unsigned int i=0; i<N+1; i++)
@@ -594,7 +594,7 @@ namespace embree
    {
      if (curGroupHair.empty()) return;
 
-     avector<Vec3fa> vertices;
+     avector<Vec3ff> vertices;
      std::vector<SceneGraph::HairSetNode::Hair> curves;
      
      for (size_t i=0; i<curGroupHair.size(); i++) {

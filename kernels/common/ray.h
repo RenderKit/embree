@@ -175,13 +175,13 @@ namespace embree
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
-      return all(le_mask(abs(Vec3fa(org,0.0f)), Vec3fa(FLT_LARGE)) & le_mask(abs(Vec3fa(dir,0.0f)), Vec3fa(FLT_LARGE))) && abs(tnear()) <= float(inf) && abs(tfar) <= float(inf);
+      return all(le_mask(abs(Vec3fa(org)), Vec3fa(FLT_LARGE)) & le_mask(abs(Vec3fa(dir)), Vec3fa(FLT_LARGE))) && abs(tnear()) <= float(inf) && abs(tfar) <= float(inf);
     }
 
     /* Ray data */
-    Vec3fa org;  // 3 floats for ray origin, 1 float for tnear
+    Vec3ff org;  // 3 floats for ray origin, 1 float for tnear
     //float tnear; // start of ray segment
-    Vec3fa dir;  // 3 floats for ray direction, 1 float for time
+    Vec3ff dir;  // 3 floats for ray direction, 1 float for time
     // float time; 
     float tfar;  // end of ray segment
     int mask;    // used to mask out objects during traversal

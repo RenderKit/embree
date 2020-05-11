@@ -255,7 +255,7 @@ namespace embree
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
-      positions[i] = in->positions[i].data();
+      positions[i] = (Vec3fa*) in->positions[i].data();
 
     if (in->normals.size()) {
       normals = new Vec3fa*[in->numTimeSteps()];
@@ -266,7 +266,7 @@ namespace embree
     if (in->tangents.size()) {
       tangents = new Vec3fa*[in->numTimeSteps()];
       for (size_t i=0; i<in->numTimeSteps(); i++)
-        tangents[i] = in->tangents[i].data();
+        tangents[i] = (Vec3fa*) in->tangents[i].data();
     }
 
     if (in->dnormals.size()) {
@@ -298,7 +298,7 @@ namespace embree
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
-      positions[i] = in->positions[i].data();
+      positions[i] = (Vec3fa*) in->positions[i].data();
 
     if (in->normals.size()) {
       normals = new Vec3fa*[in->numTimeSteps()];

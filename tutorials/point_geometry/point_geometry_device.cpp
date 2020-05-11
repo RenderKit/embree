@@ -28,7 +28,7 @@ void addPoints (RTCScene scene, RTCGeometryType gtype, const Vec3fa& pos)
     const float vy = COORD;
     const float vz = COORD;
     const float vr = RADIUS;
-    point_vertices[i] = Vec4f(pos) + Vec4f(vx, vy, vz, vr);
+    point_vertices[i] = Vec4f(pos.x,pos.y,pos.z,0.0f) + Vec4f(vx, vy, vz, vr);
     const float cr = COLOR;
     const float cg = COLOR;
     const float cb = COLOR;

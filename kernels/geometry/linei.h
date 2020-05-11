@@ -116,8 +116,8 @@ namespace embree
       for (size_t i=0; i<M && valid(i); i++)
       {
         const LineSegments* geom = scene->get<LineSegments>(geomID(i));
-        const Vec3fa& p0 = geom->vertex(v0[i]+0,itime);
-        const Vec3fa& p1 = geom->vertex(v0[i]+1,itime);
+        const Vec3ff& p0 = geom->vertex(v0[i]+0,itime);
+        const Vec3ff& p1 = geom->vertex(v0[i]+1,itime);
         BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
         b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
         bounds.extend(b);
@@ -229,8 +229,8 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const Vec3fa& p0 = geom->vertex(v0[i]+0);
-        const Vec3fa& p1 = geom->vertex(v0[i]+1);
+        const Vec3ff& p0 = geom->vertex(v0[i]+0);
+        const Vec3ff& p1 = geom->vertex(v0[i]+1);
         BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
         b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
         bounds.extend(b);

@@ -39,8 +39,8 @@ namespace embree
       Vec3fa Ng;
     };
     
-    template<typename NativeCurve3fa, typename Ray, typename Epilog>
-    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const NativeCurve3fa& curve, size_t i,
+    template<typename NativeCurve3ff, typename Ray, typename Epilog>
+    __forceinline bool intersect_bezier_iterative_debug(const Ray& ray, const float dt, const NativeCurve3ff& curve, size_t i,
                                                         const vfloatx& u, const BBox<vfloatx>& tp, const BBox<vfloatx>& h0, const BBox<vfloatx>& h1, 
                                                         const Vec3vfx& Ng, const Vec4vfx& dP0du, const Vec4vfx& dP3du,
                                                         const Epilog& epilog)
@@ -53,15 +53,15 @@ namespace embree
       return epilog(hit);
     }
 
-    template<typename NativeCurve3fa, typename Ray, typename Epilog> 
-     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve, float u, float t, const Epilog& epilog)
+    template<typename NativeCurve3ff, typename Ray, typename Epilog> 
+     __forceinline bool intersect_bezier_iterative_jacobian(const Ray& ray, const float dt, const NativeCurve3ff& curve, float u, float t, const Epilog& epilog)
     {
       const Vec3fa org = zero;
       const Vec3fa dir = ray.dir;
       const float length_ray_dir = length(dir);
 
       /* error of curve evaluations is propertional to largest coordinate */
-      const BBox3fa box = curve.bounds();
+      const BBox3ff box = curve.bounds();
       const float P_err = 16.0f*float(ulp)*reduce_max(max(abs(box.lower),abs(box.upper)));
      
       for (size_t i=0; i<numJacobianIterations; i++) 
@@ -71,7 +71,7 @@ namespace embree
         const Vec3fa dQdt = dir;
         const float Q_err = 16.0f*float(ulp)*length_ray_dir*t; // works as org=zero here
            
-        Vec3fa P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
+        Vec3ff P,dPdu,ddPdu; curve.eval(u,P,dPdu,ddPdu);
         //const Vec3fa dPdt = zero;
 
         const Vec3fa R = Q-P;
@@ -132,8 +132,8 @@ namespace embree
       return false;
     }
 
-    template<typename NativeCurve3fa, typename Ray, typename Epilog>
-    bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3fa& curve,
+    template<typename NativeCurve3ff, typename Ray, typename Epilog>
+    bool intersect_bezier_recursive_jacobian(const Ray& ray, const float dt, const NativeCurve3ff& curve,
                                              float u0, float u1, unsigned int depth, const Epilog& epilog)
     {
 #if defined(__AVX__)
@@ -239,8 +239,8 @@ namespace embree
         const vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
         
         /* at the unstable area we subdivide deeper */
-        const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner0))) < 0.3f);
-        const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(ray.dir)),normalize(Ng_inner1))) < 0.3f);
+        const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(Vec3fa(ray.dir))),normalize(Ng_inner0))) < 0.3f);
+        const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(Vec3fa(ray.dir))),normalize(Ng_inner1))) < 0.3f);
         
         /* subtract the inner interval from the current hit interval */
         BBox<vfloatx> tp0, tp1;
@@ -292,29 +292,33 @@ namespace embree
       return found;
     }
 
-    template<typename NativeCurve3fa>
+    template<template<typename Ty> class NativeCurve>
     struct SweepCurve1Intersector1
     {
+      typedef NativeCurve<Vec3ff> NativeCurve3ff;
+      
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
                                 const Geometry* geom, const unsigned int primID,
-                                const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                 const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
 
         /* move ray closer to make intersection stable */
-        const NativeCurve3fa curve0(v0,v1,v2,v3);
+        const NativeCurve3ff curve0(v0,v1,v2,v3);
         const float dt = dot(curve0.center()-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
-        const Vec3fa ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
-        const NativeCurve3fa curve1 = curve0-ref;
+        const Vec3ff ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
+        const NativeCurve3ff curve1 = curve0-ref;
         return intersect_bezier_recursive_jacobian(ray,dt,curve1,0.0f,1.0f,1,epilog);
       }
     };
 
-    template<typename NativeCurve3fa, int K>
+    template<template<typename Ty> class NativeCurve, int K>
     struct SweepCurve1IntersectorK
     {
+      typedef NativeCurve<Vec3ff> NativeCurve3ff;
+      
       struct Ray1
       {
         __forceinline Ray1(RayK<K>& ray, size_t k)
@@ -335,17 +339,17 @@ namespace embree
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
                                    const Geometry* geom, const unsigned int primID,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                    const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
         Ray1 ray(vray,k);
 
         /* move ray closer to make intersection stable */
-        const NativeCurve3fa curve0(v0,v1,v2,v3);
+        const NativeCurve3ff curve0(v0,v1,v2,v3);
         const float dt = dot(curve0.center()-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
-        const Vec3fa ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
-        const NativeCurve3fa curve1 = curve0-ref;
+        const Vec3ff ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
+        const NativeCurve3ff curve1 = curve0-ref;
         return intersect_bezier_recursive_jacobian(ray,dt,curve1,0.0f,1.0f,1,epilog);
       }
     };

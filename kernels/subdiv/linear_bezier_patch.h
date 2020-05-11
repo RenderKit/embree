@@ -76,25 +76,25 @@ namespace embree
         __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<V>& L, const CubicBezierCurve<V>& R)
           : L(L), R(R) {}
 
-        template<typename SourceCurve3fa>
-        __forceinline static TensorLinearCubicBezierSurface fromCenterAndNormalCurve(const SourceCurve3fa& center, const SourceCurve3fa& normal)
+        template<template<typename T> class SourceCurve>
+        __forceinline static TensorLinearCubicBezierSurface fromCenterAndNormalCurve(const SourceCurve<Vec3ff>& center, const SourceCurve<Vec3fa>& normal)
         {
-          SourceCurve3fa vcurve = center;
-          SourceCurve3fa ncurve = normal;
+          SourceCurve<Vec3ff> vcurve = center;
+          SourceCurve<Vec3fa> ncurve = normal;
           
           /* here we construct a patch which follows the curve l(t) =
            * p(t) +/- r(t)*normalize(cross(n(t),dp(t))) */
           
-          const Vec3fa p0   = vcurve.eval(0.0f);
-          const Vec3fa dp0  = vcurve.eval_du(0.0f);
-          const Vec3fa ddp0 = vcurve.eval_dudu(0.0f);
+          const Vec3ff p0   = vcurve.eval(0.0f);
+          const Vec3ff dp0  = vcurve.eval_du(0.0f);
+          const Vec3ff ddp0 = vcurve.eval_dudu(0.0f);
 
           const Vec3fa n0   = ncurve.eval(0.0f);
           const Vec3fa dn0  = ncurve.eval_du(0.0f);
 
-          const Vec3fa p1   = vcurve.eval(1.0f);
-          const Vec3fa dp1  = vcurve.eval_du(1.0f);
-          const Vec3fa ddp1 = vcurve.eval_dudu(1.0f);
+          const Vec3ff p1   = vcurve.eval(1.0f);
+          const Vec3ff dp1  = vcurve.eval_du(1.0f);
+          const Vec3ff ddp1 = vcurve.eval_dudu(1.0f);
 
           const Vec3fa n1   = ncurve.eval(1.0f);
           const Vec3fa dn1  = ncurve.eval_du(1.0f);

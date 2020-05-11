@@ -12,7 +12,7 @@ RTCScene g_scene = nullptr;
 InstanceLevels g_instanceLevels;
 
 /* accumulation buffer */
-Vec3fa* g_accu = nullptr;
+Vec3ff* g_accu = nullptr;
 unsigned int g_accu_width = 0;
 unsigned int g_accu_height = 0;
 unsigned int g_accu_count = 0;
@@ -96,8 +96,8 @@ inline void invalidateRay(Ray& ray)
   // in streamed mode, active state of lanes is forgotten between ray
   // generation and traversal.
   {
-    ray.org = Vec3fa(0.f);
-    ray.dir = Vec3fa(0.f);
+    ray.org = Vec3ff(0.f);
+    ray.dir = Vec3ff(0.f);
     ray.tnear() = pos_inf;
     ray.tfar = neg_inf;
   }
@@ -229,7 +229,7 @@ void splat(int* pixels,
            const Vec3fa& color)
 {
   const unsigned int pixIdx = y * width + x;
-  const Vec3fa accu_color = g_accu[pixIdx] + Vec3fa(color.x,color.y,color.z,1.0f); 
+  const Vec3ff accu_color = g_accu[pixIdx] + Vec3ff(color.x,color.y,color.z,1.0f); 
   g_accu[pixIdx] = accu_color;
   if (accu_color.w > 0)
   {
@@ -439,11 +439,11 @@ extern "C" void device_render(int* pixels,
 {
   if (g_accu_width != width || g_accu_height != height) {
     alignedFree(g_accu);
-    g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa),16);
+    g_accu = (Vec3ff*) alignedMalloc(width*height*sizeof(Vec3ff),16);
     g_accu_width = width;
     g_accu_height = height;
     for (unsigned int i=0; i<width*height; i++)
-      g_accu[i] = Vec3fa(0.0f);
+      g_accu[i] = Vec3ff(0.0f);
   }
 
   bool camera_changed = g_changed; 
@@ -457,7 +457,7 @@ extern "C" void device_render(int* pixels,
   {
     g_accu_count=0;
     for (unsigned int i=0; i<width*height; i++)
-      g_accu[i] = Vec3fa(0.0f);
+      g_accu[i] = Vec3ff(0.0f);
   }
   else
     g_accu_count++;

@@ -48,7 +48,7 @@ namespace embree
     virtual void setNumTimeSteps (unsigned int numTimeSteps) override;
     virtual void setInstancedScene(const Ref<Scene>& scene) override;
     virtual void setTransform(const AffineSpace3fa& local2world, unsigned int timeStep) override;
-    virtual void setQuaternionDecomposition(const AffineSpace3fa& qd, unsigned int timeStep) override;
+    virtual void setQuaternionDecomposition(const AffineSpace3ff& qd, unsigned int timeStep) override;
     virtual AffineSpace3fa getTransform(float time) override;
     virtual void setMask (unsigned mask) override;
     virtual void build() {}
@@ -137,18 +137,18 @@ namespace embree
       const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];
       if (likely(all(valid, itime_k == vint<K>(itime)))) {
-        return rcp(slerp(AffineSpace3vfa<K>(local2world[itime+0]),
-                         AffineSpace3vfa<K>(local2world[itime+1]),
+        return rcp(slerp(AffineSpace3vff<K>(local2world[itime+0]),
+                         AffineSpace3vff<K>(local2world[itime+1]),
                          ftime));
       }
       else {
-        AffineSpace3vfa<K> space0,space1;
+        AffineSpace3vff<K> space0,space1;
         vbool<K> valid1 = valid;
         while (any(valid1)) {
           vbool<K> valid2;
           const int itime = next_unique(valid1, itime_k, valid2);
-          space0 = select(valid2, AffineSpace3vfa<K>(local2world[itime+0]), space0);
-          space1 = select(valid2, AffineSpace3vfa<K>(local2world[itime+1]), space1);
+          space0 = select(valid2, AffineSpace3vff<K>(local2world[itime+0]), space0);
+          space1 = select(valid2, AffineSpace3vff<K>(local2world[itime+1]), space1);
         }
         return rcp(slerp(space0, space1, ftime));
       }
@@ -163,8 +163,8 @@ namespace embree
       const size_t index = bsf(movemask(valid));
       const int itime = itime_k[index];
       if (likely(all(valid, itime_k == vint<K>(itime)))) {
-        return rcp(lerp(AffineSpace3vf<K>(local2world[itime+0]),
-                        AffineSpace3vf<K>(local2world[itime+1]),
+        return rcp(lerp(AffineSpace3vf<K>((AffineSpace3fa)local2world[itime+0]),
+                        AffineSpace3vf<K>((AffineSpace3fa)local2world[itime+1]),
                         ftime));
       } else {
         AffineSpace3vf<K> space0,space1;
@@ -172,8 +172,8 @@ namespace embree
         while (any(valid1)) {
           vbool<K> valid2;
           const int itime = next_unique(valid1, itime_k, valid2);
-          space0 = select(valid2, AffineSpace3vf<K>(local2world[itime+0]), space0);
-          space1 = select(valid2, AffineSpace3vf<K>(local2world[itime+1]), space1);
+          space0 = select(valid2, AffineSpace3vf<K>((AffineSpace3fa)local2world[itime+0]), space0);
+          space1 = select(valid2, AffineSpace3vf<K>((AffineSpace3fa)local2world[itime+1]), space1);
         }
         return rcp(lerp(space0, space1, ftime));
       }
@@ -181,7 +181,7 @@ namespace embree
 
   public:
     Accel* object;                 //!< pointer to instanced acceleration structure
-    AffineSpace3fa* local2world;   //!< transformation from local space to world space for each timestep (either normal matrix or quaternion decomposition)
+    AffineSpace3ff* local2world;   //!< transformation from local space to world space for each timestep (either normal matrix or quaternion decomposition)
     AffineSpace3fa world2local0;   //!< transformation from world space to local space for timestep 0
   };
 

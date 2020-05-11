@@ -8,7 +8,7 @@
 namespace embree {
 
 /* accumulation buffer */
-Vec3fa* g_accu = nullptr;
+Vec3ff* g_accu = nullptr;
 unsigned int g_accu_width = 0;
 unsigned int g_accu_height = 0;
 unsigned int g_accu_count = 0;
@@ -374,7 +374,7 @@ void renderTileStandard(int taskIndex,
     Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
-    Vec3fa accu_color = g_accu[y*width+x] + Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
+    Vec3ff accu_color = g_accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
     float f = rcp(max(1.f,accu_color.w));
     unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
@@ -426,11 +426,11 @@ extern "C" void device_render (int* pixels,
 
   if (g_accu_width != width || g_accu_height != height) {
     alignedFree(g_accu);
-    g_accu = (Vec3fa*) alignedMalloc(width*height*sizeof(Vec3fa),16);
+    g_accu = (Vec3ff*) alignedMalloc(width*height*sizeof(Vec3ff),16);
     g_accu_width = width;
     g_accu_height = height;
     for (unsigned int i=0; i<width*height; i++)
-      g_accu[i] = Vec3fa(0.0f);
+      g_accu[i] = Vec3ff(0.0f);
   }
 
   if (g_changed || g_reset)
@@ -449,7 +449,7 @@ extern "C" void device_render (int* pixels,
   if (camera_changed) {
     g_accu_count=0;
     for (unsigned int i=0; i<width*height; i++)
-      g_accu[i] = Vec3fa(0.0f);
+      g_accu[i] = Vec3ff(0.0f);
   }
   else {
     g_accu_count++;

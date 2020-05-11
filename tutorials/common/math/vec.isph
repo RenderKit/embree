@@ -869,6 +869,8 @@ inline uniform bool isnan(uniform Vec3fa v)
 inline bool isnan(Vec3fa v)
 { return isnan(v.x+v.y+v.z); }
 
+typedef Vec3fa Vec3ff;
+
 inline void out(uniform Vec3f v) { print("(%,%,%)",v.x,v.y,v.z); }
 inline void out(Vec3f v) { print("\n(%\n %\n %)",v.x,v.y,v.z); }
 inline void out(uniform Vec3i v) { print("(%,%,%)",v.x,v.y,v.z); }

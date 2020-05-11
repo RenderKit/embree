@@ -69,8 +69,8 @@ namespace embree
       {
         /* calculate denominator */
         vbool<M> valid = valid0;
-        const Vec3vf<M> O = Vec3vf<M>(ray.org);
-        const Vec3vf<M> D = Vec3vf<M>(ray.dir);
+        const Vec3vf<M> O = Vec3vf<M>((Vec3fa)ray.org);
+        const Vec3vf<M> D = Vec3vf<M>((Vec3fa)ray.dir);
         const Vec3vf<M> C = Vec3vf<M>(tri_v0) - O;
         const Vec3vf<M> R = cross(C,D);
         const vfloat<M> den = dot(Vec3vf<M>(tri_Ng),D);

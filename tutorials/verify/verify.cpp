@@ -1709,9 +1709,9 @@ namespace embree
     
     static void move_mesh(RTCGeometry mesh, size_t numVertices, Vec3fa& pos) 
     {
-      Vec3fa* vertices = (Vec3fa*) rtcGetGeometryBufferData(mesh,RTC_BUFFER_TYPE_VERTEX,0);
+      Vec3ff* vertices = (Vec3ff*) rtcGetGeometryBufferData(mesh,RTC_BUFFER_TYPE_VERTEX,0);
       for (size_t i=0; i<numVertices; i++)
-        vertices[i] += Vec3fa(pos);
+        vertices[i] += Vec3ff(pos,0.0f);
       rtcUpdateGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0);
       rtcCommitGeometry(mesh);
     }
@@ -1745,7 +1745,7 @@ namespace embree
       for (size_t i=0; i<16; i++) 
       {
         bool move0 = i & 1, move1 = i & 2, move2 = i & 4, move3 = i & 8;
-        Vec3fa ds(2,0.1f,2,0.0f);
+        Vec3fa ds(2,0.1f,2);
         if (move0) { move_mesh(hgeom0,numVertices,ds); pos0 += ds; }
         if (move1) { move_mesh(hgeom1,numVertices,ds); pos1 += ds; }
         if (move2) { move_mesh(hgeom2,numVertices,ds); pos2 += ds; }

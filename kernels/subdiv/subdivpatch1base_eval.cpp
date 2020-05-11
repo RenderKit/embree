@@ -320,8 +320,8 @@ namespace embree
         b.upper.x = reduce_max(bounds_max_x);
         b.upper.y = reduce_max(bounds_max_y);
         b.upper.z = reduce_max(bounds_max_z);
-        b.lower.a = 0;
-        b.upper.a = 0;
+        //b.lower.a = 0;
+        //b.upper.a = 0;
       }
       else
       {
@@ -393,8 +393,8 @@ namespace embree
         b.upper.x = reduce_max(bounds_max[0]);
         b.upper.y = reduce_max(bounds_max[1]);
         b.upper.z = reduce_max(bounds_max[2]);
-        b.lower.a = 0;
-        b.upper.a = 0;
+        //b.lower.a = 0;
+        //b.upper.a = 0;
       }
 
       assert( std::isfinite(b.lower.x) );

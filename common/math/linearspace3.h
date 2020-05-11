@@ -191,6 +191,8 @@ namespace embree
   /*! Shortcuts for common linear spaces. */
   typedef LinearSpace3<Vec3f> LinearSpace3f;
   typedef LinearSpace3<Vec3fa> LinearSpace3fa;
+  typedef LinearSpace3<Vec3fx> LinearSpace3fx;
+  typedef LinearSpace3<Vec3ff> LinearSpace3ff;
 
   template<int N> using LinearSpace3vf = LinearSpace3<Vec3<vfloat<N>>>;
   typedef LinearSpace3<Vec3<vfloat<4>>>  LinearSpace3vf4;

@@ -42,8 +42,8 @@ namespace embree
 
         __forceinline BBox<vfloat<M>> intersect(const Vec3fa& ray_org, const Vec3fa& ray_dir) const
         {
-          Vec3vf<M> O = Vec3vf<M>(ray_org) - P;
-          Vec3vf<M> D = Vec3vf<M>(ray_dir);
+          Vec3vf<M> O = Vec3vf<M>((Vec3fa)ray_org) - P;
+          Vec3vf<M> D = Vec3vf<M>((Vec3fa)ray_dir);
           vfloat<M> ON = dot(O,N);
           vfloat<M> DN = dot(D,N);
           vbool<M> eps = abs(DN) < min_rcp_input;

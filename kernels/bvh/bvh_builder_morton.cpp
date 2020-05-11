@@ -50,6 +50,7 @@ namespace embree
           node->setBounds(i,b);
         }
 
+        BBox3fx result = (BBox3fx&)res;
 #if ROTATE_TREE
         if (N == 4)
         {
@@ -66,11 +67,11 @@ namespace embree
               }
             }
           }
-          res.lower.a = unsigned(n);
+          result.lower.a = unsigned(n);
         }
 #endif
 
-        return NodeRecord(ref,res);
+        return NodeRecord(ref,result);
       }
     };
 
@@ -119,7 +120,7 @@ namespace embree
         }
 
         Triangle4::store_nt(accel,Triangle4(v0,v1,v2,vgeomID,vprimID));
-        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fx box_o = BBox3fx((Vec3fx)lower,(Vec3fx)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = unsigned(current.size());
@@ -174,7 +175,7 @@ namespace embree
           v2.x[i] = p2.x; v2.y[i] = p2.y; v2.z[i] = p2.z;
         }
         Triangle4v::store_nt(accel,Triangle4v(v0,v1,v2,vgeomID,vprimID));
-        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fx box_o = BBox3fx((Vec3fx)lower,(Vec3fx)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
@@ -239,7 +240,7 @@ namespace embree
           v2[i] = 0;
         }
         Triangle4i::store_nt(accel,Triangle4i(v0,v1,v2,vgeomID,vprimID));
-        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fx box_o = BBox3fx((Vec3fx)lower,(Vec3fx)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
@@ -296,7 +297,7 @@ namespace embree
           v3.x[i] = p3.x; v3.y[i] = p3.y; v3.z[i] = p3.z;
         }
         Quad4v::store_nt(accel,Quad4v(v0,v1,v2,v3,vgeomID,vprimID));
-        BBox3fa box_o = BBox3fa((Vec3fa)lower,(Vec3fa)upper);
+        BBox3fx box_o = BBox3fx((Vec3fx)lower,(Vec3fx)upper);
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();
@@ -339,7 +340,8 @@ namespace embree
           bounds.extend(mesh->bounds(primID));
           new (&accel[i]) Object(geomID_,primID);
         }
-        BBox3fa box_o = bounds;
+
+        BBox3fx box_o = (BBox3fx&)bounds;
 #if ROTATE_TREE
         if (N == 4)
           box_o.lower.a = current.size();

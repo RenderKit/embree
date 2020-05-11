@@ -58,7 +58,7 @@ namespace embree
     }
 
      /*! returns i'th vertex of the first time step */
-    __forceinline Vec3fa vertex(size_t i) const {
+    __forceinline Vec3ff vertex(size_t i) const {
       return vertices0[i];
     }
 
@@ -78,7 +78,7 @@ namespace embree
     }
 
     /*! returns i'th vertex of itime'th timestep */
-    __forceinline Vec3fa vertex(size_t i, size_t itime) const {
+    __forceinline Vec3ff vertex(size_t i, size_t itime) const {
       return vertices[itime][i];
     }
 
@@ -98,18 +98,18 @@ namespace embree
     }
 
     /*! calculates bounding box of i'th line segment */
-    __forceinline BBox3fa bounds(const Vec3fa& v0, const Vec3fa& v1) const
+    __forceinline BBox3fa bounds(const Vec3ff& v0, const Vec3ff& v1) const
     {
-      const BBox3fa b = merge(BBox3fa(v0),BBox3fa(v1));
-      return enlarge(b,Vec3fa(max(v0.w,v1.w)));
+      const BBox3ff b = merge(BBox3ff(v0),BBox3ff(v1));
+      return enlarge((BBox3fa)b,Vec3fa(max(v0.w,v1.w)));
     }
 
     /*! calculates bounding box of i'th line segment */
     __forceinline BBox3fa bounds(size_t i) const
     {
       const unsigned int index = segment(i);
-      const Vec3fa v0 = vertex(index+0);
-      const Vec3fa v1 = vertex(index+1);
+      const Vec3ff v0 = vertex(index+0);
+      const Vec3ff v1 = vertex(index+1);
       return bounds(v0,v1);
     }
 
@@ -117,8 +117,8 @@ namespace embree
     __forceinline BBox3fa bounds(size_t i, size_t itime) const
     {
       const unsigned int index = segment(i);
-      const Vec3fa v0 = vertex(index+0,itime);
-      const Vec3fa v1 = vertex(index+1,itime);
+      const Vec3ff v0 = vertex(index+0,itime);
+      const Vec3ff v1 = vertex(index+1,itime);
       return bounds(v0,v1);
     }
 
@@ -126,10 +126,10 @@ namespace embree
     __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i) const
     {
       const unsigned int index = segment(i);
-      const Vec3fa v0 = vertex(index+0);
-      const Vec3fa v1 = vertex(index+1);
-      const Vec3fa w0(xfmVector(space,v0),v0.w);
-      const Vec3fa w1(xfmVector(space,v1),v1.w);
+      const Vec3ff v0 = vertex(index+0);
+      const Vec3ff v1 = vertex(index+1);
+      const Vec3ff w0(xfmVector(space,(Vec3fa)v0),v0.w);
+      const Vec3ff w1(xfmVector(space,(Vec3fa)v1),v1.w);
       return bounds(w0,w1);
     }
 
@@ -137,10 +137,10 @@ namespace embree
     __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime) const
     {
       const unsigned int index = segment(i);
-      const Vec3fa v0 = vertex(index+0,itime);
-      const Vec3fa v1 = vertex(index+1,itime);
-      const Vec3fa w0(xfmVector(space,v0),v0.w);
-      const Vec3fa w1(xfmVector(space,v1),v1.w);
+      const Vec3ff v0 = vertex(index+0,itime);
+      const Vec3ff v1 = vertex(index+1,itime);
+      const Vec3ff w0(xfmVector(space,(Vec3fa)v0),v0.w);
+      const Vec3ff w1(xfmVector(space,(Vec3fa)v1),v1.w);
       return bounds(w0,w1);
     }
 
@@ -157,8 +157,8 @@ namespace embree
       
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
       {
-        const Vec3fa v0 = vertex(index+0,itime); if (unlikely(!isvalid((vfloat4)v0))) return false;
-        const Vec3fa v1 = vertex(index+1,itime); if (unlikely(!isvalid((vfloat4)v1))) return false;
+        const Vec3ff v0 = vertex(index+0,itime); if (unlikely(!isvalid4(v0))) return false;
+        const Vec3ff v1 = vertex(index+1,itime); if (unlikely(!isvalid4(v1))) return false;
         if (min(v0.w,v1.w) < 0.0f) return false;
       }
       return true;
@@ -210,10 +210,10 @@ namespace embree
 
   public:
     BufferView<unsigned int> segments;      //!< array of line segment indices
-    BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer
+    BufferView<Vec3ff> vertices0;           //!< fast access to first vertex buffer
     BufferView<Vec3fa> normals0;            //!< fast access to first normal buffer
     BufferView<char> flags;                 //!< start, end flag per segment
-    vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
+    vector<BufferView<Vec3ff>> vertices;    //!< vertex array for each timestep
     vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
     vector<BufferView<char>> vertexAttribs; //!< user buffers
     int tessellationRate;                   //!< tessellation rate for bezier curve

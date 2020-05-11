@@ -46,8 +46,8 @@ namespace embree
           vbool<M> valid = valid_i;
           vfloat<M> depth_scale = pre.depth_scale;
           LinearSpace3<Vec3vf<M>> ray_space = pre.ray_space;
-          Vec4vf<M> p0(xfmVector(ray_space,v0.xyz()-Vec3vf<M>(ray.org)), v0.w);
-          Vec4vf<M> p1(xfmVector(ray_space,v1.xyz()-Vec3vf<M>(ray.org)), v1.w);
+          Vec4vf<M> p0(xfmVector(ray_space,v0.xyz()-Vec3vf<M>((Vec3fa)ray.org)), v0.w);
+          Vec4vf<M> p1(xfmVector(ray_space,v1.xyz()-Vec3vf<M>((Vec3fa)ray.org)), v1.w);
           
           /* approximative intersection with cone */
           const Vec4vf<M> v = p1-p0;

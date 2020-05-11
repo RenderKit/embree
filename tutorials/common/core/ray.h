@@ -45,9 +45,9 @@
     __forceinline operator bool() const { return geomID != RTC_INVALID_GEOMETRY_ID; }
 
   public:
-    embree::Vec3fa org;       //!< Ray origin + tnear
+    embree::Vec3ff org;       //!< Ray origin + tnear
     //float tnear;              //!< Start of ray segment
-    embree::Vec3fa dir;        //!< Ray direction + tfar
+    embree::Vec3ff dir;        //!< Ray direction + tfar
     //float time;               //!< Time of this ray for motion blur.
     float tfar;               //!< End of ray segment
     unsigned int mask;        //!< used to mask out objects during traversal

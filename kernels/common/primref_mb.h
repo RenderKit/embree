@@ -19,7 +19,7 @@ namespace embree
     __forceinline PrimRefMB () {}
 
     __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, unsigned int geomID, unsigned int primID)
-      : lbounds(lbounds_i), time_range(time_range)
+      : lbounds((LBBox3fx)lbounds_i), time_range(time_range)
     {
       assert(activeTimeSegments > 0);
       lbounds.bounds0.lower.a = geomID;
@@ -29,7 +29,7 @@ namespace embree
     }
 
     __forceinline PrimRefMB (EmptyTy empty, const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
-      : lbounds(lbounds_i), time_range(time_range)
+      : lbounds((LBBox3fx)lbounds_i), time_range(time_range)
     {
       assert(activeTimeSegments > 0);
 #if defined(__X86_64__)
@@ -44,7 +44,7 @@ namespace embree
     }
     
     __forceinline PrimRefMB (const LBBox3fa& lbounds_i, unsigned int activeTimeSegments, BBox1f time_range, unsigned int totalTimeSegments, size_t id)
-      : lbounds(lbounds_i), time_range(time_range)
+      : lbounds((LBBox3fx)lbounds_i), time_range(time_range)
     {
       assert(activeTimeSegments > 0);
 #if defined(__X86_64__)
@@ -138,7 +138,7 @@ namespace embree
     }
 
   public:
-    LBBox3fa lbounds;
+    LBBox3fx lbounds;
     BBox1f time_range; // entire geometry time range
   };
 

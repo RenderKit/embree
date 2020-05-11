@@ -8,14 +8,15 @@
 namespace embree
 {  
   class __aligned(64) DenseGregoryPatch3fa
-  {    
+  {
+    typedef Vec3fa Vec3fa_4x4[4][4];
   public:
 
     __forceinline DenseGregoryPatch3fa (const GregoryPatch3fa& patch)
     {
       for (size_t y=0; y<4; y++)
 	for (size_t x=0; x<4; x++)
-	  matrix[y][x] = patch.v[y][x];
+	  matrix[y][x] = Vec3ff(patch.v[y][x], 0.0f);
       
       matrix[0][0].w = patch.f[0][0].x;
       matrix[0][1].w = patch.f[0][0].y;
@@ -49,13 +50,13 @@ namespace embree
     __forceinline Vec3fa eval(const float uu, const float vv) const
     {
       __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
-      return GregoryPatch3fa::eval(matrix,f_m,uu,vv);
+      return GregoryPatch3fa::eval(*(Vec3fa_4x4*)&matrix,f_m,uu,vv);
     }
 
     __forceinline Vec3fa normal(const float uu, const float vv) const
     {
       __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
-      return GregoryPatch3fa::normal(matrix,f_m,uu,vv);
+      return GregoryPatch3fa::normal(*(Vec3fa_4x4*)&matrix,f_m,uu,vv);
     }
 
     template<class T>
@@ -66,7 +67,7 @@ namespace embree
       f_m[0][1] = Vec3<T>( matrix[1][0].w, matrix[1][1].w, matrix[1][2].w );
       f_m[1][1] = Vec3<T>( matrix[2][0].w, matrix[2][1].w, matrix[2][2].w );
       f_m[1][0] = Vec3<T>( matrix[3][0].w, matrix[3][1].w, matrix[3][2].w );
-      return GregoryPatch3fa::eval_t(matrix,f_m,uu,vv);
+      return GregoryPatch3fa::eval_t(*(Vec3fa_4x4*)&matrix,f_m,uu,vv);
     }
     
     template<class T>
@@ -77,7 +78,7 @@ namespace embree
       f_m[0][1] = Vec3<T>( matrix[1][0].w, matrix[1][1].w, matrix[1][2].w );
       f_m[1][1] = Vec3<T>( matrix[2][0].w, matrix[2][1].w, matrix[2][2].w );
       f_m[1][0] = Vec3<T>( matrix[3][0].w, matrix[3][1].w, matrix[3][2].w );
-      return GregoryPatch3fa::normal_t(matrix,f_m,uu,vv);
+      return GregoryPatch3fa::normal_t(*(Vec3fa_4x4*)&matrix,f_m,uu,vv);
     }
 
     __forceinline void eval(const float u, const float v, 
@@ -86,16 +87,16 @@ namespace embree
     {
       __aligned(64) Vec3fa f_m[2][2]; extract_f_m(f_m);
       if (P) {
-        *P    = GregoryPatch3fa::eval(matrix,f_m,u,v); 
+        *P    = GregoryPatch3fa::eval(*(Vec3fa_4x4*)&matrix,f_m,u,v); 
       }
       if (dPdu) {
-        assert(dPdu); *dPdu = GregoryPatch3fa::eval_du(matrix,f_m,u,v)*dscale; 
-        assert(dPdv); *dPdv = GregoryPatch3fa::eval_dv(matrix,f_m,u,v)*dscale; 
+        assert(dPdu); *dPdu = GregoryPatch3fa::eval_du(*(Vec3fa_4x4*)&matrix,f_m,u,v)*dscale; 
+        assert(dPdv); *dPdv = GregoryPatch3fa::eval_dv(*(Vec3fa_4x4*)&matrix,f_m,u,v)*dscale; 
       }
       if (ddPdudu) {
-        assert(ddPdudu); *ddPdudu = GregoryPatch3fa::eval_dudu(matrix,f_m,u,v)*sqr(dscale); 
-        assert(ddPdvdv); *ddPdvdv = GregoryPatch3fa::eval_dvdv(matrix,f_m,u,v)*sqr(dscale); 
-        assert(ddPdudv); *ddPdudv = GregoryPatch3fa::eval_dudv(matrix,f_m,u,v)*sqr(dscale); 
+        assert(ddPdudu); *ddPdudu = GregoryPatch3fa::eval_dudu(*(Vec3fa_4x4*)&matrix,f_m,u,v)*sqr(dscale); 
+        assert(ddPdvdv); *ddPdvdv = GregoryPatch3fa::eval_dvdv(*(Vec3fa_4x4*)&matrix,f_m,u,v)*sqr(dscale); 
+        assert(ddPdudv); *ddPdudv = GregoryPatch3fa::eval_dudv(*(Vec3fa_4x4*)&matrix,f_m,u,v)*sqr(dscale); 
       }
     }
 
@@ -107,6 +108,6 @@ namespace embree
     }
 
   private:
-    Vec3fa matrix[4][4]; // f_p/m points are stored in 4th component
+    Vec3ff matrix[4][4]; // f_p/m points are stored in 4th component
   };
 }

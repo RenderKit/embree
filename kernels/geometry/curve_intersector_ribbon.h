@@ -14,13 +14,13 @@ namespace embree
 {
   namespace isa
   {
-    template<typename NativeCurve3fa, int M>
+    template<typename NativeCurve3ff, int M>
     struct RibbonHit
     {
       __forceinline RibbonHit() {}
 
       __forceinline RibbonHit(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const int i, const int N,
-                              const NativeCurve3fa& curve3D)
+                              const NativeCurve3ff& curve3D)
         : U(U), V(V), T(T), i(i), N(N), curve3D(curve3D), valid(valid) {}
       
       __forceinline void finalize() 
@@ -41,7 +41,7 @@ namespace embree
       vfloat<M> V;
       vfloat<M> T;
       int i, N;
-      NativeCurve3fa curve3D;
+      NativeCurve3ff curve3D;
       
     public:
       vbool<M> valid;
@@ -65,14 +65,14 @@ namespace embree
       return d.first <= r*r*d.second;
     }
 
-    template<typename NativeCurve3fa, typename Epilog>
+    template<typename NativeCurve3ff, typename Epilog>
     __forceinline bool intersect_ribbon(const Vec3fa& ray_org, const Vec3fa& ray_dir, const float ray_tnear, const float& ray_tfar,
                                         const LinearSpace3fa& ray_space, const float& depth_scale,
-                                        const NativeCurve3fa& curve3D, const int N,
+                                        const NativeCurve3ff& curve3D, const int N,
                                         const Epilog& epilog)
     {
       /* transform control points into ray space */
-      const NativeCurve3fa curve2D = curve3D.xfm_pr(ray_space,ray_org);
+      const NativeCurve3ff curve2D = curve3D.xfm_pr(ray_space,ray_org);
       float eps = 4.0f*float(ulp)*reduce_max(max(abs(curve2D.v0),abs(curve2D.v1),abs(curve2D.v2),abs(curve2D.v3)));
       
       /* evaluate the bezier curve */
@@ -111,7 +111,7 @@ namespace embree
           if (any(valid0))
           {
             vv = madd(2.0f,vv,vfloatx(-1.0f));
-            RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,vt,0,N,curve3D);
+            RibbonHit<NativeCurve3ff,VSIZEX> bhit(valid0,vu,vv,vt,0,N,curve3D);
             ishit |= epilog(bhit.valid,bhit);
           }
         }
@@ -156,7 +156,7 @@ namespace embree
             if (any(valid0))
             {
               vv = madd(2.0f,vv,vfloatx(-1.0f));
-              RibbonHit<NativeCurve3fa,VSIZEX> bhit(valid0,vu,vv,vt,i,N,curve3D);
+              RibbonHit<NativeCurve3ff,VSIZEX> bhit(valid0,vu,vv,vt,i,N,curve3D);
               ishit |= epilog(bhit.valid,bhit);
             }
           }
@@ -165,38 +165,42 @@ namespace embree
       return ishit;
     }
         
-    template<typename NativeCurve3fa>
+    template<template<typename Ty> class NativeCurve>
     struct RibbonCurve1Intersector1
     {
+      typedef NativeCurve<Vec3ff> NativeCurve3ff;
+      
       template<typename GeometryT, typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
                                    const GeometryT* geom, const unsigned int primID,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                    const Epilog& epilog)
       {
         const int N = geom->tessellationRate;
-        const NativeCurve3fa curve(v0,v1,v2,v3);
-        return intersect_ribbon<NativeCurve3fa>(ray.org,ray.dir,ray.tnear(),ray.tfar,
+        const NativeCurve3ff curve(v0,v1,v2,v3);
+        return intersect_ribbon<NativeCurve3ff>(ray.org,ray.dir,ray.tnear(),ray.tfar,
                                                 pre.ray_space,pre.depth_scale,
                                                 curve,N,
                                                 epilog);
       }
     };
     
-    template<typename NativeCurve3fa, int K>
+    template<template<typename Ty> class NativeCurve, int K>
     struct RibbonCurve1IntersectorK
     {
+      typedef NativeCurve<Vec3ff> NativeCurve3ff;
+      
       template<typename GeometryT, typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
                                    const GeometryT* geom, const unsigned int primID,
-                                   const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
+                                   const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                    const Epilog& epilog)
       {
         const int N = geom->tessellationRate;
-        const NativeCurve3fa curve(v0,v1,v2,v3);
+        const NativeCurve3ff curve(v0,v1,v2,v3);
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
-        return intersect_ribbon<NativeCurve3fa>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
+        return intersect_ribbon<NativeCurve3ff>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
                                                 pre.ray_space[k],pre.depth_scale[k],
                                                 curve,N,
                                                 epilog);

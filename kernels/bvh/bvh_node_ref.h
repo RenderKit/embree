@@ -18,10 +18,11 @@ namespace embree
   struct BVHNodeRecord
   {
     __forceinline BVHNodeRecord() {}
-    __forceinline BVHNodeRecord(NodeRef ref, const BBox3fa& bounds) : ref(ref), bounds(bounds) {}
+    __forceinline BVHNodeRecord(NodeRef ref, const BBox3fa& bounds) : ref(ref), bounds((BBox3fx)bounds) {}
+    __forceinline BVHNodeRecord(NodeRef ref, const BBox3fx& bounds) : ref(ref), bounds(bounds) {}
 
     NodeRef ref;
-    BBox3fa bounds;
+    BBox3fx bounds;
   };
 
   template<typename NodeRef>
