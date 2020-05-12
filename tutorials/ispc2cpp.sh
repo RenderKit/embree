@@ -78,9 +78,9 @@ sed -i.backup 's/atomic_compare_exchange_global/atomic_cmpxchg/g' $2
 sed -i.backup 's/memory_barrier/__memory_barrier/g' $2
 
 # math library
-sed -i.backup  's/Vec3f\([^a]\)/Vec3fa\1/g' $2
-sed -i.backup 's/LinearSpace3f\([^a]\)/LinearSpace3fa\1/g' $2
-sed -i.backup 's/AffineSpace3f\([^a]\)/AffineSpace3fa\1/g' $2
+sed -i.backup  's/Vec3f\([^af_]\)/Vec3fa\1/g' $2
+sed -i.backup 's/LinearSpace3f\([^af]\)/LinearSpace3fa\1/g' $2
+sed -i.backup 's/AffineSpace3f\([^af]\)/AffineSpace3fa\1/g' $2
 
 sed -i.backup  's/ = make_Ray//g' $2
 sed -i.backup 's/make_LinearSpace3fa_scale/LinearSpace3fa::scale/g' $2
@@ -100,13 +100,16 @@ sed -i.backup  's/one_over_two_pi/float(one_over_two_pi)/g' $2
 sed -i.backup  's/one_over_four_pi/float(one_over_four_pi)/g' $2
 sed -i.backup  's/(two_pi/(float(two_pi)/g' $2
 sed -i.backup  's/[^_(]two_pi/float(two_pi)/g' $2
+sed -i.backup  's/make_Vec3f_/Vec3ff/g' $2
+sed -i.backup  's/make_Vec3ff/Vec3ff/g' $2
+sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Vec2f/Vec2f/g' $2
 sed -i.backup  's/make_Vec2i/Vec2i/g' $2
 sed -i.backup  's/make_Vec3f/Vec3f/g' $2
-sed -i.backup  's/make_Vec3fa/Vec3fa/g' $2
 sed -i.backup  's/make_Vec4f/Vec4f/g' $2
 #sed -i.backup  's/make_Sample3f/Sample3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2
+sed -i.backup  's/Vec3f_\([^af]\)/Vec3ff\1/g' $2
 
 sed -i.backup  's/make_Quaternion3f/Quaternion3f/g' $2
 sed -i.backup  's/make_AffineSpace3f/AffineSpace3f/g' $2

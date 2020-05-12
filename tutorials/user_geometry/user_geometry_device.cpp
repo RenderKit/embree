@@ -120,8 +120,8 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)
   const Vec3ff ray_dir = ray->dir;
   const float ray_tnear = ray->tnear();
   const float ray_tfar  = ray->tfar;
-  ray->org = (Vec3ff) xfmPoint (instance->world2local,ray_org);
-  ray->dir = (Vec3ff) xfmVector(instance->world2local,ray_dir);
+  ray->org = Vec3ff(xfmPoint (instance->world2local,ray_org));
+  ray->dir = Vec3ff(xfmVector(instance->world2local,ray_dir));
   ray->tnear() = ray_tnear;
   ray->tfar  = ray_tfar;
   pushInstanceId(context, instance->userID);
@@ -149,8 +149,8 @@ void instanceOccludedFunc(const RTCOccludedFunctionNArguments* args)
   const Vec3ff ray_dir = ray->dir;
   const float ray_tnear = ray->tnear();
   const float ray_tfar  = ray->tfar;
-  ray->org    = (Vec3ff) xfmPoint (instance->world2local,ray_org);
-  ray->dir    = (Vec3ff) xfmVector(instance->world2local,ray_dir);
+  ray->org    = Vec3ff(xfmPoint (instance->world2local,ray_org));
+  ray->dir    = Vec3ff(xfmVector(instance->world2local,ray_dir));
   ray->tnear()  = ray_tnear;
   ray->tfar   = ray_tfar;
   pushInstanceId(context, instance->userID);
@@ -193,8 +193,8 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
     invalidateRay(ray);
     const Vec3fa ray_org = Vec3fa(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
-    ray.org = (Vec3ff) xfmPoint (instance->world2local,ray_org);
-    ray.dir = (Vec3ff) xfmVector(instance->world2local,ray_dir);
+    ray.org = Vec3ff(xfmPoint (instance->world2local,ray_org));
+    ray.dir = Vec3ff(xfmVector(instance->world2local,ray_dir));
     ray.tnear() = RTCRayN_tnear(rays,N,ui);
     ray.tfar  = RTCRayN_tfar(rays,N,ui);
     ray.time()  = RTCRayN_time(rays,N,ui);
@@ -241,8 +241,8 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
     invalidateRay(ray);
     const Vec3fa ray_org = Vec3fa(RTCRayN_org_x(rays,N,ui),RTCRayN_org_y(rays,N,ui),RTCRayN_org_z(rays,N,ui));
     const Vec3fa ray_dir = Vec3fa(RTCRayN_dir_x(rays,N,ui),RTCRayN_dir_y(rays,N,ui),RTCRayN_dir_z(rays,N,ui));
-    ray.org = (Vec3ff) xfmPoint (instance->world2local,ray_org);
-    ray.dir = (Vec3ff) xfmVector(instance->world2local,ray_dir);
+    ray.org = Vec3ff(xfmPoint (instance->world2local,ray_org));
+    ray.dir = Vec3ff(xfmVector(instance->world2local,ray_dir));
     ray.tnear() = RTCRayN_tnear(rays,N,ui);
     ray.tfar = RTCRayN_tfar(rays,N,ui);
     ray.time()  = RTCRayN_time(rays,N,ui);

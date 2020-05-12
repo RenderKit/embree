@@ -493,14 +493,10 @@ void createGridGeometry (GridMesh& gmesh)
           int index = grid.startVertexID + y*grid.strideY + x*grid.strideX;
           Vec3fa Ng = gmesh.normals[index];
 
-          nvertices[4*index+0] = Vec3ff(gmesh.vertices[index], 0.0f);
-          nvertices[4*index+1] = Vec3ff(gmesh.vertices[index], 0.0f);
-          nvertices[4*index+2] = Vec3ff(gmesh.vertices[index]+0.01f*Vec3fa(Ng), 0.0f);
-          nvertices[4*index+3] = Vec3ff(gmesh.vertices[index]+0.01f*Vec3fa(Ng), 0.0f);
-          nvertices[4*index+0].w = 0.0001f;
-          nvertices[4*index+1].w = 0.0001f;
-          nvertices[4*index+2].w = 0.0001f;
-          nvertices[4*index+3].w = 0.0001f;
+          nvertices[4*index+0] = Vec3ff(gmesh.vertices[index], 0.0001f);
+          nvertices[4*index+1] = Vec3ff(gmesh.vertices[index], 0.0001f);
+          nvertices[4*index+2] = Vec3ff(gmesh.vertices[index]+0.01f*Vec3fa(Ng), 0.0001f);
+          nvertices[4*index+3] = Vec3ff(gmesh.vertices[index]+0.01f*Vec3fa(Ng), 0.0001f);
           curves[index] = 4*index;
         }
       }

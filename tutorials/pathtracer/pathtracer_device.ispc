@@ -373,7 +373,7 @@ inline float AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This
 
 /*! Samples the distribution. \param s is the sample location
  *  provided by the caller. */
-inline Vec3fa AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const float sx, const float sy)
+inline Vec3ff AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const float sx, const float sy)
 {
   const float phi = two_pi*sx;
   const float sinPhi0 = sqrtf(This->nx+1)*sinf(phi);
@@ -387,7 +387,7 @@ inline Vec3fa AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform T
   const float pdf = This->norm1*powf(cosTheta,n);
   const Vec3f h = make_Vec3f(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
   const Vec3f wh = h.x*This->dx + h.y*This->dy + h.z*This->dz;
-  return make_Vec3fa(wh,pdf);
+  return make_Vec3ff(wh,pdf);
 }
 
 inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, const Vec3f& wi)
@@ -411,7 +411,7 @@ inline Vec3f AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform Th
 {
   //wi = Vec3f(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
   //wi = Vec3f(neg(wo),1.0f); return Kt;
-  const Vec3fa wh = AnisotropicBlinn__sample(This,sx,sy);
+  const Vec3ff wh = AnisotropicBlinn__sample(This,sx,sy);
   //if (dot(wo,wh) < 0.0f) return Vec3f(0.0f,0.0f);
 
   /* reflection */
@@ -853,7 +853,7 @@ unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args
 unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args);
 
 /* accumulation buffer */
-uniform Vec3fa* uniform g_accu = NULL;
+uniform Vec3ff* uniform g_accu = NULL;
 uniform unsigned int g_accu_width = 0;
 uniform unsigned int g_accu_height = 0;
 uniform unsigned int g_accu_count = 0;
@@ -1713,7 +1713,7 @@ void renderTileStandard(uniform int taskIndex,
     Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
-    Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
+    Vec3ff accu_color = g_accu[y*width+x] + make_Vec3ff(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
     float f = rcp(max(0.001f,accu_color.w));
     unsigned int r = (unsigned int) (255.01f * clamp(accu_color.x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.01f * clamp(accu_color.y*f,0.0f,1.0f));
@@ -1832,11 +1832,11 @@ export void device_render (uniform int* uniform pixels,
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     delete[] g_accu;
-    g_accu = uniform new uniform Vec3fa[width*height];
+    g_accu = uniform new uniform Vec3ff[width*height];
     g_accu_width = width;
     g_accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_accu[i] = make_Vec3ff(0.0f);
   }
 
   /* reset accumulator */
@@ -1850,7 +1850,7 @@ export void device_render (uniform int* uniform pixels,
   {
     g_accu_count=0;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_accu[i] = make_Vec3ff(0.0f);
 
     if (g_subdiv_mode) {
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);

@@ -37,14 +37,6 @@ void occlusionFilter(const RTCFilterFunctionNArguments* args);
 extern "C" ISPCScene* g_ispc_scene;
 RTCScene g_scene = nullptr;
 
-/*! Uniform hemisphere sampling. Up direction is the z direction. */
-/*Vec3ff sampleSphere(const float u, const float v)
-{
-  const float phi = 2.0f*(float)pi * u;
-  const float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
-  return Vec3ff(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta, float(one_over_four_pi));
-  }*/
-
 void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
 {
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -65,7 +57,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT4,hair->positions[t],0,sizeof(Vertex),hair->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
-  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(unsigned char),hair->numHairs);
+  rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(char),hair->numHairs);
   rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
   rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);

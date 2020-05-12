@@ -7,7 +7,7 @@
 #include "../common/tutorial/optics.isph"
 
 /* accumulation buffer */
-uniform Vec3fa* uniform g_accu = NULL;
+uniform Vec3ff* uniform g_accu = NULL;
 uniform unsigned int g_accu_width = 0;
 uniform unsigned int g_accu_height = 0;
 uniform unsigned int g_accu_count = 0;
@@ -34,14 +34,6 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args);
 /* scene data */
 extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
-
-/*! Uniform hemisphere sampling. Up direction is the z direction. */
-Vec3fa sampleSphere(const float u, const float v)
-{
-  const float phi = 2.0f*(float)pi * u;
-  const float cosTheta = 1.0f - 2.0f * v, sinTheta = 2.0f * sqrt(v * (1.0f - v));
-  return make_Vec3fa(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta, one_over_four_pi);
-}
 
 void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
 {
@@ -142,7 +134,7 @@ inline float AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This
 
 /*! Samples the distribution. \param s is the sample location
  *  provided by the caller. */
-inline Vec3fa AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const float sx, const float sy)
+inline Vec3ff AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const float sx, const float sy)
 {
   const float phi = two_pi*sx;
   const float sinPhi0 = sqrtf(This->nx+1)*sinf(phi);
@@ -156,7 +148,7 @@ inline Vec3fa AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform T
   const float pdf = This->norm1*powf(cosTheta,n);
   const Vec3f h = make_Vec3f(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
   const Vec3f wh = h.x*This->dx + h.y*This->dy + h.z*This->dz;
-  return make_Vec3fa(wh,pdf);
+  return make_Vec3ff(wh,pdf);
 }
 
 inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, const uniform Vec3f& wi)
@@ -176,23 +168,23 @@ inline Vec3f AnisotropicBlinn__eval(const varying AnisotropicBlinn* uniform This
   }
 }
 
-inline Vec3f AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, Vec3fa& wi, const float sx, const float sy, const float sz)
+inline Vec3f AnisotropicBlinn__sample(const varying AnisotropicBlinn* uniform This, const Vec3f& wo, Vec3ff& wi, const float sx, const float sy, const float sz)
 {
   //wi = Vec3f(reflect(normalize(wo),normalize(dz)),1.0f); return Kr;
   //wi = Vec3f(neg(wo),1.0f); return Kt;
-  const Vec3fa wh = AnisotropicBlinn__sample(This,sx,sy);
+  const Vec3ff wh = AnisotropicBlinn__sample(This,sx,sy);
   //if (dot(wo,wh) < 0.0f) return Vec3f(0.0f,0.0f);
 
   /* reflection */
   if (sz < This->side) {
-    wi = make_Vec3fa(reflect(wo,make_Vec3f(wh)),wh.w*This->side);
+    wi = make_Vec3ff(reflect(wo,make_Vec3f(wh)),wh.w*This->side);
     const float cosThetaI = dot(make_Vec3f(wi),This->dz);
     return This->Kr * AnisotropicBlinn__eval(This,make_Vec3f(wh)) * abs(cosThetaI);
   }
 
   /* transmission */
   else {
-    wi = make_Vec3fa(reflect(reflect(wo,make_Vec3f(wh)),This->dz),wh.w*(1-This->side));
+    wi = make_Vec3ff(reflect(reflect(wo,make_Vec3f(wh)),This->dz),wh.w*(1-This->side));
     const float cosThetaI = dot(make_Vec3f(wi),This->dz);
     return This->Kt * AnisotropicBlinn__eval(This,make_Vec3f(wh)) * abs(cosThetaI);
   }
@@ -341,7 +333,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
 #if 1
     /* sample BRDF */
-    Vec3fa wi;
+    Vec3ff wi;
     float ru = RandomSampler_get1D(sampler);
     float rv = RandomSampler_get1D(sampler);
     float rw = RandomSampler_get1D(sampler);
@@ -350,8 +342,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     /* calculate secondary ray and offset it out of the hair */
     float sign = dot(make_Vec3f(wi),brdf.dz) < 0.0f ? -1.0f : 1.0f;
-    ray.org = ray.org + ray.tfar*ray.dir + sign*eps*brdf.dz;
-    ray.dir = make_Vec3f(wi);
+    ray.org = make_Vec3f_(ray.org + ray.tfar*ray.dir + sign*eps*brdf.dz);
+    ray.dir = make_Vec3f_(wi);
     ray.tnear = 0.001f;
     ray.tfar = inf;
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -399,7 +391,7 @@ void renderTileStandard(uniform int taskIndex,
     Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
-    Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
+    Vec3ff accu_color = g_accu[y*width+x] + make_Vec3ff(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
     float f = rcp(max(0.001f,accu_color.w));
     unsigned int r = (unsigned int) (255.01f * clamp(accu_color.x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.01f * clamp(accu_color.y*f,0.0f,1.0f));
@@ -460,11 +452,11 @@ export void device_render (uniform int* uniform pixels,
 {
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
-    g_accu = uniform new uniform Vec3fa[width*height];
+    g_accu = uniform new uniform Vec3ff[width*height];
     g_accu_width = width;
     g_accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_accu[i] = make_Vec3ff(0.0f);
   }
 
   /* reset accumulator */
@@ -477,7 +469,7 @@ export void device_render (uniform int* uniform pixels,
   if (camera_changed) {
     g_accu_count=0;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_accu[i] = make_Vec3ff(0.0f);
   }
 }
 

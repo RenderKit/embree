@@ -164,8 +164,8 @@ Vec3f renderPixelEyeLight(const uniform DebugShaderData& data, float x, float y,
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -195,8 +195,8 @@ Vec3f renderPixelOcclusion(const uniform DebugShaderData& data, float x, float y
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -224,8 +224,8 @@ Vec3f renderPixelUV(const uniform DebugShaderData& data, float x, float y, const
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -251,8 +251,8 @@ Vec3f renderPixelTexCoords(const uniform DebugShaderData& data, float x, float y
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -293,8 +293,8 @@ Vec3f renderPixelNg(const uniform DebugShaderData& data, float x, float y, const
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -330,8 +330,8 @@ Vec3f renderPixelGeomID(const uniform DebugShaderData& data, float x, float y, c
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -357,8 +357,8 @@ Vec3f renderPixelGeomIDPrimID(const uniform DebugShaderData& data, float x, floa
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -384,8 +384,8 @@ Vec3f renderPixelCycles(const uniform DebugShaderData& data, float x, float y, c
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -412,8 +412,8 @@ Vec3f renderPixelAmbientOcclusion(const uniform DebugShaderData& data, float x, 
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -449,8 +449,8 @@ Vec3f renderPixelAmbientOcclusion(const uniform DebugShaderData& data, float x, 
 
     /* initialize shadow ray */
     Ray shadow;
-    shadow.org = hitPos;
-    shadow.dir = dir.v;
+    shadow.org = make_Vec3f_(hitPos);
+    shadow.dir = make_Vec3f_(dir.v);
     shadow.tnear = 0.001f;
     shadow.tfar = inf;
     shadow.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -482,8 +482,8 @@ Vec3f renderPixelDifferentials(const uniform DebugShaderData& data, float x, flo
 {
   /* initialize ray */
   Ray ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
@@ -569,8 +569,8 @@ export uniform bool device_pick(const uniform float x,
 {
   /* initialize ray */
   uniform Ray1 ray;
-  ray.org = make_Vec3f(camera.xfm.p);
-  ray.dir = make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = make_Vec3f_(camera.xfm.p);
+  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
