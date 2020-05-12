@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.10.1
+-   Supporting EMBREE_INCLUDE_DIRS and EMBREE_LIBRARY again in embree-config.cmake
+
 ### Embree 3.10.0
 -   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
     leaves to reduce memory consumption in compact mode by an additional 40% at about
