@@ -147,7 +147,6 @@ namespace embree
     public:
       BVH* bvh;
       std::vector<std::unique_ptr<RefBuilderBase>> builders_;
-      std::vector<BuilderState> builders;
       
     public:
       Scene* scene;

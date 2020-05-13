@@ -281,7 +281,7 @@ namespace embree
       for (size_t i=0; i<bvh->objects.size(); i++) 
         if (bvh->objects[i]) bvh->objects[i]->clear();
 
-      for (size_t i=0; i<builders.size(); i++) 
+      for (size_t i=0; i<builders_.size(); i++) 
 	      if (builders_[i]) builders_[i]->clear();
 
       refs.clear();
