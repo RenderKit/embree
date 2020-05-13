@@ -235,13 +235,13 @@ namespace embree
         
         /* intersect with inner cylinder */
         BBox<vfloatx> tc_inner;
-        vfloatx u_inner0; Vec3vfx Ng_inner0; vfloatx u_inner1; Vec3vfx Ng_inner1;
+        vfloatx u_inner0 = zero; Vec3vfx Ng_inner0 = zero; vfloatx u_inner1 = zero; Vec3vfx Ng_inner1 = zero;
         const vboolx valid_inner = cylinder_inner.intersect(org,dir,tc_inner,u_inner0,Ng_inner0,u_inner1,Ng_inner1);
         
         /* at the unstable area we subdivide deeper */
-        const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(Vec3fa(ray.dir))),normalize(Ng_inner0))) < 0.3f);
-        const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(normalize(Vec3fa(ray.dir))),normalize(Ng_inner1))) < 0.3f);
-        
+        const vboolx unstable0 = (!valid_inner) | (abs(dot(Vec3vfx(Vec3fa(ray.dir)),Ng_inner0)) < 0.3f);
+        const vboolx unstable1 = (!valid_inner) | (abs(dot(Vec3vfx(Vec3fa(ray.dir)),Ng_inner1)) < 0.3f);
+      
         /* subtract the inner interval from the current hit interval */
         BBox<vfloatx> tp0, tp1;
         subtract(tp,tc_inner,tp0,tp1);
@@ -253,6 +253,7 @@ namespace embree
         const vintx termDepth0 = select(unstable0,vintx(maxDepth+1),vintx(maxDepth));
         vboolx recursion_valid0 = valid0 & (depth < termDepth0);
         valid0 &= depth >= termDepth0;
+        
         while (any(valid0))
         {
           const size_t i = select_min(valid0,tp0.lower); clear(valid0,i);
