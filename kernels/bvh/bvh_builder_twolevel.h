@@ -121,16 +121,32 @@ namespace embree
       
     private:
 
-      class RefBuilderBase {};
+      class RefBuilderBase {
+      public:
+        virtual ~RefBuilderBase () {}
+        virtual void clear () = 0;
+      };
       class RefBuilderLarge : public RefBuilderBase {
-        BVH*         object_;
+      public:
+        
+        RefBuilderLarge (size_t objectID, BuilderState builder)
+        :
+          objectID_ (objectID)
+        , builder_ (builder)
+        {}
+
+        void clear () {
+          builder_.clear();
+        }
+
+      // private:
+        size_t       objectID_;
         BuilderState builder_;
       };
 
     public:
       BVH* bvh;
       std::vector<std::unique_ptr<RefBuilderBase>> builders_;
-      // std::vector<BVH*>& objects;
       std::vector<BuilderState> builders;
       
     public:

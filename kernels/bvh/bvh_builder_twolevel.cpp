@@ -50,7 +50,7 @@ namespace embree
       if (num < bvh->objects.size()) {
         parallel_for(num, bvh->objects.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
-              builders[i].clear();
+              builders_[i]->clear();
               delete bvh->objects[i]; bvh->objects[i] = nullptr;
             }
           });
@@ -76,7 +76,7 @@ namespace embree
 
       /* resize object array if scene got larger */
       if (bvh->objects.size()  < num) bvh->objects.resize(num);
-      if (builders.size() < num) builders.resize(num);
+      if (builders_.size() < num) builders_.resize(num);
       if (refs.size()     < num) refs.resize(num);
       nextRef.store(0);
       
@@ -95,15 +95,15 @@ namespace embree
           if (bvh->objects[objectID] == nullptr) {
             Builder* builder = nullptr;
             createMeshAccel(scene, unsigned(objectID),(AccelData*&)bvh->objects[objectID],builder);
-            builders[objectID] = BuilderState(builder,mesh->quality);
+            builders_[objectID].reset (new RefBuilderLarge(objectID, BuilderState(builder,mesh->quality)));
           }
 
           /* re-create when build quality changed */
-          else if (mesh->quality != builders[objectID].quality) {
+          else if (mesh->quality != static_cast<RefBuilderLarge*>(builders_[objectID].get())->builder_.quality) {
             Builder* builder = nullptr;
             delete bvh->objects[objectID]; 
             createMeshAccel(scene, unsigned(objectID),(AccelData*&)bvh->objects[objectID],builder);
-            builders[objectID] = BuilderState(builder,mesh->quality);
+            builders_[objectID].reset (new RefBuilderLarge(objectID, BuilderState(builder,mesh->quality)));
           }
         }
       });
@@ -118,8 +118,9 @@ namespace embree
           if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
             continue;
         
-          BVH*     object  = bvh->objects [objectID]; assert(object);
-          Ref<Builder>& builder = builders[objectID].builder; assert(builder);
+          auto refBuilder = static_cast<RefBuilderLarge*>(builders_[objectID].get());
+          BVH*     object  = bvh->objects [refBuilder->objectID_]; assert(object);
+          Ref<Builder>& builder = refBuilder->builder_.builder; assert(builder);
 
           /* build object if it got modified */
           if (scene->isGeometryModified(objectID))
@@ -270,7 +271,7 @@ namespace embree
     void BVHNBuilderTwoLevel<N,Mesh>::deleteGeometry(size_t geomID)
     {
       if (geomID >= bvh->objects.size()) return;
-      builders[geomID].clear();
+      if(builders_[geomID]) builders_[geomID]->clear();
       delete bvh->objects [geomID]; bvh->objects [geomID] = nullptr;
     }
 
@@ -281,7 +282,7 @@ namespace embree
         if (bvh->objects[i]) bvh->objects[i]->clear();
 
       for (size_t i=0; i<builders.size(); i++) 
-	      if (builders[i].builder) builders[i].builder->clear();
+	      if (builders_[i]) builders_[i]->clear();
 
       refs.clear();
     }
