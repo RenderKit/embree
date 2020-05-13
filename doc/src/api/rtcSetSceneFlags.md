@@ -30,8 +30,8 @@ flags are:
   by rays shooting through edges of neighboring primitives.
 
 + `RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION`: Enables support for a
-  filter function inside the intersection context. See Section
-  [rtcInitIntersectContext] for more details.
+  filter function inside the intersection context for this scene.
+  See Section [rtcInitIntersectContext] for more details.
 
 Multiple flags can be enabled using an `or` operation,
 e.g. `RTC_SCENE_FLAG_COMPACT | RTC_SCENE_FLAG_ROBUST`.
