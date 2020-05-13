@@ -128,7 +128,6 @@ Embree is tested using the following compilers under Windows:
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update\ 1)
-  - Visual Studio 2013 (Update\ 5)
   - Intel® Compiler 2019 Update 6
   - Intel® Compiler 2017 Update 8
   - LLVM Clang 9.0.0
@@ -151,17 +150,15 @@ found when executing your Embree applications, e.g. by putting the path
 to these libraries into your `PATH` environment variable.
 
 Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
-straightforward parallelization of an entire renderer. When
-installing ISPC, make sure to download an ISPC version from
+straightforward parallelization of an entire renderer. When installing
+ISPC, make sure to download an ISPC version from
 [ispc.github.io](https://ispc.github.io/downloads.html) that is
-compatible with your Visual Studio version. There are two ISPC
-versions, one for Visual Studio 2013 and earlier, and one for Visual
-Studio 2015 and later. When using the wrong ISPC version you will get
-link errors. After installation, put the path to `ispc.exe`
-permanently into your `PATH` environment variable or you need to
-correctly set the `ISPC_EXECUTABLE` variable during CMake
-configuration. We have tested ISPC version 1.9.1. If you do not want
-to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in CMake.
+compatible with your Visual Studio version. After installation, put
+the path to `ispc.exe` permanently into your `PATH` environment
+variable or you need to correctly set the `ISPC_EXECUTABLE` variable
+during CMake configuration. We have tested ISPC version 1.9.1. If you
+do not want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
+CMake.
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.11 or higher). Note that you need a native Windows CMake

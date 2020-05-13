@@ -10,8 +10,8 @@ continuous-macosx-x64-Debug-ICC2020.1-ISPC1.12.0-SSE2-TBB2020.2:
   tags:   [mac]
   only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
+continuous-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2019.2:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
   tags:   [win10, v120]
   only:   [pushes]
 
@@ -88,13 +88,13 @@ continuous-linux-x64-PROTEX:
 # Intensive Nightly Tests
 ####################################################################
 
-nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-SSE2-INT:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:2"
+nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-SSE2-INT:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:INT intensity:2"
   tags:   [win10, v120]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-V120-ISPC1.9.2-AVX-TBB2019.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V120 ispc:ispc1.9.2 isa:AVX tasking:TBB2019.2 intensity:4"
+nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-AVX-TBB2019.2:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:AVX tasking:TBB2019.2 intensity:4"
   tags:   [win10, v120, avx]
   only:   [schedules]
 
