@@ -131,7 +131,7 @@ INSTALL(FILES "${PROJECT_BINARY_DIR}/embree-config-version.cmake" DESTINATION ${
 # CPack specific stuff
 ##############################################################
 
-SET(CPACK_PACKAGE_NAME "Embree Ray Tracing Kernels")
+SET(CPACK_PACKAGE_NAME "Intel(R) Embree Ray Tracing Kernels")
 SET(CPACK_PACKAGE_FILE_NAME "embree-${EMBREE_VERSION}")
 #SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/embree-doc/images/icon.png)
 #SET(CPACK_PACKAGE_RELOCATABLE TRUE)
@@ -140,7 +140,7 @@ SET(CPACK_STRIP_FILES TRUE)
 SET(CPACK_PACKAGE_VERSION_MAJOR ${EMBREE_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${EMBREE_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${EMBREE_VERSION_PATCH})
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Embree: High Performance Ray Tracing Kernels")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Intel(R) Embree implements high performance ray tracing kernels including accelertion structure construction and traversal.")
 SET(CPACK_PACKAGE_VENDOR "Intel Corporation")
 SET(CPACK_PACKAGE_CONTACT embree_support@intel.com)
 
