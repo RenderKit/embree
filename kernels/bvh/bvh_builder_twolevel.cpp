@@ -23,7 +23,7 @@ namespace embree
   {
     template<int N, typename Mesh>
     BVHNBuilderTwoLevel<N,Mesh>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel, const size_t singleThreadThreshold)
-      : bvh(bvh), objects(bvh->objects), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold(singleThreadThreshold) {}
+      : bvh(bvh), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold(singleThreadThreshold) {}
     
     template<int N, typename Mesh>
     BVHNBuilderTwoLevel<N,Mesh>::~BVHNBuilderTwoLevel () {
@@ -36,13 +36,22 @@ namespace embree
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::build()
     {
+
+      // num needs to be set to number of scene->size minus the number of small meshes
+      // need geomID's for small right?
+
+      // actually lets pack builders and objects together since it's one system - then that will be the build specialization for large
+      // with a small specialization that uses the allocator to pack objects into the noderef (or N noderefs for user geometries)
+
+      // first thing is refactor objects and builders code into it's own object and rewrite in those terms
+
       /* delete some objects */
       size_t num = scene->size();
-      if (num < objects.size()) {
-        parallel_for(num, objects.size(), [&] (const range<size_t>& r) {
+      if (num < bvh->objects.size()) {
+        parallel_for(num, bvh->objects.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
               builders[i].clear();
-              delete objects[i]; objects[i] = nullptr;
+              delete bvh->objects[i]; bvh->objects[i] = nullptr;
             }
           });
       }
@@ -66,7 +75,7 @@ namespace embree
       double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
 
       /* resize object array if scene got larger */
-      if (objects.size()  < num) objects.resize(num);
+      if (bvh->objects.size()  < num) bvh->objects.resize(num);
       if (builders.size() < num) builders.resize(num);
       if (refs.size()     < num) refs.resize(num);
       nextRef.store(0);
@@ -83,17 +92,17 @@ namespace embree
             continue;
           
           /* create BVH and builder for new meshes */
-          if (objects[objectID] == nullptr) {
+          if (bvh->objects[objectID] == nullptr) {
             Builder* builder = nullptr;
-            createMeshAccel(scene, unsigned(objectID),(AccelData*&)objects[objectID],builder);
+            createMeshAccel(scene, unsigned(objectID),(AccelData*&)bvh->objects[objectID],builder);
             builders[objectID] = BuilderState(builder,mesh->quality);
           }
 
           /* re-create when build quality changed */
           else if (mesh->quality != builders[objectID].quality) {
             Builder* builder = nullptr;
-            delete objects[objectID]; 
-            createMeshAccel(scene, unsigned(objectID),(AccelData*&)objects[objectID],builder);
+            delete bvh->objects[objectID]; 
+            createMeshAccel(scene, unsigned(objectID),(AccelData*&)bvh->objects[objectID],builder);
             builders[objectID] = BuilderState(builder,mesh->quality);
           }
         }
@@ -109,7 +118,7 @@ namespace embree
           if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
             continue;
         
-          BVH*     object  = objects [objectID]; assert(object);
+          BVH*     object  = bvh->objects [objectID]; assert(object);
           Ref<Builder>& builder = builders[objectID].builder; assert(builder);
 
           /* build object if it got modified */
@@ -260,19 +269,19 @@ namespace embree
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::deleteGeometry(size_t geomID)
     {
-      if (geomID >= objects.size()) return;
+      if (geomID >= bvh->objects.size()) return;
       builders[geomID].clear();
-      delete objects [geomID]; objects [geomID] = nullptr;
+      delete bvh->objects [geomID]; bvh->objects [geomID] = nullptr;
     }
 
     template<int N, typename Mesh>
     void BVHNBuilderTwoLevel<N,Mesh>::clear()
     {
-      for (size_t i=0; i<objects.size(); i++) 
-        if (objects[i]) objects[i]->clear();
+      for (size_t i=0; i<bvh->objects.size(); i++) 
+        if (bvh->objects[i]) bvh->objects[i]->clear();
 
       for (size_t i=0; i<builders.size(); i++) 
-	if (builders[i].builder) builders[i].builder->clear();
+	      if (builders[i].builder) builders[i].builder->clear();
 
       refs.clear();
     }
