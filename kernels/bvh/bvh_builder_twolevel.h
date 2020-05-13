@@ -144,6 +144,9 @@ namespace embree
         BuilderState builder_;
       };
 
+      void setupBuildRefBuilder (size_t objectID);
+      void addBuildRefs (size_t objectID);
+
     public:
       BVH* bvh;
       std::vector<std::unique_ptr<RefBuilderBase>> builders_;
