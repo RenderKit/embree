@@ -1,12 +1,10 @@
 Downloading Embree
 ------------------
 
-For Windows we provide Embree as MSI installer and ZIP files. For the
-ZIP files we have a version where Embree is linked against the Visual
-Studio 2013 (VC12) runtime and Visual Studio 2015/2017 (VC14) runtime:
+For Windows we provide Embree as MSI installer and ZIP files linked
+against the Visual Studio 2015/2017 (VC14) runtime:
 
 [embree-<EMBREE_VERSION>-x64.vc14.msi](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.msi)  
-[embree-<EMBREE_VERSION>.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc12.windows.zip)  
 [embree-<EMBREE_VERSION>.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.windows.zip)  
 
 For Linux we provide Embree as a `tar.gz` file:
