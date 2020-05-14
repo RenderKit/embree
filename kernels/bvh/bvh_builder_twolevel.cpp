@@ -76,7 +76,17 @@ namespace embree
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++) {
-          setupBuildRefBuilder (objectID);
+          Mesh* mesh = scene->getSafe<Mesh>(objectID);
+      
+          /* ignore meshes we do not support */
+          if (mesh == nullptr || mesh->numTimeSteps != 1)
+            return;
+          
+          if (mesh->size() > N) {
+            setupLargeBuildRefBuilder (objectID, mesh);
+          } else {
+            setupLargeBuildRefBuilder (objectID, mesh);
+          }
         }
       });
 
@@ -84,7 +94,12 @@ namespace embree
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++) {
-          addBuildRefs(objectID);
+          /* ignore if no triangle mesh or not enabled */
+          Mesh* mesh = scene->getSafe<Mesh>(objectID);
+          if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
+            return;
+
+          builders_[objectID]->attachBuildRefs (this);
         }
       });
 
@@ -278,14 +293,8 @@ namespace embree
     }
 
     template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::setupBuildRefBuilder (size_t objectID) {
-
-      Mesh* mesh = scene->getSafe<Mesh>(objectID);
+    void BVHNBuilderTwoLevel<N,Mesh>::setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh) {
       
-      /* ignore meshes we do not support */
-      if (mesh == nullptr || mesh->numTimeSteps != 1)
-        return;
-        
       /* create BVH and builder for new meshes */
       if (bvh->objects[objectID] == nullptr) {
         Builder* builder = nullptr;
@@ -294,37 +303,11 @@ namespace embree
       }
 
       /* re-create when build quality changed */
-      else if (mesh->quality != static_cast<RefBuilderLarge*>(builders_[objectID].get())->builder_.quality) {
+      else if (builders_[objectID]->meshQualityChanged (mesh->quality)) {
         Builder* builder = nullptr;
         delete bvh->objects[objectID]; 
         createMeshAccel(scene, unsigned(objectID),(AccelData*&)bvh->objects[objectID],builder);
         builders_[objectID].reset (new RefBuilderLarge(objectID, BuilderState(builder,mesh->quality)));
-      }
-    }
-
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::addBuildRefs (size_t objectID) {
-      /* ignore if no triangle mesh or not enabled */
-      Mesh* mesh = scene->getSafe<Mesh>(objectID);
-      if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
-        return;
-    
-      auto refBuilder = static_cast<RefBuilderLarge*>(builders_[objectID].get());
-      BVH*     object  = bvh->objects [refBuilder->objectID_]; assert(object);
-      Ref<Builder>& builder = refBuilder->builder_.builder; assert(builder);
-
-      /* build object if it got modified */
-      if (scene->isGeometryModified(objectID))
-        builder->build();
-
-      /* create build primitive */
-      if (!object->getBounds().empty())
-      {
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER
-        refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID,(unsigned int)mesh->size());
-#else
-        refs[nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
-#endif
       }
     }
 

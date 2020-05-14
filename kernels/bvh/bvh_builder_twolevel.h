@@ -125,6 +125,8 @@ namespace embree
       public:
         virtual ~RefBuilderBase () {}
         virtual void clear () = 0;
+        virtual void attachBuildRefs (BVHNBuilderTwoLevel* builder) = 0;
+        virtual bool meshQualityChanged (RTCBuildQuality currQuality) = 0;
       };
       class RefBuilderLarge : public RefBuilderBase {
       public:
@@ -139,13 +141,35 @@ namespace embree
           builder_.clear();
         }
 
-      // private:
+        void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
+          BVH*     object  = topBuilder->bvh->objects [objectID_]; assert(object);
+          Ref<Builder>& builder = builder_.builder; assert(builder);
+
+          /* build object if it got modified */
+          if (topBuilder->scene->isGeometryModified(objectID_))
+            builder->build();
+
+          /* create build primitive */
+          if (!object->getBounds().empty())
+          {
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID,(unsigned int)mesh->size());
+#else
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
+#endif
+          }
+        }
+
+        bool meshQualityChanged (RTCBuildQuality currQuality) {
+          return currQuality != builder_.quality;
+        }
+
+      private:
         size_t       objectID_;
         BuilderState builder_;
       };
 
-      void setupBuildRefBuilder (size_t objectID);
-      void addBuildRefs (size_t objectID);
+      void setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh);
 
     public:
       BVH* bvh;
