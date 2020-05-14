@@ -1,4 +1,4 @@
-% RTCRay(3) | Embree Ray Tracing Kernels 3
+% RTCFormat(3) | Embree Ray Tracing Kernels 3
 
 #### NAME
 
