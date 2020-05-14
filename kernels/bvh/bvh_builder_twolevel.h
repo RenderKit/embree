@@ -11,7 +11,7 @@ namespace embree
 {
   namespace isa
   {
-    template<int N, typename Mesh>
+    template<int N, typename Mesh, typename Primitive>
     class BVHNBuilderTwoLevel : public Builder
     {
       typedef BVHN<N> BVH;
@@ -128,6 +128,31 @@ namespace embree
         virtual void attachBuildRefs (BVHNBuilderTwoLevel* builder) = 0;
         virtual bool meshQualityChanged (RTCBuildQuality currQuality) = 0;
       };
+
+      class RefBuilderSmall : public RefBuilderBase {
+      public:
+
+        RefBuilderSmall (size_t objectID, size_t meshSize) 
+        :
+          objectID_ (objectID)
+        , meshSize_ (meshSize)
+        {}
+
+        void clear () {}
+
+        void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
+        
+        }
+
+        bool meshQualityChanged (RTCBuildQuality /*currQuality*/) {
+          return false;
+        }
+
+        private:
+          size_t  objectID_;
+          size_t  meshSize_;
+      };
+
       class RefBuilderLarge : public RefBuilderBase {
       public:
         
@@ -170,6 +195,7 @@ namespace embree
       };
 
       void setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh);
+      void setupSmallBuildRefBuilder (size_t objectID, Mesh const * const mesh);
 
     public:
       BVH* bvh;

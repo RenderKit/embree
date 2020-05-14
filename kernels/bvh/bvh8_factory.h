@@ -282,7 +282,9 @@ namespace embree
 
     // twolevel scene builders
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelTriangleMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelTriangle4MeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelTriangle4vMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
+    DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelTriangle4iMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
     DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
     DEFINE_ISA_FUNCTION(Builder*,BVH8BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createUserGeometryAccelTy);
  

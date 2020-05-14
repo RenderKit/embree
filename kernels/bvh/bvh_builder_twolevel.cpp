@@ -8,6 +8,13 @@
 #include "../common/scene_triangle_mesh.h"
 #include "../common/scene_quad_mesh.h"
 
+#include "../geometry/triangle.h"
+#include "../geometry/trianglev.h"
+#include "../geometry/trianglei.h"
+#include "../geometry/quadv.h"
+#include "../geometry/quadi.h"
+#include "../geometry/object.h"
+
 #define PROFILE 0
 
 /* new open/merge builder */
@@ -21,20 +28,20 @@ namespace embree
 {
   namespace isa
   {
-    template<int N, typename Mesh>
-    BVHNBuilderTwoLevel<N,Mesh>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel, const size_t singleThreadThreshold)
+    template<int N, typename Mesh, typename Primitive>
+    BVHNBuilderTwoLevel<N,Mesh,Primitive>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAccel, const size_t singleThreadThreshold)
       : bvh(bvh), scene(scene), createMeshAccel(createMeshAccel), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold(singleThreadThreshold) {}
     
-    template<int N, typename Mesh>
-    BVHNBuilderTwoLevel<N,Mesh>::~BVHNBuilderTwoLevel () {
+    template<int N, typename Mesh, typename Primitive>
+    BVHNBuilderTwoLevel<N,Mesh,Primitive>::~BVHNBuilderTwoLevel () {
     }
 
     // ===========================================================================
     // ===========================================================================
     // ===========================================================================
 
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::build()
+    template<int N, typename Mesh, typename Primitive>
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::build()
     {
 
       /* delete some objects */
@@ -232,16 +239,16 @@ namespace embree
 
     }
     
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::deleteGeometry(size_t geomID)
+    template<int N, typename Mesh, typename Primitive>
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::deleteGeometry(size_t geomID)
     {
       if (geomID >= bvh->objects.size()) return;
       if(builders_[geomID]) builders_[geomID]->clear();
       delete bvh->objects [geomID]; bvh->objects [geomID] = nullptr;
     }
 
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::clear()
+    template<int N, typename Mesh, typename Primitive>
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::clear()
     {
       for (size_t i=0; i<bvh->objects.size(); i++) 
         if (bvh->objects[i]) bvh->objects[i]->clear();
@@ -252,8 +259,8 @@ namespace embree
       refs.clear();
     }
 
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::open_sequential(const size_t extSize)
+    template<int N, typename Mesh, typename Primitive>
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::open_sequential(const size_t extSize)
     {
       if (refs.size() == 0)
 	return;
@@ -292,8 +299,15 @@ namespace embree
       }
     }
 
-    template<int N, typename Mesh>
-    void BVHNBuilderTwoLevel<N,Mesh>::setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh) {
+    template<int N, typename Mesh, typename Primitive>
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupSmallBuildRefBuilder (size_t objectID, Mesh const * const mesh) {
+      if (builders_[objectID] == nullptr) {
+        builders_[objectID].reset (new RefBuilderSmall(objectID, mesh->size()));
+      }
+    }
+
+    template<int N, typename Mesh, typename Primitive>
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh) {
       
       /* create BVH and builder for new meshes */
       if (bvh->objects[objectID] == nullptr) {
@@ -312,40 +326,52 @@ namespace embree
     }
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH4BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
-      return new BVHNBuilderTwoLevel<4,TriangleMesh>((BVH4*)bvh,scene,createMeshAccel);
+    Builder* BVH4BuilderTwoLevelTriangle4MeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,createMeshAccel);
+    }
+    Builder* BVH4BuilderTwoLevelTriangle4vMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,createMeshAccel);
+    }
+    Builder* BVH4BuilderTwoLevelTriangle4iMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,createMeshAccel);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
     Builder* BVH4BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createMeshAccel) {
-    return new BVHNBuilderTwoLevel<4,QuadMesh>((BVH4*)bvh,scene,createMeshAccel);
+    return new BVHNBuilderTwoLevel<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,createMeshAccel);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
     Builder* BVH4BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, const createUserGeometryAccelTy createMeshAccel) {
-    return new BVHNBuilderTwoLevel<4,UserGeometry>((BVH4*)bvh,scene,createMeshAccel);
+    return new BVHNBuilderTwoLevel<4,UserGeometry,Object>((BVH4*)bvh,scene,createMeshAccel);
     }
 #endif
 
 
 #if defined(__AVX__)
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH8BuilderTwoLevelTriangleMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
-      return new BVHNBuilderTwoLevel<8,TriangleMesh>((BVH8*)bvh,scene,createMeshAccel);
+    Builder* BVH8BuilderTwoLevelTriangle4MeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,createMeshAccel);
+    }
+    Builder* BVH8BuilderTwoLevelTriangle4vMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4v>((BVH8*)bvh,scene,createMeshAccel);
+    }
+    Builder* BVH8BuilderTwoLevelTriangle4iMeshSAH (void* bvh, Scene* scene, const createTriangleMeshAccelTy createMeshAccel) {
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,createMeshAccel);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
     Builder* BVH8BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, const createQuadMeshAccelTy createMeshAccel) {
-      return new BVHNBuilderTwoLevel<8,QuadMesh>((BVH8*)bvh,scene,createMeshAccel);
+      return new BVHNBuilderTwoLevel<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,createMeshAccel);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
     Builder* BVH8BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, const createUserGeometryAccelTy createMeshAccel) {
-      return new BVHNBuilderTwoLevel<8,UserGeometry>((BVH8*)bvh,scene,createMeshAccel);
+      return new BVHNBuilderTwoLevel<8,UserGeometry,Object>((BVH8*)bvh,scene,createMeshAccel);
     }
 #endif
 #endif
