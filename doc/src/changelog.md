@@ -2,7 +2,6 @@ Version History
 ---------------
 
 ### Embree 3.10.1
--   Supporting EMBREE_INCLUDE_DIRS and EMBREE_LIBRARY again in embree-config.cmake
 -   Embree no longer supports Visual Studio 2013 starting with this release.
 
 ### Embree 3.10.0
