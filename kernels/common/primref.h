@@ -34,7 +34,7 @@ namespace embree
       upper = Vec3fx(bounds.upper, (unsigned)((id >> 32) & 0xFFFFFFFF));
 #else
       lower = Vec3fx(bounds.lower, (unsigned)id);
-      upper = Vec3fx(bounds.upper; (unsigned)0);
+      upper = Vec3fx(bounds.upper, (unsigned)0);
 #endif
     }
 
