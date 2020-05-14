@@ -6,6 +6,7 @@
 #include "bvh.h"
 #include "../common/primref.h"
 #include "../builders/priminfo.h"
+#include "../builders/primrefgen.h"
 
 namespace embree
 {
@@ -132,16 +133,40 @@ namespace embree
       class RefBuilderSmall : public RefBuilderBase {
       public:
 
-        RefBuilderSmall (size_t objectID, size_t meshSize) 
+        RefBuilderSmall (size_t objectID) 
         :
           objectID_ (objectID)
-        , meshSize_ (meshSize)
         {}
 
         void clear () {}
 
         void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
-        
+
+          if (!topBuilder->scene->isGeometryModified(objectID_)) {
+            return;
+          }
+
+          Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
+          size_t meshSize = mesh->size();
+          assert(meshSize <= N);
+          
+          mvector<PrimRef> prims(topBuilder->scene->device, meshSize);
+          auto pinfo = createPrimRefArray(mesh,objectID_,prims,topBuilder->bvh->scene->progressInterface);
+          if (unlikely(pinfo.size() == 0)) {
+            return;
+          }
+
+          Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
+          typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
+          size_t begin (0);
+          accel->fill(prims.data(),begin,pinfo.size(),topBuilder->bvh->scene);
+
+          /* create build primitive */
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
+          topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,(unsigned int)meshSize);
+#else
+          topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
+#endif
         }
 
         bool meshQualityChanged (RTCBuildQuality /*currQuality*/) {
@@ -150,7 +175,6 @@ namespace embree
 
         private:
           size_t  objectID_;
-          size_t  meshSize_;
       };
 
       class RefBuilderLarge : public RefBuilderBase {

@@ -92,7 +92,7 @@ namespace embree
           if (mesh->size() > N) {
             setupLargeBuildRefBuilder (objectID, mesh);
           } else {
-            setupLargeBuildRefBuilder (objectID, mesh);
+            setupSmallBuildRefBuilder (objectID, mesh);
           }
         }
       });
@@ -300,9 +300,9 @@ namespace embree
     }
 
     template<int N, typename Mesh, typename Primitive>
-    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupSmallBuildRefBuilder (size_t objectID, Mesh const * const mesh) {
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupSmallBuildRefBuilder (size_t objectID, Mesh const * const /*mesh*/) {
       if (builders_[objectID] == nullptr) {
-        builders_[objectID].reset (new RefBuilderSmall(objectID, mesh->size()));
+        builders_[objectID].reset (new RefBuilderSmall(objectID));
       }
     }
 
