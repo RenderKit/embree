@@ -142,16 +142,12 @@ namespace embree
 
         void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
 
-          if (!topBuilder->scene->isGeometryModified(objectID_)) {
-            return;
-          }
-
           Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
           size_t meshSize = mesh->size();
           assert(meshSize <= N);
           
-          mvector<PrimRef> prims(topBuilder->scene->device, meshSize);
-          auto pinfo = createPrimRefArray(mesh,objectID_,prims,topBuilder->bvh->scene->progressInterface);
+          mvector<PrimRef> prefs(topBuilder->scene->device, meshSize);
+          auto pinfo = createPrimRefArray(mesh,objectID_,prefs,topBuilder->bvh->scene->progressInterface);
           if (unlikely(pinfo.size() == 0)) {
             return;
           }
@@ -159,7 +155,12 @@ namespace embree
           Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
           typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
           size_t begin (0);
-          accel->fill(prims.data(),begin,pinfo.size(),topBuilder->bvh->scene);
+          accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh->scene);
+
+          // std::cout << "objectID_: " << objectID_ << std::endl;
+          // std::cout << "nextRef before: " << topBuilder->nextRef << std::endl;
+          // std::cout << "bounds: " << pinfo.geomBounds << std::endl;
+          // std::cout << "node.ptr: " << node.ptr << std::endl;
 
           /* create build primitive */
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
