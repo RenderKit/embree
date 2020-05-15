@@ -66,6 +66,9 @@ IF(COMMAND cmake_policy)
   if(POLICY CMP0022)
     cmake_policy(SET CMP0022 NEW)
   endif()
+  if(POLICY CMP0074)
+    cmake_policy(SET CMP0074 NEW)
+  endif()
 ENDIF(COMMAND cmake_policy)
 
 MARK_AS_ADVANCED(CMAKE_BACKWARDS_COMPATIBILITY)
@@ -422,14 +425,6 @@ IF (EMBREE_ISA_AVX512SKX)
 ENDIF ()
 
 INCLUDE (ispc)
-
-##############################################################
-# Find TBB
-##############################################################
-IF (TASKING_TBB)
-  FIND_PACKAGE(TBB REQUIRED)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
-ENDIF()
 
 ##############################################################
 # Create Binary Packages (uses above config options)
