@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.10.1
+-   Bugfix in subdivision tessellation level assignment for non-quad base primitives
+
 ### Embree 3.10.0
 -   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
     leaves to reduce memory consumption in compact mode by an additional 40% at about

@@ -216,8 +216,7 @@ namespace embree
         neighborSubdiv[i] = h->hasOpposite() ? h->opposite()->numEdges() != 4 : 0; 
         levels[i] = h->edge_level;
         h = h->next();
-      }
-      
+      }      
       if (N == 4)
       {
         const Vec2f uv[4] = { Vec2f(0.0f,0.0f), Vec2f(1.0f,0.0f), Vec2f(1.0f,1.0f), Vec2f(0.0f,1.0f) };
@@ -236,7 +235,7 @@ namespace embree
                                 2.0f*subPatchID + (0.5f+Vec2f(1.0f,1.0f)),
                                 2.0f*subPatchID + (0.5f+Vec2f(0.0f,1.0f)) };
           const int neighborSubdiv1[4] = { 0,0,0,0 }; 
-          const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i-1)%N], 0.5f*levels[(i-1)%N] };
+          const float levels1[4] = { 0.5f*levels[(i+0)%N], 0.5f*levels[(i+0)%N], 0.5f*levels[(i+N-1)%N], 0.5f*levels[(i+N-1)%N] };
           tessellator(uv,neighborSubdiv1,levels1,i);
         }
       }
