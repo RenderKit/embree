@@ -133,7 +133,6 @@ namespace embree
       if (format != RTC_FORMAT_UINT)
         throw_RTCError(RTC_ERROR_INVALID_OPERATION, "invalid face buffer format");
 
-      PRINT(num);
       faceVertices.set(buffer, offset, stride, num, format);
       setNumPrimitives(num);
     }
