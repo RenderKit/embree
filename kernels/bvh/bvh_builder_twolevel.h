@@ -8,6 +8,13 @@
 #include "../builders/priminfo.h"
 #include "../builders/primrefgen.h"
 
+/* new open/merge builder */
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
+#define ENABLE_OPEN_SEQUENTIAL 0
+#define SPLIT_MEMORY_RESERVE_FACTOR 1000
+#define SPLIT_MEMORY_RESERVE_SCALE 2
+#define SPLIT_MIN_EXT_SPACE 1000
+
 namespace embree
 {
   namespace isa
@@ -191,9 +198,11 @@ namespace embree
           builder_.clear();
         }
 
-        void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
+        void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder)
+        {
           BVH*     object  = topBuilder->bvh->objects [objectID_]; assert(object);
           Ref<Builder>& builder = builder_.builder; assert(builder);
+          Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
 
           /* build object if it got modified */
           if (topBuilder->scene->isGeometryModified(objectID_))
@@ -203,7 +212,7 @@ namespace embree
           if (!object->getBounds().empty())
           {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID,(unsigned int)mesh->size());
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID_,(unsigned int)mesh->size());
 #else
             topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
 #endif

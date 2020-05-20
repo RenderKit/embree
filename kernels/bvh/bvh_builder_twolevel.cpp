@@ -17,12 +17,6 @@
 
 #define PROFILE 0
 
-/* new open/merge builder */
-#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
-#define ENABLE_OPEN_SEQUENTIAL 0
-#define SPLIT_MEMORY_RESERVE_FACTOR 1000
-#define SPLIT_MEMORY_RESERVE_SCALE 2
-#define SPLIT_MIN_EXT_SPACE 1000
 
 namespace embree
 {
@@ -87,7 +81,7 @@ namespace embree
       
           /* ignore meshes we do not support */
           if (mesh == nullptr || mesh->numTimeSteps != 1)
-            return;
+            continue;
           
           if (mesh->size() > N) {
             setupLargeBuildRefBuilder (objectID, mesh);
@@ -100,11 +94,12 @@ namespace embree
       /* parallel build of acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
-        for (size_t objectID=r.begin(); objectID<r.end(); objectID++) {
+        for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
+        {
           /* ignore if no triangle mesh or not enabled */
           Mesh* mesh = scene->getSafe<Mesh>(objectID);
           if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
-            return;
+            continue;
 
           builders_[objectID]->attachBuildRefs (this);
         }
@@ -300,15 +295,16 @@ namespace embree
     }
 
     template<int N, typename Mesh, typename Primitive>
-    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupSmallBuildRefBuilder (size_t objectID, Mesh const * const /*mesh*/) {
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupSmallBuildRefBuilder (size_t objectID, Mesh const * const /*mesh*/)
+    {
       if (builders_[objectID] == nullptr) {
         builders_[objectID].reset (new RefBuilderSmall(objectID));
       }
     }
 
     template<int N, typename Mesh, typename Primitive>
-    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh) {
-      
+    void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh)
+    {
       /* create BVH and builder for new meshes */
       if (bvh->objects[objectID] == nullptr) {
         Builder* builder = nullptr;
