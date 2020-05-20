@@ -306,7 +306,7 @@ namespace embree
       if (bvh->objects[objectID] == nullptr) {
         Builder* builder = nullptr;
         createMeshAccel(scene, unsigned(objectID),(AccelData*&)bvh->objects[objectID],builder);
-        builders_[objectID].reset (new RefBuilderLarge(objectID, BuilderState(builder,mesh->quality)));
+        builders_[objectID].reset (new RefBuilderLarge(objectID, builder, mesh->quality));
       }
 
       /* re-create when build quality changed */
@@ -314,7 +314,7 @@ namespace embree
         Builder* builder = nullptr;
         delete bvh->objects[objectID]; 
         createMeshAccel(scene, unsigned(objectID),(AccelData*&)bvh->objects[objectID],builder);
-        builders_[objectID].reset (new RefBuilderLarge(objectID, BuilderState(builder,mesh->quality)));
+        builders_[objectID].reset (new RefBuilderLarge(objectID, builder, mesh->quality));
       }
     }
 

@@ -107,25 +107,6 @@ namespace embree
       void clear();
 
       void open_sequential(const size_t extSize);
-
-    public:
-      
-      struct BuilderState
-      {
-        BuilderState ()
-        : builder(nullptr), quality(RTC_BUILD_QUALITY_LOW) {}
-
-        BuilderState (const Ref<Builder>& builder, RTCBuildQuality quality)
-        : builder(builder), quality(quality) {}
-        
-        void clear() {
-          builder = nullptr;
-          quality = RTC_BUILD_QUALITY_LOW;
-        }
-        
-        Ref<Builder> builder;
-        RTCBuildQuality quality;
-      };
       
     private:
 
@@ -188,30 +169,31 @@ namespace embree
       class RefBuilderLarge : public RefBuilderBase {
       public:
         
-        RefBuilderLarge (size_t objectID, BuilderState builder)
+        RefBuilderLarge (size_t objectID, const Ref<Builder>& builder, RTCBuildQuality quality)
         :
           objectID_ (objectID)
         , builder_ (builder)
+        , quality_ (quality)
         {}
 
         void clear () {
-          builder_.clear();
+          builder_ = nullptr;
+          quality_ = RTC_BUILD_QUALITY_LOW;
         }
 
         void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder)
         {
-          BVH*     object  = topBuilder->bvh->objects [objectID_]; assert(object);
-          Ref<Builder>& builder = builder_.builder; assert(builder);
+          BVH* object  = topBuilder->getBVH(objectID_); assert(object);
           
           /* build object if it got modified */
-          if (topBuilder->scene->isGeometryModified(objectID_))
-            builder->build();
+          if (topBuilder->isGeometryModified(objectID_))
+            builder_->build();
 
           /* create build primitive */
           if (!object->getBounds().empty())
           {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
+            Mesh* mesh = topBuilder->getMesh(objectID_);
             topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID_,(unsigned int)mesh->size());
 #else
             topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
@@ -220,16 +202,27 @@ namespace embree
         }
 
         bool meshQualityChanged (RTCBuildQuality currQuality) {
-          return currQuality != builder_.quality;
+          return currQuality != quality_;
         }
 
       private:
-        size_t       objectID_;
-        BuilderState builder_;
+        size_t          objectID_;
+        Ref<Builder>    builder_;
+        RTCBuildQuality quality_;
       };
 
       void setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh);
       void setupSmallBuildRefBuilder (size_t objectID, Mesh const * const mesh);
+
+      BVH* getBVH (size_t objectID) {
+        return this->bvh->objects[objectID];
+      }
+      Mesh* getMesh (size_t objectID) {
+        return this->scene->template getSafe<Mesh>(objectID);
+      }
+      bool isGeometryModified (size_t objectID) {
+        return this->scene->isGeometryModified(objectID);
+      }
 
     public:
       BVH* bvh;
