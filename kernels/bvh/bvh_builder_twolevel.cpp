@@ -73,7 +73,7 @@ namespace embree
       /* resize object array if scene got larger */
       if (bvh->objects.size()  < num) bvh->objects.resize(num);
       if (builders_.size() < num) builders_.resize(num);
-      if (refs.size()     < num) refs.resize(num);
+      resizeRefsList ();
       nextRef.store(0);
       
       /* create acceleration structures */
