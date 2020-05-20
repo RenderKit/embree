@@ -202,8 +202,7 @@ namespace embree
         {
           BVH*     object  = topBuilder->bvh->objects [objectID_]; assert(object);
           Ref<Builder>& builder = builder_.builder; assert(builder);
-          Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
-
+          
           /* build object if it got modified */
           if (topBuilder->scene->isGeometryModified(objectID_))
             builder->build();
@@ -212,6 +211,7 @@ namespace embree
           if (!object->getBounds().empty())
           {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
+            Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
             topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID_,(unsigned int)mesh->size());
 #else
             topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);

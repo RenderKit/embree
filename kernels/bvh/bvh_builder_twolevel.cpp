@@ -17,7 +17,6 @@
 
 #define PROFILE 0
 
-
 namespace embree
 {
   namespace isa
@@ -37,7 +36,6 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::build()
     {
-
       /* delete some objects */
       size_t num = scene->size();
       if (num < bvh->objects.size()) {
@@ -64,6 +62,11 @@ namespace embree
         bvh->set(BVH::emptyNode,empty,0);
         return;
       }
+
+      /* calculate the size of the entire BVH */
+      const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+      const size_t leaf_bytes = size_t(1.2*44*numPrimitives); // assumes triangles
+      bvh->alloc.init_estimate(node_bytes+leaf_bytes); 
 
       double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
 
@@ -121,7 +124,6 @@ namespace embree
 
         /* this probably needs some more tuning */
         const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
-        //PRINT(extSize);
  
 #if !ENABLE_DIRECT_SAH_MERGE_BUILDER
 
@@ -131,12 +133,7 @@ namespace embree
         /* compute PrimRefs */
         prims.resize(refs.size());
 #endif
-
-        /* calculate the size of the entire BVH */
-        const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
-        const size_t leaf_bytes = size_t(1.2*44*numPrimitives); // assumes triangles
-        bvh->alloc.init_estimate(node_bytes+leaf_bytes); 
-
+        
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
         tbb::task_arena limited(min(32,(int)TaskScheduler::threadCount()));
         limited.execute([&]
@@ -158,7 +155,7 @@ namespace embree
 
               PrimInfo pinfo(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
-                pinfo.add(refs[i].bounds());
+                pinfo.add_center2(refs[i]);
                 prims[i] = PrimRef(refs[i].bounds(),(size_t)refs[i].node);
               }
               return pinfo;
