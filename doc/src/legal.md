@@ -34,3 +34,7 @@ assist you in fully evaluating your contemplated purchases, including
 the performance of that product when combined with other products.  
 For more complete information visit <http://www.intel.com/performance>.
 
+Intel Embree is using third party libraries in its
+implementation. Please see the third-party-programs.txt file contained
+in the Embree source and binary distribution for licenses of used
+third party components.
