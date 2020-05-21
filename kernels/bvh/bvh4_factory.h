@@ -84,18 +84,6 @@ namespace embree
     Accel::Intersectors BVH4GridIntersectors(BVH4* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH4GridMBIntersectors(BVH4* bvh, IntersectVariant ivariant);
     
-    static void createTriangleMeshTriangle4Morton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4iMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4i(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-
-    static void createQuadMeshQuad4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createQuadMeshQuad4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-
-    static void createUserGeometryMesh(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    
   private:
 
     DEFINE_SYMBOL2(Accel::Collider,BVH4ColliderUserGeom);
@@ -318,11 +306,11 @@ namespace embree
     
     // twolevel scene builders
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4MeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4vMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4iMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createUserGeometryAccelTy);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4MeshSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4vMeshSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4iMeshSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA bool);
  
     // SAH mesh builders
   private:
