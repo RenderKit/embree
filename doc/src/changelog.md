@@ -3,6 +3,8 @@ Version History
 
 ### Embree 3.10.1
 -   Embree no longer supports Visual Studio 2013 starting with this release.
+-   Bugfix in subdivision tessellation level assignment for non-quad base primitives
+-   Small meshes now directly added to top level of two-level builder
 
 ### Embree 3.10.0
 -   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
