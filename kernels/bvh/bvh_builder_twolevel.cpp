@@ -57,7 +57,7 @@ namespace embree
       }
 
       /* calculate the size of the entire BVH */
-      const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+      const size_t node_bytes = numPrimitives*sizeof(typename BVH::AABBNodeMB)/(4*N);
       const size_t leaf_bytes = size_t(1.2*44*numPrimitives); // assumes triangles
       bvh_->alloc.init_estimate(node_bytes+leaf_bytes); 
 

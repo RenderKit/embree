@@ -292,8 +292,7 @@ namespace embree
           return;
         }
 
-        __internal_two_level_builder__::MeshBuilder<N,Mesh,Primitive> helper;
-        helper (accel, mesh, geomID, this->useMortonBuilder_, builder);
+        __internal_two_level_builder__::MeshBuilder<N,Mesh,Primitive>()(accel, mesh, geomID, this->useMortonBuilder_, builder);
       }      
 
       using BuilderList = std::vector<std::unique_ptr<RefBuilderBase>>;
