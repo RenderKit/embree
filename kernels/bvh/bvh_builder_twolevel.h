@@ -131,13 +131,7 @@ namespace embree
 
         void clear () {}
 
-        void attachBuildRefs (BVHNBuilderTwoLevel* builder) {
-          attachBuildRefs_Impl (builder);
-        }
-
-        template <typename PrimitiveI = Primitive>
-        typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && !std::is_same<Primitive, Object>::value>::type
-        attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder) {
+        void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
 
           Mesh* mesh = topBuilder->scene_->template getSafe<Mesh>(objectID_);
           size_t meshSize = mesh->size();
@@ -149,47 +143,7 @@ namespace embree
             return;
           }
 
-          Primitive* accel = (Primitive*) topBuilder->bvh_->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
-          typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
-          size_t begin (0);
-          accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh_->scene);
-
-          /* create build primitive */
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER
-          topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,(unsigned int)meshSize);
-#else
-          topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
-#endif
-        }
-
-        template <typename PrimitiveI = Primitive>
-        typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && std::is_same<Primitive, Object>::value>::type
-        attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder) {
-
-          Mesh* mesh = topBuilder->scene_->template getSafe<Mesh>(objectID_);
-          size_t meshSize = mesh->size();
-          assert(meshSize <= N);
-          
-          mvector<PrimRef> prefs(topBuilder->scene_->device, meshSize);
-          auto pinfo = createPrimRefArray(mesh,objectID_,prefs,topBuilder->bvh_->scene->progressInterface);
-          if (unlikely(pinfo.size() == 0)) {
-            return;
-          }
-
-          for (size_t i=0; i<pinfo.size(); ++i) {
-
-            Primitive* accel = (Primitive*) topBuilder->bvh_->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
-            typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
-            size_t begin (i);
-            accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh_->scene);
-
-            /* create build primitive */
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,(unsigned int)pinfo.size());
-#else
-            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
-#endif
-          }
+          attachBuildRefs_Impl (topBuilder, prefs, pinfo);
         }
 
         bool meshQualityChanged (RTCBuildQuality /*currQuality*/) {
@@ -197,6 +151,44 @@ namespace embree
         }
 
         private:
+
+          template <typename PrimitiveI = Primitive>
+          typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && !std::is_same<Primitive, Object>::value>::type
+          attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo) {
+
+            Primitive* accel = (Primitive*) topBuilder->bvh_->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
+            typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
+            size_t begin (0);
+            accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh_->scene);
+
+            /* create build primitive */
+  #if ENABLE_DIRECT_SAH_MERGE_BUILDER
+            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,(unsigned int)pinfo.size());
+  #else
+            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
+  #endif
+          }
+
+          template <typename PrimitiveI = Primitive>
+          typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && std::is_same<Primitive, Object>::value>::type
+          attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo) {
+
+            for (size_t i=0; i<pinfo.size(); ++i) {
+
+              Primitive* accel = (Primitive*) topBuilder->bvh_->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
+              typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
+              size_t begin (i);
+              accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh_->scene);
+
+              /* create build primitive */
+  #if ENABLE_DIRECT_SAH_MERGE_BUILDER
+              topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,(unsigned int)pinfo.size());
+  #else
+              topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
+  #endif
+            }
+          }
+
           size_t  objectID_;
       };
 
