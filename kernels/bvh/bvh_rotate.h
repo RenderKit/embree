@@ -25,7 +25,7 @@ namespace embree
     template<>
     class BVHNRotate<4>
     {
-      typedef BVH4::AlignedNode AlignedNode;
+      typedef BVH4::AABBNode AABBNode;
       typedef BVH4::NodeRef NodeRef;
       
     public:

@@ -19,7 +19,7 @@ namespace embree
     
     union {
       __m128 m128;
-      struct { int x,y,z; int a; };
+      struct { int x,y,z; };
     };
 
     typedef int Scalar;
@@ -107,6 +107,8 @@ namespace embree
   __forceinline bool all       ( const Vec3ba& b ) { return (_mm_movemask_ps(b) & 0x7) == 0x7; }
   __forceinline bool any       ( const Vec3ba& b ) { return (_mm_movemask_ps(b) & 0x7) != 0x0; }
   __forceinline bool none      ( const Vec3ba& b ) { return (_mm_movemask_ps(b) & 0x7) == 0x0; }
+
+  __forceinline size_t movemask(const Vec3ba& a) { return _mm_movemask_ps(a) & 0x7; }
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators

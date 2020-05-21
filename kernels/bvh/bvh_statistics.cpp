@@ -25,11 +25,11 @@ namespace embree
     stream << "#bytes = " << std::setw(7) << std::setprecision(2) << totalBytes/1E6 << " MB (100.00%), ";
     stream << "#nodes = " << std::setw(7) << stat.size() << " (" << std::setw(6) << std::setprecision(2) << 100.0*stat.fillRate(bvh) << "% filled), ";
     stream << "#bytes/prim = " << std::setw(6) << std::setprecision(2) << double(totalBytes)/double(bvh->numPrimitives) << std::endl;
-    if (stat.statAlignedNodes.numNodes    ) stream << "  alignedNodes     : "  << stat.statAlignedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statUnalignedNodes.numNodes  ) stream << "  unalignedNodes   : "  << stat.statUnalignedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statAlignedNodesMB.numNodes  ) stream << "  alignedNodesMB   : "  << stat.statAlignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statAlignedNodesMB4D.numNodes) stream << "  alignedNodesMB4D : "  << stat.statAlignedNodesMB4D.toString(bvh,totalSAH,totalBytes) << std::endl;
-    if (stat.statUnalignedNodesMB.numNodes) stream << "  unalignedNodesMB : "  << stat.statUnalignedNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
+    if (stat.statAABBNodes.numNodes    ) stream << "  getAABBNodes     : "  << stat.statAABBNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
+    if (stat.statOBBNodes.numNodes  ) stream << "  ungetAABBNodes   : "  << stat.statOBBNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
+    if (stat.statAABBNodesMB.numNodes  ) stream << "  getAABBNodesMB   : "  << stat.statAABBNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
+    if (stat.statAABBNodesMB4D.numNodes) stream << "  getAABBNodesMB4D : "  << stat.statAABBNodesMB4D.toString(bvh,totalSAH,totalBytes) << std::endl;
+    if (stat.statOBBNodesMB.numNodes) stream << "  ungetAABBNodesMB : "  << stat.statOBBNodesMB.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (stat.statQuantizedNodes.numNodes  ) stream << "  quantizedNodes   : "  << stat.statQuantizedNodes.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (true)                               stream << "  leaves           : "  << stat.statLeaf.toString(bvh,totalSAH,totalBytes) << std::endl;
     if (true)                               stream << "    histogram      : "  << stat.statLeaf.histToString() << std::endl;
@@ -42,76 +42,76 @@ namespace embree
     Statistics s;
     assert(t0t1.size() > 0.0f);
     double dt = max(0.0f,t0t1.size());
-    if (node.isAlignedNode())
+    if (node.isAABBNode())
     {
-      AlignedNode* n = node.alignedNode();
+      AABBNode* n = node.getAABBNode();
       s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
           if (n->child(i) == BVH::emptyNode) return Statistics();
           const double Ai = max(0.0f,halfArea(n->extend(i)));
           Statistics s = statistics(n->child(i),Ai,t0t1); 
-          s.statAlignedNodes.numChildren++;
+          s.statAABBNodes.numChildren++;
           return s;
         }, Statistics::add);
-      s.statAlignedNodes.numNodes++;
-      s.statAlignedNodes.nodeSAH += dt*A;
+      s.statAABBNodes.numNodes++;
+      s.statAABBNodes.nodeSAH += dt*A;
       s.depth++;
     }
-    else if (node.isUnalignedNode())
+    else if (node.isOBBNode())
     {
-      UnalignedNode* n = node.unalignedNode();
+      OBBNode* n = node.ungetAABBNode();
       s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
           if (n->child(i) == BVH::emptyNode) return Statistics();
           const double Ai = max(0.0f,halfArea(n->extent(i)));
           Statistics s = statistics(n->child(i),Ai,t0t1); 
-          s.statUnalignedNodes.numChildren++;
+          s.statOBBNodes.numChildren++;
           return s;
         }, Statistics::add);
-      s.statUnalignedNodes.numNodes++;
-      s.statUnalignedNodes.nodeSAH += dt*A;
+      s.statOBBNodes.numNodes++;
+      s.statOBBNodes.nodeSAH += dt*A;
       s.depth++;
     }
-    else if (node.isAlignedNodeMB())
+    else if (node.isAABBNodeMB())
     {
-      AlignedNodeMB* n = node.alignedNodeMB();
+      AABBNodeMB* n = node.getAABBNodeMB();
       s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
           if (n->child(i) == BVH::emptyNode) return Statistics();
           const double Ai = max(0.0f,n->expectedHalfArea(i,t0t1));
           Statistics s = statistics(n->child(i),Ai,t0t1);
-          s.statAlignedNodesMB.numChildren++;
+          s.statAABBNodesMB.numChildren++;
           return s;
         }, Statistics::add);
-      s.statAlignedNodesMB.numNodes++;
-      s.statAlignedNodesMB.nodeSAH += dt*A;
+      s.statAABBNodesMB.numNodes++;
+      s.statAABBNodesMB.nodeSAH += dt*A;
       s.depth++;
     }
-    else if (node.isAlignedNodeMB4D())
+    else if (node.isAABBNodeMB4D())
     {
-      AlignedNodeMB4D* n = node.alignedNodeMB4D();
+      AABBNodeMB4D* n = node.getAABBNodeMB4D();
       s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
           if (n->child(i) == BVH::emptyNode) return Statistics();
           const BBox1f t0t1i = intersect(t0t1,n->timeRange(i));
           assert(!t0t1i.empty());
-          const double Ai = n->AlignedNodeMB::expectedHalfArea(i,t0t1i);
+          const double Ai = n->AABBNodeMB::expectedHalfArea(i,t0t1i);
           Statistics s =  statistics(n->child(i),Ai,t0t1i);
-          s.statAlignedNodesMB4D.numChildren++;
+          s.statAABBNodesMB4D.numChildren++;
           return s;
         }, Statistics::add);
-      s.statAlignedNodesMB4D.numNodes++;
-      s.statAlignedNodesMB4D.nodeSAH += dt*A;
+      s.statAABBNodesMB4D.numNodes++;
+      s.statAABBNodesMB4D.nodeSAH += dt*A;
       s.depth++;
     }
-    else if (node.isUnalignedNodeMB())
+    else if (node.isOBBNodeMB())
     {
-      UnalignedNodeMB* n = node.unalignedNodeMB();
+      OBBNodeMB* n = node.ungetAABBNodeMB();
       s = s + parallel_reduce(0,N,Statistics(),[&] ( const int i ) {
           if (n->child(i) == BVH::emptyNode) return Statistics();
           const double Ai = max(0.0f,halfArea(n->extent0(i)));
           Statistics s = statistics(n->child(i),Ai,t0t1); 
-          s.statUnalignedNodesMB.numChildren++;
+          s.statOBBNodesMB.numChildren++;
           return s;
         }, Statistics::add);
-      s.statUnalignedNodesMB.numNodes++;
-      s.statUnalignedNodesMB.nodeSAH += dt*A;
+      s.statOBBNodesMB.numNodes++;
+      s.statOBBNodesMB.nodeSAH += dt*A;
       s.depth++;
     }
     else if (node.isQuantizedNode())

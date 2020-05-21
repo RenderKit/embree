@@ -62,9 +62,9 @@ public:
     virtual void solvePositionConstraint    (ClothModel & model, float timeStep, size_t iter);
 
 protected:
-    vec_t x0_   {0.f, 0.f, 0.f, 0.f};
-    vec_t n_    {0.f, 0.f, 0.f, 0.f};
-    float d_    {1.e5f};
+    vec_t x0_   = vec_t(0.f, 0.f, 0.f);
+    vec_t n_    = vec_t(0.f, 0.f, 0.f);
+    float d_    = 1.e5f;
 };
 
 } // namespace collide2

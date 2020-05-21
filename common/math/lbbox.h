@@ -23,9 +23,10 @@ namespace embree
   public:
     __forceinline LBBox () {}
 
-    __forceinline LBBox ( const LBBox& other ) { 
-      bounds0 = other.bounds0; bounds1 = other.bounds1; 
-    }
+    template<typename T1>
+    __forceinline LBBox ( const LBBox<T1>& other )
+    : bounds0(other.bounds0), bounds1(other.bounds1) {} 
+
     __forceinline LBBox& operator= ( const LBBox& other ) { 
       bounds0 = other.bounds0; bounds1 = other.bounds1; return *this; 
     }
@@ -221,9 +222,11 @@ namespace embree
     }
 
     /*! Comparison Operators */
-    template<typename TT> friend __forceinline bool operator==( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 == b.bounds0 && a.bounds1 == b.bounds1; }
-    template<typename TT> friend __forceinline bool operator!=( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
-
+    //template<typename TT> friend __forceinline bool operator==( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 == b.bounds0 && a.bounds1 == b.bounds1; }
+    //template<typename TT> friend __forceinline bool operator!=( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
+    friend __forceinline bool operator==( const LBBox& a, const LBBox& b ) { return a.bounds0 == b.bounds0 && a.bounds1 == b.bounds1; }
+    friend __forceinline bool operator!=( const LBBox& a, const LBBox& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
+    
     /*! output operator */
     friend __forceinline embree_ostream operator<<(embree_ostream cout, const LBBox& box) {
       return cout << "LBBox { " << box.bounds0 << "; " << box.bounds1 << " }";
@@ -277,4 +280,5 @@ namespace embree
   typedef LBBox<Vec2f> LBBox2f;
   typedef LBBox<Vec3f> LBBox3f;
   typedef LBBox<Vec3fa> LBBox3fa;
+  typedef LBBox<Vec3fx> LBBox3fx;
 }

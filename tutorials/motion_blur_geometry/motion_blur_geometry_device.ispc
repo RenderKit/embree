@@ -8,7 +8,7 @@ RTCScene g_scene = NULL;
 uniform Vec3f face_colors[12];
 
 /* accumulation buffer */
-uniform Vec3fa* uniform g_accu = NULL;
+uniform Vec3ff* uniform g_accu = NULL;
 uniform unsigned int g_accu_width = 0;
 uniform unsigned int g_accu_height = 0;
 uniform unsigned int g_accu_count = 0;
@@ -87,9 +87,9 @@ uniform unsigned int addSphere(RTCScene scene, const uniform Vec3f& pos, uniform
   for (uniform unsigned int t = 0; t < num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
-    uniform Vec3fa *vertex = (uniform Vec3fa*)rtcSetNewGeometryBuffer(geom, bufType, t, RTC_FORMAT_FLOAT4, sizeof(Vec3fa), 1);
+    uniform Vec3ff *vertex = (uniform Vec3ff*)rtcSetNewGeometryBuffer(geom, bufType, t, RTC_FORMAT_FLOAT4, sizeof(Vec3ff), 1);
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0), make_Vec3f(0,1,0), 2.0f*M_PI*(float)t/(float)(num_time_steps-1));
-    *vertex = make_Vec3fa(xfmPoint(rotation, make_Vec3f(1, 0, 0)) + pos);
+    *vertex = make_Vec3ff(xfmPoint(rotation, make_Vec3f(1, 0, 0)) + pos);
     vertex->w = 1.f;
 
     if (type == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT) {
@@ -231,13 +231,13 @@ uniform unsigned int addCurve (RTCScene scene, const uniform Vec3f& pos, uniform
   for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
-    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3fa),16);
+    uniform Vec3ff* uniform vertices = (uniform Vec3ff* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3ff),16);
 
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
     uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
 
     for (uniform int i=0; i<16; i++)
-      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
+      vertices[i] = make_Vec3ff(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
   }
 
   uniform int* uniform indices = (uniform int* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,sizeof(uniform int),13);
@@ -266,13 +266,13 @@ uniform unsigned int addLines (RTCScene scene, const uniform Vec3f& pos, uniform
   for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
     uniform RTCBufferType bufType = RTC_BUFFER_TYPE_VERTEX;
-    uniform Vec3fa* uniform vertices = (uniform Vec3fa* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3fa),16);
+    uniform Vec3ff* uniform vertices = (uniform Vec3ff* uniform) rtcSetNewGeometryBuffer(geom,bufType,t,RTC_FORMAT_FLOAT4,sizeof(uniform Vec3ff),16);
 
     uniform AffineSpace3f rotation = make_AffineSpace3f_rotate(make_Vec3f(0,0,0),make_Vec3f(0,1,0),2.0f*M_PI*(float)t/(float)(num_time_steps-1));
     uniform AffineSpace3f scale = make_AffineSpace3f_scale(make_Vec3f(2.0f,1.0f,1.0f));
 
     for (uniform int i=0; i<16; i++)
-      vertices[i] = make_Vec3fa(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
+      vertices[i] = make_Vec3ff(xfmPoint(rotation*scale,bspline[i])+pos,0.2f);
   }
 
   uniform int* uniform indices = (uniform int* uniform) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,sizeof(uniform int),15);
@@ -663,7 +663,7 @@ void renderTileStandard(uniform int taskIndex,
     Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
-    Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
+    Vec3ff accu_color = g_accu[y*width+x] + make_Vec3ff(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
     float f = rcp(max(0.001f,accu_color.w));
     unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
@@ -706,11 +706,11 @@ export void device_render (uniform int* uniform pixels,
   /* create accumulator */
   if (g_accu_width != width || g_accu_height != height) {
     delete[] g_accu;
-    g_accu = uniform new uniform Vec3fa[width*height];
+    g_accu = uniform new uniform Vec3ff[width*height];
     g_accu_width = width;
     g_accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_accu[i] = make_Vec3ff(0.0f);
   }
 
   /* reset accumulator */
@@ -723,7 +723,7 @@ export void device_render (uniform int* uniform pixels,
   if (camera_changed) {
     g_accu_count=0;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_accu[i] = make_Vec3ff(0.0f);
   }
 
   /* render next frame */

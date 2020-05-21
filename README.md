@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.9.0
+% Embree: High Performance Ray Tracing Kernels 3.10.0
 % Intel Corporation
 
 Embree Overview
@@ -80,9 +80,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.9.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.9.0/embree-3.9.0.x64.vc12.msi). This
+[embree-3.10.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.9.0 x64`.
+Files\Intel\Embree v3.10.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -90,20 +90,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.9.0 x64`.
+Files\Intel\Embree v3.10.0 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.9.0 x64` and uninstall it.
+3.10.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.9.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.9.0/embree-3.9.0.x64.vc12.windows.zip)
+[embree-3.10.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.9.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.9.0/embree-3.9.0.x64.vc14.windows.zip)
+[embree-3.10.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -117,12 +117,12 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.9.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.9.0/embree-3.9.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.10.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.9.0.x86_64.linux.tar.gz
-    source embree-3.9.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.10.0.x86_64.linux.tar.gz
+    source embree-3.10.0.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -135,7 +135,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.9.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.9.0/embree-3.9.0.x86_64.pkg). This
+[embree-3.10.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -157,12 +157,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.9.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.9.0/embree-3.9.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.10.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.9.0.x64.macosx.tar.gz
-    source embree-3.9.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.10.0.x64.macosx.tar.gz
+    source embree-3.10.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -180,13 +180,29 @@ optimizations; these might break Embree.
 Linux and macOS
 ---------------
 
-To compile Embree you need a modern C++ compiler that supports C++11.
-Embree is tested with Intel® Compiler 17.0 (Update 1), Intel®
-Compiler 16.0 (Update 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
-(supports AVX512) and GCC 5.4.0 (Linux only). If the GCC that comes with your
-Fedora/Red Hat/CentOS distribution is too old then you can run the
-provided script `scripts/install_linux_gcc.sh` to locally install a
-recent GCC into `$HOME/devtools-2`.
+To compile Embree you need a modern C++ compiler that supports
+C++11. Embree is tested with the following compilers:
+
+Linux
+
+  - Intel® Compiler 2020 Update 1
+  - Intel® Compiler 2019 Update 4
+  - Intel® Compiler 2017 Update 1
+  - Intel® Compiler 2016 Update 3
+  - Intel® Compiler 2015 Update 3
+  - Clang 5.0.0
+  - Clang 4.0.0
+  - GCC 10.0.1 (Fedora 32)
+  - GCC  8.3.1 (Fedora 28)
+  - GCC  7.3.1 (Fedora 27)
+  - GCC  7.3.1 (Fedora 26)
+  - GCC  6.4.1 (Fedora 25)
+
+macOS
+
+  - Intel® Compiler 2020 Update 1
+  - Intel® Compiler 2019 Update 4
+  - Apple LLVM 10.0.1 (macOS 10.14.6)
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -204,7 +220,7 @@ installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
 `ISPC_EXECUTABLE` variable during CMake configuration.
 
-You additionally have to install CMake 2.8.11 or higher and the developer
+You additionally have to install CMake 3.1.0 or higher and the developer
 version of GLUT.
 
 Under macOS, all these dependencies can be installed
@@ -280,14 +296,17 @@ your `LD_LIBRARY_PATH`.
 Windows
 -------
 
-Embree is tested under Windows using the Visual Studio 2017, Visual
-Studio 2015 (Update 1) compiler (Win32 and x64), Visual Studio 2013
-(Update 5) compiler (Win32 and x64), Intel® Compiler 17.0 (Update 1)
-(Win32 and x64), Intel® Compiler 16.0 (Update 1) (Win32 and x64), and
-Clang 3.9 (Win32 and x64). Using the Visual Studio 2015 compiler,
-Visual Studio 2013 compiler, Intel® Compiler, and Clang you can
-compile Embree for AVX2. To compile Embree for AVX-512 you have to use
-the Intel® Compiler.
+Embree is tested using the following compilers under Windows:
+
+  - Visual Studio 2019
+  - Visual Studio 2017
+  - Visual Studio 2015 (Update 1)
+  - Visual Studio 2013 (Update 5)
+  - Intel® Compiler 2019 Update 6
+  - Intel® Compiler 2017 Update 8
+  - LLVM Clang 9.0.0
+
+To compile Embree for AVX-512 you have to use the Intel® Compiler.
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -332,7 +351,7 @@ for a 64-bit build.
 To use a different compiler than the Microsoft Visual C++ compiler, you
 additionally need to specify the proper compiler toolset through the
 option "Optional toolset to use (-T parameter)". E.g. to use Clang for
-compilation set the toolset to "LLVM-vs2013", to use the Intel®
+compilation set the toolset to "LLVM_v142", to use the Intel®
 Compiler 2017 for compilation set the toolset to "Intel C++
 Compiler 17.0".
 
@@ -425,6 +444,9 @@ parameters that can be configured in CMake:
 + `EMBREE_BACKFACE_CULLING`: Enables backface culling, i.e. only
   surfaces facing a ray can be hit. This option is turned OFF by
   default.
+
++ `EMBREE_COMPACT_POLYS`: Enables compact tris/quads, i.e. only
+  geomIDs and primIDs are stored inside the leaf nodes.  
 
 + `EMBREE_FILTER_FUNCTION`: Enables the intersection filter function
   feature (ON by default).
@@ -534,19 +556,14 @@ the folder you extracted Embree to. If you used the Windows MSI
 installer, you need to set `embree_DIR` to point to the Embree install
 location (e.g. `C:\Program Files\Intel\Embree3`).
 
-The `FIND_PACKAGE` CMake function will set the `EMBREE_INCLUDE_DIRS`
-variable to point to the directory containing the Embree headers. You
-should add this folder to the include directories of your build:
+The `FIND_PACKAGE` function will create an embree target that
+you can add to your target link libraries:
 
-    INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
-
-Further, the `EMBREE_LIBRARY` variable will point to the Embree
-library to link against. Link against Embree the following way:
-
-    TARGET_LINK_LIBRARIES(application ${EMBREE_LIBRARY})
+    TARGET_LINK_LIBRARIES(application embree)
 
 Now please have a look at the [Embree Tutorials] source code and the
 [Embree API] section to get started.
+
 
 
 Embree API
@@ -1315,6 +1332,10 @@ Possible properties to query are:
 -   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED`: Queries whether
     back face culling is enabled. This is only the case if Embree is
     compiled with `EMBREE_BACKFACE_CULLING` enabled.
+
+-   `RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED`: Queries whether
+    compact polys is enabled. This is only the case if Embree is
+    compiled with `EMBREE_COMPACT_POLYS` enabled.
 
 -   `RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED`: Queries whether
     filter functions are supported, which is the case if Embree is
@@ -7721,6 +7742,9 @@ components, and a single SSE store to set up the `dir` and `time`
 components of a single ray (`RTCRay` type). Storing these values using
 scalar stores causes a store-to-load forwarding penalty because Embree
 is reading these components using SSE loads later on.
+
+
+
 Embree Tutorials
 ================
 

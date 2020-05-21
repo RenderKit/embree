@@ -185,6 +185,14 @@ namespace embree
           travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false),
           singleThreadThreshold(1024) {}
 
+
+        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
+        : branchingFactor(2), maxDepth(32), logBlockSize(bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold)
+        {
+          minLeafSize = min(minLeafSize,maxLeafSize);
+        }
+
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
         size_t maxDepth;         //!< maximum depth of BVH to build
@@ -247,7 +255,7 @@ namespace embree
         class BuilderT
         {
           ALIGNED_CLASS_(16);
-          static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximum supported BVH branching factor
+          static const size_t MAX_BRANCHING_FACTOR = 16;       //!< maximum supported BVH branching factor	  
           static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree if we are that many levels before the maximum tree depth
 
           typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
@@ -438,11 +446,11 @@ namespace embree
               
               force_split = c.lower > p.lower || c.upper < p.upper;
             }
-
+	    
             /* create leaf for few primitives */
             if (current.size() <= cfg.maxLeafSize && current.split.data < Split::SPLIT_ENFORCE && !force_split)
               return createLeaf(current,alloc);
-
+	  
             /* fill all children by always splitting the largest one */
             bool hasTimeSplits = false;
             NodeRecordMB4D values[MAX_BRANCHING_FACTOR];

@@ -1,15 +1,10 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/optics.isph"
-#include "../common/math/random_sampler.isph"
+#include "point_geometry_device.isph"
 
-/* scene data */
 RTCScene  g_scene  = NULL;
-
-#define NUM_POINTS 512
-uniform Vec3f point_colors[NUM_POINTS];
+uniform TutorialData data;
 
 /* add point geometry */
 void addPoints (RTCScene scene, uniform RTCGeometryType gtype, const uniform Vec3f& pos)
@@ -25,15 +20,26 @@ void addPoints (RTCScene scene, uniform RTCGeometryType gtype, const uniform Vec
   RTCGeometry geom = rtcNewGeometry (g_device, gtype);
   uniform Vec4f* uniform point_vertices = (uniform Vec4f* uniform)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, sizeof(uniform Vec4f), NUM_POINTS);
 
-  for (uniform int i = 0; i < NUM_POINTS; i++) {
-    point_vertices[i] = make_Vec4f(pos) + make_Vec4f(COORD, COORD, COORD, RADIUS);
-    point_colors[i] = make_Vec3f(COLOR, COLOR, COLOR);
+  for (uniform int i = 0; i < NUM_POINTS; i++)
+  {
+    const uniform float vx = COORD;
+    const uniform float vy = COORD;
+    const uniform float vz = COORD;
+    const uniform float vr = RADIUS;
+    point_vertices[i] = make_Vec4f(pos.x,pos.y,pos.z,0.0f) + make_Vec4f(vx, vy, vz, vr);
+    const uniform float cr = COLOR;
+    const uniform float cg = COLOR;
+    const uniform float cb = COLOR;
+    data.point_colors[i] = make_Vec3f(cr,cg,cb);
   }
 
   if (gtype == RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT) {
     uniform Vec3fa* uniform point_normals = (uniform Vec3fa* uniform)rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_NORMAL, 0, RTC_FORMAT_FLOAT3, sizeof(uniform Vec3fa), NUM_POINTS);
     for (uniform int i = 0; i < NUM_POINTS; i++) {
-      point_normals[i] = make_Vec3fa(NORMAL, NORMAL, NORMAL);
+      const uniform float nx = NORMAL;
+      const uniform float ny = NORMAL;
+      const uniform float nz = NORMAL;
+      point_normals[i] = make_Vec3fa(nx,ny,nz);
       point_normals[i] = normalize(point_normals[i]);
     }
   }
@@ -71,7 +77,8 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 export void device_init (uniform int8* uniform cfg)
 {
   /* create scene */
-  g_scene = rtcNewScene(g_device);
+  TutorialData_Constructor(&data);
+  g_scene = data.g_scene = rtcNewScene(g_device);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -86,7 +93,13 @@ export void device_init (uniform int8* uniform cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+void renderPixelStandard(const uniform TutorialData& data,
+                          int x, int y, 
+                          uniform int* uniform pixels,
+                          const uniform unsigned int width,
+                          const uniform unsigned int height,
+                          const float time,
+                          const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
@@ -95,7 +108,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -103,7 +116,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)
   {
     /* interpolate diffuse color */
-    Vec3f diffuse = point_colors[ray.geomID ? ray.primID : 0];
+    Vec3f diffuse = data.point_colors[ray.geomID ? ray.primID : 0];
 
     /* calculate smooth shading normal */
     Vec3f Ng = normalize(ray.Ng);
@@ -114,7 +127,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
-    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
+    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -125,38 +138,12 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       color = color + diffuse*d + 0.5f*make_Vec3f(s);
     }
   }
-  return color;
-}
 
-/* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex,
-                        uniform int threadIndex,
-                        uniform int* uniform pixels,
-                        const uniform unsigned int width,
-                        const uniform unsigned int height,
-                        const uniform float time,
-                        const uniform ISPCCamera& camera,
-                        const uniform int numTilesX,
-                        const uniform int numTilesY)
-{
-  const uniform unsigned int tileY = taskIndex / numTilesX;
-  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* task that renders a single screen tile */
@@ -168,7 +155,17 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+  }
 }
 
 export void renderFrameStandard (uniform int* uniform pixels,
@@ -195,5 +192,5 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = NULL;
+  TutorialData_Destructor(&data);
 }

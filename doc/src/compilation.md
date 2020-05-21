@@ -7,13 +7,29 @@ optimizations; these might break Embree.
 Linux and macOS
 ---------------
 
-To compile Embree you need a modern C++ compiler that supports C++11.
-Embree is tested with Intel® Compiler 17.0 (Update\ 1), Intel®
-Compiler 16.0 (Update\ 1), Clang 3.8.0 (supports AVX2), Clang 4.0.0
-(supports AVX512) and GCC 5.4.0 (Linux only). If the GCC that comes with your
-Fedora/Red Hat/CentOS distribution is too old then you can run the
-provided script `scripts/install_linux_gcc.sh` to locally install a
-recent GCC into `$HOME/devtools-2`.
+To compile Embree you need a modern C++ compiler that supports
+C++11. Embree is tested with the following compilers:
+
+Linux
+
+  - Intel® Compiler 2020 Update 1
+  - Intel® Compiler 2019 Update 4
+  - Intel® Compiler 2017 Update 1
+  - Intel® Compiler 2016 Update 3
+  - Intel® Compiler 2015 Update 3
+  - Clang 5.0.0
+  - Clang 4.0.0
+  - GCC 10.0.1 (Fedora 32)
+  - GCC  8.3.1 (Fedora 28)
+  - GCC  7.3.1 (Fedora 27)
+  - GCC  7.3.1 (Fedora 26)
+  - GCC  6.4.1 (Fedora 25)
+
+macOS
+
+  - Intel® Compiler 2020 Update 1
+  - Intel® Compiler 2019 Update 4
+  - Apple LLVM 10.0.1 (macOS 10.14.6)
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -31,7 +47,7 @@ installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
 `ISPC_EXECUTABLE` variable during CMake configuration.
 
-You additionally have to install CMake 2.8.11 or higher and the developer
+You additionally have to install CMake 3.1.0 or higher and the developer
 version of GLUT.
 
 Under macOS, all these dependencies can be installed
@@ -107,14 +123,16 @@ your `LD_LIBRARY_PATH`.
 Windows
 -------
 
-Embree is tested under Windows using the Visual Studio 2017, Visual
-Studio 2015 (Update\ 1) compiler (Win32 and x64), Visual Studio 2013
-(Update\ 5) compiler (Win32 and x64), Intel® Compiler 17.0 (Update\ 1)
-(Win32 and x64), Intel® Compiler 16.0 (Update\ 1) (Win32 and x64), and
-Clang 3.9 (Win32 and x64). Using the Visual Studio 2015 compiler,
-Visual Studio 2013 compiler, Intel® Compiler, and Clang you can
-compile Embree for AVX2. To compile Embree for AVX-512 you have to use
-the Intel® Compiler.
+Embree is tested using the following compilers under Windows:
+
+  - Visual Studio 2019
+  - Visual Studio 2017
+  - Visual Studio 2015 (Update\ 1)
+  - Intel® Compiler 2019 Update 6
+  - Intel® Compiler 2017 Update 8
+  - LLVM Clang 9.0.0
+
+To compile Embree for AVX-512 you have to use the Intel® Compiler.
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -132,17 +150,15 @@ found when executing your Embree applications, e.g. by putting the path
 to these libraries into your `PATH` environment variable.
 
 Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
-straightforward parallelization of an entire renderer. When
-installing ISPC, make sure to download an ISPC version from
+straightforward parallelization of an entire renderer. When installing
+ISPC, make sure to download an ISPC version from
 [ispc.github.io](https://ispc.github.io/downloads.html) that is
-compatible with your Visual Studio version. There are two ISPC
-versions, one for Visual Studio 2013 and earlier, and one for Visual
-Studio 2015 and later. When using the wrong ISPC version you will get
-link errors. After installation, put the path to `ispc.exe`
-permanently into your `PATH` environment variable or you need to
-correctly set the `ISPC_EXECUTABLE` variable during CMake
-configuration. We have tested ISPC version 1.9.1. If you do not want
-to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in CMake.
+compatible with your Visual Studio version. After installation, put
+the path to `ispc.exe` permanently into your `PATH` environment
+variable or you need to correctly set the `ISPC_EXECUTABLE` variable
+during CMake configuration. We have tested ISPC version 1.9.1. If you
+do not want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
+CMake.
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.11 or higher). Note that you need a native Windows CMake
@@ -159,7 +175,7 @@ for a 64-bit build.
 To use a different compiler than the Microsoft Visual C++ compiler, you
 additionally need to specify the proper compiler toolset through the
 option "Optional toolset to use (-T parameter)". E.g. to use Clang for
-compilation set the toolset to "LLVM-vs2013", to use the Intel®
+compilation set the toolset to "LLVM_v142", to use the Intel®
 Compiler 2017 for compilation set the toolset to "Intel C++
 Compiler 17.0".
 
@@ -252,6 +268,9 @@ parameters that can be configured in CMake:
 + `EMBREE_BACKFACE_CULLING`: Enables backface culling, i.e. only
   surfaces facing a ray can be hit. This option is turned OFF by
   default.
+
++ `EMBREE_COMPACT_POLYS`: Enables compact tris/quads, i.e. only
+  geomIDs and primIDs are stored inside the leaf nodes.  
 
 + `EMBREE_FILTER_FUNCTION`: Enables the intersection filter function
   feature (ON by default).
@@ -361,18 +380,13 @@ the folder you extracted Embree to. If you used the Windows MSI
 installer, you need to set `embree_DIR` to point to the Embree install
 location (e.g. `C:\Program Files\Intel\Embree3`).
 
-The `FIND_PACKAGE` CMake function will set the `EMBREE_INCLUDE_DIRS`
-variable to point to the directory containing the Embree headers. You
-should add this folder to the include directories of your build:
+The `FIND_PACKAGE` function will create an embree target that
+you can add to your target link libraries:
 
-    INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
-
-Further, the `EMBREE_LIBRARY` variable will point to the Embree
-library to link against. Link against Embree the following way:
-
-    TARGET_LINK_LIBRARIES(application ${EMBREE_LIBRARY})
+    TARGET_LINK_LIBRARIES(application embree)
 
 Now please have a look at the [Embree Tutorials] source code and the
 [Embree API] section to get started.
 
 \pagebreak
+

@@ -22,7 +22,7 @@ struct MotionDerivativeCoefficients
   MotionDerivativeCoefficients() {}
 
   // xfm0 and xfm1 are interpret as quaternion decomposition
-  MotionDerivativeCoefficients(AffineSpace3fa const& xfm0, AffineSpace3fa const& xfm1)
+  MotionDerivativeCoefficients(AffineSpace3ff const& xfm0, AffineSpace3ff const& xfm1)
   {
     // cosTheta of the two quaternions
     const float cosTheta = min(1.f, max(-1.f,

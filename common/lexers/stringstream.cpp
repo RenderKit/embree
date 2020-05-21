@@ -5,6 +5,8 @@
 
 namespace embree
 {
+  static const std::string stringChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _.,+-=:/*\\";
+  
   /* creates map for fast categorization of characters */
   static void createCharMap(bool map[256], const std::string& chrs) {
     for (size_t i=0; i<256; i++) map[i] = false;
@@ -16,6 +18,7 @@ namespace embree
     : cin(cin), endl(endl), multiLine(multiLine)
   {
     createCharMap(isSepMap,seps);
+    createCharMap(isValidCharMap,stringChars);
   }
 
   std::string StringStream::next()
@@ -34,8 +37,11 @@ namespace embree
 
     /* parse everything until the next separator */
     std::vector<char> str; str.reserve(64);
-    while (cin->peek() != EOF && !isSeparator(cin->peek()))
-      str.push_back((char)cin->get());
+    while (cin->peek() != EOF && !isSeparator(cin->peek())) {
+      int c = cin->get();
+      if (!isValidChar(c)) throw std::runtime_error("invalid character "+std::string(1,c)+" in input");
+      str.push_back((char)c);
+    }
     str.push_back(0);
     return std::string(str.data());
   }

@@ -7,9 +7,9 @@
 
 namespace embree
 {
-  /*! Motion Blur AlignedNode */
+  /*! Motion Blur AABBNode */
   template<typename NodeRef, int N>
-    struct AlignedNodeMB_t : public BaseNode_t<NodeRef, N>
+    struct AABBNodeMB_t : public BaseNode_t<NodeRef, N>
   {
     using BaseNode_t<NodeRef,N>::children;
     typedef BVHNodeRecord<NodeRef>     NodeRecord;
@@ -21,7 +21,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
       {
-        AlignedNodeMB_t* node = (AlignedNodeMB_t*) alloc.malloc0(sizeof(AlignedNodeMB_t),NodeRef::byteNodeAlignment); node->clear();
+        AABBNodeMB_t* node = (AABBNodeMB_t*) alloc.malloc0(sizeof(AABBNodeMB_t),NodeRef::byteNodeAlignment); node->clear();
         return NodeRef::encodeNode(node);
       }
     };
@@ -31,7 +31,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
       {
-        AlignedNodeMB_t* node = ref.alignedNodeMB();
+        AABBNodeMB_t* node = ref.getAABBNodeMB();
         
         LBBox3fa bounds = empty;
         for (size_t i=0; i<num; i++) {
@@ -50,7 +50,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline NodeRecordMB operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRecordMB* children, const size_t num) const
       {
-        AlignedNodeMB_t* node = ref.alignedNodeMB();
+        AABBNodeMB_t* node = ref.getAABBNodeMB();
         
         LBBox3fa bounds = empty;
         for (size_t i=0; i<num; i++) {
@@ -194,7 +194,7 @@ namespace embree
     }
 
     /*! compacts a node (moves empty children to the end) */
-    __forceinline static void compact(AlignedNodeMB_t* a)
+    __forceinline static void compact(AABBNodeMB_t* a)
     {
       /* find right most filled node */
       ssize_t j=N;
@@ -218,9 +218,9 @@ namespace embree
     __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! stream output operator */
-    friend embree_ostream operator<<(embree_ostream cout, const AlignedNodeMB_t& n) 
+    friend embree_ostream operator<<(embree_ostream cout, const AABBNodeMB_t& n) 
     {
-      cout << "AlignedNodeMB {" << embree_endl;
+      cout << "AABBNodeMB {" << embree_endl;
       for (size_t i=0; i<N; i++) 
       {
         const BBox3fa b0 = n.bounds0(i);

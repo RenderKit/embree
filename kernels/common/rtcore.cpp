@@ -1054,7 +1054,8 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetGeometryTransformQuaternion);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_HANDLE(qd);
-    AffineSpace3fa transform;
+    
+    AffineSpace3fx transform;
     transform.l.vx.x = qd->scale_x;
     transform.l.vy.y = qd->scale_y;
     transform.l.vz.z = qd->scale_z;

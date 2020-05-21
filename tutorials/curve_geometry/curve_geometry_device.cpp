@@ -70,7 +70,7 @@ unsigned int hair_indices_linear[NUM_CURVES] = {
 char hair_flags_linear[NUM_CURVES] = {
   0x3, 0x3, 0x3, 0x3, 0x3, 0x3
 };
-    
+
 /* add hair geometry */
 unsigned int addCurve (RTCScene scene, RTCGeometryType gtype, const Vec4f& pos)
 {
@@ -91,7 +91,7 @@ unsigned int addCurve (RTCScene scene, RTCGeometryType gtype, const Vec4f& pos)
       gtype == RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE) {
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, 0, RTC_FORMAT_FLOAT3, hair_normals, 0, sizeof(Vec3fa), NUM_VERTICES);
   }
-
+  
   if (gtype == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, hair_flags_linear, 0, sizeof(char), NUM_CURVES);
   }

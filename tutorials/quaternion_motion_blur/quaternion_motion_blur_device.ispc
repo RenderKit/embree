@@ -6,7 +6,7 @@
 #include "../common/math/sampling.isph"
 
 /* accumulation buffer */
-uniform Vec3fa* uniform g_accu = NULL;
+uniform Vec3ff* uniform g_accu = NULL;
 uniform unsigned int g_accu_width = 0;
 uniform unsigned int g_accu_height = 0;
 uniform unsigned int g_accu_count = 0;
@@ -372,7 +372,7 @@ void renderTileStandard(uniform int taskIndex,
     Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
-    Vec3fa accu_color = g_accu[y*width+x] + make_Vec3fa(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
+    Vec3ff accu_color = g_accu[y*width+x] + make_Vec3ff(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
     float f = rcp(max(1.f,accu_color.w));
     unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
     unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
@@ -420,11 +420,11 @@ export void device_render (uniform int* uniform pixels,
 
   if (g_accu_width != width || g_accu_height != height) {
     delete[] g_accu;
-    g_accu = uniform new uniform Vec3fa[width*height];
+    g_accu = uniform new uniform Vec3ff[width*height];
     g_accu_width = width;
     g_accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_accu[i] = make_Vec3ff(0.0f);
   }
 
   if (g_changed || g_reset)
@@ -443,7 +443,7 @@ export void device_render (uniform int* uniform pixels,
   if (camera_changed) {
     g_accu_count=0;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_accu[i] = make_Vec3ff(0.0f);
   }
   else {
     g_accu_count++;

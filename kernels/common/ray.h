@@ -175,13 +175,13 @@ namespace embree
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
-      return all(le_mask(abs(Vec3fa(org,0.0f)), Vec3fa(FLT_LARGE)) & le_mask(abs(Vec3fa(dir,0.0f)), Vec3fa(FLT_LARGE))) && abs(tnear()) <= float(inf) && abs(tfar) <= float(inf);
+      return all(le_mask(abs(Vec3fa(org)), Vec3fa(FLT_LARGE)) & le_mask(abs(Vec3fa(dir)), Vec3fa(FLT_LARGE))) && abs(tnear()) <= float(inf) && abs(tfar) <= float(inf);
     }
 
     /* Ray data */
-    Vec3fa org;  // 3 floats for ray origin, 1 float for tnear
+    Vec3ff org;  // 3 floats for ray origin, 1 float for tnear
     //float tnear; // start of ray segment
-    Vec3fa dir;  // 3 floats for ray direction, 1 float for time
+    Vec3ff dir;  // 3 floats for ray direction, 1 float for time
     // float time; 
     float tfar;  // end of ray segment
     int mask;    // used to mask out objects during traversal
@@ -857,11 +857,13 @@ namespace embree
         *(unsigned int* __restrict__)((char*)geomID + offset) = ray.geomID;
         *(unsigned int* __restrict__)((char*)primID + offset) = ray.primID;
 
-        *(unsigned int* __restrict__)((char*)instID[0] + offset) = ray.instID[0];
+        if (likely(instID[0])) {
+          *(unsigned int* __restrict__)((char*)instID[0] + offset) = ray.instID[0];
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID; ++l)
-          *(unsigned int* __restrict__)((char*)instID[l] + offset) = ray.instID[l];
+          for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID; ++l)
+            *(unsigned int* __restrict__)((char*)instID[l] + offset) = ray.instID[l];
 #endif
+        }
       }
     }
 
@@ -888,11 +890,13 @@ namespace embree
         vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)primID + offset), ray.primID);
         vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)geomID + offset), ray.geomID);
 
-        vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)instID[0] + offset), ray.instID[0]);
+        if (likely(instID[0])) {
+          vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)instID[0] + offset), ray.instID[0]);
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
-          vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)instID[l] + offset), ray.instID[l]);
+          for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
+            vuint<K>::storeu(valid, (unsigned int* __restrict__)((char*)instID[l] + offset), ray.instID[l]);
 #endif
+        }
       }
     }
 
@@ -1002,11 +1006,13 @@ namespace embree
         vuint<K>::template scatter<1>(valid, (unsigned int*)geomID, offset, ray.geomID);
         vuint<K>::template scatter<1>(valid, (unsigned int*)primID, offset, ray.primID);
 
-        vuint<K>::template scatter<1>(valid, (unsigned int*)instID[0], offset, ray.instID[0]);
+        if (likely(instID[0])) {
+          vuint<K>::template scatter<1>(valid, (unsigned int*)instID[0], offset, ray.instID[0]);
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-        for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
-          vuint<K>::template scatter<1>(valid, (unsigned int*)instID[l], offset, ray.instID[l]);
+          for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && any(valid & (ray.instID[l-1] != RTC_INVALID_GEOMETRY_ID)); ++l)
+            vuint<K>::template scatter<1>(valid, (unsigned int*)instID[l], offset, ray.instID[l]);
 #endif
+        }
 #else
         size_t valid_bits = movemask(valid);
         while (valid_bits != 0)
@@ -1024,11 +1030,13 @@ namespace embree
           *(unsigned int* __restrict__)((char*)primID + ofs) = ray.primID[k];
           *(unsigned int* __restrict__)((char*)geomID + ofs) = ray.geomID[k];
 
-          *(unsigned int* __restrict__)((char*)instID[0] + ofs) = ray.instID[0][k];
+          if (likely(instID[0])) {
+            *(unsigned int* __restrict__)((char*)instID[0] + ofs) = ray.instID[0][k];
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-          for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && ray.instID[l-1][k] != RTC_INVALID_GEOMETRY_ID; ++l)
-            *(unsigned int* __restrict__)((char*)instID[l] + ofs) = ray.instID[l][k];
+            for (unsigned l = 1; l < RTC_MAX_INSTANCE_LEVEL_COUNT && ray.instID[l-1][k] != RTC_INVALID_GEOMETRY_ID; ++l)
+              *(unsigned int* __restrict__)((char*)instID[l] + ofs) = ray.instID[l][k];
 #endif
+          }
         }
 #endif
       }

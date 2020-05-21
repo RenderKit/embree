@@ -4,6 +4,7 @@
 #pragma once
 
 #include "alloc.h"
+#include <algorithm>
 
 namespace embree
 {
@@ -196,9 +197,11 @@ namespace embree
           ::new (&items[i]) T(std::move(old_items[i]));
           alloc.destroy(&old_items[i]);
         }
+
         for (size_t i=size_active; i<new_active; i++) {
           ::new (&items[i]) T;
         }
+
         alloc.deallocate(old_items,size_alloced);
         size_active = new_active;
         size_alloced = new_alloced;
@@ -213,8 +216,7 @@ namespace embree
         /* resize to next power of 2 otherwise */
         size_t new_size_alloced = size_alloced;
         while (new_size_alloced < new_alloced) {
-          new_size_alloced = 2*new_size_alloced;
-          if (new_size_alloced == 0) new_size_alloced = 1;
+          new_size_alloced = std::max(size_t(1),2*new_size_alloced);
         }
         return new_size_alloced;
       }

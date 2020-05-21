@@ -318,10 +318,12 @@ namespace embree
       };
 
 
-    template<typename SourceCurve3fa>
+    template<template<typename Ty> class SourceCurve>
       struct OrientedCurve1Intersector1
     {
-      typedef SourceCurve3fa Curve;
+      //template<typename Ty> using Curve = SourceCurve<Ty>;
+      typedef SourceCurve<Vec3ff> SourceCurve3ff;
+      typedef SourceCurve<Vec3fa> SourceCurve3fa;
       
       __forceinline OrientedCurve1Intersector1() {}
       
@@ -329,13 +331,13 @@ namespace embree
       
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, const unsigned int primID, 
-                                const Vec3fa& v0i, const Vec3fa& v1i, const Vec3fa& v2i, const Vec3fa& v3i,
+                                const Vec3ff& v0i, const Vec3ff& v1i, const Vec3ff& v2i, const Vec3ff& v3i,
                                 const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
                                 const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
         TensorLinearCubicBezierSurface3fa curve =
-          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
+          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3ff(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
         //return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_bezier_clipping();
         return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
       }
@@ -350,10 +352,12 @@ namespace embree
       }
     };
 
-    template<typename SourceCurve3fa, int K>
+    template<template<typename Ty> class SourceCurve, int K>
       struct OrientedCurve1IntersectorK
     {
-      typedef SourceCurve3fa Curve;
+      //template<typename Ty> using Curve = SourceCurve<Ty>;
+      typedef SourceCurve<Vec3ff> SourceCurve3ff;
+      typedef SourceCurve<Vec3fa> SourceCurve3fa;
       
       struct Ray1
       {
@@ -374,14 +378,14 @@ namespace embree
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
                                    const CurveGeometry* geom, const unsigned int primID,
-                                   const Vec3fa& v0i, const Vec3fa& v1i, const Vec3fa& v2i, const Vec3fa& v3i,
+                                   const Vec3ff& v0i, const Vec3ff& v1i, const Vec3ff& v2i, const Vec3ff& v3i,
                                    const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
                                    const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
         Ray1 ray(vray,k);
         TensorLinearCubicBezierSurface3fa curve =
-          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
+          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3ff(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
         //return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_bezier_clipping();
         return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_newton_raphson_main();
       }

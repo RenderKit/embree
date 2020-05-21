@@ -120,6 +120,7 @@ namespace embree
     static const std::string ALPHA;
     static const std::string numbers;
     static const std::string separators;
+    static const std::string stringChars;
 
   public:
     TokenStream(const Ref<Stream<int> >& cin,
@@ -144,16 +145,20 @@ namespace embree
     Ref<Stream<int> > cin;
     bool isSepMap[256];
     bool isAlphaMap[256];
+    bool isStringCharMap[256];
     std::vector<std::string> symbols;
 
     /*! checks if a character is a separator */
-    __forceinline bool isSeparator(int c) const { return c<256 && isSepMap[c]; }
+    __forceinline bool isSeparator(unsigned int c) const { return c<256 && isSepMap[c]; }
 
     /*! checks if a character is a number */
-    __forceinline bool isDigit(int c) const {  return c >= '0' && c <= '9';}
+    __forceinline bool isDigit(unsigned int c) const {  return c >= '0' && c <= '9'; }
+
+    /*! checks if a character is valid inside a string */
+    __forceinline bool isStringChar(unsigned int c) const { return c<256 && isStringCharMap[c]; }
 
     /*! checks if a character is legal for an identifier */
-    __forceinline bool isAlpha(int c) const {  return c<256 && isAlphaMap[c];  }
-    __forceinline bool isAlphaNum(int c) const { return isAlpha(c) || isDigit(c); }
+    __forceinline bool isAlpha(unsigned int c) const {  return c<256 && isAlphaMap[c];  }
+    __forceinline bool isAlphaNum(unsigned int c) const { return isAlpha(c) || isDigit(c); }
   };
 }

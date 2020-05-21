@@ -49,8 +49,11 @@ namespace embree
   }
 
   /*! parse XML tag */
-  Ref<XML> parseXML(Ref<Stream<Token> >& cin)
+  Ref<XML> parseXML(Ref<Stream<Token> >& cin, size_t depth)
   {
+    if (depth > 1024)
+      THROW_RUNTIME_ERROR(cin->peek().Location().str()+": maximal nesting depth reached");
+      
     Ref<XML> xml = new XML;
     xml->loc = cin->peek().Location();
 
@@ -79,7 +82,7 @@ namespace embree
     /* the body also contains children */
     if (cin->peek() == Token::Sym("<")) {
       while (cin->peek() != Token::Sym("</")) {
-        xml->children.push_back(parseXML(cin));
+        xml->children.push_back(parseXML(cin,depth+1));
         parseComments(cin);
       }
     }
@@ -110,7 +113,7 @@ namespace embree
 
     if (hasHeader) parseHeader(cin);
     parseComments(cin);
-    Ref<XML> xml = parseXML(cin);
+    Ref<XML> xml = parseXML(cin,0);
     parseComments(cin);
 
     if (!hasTail)

@@ -363,268 +363,268 @@ namespace embree
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors RibbonNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNiIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNiIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNiIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNiIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_t<RibbonCurve1IntersectorK<Curve,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_t <RibbonCurve1IntersectorK<Curve,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors RibbonNvIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNvIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNvIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNvIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNvIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNvIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNvIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNvIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNvIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNvIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNvIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNvIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNvIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNvIntersectorK<N,16>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNvIntersectorK<N,16>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNvIntersectorK<N,16>::template intersect_t<RibbonCurve1IntersectorK<Curve,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNvIntersectorK<N,16>::template occluded_t <RibbonCurve1IntersectorK<Curve,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors RibbonNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNiMBIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNiMBIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_t<RibbonCurve1Intersector1<Curve>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_t <RibbonCurve1Intersector1<Curve>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &CurveNiMBIntersectorK<N,4>::template intersect_t<RibbonCurve1IntersectorK<Curve,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &CurveNiMBIntersectorK<N,4>::template occluded_t <RibbonCurve1IntersectorK<Curve,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_t<RibbonCurve1IntersectorK<Curve,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_t <RibbonCurve1IntersectorK<Curve,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_t<RibbonCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_t <RibbonCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_t<RibbonCurve1IntersectorK<Curve,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_t <RibbonCurve1IntersectorK<Curve,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors CurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_t<SweepCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_t <SweepCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_t<SweepCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_t <SweepCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors CurveNvIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNvIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNvIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNvIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNvIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNvIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNvIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNvIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNvIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNvIntersectorK<N,8>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNvIntersectorK<N,8>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNvIntersectorK<N,8>::template intersect_t<SweepCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNvIntersectorK<N,8>::template occluded_t <SweepCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNvIntersectorK<N,16>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNvIntersectorK<N,16>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNvIntersectorK<N,16>::template intersect_t<SweepCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNvIntersectorK<N,16>::template occluded_t <SweepCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors CurveNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_t<SweepCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_t <SweepCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_t<SweepCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_t <SweepCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_t<SweepCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_t <SweepCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_t<SweepCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_t <SweepCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_t<SweepCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_t <SweepCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors OrientedCurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_n<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_n <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_n<OrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_n <OrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_n<OrientedCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_n <OrientedCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_n<OrientedCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_n <OrientedCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_n<OrientedCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_n <OrientedCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_n<OrientedCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_n <OrientedCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_n<OrientedCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_n <OrientedCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_n<OrientedCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_n <OrientedCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors OrientedCurveNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_n<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_n <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_n<OrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_n <OrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_n<OrientedCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_n <OrientedCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_n<OrientedCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_n <OrientedCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_n<OrientedCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_n <OrientedCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_n<OrientedCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_n <OrientedCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_n<OrientedCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_n <OrientedCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_n<OrientedCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_n <OrientedCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors HermiteRibbonNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_h<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_h <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_h<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_h <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_h<RibbonCurve1Intersector1<Curve>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_h <RibbonCurve1Intersector1<Curve>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_h<RibbonCurve1IntersectorK<Curve,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_h <RibbonCurve1IntersectorK<Curve,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_h<RibbonCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_h <RibbonCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_h<RibbonCurve1IntersectorK<Curve,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_h <RibbonCurve1IntersectorK<Curve,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_h<RibbonCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_h <RibbonCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_h<RibbonCurve1IntersectorK<Curve,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_h <RibbonCurve1IntersectorK<Curve,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors HermiteRibbonNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_h<RibbonCurve1Intersector1<Curve3fa>, Intersect1EpilogMU<VSIZEX,true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_h <RibbonCurve1Intersector1<Curve3fa>, Occluded1EpilogMU<VSIZEX,true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_h<RibbonCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_h <RibbonCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_h<RibbonCurve1Intersector1<Curve>, Intersect1EpilogMU<VSIZEX,true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_h <RibbonCurve1Intersector1<Curve>, Occluded1EpilogMU<VSIZEX,true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_h<RibbonCurve1IntersectorK<Curve,4>, Intersect1KEpilogMU<VSIZEX,4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_h <RibbonCurve1IntersectorK<Curve,4>, Occluded1KEpilogMU<VSIZEX,4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_h<RibbonCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_h <RibbonCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_h<RibbonCurve1IntersectorK<Curve,8>, Intersect1KEpilogMU<VSIZEX,8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_h <RibbonCurve1IntersectorK<Curve,8>, Occluded1KEpilogMU<VSIZEX,8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_h<RibbonCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_h <RibbonCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_h<RibbonCurve1IntersectorK<Curve,16>, Intersect1KEpilogMU<VSIZEX,16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_h <RibbonCurve1IntersectorK<Curve,16>, Occluded1KEpilogMU<VSIZEX,16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors HermiteCurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_h<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_h <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_h<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_h <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_h<SweepCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_h <SweepCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_h<SweepCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_h <SweepCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_h<SweepCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_h <SweepCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_h<SweepCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_h <SweepCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_h<SweepCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_h <SweepCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_h<SweepCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_h <SweepCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors HermiteCurveNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_h<SweepCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_h <SweepCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_h<SweepCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_h <SweepCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_h<SweepCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_h <SweepCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_h<SweepCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_h <SweepCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_h<SweepCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_h <SweepCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_h<SweepCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_h <SweepCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_h<SweepCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_h <SweepCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_h<SweepCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_h <SweepCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors HermiteOrientedCurveNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_hn<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_hn <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiIntersector1<N>::template intersect_hn<OrientedCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiIntersector1<N>::template occluded_hn <OrientedCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiIntersectorK<N,4>::template intersect_hn<OrientedCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiIntersectorK<N,4>::template occluded_hn <OrientedCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiIntersectorK<N,8>::template intersect_hn<OrientedCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiIntersectorK<N,8>::template occluded_hn <OrientedCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiIntersectorK<N,16>::template intersect_hn<OrientedCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiIntersectorK<N,16>::template occluded_hn <OrientedCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }
     
-    template<typename Curve3fa, int N>
+    template<template<typename Ty> class Curve, int N>
       static VirtualCurveIntersector::Intersectors HermiteOrientedCurveNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
-      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_hn<OrientedCurve1Intersector1<Curve3fa>, Intersect1Epilog1<true> >;
-      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_hn <OrientedCurve1Intersector1<Curve3fa>, Occluded1Epilog1<true> >;
-      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,4>, Intersect1KEpilog1<4,true> >;
-      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,4>, Occluded1KEpilog1<4,true> >;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &CurveNiMBIntersector1<N>::template intersect_hn<OrientedCurve1Intersector1<Curve>, Intersect1Epilog1<true> >;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &CurveNiMBIntersector1<N>::template occluded_hn <OrientedCurve1Intersector1<Curve>, Occluded1Epilog1<true> >;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty)&CurveNiMBIntersectorK<N,4>::template intersect_hn<OrientedCurve1IntersectorK<Curve,4>, Intersect1KEpilog1<4,true> >;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty) &CurveNiMBIntersectorK<N,4>::template occluded_hn <OrientedCurve1IntersectorK<Curve,4>, Occluded1KEpilog1<4,true> >;
 #if defined(__AVX__)
-      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,8>, Intersect1KEpilog1<8,true> >;
-      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,8>, Occluded1KEpilog1<8,true> >;
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&CurveNiMBIntersectorK<N,8>::template intersect_hn<OrientedCurve1IntersectorK<Curve,8>, Intersect1KEpilog1<8,true> >;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &CurveNiMBIntersectorK<N,8>::template occluded_hn <OrientedCurve1IntersectorK<Curve,8>, Occluded1KEpilog1<8,true> >;
 #endif
 #if defined(__AVX512F__)
-      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_hn<OrientedCurve1IntersectorK<Curve3fa,16>, Intersect1KEpilog1<16,true> >;
-      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_hn <OrientedCurve1IntersectorK<Curve3fa,16>, Occluded1KEpilog1<16,true> >;
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&CurveNiMBIntersectorK<N,16>::template intersect_hn<OrientedCurve1IntersectorK<Curve,16>, Intersect1KEpilog1<16,true> >;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &CurveNiMBIntersectorK<N,16>::template occluded_hn <OrientedCurve1IntersectorK<Curve,16>, Occluded1KEpilog1<16,true> >;
 #endif
       return intersectors;
     }

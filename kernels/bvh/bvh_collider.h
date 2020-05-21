@@ -16,7 +16,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
 
       struct CollideJob
       {
@@ -59,7 +59,7 @@ namespace embree
     {
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
 
       __forceinline BVHNColliderUserGeom (Scene* scene0, Scene* scene1, RTCCollideFunc callback, void* userPtr)
         : BVHNCollider<N>(scene0,scene1,callback,userPtr) {}

@@ -91,18 +91,18 @@ namespace embree
         const Vec3vf<M> center = v0.xyz();
         const vfloat<M> radius = v0.w;
 
-        vfloat<M> divisor       = dot(Vec3vf<M>(ray.dir), normal);
+        vfloat<M> divisor       = dot(Vec3vf<M>((Vec3fa)ray.dir), normal);
         const vbool<M> parallel = divisor == vfloat<M>(0.f);
         valid &= !parallel;
         divisor = select(parallel, 1.f, divisor);  // prevent divide by zero
 
-        vfloat<M> t = dot(center - Vec3vf<M>(ray.org), Vec3vf<M>(normal)) / divisor;
+        vfloat<M> t = dot(center - Vec3vf<M>((Vec3fa)ray.org), Vec3vf<M>(normal)) / divisor;
 
         valid &= (vfloat<M>(ray.tnear()) <= t) & (t <= vfloat<M>(ray.tfar));
         if (unlikely(none(valid)))
           return false;
 
-        Vec3vf<M> intersection = Vec3vf<M>(ray.org) + Vec3vf<M>(ray.dir) * t;
+        Vec3vf<M> intersection = Vec3vf<M>((Vec3fa)ray.org) + Vec3vf<M>((Vec3fa)ray.dir) * t;
         vfloat<M> dist2        = dot(intersection - center, intersection - center);
         valid &= dist2 < radius * radius;
         if (unlikely(none(valid)))

@@ -1017,7 +1017,7 @@ int ImStrnicmp(const char* str1, const char* str2, size_t count)
 void ImStrncpy(char* dst, const char* src, size_t count)
 {
     if (count < 1) return;
-    strncpy(dst, src, count);
+    strncpy(dst, src, count-1);
     dst[count-1] = 0;
 }
 

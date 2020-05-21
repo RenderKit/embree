@@ -46,7 +46,7 @@ namespace embree
         const PrimInfoMB pinfo = createPrimRefArrayMSMBlur(scene,Geometry::MTY_CURVES,prims0,bvh->scene->progressInterface);
 
         /* estimate acceleration structure size */
-        const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(typename BVH::AABBNodeMB)/(4*N);
         const size_t leaf_bytes = CurvePrimitive::bytes(pinfo.num_time_segments);
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
     
@@ -78,10 +78,10 @@ namespace embree
           (scene, prims0, pinfo,
            VirtualRecalculatePrimRef(scene),
            typename BVH::CreateAlloc(bvh),
-           typename BVH::AlignedNodeMB4D::Create(),
-           typename BVH::AlignedNodeMB4D::Set(),
-           typename BVH::UnalignedNodeMB::Create(),
-           typename BVH::UnalignedNodeMB::Set(),
+           typename BVH::AABBNodeMB4D::Create(),
+           typename BVH::AABBNodeMB4D::Set(),
+           typename BVH::OBBNodeMB::Create(),
+           typename BVH::OBBNodeMB::Set(),
            createLeaf,
            bvh->scene->progressInterface,
            settings);

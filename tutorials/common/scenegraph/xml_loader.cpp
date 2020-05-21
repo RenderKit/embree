@@ -236,6 +236,7 @@ namespace embree
     Ref<SceneGraph::Node> loadSubdivMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, SceneGraph::CurveSubtype subtype); // only for compatibility
     Ref<SceneGraph::Node> loadCurves(const Ref<XML>& xml, RTCGeometryType type);
+    Ref<SceneGraph::Node> loadPoints(const Ref<XML>& xml, RTCGeometryType type);
  
   private:
     Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
@@ -265,14 +266,14 @@ namespace embree
     std::vector<Vec2f> loadVec2fArray(const Ref<XML>& xml);
     std::vector<Vec3f> loadVec3fArray(const Ref<XML>& xml);
     avector<Vec3fa> loadVec3faArray(const Ref<XML>& xml);
-    avector<Vec3fa> loadVec4fArray(const Ref<XML>& xml);
-    avector<AffineSpace3fa> loadAffineSpace3faArray(const Ref<XML>& xml);
+    avector<Vec3ff> loadVec3ffArray(const Ref<XML>& xml);
+    avector<AffineSpace3ff> loadAffineSpace3faArray(const Ref<XML>& xml);
     std::vector<unsigned> loadUIntArray(const Ref<XML>& xml);
     std::vector<unsigned char> loadUCharArray(const Ref<XML>& xml);
     std::vector<Vec2i> loadVec2iArray(const Ref<XML>& xml);
     std::vector<Vec3i> loadVec3iArray(const Ref<XML>& xml);
     std::vector<Vec4i> loadVec4iArray(const Ref<XML>& xml);
-    AffineSpace3fa loadQuaternion(const Ref<XML>& xml);
+    AffineSpace3ff loadQuaternion(const Ref<XML>& xml);
 
   private:
     FileName path;         //!< path to XML file
@@ -399,7 +400,7 @@ namespace embree
     }
   }
 
-  AffineSpace3fa XMLLoader::loadQuaternion(const Ref<XML>& xml)
+  AffineSpace3ff XMLLoader::loadQuaternion(const Ref<XML>& xml)
   {
     Vec3f scale(1.f, 1.f, 1.f);
     Vec3f shift(0.f, 0.f, 0.f);
@@ -419,17 +420,17 @@ namespace embree
       q = string_to_Vec4f(xml->parm("quaternion"));
     }
 
-    AffineSpace3fa res(LinearSpace3fa(
-      Vec3fa(scale.x, skew.x, skew.y, q.x),
-      Vec3fa(shift.x, scale.y, skew.z, q.y),
-      Vec3fa(shift.y, shift.z, scale.z, q.z)),
-      Vec3fa(translate.x, translate.y, translate.z, q.w));
+    AffineSpace3ff res(LinearSpace3fa(
+      Vec3ff(scale.x, skew.x, skew.y, q.x),
+      Vec3ff(shift.x, scale.y, skew.z, q.y),
+      Vec3ff(shift.y, shift.z, scale.z, q.z)),
+      Vec3ff(translate.x, translate.y, translate.z, q.w));
 
     if (xml->body.size() == 16) {
-      res = AffineSpace3fa(LinearSpace3fa(Vec3fa(xml->body[ 0].Float(),xml->body[ 4].Float(),xml->body[ 8].Float(),xml->body[12].Float()),
-                                          Vec3fa(xml->body[ 1].Float(),xml->body[ 5].Float(),xml->body[ 9].Float(),xml->body[13].Float()),
-                                          Vec3fa(xml->body[ 2].Float(),xml->body[ 6].Float(),xml->body[10].Float(),xml->body[14].Float())),
-                                          Vec3fa(xml->body[ 3].Float(),xml->body[ 7].Float(),xml->body[11].Float(),xml->body[15].Float()));
+      res = AffineSpace3ff(LinearSpace3fa(Vec3ff(xml->body[ 0].Float(),xml->body[ 4].Float(),xml->body[ 8].Float(),xml->body[12].Float()),
+                                          Vec3ff(xml->body[ 1].Float(),xml->body[ 5].Float(),xml->body[ 9].Float(),xml->body[13].Float()),
+                                          Vec3ff(xml->body[ 2].Float(),xml->body[ 6].Float(),xml->body[10].Float(),xml->body[14].Float())),
+                                          Vec3ff(xml->body[ 3].Float(),xml->body[ 7].Float(),xml->body[11].Float(),xml->body[15].Float()));
     }
     return res;
   }
@@ -533,34 +534,34 @@ namespace embree
     }
   }
 
-  avector<Vec3fa> XMLLoader::loadVec4fArray(const Ref<XML>& xml)
+  avector<Vec3ff> XMLLoader::loadVec3ffArray(const Ref<XML>& xml)
   {
-    if (!xml) return avector<Vec3fa>();
+    if (!xml) return avector<Vec3ff>();
 
     if (xml->parm("ofs") != "") {
-      return loadBinary<avector<Vec3fa>>(xml);
+      return loadBinary<avector<Vec3ff>>(xml);
     } 
     else 
     {
-      avector<Vec3fa> data;
+      avector<Vec3ff> data;
       if (xml->body.size() % 4 != 0) THROW_RUNTIME_ERROR(xml->loc.str()+": wrong vector<float4> body");
       data.resize(xml->body.size()/4);
       for (size_t i=0; i<data.size(); i++) 
-        data[i] = Vec3fa(xml->body[4*i+0].Float(),xml->body[4*i+1].Float(),xml->body[4*i+2].Float(),xml->body[4*i+3].Float());
+        data[i] = Vec3ff(xml->body[4*i+0].Float(),xml->body[4*i+1].Float(),xml->body[4*i+2].Float(),xml->body[4*i+3].Float());
       return data;
     }
   }
 
-  avector<AffineSpace3fa> XMLLoader::loadAffineSpace3faArray(const Ref<XML>& xml)
+  avector<AffineSpace3ff> XMLLoader::loadAffineSpace3faArray(const Ref<XML>& xml)
   {
-    if (!xml) return avector<AffineSpace3fa>();
+    if (!xml) return avector<AffineSpace3ff>();
 
     if (xml->parm("ofs") == "") 
       THROW_RUNTIME_ERROR(xml->loc.str()+": invalid AffineSpace3fa array");
 
     std::vector<AffineSpace3f> temp = loadBinary<std::vector<AffineSpace3f>>(xml);
-    avector<AffineSpace3fa> data; data.resize(temp.size());
-    for (size_t i=0; i<temp.size(); i++) data[i] = AffineSpace3fa(temp[i]);
+    avector<AffineSpace3ff> data; data.resize(temp.size());
+    for (size_t i=0; i<temp.size(); i++) data[i] = AffineSpace3ff(AffineSpace3fa(temp[i]));
     return data;
   }
 
@@ -1067,7 +1068,7 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
-  void fix_bspline_end_points(const std::vector<unsigned>& indices, avector<Vec3fa>& positions)
+  void fix_bspline_end_points(const std::vector<unsigned>& indices, avector<Vec3ff>& positions)
   {
     for (size_t i=0; i<indices.size(); i++) 
     {
@@ -1091,11 +1092,11 @@ namespace embree
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++)
-        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
+        mesh->positions.push_back(loadVec3ffArray(animation->child(i)));
     } else {
-      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
+      mesh->positions.push_back(loadVec3ffArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) 
-        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
+        mesh->positions.push_back(loadVec3ffArray(xml->childOpt("positions2")));
     }
     
     std::vector<Vec2i> indices = loadVec2iArray(xml->childOpt("indices"));
@@ -1120,12 +1121,12 @@ namespace embree
 
     if (Ref<XML> animation = xml->childOpt("animated_positions")) {
       for (size_t i=0; i<animation->size(); i++) {
-        mesh->positions.push_back(loadVec4fArray(animation->child(i)));
+        mesh->positions.push_back(loadVec3ffArray(animation->child(i)));
       }
     } else {
-      mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions")));
+      mesh->positions.push_back(loadVec3ffArray(xml->childOpt("positions")));
       if (xml->hasChild("positions2")) {
-        mesh->positions.push_back(loadVec4fArray(xml->childOpt("positions2")));
+        mesh->positions.push_back(loadVec3ffArray(xml->childOpt("positions2")));
       }
     }
 
@@ -1143,10 +1144,10 @@ namespace embree
     {
       if (Ref<XML> animation = xml->childOpt("animated_tangents")) {
         for (size_t i=0; i<animation->size(); i++) {
-          mesh->tangents.push_back(loadVec4fArray(animation->child(i)));
+          mesh->tangents.push_back(loadVec3ffArray(animation->child(i)));
         }
       } else if (Ref<XML> tangents = xml->childOpt("tangents")) {
-        mesh->tangents.push_back(loadVec4fArray(tangents));
+        mesh->tangents.push_back(loadVec3ffArray(tangents));
       }
     }
 
@@ -1203,6 +1204,31 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadPoints(const Ref<XML>& xml, RTCGeometryType type)
+  {
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    Ref<SceneGraph::PointSetNode> mesh = new SceneGraph::PointSetNode(type,material,BBox1f(0,1),0);
+
+    if (Ref<XML> animation = xml->childOpt("animated_positions")) {
+      for (size_t i=0; i<animation->size(); i++) {
+        mesh->positions.push_back(loadVec3ffArray(animation->child(i)));
+      }
+    } else {
+      mesh->positions.push_back(loadVec3ffArray(xml->childOpt("positions")));
+    }
+
+    if (Ref<XML> animation = xml->childOpt("animated_normals")) {
+      for (size_t i=0; i<animation->size(); i++) {
+        mesh->normals.push_back(loadVec3faArray(animation->child(i)));
+      }
+    } else if (Ref<XML> normals = xml->childOpt("normals")) {
+      mesh->normals.push_back(loadVec3faArray(normals));
+    }
+
+    mesh->verify();
+    return mesh.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
   {
     /* parse number of time steps to use for instanced geometry */
@@ -1211,10 +1237,10 @@ namespace embree
     if (str_time_steps != "") time_steps = max(1,std::stoi(str_time_steps));
 
     bool quaternion = false;
-    AffineSpace3fa space;
-    avector<AffineSpace3fa> spaces(time_steps);
+    AffineSpace3ff space;
+    avector<AffineSpace3ff> spaces(time_steps);
     if (xml->children[0]->name == "AffineSpace") {
-      space = load<AffineSpace3fa>(xml->children[0]);
+      space = (AffineSpace3ff) load<AffineSpace3fa>(xml->children[0]);
     }
     else if (xml->children[0]->name == "Quaternion") {
       space = loadQuaternion(xml->children[0]);
@@ -1242,7 +1268,7 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::loadMultiTransformNode(const Ref<XML>& xml) 
   {
-    avector<AffineSpace3fa> spaces = loadAffineSpace3faArray(xml->children[0]);
+    avector<AffineSpace3ff> spaces = loadAffineSpace3faArray(xml->children[0]);
     Ref<SceneGraph::Node> child = loadNode(xml->children[1]);
     
     /* instantiate the object group with all transformations */
@@ -1273,11 +1299,11 @@ namespace embree
     if (xml->size() < 2) THROW_RUNTIME_ERROR(xml->loc.str()+": invalid TransformAnimation node");
 
     bool quaternion = false;
-    avector<AffineSpace3fa> spaces(xml->size()-1);
+    avector<AffineSpace3ff> spaces(xml->size()-1);
     for (size_t i=0; i<xml->size()-1; i++)
     {
       if (xml->children[0]->name == "AffineSpace") {
-        spaces[i] = load<AffineSpace3fa>(xml->children[i]);
+        spaces[i] = (AffineSpace3ff) load<AffineSpace3fa>(xml->children[i]);
       }
       else if (xml->children[0]->name == "Quaternion") {
         spaces[i] = loadQuaternion(xml->children[i]);
@@ -1374,14 +1400,25 @@ namespace embree
       else if (xml->name == "SubdivisionMesh" ) node = state.sceneMap[id] = loadSubdivMesh      (xml);
 
       /* just for compatibility, use Curves XML node instead */
-      else if (xml->name == "Hair"            ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "LineSegments"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
+      else if (xml->name == "Hair"             ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "LineSegments"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
       else if (xml->name == "RoundLineSegments") node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
-      else if (xml->name == "BezierHair"      ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
-      else if (xml->name == "BSplineHair"     ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
-      else if (xml->name == "BezierCurves"    ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
-      else if (xml->name == "BSplineCurves"   ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
-      
+      else if (xml->name == "BezierHair"       ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::FLAT_CURVE);
+      else if (xml->name == "BSplineHair"      ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE);
+      else if (xml->name == "BezierCurves"     ) node = state.sceneMap[id] = loadBezierCurves    (xml,SceneGraph::ROUND_CURVE);
+      else if (xml->name == "BSplineCurves"    ) node = state.sceneMap[id] = loadCurves          (xml,RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
+
+      else if (xml->name == "Points")
+      {
+        RTCGeometryType type;
+        std::string str_type = xml->parm("type");
+        if      (str_type == "sphere")   { type = RTC_GEOMETRY_TYPE_SPHERE_POINT; }
+        else if (str_type == "disc")     { type = RTC_GEOMETRY_TYPE_DISC_POINT; }
+        else if (str_type == "oriented") { type = RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT; }
+        else { THROW_RUNTIME_ERROR(xml->loc.str()+": unknown point type: "+str_type); }
+        node = state.sceneMap[id] = loadPoints(xml,type);
+      }
+
       else if (xml->name == "Curves")
       {
         RTCGeometryType type;

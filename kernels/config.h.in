@@ -16,6 +16,7 @@
 #cmakedefine EMBREE_GEOMETRY_GRID
 #cmakedefine EMBREE_GEOMETRY_POINT
 #cmakedefine EMBREE_RAY_PACKETS
+#cmakedefine EMBREE_COMPACT_POLYS
 
 #define EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR @EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR@
 
@@ -32,9 +33,21 @@
 #endif
 
 #if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
+  #define IF_ENABLED_CURVES_OR_POINTS(x) x
+#else
+  #define IF_ENABLED_CURVES_OR_POINTS(x)
+#endif
+
+#if defined(EMBREE_GEOMETRY_CURVE)
   #define IF_ENABLED_CURVES(x) x
 #else
   #define IF_ENABLED_CURVES(x)
+#endif
+
+#if defined(EMBREE_GEOMETRY_POINT)
+  #define IF_ENABLED_POINTS(x) x
+#else
+  #define IF_ENABLED_POINTS(x)
 #endif
 
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)

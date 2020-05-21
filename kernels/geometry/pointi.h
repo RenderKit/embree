@@ -130,7 +130,7 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i = 0; i < M && valid(i); i++) {
         const Points* geom = scene->get<Points>(geomID(i));
-        const Vec3fa& p0   = geom->vertex(primID(i), itime);
+        const Vec3ff& p0   = geom->vertex(primID(i), itime);
         BBox3fa b          = enlarge(BBox3fa(p0), Vec3fa(p0.w));
         bounds.extend(b);
       }
@@ -243,7 +243,7 @@ namespace embree
     {
       BBox3fa bounds = empty;
       for (size_t i = 0; i < M && valid(i); i++) {
-        const Vec3fa& p0 = geom->vertex(primID(i));
+        const Vec3ff& p0 = geom->vertex(primID(i));
         BBox3fa b        = enlarge(BBox3fa(p0), Vec3fa(p0.w));
         bounds.extend(b);
       }

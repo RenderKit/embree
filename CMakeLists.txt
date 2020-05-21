@@ -2,9 +2,9 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 SET(EMBREE_VERSION_MAJOR 3)
-SET(EMBREE_VERSION_MINOR 9)
+SET(EMBREE_VERSION_MINOR 10)
 SET(EMBREE_VERSION_PATCH 1)
-SET(EMBREE_VERSION_NOTE "-alpha.0")
+SET(EMBREE_VERSION_NOTE "")
 
 SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
 MATH(EXPR EMBREE_VERSION_NUMBER "10000*${EMBREE_VERSION_MAJOR} + 100*${EMBREE_VERSION_MINOR} + ${EMBREE_VERSION_PATCH}")
@@ -12,7 +12,7 @@ SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
 PROJECT(embree${EMBREE_VERSION_MAJOR})
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.11)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
 # We use our own strip tool on macOS to sign during install. This is required as CMake modifies RPATH of the binary during install.
 IF (APPLE AND EMBREE_SIGN_FILE)
@@ -63,6 +63,12 @@ IF(COMMAND cmake_policy)
   if(POLICY CMP0072)
     cmake_policy(SET CMP0072 OLD)
   endif()
+  if(POLICY CMP0022)
+    cmake_policy(SET CMP0022 NEW)
+  endif()
+  if(POLICY CMP0074)
+    cmake_policy(SET CMP0074 NEW)
+  endif()
 ENDIF(COMMAND cmake_policy)
 
 MARK_AS_ADVANCED(CMAKE_BACKWARDS_COMPATIBILITY)
@@ -110,6 +116,9 @@ ENDIF()
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config.cmake)
 
+OPTION(EMBREE_ZIP_MODE "Create Embree ZIP package" OFF)
+MARK_AS_ADVANCED(EMBREE_ZIP_MODE)
+
 OPTION(EMBREE_INSTALL_DEPENDENCIES "Install Embree dependencies in binary packages and install" OFF)
 MARK_AS_ADVANCED(EMBREE_INSTALL_DEPENDENCIES)
 
@@ -120,6 +129,7 @@ OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
 OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)
 OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
+OPTION(EMBREE_COMPACT_POLYS "Enables double indexed poly layout." OFF)
 
 OPTION(EMBREE_GEOMETRY_TRIANGLE "Enables support for triangle geometries." ON)
 OPTION(EMBREE_GEOMETRY_QUAD "Enables support for quad geometries." ON)
@@ -448,13 +458,6 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map"
 )
 
-##############################################################
-# Search paths
-##############################################################
-IF (TASKING_TBB)
-  FIND_PACKAGE(TBB REQUIRED)
-  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIRS})
-ENDIF()
 
 ##############################################################
 # Output paths

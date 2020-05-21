@@ -84,7 +84,7 @@ namespace embree
 #endif
     }
     
-    __forceinline void init_dim(AlignedNode_t<NodeRefPtr<N>,N>& node)
+    __forceinline void init_dim(AABBNode_t<NodeRefPtr<N>,N>& node)
     {
       init_dim(node.lower_x,node.upper_x,lower_x,upper_x,start.x,scale.x);
       init_dim(node.lower_y,node.upper_y,lower_y,upper_y,start.y,scale.y);
@@ -173,7 +173,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline NodeRef operator() (BuildRecord* children, const size_t n, const FastAllocator::CachedAllocator& alloc) const
       {
-        __aligned(64) AlignedNode_t<NodeRef,N> node;
+        __aligned(64) AABBNode_t<NodeRef,N> node;
         node.clear();
         for (size_t i=0; i<n; i++) {
           node.setBounds(i,children[i].bounds());
@@ -196,7 +196,7 @@ namespace embree
       }
     };
     
-    __forceinline void init(AlignedNode_t<NodeRef,N>& node)
+    __forceinline void init(AABBNode_t<NodeRef,N>& node)
     {
       for (size_t i=0;i<N;i++) children[i] = NodeRef::emptyNode;
       init_dim(node);

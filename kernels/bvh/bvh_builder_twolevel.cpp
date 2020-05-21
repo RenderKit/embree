@@ -179,8 +179,8 @@ namespace embree
          
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
               typename BVH::CreateAlloc(bvh_),
-              typename BVH::AlignedNode::Create2(),
-              typename BVH::AlignedNode::Set2(),
+              typename BVH::AABBNode::Create2(),
+              typename BVH::AABBNode::Set2(),
               
               [&] (const BuildRef* refs, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef  {
                 assert(range.size() == 1);
@@ -194,8 +194,8 @@ namespace embree
 #else
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>(
               typename BVH::CreateAlloc(bvh_),
-              typename BVH::AlignedNode::Create2(),
-              typename BVH::AlignedNode::Set2(),
+              typename BVH::AABBNode::Create2(),
+              typename BVH::AABBNode::Set2(),
               
               [&] (const PrimRef* prims, const range<size_t>& range, const FastAllocator::CachedAllocator& alloc) -> NodeRef {
                 assert(range.size() == 1);
@@ -257,7 +257,7 @@ namespace embree
       for (size_t i=0;i<refs_.size();i++)
       {
         NodeRef ref = refs_[i].node;
-        if (ref.isAlignedNode())
+        if (ref.isAABBNode())
           BVH::prefetch(ref);
       }
 #endif
@@ -270,14 +270,14 @@ namespace embree
         if (ref.isLeaf()) break;
         refs_.pop_back();    
         
-        AlignedNode* node = ref.alignedNode();
+        AABBNode* node = ref.getAABBNode();
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
           refs_.push_back(BuildRef(node->bounds(i),node->child(i)));
          
 #if 1
           NodeRef ref_pre = node->child(i);
-          if (ref_pre.isAlignedNode())
+          if (ref_pre.isAABBNode())
             ref_pre.prefetch();
 #endif
           std::push_heap (refs_.begin(),refs_.end()); 

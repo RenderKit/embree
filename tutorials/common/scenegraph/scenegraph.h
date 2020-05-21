@@ -184,15 +184,15 @@ namespace embree
         spaces.push_back(space1);
       }
 
-      __forceinline Transformations(const avector<AffineSpace3fa>& spaces)
+      __forceinline Transformations(const avector<AffineSpace3ff>& spaces)
         : time_range(0.0f,1.0f), spaces(spaces) { assert(spaces.size()); }
 
       __forceinline size_t size() const {
         return spaces.size();
       }
 
-      __forceinline       AffineSpace3fa& operator[] ( const size_t i )       { return spaces[i]; }
-      __forceinline const AffineSpace3fa& operator[] ( const size_t i ) const { return spaces[i]; }
+      __forceinline       AffineSpace3ff& operator[] ( const size_t i )       { return spaces[i]; }
+      __forceinline const AffineSpace3ff& operator[] ( const size_t i ) const { return spaces[i]; }
 
       BBox3fa bounds ( const BBox3fa& cbounds ) const 
       {
@@ -225,7 +225,7 @@ namespace embree
         for (size_t i=0; i<other.size(); i++) spaces.push_back(other[i]);
       }
 
-      static __forceinline bool isIdentity(AffineSpace3fa const& M, bool q)
+      static __forceinline bool isIdentity(AffineSpace3ff const& M, bool q)
       {
         if (M.l.vx.x      != 1.f) return false;
         if (M.l.vx.y      != 0.f) return false;
@@ -250,7 +250,7 @@ namespace embree
         return true;
       }
 
-      static __forceinline AffineSpace3fa mul(AffineSpace3fa const& M0, AffineSpace3fa const& M1, bool q0, bool q1, bool& q)
+      static __forceinline AffineSpace3ff mul(AffineSpace3ff const& M0, AffineSpace3ff const& M1, bool q0, bool q1, bool& q)
       {
         q = false;
         if (isIdentity(M0, q0)) { q = q1; return M1; }
@@ -270,7 +270,7 @@ namespace embree
         {
           AffineSpace3fa S; Quaternion3f Q; Vec3fa T;
           quaternionDecomposition(M0, T, Q, S);
-          S = S * M1;
+          S = S * AffineSpace3fa(M1);
           if (S.l.vx.y != 0.f || S.l.vx.z != 0 || S.l.vy.z != 0)
             std::cout << "warning: cannot multiply quaternion and general transformation matrix. will ignore lower diagonal" << std::endl;
           q = true;
@@ -279,7 +279,7 @@ namespace embree
         else {
           if (M0.l.vx.y != 0.f || M0.l.vx.z != 0 || M0.l.vy.z != 0 || M0.l.vy.x != 0.f || M0.l.vz.x != 0 || M0.l.vz.y != 0)
             std::cout << "warning: cannot multiply general transformation matrix and quaternion. will only consider translation and diagonal as scale factors" << std::endl;
-          AffineSpace3fa M = M1;
+          AffineSpace3ff M = M1;
           M.l.vx.y += M0.p.x;
           M.l.vx.z += M0.p.y;
           M.l.vy.z += M0.p.z;
@@ -317,7 +317,7 @@ namespace embree
           THROW_RUNTIME_ERROR("number of transformations does not match");
       }
 
-      AffineSpace3fa interpolate (const float gtime) const
+      AffineSpace3ff interpolate (const float gtime) const
       {
         assert(time_range.lower == 0.0f && time_range.upper == 1.0f);
         if (spaces.size() == 1) return spaces[0];
@@ -332,7 +332,7 @@ namespace embree
 
     public:
       BBox1f time_range;
-      avector<AffineSpace3fa> spaces;
+      avector<AffineSpace3ff> spaces;
       bool quaternion = false;
     };
 
@@ -362,11 +362,46 @@ namespace embree
         for (size_t t=0; t<num_time_steps; t++) 
         {
           float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
-          const AffineSpace3fa space = spaces.interpolate(time);
+          const AffineSpace3ff space = spaces.interpolate(time);
           avector<Vertex> verts(num_vertices);
           for (size_t i=0; i<num_vertices; i++) {
             verts[i] = xfmPoint (space,positions_in[t][i]);
             verts[i].w = positions_in[t][i].w;
+          }
+          positions_out.push_back(std::move(verts));
+        }
+      }
+      return positions_out;
+    }
+
+    inline std::vector<avector<Vec3fa>> transformMSMBlurVec3faBuffer(const std::vector<avector<Vec3fa>>& positions_in, const Transformations& spaces)
+    {
+      std::vector<avector<Vec3fa>> positions_out;
+      const size_t num_time_steps = positions_in.size(); assert(num_time_steps);
+      const size_t num_vertices = positions_in[0].size();
+
+      /* if we have only one set of vertices, use transformation to generate more vertex sets */
+      if (num_time_steps == 1)
+      {
+        for (size_t i=0; i<spaces.size(); i++) 
+        {
+          avector<Vec3fa> verts(num_vertices);
+          for (size_t j=0; j<num_vertices; j++) {
+            verts[j] = xfmPoint((AffineSpace3fa)spaces[i],positions_in[0][j]);
+          }
+          positions_out.push_back(std::move(verts));
+        }
+      } 
+      /* otherwise transform all vertex sets with interpolated transformation */
+      else
+      {
+        for (size_t t=0; t<num_time_steps; t++) 
+        {
+          float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
+          const AffineSpace3ff space = spaces.interpolate(time);
+          avector<Vec3fa> verts(num_vertices);
+          for (size_t i=0; i<num_vertices; i++) {
+            verts[i] = xfmPoint ((AffineSpace3fa)space,positions_in[t][i]);
           }
           positions_out.push_back(std::move(verts));
         }
@@ -403,11 +438,50 @@ namespace embree
         for (size_t t=0; t<num_time_steps; t++) 
         {
           float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
-          const AffineSpace3fa space = spaces.interpolate(time);
+          const AffineSpace3ff space = spaces.interpolate(time);
           avector<Vertex> vecs(num_vertices);
           for (size_t i=0; i<num_vertices; i++) {
             vecs[i] = xfmVector (space,vectors_in[t][i]);
             vecs[i].w = vectors_in[t][i].w;
+          }
+          vectors_out.push_back(std::move(vecs));
+        }
+      }
+      return vectors_out;
+    }
+
+    template<typename Vertex>
+       std::vector<avector<Vertex>> transformMSMBlurVectorVec3faBuffer(const std::vector<avector<Vertex>>& vectors_in, const Transformations& spaces)
+    {
+      if (vectors_in.size() == 0)
+        return vectors_in;
+      
+      std::vector<avector<Vertex>> vectors_out;
+      const size_t num_time_steps = vectors_in.size();
+      const size_t num_vertices = vectors_in[0].size();
+
+      /* if we have only one set of vertices, use transformation to generate more vertex sets */
+      if (num_time_steps == 1)
+      {
+        for (size_t i=0; i<spaces.size(); i++) 
+        {
+          avector<Vertex> vecs(num_vertices);
+          for (size_t j=0; j<num_vertices; j++) {
+            vecs[j] = xfmVector((AffineSpace3fa)spaces[i],vectors_in[0][j]);
+          }
+          vectors_out.push_back(std::move(vecs));
+        }
+      } 
+      /* otherwise transform all vertex sets with interpolated transformation */
+      else
+      {
+        for (size_t t=0; t<num_time_steps; t++) 
+        {
+          float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
+          const AffineSpace3ff space = spaces.interpolate(time);
+          avector<Vertex> vecs(num_vertices);
+          for (size_t i=0; i<num_vertices; i++) {
+            vecs[i] = xfmVector ((AffineSpace3fa)space,vectors_in[t][i]);
           }
           vectors_out.push_back(std::move(vecs));
         }
@@ -432,7 +506,7 @@ namespace embree
         {
           avector<Vertex> norms(num_vertices);
           for (size_t j=0; j<num_vertices; j++) {
-            norms[j] = xfmNormal(spaces[i],normals_in[0][j]);
+            norms[j] = xfmNormal((AffineSpace3fa)spaces[i],normals_in[0][j]);
           }
           normals_out.push_back(std::move(norms));
         }
@@ -443,10 +517,10 @@ namespace embree
         for (size_t t=0; t<num_time_steps; t++) 
         {
           float time = num_time_steps > 1 ? float(t)/float(num_time_steps-1) : 0.0f;
-          const AffineSpace3fa space = spaces.interpolate(time);
+          const AffineSpace3ff space = spaces.interpolate(time);
           avector<Vertex> norms(num_vertices);
           for (size_t i=0; i<num_vertices; i++) {
-            norms[i] = xfmNormal (space,normals_in[t][i]);
+            norms[i] = xfmNormal ((AffineSpace3fa)space,normals_in[t][i]);
           }
           normals_out.push_back(std::move(norms));
         }
@@ -481,12 +555,12 @@ namespace embree
       ALIGNED_STRUCT_(16);
 
       TransformNode (const AffineSpace3fa& xfm, const Ref<Node>& child)
-        : spaces(xfm), child(child) {}
+        : spaces((AffineSpace3ff)xfm), child(child) {}
 
       TransformNode (const AffineSpace3fa& xfm0, const AffineSpace3fa& xfm1, const Ref<Node>& child)
-        : spaces(xfm0,xfm1), child(child) {}
+        : spaces((AffineSpace3ff)xfm0,(AffineSpace3ff)xfm1), child(child) {}
 
-      TransformNode (const avector<AffineSpace3fa>& spaces, const Ref<Node>& child)
+      TransformNode (const avector<AffineSpace3ff>& spaces, const Ref<Node>& child)
         : spaces(spaces), child(child) {}
 
       TransformNode(const Transformations& spaces, const Ref<Node>& child)
@@ -715,7 +789,7 @@ namespace embree
       TriangleMeshNode (Ref<SceneGraph::TriangleMeshNode> imesh, const Transformations& spaces)
         : Node(true),
           time_range(imesh->time_range),
-          positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+          positions(transformMSMBlurVec3faBuffer(imesh->positions,spaces)),
           normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
           texcoords(imesh->texcoords), triangles(imesh->triangles), material(imesh->material) {}
       
@@ -802,7 +876,7 @@ namespace embree
       QuadMeshNode (Ref<SceneGraph::QuadMeshNode> imesh, const Transformations& spaces)
         : Node(true),
           time_range(imesh->time_range),
-          positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+          positions(transformMSMBlurVec3faBuffer(imesh->positions,spaces)),
           normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
           texcoords(imesh->texcoords), quads(imesh->quads), material(imesh->material) {}
    
@@ -884,7 +958,7 @@ namespace embree
       SubdivMeshNode (Ref<SceneGraph::SubdivMeshNode> imesh, const Transformations& spaces)
         : Node(true),
         time_range(imesh->time_range),
-        positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+        positions(transformMSMBlurVec3faBuffer(imesh->positions,spaces)),
         normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
         texcoords(imesh->texcoords),
         position_indices(imesh->position_indices),
@@ -994,7 +1068,7 @@ namespace embree
     /*! Hair Set. */
     struct HairSetNode : public Node
     {
-      typedef Vec3fa Vertex;
+      typedef Vec3ff Vertex;
 
       struct Hair
       {
@@ -1027,7 +1101,7 @@ namespace embree
         positions(transformMSMBlurBuffer(imesh->positions,spaces)),
         normals(transformMSMBlurNormalBuffer(imesh->normals,spaces)),
         tangents(transformMSMBlurVectorBuffer(imesh->tangents,spaces)),
-        dnormals(transformMSMBlurVectorBuffer(imesh->dnormals,spaces)),
+        dnormals(transformMSMBlurVectorVec3faBuffer(imesh->dnormals,spaces)),
         hairs(imesh->hairs), flags(imesh->flags), material(imesh->material), tessellation_rate(imesh->tessellation_rate) {}
 
       virtual void setMaterial(Ref<MaterialNode> material) {
@@ -1087,9 +1161,9 @@ namespace embree
       BBox1f time_range;                      //!< geometry time range for motion blur
       RTCGeometryType type;                   //!< type of curve
       std::vector<avector<Vertex>> positions; //!< hair control points (x,y,z,r) for multiple timesteps
-      std::vector<avector<Vertex>> normals;   //!< hair control normals (nx,ny,nz) for multiple timesteps
+      std::vector<avector<Vec3fa>> normals;   //!< hair control normals (nx,ny,nz) for multiple timesteps
       std::vector<avector<Vertex>> tangents;  //!< hair control tangents (tx,ty,tz,tr) for multiple timesteps
-      std::vector<avector<Vertex>> dnormals;  //!< hair control normal derivatives (nx,ny,nz) for multiple timesteps
+      std::vector<avector<Vec3fa>> dnormals;  //!< hair control normal derivatives (nx,ny,nz) for multiple timesteps
       std::vector<Hair> hairs;                //!< list of hairs
       std::vector<unsigned char> flags;       //!< left, right end cap flags
 
@@ -1100,7 +1174,7 @@ namespace embree
     /*! Point Set. */
     struct PointSetNode : public Node
     {
-      typedef Vec3fa Vertex;
+      typedef Vec3ff Vertex;
 
     public:
       PointSetNode (RTCGeometryType type, Ref<MaterialNode> material, const BBox1f time_range = BBox1f(0,1), size_t numTimeSteps = 0)
@@ -1174,7 +1248,7 @@ namespace embree
       BBox1f time_range;                      //!< geometry time range for motion blur
       RTCGeometryType type;                   //!< type of point
       std::vector<avector<Vertex>> positions; //!< point control points (x,y,z,r) for multiple timesteps
-      std::vector<avector<Vertex>> normals;   //!< point control normals (nx,ny,nz) for multiple timesteps (oriented only)
+      std::vector<avector<Vec3fa>> normals;   //!< point control normals (nx,ny,nz) for multiple timesteps (oriented only)
 
       Ref<MaterialNode> material;
     };
@@ -1212,7 +1286,7 @@ namespace embree
       GridMeshNode (Ref<SceneGraph::GridMeshNode> imesh, const Transformations& spaces)
         : Node(true),
          time_range(imesh->time_range),
-          positions(transformMSMBlurBuffer(imesh->positions,spaces)),
+          positions(transformMSMBlurVec3faBuffer(imesh->positions,spaces)),
         grids(imesh->grids), material(imesh->material) {}
    
       virtual void setMaterial(Ref<MaterialNode> material) {

@@ -95,7 +95,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
       typedef typename BVHN<N>::NodeRecordMB NodeRecordMB;
-      typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
+      typedef typename BVHN<N>::AABBNodeMB AABBNodeMB;
 
       BVH* bvh;
       Scene* scene;
@@ -146,7 +146,7 @@ namespace embree
         /* early out if no valid primitives */
         if (pinfo.size() == 0) { bvh->clear(); return; }
         /* estimate acceleration structure size */
-        const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
+        const size_t node_bytes = pinfo.size()*sizeof(AABBNodeMB)/(4*N);
         const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.size())*sizeof(Primitive));
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
 
@@ -163,7 +163,7 @@ namespace embree
 
         /* build hierarchy */
         auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
-          (typename BVH::CreateAlloc(bvh),typename BVH::AlignedNodeMB::Create(),typename BVH::AlignedNodeMB::Set(),
+          (typename BVH::CreateAlloc(bvh),typename BVH::AABBNodeMB::Create(),typename BVH::AABBNodeMB::Set(),
            CreateMBlurLeaf<N,Primitive>(bvh,prims.data(),0),bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
 
@@ -181,7 +181,7 @@ namespace embree
         if (pinfo.size() == 0) { bvh->clear(); return; }
 
         /* estimate acceleration structure size */
-        const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(AABBNodeMB)/(4*N);
         const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(Primitive));
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
 
@@ -202,8 +202,8 @@ namespace embree
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                             RecalculatePrimRef<Mesh>(scene),
                                             typename BVH::CreateAlloc(bvh),
-                                            typename BVH::AlignedNodeMB4D::Create(),
-                                            typename BVH::AlignedNodeMB4D::Set(),
+                                            typename BVH::AABBNodeMB4D::Create(),
+                                            typename BVH::AABBNodeMB4D::Set(),
                                             CreateMSMBlurLeaf<N,Mesh,Primitive>(bvh),
                                             bvh->scene->progressInterface,
                                             settings);
@@ -319,6 +319,7 @@ namespace embree
             bounds1[pos] = newBounds.bounds1;
             pos++;
           }
+          assert(pos <= N);
           new (&accel[g]) SubGridMBQBVHN<N>(x,y,primID,bounds0,bounds1,geomIDs[g],current.prims.time_range.lower,1.0f/current.prims.time_range.size(),pos);
         }
         return NodeRecordMB4D(node,allBounds,current.prims.time_range);       
@@ -414,7 +415,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVHN<N>::NodeRef NodeRef;
       typedef typename BVHN<N>::NodeRecordMB NodeRecordMB;
-      typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
+      typedef typename BVHN<N>::AABBNodeMB AABBNodeMB;
 
       BVH* bvh;
       Scene* scene;
@@ -572,7 +573,7 @@ namespace embree
         if (pinfo.size() == 0) { bvh->clear(); return; }
 
         /* estimate acceleration structure size */
-        const size_t node_bytes = pinfo.size()*sizeof(AlignedNodeMB)/(4*N);
+        const size_t node_bytes = pinfo.size()*sizeof(AABBNodeMB)/(4*N);
         //TODO: check leaf_bytes
         const size_t leaf_bytes = size_t(1.2*(float)numPrimitives/N * sizeof(SubGridQBVHN<N>));
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
@@ -591,8 +592,8 @@ namespace embree
         /* build hierarchy */
         auto root = BVHBuilderBinnedSAH::build<NodeRecordMB>
           (typename BVH::CreateAlloc(bvh),
-           typename BVH::AlignedNodeMB::Create(),
-           typename BVH::AlignedNodeMB::Set(),
+           typename BVH::AABBNodeMB::Create(),
+           typename BVH::AABBNodeMB::Set(),
            CreateLeafGridMB<N>(scene,bvh,sgrids.data()),
            bvh->scene->progressInterface,
            prims.data(),pinfo,settings);
@@ -615,7 +616,7 @@ namespace embree
         GridRecalculatePrimRef recalculatePrimRef(scene,sgrids.data());
 
         /* estimate acceleration structure size */
-        const size_t node_bytes = pinfo.num_time_segments*sizeof(AlignedNodeMB)/(4*N);
+        const size_t node_bytes = pinfo.num_time_segments*sizeof(AABBNodeMB)/(4*N);
         //FIXME: check leaf_bytes
         //const size_t leaf_bytes = size_t(1.2*Primitive::blocks(pinfo.num_time_segments)*sizeof(SubGridQBVHN<N>));
         const size_t leaf_bytes = size_t(1.2*(float)numPrimitives/N * sizeof(SubGridQBVHN<N>));
@@ -639,8 +640,8 @@ namespace embree
           BVHBuilderMSMBlur::build<NodeRef>(prims,pinfo,scene->device,
                                             recalculatePrimRef,
                                             typename BVH::CreateAlloc(bvh),
-                                            typename BVH::AlignedNodeMB4D::Create(),
-                                            typename BVH::AlignedNodeMB4D::Set(),
+                                            typename BVH::AABBNodeMB4D::Create(),
+                                            typename BVH::AABBNodeMB4D::Set(),
                                             CreateMSMBlurLeafGrid<N>(scene,bvh,sgrids.data()),
                                             bvh->scene->progressInterface,
                                             settings);

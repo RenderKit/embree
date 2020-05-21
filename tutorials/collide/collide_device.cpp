@@ -177,7 +177,7 @@ void initializeClothPositions (collide2::ClothModel & cloth) {
   cloth.x_ = cloth.x_0_;
   cloth.x_old_ = cloth.x_0_;
   cloth.x_last_ = cloth.x_0_;
-  collide2::vec_t nullvec {0.f, 0.f, 0.f, 0.f};
+  collide2::vec_t nullvec(0.f, 0.f, 0.f);
   std::fill (cloth.v_.begin (), cloth.v_.end (), nullvec);
 
   cur_time = 0;
@@ -191,8 +191,8 @@ unsigned int createClothSheet (RTCScene scene)
   cloth->x_.resize (NX*NZ);
   cloth->x_old_.resize (NX*NZ);
   cloth->x_last_.resize (NX*NZ);
-  collide2::vec_t nullvec {0.f, 0.f, 0.f, 0.f};
-  collide2::vec_t gravity {0.f, -9.8f, 0.f, 0.f};
+  collide2::vec_t nullvec(0.f, 0.f, 0.f);
+  collide2::vec_t gravity(0.f, -9.8f, 0.f);
   cloth->v_.resize (NX*NZ, nullvec);
   cloth->a_.resize (NX*NZ, gravity);
   cloth->m_.resize (NX*NZ, m);
@@ -363,8 +363,8 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
 {
   /* initialize ray */
   Ray ray;
-  ray.org = Vec3fa(camera.xfm.p);
-  ray.dir = Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
+  ray.org = Vec3ff(camera.xfm.p);
+  ray.dir = Vec3ff(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
   ray.tnear() = 0.0f;
   ray.tfar = inf;
   ray.geomID = RTC_INVALID_GEOMETRY_ID;

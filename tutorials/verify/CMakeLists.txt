@@ -6,7 +6,7 @@ IF(NOT EMBREE_API_NAMESPACE)
 ENDIF()
 
 ADD_EXECUTABLE(verify ../../kernels/embree.rc verify.cpp ../common/tutorial/application.cpp ../../kernels/common/geometry.cpp)
-TARGET_LINK_LIBRARIES(verify sys math scenegraph embree)
+TARGET_LINK_LIBRARIES(verify sys math scenegraph embree tasking)
 SET_PROPERTY(TARGET verify PROPERTY FOLDER tutorials)
 SET_PROPERTY(TARGET verify APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 INSTALL(TARGETS verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)

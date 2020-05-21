@@ -9,10 +9,10 @@ namespace embree
 {
   /*! Aligned 4D Motion Blur Node */
   template<typename NodeRef, int N>
-    struct AlignedNodeMB4D_t : public AlignedNodeMB_t<NodeRef, N>
+    struct AABBNodeMB4D_t : public AABBNodeMB_t<NodeRef, N>
   {
     using BaseNode_t<NodeRef,N>::children;
-    using AlignedNodeMB_t<NodeRef,N>::set;
+    using AABBNodeMB_t<NodeRef,N>::set;
 
     typedef BVHNodeRecord<NodeRef>     NodeRecord;
     typedef BVHNodeRecordMB<NodeRef>   NodeRecordMB;
@@ -25,12 +25,12 @@ namespace embree
       {
         if (hasTimeSplits)
         {
-          AlignedNodeMB4D_t* node = (AlignedNodeMB4D_t*) alloc.malloc0(sizeof(AlignedNodeMB4D_t),NodeRef::byteNodeAlignment); node->clear();
+          AABBNodeMB4D_t* node = (AABBNodeMB4D_t*) alloc.malloc0(sizeof(AABBNodeMB4D_t),NodeRef::byteNodeAlignment); node->clear();
           return NodeRef::encodeNode(node);
         }
         else
         {
-          AlignedNodeMB_t<NodeRef,N>* node = (AlignedNodeMB_t<NodeRef,N>*) alloc.malloc0(sizeof(AlignedNodeMB_t<NodeRef,N>),NodeRef::byteNodeAlignment); node->clear();
+          AABBNodeMB_t<NodeRef,N>* node = (AABBNodeMB_t<NodeRef,N>*) alloc.malloc0(sizeof(AABBNodeMB_t<NodeRef,N>),NodeRef::byteNodeAlignment); node->clear();
           return NodeRef::encodeNode(node);
         }
       }
@@ -41,12 +41,12 @@ namespace embree
       template<typename BuildRecord>
       __forceinline void operator() (const BuildRecord&, const BuildRecord*, NodeRef ref, NodeRecordMB4D* children, const size_t num) const
       {
-        if (likely(ref.isAlignedNodeMB())) {
+        if (likely(ref.isAABBNodeMB())) {
           for (size_t i=0; i<num; i++)
-            ref.alignedNodeMB()->set(i, children[i]);
+            ref.getAABBNodeMB()->set(i, children[i]);
         } else {
           for (size_t i=0; i<num; i++)
-            ref.alignedNodeMB4D()->set(i, children[i]);
+            ref.getAABBNodeMB4D()->set(i, children[i]);
         }
       }
     };
@@ -55,26 +55,26 @@ namespace embree
     __forceinline void clear()  {
       lower_t = vfloat<N>(pos_inf);
       upper_t = vfloat<N>(neg_inf);
-      AlignedNodeMB_t<NodeRef,N>::clear();
+      AABBNodeMB_t<NodeRef,N>::clear();
     }
     
     /*! Sets bounding box of child. */
     __forceinline void setBounds(size_t i, const LBBox3fa& bounds, const BBox1f& tbounds)
     {
-      AlignedNodeMB_t<NodeRef,N>::setBounds(i, bounds.global(tbounds));
+      AABBNodeMB_t<NodeRef,N>::setBounds(i, bounds.global(tbounds));
       lower_t[i] = tbounds.lower;
       upper_t[i] = tbounds.upper == 1.0f ? 1.0f+float(ulp) : tbounds.upper;
     }
     
     /*! Sets bounding box and ID of child. */
     __forceinline void set(size_t i, const NodeRecordMB4D& child) {
-      AlignedNodeMB_t<NodeRef,N>::setRef(i,child.ref);
+      AABBNodeMB_t<NodeRef,N>::setRef(i,child.ref);
       setBounds(i, child.lbounds, child.dt);
     }
     
     /*! Returns the expected surface area when randomly sampling the time. */
     __forceinline float expectedHalfArea(size_t i) const {
-      return AlignedNodeMB_t<NodeRef,N>::lbounds(i).expectedHalfArea(timeRange(i));
+      return AABBNodeMB_t<NodeRef,N>::lbounds(i).expectedHalfArea(timeRange(i));
     }
     
     /*! returns time range for specified child */
@@ -83,9 +83,9 @@ namespace embree
     }
     
     /*! stream output operator */
-    friend embree_ostream operator<<(embree_ostream cout, const AlignedNodeMB4D_t& n) 
+    friend embree_ostream operator<<(embree_ostream cout, const AABBNodeMB4D_t& n) 
     {
-      cout << "AlignedNodeMB4D {" << embree_endl;
+      cout << "AABBNodeMB4D {" << embree_endl;
       for (size_t i=0; i<N; i++) 
       {
         const BBox3fa b0 = n.bounds0(i);

@@ -205,6 +205,11 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
     materialID = mesh->geom.materialID;
   }
+  else if (geometry->type == POINTS)
+  {
+    uniform ISPCPointSet* uniform mesh = (uniform ISPCPointSet* uniform) geometry;
+    materialID = mesh->geom.materialID;
+  }
   else if (geometry->type == GROUP) {
     foreach_unique (geomID in ray.geomID) {
       postIntersectGeometry(ray,dg,((uniform ISPCGroup*) geometry)->geometries[geomID],materialID);

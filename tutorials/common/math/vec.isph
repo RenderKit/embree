@@ -869,6 +869,36 @@ inline uniform bool isnan(uniform Vec3fa v)
 inline bool isnan(Vec3fa v)
 { return isnan(v.x+v.y+v.z); }
 
+typedef Vec3fa Vec3ff;
+typedef Vec3f Vec3f_;
+
+inline uniform Vec3f make_Vec3f_(uniform float w) { uniform Vec3f r; r.x = w; r.y = w; r.z = w; return r; }
+inline varying Vec3f make_Vec3f_(varying float w) { varying Vec3f r; r.x = w; r.y = w; r.z = w; return r; }
+
+inline uniform Vec3f make_Vec3f_(uniform Vec3f v) { uniform Vec3f r; r.x = v.x; r.y = v.y; r.z = v.z; return r; }
+inline varying Vec3f make_Vec3f_(varying Vec3f v) { varying Vec3f r; r.x = v.x; r.y = v.y; r.z = v.z; return r; }
+
+inline uniform Vec3f make_Vec3f_(uniform Vec3fa v) { uniform Vec3f r; r.x = v.x; r.y = v.y; r.z = v.z; return r; }
+inline varying Vec3f make_Vec3f_(varying Vec3fa v) { varying Vec3f r; r.x = v.x; r.y = v.y; r.z = v.z; return r; }
+
+inline uniform Vec3ff make_Vec3ff(uniform float w) { uniform Vec3ff r; r.x = w; r.y = w; r.z = w; r.w = w; return r; }
+inline varying Vec3ff make_Vec3ff(varying float w) { varying Vec3ff r; r.x = w; r.y = w; r.z = w; r.w = w; return r; }
+
+inline uniform Vec3ff make_Vec3ff(uniform Vec3f v) { uniform Vec3ff r; r.x = v.x; r.y = v.y; r.z = v.z; r.w = 0.0f; return r; }
+inline varying Vec3ff make_Vec3ff(varying Vec3f v) { varying Vec3ff r; r.x = v.x; r.y = v.y; r.z = v.z; r.w = 0.0f; return r; }
+
+inline uniform Vec3ff make_Vec3ff(uniform Vec3fa v) { uniform Vec3ff r; r.x = v.x; r.y = v.y; r.z = v.z; r.w = 0.0f; return r; }
+inline varying Vec3ff make_Vec3ff(varying Vec3fa v) { varying Vec3ff r; r.x = v.x; r.y = v.y; r.z = v.z; r.w = 0.0f; return r; }
+
+inline uniform Vec3ff make_Vec3ff(uniform Vec3f v, uniform float w) { uniform Vec3ff r; r.x = v.x; r.y = v.y; r.z = v.z; r.w = w; return r; }
+inline varying Vec3ff make_Vec3ff(varying Vec3f v, varying float w) { varying Vec3ff r; r.x = v.x; r.y = v.y; r.z = v.z; r.w = w; return r; }
+
+inline uniform Vec3ff make_Vec3ff(uniform Vec3fa v, uniform float w) { uniform Vec3ff r; r.x = v.x; r.y = v.y; r.z = v.z; r.w = w; return r; }
+inline varying Vec3ff make_Vec3ff(varying Vec3fa v, varying float w) { varying Vec3ff r; r.x = v.x; r.y = v.y; r.z = v.z; r.w = w; return r; }
+
+inline uniform Vec3ff make_Vec3ff(uniform float x, uniform float y, uniform float z, uniform float w) { uniform Vec3ff r; r.x = x; r.y = y; r.z = z; r.w = w; return r; }
+inline varying Vec3ff make_Vec3ff(varying float x, varying float y, varying float z, varying float w) { varying Vec3ff r; r.x = x; r.y = y; r.z = z; r.w = w; return r; }
+
 inline void out(uniform Vec3f v) { print("(%,%,%)",v.x,v.y,v.z); }
 inline void out(Vec3f v) { print("\n(%\n %\n %)",v.x,v.y,v.z); }
 inline void out(uniform Vec3i v) { print("(%,%,%)",v.x,v.y,v.z); }

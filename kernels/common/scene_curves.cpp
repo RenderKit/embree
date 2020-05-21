@@ -383,49 +383,53 @@ namespace embree
       return enlarge(bounds,Vec3fa(4.0f*float(ulp)*size));
     }
     
-    template<typename Curve3fa, typename Curve4f>
+    template<template<typename Ty> class Curve>
     struct CurveGeometryInterface : public CurveGeometry
     {
+      typedef Curve<Vec3ff> Curve3ff;
+      typedef Curve<Vec3fa> Curve3fa;
+      typedef Curve<vfloat4> Curve4vf;
+      
       CurveGeometryInterface (Device* device, Geometry::GType gtype)
         : CurveGeometry(device,gtype) {}
       
-      __forceinline const Curve3fa getCurve(size_t i, size_t itime = 0) const 
+      __forceinline const Curve3ff getCurve(size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa v2 = vertex(index+2,itime);
-        const Vec3fa v3 = vertex(index+3,itime);
-        return Curve3fa (v0,v1,v2,v3);
+        const Vec3ff v0 = vertex(index+0,itime);
+        const Vec3ff v1 = vertex(index+1,itime);
+        const Vec3ff v2 = vertex(index+2,itime);
+        const Vec3ff v3 = vertex(index+3,itime);
+        return Curve3ff (v0,v1,v2,v3);
       }
 
-      __forceinline const Curve3fa getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      __forceinline const Curve3ff getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa v2 = vertex(index+2,itime);
-        const Vec3fa v3 = vertex(index+3,itime);
-        Vec3fa w0 = xfmPoint(space,v0); w0.w = v0.w;
-        Vec3fa w1 = xfmPoint(space,v1); w1.w = v1.w;
-        Vec3fa w2 = xfmPoint(space,v2); w2.w = v2.w;
-        Vec3fa w3 = xfmPoint(space,v3); w3.w = v3.w;
-        return Curve3fa(w0,w1,w2,w3);
+        const Vec3ff v0 = vertex(index+0,itime);
+        const Vec3ff v1 = vertex(index+1,itime);
+        const Vec3ff v2 = vertex(index+2,itime);
+        const Vec3ff v3 = vertex(index+3,itime);
+        const Vec3ff w0(xfmPoint(space,(Vec3fa)v0), v0.w);
+        const Vec3ff w1(xfmPoint(space,(Vec3fa)v1), v1.w);
+        const Vec3ff w2(xfmPoint(space,(Vec3fa)v2), v2.w);
+        const Vec3ff w3(xfmPoint(space,(Vec3fa)v3), v3.w);
+        return Curve3ff(w0,w1,w2,w3);
       }
 
-       __forceinline const Curve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+       __forceinline const Curve3ff getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const float r_scale = r_scale0*scale;
         const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa v2 = vertex(index+2,itime);
-        const Vec3fa v3 = vertex(index+3,itime);
-        Vec3fa w0 = xfmPoint(space,(v0-ofs)*Vec3fa(scale)); w0.w = v0.w*r_scale;
-        Vec3fa w1 = xfmPoint(space,(v1-ofs)*Vec3fa(scale)); w1.w = v1.w*r_scale;
-        Vec3fa w2 = xfmPoint(space,(v2-ofs)*Vec3fa(scale)); w2.w = v2.w*r_scale;
-        Vec3fa w3 = xfmPoint(space,(v3-ofs)*Vec3fa(scale)); w3.w = v3.w*r_scale;
-        return Curve3fa(w0,w1,w2,w3);
+        const Vec3ff v0 = vertex(index+0,itime);
+        const Vec3ff v1 = vertex(index+1,itime);
+        const Vec3ff v2 = vertex(index+2,itime);
+        const Vec3ff v3 = vertex(index+3,itime);
+        const Vec3ff w0(xfmPoint(space,((Vec3fa)v0-ofs)*Vec3fa(scale)), v0.w*r_scale);
+        const Vec3ff w1(xfmPoint(space,((Vec3fa)v1-ofs)*Vec3fa(scale)), v1.w*r_scale);
+        const Vec3ff w2(xfmPoint(space,((Vec3fa)v2-ofs)*Vec3fa(scale)), v2.w*r_scale);
+        const Vec3ff w3(xfmPoint(space,((Vec3fa)v3-ofs)*Vec3fa(scale)), v3.w*r_scale);
+        return Curve3ff(w0,w1,w2,w3);
       }
 
       __forceinline const Curve3fa getNormalCurve(size_t i, size_t itime = 0) const 
@@ -440,7 +444,7 @@ namespace embree
 
       __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
       {
-        const Curve3fa center = getCurve(i,itime);
+        const Curve3ff center = getCurve(i,itime);
         const Curve3fa normal = getNormalCurve(i,itime);
         const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
@@ -522,7 +526,7 @@ namespace embree
           const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[(index+2)*stride+ofs]);
           const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[(index+3)*stride+ofs]);
           
-          const Curve4f curve(p0,p1,p2,p3);
+          const Curve4vf curve(p0,p1,p2,p3);
           if (P      ) vfloat4::storeu(valid,P+i,      curve.eval(u));
           if (dPdu   ) vfloat4::storeu(valid,dPdu+i,   curve.eval_du(u));
           if (ddPdudu) vfloat4::storeu(valid,ddPdudu+i,curve.eval_dudu(u));
@@ -530,48 +534,52 @@ namespace embree
       }
     };
 
+    template<template<typename Ty> class Curve>
     struct HermiteCurveGeometryInterface : public CurveGeometry
     {
+      typedef Curve<Vec3ff> HermiteCurve3ff;
+      typedef Curve<Vec3fa> HermiteCurve3fa;
+      
       HermiteCurveGeometryInterface (Device* device, Geometry::GType gtype)
         : CurveGeometry(device,gtype) {}
       
-      __forceinline const HermiteCurve3fa getCurve(size_t i, size_t itime = 0) const 
+      __forceinline const HermiteCurve3ff getCurve(size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa t0 = tangent(index+0,itime);
-        const Vec3fa t1 = tangent(index+1,itime);
-        return HermiteCurve3fa (v0,t0,v1,t1);
+        const Vec3ff v0 = vertex(index+0,itime);
+        const Vec3ff v1 = vertex(index+1,itime);
+        const Vec3ff t0 = tangent(index+0,itime);
+        const Vec3ff t1 = tangent(index+1,itime);
+        return HermiteCurve3ff (v0,t0,v1,t1);
       }
 
-      __forceinline const HermiteCurve3fa getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      __forceinline const HermiteCurve3ff getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa t0 = tangent(index+0,itime);
-        const Vec3fa t1 = tangent(index+1,itime);
-        Vec3fa V0 = xfmPoint(space,v0); V0.w = v0.w;
-        Vec3fa V1 = xfmPoint(space,v1); V1.w = v1.w;
-        Vec3fa T0 = xfmVector(space,t0); T0.w = t0.w;
-        Vec3fa T1 = xfmVector(space,t1); T1.w = t1.w;
-        return HermiteCurve3fa(V0,T0,V1,T1);
+        const Vec3ff v0 = vertex(index+0,itime);
+        const Vec3ff v1 = vertex(index+1,itime);
+        const Vec3ff t0 = tangent(index+0,itime);
+        const Vec3ff t1 = tangent(index+1,itime);
+        const Vec3ff V0(xfmPoint(space,(Vec3fa)v0),v0.w);
+        const Vec3ff V1(xfmPoint(space,(Vec3fa)v1),v1.w);
+        const Vec3ff T0(xfmVector(space,(Vec3fa)t0),t0.w);
+        const Vec3ff T1(xfmVector(space,(Vec3fa)t1),t1.w);
+        return HermiteCurve3ff(V0,T0,V1,T1);
       }
 
-      __forceinline const HermiteCurve3fa getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      __forceinline const HermiteCurve3ff getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const float r_scale = r_scale0*scale;
         const unsigned int index = curve(i);
-        const Vec3fa v0 = vertex(index+0,itime);
-        const Vec3fa v1 = vertex(index+1,itime);
-        const Vec3fa t0 = tangent(index+0,itime);
-        const Vec3fa t1 = tangent(index+1,itime);
-        Vec3fa V0 = xfmPoint(space,(v0-ofs)*Vec3fa(scale)); V0.w = v0.w*r_scale;
-        Vec3fa V1 = xfmPoint(space,(v1-ofs)*Vec3fa(scale)); V1.w = v1.w*r_scale;
-        Vec3fa T0 = xfmVector(space,t0*Vec3fa(scale)); T0.w = t0.w*r_scale;
-        Vec3fa T1 = xfmVector(space,t1*Vec3fa(scale)); T1.w = t1.w*r_scale;
-        return HermiteCurve3fa(V0,T0,V1,T1);
+        const Vec3ff v0 = vertex(index+0,itime);
+        const Vec3ff v1 = vertex(index+1,itime);
+        const Vec3ff t0 = tangent(index+0,itime);
+        const Vec3ff t1 = tangent(index+1,itime);
+        const Vec3ff V0(xfmPoint(space,(v0-ofs)*Vec3fa(scale)), v0.w*r_scale);
+        const Vec3ff V1(xfmPoint(space,(v1-ofs)*Vec3fa(scale)), v1.w*r_scale);
+        const Vec3ff T0(xfmVector(space,t0*Vec3fa(scale)), t0.w*r_scale);
+        const Vec3ff T1(xfmVector(space,t1*Vec3fa(scale)), t1.w*r_scale);
+        return HermiteCurve3ff(V0,T0,V1,T1);
       }
 
       __forceinline const HermiteCurve3fa getNormalCurve(size_t i, size_t itime = 0) const 
@@ -586,7 +594,7 @@ namespace embree
 
       __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
       {
-        const HermiteCurve3fa center = getCurve(i,itime);
+        const HermiteCurve3ff center = getCurve(i,itime);
         const HermiteCurve3fa normal = getNormalCurve(i,itime);
         const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
@@ -608,16 +616,16 @@ namespace embree
         
         for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
         {
-          const vfloat4 v0(vertex(index+0,itime));
-          const vfloat4 v1(vertex(index+1,itime));
-          if (!isvalid(v0) || !isvalid(v1))
+          const Vec3ff v0 = vertex(index+0,itime);
+          const Vec3ff v1 = vertex(index+1,itime);
+          if (!isvalid4(v0) || !isvalid4(v1))
             return false;
 
-          const vfloat4 t0(tangent(index+0,itime));
-          const vfloat4 t1(tangent(index+1,itime));
-          if (!isvalid(t0) || !isvalid(t1))
+          const Vec3ff t0 = tangent(index+0,itime);
+          const Vec3ff t1 = tangent(index+1,itime);
+          if (!isvalid4(t0) || !isvalid4(t1))
             return false;
-
+          
           if (ctype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE)
           {
             const Vec3fa n0 = normal(index+0,itime);
@@ -695,35 +703,38 @@ namespace embree
       }
     };
     
-    template<Geometry::GType ctype, typename CurveInterface, typename Curve3fa, typename Curve4f>
-    struct CurveGeometryISA : public CurveInterface
+    template<Geometry::GType ctype, template<template<typename Ty> class Curve> class CurveInterfaceT, template<typename Ty> class Curve>
+      struct CurveGeometryISA : public CurveInterfaceT<Curve>
     {
-      using CurveInterface::getCurve;
-      using CurveInterface::getOrientedCurve;
-      using CurveInterface::numTimeSteps;
-      using CurveInterface::fnumTimeSegments;
-      using CurveInterface::numTimeSegments;
-      using CurveInterface::tessellationRate;
+      typedef Curve<Vec3ff> Curve3ff;
+      typedef Curve<Vec3fa> Curve3fa;
+      
+      using CurveInterfaceT<Curve>::getCurve;
+      using CurveInterfaceT<Curve>::getOrientedCurve;
+      using CurveInterfaceT<Curve>::numTimeSteps;
+      using CurveInterfaceT<Curve>::fnumTimeSegments;
+      using CurveInterfaceT<Curve>::numTimeSegments;
+      using CurveInterfaceT<Curve>::tessellationRate;
 
-      using CurveInterface::valid;
-      using CurveInterface::numVertices;
-      using CurveInterface::vertexAttribs;
-      using CurveInterface::vertices;
-      using CurveInterface::curves;
-      using CurveInterface::curve;
-      using CurveInterface::radius;
-      using CurveInterface::vertex;
-      using CurveInterface::normal;
+      using CurveInterfaceT<Curve>::valid;
+      using CurveInterfaceT<Curve>::numVertices;
+      using CurveInterfaceT<Curve>::vertexAttribs;
+      using CurveInterfaceT<Curve>::vertices;
+      using CurveInterfaceT<Curve>::curves;
+      using CurveInterfaceT<Curve>::curve;
+      using CurveInterfaceT<Curve>::radius;
+      using CurveInterfaceT<Curve>::vertex;
+      using CurveInterfaceT<Curve>::normal;
       
       CurveGeometryISA (Device* device, Geometry::GType gtype)
-        : CurveInterface(device,gtype) {}
+        : CurveInterfaceT<Curve>(device,gtype) {}
 
       LinearSpace3fa computeAlignedSpace(const size_t primID) const
       {
         Vec3fa axisz(0,0,1);
         Vec3fa axisy(0,1,0);
         
-        const Curve3fa curve = getCurve(primID);
+        const Curve3ff curve = getCurve(primID);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
         const Vec3fa d0 = curve.eval_du(0.0f);
@@ -752,7 +763,7 @@ namespace embree
         if (tbounds.size() == 0) return frame(axisz);
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
-        const Curve3fa curve = getCurve(primID,t);
+        const Curve3ff curve = getCurve(primID,t);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
         const Vec3fa d0 = curve.eval_du(0.0f);
@@ -774,7 +785,7 @@ namespace embree
       
       Vec3fa computeDirection(unsigned int primID) const
       {
-        const Curve3fa c = getCurve(primID);
+        const Curve3ff c = getCurve(primID);
         const Vec3fa p0 = c.begin();
         const Vec3fa p3 = c.end();
         const Vec3fa axis1 = p3 - p0;
@@ -783,7 +794,7 @@ namespace embree
 
       Vec3fa computeDirection(unsigned int primID, size_t time) const
       {
-        const Curve3fa c = getCurve(primID,time);
+        const Curve3ff c = getCurve(primID,time);
         const Vec3fa p0 = c.begin();
         const Vec3fa p3 = c.end();
         const Vec3fa axis1 = p3 - p0;
@@ -896,21 +907,21 @@ namespace embree
     CurveGeometry* createCurves(Device* device, Geometry::GType gtype)
     {
       switch (gtype) {
-      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BezierCurve3fa,BezierCurveT<vfloat4>>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BezierCurve3fa,BezierCurveT<vfloat4>>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BezierCurve3fa,BezierCurveT<vfloat4>>,BezierCurve3fa,BezierCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BEZIER_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface,BezierCurveT>(device,gtype);
+      case Geometry::GTY_FLAT_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface,BezierCurveT>(device,gtype);
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface,BezierCurveT>(device,gtype);
         
-      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<BSplineCurve3fa,BSplineCurveT<vfloat4>>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<BSplineCurve3fa,BSplineCurveT<vfloat4>>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<BSplineCurve3fa,BSplineCurveT<vfloat4>>,BSplineCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_BSPLINE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface,BSplineCurveT>(device,gtype);
+      case Geometry::GTY_FLAT_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface,BSplineCurveT>(device,gtype);
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface,BSplineCurveT>(device,gtype);
 
-      case Geometry::GTY_ROUND_HERMITE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,HermiteCurveGeometryInterface,HermiteCurve3fa,HermiteCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_HERMITE_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,HermiteCurveGeometryInterface,HermiteCurveT>(device,gtype);
+      case Geometry::GTY_FLAT_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,HermiteCurveGeometryInterface,HermiteCurveT>(device,gtype);
+      case Geometry::GTY_ORIENTED_HERMITE_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,HermiteCurveGeometryInterface,HermiteCurveT>(device,gtype);
 
-      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
-      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface<CatmullRomCurve3fa,CatmullRomCurveT<vfloat4>>,CatmullRomCurve3fa,BSplineCurveT<vfloat4>>(device,gtype);
+      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE: return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ROUND_CURVE,CurveGeometryInterface,CatmullRomCurveT>(device,gtype);
+      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_FLAT_CURVE,CurveGeometryInterface,CatmullRomCurveT>(device,gtype);
+      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE : return new CurveGeometryISA<Geometry::GTY_SUBTYPE_ORIENTED_CURVE,CurveGeometryInterface,CatmullRomCurveT>(device,gtype);
      
       default: throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry type");
       }

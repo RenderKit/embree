@@ -146,7 +146,7 @@ namespace embree
               bvh->alloc.setOSallocation(true);
 
             /* initialize allocator */
-            const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+            const size_t node_bytes = numPrimitives*sizeof(typename BVH::AABBNodeMB)/(4*N);
             const size_t leaf_bytes = size_t(1.2*Primitive::blocks(numPrimitives)*sizeof(Primitive));
             bvh->alloc.init_estimate(node_bytes+leaf_bytes);
             settings.singleThreadThreshold = bvh->alloc.fixSingleThreadThreshold(N,DEFAULT_SINGLE_THREAD_THRESHOLD,numPrimitives,node_bytes+leaf_bytes);
@@ -325,13 +325,14 @@ namespace embree
           {
             if (unlikely(prims[start+i].geomID() != geomIDs[g])) continue;
 
-            const SubGridBuildData  &sgrid_bd = sgrids[prims[start+i].primID()];                      
+            const SubGridBuildData& sgrid_bd = sgrids[prims[start+i].primID()];
             x[pos] = sgrid_bd.sx;
             y[pos] = sgrid_bd.sy;
             primID[pos] = sgrid_bd.primID;
             bounds[pos] = prims[start+i].bounds();
             pos++;
           }
+          assert(pos <= N);
           new (&accel[g]) SubGridQBVHN<N>(x,y,primID,bounds,geomIDs[g],pos);
         }
 
@@ -500,7 +501,7 @@ namespace embree
           bvh->alloc.setOSallocation(true);
 
         /* initialize allocator */
-        const size_t node_bytes = numPrimitives*sizeof(typename BVH::AlignedNodeMB)/(4*N);
+        const size_t node_bytes = numPrimitives*sizeof(typename BVH::AABBNodeMB)/(4*N);
         const size_t leaf_bytes = size_t(1.2*(float)numPrimitives/N * sizeof(SubGridQBVHN<N>));
 
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);

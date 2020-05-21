@@ -16,7 +16,7 @@ namespace embree
 
       /*! Type shortcuts */
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
       typedef typename BVH::NodeRef NodeRef;
 
       struct LeafBoundsInterface {
@@ -63,7 +63,7 @@ namespace embree
       
       /*! Type shortcuts */
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
       typedef typename BVH::NodeRef NodeRef;
       
     public:

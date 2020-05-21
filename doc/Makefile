@@ -146,18 +146,18 @@ doc/CHANGELOG.md: tmp/changelog.md
 ### pdf
 ########################################################################
 
+tmp/readme_all.md: tmp/overview.md tmp/platforms.md tmp/support.md tmp/changelog.md tmp/install.md tmp/compilation.md tmp/api_inc.md tmp/tutorials.md tmp/links_local.md tmp/images_local_pdf.md
+	cat $+ > $@
+
 tmp/readme.tex: src/readme.tex
 	cp src/readme.tex tmp
 
-tmp/%.tex: tmp/%.md tmp/links_local.md tmp/images_local_pdf.md
-	$(PANDOC) $+ -t latex --columns=72 $(top_level_chapter) -o $@
-
-tmp/api.tex: tmp/api_inc.md tmp/links_local.md tmp/images_local_pdf.md
+tmp/%.tex: tmp/%.md
 	$(PANDOC) $+ --indented-code-classes=cpp -t latex --columns=72 $(top_level_chapter) -o $@
 
 doc/readme.pdf: preamble.tex tmp/version
 
-doc/readme.pdf: tmp/readme.tex tmp/overview.tex tmp/changelog.tex tmp/platforms.tex tmp/support.tex tmp/install.tex tmp/compilation.tex tmp/api.tex tmp/tutorials.tex $(images_jpg) $(images_pdf)
+doc/readme.pdf: tmp/readme.tex tmp/readme_all.tex $(images_jpg) $(images_pdf)
 	xelatex -output-directory=tmp $<
 	xelatex -output-directory=tmp $<
 	cp tmp/readme.pdf $@

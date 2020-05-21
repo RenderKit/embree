@@ -19,7 +19,7 @@ namespace embree
 
     union {
       __m128i m128;
-      struct { int x,y,z; int a; };
+      struct { int x,y,z; };
     };
 
     typedef int Scalar;

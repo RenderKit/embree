@@ -23,18 +23,18 @@ namespace embree
 
     __forceinline PrimRef (const BBox3fa& bounds, unsigned int geomID, unsigned int primID) 
     {
-      lower = bounds.lower; lower.a = geomID;
-      upper = bounds.upper; upper.a = primID;
+      lower = Vec3fx(bounds.lower, geomID);
+      upper = Vec3fx(bounds.upper, primID);
     }
 
     __forceinline PrimRef (const BBox3fa& bounds, size_t id) 
     {
 #if defined(__X86_64__)
-      lower = bounds.lower; lower.u = id & 0xFFFFFFFF;
-      upper = bounds.upper; upper.u = (id >> 32) & 0xFFFFFFFF;
+      lower = Vec3fx(bounds.lower, (unsigned)(id & 0xFFFFFFFF));
+      upper = Vec3fx(bounds.upper, (unsigned)((id >> 32) & 0xFFFFFFFF));
 #else
-      lower = bounds.lower; lower.u = id;
-      upper = bounds.upper; upper.u = 0;
+      lower = Vec3fx(bounds.lower, (unsigned)id);
+      upper = Vec3fx(bounds.upper, (unsigned)0);
 #endif
     }
 
@@ -102,8 +102,8 @@ namespace embree
     }
 
   public:
-    Vec3fa lower;     //!< lower bounds and geomID
-    Vec3fa upper;     //!< upper bounds and primID
+    Vec3fx lower;     //!< lower bounds and geomID
+    Vec3fx upper;     //!< upper bounds and primID
   };
 
   /*! fast exchange for PrimRefs */

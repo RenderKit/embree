@@ -28,7 +28,7 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::BaseNode BaseNode;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
       
       static const size_t stackSizeSingle = 1+(N-1)*BVH::maxDepth+3; // +3 due to 16-wide store
       static const size_t stackSizeChunk = 1+(N-1)*BVH::maxDepth;

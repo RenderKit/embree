@@ -31,10 +31,10 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
-          const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
-          const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
-          const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+          const Vec3ff a0 = Vec3ff::loadu(&prim.vertices(i,N)[0]);
+          const Vec3ff a1 = Vec3ff::loadu(&prim.vertices(i,N)[1]);
+          const Vec3ff a2 = Vec3ff::loadu(&prim.vertices(i,N)[2]);
+          const Vec3ff a3 = Vec3ff::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);
@@ -68,10 +68,10 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
-          const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
-          const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
-          const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+          const Vec3ff a0 = Vec3ff::loadu(&prim.vertices(i,N)[0]);
+          const Vec3ff a1 = Vec3ff::loadu(&prim.vertices(i,N)[1]);
+          const Vec3ff a2 = Vec3ff::loadu(&prim.vertices(i,N)[2]);
+          const Vec3ff a3 = Vec3ff::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);
@@ -115,10 +115,10 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
-          const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
-          const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
-          const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+          const Vec3ff a0 = Vec3ff::loadu(&prim.vertices(i,N)[0]);
+          const Vec3ff a1 = Vec3ff::loadu(&prim.vertices(i,N)[1]);
+          const Vec3ff a2 = Vec3ff::loadu(&prim.vertices(i,N)[2]);
+          const Vec3ff a3 = Vec3ff::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);
@@ -152,10 +152,10 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
-          const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
-          const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
-          const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+          const Vec3ff a0 = Vec3ff::loadu(&prim.vertices(i,N)[0]);
+          const Vec3ff a1 = Vec3ff::loadu(&prim.vertices(i,N)[1]);
+          const Vec3ff a2 = Vec3ff::loadu(&prim.vertices(i,N)[2]);
+          const Vec3ff a3 = Vec3ff::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);

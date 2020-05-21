@@ -18,6 +18,8 @@ ispc2cpp:
 	@./ispc2cpp.sh common/texture/texture_param.isph common/texture/texture_param.h
 	@./ispc2cpp.sh triangle_geometry/triangle_geometry_device.isph triangle_geometry/triangle_geometry_device.h
 	@./ispc2cpp.sh triangle_geometry/triangle_geometry_device.ispc triangle_geometry/triangle_geometry_device.cpp
+	@./ispc2cpp.sh point_geometry/point_geometry_device.isph point_geometry/point_geometry_device.h
+	@./ispc2cpp.sh point_geometry/point_geometry_device.ispc point_geometry/point_geometry_device.cpp
 	@./ispc2cpp.sh dynamic_scene/dynamic_scene_device.ispc dynamic_scene/dynamic_scene_device.cpp
 	@./ispc2cpp.sh user_geometry/user_geometry_device.ispc user_geometry/user_geometry_device.cpp
 	@./ispc2cpp.sh viewer/viewer_device.isph viewer/viewer_device.h

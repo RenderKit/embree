@@ -55,10 +55,10 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-          const Vec3vf<K> p0 = quad.getVertex(quad.v0,i,scene);
-          const Vec3vf<K> p1 = quad.getVertex(quad.v1,i,scene);
-          const Vec3vf<K> p2 = quad.getVertex(quad.v2,i,scene);
-          const Vec3vf<K> p3 = quad.getVertex(quad.v3,i,scene);
+          const Vec3vf<K> p0 = quad.template getVertex<0>(i,scene);
+          const Vec3vf<K> p1 = quad.template getVertex<1>(i,scene);
+          const Vec3vf<K> p2 = quad.template getVertex<2>(i,scene);
+          const Vec3vf<K> p3 = quad.template getVertex<3>(i,scene);
           pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomID(),quad.primID(),i));
         }
       }
@@ -72,10 +72,10 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-          const Vec3vf<K> p0 = quad.getVertex(quad.v0,i,scene);
-          const Vec3vf<K> p1 = quad.getVertex(quad.v1,i,scene);
-          const Vec3vf<K> p2 = quad.getVertex(quad.v2,i,scene);
-          const Vec3vf<K> p3 = quad.getVertex(quad.v3,i,scene);
+          const Vec3vf<K> p0 = quad.template getVertex<0>(i,scene);
+          const Vec3vf<K> p1 = quad.template getVertex<1>(i,scene);
+          const Vec3vf<K> p2 = quad.template getVertex<2>(i,scene);
+          const Vec3vf<K> p3 = quad.template getVertex<3>(i,scene);
           if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomID(),quad.primID(),i)))
             break;
         }
@@ -143,10 +143,10 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-          const Vec3vf<K> p0 = quad.getVertex(quad.v0,i,scene);
-          const Vec3vf<K> p1 = quad.getVertex(quad.v1,i,scene);
-          const Vec3vf<K> p2 = quad.getVertex(quad.v2,i,scene);
-          const Vec3vf<K> p3 = quad.getVertex(quad.v3,i,scene);
+          const Vec3vf<K> p0 = quad.template getVertex<0>(i,scene);
+          const Vec3vf<K> p1 = quad.template getVertex<1>(i,scene);
+          const Vec3vf<K> p2 = quad.template getVertex<2>(i,scene);
+          const Vec3vf<K> p3 = quad.template getVertex<3>(i,scene);
           pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomID(),quad.primID(),i));
         }
       }
@@ -160,10 +160,10 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-          const Vec3vf<K> p0 = quad.getVertex(quad.v0,i,scene);
-          const Vec3vf<K> p1 = quad.getVertex(quad.v1,i,scene);
-          const Vec3vf<K> p2 = quad.getVertex(quad.v2,i,scene);
-          const Vec3vf<K> p3 = quad.getVertex(quad.v3,i,scene);
+          const Vec3vf<K> p0 = quad.template getVertex<0>(i,scene);
+          const Vec3vf<K> p1 = quad.template getVertex<1>(i,scene);
+          const Vec3vf<K> p2 = quad.template getVertex<2>(i,scene);
+          const Vec3vf<K> p3 = quad.template getVertex<3>(i,scene);
           if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomID(),quad.primID(),i)))
             break;
         }

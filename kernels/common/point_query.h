@@ -57,7 +57,7 @@ namespace embree
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
-      return all(le_mask(abs(Vec3fa(p, 0.0f)), Vec3fa(FLT_LARGE)) & le_mask(Vec3fa(0.f), Vec3fa(radius))) && abs(time) < float(inf);
+      return all(le_mask(abs(Vec3fa(p)), Vec3fa(FLT_LARGE)) & le_mask(Vec3fa(0.f), Vec3fa(radius))) && abs(time) < float(inf);
     }
 
     Vec3f p;  

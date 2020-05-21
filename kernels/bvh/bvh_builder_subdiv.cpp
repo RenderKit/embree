@@ -218,8 +218,8 @@ namespace embree
       typedef BVHN<N> BVH;
       typedef typename BVH::NodeRef NodeRef;
       typedef typename BVH::NodeRecordMB4D NodeRecordMB4D;
-      typedef typename BVHN<N>::AlignedNodeMB AlignedNodeMB;
-      typedef typename BVHN<N>::AlignedNodeMB4D AlignedNodeMB4D;
+      typedef typename BVHN<N>::AABBNodeMB AABBNodeMB;
+      typedef typename BVHN<N>::AABBNodeMB4D AABBNodeMB4D;
       typedef typename BVHN<N>::Allocator BVH_Allocator;
 
       typedef SetMB Set;
@@ -326,8 +326,8 @@ namespace embree
           BVHBuilderMSMBlur::build<NodeRef>(primsMB,pinfo,scene->device,
                                              recalculatePrimRef,
                                              typename BVH::CreateAlloc(bvh),
-                                             typename BVH::AlignedNodeMB4D::Create(),
-                                             typename BVH::AlignedNodeMB4D::Set(),
+                                             typename BVH::AABBNodeMB4D::Create(),
+                                             typename BVH::AABBNodeMB4D::Set(),
                                              createLeafFunc,
                                              bvh->scene->progressInterface,
                                              settings);

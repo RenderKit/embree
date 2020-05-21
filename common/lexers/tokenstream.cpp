@@ -11,6 +11,7 @@ namespace embree
   const std::string TokenStream::ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const std::string TokenStream::numbers = "0123456789";
   const std::string TokenStream::separators = "\n\t\r ";
+  const std::string TokenStream::stringChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _.,+-=:/*\\";
 
   /* creates map for fast categorization of characters */
   static void createCharMap(bool map[256], const std::string& chrs) {
@@ -27,6 +28,7 @@ namespace embree
   {
     createCharMap(isAlphaMap,alpha);
     createCharMap(isSepMap,seps);
+    createCharMap(isStringCharMap,stringChars);
   }
 
   bool TokenStream::decDigits(std::string& str_o)
@@ -136,7 +138,11 @@ namespace embree
     std::string str;
     if (cin->peek() != '\"') return false;
     cin->drop();
-    while (cin->peek() != '\"') str += (char)cin->get();
+    while (cin->peek() != '\"') {
+      const int c = cin->get();
+      if (!isStringChar(c)) THROW_RUNTIME_ERROR("invalid string character "+std::string(1,c)+" at "+loc.str());
+      str += (char)c;
+    }
     cin->drop();
     token = Token(str,Token::TY_STRING,loc);
     return true;

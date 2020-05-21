@@ -72,7 +72,7 @@ namespace embree
   
   // template specialization to get correct identity matrix for type AffineSpace3fa
   template<>
-    __forceinline AffineSpaceT<LinearSpace3fa>::AffineSpaceT( OneTy )  : l(one),  p(0.f, 0.f, 0.f, 1.f) {}
+    __forceinline AffineSpaceT<LinearSpace3ff>::AffineSpaceT( OneTy )  : l(one),  p(0.f, 0.f, 0.f, 1.f) {}
 
   ////////////////////////////////////////////////////////////////////////////////
   // Unary Operators
@@ -147,6 +147,8 @@ namespace embree
   typedef AffineSpaceT<LinearSpace2f> AffineSpace2f;
   typedef AffineSpaceT<LinearSpace3f> AffineSpace3f;
   typedef AffineSpaceT<LinearSpace3fa> AffineSpace3fa;
+  typedef AffineSpaceT<LinearSpace3fx> AffineSpace3fx;
+  typedef AffineSpaceT<LinearSpace3ff> AffineSpace3ff;
   typedef AffineSpaceT<Quaternion3f > OrthonormalSpace3f;
 
   template<int N> using AffineSpace3vf = AffineSpaceT<LinearSpace3<Vec3<vfloat<N>>>>;
@@ -154,7 +156,7 @@ namespace embree
   typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<8>>>>  AffineSpace3vf8;
   typedef AffineSpaceT<LinearSpace3<Vec3<vfloat<16>>>> AffineSpace3vf16;
 
-  template<int N> using AffineSpace3vfa = AffineSpaceT<LinearSpace3<Vec4<vfloat<N>>>>;
+  template<int N> using AffineSpace3vff = AffineSpaceT<LinearSpace3<Vec4<vfloat<N>>>>;
   typedef AffineSpaceT<LinearSpace3<Vec4<vfloat<4>>>>  AffineSpace3vfa4;
   typedef AffineSpaceT<LinearSpace3<Vec4<vfloat<8>>>>  AffineSpace3vfa8;
   typedef AffineSpaceT<LinearSpace3<Vec4<vfloat<16>>>> AffineSpace3vfa16;
@@ -196,8 +198,8 @@ namespace embree
 
   // this is a specialized version for Vec3fa because that does
   // not play along nicely with the other templated Vec3/Vec4 types
-  __forceinline AffineSpace3fa slerp(const AffineSpace3fa& M0,
-                                     const AffineSpace3fa& M1,
+  __forceinline AffineSpace3fa slerp(const AffineSpace3ff& M0,
+                                     const AffineSpace3ff& M1,
                                      const float& t)
   {
     Quaternion3f q0(M0.p.w, M0.l.vx.w, M0.l.vy.w, M0.l.vz.w);
@@ -217,7 +219,7 @@ namespace embree
     return D * R * S;
   }
   
-  __forceinline AffineSpace3fa quaternionDecompositionToAffineSpace(const AffineSpace3fa& qd)
+  __forceinline AffineSpace3fa quaternionDecompositionToAffineSpace(const AffineSpace3ff& qd)
   {
     // compute affine transform from quaternion decomposition
     Quaternion3f q(qd.p.w, qd.l.vx.w, qd.l.vy.w, qd.l.vz.w);
@@ -233,7 +235,7 @@ namespace embree
     return D * R * M;
   }
   
-  __forceinline void quaternionDecomposition(const AffineSpace3fa& qd, Vec3fa& T, Quaternion3f& q, AffineSpace3fa& S)
+  __forceinline void quaternionDecomposition(const AffineSpace3ff& qd, Vec3fa& T, Quaternion3f& q, AffineSpace3fa& S)
   {
     q = Quaternion3f(qd.p.w, qd.l.vx.w, qd.l.vy.w, qd.l.vz.w);
     S = qd;
@@ -245,9 +247,9 @@ namespace embree
     S.l.vy.z = 0;
   }
 
-  __forceinline AffineSpace3fa quaternionDecomposition(Vec3fa const& T, Quaternion3f const& q, AffineSpace3fa const& S)
+  __forceinline AffineSpace3fx quaternionDecomposition(Vec3fa const& T, Quaternion3f const& q, AffineSpace3fa const& S)
   {
-    AffineSpace3fa M = S;
+    AffineSpace3ff M = S;
     M.l.vx.w = q.i;
     M.l.vy.w = q.j;
     M.l.vz.w = q.k;
@@ -278,7 +280,7 @@ namespace embree
     float translation_z = 0.f;
   };
 
-  __forceinline QuaternionDecomposition quaternionDecomposition(AffineSpace3fa const& M)
+  __forceinline QuaternionDecomposition quaternionDecomposition(AffineSpace3ff const& M)
   {
     QuaternionDecomposition qd;
     qd.scale_x       = M.l.vx.x;

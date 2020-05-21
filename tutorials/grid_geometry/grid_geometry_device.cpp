@@ -477,7 +477,7 @@ void createGridGeometry (GridMesh& gmesh)
 
   /* create normal debug geometry */
   gmesh.geomNormals = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
-  Vec3fa *nvertices = (Vec3fa *) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT4,sizeof(Vec3fa),4*numVertices);
+  Vec3ff *nvertices = (Vec3ff *) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT4,sizeof(Vec3ff),4*numVertices);
   int*    curves    = (int    *) rtcSetNewGeometryBuffer(gmesh.geomNormals,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT   ,sizeof(int)   ,numVertices);
 
   h = 0;
@@ -493,14 +493,10 @@ void createGridGeometry (GridMesh& gmesh)
           int index = grid.startVertexID + y*grid.strideY + x*grid.strideX;
           Vec3fa Ng = gmesh.normals[index];
 
-          nvertices[4*index+0] = gmesh.vertices[index];
-          nvertices[4*index+1] = gmesh.vertices[index];
-          nvertices[4*index+2] = gmesh.vertices[index]+0.01f*Vec3fa(Ng);
-          nvertices[4*index+3] = gmesh.vertices[index]+0.01f*Vec3fa(Ng);
-          nvertices[4*index+0].w = 0.0001f;
-          nvertices[4*index+1].w = 0.0001f;
-          nvertices[4*index+2].w = 0.0001f;
-          nvertices[4*index+3].w = 0.0001f;
+          nvertices[4*index+0] = Vec3ff(gmesh.vertices[index], 0.0001f);
+          nvertices[4*index+1] = Vec3ff(gmesh.vertices[index], 0.0001f);
+          nvertices[4*index+2] = Vec3ff(gmesh.vertices[index]+0.01f*Vec3fa(Ng), 0.0001f);
+          nvertices[4*index+3] = Vec3ff(gmesh.vertices[index]+0.01f*Vec3fa(Ng), 0.0001f);
           curves[index] = 4*index;
         }
       }

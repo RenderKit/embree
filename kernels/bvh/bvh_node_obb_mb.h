@@ -8,7 +8,7 @@
 namespace embree
 {
   template<typename NodeRef, int N>
-    struct UnalignedNodeMB_t : public BaseNode_t<NodeRef, N>
+    struct OBBNodeMB_t : public BaseNode_t<NodeRef, N>
   {
     using BaseNode_t<NodeRef,N>::children;
     
@@ -16,7 +16,7 @@ namespace embree
     {
       __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc) const
       {
-        UnalignedNodeMB_t* node = (UnalignedNodeMB_t*) alloc.malloc0(sizeof(UnalignedNodeMB_t),NodeRef::byteNodeAlignment); node->clear();
+        OBBNodeMB_t* node = (OBBNodeMB_t*) alloc.malloc0(sizeof(OBBNodeMB_t),NodeRef::byteNodeAlignment); node->clear();
         return NodeRef::encodeNode(node);
       }
     };
@@ -24,8 +24,8 @@ namespace embree
     struct Set
     {
       __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const LinearSpace3fa& space, const LBBox3fa& lbounds, const BBox1f dt) const {
-        node.unalignedNodeMB()->setRef(i,child);
-        node.unalignedNodeMB()->setBounds(i,space,lbounds.global(dt));
+        node.ungetAABBNodeMB()->setRef(i,child);
+        node.ungetAABBNodeMB()->setBounds(i,space,lbounds.global(dt));
       }
     };
     

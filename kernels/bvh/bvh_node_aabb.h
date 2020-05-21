@@ -7,9 +7,9 @@
 
 namespace embree
 {
-  /*! BVHN AlignedNode */
+  /*! BVHN AABBNode */
   template<typename NodeRef, int N>
-    struct AlignedNode_t : public BaseNode_t<NodeRef, N>
+    struct AABBNode_t : public BaseNode_t<NodeRef, N>
   {
     using BaseNode_t<NodeRef,N>::children;
     
@@ -17,7 +17,7 @@ namespace embree
     {
       __forceinline NodeRef operator() (const FastAllocator::CachedAllocator& alloc, size_t numChildren = 0) const
       {
-        AlignedNode_t* node = (AlignedNode_t*) alloc.malloc0(sizeof(AlignedNode_t),NodeRef::byteNodeAlignment); node->clear();
+        AABBNode_t* node = (AABBNode_t*) alloc.malloc0(sizeof(AABBNode_t),NodeRef::byteNodeAlignment); node->clear();
         return NodeRef::encodeNode(node);
       }
     };
@@ -25,8 +25,8 @@ namespace embree
     struct Set
     {
       __forceinline void operator() (NodeRef node, size_t i, NodeRef child, const BBox3fa& bounds) const {
-        node.alignedNode()->setRef(i,child);
-        node.alignedNode()->setBounds(i,bounds);
+        node.getAABBNode()->setRef(i,child);
+        node.getAABBNode()->setBounds(i,bounds);
       }
     };
     
@@ -35,7 +35,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline NodeRef operator() (BuildRecord* children, const size_t num, const FastAllocator::CachedAllocator& alloc) const
       {
-        AlignedNode_t* node = (AlignedNode_t*) alloc.malloc0(sizeof(AlignedNode_t), NodeRef::byteNodeAlignment); node->clear();
+        AABBNode_t* node = (AABBNode_t*) alloc.malloc0(sizeof(AABBNode_t), NodeRef::byteNodeAlignment); node->clear();
         for (size_t i=0; i<num; i++) node->setBounds(i,children[i].bounds());
         return NodeRef::encodeNode(node);
       }
@@ -46,7 +46,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
       {
-        AlignedNode_t* node = ref.alignedNode();
+        AABBNode_t* node = ref.getAABBNode();
         for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
         return ref;
       }
@@ -60,7 +60,7 @@ namespace embree
       template<typename BuildRecord>
       __forceinline NodeRef operator() (const BuildRecord& precord, const BuildRecord* crecords, NodeRef ref, NodeRef* children, const size_t num) const
       {
-        AlignedNode_t* node = ref.alignedNode();
+        AABBNode_t* node = ref.getAABBNode();
         for (size_t i=0; i<num; i++) node->setRef(i,children[i]);
         
         if (unlikely(precord.alloc_barrier))
@@ -143,7 +143,7 @@ namespace embree
     }
 
     /*! swap the children of two nodes */
-    __forceinline static void swap(AlignedNode_t* a, size_t i, AlignedNode_t* b, size_t j)
+    __forceinline static void swap(AABBNode_t* a, size_t i, AABBNode_t* b, size_t j)
     {
       assert(i<N && j<N);
       std::swap(a->children[i],b->children[j]);
@@ -156,7 +156,7 @@ namespace embree
     }
 
     /*! compacts a node (moves empty children to the end) */
-    __forceinline static void compact(AlignedNode_t* a)
+    __forceinline static void compact(AABBNode_t* a)
     {
       /* find right most filled node */
       ssize_t j=N;
@@ -180,9 +180,9 @@ namespace embree
     __forceinline const NodeRef& child(size_t i) const { assert(i<N); return children[i]; }
     
     /*! output operator */
-    friend embree_ostream operator<<(embree_ostream o, const AlignedNode_t& n)
+    friend embree_ostream operator<<(embree_ostream o, const AABBNode_t& n)
     {
-      o << "AlignedNode { " << embree_endl;
+      o << "AABBNode { " << embree_endl;
       o << "  lower_x " << n.lower_x << embree_endl;
       o << "  upper_x " << n.upper_x << embree_endl;
       o << "  lower_y " << n.lower_y << embree_endl;
@@ -206,7 +206,7 @@ namespace embree
   };
 
   template<>
-    __forceinline void AlignedNode_t<NodeRefPtr<4>,4>::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
+    __forceinline void AABBNode_t<NodeRefPtr<4>,4>::bounds(BBox<vfloat4>& bounds0, BBox<vfloat4>& bounds1, BBox<vfloat4>& bounds2, BBox<vfloat4>& bounds3) const {
     transpose(lower_x,lower_y,lower_z,vfloat4(zero),bounds0.lower,bounds1.lower,bounds2.lower,bounds3.lower);
     transpose(upper_x,upper_y,upper_z,vfloat4(zero),bounds0.upper,bounds1.upper,bounds2.upper,bounds3.upper);
   }

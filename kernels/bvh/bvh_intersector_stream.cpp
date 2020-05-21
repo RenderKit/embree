@@ -99,7 +99,7 @@ namespace embree
         while (1)
         {
           if (unlikely(cur.isLeaf())) break;
-          const AlignedNode* __restrict__ const node = cur.alignedNode();
+          const AABBNode* __restrict__ const node = cur.getAABBNode();
           parent = cur;
 
           __aligned(64) size_t maskK[N];
@@ -116,13 +116,13 @@ namespace embree
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(parent != 0 && cur.isLeaf()))
         {
-          const AlignedNode* __restrict__ const node = parent.alignedNode();
+          const AABBNode* __restrict__ const node = parent.getAABBNode();
           size_t boxID = 0xff;
           for (size_t i = 0; i < N; i++)
             if (node->child(i) == cur) { boxID = i; break; }
           assert(boxID < N);
           assert(cur == node->child(boxID));
-          m_trav_active = intersectAlignedNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
+          m_trav_active = intersectAABBNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
         }
 
         /*! this is a leaf node */
@@ -228,7 +228,7 @@ namespace embree
         while (1)
         {
           if (unlikely(cur.isLeaf())) break;
-          const AlignedNode* __restrict__ const node = cur.alignedNode();
+          const AABBNode* __restrict__ const node = cur.getAABBNode();
           parent = cur;
 
           __aligned(64) size_t maskK[N];
@@ -246,13 +246,13 @@ namespace embree
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(parent != 0 && cur.isLeaf()))
         {
-          const AlignedNode* __restrict__ const node = parent.alignedNode();
+          const AABBNode* __restrict__ const node = parent.getAABBNode();
           size_t boxID = 0xff;
           for (size_t i = 0; i < N; i++)
             if (node->child(i) == cur) { boxID = i; break; }
           assert(boxID < N);
           assert(cur == node->child(boxID));
-          m_trav_active = intersectAlignedNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
+          m_trav_active = intersectAABBNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
         }
 
         /*! this is a leaf node */
@@ -336,7 +336,7 @@ namespace embree
         {
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
-          const AlignedNode* __restrict__ const node = cur.alignedNode();
+          const AABBNode* __restrict__ const node = cur.getAABBNode();
 
           const vint<Nx> vmask = traverseIncoherentStream(cur_mask, packet, node, nf, shiftTable);
 

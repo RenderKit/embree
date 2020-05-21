@@ -171,6 +171,15 @@ namespace embree
     return LinearSpace3<T>(select(s,t.vx,f.vx),select(s,t.vy,f.vy),select(s,t.vz,f.vz));
   }
 
+  /*! blending */
+  template<typename T>
+    __forceinline LinearSpace3<T> lerp(const LinearSpace3<T>& l0, const LinearSpace3<T>& l1, const float t) 
+  {
+    return LinearSpace3<T>(lerp(l0.vx,l1.vx,t),
+                           lerp(l0.vy,l1.vy,t),
+                           lerp(l0.vz,l1.vz,t));
+  }
+
   ////////////////////////////////////////////////////////////////////////////////
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -182,6 +191,8 @@ namespace embree
   /*! Shortcuts for common linear spaces. */
   typedef LinearSpace3<Vec3f> LinearSpace3f;
   typedef LinearSpace3<Vec3fa> LinearSpace3fa;
+  typedef LinearSpace3<Vec3fx> LinearSpace3fx;
+  typedef LinearSpace3<Vec3ff> LinearSpace3ff;
 
   template<int N> using LinearSpace3vf = LinearSpace3<Vec3<vfloat<N>>>;
   typedef LinearSpace3<Vec3<vfloat<4>>>  LinearSpace3vf4;

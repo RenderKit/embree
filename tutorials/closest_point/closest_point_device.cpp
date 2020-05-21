@@ -130,12 +130,12 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)
   
   Ray *ray = (Ray*)rays;
   const Instance* instance = (const Instance*)ptr;
-  const Vec3fa ray_org = ray->org;
-  const Vec3fa ray_dir = ray->dir;
+  const Vec3ff ray_org = ray->org;
+  const Vec3ff ray_dir = ray->dir;
   const float ray_tnear = ray->tnear();
   const float ray_tfar  = ray->tfar;
-  ray->org = xfmPoint (instance->world2local,ray_org);
-  ray->dir = xfmVector(instance->world2local,ray_dir);
+  ray->org = (Vec3ff) xfmPoint (instance->world2local,ray_org);
+  ray->dir = (Vec3ff) xfmVector(instance->world2local,ray_dir);
   ray->tnear() = ray_tnear;
   ray->tfar  = ray_tfar;
   pushInstanceId(context, instance->userID);
@@ -709,7 +709,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     }
 
     Ns = face_forward(ray.dir,normalize(Ns));
-    return 0.5f * Ns + Vec3fa(0.5f, 0.5f, 0.5f, 0.0f);
+    return 0.5f * Ns + Vec3fa(0.5f, 0.5f, 0.5f);
   }
   return Vec3fa(0.0f);
 }

@@ -34,7 +34,7 @@ namespace embree
     __forceinline          Vec4( const Vec3<T>& xyz, const T& w ) : x(xyz.x), y(xyz.y), z(xyz.z), w(w) {}
 
     __forceinline Vec4( const Vec4& other ) { x = other.x; y = other.y; z = other.z; w = other.w; }
-    __forceinline Vec4( const Vec3fa& other );
+    __forceinline Vec4( const Vec3fx& other );
 
     template<typename T1> __forceinline Vec4( const Vec4<T1>& a ) : x(T(a.x)), y(T(a.y)), z(T(a.z)), w(T(a.w)) {}
     template<typename T1> __forceinline Vec4& operator =(const Vec4<T1>& other) { x = other.x; y = other.y; z = other.z; w = other.w; return *this; }
@@ -219,15 +219,15 @@ namespace embree
 
 namespace embree
 {
-  template<> __forceinline Vec4<float>::Vec4( const Vec3fa& a ) { x = a.x; y = a.y; z = a.z; w = a.w; }
+  template<> __forceinline Vec4<float>::Vec4( const Vec3fx& a ) { x = a.x; y = a.y; z = a.z; w = a.w; }
 
 #if defined(__AVX__)
-  template<> __forceinline Vec4<vfloat4>::Vec4( const Vec3fa& a ) {
+  template<> __forceinline Vec4<vfloat4>::Vec4( const Vec3fx& a ) {
     x = a.x; y = a.y; z = a.z; w = a.w;
   }
 #elif defined(__SSE__)
-  template<> __forceinline Vec4<vfloat4>::Vec4( const Vec3fa& a ) {
-    const vfloat4 v = vfloat4(a); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); w = shuffle<3,3,3,3>(v);
+  template<> __forceinline Vec4<vfloat4>::Vec4( const Vec3fx& a ) {
+    const vfloat4 v = vfloat4(a.m128); x = shuffle<0,0,0,0>(v); y = shuffle<1,1,1,1>(v); z = shuffle<2,2,2,2>(v); w = shuffle<3,3,3,3>(v);
   }
 #endif
 
@@ -238,7 +238,7 @@ namespace embree
 #endif
 
 #if defined(__AVX__)
-  template<> __forceinline Vec4<vfloat8>::Vec4( const Vec3fa& a ) {
+  template<> __forceinline Vec4<vfloat8>::Vec4( const Vec3fx& a ) {
     x = a.x; y = a.y; z = a.z; w = a.w;
   }
   __forceinline Vec4<vfloat4> broadcast4f( const Vec4<vfloat8>& a, const size_t k ) {
@@ -253,6 +253,6 @@ namespace embree
 #endif
 
 #if defined(__AVX512F__)
-  template<> __forceinline Vec4<vfloat16>::Vec4( const Vec3fa& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
+  template<> __forceinline Vec4<vfloat16>::Vec4( const Vec3fx& a ) : x(a.x), y(a.y), z(a.z), w(a.w) {}
 #endif
 }

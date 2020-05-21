@@ -210,13 +210,13 @@ namespace embree
         return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
       }
 
-      __forceinline CubicBezierCurve<Vec3fa> xfm_pr(const LinearSpace3fa& space, const Vec3fa& p) const
+      __forceinline CubicBezierCurve<Vec3ff> xfm_pr(const LinearSpace3fa& space, const Vec3fa& p) const
       {
-        Vec3fa q0 = xfmVector(space,v0-p); q0.w = v0.w;
-        Vec3fa q1 = xfmVector(space,v1-p); q1.w = v1.w;
-        Vec3fa q2 = xfmVector(space,v2-p); q2.w = v2.w;
-        Vec3fa q3 = xfmVector(space,v3-p); q3.w = v3.w;
-        return CubicBezierCurve<Vec3fa>(q0,q1,q2,q3);
+        const Vec3ff q0(xfmVector(space,(Vec3fa)v0-p), v0.w);
+        const Vec3ff q1(xfmVector(space,(Vec3fa)v1-p), v1.w);
+        const Vec3ff q2(xfmVector(space,(Vec3fa)v2-p), v2.w);
+        const Vec3ff q3(xfmVector(space,(Vec3fa)v3-p), v3.w);
+        return CubicBezierCurve<Vec3ff>(q0,q1,q2,q3);
       }
 
       __forceinline CubicBezierCurve<Vec3fa> xfm(const LinearSpace3fa& space, const Vec3fa& p, const float s) const
@@ -478,48 +478,48 @@ namespace embree
         dp = vfloat<M>(3.0f)*(p21-p20);
       }
       
-      template<int M>
-      __forceinline Vec4vf<M> eval0(const int ofs, const int size) const
+      template<int M, typename Vec = Vec4vf<M>>
+      __forceinline Vec eval0(const int ofs, const int size) const
       {
         assert(size <= PrecomputedBezierBasis::N);
         assert(ofs <= size);
-        return madd(vfloat<M>::loadu(&bezier_basis0.c0[size][ofs]), Vec4vf<M>(v0),
-                    madd(vfloat<M>::loadu(&bezier_basis0.c1[size][ofs]), Vec4vf<M>(v1),
-                         madd(vfloat<M>::loadu(&bezier_basis0.c2[size][ofs]), Vec4vf<M>(v2),
-                              vfloat<M>::loadu(&bezier_basis0.c3[size][ofs]) * Vec4vf<M>(v3))));
+        return madd(vfloat<M>::loadu(&bezier_basis0.c0[size][ofs]), Vec(v0),
+                    madd(vfloat<M>::loadu(&bezier_basis0.c1[size][ofs]), Vec(v1),
+                         madd(vfloat<M>::loadu(&bezier_basis0.c2[size][ofs]), Vec(v2),
+                              vfloat<M>::loadu(&bezier_basis0.c3[size][ofs]) * Vec(v3))));
       }
       
-      template<int M>
-      __forceinline Vec4vf<M> eval1(const int ofs, const int size) const
+      template<int M, typename Vec = Vec4vf<M>>
+      __forceinline Vec eval1(const int ofs, const int size) const
       {
         assert(size <= PrecomputedBezierBasis::N);
         assert(ofs <= size);
-        return madd(vfloat<M>::loadu(&bezier_basis1.c0[size][ofs]), Vec4vf<M>(v0), 
-                    madd(vfloat<M>::loadu(&bezier_basis1.c1[size][ofs]), Vec4vf<M>(v1),
-                         madd(vfloat<M>::loadu(&bezier_basis1.c2[size][ofs]), Vec4vf<M>(v2),
-                              vfloat<M>::loadu(&bezier_basis1.c3[size][ofs]) * Vec4vf<M>(v3))));
+        return madd(vfloat<M>::loadu(&bezier_basis1.c0[size][ofs]), Vec(v0), 
+                    madd(vfloat<M>::loadu(&bezier_basis1.c1[size][ofs]), Vec(v1),
+                         madd(vfloat<M>::loadu(&bezier_basis1.c2[size][ofs]), Vec(v2),
+                              vfloat<M>::loadu(&bezier_basis1.c3[size][ofs]) * Vec(v3))));
       }
       
-      template<int M>
-      __forceinline Vec4vf<M> derivative0(const int ofs, const int size) const
+      template<int M, typename Vec = Vec4vf<M>>
+      __forceinline Vec derivative0(const int ofs, const int size) const
       {
         assert(size <= PrecomputedBezierBasis::N);
         assert(ofs <= size);
-        return madd(vfloat<M>::loadu(&bezier_basis0.d0[size][ofs]), Vec4vf<M>(v0),
-                    madd(vfloat<M>::loadu(&bezier_basis0.d1[size][ofs]), Vec4vf<M>(v1),
-                         madd(vfloat<M>::loadu(&bezier_basis0.d2[size][ofs]), Vec4vf<M>(v2),
-                              vfloat<M>::loadu(&bezier_basis0.d3[size][ofs]) * Vec4vf<M>(v3))));
+        return madd(vfloat<M>::loadu(&bezier_basis0.d0[size][ofs]), Vec(v0),
+                    madd(vfloat<M>::loadu(&bezier_basis0.d1[size][ofs]), Vec(v1),
+                         madd(vfloat<M>::loadu(&bezier_basis0.d2[size][ofs]), Vec(v2),
+                              vfloat<M>::loadu(&bezier_basis0.d3[size][ofs]) * Vec(v3))));
       }
       
-      template<int M>
-      __forceinline Vec4vf<M> derivative1(const int ofs, const int size) const
+      template<int M, typename Vec = Vec4vf<M>>
+      __forceinline Vec derivative1(const int ofs, const int size) const
       {
         assert(size <= PrecomputedBezierBasis::N);
         assert(ofs <= size);
-        return madd(vfloat<M>::loadu(&bezier_basis1.d0[size][ofs]), Vec4vf<M>(v0),
-                    madd(vfloat<M>::loadu(&bezier_basis1.d1[size][ofs]), Vec4vf<M>(v1),
-                         madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec4vf<M>(v2),
-                              vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec4vf<M>(v3))));
+        return madd(vfloat<M>::loadu(&bezier_basis1.d0[size][ofs]), Vec(v0),
+                    madd(vfloat<M>::loadu(&bezier_basis1.d1[size][ofs]), Vec(v1),
+                         madd(vfloat<M>::loadu(&bezier_basis1.d2[size][ofs]), Vec(v2),
+                              vfloat<M>::loadu(&bezier_basis1.d3[size][ofs]) * Vec(v3))));
       }
 
       /* calculates bounds of bezier curve geometry */
@@ -527,15 +527,15 @@ namespace embree
       {
         const int N = 7;
         const float scale = 1.0f/(3.0f*(N-1));
-        Vec4vfx pl(pos_inf), pu(neg_inf);
+        Vec3vfx pl(pos_inf), pu(neg_inf);
         for (int i=0; i<=N; i+=VSIZEX)
         {
           vintx vi = vintx(i)+vintx(step);
           vboolx valid = vi <= vintx(N);
-          const Vec4vfx p  = eval0<VSIZEX>(i,N);
-          const Vec4vfx dp = derivative0<VSIZEX>(i,N);
-          const Vec4vfx pm = p-Vec4vfx(scale)*select(vi!=vintx(0),dp,Vec4vfx(zero));
-          const Vec4vfx pp = p+Vec4vfx(scale)*select(vi!=vintx(N),dp,Vec4vfx(zero));
+          const Vec3vfx p  = eval0<VSIZEX,Vec3vf<VSIZEX>>(i,N);
+          const Vec3vfx dp = derivative0<VSIZEX,Vec3vf<VSIZEX>>(i,N);
+          const Vec3vfx pm = p-Vec3vfx(scale)*select(vi!=vintx(0),dp,Vec3vfx(zero));
+          const Vec3vfx pp = p+Vec3vfx(scale)*select(vi!=vintx(N),dp,Vec3vfx(zero));
           pl = select(valid,min(pl,p,pm,pp),pl); // FIXME: use masked min
           pu = select(valid,max(pu,p,pm,pp),pu); // FIXME: use masked min
         }

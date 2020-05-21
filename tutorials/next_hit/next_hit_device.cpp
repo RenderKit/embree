@@ -315,7 +315,7 @@ void multi_pass(const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSamp
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3ff renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize sampler */
   const int ix = (int)x;
@@ -392,7 +392,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   sampler.s = MurmurHash3_finalize(sampler.s);
 
   /* map geomID/primID sequence to color */
-  Vec3fa color;
+  Vec3ff color;
   color.x = RandomSampler_getFloat(sampler);
   color.y = RandomSampler_getFloat(sampler);
   color.z = RandomSampler_getFloat(sampler);
@@ -402,7 +402,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   {
     color.x = color.y = color.z;
     if (has_error)
-      color = Vec3fa(1,0,0);
+      color = Vec3ff(1,0,0);
   }
   
   color.w = (float) hits.size();
@@ -430,7 +430,7 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
+    Vec3ff color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));

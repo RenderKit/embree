@@ -440,7 +440,7 @@ namespace embree
             /* process nodes */
             //STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
-            const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
+            const AABBNode* __restrict__ const node = nodeRef.getAABBNode();
 
             vfloat<Nx> fmin;
             size_t m_frustum_node = intersectNodeFrustum<N,Nx>(node, frustum, fmin);
@@ -851,7 +851,7 @@ namespace embree
             /* process nodes */
             //STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
-            const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
+            const AABBNode* __restrict__ const node = nodeRef.getAABBNode();
 
             vfloat<Nx> fmin;
             size_t m_frustum_node = intersectNodeFrustum<N,Nx>(node, frustum, fmin);
