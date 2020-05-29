@@ -151,41 +151,24 @@ namespace embree
 
         private:
 
-          template <typename PrimitiveI = Primitive>
-          typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && !std::is_same<Primitive, Object>::value>::type
-          attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo)
+          void attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo)
           {
-            Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
-            typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
-            size_t begin (0);
-            accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh->scene);
+            size_t begin=0;
 
-            /* create build primitive */
-  #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,(unsigned int)pinfo.size());
-  #else
-            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
-  #endif
-          }
-
-          template <typename PrimitiveI = Primitive>
-          typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && std::is_same<Primitive, Object>::value>::type
-          attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo) {
-
-            for (size_t i=0; i<pinfo.size(); ++i) {
-
+            while (begin < pinfo.size())
+            {
               Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
               typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
-              size_t begin (i);
               accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh->scene);
 
               /* create build primitive */
-  #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-              topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,(unsigned int)pinfo.size());
-  #else
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
+              topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,1);
+#else
               topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
-  #endif
+#endif
             }
+            assert(begin == pinfo.size());
           }
 
           size_t  objectID_;
