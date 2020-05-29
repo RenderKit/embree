@@ -81,10 +81,10 @@ namespace embree
           if (mesh == nullptr || mesh->numTimeSteps != 1)
             continue;
           
-          if (mesh->size() > N) {
-            setupLargeBuildRefBuilder (objectID, mesh);
+          if (isSmallGeometry(mesh)) {
+             setupSmallBuildRefBuilder (objectID, mesh);
           } else {
-            setupSmallBuildRefBuilder (objectID, mesh);
+            setupLargeBuildRefBuilder (objectID, mesh);
           }
         }
       });

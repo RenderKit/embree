@@ -29,6 +29,10 @@ namespace embree
       typedef typename BVH::AABBNode AABBNode;
       typedef typename BVH::NodeRef NodeRef;
 
+      __forceinline static bool isSmallGeometry(Mesh* mesh) {
+        return mesh->size() <= 4;
+      }
+
     public:
 
       typedef void (*createMeshAccelTy)(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
@@ -130,7 +134,7 @@ namespace embree
 
           Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
           size_t meshSize = mesh->size();
-          assert(meshSize <= N);
+          assert(isSmallGeometry(mesh));
           
           mvector<PrimRef> prefs(topBuilder->scene->device, meshSize);
           auto pinfo = createPrimRefArray(mesh,objectID_,prefs,topBuilder->bvh->scene->progressInterface);
@@ -149,8 +153,8 @@ namespace embree
 
           template <typename PrimitiveI = Primitive>
           typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && !std::is_same<Primitive, Object>::value>::type
-          attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo) {
-
+          attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo)
+          {
             Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
             typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
             size_t begin (0);
@@ -236,9 +240,8 @@ namespace embree
         return this->scene->isGeometryModified(objectID);
       }
 
-      template <typename PrimitiveI = Primitive>
-      typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && std::is_same<Primitive, Object>::value>::type
-      resizeRefsList () {
+      void resizeRefsList ()
+      {
         size_t num = parallel_reduce (size_t(0), scene->size(), size_t(0), 
           [this](const range<size_t>& r)->size_t {
             size_t c = 0;
@@ -247,22 +250,13 @@ namespace embree
               if (mesh == nullptr || mesh->numTimeSteps != 1)
                 continue;
               size_t meshSize = mesh->size();
-              c += meshSize > N ? 1 : meshSize; 
+              c += isSmallGeometry(mesh) ? Primitive::blocks(meshSize) : 1;
             }
             return c;
           },
           std::plus<size_t>()
         );
 
-        if (refs_.size() < num) {
-          refs_.resize(num);
-        }
-      }
-
-      template <typename PrimitiveI = Primitive>
-      typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && !std::is_same<Primitive, Object>::value>::type
-      resizeRefsList () {
-        size_t num = scene->size();
         if (refs_.size() < num) {
           refs_.resize(num);
         }
