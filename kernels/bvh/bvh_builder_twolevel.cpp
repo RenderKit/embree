@@ -242,7 +242,7 @@ namespace embree
         if (bvh->objects[i]) bvh->objects[i]->clear();
 
       for (size_t i=0; i<builders.size(); i++) 
-        if (builders[i]) builders[i]->clear();
+        if (builders[i]) builders[i].reset();
 
       refs_.clear();
     }
@@ -290,7 +290,7 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupSmallBuildRefBuilder (size_t objectID, Mesh const * const /*mesh*/)
     {
-      if (builders[objectID] == nullptr ||                                  // new mesh
+      if (builders[objectID] == nullptr ||                                         // new mesh
           dynamic_cast<RefBuilderSmall*>(builders[objectID].get()) == nullptr)     // size change resulted in large->small change
       {
         builders[objectID].reset (new RefBuilderSmall(objectID));
@@ -300,8 +300,8 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh)
     {
-      if (bvh->objects[objectID] == nullptr ||                           // new mesh
-          builders[objectID]->meshQualityChanged (mesh->quality) ||      // changed build quality
+      if (bvh->objects[objectID] == nullptr ||                                  // new mesh
+          builders[objectID]->meshQualityChanged (mesh->quality) ||             // changed build quality
           dynamic_cast<RefBuilderLarge*>(builders[objectID].get()) == nullptr)  // size change resulted in small->large change
       {
         Builder* builder = nullptr;

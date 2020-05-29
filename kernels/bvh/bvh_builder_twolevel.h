@@ -116,7 +116,6 @@ namespace embree
       class RefBuilderBase {
       public:
         virtual ~RefBuilderBase () {}
-        virtual void clear () = 0;
         virtual void attachBuildRefs (BVHNBuilderTwoLevel* builder) = 0;
         virtual bool meshQualityChanged (RTCBuildQuality currQuality) = 0;
       };
