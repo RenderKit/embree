@@ -57,8 +57,9 @@ namespace embree
       }
 
       /* calculate the size of the entire BVH */
-      const size_t node_bytes = numPrimitives*sizeof(typename BVH::AABBNodeMB)/(4*N);
-      const size_t leaf_bytes = size_t(1.2*44*numPrimitives); // assumes triangles
+      const size_t numLeafBlocks = Primitive::blocks(numPrimitives);
+      const size_t node_bytes = 2*numLeafBlocks*sizeof(typename BVH::AABBNode)/N;
+      const size_t leaf_bytes = size_t(1.2*numLeafBlocks*sizeof(Primitive));
       bvh_->alloc.init_estimate(node_bytes+leaf_bytes); 
 
       double t0 = bvh_->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
@@ -72,7 +73,8 @@ namespace embree
       /* create acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
       {
-        for (size_t objectID=r.begin(); objectID<r.end(); objectID++) {
+        for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
+        {
           Mesh* mesh = scene_->getSafe<Mesh>(objectID);
       
           /* ignore meshes we do not support */
@@ -114,12 +116,13 @@ namespace embree
       {     
         /* open all large nodes */
         refs_.resize(nextRef_);
+
+        /* this probably needs some more tuning */
+        const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs_.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
  
 #if !ENABLE_DIRECT_SAH_MERGE_BUILDER
 
 #if ENABLE_OPEN_SEQUENTIAL
-        /* this probably needs some more tuning */
-        const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs_.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
         open_sequential(extSize); 
 #endif
         /* compute PrimRefs */
@@ -173,8 +176,7 @@ namespace embree
             settings.singleThreadThreshold = singleThreadThreshold_;
       
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            /* this probably needs some more tuning */
-            const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs_.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+            
             refs_.resize(extSize); 
          
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
