@@ -953,6 +953,7 @@ extern "C" void device_init (char* cfg)
 
   /* create scene with 4 analytical spheres */
   g_scene0 = rtcNewScene(g_device);
+  rtcSetSceneBuildQuality(g_scene0,RTC_BUILD_QUALITY_LOW);
   g_spheres = createAnalyticalSpheres(g_scene0,4);
   g_spheres[0].p = Vec3fa( 0, 0,+1); g_spheres[0].r = 0.5f;
   g_spheres[1].p = Vec3fa(+1, 0, 0); g_spheres[1].r = 0.5f;
