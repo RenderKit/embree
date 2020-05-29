@@ -34,7 +34,7 @@ namespace embree
       if (num < bvh_->objects.size()) {
         parallel_for(num, bvh_->objects.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
-              builders_[i]->clear();
+              builders_[i].reset();
               delete bvh_->objects[i]; bvh_->objects[i] = nullptr;
             }
           });
@@ -231,7 +231,7 @@ namespace embree
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::deleteGeometry(size_t geomID)
     {
       if (geomID >= bvh_->objects.size()) return;
-      if(builders_[geomID]) builders_[geomID]->clear();
+      if (builders_[geomID]) builders_[geomID].reset();
       delete bvh_->objects [geomID]; bvh_->objects [geomID] = nullptr;
     }
 
@@ -290,7 +290,9 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupSmallBuildRefBuilder (size_t objectID, Mesh const * const /*mesh*/)
     {
-      if (builders_[objectID] == nullptr) {
+      if (builders_[objectID] == nullptr ||                                  // new mesh
+          dynamic_cast<RefBuilderSmall*>(builders_[objectID].get()) == nullptr)     // size change resulted in large->small change
+      {
         builders_[objectID].reset (new RefBuilderSmall(objectID));
       }
     }
@@ -298,15 +300,10 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh)
     {
-      /* create BVH and builder for new meshes */
-      if (bvh_->objects[objectID] == nullptr) {
-        Builder* builder = nullptr;
-        createMeshAccel(objectID, builder);
-        builders_[objectID].reset (new RefBuilderLarge(objectID, builder, mesh->quality));
-      }
-
-      /* re-create when build quality changed */
-      else if (builders_[objectID]->meshQualityChanged (mesh->quality)) {
+      if (bvh_->objects[objectID] == nullptr ||                           // new mesh
+          builders_[objectID]->meshQualityChanged (mesh->quality) ||      // changed build quality
+          dynamic_cast<RefBuilderLarge*>(builders_[objectID].get()) == nullptr)  // size change resulted in small->large change
+      {
         Builder* builder = nullptr;
         delete bvh_->objects[objectID]; 
         createMeshAccel(objectID, builder);
