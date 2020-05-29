@@ -138,40 +138,29 @@ namespace embree
           
           mvector<PrimRef> prefs(topBuilder->scene->device, meshSize);
           auto pinfo = createPrimRefArray(mesh,objectID_,prefs,topBuilder->bvh->scene->progressInterface);
-          if (unlikely(pinfo.size() == 0)) {
-            return;
-          }
 
-          attachBuildRefs_Impl (topBuilder, prefs, pinfo);
+          size_t begin=0;
+          while (begin < pinfo.size())
+          {
+            Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
+            typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
+            accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh->scene);
+            
+            /* create build primitive */
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
+            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,1);
+#else
+            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
+#endif
+          }
+          assert(begin == pinfo.size());
         }
 
         bool meshQualityChanged (RTCBuildQuality /*currQuality*/) {
           return false;
         }
-
-        private:
-
-          void attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo)
-          {
-            size_t begin=0;
-
-            while (begin < pinfo.size())
-            {
-              Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
-              typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
-              accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh->scene);
-
-              /* create build primitive */
-#if ENABLE_DIRECT_SAH_MERGE_BUILDER
-              topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,1);
-#else
-              topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
-#endif
-            }
-            assert(begin == pinfo.size());
-          }
-
-          size_t  objectID_;
+        
+        size_t  objectID_;
       };
 
       class RefBuilderLarge : public RefBuilderBase {
@@ -245,8 +234,8 @@ namespace embree
         }
       }
 
-      void createMeshAccel (size_t geomID, Builder*& builder) {
-
+      void createMeshAccel (size_t geomID, Builder*& builder)
+      {
         bvh->objects[geomID] = new BVH(Primitive::type,scene);
         BVH* accel = bvh->objects[geomID];
         auto mesh = scene->getSafe<Mesh>(geomID);
