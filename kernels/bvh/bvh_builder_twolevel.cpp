@@ -16,7 +16,7 @@ namespace embree
   {
     template<int N, typename Mesh, typename Primitive>
     BVHNBuilderTwoLevel<N,Mesh,Primitive>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, bool useMortonBuilder, const size_t singleThreadThreshold)
-      : bvh(bvh), scene(scene), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold_(singleThreadThreshold), useMortonBuilder_(useMortonBuilder) {}
+      : bvh(bvh), scene(scene), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold(singleThreadThreshold), useMortonBuilder_(useMortonBuilder) {}
     
     template<int N, typename Mesh, typename Primitive>
     BVHNBuilderTwoLevel<N,Mesh,Primitive>::~BVHNBuilderTwoLevel () {
@@ -173,7 +173,7 @@ namespace embree
             settings.maxLeafSize = 1;
             settings.travCost = 1.0f;
             settings.intCost = 1.0f;
-            settings.singleThreadThreshold = singleThreadThreshold_;
+            settings.singleThreadThreshold = singleThreadThreshold;
       
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
             

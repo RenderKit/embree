@@ -255,7 +255,7 @@ namespace embree
       mvector<BuildRef> refs;
       mvector<PrimRef>  prims;
       std::atomic<int>  nextRef;
-      const size_t      singleThreadThreshold_;
+      const size_t      singleThreadThreshold;
       bool              useMortonBuilder_ = false;
     };
   }
