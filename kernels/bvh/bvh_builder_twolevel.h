@@ -124,12 +124,8 @@ namespace embree
       class RefBuilderSmall : public RefBuilderBase {
       public:
 
-        RefBuilderSmall (size_t objectID) 
-        :
-          objectID_ (objectID)
-        {}
-
-        void clear () {}
+        RefBuilderSmall (size_t objectID)
+          : objectID_ (objectID) {}
 
         void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
 
@@ -196,16 +192,7 @@ namespace embree
       public:
         
         RefBuilderLarge (size_t objectID, const Ref<Builder>& builder, RTCBuildQuality quality)
-        :
-          objectID_ (objectID)
-        , builder_ (builder)
-        , quality_ (quality)
-        {}
-
-        void clear () {
-          builder_ = nullptr;
-          quality_ = RTC_BUILD_QUALITY_LOW;
-        }
+        : objectID_ (objectID), builder_ (builder), quality_ (quality) {}
 
         void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder)
         {
