@@ -148,9 +148,9 @@ namespace embree
             
             /* create build primitive */
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
-            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,1);
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,1);
 #else
-            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
 #endif
           }
           assert(begin == pinfo.size());
@@ -182,9 +182,9 @@ namespace embree
           {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
             Mesh* mesh = topBuilder->getMesh(objectID_);
-            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID_,(unsigned int)mesh->size());
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID_,(unsigned int)mesh->size());
 #else
-            topBuilder->refs_[topBuilder->nextRef_++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
 #endif
           }
         }
@@ -229,8 +229,8 @@ namespace embree
           std::plus<size_t>()
         );
 
-        if (refs_.size() < num) {
-          refs_.resize(num);
+        if (refs.size() < num) {
+          refs.resize(num);
         }
       }
 
@@ -252,9 +252,9 @@ namespace embree
       BuilderList       builders;
       BVH*              bvh;
       Scene*            scene;      
-      mvector<BuildRef> refs_;
-      mvector<PrimRef>  prims_;
-      std::atomic<int>  nextRef_;
+      mvector<BuildRef> refs;
+      mvector<PrimRef>  prims;
+      std::atomic<int>  nextRef;
       const size_t      singleThreadThreshold_;
       bool              useMortonBuilder_ = false;
     };

@@ -16,7 +16,7 @@ namespace embree
   {
     template<int N, typename Mesh, typename Primitive>
     BVHNBuilderTwoLevel<N,Mesh,Primitive>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, bool useMortonBuilder, const size_t singleThreadThreshold)
-      : bvh(bvh), scene(scene), refs_(scene->device,0), prims_(scene->device,0), singleThreadThreshold_(singleThreadThreshold), useMortonBuilder_(useMortonBuilder) {}
+      : bvh(bvh), scene(scene), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold_(singleThreadThreshold), useMortonBuilder_(useMortonBuilder) {}
     
     template<int N, typename Mesh, typename Primitive>
     BVHNBuilderTwoLevel<N,Mesh,Primitive>::~BVHNBuilderTwoLevel () {
@@ -51,7 +51,7 @@ namespace embree
       const size_t numPrimitives = scene->getNumPrimitives(Mesh::geom_type,false);
 
       if (numPrimitives == 0) {
-        prims_.resize(0);
+        prims.resize(0);
         bvh->set(BVH::emptyNode,empty,0);
         return;
       }
@@ -68,7 +68,7 @@ namespace embree
       if (bvh->objects.size()  < num) bvh->objects.resize(num);
       if (builders.size() < num) builders.resize(num);
       resizeRefsList ();
-      nextRef_.store(0);
+      nextRef.store(0);
       
       /* create acceleration structures */
       parallel_for(size_t(0), num, [&] (const range<size_t>& r)
@@ -108,17 +108,17 @@ namespace embree
       double d0 = getSeconds();
 #endif
       /* fast path for single geometry scenes */
-      if (nextRef_ == 1) { 
-        bvh->set(refs_[0].node,LBBox3fa(refs_[0].bounds()),numPrimitives);
+      if (nextRef == 1) { 
+        bvh->set(refs[0].node,LBBox3fa(refs[0].bounds()),numPrimitives);
       }
 
       else
       {     
         /* open all large nodes */
-        refs_.resize(nextRef_);
+        refs.resize(nextRef);
 
         /* this probably needs some more tuning */
-        const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs_.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
+        const size_t extSize = max(max((size_t)SPLIT_MIN_EXT_SPACE,refs.size()*SPLIT_MEMORY_RESERVE_SCALE),size_t((float)numPrimitives / SPLIT_MEMORY_RESERVE_FACTOR));
  
 #if !ENABLE_DIRECT_SAH_MERGE_BUILDER
 
@@ -126,7 +126,7 @@ namespace embree
         open_sequential(extSize); 
 #endif
         /* compute PrimRefs */
-        prims_.resize(refs_.size());
+        prims.resize(refs.size());
 #endif
         
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
@@ -136,22 +136,22 @@ namespace embree
         {
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
 
-          const PrimInfo pinfo = parallel_reduce(size_t(0), refs_.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
+          const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
               PrimInfo pinfo(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
-                pinfo.add_center2(refs_[i]);
+                pinfo.add_center2(refs[i]);
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
           
 #else
-          const PrimInfo pinfo = parallel_reduce(size_t(0), refs_.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
+          const PrimInfo pinfo = parallel_reduce(size_t(0), refs.size(),  PrimInfo(empty), [&] (const range<size_t>& r) -> PrimInfo {
 
               PrimInfo pinfo(empty);
               for (size_t i=r.begin(); i<r.end(); i++) {
-                pinfo.add_center2(refs_[i]);
-                prims_[i] = PrimRef(refs_[i].bounds(),(size_t)refs_[i].node);
+                pinfo.add_center2(refs[i]);
+                prims[i] = PrimRef(refs[i].bounds(),(size_t)refs[i].node);
               }
               return pinfo;
             }, [] (const PrimInfo& a, const PrimInfo& b) { return PrimInfo::merge(a,b); });
@@ -177,7 +177,7 @@ namespace embree
       
 #if ENABLE_DIRECT_SAH_MERGE_BUILDER
             
-            refs_.resize(extSize); 
+            refs.resize(extSize); 
          
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
               typename BVH::CreateAlloc(bvh),
@@ -192,7 +192,7 @@ namespace embree
                 return openBuildRef(bref,refs);
               },              
               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-              refs_.data(),extSize,pinfo,settings);
+              refs.data(),extSize,pinfo,settings);
 #else
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>(
               typename BVH::CreateAlloc(bvh),
@@ -204,7 +204,7 @@ namespace embree
                 return (NodeRef) prims[range.begin()].ID();
               },
               [&] (size_t dn) { bvh->scene->progressMonitor(0); },
-              prims_.data(),pinfo,settings);
+              prims.data(),pinfo,settings);
 #endif
 
             
@@ -244,45 +244,45 @@ namespace embree
       for (size_t i=0; i<builders.size(); i++) 
         if (builders[i]) builders[i].reset();
 
-      refs_.clear();
+      refs.clear();
     }
 
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::open_sequential(const size_t extSize)
     {
-      if (refs_.size() == 0)
+      if (refs.size() == 0)
 	return;
 
-      refs_.reserve(extSize);
+      refs.reserve(extSize);
 
 #if 1
-      for (size_t i=0;i<refs_.size();i++)
+      for (size_t i=0;i<refs.size();i++)
       {
-        NodeRef ref = refs_[i].node;
+        NodeRef ref = refs[i].node;
         if (ref.isAABBNode())
           BVH::prefetch(ref);
       }
 #endif
 
-      std::make_heap(refs_.begin(),refs_.end());
-      while (refs_.size()+N-1 <= extSize)
+      std::make_heap(refs.begin(),refs.end());
+      while (refs.size()+N-1 <= extSize)
       {
-        std::pop_heap (refs_.begin(),refs_.end()); 
-        NodeRef ref = refs_.back().node;
+        std::pop_heap (refs.begin(),refs.end()); 
+        NodeRef ref = refs.back().node;
         if (ref.isLeaf()) break;
-        refs_.pop_back();    
+        refs.pop_back();    
         
         AABBNode* node = ref.getAABBNode();
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
-          refs_.push_back(BuildRef(node->bounds(i),node->child(i)));
+          refs.push_back(BuildRef(node->bounds(i),node->child(i)));
          
 #if 1
           NodeRef ref_pre = node->child(i);
           if (ref_pre.isAABBNode())
             ref_pre.prefetch();
 #endif
-          std::push_heap (refs_.begin(),refs_.end()); 
+          std::push_heap (refs.begin(),refs.end()); 
         }
       }
     }
