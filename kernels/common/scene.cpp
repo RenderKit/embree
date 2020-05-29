@@ -434,20 +434,20 @@ namespace embree
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
       {
-        //if (quality_flags != RTC_BUILD_QUALITY_LOW) {
-        accels_add(device->bvh8_factory->BVH8UserGeometry(this,BVHFactory::BuildVariant::STATIC));
-        //} else {
-        //accels_add(device->bvh8_factory->BVH8UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC));
-        //}
+        if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+          accels_add(device->bvh8_factory->BVH8UserGeometry(this,BVHFactory::BuildVariant::STATIC));
+        } else {
+          accels_add(device->bvh8_factory->BVH8UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC));
+        }
       }
       else
 #endif
       {
-        //if (quality_flags != RTC_BUILD_QUALITY_LOW) {
-        accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::STATIC));
-        //} else {
-        //accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC)); // FIXME: only enable when memory consumption issue with instancing is solved
-        //}
+        if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+          accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::STATIC));
+        } else {
+          accels_add(device->bvh4_factory->BVH4UserGeometry(this,BVHFactory::BuildVariant::DYNAMIC));
+        }
       }
     }
     else if (device->object_accel == "bvh4.object") accels_add(device->bvh4_factory->BVH4UserGeometry(this));
