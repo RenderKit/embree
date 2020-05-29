@@ -86,16 +86,27 @@ unsigned int addGroundPlane (RTCScene scene_i)
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
   /* set vertices */
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),4);
+  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),9);
   vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
-  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
+  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z =   0;
+  vertices[2].x = -10; vertices[2].y = -2; vertices[2].z = +10;
+  vertices[3].x =   0; vertices[3].y = -2; vertices[3].z = -10;
+  vertices[4].x =   0; vertices[4].y = -2; vertices[4].z =   0;
+  vertices[5].x =   0; vertices[5].y = -2; vertices[5].z = +10;
+  vertices[6].x = +10; vertices[6].y = -2; vertices[6].z = -10;
+  vertices[7].x = +10; vertices[7].y = -2; vertices[7].z =   0;
+  vertices[8].x = +10; vertices[8].y = -2; vertices[8].z = +10;
 
   /* set triangles */
-  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2);
-  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-  triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
+  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),8);
+  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 4;
+  triangles[1].v0 = 0; triangles[1].v1 = 4; triangles[1].v2 = 3;
+  triangles[2].v0 = 1; triangles[2].v1 = 2; triangles[2].v2 = 5;
+  triangles[3].v0 = 1; triangles[3].v1 = 5; triangles[3].v2 = 4;
+  triangles[4].v0 = 3; triangles[4].v1 = 4; triangles[4].v2 = 7;
+  triangles[5].v0 = 3; triangles[5].v1 = 7; triangles[5].v2 = 6;
+  triangles[6].v0 = 4; triangles[6].v1 = 5; triangles[6].v2 = 8;
+  triangles[7].v0 = 4; triangles[7].v1 = 8; triangles[7].v2 = 7;
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i,geom);
