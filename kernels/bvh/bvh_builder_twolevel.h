@@ -99,7 +99,7 @@ namespace embree
       }
       
       /*! Constructor. */
-      BVHNBuilderTwoLevel (BVH* bvh_, Scene* scene, bool useMortonBuilder = false, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
+      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, bool useMortonBuilder = false, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
       
       /*! Destructor */
       ~BVHNBuilderTwoLevel ();
@@ -133,12 +133,12 @@ namespace embree
 
         void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
 
-          Mesh* mesh = topBuilder->scene_->template getSafe<Mesh>(objectID_);
+          Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
           size_t meshSize = mesh->size();
           assert(meshSize <= N);
           
-          mvector<PrimRef> prefs(topBuilder->scene_->device, meshSize);
-          auto pinfo = createPrimRefArray(mesh,objectID_,prefs,topBuilder->bvh_->scene->progressInterface);
+          mvector<PrimRef> prefs(topBuilder->scene->device, meshSize);
+          auto pinfo = createPrimRefArray(mesh,objectID_,prefs,topBuilder->bvh->scene->progressInterface);
           if (unlikely(pinfo.size() == 0)) {
             return;
           }
@@ -156,10 +156,10 @@ namespace embree
           typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && !std::is_same<Primitive, Object>::value>::type
           attachBuildRefs_Impl (BVHNBuilderTwoLevel* topBuilder, const mvector<PrimRef>& prefs, const PrimInfo& pinfo) {
 
-            Primitive* accel = (Primitive*) topBuilder->bvh_->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
+            Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
             typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
             size_t begin (0);
-            accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh_->scene);
+            accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh->scene);
 
             /* create build primitive */
   #if ENABLE_DIRECT_SAH_MERGE_BUILDER
@@ -175,10 +175,10 @@ namespace embree
 
             for (size_t i=0; i<pinfo.size(); ++i) {
 
-              Primitive* accel = (Primitive*) topBuilder->bvh_->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
+              Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
               typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
               size_t begin (i);
-              accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh_->scene);
+              accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh->scene);
 
               /* create build primitive */
   #if ENABLE_DIRECT_SAH_MERGE_BUILDER
@@ -241,23 +241,23 @@ namespace embree
       void setupSmallBuildRefBuilder (size_t objectID, Mesh const * const mesh);
 
       BVH*  getBVH (size_t objectID) {
-        return this->bvh_->objects[objectID];
+        return this->bvh->objects[objectID];
       }
       Mesh* getMesh (size_t objectID) {
-        return this->scene_->template getSafe<Mesh>(objectID);
+        return this->scene->template getSafe<Mesh>(objectID);
       }
       bool  isGeometryModified (size_t objectID) {
-        return this->scene_->isGeometryModified(objectID);
+        return this->scene->isGeometryModified(objectID);
       }
 
       template <typename PrimitiveI = Primitive>
       typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && std::is_same<Primitive, Object>::value>::type
       resizeRefsList () {
-        size_t num = parallel_reduce (size_t(0), scene_->size(), size_t(0), 
+        size_t num = parallel_reduce (size_t(0), scene->size(), size_t(0), 
           [this](const range<size_t>& r)->size_t {
             size_t c = 0;
             for (auto i=r.begin(); i<r.end(); ++i) {
-              Mesh* mesh = scene_->getSafe<Mesh>(i);
+              Mesh* mesh = scene->getSafe<Mesh>(i);
               if (mesh == nullptr || mesh->numTimeSteps != 1)
                 continue;
               size_t meshSize = mesh->size();
@@ -276,7 +276,7 @@ namespace embree
       template <typename PrimitiveI = Primitive>
       typename std::enable_if<std::is_same<Primitive,PrimitiveI>::value && !std::is_same<Primitive, Object>::value>::type
       resizeRefsList () {
-        size_t num = scene_->size();
+        size_t num = scene->size();
         if (refs_.size() < num) {
           refs_.resize(num);
         }
@@ -284,9 +284,9 @@ namespace embree
 
       void createMeshAccel (size_t geomID, Builder*& builder) {
 
-        bvh_->objects[geomID] = new BVH(Primitive::type,scene_);
-        BVH* accel = bvh_->objects[geomID];
-        auto mesh = scene_->getSafe<Mesh>(geomID);
+        bvh->objects[geomID] = new BVH(Primitive::type,scene);
+        BVH* accel = bvh->objects[geomID];
+        auto mesh = scene->getSafe<Mesh>(geomID);
         if (nullptr == mesh) {
           throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
           return;
@@ -297,9 +297,9 @@ namespace embree
 
       using BuilderList = std::vector<std::unique_ptr<RefBuilderBase>>;
 
-      BuilderList       builders_;
-      BVH*              bvh_;
-      Scene*            scene_;      
+      BuilderList       builders;
+      BVH*              bvh;
+      Scene*            scene;      
       mvector<BuildRef> refs_;
       mvector<PrimRef>  prims_;
       std::atomic<int>  nextRef_;

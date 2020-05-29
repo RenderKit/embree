@@ -16,7 +16,7 @@ namespace embree
   {
     template<int N, typename Mesh, typename Primitive>
     BVHNBuilderTwoLevel<N,Mesh,Primitive>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, bool useMortonBuilder, const size_t singleThreadThreshold)
-      : bvh_(bvh), scene_(scene), refs_(scene->device,0), prims_(scene->device,0), singleThreadThreshold_(singleThreadThreshold), useMortonBuilder_(useMortonBuilder) {}
+      : bvh(bvh), scene(scene), refs_(scene->device,0), prims_(scene->device,0), singleThreadThreshold_(singleThreadThreshold), useMortonBuilder_(useMortonBuilder) {}
     
     template<int N, typename Mesh, typename Primitive>
     BVHNBuilderTwoLevel<N,Mesh,Primitive>::~BVHNBuilderTwoLevel () {
@@ -30,12 +30,12 @@ namespace embree
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::build()
     {
       /* delete some objects */
-      size_t num = scene_->size();
-      if (num < bvh_->objects.size()) {
-        parallel_for(num, bvh_->objects.size(), [&] (const range<size_t>& r) {
+      size_t num = scene->size();
+      if (num < bvh->objects.size()) {
+        parallel_for(num, bvh->objects.size(), [&] (const range<size_t>& r) {
             for (size_t i=r.begin(); i<r.end(); i++) {
-              builders_[i].reset();
-              delete bvh_->objects[i]; bvh_->objects[i] = nullptr;
+              builders[i].reset();
+              delete bvh->objects[i]; bvh->objects[i] = nullptr;
             }
           });
       }
@@ -45,14 +45,14 @@ namespace embree
 #endif
       {
       /* reset memory allocator */
-      bvh_->alloc.reset();
+      bvh->alloc.reset();
       
       /* skip build for empty scene */
-      const size_t numPrimitives = scene_->getNumPrimitives(Mesh::geom_type,false);
+      const size_t numPrimitives = scene->getNumPrimitives(Mesh::geom_type,false);
 
       if (numPrimitives == 0) {
         prims_.resize(0);
-        bvh_->set(BVH::emptyNode,empty,0);
+        bvh->set(BVH::emptyNode,empty,0);
         return;
       }
 
@@ -60,13 +60,13 @@ namespace embree
       const size_t numLeafBlocks = Primitive::blocks(numPrimitives);
       const size_t node_bytes = 2*numLeafBlocks*sizeof(typename BVH::AABBNode)/N;
       const size_t leaf_bytes = size_t(1.2*numLeafBlocks*sizeof(Primitive));
-      bvh_->alloc.init_estimate(node_bytes+leaf_bytes); 
+      bvh->alloc.init_estimate(node_bytes+leaf_bytes); 
 
-      double t0 = bvh_->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
+      double t0 = bvh->preBuild(TOSTRING(isa) "::BVH" + toString(N) + "BuilderTwoLevel");
 
       /* resize object array if scene got larger */
-      if (bvh_->objects.size()  < num) bvh_->objects.resize(num);
-      if (builders_.size() < num) builders_.resize(num);
+      if (bvh->objects.size()  < num) bvh->objects.resize(num);
+      if (builders.size() < num) builders.resize(num);
       resizeRefsList ();
       nextRef_.store(0);
       
@@ -75,7 +75,7 @@ namespace embree
       {
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
         {
-          Mesh* mesh = scene_->getSafe<Mesh>(objectID);
+          Mesh* mesh = scene->getSafe<Mesh>(objectID);
       
           /* ignore meshes we do not support */
           if (mesh == nullptr || mesh->numTimeSteps != 1)
@@ -95,11 +95,11 @@ namespace embree
         for (size_t objectID=r.begin(); objectID<r.end(); objectID++)
         {
           /* ignore if no triangle mesh or not enabled */
-          Mesh* mesh = scene_->getSafe<Mesh>(objectID);
+          Mesh* mesh = scene->getSafe<Mesh>(objectID);
           if (mesh == nullptr || !mesh->isEnabled() || mesh->numTimeSteps != 1) 
             continue;
 
-          builders_[objectID]->attachBuildRefs (this);
+          builders[objectID]->attachBuildRefs (this);
         }
       });
 
@@ -109,7 +109,7 @@ namespace embree
 #endif
       /* fast path for single geometry scenes */
       if (nextRef_ == 1) { 
-        bvh_->set(refs_[0].node,LBBox3fa(refs_[0].bounds()),numPrimitives);
+        bvh->set(refs_[0].node,LBBox3fa(refs_[0].bounds()),numPrimitives);
       }
 
       else
@@ -159,7 +159,7 @@ namespace embree
        
           /* skip if all objects where empty */
           if (pinfo.size() == 0)
-            bvh_->set(BVH::emptyNode,empty,0);
+            bvh->set(BVH::emptyNode,empty,0);
         
           /* otherwise build toplevel hierarchy */
           else
@@ -180,7 +180,7 @@ namespace embree
             refs_.resize(extSize); 
          
             NodeRef root = BVHBuilderBinnedOpenMergeSAH::build<NodeRef,BuildRef>(
-              typename BVH::CreateAlloc(bvh_),
+              typename BVH::CreateAlloc(bvh),
               typename BVH::AABBNode::Create2(),
               typename BVH::AABBNode::Set2(),
               
@@ -191,11 +191,11 @@ namespace embree
               [&] (BuildRef &bref, BuildRef *refs) -> size_t { 
                 return openBuildRef(bref,refs);
               },              
-              [&] (size_t dn) { bvh_->scene->progressMonitor(0); },
+              [&] (size_t dn) { bvh->scene->progressMonitor(0); },
               refs_.data(),extSize,pinfo,settings);
 #else
             NodeRef root = BVHBuilderBinnedSAH::build<NodeRef>(
-              typename BVH::CreateAlloc(bvh_),
+              typename BVH::CreateAlloc(bvh),
               typename BVH::AABBNode::Create2(),
               typename BVH::AABBNode::Set2(),
               
@@ -203,12 +203,12 @@ namespace embree
                 assert(range.size() == 1);
                 return (NodeRef) prims[range.begin()].ID();
               },
-              [&] (size_t dn) { bvh_->scene->progressMonitor(0); },
+              [&] (size_t dn) { bvh->scene->progressMonitor(0); },
               prims_.data(),pinfo,settings);
 #endif
 
             
-            bvh_->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
+            bvh->set(root,LBBox3fa(pinfo.geomBounds),numPrimitives);
           }
         }
 #if defined(TASKING_TBB) && defined(__AVX512ER__) && USE_TASK_ARENA // KNL
@@ -217,8 +217,8 @@ namespace embree
 
       }  
         
-      bvh_->alloc.cleanup();
-      bvh_->postBuild(t0);
+      bvh->alloc.cleanup();
+      bvh->postBuild(t0);
 #if PROFILE
       double d1 = getSeconds();
       std::cout << "TOP_LEVEL OPENING/REBUILD TIME " << 1000.0*(d1-d0) << " ms" << std::endl;
@@ -230,19 +230,19 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::deleteGeometry(size_t geomID)
     {
-      if (geomID >= bvh_->objects.size()) return;
-      if (builders_[geomID]) builders_[geomID].reset();
-      delete bvh_->objects [geomID]; bvh_->objects [geomID] = nullptr;
+      if (geomID >= bvh->objects.size()) return;
+      if (builders[geomID]) builders[geomID].reset();
+      delete bvh->objects [geomID]; bvh->objects [geomID] = nullptr;
     }
 
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::clear()
     {
-      for (size_t i=0; i<bvh_->objects.size(); i++) 
-        if (bvh_->objects[i]) bvh_->objects[i]->clear();
+      for (size_t i=0; i<bvh->objects.size(); i++) 
+        if (bvh->objects[i]) bvh->objects[i]->clear();
 
-      for (size_t i=0; i<builders_.size(); i++) 
-	      if (builders_[i]) builders_[i]->clear();
+      for (size_t i=0; i<builders.size(); i++) 
+        if (builders[i]) builders[i]->clear();
 
       refs_.clear();
     }
@@ -290,74 +290,74 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupSmallBuildRefBuilder (size_t objectID, Mesh const * const /*mesh*/)
     {
-      if (builders_[objectID] == nullptr ||                                  // new mesh
-          dynamic_cast<RefBuilderSmall*>(builders_[objectID].get()) == nullptr)     // size change resulted in large->small change
+      if (builders[objectID] == nullptr ||                                  // new mesh
+          dynamic_cast<RefBuilderSmall*>(builders[objectID].get()) == nullptr)     // size change resulted in large->small change
       {
-        builders_[objectID].reset (new RefBuilderSmall(objectID));
+        builders[objectID].reset (new RefBuilderSmall(objectID));
       }
     }
 
     template<int N, typename Mesh, typename Primitive>
     void BVHNBuilderTwoLevel<N,Mesh,Primitive>::setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh)
     {
-      if (bvh_->objects[objectID] == nullptr ||                           // new mesh
-          builders_[objectID]->meshQualityChanged (mesh->quality) ||      // changed build quality
-          dynamic_cast<RefBuilderLarge*>(builders_[objectID].get()) == nullptr)  // size change resulted in small->large change
+      if (bvh->objects[objectID] == nullptr ||                           // new mesh
+          builders[objectID]->meshQualityChanged (mesh->quality) ||      // changed build quality
+          dynamic_cast<RefBuilderLarge*>(builders[objectID].get()) == nullptr)  // size change resulted in small->large change
       {
         Builder* builder = nullptr;
-        delete bvh_->objects[objectID]; 
+        delete bvh->objects[objectID]; 
         createMeshAccel(objectID, builder);
-        builders_[objectID].reset (new RefBuilderLarge(objectID, builder, mesh->quality));
+        builders[objectID].reset (new RefBuilderLarge(objectID, builder, mesh->quality));
       }
     }
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH4BuilderTwoLevelTriangle4MeshSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4>((BVH4*)bvh_,scene,useMortonBuilder);
+    Builder* BVH4BuilderTwoLevelTriangle4MeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,useMortonBuilder);
     }
-    Builder* BVH4BuilderTwoLevelTriangle4vMeshSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4v>((BVH4*)bvh_,scene,useMortonBuilder);
+    Builder* BVH4BuilderTwoLevelTriangle4vMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,useMortonBuilder);
     }
-    Builder* BVH4BuilderTwoLevelTriangle4iMeshSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4i>((BVH4*)bvh_,scene,useMortonBuilder);
+    Builder* BVH4BuilderTwoLevelTriangle4iMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,useMortonBuilder);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-    Builder* BVH4BuilderTwoLevelQuadMeshSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-    return new BVHNBuilderTwoLevel<4,QuadMesh,Quad4v>((BVH4*)bvh_,scene,useMortonBuilder);
+    Builder* BVH4BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+    return new BVHNBuilderTwoLevel<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,useMortonBuilder);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    Builder* BVH4BuilderTwoLevelVirtualSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-    return new BVHNBuilderTwoLevel<4,UserGeometry,Object>((BVH4*)bvh_,scene,useMortonBuilder);
+    Builder* BVH4BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+    return new BVHNBuilderTwoLevel<4,UserGeometry,Object>((BVH4*)bvh,scene,useMortonBuilder);
     }
 #endif
 
 
 #if defined(__AVX__)
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH8BuilderTwoLevelTriangle4MeshSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4>((BVH8*)bvh_,scene,useMortonBuilder);
+    Builder* BVH8BuilderTwoLevelTriangle4MeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,useMortonBuilder);
     }
-    Builder* BVH8BuilderTwoLevelTriangle4vMeshSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4v>((BVH8*)bvh_,scene,useMortonBuilder);
+    Builder* BVH8BuilderTwoLevelTriangle4vMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4v>((BVH8*)bvh,scene,useMortonBuilder);
     }
-    Builder* BVH8BuilderTwoLevelTriangle4iMeshSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4i>((BVH8*)bvh_,scene,useMortonBuilder);
+    Builder* BVH8BuilderTwoLevelTriangle4iMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,useMortonBuilder);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-    Builder* BVH8BuilderTwoLevelQuadMeshSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,QuadMesh,Quad4v>((BVH8*)bvh_,scene,useMortonBuilder);
+    Builder* BVH8BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,useMortonBuilder);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    Builder* BVH8BuilderTwoLevelVirtualSAH (void* bvh_, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,UserGeometry,Object>((BVH8*)bvh_,scene,useMortonBuilder);
+    Builder* BVH8BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<8,UserGeometry,Object>((BVH8*)bvh,scene,useMortonBuilder);
     }
 #endif
 #endif
