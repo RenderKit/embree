@@ -5,10 +5,21 @@
 
 namespace embree
 {
+  extern "C" bool g_min_width_enabled;
+  extern "C" float g_min_width = 0.0f;
+  
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE) {}
+      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE)
+    {
+#if RTC_CURVE_MINWIDTH
+      registerOption("min-width", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_min_width = cin->getFloat();
+          g_min_width_enabled = true;
+        }, "--min-width <float>: sets number of pixel to enlarge hair geometry to");
+#endif
+    }
     
     void postParseCommandLine() 
     {

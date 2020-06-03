@@ -8,6 +8,7 @@
 
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform int g_instancing_mode;
+extern uniform float g_min_width;
 
 struct TutorialData
 {
@@ -18,6 +19,8 @@ struct TutorialData
   /* scene data */
   RTCScene scene;
   uniform bool subdiv_mode;
+
+  uniform float min_width;
 };
 
 void TutorialData_Constructor(uniform TutorialData* uniform This)
@@ -27,6 +30,7 @@ void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->iflags_coherent = g_iflags_coherent;
   This->scene = NULL;
   This->subdiv_mode = false;
+  This->min_width = g_min_width;
 }
 
 void TutorialData_Destructor(uniform TutorialData* uniform This)

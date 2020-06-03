@@ -10,6 +10,7 @@ namespace embree
 {
   extern "C" {
     int g_instancing_mode = SceneGraph::INSTANCING_NONE;
+    bool g_min_width_enabled = false;
   }
 
   void deleteGeometry(ISPCGeometry* geom)
@@ -525,7 +526,11 @@ namespace embree
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);
     if (mesh->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
-      //rtcSetGeometryMaxRadiusScale(geom,40.0f);
+    } else {
+#if RTC_CURVE_MINWIDTH
+      if (g_min_width_enabled)
+        rtcSetGeometryMaxRadiusScale(geom,16.0f);
+#endif
     }
 
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, mesh->flags, 0, sizeof(unsigned char), mesh->numHairs);
