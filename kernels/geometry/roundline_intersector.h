@@ -371,6 +371,26 @@ namespace embree
           vbool<M> valid_sph1_back  = h2 >= 0.0f & yp + t_sph1_back*dOdP > g & !coneR.isClippedByPlane (valid, hit_back);
           upper = select(valid_sph1_back, t_sph1_back,  vfloat<M>(neg_inf));
         }
+
+        __forceinline void intersectBeginSphere(vbool<M>& valid, 
+                                                vfloat<M>& lower, vfloat<M>& upper)
+        {
+          /* calculate front and back hit with end sphere */
+          const Vec3vf<M> O1 = org - p0;
+          const vfloat<M> O1dO = dot(O1,dO);
+          const vfloat<M> h2 = sqr(O1dO) - dOdO*(sqr(O1) - sqr(r0));
+          const vfloat<M> rhs1 = select( h2 >= 0.0f, sqrt(h2), vfloat<M>(neg_inf) );
+          t_sph0_front = (-O1dO - rhs1)*rcp_dOdO;
+          t_sph0_back  = (-O1dO + rhs1)*rcp_dOdO;
+          
+          /* clip away front hit if it is inside next cone segment */
+          vbool<M> valid_sph1_front = h2 >= 0.0f & yp + t_sph0_front*dOdP < 0;
+          lower = select(valid_sph1_front, t_sph0_front, vfloat<M>(pos_inf));
+          
+          /* clip away back hit if it is inside next cone segment */
+          vbool<M> valid_sph1_back  = h2 >= 0.0f & yp + t_sph0_back*dOdP < 0;
+          upper = select(valid_sph1_back, t_sph0_back,  vfloat<M>(neg_inf));
+        }
         
         /* 
            
@@ -428,10 +448,16 @@ namespace embree
         /* compute geometry normal of sphere hit as the difference
          * vector from hit point to sphere center */
         
-        __forceinline Vec3vf<M> Ng_sphere(const vbool<M>& front_hit) const
+        __forceinline Vec3vf<M> Ng_sphere1(const vbool<M>& front_hit) const
         {
           const vfloat<M> t_sph1 = select(front_hit, t_sph1_front, t_sph1_back);
           return org+t_sph1*dO-p1;
+        }
+
+        __forceinline Vec3vf<M> Ng_sphere0(const vbool<M>& front_hit) const
+        {
+          const vfloat<M> t_sph0 = select(front_hit, t_sph0_front, t_sph0_back);
+          return org+t_sph0*dO-p0;
         }
         
         /* 
@@ -469,6 +495,8 @@ namespace embree
       private:
         vfloat<M> t_sph1_front;
         vfloat<M> t_sph1_back;
+        vfloat<M> t_sph0_front;
+        vfloat<M> t_sph0_back;
       };
       
       
@@ -509,11 +537,27 @@ namespace embree
 
         /* intersect ending sphere */
         vfloat<M> t_sph1_lower, t_sph1_upper;
+        vfloat<M> t_sph0_lower, t_sph0_upper;
+        vfloat<M> t_sph_lower = vfloat<M>(pos_inf);
+        vfloat<M> t_sph_upper = vfloat<M>(neg_inf);
         cone.intersectEndSphere(valid, coneR, t_sph1_lower, t_sph1_upper);
+
+        vbool<M> isBeginPoint = valid & (vL[0] == vfloat<M>(pos_inf));
+        vbool<M> sph0_first_lower, sph0_first_upper;
+        if (unlikely(any(isBeginPoint))) {
+          cone.intersectBeginSphere (isBeginPoint, t_sph0_lower, t_sph0_upper);
+          t_sph_lower = min(t_sph0_lower, t_sph1_lower);
+          t_sph_upper = max(t_sph0_upper, t_sph1_upper);
+          sph0_first_lower = t_sph0_lower < t_sph1_lower;
+          sph0_first_upper = t_sph0_upper < t_sph1_upper; 
+        } else {
+          t_sph_lower = t_sph1_lower;
+          t_sph_upper = t_sph1_upper;
+        }
         
         /* CSG union of cone and end sphere */
-        vfloat<M> t_cone_sphere_lower = min(t_cone_lower, t_sph1_lower);
-        vfloat<M> t_cone_sphere_upper = max(t_cone_upper, t_sph1_upper);
+        vfloat<M> t_cone_sphere_lower = min(t_cone_lower, t_sph_lower);
+        vfloat<M> t_cone_sphere_upper = max(t_cone_upper, t_sph_upper);
         
         /* filter out hits that are not in tnear/tfar range */
         const vbool<M> valid_lower = valid & ray_tnear <= dt+t_cone_sphere_lower & dt+t_cone_sphere_lower <= ray_tfar() & t_cone_sphere_lower != vfloat<M>(pos_inf);
@@ -527,8 +571,15 @@ namespace embree
         /* construct first hit */
         const vfloat<M> t_first = select(valid_lower, t_cone_sphere_lower, t_cone_sphere_upper);
         const vbool<M> cone_hit_first = t_first == t_cone_lower | t_first == t_cone_upper;
-        const Vec3vf<M> Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), cone.Ng_sphere(valid_lower));
-        const vfloat<M> u_first  = cone.u_cone(valid_lower);
+        Vec3vf<M> Ng_first;
+        vfloat<M> u_first;
+        if (unlikely(any(isBeginPoint))) {
+          Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), select (sph0_first_lower, cone.Ng_sphere0(valid_lower), cone.Ng_sphere1(valid_lower)));
+          u_first  = select(cone_hit_first, cone.u_cone(valid_lower), select (sph0_first_lower, vfloat<M>(zero), vfloat<M>(one)));
+        } else {
+          Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), cone.Ng_sphere1(valid_lower));
+          u_first  = select(cone_hit_first, cone.u_cone(valid_lower), one);
+        }
         
         /* invoke intersection filter for first hit */
         RoundLineIntersectorHitM<M> hit(u_first,zero,dt+t_first,Ng_first);
@@ -542,8 +593,15 @@ namespace embree
         
         /* invoke intersection filter for second hit */
         const vbool<M> cone_hit_second = t_second == t_cone_lower | t_second == t_cone_upper;
-        const Vec3vf<M> Ng_second = select(cone_hit_second, cone.Ng_cone(false), cone.Ng_sphere(false));
-        const vfloat<M> u_second  = cone.u_cone(false);
+        Vec3vf<M> Ng_second;
+        vfloat<M> u_second;
+        if (unlikely(any(isBeginPoint))) {
+          Ng_second = select(cone_hit_second, cone.Ng_cone(false), select (sph0_first_upper, cone.Ng_sphere0(false), cone.Ng_sphere1(false)));
+          u_second  = select(cone_hit_second, cone.u_cone(false), select (sph0_first_lower, vfloat<M>(zero), vfloat<M>(one)));
+        } else {
+          Ng_second = select(cone_hit_second, cone.Ng_cone(false), cone.Ng_sphere1(false));
+          u_second  = select(cone_hit_second, cone.u_cone(false), one);
+        }
         hit = RoundLineIntersectorHitM<M>(u_second,zero,dt+t_second,Ng_second);
         const bool is_hit_second = epilog(valid_second, hit);
         
