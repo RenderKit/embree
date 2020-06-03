@@ -45,5 +45,17 @@ namespace embree
         }
       }
     };
+
+    template<int M, typename Geometry>
+      __forceinline Vec4vf<M> enlargeRadiusToMinWidth(const IntersectContext* context, const Geometry* geom, const Vec3vf<M>& ray_org, const Vec4vf<M>& v)
+    {
+#if RTC_CURVE_MINWIDTH
+      const vfloat<M> d = length(Vec3vf<M>(v) - ray_org);
+      const vfloat<M> r = clamp(context->user->minWidthDistanceFactor*d, v.w, geom->maxRadiusScale*v.w);
+      return Vec4vf<M>(v.x,v.y,v.z,r);
+#else
+      return v;
+#endif
+    }
   }
 }

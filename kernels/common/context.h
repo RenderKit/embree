@@ -28,18 +28,6 @@ namespace embree
     __forceinline bool isIncoherent() const {
       return embree::isIncoherent(user->flags);
     }
-
-    template<int M>
-    __forceinline Vec4vf<M> enlargeRadiusToMinWidth(const Vec3vf<M>& ray_org, const Vec4vf<M>& v)
-    {
-#if RTC_MINWIDTH
-      const vfloat<M> d = length(Vec3vf(v) - ray_org);
-      const vfloat<M> r = clamp(user->minWidthDistanceFactor*d0, v.w, scene->maxRadiusScale*v.w));
-      return Vec4vf(v.x,v.y,v.z,r);
-#else
-      return v;
-#endif
-    }
     
   public:
     Scene* scene;

@@ -559,6 +559,7 @@ namespace embree
         static __forceinline bool intersect(const vbool<M>& valid_i,
                                             Ray& ray,
                                             IntersectContext* context,
+                                            const LineSegments* geom,
                                             const Precalculations& pre,
                                             const Vec4vf<M>& v0i, const Vec4vf<M>& v1i,
                                             const Vec4vf<M>& vLi, const Vec4vf<M>& vRi,
@@ -567,10 +568,10 @@ namespace embree
           const Vec3vf<M> ray_org(ray.org.x, ray.org.y, ray.org.z);
           const Vec3vf<M> ray_dir(ray.dir.x, ray.dir.y, ray.dir.z);
           const vfloat<M> ray_tnear(ray.tnear());
-          const Vec4vf<M> v0 = context->enlargeRadiusToMinWidth(ray_org,v0i);
-          const Vec4vf<M> v1 = context->enlargeRadiusToMinWidth(ray_org,v1i);
-          const Vec4vf<M> vL = context->enlargeRadiusToMinWidth(ray_org,vLi);
-          const Vec4vf<M> vR = context->enlargeRadiusToMinWidth(ray_org,vRi);
+          const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
+          const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
+          const Vec4vf<M> vL = enlargeRadiusToMinWidth(context,geom,ray_org,vLi);
+          const Vec4vf<M> vR = enlargeRadiusToMinWidth(context,geom,ray_org,vRi);
           return  __roundline_internal::intersectConeSphere(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),v0,v1,vL,vR,epilog);
         }
       };
@@ -591,6 +592,7 @@ namespace embree
         static __forceinline bool intersect(const vbool<M>& valid_i,
                                             RayK<K>& ray, size_t k,
                                             IntersectContext* context,
+                                            const LineSegments* geom,
                                             const Precalculations& pre,
                                             const Vec4vf<M>& v0i, const Vec4vf<M>& v1i,
                                             const Vec4vf<M>& vLi, const Vec4vf<M>& vRi,
@@ -599,10 +601,10 @@ namespace embree
           const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
           const Vec3vf<M> ray_dir(ray.dir.x[k], ray.dir.y[k], ray.dir.z[k]);
           const vfloat<M> ray_tnear = ray.tnear()[k];
-          const Vec4vf<M> v0 = context->enlargeRadiusToMinWidth(ray_org,v0i);
-          const Vec4vf<M> v1 = context->enlargeRadiusToMinWidth(ray_org,v1i);
-          const Vec4vf<M> vL = context->enlargeRadiusToMinWidth(ray_org,vLi);
-          const Vec4vf<M> vR = context->enlargeRadiusToMinWidth(ray_org,vRi);
+          const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
+          const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
+          const Vec4vf<M> vL = enlargeRadiusToMinWidth(context,geom,ray_org,vLi);
+          const Vec4vf<M> vR = enlargeRadiusToMinWidth(context,geom,ray_org,vRi);
           return __roundline_internal::intersectConeSphere(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),v0,v1,vL,vR,epilog);
         }
       };

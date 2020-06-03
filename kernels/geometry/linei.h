@@ -91,21 +91,21 @@ namespace embree
     /* gather the line segments with lateral info */
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
-															Vec4vf<M>& pL,
-															Vec4vf<M>& pR,
+                              Vec4vf<M>& pL,
+                              Vec4vf<M>& pR,
                               const Scene* scene) const;
 
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
-															Vec4vf<M>& pL,
-															Vec4vf<M>& pR,
+                              Vec4vf<M>& pL,
+                              Vec4vf<M>& pR,
                               const LineSegments* geom,
                               const int itime) const;
 
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
-															Vec4vf<M>& pL,
-															Vec4vf<M>& pR,
+                              Vec4vf<M>& pL,
+                              Vec4vf<M>& pR,
                               const Scene* scene,
                               float time) const;
 
