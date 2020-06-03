@@ -1,7 +1,7 @@
 Version History
 ---------------
 
-### Embree 3.10.1
+### Embree 3.11.0
 -   Implemented min-width feature for linear curves, which allows to increase the
     curve radius in such a way, that the curve thickness is n pixels wide.
 -   Embree no longer supports Visual Studio 2013 starting with this release.
