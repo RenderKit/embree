@@ -32,8 +32,8 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID()); // FIXME: use geom to gather
-        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,context->scene);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom);
         const vbool<Mx> valid = line.template valid<Mx>();
         RoundLinearCurveIntersector1<Mx>::intersect(valid,ray,context,geom,pre,v0,v1,vL,vR,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
@@ -41,8 +41,8 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID()); // FIXME: use geom to gather
-        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,context->scene);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom);
         const vbool<Mx> valid = line.template valid<Mx>();
         return RoundLinearCurveIntersector1<Mx>::intersect(valid,ray,context,geom,pre,v0,v1,vL,vR,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
@@ -62,8 +62,8 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID()); // FIXME: use geom to gather
-        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,context->scene,ray.time());
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom,ray.time());
         const vbool<Mx> valid = line.template valid<Mx>();
         RoundLinearCurveIntersector1<Mx>::intersect(valid,ray,context,geom,pre,v0,v1,vL,vR,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
@@ -71,8 +71,8 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID()); // FIXME: use geom to gather
-        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,context->scene,ray.time());
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom,ray.time());
         const vbool<Mx> valid = line.template valid<Mx>();
         return RoundLinearCurveIntersector1<Mx>::intersect(valid,ray,context,geom,pre,v0,v1,vL,vR,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
@@ -92,8 +92,8 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID()); // FIXME: use geom to gather
-        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,context->scene);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom);
         const vbool<Mx> valid = line.template valid<Mx>();
         RoundLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
@@ -101,8 +101,8 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID()); // FIXME: use geom to gather
-        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,context->scene);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom);
         const vbool<Mx> valid = line.template valid<Mx>();
         return RoundLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
@@ -117,8 +117,8 @@ namespace embree
       static __forceinline void intersect(const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line)
       {
         STAT3(normal.trav_prims,1,1,1);
-        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID()); // FIXME: use geom to gather
-        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,context->scene,ray.time()[k]);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom,ray.time()[k]);
         const vbool<Mx> valid = line.template valid<Mx>();
         RoundLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
@@ -126,8 +126,8 @@ namespace embree
       static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
         STAT3(shadow.trav_prims,1,1,1);
-        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID()); // FIXME: use geom to gather
-        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,context->scene,ray.time()[k]);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom,ray.time()[k]);
         const vbool<Mx> valid = line.template valid<Mx>();
         return RoundLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
