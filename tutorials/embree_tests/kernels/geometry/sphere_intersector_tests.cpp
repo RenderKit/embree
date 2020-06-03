@@ -28,7 +28,7 @@ namespace __sphere_unit_tests_internal {
       : ray_(ray) {}
     
     bool operator ()(const vbool<4> & , 
-                     const sse2::SphereIntersectorHitM<4>& hit) const {
+                     const isa::SphereIntersectorHitM<4>& hit) const {
       
       ray_.id = -1;
       for (auto i=0; i<4; ++i) {
@@ -47,7 +47,7 @@ namespace __sphere_unit_tests_internal {
 
 TEST_CASE ("Overlapping spheres with filtering - Issue 676 fix-intersection-epilog-handling", "[spheres]") 
 {
-  sse2::CurvePrecalculations1 pre;
+  isa::CurvePrecalculations1 pre;
   vbool<4> valid {true, true, false, false};
   Vec3fa org (14.8001127f, -9.01768494f, 3.47012758f);
   Vec3fa dir (-0.989340246f, -0.0190101117f, -0.144376263f);
@@ -60,7 +60,7 @@ TEST_CASE ("Overlapping spheres with filtering - Issue 676 fix-intersection-epil
   
   __sphere_unit_tests_internal::fakeEpilog epilog (ray);
   
-  sse2::SphereIntersector1<4>::intersect (valid, ray, pre, v0, epilog);
+  isa::SphereIntersector1<4>::intersect (valid, ray, pre, v0, epilog);
   int id = ray.id;
   REQUIRE (id == 0);
   REQUIRE (ray.tfar == Approx (10.2983));
