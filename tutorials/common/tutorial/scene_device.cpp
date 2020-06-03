@@ -10,7 +10,7 @@ namespace embree
 {
   extern "C" {
     int g_instancing_mode = SceneGraph::INSTANCING_NONE;
-    bool g_min_width_enabled = false;
+    float g_min_width_max_radius_scale = 1.0f;
   }
 
   void deleteGeometry(ISPCGeometry* geom)
@@ -528,8 +528,8 @@ namespace embree
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
     } else {
 #if RTC_CURVE_MINWIDTH
-      if (g_min_width_enabled)
-        rtcSetGeometryMaxRadiusScale(geom,16.0f);
+      if (g_min_width_max_radius_scale >= 1.0f)
+        rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
 #endif
     }
 
