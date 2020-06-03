@@ -314,7 +314,7 @@ namespace embree
           
           /* we miss the cone if determinant is smaller than zero */
           const vfloat<M> D = B*B - 4.0f*A*C;
-          valid &= D >= 0.0f;
+          valid &= (D >= 0.0f & g > 0.0f);  // if g <= 0 then the cone is inside a sphere end
           
           /* When rays are parallel to the cone surface, then the
            * ray may be inside or outside the cone. We just assume a
@@ -322,7 +322,11 @@ namespace embree
            * cone would anyway hit the ending spheres in that
            * case. */
           valid &= abs(A) > min_rcp_input;
-          if (unlikely(none(valid))) return false;
+          if (unlikely(none(valid))) {
+            lower = vfloat<M>(pos_inf);
+            upper = vfloat<M>(neg_inf);
+            return false;
+          }
           
           /* compute distance to front and back hit */
           const vfloat<M> Q = sqrt(D);
@@ -332,8 +336,8 @@ namespace embree
           
           y_cone_front = yp + t_cone_front*dOdP;
           y_cone_back  = yp + t_cone_back *dOdP;
-          lower = select( (y_cone_front > -(float)ulp) & (y_cone_front <= g), t_cone_front, vfloat<M>(pos_inf));
-          upper = select( (y_cone_back  > -(float)ulp) & (y_cone_back  <= g), t_cone_back , vfloat<M>(neg_inf));
+          lower = select( (y_cone_front > -(float)ulp) & (y_cone_front <= g) & (g > 0.0f), t_cone_front, vfloat<M>(pos_inf));
+          upper = select( (y_cone_back  > -(float)ulp) & (y_cone_back  <= g) & (g > 0.0f), t_cone_back , vfloat<M>(neg_inf));
           
           return true;
         }
@@ -488,7 +492,11 @@ namespace embree
         /* intersect with cone from v0 to v1 */
         vfloat<M> t_cone_lower, t_cone_upper;
         ConeGeometryIntersector<M> cone (ray_org, ray_dir, dOdO, rcp_dOdO, v0, v1);
-        if (!cone.intersectCone(valid, t_cone_lower, t_cone_upper))
+        vbool<M> validCone = valid;
+        cone.intersectCone(validCone, t_cone_lower, t_cone_upper);
+
+        valid &= (validCone | (cone.g <= 0.0f));  // if cone is entirely in sphere end - check sphere
+        if (unlikely(none(valid)))
           return false;
         
         /* cone hits inside the neighboring capped cones are inside the geometry and thus ignored */
@@ -496,9 +504,9 @@ namespace embree
         const ConeGeometry<M> coneR (v1, vR);
         const Vec3vf<M> hit_lower = ray_org + t_cone_lower*ray_dir;
         const Vec3vf<M> hit_upper = ray_org + t_cone_upper*ray_dir;
-        t_cone_lower = select (!coneL.isInsideCappedCone (valid, hit_lower) & !coneR.isInsideCappedCone (valid, hit_lower), t_cone_lower, vfloat<M>(pos_inf));
-        t_cone_upper = select (!coneL.isInsideCappedCone (valid, hit_upper) & !coneR.isInsideCappedCone (valid, hit_upper), t_cone_upper, vfloat<M>(neg_inf));
-        
+        t_cone_lower = select (!coneL.isInsideCappedCone (validCone, hit_lower) & !coneR.isInsideCappedCone (validCone, hit_lower), t_cone_lower, vfloat<M>(pos_inf));
+        t_cone_upper = select (!coneL.isInsideCappedCone (validCone, hit_upper) & !coneR.isInsideCappedCone (validCone, hit_upper), t_cone_upper, vfloat<M>(neg_inf));
+
         /* intersect ending sphere */
         vfloat<M> t_sph1_lower, t_sph1_upper;
         cone.intersectEndSphere(valid, coneR, t_sph1_lower, t_sph1_upper);
