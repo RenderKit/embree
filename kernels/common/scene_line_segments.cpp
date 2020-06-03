@@ -178,9 +178,12 @@ namespace embree
     Geometry::update();
   }
 
-  void LineSegments::setTessellationRate(float N)
-  {
+  void LineSegments::setTessellationRate(float N) {
     tessellationRate = clamp((int)N,1,16);
+  }
+
+  void LineSegments::setMaxRadiusScale(float s) {
+    maxRadiusScale = s;
   }
 
   void LineSegments::commit() 

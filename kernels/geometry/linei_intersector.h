@@ -22,7 +22,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         const vbool<Mx> valid = line.template valid<Mx>();
-        FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+        FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,context,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
 
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
@@ -30,7 +30,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         const vbool<Mx> valid = line.template valid<Mx>();
-        return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+        return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,context,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
       
       static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
@@ -50,7 +50,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time());
         const vbool<Mx> valid = line.template valid<Mx>();
-        FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+        FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,context,pre,v0,v1,Intersect1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
 
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& line)
@@ -58,7 +58,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time());
         const vbool<Mx> valid = line.template valid<Mx>();
-        return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
+        return FlatLinearCurveIntersector1<Mx>::intersect(valid,ray,context,pre,v0,v1,Occluded1EpilogM<M,Mx,filter>(ray,context,line.geomID(),line.primID()));
       }
       
       static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& line)
@@ -78,7 +78,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         const vbool<Mx> valid = line.template valid<Mx>();
-        FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
+        FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
 
       static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
@@ -86,7 +86,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene);
         const vbool<Mx> valid = line.template valid<Mx>();
-        return FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
+        return FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
     };
 
@@ -101,7 +101,7 @@ namespace embree
         STAT3(normal.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time()[k]);
         const vbool<Mx> valid = line.template valid<Mx>();
-        FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
+        FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,pre,v0,v1,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
 
       static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
@@ -109,7 +109,7 @@ namespace embree
         STAT3(shadow.trav_prims,1,1,1);
         Vec4vf<M> v0,v1; line.gather(v0,v1,context->scene,ray.time()[k]);
         const vbool<Mx> valid = line.template valid<Mx>();
-        return FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
+        return FlatLinearCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,pre,v0,v1,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
     };
   }

@@ -79,6 +79,7 @@ RTC_API void rtcGetSceneBounds(RTCScene scene, struct RTCBounds* bounds_o);
 /* Returns the linear axis-aligned bounds of the scene. */
 RTC_API void rtcGetSceneLinearBounds(RTCScene scene, struct RTCLinearBounds* bounds_o);
 
+
 /* Perform a closest point query of the scene. */
 RTC_API bool rtcPointQuery(RTCScene scene, struct RTCPointQuery* query, struct RTCPointQueryContext* context, RTCPointQueryFunction queryFunc, void* userPtr);
 

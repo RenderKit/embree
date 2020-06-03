@@ -71,6 +71,7 @@ RTC_API void rtcGetSceneBounds(RTCScene scene, uniform RTCBounds* uniform bounds
 /* Returns the linear axis-aligned bounds of the scene. */
 RTC_API void rtcGetSceneLinearBounds(RTCScene scene, uniform RTCLinearBounds* uniform bounds_o);
 
+
 /* perform a closest point query of the scene. */
 RTC_API bool rtcPointQuery(RTCScene scene, uniform RTCPointQuery* uniform query, uniform RTCPointQueryContext* uniform context, RTCPointQueryFunction queryFunc, void* uniform userPtr);
 

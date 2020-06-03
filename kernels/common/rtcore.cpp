@@ -1338,7 +1338,6 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(geometry);
   }
  
-  /*! sets the build quality of the geometry */
   RTC_API void rtcSetGeometryBuildQuality (RTCGeometry hgeometry, RTCBuildQuality quality) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1351,6 +1350,17 @@ RTC_NAMESPACE_BEGIN;
         quality != RTC_BUILD_QUALITY_REFIT)
       throw std::runtime_error("invalid build quality");
     geometry->setBuildQuality(quality);
+    RTC_CATCH_END2(geometry);
+  }
+
+  RTC_API void rtcSetGeometryMaxRadiusScale(RTCGeometry hgeometry, float maxRadiusScale)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryMaxRadiusScale);
+    RTC_VERIFY_HANDLE(hgeometry);
+    if (maxRadiusScale < 1.0f) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximal radius scale has to be larger or equal to 1");
+    geometry->setMaxRadiusScale(maxRadiusScale);
     RTC_CATCH_END2(geometry);
   }
   

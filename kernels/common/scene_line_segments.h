@@ -31,6 +31,7 @@ namespace embree
     bool verify ();
     void interpolate(const RTCInterpolateArguments* const args);
     void setTessellationRate(float N);
+    void setMaxRadiusScale(float s);
     void addElementsToCount (GeometryCounts & counts) const;
 
   public:
@@ -101,7 +102,7 @@ namespace embree
     __forceinline BBox3fa bounds(const Vec3ff& v0, const Vec3ff& v1) const
     {
       const BBox3ff b = merge(BBox3ff(v0),BBox3ff(v1));
-      return enlarge((BBox3fa)b,Vec3fa(max(v0.w,v1.w)));
+      return enlarge((BBox3fa)b,maxRadiusScale*Vec3fa(max(v0.w,v1.w)));
     }
 
     /*! calculates bounding box of i'th line segment */
@@ -217,6 +218,7 @@ namespace embree
     vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
     vector<BufferView<char>> vertexAttribs; //!< user buffers
     int tessellationRate;                   //!< tessellation rate for bezier curve
+    float maxRadiusScale = 1.0;             //!< maximal minwidth scaling of curve radii
   };
 
   namespace isa
