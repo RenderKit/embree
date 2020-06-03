@@ -143,7 +143,7 @@ OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 1 CACHE STRING "Maximum number of instance levels.")
 SET(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR 2.0 CACHE STRING "Self intersection avoidance factor for flat curves. Specify floating point value in range 0 to inf.")
-OPTION(EMBREE_CURVE_MINWIDTH "Enabled minwidth feature to enlarge linear curves to pixel size.")
+OPTION(EMBREE_CURVE_MINWIDTH "Enables min-width feature to enlarge curve thickness to pixel width.")
 
 SET(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 IF (WIN32)
