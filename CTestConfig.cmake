@@ -2,4 +2,4 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 set(CTEST_PROJECT_NAME "Embree")
-set(TEST_MODELS_HASH c08176dce5fb21ed351cba08b96ff90356274ba2)
+set(TEST_MODELS_HASH dea4b30b64990b3c39921cada2b8bce2835bd069)

@@ -285,10 +285,10 @@ namespace embree
 
   __forceinline CatmullRomCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const CatmullRomCurveT<Vec3ff>& curve)
   {
-    return CatmullRomCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0,curve.v0),
-                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1,curve.v1),
-                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v2,curve.v2),
-                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3,curve.v3));
+    return CatmullRomCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v2),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3));
   }
   
   typedef CatmullRomCurveT<Vec3fa> CatmullRomCurve3fa;

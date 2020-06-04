@@ -47,10 +47,10 @@ namespace embree
     }
 
     template<typename Geometry>
-    __forceinline Vec3ff enlargeRadiusToMinWidth(const IntersectContext* context, const Geometry* geom, const Vec3fa& ray_org, const Vec3ff& ref, const Vec3ff& v)
+    __forceinline Vec3ff enlargeRadiusToMinWidth(const IntersectContext* context, const Geometry* geom, const Vec3fa& ray_org, const Vec3ff& v)
   {
 #if RTC_MIN_WIDTH
-    const float d = length(Vec3fa(ref) - ray_org);
+    const float d = length(Vec3fa(v) - ray_org);
     const float r = clamp(context->user->minWidthDistanceFactor*d, v.w, geom->maxRadiusScale*v.w);
     return Vec3ff(v.x,v.y,v.z,r);
 #else

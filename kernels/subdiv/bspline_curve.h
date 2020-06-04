@@ -308,10 +308,10 @@ namespace embree
 
   __forceinline BSplineCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const BSplineCurveT<Vec3ff>& curve)
   {
-    return BSplineCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0,curve.v0),
-                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1,curve.v1),
-                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v2,curve.v2),
-                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3,curve.v3));
+    return BSplineCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0),
+                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1),
+                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v2),
+                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3));
   }
   
   typedef BSplineCurveT<Vec3fa> BSplineCurve3fa;

@@ -17,7 +17,7 @@ namespace embree
       registerOption("min-width", [] (Ref<ParseStream> cin, const FileName& path) {
           g_min_width = cin->getFloat();
           g_min_width_max_radius_scale = cin->getFloat();
-        }, "--min-width <float> <float>: first value sets number of pixel to enlarge hair geometry to, but maximally scales hair radii by second value");
+        }, "--min-width <float> <float>: first value sets number of pixel to enlarge curve and point geometry to, but maximally scales hair radii by second value");
 #endif
     }
     
