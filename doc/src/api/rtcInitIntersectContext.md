@@ -74,7 +74,7 @@ instancing this feature has to get enabled also for each instantiated
 scene.
 
 The minWidthDistanceFactor value controls the target size of the curve
-radii when min-width feature is enabled. Please see the
+radii when the min-width feature is enabled. Please see the
 [rtcSetGeometryMaxRadiusScale] function for more details on the
 min-width feature.
 
