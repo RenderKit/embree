@@ -34,67 +34,58 @@ namespace embree
     void updateBuffer(RTCBufferType type, unsigned int slot);
     void commit();
     bool verify();
+    void setMaxRadiusScale(float s);
     void addElementsToCount (GeometryCounts & counts) const;
 
    public:
     /*! returns the number of vertices */
-    __forceinline size_t numVertices() const
-    {
+    __forceinline size_t numVertices() const {
       return vertices[0].size();
     }
 
     /*! returns i'th vertex of the first time step */
-    __forceinline Vec3ff vertex(size_t i) const
-    {
+    __forceinline Vec3ff vertex(size_t i) const {
       return vertices0[i];
     }
 
     /*! returns i'th vertex of the first time step */
-    __forceinline const char* vertexPtr(size_t i) const
-    {
+    __forceinline const char* vertexPtr(size_t i) const {
       return vertices0.getPtr(i);
     }
 
     /*! returns i'th normal of the first time step */
-    __forceinline Vec3fa normal(size_t i) const
-    {
+    __forceinline Vec3fa normal(size_t i) const {
       return normals0[i];
     }
 
     /*! returns i'th radius of the first time step */
-    __forceinline float radius(size_t i) const
-    {
+    __forceinline float radius(size_t i) const {
       return vertices0[i].w;
     }
 
     /*! returns i'th vertex of itime'th timestep */
-    __forceinline Vec3ff vertex(size_t i, size_t itime) const
-    {
+    __forceinline Vec3ff vertex(size_t i, size_t itime) const {
       return vertices[itime][i];
     }
 
     /*! returns i'th vertex of itime'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t itime) const
-    {
+    __forceinline const char* vertexPtr(size_t i, size_t itime) const {
       return vertices[itime].getPtr(i);
     }
 
     /*! returns i'th normal of itime'th timestep */
-    __forceinline Vec3fa normal(size_t i, size_t itime) const
-    {
+    __forceinline Vec3fa normal(size_t i, size_t itime) const {
       return normals[itime][i];
     }
 
     /*! returns i'th radius of itime'th timestep */
-    __forceinline float radius(size_t i, size_t itime) const
-    {
+    __forceinline float radius(size_t i, size_t itime) const {
       return vertices[itime][i].w;
     }
 
     /*! calculates bounding box of i'th line segment */
-    __forceinline BBox3fa bounds(const Vec3ff& v0) const
-    {
-      return enlarge(BBox3fa(v0), Vec3fa(v0.w));
+    __forceinline BBox3fa bounds(const Vec3ff& v0) const {
+      return enlarge(BBox3fa(v0), maxRadiusScale*Vec3fa(v0.w));
     }
 
     /*! calculates bounding box of i'th line segment */
@@ -128,8 +119,7 @@ namespace embree
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const
-    {
+    __forceinline bool valid(size_t i, size_t itime) const {
       return valid(i, make_range(itime, itime));
     }
 
@@ -151,8 +141,7 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-    __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const
-    {
+    __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const {
       return LBBox3fa(bounds(i, itime + 0), bounds(i, itime + 1));
     }
 
@@ -206,6 +195,7 @@ namespace embree
     vector<BufferView<Vec3ff>> vertices;     //!< vertex array for each timestep
     vector<BufferView<Vec3fa>> normals;      //!< normal array for each timestep
     vector<BufferView<char>> vertexAttribs;  //!< user buffers
+    float maxRadiusScale = 1.0;              //!< maximal minwidth scaling of curve radii
   };
 
   namespace isa

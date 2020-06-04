@@ -123,6 +123,10 @@ namespace embree
     Geometry::update();
   }
 
+  void Points::setMaxRadiusScale(float s) {
+    maxRadiusScale = s;
+  }
+
   void Points::commit()
   {
     /* verify that stride of all time steps are identical */
