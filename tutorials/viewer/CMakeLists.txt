@@ -47,3 +47,17 @@ CMAKE_HOST_SYSTEM_INFORMATION(RESULT memory QUERY TOTAL_PHYSICAL_MEMORY)
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3 AND ${memory} GREATER 10000)
   ADD_EMBREE_MODELS_TEST(test-models-intensity4.txt viewer viewer viewer)
 ENDIF()
+
+IF (EMBREE_MIN_WIDTH AND EMBREE_TESTING_INTENSITY GREATER 1)
+
+  ADD_EMBREE_MODEL_TEST(viewer_min_width_spheres viewer_min_width_spheres viewer "" points/min_width_spheres.ecs)
+  ADD_EMBREE_MODEL_TEST(viewer_min_width_discs viewer_min_width_discs viewer "" points/min_width_discs.ecs)
+  ADD_EMBREE_MODEL_TEST(viewer_min_width_oriented_discs viewer_min_width_oriented_discs viewer "" points/min_width_oriented_discs.ecs)
+
+  ADD_EMBREE_MODEL_TEST(viewer_min_width_flat_linear_curves viewer_min_width_flat_linear_curves viewer "" curves/min_width_flat_linear_curves.ecs)
+  ADD_EMBREE_MODEL_TEST(viewer_min_width_round_linear_curves viewer_min_width_round_linear_curves viewer "" curves/min_width_round_linear_curves.ecs)
+  ADD_EMBREE_MODEL_TEST(viewer_min_width_flat_bezier_curves viewer_min_width_flat_bezier_curves viewer "" curves/min_width_flat_bezier_curves.ecs)
+  ADD_EMBREE_MODEL_TEST(viewer_min_width_round_bezier_curves viewer_min_width_round_bezier_curves viewer "" curves/min_width_round_bezier_curves.ecs)
+  ADD_EMBREE_MODEL_TEST(viewer_min_width_oriented_hermite_curves viewer_min_width_oriented_hermite_curves viewer "" curves/min_width_oriented_hermite_curves.ecs)
+  
+ENDIF()

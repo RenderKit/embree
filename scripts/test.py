@@ -297,6 +297,8 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_POINT="+config["POINT"])
   if "COMPACT_POLYS" in config:
     conf.append("-D EMBREE_COMPACT_POLYS="+config["COMPACT_POLYS"])
+  if "MIN_WIDTH" in config:
+    conf.append("-D EMBREE_MIN_WIDTH="+config["MIN_WIDTH"])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")

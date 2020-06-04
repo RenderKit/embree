@@ -1426,7 +1426,14 @@ namespace embree
         std::string str_subtype = xml->parm("type");
         if (str_type == "linear")
         {
-          type = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;
+          if (str_subtype == "flat")
+            type = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;
+          else if (str_subtype == "round")
+            type = RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE;
+          //else if (str_subtype == "normal_oriented")
+          //  type = RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_LINEAR_CURVE;
+          else
+            THROW_RUNTIME_ERROR(xml->loc.str()+": unknown curve type: "+str_subtype);
         }
         else if (str_type == "bezier")
         {
