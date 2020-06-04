@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../common/default.h"
+#include "../common/scene_curves.h"
 
 namespace embree
 {
@@ -180,7 +181,7 @@ namespace embree
         return v3-v2;
       }
 
-       __forceinline CubicBezierCurve<float> xfm(const Vertex& dx) const {
+      __forceinline CubicBezierCurve<float> xfm(const Vertex& dx) const {
         return CubicBezierCurve<float>(dot(v0,dx),dot(v1,dx),dot(v2,dx),dot(v3,dx));
       }
       
@@ -656,5 +657,13 @@ namespace embree
   
   template<> __forceinline int CubicBezierCurve<Interval1f>::maxRoots() const {
     return numRoots(v0,v1) + numRoots(v1,v2) + numRoots(v2,v3);
+  }
+
+  __forceinline CubicBezierCurve<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const CubicBezierCurve<Vec3ff>& curve)
+  {
+    return CubicBezierCurve<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0,curve.v0),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1,curve.v1),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v2,curve.v2),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3,curve.v3));
   }
 }

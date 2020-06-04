@@ -526,12 +526,12 @@ namespace embree
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);
     if (mesh->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
-    } else {
-#if RTC_CURVE_MINWIDTH
-      if (g_min_width_max_radius_scale >= 1.0f)
-        rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
-#endif
     }
+    
+#if RTC_CURVE_MINWIDTH
+    if (g_min_width_max_radius_scale >= 1.0f)
+      rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
+#endif
 
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, mesh->flags, 0, sizeof(unsigned char), mesh->numHairs);
     rtcSetGeometryUserData(geom, mesh);
