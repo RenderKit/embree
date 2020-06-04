@@ -1359,7 +1359,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryMaxRadiusScale);
     RTC_VERIFY_HANDLE(hgeometry);
-#if RTC_CURVE_MINWIDTH
+#if RTC_MINWIDTH
     if (maxRadiusScale < 1.0f) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximal radius scale has to be larger or equal to 1");
     geometry->setMaxRadiusScale(maxRadiusScale);
 #else

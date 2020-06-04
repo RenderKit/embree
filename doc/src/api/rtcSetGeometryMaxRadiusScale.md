@@ -15,10 +15,10 @@
 The `rtcSetMaxGeometryScale` function specifies a maximal scaling
 factor for curve radii used by the min-width feature.
 
-The min-width feature can increase the radius of curves, in order to
-reduce aliasing and increase render times. The feature is disabled by
-default and has to get enabled using the EMBREE_CURVE_MINWIDTH cmake
-option.
+The min-width feature can increase the radius of curves and points, in
+order to reduce aliasing and increase render times. The feature is
+disabled by default and has to get enabled using the
+EMBREE_MINWIDTH cmake option.
 
 When enabled, one has to specify a maximal curve radius scaling factor
 using the [rtcSetGeometryMaxRadiusScale] function. This factor should
@@ -46,8 +46,6 @@ maximal bound maxRadiusScale*r to obtain the final radius r'':
 Thus curves close to the camera are rendered with a normal radii r,
 and curves very far from the camera are not enlarged too much, as this
 would be very expensive to render.
-
-The min-width  feature is only implemented for the linear basis.
 
 #### EXIT STATUS
 
