@@ -1363,7 +1363,7 @@ RTC_NAMESPACE_BEGIN;
     if (maxRadiusScale < 1.0f) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximal radius scale has to be larger or equal to 1");
     geometry->setMaxRadiusScale(maxRadiusScale);
 #else
-    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"minwidth feature is not enabled");
+    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"min-width feature is not enabled");
 #endif
     RTC_CATCH_END2(geometry);
   }

@@ -165,7 +165,7 @@ RTC_API void rtcSetGeometryMask(RTCGeometry geometry, unsigned int mask);
 /* Sets the build quality of the geometry. */
 RTC_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, enum RTCBuildQuality quality);
 
-/* Sets the maximal curve radius scale allowed by minwidth feature. */
+/* Sets the maximal curve or point radius scale allowed by min-width feature. */
 RTC_API void rtcSetGeometryMaxRadiusScale(RTCGeometry geometry, float maxRadiusScale);
 
 

@@ -334,7 +334,7 @@ namespace embree
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<char>> vertexAttribs; //!< user buffers
     int tessellationRate;                   //!< tessellation rate for flat curve
-    float maxRadiusScale = 1.0;             //!< maximal minwidth scaling of curve radii
+    float maxRadiusScale = 1.0;             //!< maximal min-width scaling of curve radii
   };
   
   DECLARE_ISA_FUNCTION(CurveGeometry*, createCurves, Device* COMMA Geometry::GType);

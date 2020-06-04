@@ -218,7 +218,7 @@ namespace embree
     vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
     vector<BufferView<char>> vertexAttribs; //!< user buffers
     int tessellationRate;                   //!< tessellation rate for bezier curve
-    float maxRadiusScale = 1.0;             //!< maximal minwidth scaling of curve radii
+    float maxRadiusScale = 1.0;             //!< maximal min-width scaling of curve radii
   };
 
   namespace isa
