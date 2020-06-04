@@ -42,12 +42,6 @@ continuous-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512SKX-TBB2020.2:
   tags:   [docker, avx512vl]
   only:   [pushes]
 
-#continuous-linux-knl-x64-Debug-CLANG4.0.0-ISPC1.12.0-AVX512KNL-TBB2020.2:
-#  image: embreedocker/fedora:26
-#  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.12.0 isa:AVX512KNL tasking:TBB2020.2 intensity:2"
-#  tags:   [docker-knl]
-#  only:   [pushes]
-
 continuous-linux-x64-Debug-CLANG5.0.0-ISPC1.13.0-AVX2-INT-ADDRSANITIZER:
   image: embreedocker/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG5.0.0 ispc:ispc1.13.0 isa:AVX tasking:INT intensity:1 addrsanitizer:ON"
@@ -312,7 +306,7 @@ nightly-fedora32-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
 
 nightly-fedora28-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
   image: embreedocker/fedora:28
-  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB intensity:3" # AVX512KNL triggers internal compiler bug in GCC 8.0.1
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB intensity:3"
   tags:   [docker, avx512vl]
   only:   [schedules]
   
@@ -511,7 +505,7 @@ release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG:
 release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
   image: embreedocker/centos:7.4
   script:
-    - "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
+    - "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
     - tar xzf build/embree-*.x86_64.linux.tar.gz
     - mv embree*.x86_64.linux embree
     - mkdir ospray_build
