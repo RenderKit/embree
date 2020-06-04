@@ -25,7 +25,7 @@
 #endif
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
 
-#if RTC_MINWIDTH
+#if RTC_MIN_WIDTH
       float minWidthDistanceFactor;
 #endif
     };

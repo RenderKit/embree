@@ -528,7 +528,7 @@ namespace embree
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
     }
     
-#if RTC_MINWIDTH
+#if RTC_MIN_WIDTH
     if (g_min_width_max_radius_scale >= 1.0f)
       rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
 #endif
@@ -558,7 +558,7 @@ namespace embree
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, mesh->normals[t], 0, sizeof(Vec3fa), mesh->numVertices);
       }
     }
-#if RTC_MINWIDTH
+#if RTC_MIN_WIDTH
     if (g_min_width_max_radius_scale >= 1.0f)
       rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
 #endif

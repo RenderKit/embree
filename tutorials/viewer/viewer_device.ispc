@@ -245,7 +245,7 @@ void renderPixelStandard(const uniform TutorialData& data,
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   context.flags = data.iflags_coherent;
-#if RTC_MINWIDTH
+#if RTC_MIN_WIDTH
   context.minWidthDistanceFactor = data.min_width/width;
 #endif
   rtcIntersectV(data.scene,&context,RTCRayHit_(ray));

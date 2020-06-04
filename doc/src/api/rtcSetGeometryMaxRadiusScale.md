@@ -18,7 +18,7 @@ factor for curve radii used by the min-width feature.
 The min-width feature can increase the radius of curves and points, in
 order to reduce aliasing and increase render times. The feature is
 disabled by default and has to get enabled using the
-EMBREE_MINWIDTH cmake option.
+EMBREE_MIN_WIDTH cmake option.
 
 When enabled, one has to specify a maximal curve radius scaling factor
 using the [rtcSetGeometryMaxRadiusScale] function. This factor should

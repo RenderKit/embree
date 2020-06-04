@@ -358,7 +358,7 @@ parameters that can be configured in CMake:
   the ray origin are ignored. A value of 0.0f disables self
   intersection avoidance while 2.0f is the default value.
 
-+ `EMBREE_MINWIDTH`: Enabled the min-width feature, which allows
++ `EMBREE_MIN_WIDTH`: Enabled the min-width feature, which allows
   increasing the radius of curves and points to match some amount of
   pixels. See [rtcSetGeometryMaxRadiusScale] for more details.
 

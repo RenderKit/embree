@@ -13,7 +13,7 @@ namespace embree
     Tutorial()
       : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE)
     {
-#if RTC_MINWIDTH
+#if RTC_MIN_WIDTH
       registerOption("min-width", [] (Ref<ParseStream> cin, const FileName& path) {
           g_min_width = cin->getFloat();
           g_min_width_max_radius_scale = cin->getFloat();

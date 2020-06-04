@@ -200,7 +200,7 @@ struct RTCIntersectContext
 #endif
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // The current stack of instance ids.
   
-#if RTC_MINWIDTH
+#if RTC_MIN_WIDTH
   float minWidthDistanceFactor;                      // curve radius is set to this factor times distance to ray origin
 #endif
 };
@@ -218,7 +218,7 @@ RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context
   for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     context->instID[l] = RTC_INVALID_GEOMETRY_ID;
   
-#if RTC_MINWIDTH
+#if RTC_MIN_WIDTH
   context->minWidthDistanceFactor = 0.0f;
 #endif
 }
