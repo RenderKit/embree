@@ -511,7 +511,7 @@ release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG:
 release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
   image: embreedocker/centos:7.4
   script:
-    - scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
+    - "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512KNL-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
     - tar xzf build/embree-*.x86_64.linux.tar.gz
     - mv embree*.x86_64.linux embree
     - mkdir ospray_build
