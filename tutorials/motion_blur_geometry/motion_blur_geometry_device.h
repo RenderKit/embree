@@ -5,13 +5,23 @@
 
 namespace embree {
 
+struct Sphere
+{
+  ALIGNED_STRUCT_(16)
+  Vec3fa p;                      //!< position of the sphere
+  float r;                      //!< radius of the sphere
+  unsigned int geomID;
+  unsigned int num_time_steps;
+};
+
 struct TutorialData
 {
-  RTCScene g_scene = nullptr;
+  RTCScene g_scene;
   Vec3fa face_colors[12];
+  float g_time;
   
   /* accumulation buffer */
-  Vec3fa* g_accu = nullptr;
+  Vec3ff* g_accu;
   unsigned int g_accu_width;
   unsigned int g_accu_height;
   unsigned int g_accu_count;
@@ -19,15 +29,19 @@ struct TutorialData
   Vec3fa g_accu_vy;
   Vec3fa g_accu_vz;
   Vec3fa g_accu_p;
-  
-  extern "C" float g_time;
-  extern "C" unsigned int g_num_time_steps;
-  extern "C" unsigned int g_num_time_steps2;
+
+  RTCScene scene0;
+  RTCScene scene1;
+  RTCScene scene2;
+  RTCScene scene3;
+  Sphere* sphere0;
+  Sphere* sphere1;
 };
 
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene = nullptr;
+  This->g_time = 0;
   This->g_accu = nullptr;
   This->g_accu_width = 0;
   This->g_accu_height = 0;
@@ -36,9 +50,13 @@ inline void TutorialData_Constructor(TutorialData* This)
   This->g_accu_vy = Vec3fa(0.0f);
   This->g_accu_vz = Vec3fa(0.0f);
   This->g_accu_p  = Vec3fa(0.0f);
-  This->g_time = -1;
-  This->g_num_time_steps = 8;
-  This->g_num_time_steps2 = 30;
+
+  This->scene0 = nullptr;
+  This->scene1 = nullptr;
+  This->scene2 = nullptr;
+  This->scene3 = nullptr;
+  This->sphere0 = nullptr;
+  This->sphere1 = nullptr;
 }
 
 inline void TutorialData_Destructor(TutorialData* This)

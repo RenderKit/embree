@@ -1,21 +1,12 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.isph"
+#include "motion_blur_geometry_device.isph"
 
 /* scene data */
 RTCScene g_scene = NULL;
-uniform Vec3f face_colors[12];
+uniform TutorialData data;
 
-/* accumulation buffer */
-uniform Vec3ff* uniform g_accu = NULL;
-uniform unsigned int g_accu_width = 0;
-uniform unsigned int g_accu_height = 0;
-uniform unsigned int g_accu_count = 0;
-uniform Vec3fa g_accu_vx;
-uniform Vec3fa g_accu_vy;
-uniform Vec3fa g_accu_vz;
-uniform Vec3fa g_accu_p;
 extern uniform bool g_changed;
 extern uniform float g_time;
 extern uniform unsigned int g_num_time_steps;
@@ -128,18 +119,18 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos, 
   }
 
   /* create face color array */
-  face_colors[0] = make_Vec3f(1,0,0);
-  face_colors[1] = make_Vec3f(1,0,0);
-  face_colors[2] = make_Vec3f(0,1,0);
-  face_colors[3] = make_Vec3f(0,1,0);
-  face_colors[4] = make_Vec3f(0.5f);
-  face_colors[5] = make_Vec3f(0.5f);
-  face_colors[6] = make_Vec3f(1.0f);
-  face_colors[7] = make_Vec3f(1.0f);
-  face_colors[8] = make_Vec3f(0,0,1);
-  face_colors[9] = make_Vec3f(0,0,1);
-  face_colors[10] = make_Vec3f(1,1,0);
-  face_colors[11] = make_Vec3f(1,1,0);
+  data.face_colors[0] = make_Vec3f(1,0,0);
+  data.face_colors[1] = make_Vec3f(1,0,0);
+  data.face_colors[2] = make_Vec3f(0,1,0);
+  data.face_colors[3] = make_Vec3f(0,1,0);
+  data.face_colors[4] = make_Vec3f(0.5f);
+  data.face_colors[5] = make_Vec3f(0.5f);
+  data.face_colors[6] = make_Vec3f(1.0f);
+  data.face_colors[7] = make_Vec3f(1.0f);
+  data.face_colors[8] = make_Vec3f(0,0,1);
+  data.face_colors[9] = make_Vec3f(0,0,1);
+  data.face_colors[10] = make_Vec3f(1,1,0);
+  data.face_colors[11] = make_Vec3f(1,1,0);
 
   rtcCommitGeometry(geom);
   uniform unsigned int geomID = rtcAttachGeometry(scene,geom);
@@ -366,15 +357,6 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
 //                     User defined sphere geometry                         //
 // ======================================================================== //
 
-struct Sphere
-{
-  ALIGNED_STRUCT_(16)
-  Vec3f p;                      //!< position of the sphere
-  float r;                      //!< radius of the sphere
-  unsigned int geomID;
-  unsigned int num_time_steps;
-};
-
 unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform args)
 {
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform) args->geometryUserPtr;
@@ -529,18 +511,13 @@ uniform unsigned int addGroundPlane (RTCScene scene)
   return geomID;
 }
 
-RTCScene scene0 = NULL;
-RTCScene scene1 = NULL;
-RTCScene scene2 = NULL;
-RTCScene scene3 = NULL;
-uniform Sphere* uniform sphere0 = NULL;
-uniform Sphere* uniform sphere1 = NULL;
-
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
   /* create scene */
-  g_scene = rtcNewScene(g_device);
+  TutorialData_Constructor(&data);
+  g_scene = data.g_scene = rtcNewScene(g_device);
+  data.g_time = g_time;
 
   /* add geometry to the scene */
   addTriangleCube(g_scene,make_Vec3f(-5,1,-5),g_num_time_steps);
@@ -561,14 +538,14 @@ export void device_init (uniform int8* uniform cfg)
   addCurve (g_scene,make_Vec3f(+5,1, 0),RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,g_num_time_steps);
   addCurve (g_scene,make_Vec3f(+5,5, 0),RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,g_num_time_steps2);
 
-  scene0 = addInstancedTriangleCube(g_scene,make_Vec3f(-5,1,+5),g_num_time_steps);
-  scene1 = addInstancedTriangleCube(g_scene,make_Vec3f(-5,5,+5),g_num_time_steps2);
+  data.scene0 = addInstancedTriangleCube(g_scene,make_Vec3f(-5,1,+5),g_num_time_steps);
+  data.scene1 = addInstancedTriangleCube(g_scene,make_Vec3f(-5,5,+5),g_num_time_steps2);
 
-  scene2 = addInstancedQuadCube    (g_scene,make_Vec3f( 0,1,+5),g_num_time_steps);
-  scene3 = addInstancedQuadCube    (g_scene,make_Vec3f( 0,5,+5),g_num_time_steps2);
+  data.scene2 = addInstancedQuadCube    (g_scene,make_Vec3f( 0,1,+5),g_num_time_steps);
+  data.scene3 = addInstancedQuadCube    (g_scene,make_Vec3f( 0,5,+5),g_num_time_steps2);
 
-  sphere0 = addUserGeometrySphere   (g_scene,make_Vec3f(+5,1,+5),1.0f,g_num_time_steps);
-  sphere1 = addUserGeometrySphere   (g_scene,make_Vec3f(+5,5,+5),1.0f,g_num_time_steps2);
+  data.sphere0 = addUserGeometrySphere   (g_scene,make_Vec3f(+5,1,+5),1.0f,g_num_time_steps);
+  data.sphere1 = addUserGeometrySphere   (g_scene,make_Vec3f(+5,5,+5),1.0f,g_num_time_steps2);
 
   addSphere(g_scene, make_Vec3f(-5, 1, +10), RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT, g_num_time_steps);
   addSphere(g_scene, make_Vec3f(-5, 5, +10), RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT, g_num_time_steps2);
@@ -586,13 +563,13 @@ export void device_init (uniform int8* uniform cfg)
 uniform int frameID = 50;
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   
   uniform float time = abs((uniform int)(0.01f*frameID) - 0.01f*frameID);
-  if (g_time != -1) time = g_time;
+  if (data.g_time != -1) time = data.g_time;
 
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, time);
@@ -609,16 +586,16 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     if (ray.instID[0] == RTC_INVALID_GEOMETRY_ID)
       ray.instID[0] = ray.geomID;
     switch (ray.instID[0] / 2) {
-    case 0: diffuse = face_colors[ray.primID]; break;
-    case 1: diffuse = face_colors[2*ray.primID]; break;
-    case 2: diffuse = face_colors[2*ray.primID]; break;
+    case 0: diffuse = data.face_colors[ray.primID]; break;
+    case 1: diffuse = data.face_colors[2*ray.primID]; break;
+    case 2: diffuse = data.face_colors[2*ray.primID]; break;
 
     case 3: diffuse = make_Vec3f(0.5f,0.0f,0.0f); break;
     case 4: diffuse = make_Vec3f(0.0f,0.5f,0.0f); break;
     case 5: diffuse = make_Vec3f(0.0f,0.0f,0.5f); break;
 
-    case 6: diffuse = face_colors[ray.primID]; break;
-    case 7: diffuse = face_colors[2*ray.primID]; break;
+    case 6: diffuse = data.face_colors[ray.primID]; break;
+    case 7: diffuse = data.face_colors[2*ray.primID]; break;
     case 8: diffuse = make_Vec3f(0.5f,0.5f,0.0f); break;
     default: diffuse = make_Vec3f(0.5f,0.5f,0.5f); break;
     }
@@ -637,6 +614,25 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       color = color + diffuse*clamp(-dot(lightDir,normalize(ray.Ng)),0.0f,1.0f);
   }
   return color;
+}
+
+void updatePixel(const uniform TutorialData& data, int x, int y,
+                  uniform int* uniform pixels,
+                  const uniform unsigned int width,
+                  const uniform unsigned int height,
+                  const uniform float time,
+                  const uniform ISPCCamera& camera, uniform RayStats& stats)
+{
+  /* calculate pixel color */
+  Vec3f color = renderPixel(data,(float)x,(float)y,camera,stats);
+  
+  /* write color to framebuffer */
+  Vec3ff accu_color = data.g_accu[y*width+x] + make_Vec3ff(color.x,color.y,color.z,1.0f); data.g_accu[y*width+x] = accu_color;
+  float f = rcp(max(0.001f,accu_color.w));
+  unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(accu_color.z*f,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* renders a single screen tile */
@@ -659,16 +655,7 @@ void renderTileStandard(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    Vec3ff accu_color = g_accu[y*width+x] + make_Vec3ff(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
-    float f = rcp(max(0.001f,accu_color.w));
-    unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(accu_color.z*f,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    updatePixel(data,(float)x,(float)y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
 
@@ -704,26 +691,26 @@ export void device_render (uniform int* uniform pixels,
                            const uniform ISPCCamera& camera)
 {
   /* create accumulator */
-  if (g_accu_width != width || g_accu_height != height) {
-    delete[] g_accu;
-    g_accu = uniform new uniform Vec3ff[width*height];
-    g_accu_width = width;
-    g_accu_height = height;
+  if (data.g_accu_width != width || data.g_accu_height != height) {
+    delete[] data.g_accu;
+    data.g_accu = uniform new uniform Vec3ff[width*height];
+    data.g_accu_width = width;
+    data.g_accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3ff(0.0f);
+      data.g_accu[i] = make_Vec3ff(0.0f);
   }
 
   /* reset accumulator */
   uniform bool camera_changed = g_changed; g_changed = false;
-  camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
-  camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
-  camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
-  camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
+  camera_changed |= ne(data.g_accu_vx,camera.xfm.l.vx); data.g_accu_vx = camera.xfm.l.vx;
+  camera_changed |= ne(data.g_accu_vy,camera.xfm.l.vy); data.g_accu_vy = camera.xfm.l.vy;
+  camera_changed |= ne(data.g_accu_vz,camera.xfm.l.vz); data.g_accu_vz = camera.xfm.l.vz;
+  camera_changed |= ne(data.g_accu_p, camera.xfm.p);    data.g_accu_p  = camera.xfm.p;
   //camera_changed = true;
   if (camera_changed) {
-    g_accu_count=0;
+    data.g_accu_count=0;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3ff(0.0f);
+      data.g_accu[i] = make_Vec3ff(0.0f);
   }
 
   /* render next frame */
@@ -733,15 +720,5 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  delete sphere0; sphere0 = NULL;
-  delete sphere1; sphere1 = NULL;
-  rtcReleaseScene(scene0); scene0 = NULL;
-  rtcReleaseScene(scene1); scene1 = NULL;
-  rtcReleaseScene(scene2); scene2 = NULL;
-  rtcReleaseScene(scene3); scene3 = NULL;
-  rtcReleaseScene (g_scene); g_scene = NULL;
-  delete[] g_accu; g_accu = NULL;
-  g_accu_width = 0;
-  g_accu_height = 0;
-  g_accu_count = 0;
+  TutorialData_Destructor(&data);
 }
