@@ -17,20 +17,23 @@ namespace embree
       camera.to = Vec3f(0, 0, 0);
     }
 
-    void drawGUI()
+#if defined(USE_GLFW)
+    
+    void drawGUI() override
     {
       static const char* items[] = { "full scene", "right half", "left half" };
       ImGui::Combo("",&g_scene_id,items,IM_ARRAYSIZE(items));
     }
-
-    void keypressed(int key)
+   
+    void keypressed(int key) override
     {
       if (key == ' ')
         g_scene_id = (g_scene_id+1)%3;
       else
         TutorialApplication::keypressed(key);
     }
-  
+#endif
+    
   };
   
 }

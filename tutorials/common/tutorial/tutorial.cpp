@@ -5,6 +5,8 @@
 #include "scene.h"
 #include "statistics.h"
 
+#if defined(USE_GLFW)
+
 /* include GL */
 #if defined(__MACOSX__)
 #  include <OpenGL/gl.h>
@@ -13,6 +15,8 @@
 #  include <GL/gl.h>
 #else
 #  include <GL/gl.h>
+#endif
+
 #endif
 
 #include "tutorial_device.h"
@@ -117,7 +121,6 @@ namespace embree
 
       window_width(512),
       window_height(512),
-      window(nullptr),
 
       time0(getSeconds()),
       debug_int0(0),
@@ -763,6 +766,9 @@ namespace embree
   void errorFunc(int error, const char* description) {
     throw std::runtime_error(std::string("Error: ")+description);
   }
+
+#if defined(USE_GLFW)
+  
   void keyboardFunc(GLFWwindow* window, int key, int scancode, int action, int mods) {
     TutorialApplication::instance->keyboardFunc(window,key,scancode,action,mods);
   }
@@ -1097,11 +1103,72 @@ namespace embree
     this->width = width; this->height = height;
   }
 
+   void TutorialApplication::renderInteractive()
+   {
+     window_width = width;
+     window_height = height;
+     glfwSetErrorCallback(errorFunc);
+     glfwInit();
+     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,2);
+     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,0);
+     
+     if (fullscreen) window = createFullScreenWindow();
+     else            window = createStandardWindow(width,height);
+     
+     glfwMakeContextCurrent(window);
+     glfwSwapInterval(1);
+     reshapeFunc(window,0,0);
+     
+     // Setup ImGui binding
+     ImGui::CreateContext();
+     ImGuiIO& io = ImGui::GetIO(); (void)io;
+     //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
+     ImGui_ImplGlfwGL2_Init(window, false);
+     
+     // Setup style
+     ImGui::StyleColorsDark();
+     //ImGui::StyleColorsClassic();
+     
+     // Load Fonts
+     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them. 
+     // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple. 
+     // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
+     // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
+     // - Read 'misc/fonts/README.txt' for more instructions and details.
+     // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
+     //io.Fonts->AddFontDefault();
+     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
+     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
+     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
+     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
+     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
+     //IM_ASSERT(font != NULL);
+     
+     while (!glfwWindowShouldClose(window))
+     {
+       // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
+       // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
+       // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
+       // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
+       glfwPollEvents();
+       
+       displayFunc();
+     }
+     
+     ImGui_ImplGlfwGL2_Shutdown();
+     ImGui::DestroyContext();
+     
+     glfwDestroyWindow(window);
+     glfwTerminate();
+   }
+  
+#endif
+  
   void TutorialApplication::render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera) {
     device_render(pixels,width,height,time,camera);
     renderFrame((int*)pixels,width,height,time,camera);
   }
-
+  
   void TutorialApplication::run(int argc, char** argv)
   {
     /* set debug values */
@@ -1142,65 +1209,16 @@ namespace embree
     if (referenceImageFilename.str() != "")
       compareToReferenceImage(referenceImageFilename);
 
+#if defined(USE_GLFW)
+    
     /* interactive mode */
     if (interactive)
-    {
-      window_width = width;
-      window_height = height;
-      glfwSetErrorCallback(errorFunc);
-      glfwInit();
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,2);
-      glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,0);
-     
-      if (fullscreen) window = createFullScreenWindow();
-      else            window = createStandardWindow(width,height);
-     
-      glfwMakeContextCurrent(window);
-      glfwSwapInterval(1);
-      reshapeFunc(window,0,0);
-
-      // Setup ImGui binding
-      ImGui::CreateContext();
-      ImGuiIO& io = ImGui::GetIO(); (void)io;
-      //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-      ImGui_ImplGlfwGL2_Init(window, false);
-      
-      // Setup style
-      ImGui::StyleColorsDark();
-      //ImGui::StyleColorsClassic();
-      
-      // Load Fonts
-      // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them. 
-      // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple. 
-      // - If the file cannot be loaded, the function will return NULL. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-      // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-      // - Read 'misc/fonts/README.txt' for more instructions and details.
-      // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-      //io.Fonts->AddFontDefault();
-      //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-      //io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-      //io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-      //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
-      //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
-      //IM_ASSERT(font != NULL);
-      
-      while (!glfwWindowShouldClose(window))
-      {
-        // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
-        // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
-        // - When io.WantCaptureKeyboard is true, do not dispatch keyboard input data to your main application.
-        // Generally you may always pass all inputs to dear imgui, and hide them from your application based on those two flags.
-        glfwPollEvents();
-
-        displayFunc();
-      }
-
-      ImGui_ImplGlfwGL2_Shutdown();
-      ImGui::DestroyContext();
-      
-      glfwDestroyWindow(window);
-      glfwTerminate();
-    }
+      renderInteractive();
+    
+#else
+    if (interactive) 
+      std::cout << "GLFW is disabled, you can only render to disk using -o command line option." << std::endl;
+#endif
   }
 
   int TutorialApplication::main(int argc, char** argv) try

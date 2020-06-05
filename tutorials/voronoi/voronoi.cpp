@@ -20,9 +20,10 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("voronoi", FEATURE_RTCORE | FEATURE_STREAM) 
-    { }
+      : TutorialApplication("voronoi", FEATURE_RTCORE | FEATURE_STREAM) {}
 
+#if defined(USE_GLFW)
+    
     void drawGUI() override
     {
       ImGui::SliderInt ("Number of points", &g_num_points, 4, 4096);
@@ -41,9 +42,8 @@ namespace embree
       
       TutorialApplication::keypressed(key);
     }
-
+#endif
   };
-
 }
 
 int main(int argc, char** argv) {

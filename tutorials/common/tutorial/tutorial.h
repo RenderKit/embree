@@ -9,12 +9,16 @@
 #include "scene.h"
 #include "scene_device.h"
 
+#if defined(USE_GLFW)
+
 /* include GLFW for window management */
 #include <GLFW/glfw3.h>
 
 /* include ImGUI */
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_impl_glfw_gl2.h"
+
+#endif
 
 namespace embree
 {
@@ -97,11 +101,18 @@ namespace embree
     /* set scene to use */
     void set_scene (TutorialScene* in);
 
+#if defined(USE_GLFW)
+    
+  public:
+    
     /* create a fullscreen window */
     GLFWwindow* createFullScreenWindow();
 
     /* create a standard window of specified size */
     GLFWwindow* createStandardWindow(int width, int height);
+
+    /* interactive rendering using GLFW window */
+    void renderInteractive();
  
     /* GLFW callback functions */
   public:
@@ -111,8 +122,13 @@ namespace embree
     virtual void motionFunc(GLFWwindow* window, double x, double y);
     virtual void displayFunc();
     virtual void reshapeFunc(GLFWwindow* window, int width, int height);
-    virtual void drawGUI() {}; 
+    virtual void drawGUI() {};
 
+  public:
+    GLFWwindow* window = nullptr;
+
+#endif
+    
   public:
     virtual void render(unsigned* pixels, const unsigned width, const unsigned height, const float time, const ISPCCamera& camera);
   
@@ -143,8 +159,7 @@ namespace embree
 
     unsigned window_width;
     unsigned window_height;
-    GLFWwindow* window;
-
+  
     double time0;
     int debug_int0;
     int debug_int1;
