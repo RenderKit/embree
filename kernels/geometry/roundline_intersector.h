@@ -549,7 +549,7 @@ namespace embree
           t_sph_lower = min(t_sph0_lower, t_sph1_lower);
           t_sph_upper = max(t_sph0_upper, t_sph1_upper);
           sph0_first_lower = t_sph0_lower < t_sph1_lower;
-          sph0_first_upper = t_sph0_upper < t_sph1_upper; 
+          sph0_first_upper = t_sph0_upper > t_sph1_upper; 
         } else {
           t_sph_lower = t_sph1_lower;
           t_sph_upper = t_sph1_upper;
@@ -574,8 +574,9 @@ namespace embree
         Vec3vf<M> Ng_first;
         vfloat<M> u_first;
         if (unlikely(any(isBeginPoint))) {
-          Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), select (sph0_first_lower, cone.Ng_sphere0(valid_lower), cone.Ng_sphere1(valid_lower)));
-          u_first  = select(cone_hit_first, cone.u_cone(valid_lower), select (sph0_first_lower, vfloat<M>(zero), vfloat<M>(one)));
+          const vbool<M> sph0_hit_first = t_first == t_sph0_lower | t_first == t_sph0_upper;
+          Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), select (sph0_hit_first, cone.Ng_sphere0(valid_lower), cone.Ng_sphere1(valid_lower)));
+          u_first  = select(cone_hit_first, cone.u_cone(valid_lower), select (sph0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
         } else {
           Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), cone.Ng_sphere1(valid_lower));
           u_first  = select(cone_hit_first, cone.u_cone(valid_lower), one);
@@ -596,8 +597,9 @@ namespace embree
         Vec3vf<M> Ng_second;
         vfloat<M> u_second;
         if (unlikely(any(isBeginPoint))) {
-          Ng_second = select(cone_hit_second, cone.Ng_cone(false), select (sph0_first_upper, cone.Ng_sphere0(false), cone.Ng_sphere1(false)));
-          u_second  = select(cone_hit_second, cone.u_cone(false), select (sph0_first_lower, vfloat<M>(zero), vfloat<M>(one)));
+          const vbool<M> sph0_hit_second = t_second == t_sph0_lower | t_second == t_sph0_upper;
+          Ng_second = select(cone_hit_second, cone.Ng_cone(false), select (sph0_hit_second, cone.Ng_sphere0(false), cone.Ng_sphere1(false)));
+          u_second  = select(cone_hit_second, cone.u_cone(false), select (sph0_hit_second, vfloat<M>(zero), vfloat<M>(one)));
         } else {
           Ng_second = select(cone_hit_second, cone.Ng_cone(false), cone.Ng_sphere1(false));
           u_second  = select(cone_hit_second, cone.u_cone(false), one);
