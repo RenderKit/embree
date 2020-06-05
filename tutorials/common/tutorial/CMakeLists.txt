@@ -1,8 +1,12 @@
 ## Copyright 2009-2020 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+IF (EMBREE_TUTORIALS_GLFW)
+  SET(IMGUI_LIBRARY imgui)
+ENDIF()
+
 ADD_LIBRARY(tutorial STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.cpp scene_device.cpp)
-TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree imgui tasking ${OPENGL_LIBRARIES} ${GLFW_LIBRARY})
+TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree ${IMGUI_LIBRARY} tasking ${OPENGL_LIBRARIES} ${GLFW_LIBRARY})
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
 SET_PROPERTY(TARGET tutorial APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
@@ -12,7 +16,7 @@ SET_PROPERTY(TARGET noise APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
 IF (EMBREE_ISPC_SUPPORT)
   ADD_ISPC_LIBRARY(tutorial_ispc STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.ispc scene_device.cpp tasksys.cpp)
-  TARGET_LINK_LIBRARIES(tutorial_ispc sys math lexers scenegraph lights_ispc embree imgui tasking ${OPENGL_LIBRARIES} ${GLFW_LIBRARY})
+  TARGET_LINK_LIBRARIES(tutorial_ispc sys math lexers scenegraph lights_ispc embree ${IMGUI_LIBRARY} tasking ${OPENGL_LIBRARIES} ${GLFW_LIBRARY})
   SET_PROPERTY(TARGET tutorial_ispc PROPERTY FOLDER tutorials/common)
   SET_PROPERTY(TARGET tutorial_ispc APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 

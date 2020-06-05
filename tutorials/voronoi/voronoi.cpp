@@ -13,7 +13,6 @@ namespace embree
     bool g_show_voronoi = true;
     bool g_point_repulsion = false;
     float g_tmax = inf;
-    DrawGUI g_drawGUI = nullptr;
     Vec3fa g_query_point(0.7f, 0.0f, 0.3f);
   }
 
@@ -27,8 +26,13 @@ namespace embree
     void drawGUI() override
     {
       ImGui::SliderInt ("Number of points", &g_num_points, 4, 4096);
-      if (g_drawGUI)
-        g_drawGUI();
+      ImGui::Checkbox  ("Show Voronoi", &g_show_voronoi);
+      if (!g_show_voronoi)
+      {
+        ImGui::SliderInt ("Number of neighbours", &g_num_knn, 1, 128);
+        ImGui::Checkbox  ("Simulate: Point repulsion", &g_point_repulsion);
+        ImGui::InputFloat("Max dist for NN query", &g_tmax);
+      }
     }
 
     void keypressed(int key) override

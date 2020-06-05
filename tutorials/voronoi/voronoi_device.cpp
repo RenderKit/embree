@@ -31,18 +31,6 @@ extern "C" int g_num_knn;
 extern "C" bool g_show_voronoi;
 extern "C" bool g_point_repulsion;
 extern "C" float g_tmax;
-extern "C" DrawGUI g_drawGUI;
-
-void drawGUI()
-{
-  ImGui::Checkbox  ("Show Voronoi", &g_show_voronoi);
-  if (!g_show_voronoi)
-  {
-    ImGui::SliderInt ("Number of neighbours", &g_num_knn, 1, 128);
-    ImGui::Checkbox  ("Simulate: Point repulsion", &g_point_repulsion);
-    ImGui::InputFloat("Max dist for NN query", &g_tmax);
-  }
-}
 
 struct Neighbour
 {
@@ -169,8 +157,6 @@ Point* createPoints (RTCScene scene, unsigned int N)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  g_drawGUI = &drawGUI;
-
   /* create scene */
   g_scene = rtcNewScene(g_device);
   g_points = createPoints(g_scene, g_num_points);
