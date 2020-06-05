@@ -372,7 +372,7 @@ namespace embree
           upper = select(valid_sph1_back, t_sph1_back,  vfloat<M>(neg_inf));
         }
 
-        __forceinline void intersectBeginSphere(vbool<M>& valid, 
+        __forceinline void intersectBeginSphere(const vbool<M>& valid, 
                                                 vfloat<M>& lower, vfloat<M>& upper)
         {
           /* calculate front and back hit with end sphere */
@@ -537,23 +537,19 @@ namespace embree
 
         /* intersect ending sphere */
         vfloat<M> t_sph1_lower, t_sph1_upper;
-        vfloat<M> t_sph0_lower, t_sph0_upper;
+        vfloat<M> t_sph0_lower = vfloat<M>(pos_inf);
+        vfloat<M> t_sph0_upper = vfloat<M>(neg_inf);
         vfloat<M> t_sph_lower = vfloat<M>(pos_inf);
         vfloat<M> t_sph_upper = vfloat<M>(neg_inf);
         cone.intersectEndSphere(valid, coneR, t_sph1_lower, t_sph1_upper);
 
-        vbool<M> isBeginPoint = valid & (vL[0] == vfloat<M>(pos_inf));
-        vbool<M> sph0_first_lower, sph0_first_upper;
+        const vbool<M> isBeginPoint = valid & (vL[0] == vfloat<M>(pos_inf));
         if (unlikely(any(isBeginPoint))) {
           cone.intersectBeginSphere (isBeginPoint, t_sph0_lower, t_sph0_upper);
-          t_sph_lower = min(t_sph0_lower, t_sph1_lower);
-          t_sph_upper = max(t_sph0_upper, t_sph1_upper);
-          sph0_first_lower = t_sph0_lower < t_sph1_lower;
-          sph0_first_upper = t_sph0_upper > t_sph1_upper; 
-        } else {
-          t_sph_lower = t_sph1_lower;
-          t_sph_upper = t_sph1_upper;
         }
+          
+        t_sph_lower = min(t_sph0_lower, t_sph1_lower);
+        t_sph_upper = max(t_sph0_upper, t_sph1_upper);
         
         /* CSG union of cone and end sphere */
         vfloat<M> t_cone_sphere_lower = min(t_cone_lower, t_sph_lower);
@@ -571,17 +567,10 @@ namespace embree
         /* construct first hit */
         const vfloat<M> t_first = select(valid_lower, t_cone_sphere_lower, t_cone_sphere_upper);
         const vbool<M> cone_hit_first = t_first == t_cone_lower | t_first == t_cone_upper;
-        Vec3vf<M> Ng_first;
-        vfloat<M> u_first;
-        if (unlikely(any(isBeginPoint))) {
-          const vbool<M> sph0_hit_first = t_first == t_sph0_lower | t_first == t_sph0_upper;
-          Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), select (sph0_hit_first, cone.Ng_sphere0(valid_lower), cone.Ng_sphere1(valid_lower)));
-          u_first  = select(cone_hit_first, cone.u_cone(valid_lower), select (sph0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
-        } else {
-          Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), cone.Ng_sphere1(valid_lower));
-          u_first  = select(cone_hit_first, cone.u_cone(valid_lower), one);
-        }
-        
+        const vbool<M> sph0_hit_first = t_first == t_sph0_lower | t_first == t_sph0_upper;
+        const Vec3vf<M> Ng_first = select(cone_hit_first, cone.Ng_cone(valid_lower), select (sph0_hit_first, cone.Ng_sphere0(valid_lower), cone.Ng_sphere1(valid_lower)));
+        const vfloat<M> u_first  = select(cone_hit_first, cone.u_cone(valid_lower), select (sph0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
+
         /* invoke intersection filter for first hit */
         RoundLineIntersectorHitM<M> hit(u_first,zero,dt+t_first,Ng_first);
         const bool is_hit_first = epilog(valid_first, hit);
@@ -594,16 +583,10 @@ namespace embree
         
         /* invoke intersection filter for second hit */
         const vbool<M> cone_hit_second = t_second == t_cone_lower | t_second == t_cone_upper;
-        Vec3vf<M> Ng_second;
-        vfloat<M> u_second;
-        if (unlikely(any(isBeginPoint))) {
-          const vbool<M> sph0_hit_second = t_second == t_sph0_lower | t_second == t_sph0_upper;
-          Ng_second = select(cone_hit_second, cone.Ng_cone(false), select (sph0_hit_second, cone.Ng_sphere0(false), cone.Ng_sphere1(false)));
-          u_second  = select(cone_hit_second, cone.u_cone(false), select (sph0_hit_second, vfloat<M>(zero), vfloat<M>(one)));
-        } else {
-          Ng_second = select(cone_hit_second, cone.Ng_cone(false), cone.Ng_sphere1(false));
-          u_second  = select(cone_hit_second, cone.u_cone(false), one);
-        }
+        const vbool<M> sph0_hit_second = t_second == t_sph0_lower | t_second == t_sph0_upper;
+        const Vec3vf<M> Ng_second = select(cone_hit_second, cone.Ng_cone(false), select (sph0_hit_second, cone.Ng_sphere0(false), cone.Ng_sphere1(false)));
+        const vfloat<M> u_second  = select(cone_hit_second, cone.u_cone(false), select (sph0_hit_second, vfloat<M>(zero), vfloat<M>(one)));
+
         hit = RoundLineIntersectorHitM<M>(u_second,zero,dt+t_second,Ng_second);
         const bool is_hit_second = epilog(valid_second, hit);
         
