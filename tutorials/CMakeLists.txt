@@ -1,7 +1,14 @@
 ## Copyright 2009-2020 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-OPTION(EMBREE_TUTORIALS_GLFW  "Enables GLFW usage in tutorials. When disabled tutorial can only render to disk." ON)
+include(CMakeDependentOption)
+
+OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
+
+ADD_SUBDIRECTORY(common/image)
+CMAKE_DEPENDENT_OPTION(EMBREE_TUTORIALS_GLFW  "Enables GLFW usage in tutorials. When disabled tutorial can only render to disk." ON "EMBREE_TUTORIALS" OFF)
+
+IF (EMBREE_TUTORIALS)
 
 IF (EMBREE_TUTORIALS_GLFW)
 
@@ -86,8 +93,7 @@ IF (EMBREE_RAY_PACKETS)
   ADD_SUBDIRECTORY(viewer_anim)
 ENDIF()
 
-# IF (BUILD_TESTING)
 ADD_SUBDIRECTORY(embree_tests)
-# ENDIF()
 
+ENDIF()
 
