@@ -10,7 +10,7 @@ namespace embree
     Tutorial()
       : SceneLoadingTutorialApplication("viewer_stream",FEATURE_RTCORE) {}
     
-    void postParseCommandLine() 
+    void postParseCommandLine() override
     {
       /* load default scene if none specified */
       if (sceneFilename.size() == 0) {

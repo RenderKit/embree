@@ -14,10 +14,9 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication 
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("hair_geometry",FEATURE_RTCORE) 
-    {    }
+      : SceneLoadingTutorialApplication("hair_geometry",FEATURE_RTCORE) {}
 
-    void postParseCommandLine() 
+    void postParseCommandLine() override
     {
       /* load default scene if none specified */
       if (scene->size() == 0 && sceneFilename.size() == 0) {
