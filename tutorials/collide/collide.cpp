@@ -173,6 +173,8 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }
 
+#if defined(USE_GLFW)
+    
     void keypressed(int key) override
     {
       if (key == 32  /* */) initializeClothPositions ((collide2::ClothModel &) (*meshes[clothID]));
@@ -180,6 +182,8 @@ void triangle_intersect_func(const RTCIntersectFunctionNArguments* args)
       if (pause == true && key == 78 /*n*/) { updateScene (); }
       else TutorialApplication::keypressed(key);
     }
+#endif
+    
   };
 }
 

@@ -305,6 +305,14 @@ namespace embree
     const Vertex v3 = madd(1.0f/6.0f,icurve.v1,madd(2.0f/3.0f,icurve.v2,1.0f/6.0f*icurve.v3));
     ocurve = BezierCurveT<Vertex>(v0,v1,v2,v3);
   }
+
+  __forceinline BSplineCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const BSplineCurveT<Vec3ff>& curve)
+  {
+    return BSplineCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0),
+                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1),
+                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v2),
+                                 enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3));
+  }
   
   typedef BSplineCurveT<Vec3fa> BSplineCurve3fa;
 }

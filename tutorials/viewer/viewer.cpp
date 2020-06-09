@@ -5,12 +5,23 @@
 
 namespace embree
 {
+  extern "C" float g_min_width = 0.0f;
+  extern "C" float g_min_width_max_radius_scale;
+  
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE) {}
+      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE)
+    {
+#if RTC_MIN_WIDTH
+      registerOption("min-width", [] (Ref<ParseStream> cin, const FileName& path) {
+          g_min_width = cin->getFloat();
+          g_min_width_max_radius_scale = cin->getFloat();
+        }, "--min-width <float> <float>: first value sets number of pixel to enlarge curve and point geometry to, but maximally scales hair radii by second value");
+#endif
+    }
     
-    void postParseCommandLine() 
+    void postParseCommandLine() override
     {
       /* load default scene if none specified */
       if (scene->size() == 0 && sceneFilename.size() == 0) {

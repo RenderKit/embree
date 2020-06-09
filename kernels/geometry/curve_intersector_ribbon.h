@@ -170,14 +170,16 @@ namespace embree
     {
       typedef NativeCurve<Vec3ff> NativeCurve3ff;
       
-      template<typename GeometryT, typename Epilog>
+      template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                   const GeometryT* geom, const unsigned int primID,
+                                   IntersectContext* context,
+                                   const CurveGeometry* geom, const unsigned int primID,
                                    const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                    const Epilog& epilog)
       {
         const int N = geom->tessellationRate;
-        const NativeCurve3ff curve(v0,v1,v2,v3);
+        NativeCurve3ff curve(v0,v1,v2,v3);
+        curve = enlargeRadiusToMinWidth(context,geom,ray.org,curve);
         return intersect_ribbon<NativeCurve3ff>(ray.org,ray.dir,ray.tnear(),ray.tfar,
                                                 pre.ray_space,pre.depth_scale,
                                                 curve,N,
@@ -190,16 +192,18 @@ namespace embree
     {
       typedef NativeCurve<Vec3ff> NativeCurve3ff;
       
-      template<typename GeometryT, typename Epilog>
+      template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& ray, size_t k,
-                                   const GeometryT* geom, const unsigned int primID,
+                                   IntersectContext* context,
+                                   const CurveGeometry* geom, const unsigned int primID,
                                    const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                    const Epilog& epilog)
       {
         const int N = geom->tessellationRate;
-        const NativeCurve3ff curve(v0,v1,v2,v3);
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
+        NativeCurve3ff curve(v0,v1,v2,v3);
+        curve = enlargeRadiusToMinWidth(context,geom,ray_org,curve);
         return intersect_ribbon<NativeCurve3ff>(ray_org,ray_dir,ray.tnear()[k],ray.tfar[k],
                                                 pre.ray_space[k],pre.depth_scale[k],
                                                 curve,N,

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../common/default.h"
+#include "../common/scene_curves.h"
 
 /*
 
@@ -281,6 +282,14 @@ namespace embree
         return cout << "CatmullRomCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
+
+  __forceinline CatmullRomCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const CatmullRomCurveT<Vec3ff>& curve)
+  {
+    return CatmullRomCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v2),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3));
+  }
   
   typedef CatmullRomCurveT<Vec3fa> CatmullRomCurve3fa;
 }

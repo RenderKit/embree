@@ -249,9 +249,12 @@ namespace embree
     Geometry::update();
   }
 
-  void CurveGeometry::setTessellationRate(float N)
-  {
+  void CurveGeometry::setTessellationRate(float N) {
     tessellationRate = clamp((int)N,1,16);
+  }
+
+  void CurveGeometry::setMaxRadiusScale(float s) {
+    maxRadiusScale = s;
   }
 
   void CurveGeometry::addElementsToCount (GeometryCounts & counts) const 
@@ -393,31 +396,35 @@ namespace embree
       CurveGeometryInterface (Device* device, Geometry::GType gtype)
         : CurveGeometry(device,gtype) {}
       
-      __forceinline const Curve3ff getCurve(size_t i, size_t itime = 0) const 
+      __forceinline const Curve3ff getCurveScaledRadius(size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
-        const Vec3ff v0 = vertex(index+0,itime);
-        const Vec3ff v1 = vertex(index+1,itime);
-        const Vec3ff v2 = vertex(index+2,itime);
-        const Vec3ff v3 = vertex(index+3,itime);
+        Vec3ff v0 = vertex(index+0,itime);
+        Vec3ff v1 = vertex(index+1,itime);
+        Vec3ff v2 = vertex(index+2,itime);
+        Vec3ff v3 = vertex(index+3,itime);
+        v0.w *= maxRadiusScale;
+        v1.w *= maxRadiusScale;
+        v2.w *= maxRadiusScale;
+        v3.w *= maxRadiusScale;
         return Curve3ff (v0,v1,v2,v3);
       }
 
-      __forceinline const Curve3ff getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      __forceinline const Curve3ff getCurveScaledRadius(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
         const Vec3ff v0 = vertex(index+0,itime);
         const Vec3ff v1 = vertex(index+1,itime);
         const Vec3ff v2 = vertex(index+2,itime);
         const Vec3ff v3 = vertex(index+3,itime);
-        const Vec3ff w0(xfmPoint(space,(Vec3fa)v0), v0.w);
-        const Vec3ff w1(xfmPoint(space,(Vec3fa)v1), v1.w);
-        const Vec3ff w2(xfmPoint(space,(Vec3fa)v2), v2.w);
-        const Vec3ff w3(xfmPoint(space,(Vec3fa)v3), v3.w);
+        const Vec3ff w0(xfmPoint(space,(Vec3fa)v0), maxRadiusScale*v0.w);
+        const Vec3ff w1(xfmPoint(space,(Vec3fa)v1), maxRadiusScale*v1.w);
+        const Vec3ff w2(xfmPoint(space,(Vec3fa)v2), maxRadiusScale*v2.w);
+        const Vec3ff w3(xfmPoint(space,(Vec3fa)v3), maxRadiusScale*v3.w);
         return Curve3ff(w0,w1,w2,w3);
       }
 
-       __forceinline const Curve3ff getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+       __forceinline const Curve3ff getCurveScaledRadius(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const float r_scale = r_scale0*scale;
         const unsigned int index = curve(i);
@@ -425,10 +432,10 @@ namespace embree
         const Vec3ff v1 = vertex(index+1,itime);
         const Vec3ff v2 = vertex(index+2,itime);
         const Vec3ff v3 = vertex(index+3,itime);
-        const Vec3ff w0(xfmPoint(space,((Vec3fa)v0-ofs)*Vec3fa(scale)), v0.w*r_scale);
-        const Vec3ff w1(xfmPoint(space,((Vec3fa)v1-ofs)*Vec3fa(scale)), v1.w*r_scale);
-        const Vec3ff w2(xfmPoint(space,((Vec3fa)v2-ofs)*Vec3fa(scale)), v2.w*r_scale);
-        const Vec3ff w3(xfmPoint(space,((Vec3fa)v3-ofs)*Vec3fa(scale)), v3.w*r_scale);
+        const Vec3ff w0(xfmPoint(space,((Vec3fa)v0-ofs)*Vec3fa(scale)), maxRadiusScale*v0.w*r_scale);
+        const Vec3ff w1(xfmPoint(space,((Vec3fa)v1-ofs)*Vec3fa(scale)), maxRadiusScale*v1.w*r_scale);
+        const Vec3ff w2(xfmPoint(space,((Vec3fa)v2-ofs)*Vec3fa(scale)), maxRadiusScale*v2.w*r_scale);
+        const Vec3ff w3(xfmPoint(space,((Vec3fa)v3-ofs)*Vec3fa(scale)), maxRadiusScale*v3.w*r_scale);
         return Curve3ff(w0,w1,w2,w3);
       }
 
@@ -442,20 +449,20 @@ namespace embree
         return Curve3fa (n0,n1,n2,n3);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurveScaledRadius(size_t i, size_t itime = 0) const 
       {
-        const Curve3ff center = getCurve(i,itime);
+        const Curve3ff center = getCurveScaledRadius(i,itime);
         const Curve3fa normal = getNormalCurve(i,itime);
         const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
-        return getOrientedCurve(i,itime).xfm(space);
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurveScaledRadius(const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return getOrientedCurveScaledRadius(i,itime).xfm(space);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
-        return getOrientedCurve(i,itime).xfm(space,ofs,scale);
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurveScaledRadius(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return getOrientedCurveScaledRadius(i,itime).xfm(space,ofs,scale);
       }
 
       /*! check if the i'th primitive is valid at the itime'th time step */
@@ -543,31 +550,35 @@ namespace embree
       HermiteCurveGeometryInterface (Device* device, Geometry::GType gtype)
         : CurveGeometry(device,gtype) {}
       
-      __forceinline const HermiteCurve3ff getCurve(size_t i, size_t itime = 0) const 
+      __forceinline const HermiteCurve3ff getCurveScaledRadius(size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
-        const Vec3ff v0 = vertex(index+0,itime);
-        const Vec3ff v1 = vertex(index+1,itime);
-        const Vec3ff t0 = tangent(index+0,itime);
-        const Vec3ff t1 = tangent(index+1,itime);
+        Vec3ff v0 = vertex(index+0,itime);
+        Vec3ff v1 = vertex(index+1,itime);
+        Vec3ff t0 = tangent(index+0,itime);
+        Vec3ff t1 = tangent(index+1,itime);
+        v0.w *= maxRadiusScale;
+        v1.w *= maxRadiusScale;
+        t0.w *= maxRadiusScale;
+        t1.w *= maxRadiusScale;
         return HermiteCurve3ff (v0,t0,v1,t1);
       }
 
-      __forceinline const HermiteCurve3ff getCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      __forceinline const HermiteCurve3ff getCurveScaledRadius(const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const unsigned int index = curve(i);
         const Vec3ff v0 = vertex(index+0,itime);
         const Vec3ff v1 = vertex(index+1,itime);
         const Vec3ff t0 = tangent(index+0,itime);
         const Vec3ff t1 = tangent(index+1,itime);
-        const Vec3ff V0(xfmPoint(space,(Vec3fa)v0),v0.w);
-        const Vec3ff V1(xfmPoint(space,(Vec3fa)v1),v1.w);
-        const Vec3ff T0(xfmVector(space,(Vec3fa)t0),t0.w);
-        const Vec3ff T1(xfmVector(space,(Vec3fa)t1),t1.w);
+        const Vec3ff V0(xfmPoint(space,(Vec3fa)v0),maxRadiusScale*v0.w);
+        const Vec3ff V1(xfmPoint(space,(Vec3fa)v1),maxRadiusScale*v1.w);
+        const Vec3ff T0(xfmVector(space,(Vec3fa)t0),maxRadiusScale*t0.w);
+        const Vec3ff T1(xfmVector(space,(Vec3fa)t1),maxRadiusScale*t1.w);
         return HermiteCurve3ff(V0,T0,V1,T1);
       }
 
-      __forceinline const HermiteCurve3ff getCurve(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
+      __forceinline const HermiteCurve3ff getCurveScaledRadius(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const 
       {
         const float r_scale = r_scale0*scale;
         const unsigned int index = curve(i);
@@ -575,10 +586,10 @@ namespace embree
         const Vec3ff v1 = vertex(index+1,itime);
         const Vec3ff t0 = tangent(index+0,itime);
         const Vec3ff t1 = tangent(index+1,itime);
-        const Vec3ff V0(xfmPoint(space,(v0-ofs)*Vec3fa(scale)), v0.w*r_scale);
-        const Vec3ff V1(xfmPoint(space,(v1-ofs)*Vec3fa(scale)), v1.w*r_scale);
-        const Vec3ff T0(xfmVector(space,t0*Vec3fa(scale)), t0.w*r_scale);
-        const Vec3ff T1(xfmVector(space,t1*Vec3fa(scale)), t1.w*r_scale);
+        const Vec3ff V0(xfmPoint(space,(v0-ofs)*Vec3fa(scale)), maxRadiusScale*v0.w*r_scale);
+        const Vec3ff V1(xfmPoint(space,(v1-ofs)*Vec3fa(scale)), maxRadiusScale*v1.w*r_scale);
+        const Vec3ff T0(xfmVector(space,t0*Vec3fa(scale)), maxRadiusScale*t0.w*r_scale);
+        const Vec3ff T1(xfmVector(space,t1*Vec3fa(scale)), maxRadiusScale*t1.w*r_scale);
         return HermiteCurve3ff(V0,T0,V1,T1);
       }
 
@@ -592,20 +603,20 @@ namespace embree
         return HermiteCurve3fa (n0,dn0,n1,dn1);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(size_t i, size_t itime = 0) const 
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurveScaledRadius(size_t i, size_t itime = 0) const 
       {
-        const HermiteCurve3ff center = getCurve(i,itime);
+        const HermiteCurve3ff center = getCurveScaledRadius(i,itime);
         const HermiteCurve3fa normal = getNormalCurve(i,itime);
         const TensorLinearCubicBezierSurface3fa ocurve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(center,normal);
         return ocurve;
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
-        return getOrientedCurve(i,itime).xfm(space);
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurveScaledRadius(const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return getOrientedCurveScaledRadius(i,itime).xfm(space);
       }
 
-      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurve(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
-        return getOrientedCurve(i,itime).xfm(space,ofs,scale);
+      __forceinline const TensorLinearCubicBezierSurface3fa getOrientedCurveScaledRadius(const Vec3fa& ofs, const float scale, const LinearSpace3fa& space, size_t i, size_t itime = 0) const {
+        return getOrientedCurveScaledRadius(i,itime).xfm(space,ofs,scale);
       }
 
       /*! check if the i'th primitive is valid at the itime'th time step */
@@ -709,8 +720,8 @@ namespace embree
       typedef Curve<Vec3ff> Curve3ff;
       typedef Curve<Vec3fa> Curve3fa;
       
-      using CurveInterfaceT<Curve>::getCurve;
-      using CurveInterfaceT<Curve>::getOrientedCurve;
+      using CurveInterfaceT<Curve>::getCurveScaledRadius;
+      using CurveInterfaceT<Curve>::getOrientedCurveScaledRadius;
       using CurveInterfaceT<Curve>::numTimeSteps;
       using CurveInterfaceT<Curve>::fnumTimeSegments;
       using CurveInterfaceT<Curve>::numTimeSegments;
@@ -734,7 +745,7 @@ namespace embree
         Vec3fa axisz(0,0,1);
         Vec3fa axisy(0,1,0);
         
-        const Curve3ff curve = getCurve(primID);
+        const Curve3ff curve = getCurveScaledRadius(primID);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
         const Vec3fa d0 = curve.eval_du(0.0f);
@@ -763,7 +774,7 @@ namespace embree
         if (tbounds.size() == 0) return frame(axisz);
         
         const size_t t = (tbounds.begin()+tbounds.end())/2;
-        const Curve3ff curve = getCurve(primID,t);
+        const Curve3ff curve = getCurveScaledRadius(primID,t);
         const Vec3fa p0 = curve.begin();
         const Vec3fa p3 = curve.end();
         const Vec3fa d0 = curve.eval_du(0.0f);
@@ -785,7 +796,7 @@ namespace embree
       
       Vec3fa computeDirection(unsigned int primID) const
       {
-        const Curve3ff c = getCurve(primID);
+        const Curve3ff c = getCurveScaledRadius(primID);
         const Vec3fa p0 = c.begin();
         const Vec3fa p3 = c.end();
         const Vec3fa axis1 = p3 - p0;
@@ -794,7 +805,7 @@ namespace embree
 
       Vec3fa computeDirection(unsigned int primID, size_t time) const
       {
-        const Curve3ff c = getCurve(primID,time);
+        const Curve3ff c = getCurveScaledRadius(primID,time);
         const Vec3fa p0 = c.begin();
         const Vec3fa p3 = c.end();
         const Vec3fa axis1 = p3 - p0;
@@ -805,9 +816,9 @@ namespace embree
       __forceinline BBox3fa bounds(size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(i,itime).accurateFlatBounds(tessellationRate));
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(i,itime).accurateRoundBounds());
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(i,itime).accurateBounds());
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurveScaledRadius(i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurveScaledRadius(i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurveScaledRadius(i,itime).accurateBounds());
         default: return empty;
         }
       }
@@ -816,9 +827,9 @@ namespace embree
       __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(space,i,itime).accurateFlatBounds(tessellationRate));
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(space,i,itime).accurateRoundBounds());
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(space,i,itime).accurateBounds());
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurveScaledRadius(space,i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurveScaledRadius(space,i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurveScaledRadius(space,i,itime).accurateBounds());
         default: return empty;
         }
       }
@@ -827,9 +838,9 @@ namespace embree
       __forceinline BBox3fa bounds(const Vec3fa& ofs, const float scale, const float r_scale0, const LinearSpace3fa& space, size_t i, size_t itime = 0) const
       {
         switch (ctype) {
-        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurve(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate));
-        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurve(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds());
-        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurve(ofs,scale,space,i,itime).accurateBounds());
+        case Geometry::GTY_SUBTYPE_FLAT_CURVE: return enlarge_bounds(getCurveScaledRadius(ofs,scale,r_scale0,space,i,itime).accurateFlatBounds(tessellationRate));
+        case Geometry::GTY_SUBTYPE_ROUND_CURVE: return enlarge_bounds(getCurveScaledRadius(ofs,scale,r_scale0,space,i,itime).accurateRoundBounds());
+        case Geometry::GTY_SUBTYPE_ORIENTED_CURVE: return enlarge_bounds(getOrientedCurveScaledRadius(ofs,scale,space,i,itime).accurateBounds());
         default: return empty;
         }
       }

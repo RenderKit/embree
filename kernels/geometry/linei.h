@@ -76,37 +76,37 @@ namespace embree
     /* gather the line segments */
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
-                              const Scene* scene) const;
+                              const LineSegments* geom) const;
+
+    __forceinline void gatheri(Vec4vf<M>& p0,
+                               Vec4vf<M>& p1,
+                               const LineSegments* geom,
+                               const int itime) const;
 
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
                               const LineSegments* geom,
-                              const int itime) const;
-
-    __forceinline void gather(Vec4vf<M>& p0,
-                              Vec4vf<M>& p1,
-                              const Scene* scene,
                               float time) const;
 
     /* gather the line segments with lateral info */
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
-															Vec4vf<M>& pL,
-															Vec4vf<M>& pR,
-                              const Scene* scene) const;
+                              Vec4vf<M>& pL,
+                              Vec4vf<M>& pR,
+                              const LineSegments* geom) const;
+
+    __forceinline void gatheri(Vec4vf<M>& p0,
+                               Vec4vf<M>& p1,
+                               Vec4vf<M>& pL,
+                               Vec4vf<M>& pR,
+                               const LineSegments* geom,
+                               const int itime) const;
 
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
-															Vec4vf<M>& pL,
-															Vec4vf<M>& pR,
+                              Vec4vf<M>& pL,
+                              Vec4vf<M>& pR,
                               const LineSegments* geom,
-                              const int itime) const;
-
-    __forceinline void gather(Vec4vf<M>& p0,
-                              Vec4vf<M>& p1,
-															Vec4vf<M>& pL,
-															Vec4vf<M>& pR,
-                              const Scene* scene,
                               float time) const;
 
     /* Calculate the bounds of the line segments */
@@ -255,9 +255,8 @@ namespace embree
   template<>
     __forceinline void LineMi<4>::gather(Vec4vf4& p0,
                                          Vec4vf4& p1,
-                                         const Scene* scene) const
+                                         const LineSegments* geom) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
     const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1]));
     const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2]));
@@ -272,7 +271,7 @@ namespace embree
   }
 
   template<>
-  __forceinline void LineMi<4>::gather(Vec4vf4& p0,
+  __forceinline void LineMi<4>::gatheri(Vec4vf4& p0,
                                        Vec4vf4& p1,
                                        const LineSegments* geom,
                                        const int itime) const
@@ -293,18 +292,16 @@ namespace embree
   template<>
     __forceinline void LineMi<4>::gather(Vec4vf4& p0,
                                          Vec4vf4& p1,
-                                         const Scene* scene,
+                                         const LineSegments* geom,
                                          float time) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-
     float ftime;
     const int itime = geom->timeSegment(time, ftime);
 
     Vec4vf4 a0,a1;
-    gather(a0,a1,geom,itime);
+    gatheri(a0,a1,geom,itime);
     Vec4vf4 b0,b1;
-    gather(b0,b1,geom,itime+1);
+    gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat4(ftime));
     p1 = lerp(a1,b1,vfloat4(ftime));
   }
@@ -314,9 +311,8 @@ namespace embree
                                               Vec4vf4& p1,
                                               Vec4vf4& pL,
                                               Vec4vf4& pR,
-                                              const Scene* scene) const
+                                              const LineSegments* geom) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
     const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1]));
     const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2]));
@@ -343,7 +339,7 @@ namespace embree
   }
   
   template<>
-    __forceinline void LineMi<4>::gather(Vec4vf4& p0,
+    __forceinline void LineMi<4>::gatheri(Vec4vf4& p0,
                                               Vec4vf4& p1,
                                               Vec4vf4& pL,
                                               Vec4vf4& pR,
@@ -380,18 +376,16 @@ namespace embree
                                               Vec4vf4& p1,
                                               Vec4vf4& pL,
                                               Vec4vf4& pR,
-                                              const Scene* scene,
+                                              const LineSegments* geom,
                                               float time) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-    
     float ftime;
     const int itime = geom->timeSegment(time, ftime);
     
     Vec4vf4 a0,a1,aL,aR;
-    gather(a0,a1,aL,aR,geom,itime);
+    gatheri(a0,a1,aL,aR,geom,itime);
     Vec4vf4 b0,b1,bL,bR;
-    gather(b0,b1,bL,bR,geom,itime+1);
+    gatheri(b0,b1,bL,bR,geom,itime+1);
     p0 = lerp(a0,b0,vfloat4(ftime));
     p1 = lerp(a1,b1,vfloat4(ftime));
     pL = lerp(aL,bL,vfloat4(ftime));
@@ -403,10 +397,8 @@ namespace embree
   template<>
     __forceinline void LineMi<8>::gather(Vec4vf8& p0,
                                          Vec4vf8& p1,
-                                         const Scene* scene) const
+                                         const LineSegments* geom) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-    
     const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1]));
     const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2]));
@@ -429,7 +421,7 @@ namespace embree
   }
 
   template<>
-  __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+  __forceinline void LineMi<8>::gatheri(Vec4vf8& p0,
                                        Vec4vf8& p1,
                                        const LineSegments* geom,
                                        const int itime) const
@@ -458,18 +450,16 @@ namespace embree
   template<>
     __forceinline void LineMi<8>::gather(Vec4vf8& p0,
                                          Vec4vf8& p1,
-                                         const Scene* scene,
+                                         const LineSegments* geom,
                                          float time) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-
     float ftime;
     const int itime = geom->timeSegment(time, ftime);
 
     Vec4vf8 a0,a1;
-    gather(a0,a1,geom,itime);
+    gatheri(a0,a1,geom,itime);
     Vec4vf8 b0,b1;
-    gather(b0,b1,geom,itime+1);
+    gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat8(ftime));
     p1 = lerp(a1,b1,vfloat8(ftime));
   }
@@ -479,10 +469,8 @@ namespace embree
                                               Vec4vf8& p1,
                                               Vec4vf8& pL,
                                               Vec4vf8& pR,
-                                              const Scene* scene) const
+                                              const LineSegments* geom) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-    
     const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1]));
     const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2]));
@@ -525,7 +513,7 @@ namespace embree
   }
   
   template<>
-    __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+    __forceinline void LineMi<8>::gatheri(Vec4vf8& p0,
                                               Vec4vf8& p1,
                                               Vec4vf8& pL,
                                               Vec4vf8& pR,
@@ -578,18 +566,16 @@ namespace embree
                                               Vec4vf8& p1,
                                               Vec4vf8& pL,
                                               Vec4vf8& pR,
-                                              const Scene* scene,
+                                              const LineSegments* geom,
                                               float time) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-    
     float ftime;
     const int itime = geom->timeSegment(time, ftime);
     
     Vec4vf8 a0,a1,aL,aR;
-    gather(a0,a1,aL,aR,geom,itime);
+    gatheri(a0,a1,aL,aR,geom,itime);
     Vec4vf8 b0,b1,bL,bR;
-    gather(b0,b1,bL,bR,geom,itime+1);
+    gatheri(b0,b1,bL,bR,geom,itime+1);
     p0 = lerp(a0,b0,vfloat8(ftime));
     p1 = lerp(a1,b1,vfloat8(ftime));
     pL = lerp(aL,bL,vfloat8(ftime));

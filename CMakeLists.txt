@@ -2,9 +2,9 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 SET(EMBREE_VERSION_MAJOR 3)
-SET(EMBREE_VERSION_MINOR 10)
-SET(EMBREE_VERSION_PATCH 1)
-SET(EMBREE_VERSION_NOTE "")
+SET(EMBREE_VERSION_MINOR 11)
+SET(EMBREE_VERSION_PATCH 0)
+SET(EMBREE_VERSION_NOTE "-alpha.0")
 
 SET(EMBREE_VERSION ${EMBREE_VERSION_MAJOR}.${EMBREE_VERSION_MINOR}.${EMBREE_VERSION_PATCH})
 MATH(EXPR EMBREE_VERSION_NUMBER "10000*${EMBREE_VERSION_MAJOR} + 100*${EMBREE_VERSION_MINOR} + ${EMBREE_VERSION_PATCH}")
@@ -105,7 +105,6 @@ ELSE()
 ENDIF()
 
 OPTION(EMBREE_ISPC_SUPPORT "Build Embree with support for ISPC applications." ON)
-OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
 SET(EMBREE_API_NAMESPACE "" CACHE STRING "C++ namespace to put API symbols into.")
 SET(EMBREE_LIBRARY_NAME  "embree${EMBREE_VERSION_MAJOR}" CACHE STRING "Name of the embree library file (default is embree${EMBREE_VERSION_MAJOR})")
 
@@ -143,6 +142,7 @@ OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 1 CACHE STRING "Maximum number of instance levels.")
 SET(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR 2.0 CACHE STRING "Self intersection avoidance factor for flat curves. Specify floating point value in range 0 to inf.")
+OPTION(EMBREE_MIN_WIDTH "Enables min-width feature to enlarge curve and point thickness to pixel width." OFF)
 
 SET(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 IF (WIN32)
@@ -472,9 +472,7 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(kernels)
-IF (EMBREE_TUTORIALS)
-  ADD_SUBDIRECTORY(tutorials)
-ENDIF()
+ADD_SUBDIRECTORY(tutorials)
 
 ##############################################################
 # Uninstall

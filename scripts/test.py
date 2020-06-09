@@ -103,6 +103,10 @@ def runConfig(config):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"V141\"")
       ispc_ext = "-vs2015"
+    elif (compiler == "ICC17-VC141"):
+      conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
+      conf.append("-T \"Intel C++ Compiler 17.0\"")
+      ispc_ext = "-vs2015"
     elif (compiler == "V140"):
       conf.append("-G \"Visual Studio 14 2015"+ext+"\"")
       conf.append("-T \"V140\"")
@@ -297,6 +301,10 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_POINT="+config["POINT"])
   if "COMPACT_POLYS" in config:
     conf.append("-D EMBREE_COMPACT_POLYS="+config["COMPACT_POLYS"])
+  if "MIN_WIDTH" in config:
+    conf.append("-D EMBREE_MIN_WIDTH="+config["MIN_WIDTH"])
+  if "GLFW" in config:
+    conf.append("-D EMBREE_TUTORIALS_GLFW="+config["GLFW"])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")

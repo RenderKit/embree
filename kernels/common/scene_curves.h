@@ -30,6 +30,7 @@ namespace embree
     void commit();
     bool verify();
     void setTessellationRate(float N);
+    void setMaxRadiusScale(float s);
     void addElementsToCount (GeometryCounts & counts) const;
 
   public:
@@ -193,21 +194,24 @@ namespace embree
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(const unsigned int primID, const size_t itime) const
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const size_t itime) const
     {
       Vec3ff v0,v1,v2,v3; Vec3fa n0,n1,n2,n3;
       unsigned int vertexID = curve(primID);
       gather(v0,v1,v2,v3,n0,n1,n2,n3,vertexID,itime);
-      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3ff(v0,v1,v2,v3),SourceCurve3fa(n0,n1,n2,n3));
+      SourceCurve3ff ccurve(v0,v1,v2,v3);
+      SourceCurve3fa ncurve(n0,n1,n2,n3);
+      ccurve = enlargeRadiusToMinWidth(context,this,ray_org,ccurve);
+      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(ccurve,ncurve);
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(const unsigned int primID, const float time) const
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
-      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+0);
-      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+1);
+      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(context,ray_org,primID,itime+0);
+      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(context,ray_org,primID,itime+1);
       return clerp(curve0,curve1,ftime);
     }
 
@@ -292,21 +296,25 @@ namespace embree
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(const unsigned int primID, const size_t itime) const
+      __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const size_t itime) const
     {
       Vec3ff v0,t0,v1,t1; Vec3fa n0,dn0,n1,dn1;
       unsigned int vertexID = curve(primID);
       gather_hermite(v0,t0,n0,dn0,v1,t1,n1,dn1,vertexID,itime);
-      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3ff(v0,t0,v1,t1),SourceCurve3fa(n0,dn0,n1,dn1));
+
+      SourceCurve3ff ccurve(v0,t0,v1,t1);
+      SourceCurve3fa ncurve(n0,dn0,n1,dn1);
+      ccurve = enlargeRadiusToMinWidth(context,this,ray_org,ccurve);
+      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(ccurve,ncurve);
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(const unsigned int primID, const float time) const
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
-      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedHermiteCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+0);
-      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedHermiteCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+1);
+      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedHermiteCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(context, ray_org, primID,itime+0);
+      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedHermiteCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(context, ray_org, primID,itime+1);
       return clerp(curve0,curve1,ftime);
     }
 
@@ -322,10 +330,11 @@ namespace embree
     vector<BufferView<Vec3ff>> vertices;    //!< vertex array for each timestep
     vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
     vector<BufferView<Vec3ff>> tangents;    //!< tangent array for each timestep
-    vector<BufferView<Vec3fa>> dnormals;     //!< normal derivative array for each timestep
+    vector<BufferView<Vec3fa>> dnormals;    //!< normal derivative array for each timestep
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<char>> vertexAttribs; //!< user buffers
-    int tessellationRate;                   //!< tessellation rate for bezier curve
+    int tessellationRate;                   //!< tessellation rate for flat curve
+    float maxRadiusScale = 1.0;             //!< maximal min-width scaling of curve radii
   };
   
   DECLARE_ISA_FUNCTION(CurveGeometry*, createCurves, Device* COMMA Geometry::GType);

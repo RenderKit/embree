@@ -164,6 +164,9 @@ RTC_API void rtcSetGeometryMask(RTCGeometry geometry, uniform unsigned int mask)
 /* Sets the build quality of the geometry. */
 RTC_API void rtcSetGeometryBuildQuality(RTCGeometry geometry, uniform RTCBuildQuality quality);
 
+/* Sets the maximal curve or point radius scale allowed by min-width feature. */
+RTC_API void rtcSetGeometryMaxRadiusScale(RTCGeometry geometry, uniform float maxRadiusScale);
+
 
 /* Sets a geometry buffer. */
 RTC_API void rtcSetGeometryBuffer(RTCGeometry geometry, uniform RTCBufferType type, uniform unsigned int slot, uniform RTCFormat format, uniform RTCBuffer buffer, uniform uintptr_t byteOffset, uniform uintptr_t byteStride, uniform uintptr_t itemCount);

@@ -84,18 +84,6 @@ namespace embree
     Accel::Intersectors BVH4GridIntersectors(BVH4* bvh, IntersectVariant ivariant);
     Accel::Intersectors BVH4GridMBIntersectors(BVH4* bvh, IntersectVariant ivariant);
     
-    static void createTriangleMeshTriangle4Morton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4iMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createTriangleMeshTriangle4i(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-
-    static void createQuadMeshQuad4v(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    static void createQuadMeshQuad4vMorton(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-
-    static void createUserGeometryMesh(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
-    
   private:
 
     DEFINE_SYMBOL2(Accel::Collider,BVH4ColliderUserGeom);
@@ -318,33 +306,10 @@ namespace embree
     
     // twolevel scene builders
   private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangleMeshSAH,void* COMMA Scene* COMMA const createTriangleMeshAccelTy);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA const createQuadMeshAccelTy);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA const createUserGeometryAccelTy);
- 
-    // SAH mesh builders
-  private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4GridMeshBuilderSAH,void* COMMA GridMesh* COMMA unsigned int COMMA size_t);
-
-    // mesh refitters
-  private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshRefitSAH,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshRefitSAH,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshRefitSAH,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
-    
-    // morton mesh builders
-  private:
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4MeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4vMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Triangle4iMeshBuilderMortonGeneral,void* COMMA TriangleMesh* COMMA unsigned int COMMA size_t)
-    DEFINE_ISA_FUNCTION(Builder*,BVH4Quad4vMeshBuilderMortonGeneral,void* COMMA QuadMesh* COMMA unsigned int COMMA size_t);
-    DEFINE_ISA_FUNCTION(Builder*,BVH4VirtualMeshBuilderMortonGeneral,void* COMMA UserGeometry* COMMA unsigned int COMMA size_t);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4MeshSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4vMeshSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4iMeshSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA bool);
   };
 }

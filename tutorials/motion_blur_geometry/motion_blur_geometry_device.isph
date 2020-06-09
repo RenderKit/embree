@@ -3,13 +3,23 @@
 
 #include "../common/tutorial/tutorial_device.isph"
 
+struct Sphere
+{
+  ALIGNED_STRUCT_(16)
+  Vec3f p;                      //!< position of the sphere
+  float r;                      //!< radius of the sphere
+  unsigned int geomID;
+  unsigned int num_time_steps;
+};
+
 struct TutorialData
 {
-  RTCScene g_scene = NULL;
+  RTCScene g_scene;
   uniform Vec3f face_colors[12];
+  uniform float g_time;
   
   /* accumulation buffer */
-  uniform Vec3fa* uniform g_accu = NULL;
+  uniform Vec3ff* uniform g_accu;
   uniform unsigned int g_accu_width;
   uniform unsigned int g_accu_height;
   uniform unsigned int g_accu_count;
@@ -17,15 +27,19 @@ struct TutorialData
   uniform Vec3fa g_accu_vy;
   uniform Vec3fa g_accu_vz;
   uniform Vec3fa g_accu_p;
-  
-  extern uniform float g_time;
-  extern uniform unsigned int g_num_time_steps;
-  extern uniform unsigned int g_num_time_steps2;
+
+  RTCScene scene0;
+  RTCScene scene1;
+  RTCScene scene2;
+  RTCScene scene3;
+  uniform Sphere* uniform sphere0;
+  uniform Sphere* uniform sphere1;
 };
 
 inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->g_scene = NULL;
+  This->g_time = 0;
   This->g_accu = NULL;
   This->g_accu_width = 0;
   This->g_accu_height = 0;
@@ -34,9 +48,13 @@ inline void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->g_accu_vy = make_Vec3fa(0.0f);
   This->g_accu_vz = make_Vec3fa(0.0f);
   This->g_accu_p  = make_Vec3fa(0.0f);
-  This->g_time = -1;
-  This->g_num_time_steps = 8;
-  This->g_num_time_steps2 = 30;
+
+  This->scene0 = NULL;
+  This->scene1 = NULL;
+  This->scene2 = NULL;
+  This->scene3 = NULL;
+  This->sphere0 = NULL;
+  This->sphere1 = NULL;
 }
 
 inline void TutorialData_Destructor(uniform TutorialData* uniform This)

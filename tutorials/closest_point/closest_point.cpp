@@ -19,12 +19,16 @@ namespace embree
       camera.to = Vec3fa(-0.106665f, -1.8421f, -6.5347f);
       camera.fov  = 60;
     }
+
+#if defined(USE_GLFW)
     
     void drawGUI() override
     {
       ImGui::Checkbox  ("Animate", &g_animate);
       ImGui::Checkbox  ("User Defined Instancing", &g_userDefinedInstancing);
     }
+    
+#endif
   };
 
 }

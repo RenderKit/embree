@@ -28,6 +28,10 @@ namespace embree
         return BezierCurveT<Vec3ff>(q0,q1,q2,q3);
       }
     };
+
+  __forceinline HermiteCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const HermiteCurveT<Vec3ff>& curve) {
+    return HermiteCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,BezierCurveT<Vec3ff>(curve)));
+  }
   
   typedef HermiteCurveT<Vec3fa> HermiteCurve3fa;
 }

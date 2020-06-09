@@ -10,6 +10,7 @@ namespace embree
 {
   extern "C" {
     int g_instancing_mode = SceneGraph::INSTANCING_NONE;
+    float g_min_width_max_radius_scale = 1.0f;
   }
 
   void deleteGeometry(ISPCGeometry* geom)
@@ -523,8 +524,14 @@ namespace embree
     }
     
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);
-    if (mesh->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE)
+    if (mesh->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
+    }
+    
+#if RTC_MIN_WIDTH
+    if (g_min_width_max_radius_scale >= 1.0f)
+      rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
+#endif
 
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, mesh->flags, 0, sizeof(unsigned char), mesh->numHairs);
     rtcSetGeometryUserData(geom, mesh);
@@ -551,6 +558,11 @@ namespace embree
         rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, mesh->normals[t], 0, sizeof(Vec3fa), mesh->numVertices);
       }
     }
+#if RTC_MIN_WIDTH
+    if (g_min_width_max_radius_scale >= 1.0f)
+      rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
+#endif
+      
     rtcSetGeometryUserData(geom, mesh);
     rtcCommitGeometry(geom);
 

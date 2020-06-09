@@ -34,6 +34,8 @@ namespace embree
       camera.fov  = 30.f;
     }
 
+#if defined(USE_GLFW)
+    
     void drawGUI() override
     {
       if (ImGui::SliderInt ("samples per pixel",  &g_spp, 1, 32))  g_reset = true;
@@ -48,6 +50,7 @@ namespace embree
       if (g_drawGUI)
         g_drawGUI();
     }
+#endif
   };
 }
 

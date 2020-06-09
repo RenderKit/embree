@@ -300,14 +300,16 @@ namespace embree
       
       template<typename Epilog>
       __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                const Geometry* geom, const unsigned int primID,
+                                IntersectContext* context,
+                                const CurveGeometry* geom, const unsigned int primID,
                                 const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                 const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
 
         /* move ray closer to make intersection stable */
-        const NativeCurve3ff curve0(v0,v1,v2,v3);
+        NativeCurve3ff curve0(v0,v1,v2,v3);
+        curve0 = enlargeRadiusToMinWidth(context,geom,ray.org,curve0);
         const float dt = dot(curve0.center()-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
         const Vec3ff ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
         const NativeCurve3ff curve1 = curve0-ref;
@@ -339,7 +341,8 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
-                                   const Geometry* geom, const unsigned int primID,
+                                   IntersectContext* context,
+                                   const CurveGeometry* geom, const unsigned int primID,
                                    const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                    const Epilog& epilog)
       {
@@ -347,7 +350,8 @@ namespace embree
         Ray1 ray(vray,k);
 
         /* move ray closer to make intersection stable */
-        const NativeCurve3ff curve0(v0,v1,v2,v3);
+        NativeCurve3ff curve0(v0,v1,v2,v3);
+        curve0 = enlargeRadiusToMinWidth(context,geom,ray.org,curve0);
         const float dt = dot(curve0.center()-ray.org,ray.dir)*rcp(dot(ray.dir,ray.dir));
         const Vec3ff ref(madd(Vec3fa(dt),ray.dir,ray.org),0.0f);
         const NativeCurve3ff curve1 = curve0-ref;

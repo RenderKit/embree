@@ -51,6 +51,7 @@ namespace embree
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre,Ray& ray,
+                                   IntersectContext* context,
                                    const CurveGeometry* geom, const unsigned int primID,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
@@ -58,7 +59,8 @@ namespace embree
         const int N = geom->tessellationRate;
         
         /* transform control points into ray space */
-        const NativeCurve3fa curve3D(v0,v1,v2,v3);
+        const NativeCurve3fa curve3Di(v0,v1,v2,v3);
+        const NativeCurve3fa curve3D = enlargeRadiusToMinWidth(context,geom,ray.org,curve3Di);
         const NativeCurve3fa curve2D = curve3D.xfm_pr(pre.ray_space,ray.org);
       
         /* evaluate the bezier curve */

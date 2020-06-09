@@ -325,10 +325,7 @@ namespace embree
     void progressMonitor(double nprims);
     void setProgressMonitorFunction(RTCProgressMonitorFunction func, void* ptr);
 
-  public:
-    
   private:
-
     GeometryCounts world;               //!< counts for geometry
 
   public:

@@ -10,6 +10,7 @@ namespace embree {
 
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
+extern "C" float g_min_width;
 
 struct TutorialData
 {
@@ -20,6 +21,8 @@ struct TutorialData
   /* scene data */
   RTCScene scene;
   bool subdiv_mode;
+
+  float min_width;
 };
 
 void TutorialData_Constructor(TutorialData* This)
@@ -29,6 +32,7 @@ void TutorialData_Constructor(TutorialData* This)
   This->iflags_coherent = g_iflags_coherent;
   This->scene = nullptr;
   This->subdiv_mode = false;
+  This->min_width = g_min_width;
 }
 
 void TutorialData_Destructor(TutorialData* This)

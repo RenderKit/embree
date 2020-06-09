@@ -72,7 +72,7 @@ namespace embree
         }, "--visualize_errors: visualizes pixels where collected hits are wrong");
     }
     
-    void postParseCommandLine() 
+    void postParseCommandLine() override
     {
       /* load default scene if none specified */
       if (scene->size() == 0 && sceneFilename.size() == 0) {
@@ -81,7 +81,9 @@ namespace embree
       }
     }
 
-    void drawGUI()
+#if defined(USE_GLFW)
+    
+    void drawGUI() override
     {
       
       ImGui::Combo("mode",&g_next_hit_mode,next_hit_mode_names,4);
@@ -94,6 +96,7 @@ namespace embree
       if (g_next_hit_mode != 0)
         ImGui::Checkbox("verify",&g_verify);
     }
+#endif   
   };
 }
 

@@ -29,7 +29,7 @@ namespace embree
         }, "--accumulate <bool>: accumulate samples (on by default)");
     }
     
-    void postParseCommandLine() 
+    void postParseCommandLine() override
     {
       /* load default scene if none specified */
       if (scene->size() == 0 && sceneFilename.size() == 0) {
@@ -38,7 +38,8 @@ namespace embree
       }
     }
 
-    void drawGUI()
+#if defined(USE_GLFW)
+    void drawGUI() override
     {
       ImGui::Checkbox("accumulate",&g_accumulate);
       ImGui::Text("max path length");
@@ -46,6 +47,7 @@ namespace embree
       ImGui::Text("samples per pixel");
       ImGui::DragInt("",&g_spp,1.0f,1,16);
     }
+#endif
   };
 
 }

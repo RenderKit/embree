@@ -4,6 +4,7 @@
 #pragma once
 
 #include "../common/ray.h"
+#include "../common/scene_points.h"
 #include "curve_intersector_precalculations.h"
 
 namespace embree
@@ -49,13 +50,21 @@ namespace embree
 
       template<typename Epilog>
       static __forceinline bool intersect(
-          const vbool<M>& valid_i, Ray& ray, const Precalculations& pre, const Vec4vf<M>& v0, const Epilog& epilog)
+          const vbool<M>& valid_i,
+          Ray& ray,
+          IntersectContext* context,
+          const Points* geom,
+          const Precalculations& pre,
+          const Vec4vf<M>& v0i,
+          const Epilog& epilog)
       {
         vbool<M> valid = valid_i;
 
         const Vec3vf<M> ray_org(ray.org.x, ray.org.y, ray.org.z);
         const Vec3vf<M> ray_dir(ray.dir.x, ray.dir.y, ray.dir.z);
         const vfloat<M> rd2    = rcp(dot(ray_dir, ray_dir));
+
+        const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
         const Vec3vf<M> center = v0.xyz();
         const vfloat<M> radius = v0.w;
 
@@ -82,12 +91,17 @@ namespace embree
       template<typename Epilog>
       static __forceinline bool intersect(const vbool<M>& valid_i,
                                           Ray& ray,
+                                          IntersectContext* context,
+                                          const Points* geom,
                                           const Precalculations& pre,
-                                          const Vec4vf<M>& v0,
+                                          const Vec4vf<M>& v0i,
                                           const Vec3vf<M>& normal,
                                           const Epilog& epilog)
       {
         vbool<M> valid         = valid_i;
+        const Vec3vf<M> ray_org(ray.org.x, ray.org.y, ray.org.z);
+
+        const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
         const Vec3vf<M> center = v0.xyz();
         const vfloat<M> radius = v0.w;
 
@@ -122,8 +136,10 @@ namespace embree
       static __forceinline bool intersect(const vbool<M>& valid_i,
                                           RayK<K>& ray,
                                           size_t k,
+                                          IntersectContext* context,
+                                          const Points* geom,
                                           const Precalculations& pre,
-                                          const Vec4vf<M>& v0,
+                                          const Vec4vf<M>& v0i,
                                           const Epilog& epilog)
       {
         vbool<M> valid = valid_i;
@@ -131,6 +147,8 @@ namespace embree
         const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
         const Vec3vf<M> ray_dir(ray.dir.x[k], ray.dir.y[k], ray.dir.z[k]);
         const vfloat<M> rd2    = rcp(dot(ray_dir, ray_dir));
+
+        const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
         const Vec3vf<M> center = v0.xyz();
         const vfloat<M> radius = v0.w;
 
@@ -158,17 +176,21 @@ namespace embree
       static __forceinline bool intersect(const vbool<M>& valid_i,
                                           RayK<K>& ray,
                                           size_t k,
+                                          IntersectContext* context,
+                                          const Points* geom,
                                           const Precalculations& pre,
-                                          const Vec4vf<M>& v0,
+                                          const Vec4vf<M>& v0i,
                                           const Vec3vf<M>& normal,
                                           const Epilog& epilog)
       {
         vbool<M> valid         = valid_i;
-        const Vec3vf<M> center = v0.xyz();
-        const vfloat<M> radius = v0.w;
         const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
         const Vec3vf<M> ray_dir(ray.dir.x[k], ray.dir.y[k], ray.dir.z[k]);
 
+        const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
+        const Vec3vf<M> center = v0.xyz();
+        const vfloat<M> radius = v0.w;
+        
         vfloat<M> divisor       = dot(Vec3vf<M>(ray_dir), normal);
         const vbool<M> parallel = divisor == vfloat<M>(0.f);
         valid &= !parallel;

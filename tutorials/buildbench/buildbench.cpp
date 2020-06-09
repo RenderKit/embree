@@ -22,7 +22,7 @@ namespace embree
         }, "--user_threads <int>: invokes user thread benchmark with specified number of application provided build threads");
     }
     
-    void postParseCommandLine() 
+    void postParseCommandLine() override
     {
       /* load default scene if none specified */
       if (sceneFilename.size() == 0) {
