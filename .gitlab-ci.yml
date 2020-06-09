@@ -462,8 +462,8 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-INSTANCE:
 # Release Builds
 ####################################################################
 
-release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
+release-windows-x64-Release-ICC17-VC141-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC141 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
   tags:   [win10, icc17, avx512vl]
   only:   [web, schedules]
   artifacts:
@@ -472,8 +472,8 @@ release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-VC14-ISPC1.13.0-TBB2020.2-PACKAGE-MSI:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC14 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:MSI"
+release-windows-x64-Release-ICC17-VC141-ISPC1.13.0-TBB2020.2-PACKAGE-MSI:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC141 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:MSI"
   tags:   [win10, icc17, avx512vl]
   only:   [web, schedules]
   artifacts:
