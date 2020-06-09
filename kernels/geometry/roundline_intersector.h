@@ -384,11 +384,11 @@ namespace embree
           t_sph0_back  = (-O1dO + rhs1)*rcp_dOdO;
           
           /* clip away front hit if it is inside next cone segment */
-          vbool<M> valid_sph1_front = h2 >= 0.0f & yp + t_sph0_front*dOdP < 0;
+          vbool<M> valid_sph1_front = valid & h2 >= 0.0f & yp + t_sph0_front*dOdP < 0;
           lower = select(valid_sph1_front, t_sph0_front, vfloat<M>(pos_inf));
           
           /* clip away back hit if it is inside next cone segment */
-          vbool<M> valid_sph1_back  = h2 >= 0.0f & yp + t_sph0_back*dOdP < 0;
+          vbool<M> valid_sph1_back  = valid & h2 >= 0.0f & yp + t_sph0_back*dOdP < 0;
           upper = select(valid_sph1_back, t_sph0_back,  vfloat<M>(neg_inf));
         }
         
