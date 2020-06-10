@@ -262,4 +262,4 @@ queried using `rtcGetDeviceError`.
 
 #### SEE ALSO
 
-[rtcNewGeometry, RTCCurveFlags]
+[rtcNewGeometry], [RTCCurveFlags]
