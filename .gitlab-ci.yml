@@ -48,11 +48,11 @@ continuous-linux-x64-Debug-CLANG5.0.0-ISPC1.13.0-AVX2-INT-ADDRSANITIZER:
   tags:   [docker]
   only:   [pushes]
 
-#continuous-ubuntu17.10-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB-NAMESPACE:
-#  image: embreedocker/ubuntu:17.10
-#  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree"
-#  tags:   [docker]
-#  only:   [pushes]
+continuous-ubuntu20.04-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB-NAMESPACE:
+  image: embreedocker/ubuntu:20.04
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree"
+  tags:   [docker]
+  only:   [pushes]
 
 continuous-centos7.4-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
   image: embreedocker/centos:7.4
@@ -274,6 +274,12 @@ nightly-linux-x64-Debug-ICC2020.1-ISPC1.13.0-AVX2-TBB2019.9:
 
 # Testing on different Linux distributions
 
+nightly-ubuntu20.04-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
+  image: embreedocker/ubuntu:20.04
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB intensity:3"
+  tags:   [docker]
+  only:   [schedules]
+  
 #nightly-ubuntu17.10-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
 #  image: embreedocker/ubuntu:17.10
 #  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB intensity:3"
