@@ -1569,10 +1569,9 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      //if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE) // FIXME: not supported yet
-      //  hmesh->type = RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE;
-      //else
-      if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE)
+      if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
+        hmesh->type = RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE;
+      else if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE)
         hmesh->type = RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE;
       else if (hmesh->type == RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE)
         hmesh->type = RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE;
@@ -1594,10 +1593,9 @@ namespace embree
     }
     else if (Ref<SceneGraph::HairSetNode> hmesh = node.dynamicCast<SceneGraph::HairSetNode>()) 
     {
-      //if (hmesh->type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) // FIXME: not supported yet
-      //  hmesh->type = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;
-      //else
-      if (hmesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE)
+      if (hmesh->type == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE)
+        hmesh->type = RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE;
+      else if (hmesh->type == RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE)
         hmesh->type = RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE;
       else if (hmesh->type == RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE)
         hmesh->type = RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE;
