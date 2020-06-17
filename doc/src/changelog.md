@@ -4,6 +4,7 @@ Version History
 ### Embree 3.11.0
 -   Implemented the min-width feature for curves and points, which allows to increase the
     radius in a distance dependent way, such that the curve or points thickness is n pixels wide.
+-   Round linear curves are closed now also at their start.
 -   Embree no longer supports Visual Studio 2013 starting with this release.
 -   Bugfix in subdivision tessellation level assignment for non-quad base primitives
 -   Small meshes are directly added to top level build phase of two-level builder to reduce memory consumption.

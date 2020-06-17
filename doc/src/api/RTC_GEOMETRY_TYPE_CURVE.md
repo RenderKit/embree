@@ -217,14 +217,15 @@ In the `RTC_GEOMETRY_TYPE_ROUND_*` round mode, a real geometric
 surface is rendered for the curve, which is more expensive but allows
 closeup views.
 
-For the linear basis the round mode renders an end sphere for a
-segment and a cone that tangentially touches that ending sphere (and
-an imaginary start sphere). The geometry clips away parts of the
-end spheres that lies inside the neighboring segments, thus the curve
-interiour will also render properly as long as only neighboring
-segments penetrate into a segment. For this to work properly it is
-important that the flags buffer is properly populated with neighbor
-information.
+For the linear basis the round mode renders a cone that tangentially
+touches a start-sphere and end-sphere. The start sphere is rendered
+when no previous segments is indicated by the neighbor bits. The end
+sphere is always rendered but parts that lie inside the next segment
+are clipped away (if that next segment exists). This way a curve is
+closed on both ends and the interiour will render properly as long as
+only neighboring segments penetrate into a segment. For this to work
+properly it is important that the flags buffer is properly populated
+with neighbor information.
 
 For the cubic polynomial bases, the round mode renders a sweep surface
 by sweeping a varying radius circle tangential along the curve. As a
