@@ -31,43 +31,49 @@ continuous-macosx-x64-Debug-CLANG-ISPC1.13.0-SSE2-TBB2020.2:
   only:   [pushes]
 
 continuous-linux-avx512vl-x64-Debug-ICC2019.4-ISPC1.12.0-AVX512SKX-TBB2019.9:
-  image: embreedocker/fedora:27
+  image: $DOCKER_REGISTRY/embree/fedora:27
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.12.0 isa:AVX512SKX tasking:TBB2019.9 intensity:2 maxinstancelevelcount:4"
   tags:   [docker, avx512vl]
   only:   [pushes]
 
 continuous-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512SKX-TBB2020.2:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2020.2 GLFW:OFF intensity:2"
   tags:   [docker, avx512vl]
   only:   [pushes]
 
 continuous-linux-x64-Debug-CLANG5.0.0-ISPC1.13.0-AVX2-INT-ADDRSANITIZER:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG5.0.0 ispc:ispc1.13.0 isa:AVX tasking:INT intensity:1 addrsanitizer:ON"
   tags:   [docker]
   only:   [pushes]
 
+continuous-ubuntu20.04-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB-NAMESPACE:
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree"
+  tags:   [docker]
+  only:   [pushes]
+
 #continuous-ubuntu17.10-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB-NAMESPACE:
-#  image: embreedocker/ubuntu:17.10
+#  image: $DOCKER_REGISTRY/embree/ubuntu:17.10
 #  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree"
 #  tags:   [docker]
 #  only:   [pushes]
 
 continuous-centos7.4-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:1"
   tags:   [docker]
   only:   [pushes]
 
 continuous-fedora32-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
-  image: embreedocker/fedora:32
+  image: $DOCKER_REGISTRY/embree/fedora:32
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX512SKX tasking:TBB COMPACT_POLYS:ON MIN_WIDTH:ON intensity:2"
   tags:   [docker, avx512vl]
   only:   [pushes]
 
 continuous-linux-x64-Debug-GCC-ISPC1.13.0-SSE2-TBB-KLOCKWORK:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:SSE2 tasking:TBB klocwork:ON intensity:0"
   tags:   [docker]
   only:   [pushes]
@@ -171,37 +177,37 @@ nightly-macosx-x64-Debug-ICC2020.1-ISPC1.13.0-AVX2-TBB2019.9:
 # CLANG compilation and testing of different ISAs
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.12.0-SSE2-TBB-NAMESPACE:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2019.9 intensity:4 api_namespace:myembree maxinstancelevelcount:8"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX-TBB2019.9-VALGRIND:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX tasking:TBB2019.9 intensity:4 memcheck:ON"
   tags:   [docker] # avx
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG5.0.0-ISPC1.13.0-AVX2-INT-ADDRSANITIZER:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG5.0.0 ispc:ispc1.13.0 isa:AVX tasking:INT intensity:2 addrsanitizer:ON"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-STATIC:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:4 STATIC_LIB:ON"
   tags:   [docker] # avx2
   only:   [schedules]
 
 nightly-linux-knl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512KNL-TBB2019.9:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512KNL tasking:TBB2019.9 intensity:3 GLFW:OFF"
   tags:   [docker-knl]
   only:   [schedules]
   
 nightly-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512SKX-TBB2020.2:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2020.2 intensity:3"
   tags:   [docker, avx512vl]
   only:   [schedules]
@@ -210,19 +216,19 @@ nightly-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512SKX-TBB2020.2:
 # GCC compilation and testing of different ISAs
 
 nightly-linux-x64-Debug-GCC-ISPC1.13.0-SSE2-TBB2020.2:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:SSE2 tasking:TBB2020.2 intensity:4"
   tags:   [docker]         
   only:   [schedules]
 
 nightly-linux-x64-Debug-GCC-ISPC1.13.0-AVX-TBB2019.9:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX tasking:TBB2019.9 intensity:4"
   tags:   [docker] # avx
   only:   [schedules]
 
 nightly-linux-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB2020.2:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:4"
   tags:   [docker] # avx2
   only:   [schedules]
@@ -231,99 +237,99 @@ nightly-linux-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB2020.2:
 # ICC compilation and testing of different ISAs
 
 nightly-linux-x64-Debug-ICC2015.3-ISPC1.13.0-SSE2-TBB2019.2:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2015.3 ispc:ispc1.13.0 isa:SSE2 tasking:TBB2019.2 intensity:4"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-ICC2016.3-ISPC1.13.0-AVX-TBB2019.2:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2016.3 ispc:ispc1.13.0 isa:AVX tasking:TBB2019.2 intensity:4"
   tags:   [docker] # avx
   only:   [schedules]
 
 nightly-linux-knl-x64-Debug-ICC2017.1-ISPC1.13.0-AVX512KNL-TBB2019.2:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2017.1 ispc:ispc1.13.0 isa:AVX512KNL tasking:TBB2019.2 intensity:3"
   tags:   [docker-knl]
   only:   [schedules]
 
 nightly-linux-avx512vl-x64-Debug-ICC2017.1-ISPC1.13.0-AVX512SKX-TBB2019.2:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2017.1 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2019.2 intensity:4"
   tags:   [docker, avx512vl]
   only:   [schedules]
 
 nightly-linux-avx512vl-x64-Debug-ICC2018.0-ISPC1.13.0-AVX512SKX-TBB2019.9:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2018.0 ispc:ispc1.13.0 isa:AVX512SKX tasking:TBB2019.9 intensity:4"
   tags:   [docker, avx512vl]
   only:   [schedules]
 
 nightly-linux-x64-Debug-ICC2019.4-ISPC1.13.0-AVX2-TBB2020.2:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 intensity:4"
   tags:   [docker] # avx2
   only:   [schedules]
 
 nightly-linux-x64-Debug-ICC2020.1-ISPC1.13.0-AVX2-TBB2019.9:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 intensity:4"
   tags:   [docker] # avx2
   only:   [schedules]
 
 # Testing on different Linux distributions
 
-#nightly-ubuntu17.10-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
-#  image: embreedocker/ubuntu:17.10
-#  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB intensity:3"
-#  tags:   [docker]
-#  only:   [schedules]
-
+nightly-ubuntu20.04-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB intensity:3"
+  tags:   [docker]
+  only:   [schedules]
+  
 nightly-ubuntu16.04-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
-  image: embreedocker/ubuntu:16.04
+  image: $DOCKER_REGISTRY/embree/ubuntu:16.04
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB MIN_WIDTH:ON intensity:3"
   tags:   [docker]
   only:   [schedules]
 
 nightly-centos7.4-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB COMPACT_POLYS:ON intensity:3"
   tags:   [docker]
   only:   [schedules]
 
 #nightly-centos7.0-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
-#  image: embreedocker/centos:7.0
+#  image: $DOCKER_REGISTRY/embree/centos:7.0
 #  script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:AVX2 tasking:TBB intensity:3"
 #  tags:   [docker]
 #  only:   [schedules]
 
 nightly-fedora32-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
-  image: embreedocker/fedora:32
+  image: $DOCKER_REGISTRY/embree/fedora:32
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isas:AVX512SKX tasking:TBB intensity:3"
   tags:   [docker, avx512vl]
   only:   [schedules]
 
 nightly-fedora28-x64-Debug-GCC-ISPC-AVX512SKX-TBB:
-  image: embreedocker/fedora:28
+  image: $DOCKER_REGISTRY/embree/fedora:28
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB intensity:3"
   tags:   [docker, avx512vl]
   only:   [schedules]
   
 nightly-fedora27-x64-Debug-GCC-ISPC-AVX2-TBB:
-  image: embreedocker/fedora:27
+  image: $DOCKER_REGISTRY/embree/fedora:27
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX2 tasking:TBB intensity:3"
   tags:   [docker]
   only:   [schedules]
 
 nightly-fedora26-x64-Debug-GCC-ISPC-AVX2-TBB:
-  image: embreedocker/fedora:26
+  image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX2 tasking:TBB intensity:3"
   tags:   [docker]
   only:   [schedules]
   
 nightly-fedora25-x64-Debug-GCC-ISPC-AVX2-TBB:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX2 tasking:TBB intensity:3"
   tags:   [docker]
   only:   [schedules]
@@ -332,49 +338,49 @@ nightly-fedora25-x64-Debug-GCC-ISPC-AVX2-TBB:
 # Compilation test of disabled features
 
 nightly-linux-x64-Debug-CLANG4.0.0-AVX2-TBB2019.9-NO-ISPC:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 ISPC_SUPPORT:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-NO-TUTORIALS:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TUTORIALS:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-BACKFACECULLING:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 BACKFACE_CULLING:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-IGNORE-INVALID-RAYS:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 IGNORE_INVALID_RAYS:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-NO-FILTER-FUNCTION:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 FILTER_FUNCTION:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-RAYMASKS:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 RAY_MASK:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-NO-PACKETS:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 RAY_PACKETS:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-STATCOUNTER:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 STAT_COUNTER:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
@@ -383,31 +389,31 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-STATCOUNTER:
 # Compilation test of individual ISAs
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-SSE2-TBB2019.9:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:SSE2 tasking:TBB2019.9 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-SSE42-TBB2020.2:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:SSE42 tasking:TBB2020.2 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-AVX-TBB2019.9:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:AVX tasking:TBB2019.9 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-AVX2-TBB2020.2:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:AVX2 tasking:TBB2020.2 intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-AVX512SKX-TBB2019.9:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isas:AVX512SKX tasking:TBB2019.9 intensity:0"
   tags:   [docker]
   only:   [schedules]
@@ -416,43 +422,43 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-ISAS-AVX512SKX-TBB2019.9:
 # Compilation test of individual primitive types enabled
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-TRI:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-QUAD:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 TRI:OFF QUAD:ON GRID:OFF CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-GRID:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TRI:OFF QUAD:OFF GRID:ON CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-CURVE:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 TRI:ON QUAD:OFF GRID:OFF CURVE:ON SUBDIV:OFF USERGEOM:OFF INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-SUBDIV:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:ON USERGEOM:OFF INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2019.9-USERGEOM:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2019.9 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:OFF USERGEOM:ON INSTANCE:OFF intensity:0"
   tags:   [docker]
   only:   [schedules]
 
 nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-INSTANCE:
-  image: embreedocker/fedora:25
+  image: $DOCKER_REGISTRY/embree/fedora:25
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX2 tasking:TBB2020.2 TRI:ON QUAD:OFF GRID:OFF CURVE:OFF SUBDIV:OFF USERGEOM:OFF INSTANCE:ON intensity:0"
   tags:   [docker]
   only:   [schedules]
@@ -462,8 +468,8 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-INSTANCE:
 # Release Builds
 ####################################################################
 
-release-windows-x64-Release-ICC17-VC141-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC141 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
+release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC19-VC141 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
   tags:   [win10, icc17, avx512vl]
   only:   [web, schedules]
   artifacts:
@@ -472,8 +478,8 @@ release-windows-x64-Release-ICC17-VC141-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
-release-windows-x64-Release-ICC17-VC141-ISPC1.13.0-TBB2020.2-PACKAGE-MSI:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC17-VC141 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:MSI"
+release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2020.2-PACKAGE-MSI:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:ICC19-VC141 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:MSI"
   tags:   [win10, icc17, avx512vl]
   only:   [web, schedules]
   artifacts:
@@ -503,7 +509,7 @@ release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG:
     expire_in: 2 mos
 
 release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2020.2-PACKAGE-ZIP:
-  image: embreedocker/centos:7.4
+  image: $DOCKER_REGISTRY/embree/centos:7.4
   script:
     - "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512SKX tasking:TBB2020.2 intensity:4 package:ZIP"
     - tar xzf build/embree-*.x86_64.linux.tar.gz
