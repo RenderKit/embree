@@ -14,5 +14,4 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-#include "common/common_tests.cpp"
-#include "geometry/geometry_tests.cpp"
+#include "scene_line_segments_tests.cpp"
