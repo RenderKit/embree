@@ -2,6 +2,9 @@ Version History
 ---------------
 
 ### Embree 3.11.0
+-   Round linear curves now automatically check for the existence of left and right
+    connected segments if the flags buffer is empty.  Left segments exist if the 
+    segment(id-1) + 1 == segment(id) and similarly for right segments.
 -   Implemented the min-width feature for curves and points, which allows to increase the
     radius in a distance dependent way, such that the curve or points thickness is n pixels wide.
 -   Round linear curves are closed now also at their start.
