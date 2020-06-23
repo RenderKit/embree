@@ -48,18 +48,14 @@ namespace embree
 
     /*! returns the segment to the left of the i'th segment */
     __forceinline bool segmentLeftExists(size_t i) const {
-      if (flags.size() != 0) {
-        return (flags[i] & RTC_CURVE_FLAG_NEIGHBOR_LEFT) != 0;
-      }
-      return (i>0) ? segment(i) == segment(i-1)+1 : false;
+      assert (flags);
+      return (flags[i] & RTC_CURVE_FLAG_NEIGHBOR_LEFT) != 0;
     }
 
     /*! returns the segment to the right of the i'th segment */
     __forceinline bool segmentRightExists(size_t i) const {
-      if (flags.size() != 0) {
-        return (flags[i] & RTC_CURVE_FLAG_NEIGHBOR_RIGHT) != 0;
-      }
-      return (i<segments.size()-1) ? segment(i) == segment(i+1)-1 : false;
+      assert (flags);
+      return (flags[i] & RTC_CURVE_FLAG_NEIGHBOR_RIGHT) != 0;
     }
 
      /*! returns i'th vertex of the first time step */
