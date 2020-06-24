@@ -207,7 +207,7 @@ namespace embree
     bool recompute_flags_buffer = segments.isLocalModified();
 
     /* resize flags buffer if number of primitives changed */
-    if (!flags.userData && flags.size() != numPrimitives)
+    if (!flags.userData && (!flags.buffer || flags.size() != numPrimitives))
     {
       Ref<Buffer> buffer = new Buffer(device, numPrimitives*sizeof(char));
       flags.set(buffer, 0, sizeof(char), numPrimitives, RTC_FORMAT_UCHAR);
