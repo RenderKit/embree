@@ -225,7 +225,7 @@ namespace embree
       }
     }
     segments.clearLocalModified();
-    
+
     Geometry::commit();
   }
   
