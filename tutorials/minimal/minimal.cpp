@@ -170,7 +170,7 @@ void castRay(RTCScene scene,
   rayhit.ray.dir_z = dz;
   rayhit.ray.tnear = 0;
   rayhit.ray.tfar = std::numeric_limits<float>::infinity();
-  rayhit.ray.mask = 0;
+  rayhit.ray.mask = -1;
   rayhit.ray.flags = 0;
   rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
   rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
