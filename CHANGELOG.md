@@ -1,12 +1,21 @@
 Version History
 ---------------
 
-### Embree 3.10.1
+### Embree 3.11.0
+
+-   Round linear curves now automatically check for the existence of left and right
+    connected segments if the flags buffer is empty.  Left segments exist if the
+    segment(id-1) + 1 == segment(id) and similarly for right segments.
+-   Implemented the min-width feature for curves and points, which allows to increase the
+    radius in a distance dependent way, such that the curve or points thickness is n pixels wide.
+-   Round linear curves are closed now also at their start.
 -   Embree no longer supports Visual Studio 2013 starting with this release.
 -   Bugfix in subdivision tessellation level assignment for non-quad base primitives
--   Small meshes now directly added to top level of two-level builder
+-   Small meshes are directly added to top level build phase of two-level builder to reduce memory consumption.
+-   Enabled fast two level builder for user geometries when low quality build is requested.
 
 ### Embree 3.10.0
+
 -   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
     leaves to reduce memory consumption in compact mode by an additional 40% at about
     15% performance impact. This new mode is disabled by default.

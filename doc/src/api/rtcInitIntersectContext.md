@@ -20,14 +20,15 @@
       enum RTCIntersectContextFlags flags;
       RTCFilterFunctionN filter;
       
-#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
-      unsigned int instStackSize;
-#endif
+      #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+        unsigned int instStackSize;
+      #endif
+      
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
 
-#if RTC_MIN_WIDTH
-      float minWidthDistanceFactor;
-#endif
+      #if RTC_MIN_WIDTH
+        float minWidthDistanceFactor;
+      #endif
     };
 
     void rtcInitIntersectContext(

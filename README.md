@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.10.0
+% Embree: High Performance Ray Tracing Kernels 3.11.0
 % Intel Corporation
 
 Embree Overview
@@ -80,9 +80,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.10.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x64.vc12.msi). This
+[embree-3.11.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x64.vc12.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.10.0 x64`.
+Files\Intel\Embree v3.11.0 x64`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -90,20 +90,20 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.10.0 x64`.
+Files\Intel\Embree v3.11.0 x64`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.10.0 x64` and uninstall it.
+3.11.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2013
-[embree-3.10.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x64.vc12.windows.zip)
+[embree-3.11.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x64.vc12.windows.zip)
 and Visual Studio 2015
-[embree-3.10.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x64.vc14.windows.zip)
+[embree-3.11.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x64.vc14.windows.zip)
 are provided as a ZIP file. After unpacking this ZIP file, you should
 set the path to the `lib` folder manually to your `PATH` environment
 variable for applications to find Embree. To compile applications with
@@ -117,12 +117,12 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.10.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.11.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.10.0.x86_64.linux.tar.gz
-    source embree-3.10.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.11.0.x86_64.linux.tar.gz
+    source embree-3.11.0.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -135,7 +135,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.10.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x86_64.pkg). This
+[embree-3.11.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -157,12 +157,12 @@ macOS tar.gz file
 -----------------
 
 The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.10.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.10.0/embree-3.10.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
+[embree-3.11.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the
 C shell) to set up the environment properly:
 
-    tar xzf embree-3.10.0.x64.macosx.tar.gz
-    source embree-3.10.0.x64.macosx/embree-vars.sh
+    tar xzf embree-3.11.0.x64.macosx.tar.gz
+    source embree-3.11.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided `tar.gz` file. The library name of that Embree
@@ -301,7 +301,6 @@ Embree is tested using the following compilers under Windows:
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update 1)
-  - Visual Studio 2013 (Update 5)
   - Intel® Compiler 2019 Update 6
   - Intel® Compiler 2017 Update 8
   - LLVM Clang 9.0.0
@@ -324,17 +323,15 @@ found when executing your Embree applications, e.g. by putting the path
 to these libraries into your `PATH` environment variable.
 
 Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
-straightforward parallelization of an entire renderer. When
-installing ISPC, make sure to download an ISPC version from
+straightforward parallelization of an entire renderer. When installing
+ISPC, make sure to download an ISPC version from
 [ispc.github.io](https://ispc.github.io/downloads.html) that is
-compatible with your Visual Studio version. There are two ISPC
-versions, one for Visual Studio 2013 and earlier, and one for Visual
-Studio 2015 and later. When using the wrong ISPC version you will get
-link errors. After installation, put the path to `ispc.exe`
-permanently into your `PATH` environment variable or you need to
-correctly set the `ISPC_EXECUTABLE` variable during CMake
-configuration. We have tested ISPC version 1.9.1. If you do not want
-to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in CMake.
+compatible with your Visual Studio version. After installation, put
+the path to `ispc.exe` permanently into your `PATH` environment
+variable or you need to correctly set the `ISPC_EXECUTABLE` variable
+during CMake configuration. We have tested ISPC version 1.9.1. If you
+do not want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
+CMake.
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.11 or higher). Note that you need a native Windows CMake
@@ -533,6 +530,10 @@ parameters that can be configured in CMake:
   curve_radius*`EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR` to
   the ray origin are ignored. A value of 0.0f disables self
   intersection avoidance while 2.0f is the default value.
+
++ `EMBREE_MIN_WIDTH`: Enabled the min-width feature, which allows
+  increasing the radius of curves and points to match some amount of
+  pixels. See [rtcSetGeometryMaxRadiusScale] for more details.
 
 + `EMBREE_MAX_INSTANCE_LEVEL_COUNT`: Specifies the maximum number of nested
   instance levels. Should be greater than 0; the default value is 1.
@@ -2169,8 +2170,8 @@ for the specified scene (`scene` argument). Possible scene flags are:
     neighboring primitives.
 
 -   `RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION`: Enables support for a
-    filter function inside the intersection context. See Section
-    [rtcInitIntersectContext] for more details.
+    filter function inside the intersection context for this scene. See
+    Section [rtcInitIntersectContext] for more details.
 
 Multiple flags can be enabled using an `or` operation, e.g.
 `RTC_SCENE_FLAG_COMPACT | RTC_SCENE_FLAG_ROBUST`.
@@ -2942,11 +2943,14 @@ start and the second control point the end of the line segment. When
 constructing hair strands in this basis, the end-point can be shared
 with the start of the next line segment.
 
-For the linear basis the user has to additionally provide a flags
-buffer of type `RTC_BUFFER_TYPE_FLAGS` which contains bytes that encode
-if the left neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_LEFT` flag)
-and/or right neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_RIGHT` flags)
-exist (see [RTCCurveFlags]).
+For the linear basis the user optionally can provide a flags buffer of
+type `RTC_BUFFER_TYPE_FLAGS` which contains bytes that encode if the
+left neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_LEFT` flag) and/or
+right neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_RIGHT` flags) exist
+(see [RTCCurveFlags]). If this buffer is not set, than the left/right
+neighbor bits are automatically calculated base on the index buffer
+(left segment exists if segment(id-1)+1 == segment(id) and right
+segment exists if segment(id+1)-1 == segment(id)).
 
 A left neighbor segment is assumed to end at the start vertex of the
 current segement, and to start at the previous vertex in the vertex
@@ -3043,14 +3047,15 @@ In the `RTC_GEOMETRY_TYPE_ROUND_*` round mode, a real geometric surface
 is rendered for the curve, which is more expensive but allows closeup
 views.
 
-For the linear basis the round mode renders an end sphere for a segment
-and a cone that tangentially touches that ending sphere (and an
-imaginary start sphere). The geometry clips away parts of the end
-spheres that lies inside the neighboring segments, thus the curve
-interiour will also render properly as long as only neighboring
-segments penetrate into a segment. For this to work properly it is
-important that the flags buffer is properly populated with neighbor
-information.
+For the linear basis the round mode renders a cone that tangentially
+touches a start-sphere and end-sphere. The start sphere is rendered
+when no previous segments is indicated by the neighbor bits. The end
+sphere is always rendered but parts that lie inside the next segment
+are clipped away (if that next segment exists). This way a curve is
+closed on both ends and the interiour will render properly as long as
+only neighboring segments penetrate into a segment. For this to work
+properly it is important that the flags buffer is properly populated
+with neighbor information.
 
 For the cubic polynomial bases, the round mode renders a sweep surface
 by sweeping a varying radius circle tangential along the curve. As a
@@ -3088,7 +3093,7 @@ queried using `rtcGetDeviceError`.
 
 #### SEE ALSO {#see-also}
 
-[rtcNewGeometry, RTCCurveFlags]
+[rtcNewGeometry], [RTCCurveFlags]
 
 
 
@@ -3320,7 +3325,7 @@ RTC\_CURVE\_FLAG\_NEIGHBOR\_RIGHT = (1 &lt;&lt; 1) };
 #### DESCRIPTION {#description}
 
 The RTCCurveFlags type is used for linear curves to determine if the
-left and/or right neighbor segment exist. Therefore one attached a
+left and/or right neighbor segment exist. Therefore one attaches a
 buffer of type RTC\_BUFFER\_TYPE\_FLAGS to the curve geometry which
 stores an individual byte per curve segment.
 
@@ -3912,6 +3917,166 @@ On failure an error code is set that can be queried using
 #### SEE ALSO {#see-also}
 
 [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer]
+
+
+
+RTCFormat
+---------
+
+#### NAME {#name}
+
+    RTCFormat - specifies format of data in buffers
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree3/rtcore_ray.h>
+
+    enum RTCFormat
+    {
+      RTC_FORMAT_UINT,
+      RTC_FORMAT_UINT2,
+      RTC_FORMAT_UINT3,
+      RTC_FORMAT_UINT4,
+
+      RTC_FORMAT_FLOAT,
+      RTC_FORMAT_FLOAT2,
+      RTC_FORMAT_FLOAT3,
+      RTC_FORMAT_FLOAT4,
+      RTC_FORMAT_FLOAT5,
+      RTC_FORMAT_FLOAT6,
+      RTC_FORMAT_FLOAT7,
+      RTC_FORMAT_FLOAT8,
+      RTC_FORMAT_FLOAT9,
+      RTC_FORMAT_FLOAT10,
+      RTC_FORMAT_FLOAT11,
+      RTC_FORMAT_FLOAT12,
+      RTC_FORMAT_FLOAT13,
+      RTC_FORMAT_FLOAT14,
+      RTC_FORMAT_FLOAT15,
+      RTC_FORMAT_FLOAT16,
+
+      RTC_FORMAT_FLOAT3X4_ROW_MAJOR,
+      RTC_FORMAT_FLOAT4X4_ROW_MAJOR,
+
+      RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,
+      RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
+
+      RTC_FORMAT_GRID,
+
+};
+
+#### DESCRIPTION {#description}
+
+The `RTFormat` structure defines the data format stored in data buffers
+provided to Embree using the [rtcSetGeometryBuffer],
+[rtcSetSharedGeometryBuffer], and [rtcSetNewGeometryBuffer] API
+calls.
+
+The `RTC_FORMAT_UINT/2/3/4` format are used to specify that data
+buffers store unsigned integers, or unsigned integer vectors of size
+2,3 or 4. This format has typically to get used when specifying index
+buffers, e.g. `RTC_FORMAT_UINT3` for triangle meshes.
+
+The `RTC_FORMAT_FLOAT/2/3/4...` format are used to specify that data
+buffers store single precision floating point values, or vectors there
+of (size 2,3,4, etc.). This format is typcally used to specify to
+format of vertex buffers, e.g. the `RTC_FORMAT_FLOAT3` type for vertex
+buffers of triangle meshes.
+
+The `RTC_FORMAT_FLOAT3X4_ROW_MAJOR` and
+`RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR` formats, specify a 3x4 floating
+point matrix layed out either row major or column major. The
+`RTC_FORMAT_FLOAT4X4_ROW_MAJOR` and `RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR`
+formats, specify a 4x4 floating point matrix layed out either row major
+or column major. These matrix formats are used in the
+[rtcSetGeometryTransform] function in order to set a transformation
+matrix for geometries.
+
+The `RTC_FORMAT_GRID` is a special data format used to specify grid
+primitives of layout RTCGrid when creating grid geometries (see
+[RTC\_GEOMETRY\_TYPE\_GRID]).
+
+#### EXIT STATUS {#exit-status}
+
+#### SEE ALSO {#see-also}
+
+[rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
+[rtcSetNewGeometryBuffer], [rtcSetGeometryTransform]
+
+
+
+RTCBufferType
+-------------
+
+#### NAME {#name}
+
+    RTCFormat - specifies format of data in buffers
+
+#### SYNOPSIS {#synopsis}
+
+    #include <embree3/rtcore_ray.h>
+
+    enum RTCBufferType
+    {
+      RTC_BUFFER_TYPE_INDEX            = 0,
+      RTC_BUFFER_TYPE_VERTEX           = 1,
+      RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE = 2,
+      RTC_BUFFER_TYPE_NORMAL           = 3,
+      RTC_BUFFER_TYPE_TANGENT          = 4,
+      RTC_BUFFER_TYPE_NORMAL_DERIVATIVE = 5,
+
+      RTC_BUFFER_TYPE_GRID                 = 8,
+
+      RTC_BUFFER_TYPE_FACE                 = 16,
+      RTC_BUFFER_TYPE_LEVEL                = 17,
+      RTC_BUFFER_TYPE_EDGE_CREASE_INDEX    = 18,
+      RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT   = 19,
+      RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX  = 20,
+      RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT = 21,
+      RTC_BUFFER_TYPE_HOLE                 = 22,
+
+      RTC_BUFFER_TYPE_FLAGS = 32
+    };
+
+#### DESCRIPTION {#description}
+
+The `RTBufferType` structure defines slots to assign data buffers to
+using the [rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer], and
+[rtcSetNewGeometryBuffer] API calls.
+
+For most geometry types the `RTC_BUFFER_TYPE_INDEX` slot is used to
+assign an index buffer, while the `RTC_BUFFER_TYPE_VERTEX` is used to
+assign the corresponding vertex buffer.
+
+The `RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE` slot can get used to assign
+arbitrary additional vertex data which can get interpolated using the
+[rtcInterpolate] API call.
+
+The `RTC_BUFFER_TYPE_NORMAL`, `RTC_BUFFER_TYPE_TANGENT`, and
+`RTC_BUFFER_TYPE_NORMAL_DERIVATIVE` are special buffers required to
+assign per vertex normals, tangents, and normal derivatives for some
+curve types.
+
+The `RTC_BUFFER_TYPE_GRID` buffer is used to assign the grid primitive
+buffer for grid geometries (see [RTC\_GEOMETRY\_TYPE\_GRID]).
+
+The `RTC_BUFFER_TYPE_FACE`, `RTC_BUFFER_TYPE_LEVEL`,
+`RTC_BUFFER_TYPE_EDGE_CREASE_INDEX`,
+`RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT`,
+`RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX`,
+`RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT`, and `RTC_BUFFER_TYPE_HOLE` are
+special buffers required to create subdivision meshes (see
+[RTC\_GEOMETRY\_TYPE\_SUBDIVISION]).
+
+The `RTC_BUFFER_TYPE_FLAGS` can get used to add additional flag per
+primitive of a geometry, and is currently only used for linear curves.
+
+#### EXIT STATUS {#exit-status}
+
+#### SEE ALSO {#see-also}
+
+[rtcSetGeometryBuffer], [rtcSetSharedGeometryBuffer],
+[rtcSetNewGeometryBuffer]
 
 
 
@@ -6083,10 +6248,16 @@ rtcInitIntersectContext
     {
       enum RTCIntersectContextFlags flags;
       RTCFilterFunctionN filter;
+      
       #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
-      unsigned int instStackSize;
+        unsigned int instStackSize;
       #endif
+      
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
+
+      #if RTC_MIN_WIDTH
+        float minWidthDistanceFactor;
+      #endif
     };
 
     void rtcInitIntersectContext(
@@ -6129,7 +6300,14 @@ such a per ray-query filter function can be useful to implement
 modifications of the behavior of the query, such as collecting all hits
 or accumulating transparencies. The support for the context filter
 function must be enabled for a scene by using the
-`RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION` scene flag.
+`RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION` scene flag. In case of
+instancing this feature has to get enabled also for each instantiated
+scene.
+
+The minWidthDistanceFactor value controls the target size of the curve
+radii when the min-width feature is enabled. Please see the
+[rtcSetGeometryMaxRadiusScale] function for more details on the
+min-width feature.
 
 It is guaranteed that the pointer to the intersection context passed to
 a ray query is directly passed to the registered callback functions.

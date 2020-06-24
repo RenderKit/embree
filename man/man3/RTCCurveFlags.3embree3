@@ -23,7 +23,7 @@ RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1) };
 .PP
 The RTCCurveFlags type is used for linear curves to determine if the
 left and/or right neighbor segment exist.
-Therefore one attached a buffer of type RTC_BUFFER_TYPE_FLAGS to the
+Therefore one attaches a buffer of type RTC_BUFFER_TYPE_FLAGS to the
 curve geometry which stores an individual byte per curve segment.
 .PP
 If the RTC_CURVE_FLAG_NEIGHBOR_LEFT flag in that byte is enabled for a
