@@ -203,18 +203,14 @@ namespace embree
 
     if (flags.size()==0)
     {
-      if (gtype == GTY_FLAT_LINEAR_CURVE ||
-          gtype == GTY_ROUND_LINEAR_CURVE)
-      {
-        Ref<Buffer> buffer = new Buffer(device, numPrimitives*sizeof(char));
-        flags.set(buffer, 0, sizeof(char), numPrimitives, RTC_FORMAT_UCHAR);
-        bool hasLeft = false;
-        for (size_t i=0; i<numPrimitives; i++) {
-          bool hasRight = (i==numPrimitives-1) ? false : segment(i+1) == segment(i)+1;
-          flags[i] |= hasLeft  * RTC_CURVE_FLAG_NEIGHBOR_LEFT;
-          flags[i] |= hasRight * RTC_CURVE_FLAG_NEIGHBOR_RIGHT;
-          hasLeft = hasRight;
-        }
+      Ref<Buffer> buffer = new Buffer(device, numPrimitives*sizeof(char));
+      flags.set(buffer, 0, sizeof(char), numPrimitives, RTC_FORMAT_UCHAR);
+      bool hasLeft = false;
+      for (size_t i=0; i<numPrimitives; i++) {
+        bool hasRight = (i==numPrimitives-1) ? false : segment(i+1) == segment(i)+1;
+        flags[i] |= hasLeft  * RTC_CURVE_FLAG_NEIGHBOR_LEFT;
+        flags[i] |= hasRight * RTC_CURVE_FLAG_NEIGHBOR_RIGHT;
+        hasLeft = hasRight;
       }
     }
         
