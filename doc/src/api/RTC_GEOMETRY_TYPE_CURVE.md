@@ -115,11 +115,14 @@ start and the second control point the end of the line segment. When
 constructing hair strands in this basis, the end-point can be shared
 with the start of the next line segment.
 
-For the linear basis the user has to additionally provide a flags
-buffer of type `RTC_BUFFER_TYPE_FLAGS` which contains bytes that
-encode if the left neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_LEFT`
-flag) and/or right neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_RIGHT`
-flags) exist (see [RTCCurveFlags]).
+For the linear basis the user optionally can provide a flags buffer of
+type `RTC_BUFFER_TYPE_FLAGS` which contains bytes that encode if the
+left neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_LEFT` flag) and/or
+right neighbor segment (`RTC_CURVE_FLAG_NEIGHBOR_RIGHT` flags) exist
+(see [RTCCurveFlags]). If this buffer is not set, than the left/right
+neighbor bits are automatically calculated base on the index buffer
+(left segment exists if segment(id-1)+1 == segment(id) and right
+segment exists if segment(id+1)-1 == segment(id)).
 
 A left neighbor segment is assumed to end at the start vertex of the
 current segement, and to start at the previous vertex in the vertex
