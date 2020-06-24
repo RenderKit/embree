@@ -252,7 +252,7 @@ namespace embree
   }
   
   ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in)
-    : geom(CURVES), normals(nullptr), tangents(nullptr), dnormals(nullptr), type(type)
+    : geom(CURVES), normals(nullptr), tangents(nullptr), dnormals(nullptr), hairs(nullptr), flags(nullptr), type(type)
   {
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
@@ -277,7 +277,10 @@ namespace embree
     }
     
     hairs = (ISPCHair*) in->hairs.data();
-    flags = (unsigned char*)in->flags.data();
+
+    if (in->flags.size())
+      flags = (unsigned char*)in->flags.data();
+    
     startTime = in->time_range.lower;
     endTime   = in->time_range.upper;
     numTimeSteps = (unsigned) in->numTimeSteps();
@@ -533,7 +536,9 @@ namespace embree
       rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
 #endif
 
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, mesh->flags, 0, sizeof(unsigned char), mesh->numHairs);
+    if (mesh->flags) {
+      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, mesh->flags, 0, sizeof(unsigned char), mesh->numHairs);
+    }
     rtcSetGeometryUserData(geom, mesh);
     rtcCommitGeometry(geom);
 

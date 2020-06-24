@@ -203,23 +203,24 @@ namespace embree
       normals0 = normals[0];
 
     /* if no flags buffer is specified we manage and calculate the flags buffer */
-    if (!flags.buffer)
-      flags.userData = 0; // to encode that we manage this buffer
+    if (!flags.buffer) flags.userData = 0; // to encode that we manage this buffer
+    bool recompute_flags_buffer = segments.isLocalModified();
 
     /* resize flags buffer if number of primitives changed */
     if (!flags.userData && flags.size() != numPrimitives)
     {
       Ref<Buffer> buffer = new Buffer(device, numPrimitives*sizeof(char));
       flags.set(buffer, 0, sizeof(char), numPrimitives, RTC_FORMAT_UCHAR);
+      recompute_flags_buffer = true;
     }
 
     /* recalculate the flags buffer if index buffer got modified */
-    if (segments.isLocalModified())
+    if (!flags.userData && recompute_flags_buffer)
     {
       bool hasLeft = false;
       for (size_t i=0; i<numPrimitives; i++) {
         bool hasRight = (i==numPrimitives-1) ? false : segment(i+1) == segment(i)+1;
-        flags[i] |= hasLeft  * RTC_CURVE_FLAG_NEIGHBOR_LEFT;
+        flags[i]  = hasLeft  * RTC_CURVE_FLAG_NEIGHBOR_LEFT;
         flags[i] |= hasRight * RTC_CURVE_FLAG_NEIGHBOR_RIGHT;
         hasLeft = hasRight;
       }
