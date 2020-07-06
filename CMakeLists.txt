@@ -86,6 +86,11 @@ IF (BUILD_TESTING)
   INCLUDE(test)
 ENDIF()
 
+set(BUILD_DOC OFF CACHE INTERNAL "build documentation (internal only)")
+IF (BUILD_DOC)
+  ADD_SUBDIRECTORY(doc)
+ENDIF()
+
 ##############################################################
 # Embree configuration
 ##############################################################
