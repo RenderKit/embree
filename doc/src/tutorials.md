@@ -95,10 +95,12 @@ It can be compiled as both C and C++. It demonstrates how to initialize
 a device and scene, and how to intersect rays with the scene.
 There is no image output to keep the tutorial as simple as possible.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/minimal/minimal.cpp)
+
 Triangle Geometry
 -----------------
 
-![][imgTriangleGeometry]
+[![][imgTriangleGeometry]](https://github.com/embree/embree/blob/master/tutorials/triangle_geometry/triangle_geometry_device.cpp)
 
 This tutorial demonstrates the creation of a static cube and ground
 plane using triangle meshes. It also demonstrates the use of the
@@ -106,10 +108,12 @@ plane using triangle meshes. It also demonstrates the use of the
 and hard shadows. The cube sides are colored based on the ID of the hit
 primitive.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/triangle_geometry/triangle_geometry_device.cpp)
+
 Dynamic Scene
 -------------
 
-![][imgDynamicScene]
+[![][imgDynamicScene]](https://github.com/embree/embree/blob/master/tutorials/dynamic_scene/dynamic_scene_device.cpp)
 
 This tutorial demonstrates the creation of a dynamic scene, consisting
 of several deforming spheres. Half of the spheres use the
@@ -119,10 +123,12 @@ to use a refitting strategy for these spheres, the other half uses the
 performance rebuild of their spatial data structure each frame. The
 spheres are colored based on the ID of the hit sphere geometry.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/dynamic_scene/dynamic_scene_device.cpp)
+
 Multi Scene Geometry
 -------------
 
-![][imgDynamicScene]
+[![][imgDynamicScene]](https://github.com/embree/embree/blob/master/tutorials/multiscene_geometry/multiscene_geometry_device.cpp)
 
 This tutorial demonstrates the creation of multiple scenes sharing the
 same geometry objects.  Here, three scenes are built.  One with all
@@ -130,10 +136,12 @@ the dynamic spheres of the Dynamic Scene test and two others each with
 half.  The ground plane is shared by all three scenes.  The space bar
 is used to cycle the scene chosen for rendering.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/multiscene_geometry/multiscene_geometry_device.cpp)
+
 User Geometry
 -------------
 
-![][imgUserGeometry]
+[![][imgUserGeometry]](https://github.com/embree/embree/blob/master/tutorials/user_geometry/user_geometry_device.cpp)
 
 This tutorial shows the use of user-defined geometry, to re-implement
 instancing, and to add analytic spheres. A two-level scene is created,
@@ -143,10 +151,12 @@ The spheres are colored using the instance ID and geometry ID of the hit
 sphere, to demonstrate how the same geometry instanced in different
 ways can be distinguished.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/user_geometry/user_geometry_device.cpp)
+
 Viewer
 ------
 
-![][imgViewer]
+[![][imgViewer]](https://github.com/embree/embree/blob/master/tutorials/viewer/viewer_device.cpp)
 
 This tutorial demonstrates a simple OBJ viewer that traces primary
 visibility rays only. A scene consisting of multiple meshes is created,
@@ -159,10 +169,12 @@ work:
 
     ./viewer -i model.obj
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/viewer/viewer_device.cpp)
+
 Stream Viewer
 -------------
 
-![][imgViewerStream]
+[![][imgViewerStream]](https://github.com/embree/embree/blob/master/tutorials/viewer_stream/viewer_stream_device.cpp)
 
 This tutorial is a simple OBJ viewer that demonstrates the use of ray
 streams. You need to specify an OBJ file at the command line for this
@@ -170,10 +182,12 @@ tutorial to work:
 
     ./viewer_stream -i model.obj
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/viewer_stream/viewer_stream_device.cpp)
+
 Intersection Filter
 -------------------
 
-![][imgIntersectionFilter]
+[![][imgIntersectionFilter]](https://github.com/embree/embree/blob/master/tutorials/intersection_filter/intersection_filter_device.cpp)
 
 This tutorial demonstrates the use of filter callback functions to
 efficiently implement transparent objects. The filter function used for
@@ -183,10 +197,12 @@ properly, by potentially shooting secondary rays. The filter function
 used for shadow rays accumulates the transparency of all surfaces along
 the ray, and terminates traversal if an opaque occluder is hit.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/intersection_filter/intersection_filter_device.cpp)
+
 Instanced Geometry
 ------------------
 
-![][imgInstancedGeometry]
+[![][imgInstancedGeometry]](https://github.com/embree/embree/blob/master/tutorials/instanced_geometry/instanced_geometry_device.cpp)
 
 This tutorial demonstrates the in-build instancing feature of Embree, by
 instancing a number of other scenes built from triangulated spheres. The
@@ -194,10 +210,12 @@ spheres are again colored using the instance ID and geometry ID of the
 hit sphere, to demonstrate how the same geometry instanced in different
 ways can be distinguished.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/instanced_geometry/instanced_geometry_device.cpp)
+
 Multi Level Instancing
 ----------------------
 
-![][imgMultiLevelInstancing]
+[![][imgMultiLevelInstancing]](https://github.com/embree/embree/blob/master/tutorials/multi_instanced_geometry/multi_instanced_geometry_device.cpp)
 
 This tutorial demonstrates multi-level instancing, i.e., nesting instances
 into instances. To enable the tutorial, set the compile-time variable
@@ -215,10 +233,12 @@ During shading, the instance ID stack is used to accumulate
 normal transformation matrices for each hit. The tutorial visualizes
 transformed normals as colors.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/multi_instanced_geometry/multi_instanced_geometry_device.cpp)
+
 Path Tracer
 -----------
 
-![][imgPathtracer]
+[![][imgPathtracer]](https://github.com/embree/embree/blob/master/tutorials/pathtracer/pathtracer_device.cpp)
 
 This tutorial is a simple path tracer, based on the viewer tutorial.
 
@@ -240,58 +260,72 @@ To render these models execute the following:
     ./pathtracer -c crown/crown.ecs
     ./pathtracer -c asian_dragon/asian_dragon.ecs
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/pathtracer/pathtracer_device.cpp)
+
 Hair
 ----
 
-![][imgHairGeometry]
+[![][imgHairGeometry]](https://github.com/embree/embree/blob/master/tutorials/hair_geometry/hair_geometry_device.cpp)
 
 This tutorial demonstrates the use of the hair geometry to render a
 hairball.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/hair_geometry/hair_geometry_device.cpp)
+
 Curve Geometry
 --------------
 
-![][imgCurveGeometry]
+[![][imgCurveGeometry]](https://github.com/embree/embree/blob/master/tutorials/curve_geometry/curve_geometry_device.cpp)
 
 This tutorial demonstrates the use of the B-Spline and Catmull-Rom curve geometries.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/curve_geometry/curve_geometry_device.cpp)
 
 Subdivision Geometry
 --------------------
 
-![][imgSubdivisionGeometry]
+[![][imgSubdivisionGeometry]](https://github.com/embree/embree/blob/master/tutorials/subdivision_geometry/subdivision_geometry_device.cpp)
 
 This tutorial demonstrates the use of Catmull-Clark subdivision
 surfaces.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/subdivision_geometry/subdivision_geometry_device.cpp)
+
 Displacement Geometry
 ---------------------
 
-![][imgDisplacementGeometry]
+[![][imgDisplacementGeometry]](https://github.com/embree/embree/blob/master/tutorials/displacement_geometry/displacement_geometry_device.cpp)
 
 This tutorial demonstrates the use of Catmull-Clark subdivision
 surfaces with procedural displacement mapping using a constant edge
 tessellation level.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/displacement_geometry/displacement_geometry_device.cpp)
+
 Grid Geometry
 ---------------------
 
-![][imgGridGeometry]
+[![][imgGridGeometry]](https://github.com/embree/embree/tree/master/tutorials/grid_geometry)
 
 This tutorial demonstrates the use of the memory efficient grid
 primitive to handle highly tessellated and displaced geometry.
 
+[Source Code](https://github.com/embree/embree/tree/master/tutorials/grid_geometry)
+
 Point Geometry
 ---------------------
 
-![][imgPointGeometry]
+[![][imgPointGeometry]](https://github.com/embree/embree/blob/master/tutorials/point_geometry/point_geometry_device.cpp)
 
 This tutorial demonstrates the use of the three representations
 of point geometry.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/point_geometry/point_geometry_device.cpp)
+
 Motion Blur Geometry
 --------------------
 
-![][imgMotionBlurGeometry]
+[![][imgMotionBlurGeometry]](https://github.com/embree/embree/blob/master/tutorials/motion_blur_geometry/motion_blur_geometry_device.cpp)
 
 This tutorial demonstrates rendering of motion blur using the
 multi-segment motion blur feature. Shown is motion blur of a triangle mesh,
@@ -305,10 +339,12 @@ The number of time steps used can be configured using the `--time-steps
 geometry can be rendered at a specific time using the the `--time
 <float>` command line parameter.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/motion_blur_geometry/motion_blur_geometry_device.cpp)
+
 Quaternion Motion Blur
 ----------------------
 
-![][imgQuaternionMotionBlur]
+[![][imgQuaternionMotionBlur]](https://github.com/embree/embree/blob/master/tutorials/quaternion_motion_blur/quaternion_motion_blur_device.cpp)
 
 This tutorial demonstrates rendering of motion blur using quaternion
 interpolation. Shown is motion blur using spherical linear interpolation of
@@ -316,18 +352,21 @@ the rotational component of the instance transformation on the left and
 simple linear interpolation of the instance transformation on the right. The
 number of time steps can be modified as well.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/quaternion_motion_blur/quaternion_motion_blur_device.cpp)
 
 Interpolation
 -------------
 
-![][imgInterpolation]
+[![][imgInterpolation]](https://github.com/embree/embree/blob/master/tutorials/interpolation/interpolation_device.cpp)
 
 This tutorial demonstrates interpolation of user-defined per-vertex data.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/interpolation/interpolation_device.cpp)
 
 Closest Point
 ----------------------
 
-![][imgClosestPoint]
+[![][imgClosestPoint]](https://github.com/embree/embree/blob/master/tutorials/closest_point/closest_point_device.cpp)
 
 This tutorial demonstrates a use-case of the point query API. The scene
 consists of a simple collection of objects that are instanced and for several
@@ -337,25 +376,31 @@ implemented for Embree internal and for user-defined instancing. The tutorial
 also illustrates how to handle instance transformations that are not
 similarity transforms.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/closest_point/closest_point_device.cpp)
+
 Voronoi
 ----------------------
 
-![][imgVoronoi]
+[![][imgVoronoi]](https://github.com/embree/embree/blob/master/tutorials/voronoi/voronoi_device.cpp)
 
 This tutorial demonstrates how to implement nearest neighbour lookups using
 the point query API. Several colored points are located on a plane and the
 corresponding voroni regions are illustrated.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/voronoi/voronoi_device.cpp)
+
 Collision Detection
 ----------------------
 
-![][imgCollision]
+[![][imgCollision]](https://github.com/embree/embree/blob/master/tutorials/collide/collide_device.cpp)
 
 This tutorial demonstrates how to implement collision detection using
 the collide API. A simple cloth solver is setup to collide with a sphere.
 
 The cloth can be reset with the `space` bar.  The sim stepped once with `n` 
 and continuous simulation started and paused with `p`.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/collide/collide_device.cpp)
 
 BVH Builder
 -----------
@@ -365,12 +410,16 @@ of Embree to build a bounding volume hierarchy with a user-defined
 memory layout using a high-quality SAH builder using spatial splits, a
 standard SAH builder, and a very fast Morton builder.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/bvh_builder/bvh_builder_device.cpp)
+
 BVH Access
 -----------
 
 This tutorial demonstrates how to access the internal triangle
 acceleration structure build by Embree. Please be aware that the
 internal Embree data structures might change between Embree updates.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/bvh_access/bvh_access.cpp)
 
 Find Embree
 -----------
@@ -381,6 +430,8 @@ the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable must be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree3`.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/find_embree/CMakeLists.txt)
+
 Next Hit
 -----------
 
@@ -388,6 +439,8 @@ This tutorial demonstrates how to robustly enumerate all hits along
 the ray using multiple ray queries and an intersection filter
 function. To improve performance, the tutorial also supports
 collecting the next N hits in a single ray query.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/next_hit/next_hit_device.cpp)
 
 
 
