@@ -173,7 +173,7 @@ namespace embree
       };
 
     template<int N>
-    static VirtualCurveIntersector::Intersectors LinearConeNiIntersectors()
+    static VirtualCurveIntersector::Intersectors LinearRoundConeNiIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
       intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &RoundLinearCurveMiIntersector1<N,N,true>::intersect;
@@ -192,7 +192,7 @@ namespace embree
     }
 
     template<int N>
-    static VirtualCurveIntersector::Intersectors LinearConeNiMBIntersectors()
+    static VirtualCurveIntersector::Intersectors LinearRoundConeNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
       intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &RoundLinearCurveMiMBIntersector1<N,N,true>::intersect;
