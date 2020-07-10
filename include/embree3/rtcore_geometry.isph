@@ -22,6 +22,7 @@ enum RTCGeometryType
 
   RTC_GEOMETRY_TYPE_SUBDIVISION = 8, // Catmull-Clark subdivision surface
 
+  RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE   = 15, // Cone linear curves - discontinuous at edge boundaries
   RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE   = 17, // flat (ribbon-like) linear curves
   RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE  = 16, // Round (rounded cone like) linear curves
   

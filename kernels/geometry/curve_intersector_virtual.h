@@ -22,6 +22,7 @@
 
 #include "linei_intersector.h"
 #include "roundlinei_intersector.h"
+#include "conelinei_intersector.h"
 
 #include "curveNi_intersector.h"
 #include "curveNv_intersector.h"
@@ -192,6 +193,25 @@ namespace embree
     }
 
     template<int N>
+    static VirtualCurveIntersector::Intersectors LinearConeNiIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &ConeCurveMiIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &ConeCurveMiIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &ConeCurveMiIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &ConeCurveMiIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&ConeCurveMiIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &ConeCurveMiIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&ConeCurveMiIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &ConeCurveMiIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
+    template<int N>
     static VirtualCurveIntersector::Intersectors LinearRoundConeNiMBIntersectors()
     {
       VirtualCurveIntersector::Intersectors intersectors;
@@ -206,6 +226,25 @@ namespace embree
 #if defined(__AVX512F__)
       intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&RoundLinearCurveMiMBIntersectorK<N,N,16,true>::intersect;
       intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &RoundLinearCurveMiMBIntersectorK<N,N,16,true>::occluded;
+#endif
+      return intersectors;
+    }
+
+    template<int N>
+    static VirtualCurveIntersector::Intersectors LinearConeNiMBIntersectors()
+    {
+      VirtualCurveIntersector::Intersectors intersectors;
+      intersectors.intersect1 = (VirtualCurveIntersector::Intersect1Ty) &ConeCurveMiMBIntersector1<N,N,true>::intersect;
+      intersectors.occluded1  = (VirtualCurveIntersector::Occluded1Ty)  &ConeCurveMiMBIntersector1<N,N,true>::occluded;
+      intersectors.intersect4 = (VirtualCurveIntersector::Intersect4Ty) &ConeCurveMiMBIntersectorK<N,N,4,true>::intersect;
+      intersectors.occluded4  = (VirtualCurveIntersector::Occluded4Ty)  &ConeCurveMiMBIntersectorK<N,N,4,true>::occluded;
+#if defined(__AVX__)
+      intersectors.intersect8 = (VirtualCurveIntersector::Intersect8Ty)&ConeCurveMiMBIntersectorK<N,N,8,true>::intersect;
+      intersectors.occluded8  = (VirtualCurveIntersector::Occluded8Ty) &ConeCurveMiMBIntersectorK<N,N,8,true>::occluded;
+#endif
+#if defined(__AVX512F__)
+      intersectors.intersect16 = (VirtualCurveIntersector::Intersect16Ty)&ConeCurveMiMBIntersectorK<N,N,16,true>::intersect;
+      intersectors.occluded16  = (VirtualCurveIntersector::Occluded16Ty) &ConeCurveMiMBIntersectorK<N,N,16,true>::occluded;
 #endif
       return intersectors;
     }

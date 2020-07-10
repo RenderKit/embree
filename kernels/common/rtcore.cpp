@@ -1165,6 +1165,7 @@ RTC_NAMESPACE_BEGIN;
 #endif
     }
 
+    case RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE:
     case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE:
     case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
       
@@ -1192,6 +1193,7 @@ RTC_NAMESPACE_BEGIN;
       
       Geometry* geom;
       switch (type) {
+      case RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE             : geom = createLineSegments (device,Geometry::GTY_CONE_LINEAR_CURVE); break;
       case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE            : geom = createLineSegments (device,Geometry::GTY_ROUND_LINEAR_CURVE); break;
       case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE             : geom = createLineSegments (device,Geometry::GTY_FLAT_LINEAR_CURVE); break;
       //case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_LINEAR_CURVE  : geom = createLineSegments (device,Geometry::GTY_ORIENTED_LINEAR_CURVE); break;
