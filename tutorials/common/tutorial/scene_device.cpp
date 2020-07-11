@@ -527,7 +527,7 @@ namespace embree
     }
     
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);
-    if (mesh->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
+    if (mesh->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE) {
       rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
     }
     
