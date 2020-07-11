@@ -23,6 +23,99 @@ namespace embree
 {
   namespace isa
   {
+    namespace __coneline_internal 
+    {
+      template<int M, typename Epilog, typename ray_tfar_func>
+        static __forceinline bool intersectCone(const vbool<M>& valid_i,
+                                                const Vec3vf<M>& ray_org_in, const Vec3vf<M>& ray_dir, 
+                                                const vfloat<M>& ray_tnear, const ray_tfar_func& ray_tfar,
+                                                const Vec4vf<M>& v0, const Vec4vf<M>& v1,
+                                                const Vec4vf<M>& vL, const Vec4vf<M>& vR,
+                                                const Epilog& epilog)
+      {   
+        vbool<M> valid = valid_i;
+
+        vfloat<M> t_cone_lower = vfloat<M>(pos_inf);
+        vfloat<M> t_cone_upper = vfloat<M>(neg_inf);
+
+        /* move ray origin closer to make calculations numerically stable */
+        const vfloat<M> dOdO = sqr(ray_dir);
+        const vfloat<M> rcp_dOdO = rcp(dOdO);
+        const Vec3vf<M> center = vfloat<M>(0.5f)*(v0.xyz()+v1.xyz());
+        const vfloat<M> dt = dot(center-ray_org_in,ray_dir)*rcp_dOdO;
+        const Vec3vf<M> ray_org = ray_org_in + dt*ray_dir;
+
+        const Vec3vf<M> dP = v1.xyz() - v0.xyz();
+        const Vec3vf<M> p0 = ray_org - v0.xyz();
+        // const Vec3vf<M> p1 = ray_org - v1.xyz();
+        
+        const vfloat<M> dPdP  = dot(dP,dP);
+        const vfloat<M> dP0   = dot(p0,dP);
+        // const vfloat<M> dP1   = dot(p1,dP); 
+        const vfloat<M> dOdP  = dot(ray_dir,dP);
+
+        // intersect cone body
+        const vfloat<M> dr  = v0.w - v1.w;
+        const vfloat<M> hy  = dPdP + dr*dr;
+        const vfloat<M> dO0 = dot(ray_dir,p0);
+        const vfloat<M> OO  = dot(p0,p0);
+        const vfloat<M> dPdP2 = sqr(dPdP);
+        const vfloat<M> dPdPr0 = dPdP*v0.w;
+        
+        const vfloat<M> A = dPdP2     - sqr(dOdP)*hy;
+        const vfloat<M> B = dPdP2*dO0 - dP0*dOdP*hy   + dPdPr0*(dr*dOdP);
+        const vfloat<M> C = dPdP2*OO  - sqr(dP0)*hy   + dPdPr0*(2.0f*dr*dP0 - dPdPr0);
+        
+        const vfloat<M> D = B*B - A*C;
+        valid &= D >= 0.0f;
+        if (unlikely(none(valid))) {
+          return false;
+        }
+
+        const vfloat<M> Q = sqrt(D);
+        const vfloat<M> rcp_A = rcp(A);
+        t_cone_lower = (-B-Q)*rcp_A;
+        t_cone_upper = (-B+Q)*rcp_A;
+
+        const vfloat<M> y_lower = dP0 + t_cone_lower*dOdP;
+        const vbool<M> valid_lower = valid & ray_tnear <= dt+t_cone_lower & dt+t_cone_lower <= ray_tfar() & y_lower > 0.0f & y_lower < dPdP;
+        const vfloat<M> y_upper = dP0 + t_cone_upper*dOdP;
+        const vbool<M> valid_upper = valid & ray_tnear <= dt+t_cone_upper & dt+t_cone_upper <= ray_tfar() & y_upper > 0.0f & y_upper < dPdP;
+
+        const vbool<M> valid_first = valid_lower | valid_upper;
+        if (unlikely(none(valid_first)))
+          return false;
+
+        const vfloat<M> t_first = select(valid_lower, t_cone_lower, t_cone_upper);
+        const vfloat<M> y_first = select(valid_lower, y_lower, y_upper);
+
+        const Vec3vf<M> drr0dP = dr*v0.w*dP;
+        const Vec3vf<M> dPhy = dP*hy;
+        const Vec3vf<M> Ng_first = dPdP*(dPdP*(p0+t_first*ray_dir)+drr0dP)-dPhy*y_first;
+        const vfloat<M> u_first = y_first*rcp(dPdP);
+
+        /* invoke intersection filter for first hit */
+        RoundLineIntersectorHitM<M> hit(u_first,zero,dt+t_first,Ng_first);
+        const bool is_hit_first = epilog(valid_first, hit);
+
+        /* check for possible second hits before potentially accepted hit */
+        const vfloat<M> t_second = t_cone_upper;
+        const vfloat<M> y_second = y_upper;
+        const vbool<M> valid_second = valid_lower & valid_upper;
+        if (unlikely(none(valid_second)))
+          return is_hit_first;
+        
+        /* invoke intersection filter for second hit */
+        const Vec3vf<M> Ng_second = dPdP*(dPdP*(p0+t_second*ray_dir)+drr0dP)-dPhy*y_second;
+        const vfloat<M> u_second = y_second*rcp(dPdP);
+
+        hit = RoundLineIntersectorHitM<M>(u_second,zero,dt+t_second,Ng_second);
+        const bool is_hit_second = epilog(valid_second, hit);
+        
+        return is_hit_first | is_hit_second;
+      }
+    }
+
     template<int M>
       struct ConeLineIntersectorHitM
       {
@@ -72,8 +165,8 @@ namespace embree
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
           const Vec4vf<M> vL = enlargeRadiusToMinWidth(context,geom,ray_org,vLi);
           const Vec4vf<M> vR = enlargeRadiusToMinWidth(context,geom,ray_org,vRi);
-          return false;
-        //   return  __roundline_internal::intersectConeSphere(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),v0,v1,vL,vR,epilog);
+          // return false;
+          return  __coneline_internal::intersectCone(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),v0,v1,vL,vR,epilog);
         }
       };
     
@@ -106,8 +199,8 @@ namespace embree
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
           const Vec4vf<M> vL = enlargeRadiusToMinWidth(context,geom,ray_org,vLi);
           const Vec4vf<M> vR = enlargeRadiusToMinWidth(context,geom,ray_org,vRi);
-          return false;
-        //   return __roundline_internal::intersectConeSphere(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),v0,v1,vL,vR,epilog);
+          // return false;
+          return __coneline_internal::intersectCone(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),v0,v1,vL,vR,epilog);
         }
       };
   }
