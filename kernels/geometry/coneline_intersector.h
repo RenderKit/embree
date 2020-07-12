@@ -35,9 +35,6 @@ namespace embree
       {   
         vbool<M> valid = valid_i;
 
-        vfloat<M> t_cone_lower = vfloat<M>(pos_inf);
-        vfloat<M> t_cone_upper = vfloat<M>(neg_inf);
-
         /* move ray origin closer to make calculations numerically stable */
         const vfloat<M> dOdO = sqr(ray_dir);
         const vfloat<M> rcp_dOdO = rcp(dOdO);
@@ -47,12 +44,13 @@ namespace embree
 
         const Vec3vf<M> dP = v1.xyz() - v0.xyz();
         const Vec3vf<M> p0 = ray_org - v0.xyz();
-        // const Vec3vf<M> p1 = ray_org - v1.xyz();
+        const Vec3vf<M> p1 = ray_org - v1.xyz();
         
         const vfloat<M> dPdP  = dot(dP,dP);
         const vfloat<M> dP0   = dot(p0,dP);
-        // const vfloat<M> dP1   = dot(p1,dP); 
+        const vfloat<M> dP1   = dot(p1,dP); 
         const vfloat<M> dOdP  = dot(ray_dir,dP);
+        const vfloat<M> rcp_dOdP = rcp(dOdP);
 
         // intersect cone body
         const vfloat<M> dr  = v0.w - v1.w;
@@ -72,42 +70,62 @@ namespace embree
           return false;
         }
 
+        /* standard case for "non-parallel" rays */
         const vfloat<M> Q = sqrt(D);
         const vfloat<M> rcp_A = rcp(A);
-        t_cone_lower = (-B-Q)*rcp_A;
-        t_cone_upper = (-B+Q)*rcp_A;
+        /* special case for rays that are "parallel" to the cone - assume miss */
+        const vbool<M> isParallel = abs(A) <= min_rcp_input;
 
+        vfloat<M> t_cone_lower = select (isParallel, neg_inf, (-B-Q)*rcp_A);
+        vfloat<M> t_cone_upper = select (isParallel, pos_inf, (-B+Q)*rcp_A);
         const vfloat<M> y_lower = dP0 + t_cone_lower*dOdP;
-        const vbool<M> valid_lower = valid & ray_tnear <= dt+t_cone_lower & dt+t_cone_lower <= ray_tfar() & y_lower > 0.0f & y_lower < dPdP;
         const vfloat<M> y_upper = dP0 + t_cone_upper*dOdP;
-        const vbool<M> valid_upper = valid & ray_tnear <= dt+t_cone_upper & dt+t_cone_upper <= ray_tfar() & y_upper > 0.0f & y_upper < dPdP;
+        t_cone_lower = select(y_lower > 0.0f & y_lower < dPdP, t_cone_lower, pos_inf);
+        t_cone_upper = select(y_upper > 0.0f & y_upper < dPdP, t_cone_upper, neg_inf);
+
+        const vbool<M> hitDisk0 = valid & (vL[0] == vfloat<M>(pos_inf));
+        const vbool<M> hitDisk1 = valid & (vR[0] == vfloat<M>(pos_inf));
+        const vfloat<M> t_disk0 = select (hitDisk0, select (sqr(p0*dOdP-ray_dir*dP0)<(sqr(v0.w)*sqr(dOdP)), -dP0*rcp_dOdP, pos_inf), pos_inf);
+        const vfloat<M> t_disk1 = select (hitDisk1, select (sqr(p1*dOdP-ray_dir*dP1)<(sqr(v1.w)*sqr(dOdP)), -dP1*rcp_dOdP, pos_inf), pos_inf);
+
+        const vfloat<M> t_lower = min(t_cone_lower, min(t_disk0, t_disk1));
+        const vfloat<M> t_upper = max(t_cone_upper, select(t_lower==t_disk0, 
+                                                      select(t_disk1==vfloat<M>(pos_inf),neg_inf,t_disk1), 
+                                                      select(t_disk0==vfloat<M>(pos_inf),neg_inf,t_disk0)));
+
+        const vbool<M> valid_lower = valid & ray_tnear <= dt+t_lower & dt+t_lower <= ray_tfar() & t_lower != vfloat<M>(pos_inf);
+        const vbool<M> valid_upper = valid & ray_tnear <= dt+t_upper & dt+t_upper <= ray_tfar() & t_upper != vfloat<M>(neg_inf);
 
         const vbool<M> valid_first = valid_lower | valid_upper;
         if (unlikely(none(valid_first)))
           return false;
 
-        const vfloat<M> t_first = select(valid_lower, t_cone_lower, t_cone_upper);
+        const vfloat<M> t_first = select(valid_lower, t_lower, t_upper);
         const vfloat<M> y_first = select(valid_lower, y_lower, y_upper);
 
         const Vec3vf<M> drr0dP = dr*v0.w*dP;
         const Vec3vf<M> dPhy = dP*hy;
-        const Vec3vf<M> Ng_first = dPdP*(dPdP*(p0+t_first*ray_dir)+drr0dP)-dPhy*y_first;
-        const vfloat<M> u_first = y_first*rcp(dPdP);
+        const vbool<M> cone_hit_first = t_first == t_cone_lower | t_first == t_cone_upper;
+        const vbool<M> disk0_hit_first = t_first == t_disk0;
+        const Vec3vf<M> Ng_first = select(cone_hit_first, dPdP*(dPdP*(p0+t_first*ray_dir)+drr0dP)-dPhy*y_first, select(disk0_hit_first, -dP, dP));
+        const vfloat<M> u_first = select(cone_hit_first, y_first*rcp(dPdP), select(disk0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
 
         /* invoke intersection filter for first hit */
         RoundLineIntersectorHitM<M> hit(u_first,zero,dt+t_first,Ng_first);
         const bool is_hit_first = epilog(valid_first, hit);
 
         /* check for possible second hits before potentially accepted hit */
-        const vfloat<M> t_second = t_cone_upper;
+        const vfloat<M> t_second = t_upper;
         const vfloat<M> y_second = y_upper;
-        const vbool<M> valid_second = valid_lower & valid_upper;
+        const vbool<M> valid_second = valid_lower & valid_upper & (dt+t_upper <= ray_tfar());
         if (unlikely(none(valid_second)))
           return is_hit_first;
         
         /* invoke intersection filter for second hit */
-        const Vec3vf<M> Ng_second = dPdP*(dPdP*(p0+t_second*ray_dir)+drr0dP)-dPhy*y_second;
-        const vfloat<M> u_second = y_second*rcp(dPdP);
+        const vbool<M> cone_hit_second = t_second == t_cone_lower | t_second == t_cone_upper;
+        const vbool<M> disk0_hit_second = t_second == t_disk0;
+        const Vec3vf<M> Ng_second = select(cone_hit_second, dPdP*(dPdP*(p0+t_second*ray_dir)+drr0dP)-dPhy*y_second, select(disk0_hit_second, -dP, dP));
+        const vfloat<M> u_second = select(cone_hit_second, y_second*rcp(dPdP), select(disk0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
 
         hit = RoundLineIntersectorHitM<M>(u_second,zero,dt+t_second,Ng_second);
         const bool is_hit_second = epilog(valid_second, hit);
@@ -165,7 +183,6 @@ namespace embree
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
           const Vec4vf<M> vL = enlargeRadiusToMinWidth(context,geom,ray_org,vLi);
           const Vec4vf<M> vR = enlargeRadiusToMinWidth(context,geom,ray_org,vRi);
-          // return false;
           return  __coneline_internal::intersectCone(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),v0,v1,vL,vR,epilog);
         }
       };
@@ -199,7 +216,6 @@ namespace embree
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
           const Vec4vf<M> vL = enlargeRadiusToMinWidth(context,geom,ray_org,vLi);
           const Vec4vf<M> vR = enlargeRadiusToMinWidth(context,geom,ray_org,vRi);
-          // return false;
           return __coneline_internal::intersectCone(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),v0,v1,vL,vR,epilog);
         }
       };
