@@ -93,21 +93,20 @@ namespace embree
 
       static __forceinline void intersect(const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
-        // STAT3(normal.trav_prims,1,1,1);
-        // const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
-        // Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom);
-        // const vbool<Mx> valid = line.template valid<Mx>();
-        // ConeCurveMiIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
+        STAT3(normal.trav_prims,1,1,1);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom);
+        const vbool<Mx> valid = line.template valid<Mx>();
+        ConeCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
 
       static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
-        // STAT3(shadow.trav_prims,1,1,1);
-        // const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
-        // Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom);
-        // const vbool<Mx> valid = line.template valid<Mx>();
-        // return ConeCurveMiIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
-        return false;
+        STAT3(shadow.trav_prims,1,1,1);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom);
+        const vbool<Mx> valid = line.template valid<Mx>();
+        return ConeCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
     };
 
@@ -119,21 +118,20 @@ namespace embree
 
       static __forceinline void intersect(const Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context,  const Primitive& line)
       {
-        // STAT3(normal.trav_prims,1,1,1);
-        // const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
-        // Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom,ray.time()[k]);
-        // const vbool<Mx> valid = line.template valid<Mx>();
-        // ConeCurveMiMBIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
+        STAT3(normal.trav_prims,1,1,1);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom,ray.time()[k]);
+        const vbool<Mx> valid = line.template valid<Mx>();
+        ConeCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Intersect1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
 
       static __forceinline bool occluded(const Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive& line)
       {
-        // STAT3(shadow.trav_prims,1,1,1);
-        // const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
-        // Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom,ray.time()[k]);
-        // const vbool<Mx> valid = line.template valid<Mx>();
-        // return ConeCurveMiMBIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
-        return false;
+        STAT3(shadow.trav_prims,1,1,1);
+        const LineSegments* geom = context->scene->get<LineSegments>(line.geomID());
+        Vec4vf<M> v0,v1,vL,vR; line.gather(v0,v1,vL,vR,geom,ray.time()[k]);
+        const vbool<Mx> valid = line.template valid<Mx>();
+        return ConeCurveIntersectorK<Mx,K>::intersect(valid,ray,k,context,geom,pre,v0,v1,vL,vR,Occluded1KEpilogM<M,Mx,K,filter>(ray,k,context,line.geomID(),line.primID()));
       }
     };
   }
