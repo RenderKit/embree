@@ -201,7 +201,6 @@ namespace embree
     {
       Ref<Geometry>& g = geometries[geomID];
       if (!g) return false;
-      if (!g->isEnabled()) return false;
       return g->getModCounter() > geometryModCounters_[geomID];
     }
 
