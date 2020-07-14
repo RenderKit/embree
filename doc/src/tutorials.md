@@ -277,7 +277,7 @@ Curve Geometry
 
 [![][imgCurveGeometry]](https://github.com/embree/embree/blob/master/tutorials/curve_geometry/curve_geometry_device.cpp)
 
-This tutorial demonstrates the use of the B-Spline and Catmull-Rom curve geometries.
+This tutorial demonstrates the use of the Linear Basis, B-Spline, and Catmull-Rom curve geometries.
 
 [Source Code](https://github.com/embree/embree/blob/master/tutorials/curve_geometry/curve_geometry_device.cpp)
 

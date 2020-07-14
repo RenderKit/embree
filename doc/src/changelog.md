@@ -1,6 +1,10 @@
 Version History
 ---------------
 
+### Embree 3.12.0
+-   Added linear cone curve geometry support. In this mode a real geometric surface for curves
+    with linear basis is rendered using capped cones.  They are discontinuous at edge boundaries.
+
 ### Embree 3.11.0
 
 -   Round linear curves now automatically check for the existence of left and right
