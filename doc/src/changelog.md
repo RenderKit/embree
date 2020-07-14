@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.12.0
+-   Bugfix for ignored geometry disabling.
+
 ### Embree 3.11.0
 
 -   Round linear curves now automatically check for the existence of left and right
