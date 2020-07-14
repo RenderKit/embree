@@ -30,7 +30,7 @@ namespace embree
                                                 const Vec3vf<M>& ray_org_in, const Vec3vf<M>& ray_dir, 
                                                 const vfloat<M>& ray_tnear, const ray_tfar_func& ray_tfar,
                                                 const Vec4vf<M>& v0, const Vec4vf<M>& v1,
-                                                const Vec4vf<M>& vL, const Vec4vf<M>& vR,
+                                                const vbool<M>& cL, const vbool<M>& cR,
                                                 const Epilog& epilog)
       {   
         vbool<M> valid = valid_i;
@@ -46,7 +46,7 @@ namespace embree
         const Vec3vf<M> p0 = ray_org - v0.xyz();
         const Vec3vf<M> p1 = ray_org - v1.xyz();
         
-        const vfloat<M> dPdP  = dot(dP,dP);
+        const vfloat<M> dPdP  = sqr(dP);
         const vfloat<M> dP0   = dot(p0,dP);
         const vfloat<M> dP1   = dot(p1,dP); 
         const vfloat<M> dOdP  = dot(ray_dir,dP);
@@ -54,9 +54,9 @@ namespace embree
 
         // intersect cone body
         const vfloat<M> dr  = v0.w - v1.w;
-        const vfloat<M> hy  = dPdP + dr*dr;
+        const vfloat<M> hy  = dPdP + sqr(dr);
         const vfloat<M> dO0 = dot(ray_dir,p0);
-        const vfloat<M> OO  = dot(p0,p0);
+        const vfloat<M> OO  = sqr(p0);
         const vfloat<M> dPdP2 = sqr(dPdP);
         const vfloat<M> dPdPr0 = dPdP*v0.w;
         
@@ -83,8 +83,8 @@ namespace embree
         t_cone_lower = select(y_lower > 0.0f & y_lower < dPdP, t_cone_lower, pos_inf);
         t_cone_upper = select(y_upper > 0.0f & y_upper < dPdP, t_cone_upper, neg_inf);
 
-        const vbool<M> hitDisk0 = valid & (vL[0] == vfloat<M>(pos_inf));
-        const vbool<M> hitDisk1 = valid & (vR[0] == vfloat<M>(pos_inf));
+        const vbool<M> hitDisk0 = valid & cL;
+        const vbool<M> hitDisk1 = valid & cR;
         const vfloat<M> t_disk0 = select (hitDisk0, select (sqr(p0*dOdP-ray_dir*dP0)<(sqr(v0.w)*sqr(dOdP)), -dP0*rcp_dOdP, pos_inf), pos_inf);
         const vfloat<M> t_disk1 = select (hitDisk1, select (sqr(p1*dOdP-ray_dir*dP1)<(sqr(v1.w)*sqr(dOdP)), -dP1*rcp_dOdP, pos_inf), pos_inf);
 
@@ -173,7 +173,7 @@ namespace embree
                                             const LineSegments* geom,
                                             const Precalculations& pre,
                                             const Vec4vf<M>& v0i, const Vec4vf<M>& v1i,
-                                            const Vec4vf<M>& vLi, const Vec4vf<M>& vRi,
+                                            const vbool<M>& cL, const vbool<M>& cR,
                                             const Epilog& epilog)
         {
           const Vec3vf<M> ray_org(ray.org.x, ray.org.y, ray.org.z);
@@ -181,9 +181,7 @@ namespace embree
           const vfloat<M> ray_tnear(ray.tnear());
           const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
-          const Vec4vf<M> vL = enlargeRadiusToMinWidth(context,geom,ray_org,vLi);
-          const Vec4vf<M> vR = enlargeRadiusToMinWidth(context,geom,ray_org,vRi);
-          return  __coneline_internal::intersectCone(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),v0,v1,vL,vR,epilog);
+          return  __coneline_internal::intersectCone(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),v0,v1,cL,cR,epilog);
         }
       };
     
@@ -206,7 +204,7 @@ namespace embree
                                             const LineSegments* geom,
                                             const Precalculations& pre,
                                             const Vec4vf<M>& v0i, const Vec4vf<M>& v1i,
-                                            const Vec4vf<M>& vLi, const Vec4vf<M>& vRi,
+                                            const vbool<M>& cL, const vbool<M>& cR,
                                             const Epilog& epilog)
         {
           const Vec3vf<M> ray_org(ray.org.x[k], ray.org.y[k], ray.org.z[k]);
@@ -214,9 +212,7 @@ namespace embree
           const vfloat<M> ray_tnear = ray.tnear()[k];
           const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
-          const Vec4vf<M> vL = enlargeRadiusToMinWidth(context,geom,ray_org,vLi);
-          const Vec4vf<M> vR = enlargeRadiusToMinWidth(context,geom,ray_org,vRi);
-          return __coneline_internal::intersectCone(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),v0,v1,vL,vR,epilog);
+          return __coneline_internal::intersectCone(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray,k),v0,v1,cL,cR,epilog);
         }
       };
   }

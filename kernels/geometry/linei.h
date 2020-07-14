@@ -109,6 +109,26 @@ namespace embree
                               const LineSegments* geom,
                               float time) const;
 
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
+                              vbool<M>& cL,
+                              vbool<M>& cR,
+                              const LineSegments* geom) const;
+
+    __forceinline void gatheri(Vec4vf<M>& p0,
+                               Vec4vf<M>& p1,
+                               vbool<M>& cL,
+                               vbool<M>& cR,
+                               const LineSegments* geom,
+                               const int itime) const;
+
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
+                              vbool<M>& cL,
+                              vbool<M>& cR,
+                              const LineSegments* geom,
+                              float time) const;
+
     /* Calculate the bounds of the line segments */
     __forceinline const BBox3fa bounds(const Scene* scene, size_t itime = 0) const
     {
@@ -304,6 +324,79 @@ namespace embree
     gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat4(ftime));
     p1 = lerp(a1,b1,vfloat4(ftime));
+  }
+
+  template<>
+    __forceinline void LineMi<4>::gather(Vec4vf4& p0,
+                                         Vec4vf4& p1,
+                                         vbool4&  cL,
+                                         vbool4&  cR,
+                                         const LineSegments* geom) const
+  {
+    gather(p0,p1,geom);
+    vuint4 cLi,cRi;
+    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
+    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
+    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0 ;
+    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
+    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
+    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
+    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
+    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
+    cL = cLi == vuint4(-1);
+    cR = cRi == vuint4(-1);
+  }
+
+  template<>
+    __forceinline void LineMi<4>::gatheri(Vec4vf4& p0,
+                                          Vec4vf4& p1,
+                                          vbool4&  cL,
+                                          vbool4&  cR,
+                                          const LineSegments* geom,
+                                          const int itime) const
+  {
+    gatheri(p0,p1,geom,itime);
+    vuint4 cLi,cRi;
+    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
+    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
+    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
+    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
+    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
+    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
+    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
+    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
+    cL = cLi == vuint4(-1);
+    cR = cRi == vuint4(-1);
+  }
+
+  template<>
+    __forceinline void LineMi<4>::gather(Vec4vf4& p0,
+                                         Vec4vf4& p1,
+                                         vbool4&  cL,
+                                         vbool4&  cR,
+                                         const LineSegments* geom,
+                                         float time) const
+  {
+    float ftime;
+    const int itime = geom->timeSegment(time, ftime);
+    
+    Vec4vf4 a0,a1;
+    gatheri(a0,a1,geom,itime);
+    Vec4vf4 b0,b1;
+    gatheri(b0,b1,geom,itime+1);
+    p0 = lerp(a0,b0,vfloat4(ftime));
+    p1 = lerp(a1,b1,vfloat4(ftime));
+    vuint4 cLi,cRi;
+    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
+    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
+    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
+    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
+    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
+    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
+    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
+    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
+    cL = cLi == vuint4(-1);
+    cR = cRi == vuint4(-1);
   }
 
   template<>
@@ -580,6 +673,103 @@ namespace embree
     p1 = lerp(a1,b1,vfloat8(ftime));
     pL = lerp(aL,bL,vfloat8(ftime));
     pR = lerp(aR,bR,vfloat8(ftime));
+  }
+
+  template<>
+    __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+                                         Vec4vf8& p1,
+                                         vbool8& cL,
+                                         vbool8& cR,
+                                         const LineSegments* geom) const
+  {
+    gather(p0,p1,geom);
+    vuint8 cLi,cRi;
+    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
+    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
+    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
+    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
+    cLi[4] = (primIDs[4] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
+    cLi[5] = (primIDs[5] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
+    cLi[6] = (primIDs[6] != -1 && !geom->segmentLeftExists(primIDs[5])) ? -1 : 0;
+    cLi[7] = (primIDs[7] != -1 && !geom->segmentLeftExists(primIDs[7])) ? -1 : 0;
+    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
+    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
+    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
+    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
+    cRi[4] = (primIDs[4] != -1 && !geom->segmentRightExists(primIDs[4])) ? -1 : 0;
+    cRi[5] = (primIDs[5] != -1 && !geom->segmentRightExists(primIDs[5])) ? -1 : 0;
+    cRi[6] = (primIDs[6] != -1 && !geom->segmentRightExists(primIDs[6])) ? -1 : 0;
+    cRi[7] = (primIDs[7] != -1 && !geom->segmentRightExists(primIDs[7])) ? -1 : 0;    
+    cL = cLi == vuint8(-1);
+    cR = cRi == vuint8(-1);
+  }
+  
+  template<>
+    __forceinline void LineMi<8>::gatheri(Vec4vf8& p0,
+                                              Vec4vf8& p1,
+                                              vbool8& cL,
+                                              vbool8& cR,
+                                              const LineSegments* geom,
+                                              const int itime) const
+  {
+    gatheri(p0,p1,geom,itime);
+    vuint8 cLi,cRi;
+    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
+    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
+    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
+    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
+    cLi[4] = (primIDs[4] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
+    cLi[5] = (primIDs[5] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
+    cLi[6] = (primIDs[6] != -1 && !geom->segmentLeftExists(primIDs[5])) ? -1 : 0;
+    cLi[7] = (primIDs[7] != -1 && !geom->segmentLeftExists(primIDs[7])) ? -1 : 0;
+    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
+    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
+    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
+    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
+    cRi[4] = (primIDs[4] != -1 && !geom->segmentRightExists(primIDs[4])) ? -1 : 0;
+    cRi[5] = (primIDs[5] != -1 && !geom->segmentRightExists(primIDs[5])) ? -1 : 0;
+    cRi[6] = (primIDs[6] != -1 && !geom->segmentRightExists(primIDs[6])) ? -1 : 0;
+    cRi[7] = (primIDs[7] != -1 && !geom->segmentRightExists(primIDs[7])) ? -1 : 0; 
+    cL = cLi == vuint8(-1);
+    cR = cRi == vuint8(-1);
+  }
+  
+  template<>
+    __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+                                              Vec4vf8& p1,
+                                              vbool8& cL,
+                                              vbool8& cR,
+                                              const LineSegments* geom,
+                                              float time) const
+  {
+    float ftime;
+    const int itime = geom->timeSegment(time, ftime);
+    
+    Vec4vf8 a0,a1;
+    gatheri(a0,a1,geom,itime);
+    Vec4vf8 b0,b1;
+    gatheri(b0,b1,geom,itime+1);
+    p0 = lerp(a0,b0,vfloat8(ftime));
+    p1 = lerp(a1,b1,vfloat8(ftime));
+    vuint8 cLi,cRi;
+    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
+    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
+    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
+    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
+    cLi[4] = (primIDs[4] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
+    cLi[5] = (primIDs[5] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
+    cLi[6] = (primIDs[6] != -1 && !geom->segmentLeftExists(primIDs[5])) ? -1 : 0;
+    cLi[7] = (primIDs[7] != -1 && !geom->segmentLeftExists(primIDs[7])) ? -1 : 0;
+    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
+    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
+    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
+    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
+    cRi[4] = (primIDs[4] != -1 && !geom->segmentRightExists(primIDs[4])) ? -1 : 0;
+    cRi[5] = (primIDs[5] != -1 && !geom->segmentRightExists(primIDs[5])) ? -1 : 0;
+    cRi[6] = (primIDs[6] != -1 && !geom->segmentRightExists(primIDs[6])) ? -1 : 0;
+    cRi[7] = (primIDs[7] != -1 && !geom->segmentRightExists(primIDs[7])) ? -1 : 0; 
+    cL = cLi == vuint8(-1);
+    cR = cRi == vuint8(-1);
   }
   
 #endif
