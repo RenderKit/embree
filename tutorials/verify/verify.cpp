@@ -1668,7 +1668,7 @@ namespace embree
       RTCGeometry hgeom3 = rtcGetGeometry(scene,geom3);
       AssertNoError(device);
       
-      for (size_t i=0; i<16; i++) 
+      for (size_t i=0; i<17; i++)
       {
         bool enabled0 = i & 1, enabled1 = i & 2, enabled2 = i & 4, enabled3 = i & 8;
         if (enabled0) rtcEnableGeometry(hgeom0); else rtcDisableGeometry(hgeom0); AssertNoError(device);
