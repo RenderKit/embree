@@ -80,18 +80,20 @@ namespace embree
         vfloat<M> t_cone_upper = select (isParallel, pos_inf, (-B+Q)*rcp_A);
         const vfloat<M> y_lower = dP0 + t_cone_lower*dOdP;
         const vfloat<M> y_upper = dP0 + t_cone_upper*dOdP;
-        t_cone_lower = select(y_lower > 0.0f & y_lower < dPdP, t_cone_lower, pos_inf);
-        t_cone_upper = select(y_upper > 0.0f & y_upper < dPdP, t_cone_upper, neg_inf);
+        t_cone_lower = select(D>=0.0f & y_lower > 0.0f & y_lower < dPdP, t_cone_lower, pos_inf);
+        t_cone_upper = select(D>=0.0f & y_upper > 0.0f & y_upper < dPdP, t_cone_upper, neg_inf);
 
         const vbool<M> hitDisk0 = valid & cL;
         const vbool<M> hitDisk1 = valid & cR;
         const vfloat<M> t_disk0 = select (hitDisk0, select (sqr(p0*dOdP-ray_dir*dP0)<(sqr(v0.w)*sqr(dOdP)), -dP0*rcp_dOdP, pos_inf), pos_inf);
         const vfloat<M> t_disk1 = select (hitDisk1, select (sqr(p1*dOdP-ray_dir*dP1)<(sqr(v1.w)*sqr(dOdP)), -dP1*rcp_dOdP, pos_inf), pos_inf);
+        const vfloat<M> t_disk_lower = min(t_disk0, t_disk1);
+        const vfloat<M> t_disk_upper = max(t_disk0, t_disk1);
 
-        const vfloat<M> t_lower = min(t_cone_lower, min(t_disk0, t_disk1));
-        const vfloat<M> t_upper = max(t_cone_upper, select(t_lower==t_disk0, 
-                                                      select(t_disk1==vfloat<M>(pos_inf),neg_inf,t_disk1), 
-                                                      select(t_disk0==vfloat<M>(pos_inf),neg_inf,t_disk0)));
+        const vfloat<M> t_lower = min(t_cone_lower, t_disk_lower);
+        const vfloat<M> t_upper = max(t_cone_upper, select(t_lower==t_disk_lower, 
+                                                      select(t_disk_upper==vfloat<M>(pos_inf),neg_inf,t_disk_upper), 
+                                                      select(t_disk_lower==vfloat<M>(pos_inf),neg_inf,t_disk_lower)));
 
         const vbool<M> valid_lower = valid & ray_tnear <= dt+t_lower & dt+t_lower <= ray_tfar() & t_lower != vfloat<M>(pos_inf);
         const vbool<M> valid_upper = valid & ray_tnear <= dt+t_upper & dt+t_upper <= ray_tfar() & t_upper != vfloat<M>(neg_inf);
@@ -105,8 +107,8 @@ namespace embree
 
         const Vec3vf<M> drr0dP = dr*v0.w*dP;
         const Vec3vf<M> dPhy = dP*hy;
-        const vbool<M> cone_hit_first = t_first == t_cone_lower | t_first == t_cone_upper;
-        const vbool<M> disk0_hit_first = t_first == t_disk0;
+        const vbool<M> cone_hit_first = valid & (t_first == t_cone_lower | t_first == t_cone_upper);
+        const vbool<M> disk0_hit_first = valid & (t_first == t_disk0);
         const Vec3vf<M> Ng_first = select(cone_hit_first, dPdP*(dPdP*(p0+t_first*ray_dir)+drr0dP)-dPhy*y_first, select(disk0_hit_first, -dP, dP));
         const vfloat<M> u_first = select(cone_hit_first, y_first*rcp(dPdP), select(disk0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
 
