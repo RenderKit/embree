@@ -77,7 +77,7 @@ unsigned int addCurve (RTCScene scene, RTCGeometryType gtype, const Vec4f& pos)
   RTCGeometry geom = rtcNewGeometry (g_device, gtype);
   rtcSetGeometryVertexAttributeCount(geom,1);
 
-  if (gtype == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE || gtype == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE)
+  if (gtype == RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE || gtype == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE || gtype == RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,   hair_indices_linear,0, sizeof(unsigned int), NUM_CURVES);
   else
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(unsigned int), NUM_CURVES);
@@ -92,7 +92,7 @@ unsigned int addCurve (RTCScene scene, RTCGeometryType gtype, const Vec4f& pos)
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, 0, RTC_FORMAT_FLOAT3, hair_normals, 0, sizeof(Vec3fa), NUM_VERTICES);
   }
   
-  if (gtype == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE) {
+  if (gtype == RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE || gtype == RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE) {
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, hair_flags_linear, 0, sizeof(char), NUM_CURVES);
   }
 
@@ -137,10 +137,11 @@ extern "C" void device_init (char* cfg)
   addGroundPlane(g_scene);
 
   /* add curves */
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE, Vec4f(-4.5f, 0.0f, 3.f, 0.0f));
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE, Vec4f(-1.5f, 0.0f, 3.f, 0.0f));
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE, Vec4f(1.5f, 0.0f, 3.f, 0.0f));
-  addCurve(g_scene, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE, Vec4f(+4.5f, 0.0f, 3.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE, Vec4f(-5.5f, 0.0f, 3.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE, Vec4f(-2.5f, 0.0f, 3.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE, Vec4f(0.5f, 0.0f, 3.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE, Vec4f(3.5f, 0.0f, 3.f, 0.0f));
+  addCurve(g_scene, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE, Vec4f(+6.0f, 0.0f, 3.f, 0.0f));
 
   addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE, Vec4f(-4.5f, 0.0f, -2.f, 0.0f));
   addCurve(g_scene, RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE, Vec4f(-1.5f, 0.0f, -2.f, 0.0f));
