@@ -50,7 +50,6 @@ namespace embree
         const vfloat<M> dP0   = dot(p0,dP);
         const vfloat<M> dP1   = dot(p1,dP); 
         const vfloat<M> dOdP  = dot(ray_dir,dP);
-        const vfloat<M> rcp_dOdP = rcp(dOdP);
 
         // intersect cone body
         const vfloat<M> dr  = v0.w - v1.w;
@@ -80,11 +79,12 @@ namespace embree
         vfloat<M> t_cone_upper = select (isParallel, pos_inf, (-B+Q)*rcp_A);
         const vfloat<M> y_lower = dP0 + t_cone_lower*dOdP;
         const vfloat<M> y_upper = dP0 + t_cone_upper*dOdP;
-        t_cone_lower = select(D>=0.0f & y_lower > 0.0f & y_lower < dPdP, t_cone_lower, pos_inf);
-        t_cone_upper = select(D>=0.0f & y_upper > 0.0f & y_upper < dPdP, t_cone_upper, neg_inf);
+        t_cone_lower = select(valid & y_lower > 0.0f & y_lower < dPdP, t_cone_lower, pos_inf);
+        t_cone_upper = select(valid & y_upper > 0.0f & y_upper < dPdP, t_cone_upper, neg_inf);
 
         const vbool<M> hitDisk0 = valid & cL;
         const vbool<M> hitDisk1 = valid & cR;
+        const vfloat<M> rcp_dOdP = rcp(dOdP);
         const vfloat<M> t_disk0 = select (hitDisk0, select (sqr(p0*dOdP-ray_dir*dP0)<(sqr(v0.w)*sqr(dOdP)), -dP0*rcp_dOdP, pos_inf), pos_inf);
         const vfloat<M> t_disk1 = select (hitDisk1, select (sqr(p1*dOdP-ray_dir*dP1)<(sqr(v1.w)*sqr(dOdP)), -dP1*rcp_dOdP, pos_inf), pos_inf);
         const vfloat<M> t_disk_lower = min(t_disk0, t_disk1);
@@ -105,12 +105,13 @@ namespace embree
         const vfloat<M> t_first = select(valid_lower, t_lower, t_upper);
         const vfloat<M> y_first = select(valid_lower, y_lower, y_upper);
 
-        const Vec3vf<M> drr0dP = dr*v0.w*dP;
+        const vfloat<M> rcp_dPdP = rcp(dPdP);
+        const Vec3vf<M> dP2drr0dP = dPdP*dr*v0.w*dP;
         const Vec3vf<M> dPhy = dP*hy;
         const vbool<M> cone_hit_first = valid & (t_first == t_cone_lower | t_first == t_cone_upper);
         const vbool<M> disk0_hit_first = valid & (t_first == t_disk0);
-        const Vec3vf<M> Ng_first = select(cone_hit_first, dPdP*(dPdP*(p0+t_first*ray_dir)+drr0dP)-dPhy*y_first, select(disk0_hit_first, -dP, dP));
-        const vfloat<M> u_first = select(cone_hit_first, y_first*rcp(dPdP), select(disk0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
+        const Vec3vf<M> Ng_first = select(cone_hit_first, dPdP2*(p0+t_first*ray_dir)+dP2drr0dP-dPhy*y_first, select(disk0_hit_first, -dP, dP));
+        const vfloat<M> u_first = select(cone_hit_first, y_first*rcp_dPdP, select(disk0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
 
         /* invoke intersection filter for first hit */
         RoundLineIntersectorHitM<M> hit(u_first,zero,dt+t_first,Ng_first);
@@ -126,8 +127,8 @@ namespace embree
         /* invoke intersection filter for second hit */
         const vbool<M> cone_hit_second = t_second == t_cone_lower | t_second == t_cone_upper;
         const vbool<M> disk0_hit_second = t_second == t_disk0;
-        const Vec3vf<M> Ng_second = select(cone_hit_second, dPdP*(dPdP*(p0+t_second*ray_dir)+drr0dP)-dPhy*y_second, select(disk0_hit_second, -dP, dP));
-        const vfloat<M> u_second = select(cone_hit_second, y_second*rcp(dPdP), select(disk0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
+        const Vec3vf<M> Ng_second = select(cone_hit_second, dPdP2*(p0+t_second*ray_dir)+dP2drr0dP-dPhy*y_second, select(disk0_hit_second, -dP, dP));
+        const vfloat<M> u_second = select(cone_hit_second, y_second*rcp_dPdP, select(disk0_hit_first, vfloat<M>(zero), vfloat<M>(one)));
 
         hit = RoundLineIntersectorHitM<M>(u_second,zero,dt+t_second,Ng_second);
         const bool is_hit_second = epilog(valid_second, hit);
