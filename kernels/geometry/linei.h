@@ -40,8 +40,8 @@ namespace embree
     __forceinline LineMi() {  }
 
     /* Construction from vertices and IDs */
-    __forceinline LineMi(const vuint<M>& v0, const vuint<M>& geomIDs, const vuint<M>& primIDs, Geometry::GType gtype)
-      : gtype((unsigned char)gtype), m((unsigned char)popcnt(vuint<M>(primIDs) != vuint<M>(-1))), sharedGeomID(geomIDs[0]), v0(v0), primIDs(primIDs)
+    __forceinline LineMi(const vuint<M>& v0, unsigned short leftExists, unsigned short rightExists, const vuint<M>& geomIDs, const vuint<M>& primIDs, Geometry::GType gtype)
+      : gtype((unsigned char)gtype), m((unsigned char)popcnt(vuint<M>(primIDs) != vuint<M>(-1))), sharedGeomID(geomIDs[0]), leftExists (leftExists), rightExists(rightExists), v0(v0), primIDs(primIDs)
     {
       assert(all(vuint<M>(geomID()) == geomIDs));
     }
@@ -178,6 +178,8 @@ namespace embree
       Geometry::GType gty = scene->get(prims[begin].geomID())->getType();
       vuint<M> geomID, primID;
       vuint<M> v0;
+      unsigned short leftExists = 0;
+      unsigned short rightExists = 0;
       const PrimRefT* prim = &prims[begin];
 
       for (size_t i=0; i<M; i++)
@@ -186,7 +188,9 @@ namespace embree
         if (begin<end) {
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
-          v0[i] = geom->segment(prim->primID());         
+          v0[i] = geom->segment(prim->primID());
+          leftExists |= geom->segmentLeftExists(primID[i]) << i;
+          rightExists |= geom->segmentRightExists(primID[i]) << i;         
           begin++;
         } else {
           assert(i);
@@ -198,7 +202,7 @@ namespace embree
         }
         if (begin<end) prim = &prims[begin]; // FIXME: remove this line
       }
-      new (this) LineMi(v0,geomID,primID,gty); // FIXME: use non temporal store
+      new (this) LineMi(v0,leftExists,rightExists,geomID,primID,gty); // FIXME: use non temporal store
     }
 
      template<typename BVH, typename Allocator>
@@ -267,6 +271,7 @@ namespace embree
     unsigned char gtype;
     unsigned char m;
     unsigned int sharedGeomID;
+    unsigned short leftExists, rightExists;
     vuint<M> v0;      // index of start vertex
   private:
     vuint<M> primIDs; // primitive ID
@@ -334,17 +339,19 @@ namespace embree
                                          const LineSegments* geom) const
   {
     gather(p0,p1,geom);
-    vuint4 cLi,cRi;
-    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
-    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
-    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0 ;
-    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
-    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
-    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
-    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
-    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
-    cL = cLi == vuint4(-1);
-    cR = cRi == vuint4(-1);
+#if defined(__AVX512VL__)
+    cL = !vbool4(leftExists);
+    cR = !vbool4(rightExists);
+#else
+    cL[0] = (leftExists>>0 & 1)-1;
+    cL[1] = (leftExists>>1 & 1)-1;
+    cL[2] = (leftExists>>2 & 1)-1;
+    cL[3] = (leftExists>>3 & 1)-1;
+    cR[0] = (rightExists>>0 & 1)-1;
+    cR[1] = (rightExists>>1 & 1)-1;
+    cR[2] = (rightExists>>2 & 1)-1;
+    cR[3] = (rightExists>>3 & 1)-1;
+#endif
   }
 
   template<>
@@ -356,17 +363,19 @@ namespace embree
                                           const int itime) const
   {
     gatheri(p0,p1,geom,itime);
-    vuint4 cLi,cRi;
-    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
-    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
-    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
-    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
-    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
-    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
-    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
-    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
-    cL = cLi == vuint4(-1);
-    cR = cRi == vuint4(-1);
+#if defined(__AVX512VL__)
+    cL = !vbool4(leftExists);
+    cR = !vbool4(rightExists);
+#else
+    cL[0] = (leftExists>>0 & 1)-1;
+    cL[1] = (leftExists>>1 & 1)-1;
+    cL[2] = (leftExists>>2 & 1)-1;
+    cL[3] = (leftExists>>3 & 1)-1;
+    cR[0] = (rightExists>>0 & 1)-1;
+    cR[1] = (rightExists>>1 & 1)-1;
+    cR[2] = (rightExists>>2 & 1)-1;
+    cR[3] = (rightExists>>3 & 1)-1;
+#endif
   }
 
   template<>
@@ -386,17 +395,19 @@ namespace embree
     gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat4(ftime));
     p1 = lerp(a1,b1,vfloat4(ftime));
-    vuint4 cLi,cRi;
-    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
-    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
-    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
-    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
-    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
-    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
-    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
-    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
-    cL = cLi == vuint4(-1);
-    cR = cRi == vuint4(-1);
+#if defined(__AVX512VL__)
+    cL = !vbool4(leftExists);
+    cR = !vbool4(rightExists);
+#else
+    cL[0] = (leftExists>>0 & 1)-1;
+    cL[1] = (leftExists>>1 & 1)-1;
+    cL[2] = (leftExists>>2 & 1)-1;
+    cL[3] = (leftExists>>3 & 1)-1;
+    cR[0] = (rightExists>>0 & 1)-1;
+    cR[1] = (rightExists>>1 & 1)-1;
+    cR[2] = (rightExists>>2 & 1)-1;
+    cR[3] = (rightExists>>3 & 1)-1;
+#endif
   }
 
   template<>
@@ -683,25 +694,27 @@ namespace embree
                                          const LineSegments* geom) const
   {
     gather(p0,p1,geom);
-    vuint8 cLi,cRi;
-    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
-    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
-    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
-    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
-    cLi[4] = (primIDs[4] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
-    cLi[5] = (primIDs[5] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
-    cLi[6] = (primIDs[6] != -1 && !geom->segmentLeftExists(primIDs[5])) ? -1 : 0;
-    cLi[7] = (primIDs[7] != -1 && !geom->segmentLeftExists(primIDs[7])) ? -1 : 0;
-    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
-    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
-    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
-    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
-    cRi[4] = (primIDs[4] != -1 && !geom->segmentRightExists(primIDs[4])) ? -1 : 0;
-    cRi[5] = (primIDs[5] != -1 && !geom->segmentRightExists(primIDs[5])) ? -1 : 0;
-    cRi[6] = (primIDs[6] != -1 && !geom->segmentRightExists(primIDs[6])) ? -1 : 0;
-    cRi[7] = (primIDs[7] != -1 && !geom->segmentRightExists(primIDs[7])) ? -1 : 0;    
-    cL = cLi == vuint8(-1);
-    cR = cRi == vuint8(-1);
+#if defined(__AVX512VL__)
+    cL = !vbool8(leftExists);
+    cR = !vbool8(rightExists);
+#else
+    cL[0] = (leftExists>>0 & 1)-1;
+    cL[1] = (leftExists>>1 & 1)-1;
+    cL[2] = (leftExists>>2 & 1)-1;
+    cL[3] = (leftExists>>3 & 1)-1;
+    cL[4] = (leftExists>>4 & 1)-1;
+    cL[5] = (leftExists>>5 & 1)-1;
+    cL[6] = (leftExists>>6 & 1)-1;
+    cL[7] = (leftExists>>7 & 1)-1;
+    cR[0] = (rightExists>>0 & 1)-1;
+    cR[1] = (rightExists>>1 & 1)-1;
+    cR[2] = (rightExists>>2 & 1)-1;
+    cR[3] = (rightExists>>3 & 1)-1;
+    cR[4] = (rightExists>>4 & 1)-1;
+    cR[5] = (rightExists>>5 & 1)-1;
+    cR[6] = (rightExists>>6 & 1)-1;
+    cR[7] = (rightExists>>7 & 1)-1;
+#endif
   }
   
   template<>
@@ -713,25 +726,27 @@ namespace embree
                                               const int itime) const
   {
     gatheri(p0,p1,geom,itime);
-    vuint8 cLi,cRi;
-    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
-    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
-    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
-    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
-    cLi[4] = (primIDs[4] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
-    cLi[5] = (primIDs[5] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
-    cLi[6] = (primIDs[6] != -1 && !geom->segmentLeftExists(primIDs[5])) ? -1 : 0;
-    cLi[7] = (primIDs[7] != -1 && !geom->segmentLeftExists(primIDs[7])) ? -1 : 0;
-    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
-    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
-    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
-    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
-    cRi[4] = (primIDs[4] != -1 && !geom->segmentRightExists(primIDs[4])) ? -1 : 0;
-    cRi[5] = (primIDs[5] != -1 && !geom->segmentRightExists(primIDs[5])) ? -1 : 0;
-    cRi[6] = (primIDs[6] != -1 && !geom->segmentRightExists(primIDs[6])) ? -1 : 0;
-    cRi[7] = (primIDs[7] != -1 && !geom->segmentRightExists(primIDs[7])) ? -1 : 0; 
-    cL = cLi == vuint8(-1);
-    cR = cRi == vuint8(-1);
+#if defined(__AVX512VL__)
+    cL = !vbool8(leftExists);
+    cR = !vbool8(rightExists);
+#else
+    cL[0] = (leftExists>>0 & 1)-1;
+    cL[1] = (leftExists>>1 & 1)-1;
+    cL[2] = (leftExists>>2 & 1)-1;
+    cL[3] = (leftExists>>3 & 1)-1;
+    cL[4] = (leftExists>>4 & 1)-1;
+    cL[5] = (leftExists>>5 & 1)-1;
+    cL[6] = (leftExists>>6 & 1)-1;
+    cL[7] = (leftExists>>7 & 1)-1;
+    cR[0] = (rightExists>>0 & 1)-1;
+    cR[1] = (rightExists>>1 & 1)-1;
+    cR[2] = (rightExists>>2 & 1)-1;
+    cR[3] = (rightExists>>3 & 1)-1;
+    cR[4] = (rightExists>>4 & 1)-1;
+    cR[5] = (rightExists>>5 & 1)-1;
+    cR[6] = (rightExists>>6 & 1)-1;
+    cR[7] = (rightExists>>7 & 1)-1;
+#endif
   }
   
   template<>
@@ -751,25 +766,27 @@ namespace embree
     gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat8(ftime));
     p1 = lerp(a1,b1,vfloat8(ftime));
-    vuint8 cLi,cRi;
-    cLi[0] = (primIDs[0] != -1 && !geom->segmentLeftExists(primIDs[0])) ? -1 : 0;
-    cLi[1] = (primIDs[1] != -1 && !geom->segmentLeftExists(primIDs[1])) ? -1 : 0;
-    cLi[2] = (primIDs[2] != -1 && !geom->segmentLeftExists(primIDs[2])) ? -1 : 0;
-    cLi[3] = (primIDs[3] != -1 && !geom->segmentLeftExists(primIDs[3])) ? -1 : 0;
-    cLi[4] = (primIDs[4] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
-    cLi[5] = (primIDs[5] != -1 && !geom->segmentLeftExists(primIDs[4])) ? -1 : 0;
-    cLi[6] = (primIDs[6] != -1 && !geom->segmentLeftExists(primIDs[5])) ? -1 : 0;
-    cLi[7] = (primIDs[7] != -1 && !geom->segmentLeftExists(primIDs[7])) ? -1 : 0;
-    cRi[0] = (primIDs[0] != -1 && !geom->segmentRightExists(primIDs[0])) ? -1 : 0;
-    cRi[1] = (primIDs[1] != -1 && !geom->segmentRightExists(primIDs[1])) ? -1 : 0;
-    cRi[2] = (primIDs[2] != -1 && !geom->segmentRightExists(primIDs[2])) ? -1 : 0;
-    cRi[3] = (primIDs[3] != -1 && !geom->segmentRightExists(primIDs[3])) ? -1 : 0;
-    cRi[4] = (primIDs[4] != -1 && !geom->segmentRightExists(primIDs[4])) ? -1 : 0;
-    cRi[5] = (primIDs[5] != -1 && !geom->segmentRightExists(primIDs[5])) ? -1 : 0;
-    cRi[6] = (primIDs[6] != -1 && !geom->segmentRightExists(primIDs[6])) ? -1 : 0;
-    cRi[7] = (primIDs[7] != -1 && !geom->segmentRightExists(primIDs[7])) ? -1 : 0; 
-    cL = cLi == vuint8(-1);
-    cR = cRi == vuint8(-1);
+#if defined(__AVX512VL__)
+    cL = !vbool8(leftExists);
+    cR = !vbool8(rightExists);
+#else
+    cL[0] = (leftExists>>0 & 1)-1;
+    cL[1] = (leftExists>>1 & 1)-1;
+    cL[2] = (leftExists>>2 & 1)-1;
+    cL[3] = (leftExists>>3 & 1)-1;
+    cL[4] = (leftExists>>4 & 1)-1;
+    cL[5] = (leftExists>>5 & 1)-1;
+    cL[6] = (leftExists>>6 & 1)-1;
+    cL[7] = (leftExists>>7 & 1)-1;
+    cR[0] = (rightExists>>0 & 1)-1;
+    cR[1] = (rightExists>>1 & 1)-1;
+    cR[2] = (rightExists>>2 & 1)-1;
+    cR[3] = (rightExists>>3 & 1)-1;
+    cR[4] = (rightExists>>4 & 1)-1;
+    cR[5] = (rightExists>>5 & 1)-1;
+    cR[6] = (rightExists>>6 & 1)-1;
+    cR[7] = (rightExists>>7 & 1)-1;
+#endif
   }
   
 #endif
