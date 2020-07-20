@@ -429,16 +429,16 @@ namespace embree
     const vfloat4 b3 = vfloat4::loadu(geom->vertexPtr(v0[3]+1));
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
     
-    const vfloat4 l0 = (primIDs[0] != -1 && geom->segmentLeftExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1)) : vfloat4(inf);
-    const vfloat4 l1 = (primIDs[1] != -1 && geom->segmentLeftExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1)) : vfloat4(inf);
-    const vfloat4 l2 = (primIDs[2] != -1 && geom->segmentLeftExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1)) : vfloat4(inf);
-    const vfloat4 l3 = (primIDs[3] != -1 && geom->segmentLeftExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1)) : vfloat4(inf);
+    const vfloat4 l0 = (leftExists & (1<<0)) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1)) : vfloat4(inf);
+    const vfloat4 l1 = (leftExists & (1<<1)) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1)) : vfloat4(inf);
+    const vfloat4 l2 = (leftExists & (1<<2)) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1)) : vfloat4(inf);
+    const vfloat4 l3 = (leftExists & (1<<3)) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1)) : vfloat4(inf);
     transpose(l0,l1,l2,l3,pL.x,pL.y,pL.z,pL.w);
     
-    const vfloat4 r0 = (primIDs[0] != -1 && geom->segmentRightExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2)) : vfloat4(inf);
-    const vfloat4 r1 = (primIDs[1] != -1 && geom->segmentRightExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2)) : vfloat4(inf);
-    const vfloat4 r2 = (primIDs[2] != -1 && geom->segmentRightExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2)) : vfloat4(inf);
-    const vfloat4 r3 = (primIDs[3] != -1 && geom->segmentRightExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2)) : vfloat4(inf);
+    const vfloat4 r0 = (rightExists & (1<<0)) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2)) : vfloat4(inf);
+    const vfloat4 r1 = (rightExists & (1<<1)) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2)) : vfloat4(inf);
+    const vfloat4 r2 = (rightExists & (1<<2)) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2)) : vfloat4(inf);
+    const vfloat4 r3 = (rightExists & (1<<3)) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2)) : vfloat4(inf);
     transpose(r0,r1,r2,r3,pR.x,pR.y,pR.z,pR.w);
   }
   
@@ -462,16 +462,16 @@ namespace embree
     const vfloat4 b3 = vfloat4::loadu(geom->vertexPtr(v0[3]+1,itime));
     transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
     
-    const vfloat4 l0 = (primIDs[0] != -1 && geom->segmentLeftExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1,itime)) : vfloat4(inf);
-    const vfloat4 l1 = (primIDs[1] != -1 && geom->segmentLeftExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1,itime)) : vfloat4(inf);
-    const vfloat4 l2 = (primIDs[2] != -1 && geom->segmentLeftExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1,itime)) : vfloat4(inf);
-    const vfloat4 l3 = (primIDs[3] != -1 && geom->segmentLeftExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1,itime)) : vfloat4(inf);
+    const vfloat4 l0 = (leftExists & (1<<0)) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1,itime)) : vfloat4(inf);
+    const vfloat4 l1 = (leftExists & (1<<1)) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1,itime)) : vfloat4(inf);
+    const vfloat4 l2 = (leftExists & (1<<2)) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1,itime)) : vfloat4(inf);
+    const vfloat4 l3 = (leftExists & (1<<3)) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1,itime)) : vfloat4(inf);
     transpose(l0,l1,l2,l3,pL.x,pL.y,pL.z,pL.w);
     
-    const vfloat4 r0 = (primIDs[0] != -1 && geom->segmentRightExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2,itime)) : vfloat4(inf);
-    const vfloat4 r1 = (primIDs[1] != -1 && geom->segmentRightExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2,itime)) : vfloat4(inf);
-    const vfloat4 r2 = (primIDs[2] != -1 && geom->segmentRightExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2,itime)) : vfloat4(inf);
-    const vfloat4 r3 = (primIDs[3] != -1 && geom->segmentRightExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2,itime)) : vfloat4(inf);
+    const vfloat4 r0 = (rightExists & (1<<0)) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2,itime)) : vfloat4(inf);
+    const vfloat4 r1 = (rightExists & (1<<1)) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2,itime)) : vfloat4(inf);
+    const vfloat4 r2 = (rightExists & (1<<2)) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2,itime)) : vfloat4(inf);
+    const vfloat4 r3 = (rightExists & (1<<3)) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2,itime)) : vfloat4(inf);
     transpose(r0,r1,r2,r3,pR.x,pR.y,pR.z,pR.w);
   }
   
@@ -595,24 +595,24 @@ namespace embree
     const vfloat4 b7 = vfloat4::loadu(geom->vertexPtr(v0[7]+1));
     transpose(b0,b1,b2,b3,b4,b5,b6,b7,p1.x,p1.y,p1.z,p1.w);
     
-    const vfloat4 l0 = (primIDs[0] != -1 && geom->segmentLeftExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1)) : vfloat4(inf);
-    const vfloat4 l1 = (primIDs[1] != -1 && geom->segmentLeftExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1)) : vfloat4(inf);
-    const vfloat4 l2 = (primIDs[2] != -1 && geom->segmentLeftExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1)) : vfloat4(inf);
-    const vfloat4 l3 = (primIDs[3] != -1 && geom->segmentLeftExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1)) : vfloat4(inf);
-    const vfloat4 l4 = (primIDs[4] != -1 && geom->segmentLeftExists(primIDs[4])) ? vfloat4::loadu(geom->vertexPtr(v0[4]-1)) : vfloat4(inf);
-    const vfloat4 l5 = (primIDs[5] != -1 && geom->segmentLeftExists(primIDs[5])) ? vfloat4::loadu(geom->vertexPtr(v0[5]-1)) : vfloat4(inf);
-    const vfloat4 l6 = (primIDs[6] != -1 && geom->segmentLeftExists(primIDs[6])) ? vfloat4::loadu(geom->vertexPtr(v0[6]-1)) : vfloat4(inf);
-    const vfloat4 l7 = (primIDs[7] != -1 && geom->segmentLeftExists(primIDs[7])) ? vfloat4::loadu(geom->vertexPtr(v0[7]-1)) : vfloat4(inf);
+    const vfloat4 l0 = (leftExists & (1<<0)) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1)) : vfloat4(inf);
+    const vfloat4 l1 = (leftExists & (1<<1)) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1)) : vfloat4(inf);
+    const vfloat4 l2 = (leftExists & (1<<2)) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1)) : vfloat4(inf);
+    const vfloat4 l3 = (leftExists & (1<<3)) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1)) : vfloat4(inf);
+    const vfloat4 l4 = (leftExists & (1<<4)) ? vfloat4::loadu(geom->vertexPtr(v0[4]-1)) : vfloat4(inf);
+    const vfloat4 l5 = (leftExists & (1<<5)) ? vfloat4::loadu(geom->vertexPtr(v0[5]-1)) : vfloat4(inf);
+    const vfloat4 l6 = (leftExists & (1<<6)) ? vfloat4::loadu(geom->vertexPtr(v0[6]-1)) : vfloat4(inf);
+    const vfloat4 l7 = (leftExists & (1<<7)) ? vfloat4::loadu(geom->vertexPtr(v0[7]-1)) : vfloat4(inf);
     transpose(l0,l1,l2,l3,l4,l5,l6,l7,pL.x,pL.y,pL.z,pL.w);
     
-    const vfloat4 r0 = (primIDs[0] != -1 && geom->segmentRightExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2)) : vfloat4(inf);
-    const vfloat4 r1 = (primIDs[1] != -1 && geom->segmentRightExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2)) : vfloat4(inf);
-    const vfloat4 r2 = (primIDs[2] != -1 && geom->segmentRightExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2)) : vfloat4(inf);
-    const vfloat4 r3 = (primIDs[3] != -1 && geom->segmentRightExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2)) : vfloat4(inf);
-    const vfloat4 r4 = (primIDs[4] != -1 && geom->segmentRightExists(primIDs[4])) ? vfloat4::loadu(geom->vertexPtr(v0[4]+2)) : vfloat4(inf);
-    const vfloat4 r5 = (primIDs[5] != -1 && geom->segmentRightExists(primIDs[5])) ? vfloat4::loadu(geom->vertexPtr(v0[5]+2)) : vfloat4(inf);
-    const vfloat4 r6 = (primIDs[6] != -1 && geom->segmentRightExists(primIDs[6])) ? vfloat4::loadu(geom->vertexPtr(v0[6]+2)) : vfloat4(inf);
-    const vfloat4 r7 = (primIDs[7] != -1 && geom->segmentRightExists(primIDs[7])) ? vfloat4::loadu(geom->vertexPtr(v0[7]+2)) : vfloat4(inf);
+    const vfloat4 r0 = (rightExists & (1<<0)) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2)) : vfloat4(inf);
+    const vfloat4 r1 = (rightExists & (1<<1)) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2)) : vfloat4(inf);
+    const vfloat4 r2 = (rightExists & (1<<2)) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2)) : vfloat4(inf);
+    const vfloat4 r3 = (rightExists & (1<<3)) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2)) : vfloat4(inf);
+    const vfloat4 r4 = (rightExists & (1<<4)) ? vfloat4::loadu(geom->vertexPtr(v0[4]+2)) : vfloat4(inf);
+    const vfloat4 r5 = (rightExists & (1<<5)) ? vfloat4::loadu(geom->vertexPtr(v0[5]+2)) : vfloat4(inf);
+    const vfloat4 r6 = (rightExists & (1<<6)) ? vfloat4::loadu(geom->vertexPtr(v0[6]+2)) : vfloat4(inf);
+    const vfloat4 r7 = (rightExists & (1<<7)) ? vfloat4::loadu(geom->vertexPtr(v0[7]+2)) : vfloat4(inf);
     transpose(r0,r1,r2,r3,r4,r5,r6,r7,pR.x,pR.y,pR.z,pR.w);
   }
   
@@ -644,24 +644,24 @@ namespace embree
     const vfloat4 b7 = vfloat4::loadu(geom->vertexPtr(v0[7]+1,itime));
     transpose(b0,b1,b2,b3,b4,b5,b6,b7,p1.x,p1.y,p1.z,p1.w);
     
-    const vfloat4 l0 = (primIDs[0] != -1 && geom->segmentLeftExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1,itime)) : vfloat4(inf);
-    const vfloat4 l1 = (primIDs[1] != -1 && geom->segmentLeftExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1,itime)) : vfloat4(inf);
-    const vfloat4 l2 = (primIDs[2] != -1 && geom->segmentLeftExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1,itime)) : vfloat4(inf);
-    const vfloat4 l3 = (primIDs[3] != -1 && geom->segmentLeftExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1,itime)) : vfloat4(inf);
-    const vfloat4 l4 = (primIDs[4] != -1 && geom->segmentLeftExists(primIDs[4])) ? vfloat4::loadu(geom->vertexPtr(v0[4]-1,itime)) : vfloat4(inf);
-    const vfloat4 l5 = (primIDs[5] != -1 && geom->segmentLeftExists(primIDs[5])) ? vfloat4::loadu(geom->vertexPtr(v0[5]-1,itime)) : vfloat4(inf);
-    const vfloat4 l6 = (primIDs[6] != -1 && geom->segmentLeftExists(primIDs[6])) ? vfloat4::loadu(geom->vertexPtr(v0[6]-1,itime)) : vfloat4(inf);
-    const vfloat4 l7 = (primIDs[7] != -1 && geom->segmentLeftExists(primIDs[7])) ? vfloat4::loadu(geom->vertexPtr(v0[7]-1,itime)) : vfloat4(inf);
+    const vfloat4 l0 = (leftExists & (1<<0)) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1,itime)) : vfloat4(inf);
+    const vfloat4 l1 = (leftExists & (1<<1)) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1,itime)) : vfloat4(inf);
+    const vfloat4 l2 = (leftExists & (1<<2)) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1,itime)) : vfloat4(inf);
+    const vfloat4 l3 = (leftExists & (1<<3)) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1,itime)) : vfloat4(inf);
+    const vfloat4 l4 = (leftExists & (1<<4)) ? vfloat4::loadu(geom->vertexPtr(v0[4]-1,itime)) : vfloat4(inf);
+    const vfloat4 l5 = (leftExists & (1<<5)) ? vfloat4::loadu(geom->vertexPtr(v0[5]-1,itime)) : vfloat4(inf);
+    const vfloat4 l6 = (leftExists & (1<<6)) ? vfloat4::loadu(geom->vertexPtr(v0[6]-1,itime)) : vfloat4(inf);
+    const vfloat4 l7 = (leftExists & (1<<7)) ? vfloat4::loadu(geom->vertexPtr(v0[7]-1,itime)) : vfloat4(inf);
     transpose(l0,l1,l2,l3,l4,l5,l6,l7,pL.x,pL.y,pL.z,pL.w);
     
-    const vfloat4 r0 = (primIDs[0] != -1 && geom->segmentRightExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2,itime)) : vfloat4(inf);
-    const vfloat4 r1 = (primIDs[1] != -1 && geom->segmentRightExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2,itime)) : vfloat4(inf);
-    const vfloat4 r2 = (primIDs[2] != -1 && geom->segmentRightExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2,itime)) : vfloat4(inf);
-    const vfloat4 r3 = (primIDs[3] != -1 && geom->segmentRightExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2,itime)) : vfloat4(inf);
-    const vfloat4 r4 = (primIDs[4] != -1 && geom->segmentRightExists(primIDs[4])) ? vfloat4::loadu(geom->vertexPtr(v0[4]+2,itime)) : vfloat4(inf);
-    const vfloat4 r5 = (primIDs[5] != -1 && geom->segmentRightExists(primIDs[5])) ? vfloat4::loadu(geom->vertexPtr(v0[5]+2,itime)) : vfloat4(inf);
-    const vfloat4 r6 = (primIDs[6] != -1 && geom->segmentRightExists(primIDs[6])) ? vfloat4::loadu(geom->vertexPtr(v0[6]+2,itime)) : vfloat4(inf);
-    const vfloat4 r7 = (primIDs[7] != -1 && geom->segmentRightExists(primIDs[7])) ? vfloat4::loadu(geom->vertexPtr(v0[7]+2,itime)) : vfloat4(inf);
+    const vfloat4 r0 = (rightExists & (1<<0)) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2,itime)) : vfloat4(inf);
+    const vfloat4 r1 = (rightExists & (1<<1)) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2,itime)) : vfloat4(inf);
+    const vfloat4 r2 = (rightExists & (1<<2)) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2,itime)) : vfloat4(inf);
+    const vfloat4 r3 = (rightExists & (1<<3)) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2,itime)) : vfloat4(inf);
+    const vfloat4 r4 = (rightExists & (1<<4)) ? vfloat4::loadu(geom->vertexPtr(v0[4]+2,itime)) : vfloat4(inf);
+    const vfloat4 r5 = (rightExists & (1<<5)) ? vfloat4::loadu(geom->vertexPtr(v0[5]+2,itime)) : vfloat4(inf);
+    const vfloat4 r6 = (rightExists & (1<<6)) ? vfloat4::loadu(geom->vertexPtr(v0[6]+2,itime)) : vfloat4(inf);
+    const vfloat4 r7 = (rightExists & (1<<7)) ? vfloat4::loadu(geom->vertexPtr(v0[7]+2,itime)) : vfloat4(inf);
     transpose(r0,r1,r2,r3,r4,r5,r6,r7,pR.x,pR.y,pR.z,pR.w);
   }
   
