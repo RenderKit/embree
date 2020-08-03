@@ -68,7 +68,7 @@ namespace embree
       __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
       {
         for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++)
-          if (!isvalid(bounds(i,itime))) return false;
+          if (!isvalid_non_empty(bounds(i,itime))) return false;
         
         return true;
       }
@@ -109,7 +109,7 @@ namespace embree
       {
         const BBox3fa b = bounds(i);
         if (bbox) *bbox = b;
-        return isvalid(b);
+        return isvalid_non_empty(b);
       }
 
       /*! calculates the build bounds of the i'th item at the itime'th time segment, if it's valid */
@@ -117,7 +117,7 @@ namespace embree
       {
         const LBBox3fa bounds = linearBounds(i,itime);
         bbox = bounds.bounds0; // use bounding box of first timestep to build BVH
-        return isvalid(bounds);
+        return isvalid_non_empty(bounds);
       }
 
       /*! calculates the linear bounds of the i'th primitive for the specified time range */
