@@ -43,9 +43,9 @@ namespace embree
     {
       ImGui::Checkbox("accumulate",&g_accumulate);
       ImGui::Text("max path length");
-      ImGui::DragInt("",&g_max_path_length,1.0f,1,16);
+      ImGui::DragInt("##max_path_length",&g_max_path_length,1.0f,1,16);
       ImGui::Text("samples per pixel");
-      ImGui::DragInt("",&g_spp,1.0f,1,16);
+      ImGui::DragInt("##spp",&g_spp,1.0f,1,16);
     }
 #endif
   };
