@@ -206,6 +206,7 @@ namespace embree
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4iMeshSAH,void* COMMA Scene* COMMA bool);
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA bool);
   DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA bool);
+  DECLARE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelInstanceSAH,void* COMMA Scene* COMMA Geometry::GTypeMask COMMA bool);
 
   DECLARE_ISA_FUNCTION(Builder*,BVH4Curve4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
   DECLARE_ISA_FUNCTION(Builder*,BVH4Curve4iBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
@@ -264,6 +265,7 @@ namespace embree
     IF_ENABLED_TRIS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelTriangle4vMeshSAH));
     IF_ENABLED_QUADS (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelQuadMeshSAH));
     IF_ENABLED_USER (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelVirtualSAH));
+    IF_ENABLED_INSTANCE (SELECT_SYMBOL_DEFAULT_AVX_AVX512KNL(features,BVH4BuilderTwoLevelInstanceSAH));
 
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Curve4vBuilder_OBB_New));
     IF_ENABLED_CURVES_OR_POINTS(SELECT_SYMBOL_DEFAULT_AVX(features,BVH4Curve4iBuilder_OBB_New));
@@ -1227,7 +1229,20 @@ namespace embree
     BVH4* accel = new BVH4(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH4InstanceIntersectors(accel);
     auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE_CHEAP;
-    Builder* builder = BVH4InstanceSceneBuilderSAH(accel,scene,gtype);
+    // Builder* builder = BVH4InstanceSceneBuilderSAH(accel,scene,gtype);
+
+    Builder* builder = nullptr;
+    if (scene->device->object_builder == "default") {
+      switch (bvariant) {
+      case BuildVariant::STATIC      : builder = BVH4InstanceSceneBuilderSAH(accel,scene,gtype); break;
+      case BuildVariant::DYNAMIC     : builder = BVH4BuilderTwoLevelInstanceSAH(accel,scene,gtype,false); break;
+      case BuildVariant::HIGH_QUALITY: assert(false); break;
+      }
+    }
+    else if (scene->device->object_builder == "sah") builder = BVH4InstanceSceneBuilderSAH(accel,scene,gtype);
+    else if (scene->device->object_builder == "dynamic") builder = BVH4BuilderTwoLevelInstanceSAH(accel,scene,gtype,false);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH4<Object>");
+
     return new AccelInstance(accel,builder,intersectors);
   }
 

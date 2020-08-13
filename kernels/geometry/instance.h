@@ -66,6 +66,11 @@ namespace embree
       return instance->linearBounds(0,time_range);
     }
 
+    /* Updates the primitive */
+    __forceinline BBox3fa update(Instance* instance) {
+      return instance->bounds(0);
+    }
+
   public:
     const Instance* instance;
     const unsigned int instID_ = std::numeric_limits<unsigned int>::max ();

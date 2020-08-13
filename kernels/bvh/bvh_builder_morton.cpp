@@ -16,6 +16,7 @@
 #include "../geometry/quadv.h"
 #include "../geometry/quadi.h"
 #include "../geometry/object.h"
+#include "../geometry/instance.h"
 
 #if defined(__X86_64__)
 #  define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform
@@ -354,6 +355,50 @@ namespace embree
       unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
     };
 
+    template<int N>
+    struct CreateMortonLeaf<N,InstancePrimitive>
+    {
+      typedef BVHN<N> BVH;
+      typedef typename BVH::NodeRef NodeRef;
+      typedef typename BVH::NodeRecord NodeRecord;
+
+      __forceinline CreateMortonLeaf (Instance* mesh, unsigned int geomID, BVHBuilderMorton::BuildPrim* morton)
+        : mesh(mesh), morton(morton), geomID_(geomID) {}
+      
+      __noinline NodeRecord operator() (const range<unsigned>& current, const FastAllocator::CachedAllocator& alloc)
+      {
+        vfloat4 lower(pos_inf);
+        vfloat4 upper(neg_inf);
+        size_t items = current.size();
+        size_t start = current.begin();
+        assert(items <= 1);
+        
+        /* allocate leaf node */
+        InstancePrimitive* accel = (InstancePrimitive*) alloc.malloc1(items*sizeof(InstancePrimitive),BVH::byteAlignment);
+        NodeRef ref = BVH::encodeLeaf((char*)accel,items);
+        const Instance* instance = this->mesh;
+        
+        BBox3fa bounds = empty;
+        for (size_t i=0; i<items; i++)
+        {
+          const unsigned int primID = morton[start+i].index; 
+          bounds.extend(instance->bounds(primID));
+          new (&accel[i]) InstancePrimitive(instance, geomID_);
+        }
+
+        BBox3fx box_o = (BBox3fx&)bounds;
+#if ROTATE_TREE
+        if (N == 4)
+          box_o.lower.a = current.size();
+#endif
+        return NodeRecord(ref,box_o);
+      }
+    private:
+      Instance* mesh;
+      BVHBuilderMorton::BuildPrim* morton;
+      unsigned int geomID_ = std::numeric_limits<unsigned int>::max();
+    };
+
     template<typename Mesh>
     struct CalculateMeshBounds
     {
@@ -472,6 +517,13 @@ namespace embree
     Builder* BVH4VirtualMeshBuilderMortonGeneral (void* bvh, UserGeometry* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,UserGeometry,Object>((BVH4*)bvh,mesh,geomID,1,BVH4::maxLeafBlocks); }
 #if defined(__AVX__)
     Builder* BVH8VirtualMeshBuilderMortonGeneral (void* bvh, UserGeometry* mesh, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,UserGeometry,Object>((BVH8*)bvh,mesh,geomID,1,BVH4::maxLeafBlocks); }    
+#endif
+#endif
+
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    Builder* BVH4InstanceMeshBuilderMortonGeneral (void* bvh, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<4,Instance,InstancePrimitive>((BVH4*)bvh,mesh,gtype,geomID,1,BVH4::maxLeafBlocks); }
+#if defined(__AVX__)
+    Builder* BVH8InstanceMeshBuilderMortonGeneral (void* bvh, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) { return new class BVHNMeshBuilderMorton<8,Instance,InstancePrimitive>((BVH8*)bvh,mesh,gtype,geomID,1,BVH4::maxLeafBlocks); }    
 #endif
 #endif
 

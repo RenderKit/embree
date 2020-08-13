@@ -616,8 +616,14 @@ namespace embree
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
     Builder* BVH4InstanceSceneBuilderSAH (void* bvh, Scene* scene, Geometry::GTypeMask gtype) { return new BVHNBuilderSAH<4,InstancePrimitive>((BVH4*)bvh,scene,4,1.0f,1,1,gtype); }
+    Builder* BVH4InstanceMeshBuilderSAH (void* bvh, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) {
+      return new BVHNBuilderSAH<4,InstancePrimitive>((BVH4*)bvh,mesh,geomID,4,1.0f,1,inf,gtype);
+    }
 #if defined(__AVX__)
     Builder* BVH8InstanceSceneBuilderSAH (void* bvh, Scene* scene, Geometry::GTypeMask gtype) { return new BVHNBuilderSAH<8,InstancePrimitive>((BVH8*)bvh,scene,8,1.0f,1,1,gtype); }
+    Builder* BVH8InstanceMeshBuilderSAH (void* bvh, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) {
+      return new BVHNBuilderSAH<8,InstancePrimitive>((BVH8*)bvh,mesh,geomID,8,1.0f,1,inf,gtype);
+    }
 #endif
 #endif
 

@@ -734,8 +734,8 @@ void sphereFilterFunction(const RTCFilterFunctionNArguments* args)
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
-  const unsigned int N = args->N;
-  assert(N == 1);
+  // const unsigned int N = args->N;
+  assert(args->N == 1);
 
 
   /* avoid crashing when debug visualizations are used */

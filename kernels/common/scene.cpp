@@ -480,16 +480,27 @@ namespace embree
   void Scene::createInstanceAccel()
   {
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-    //if (device->object_accel == "default") 
+    // if (device->object_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->canUseAVX() && !isCompactAccel())
-        accels_add(device->bvh8_factory->BVH8Instance(this, false, BVHFactory::BuildVariant::STATIC));
+      if (device->canUseAVX() && !isCompactAccel()) {
+        if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+          accels_add(device->bvh8_factory->BVH8Instance(this, false, BVHFactory::BuildVariant::STATIC));
+        } else {
+          accels_add(device->bvh8_factory->BVH8Instance(this, false, BVHFactory::BuildVariant::DYNAMIC));
+        }
+      } 
       else
 #endif
-        accels_add(device->bvh4_factory->BVH4Instance(this, false, BVHFactory::BuildVariant::STATIC));
+      {
+        if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+          accels_add(device->bvh4_factory->BVH4Instance(this, false, BVHFactory::BuildVariant::STATIC));
+        } else {
+          accels_add(device->bvh4_factory->BVH4Instance(this, false, BVHFactory::BuildVariant::DYNAMIC));
+        }
+      }
     }
-    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
+    // else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
 #endif
   }
 
@@ -512,16 +523,27 @@ namespace embree
   void Scene::createInstanceExpensiveAccel()
   {
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-    //if (device->object_accel == "default") 
+    // if (device->object_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
-      if (device->canUseAVX() && !isCompactAccel())
-        accels_add(device->bvh8_factory->BVH8Instance(this, true, BVHFactory::BuildVariant::STATIC));
+      if (device->canUseAVX() && !isCompactAccel()) {
+        if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+          accels_add(device->bvh8_factory->BVH8Instance(this, true, BVHFactory::BuildVariant::STATIC));
+        } else {
+          accels_add(device->bvh8_factory->BVH8Instance(this, true, BVHFactory::BuildVariant::DYNAMIC));
+        }
+      } 
       else
 #endif
-        accels_add(device->bvh4_factory->BVH4Instance(this, true, BVHFactory::BuildVariant::STATIC));
+      {
+        if (quality_flags != RTC_BUILD_QUALITY_LOW) {
+          accels_add(device->bvh4_factory->BVH4Instance(this, true, BVHFactory::BuildVariant::STATIC));
+        } else {
+          accels_add(device->bvh4_factory->BVH4Instance(this, true, BVHFactory::BuildVariant::DYNAMIC));
+        }
+      }
     }
-    //else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
+    // else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown instance accel "+device->instance_accel);
 #endif
   }
 

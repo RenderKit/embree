@@ -85,6 +85,34 @@ namespace embree
       return lbbox;
     }
 
+    /*! calculates the build bounds of the i'th item, if it's valid */
+    __forceinline bool buildBounds(size_t i, BBox3fa* bbox = nullptr) const
+    {
+      assert(i==0);
+      const BBox3fa b = bounds(i);
+      if (bbox) *bbox = b;
+      return isvalid(b);
+    }
+
+     /*! calculates the build bounds of the i'th item at the itime'th time segment, if it's valid */
+    __forceinline bool buildBounds(size_t i, size_t itime, BBox3fa& bbox) const
+    {
+      assert(i==0);
+      const LBBox3fa bounds = linearBounds(i,itime);
+      bbox = bounds.bounds ();
+      return isvalid(bounds);
+    }
+
+    /* gets version info of topology */
+    unsigned int getTopologyVersion() const {
+      return numPrimitives;
+    }
+  
+    /* returns true if topology changed */
+    bool topologyChanged(unsigned int otherVersion) const {
+      return numPrimitives != otherVersion;
+    }
+
     /*! check if the i'th primitive is valid between the specified time range */
     __forceinline bool valid(size_t i, const range<size_t>& itime_range) const
     {
@@ -198,8 +226,10 @@ namespace embree
         assert(r.end()   == 1);
 
         PrimInfo pinfo(empty);
-        const BBox3fa b = bounds(0);
-        if (!isvalid(b)) return pinfo;
+        BBox3fa b = empty;
+        if (!buildBounds(0,&b)) return pinfo;
+        // const BBox3fa b = bounds(0);
+        // if (!isvalid(b)) return pinfo;
 
         const PrimRef prim(b,geomID,unsigned(0));
         pinfo.add_center2(prim);
@@ -213,8 +243,11 @@ namespace embree
         assert(r.end()   == 1);
 
         PrimInfo pinfo(empty);
-        if (!valid(0,range<size_t>(itime))) return pinfo;
-        const PrimRef prim(linearBounds(0,itime).bounds(),geomID,unsigned(0));
+        BBox3fa b = empty;
+        if (!buildBounds(0,&b)) return pinfo;
+        // if (!valid(0,range<size_t>(itime))) return pinfo;
+        // const PrimRef prim(linearBounds(0,itime).bounds(),geomID,unsigned(0));
+        const PrimRef prim(b,geomID,unsigned(0));
         pinfo.add_center2(prim);
         prims[k++] = prim;
         return pinfo;

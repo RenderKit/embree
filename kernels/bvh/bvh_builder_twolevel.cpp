@@ -15,8 +15,8 @@ namespace embree
   namespace isa
   {
     template<int N, typename Mesh, typename Primitive>
-    BVHNBuilderTwoLevel<N,Mesh,Primitive>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, bool useMortonBuilder, const size_t singleThreadThreshold)
-      : bvh(bvh), scene(scene), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold(singleThreadThreshold), useMortonBuilder_(useMortonBuilder) {}
+    BVHNBuilderTwoLevel<N,Mesh,Primitive>::BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, Geometry::GTypeMask gtype, bool useMortonBuilder, const size_t singleThreadThreshold)
+      : bvh(bvh), scene(scene), refs(scene->device,0), prims(scene->device,0), singleThreadThreshold(singleThreadThreshold), gtype(gtype), useMortonBuilder_(useMortonBuilder) {}
     
     template<int N, typename Mesh, typename Primitive>
     BVHNBuilderTwoLevel<N,Mesh,Primitive>::~BVHNBuilderTwoLevel () {
@@ -48,7 +48,7 @@ namespace embree
       bvh->alloc.reset();
       
       /* skip build for empty scene */
-      const size_t numPrimitives = scene->getNumPrimitives(Mesh::geom_type,false);
+      const size_t numPrimitives = scene->getNumPrimitives(gtype,false);
 
       if (numPrimitives == 0) {
         prims.resize(0);
@@ -313,53 +313,65 @@ namespace embree
 
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
     Builder* BVH4BuilderTwoLevelTriangle4MeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,useMortonBuilder);
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4>((BVH4*)bvh,scene,TriangleMesh::geom_type,useMortonBuilder);
     }
     Builder* BVH4BuilderTwoLevelTriangle4vMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,useMortonBuilder);
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4v>((BVH4*)bvh,scene,TriangleMesh::geom_type,useMortonBuilder);
     }
     Builder* BVH4BuilderTwoLevelTriangle4iMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,useMortonBuilder);
+      return new BVHNBuilderTwoLevel<4,TriangleMesh,Triangle4i>((BVH4*)bvh,scene,TriangleMesh::geom_type,useMortonBuilder);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
     Builder* BVH4BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-    return new BVHNBuilderTwoLevel<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,useMortonBuilder);
+    return new BVHNBuilderTwoLevel<4,QuadMesh,Quad4v>((BVH4*)bvh,scene,QuadMesh::geom_type,useMortonBuilder);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
     Builder* BVH4BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-    return new BVHNBuilderTwoLevel<4,UserGeometry,Object>((BVH4*)bvh,scene,useMortonBuilder);
+    return new BVHNBuilderTwoLevel<4,UserGeometry,Object>((BVH4*)bvh,scene,UserGeometry::geom_type,useMortonBuilder);
     }
 #endif
 
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    Builder* BVH4BuilderTwoLevelInstanceSAH (void* bvh, Scene* scene, Geometry::GTypeMask gtype, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<4,Instance,InstancePrimitive>((BVH4*)bvh,scene,gtype,useMortonBuilder);
+    }
+#endif
 
 #if defined(__AVX__)
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
     Builder* BVH8BuilderTwoLevelTriangle4MeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,useMortonBuilder);
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4>((BVH8*)bvh,scene,TriangleMesh::geom_type,useMortonBuilder);
     }
     Builder* BVH8BuilderTwoLevelTriangle4vMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4v>((BVH8*)bvh,scene,useMortonBuilder);
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4v>((BVH8*)bvh,scene,TriangleMesh::geom_type,useMortonBuilder);
     }
     Builder* BVH8BuilderTwoLevelTriangle4iMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,useMortonBuilder);
+      return new BVHNBuilderTwoLevel<8,TriangleMesh,Triangle4i>((BVH8*)bvh,scene,TriangleMesh::geom_type,useMortonBuilder);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
     Builder* BVH8BuilderTwoLevelQuadMeshSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,useMortonBuilder);
+      return new BVHNBuilderTwoLevel<8,QuadMesh,Quad4v>((BVH8*)bvh,scene,QuadMesh::geom_type,useMortonBuilder);
     }
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
     Builder* BVH8BuilderTwoLevelVirtualSAH (void* bvh, Scene* scene, bool useMortonBuilder) {
-      return new BVHNBuilderTwoLevel<8,UserGeometry,Object>((BVH8*)bvh,scene,useMortonBuilder);
+      return new BVHNBuilderTwoLevel<8,UserGeometry,Object>((BVH8*)bvh,scene,UserGeometry::geom_type,useMortonBuilder);
     }
 #endif
+
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    Builder* BVH8BuilderTwoLevelInstanceSAH (void* bvh, Scene* scene, Geometry::GTypeMask gtype, bool useMortonBuilder) {
+      return new BVHNBuilderTwoLevel<8,Instance,InstancePrimitive>((BVH8*)bvh,scene,gtype,useMortonBuilder);
+    }
+#endif
+
 #endif
   }
 }

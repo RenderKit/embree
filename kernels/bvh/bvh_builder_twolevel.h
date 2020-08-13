@@ -103,7 +103,7 @@ namespace embree
       }
       
       /*! Constructor. */
-      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, bool useMortonBuilder = false, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
+      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, Geometry::GTypeMask gtype = Mesh::geom_type, bool useMortonBuilder = false, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
       
       /*! Destructor */
       ~BVHNBuilderTwoLevel ();
@@ -244,19 +244,20 @@ namespace embree
           return;
         }
 
-        __internal_two_level_builder__::MeshBuilder<N,Mesh,Primitive>()(accel, mesh, geomID, this->useMortonBuilder_, builder);
+        __internal_two_level_builder__::MeshBuilder<N,Mesh,Primitive>()(accel, mesh, geomID, this->gtype, this->useMortonBuilder_, builder);
       }      
 
       using BuilderList = std::vector<std::unique_ptr<RefBuilderBase>>;
 
-      BuilderList       builders;
-      BVH*              bvh;
-      Scene*            scene;      
-      mvector<BuildRef> refs;
-      mvector<PrimRef>  prims;
-      std::atomic<int>  nextRef;
-      const size_t      singleThreadThreshold;
-      bool              useMortonBuilder_ = false;
+      BuilderList         builders;
+      BVH*                bvh;
+      Scene*              scene;      
+      mvector<BuildRef>   refs;
+      mvector<PrimRef>    prims;
+      std::atomic<int>    nextRef;
+      const size_t        singleThreadThreshold;
+      Geometry::GTypeMask gtype;
+      bool                useMortonBuilder_ = false;
     };
   }
 }

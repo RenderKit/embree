@@ -311,5 +311,6 @@ namespace embree
     DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelTriangle4iMeshSAH,void* COMMA Scene* COMMA bool);
     DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelQuadMeshSAH,void* COMMA Scene* COMMA bool);
     DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelVirtualSAH,void* COMMA Scene* COMMA bool);
+    DEFINE_ISA_FUNCTION(Builder*,BVH4BuilderTwoLevelInstanceSAH,void* COMMA Scene* COMMA Geometry::GTypeMask COMMA bool);
   };
 }

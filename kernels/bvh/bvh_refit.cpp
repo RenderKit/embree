@@ -10,6 +10,7 @@
 #include "../geometry/trianglei.h"
 #include "../geometry/quadv.h"
 #include "../geometry/object.h"
+#include "../geometry/instance.h"
 
 namespace embree
 {
@@ -231,5 +232,16 @@ namespace embree
     Builder* BVH8VirtualMeshRefitSAH (void* accel, UserGeometry* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<8,UserGeometry,Object>((BVH8*)accel,BVH8VirtualMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
 #endif
 #endif
+
+#if defined(EMBREE_GEOMETRY_INSTANCE)
+    Builder* BVH4InstanceMeshBuilderSAH (void* bvh, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode);
+    Builder* BVH4InstanceMeshRefitSAH (void* accel, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) { return new BVHNRefitT<4,Instance,InstancePrimitive>((BVH4*)accel,BVH4InstanceMeshBuilderSAH(accel,mesh,gtype,geomID,mode),mesh,mode); }
+
+#if  defined(__AVX__)
+    Builder* BVH8InstanceMeshBuilderSAH (void* bvh, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode);
+    Builder* BVH8InstanceMeshRefitSAH (void* accel, Instance* mesh, Geometry::GTypeMask gtype, unsigned int geomID, size_t mode) { return new BVHNRefitT<8,Instance,InstancePrimitive>((BVH8*)accel,BVH8InstanceMeshBuilderSAH(accel,mesh,gtype,geomID,mode),mesh,mode); }
+#endif
+#endif
+
   }
 }

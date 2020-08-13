@@ -1067,7 +1067,20 @@ namespace embree
     BVH8* accel = new BVH8(InstancePrimitive::type,scene);
     Accel::Intersectors intersectors = BVH8InstanceIntersectors(accel);
     auto gtype = isExpensive ? Geometry::MTY_INSTANCE_EXPENSIVE : Geometry::MTY_INSTANCE; 
-    Builder* builder = BVH8InstanceSceneBuilderSAH(accel,scene,gtype);
+    // Builder* builder = BVH8InstanceSceneBuilderSAH(accel,scene,gtype);
+
+    Builder* builder = nullptr;
+    if (scene->device->object_builder == "default") {
+      switch (bvariant) {
+      case BuildVariant::STATIC      : builder = BVH8InstanceSceneBuilderSAH(accel,scene,gtype);; break;
+      case BuildVariant::DYNAMIC     : builder = BVH8BuilderTwoLevelInstanceSAH(accel,scene,gtype,false); break;
+      case BuildVariant::HIGH_QUALITY: assert(false); break;
+      }
+    }
+    else if (scene->device->object_builder == "sah") builder = BVH8InstanceSceneBuilderSAH(accel,scene,gtype);
+    else if (scene->device->object_builder == "dynamic") builder = BVH8BuilderTwoLevelInstanceSAH(accel,scene,gtype,false);
+    else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown builder "+scene->device->object_builder+" for BVH8<Object>");
+
     return new AccelInstance(accel,builder,intersectors);
   }
 
