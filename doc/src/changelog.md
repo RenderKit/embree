@@ -7,6 +7,7 @@ Version History
 -   Bugfix for ignored geometry disabling.
 -   Added EMBREE_BACKFACE_CULLING_CURVES compiler option.  This allows for a cheaper round
     linear curve intersector when correct internal tracking and back hits are not required.
+    The new cmake option defaults to OFF.
 
 ### Embree 3.11.0
 
