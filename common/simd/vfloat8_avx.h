@@ -347,11 +347,11 @@ namespace embree
 #else
 
   __forceinline vfloat8 mini(const vfloat8& a, const vfloat8& b) {
-    return min(a,b);
+    return asFloat(min(asInt(a),asInt(b)));
   }
 
   __forceinline vfloat8 maxi(const vfloat8& a, const vfloat8& b) {
-    return max(a,b);
+    return asFloat(max(asInt(a),asInt(b)));
   }
 
 #endif
