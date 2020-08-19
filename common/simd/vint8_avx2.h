@@ -183,9 +183,9 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
-  __forceinline vboolf8 asBool(const vint8& a) { return _mm256_movepi32_mask(a); }
+  static __forceinline vboolf8 asBool(const vint8& a) { return _mm256_movepi32_mask(a); }
 #else
-  __forceinline vboolf8 asBool(const vint8& a) { return _mm256_castsi256_ps(a); }
+  static __forceinline vboolf8 asBool(const vint8& a) { return _mm256_castsi256_ps(a); }
 #endif
 
   __forceinline vint8 operator +(const vint8& a) { return a; }
@@ -272,25 +272,25 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__AVX512VL__)
-  __forceinline vboolf8 operator ==(const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_EQ); }
-  __forceinline vboolf8 operator !=(const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_NE); }
-  __forceinline vboolf8 operator < (const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_LT); }
-  __forceinline vboolf8 operator >=(const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_GE); }
-  __forceinline vboolf8 operator > (const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_GT); }
-  __forceinline vboolf8 operator <=(const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_LE); }
+  static __forceinline vboolf8 operator ==(const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_EQ); }
+  static __forceinline vboolf8 operator !=(const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_NE); }
+  static __forceinline vboolf8 operator < (const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_LT); }
+  static __forceinline vboolf8 operator >=(const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_GE); }
+  static __forceinline vboolf8 operator > (const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_GT); }
+  static __forceinline vboolf8 operator <=(const vint8& a, const vint8& b) { return _mm256_cmp_epi32_mask(a,b,_MM_CMPINT_LE); }
 
-  __forceinline vint8 select(const vboolf8& m, const vint8& t, const vint8& f) {
+  static __forceinline vint8 select(const vboolf8& m, const vint8& t, const vint8& f) {
     return _mm256_mask_blend_epi32(m, (__m256i)f, (__m256i)t);
   }
 #else
-  __forceinline vboolf8 operator ==(const vint8& a, const vint8& b) { return _mm256_castsi256_ps(_mm256_cmpeq_epi32(a, b)); }
-  __forceinline vboolf8 operator !=(const vint8& a, const vint8& b) { return !(a == b); }
-  __forceinline vboolf8 operator < (const vint8& a, const vint8& b) { return _mm256_castsi256_ps(_mm256_cmpgt_epi32(b, a)); }
-  __forceinline vboolf8 operator >=(const vint8& a, const vint8& b) { return !(a <  b); }
-  __forceinline vboolf8 operator > (const vint8& a, const vint8& b) { return _mm256_castsi256_ps(_mm256_cmpgt_epi32(a, b)); }
-  __forceinline vboolf8 operator <=(const vint8& a, const vint8& b) { return !(a >  b); }
+  static __forceinline vboolf8 operator ==(const vint8& a, const vint8& b) { return _mm256_castsi256_ps(_mm256_cmpeq_epi32(a, b)); }
+  static __forceinline vboolf8 operator !=(const vint8& a, const vint8& b) { return !(a == b); }
+  static __forceinline vboolf8 operator < (const vint8& a, const vint8& b) { return _mm256_castsi256_ps(_mm256_cmpgt_epi32(b, a)); }
+  static __forceinline vboolf8 operator >=(const vint8& a, const vint8& b) { return !(a <  b); }
+  static __forceinline vboolf8 operator > (const vint8& a, const vint8& b) { return _mm256_castsi256_ps(_mm256_cmpgt_epi32(a, b)); }
+  static __forceinline vboolf8 operator <=(const vint8& a, const vint8& b) { return !(a >  b); }
 
-  __forceinline vint8 select(const vboolf8& m, const vint8& t, const vint8& f) {
+  static __forceinline vint8 select(const vboolf8& m, const vint8& t, const vint8& f) {
     return _mm256_castps_si256(_mm256_blendv_ps(_mm256_castsi256_ps(f), _mm256_castsi256_ps(t), m));
   }
 #endif
@@ -326,19 +326,19 @@ namespace embree
   __forceinline vboolf8 le(const vint8& a, const vint8& b) { return a <= b; }
 
 #if defined(__AVX512VL__)
-  __forceinline vboolf8 eq(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_EQ); }
-  __forceinline vboolf8 ne(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_NE); }
-  __forceinline vboolf8 lt(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LT); }
-  __forceinline vboolf8 ge(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GE); }
-  __forceinline vboolf8 gt(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GT); }
-  __forceinline vboolf8 le(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LE); }
+  static __forceinline vboolf8 eq(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_EQ); }
+  static __forceinline vboolf8 ne(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_NE); }
+  static __forceinline vboolf8 lt(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LT); }
+  static __forceinline vboolf8 ge(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GE); }
+  static __forceinline vboolf8 gt(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_GT); }
+  static __forceinline vboolf8 le(const vboolf8& mask, const vint8& a, const vint8& b) { return _mm256_mask_cmp_epi32_mask(mask, a, b, _MM_CMPINT_LE); }
 #else
-  __forceinline vboolf8 eq(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a == b); }
-  __forceinline vboolf8 ne(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a != b); }
-  __forceinline vboolf8 lt(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a <  b); }
-  __forceinline vboolf8 ge(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a >= b); }
-  __forceinline vboolf8 gt(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a >  b); }
-  __forceinline vboolf8 le(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a <= b); }
+  static __forceinline vboolf8 eq(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a == b); }
+  static __forceinline vboolf8 ne(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a != b); }
+  static __forceinline vboolf8 lt(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a <  b); }
+  static __forceinline vboolf8 ge(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a >= b); }
+  static __forceinline vboolf8 gt(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a >  b); }
+  static __forceinline vboolf8 le(const vboolf8& mask, const vint8& a, const vint8& b) { return mask & (a <= b); }
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -394,7 +394,7 @@ namespace embree
   }
 
   template<int i>
-  __forceinline vint8 align_shift_right(const vint8& a, const vint8& b) {
+  static __forceinline vint8 align_shift_right(const vint8& a, const vint8& b) {
 #if defined(__AVX512VL__)
     return _mm256_alignr_epi32(a, b, i);    
 #else
