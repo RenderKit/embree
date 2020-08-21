@@ -177,6 +177,11 @@ namespace embree
     unsigned int primID = args->primID;
     float U = args->u;
     float V = args->v;
+
+    /* clamp input u,v to [0;1] range */
+    U = max(min(U,1.0f),0.0f);
+    V = max(min(V,1.0f),0.0f);
+    
     RTCBufferType bufferType = args->bufferType;
     unsigned int bufferSlot = args->bufferSlot;
     float* P = args->P;

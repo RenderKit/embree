@@ -1,6 +1,10 @@
 Version History
 ---------------
 
+### Embree 3.12.1
+-   User geometries with invalid bounds will be ignored.
+-   Increased robustness for grid interpolation code
+
 ### Embree 3.12.0
 -   Added linear cone curve geometry support. In this mode a real geometric surface for curves
     with linear basis is rendered using capped cones.  They are discontinuous at edge boundaries.

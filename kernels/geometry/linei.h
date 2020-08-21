@@ -339,19 +339,8 @@ namespace embree
                                          const LineSegments* geom) const
   {
     gather(p0,p1,geom);
-#if defined(__AVX512VL__)
     cL = !vbool4(leftExists);
     cR = !vbool4(rightExists);
-#else
-    cL[0] = (leftExists>>0 & 1)-1;
-    cL[1] = (leftExists>>1 & 1)-1;
-    cL[2] = (leftExists>>2 & 1)-1;
-    cL[3] = (leftExists>>3 & 1)-1;
-    cR[0] = (rightExists>>0 & 1)-1;
-    cR[1] = (rightExists>>1 & 1)-1;
-    cR[2] = (rightExists>>2 & 1)-1;
-    cR[3] = (rightExists>>3 & 1)-1;
-#endif
   }
 
   template<>
@@ -363,19 +352,8 @@ namespace embree
                                           const int itime) const
   {
     gatheri(p0,p1,geom,itime);
-#if defined(__AVX512VL__)
     cL = !vbool4(leftExists);
     cR = !vbool4(rightExists);
-#else
-    cL[0] = (leftExists>>0 & 1)-1;
-    cL[1] = (leftExists>>1 & 1)-1;
-    cL[2] = (leftExists>>2 & 1)-1;
-    cL[3] = (leftExists>>3 & 1)-1;
-    cR[0] = (rightExists>>0 & 1)-1;
-    cR[1] = (rightExists>>1 & 1)-1;
-    cR[2] = (rightExists>>2 & 1)-1;
-    cR[3] = (rightExists>>3 & 1)-1;
-#endif
   }
 
   template<>
@@ -395,19 +373,8 @@ namespace embree
     gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat4(ftime));
     p1 = lerp(a1,b1,vfloat4(ftime));
-#if defined(__AVX512VL__)
     cL = !vbool4(leftExists);
     cR = !vbool4(rightExists);
-#else
-    cL[0] = (leftExists>>0 & 1)-1;
-    cL[1] = (leftExists>>1 & 1)-1;
-    cL[2] = (leftExists>>2 & 1)-1;
-    cL[3] = (leftExists>>3 & 1)-1;
-    cR[0] = (rightExists>>0 & 1)-1;
-    cR[1] = (rightExists>>1 & 1)-1;
-    cR[2] = (rightExists>>2 & 1)-1;
-    cR[3] = (rightExists>>3 & 1)-1;
-#endif
   }
 
   template<>
@@ -694,27 +661,8 @@ namespace embree
                                          const LineSegments* geom) const
   {
     gather(p0,p1,geom);
-#if defined(__AVX512VL__)
     cL = !vbool8(leftExists);
     cR = !vbool8(rightExists);
-#else
-    cL[0] = (leftExists>>0 & 1)-1;
-    cL[1] = (leftExists>>1 & 1)-1;
-    cL[2] = (leftExists>>2 & 1)-1;
-    cL[3] = (leftExists>>3 & 1)-1;
-    cL[4] = (leftExists>>4 & 1)-1;
-    cL[5] = (leftExists>>5 & 1)-1;
-    cL[6] = (leftExists>>6 & 1)-1;
-    cL[7] = (leftExists>>7 & 1)-1;
-    cR[0] = (rightExists>>0 & 1)-1;
-    cR[1] = (rightExists>>1 & 1)-1;
-    cR[2] = (rightExists>>2 & 1)-1;
-    cR[3] = (rightExists>>3 & 1)-1;
-    cR[4] = (rightExists>>4 & 1)-1;
-    cR[5] = (rightExists>>5 & 1)-1;
-    cR[6] = (rightExists>>6 & 1)-1;
-    cR[7] = (rightExists>>7 & 1)-1;
-#endif
   }
   
   template<>
@@ -726,27 +674,8 @@ namespace embree
                                               const int itime) const
   {
     gatheri(p0,p1,geom,itime);
-#if defined(__AVX512VL__)
     cL = !vbool8(leftExists);
     cR = !vbool8(rightExists);
-#else
-    cL[0] = (leftExists>>0 & 1)-1;
-    cL[1] = (leftExists>>1 & 1)-1;
-    cL[2] = (leftExists>>2 & 1)-1;
-    cL[3] = (leftExists>>3 & 1)-1;
-    cL[4] = (leftExists>>4 & 1)-1;
-    cL[5] = (leftExists>>5 & 1)-1;
-    cL[6] = (leftExists>>6 & 1)-1;
-    cL[7] = (leftExists>>7 & 1)-1;
-    cR[0] = (rightExists>>0 & 1)-1;
-    cR[1] = (rightExists>>1 & 1)-1;
-    cR[2] = (rightExists>>2 & 1)-1;
-    cR[3] = (rightExists>>3 & 1)-1;
-    cR[4] = (rightExists>>4 & 1)-1;
-    cR[5] = (rightExists>>5 & 1)-1;
-    cR[6] = (rightExists>>6 & 1)-1;
-    cR[7] = (rightExists>>7 & 1)-1;
-#endif
   }
   
   template<>
@@ -766,27 +695,8 @@ namespace embree
     gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat8(ftime));
     p1 = lerp(a1,b1,vfloat8(ftime));
-#if defined(__AVX512VL__)
     cL = !vbool8(leftExists);
     cR = !vbool8(rightExists);
-#else
-    cL[0] = (leftExists>>0 & 1)-1;
-    cL[1] = (leftExists>>1 & 1)-1;
-    cL[2] = (leftExists>>2 & 1)-1;
-    cL[3] = (leftExists>>3 & 1)-1;
-    cL[4] = (leftExists>>4 & 1)-1;
-    cL[5] = (leftExists>>5 & 1)-1;
-    cL[6] = (leftExists>>6 & 1)-1;
-    cL[7] = (leftExists>>7 & 1)-1;
-    cR[0] = (rightExists>>0 & 1)-1;
-    cR[1] = (rightExists>>1 & 1)-1;
-    cR[2] = (rightExists>>2 & 1)-1;
-    cR[3] = (rightExists>>3 & 1)-1;
-    cR[4] = (rightExists>>4 & 1)-1;
-    cR[5] = (rightExists>>5 & 1)-1;
-    cR[6] = (rightExists>>6 & 1)-1;
-    cR[7] = (rightExists>>7 & 1)-1;
-#endif
   }
   
 #endif

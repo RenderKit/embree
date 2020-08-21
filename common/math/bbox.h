@@ -91,6 +91,11 @@ namespace embree
     return all(gt_mask(v.lower,Vec3fa_t(-FLT_LARGE)) & lt_mask(v.upper,Vec3fa_t(+FLT_LARGE)));
   }
 
+  /*! tests if box is finite and non-empty*/
+  __forceinline bool isvalid_non_empty( const BBox<Vec3fa>& v ) {
+    return all(gt_mask(v.lower,Vec3fa_t(-FLT_LARGE)) & lt_mask(v.upper,Vec3fa_t(+FLT_LARGE)) & le_mask(v.lower,v.upper));
+  }
+  
   /*! tests if box has finite entries */
   __forceinline bool is_finite( const BBox<Vec3fa>& b) {
     return is_finite(b.lower) && is_finite(b.upper);
