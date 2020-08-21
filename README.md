@@ -442,6 +442,10 @@ parameters that can be configured in CMake:
   surfaces facing a ray can be hit. This option is turned OFF by
   default.
 
++ `EMBREE_BACKFACE_CULLING_CURVES`: Enables backface culling for
+  the round linear curve type, i.e. only surfaces facing a ray can be 
+  hit. This option is turned OFF by default.
+
 + `EMBREE_COMPACT_POLYS`: Enables compact tris/quads, i.e. only
   geomIDs and primIDs are stored inside the leaf nodes.  
 
@@ -1333,6 +1337,11 @@ Possible properties to query are:
 -   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED`: Queries whether
     back face culling is enabled. This is only the case if Embree is
     compiled with `EMBREE_BACKFACE_CULLING` enabled.
+
+-   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED`: Queries 
+    whether back face culling for curves is enabled. This is only the 
+    case if Embree is compiled with `EMBREE_BACKFACE_CULLING_CURVES` 
+    enabled.
 
 -   `RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED`: Queries whether
     compact polys is enabled. This is only the case if Embree is

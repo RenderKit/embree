@@ -277,6 +277,8 @@ def runConfig(config):
     conf.append("-D EMBREE_TUTORIALS="+config["TUTORIALS"])
   if "BACKFACE_CULLING" in config:
     conf.append("-D EMBREE_BACKFACE_CULLING="+config["BACKFACE_CULLING"])
+  if "BACKFACE_CULLING_CURVES" in config:
+    conf.append("-D EMBREE_BACKFACE_CULLING_CURVES="+config["BACKFACE_CULLING_CRUVES"])
   if "IGNORE_INVALID_RAYS" in config:
     conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
   if "FILTER_FUNCTION" in config:

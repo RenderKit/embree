@@ -241,6 +241,11 @@ namespace embree
     __forceinline bool isvalid( const LBBox<T>& v ) {
     return isvalid(v.bounds0) && isvalid(v.bounds1);
   }
+
+  template<typename T>
+    __forceinline bool isvalid_non_empty( const LBBox<T>& v ) {
+    return isvalid_non_empty(v.bounds0) && isvalid_non_empty(v.bounds1);
+  }
   
   template<typename T>
     __forceinline T expectedArea(const T& a0, const T& a1, const T& b0, const T& b1)
