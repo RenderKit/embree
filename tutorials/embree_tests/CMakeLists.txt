@@ -1,9 +1,10 @@
 ## Copyright 2009-2020 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-ADD_EXECUTABLE(embree_tests ../../kernels/embree.rc 
-  embree_tests.cpp 
-  kernels/kernels_tests.cpp)
+ADD_EXECUTABLE(embree_tests ../../kernels/embree.rc
+  embree_tests.cpp
+  kernels/kernels_tests.cpp
+  common/common_tests.cpp)
 TARGET_LINK_LIBRARIES(embree_tests tasking sys math scenegraph embree)
 SET_PROPERTY(TARGET embree_tests PROPERTY FOLDER tutorials)
 SET_PROPERTY(TARGET embree_tests APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
