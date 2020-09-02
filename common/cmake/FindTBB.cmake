@@ -50,7 +50,6 @@ endif()
 # These two are used to automatically find the root and include directories.
 set(_TBB_INCLUDE_SUBDIR "include")
 set(_TBB_HEADER "tbb/tbb.h")
-set(_TBB_VERSION_HEADER "tbb/tbb_stddef.h")
 
 # Initialize cache variable; but use existing non-cache variable as the default,
 # and fall back to the environment variable.
@@ -145,6 +144,14 @@ endmacro()
 
 macro(rk_tbb_check_version)
   # Extract the version we found in our root.
+  if (EXISTS "${TBB_INCLUDE_DIR}/tbb/tbb_stddef.h")
+    set(_TBB_VERSION_HEADER "tbb/tbb_stddef.h")
+  elseif(EXISTS "${TBB_INCLUDE_DIR}/tbb/version.h")
+    set(_TBB_VERSION_HEADER "tbb/version.h")
+  else()
+    rk_tbb_error("Missing TBB version information. Could not find"
+      "tbb/tbb_stddef.h or tbb/version.h in ${TBB_INCLUDE_DIR}")
+  endif()
   file(READ ${TBB_INCLUDE_DIR}/${_TBB_VERSION_HEADER} VERSION_HEADER_CONTENT)
   string(REGEX MATCH "#define TBB_VERSION_MAJOR ([0-9]+)" DUMMY "${VERSION_HEADER_CONTENT}")
   set(TBB_VERSION_MAJOR ${CMAKE_MATCH_1})
@@ -194,7 +201,7 @@ macro(rk_tbb_reuse_existing_target_components)
     endif()
 
     find_path(TBB_INCLUDE_DIR
-      NAMES "${_TBB_VERSION_HEADER}"
+      NAMES "${_TBB_HEADER}"
       PATHS "${TBB_INCLUDE_DIRS}")
 
     # Extract TBB_ROOT from the include path so that rk_tbb_check_version
