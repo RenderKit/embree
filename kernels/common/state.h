@@ -40,6 +40,9 @@ namespace embree
     /*! checks if some particular ISA is enabled */
     bool hasISA(const int isa);
 
+    /*! check whether selected ISAs are all supported by the HW */    
+    bool checkISAsHWSupport();
+    
   public:
     std::string tri_accel;                 //!< acceleration structure to use for triangles
     std::string tri_builder;               //!< builder to use for triangles

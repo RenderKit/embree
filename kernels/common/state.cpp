@@ -146,6 +146,10 @@ namespace embree
     return (enabled_cpu_features & isa) == isa;
   }
 
+  bool State::checkISAsHWSupport() {
+    return (getCPUFeatures() & enabled_cpu_features) == enabled_cpu_features;
+  }
+  
   void State::verify()
   {
     /* verify that calculations stay in range */

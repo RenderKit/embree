@@ -356,7 +356,7 @@ namespace embree
 
           /* intersect leaf */
           assert(cur != BVH::emptyNode);
-          const vbool<K> valid_leaf = tray.tfar > curDist;
+          const vbool<K> valid_leaf = valid & (tray.tfar > curDist) ;
           STAT3(normal.trav_leaves, 1, popcnt(valid_leaf), K);
           if (unlikely(none(valid_leaf))) continue;
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
@@ -506,7 +506,7 @@ namespace embree
           /* intersect leaf */
           assert(cur != BVH::invalidNode);
           assert(cur != BVH::emptyNode);
-          const vbool<K> valid_leaf = tray.tfar > curDist;
+          const vbool<K> valid_leaf = valid & (tray.tfar > curDist);
           STAT3(normal.trav_leaves, 1, popcnt(valid_leaf), K);
           if (unlikely(none(valid_leaf))) continue;
           size_t items; const Primitive* prim = (Primitive*)cur.leaf(items);
@@ -763,7 +763,7 @@ namespace embree
 
         /* intersect leaf */
         assert(cur != BVH::emptyNode);
-        const vbool<K> valid_leaf = tray.tfar > curDist;
+        const vbool<K> valid_leaf = valid & (tray.tfar > curDist);
         STAT3(shadow.trav_leaves, 1, popcnt(valid_leaf), K);
         if (unlikely(none(valid_leaf))) continue;
         size_t items; const Primitive* prim = (Primitive*) cur.leaf(items);
