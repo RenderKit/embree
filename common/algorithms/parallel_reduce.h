@@ -53,12 +53,22 @@ namespace embree
     return parallel_reduce_internal(taskCount,first,last,minStepSize,identity,func,reduction);
 
 #elif defined(TASKING_TBB)
+  #if TBB_INTERFACE_VERSION >= 12002
+    tbb::task_group_context context;
+    const Value v = tbb::parallel_reduce(tbb::blocked_range<Index>(first,last,minStepSize),identity,
+      [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
+      reduction,context);
+    if (context.is_group_execution_cancelled())
+      throw std::runtime_error("task cancelled");
+    return v;
+  #else
     const Value v = tbb::parallel_reduce(tbb::blocked_range<Index>(first,last,minStepSize),identity,
       [&](const tbb::blocked_range<Index>& r, const Value& start) { return reduction(start,func(range<Index>(r.begin(),r.end()))); },
       reduction);
     if (tbb::task::self().is_cancelled())
       throw std::runtime_error("task cancelled");
     return v;
+  #endif
 #else // TASKING_PPL
     struct AlignedValue
     {
