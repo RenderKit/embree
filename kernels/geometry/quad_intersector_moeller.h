@@ -28,8 +28,8 @@ namespace embree
       {
         const vfloat<M> rcpAbsDen = rcp(absDen);
         vt = T * rcpAbsDen;
-        const vfloat<M> u = U * rcpAbsDen;
-        const vfloat<M> v = V * rcpAbsDen;
+        const vfloat<M> u = min(U * rcpAbsDen,1.0f);
+        const vfloat<M> v = min(V * rcpAbsDen,1.0f);
         const vfloat<M> u1 = vfloat<M>(1.0f) - u;
         const vfloat<M> v1 = vfloat<M>(1.0f) - v;
 #if !defined(__AVX__) || defined(EMBREE_BACKFACE_CULLING)
@@ -87,8 +87,8 @@ namespace embree
       {
         const vfloat<K> rcpAbsDen = rcp(absDen);
         const vfloat<K> t = T * rcpAbsDen;
-        const vfloat<K> u0 = U * rcpAbsDen;
-        const vfloat<K> v0 = V * rcpAbsDen;
+        const vfloat<K> u0 = min(U * rcpAbsDen,1.0f);
+        const vfloat<K> v0 = min(V * rcpAbsDen,1.0f);
         const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
         const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
         const vfloat<K> u = select(flags,u1,u0);

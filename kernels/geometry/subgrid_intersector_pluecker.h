@@ -27,8 +27,8 @@ namespace embree
       {
         const vbool<M> invalid = abs(UVW) < min_rcp_input;
         const vfloat<M> rcpUVW = select(invalid,vfloat<M>(0.0f),rcp(UVW));
-        const vfloat<M> u = U * rcpUVW;
-        const vfloat<M> v = V * rcpUVW;
+        const vfloat<M> u = min(U * rcpUVW,1.0f);
+        const vfloat<M> v = min(V * rcpUVW,1.0f);
         const vfloat<M> u1 = vfloat<M>(1.0f) - u;
         const vfloat<M> v1 = vfloat<M>(1.0f) - v;
 #if !defined(__AVX__) || defined(EMBREE_BACKFACE_CULLING)
@@ -260,8 +260,8 @@ namespace embree
         {
           const vbool<K> invalid = abs(UVW) < min_rcp_input;
           const vfloat<K> rcpUVW = select(invalid,vfloat<K>(0.0f),rcp(UVW));
-          const vfloat<K> u0 = U * rcpUVW;
-          const vfloat<K> v0 = V * rcpUVW;
+          const vfloat<K> u0 = min(U * rcpUVW,1.0f);
+          const vfloat<K> v0 = min(V * rcpUVW,1.0f);
           const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
           const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
           const vfloat<K> uu = select(flags,u1,u0);

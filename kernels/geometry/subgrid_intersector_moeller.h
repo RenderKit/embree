@@ -189,8 +189,8 @@ namespace embree
         {
           const vfloat<K> rcpAbsDen = rcp(absDen);
           const vfloat<K> t = T * rcpAbsDen;
-          const vfloat<K> u0 = U * rcpAbsDen;
-          const vfloat<K> v0 = V * rcpAbsDen;
+          const vfloat<K> u0 = min(U * rcpAbsDen,1.0f);
+          const vfloat<K> v0 = min(V * rcpAbsDen,1.0f);
           const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
           const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
           const vfloat<K> uu = select(flags,u1,u0);
