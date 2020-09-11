@@ -1013,16 +1013,15 @@ Embree API Reference
 ``` {include=src/api/rtcInitPointQueryContext.md}
 ```
 \pagebreak
+
 ## rtcPointQuery
 ``` {include=src/api/rtcPointQuery.md}
 ```
-
 \pagebreak
 
 ## rtcCollide
 ``` {include=src/api/rtcCollide.md}
 ```
-
 \pagebreak
 
 ## rtcNewBVH
