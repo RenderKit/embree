@@ -7,7 +7,7 @@ Windows MSI Installer
 You can install the Embree library using the Windows MSI installer
 [embree-<EMBREE_VERSION>-x64.vc14.msi](https://github.com/embree/embree/releases/download/v<EMBREE_VERSION>/embree-<EMBREE_VERSION>.x64.vc14.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v<EMBREE_VERSION> x64`.
+Files\Intel\Embree<EMBREE_VERSION_MAJOR>`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -15,7 +15,7 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v<EMBREE_VERSION> x64`.
+Files\Intel\Embree<EMBREE_VERSION_MAJOR>`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
