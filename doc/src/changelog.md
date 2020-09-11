@@ -2,15 +2,17 @@ Version History
 ---------------
 
 ### Embree 3.12.0
+
 -   Added linear cone curve geometry support. In this mode a real geometric surface for curves
     with linear basis is rendered using capped cones.  They are discontinuous at edge boundaries.
 -   Enabled fast two level builder for instances when low quality build is requested.
--   Bugfix for ignored geometry disabling.
+-   Bugfix for BVH build when geometries got disabled.
 -   Added EMBREE_BACKFACE_CULLING_CURVES compiler option.  This allows for a cheaper round
     linear curve intersector when correct internal tracking and back hits are not required.
     The new cmake option defaults to OFF.
--   User geometries with invalid bounds will be ignored.
--   Increased robustness for grid interpolation code
+-   User geometries with invalid bounds with lower>upper in some dimension will be ignored.
+-   Increased robustness for grid interpolation code and fixed out of range u/v coordinates for
+    grid primitive.
 
 ### Embree 3.11.0
 
