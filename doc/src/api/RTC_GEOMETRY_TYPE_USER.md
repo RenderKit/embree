@@ -45,6 +45,10 @@ Please have a look at the `rtcSetGeometryBoundsFunction`,
 `rtcSetGeometryIntersectFunction`, and `rtcSetGeometryOccludedFunction`
 functions on the implementation of the callback functions.
 
+Primitives of a user geometry are ignored during rendering when their
+bounds are empty, thus bounds have lower>upper in at least one
+dimension.
+
 See tutorial [User Geometry] for an example of how to use the
 user-defined geometries.
 
