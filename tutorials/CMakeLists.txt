@@ -3,8 +3,6 @@
 
 include(CMakeDependentOption)
 
-OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
-
 ADD_SUBDIRECTORY(common/image)
 CMAKE_DEPENDENT_OPTION(EMBREE_TUTORIALS_GLFW  "Enables GLFW usage in tutorials. When disabled tutorial can only render to disk." ON "EMBREE_TUTORIALS" OFF)
 

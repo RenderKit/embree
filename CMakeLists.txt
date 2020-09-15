@@ -91,6 +91,8 @@ IF (BUILD_DOC)
   ADD_SUBDIRECTORY(doc)
 ENDIF()
 
+OPTION(EMBREE_TUTORIALS    "Enable to build Embree tutorials" ON)
+
 ##############################################################
 # Embree configuration
 ##############################################################
@@ -477,7 +479,9 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(kernels)
-ADD_SUBDIRECTORY(tutorials)
+IF (EMBREE_TUTORIALS)
+  ADD_SUBDIRECTORY(tutorials)
+ENDIF()
 
 ##############################################################
 # Uninstall
