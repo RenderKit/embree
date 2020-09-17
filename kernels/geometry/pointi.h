@@ -302,9 +302,8 @@ namespace embree
   template<>
   __forceinline void PointMi<4>::gather(Vec4vf4& p0, const Points* geom, float time) const
   {
-    const vfloat4 numTimeSegments(geom->fnumTimeSegments);
     vfloat4 ftime;
-    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
+    const vint4 itime = geom->timeSegment(vfloat4(time), ftime);
 
     Vec4vf4 a0; gatheri(a0, geom, itime);
     Vec4vf4 b0; gatheri(b0, geom, itime + 1);
@@ -314,9 +313,8 @@ namespace embree
   template<>
   __forceinline void PointMi<4>::gather(Vec4vf4& p0, Vec3vf4& n0, const Points* geom, float time) const
   {
-    const vfloat4 numTimeSegments(geom->fnumTimeSegments);
     vfloat4 ftime;
-    const vint4 itime = getTimeSegment(vfloat4(time), numTimeSegments, ftime);
+    const vint4 itime = geom->timeSegment(vfloat4(time), ftime);
 
     Vec4vf4 a0, b0;
     Vec3vf4 norm0, norm1;
@@ -405,9 +403,8 @@ namespace embree
   template<>
   __forceinline void PointMi<8>::gather(Vec4vf8& p0, const Points* geom, float time) const
   {
-    const vfloat8 numTimeSegments(geom->fnumTimeSegments);
     vfloat8 ftime;
-    const vint8 itime = getTimeSegment(vfloat8(time), numTimeSegments, ftime);
+    const vint8 itime = geom->timeSegment(vfloat8(time), ftime);
 
     Vec4vf8 a0;
     gatheri(a0, geom, itime);
@@ -419,9 +416,8 @@ namespace embree
   template<>
   __forceinline void PointMi<8>::gather(Vec4vf8& p0, Vec3vf8& n0, const Points* geom, float time) const
   {
-    const vfloat8 numTimeSegments(geom->fnumTimeSegments);
     vfloat8 ftime;
-    const vint8 itime = getTimeSegment(vfloat8(time), numTimeSegments, ftime);
+    const vint8 itime = geom->timeSegment(vfloat8(time), ftime);
 
     Vec4vf8 a0, b0;
     Vec3vf8 norm0, norm1;
