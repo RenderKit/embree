@@ -13,6 +13,7 @@ Version History
 -   Bugfix in subdivision tessellation level assignment for non-quad base primitives
 -   Small meshes are directly added to top level build phase of two-level builder to reduce memory consumption.
 -   Enabled fast two level builder for user geometries when low quality build is requested.
+-   Fix missing model data in tutorials.
 
 ### Embree 3.10.0
 
