@@ -14,6 +14,7 @@ Version History
 -   Small meshes are directly added to top level build phase of two-level builder to reduce memory consumption.
 -   Enabled fast two level builder for user geometries when low quality build is requested.
 -   Fix missing model data in tutorials.
+-   Ensure compatibility to newer versions of oneTBB.
 
 ### Embree 3.10.0
 
