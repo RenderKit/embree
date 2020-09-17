@@ -1123,6 +1123,9 @@ namespace embree
     else if (Ref<SceneGraph::HairSetNode> mesh = node.dynamicCast<SceneGraph::HairSetNode>()) {
       mesh->time_range = time_range;
     }
+    else if (Ref<SceneGraph::PointSetNode> mesh = node.dynamicCast<SceneGraph::PointSetNode>()) {
+      mesh->time_range = time_range;
+    }
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
       mesh->time_range = time_range;
     }

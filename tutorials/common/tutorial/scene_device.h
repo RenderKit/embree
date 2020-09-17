@@ -233,6 +233,8 @@ namespace embree
     Vec3fa** normals;         //!< normal control points (x,y,z,r)
 
     RTCGeometryType type;
+    float startTime;
+    float endTime;
     unsigned int numTimeSteps;
     unsigned int numVertices;
   };
