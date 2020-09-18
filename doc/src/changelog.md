@@ -13,6 +13,7 @@ Version History
 -   User geometries with invalid bounds with lower>upper in some dimension will be ignored.
 -   Increased robustness for grid interpolation code and fixed out of range u/v coordinates for
     grid primitive.
+-   Fixed handling of motion blur time range for sphere, discs, and oriented disc geometries.
 
 ### Embree 3.11.0
 
