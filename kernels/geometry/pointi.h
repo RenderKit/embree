@@ -57,17 +57,12 @@ namespace embree
     }
 
     /* Returns a mask that tells which line segments are valid */
-    __forceinline vbool<M> valid() const
-    {
-      //return primIDs != vuint<M>(-1);
+    __forceinline vbool<M> valid() const {
       return vint<M>(step) < vint<M>(numPrimitives);
     }
 
     /* Returns a mask that tells which line segments are valid */
-    template<int Mx>
-    __forceinline vbool<Mx> valid() const
-    {
-      //return vuint<Mx>(primIDs) != vuint<Mx>(-1);
+    template<int Mx> __forceinline vbool<Mx> valid() const {
       return vint<Mx>(step) < vint<Mx>(numPrimitives);
     }
 
@@ -75,40 +70,25 @@ namespace embree
     __forceinline bool valid(const size_t i) const
     {
       assert(i < M);
-      //return primIDs[i] != -1;
       return i < numPrimitives;
     }
 
     /* Returns the number of stored line segments */
-    __forceinline size_t size() const
-    {
-      //return bsf(~movemask(valid()));
+    __forceinline size_t size() const {
       return numPrimitives;
     }
 
-    /* Returns the geometry IDs */
-    // template<class T>
-    // static __forceinline T unmask(T &index) { return index & 0x3fffffff; }
-
-    __forceinline unsigned int geomID(unsigned int i = 0) const
-    {
+    __forceinline unsigned int geomID(unsigned int i = 0) const {
       return sharedGeomID;
     }
-    //__forceinline       vuint<M> geomID()       { return unmask(geomIDs); }
-    //__forceinline const vuint<M> geomID() const { return unmask(geomIDs); }
-    //__forceinline unsigned int geomID(const size_t i) const { assert(i<M); return unmask(geomIDs[i]); }
 
-    /* Returns the primitive IDs */
-    __forceinline vuint<M>& primID()
-    {
+    __forceinline vuint<M>& primID() {
       return primIDs;
     }
-    __forceinline const vuint<M>& primID() const
-    {
+    __forceinline const vuint<M>& primID() const {
       return primIDs;
     }
-    __forceinline unsigned int primID(const size_t i) const
-    {
+    __forceinline unsigned int primID(const size_t i) const {
       assert(i < M);
       return primIDs[i];
     }
@@ -433,4 +413,5 @@ namespace embree
 
   typedef PointMi<4> Point4i;
   typedef PointMi<8> Point8i;
+  
 }  // namespace embree
