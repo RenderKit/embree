@@ -176,7 +176,7 @@ namespace embree
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline bool linearBounds(size_t i, const BBox1f& time_range, LBBox3fa& bbox) const
     {
-      if (!valid(i, getTimeSegmentRange(time_range, fnumTimeSegments))) return false;
+      if (!valid(i, timeSegmentRange(time_range))) return false;
       bbox = linearBounds(i, time_range);
       return true;
     }
@@ -247,7 +247,7 @@ namespace embree
       {
         PrimInfoMB pinfo(empty);
         for (size_t j = r.begin(); j < r.end(); j++) {
-          if (!valid(j, getTimeSegmentRange(t0t1, fnumTimeSegments)))
+          if (!valid(j, timeSegmentRange(t0t1)))
             continue;
           const PrimRefMB prim(linearBounds(j, t0t1), this->numTimeSegments(), this->time_range, this->numTimeSegments(), geomID, unsigned(j));
           pinfo.add_primref(prim);

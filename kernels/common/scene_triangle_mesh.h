@@ -95,15 +95,6 @@ namespace embree
       return BBox3fa(min(v0,v1,v2),max(v0,v1,v2));
     }
 
-    /*! calculates the interpolated bounds of the i'th triangle at the specified time */
-    __forceinline BBox3fa bounds(size_t i, float time) const
-    {
-      float ftime; size_t itime = getTimeSegment(time, fnumTimeSegments, ftime);
-      const BBox3fa b0 = bounds(i, itime+0);
-      const BBox3fa b1 = bounds(i, itime+1);
-      return lerp(b0, b1, ftime);
-    }
-
     /*! check if the i'th primitive is valid at the itime'th timestep */
     __forceinline bool valid(size_t i, size_t itime) const {
       return valid(i, make_range(itime, itime));
