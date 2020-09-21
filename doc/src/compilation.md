@@ -19,11 +19,11 @@ Linux
   - Intel® Compiler 2015 Update 3
   - Clang 5.0.0
   - Clang 4.0.0
-  - GCC 10.0.1 (Fedora 32)
-  - GCC  8.3.1 (Fedora 28)
-  - GCC  7.3.1 (Fedora 27)
-  - GCC  7.3.1 (Fedora 26)
-  - GCC  6.4.1 (Fedora 25)
+  - GCC 10.0.1 (Fedora 32) AVX512 support
+  - GCC  8.3.1 (Fedora 28) AVX512 support
+  - GCC  7.3.1 (Fedora 27) AVX2 support
+  - GCC  7.3.1 (Fedora 26) AVX2 support
+  - GCC  6.4.1 (Fedora 25) AVX2 support
 
 macOS
 
