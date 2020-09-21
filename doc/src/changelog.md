@@ -7,14 +7,14 @@ Version History
     with linear basis is rendered using capped cones.  They are discontinuous at edge boundaries.
 -   Enabled fast two level builder for instances when low quality build is requested.
 -   Bugfix for BVH build when geometries got disabled.
--   Added EMBREE_BACKFACE_CULLING_CURVES compiler option.  This allows for a cheaper round
-    linear curve intersector when correct internal tracking and back hits are not required.
+-   Added EMBREE_BACKFACE_CULLING_CURVES cmake option.  This allows for a cheaper round
+    linear curve intersection when correct internal tracking and back hits are not required.
     The new cmake option defaults to OFF.
 -   User geometries with invalid bounds with lower>upper in some dimension will be ignored.
--   Increased robustness for grid interpolation code and fixed out of range u/v coordinates for
-    grid primitive.
+-   Increased robustness for grid interpolation code and fixed returned out of range u/v
+    coordinates for grid primitive.
 -   Fixed handling of motion blur time range for sphere, discs, and oriented disc geometries.
--   Fix missing model data in tutorials.
+-   Fixed missing model data in releases.
 -   Ensure compatibility to newer versions of oneTBB.
 
 ### Embree 3.11.0
