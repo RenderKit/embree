@@ -14,6 +14,8 @@ Version History
 -   Increased robustness for grid interpolation code and fixed out of range u/v coordinates for
     grid primitive.
 -   Fixed handling of motion blur time range for sphere, discs, and oriented disc geometries.
+-   Fix missing model data in tutorials.
+-   Ensure compatibility to newer versions of oneTBB.
 
 ### Embree 3.11.0
 
