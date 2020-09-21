@@ -16,6 +16,7 @@ Version History
 -   Fixed handling of motion blur time range for sphere, discs, and oriented disc geometries.
 -   Fixed missing model data in releases.
 -   Ensure compatibility to newer versions of oneTBB.
+-   Motion blur BVH nodes no longer store NaN values.
 
 ### Embree 3.11.0
 
