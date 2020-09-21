@@ -38,9 +38,8 @@ namespace embree
 
   Device::Device (const char* cfg)
   {
-    /* check CPU */
-    if (!hasISA(ISA))
-    {
+    /* check that CPU supports lowest ISA */
+    if (!hasISA(ISA)) {
       throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
     }
 
@@ -52,10 +51,9 @@ namespace embree
       State::parseFile(FileName::homeFolder()+FileName(".embree" TOSTRING(RTC_VERSION_MAJOR)));
     State::verify();
 
-    /* check whether selected ISAs are all supported by the HW, as the user could have forced an unsupported ISA */    
-    if (!checkISAsHWSupport())
-    {
-      throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support all selected ISAs");      
+    /* check whether selected ISA is supported by the HW, as the user could have forced an unsupported ISA */    
+    if (!checkISASupport()) {
+      throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support selected ISA");
     }    
     
     /*! do some internal tests */

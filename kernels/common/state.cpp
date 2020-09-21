@@ -146,7 +146,7 @@ namespace embree
     return (enabled_cpu_features & isa) == isa;
   }
 
-  bool State::checkISAsHWSupport() {
+  bool State::checkISASupport() {
     return (getCPUFeatures() & enabled_cpu_features) == enabled_cpu_features;
   }
   
