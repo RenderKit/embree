@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.11.0
+% Embree: High Performance Ray Tracing Kernels 3.12.0
 % Intel Corporation
 
 Embree Overview
@@ -80,9 +80,9 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.11.0-x64.vc12.msi](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x64.vc12.msi). This
+[embree-3.12.0-x64.vc14.msi](https://github.com/embree/embree/releases/download/v3.12.0/embree-3.12.0.x64.vc14.msi). This
 will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree v3.11.0 x64`.
+Files\Intel\Embree3`.
 
 You have to set the path to the `bin` folders manually to your `PATH`
 environment variable for applications to find Embree.
@@ -90,25 +90,23 @@ environment variable for applications to find Embree.
 To compile applications with Embree using CMake, please have a look at
 the `find_embree` tutorial. To compile this tutorial, you need to set
 the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree v3.11.0 x64`.
+Files\Intel\Embree3`.
 
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.11.0 x64` and uninstall it.
+3.12.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
-Embree linked against Visual Studio 2013
-[embree-3.11.0.x64.vc12.windows.zip](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x64.vc12.windows.zip)
-and Visual Studio 2015
-[embree-3.11.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x64.vc14.windows.zip)
-are provided as a ZIP file. After unpacking this ZIP file, you should
-set the path to the `lib` folder manually to your `PATH` environment
-variable for applications to find Embree. To compile applications with
-Embree, you also have to set the `Include Directories` path in Visual
-Studio to the `include` folder of the Embree installation.
+Embree linked against Visual Studio 2015 are provided as a ZIP file
+[embree-3.12.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.12.0/embree-3.12.0.x64.vc14.windows.zip). After
+unpacking this ZIP file, you should set the path to the `lib` folder
+manually to your `PATH` environment variable for applications to find
+Embree. To compile applications with Embree, you also have to set the
+`Include Directories` path in Visual Studio to the `include` folder of
+the Embree installation.
 
 If you plan to ship Embree with your application, best use the Embree
 version from this ZIP file.
@@ -117,12 +115,13 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.11.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x86_64.linux.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
-are using the bash shell) or `embree-vars.csh` (if you are using the
-C shell) to set up the environment properly:
+[embree-3.12.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.12.0/embree-3.12.0.x86_64.linux.tar.gz). Unpack
+this file using `tar` and source the provided `embree-vars.sh` (if you
+are using the bash shell) or `embree-vars.csh` (if you are using the C
+shell) to set up the environment properly:
 
-    tar xzf embree-3.11.0.x86_64.linux.tar.gz
-    source embree-3.11.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.12.0.x86_64.linux.tar.gz
+    source embree-3.12.0.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -135,7 +134,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.11.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x86_64.pkg). This
+[embree-3.12.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.12.0/embree-3.12.0.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -153,19 +152,20 @@ to the TBB library.
 To uninstall Embree, execute the uninstaller script
 `/Applications/Embree3/uninstall.command`.
 
-macOS tar.gz file
+macOS ZIP file
 -----------------
 
-The macOS version of Embree is also delivered as a `tar.gz` file:
-[embree-3.11.0.x86_64.macosx.tar.gz](https://github.com/embree/embree/releases/download/v3.11.0/embree-3.11.0.x86_64.macosx.tar.gz). Unpack this file using `tar` and source the provided `embree-vars.sh` (if you
-are using the bash shell) or `embree-vars.csh` (if you are using the
-C shell) to set up the environment properly:
+The macOS version of Embree is also delivered as a ZIP file:
+[embree-3.12.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.12.0/embree-3.12.0.x86_64.macosx.zip). Unpack
+this file using `tar` and source the provided `embree-vars.sh` (if you
+are using the bash shell) or `embree-vars.csh` (if you are using the C
+shell) to set up the environment properly:
 
-    tar xzf embree-3.11.0.x64.macosx.tar.gz
-    source embree-3.11.0.x64.macosx/embree-vars.sh
+    unzip embree-3.12.0.x64.macosx.zip
+    source embree-3.12.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
-library of the provided `tar.gz` file. The library name of that Embree
+library of the provided ZIP file. The library name of that Embree
 library is of the form `@rpath/libembree.3.dylib`
 (and similar also for the included TBB library). This ensures that you
 can add a relative `RPATH` to your application that points to the location
@@ -192,11 +192,11 @@ Linux
   - Intel® Compiler 2015 Update 3
   - Clang 5.0.0
   - Clang 4.0.0
-  - GCC 10.0.1 (Fedora 32)
-  - GCC  8.3.1 (Fedora 28)
-  - GCC  7.3.1 (Fedora 27)
-  - GCC  7.3.1 (Fedora 26)
-  - GCC  6.4.1 (Fedora 25)
+  - GCC 10.0.1 (Fedora 32) AVX512 support
+  - GCC  8.3.1 (Fedora 28) AVX512 support
+  - GCC  7.3.1 (Fedora 27) AVX2 support
+  - GCC  7.3.1 (Fedora 26) AVX2 support
+  - GCC  6.4.1 (Fedora 25) AVX2 support
 
 macOS
 
@@ -441,10 +441,6 @@ parameters that can be configured in CMake:
 + `EMBREE_BACKFACE_CULLING`: Enables backface culling, i.e. only
   surfaces facing a ray can be hit. This option is turned OFF by
   default.
-
-+ `EMBREE_BACKFACE_CULLING_CURVES`: Enables backface culling for
-  the round linear curve type, i.e. only surfaces facing a ray can be 
-  hit. This option is turned OFF by default.
 
 + `EMBREE_COMPACT_POLYS`: Enables compact tris/quads, i.e. only
   geomIDs and primIDs are stored inside the leaf nodes.  
@@ -753,8 +749,8 @@ called which allows queries such as finding the closest point on the
 surface geometries of the scene (see Tutorial [Closest Point]) or
 nearest neighbour queries (see Tutorial [Voronoi]).
 
-See Section [rtcPointQuery] for a detailed description of how to set
-up point queries.
+See Section [rtcPointQuery](#rtcpointquery) for a detailed description
+of how to set up point queries.
 
 Collision Detection
 -------------------
@@ -1337,11 +1333,6 @@ Possible properties to query are:
 -   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED`: Queries whether
     back face culling is enabled. This is only the case if Embree is
     compiled with `EMBREE_BACKFACE_CULLING` enabled.
-
--   `RTC_DEVICE_PROPERTY_BACKFACE_CULLING_CURVES_ENABLED`: Queries 
-    whether back face culling for curves is enabled. This is only the 
-    case if Embree is compiled with `EMBREE_BACKFACE_CULLING_CURVES` 
-    enabled.
 
 -   `RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED`: Queries whether
     compact polys is enabled. This is only the case if Embree is
@@ -2346,6 +2337,7 @@ rtcNewGeometry
      RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE,
      RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE,
      RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE,
+     RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE,
      RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE,
      RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,
      RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,
@@ -2387,6 +2379,7 @@ bases (`RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE`,
+`RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`,
@@ -2868,6 +2861,9 @@ RTC\_GEOMETRY\_TYPE\_CURVE
     RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE - 
       flat normal oriented curve geometry with Catmull-Rom basis
 
+    RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE -
+      capped cone curve geometry with linear basis - discontinous at edge boundaries
+
     RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE -
       capped cone curve geometry with linear basis and spherical ending
 
@@ -2896,6 +2892,7 @@ RTC\_GEOMETRY\_TYPE\_CURVE
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE);
+    rtcNewGeometry(device, RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
@@ -2915,6 +2912,7 @@ created by passing `RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BSPLINE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_HERMITE_CURVE`,
 `RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_CATMULL_ROM_CURVE`,
+`RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE`,
 `RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE`,
@@ -3229,6 +3227,10 @@ The creation of a user geometry typically looks the following:
 Please have a look at the `rtcSetGeometryBoundsFunction`,
 `rtcSetGeometryIntersectFunction`, and `rtcSetGeometryOccludedFunction`
 functions on the implementation of the callback functions.
+
+Primitives of a user geometry are ignored during rendering when their
+bounds are empty, thus bounds have lower&gt;upper in at least one
+dimension.
 
 See tutorial [User Geometry] for an example of how to use the
 user-defined geometries.
@@ -7220,7 +7222,9 @@ No error code is set by this function.
 [rtcPointQuery], [rtcSetGeometryPointQueryFunction]
 
 
-\#\# rtcPointQuery
+
+rtcPointQuery
+-------------
 
 #### NAME {#name}
 
@@ -8028,10 +8032,12 @@ It can be compiled as both C and C++. It demonstrates how to initialize
 a device and scene, and how to intersect rays with the scene.
 There is no image output to keep the tutorial as simple as possible.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/minimal/minimal.cpp)
+
 Triangle Geometry
 -----------------
 
-![][imgTriangleGeometry]
+[![][imgTriangleGeometry]](https://github.com/embree/embree/blob/master/tutorials/triangle_geometry/triangle_geometry_device.cpp)
 
 This tutorial demonstrates the creation of a static cube and ground
 plane using triangle meshes. It also demonstrates the use of the
@@ -8039,10 +8045,12 @@ plane using triangle meshes. It also demonstrates the use of the
 and hard shadows. The cube sides are colored based on the ID of the hit
 primitive.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/triangle_geometry/triangle_geometry_device.cpp)
+
 Dynamic Scene
 -------------
 
-![][imgDynamicScene]
+[![][imgDynamicScene]](https://github.com/embree/embree/blob/master/tutorials/dynamic_scene/dynamic_scene_device.cpp)
 
 This tutorial demonstrates the creation of a dynamic scene, consisting
 of several deforming spheres. Half of the spheres use the
@@ -8052,10 +8060,12 @@ to use a refitting strategy for these spheres, the other half uses the
 performance rebuild of their spatial data structure each frame. The
 spheres are colored based on the ID of the hit sphere geometry.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/dynamic_scene/dynamic_scene_device.cpp)
+
 Multi Scene Geometry
 -------------
 
-![][imgDynamicScene]
+[![][imgDynamicScene]](https://github.com/embree/embree/blob/master/tutorials/multiscene_geometry/multiscene_geometry_device.cpp)
 
 This tutorial demonstrates the creation of multiple scenes sharing the
 same geometry objects.  Here, three scenes are built.  One with all
@@ -8063,10 +8073,12 @@ the dynamic spheres of the Dynamic Scene test and two others each with
 half.  The ground plane is shared by all three scenes.  The space bar
 is used to cycle the scene chosen for rendering.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/multiscene_geometry/multiscene_geometry_device.cpp)
+
 User Geometry
 -------------
 
-![][imgUserGeometry]
+[![][imgUserGeometry]](https://github.com/embree/embree/blob/master/tutorials/user_geometry/user_geometry_device.cpp)
 
 This tutorial shows the use of user-defined geometry, to re-implement
 instancing, and to add analytic spheres. A two-level scene is created,
@@ -8076,10 +8088,12 @@ The spheres are colored using the instance ID and geometry ID of the hit
 sphere, to demonstrate how the same geometry instanced in different
 ways can be distinguished.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/user_geometry/user_geometry_device.cpp)
+
 Viewer
 ------
 
-![][imgViewer]
+[![][imgViewer]](https://github.com/embree/embree/blob/master/tutorials/viewer/viewer_device.cpp)
 
 This tutorial demonstrates a simple OBJ viewer that traces primary
 visibility rays only. A scene consisting of multiple meshes is created,
@@ -8092,10 +8106,12 @@ work:
 
     ./viewer -i model.obj
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/viewer/viewer_device.cpp)
+
 Stream Viewer
 -------------
 
-![][imgViewerStream]
+[![][imgViewerStream]](https://github.com/embree/embree/blob/master/tutorials/viewer_stream/viewer_stream_device.cpp)
 
 This tutorial is a simple OBJ viewer that demonstrates the use of ray
 streams. You need to specify an OBJ file at the command line for this
@@ -8103,10 +8119,12 @@ tutorial to work:
 
     ./viewer_stream -i model.obj
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/viewer_stream/viewer_stream_device.cpp)
+
 Intersection Filter
 -------------------
 
-![][imgIntersectionFilter]
+[![][imgIntersectionFilter]](https://github.com/embree/embree/blob/master/tutorials/intersection_filter/intersection_filter_device.cpp)
 
 This tutorial demonstrates the use of filter callback functions to
 efficiently implement transparent objects. The filter function used for
@@ -8116,10 +8134,12 @@ properly, by potentially shooting secondary rays. The filter function
 used for shadow rays accumulates the transparency of all surfaces along
 the ray, and terminates traversal if an opaque occluder is hit.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/intersection_filter/intersection_filter_device.cpp)
+
 Instanced Geometry
 ------------------
 
-![][imgInstancedGeometry]
+[![][imgInstancedGeometry]](https://github.com/embree/embree/blob/master/tutorials/instanced_geometry/instanced_geometry_device.cpp)
 
 This tutorial demonstrates the in-build instancing feature of Embree, by
 instancing a number of other scenes built from triangulated spheres. The
@@ -8127,10 +8147,12 @@ spheres are again colored using the instance ID and geometry ID of the
 hit sphere, to demonstrate how the same geometry instanced in different
 ways can be distinguished.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/instanced_geometry/instanced_geometry_device.cpp)
+
 Multi Level Instancing
 ----------------------
 
-![][imgMultiLevelInstancing]
+[![][imgMultiLevelInstancing]](https://github.com/embree/embree/blob/master/tutorials/multi_instanced_geometry/multi_instanced_geometry_device.cpp)
 
 This tutorial demonstrates multi-level instancing, i.e., nesting instances
 into instances. To enable the tutorial, set the compile-time variable
@@ -8148,10 +8170,12 @@ During shading, the instance ID stack is used to accumulate
 normal transformation matrices for each hit. The tutorial visualizes
 transformed normals as colors.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/multi_instanced_geometry/multi_instanced_geometry_device.cpp)
+
 Path Tracer
 -----------
 
-![][imgPathtracer]
+[![][imgPathtracer]](https://github.com/embree/embree/blob/master/tutorials/pathtracer/pathtracer_device.cpp)
 
 This tutorial is a simple path tracer, based on the viewer tutorial.
 
@@ -8173,58 +8197,72 @@ To render these models execute the following:
     ./pathtracer -c crown/crown.ecs
     ./pathtracer -c asian_dragon/asian_dragon.ecs
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/pathtracer/pathtracer_device.cpp)
+
 Hair
 ----
 
-![][imgHairGeometry]
+[![][imgHairGeometry]](https://github.com/embree/embree/blob/master/tutorials/hair_geometry/hair_geometry_device.cpp)
 
 This tutorial demonstrates the use of the hair geometry to render a
 hairball.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/hair_geometry/hair_geometry_device.cpp)
+
 Curve Geometry
 --------------
 
-![][imgCurveGeometry]
+[![][imgCurveGeometry]](https://github.com/embree/embree/blob/master/tutorials/curve_geometry/curve_geometry_device.cpp)
 
-This tutorial demonstrates the use of the B-Spline and Catmull-Rom curve geometries.
+This tutorial demonstrates the use of the Linear Basis, B-Spline, and Catmull-Rom curve geometries.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/curve_geometry/curve_geometry_device.cpp)
 
 Subdivision Geometry
 --------------------
 
-![][imgSubdivisionGeometry]
+[![][imgSubdivisionGeometry]](https://github.com/embree/embree/blob/master/tutorials/subdivision_geometry/subdivision_geometry_device.cpp)
 
 This tutorial demonstrates the use of Catmull-Clark subdivision
 surfaces.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/subdivision_geometry/subdivision_geometry_device.cpp)
+
 Displacement Geometry
 ---------------------
 
-![][imgDisplacementGeometry]
+[![][imgDisplacementGeometry]](https://github.com/embree/embree/blob/master/tutorials/displacement_geometry/displacement_geometry_device.cpp)
 
 This tutorial demonstrates the use of Catmull-Clark subdivision
 surfaces with procedural displacement mapping using a constant edge
 tessellation level.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/displacement_geometry/displacement_geometry_device.cpp)
+
 Grid Geometry
 ---------------------
 
-![][imgGridGeometry]
+[![][imgGridGeometry]](https://github.com/embree/embree/tree/master/tutorials/grid_geometry)
 
 This tutorial demonstrates the use of the memory efficient grid
 primitive to handle highly tessellated and displaced geometry.
 
+[Source Code](https://github.com/embree/embree/tree/master/tutorials/grid_geometry)
+
 Point Geometry
 ---------------------
 
-![][imgPointGeometry]
+[![][imgPointGeometry]](https://github.com/embree/embree/blob/master/tutorials/point_geometry/point_geometry_device.cpp)
 
 This tutorial demonstrates the use of the three representations
 of point geometry.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/point_geometry/point_geometry_device.cpp)
+
 Motion Blur Geometry
 --------------------
 
-![][imgMotionBlurGeometry]
+[![][imgMotionBlurGeometry]](https://github.com/embree/embree/blob/master/tutorials/motion_blur_geometry/motion_blur_geometry_device.cpp)
 
 This tutorial demonstrates rendering of motion blur using the
 multi-segment motion blur feature. Shown is motion blur of a triangle mesh,
@@ -8238,10 +8276,12 @@ The number of time steps used can be configured using the `--time-steps
 geometry can be rendered at a specific time using the the `--time
 <float>` command line parameter.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/motion_blur_geometry/motion_blur_geometry_device.cpp)
+
 Quaternion Motion Blur
 ----------------------
 
-![][imgQuaternionMotionBlur]
+[![][imgQuaternionMotionBlur]](https://github.com/embree/embree/blob/master/tutorials/quaternion_motion_blur/quaternion_motion_blur_device.cpp)
 
 This tutorial demonstrates rendering of motion blur using quaternion
 interpolation. Shown is motion blur using spherical linear interpolation of
@@ -8249,18 +8289,21 @@ the rotational component of the instance transformation on the left and
 simple linear interpolation of the instance transformation on the right. The
 number of time steps can be modified as well.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/quaternion_motion_blur/quaternion_motion_blur_device.cpp)
 
 Interpolation
 -------------
 
-![][imgInterpolation]
+[![][imgInterpolation]](https://github.com/embree/embree/blob/master/tutorials/interpolation/interpolation_device.cpp)
 
 This tutorial demonstrates interpolation of user-defined per-vertex data.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/interpolation/interpolation_device.cpp)
 
 Closest Point
 ----------------------
 
-![][imgClosestPoint]
+[![][imgClosestPoint]](https://github.com/embree/embree/blob/master/tutorials/closest_point/closest_point_device.cpp)
 
 This tutorial demonstrates a use-case of the point query API. The scene
 consists of a simple collection of objects that are instanced and for several
@@ -8270,25 +8313,31 @@ implemented for Embree internal and for user-defined instancing. The tutorial
 also illustrates how to handle instance transformations that are not
 similarity transforms.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/closest_point/closest_point_device.cpp)
+
 Voronoi
 ----------------------
 
-![][imgVoronoi]
+[![][imgVoronoi]](https://github.com/embree/embree/blob/master/tutorials/voronoi/voronoi_device.cpp)
 
 This tutorial demonstrates how to implement nearest neighbour lookups using
 the point query API. Several colored points are located on a plane and the
 corresponding voroni regions are illustrated.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/voronoi/voronoi_device.cpp)
+
 Collision Detection
 ----------------------
 
-![][imgCollision]
+[![][imgCollision]](https://github.com/embree/embree/blob/master/tutorials/collide/collide_device.cpp)
 
 This tutorial demonstrates how to implement collision detection using
 the collide API. A simple cloth solver is setup to collide with a sphere.
 
 The cloth can be reset with the `space` bar.  The sim stepped once with `n` 
 and continuous simulation started and paused with `p`.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/collide/collide_device.cpp)
 
 BVH Builder
 -----------
@@ -8298,12 +8347,16 @@ of Embree to build a bounding volume hierarchy with a user-defined
 memory layout using a high-quality SAH builder using spatial splits, a
 standard SAH builder, and a very fast Morton builder.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/bvh_builder/bvh_builder_device.cpp)
+
 BVH Access
 -----------
 
 This tutorial demonstrates how to access the internal triangle
 acceleration structure build by Embree. Please be aware that the
 internal Embree data structures might change between Embree updates.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/bvh_access/bvh_access.cpp)
 
 Find Embree
 -----------
@@ -8314,6 +8367,8 @@ the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable must be set to the following folder of the Embree
 installation: `C:\Program Files\Intel\Embree3`.
 
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/find_embree/CMakeLists.txt)
+
 Next Hit
 -----------
 
@@ -8321,6 +8376,8 @@ This tutorial demonstrates how to robustly enumerate all hits along
 the ray using multiple ray queries and an intersection filter
 function. To improve performance, the tutorial also supports
 collecting the next N hits in a single ray query.
+
+[Source Code](https://github.com/embree/embree/blob/master/tutorials/next_hit/next_hit_device.cpp)
 
 
 

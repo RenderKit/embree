@@ -61,6 +61,10 @@ Please have a look at the \f[C]rtcSetGeometryBoundsFunction\f[],
 \f[C]rtcSetGeometryOccludedFunction\f[] functions on the implementation
 of the callback functions.
 .PP
+Primitives of a user geometry are ignored during rendering when their
+bounds are empty, thus bounds have lower>upper in at least one
+dimension.
+.PP
 See tutorial [User Geometry] for an example of how to use the
 user\-defined geometries.
 .SS EXIT STATUS

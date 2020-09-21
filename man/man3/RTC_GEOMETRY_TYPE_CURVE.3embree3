@@ -33,6 +33,9 @@ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE\ \-\
 RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE\ \-\ 
 \ \ flat\ normal\ oriented\ curve\ geometry\ with\ Catmull\-Rom\ basis
 
+RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE\ \-
+\ \ capped\ cone\ curve\ geometry\ with\ linear\ basis\ \-\ discontinous\ at\ edge\ boundaries
+
 RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE\ \-
 \ \ capped\ cone\ curve\ geometry\ with\ linear\ basis\ and\ spherical\ ending
 
@@ -64,6 +67,7 @@ rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE);
+rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
 rtcNewGeometry(device,\ RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE);
@@ -85,6 +89,7 @@ Such curve geometries are created by passing
 \f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_BSPLINE_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_HERMITE_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_FLAT_CATMULL_ROM_CURVE\f[],
+\f[C]RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE\f[],
 \f[C]RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE\f[],
