@@ -5,6 +5,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <limits>
+#include <stdio.h>
+
+#if defined(_WIN32)
+#  include <conio.h>
+#  include <windows.h>
+#endif
 
 /*
  * A minimal tutorial. 
@@ -200,6 +206,27 @@ void castRay(RTCScene scene,
     printf("Did not find any intersection.\n");
 }
 
+void waitForKeyPressedUnderWindows()
+{
+#if defined(_WIN32)
+  HANDLE hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+  
+  CONSOLE_SCREEN_BUFFER_INFO csbi;
+  if (!GetConsoleScreenBufferInfo(hStdOutput, &csbi)) {
+    printf("GetConsoleScreenBufferInfo failed: %d\n", GetLastError());
+    return;
+  }
+  
+  /* do not pause when running on a shell */
+  if (csbi.dwCursorPosition.X != 0 || csbi.dwCursorPosition.Y != 0)
+    return;
+  
+  /* only pause if running in separate console window. */
+  printf("\n\tPress any key to exit...\n");
+  int ch = getch();
+#endif
+}
+
 
 /* -------------------------------------------------------------------------- */
 
@@ -220,7 +247,10 @@ int main()
    * always make sure to release resources allocated through Embree. */
   rtcReleaseScene(scene);
   rtcReleaseDevice(device);
-
+  
+  /* wait for user input under Windows when opened in separate window */
+  waitForKeyPressedUnderWindows();
+  
   return 0;
 }
 

@@ -7,6 +7,8 @@
 
 namespace embree
 {
+  void waitForKeyPressedUnderWindows();
+ 
   class Application
   {
   public:

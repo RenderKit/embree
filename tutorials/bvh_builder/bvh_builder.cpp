@@ -16,6 +16,12 @@ namespace embree
 
 }
 
-int main(int argc, char** argv) {
-  return embree::Tutorial().main(argc,argv);
+int main(int argc, char** argv)
+{
+  int code = embree::Tutorial().main(argc,argv);
+
+  /* wait for user input under Windows when opened in separate window */
+  embree::waitForKeyPressedUnderWindows();
+
+  return code;
 }

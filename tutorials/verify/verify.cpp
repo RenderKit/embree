@@ -6029,6 +6029,11 @@ namespace embree
 int main(int argc, char** argv)
 {
   embree::VerifyApplication app;
-  return app.main(argc,argv);
+  int code = app.main(argc,argv);
+
+  /* wait for user input under Windows when opened in separate window */
+  embree::waitForKeyPressedUnderWindows();
+
+  return code;
 }
 

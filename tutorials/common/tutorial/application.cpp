@@ -3,9 +3,36 @@
 
 #include "application.h"
 
+#if defined(_WIN32)
+#  include <stdio.h>
+#  include <conio.h>
+#  include <windows.h>
+#endif
+
 namespace embree
 {
   Application* Application::instance = nullptr;
+
+  void waitForKeyPressedUnderWindows()
+  {
+#if defined(_WIN32)
+    HANDLE hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    
+    CONSOLE_SCREEN_BUFFER_INFO csbi;
+    if (!GetConsoleScreenBufferInfo(hStdOutput, &csbi)) {
+      printf("GetConsoleScreenBufferInfo failed: %d\n", GetLastError());
+      return;
+    }
+    
+    /* do not pause when running on a shell */
+    if (csbi.dwCursorPosition.X != 0 || csbi.dwCursorPosition.Y != 0)
+      return;
+    
+    /* only pause if running in separate console window. */
+    printf("\n\tPress any key to exit...\n");
+    int ch = getch();
+#endif
+  }
   
   Application::Application(int features)
     : rtcore("start_threads=1,set_affinity=1"), verbosity(0),

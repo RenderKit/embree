@@ -233,6 +233,10 @@ namespace embree
     /* cleanup */
     rtcReleaseScene (scene);
     rtcReleaseDevice(device);
+
+    /* wait for user input under Windows when opened in separate window */
+    waitForKeyPressedUnderWindows();
+    
     return 0;
   }
 }
