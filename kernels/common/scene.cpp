@@ -726,7 +726,7 @@ namespace embree
     accels_select(hasFilterFunction());
   
     /* build all hierarchies of this scene */
-	accels_build();
+    accels_build();
 
     /* make static geometry immutable */
     if (!isDynamicAccel()) {

@@ -1,6 +1,8 @@
 Version History
 ---------------
 
+### Embree 3.12.1
+
 ### Embree 3.12.0
 
 -   Added linear cone curve geometry support. In this mode a real geometric surface for curves
