@@ -1,7 +1,7 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.h"
+#include "grid_geometry_device.h"
 
 namespace embree {
 
@@ -10,8 +10,8 @@ namespace embree {
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
-/* scene data */
 RTCScene g_scene = nullptr;
+TutorialData data;
 
 #if 1
 
@@ -95,17 +95,6 @@ struct Grid
   int strideX, strideY;
   unsigned int width, height;
 };
-
-struct GridMesh
-{
-  RTCGeometry geom;
-  RTCGeometry geomNormals;
-  RTCGrid* egrids;
-  Vec3fa* vertices;
-  Vec3fa* normals;
-};
-
-GridMesh gmesh;
 
 float displacement(const Vec3fa& P)
 {
@@ -539,17 +528,18 @@ unsigned int addGroundPlane (RTCScene scene_i)
 extern "C" void device_init (char* cfg)
 {
   /* create scene */
-  g_scene = rtcNewScene(g_device);
-  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
+  TutorialData_Constructor(&data);
+  g_scene = data.g_scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_ROBUST);
 
-  addGroundPlane(g_scene);
+  addGroundPlane(data.g_scene);
 
-  createGridGeometry(gmesh);
-  rtcAttachGeometry(g_scene,gmesh.geom);
+  createGridGeometry(data.gmesh);
+  rtcAttachGeometry(data.g_scene,data.gmesh.geom);
   //rtcAttachGeometry(g_scene,gmesh.geomNormals);
    
   /* commit changes to scene */
-  rtcCommitScene (g_scene);
+  rtcCommitScene (data.g_scene);
 }
 
 Vec3fa mylerp(float f, const Vec3fa& a, const Vec3fa& b) { // FIXME: use lerpr, need to make ISPC lerpr and C++ lerpr compatible first
@@ -557,16 +547,19 @@ Vec3fa mylerp(float f, const Vec3fa& a, const Vec3fa& b) { // FIXME: use lerpr, 
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixelStandard(const TutorialData &data,
+                           float x, float y,
+                           const ISPCCamera &camera,
+                           RayStats &stats)
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  
+
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -580,20 +573,20 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
 
     if (ray.geomID == 1)
     {
-      unsigned int startVertexID = gmesh.egrids[ray.primID].startVertexID;
-      int width = gmesh.egrids[ray.primID].width;
-      int height = gmesh.egrids[ray.primID].height;
-      unsigned int stride = gmesh.egrids[ray.primID].stride;
+      unsigned int startVertexID = data.gmesh.egrids[ray.primID].startVertexID;
+      int width = data.gmesh.egrids[ray.primID].width;
+      int height = data.gmesh.egrids[ray.primID].height;
+      unsigned int stride = data.gmesh.egrids[ray.primID].stride;
       float U = ray.u*(width-1);
       float V = ray.v*(height-1);
       int x = min((int)floor(U),width -2);
       int y = min((int)floor(V),height-2);
       float u = U-x;
       float v = V-y;
-      Vec3fa N00 = gmesh.normals[startVertexID+(y+0)*stride+(x+0)];
-      Vec3fa N01 = gmesh.normals[startVertexID+(y+0)*stride+(x+1)];
-      Vec3fa N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
-      Vec3fa N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
+      Vec3fa N00 = data.gmesh.normals[startVertexID+(y+0)*stride+(x+0)];
+      Vec3fa N01 = data.gmesh.normals[startVertexID+(y+0)*stride+(x+1)];
+      Vec3fa N10 = data.gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
+      Vec3fa N11 = data.gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
       Vec3fa N0 = mylerp(u,N00,N01);
       Vec3fa N1 = mylerp(u,N10,N11);
       Ng = normalize(mylerp(v,N0,N1));
@@ -604,7 +597,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
+    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -635,7 +628,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
+    Vec3fa color = renderPixelStandard(data,(float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -685,10 +678,7 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  alignedFree(gmesh.normals);
-  rtcReleaseGeometry(gmesh.geom);
-  rtcReleaseGeometry(gmesh.geomNormals);
-  rtcReleaseScene (g_scene); g_scene = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

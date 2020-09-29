@@ -1,15 +1,15 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.isph"
+#include "grid_geometry_device.isph"
 
 /* configuration */
 #define EDGE_LEVEL 257
 #define GRID_RESOLUTION_X EDGE_LEVEL
 #define GRID_RESOLUTION_Y EDGE_LEVEL
 
-/* scene data */
 RTCScene g_scene = NULL;
+uniform TutorialData data;
 
 #if 1
 
@@ -93,17 +93,6 @@ struct Grid
   int strideX, strideY;
   unsigned int width, height;
 };
-
-struct GridMesh
-{
-  RTCGeometry geom;
-  RTCGeometry geomNormals;
-  uniform RTCGrid* uniform egrids;
-  uniform Vec3fa* uniform vertices;
-  uniform Vec3f* uniform normals;
-};
-
-uniform GridMesh gmesh;
 
 float displacement(const Vec3f& P)
 {
@@ -537,17 +526,18 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 export void device_init (uniform int8* uniform cfg)
 {
   /* create scene */
-  g_scene = rtcNewScene(g_device);
-  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_ROBUST);
+  TutorialData_Constructor(&data);
+  g_scene = data.g_scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_ROBUST);
 
-  addGroundPlane(g_scene);
+  addGroundPlane(data.g_scene);
 
-  createGridGeometry(gmesh);
-  rtcAttachGeometry(g_scene,gmesh.geom);
+  createGridGeometry(data.gmesh);
+  rtcAttachGeometry(data.g_scene,data.gmesh.geom);
   //rtcAttachGeometry(g_scene,gmesh.geomNormals);
-   
+
   /* commit changes to scene */
-  rtcCommitScene (g_scene);
+  rtcCommitScene (data.g_scene);
 }
 
 Vec3f mylerp(float f, const Vec3f& a, const Vec3f& b) { // FIXME: use lerp, need to make ISPC lerp and C++ lerp compatible first
@@ -555,16 +545,19 @@ Vec3f mylerp(float f, const Vec3f& a, const Vec3f& b) { // FIXME: use lerp, need
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+Vec3f renderPixelStandard(const uniform TutorialData& data,
+                          float x, float y,
+                          const uniform ISPCCamera& camera,
+                          uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  
+
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -578,20 +571,20 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
 
     if (ray.geomID == 1)
     {
-      unsigned int startVertexID = gmesh.egrids[ray.primID].startVertexID;
-      int width = gmesh.egrids[ray.primID].width;
-      int height = gmesh.egrids[ray.primID].height;
-      unsigned int stride = gmesh.egrids[ray.primID].stride;
+      unsigned int startVertexID = data.gmesh.egrids[ray.primID].startVertexID;
+      int width = data.gmesh.egrids[ray.primID].width;
+      int height = data.gmesh.egrids[ray.primID].height;
+      unsigned int stride = data.gmesh.egrids[ray.primID].stride;
       float U = ray.u*(width-1);
       float V = ray.v*(height-1);
       int x = min((int)floor(U),width -2);
       int y = min((int)floor(V),height-2);
       float u = U-x;
       float v = V-y;
-      Vec3f N00 = gmesh.normals[startVertexID+(y+0)*stride+(x+0)];
-      Vec3f N01 = gmesh.normals[startVertexID+(y+0)*stride+(x+1)];
-      Vec3f N10 = gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
-      Vec3f N11 = gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
+      Vec3f N00 = data.gmesh.normals[startVertexID+(y+0)*stride+(x+0)];
+      Vec3f N01 = data.gmesh.normals[startVertexID+(y+0)*stride+(x+1)];
+      Vec3f N10 = data.gmesh.normals[startVertexID+(y+1)*stride+(x+0)];
+      Vec3f N11 = data.gmesh.normals[startVertexID+(y+1)*stride+(x+1)];
       Vec3f N0 = mylerp(u,N00,N01);
       Vec3f N1 = mylerp(u,N10,N11);
       Ng = normalize(mylerp(v,N0,N1));
@@ -602,7 +595,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
-    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
+    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -633,7 +626,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
+    Vec3f color = renderPixelStandard(data,(float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -679,8 +672,5 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  delete[] gmesh.normals;
-  rtcReleaseGeometry(gmesh.geom);
-  rtcReleaseGeometry(gmesh.geomNormals);
-  rtcReleaseScene (g_scene); g_scene = NULL;
+  TutorialData_Destructor(&data);
 }

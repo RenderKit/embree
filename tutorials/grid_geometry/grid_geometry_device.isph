@@ -1,0 +1,41 @@
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+#include "../common/tutorial/scene_device.h"
+
+struct GridMesh
+{
+  RTCGeometry geom;
+  RTCGeometry geomNormals;
+  uniform RTCGrid* uniform egrids;
+  uniform Vec3fa* uniform vertices;
+  uniform Vec3f* uniform normals;
+};
+
+
+struct TutorialData
+{
+  /* scene data */
+  RTCScene g_scene;
+
+  uniform GridMesh gmesh;
+};
+
+void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->g_scene  = NULL;
+  This->gmesh.geom = NULL;
+  This->gmesh.geomNormals = NULL;
+  This->gmesh.egrids = NULL;
+  This->gmesh.vertices = NULL;
+  This->gmesh.normals = NULL;
+}
+
+void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  delete[] This->gmesh.normals;
+  rtcReleaseGeometry(This->gmesh.geom);
+  rtcReleaseGeometry(This->gmesh.geomNormals);
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+}
