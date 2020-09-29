@@ -26,6 +26,7 @@ ispc2cpp:
 	@./ispc2cpp.sh viewer/viewer_device.ispc viewer/viewer_device.cpp
 	@./ispc2cpp.sh viewer_stream/viewer_stream_device.ispc viewer_stream/viewer_stream_device.cpp
 	@./ispc2cpp.sh viewer_anim/viewer_anim_device.ispc viewer_anim/viewer_anim_device.cpp
+	@./ispc2cpp.sh instanced_geometry/instanced_geometry_device.isph instanced_geometry/instanced_geometry_device.h
 	@./ispc2cpp.sh instanced_geometry/instanced_geometry_device.ispc instanced_geometry/instanced_geometry_device.cpp
 	@./ispc2cpp.sh intersection_filter/intersection_filter_device.isph intersection_filter/intersection_filter_device.h
 	@./ispc2cpp.sh intersection_filter/intersection_filter_device.ispc intersection_filter/intersection_filter_device.cpp

@@ -1,10 +1,13 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.isph"
+#include "instanced_geometry_device.isph"
 
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
+
+RTCScene g_scene  = NULL;
+uniform TutorialData data;
 
 uniform unsigned int createTriangulatedSphere (RTCScene scene, const uniform Vec3f& p, uniform float r)
 {
@@ -86,82 +89,71 @@ uniform unsigned int createGroundPlane (RTCScene scene)
   return geomID;
 }
 
-/* scene data */
-RTCScene g_scene  = NULL;
-RTCScene g_scene1 = NULL;
-
-RTCGeometry g_instance0 = NULL;
-RTCGeometry g_instance1 = NULL;
-RTCGeometry g_instance2 = NULL;
-RTCGeometry g_instance3 = NULL;
-uniform AffineSpace3f instance_xfm[4];
-uniform LinearSpace3f normal_xfm[4];
-
-uniform Vec3f colors[4][4];
-
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
+  TutorialData_Constructor(&data);
+  
   /* create scene */
-  g_scene = rtcNewScene(g_device);
-  rtcSetSceneBuildQuality(g_scene,RTC_BUILD_QUALITY_LOW);
-  rtcSetSceneFlags(g_scene,RTC_SCENE_FLAG_DYNAMIC);
+  data.g_scene = g_scene = rtcNewScene(g_device);
+  rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
+  rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcNewScene(g_device);
-  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,+1),0.5f);
-  createTriangulatedSphere(g_scene1,make_Vec3f(+1, 0, 0),0.5f);
-  createTriangulatedSphere(g_scene1,make_Vec3f( 0, 0,-1),0.5f);
-  createTriangulatedSphere(g_scene1,make_Vec3f(-1, 0, 0),0.5f);
-  rtcCommitScene (g_scene1);
+  data.g_scene1 = rtcNewScene(g_device);
+  createTriangulatedSphere(data.g_scene1,make_Vec3f( 0, 0,+1),0.5f);
+  createTriangulatedSphere(data.g_scene1,make_Vec3f(+1, 0, 0),0.5f);
+  createTriangulatedSphere(data.g_scene1,make_Vec3f( 0, 0,-1),0.5f);
+  createTriangulatedSphere(data.g_scene1,make_Vec3f(-1, 0, 0),0.5f);
+  rtcCommitScene (data.g_scene1);
 
   /* instantiate geometry */
-  g_instance0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance0,g_scene1);
-  rtcSetGeometryTimeStepCount(g_instance0,1);
-  g_instance1 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance1,g_scene1);
-  rtcSetGeometryTimeStepCount(g_instance1,1);
-  g_instance2 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance2,g_scene1);
-  rtcSetGeometryTimeStepCount(g_instance2,1);
-  g_instance3 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance3,g_scene1);
-  rtcSetGeometryTimeStepCount(g_instance3,1);
-  rtcAttachGeometry(g_scene,g_instance0);
-  rtcAttachGeometry(g_scene,g_instance1);
-  rtcAttachGeometry(g_scene,g_instance2);
-  rtcAttachGeometry(g_scene,g_instance3);
-  rtcReleaseGeometry(g_instance0);
-  rtcReleaseGeometry(g_instance1);
-  rtcReleaseGeometry(g_instance2);
-  rtcReleaseGeometry(g_instance3);
-  createGroundPlane(g_scene);
+  data.g_instance0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(data.g_instance0,data.g_scene1);
+  rtcSetGeometryTimeStepCount(data.g_instance0,1);
+  data.g_instance1 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(data.g_instance1,data.g_scene1);
+  rtcSetGeometryTimeStepCount(data.g_instance1,1);
+  data.g_instance2 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(data.g_instance2,data.g_scene1);
+  rtcSetGeometryTimeStepCount(data.g_instance2,1);
+  data.g_instance3 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(data.g_instance3,data.g_scene1);
+  rtcSetGeometryTimeStepCount(data.g_instance3,1);
+  rtcAttachGeometry(data.g_scene,data.g_instance0);
+  rtcAttachGeometry(data.g_scene,data.g_instance1);
+  rtcAttachGeometry(data.g_scene,data.g_instance2);
+  rtcAttachGeometry(data.g_scene,data.g_instance3);
+  rtcReleaseGeometry(data.g_instance0);
+  rtcReleaseGeometry(data.g_instance1);
+  rtcReleaseGeometry(data.g_instance2);
+  rtcReleaseGeometry(data.g_instance3);
+  createGroundPlane(data.g_scene);
 
   /* set all colors */
-  colors[0][0] = make_Vec3f(0.25f, 0.f, 0.f);
-  colors[0][1] = make_Vec3f(0.50f, 0.f, 0.f);
-  colors[0][2] = make_Vec3f(0.75f, 0.f, 0.f);
-  colors[0][3] = make_Vec3f(1.00f, 0.f, 0.f);
+  data.colors[0][0] = make_Vec3f(0.25f, 0.f, 0.f);
+  data.colors[0][1] = make_Vec3f(0.50f, 0.f, 0.f);
+  data.colors[0][2] = make_Vec3f(0.75f, 0.f, 0.f);
+  data.colors[0][3] = make_Vec3f(1.00f, 0.f, 0.f);
 
-  colors[1][0] = make_Vec3f(0.f, 0.25f, 0.f);
-  colors[1][1] = make_Vec3f(0.f, 0.50f, 0.f);
-  colors[1][2] = make_Vec3f(0.f, 0.75f, 0.f);
-  colors[1][3] = make_Vec3f(0.f, 1.00f, 0.f);
+  data.colors[1][0] = make_Vec3f(0.f, 0.25f, 0.f);
+  data.colors[1][1] = make_Vec3f(0.f, 0.50f, 0.f);
+  data.colors[1][2] = make_Vec3f(0.f, 0.75f, 0.f);
+  data.colors[1][3] = make_Vec3f(0.f, 1.00f, 0.f);
 
-  colors[2][0] = make_Vec3f(0.f, 0.f, 0.25f);
-  colors[2][1] = make_Vec3f(0.f, 0.f, 0.50f);
-  colors[2][2] = make_Vec3f(0.f, 0.f, 0.75f);
-  colors[2][3] = make_Vec3f(0.f, 0.f, 1.00f);
+  data.colors[2][0] = make_Vec3f(0.f, 0.f, 0.25f);
+  data.colors[2][1] = make_Vec3f(0.f, 0.f, 0.50f);
+  data.colors[2][2] = make_Vec3f(0.f, 0.f, 0.75f);
+  data.colors[2][3] = make_Vec3f(0.f, 0.f, 1.00f);
 
-  colors[3][0] = make_Vec3f(0.25f, 0.25f, 0.f);
-  colors[3][1] = make_Vec3f(0.50f, 0.50f, 0.f);
-  colors[3][2] = make_Vec3f(0.75f, 0.75f, 0.f);
-  colors[3][3] = make_Vec3f(1.00f, 1.00f, 0.f);
+  data.colors[3][0] = make_Vec3f(0.25f, 0.25f, 0.f);
+  data.colors[3][1] = make_Vec3f(0.50f, 0.50f, 0.f);
+  data.colors[3][2] = make_Vec3f(0.75f, 0.75f, 0.f);
+  data.colors[3][3] = make_Vec3f(1.00f, 1.00f, 0.f);
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+Vec3f renderPixelStandard(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
@@ -170,7 +162,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -180,13 +172,13 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     /* calculate shading normal in world space */
     Vec3f Ns = ray.Ng;
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[ray.instID[0]],Ns);
+      Ns = xfmVector(data.normal_xfm[ray.instID[0]],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(1,1,1);
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[ray.instID[0]][ray.geomID];
+      diffuse = data.colors[ray.instID[0]][ray.geomID];
     color = color + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -194,7 +186,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
+    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -225,7 +217,7 @@ void renderTileStandard(uniform int taskIndex,
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
     /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
+    Vec3f color = renderPixelStandard(data, (float)x,(float)y,camera,g_stats[threadIndex]);
 
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -289,7 +281,7 @@ void renderTileStandardStream(uniform int taskIndex,
   uniform RTCIntersectContext primary_context;
   rtcInitIntersectContext(&primary_context);
   primary_context.flags = g_iflags_coherent;
-  rtcIntersectVM(g_scene,&primary_context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray));
+  rtcIntersectVM(data.g_scene,&primary_context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray));
 
   /* terminate rays and update color */
   N = -1;
@@ -319,13 +311,13 @@ void renderTileStandardStream(uniform int taskIndex,
     Ray& primary = primary_stream[N];
     Vec3f Ns = primary.Ng;
     if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[primary.instID[0]],Ns);
+      Ns = xfmVector(data.normal_xfm[primary.instID[0]],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(1,1,1);
     if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[primary.instID[0]][primary.geomID];
+      diffuse = data.colors[primary.instID[0]][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
 
     /* initialize shadow ray tnear/tfar */
@@ -343,7 +335,7 @@ void renderTileStandardStream(uniform int taskIndex,
   uniform RTCIntersectContext shadow_context;
   rtcInitIntersectContext(&shadow_context);
   shadow_context.flags = g_iflags_coherent;
-  rtcOccludedVM(g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));
+  rtcOccludedVM(data.g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));
 
   /* add light contribution */
   N = -1;
@@ -360,13 +352,13 @@ void renderTileStandardStream(uniform int taskIndex,
     Ray& primary = primary_stream[N];
     Vec3f Ns = primary.Ng;
     if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      Ns = xfmVector(normal_xfm[primary.instID[0]],Ns);
+      Ns = xfmVector(data.normal_xfm[primary.instID[0]],Ns);
     Ns = normalize(Ns);
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(1,1,1);
     if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      diffuse = colors[primary.instID[0]][primary.geomID];
+      diffuse = data.colors[primary.instID[0]][primary.geomID];
 
     /* add light contrinution */
     Ray& shadow = shadow_stream[N];
@@ -438,30 +430,29 @@ export void device_render (uniform int* uniform pixels,
   /* calculate transformations to move instances in cirle */
   for (uniform int i=0; i<4; i++) {
     uniform float t = t0+i*2.0f*M_PI/4.0f;
-    instance_xfm[i] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+cos(t),0.0f,+sin(t)));
+    data.instance_xfm[i] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+cos(t),0.0f,+sin(t)));
   }
 
   /* calculate transformations to properly transform normals */
   for (uniform int i=0; i<4; i++)
-    normal_xfm[i] = transposed(rcp(instance_xfm[i].l));
+    data.normal_xfm[i] = transposed(rcp(data.instance_xfm[i].l));
 
   /* set instance transformations */
-  rtcSetGeometryTransform(g_instance0,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[0]);
-  rtcSetGeometryTransform(g_instance1,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[1]);
-  rtcSetGeometryTransform(g_instance2,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[2]);
-  rtcSetGeometryTransform(g_instance3,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&instance_xfm[3]);
+  rtcSetGeometryTransform(data.g_instance0,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&data.instance_xfm[0]);
+  rtcSetGeometryTransform(data.g_instance1,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&data.instance_xfm[1]);
+  rtcSetGeometryTransform(data.g_instance2,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&data.instance_xfm[2]);
+  rtcSetGeometryTransform(data.g_instance3,0,RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&data.instance_xfm[3]);
 
   /* update scene */
-  rtcCommitGeometry(g_instance0);
-  rtcCommitGeometry(g_instance1);
-  rtcCommitGeometry(g_instance2);
-  rtcCommitGeometry(g_instance3);
-  rtcCommitScene (g_scene);
+  rtcCommitGeometry(data.g_instance0);
+  rtcCommitGeometry(data.g_instance1);
+  rtcCommitGeometry(data.g_instance2);
+  rtcCommitGeometry(data.g_instance3);
+  rtcCommitScene (data.g_scene);
 }
 
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = NULL;
-  rtcReleaseScene (g_scene1); g_scene1 = NULL;
+  TutorialData_Destructor(&data);
 }

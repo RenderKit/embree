@@ -1,0 +1,39 @@
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+#include "../common/math/random_sampler.isph"
+#include "../common/core/differential_geometry.isph"
+#include "../common/tutorial/scene_device.h"
+
+struct TutorialData
+{
+  /* scene data */
+  RTCScene g_scene;
+  RTCScene g_scene1;
+  
+  RTCGeometry g_instance0;
+  RTCGeometry g_instance1;
+  RTCGeometry g_instance2;
+  RTCGeometry g_instance3;
+  uniform AffineSpace3f instance_xfm[4];
+  uniform LinearSpace3f normal_xfm[4];
+  
+  uniform Vec3f colors[4][4];
+};
+
+void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->g_scene  = NULL;
+  This->g_scene1 = NULL;
+  This->g_instance0 = NULL;
+  This->g_instance1 = NULL;
+  This->g_instance2 = NULL;
+  This->g_instance3 = NULL;
+}
+
+void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+  rtcReleaseScene (This->g_scene1); This->g_scene1 = NULL;
+}
