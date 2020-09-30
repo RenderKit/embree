@@ -1,0 +1,69 @@
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+
+struct Sphere
+{
+  ALIGNED_STRUCT_(16)
+  Vec3f p;                      //!< position of the sphere
+  float r;                      //!< radius of the sphere
+  RTCGeometry geometry;
+  uniform unsigned int geomID;
+};
+
+struct Instance
+{
+  ALIGNED_STRUCT_(16)
+  RTCGeometry geometry;
+  RTCScene object;
+  uniform int userID;
+  AffineSpace3f local2world;
+  AffineSpace3f world2local;
+  LinearSpace3f normal2world;
+  Vec3f lower;
+  Vec3f upper;
+};
+
+struct TutorialData
+{
+  /* scene data */
+  RTCScene g_scene;
+  RTCScene g_scene0;
+  RTCScene g_scene1;
+  RTCScene g_scene2;
+  uniform Sphere* uniform g_spheres;
+  uniform Sphere* uniform g_sphere0;
+  uniform Sphere* uniform g_sphere1;
+  
+  uniform Instance* uniform g_instance[4];
+  
+  uniform Vec3f colors[5][4];
+};
+
+inline void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->g_scene  = NULL;
+  This->g_scene0 = NULL;
+  This->g_scene1 = NULL;
+  This->g_scene2 = NULL;
+  This->g_spheres = NULL;
+  This->g_sphere0 = NULL;
+  This->g_sphere1 = NULL;
+  This->g_instance[0] = NULL;
+  This->g_instance[1] = NULL;
+  This->g_instance[2] = NULL;
+  This->g_instance[3] = NULL;
+}
+
+inline void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+  rtcReleaseScene (This->g_scene0); This->g_scene0 = NULL;
+  rtcReleaseScene (This->g_scene1); This->g_scene1 = NULL;
+  rtcReleaseScene (This->g_scene2); This->g_scene2 = NULL;
+  rtcReleaseDevice(g_device); g_device = NULL;
+  delete[] This->g_spheres; This->g_spheres = NULL;
+  delete This->g_sphere0; This->g_sphere0 = NULL;
+  delete This->g_sphere1; This->g_sphere1 = NULL;
+}

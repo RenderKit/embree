@@ -1,9 +1,12 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.h"
+#include "user_geometry_device.h"
 
 namespace embree {
+
+RTCScene g_scene = nullptr;
+TutorialData data;
 
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
@@ -64,19 +67,6 @@ inline void copyInstanceIdStack(const RTCIntersectContext* ctx, unsigned* tgt)
 // ======================================================================== //
 //                         User defined instancing                          //
 // ======================================================================== //
-
-struct Instance
-{
-  ALIGNED_STRUCT_(16)
-  RTCGeometry geometry;
-  RTCScene object;
-  int userID;
-  AffineSpace3fa local2world;
-  AffineSpace3fa world2local;
-  LinearSpace3fa normal2world;
-  Vec3fa lower;
-  Vec3fa upper;
-};
 
 void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
@@ -301,15 +291,6 @@ void updateInstance (RTCScene scene, Instance* instance)
 // ======================================================================== //
 //                     User defined sphere geometry                         //
 // ======================================================================== //
-
-struct Sphere
-{
-  ALIGNED_STRUCT_(16)
-  Vec3fa p;                      //!< position of the sphere
-  float r;                      //!< radius of the sphere
-  RTCGeometry geometry;
-  unsigned int geomID;
-};
 
 void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
@@ -734,8 +715,8 @@ void sphereFilterFunction(const RTCFilterFunctionNArguments* args)
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
-  // const unsigned int N = args->N;
-  assert(args->N == 1);
+  const unsigned int N = args->N;
+  assert(N == 1);
 
 
   /* avoid crashing when debug visualizations are used */
@@ -932,84 +913,72 @@ unsigned int createGroundPlane (RTCScene scene)
   return geomID;
 }
 
-/* scene data */
-RTCScene g_scene  = nullptr;
-RTCScene g_scene0 = nullptr;
-RTCScene g_scene1 = nullptr;
-RTCScene g_scene2 = nullptr;
-Sphere* g_spheres = nullptr;
-Sphere* g_sphere0 = nullptr;
-Sphere* g_sphere1 = nullptr;
-
-Instance* g_instance[4] = { nullptr, nullptr, nullptr, nullptr };
-
-Vec3fa colors[5][4];
-
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
   /* create scene */
-  g_scene = rtcNewScene(g_device);
+  TutorialData_Constructor(&data);
+  g_scene = data.g_scene = rtcNewScene(g_device);
 
   /* create scene with 4 analytical spheres */
-  g_scene0 = rtcNewScene(g_device);
-  rtcSetSceneBuildQuality(g_scene0,RTC_BUILD_QUALITY_LOW);
-  g_spheres = createAnalyticalSpheres(g_scene0,4);
-  g_spheres[0].p = Vec3fa( 0, 0,+1); g_spheres[0].r = 0.5f;
-  g_spheres[1].p = Vec3fa(+1, 0, 0); g_spheres[1].r = 0.5f;
-  g_spheres[2].p = Vec3fa( 0, 0,-1); g_spheres[2].r = 0.5f;
-  g_spheres[3].p = Vec3fa(-1, 0, 0); g_spheres[3].r = 0.5f;
-  rtcCommitScene(g_scene0);
+  data.g_scene0 = rtcNewScene(g_device);
+  rtcSetSceneBuildQuality(data.g_scene0,RTC_BUILD_QUALITY_LOW);
+  data.g_spheres = createAnalyticalSpheres(data.g_scene0,4);
+  data.g_spheres[0].p = Vec3fa( 0, 0,+1); data.g_spheres[0].r = 0.5f;
+  data.g_spheres[1].p = Vec3fa(+1, 0, 0); data.g_spheres[1].r = 0.5f;
+  data.g_spheres[2].p = Vec3fa( 0, 0,-1); data.g_spheres[2].r = 0.5f;
+  data.g_spheres[3].p = Vec3fa(-1, 0, 0); data.g_spheres[3].r = 0.5f;
+  rtcCommitScene(data.g_scene0);
 
   /* create scene with 4 triangulated spheres */
-  g_scene1 = rtcNewScene(g_device);
-  createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,+1),0.5f);
-  createTriangulatedSphere(g_scene1,Vec3fa(+1, 0, 0),0.5f);
-  createTriangulatedSphere(g_scene1,Vec3fa( 0, 0,-1),0.5f);
-  createTriangulatedSphere(g_scene1,Vec3fa(-1, 0, 0),0.5f);
-  rtcCommitScene(g_scene1);
+  data.g_scene1 = rtcNewScene(g_device);
+  createTriangulatedSphere(data.g_scene1,Vec3fa( 0, 0,+1),0.5f);
+  createTriangulatedSphere(data.g_scene1,Vec3fa(+1, 0, 0),0.5f);
+  createTriangulatedSphere(data.g_scene1,Vec3fa( 0, 0,-1),0.5f);
+  createTriangulatedSphere(data.g_scene1,Vec3fa(-1, 0, 0),0.5f);
+  rtcCommitScene(data.g_scene1);
 
   /* create scene with 2 triangulated and 2 analytical spheres */
-  g_scene2 = rtcNewScene(g_device);
-  createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,+1),0.5f);
-  g_sphere0 = createAnalyticalSphere  (g_scene2,Vec3fa(+1, 0, 0),0.5f);
-  createTriangulatedSphere(g_scene2,Vec3fa( 0, 0,-1),0.5f);
-  g_sphere1 = createAnalyticalSphere  (g_scene2,Vec3fa(-1, 0, 0),0.5f);
-  rtcCommitScene(g_scene2);
+  data.g_scene2 = rtcNewScene(g_device);
+  createTriangulatedSphere(data.g_scene2,Vec3fa( 0, 0,+1),0.5f);
+  data.g_sphere0 = createAnalyticalSphere  (data.g_scene2,Vec3fa(+1, 0, 0),0.5f);
+  createTriangulatedSphere(data.g_scene2,Vec3fa( 0, 0,-1),0.5f);
+  data.g_sphere1 = createAnalyticalSphere  (data.g_scene2,Vec3fa(-1, 0, 0),0.5f);
+  rtcCommitScene(data.g_scene2);
 
   /* instantiate geometry */
-  g_instance[0] = createInstance(g_scene,g_scene0,0,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  g_instance[1] = createInstance(g_scene,g_scene1,1,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  g_instance[2] = createInstance(g_scene,g_scene2,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  g_instance[3] = createInstance(g_scene,g_scene2,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
-  createGroundPlane(g_scene);
-  rtcCommitScene(g_scene);
+  data.g_instance[0] = createInstance(data.g_scene,data.g_scene0,0,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  data.g_instance[1] = createInstance(data.g_scene,data.g_scene1,1,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  data.g_instance[2] = createInstance(data.g_scene,data.g_scene2,2,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  data.g_instance[3] = createInstance(data.g_scene,data.g_scene2,3,Vec3fa(-2,-2,-2),Vec3fa(+2,+2,+2));
+  createGroundPlane(data.g_scene);
+  rtcCommitScene(data.g_scene);
 
   /* set all colors */
-  colors[0][0] = Vec3fa(0.25f, 0.00f, 0.00f);
-  colors[0][1] = Vec3fa(0.50f, 0.00f, 0.00f);
-  colors[0][2] = Vec3fa(0.75f, 0.00f, 0.00f);
-  colors[0][3] = Vec3fa(1.00f, 0.00f, 0.00f);
+  data.colors[0][0] = Vec3fa(0.25f, 0.00f, 0.00f);
+  data.colors[0][1] = Vec3fa(0.50f, 0.00f, 0.00f);
+  data.colors[0][2] = Vec3fa(0.75f, 0.00f, 0.00f);
+  data.colors[0][3] = Vec3fa(1.00f, 0.00f, 0.00f);
 
-  colors[1][0] = Vec3fa(0.00f, 0.25f, 0.00f);
-  colors[1][1] = Vec3fa(0.00f, 0.50f, 0.00f);
-  colors[1][2] = Vec3fa(0.00f, 0.75f, 0.00f);
-  colors[1][3] = Vec3fa(0.00f, 1.00f, 0.00f);
+  data.colors[1][0] = Vec3fa(0.00f, 0.25f, 0.00f);
+  data.colors[1][1] = Vec3fa(0.00f, 0.50f, 0.00f);
+  data.colors[1][2] = Vec3fa(0.00f, 0.75f, 0.00f);
+  data.colors[1][3] = Vec3fa(0.00f, 1.00f, 0.00f);
 
-  colors[2][0] = Vec3fa(0.00f, 0.00f, 0.25f);
-  colors[2][1] = Vec3fa(0.00f, 0.00f, 0.50f);
-  colors[2][2] = Vec3fa(0.00f, 0.00f, 0.75f);
-  colors[2][3] = Vec3fa(0.00f, 0.00f, 1.00f);
+  data.colors[2][0] = Vec3fa(0.00f, 0.00f, 0.25f);
+  data.colors[2][1] = Vec3fa(0.00f, 0.00f, 0.50f);
+  data.colors[2][2] = Vec3fa(0.00f, 0.00f, 0.75f);
+  data.colors[2][3] = Vec3fa(0.00f, 0.00f, 1.00f);
 
-  colors[3][0] = Vec3fa(0.25f, 0.25f, 0.00f);
-  colors[3][1] = Vec3fa(0.50f, 0.50f, 0.00f);
-  colors[3][2] = Vec3fa(0.75f, 0.75f, 0.00f);
-  colors[3][3] = Vec3fa(1.00f, 1.00f, 0.00f);
+  data.colors[3][0] = Vec3fa(0.25f, 0.25f, 0.00f);
+  data.colors[3][1] = Vec3fa(0.50f, 0.50f, 0.00f);
+  data.colors[3][2] = Vec3fa(0.75f, 0.75f, 0.00f);
+  data.colors[3][3] = Vec3fa(1.00f, 1.00f, 0.00f);
 
-  colors[4][0] = Vec3fa(1.0f, 1.0f, 1.0f);
-  colors[4][1] = Vec3fa(1.0f, 1.0f, 1.0f);
-  colors[4][2] = Vec3fa(1.0f, 1.0f, 1.0f);
-  colors[4][3] = Vec3fa(1.0f, 1.0f, 1.0f);
+  data.colors[4][0] = Vec3fa(1.0f, 1.0f, 1.0f);
+  data.colors[4][1] = Vec3fa(1.0f, 1.0f, 1.0f);
+  data.colors[4][2] = Vec3fa(1.0f, 1.0f, 1.0f);
+  data.colors[4][3] = Vec3fa(1.0f, 1.0f, 1.0f);
 }
 
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
@@ -1018,7 +987,9 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixelStandard(const TutorialData& data,
+                          float x, float y, const ISPCCamera& camera,
+                          RayStats& stats)
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
@@ -1030,7 +1001,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -1041,15 +1012,15 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Vec3fa Ns = ray.Ng;
 
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID) {
-      Ns = xfmVector(g_instance[ray.instID[0]]->normal2world,Vec3fa(Ns));
+      Ns = xfmVector(data.g_instance[ray.instID[0]]->normal2world,Vec3fa(Ns));
     }
     Ns = face_forward(ray.dir,normalize(Ns));
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
-    if      (ray.instID[0] ==  0) diffuse = colors[ray.instID[0]][ray.primID];
-    else if (ray.instID[0] == -1) diffuse = colors[4][ray.primID];
-    else                       diffuse = colors[ray.instID[0]][ray.geomID];
+    if      (ray.instID[0] ==  0) diffuse = data.colors[ray.instID[0]][ray.primID];
+    else if (ray.instID[0] == -1) diffuse = data.colors[4][ray.primID];
+    else                          diffuse = data.colors[ray.instID[0]][ray.geomID];
     color = color + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -1057,7 +1028,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Ray shadow(ray.org + 0.999f*ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
+    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -1065,6 +1036,23 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
       color = color + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
   }
   return color;
+}
+
+void renderPixelStandard(const TutorialData& data,
+                         int x, int y, 
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera, RayStats& stats)
+{
+  Vec3fa color = renderPixelStandard(data,x,y,camera,stats);
+  
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* renders a single screen tile */
@@ -1087,16 +1075,7 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    
-
-    /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
 
@@ -1185,9 +1164,9 @@ void renderTileStandardStream(int taskIndex,
 
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(0.0f);
-    if      (primary.instID[0] ==  0) diffuse = colors[primary.instID[0]][primary.primID];
-    else if (primary.instID[0] == -1) diffuse = colors[4][primary.primID];      
-    else                           diffuse = colors[primary.instID[0]][primary.geomID];
+    if      (primary.instID[0] ==  0) diffuse = data.colors[primary.instID[0]][primary.primID];
+    else if (primary.instID[0] == -1) diffuse = data.colors[4][primary.primID];      
+    else                              diffuse = data.colors[primary.instID[0]][primary.geomID];
     color_stream[N] = color_stream[N] + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -1218,15 +1197,15 @@ void renderTileStandardStream(int taskIndex,
     Ray& primary = primary_stream[N];
     Vec3fa Ns = primary.Ng;
     if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID) {
-      Ns = xfmVector(g_instance[primary.instID[0]]->normal2world,Vec3fa(Ns));
+      Ns = xfmVector(data.g_instance[primary.instID[0]]->normal2world,Vec3fa(Ns));
     }
     Ns = face_forward(primary.dir,normalize(Ns));
     
     /* add light contrinution */
     Vec3fa diffuse = Vec3fa(0.0f);
-    if      (primary.instID[0] ==  0) diffuse = colors[primary.instID[0]][primary.primID];
-    else if (primary.instID[0] == -1) diffuse = colors[4][primary.primID];      
-    else                           diffuse = colors[primary.instID[0]][primary.geomID];
+    if      (primary.instID[0] ==  0) diffuse = data.colors[primary.instID[0]][primary.primID];
+    else if (primary.instID[0] == -1) diffuse = data.colors[4][primary.primID];      
+    else                              diffuse = data.colors[primary.instID[0]][primary.geomID];
     Ray& shadow = shadow_stream[N];
     if (shadow.tfar >= 0.0f) {
       color_stream[N] = color_stream[N] + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
@@ -1300,30 +1279,23 @@ extern "C" void device_render (int* pixels,
   xfm.vz = Vec3fa(-sin(t1),0,cos(t1));
 
   /* calculate transformations to move instances in circles */
-  g_instance[0]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t0),0.0f,+sin(t0)));
-  g_instance[1]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(-cos(t0),0.0f,-sin(t0)));
-  g_instance[2]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(-sin(t0),0.0f,+cos(t0)));
-  g_instance[3]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(+sin(t0),0.0f,-cos(t0)));
+  data.g_instance[0]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(+cos(t0),0.0f,+sin(t0)));
+  data.g_instance[1]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(-cos(t0),0.0f,-sin(t0)));
+  data.g_instance[2]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(-sin(t0),0.0f,+cos(t0)));
+  data.g_instance[3]->local2world = AffineSpace3fa(xfm,2.2f*Vec3fa(+sin(t0),0.0f,-cos(t0)));
 
   /* update scene */
-  updateInstance(g_scene,g_instance[0]);
-  updateInstance(g_scene,g_instance[1]);
-  updateInstance(g_scene,g_instance[2]);
-  updateInstance(g_scene,g_instance[3]);
-  rtcCommitScene (g_scene);
+  updateInstance(data.g_scene,data.g_instance[0]);
+  updateInstance(data.g_scene,data.g_instance[1]);
+  updateInstance(data.g_scene,data.g_instance[2]);
+  updateInstance(data.g_scene,data.g_instance[3]);
+  rtcCommitScene (data.g_scene);
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcReleaseScene (g_scene0); g_scene0 = nullptr;
-  rtcReleaseScene (g_scene1); g_scene1 = nullptr;
-  rtcReleaseScene (g_scene2); g_scene2 = nullptr;
-  rtcReleaseDevice(g_device); g_device = nullptr;
-  alignedFree(g_spheres); g_spheres = nullptr;
-  alignedFree(g_sphere0); g_sphere0 = nullptr;
-  alignedFree(g_sphere1); g_sphere1 = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

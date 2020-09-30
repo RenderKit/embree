@@ -537,7 +537,7 @@ extern "C" void device_init (char* cfg)
   createGridGeometry(data.gmesh);
   rtcAttachGeometry(data.g_scene,data.gmesh.geom);
   //rtcAttachGeometry(g_scene,gmesh.geomNormals);
-   
+
   /* commit changes to scene */
   rtcCommitScene (data.g_scene);
 }
@@ -547,10 +547,10 @@ Vec3fa mylerp(float f, const Vec3fa& a, const Vec3fa& b) { // FIXME: use lerpr, 
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(const TutorialData &data,
-                           float x, float y,
-                           const ISPCCamera &camera,
-                           RayStats &stats)
+Vec3fa renderPixelStandard(const TutorialData& data,
+                          float x, float y,
+                          const ISPCCamera& camera,
+                          RayStats& stats)
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
