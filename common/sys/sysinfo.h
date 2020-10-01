@@ -65,17 +65,30 @@
 
 namespace embree
 {
-  enum CPUModel {
-    CPU_UNKNOWN,
-    CPU_CORE1,
+  enum CPUModel
+  {
+    CPU_XEON_ICE_LAKE,
+    CPU_CORE_ICE_LAKE,
+    CPU_CORE_COMET_LAKE,
+    CPU_CORE_CANON_LAKE,
+    CPU_CORE_KABY_LAKE,
+    CPU_XEON_SKY_LAKE,
+    CPU_CORE_SKY_LAKE,
+    CPU_XEON_PHI_KNIGHTS_MILL,
+    CPU_XEON_PHI_KNIGHTS_LANDING,
+    CPU_XEON_BROADWELL,
+    CPU_CORE_BROADWELL,
+    CPU_XEON_HASWELL,
+    CPU_CORE_HASWELL,
+    CPU_XEON_IVY_BRIDGE,
+    CPU_CORE_IVY_BRIDGE,
+    CPU_SANDY_BRIDGE,
+    CPU_NEHALEM,
     CPU_CORE2,
-    CPU_CORE_NEHALEM,
-    CPU_CORE_SANDYBRIDGE,
-    CPU_HASWELL,
-    CPU_KNIGHTS_LANDING,
-    CPU_SKYLAKE_SERVER
+    CPU_CORE1,
+    CPU_UNKNOWN,
   };
-
+  
   /*! get the full path to the running executable */
   std::string getExecutableFileName();
 
@@ -123,8 +136,6 @@ namespace embree
   static const int CPU_FEATURE_YMM_ENABLED = 1 << 26;
   static const int CPU_FEATURE_ZMM_ENABLED = 1 << 27;
  
-  static const int CPU_FEATURE_PSEUDO_HIFREQ256BIT = 1 << 30;
- 
   /*! get CPU features */
   int getCPUFeatures();
 
@@ -147,15 +158,12 @@ namespace embree
   static const int AVX512KNL = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512PF | CPU_FEATURE_AVX512ER | CPU_FEATURE_AVX512CD | CPU_FEATURE_ZMM_ENABLED;
   static const int AVX512SKX = AVX2 | CPU_FEATURE_AVX512F | CPU_FEATURE_AVX512DQ | CPU_FEATURE_AVX512CD | CPU_FEATURE_AVX512BW | CPU_FEATURE_AVX512VL | CPU_FEATURE_ZMM_ENABLED;
 
-  static const int AVX_FAST = AVX | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
-  static const int AVX2_FAST = AVX2 | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
-
   /*! converts ISA bitvector into a string */
   std::string stringOfISA(int features);
 
   /*! return the number of logical threads of the system */
   unsigned int getNumberOfLogicalThreads();
-  
+
   /*! returns the size of the terminal window in characters */
   int getTerminalWidth();
 

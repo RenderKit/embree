@@ -98,37 +98,86 @@ namespace embree
     __cpuid(out, 0);
     if (out[0] < 1) return CPU_UNKNOWN;
     __cpuid(out, 1);
-    int family = ((out[0] >> 8) & 0x0F) + ((out[0] >> 20) & 0xFF);
-    int model  = ((out[0] >> 4) & 0x0F) | ((out[0] >> 12) & 0xF0);
-    if (family !=   6) return CPU_UNKNOWN;           // earlier than P6
-    if (model == 0x0E) return CPU_CORE1;             // Core 1
-    if (model == 0x0F) return CPU_CORE2;             // Core 2, 65 nm
-    if (model == 0x16) return CPU_CORE2;             // Core 2, 65 nm Celeron
-    if (model == 0x17) return CPU_CORE2;             // Core 2, 45 nm
-    if (model == 0x1A) return CPU_CORE_NEHALEM;      // Core i7, Nehalem
-    if (model == 0x1E) return CPU_CORE_NEHALEM;      // Core i7
-    if (model == 0x1F) return CPU_CORE_NEHALEM;      // Core i7
-    if (model == 0x2C) return CPU_CORE_NEHALEM;      // Core i7, Xeon
-    if (model == 0x2E) return CPU_CORE_NEHALEM;      // Core i7, Xeon
-    if (model == 0x2A) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
-    if (model == 0x2D) return CPU_CORE_SANDYBRIDGE;  // Core i7, SandyBridge
-    if (model == 0x45) return CPU_HASWELL;           // Haswell
-    if (model == 0x3C) return CPU_HASWELL;           // Haswell
-    if (model == 0x55) return CPU_SKYLAKE_SERVER;   // Skylake server based CPUs
+    
+    uint32_t family_ID          = (out[0] >>  8) & 0x0F;
+    uint32_t extended_family_ID = (out[0] >> 20) & 0xFF;
+    
+    uint32_t model_ID           = (out[0] >>  4) & 0x0F;
+    uint32_t extended_model_ID  = (out[0] >> 16) & 0x0F;
+    
+    uint32_t DisplayFamily = family_ID;
+    if (family_ID == 0x0F) DisplayFamily += extended_family_ID;
+    
+    uint32_t DisplayModel = model_ID;
+    if (family_ID == 0x06 || family_ID == 0x0F)
+      DisplayModel += extended_model_ID << 4;
+
+    uint32_t DisplayFamily_DisplayModel = (DisplayFamily << 8) + (DisplayModel << 0);
+
+    // Data from Intel® 64 and IA-32 Architectures, Volume 4, Chapter 2, Table 2-1 (CPUID Signature Values of DisplayFamily_DisplayModel)
+    if (DisplayFamily_DisplayModel == 0x0685) return CPU_XEON_PHI_KNIGHTS_MILL;
+    if (DisplayFamily_DisplayModel == 0x0657) return CPU_XEON_PHI_KNIGHTS_LANDING;
+    if (DisplayFamily_DisplayModel == 0x067D) return CPU_CORE_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x067E) return CPU_CORE_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06A5) return CPU_CORE_COMET_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06A6) return CPU_CORE_COMET_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0666) return CPU_CORE_CANON_LAKE;
+    if (DisplayFamily_DisplayModel == 0x068E) return CPU_CORE_KABY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x069E) return CPU_CORE_KABY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x066A) return CPU_XEON_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x066C) return CPU_XEON_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0655) return CPU_XEON_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x064E) return CPU_CORE_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x065E) return CPU_CORE_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0656) return CPU_XEON_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x064F) return CPU_XEON_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x0647) return CPU_CORE_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x063D) return CPU_CORE_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x063F) return CPU_XEON_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x063C) return CPU_CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x0645) return CPU_CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x0646) return CPU_CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x063E) return CPU_XEON_IVY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x063A) return CPU_CORE_IVY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062D) return CPU_SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062F) return CPU_SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062A) return CPU_SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062E) return CPU_NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x0625) return CPU_NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x062C) return CPU_NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061E) return CPU_NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061F) return CPU_NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061A) return CPU_NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061D) return CPU_NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x0617) return CPU_CORE2;
+    if (DisplayFamily_DisplayModel == 0x060F) return CPU_CORE2;
+    if (DisplayFamily_DisplayModel == 0x060E) return CPU_CORE1;
     return CPU_UNKNOWN;
   }
 
   std::string stringOfCPUModel(CPUModel model)
   {
     switch (model) {
-    case CPU_CORE1           : return "Core1";
-    case CPU_CORE2           : return "Core2";
-    case CPU_CORE_NEHALEM    : return "Nehalem";
-    case CPU_CORE_SANDYBRIDGE: return "SandyBridge";
-    case CPU_HASWELL         : return "Haswell";
-    case CPU_KNIGHTS_LANDING : return "Knights Landing";
-    case CPU_SKYLAKE_SERVER  : return "Skylake Server";
-    default                  : return "Unknown CPU";
+    case CPU_XEON_ICE_LAKE           : return "Xeon Ice Lake";
+    case CPU_CORE_ICE_LAKE           : return "Core Ice Lake";
+    case CPU_CORE_COMET_LAKE         : return "Core Comet Lake";
+    case CPU_CORE_CANON_LAKE         : return "Core Canon Lake";
+    case CPU_CORE_KABY_LAKE          : return "Core Kaby Lake";
+    case CPU_XEON_SKY_LAKE           : return "Xeon Sky Lake";
+    case CPU_CORE_SKY_LAKE           : return "Core Sky Lake";
+    case CPU_XEON_PHI_KNIGHTS_MILL   : return "Xeon Phi Knights Mill";
+    case CPU_XEON_PHI_KNIGHTS_LANDING: return "Xeon Phi Knights Landing";
+    case CPU_XEON_BROADWELL          : return "Xeon Broadwell";
+    case CPU_CORE_BROADWELL          : return "Core Broadwell";
+    case CPU_XEON_HASWELL            : return "Xeon Haswell";
+    case CPU_CORE_HASWELL            : return "Core Haswell";
+    case CPU_XEON_IVY_BRIDGE         : return "Xeon Ivy Bridge";
+    case CPU_CORE_IVY_BRIDGE         : return "Core Ivy Bridge";
+    case CPU_SANDY_BRIDGE            : return "Sandy Bridge";
+    case CPU_NEHALEM                 : return "Nehalem";
+    case CPU_CORE2                   : return "Core2";
+    case CPU_CORE1                   : return "Core";
+    default                          : return "Unknown CPU";
     }
   }
 
@@ -242,7 +291,7 @@ namespace embree
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_SSE4_2) cpu_features |= CPU_FEATURE_SSE42;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_POPCNT) cpu_features |= CPU_FEATURE_POPCNT;
     
-    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX | CPU_FEATURE_PSEUDO_HIFREQ256BIT;
+    if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_AVX   ) cpu_features |= CPU_FEATURE_AVX;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_F16C  ) cpu_features |= CPU_FEATURE_F16C;
     if (cpuid_leaf_1[ECX] & CPU_FEATURE_BIT_RDRAND) cpu_features |= CPU_FEATURE_RDRAND;
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX2  ) cpu_features |= CPU_FEATURE_AVX2;
@@ -260,9 +309,6 @@ namespace embree
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512IFMA) cpu_features |= CPU_FEATURE_AVX512IFMA;
     if (cpuid_leaf_7[EBX] & CPU_FEATURE_BIT_AVX512VL  ) cpu_features |= CPU_FEATURE_AVX512VL;
     if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
-
-    if (getCPUModel() == CPU_SKYLAKE_SERVER)
-      cpu_features &= ~CPU_FEATURE_PSEUDO_HIFREQ256BIT;
 
     return cpu_features;
   }

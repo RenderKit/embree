@@ -43,6 +43,28 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNSUPPORTED_CPU,"CPU does not support " ISA_STR);
     }
 
+    /* set default frequency level for detected CPU */
+    switch (getCPUModel()) {
+    default:                  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_XEON_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_CORE_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_CORE_COMET_LAKE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_CORE_CANON_LAKE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_CORE_KABY_LAKE:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_XEON_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
+    case CPU_CORE_SKY_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_XEON_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_CORE_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_XEON_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_CORE_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_XEON_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_CORE_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_SANDY_BRIDGE:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU_NEHALEM:         frequency_level = FREQUENCY_SIMD128; break;
+    case CPU_CORE2:           frequency_level = FREQUENCY_SIMD128; break;
+    case CPU_CORE1:           frequency_level = FREQUENCY_SIMD128; break;
+    };
+
     /* initialize global state */
     State::parseString(cfg);
     if (!ignore_config_files && FileName::executableFolder() != FileName(""))
@@ -81,7 +103,7 @@ namespace embree
       //exceptions &= ~_MM_MASK_INEXACT;
       _MM_SET_EXCEPTION_MASK(exceptions);
     }
-
+    
     /* print info header */
     if (State::verbosity(1))
       print();
