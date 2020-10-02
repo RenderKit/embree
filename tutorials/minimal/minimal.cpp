@@ -37,8 +37,8 @@
  * This is only required to make the tutorial compile even when
  * a custom namespace is set.
  */
-#if defined(RTC_NAMESPACE_OPEN)
-RTC_NAMESPACE_OPEN
+#if defined(RTC_NAMESPACE_USE)
+RTC_NAMESPACE_USE
 #endif
 
 /*

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <embree3/rtcore.h>
-RTC_NAMESPACE_OPEN
+RTC_NAMESPACE_USE
 
 #include <xmmintrin.h>
 //#include <pmmintrin.h> // use this to get _MM_SET_DENORMALS_ZERO_MODE when compiling for SSE3 or higher

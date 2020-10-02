@@ -21,13 +21,13 @@
 #  define RTC_NAMESPACE @EMBREE_API_NAMESPACE@
 #  define RTC_NAMESPACE_BEGIN namespace @EMBREE_API_NAMESPACE@ {
 #  define RTC_NAMESPACE_END }
-#  define RTC_NAMESPACE_OPEN using namespace @EMBREE_API_NAMESPACE@;
+#  define RTC_NAMESPACE_USE using namespace @EMBREE_API_NAMESPACE@;
 #  define RTC_API_EXTERN_C
 #  undef EMBREE_API_NAMESPACE
 #else
 #  define RTC_NAMESPACE_BEGIN
 #  define RTC_NAMESPACE_END
-#  define RTC_NAMESPACE_OPEN
+#  define RTC_NAMESPACE_USE
 #  if defined(__cplusplus)
 #    define RTC_API_EXTERN_C extern "C"
 #  else

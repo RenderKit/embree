@@ -15,7 +15,7 @@ struct Triangle { int v0, v1, v2; };
 
 /* include embree API */
 #include "../../../include/embree3/rtcore.isph"
-RTC_NAMESPACE_OPEN
+RTC_NAMESPACE_USE
 
 /* include optional vector library */
 #include "../math/math.isph"

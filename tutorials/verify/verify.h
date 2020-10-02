@@ -5,7 +5,7 @@
  * always compile without any internal Embree specific stuff. */
 #include "../../include/embree3/rtcore.h"
 #include "../../include/embree3/rtcore_ray.h"
-RTC_NAMESPACE_OPEN
+RTC_NAMESPACE_USE
 
 /* now we include all Embree internal files we need for testing */
 #include "../../kernels/common/default.h"

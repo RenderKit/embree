@@ -3,7 +3,7 @@
 
 #include "../../kernels/common/default.h"
 #include "../../include/embree3/rtcore.h"
-RTC_NAMESPACE_OPEN
+RTC_NAMESPACE_USE
 #include "../common/math/random_sampler.h"
 
 namespace embree
