@@ -456,6 +456,14 @@ CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
   "${PROJECT_SOURCE_DIR}/kernels/hash.h"
 )
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map.in"
+  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map"
+)
+CONFIGURE_FILE(
+  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map.in"
+  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map"
+)
 
 
 ##############################################################
