@@ -122,7 +122,7 @@ namespace embree
     if (DisplayFamily_DisplayModel == 0x068C) return CPU_CORE_TIGER_LAKE;
     if (DisplayFamily_DisplayModel == 0x06A5) return CPU_CORE_COMET_LAKE;
     if (DisplayFamily_DisplayModel == 0x06A6) return CPU_CORE_COMET_LAKE;
-    if (DisplayFamily_DisplayModel == 0x0666) return CPU_CORE_CANON_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0666) return CPU_CORE_CANNON_LAKE;
     if (DisplayFamily_DisplayModel == 0x068E) return CPU_CORE_KABY_LAKE;
     if (DisplayFamily_DisplayModel == 0x069E) return CPU_CORE_KABY_LAKE;
     if (DisplayFamily_DisplayModel == 0x066A) return CPU_XEON_ICE_LAKE;
@@ -165,8 +165,9 @@ namespace embree
     switch (model) {
     case CPU_XEON_ICE_LAKE           : return "Xeon Ice Lake";
     case CPU_CORE_ICE_LAKE           : return "Core Ice Lake";
+    case CPU_CORE_TIGER_LAKE         : return "Core Tiger Lake";
     case CPU_CORE_COMET_LAKE         : return "Core Comet Lake";
-    case CPU_CORE_CANON_LAKE         : return "Core Canon Lake";
+    case CPU_CORE_CANNON_LAKE        : return "Core Cannon Lake";
     case CPU_CORE_KABY_LAKE          : return "Core Kaby Lake";
     case CPU_XEON_SKY_LAKE           : return "Xeon Sky Lake";
     case CPU_CORE_SKY_LAKE           : return "Core Sky Lake";
