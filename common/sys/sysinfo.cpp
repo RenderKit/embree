@@ -98,7 +98,8 @@ namespace embree
     __cpuid(out, 0);
     if (out[0] < 1) return CPU_UNKNOWN;
     __cpuid(out, 1);
-    
+
+    /* please see CPUID documentation for these formulas */
     uint32_t family_ID          = (out[0] >>  8) & 0x0F;
     uint32_t extended_family_ID = (out[0] >> 20) & 0xFF;
     
@@ -106,7 +107,8 @@ namespace embree
     uint32_t extended_model_ID  = (out[0] >> 16) & 0x0F;
     
     uint32_t DisplayFamily = family_ID;
-    if (family_ID == 0x0F) DisplayFamily += extended_family_ID;
+    if (family_ID == 0x0F)
+      DisplayFamily += extended_family_ID;
     
     uint32_t DisplayModel = model_ID;
     if (family_ID == 0x06 || family_ID == 0x0F)
@@ -115,10 +117,9 @@ namespace embree
     uint32_t DisplayFamily_DisplayModel = (DisplayFamily << 8) + (DisplayModel << 0);
 
     // Data from Intel® 64 and IA-32 Architectures, Volume 4, Chapter 2, Table 2-1 (CPUID Signature Values of DisplayFamily_DisplayModel)
-    if (DisplayFamily_DisplayModel == 0x0685) return CPU_XEON_PHI_KNIGHTS_MILL;
-    if (DisplayFamily_DisplayModel == 0x0657) return CPU_XEON_PHI_KNIGHTS_LANDING;
     if (DisplayFamily_DisplayModel == 0x067D) return CPU_CORE_ICE_LAKE;
     if (DisplayFamily_DisplayModel == 0x067E) return CPU_CORE_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x068C) return CPU_CORE_TIGER_LAKE;
     if (DisplayFamily_DisplayModel == 0x06A5) return CPU_CORE_COMET_LAKE;
     if (DisplayFamily_DisplayModel == 0x06A6) return CPU_CORE_COMET_LAKE;
     if (DisplayFamily_DisplayModel == 0x0666) return CPU_CORE_CANON_LAKE;
@@ -152,6 +153,10 @@ namespace embree
     if (DisplayFamily_DisplayModel == 0x0617) return CPU_CORE2;
     if (DisplayFamily_DisplayModel == 0x060F) return CPU_CORE2;
     if (DisplayFamily_DisplayModel == 0x060E) return CPU_CORE1;
+
+    if (DisplayFamily_DisplayModel == 0x0685) return CPU_XEON_PHI_KNIGHTS_MILL;
+    if (DisplayFamily_DisplayModel == 0x0657) return CPU_XEON_PHI_KNIGHTS_LANDING;
+    
     return CPU_UNKNOWN;
   }
 
