@@ -45,26 +45,26 @@ namespace embree
 
     /* set default frequency level for detected CPU */
     switch (getCPUModel()) {
-    default:                  frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_XEON_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_CORE_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_CORE_TIGER_LAKE: frequency_level = FREQUENCY_SIMD128; break;
-    case CPU_CORE_COMET_LAKE: frequency_level = FREQUENCY_SIMD128; break;
-    case CPU_CORE_CANNON_LAKE:frequency_level = FREQUENCY_SIMD128; break;
-    case CPU_CORE_KABY_LAKE:  frequency_level = FREQUENCY_SIMD128; break;
-    case CPU_XEON_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
-    case CPU_CORE_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
-    case CPU_XEON_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_CORE_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_XEON_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_CORE_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_XEON_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_CORE_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_SANDY_BRIDGE:    frequency_level = FREQUENCY_SIMD256; break;
-    case CPU_NEHALEM:         frequency_level = FREQUENCY_SIMD128; break;
-    case CPU_CORE2:           frequency_level = FREQUENCY_SIMD128; break;
-    case CPU_CORE1:           frequency_level = FREQUENCY_SIMD128; break;
-    };
+    case CPU::UNKNOWN:         frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_ICE_LAKE:   frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_TIGER_LAKE: frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_COMET_LAKE: frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_CANNON_LAKE:frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_KABY_LAKE:  frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::XEON_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE_SKY_LAKE:   frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::XEON_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_BROADWELL:  frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_HASWELL:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::XEON_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::CORE_IVY_BRIDGE: frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::SANDY_BRIDGE:    frequency_level = FREQUENCY_SIMD256; break;
+    case CPU::NEHALEM:         frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE2:           frequency_level = FREQUENCY_SIMD128; break;
+    case CPU::CORE1:           frequency_level = FREQUENCY_SIMD128; break;
+    }
 
     /* initialize global state */
     State::parseString(cfg);

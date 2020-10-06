@@ -65,29 +65,29 @@
 
 namespace embree
 {
-  enum CPUModel
+  enum class CPU
   {
-    CPU_XEON_ICE_LAKE,
-    CPU_CORE_ICE_LAKE,
-    CPU_CORE_TIGER_LAKE,
-    CPU_CORE_COMET_LAKE,
-    CPU_CORE_CANNON_LAKE,
-    CPU_CORE_KABY_LAKE,
-    CPU_XEON_SKY_LAKE,
-    CPU_CORE_SKY_LAKE,
-    CPU_XEON_PHI_KNIGHTS_MILL,
-    CPU_XEON_PHI_KNIGHTS_LANDING,
-    CPU_XEON_BROADWELL,
-    CPU_CORE_BROADWELL,
-    CPU_XEON_HASWELL,
-    CPU_CORE_HASWELL,
-    CPU_XEON_IVY_BRIDGE,
-    CPU_CORE_IVY_BRIDGE,
-    CPU_SANDY_BRIDGE,
-    CPU_NEHALEM,
-    CPU_CORE2,
-    CPU_CORE1,
-    CPU_UNKNOWN,
+    XEON_ICE_LAKE,
+    CORE_ICE_LAKE,
+    CORE_TIGER_LAKE,
+    CORE_COMET_LAKE,
+    CORE_CANNON_LAKE,
+    CORE_KABY_LAKE,
+    XEON_SKY_LAKE,
+    CORE_SKY_LAKE,
+    XEON_PHI_KNIGHTS_MILL,
+    XEON_PHI_KNIGHTS_LANDING,
+    XEON_BROADWELL,
+    CORE_BROADWELL,
+    XEON_HASWELL,
+    CORE_HASWELL,
+    XEON_IVY_BRIDGE,
+    CORE_IVY_BRIDGE,
+    SANDY_BRIDGE,
+    NEHALEM,
+    CORE2,
+    CORE1,
+    UNKNOWN,
   };
   
   /*! get the full path to the running executable */
@@ -103,10 +103,10 @@ namespace embree
   std::string getCPUVendor();
 
   /*! get microprocessor model */
-  CPUModel getCPUModel(); 
+  CPU getCPUModel(); 
 
   /*! converts CPU model into string */
-  std::string stringOfCPUModel(CPUModel model);
+  std::string stringOfCPUModel(CPU model);
 
   /*! CPU features */
   static const int CPU_FEATURE_SSE    = 1 << 0;

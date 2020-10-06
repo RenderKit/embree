@@ -89,14 +89,14 @@ namespace embree
     return (char*)name;
   }
 
-  CPUModel getCPUModel() 
+  CPU getCPUModel() 
   {
     if (getCPUVendor() != "GenuineIntel")
-      return CPU_UNKNOWN;
+      return CPU::UNKNOWN;
     
     int out[4];
     __cpuid(out, 0);
-    if (out[0] < 1) return CPU_UNKNOWN;
+    if (out[0] < 1) return CPU::UNKNOWN;
     __cpuid(out, 1);
 
     /* please see CPUID documentation for these formulas */
@@ -117,74 +117,75 @@ namespace embree
     uint32_t DisplayFamily_DisplayModel = (DisplayFamily << 8) + (DisplayModel << 0);
 
     // Data from Intel® 64 and IA-32 Architectures, Volume 4, Chapter 2, Table 2-1 (CPUID Signature Values of DisplayFamily_DisplayModel)
-    if (DisplayFamily_DisplayModel == 0x067D) return CPU_CORE_ICE_LAKE;
-    if (DisplayFamily_DisplayModel == 0x067E) return CPU_CORE_ICE_LAKE;
-    if (DisplayFamily_DisplayModel == 0x068C) return CPU_CORE_TIGER_LAKE;
-    if (DisplayFamily_DisplayModel == 0x06A5) return CPU_CORE_COMET_LAKE;
-    if (DisplayFamily_DisplayModel == 0x06A6) return CPU_CORE_COMET_LAKE;
-    if (DisplayFamily_DisplayModel == 0x0666) return CPU_CORE_CANNON_LAKE;
-    if (DisplayFamily_DisplayModel == 0x068E) return CPU_CORE_KABY_LAKE;
-    if (DisplayFamily_DisplayModel == 0x069E) return CPU_CORE_KABY_LAKE;
-    if (DisplayFamily_DisplayModel == 0x066A) return CPU_XEON_ICE_LAKE;
-    if (DisplayFamily_DisplayModel == 0x066C) return CPU_XEON_ICE_LAKE;
-    if (DisplayFamily_DisplayModel == 0x0655) return CPU_XEON_SKY_LAKE;
-    if (DisplayFamily_DisplayModel == 0x064E) return CPU_CORE_SKY_LAKE;
-    if (DisplayFamily_DisplayModel == 0x065E) return CPU_CORE_SKY_LAKE;
-    if (DisplayFamily_DisplayModel == 0x0656) return CPU_XEON_BROADWELL;
-    if (DisplayFamily_DisplayModel == 0x064F) return CPU_XEON_BROADWELL;
-    if (DisplayFamily_DisplayModel == 0x0647) return CPU_CORE_BROADWELL;
-    if (DisplayFamily_DisplayModel == 0x063D) return CPU_CORE_BROADWELL;
-    if (DisplayFamily_DisplayModel == 0x063F) return CPU_XEON_HASWELL;
-    if (DisplayFamily_DisplayModel == 0x063C) return CPU_CORE_HASWELL;
-    if (DisplayFamily_DisplayModel == 0x0645) return CPU_CORE_HASWELL;
-    if (DisplayFamily_DisplayModel == 0x0646) return CPU_CORE_HASWELL;
-    if (DisplayFamily_DisplayModel == 0x063E) return CPU_XEON_IVY_BRIDGE;
-    if (DisplayFamily_DisplayModel == 0x063A) return CPU_CORE_IVY_BRIDGE;
-    if (DisplayFamily_DisplayModel == 0x062D) return CPU_SANDY_BRIDGE;
-    if (DisplayFamily_DisplayModel == 0x062F) return CPU_SANDY_BRIDGE;
-    if (DisplayFamily_DisplayModel == 0x062A) return CPU_SANDY_BRIDGE;
-    if (DisplayFamily_DisplayModel == 0x062E) return CPU_NEHALEM;
-    if (DisplayFamily_DisplayModel == 0x0625) return CPU_NEHALEM;
-    if (DisplayFamily_DisplayModel == 0x062C) return CPU_NEHALEM;
-    if (DisplayFamily_DisplayModel == 0x061E) return CPU_NEHALEM;
-    if (DisplayFamily_DisplayModel == 0x061F) return CPU_NEHALEM;
-    if (DisplayFamily_DisplayModel == 0x061A) return CPU_NEHALEM;
-    if (DisplayFamily_DisplayModel == 0x061D) return CPU_NEHALEM;
-    if (DisplayFamily_DisplayModel == 0x0617) return CPU_CORE2;
-    if (DisplayFamily_DisplayModel == 0x060F) return CPU_CORE2;
-    if (DisplayFamily_DisplayModel == 0x060E) return CPU_CORE1;
+    if (DisplayFamily_DisplayModel == 0x067D) return CPU::CORE_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x067E) return CPU::CORE_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x068C) return CPU::CORE_TIGER_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06A5) return CPU::CORE_COMET_LAKE;
+    if (DisplayFamily_DisplayModel == 0x06A6) return CPU::CORE_COMET_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0666) return CPU::CORE_CANNON_LAKE;
+    if (DisplayFamily_DisplayModel == 0x068E) return CPU::CORE_KABY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x069E) return CPU::CORE_KABY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x066A) return CPU::XEON_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x066C) return CPU::XEON_ICE_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0655) return CPU::XEON_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x064E) return CPU::CORE_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x065E) return CPU::CORE_SKY_LAKE;
+    if (DisplayFamily_DisplayModel == 0x0656) return CPU::XEON_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x064F) return CPU::XEON_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x0647) return CPU::CORE_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x063D) return CPU::CORE_BROADWELL;
+    if (DisplayFamily_DisplayModel == 0x063F) return CPU::XEON_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x063C) return CPU::CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x0645) return CPU::CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x0646) return CPU::CORE_HASWELL;
+    if (DisplayFamily_DisplayModel == 0x063E) return CPU::XEON_IVY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x063A) return CPU::CORE_IVY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062D) return CPU::SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062F) return CPU::SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062A) return CPU::SANDY_BRIDGE;
+    if (DisplayFamily_DisplayModel == 0x062E) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x0625) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x062C) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061E) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061F) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061A) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x061D) return CPU::NEHALEM;
+    if (DisplayFamily_DisplayModel == 0x0617) return CPU::CORE2;
+    if (DisplayFamily_DisplayModel == 0x060F) return CPU::CORE2;
+    if (DisplayFamily_DisplayModel == 0x060E) return CPU::CORE1;
 
-    if (DisplayFamily_DisplayModel == 0x0685) return CPU_XEON_PHI_KNIGHTS_MILL;
-    if (DisplayFamily_DisplayModel == 0x0657) return CPU_XEON_PHI_KNIGHTS_LANDING;
+    if (DisplayFamily_DisplayModel == 0x0685) return CPU::XEON_PHI_KNIGHTS_MILL;
+    if (DisplayFamily_DisplayModel == 0x0657) return CPU::XEON_PHI_KNIGHTS_LANDING;
     
-    return CPU_UNKNOWN;
+    return CPU::UNKNOWN;
   }
 
-  std::string stringOfCPUModel(CPUModel model)
+  std::string stringOfCPUModel(CPU model)
   {
     switch (model) {
-    case CPU_XEON_ICE_LAKE           : return "Xeon Ice Lake";
-    case CPU_CORE_ICE_LAKE           : return "Core Ice Lake";
-    case CPU_CORE_TIGER_LAKE         : return "Core Tiger Lake";
-    case CPU_CORE_COMET_LAKE         : return "Core Comet Lake";
-    case CPU_CORE_CANNON_LAKE        : return "Core Cannon Lake";
-    case CPU_CORE_KABY_LAKE          : return "Core Kaby Lake";
-    case CPU_XEON_SKY_LAKE           : return "Xeon Sky Lake";
-    case CPU_CORE_SKY_LAKE           : return "Core Sky Lake";
-    case CPU_XEON_PHI_KNIGHTS_MILL   : return "Xeon Phi Knights Mill";
-    case CPU_XEON_PHI_KNIGHTS_LANDING: return "Xeon Phi Knights Landing";
-    case CPU_XEON_BROADWELL          : return "Xeon Broadwell";
-    case CPU_CORE_BROADWELL          : return "Core Broadwell";
-    case CPU_XEON_HASWELL            : return "Xeon Haswell";
-    case CPU_CORE_HASWELL            : return "Core Haswell";
-    case CPU_XEON_IVY_BRIDGE         : return "Xeon Ivy Bridge";
-    case CPU_CORE_IVY_BRIDGE         : return "Core Ivy Bridge";
-    case CPU_SANDY_BRIDGE            : return "Sandy Bridge";
-    case CPU_NEHALEM                 : return "Nehalem";
-    case CPU_CORE2                   : return "Core2";
-    case CPU_CORE1                   : return "Core";
-    default                          : return "Unknown CPU";
+    case CPU::XEON_ICE_LAKE           : return "Xeon Ice Lake";
+    case CPU::CORE_ICE_LAKE           : return "Core Ice Lake";
+    case CPU::CORE_TIGER_LAKE         : return "Core Tiger Lake";
+    case CPU::CORE_COMET_LAKE         : return "Core Comet Lake";
+    case CPU::CORE_CANNON_LAKE        : return "Core Cannon Lake";
+    case CPU::CORE_KABY_LAKE          : return "Core Kaby Lake";
+    case CPU::XEON_SKY_LAKE           : return "Xeon Sky Lake";
+    case CPU::CORE_SKY_LAKE           : return "Core Sky Lake";
+    case CPU::XEON_PHI_KNIGHTS_MILL   : return "Xeon Phi Knights Mill";
+    case CPU::XEON_PHI_KNIGHTS_LANDING: return "Xeon Phi Knights Landing";
+    case CPU::XEON_BROADWELL          : return "Xeon Broadwell";
+    case CPU::CORE_BROADWELL          : return "Core Broadwell";
+    case CPU::XEON_HASWELL            : return "Xeon Haswell";
+    case CPU::CORE_HASWELL            : return "Core Haswell";
+    case CPU::XEON_IVY_BRIDGE         : return "Xeon Ivy Bridge";
+    case CPU::CORE_IVY_BRIDGE         : return "Core Ivy Bridge";
+    case CPU::SANDY_BRIDGE            : return "Sandy Bridge";
+    case CPU::NEHALEM                 : return "Nehalem";
+    case CPU::CORE2                   : return "Core2";
+    case CPU::CORE1                   : return "Core";
+    case CPU::UNKNOWN                 : return "Unknown CPU";
     }
+    return "Unknown CPU (error)";
   }
 
   /* constants to access destination registers of CPUID instruction */
