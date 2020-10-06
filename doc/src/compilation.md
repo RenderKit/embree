@@ -156,9 +156,15 @@ ISPC, make sure to download an ISPC version from
 compatible with your Visual Studio version. After installation, put
 the path to `ispc.exe` permanently into your `PATH` environment
 variable or you need to correctly set the `ISPC_EXECUTABLE` variable
-during CMake configuration. We have tested ISPC version 1.9.1. If you
-do not want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
-CMake.
+during CMake configuration. If you do not want to use ISPC then you
+can disable `EMBREE_ISPC_SUPPORT` in CMake.
+
+We have tested Embree with the following ISPC versions:
+
+  - ISPC 1.14.1
+  - ISPC 1.13.0
+  - ISPC 1.12.0
+  - ISPC 1.9.2
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.11 or higher). Note that you need a native Windows CMake
