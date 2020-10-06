@@ -89,20 +89,21 @@ The following configuration is supported:
    output is printed. By default Embree does not print anything on the
    console.
 
-+ `frequency_level=[simd128,simd256,simd512]`: Specifies the
-   frequency level the application want to run on, which can be
-   either: a) simd128 for apps that do not use AVX instructions, b)
-   simd256 for apps that use heavy AVX instruction, c) simd512 for
-   apps that use heavy AVX-512 instructions. When some frequency level
-   is specified, Embree will avoid doing optimizations that may reduce
-   the frequency level below the level specified. E.g. if your app
-   does not use AVX instructions setting "frequency_level=simd128"
-   will cause some CPUs to run at highest frequency, which may result
-   in higher application performance. However, this will prevent
-   Embree from using AVX optimizations to achieve higher ray tracing
-   performance, thus applications that trace many rays may still
-   perform better with the default setting of simd256, even though
-   this reduces frequency on some CPUs.
++ `frequency_level=[simd128,simd256,simd512]`: Specifies the frequency
+   level the application want to run on, which can be either:
+   a) simd128 to run at highest frequency
+   b) simd256 to run at AVX2-heavy frequency level
+   c) simd512 to run at heavy AVX512 frequency level.
+   When some frequency level is specified, Embree will avoid doing
+   optimizations that may reduce the frequency level below the level
+   specified. E.g. if your app does not use AVX instructions setting
+   "frequency_level=simd128" will cause some CPUs to run at highest
+   frequency, which may result in higher application performance if
+   you do much shading. If you application heavily uses
+   AVX code, you should best set the frequency level to simd256.
+   Per default Embree tries to avoid reducing the frequency of the
+   CPU by setting the simd256 level only when the CPU has no significant
+   down clocking.
 
 Different configuration options should be separated by commas, e.g.:
 
