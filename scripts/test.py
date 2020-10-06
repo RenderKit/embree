@@ -314,7 +314,7 @@ def runConfig(config):
   if "GLFW" in config:
     conf.append("-D EMBREE_TUTORIALS_GLFW="+config["GLFW"])
   if "frequency_level" in config:
-    rtcore.append("frequency_level="+config[frequency_level])
+    rtcore.append("frequency_level="+config["frequency_level"])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
