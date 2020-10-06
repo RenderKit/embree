@@ -182,7 +182,7 @@ namespace embree
 
   const char* symbols[3] = { "=", ",", "|" };
 
-   bool State::parseFile(const FileName& fileName)
+  bool State::parseFile(const FileName& fileName)
   {
     FILE* f = fopen(fileName.c_str(),"r");
     if (!f) return false;

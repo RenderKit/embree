@@ -61,6 +61,7 @@ def runConfig(config):
 
   conf = []  # CMake configuration
   env = []  # shell environment
+  rtcore = [] # rtcore configuration
   
   build = config["build"]
   conf.append("-D CMAKE_BUILD_TYPE="+build+"")
@@ -312,6 +313,8 @@ def runConfig(config):
     conf.append("-D EMBREE_MIN_WIDTH="+config["MIN_WIDTH"])
   if "GLFW" in config:
     conf.append("-D EMBREE_TUTORIALS_GLFW="+config["GLFW"])
+  if "frequency_level" in config:
+    rtcore.append("frequency_level="+config[frequency_level])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
@@ -377,6 +380,9 @@ def runConfig(config):
       sys.stderr.write("unknown package mode: "+OS+":"+config["package"])
       sys.exit(1)
 
+  if rtcore:
+    conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))
+       
   ctest =  "ctest -VV -S scripts/test.cmake"
   if g_cdash != "": ctest += " -D CTEST_DROP_SITE="+g_cdash
   ctest += " -D EMBREE_TESTING_INTENSITY="+str(g_intensity)

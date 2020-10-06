@@ -67,6 +67,9 @@ namespace embree
     }
 
     /* initialize global state */
+#if defined(EMBREE_CONFIG)
+    State::parseString(EMBREE_CONFIG);
+#endif
     State::parseString(cfg);
     if (!ignore_config_files && FileName::executableFolder() != FileName(""))
       State::parseFile(FileName::executableFolder()+FileName(".embree" TOSTRING(RTC_VERSION_MAJOR)));
