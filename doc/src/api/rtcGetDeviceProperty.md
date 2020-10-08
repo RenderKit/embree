@@ -112,7 +112,7 @@ Possible properties to query are:
     1. Intel Threading Building Blocks (TBB)
     2. Parallel Patterns Library (PPL)
 
-+   `RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED`: Queries whether
++   `RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED`: Queries whether
     `rtcJoinCommitScene` is supported. This is not the case when Embree is
     compiled with PPL or older versions of TBB.
 
