@@ -4,12 +4,7 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 import sys
-import os
 import ctypes
-import time
-import datetime
-import json
-import socket
 import subprocess
 
 g_cdash = ""
