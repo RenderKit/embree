@@ -27,16 +27,6 @@ namespace embree
   {
     device->refInc();
 
-#if defined(TASKING_INTERNAL) 
-    scheduler = nullptr;
-#elif defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
-    group = new tbb::isolated_task_group;
-#elif defined(TASKING_TBB)
-    group = new tbb::task_group;
-#elif defined(TASKING_PPL)
-    group = new concurrency::task_group;
-#endif
-
     intersectors = Accel::Intersectors(missing_rtcCommit);
 
     /* one can overwrite flags through device for debugging */
@@ -46,11 +36,8 @@ namespace embree
       scene_flags = (RTCSceneFlags) device->scene_flags;
   }
 
-  Scene::~Scene () 
+  Scene::~Scene() noexcept
   {
-#if defined(TASKING_TBB) || defined(TASKING_PPL)
-    delete group; group = nullptr;
-#endif
     device->refDec();
   }
   
@@ -843,12 +830,12 @@ namespace embree
 
 #if USE_TASK_ARENA
         if (join) {
-          device->arena->execute([&]{ group->wait(); });
+          device->arena->execute([&]{ group.wait(); });
         }
         else
 #endif
         {
-          group->wait();
+          group.wait();
         }
 
         pause_cpu();
@@ -875,19 +862,19 @@ namespace embree
       if (join)
       {
         device->arena->execute([&]{
-            group->run([&]{
+            group.run([&]{
                 tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
               });
-            group->wait();
+            group.wait();
           });
       }
       else
 #endif
       {
-        group->run([&]{
+        group.run([&]{
             tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
           });
-        group->wait();
+        group.wait();
       }
      
       /* reset MXCSR register again */
@@ -928,10 +915,10 @@ namespace embree
     
     try {
 
-      group->run([&]{
+      group.run([&]{
           concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { commit_task(); });
         });
-      group->wait();
+      group.wait();
 
        /* reset MXCSR register again */
       _mm_setcsr(mxcsr);

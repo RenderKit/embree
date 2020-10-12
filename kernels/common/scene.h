@@ -26,7 +26,7 @@ namespace embree
   /*! Base class all scenes are derived from */
   class Scene : public AccelN
   {
-    ALIGNED_CLASS_(16);
+    ALIGNED_CLASS_(std::alignment_of<Scene>::value);
 
   public:
     template<typename Ty, bool mblur = false>
@@ -137,7 +137,7 @@ namespace embree
     Scene (Device* device);
 
     /*! Scene destruction */
-    ~Scene ();
+    ~Scene () noexcept;
 
   private:
     /*! class is non-copyable */
@@ -302,11 +302,11 @@ namespace embree
     MutexSys schedulerMutex;
     Ref<TaskScheduler> scheduler;
 #elif defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
-    tbb::isolated_task_group* group;
+    tbb::isolated_task_group group;
 #elif defined(TASKING_TBB)
-    tbb::task_group* group;
+    tbb::task_group group;
 #elif defined(TASKING_PPL)
-    concurrency::task_group* group;
+    concurrency::task_group group;
 #endif
     
   public:
