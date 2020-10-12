@@ -292,7 +292,7 @@ namespace embree
     ray.u = u[i]; ray.v = v[i];
     ray.primID = primID[i]; ray.geomID = geomID[i]; 
 
-    instance_id_stack::copy<K>(instID, ray.instID, i);
+    instance_id_stack::copy_VU<K>(instID, ray.instID, i);
   }
 
   /* Converts single rays to ray packet */
@@ -331,7 +331,7 @@ namespace embree
     u[i] = ray.u; v[i] = ray.v;
     primID[i] = ray.primID; geomID[i] = ray.geomID;
 
-    instance_id_stack::copy<K>(ray.instID, instID, i);
+    instance_id_stack::copy_VU<K>(ray.instID, instID, i);
   }
 
   /* copies a ray packet element into another element*/
@@ -353,7 +353,7 @@ namespace embree
     u[dest] = u[source]; v[dest] = v[source];
     primID[dest] = primID[source]; geomID[dest] = geomID[source];  
 
-    instance_id_stack::copy<K>(instID, instID, source, dest);
+    instance_id_stack::copy_VV<K>(instID, instID, source, dest);
   }
 
   /* Shortcuts */
@@ -1153,7 +1153,7 @@ namespace embree
           ray_k->primID = ray.primID[k];
           ray_k->geomID = ray.geomID[k];
 
-          instance_id_stack::copy<K>(ray.instID, ray_k->instID, k);
+          instance_id_stack::copy_VU<K>(ray.instID, ray_k->instID, k);
         }
 #endif
       }
@@ -1357,7 +1357,7 @@ namespace embree
           ray_k->v      = ray.v[k];
           ray_k->primID = ray.primID[k];
           ray_k->geomID = ray.geomID[k];
-          instance_id_stack::copy<K>(ray.instID, ray_k->instID, k);
+          instance_id_stack::copy_VU<K>(ray.instID, ray_k->instID, k);
         }
       }
     }

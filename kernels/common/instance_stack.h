@@ -170,8 +170,68 @@ RTC_FORCEINLINE bool level_valid(unsigned level, const vuint<K>* stack, const si
  * This function automatically selects a LevelFunctor from the above Assign 
  * structs.
  */
+template <class Src, class Tgt, class... Args>
+RTC_FORCEINLINE void copy_UU(Src src, Tgt tgt, Args&&... args)
+{
+#if (RTC_MAX_INSTANCE_LEVEL_COUNT == 1)
+  /* 
+   * Avoid all loops for only one level. 
+   */
+  level_copy(0, src, tgt, std::forward<Args>(args)...);
+
+#elif (RTC_MAX_INSTANCE_LEVEL_COUNT <= 4)
+  /* 
+   * It is faster to avoid the valid test for low level counts.
+   * Just copy the whole stack.
+   */
+  for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    level_copy(l, src, tgt, std::forward<Args>(args)...);
+
+#else
+  /* 
+   * For general stack sizes, it pays off to test for validity.
+   */
+  bool valid = true;
+  for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT && valid; ++l)
+  {
+    level_copy(l, src, tgt, std::forward<Args>(args)...);
+    valid = level_valid(l, src, std::forward<Args>(args)...);
+  }
+#endif
+}
+
 template <int K, class Src, class Tgt, class... Args>
-RTC_FORCEINLINE void copy(Src src, Tgt tgt, Args&&... args)
+RTC_FORCEINLINE void copy_UV(Src src, Tgt tgt, Args&&... args)
+{
+#if (RTC_MAX_INSTANCE_LEVEL_COUNT == 1)
+  /* 
+   * Avoid all loops for only one level. 
+   */
+  level_copy<K>(0, src, tgt, std::forward<Args>(args)...);
+
+#elif (RTC_MAX_INSTANCE_LEVEL_COUNT <= 4)
+  /* 
+   * It is faster to avoid the valid test for low level counts.
+   * Just copy the whole stack.
+   */
+  for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    level_copy<K>(l, src, tgt, std::forward<Args>(args)...);
+
+#else
+  /* 
+   * For general stack sizes, it pays off to test for validity.
+   */
+  bool valid = true;
+  for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT && valid; ++l)
+  {
+    level_copy<K>(l, src, tgt, std::forward<Args>(args)...);
+    valid = level_valid(l, src, std::forward<Args>(args)...);
+  }
+#endif
+}
+
+template <int K, class Src, class Tgt, class... Args>
+RTC_FORCEINLINE void copy_VU(Src src, Tgt tgt, Args&&... args)
 {
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT == 1)
   /* 
@@ -200,14 +260,14 @@ RTC_FORCEINLINE void copy(Src src, Tgt tgt, Args&&... args)
 #endif
 }
 
-template <class Src, class Tgt, class... Args>
-RTC_FORCEINLINE void copy1(Src src, Tgt tgt, Args&&... args)
+template <int K, class Src, class Tgt, class... Args>
+RTC_FORCEINLINE void copy_VV(Src src, Tgt tgt, Args&&... args)
 {
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT == 1)
   /* 
    * Avoid all loops for only one level. 
    */
-  level_copy(0, src, tgt, std::forward<Args>(args)...);
+  level_copy<K>(0, src, tgt, std::forward<Args>(args)...);
 
 #elif (RTC_MAX_INSTANCE_LEVEL_COUNT <= 4)
   /* 
@@ -215,7 +275,7 @@ RTC_FORCEINLINE void copy1(Src src, Tgt tgt, Args&&... args)
    * Just copy the whole stack.
    */
   for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
-    level_copy(l, src, tgt, std::forward<Args>(args)...);
+    level_copy<K>(l, src, tgt, std::forward<Args>(args)...);
 
 #else
   /* 
@@ -224,8 +284,8 @@ RTC_FORCEINLINE void copy1(Src src, Tgt tgt, Args&&... args)
   bool valid = true;
   for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT && valid; ++l)
   {
-    level_copy(l, src, tgt, std::forward<Args>(args)...);
-    valid = level_valid(l, src, std::forward<Args>(args)...);
+    level_copy<K>(l, src, tgt, std::forward<Args>(args)...);
+    valid = level_valid<K>(l, src, std::forward<Args>(args)...);
   }
 #endif
 }

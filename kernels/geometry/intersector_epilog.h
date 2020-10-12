@@ -63,7 +63,7 @@ namespace embree
         ray.v = hit.v;
         ray.primID = primID;
         ray.geomID = geomID;
-        instance_id_stack::copy1(context->user->instID, ray.instID);
+        instance_id_stack::copy_UU(context->user->instID, ray.instID);
         return true;
       }
     };
@@ -162,7 +162,7 @@ namespace embree
         ray.v[k] = hit.v;
         ray.primID[k] = primID;
         ray.geomID[k] = geomID;
-        instance_id_stack::copy<K,const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
+        instance_id_stack::copy_UV<K,const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
         return true;
       }
     };
@@ -287,7 +287,7 @@ namespace embree
         ray.v = uv.y;
         ray.primID = primIDs[i];
         ray.geomID = geomID;
-        instance_id_stack::copy1(context->user->instID, ray.instID);
+        instance_id_stack::copy_UU(context->user->instID, ray.instID);
         return true;
 
       }
@@ -506,7 +506,7 @@ namespace embree
         ray.v = uv.y;
         ray.primID = primID;
         ray.geomID = geomID;
-        instance_id_stack::copy1(context->user->instID, ray.instID);
+        instance_id_stack::copy_UU(context->user->instID, ray.instID);
         return true;
       }
     };
@@ -616,7 +616,7 @@ namespace embree
         vfloat<K>::store(valid,&ray.v,v);
         vuint<K>::store(valid,&ray.primID,primID);
         vuint<K>::store(valid,&ray.geomID,geomID);
-        instance_id_stack::copy<K,const unsigned*, vuint<K>*, const vbool<K>&>(context->user->instID, ray.instID, valid);
+        instance_id_stack::copy_VV<K,const unsigned*, vuint<K>*, const vbool<K>&>(context->user->instID, ray.instID, valid);
         return valid;
       }
     };
@@ -731,7 +731,7 @@ namespace embree
         vfloat<K>::store(valid,&ray.v,v);
         vuint<K>::store(valid,&ray.primID,primID);
         vuint<K>::store(valid,&ray.geomID,geomID);
-        instance_id_stack::copy<K,const unsigned*, vuint<K>*, const vbool<K>&>(context->user->instID, ray.instID, valid);
+        instance_id_stack::copy_VV<K,const unsigned*, vuint<K>*, const vbool<K>&>(context->user->instID, ray.instID, valid);
 
         return valid;
       }
@@ -870,7 +870,7 @@ namespace embree
         ray.v[k] = uv.y;
         ray.primID[k] = primIDs[i];
         ray.geomID[k] = geomID;
-        instance_id_stack::copy<K,const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
+        instance_id_stack::copy_UV<K,const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
 #endif
         return true;
       }
@@ -1016,7 +1016,7 @@ namespace embree
         ray.v[k] = uv.y;
         ray.primID[k] = primID;
         ray.geomID[k] = geomID;
-        instance_id_stack::copy<K,const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
+        instance_id_stack::copy_UV<K,const unsigned*, vuint<K>*, const size_t&>(context->user->instID, ray.instID, k);
 #endif
         return true;
       }
