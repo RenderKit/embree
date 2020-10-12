@@ -161,8 +161,8 @@ namespace embree
       template<int M>
       __forceinline void veval(const vfloat<M>& t, Vec4vf<M>& p, Vec4vf<M>& dp) const
       {
-        p = veval(t);
-        dp = veval_du(t);
+        p = veval<M>(t);
+        dp = veval_du<M>(t);
       }
       
       template<int M>

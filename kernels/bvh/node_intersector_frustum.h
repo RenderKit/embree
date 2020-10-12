@@ -38,12 +38,6 @@ namespace embree
       __forceinline Frustum() {}
 
       template<int K>
-      __forceinline Frustum(const vbool<K>& valid, const Vec3vf<K>& org, const Vec3vf<K>& rdir, const vfloat<K>& ray_tnear, const vfloat<K>& ray_tfar, int N)
-      {
-        init(valid, org, rdir, ray_tnear, ray_tfar, N);
-      }
-
-      template<int K>
       __forceinline void init(const vbool<K>& valid, const Vec3vf<K>& org, const Vec3vf<K>& rdir, const vfloat<K>& ray_tnear, const vfloat<K>& ray_tfar, int N)
       {
         const Vec3fa reduced_min_org(reduce_min(select(valid, org.x, pos_inf)),
@@ -115,12 +109,6 @@ namespace embree
     struct Frustum<true>
     {
       __forceinline Frustum() {}
-
-      template<int K>
-      __forceinline Frustum(const vbool<K>& valid, const Vec3vf<K>& org, const Vec3vf<K>& rdir, const vfloat<K>& ray_tnear, const vfloat<K>& ray_tfar, int N)
-      {
-        init(valid, org, rdir, ray_tnear, ray_tfar, N);
-      }
 
       template<int K>
       __forceinline void init(const vbool<K>& valid, const Vec3vf<K>& org, const Vec3vf<K>& rdir, const vfloat<K>& ray_tnear, const vfloat<K>& ray_tfar, int N)

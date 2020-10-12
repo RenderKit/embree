@@ -485,10 +485,10 @@ namespace embree
         const size_t hits = 4 + popcnt(mask);
         vint8 dist(INT_MIN); // this will work with -0.0f (0x80000000) as distance, isort_update uses >= to insert
 	
-        isort_quick_update(dist,dist_A2);
-        isort_quick_update(dist,dist_B2);
-        isort_quick_update(dist,dist_C2);
-        isort_quick_update(dist,dist_D2);
+        isort_quick_update<8>(dist,dist_A2);
+        isort_quick_update<8>(dist,dist_B2);
+        isort_quick_update<8>(dist,dist_C2);
+        isort_quick_update<8>(dist,dist_D2);
 
         do {
 
@@ -497,7 +497,7 @@ namespace embree
           BVH::prefetch(cur,types);
           const vint8 new_dist(permute(distance_i,vint8(zero)));
           mask &= mask-1;
-          isort_update(dist,new_dist);
+          isort_update<8>(dist,new_dist);
 
         } while(mask);
 

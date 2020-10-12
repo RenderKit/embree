@@ -132,7 +132,7 @@ namespace embree
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
  
         vfloat<K> ftime;
-        const vint<K> itime = mesh->timeSegment(ray.time(), ftime);
+        const vint<K> itime = mesh->timeSegment<K>(ray.time(), ftime);
         Vec3vf4 v0,v1,v2,v3; subgrid.gatherMB(v0,v1,v2,v3,context->scene,itime[k],ftime[k]);
         pre.intersect1(ray,k,context,v0,v1,v2,v3,g,subgrid);
       }
@@ -144,7 +144,7 @@ namespace embree
         const GridMesh::Grid &g = mesh->grid(subgrid.primID());
 
         vfloat<K> ftime;
-        const vint<K> itime = mesh->timeSegment(ray.time(), ftime);
+        const vint<K> itime = mesh->timeSegment<K>(ray.time(), ftime);
         Vec3vf4 v0,v1,v2,v3; subgrid.gatherMB(v0,v1,v2,v3,context->scene,itime[k],ftime[k]);
         return pre.occluded1(ray,k,context,v0,v1,v2,v3,g,subgrid);
       }
@@ -156,7 +156,7 @@ namespace embree
           for (size_t j=0;j<num;j++)
           {
             size_t m_valid = movemask(prim[j].qnode.validMask());
-            const vfloat<K> time = prim[j].adjustTime(ray.time());
+            const vfloat<K> time = prim[j].template adjustTime<K>(ray.time());
 
             vfloat<K> dist;
             while(m_valid)
@@ -177,7 +177,7 @@ namespace embree
           for (size_t j=0;j<num;j++)
           {
             size_t m_valid = movemask(prim[j].qnode.validMask());
-            const vfloat<K> time = prim[j].adjustTime(ray.time());
+            const vfloat<K> time = prim[j].template adjustTime<K>(ray.time());
             vfloat<K> dist;
             while(m_valid)
             {

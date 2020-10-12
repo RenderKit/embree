@@ -216,7 +216,7 @@ namespace embree
         {
           if (!tri.valid(i)) break;
           STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-          Vec3vf<K> v0,v1,v2; tri.gather(valid_i,v0,v1,v2,i,context->scene,ray.time());
+          Vec3vf<K> v0,v1,v2; tri.template gather<K>(valid_i,v0,v1,v2,i,context->scene,ray.time());
           pre.intersectK(valid_i,ray,v0,v1,v2,/*UVIdentity<K>(),*/IntersectKEpilogM<M,K,filter>(ray,context,tri.geomID(),tri.primID(),i));
         }
       }
@@ -229,7 +229,7 @@ namespace embree
         {
           if (!tri.valid(i)) break;
           STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-          Vec3vf<K> v0,v1,v2; tri.gather(valid_i,v0,v1,v2,i,context->scene,ray.time());
+          Vec3vf<K> v0,v1,v2; tri.template gather<K>(valid_i,v0,v1,v2,i,context->scene,ray.time());
           pre.intersectK(valid0,ray,v0,v1,v2,/*UVIdentity<K>(),*/OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomID(),tri.primID(),i));
           if (none(valid0)) break;
         }
@@ -296,7 +296,7 @@ namespace embree
         {
           if (!tri.valid(i)) break;
           STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-          Vec3vf<K> v0,v1,v2; tri.gather(valid_i,v0,v1,v2,i,context->scene,ray.time());
+          Vec3vf<K> v0,v1,v2; tri.template gather<K>(valid_i,v0,v1,v2,i,context->scene,ray.time());
           pre.intersectK(valid_i,ray,v0,v1,v2,UVIdentity<K>(),IntersectKEpilogM<M,K,filter>(ray,context,tri.geomID(),tri.primID(),i));
         }
       }
@@ -309,7 +309,7 @@ namespace embree
         {
           if (!tri.valid(i)) break;
           STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-          Vec3vf<K> v0,v1,v2; tri.gather(valid_i,v0,v1,v2,i,context->scene,ray.time());
+          Vec3vf<K> v0,v1,v2; tri.template gather<K>(valid_i,v0,v1,v2,i,context->scene,ray.time());
           pre.intersectK(valid0,ray,v0,v1,v2,UVIdentity<K>(),OccludedKEpilogM<M,K,filter>(valid0,ray,context,tri.geomID(),tri.primID(),i));
           if (none(valid0)) break;
         }

@@ -51,8 +51,8 @@ namespace embree
           LinearSpace3<Vec3vf<M>> ray_space = pre.ray_space;
 
           const Vec3vf<M> ray_org ((Vec3fa)ray.org);
-          const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
-          const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
+          const Vec4vf<M> v0 = enlargeRadiusToMinWidth<M>(context,geom,ray_org,v0i);
+          const Vec4vf<M> v1 = enlargeRadiusToMinWidth<M>(context,geom,ray_org,v1i);
           
           Vec4vf<M> p0(xfmVector(ray_space,v0.xyz()-ray_org), v0.w);
           Vec4vf<M> p1(xfmVector(ray_space,v1.xyz()-ray_org), v1.w);
@@ -105,8 +105,8 @@ namespace embree
           const Vec3vf<M> ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
           const Vec3vf<M> ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
 
-          const Vec4vf<M> v0 = enlargeRadiusToMinWidth(context,geom,ray_org,v0i);
-          const Vec4vf<M> v1 = enlargeRadiusToMinWidth(context,geom,ray_org,v1i);
+          const Vec4vf<M> v0 = enlargeRadiusToMinWidth<M>(context,geom,ray_org,v0i);
+          const Vec4vf<M> v1 = enlargeRadiusToMinWidth<M>(context,geom,ray_org,v1i);
           
           Vec4vf<M> p0(xfmVector(ray_space,v0.xyz()-ray_org), v0.w);
           Vec4vf<M> p1(xfmVector(ray_space,v1.xyz()-ray_org), v1.w);

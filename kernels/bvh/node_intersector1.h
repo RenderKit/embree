@@ -52,9 +52,9 @@ namespace embree
       }
 
       template<int K>
-      __forceinline TravRayBase(size_t k, const Vec3vf<K>& ray_org, const Vec3vf<K>& ray_dir,
-                                const Vec3vf<K>& ray_rdir, const Vec3vi<K>& nearXYZ,
-                                size_t flip = sizeof(vfloat<N>))
+      __forceinline void init(size_t k, const Vec3vf<K>& ray_org, const Vec3vf<K>& ray_dir,
+                              const Vec3vf<K>& ray_rdir, const Vec3vi<K>& nearXYZ,
+                              size_t flip = sizeof(vfloat<N>))
       {
         org  = Vec3vf<Nx>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
         dir  = Vec3vf<Nx>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
@@ -129,9 +129,9 @@ namespace embree
       }
 
       template<int K>
-      __forceinline TravRayBase(size_t k, const Vec3vf<K>& ray_org, const Vec3vf<K>& ray_dir,
-                                const Vec3vf<K>& ray_rdir, const Vec3vi<K>& nearXYZ,
-                                size_t flip = sizeof(vfloat<N>))
+      __forceinline void init(size_t k, const Vec3vf<K>& ray_org, const Vec3vf<K>& ray_dir,
+                              const Vec3vf<K>& ray_rdir, const Vec3vi<K>& nearXYZ,
+                              size_t flip = sizeof(vfloat<N>))
       {
         const vfloat<Nx> round_down = 1.0f-3.0f*float(ulp);
         const vfloat<Nx> round_up   = 1.0f+3.0f*float(ulp);
@@ -178,12 +178,14 @@ namespace embree
           tnear(ray_tnear), tfar(ray_tfar) {}
 
       template<int K>
-      __forceinline TravRay(size_t k, const Vec3vf<K>& ray_org, const Vec3vf<K>& ray_dir,
-                            const Vec3vf<K>& ray_rdir, const Vec3vi<K>& nearXYZ,
-                            float ray_tnear, float ray_tfar,
-                            size_t flip = sizeof(vfloat<N>))
-        : TravRayBase<N,Nx,robust>(k, ray_org, ray_dir, ray_rdir, nearXYZ, flip),
-          tnear(ray_tnear), tfar(ray_tfar) {}
+      __forceinline void init(size_t k, const Vec3vf<K>& ray_org, const Vec3vf<K>& ray_dir,
+                              const Vec3vf<K>& ray_rdir, const Vec3vi<K>& nearXYZ,
+                              float ray_tnear, float ray_tfar,
+                              size_t flip = sizeof(vfloat<N>))
+      {
+        TravRayBase<N,Nx,robust>::template init<K>(k, ray_org, ray_dir, ray_rdir, nearXYZ, flip);
+        tnear = ray_tnear; tfar = ray_tfar;
+      }
 
       vfloat<Nx> tnear;
       vfloat<Nx> tfar;

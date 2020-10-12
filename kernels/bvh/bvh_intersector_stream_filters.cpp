@@ -31,7 +31,7 @@ namespace embree
             const vint<K> offset = vij * int(stride);
             const size_t packetIndex = j / K;
 
-            RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
+            RayTypeK<K, intersect> ray = rayN.getRayByOffset<K>(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
@@ -114,7 +114,7 @@ namespace embree
             const vint<K> offset = *(vint<K>*)&rayIDs[j] * int(stride);
             RayK<K>& ray = rays[j/K];
             rayPtrs[j/K] = &ray;
-            ray = rayN.getRayByOffset(valid, offset);
+            ray = rayN.getRayByOffset<K>(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
           }
@@ -126,7 +126,7 @@ namespace embree
             const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
             const vbool<K> valid = vi < vint<K>(int(numOctantRays));
             const vint<K> offset = *(vint<K>*)&rayIDs[j] * int(stride);
-            rayN.setHitByOffset(valid, offset, rays[j/K]);
+            rayN.setHitByOffset<K>(valid, offset, rays[j/K]);
           }
 
           raysInOctant[curOctant] = 0;
@@ -141,12 +141,12 @@ namespace embree
           vbool<K> valid = vi < vint<K>(int(N));
           const vint<K> offset = vi * int(stride);
 
-          RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
+          RayTypeK<K, intersect> ray = rayN.getRayByOffset<K>(valid, offset);
           valid &= ray.tnear() <= ray.tfar;
 
           scene->intersectors.intersect(valid, ray, context);
 
-          rayN.setHitByOffset(valid, offset, ray);
+          rayN.setHitByOffset<K>(valid, offset, ray);
         }
       }
     }
@@ -173,7 +173,7 @@ namespace embree
             const vbool<K> valid = vij < vint<K>(int(N));
             const size_t packetIndex = j / K;
 
-            RayTypeK<K, intersect> ray = rayN.getRayByIndex(valid, vij);
+            RayTypeK<K, intersect> ray = rayN.getRayByIndex<K>(valid, vij);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
@@ -191,7 +191,7 @@ namespace embree
             const vbool<K> valid = vij < vint<K>(int(N));
             const size_t packetIndex = j / K;
 
-            rayN.setHitByIndex(valid, vij, rays[packetIndex]);
+            rayN.setHitByIndex<K>(valid, vij, rays[packetIndex]);
           }
         }
       }
@@ -256,7 +256,7 @@ namespace embree
             const vint<K> index = *(vint<K>*)&rayIDs[j];
             RayK<K>& ray = rays[j/K];
             rayPtrs[j/K] = &ray;
-            ray = rayN.getRayByIndex(valid, index);
+            ray = rayN.getRayByIndex<K>(valid, index);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
           }
@@ -268,7 +268,7 @@ namespace embree
             const vint<K> vi = vint<K>(int(j)) + vint<K>(step);
             const vbool<K> valid = vi < vint<K>(int(numOctantRays));
             const vint<K> index = *(vint<K>*)&rayIDs[j];
-            rayN.setHitByIndex(valid, index, rays[j/K]);
+            rayN.setHitByIndex<K>(valid, index, rays[j/K]);
           }
 
           raysInOctant[curOctant] = 0;
@@ -282,12 +282,12 @@ namespace embree
           const vint<K> vi = vint<K>(int(i)) + vint<K>(step);
           vbool<K> valid = vi < vint<K>(int(N));
 
-          RayTypeK<K, intersect> ray = rayN.getRayByIndex(valid, vi);
+          RayTypeK<K, intersect> ray = rayN.getRayByIndex<K>(valid, vi);
           valid &= ray.tnear() <= ray.tfar;
 
           scene->intersectors.intersect(valid, ray, context);
 
-          rayN.setHitByIndex(valid, vi, ray);
+          rayN.setHitByIndex<K>(valid, vi, ray);
         }
       }
     }
@@ -394,7 +394,7 @@ namespace embree
               const vint<K> offset = *(vint<K>*)&rayOffsets[j];
               RayK<K>& ray = rays[j/K];
               rayPtrs[j/K] = &ray;
-              ray = rayN.getRayByOffset(valid, offset);
+              ray = rayN.getRayByOffset<K>(valid, offset);
               ray.tnear() = select(valid, ray.tnear(), zero);
               ray.tfar  = select(valid, ray.tfar,  neg_inf);
             }
@@ -436,7 +436,7 @@ namespace embree
           {
             const size_t offset = j * sizeof(float);
             vbool<K> valid = (vint<K>(int(j)) + vint<K>(step)) < vint<K>(int(N));
-            RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
+            RayTypeK<K, intersect> ray = rayN.getRayByOffset<K>(valid, offset);
             valid &= ray.tnear() <= ray.tfar;
 
             scene->intersectors.intersect(valid, ray, context);
@@ -470,7 +470,7 @@ namespace embree
             const size_t offset = (i+j) * sizeof(float);
             const size_t packetIndex = j / K;
 
-            RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
+            RayTypeK<K, intersect> ray = rayN.getRayByOffset<K>(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
 
@@ -554,7 +554,7 @@ namespace embree
             const vint<K> offset = *(vint<K>*)&rayOffsets[j];
             RayK<K>& ray = rays[j/K];
             rayPtrs[j/K] = &ray;
-            ray = rayN.getRayByOffset(valid, offset);
+            ray = rayN.getRayByOffset<K>(valid, offset);
             ray.tnear() = select(valid, ray.tnear(), zero);
             ray.tfar  = select(valid, ray.tfar,  neg_inf);
           }
@@ -581,7 +581,7 @@ namespace embree
           vbool<K> valid = vi < vint<K>(int(N));
           const size_t offset = i * sizeof(float);
 
-          RayTypeK<K, intersect> ray = rayN.getRayByOffset(valid, offset);
+          RayTypeK<K, intersect> ray = rayN.getRayByOffset<K>(valid, offset);
           valid &= ray.tnear() <= ray.tfar;
 
           scene->intersectors.intersect(valid, ray, context);

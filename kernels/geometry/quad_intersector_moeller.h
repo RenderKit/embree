@@ -353,7 +353,7 @@ namespace embree
         const Vec3vf<M> e1 = v0-v1;
         const Vec3vf<M> e2 = v2-v0;
         const Vec3vf<M> Ng = cross(e2,e1);
-        return intersect(ray,k,v0,e1,e2,Ng,flags,epilog);
+        return intersect<M,K>(ray,k,v0,e1,e2,Ng,flags,epilog);
       }
     };
 
@@ -459,8 +459,8 @@ namespace embree
                                     const vuint<M>& geomID, const vuint<M>& primID) const
       {
         Intersect1KEpilogM<M,M,K,filter> epilog(ray,k,context,geomID,primID);
-        MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,v0,v1,v3,vbool<M>(false),epilog);
-        MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,v2,v3,v1,vbool<M>(true ),epilog);
+        MoellerTrumboreIntersector1KTriangleM::intersect1<M,K>(ray,k,v0,v1,v3,vbool<M>(false),epilog);
+        MoellerTrumboreIntersector1KTriangleM::intersect1<M,K>(ray,k,v2,v3,v1,vbool<M>(true ),epilog);
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
@@ -468,8 +468,8 @@ namespace embree
                                    const vuint<M>& geomID, const vuint<M>& primID) const
       {
         Occluded1KEpilogM<M,M,K,filter> epilog(ray,k,context,geomID,primID);
-        if (MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,v0,v1,v3,vbool<M>(false),epilog)) return true;
-        if (MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,v2,v3,v1,vbool<M>(true ),epilog)) return true;
+        if (MoellerTrumboreIntersector1KTriangleM::intersect1<M,K>(ray,k,v0,v1,v3,vbool<M>(false),epilog)) return true;
+        if (MoellerTrumboreIntersector1KTriangleM::intersect1<M,K>(ray,k,v2,v3,v1,vbool<M>(true ),epilog)) return true;
         return false;
       }
     };
@@ -503,7 +503,7 @@ namespace embree
                             select(0x0f0f,vfloat16(v3.z),vfloat16(v1.z)));
 #endif
         const vbool16 flags(0xf0f0);
-        return MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,vtx0,vtx1,vtx2,flags,epilog);
+        return MoellerTrumboreIntersector1KTriangleM::intersect1<16,K>(ray,k,vtx0,vtx1,vtx2,flags,epilog);
       }
       
       __forceinline bool intersect1(RayHitK<K>& ray, size_t k, IntersectContext* context,
@@ -543,7 +543,7 @@ namespace embree
         const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
 #endif
         const vbool8 flags(0,0,0,0,1,1,1,1);
-        return MoellerTrumboreIntersector1KTriangleM::intersect1(ray,k,vtx0,vtx1,vtx2,flags,epilog); 
+        return MoellerTrumboreIntersector1KTriangleM::intersect1<8,K>(ray,k,vtx0,vtx1,vtx2,flags,epilog); 
       }
       
       __forceinline bool intersect1(RayHitK<K>& ray, size_t k, IntersectContext* context,

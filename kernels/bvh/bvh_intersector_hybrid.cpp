@@ -51,7 +51,8 @@ namespace embree
       stack[0].dist = neg_inf;
 
       /* load the ray into SIMD registers */
-      TravRay<N,Nx,robust> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
+      TravRay<N,Nx,robust> tray1;
+      tray1.template init<K>(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
 
       /* pop loop */
       while (true) pop:
@@ -415,7 +416,8 @@ namespace embree
         tray.tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
         tray.tfar  = select(octant_valid, org_ray_tfar , vfloat<K>(neg_inf));
 
-        Frustum<robust> frustum(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
+        Frustum<robust> frustum;
+        frustum.template init<K>(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
 
         StackItemT<NodeRef> stack[stackSizeSingle];  // stack of nodes
         StackItemT<NodeRef>* stackPtr = stack + 1;   // current stack pointer
@@ -518,7 +520,7 @@ namespace embree
           if (likely(any((ray.tfar < tray.tfar) & valid_leaf)))
           {
             tray.tfar = select(valid_leaf, ray.tfar, tray.tfar);
-            frustum.updateMaxDist(tray.tfar);
+            frustum.template updateMaxDist<K>(tray.tfar);
           }
 
           if (unlikely(lazy_node)) {
@@ -552,7 +554,8 @@ namespace embree
         stack[0] = root;
 
         /* load the ray into SIMD registers */
-        TravRay<N,Nx,robust> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
+        TravRay<N,Nx,robust> tray1;
+        tray1.template init<K>(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
 
 	/* pop loop */
 	while (true) pop:
@@ -826,7 +829,8 @@ namespace embree
         tray.tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
         tray.tfar  = select(octant_valid, org_ray_tfar,  vfloat<K>(neg_inf));
 
-        const Frustum<robust> frustum(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
+        Frustum<robust> frustum;
+        frustum.template init<K>(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
 
         StackItemMaskT<NodeRef> stack[stackSizeSingle];  // stack of nodes
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;   // current stack pointer
