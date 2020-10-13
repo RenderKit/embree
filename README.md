@@ -329,9 +329,15 @@ ISPC, make sure to download an ISPC version from
 compatible with your Visual Studio version. After installation, put
 the path to `ispc.exe` permanently into your `PATH` environment
 variable or you need to correctly set the `ISPC_EXECUTABLE` variable
-during CMake configuration. We have tested ISPC version 1.9.1. If you
-do not want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
-CMake.
+during CMake configuration. If you do not want to use ISPC then you
+can disable `EMBREE_ISPC_SUPPORT` in CMake.
+
+We have tested Embree with the following ISPC versions:
+
+  - ISPC 1.14.1
+  - ISPC 1.13.0
+  - ISPC 1.12.0
+  - ISPC 1.9.2
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.11 or higher). Note that you need a native Windows CMake
@@ -1166,18 +1172,20 @@ The following configuration is supported:
 
 -   `frequency_level=[simd128,simd256,simd512]`: Specifies the
     frequency level the application want to run on, which can be
-    either: a) simd128 for apps that do not use AVX instructions, b)
-    simd256 for apps that use heavy AVX instruction, c) simd512 for
-    apps that use heavy AVX-512 instructions. When some frequency level
-    is specified, Embree will avoid doing optimizations that may reduce
-    the frequency level below the level specified. E.g. if your app
-    does not use AVX instructions setting "frequency\_level=simd128"
-    will cause some CPUs to run at highest frequency, which may result
-    in higher application performance. However, this will prevent
-    Embree from using AVX optimizations to achieve higher ray tracing
-    performance, thus applications that trace many rays may still
-    perform better with the default setting of simd256, even though
-    this reduces frequency on some CPUs.
+    either:
+
+a)  simd128 to run at highest frequency
+b)  simd256 to run at AVX2-heavy frequency level
+c)  simd512 to run at heavy AVX512 frequency level. When some frequency
+    level is specified, Embree will avoid doing optimizations that may
+    reduce the frequency level below the level specified. E.g. if your
+    app does not use AVX instructions setting
+    "frequency\_level=simd128" will cause some CPUs to run at highest
+    frequency, which may result in higher application performance if
+    you do much shading. If you application heavily uses AVX code, you
+    should best set the frequency level to simd256. Per default Embree
+    tries to avoid reducing the frequency of the CPU by setting the
+    simd256 level only when the CPU has no significant down clocking.
 
 Different configuration options should be separated by commas, e.g.:
 
@@ -1376,7 +1384,7 @@ Possible properties to query are:
     0.  internal tasking system
     1.  Intel Threading Building Blocks (TBB)
     2.  Parallel Patterns Library (PPL)
--   `RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED`: Queries whether
+-   `RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED`: Queries whether
     `rtcJoinCommitScene` is supported. This is not the case when Embree
     is compiled with PPL or older versions of TBB.
 

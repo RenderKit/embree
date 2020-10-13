@@ -135,7 +135,7 @@ Intel Threading Building Blocks (TBB)
 Parallel Patterns Library (PPL)
 .RE
 .IP \[bu] 2
-\f[C]RTC_DEVICE_PROPERTY_COMMIT_JOIN_SUPPORTED\f[]: Queries whether
+\f[C]RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED\f[]: Queries whether
 \f[C]rtcJoinCommitScene\f[] is supported.
 This is not the case when Embree is compiled with PPL or older versions
 of TBB.
