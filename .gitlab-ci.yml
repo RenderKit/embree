@@ -76,7 +76,7 @@ continuous-linux-x64-Debug-GCC-ISPC1.13.0-SSE2-TBB-KLOCKWORK:
   image: $DOCKER_REGISTRY/embree/centos:7.4
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:SSE2 tasking:TBB klocwork:ON intensity:0"
   tags:   [docker]
-  only:   [pushes]
+  dependencies: []
 
 continuous-linux-x64-PROTEX:
   image: amd64/openjdk:8
