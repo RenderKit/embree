@@ -106,6 +106,16 @@ namespace embree
         PlueckerHitM<M,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
         return epilog(valid,hit);
       }
+
+      template<typename Epilog>
+      __forceinline bool intersect(Ray& ray,
+                                   const Vec3vf<M>& tri_v0,
+                                   const Vec3vf<M>& tri_v1,
+                                   const Vec3vf<M>& tri_v2,
+                                   const Epilog& epilog) const
+      {
+        return intersect(ray,tri_v0,tri_v1,tri_v2,UVIdentity<M>(),epilog);
+      }
     };
 
     template<int K, typename UVMapper>
@@ -190,6 +200,17 @@ namespace embree
         return epilog(valid,hit);
       }
 
+      template<typename Epilog>
+      __forceinline vbool<K> intersectK(const vbool<K>& valid0,
+                                        RayK<K>& ray,
+                                        const Vec3vf<K>& tri_v0,
+                                        const Vec3vf<K>& tri_v1,
+                                        const Vec3vf<K>& tri_v2,
+                                        const Epilog& epilog) const
+      {
+        return intersectK(valid0,ray,tri_v0,tri_v1,tri_v2,UVIdentity<K>(),epilog);
+      }
+
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
       template<typename UVMapper, typename Epilog>
       __forceinline bool intersect(RayK<K>& ray, size_t k,
@@ -241,6 +262,16 @@ namespace embree
         /* update hit information */
         PlueckerHitM<M,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
         return epilog(valid,hit);
+      }
+
+      template<typename Epilog>
+      __forceinline bool intersect(RayK<K>& ray, size_t k,
+                                   const Vec3vf<M>& tri_v0,
+                                   const Vec3vf<M>& tri_v1,
+                                   const Vec3vf<M>& tri_v2,
+                                   const Epilog& epilog) const
+      {
+        return intersect(ray,k,tri_v0,tri_v1,tri_v2,UVIdentity<M>(),epilog);
       }
     };
   }
