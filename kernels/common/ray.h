@@ -1185,7 +1185,7 @@ namespace embree
   };
 
   template<>
-  __forceinline Ray4 RayStreamAOS::getRayByOffset(const vint4& offset)
+  __forceinline Ray4 RayStreamAOS::getRayByOffset<4>(const vint4& offset)
   {
     Ray4 ray;
 
@@ -1222,7 +1222,7 @@ namespace embree
 
 #if defined(__AVX__)
   template<>
-  __forceinline Ray8 RayStreamAOS::getRayByOffset(const vint8& offset)
+  __forceinline Ray8 RayStreamAOS::getRayByOffset<8>(const vint8& offset)
   {
     Ray8 ray;
 
@@ -1260,7 +1260,7 @@ namespace embree
 
 #if defined(__AVX512F__)
   template<>
-  __forceinline Ray16 RayStreamAOS::getRayByOffset(const vint16& offset)
+  __forceinline Ray16 RayStreamAOS::getRayByOffset<16>(const vint16& offset)
   {
     Ray16 ray;
 
