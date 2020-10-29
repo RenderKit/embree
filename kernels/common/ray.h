@@ -1385,7 +1385,7 @@ namespace embree
   };
 
   template<>
-  __forceinline Ray4 RayStreamAOP::getRayByIndex(const vint4& index)
+  __forceinline Ray4 RayStreamAOP::getRayByIndex<4>(const vint4& index)
   {
     Ray4 ray;
 
@@ -1422,7 +1422,7 @@ namespace embree
 
 #if defined(__AVX__)
   template<>
-  __forceinline Ray8 RayStreamAOP::getRayByIndex(const vint8& index)
+  __forceinline Ray8 RayStreamAOP::getRayByIndex<8>(const vint8& index)
   {
     Ray8 ray;
 
@@ -1460,7 +1460,7 @@ namespace embree
 
 #if defined(__AVX512F__)
   template<>
-  __forceinline Ray16 RayStreamAOP::getRayByIndex(const vint16& index)
+  __forceinline Ray16 RayStreamAOP::getRayByIndex<16>(const vint16& index)
   {
     Ray16 ray;
 
