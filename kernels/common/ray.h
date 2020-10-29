@@ -331,7 +331,7 @@ namespace embree
     u[i] = ray.u; v[i] = ray.v;
     primID[i] = ray.primID; geomID[i] = ray.geomID;
 
-    instance_id_stack::copy_VU<K>(ray.instID, instID, i);
+    instance_id_stack::copy_UV<K>(ray.instID, instID, i);
   }
 
   /* copies a ray packet element into another element*/
