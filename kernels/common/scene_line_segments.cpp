@@ -265,43 +265,10 @@ namespace embree
       }
     }
     return true;
-  }
+  } 
 
-  void LineSegments::interpolate(const RTCInterpolateArguments* const args)
-  {
-    unsigned int primID = args->primID;
-    float u = args->u;
-    RTCBufferType bufferType = args->bufferType;
-    unsigned int bufferSlot = args->bufferSlot;
-    float* P = args->P;
-    float* dPdu = args->dPdu;
-    float* ddPdudu = args->ddPdudu;
-    unsigned int valueCount = args->valueCount;
-      
-    /* calculate base pointer and stride */
-    assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
-           (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
-    const char* src = nullptr;
-    size_t stride = 0;
-    if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-      src    = vertexAttribs[bufferSlot].getPtr();
-      stride = vertexAttribs[bufferSlot].getStride();
-    } else {
-      src    = vertices[bufferSlot].getPtr();
-      stride = vertices[bufferSlot].getStride();
-    }
-    
-    for (unsigned int i=0; i<valueCount; i+=4)
-    {
-      const size_t ofs = i*sizeof(float);
-      const size_t segment = segments[primID];
-      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(int(valueCount));
-      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[(segment+0)*stride+ofs]);
-      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[(segment+1)*stride+ofs]);
-      if (P      ) vfloat4::storeu(valid,P+i,lerp(p0,p1,u));
-      if (dPdu   ) vfloat4::storeu(valid,dPdu+i,p1-p0);
-      if (ddPdudu) vfloat4::storeu(valid,dPdu+i,vfloat4(zero));
-    }
+  void LineSegments::interpolate(const RTCInterpolateArguments* const args) {
+    interpolate_impl<4>(args);
   }
 #endif
 

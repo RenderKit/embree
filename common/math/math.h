@@ -273,6 +273,17 @@ namespace embree
   /*! exchange */
   template<typename T> __forceinline void xchg ( T& a, T& b ) { const T tmp = a; a = b; b = tmp; }
 
+  /*  load/store */
+  template<typename Ty> struct mem;
+ 
+  template<> struct mem<float> {
+    static __forceinline float load (bool mask, const void* ptr) { return mask ? *(float*)ptr : 0.0f; }
+    static __forceinline float loadu(bool mask, const void* ptr) { return mask ? *(float*)ptr : 0.0f; }
+  
+    static __forceinline void store (bool mask, void* ptr, const float v) { if (mask) *(float*)ptr = v; }
+    static __forceinline void storeu(bool mask, void* ptr, const float v) { if (mask) *(float*)ptr = v; }
+  };
+  
   /*! bit reverse operation */
   template<class T>
     __forceinline T bitReverse(const T& vin)

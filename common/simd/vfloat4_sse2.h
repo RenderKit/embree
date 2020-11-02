@@ -238,7 +238,19 @@ namespace embree
     }
   };
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Load/Store
+  ////////////////////////////////////////////////////////////////////////////////
 
+  template<> struct mem<vfloat4>
+  {
+    static __forceinline vfloat4 load (const vboolf4& mask, const void* ptr) { return vfloat4::load (mask,ptr); }
+    static __forceinline vfloat4 loadu(const vboolf4& mask, const void* ptr) { return vfloat4::loadu(mask,ptr); }
+    
+    static __forceinline void store (const vboolf4& mask, void* ptr, const vfloat4& v) { vfloat4::store (mask,ptr,v); }
+    static __forceinline void storeu(const vboolf4& mask, void* ptr, const vfloat4& v) { vfloat4::storeu(mask,ptr,v); }
+  };
+    
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
