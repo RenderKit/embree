@@ -175,63 +175,8 @@ namespace embree
     return true;
   }
 
-  void QuadMesh::interpolate(const RTCInterpolateArguments* const args)
-  {
-    unsigned int primID = args->primID;
-    float u = args->u;
-    float v = args->v;
-    RTCBufferType bufferType = args->bufferType;
-    unsigned int bufferSlot = args->bufferSlot;
-    float* P = args->P;
-    float* dPdu = args->dPdu;
-    float* dPdv = args->dPdv;
-    float* ddPdudu = args->ddPdudu;
-    float* ddPdvdv = args->ddPdvdv;
-    float* ddPdudv = args->ddPdudv;
-    unsigned int valueCount = args->valueCount;
-
-    /* calculate base pointer and stride */
-    assert((bufferType == RTC_BUFFER_TYPE_VERTEX && bufferSlot < numTimeSteps) ||
-           (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE && bufferSlot <= vertexAttribs.size()));
-    const char* src = nullptr; 
-    size_t stride = 0;
-    if (bufferType == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE) {
-      src    = vertexAttribs[bufferSlot].getPtr();
-      stride = vertexAttribs[bufferSlot].getStride();
-    } else {
-      src    = vertices[bufferSlot].getPtr();
-      stride = vertices[bufferSlot].getStride();
-    }
-
-    for (unsigned int i=0; i<valueCount; i+=4)
-    {
-      const vbool4 valid = vint4((int)i)+vint4(step) < vint4(int(valueCount));
-      const size_t ofs = i*sizeof(float);
-      const Quad& tri = quad(primID);
-      const vfloat4 p0 = vfloat4::loadu(valid,(float*)&src[tri.v[0]*stride+ofs]);
-      const vfloat4 p1 = vfloat4::loadu(valid,(float*)&src[tri.v[1]*stride+ofs]);
-      const vfloat4 p2 = vfloat4::loadu(valid,(float*)&src[tri.v[2]*stride+ofs]);
-      const vfloat4 p3 = vfloat4::loadu(valid,(float*)&src[tri.v[3]*stride+ofs]);      
-      const vbool4 left = u+v <= 1.0f;
-      const vfloat4 Q0 = select(left,p0,p2);
-      const vfloat4 Q1 = select(left,p1,p3);
-      const vfloat4 Q2 = select(left,p3,p1);
-      const vfloat4 U  = select(left,u,vfloat4(1.0f)-u);
-      const vfloat4 V  = select(left,v,vfloat4(1.0f)-v);
-      const vfloat4 W  = 1.0f-U-V;
-      if (P) {
-        vfloat4::storeu(valid,P+i,madd(W,Q0,madd(U,Q1,V*Q2)));
-      }
-      if (dPdu) { 
-        assert(dPdu); vfloat4::storeu(valid,dPdu+i,select(left,Q1-Q0,Q0-Q1));
-        assert(dPdv); vfloat4::storeu(valid,dPdv+i,select(left,Q2-Q0,Q0-Q2));
-      }
-      if (ddPdudu) { 
-        assert(ddPdudu); vfloat4::storeu(valid,ddPdudu+i,vfloat4(zero));
-        assert(ddPdvdv); vfloat4::storeu(valid,ddPdvdv+i,vfloat4(zero));
-        assert(ddPdudv); vfloat4::storeu(valid,ddPdudv+i,vfloat4(zero));
-      }
-    }
+  void QuadMesh::interpolate(const RTCInterpolateArguments* const args) {
+    interpolate_impl<4>(args);
   }
   
 #endif

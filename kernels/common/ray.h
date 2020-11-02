@@ -331,7 +331,7 @@ namespace embree
     u[i] = ray.u; v[i] = ray.v;
     primID[i] = ray.primID; geomID[i] = ray.geomID;
 
-    instance_id_stack::copy_VU<K>(ray.instID, instID, i);
+    instance_id_stack::copy_UV<K>(ray.instID, instID, i);
   }
 
   /* copies a ray packet element into another element*/
@@ -1185,7 +1185,7 @@ namespace embree
   };
 
   template<>
-  __forceinline Ray4 RayStreamAOS::getRayByOffset(const vint4& offset)
+  __forceinline Ray4 RayStreamAOS::getRayByOffset<4>(const vint4& offset)
   {
     Ray4 ray;
 
@@ -1222,7 +1222,7 @@ namespace embree
 
 #if defined(__AVX__)
   template<>
-  __forceinline Ray8 RayStreamAOS::getRayByOffset(const vint8& offset)
+  __forceinline Ray8 RayStreamAOS::getRayByOffset<8>(const vint8& offset)
   {
     Ray8 ray;
 
@@ -1260,7 +1260,7 @@ namespace embree
 
 #if defined(__AVX512F__)
   template<>
-  __forceinline Ray16 RayStreamAOS::getRayByOffset(const vint16& offset)
+  __forceinline Ray16 RayStreamAOS::getRayByOffset<16>(const vint16& offset)
   {
     Ray16 ray;
 
@@ -1385,7 +1385,7 @@ namespace embree
   };
 
   template<>
-  __forceinline Ray4 RayStreamAOP::getRayByIndex(const vint4& index)
+  __forceinline Ray4 RayStreamAOP::getRayByIndex<4>(const vint4& index)
   {
     Ray4 ray;
 
@@ -1422,7 +1422,7 @@ namespace embree
 
 #if defined(__AVX__)
   template<>
-  __forceinline Ray8 RayStreamAOP::getRayByIndex(const vint8& index)
+  __forceinline Ray8 RayStreamAOP::getRayByIndex<8>(const vint8& index)
   {
     Ray8 ray;
 
@@ -1460,7 +1460,7 @@ namespace embree
 
 #if defined(__AVX512F__)
   template<>
-  __forceinline Ray16 RayStreamAOP::getRayByIndex(const vint16& index)
+  __forceinline Ray16 RayStreamAOP::getRayByIndex<16>(const vint16& index)
   {
     Ray16 ray;
 
