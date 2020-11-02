@@ -283,6 +283,7 @@ namespace embree
       }
     };
 
+  template<typename CurveGeometry>
   __forceinline CatmullRomCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const CatmullRomCurveT<Vec3ff>& curve)
   {
     return CatmullRomCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0),

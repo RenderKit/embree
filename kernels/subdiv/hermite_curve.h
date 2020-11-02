@@ -29,6 +29,7 @@ namespace embree
       }
     };
 
+  template<typename CurveGeometry>
   __forceinline HermiteCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const HermiteCurveT<Vec3ff>& curve) {
     return HermiteCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,BezierCurveT<Vec3ff>(curve)));
   }
