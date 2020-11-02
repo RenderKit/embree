@@ -1,0 +1,19 @@
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+
+struct TutorialData
+{
+  RTCScene scene;
+};
+
+inline void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->scene = NULL;
+}
+
+inline void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  rtcReleaseScene (This->scene); This->scene = NULL;
+}
