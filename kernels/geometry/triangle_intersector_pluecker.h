@@ -31,9 +31,13 @@ namespace embree
         const vfloat<M> rcpUVW = select(invalid,vfloat<M>(0.0f),rcp(UVW));
         vu = U * rcpUVW;
         vv = V * rcpUVW;
-        mapUV(vu,vv);
+        mapUV(vu,vv,vNg);
       }
-      
+
+      __forceinline Vec2vf<M> uv() const { return Vec2vf<M>(vu,vv); }
+      __forceinline vfloat<M> t () const { return vt; }
+      __forceinline Vec3vf<M> Ng() const { return vNg; }
+    
       __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
@@ -51,7 +55,7 @@ namespace embree
       Vec3vf<M> vNg;
     };
 
-    template<int M>
+    template<int M, bool early_out = true>
     struct PlueckerIntersector1
     {
       __forceinline PlueckerIntersector1() {}
@@ -59,13 +63,16 @@ namespace embree
       __forceinline PlueckerIntersector1(const Ray& ray, const void* ptr) {}
 
       template<typename UVMapper, typename Epilog>
-      __forceinline bool intersect(Ray& ray,
+      __forceinline bool intersect(const vbool<M>& valid0,
+                                   Ray& ray,
                                    const Vec3vf<M>& tri_v0,
                                    const Vec3vf<M>& tri_v1,
                                    const Vec3vf<M>& tri_v2,
                                    const UVMapper& mapUV,
                                    const Epilog& epilog) const
       {
+        vbool<M> valid = valid0;
+        
         /* calculate vertices relative to ray origin */
         const Vec3vf<M> O = Vec3vf<M>((Vec3fa)ray.org);
 	const Vec3vf<M> D = Vec3vf<M>((Vec3fa)ray.dir);
@@ -85,11 +92,11 @@ namespace embree
         const vfloat<M> UVW = U+V+W;
         const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
-        vbool<M> valid = max(U,V,W) <= eps;
+        valid &= max(U,V,W) <= eps;
 #else
-        vbool<M> valid = (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
+        valid &= (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
 #endif
-        if (unlikely(none(valid))) return false;
+        if (unlikely(early_out && none(valid))) return false;
 
         /* calculate geometry normal and denominator */
         const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
@@ -100,11 +107,22 @@ namespace embree
         const vfloat<M> t = rcp(den)*T;
         valid &= vfloat<M>(ray.tnear()) <= t & t <= vfloat<M>(ray.tfar);
         valid &= den != vfloat<M>(zero);
-        if (unlikely(none(valid))) return false;
+        if (unlikely(early_out && none(valid))) return false;
 
         /* update hit information */
         PlueckerHitM<M,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
         return epilog(valid,hit);
+      }
+
+      template<typename UVMapper, typename Epilog>
+      __forceinline bool intersect(Ray& ray,
+                                   const Vec3vf<M>& tri_v0,
+                                   const Vec3vf<M>& tri_v1,
+                                   const Vec3vf<M>& tri_v2,
+                                   const UVMapper& mapUV,
+                                   const Epilog& epilog) const
+      {
+        return intersect(true,ray,tri_v0,tri_v1,tri_v2,mapUV,epilog);
       }
 
       template<typename Epilog>
@@ -115,6 +133,17 @@ namespace embree
                                    const Epilog& epilog) const
       {
         return intersect(ray,tri_v0,tri_v1,tri_v2,UVIdentity<M>(),epilog);
+      }
+
+      template<typename Epilog>
+      __forceinline bool intersect(const vbool<M>& valid0,
+                                   Ray& ray,
+                                   const Vec3vf<M>& tri_v0,
+                                   const Vec3vf<M>& tri_v1,
+                                   const Vec3vf<M>& tri_v2,
+                                   const Epilog& epilog) const
+      {
+        return intersect(valid0,ray,tri_v0,tri_v1,tri_v2,UVIdentity<M>(),epilog);
       }
     };
 
@@ -130,8 +159,9 @@ namespace embree
         const vfloat<K> rcpUVW = select(invalid,vfloat<K>(0.0f),rcp(UVW));
         vfloat<K> u = U * rcpUVW;
         vfloat<K> v = V * rcpUVW;
-        mapUV(u,v);
-        return std::make_tuple(u,v,t,Ng);
+        Vec3vf<K> vNg = Ng;
+        mapUV(u,v,vNg);
+        return std::make_tuple(u,v,t,vNg);
       }
       
     private:

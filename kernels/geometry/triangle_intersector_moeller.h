@@ -21,7 +21,7 @@ namespace embree
     template<int M, typename UVMapper>
     struct MoellerTrumboreHitM
     {
-      __forceinline MoellerTrumboreHitM() {}
+      __forceinline MoellerTrumboreHitM(const UVMapper& mapUV) : mapUV(mapUV) {}
 
       __forceinline MoellerTrumboreHitM(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& T, const vfloat<M>& absDen, const Vec3vf<M>& Ng, const UVMapper& mapUV)
         : U(U), V(V), T(T), absDen(absDen), mapUV(mapUV), valid(valid), vNg(Ng) {}
@@ -32,9 +32,13 @@ namespace embree
         vt = T * rcpAbsDen;
         vu = U * rcpAbsDen;
         vv = V * rcpAbsDen;
-        mapUV(vu,vv);
+        mapUV(vu,vv,vNg);
       }
 
+      __forceinline Vec2vf<M> uv() const { return Vec2vf<M>(vu,vv); }
+      __forceinline vfloat<M> t () const { return vt; }
+      __forceinline Vec3vf<M> Ng() const { return vNg; }
+     
       __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
@@ -54,7 +58,7 @@ namespace embree
       Vec3vf<M> vNg;
     };
     
-    template<int M>
+    template<int M, bool early_out = true>
     struct MoellerTrumboreIntersector1
     {
       __forceinline MoellerTrumboreIntersector1() {}
@@ -92,18 +96,30 @@ namespace embree
 #else
         valid &= (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #endif
-        if (likely(none(valid))) return false;
+        if (likely(early_out && none(valid))) return false;
 
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vf<M>(tri_Ng),C) ^ sgnDen;
         valid &= (absDen*vfloat<M>(ray.tnear()) < T) & (T <= absDen*vfloat<M>(ray.tfar));
-        if (likely(none(valid))) return false;
-   
-        
+        if (likely(early_out && none(valid))) return false;
+           
         /* update hit information */
         new (&hit) MoellerTrumboreHitM<M,UVMapper>(valid,U,V,T,absDen,tri_Ng,mapUV);
 
         return true;
+      }
+
+      template<typename UVMapper>
+      __forceinline bool intersectEdge(const vbool<M>& valid,
+                                       Ray& ray,
+                                       const Vec3vf<M>& tri_v0,
+                                       const Vec3vf<M>& tri_e1,
+                                       const Vec3vf<M>& tri_e2,
+                                       const UVMapper& mapUV,
+                                       MoellerTrumboreHitM<M,UVMapper>& hit) const
+      {
+        const Vec3<vfloat<M>> tri_Ng = cross(tri_e2,tri_e1);
+        return intersect(valid,ray,tri_v0,tri_e1,tri_e2,tri_Ng,mapUV,hit);
       }
 
       template<typename UVMapper>
@@ -154,7 +170,7 @@ namespace embree
                                        const UVMapper& mapUV,
                                        const Epilog& epilog) const
       {
-        MoellerTrumboreHitM<M,UVMapper> hit;
+        MoellerTrumboreHitM<M,UVMapper> hit(mapUV);
         if (likely(intersectEdge(ray,v0,e1,e2,mapUV,hit))) return epilog(hit.valid,hit);
         return false;
       }
@@ -167,7 +183,7 @@ namespace embree
                                      const UVMapper& mapUV,
                                      const Epilog& epilog) const
       {
-        MoellerTrumboreHitM<M,UVMapper> hit;
+        MoellerTrumboreHitM<M,UVMapper> hit(mapUV);
         if (likely(intersect(ray,v0,v1,v2,mapUV,hit))) return epilog(hit.valid,hit);
         return false;
       }
@@ -179,8 +195,9 @@ namespace embree
                                      const Vec3vf<M>& v2,
                                      const Epilog& epilog) const
       {
-        MoellerTrumboreHitM<M,UVIdentity<M>> hit;
-        if (likely(intersect(ray,v0,v1,v2,UVIdentity<M>(),hit))) return epilog(hit.valid,hit);
+        auto mapUV = UVIdentity<M>();
+        MoellerTrumboreHitM<M,UVIdentity<M>> hit(mapUV);
+        if (likely(intersect(ray,v0,v1,v2,mapUV,hit))) return epilog(hit.valid,hit);
         return false;
       }
 
@@ -193,7 +210,7 @@ namespace embree
                                    const UVMapper& mapUV,
                                    const Epilog& epilog) const
       {
-        MoellerTrumboreHitM<M,UVMapper> hit;
+        MoellerTrumboreHitM<M,UVMapper> hit(mapUV);
         if (likely(intersect(valid,ray,v0,v1,v2,mapUV,hit))) return epilog(hit.valid,hit);
         return false;
       }
@@ -211,8 +228,9 @@ namespace embree
         const vfloat<K> t = T * rcpAbsDen;
         vfloat<K> u = U * rcpAbsDen;
         vfloat<K> v = V * rcpAbsDen;
-        mapUV(u,v);
-        return std::make_tuple(u,v,t,Ng);
+        Vec3vf<K> vNg = Ng;
+        mapUV(u,v,vNg);
+        return std::make_tuple(u,v,t,vNg);
       }
       
     private:
@@ -402,7 +420,7 @@ namespace embree
                                        const UVMapper& mapUV,
                                        const Epilog& epilog) const
       {
-        MoellerTrumboreHitM<M,UVMapper> hit;
+        MoellerTrumboreHitM<M,UVMapper> hit(mapUV);
         if (likely(intersectEdge(ray,k,tri_v0,tri_e1,tri_e2,mapUV,hit))) return epilog(hit.valid,hit);
         return false;
       }
@@ -417,7 +435,7 @@ namespace embree
                                        const UVMapper& mapUV,
                                        const Epilog& epilog) const
       {
-        MoellerTrumboreHitM<M,UVMapper> hit;
+        MoellerTrumboreHitM<M,UVMapper> hit(mapUV);
         if (likely(intersectEdge(ray,k,time_range,tri_v0,tri_e1,tri_e2,mapUV,hit))) return epilog(hit.valid,hit);
         return false;
       }

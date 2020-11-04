@@ -23,6 +23,10 @@ namespace embree
         __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
         __forceinline float t  (const size_t i) const { return vt[i]; }
         __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
+
+        __forceinline Vec2vf<M> uv() const { return Vec2vf<M>(vu,vv); }
+        __forceinline vfloat<M> t () const { return vt; }
+        __forceinline Vec3vf<M> Ng() const { return vNg; }
         
       public:
         vfloat<M> vu;
@@ -36,7 +40,7 @@ namespace embree
       {
         typedef CurvePrecalculations1 Precalculations;
         
-        template<typename Epilog>
+        template<typename Ray, typename Epilog>
         static __forceinline bool intersect(const vbool<M>& valid_i,
                                             Ray& ray,
                                             IntersectContext* context,

@@ -126,16 +126,17 @@ namespace embree
                                    const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                    const vuint<M>& geomID, const vuint<M>& primID) const
       {
-        MoellerTrumboreHitM<M,UVIdentity<M>> hit;
+        UVIdentity<M> mapUV;
+        MoellerTrumboreHitM<M,UVIdentity<M>> hit(mapUV);
         MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
         Intersect1EpilogM<M,M,filter> epilog(ray,context,geomID,primID);
 
         /* intersect first triangle */
-        if (intersector.intersect(ray,v0,v1,v3,UVIdentity<M>(),hit)) 
+        if (intersector.intersect(ray,v0,v1,v3,mapUV,hit)) 
           epilog(hit.valid,hit);
 
         /* intersect second triangle */
-        if (intersector.intersect(ray,v2,v3,v1,UVIdentity<M>(),hit)) 
+        if (intersector.intersect(ray,v2,v3,v1,mapUV,hit)) 
         {
           hit.U = hit.absDen - hit.U;
           hit.V = hit.absDen - hit.V;
@@ -147,19 +148,20 @@ namespace embree
                                   const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                   const vuint<M>& geomID, const vuint<M>& primID) const
       {
-        MoellerTrumboreHitM<M,UVIdentity<M>> hit;
+        UVIdentity<M> mapUV;
+        MoellerTrumboreHitM<M,UVIdentity<M>> hit(mapUV);
         MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
         Occluded1EpilogM<M,M,filter> epilog(ray,context,geomID,primID);
 
         /* intersect first triangle */
-        if (intersector.intersect(ray,v0,v1,v3,UVIdentity<M>(),hit)) 
+        if (intersector.intersect(ray,v0,v1,v3,mapUV,hit)) 
         {
           if (epilog(hit.valid,hit))
             return true;
         }
 
         /* intersect second triangle */
-        if (intersector.intersect(ray,v2,v3,v1,UVIdentity<M>(),hit)) 
+        if (intersector.intersect(ray,v2,v3,v1,mapUV,hit)) 
         {
           hit.U = hit.absDen - hit.U;
           hit.V = hit.absDen - hit.V;
@@ -199,9 +201,10 @@ namespace embree
 #endif
         const vbool16 flags(0xf0f0);
 
-        MoellerTrumboreHitM<16,UVIdentity<16>> hit;
+        UVIdentity<16> mapUV;
+        MoellerTrumboreHitM<16,UVIdentity<16>> hit(mapUV);
         MoellerTrumboreIntersector1<16> intersector(ray,nullptr);
-        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,UVIdentity<16>(),hit))) 
+        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,mapUV,hit))) 
         {
           vfloat16 U = hit.U, V = hit.V, absDen = hit.absDen;
 #if !defined(EMBREE_BACKFACE_CULLING)
@@ -254,10 +257,11 @@ namespace embree
         const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
         const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
 #endif
-        MoellerTrumboreHitM<8,UVIdentity<8>> hit;
+        UVIdentity<8> mapUV;
+        MoellerTrumboreHitM<8,UVIdentity<8>> hit(mapUV);
         MoellerTrumboreIntersector1<8> intersector(ray,nullptr);
         const vbool8 flags(0,0,0,0,1,1,1,1);
-        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,UVIdentity<8>(),hit)))
+        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,mapUV,hit)))
         {
           vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
 

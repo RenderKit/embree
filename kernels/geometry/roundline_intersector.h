@@ -81,7 +81,11 @@ namespace embree
         __forceinline Vec2f uv (const size_t i) const { return Vec2f(vu[i],vv[i]); }
         __forceinline float t  (const size_t i) const { return vt[i]; }
         __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
-	
+
+        __forceinline Vec2vf<M> uv() const { return Vec2vf<M>(vu,vv); }
+        __forceinline vfloat<M> t () const { return vt; }
+        __forceinline Vec3vf<M> Ng() const { return vNg; }
+       
       public:
         vfloat<M> vu;
         vfloat<M> vv;
@@ -646,14 +650,15 @@ namespace embree
       struct RoundLinearCurveIntersector1
       {
         typedef CurvePrecalculations1 Precalculations;
-        
+
+        template<typename Ray>
         struct ray_tfar {
           Ray& ray;
           __forceinline ray_tfar(Ray& ray) : ray(ray) {}
           __forceinline vfloat<M> operator() () const { return ray.tfar; };
         };
-
-        template<typename Epilog>
+	
+        template<typename Ray, typename Epilog>
         static __forceinline bool intersect(const vbool<M>& valid_i,
                                             Ray& ray,
                                             IntersectContext* context,
@@ -670,7 +675,7 @@ namespace embree
           const Vec4vf<M> v1 = enlargeRadiusToMinWidth<M>(context,geom,ray_org,v1i);
           const Vec4vf<M> vL = enlargeRadiusToMinWidth<M>(context,geom,ray_org,vLi);
           const Vec4vf<M> vR = enlargeRadiusToMinWidth<M>(context,geom,ray_org,vRi);
-          return  __roundline_internal::intersectConeSphere<M>(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar(ray),v0,v1,vL,vR,epilog);
+          return  __roundline_internal::intersectConeSphere<M>(valid_i,ray_org,ray_dir,ray_tnear,ray_tfar<Ray>(ray),v0,v1,vL,vR,epilog);
         }
       };
     

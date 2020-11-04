@@ -20,7 +20,7 @@ namespace embree
       __forceinline MapUV0(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
         : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
       
-      __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const {
+      __forceinline void operator() (vfloat<K>& u, vfloat<K>& v, Vec3vf<K>& Ng) const {
         const vfloat<K> uv00(grid_uv[ofs00]);
         const vfloat<K> uv01(grid_uv[ofs01]);
         const vfloat<K> uv10(grid_uv[ofs10]);
@@ -42,7 +42,7 @@ namespace embree
       __forceinline MapUV1(const float* const grid_uv, size_t ofs00, size_t ofs01, size_t ofs10, size_t ofs11)
         : grid_uv(grid_uv), ofs00(ofs00), ofs01(ofs01), ofs10(ofs10), ofs11(ofs11) {}
       
-      __forceinline void operator() (vfloat<K>& u, vfloat<K>& v) const {
+      __forceinline void operator() (vfloat<K>& u, vfloat<K>& v, Vec3vf<K>& Ng) const {
         const vfloat<K> uv00(grid_uv[ofs00]);
         const vfloat<K> uv01(grid_uv[ofs01]);
         const vfloat<K> uv10(grid_uv[ofs10]);

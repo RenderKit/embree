@@ -13,7 +13,7 @@ namespace embree
   {
     template<int M>
     struct UVIdentity {
-      __forceinline void operator() (vfloat<M>& u, vfloat<M>& v) const {}
+      __forceinline void operator() (vfloat<M>& u, vfloat<M>& v, Vec3vf<M>& Ng) const {}
     };
 
 
@@ -646,8 +646,8 @@ namespace embree
 
         /* ray masking test */
         Scene* scene MAYBE_UNUSED = context->scene;
-        const unsigned int geomID = geomIDs[i];
-        const unsigned int primID = primIDs[i];
+        const unsigned int geomID MAYBE_UNUSED = geomIDs[i];
+        const unsigned int primID MAYBE_UNUSED = primIDs[i];
         Geometry* geometry MAYBE_UNUSED = scene->get(geomID);
 #if defined(EMBREE_RAY_MASK)
         valid &= (geometry->mask & ray.mask) != 0;
@@ -732,7 +732,6 @@ namespace embree
         vuint<K>::store(valid,&ray.primID,primID);
         vuint<K>::store(valid,&ray.geomID,geomID);
         instance_id_stack::copy_UV<K>(context->user->instID, ray.instID, valid);
-
         return valid;
       }
     };
