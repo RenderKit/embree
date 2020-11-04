@@ -297,7 +297,7 @@ namespace embree
             if (object_split_sah < 0.50f*leaf_sah)
               return object_split;
 
-            /* do temporal splits only if the the time range is big enough */
+            /* do temporal splits only if the time range is big enough */
             if (set.time_range.size() > 1.01f/float(set.max_num_time_segments))
             {
               const Split temporal_split = heuristicTemporalSplit.find(set,cfg.logBlockSize);

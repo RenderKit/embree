@@ -127,8 +127,8 @@ namespace embree
 	  {
             /* standard spatial split SAH BVH builder */
 	    pinfo = mesh ?
-	      createPrimRefArray(mesh,geomID_,/*numSplitPrimitives,*/prims0,bvh->scene->progressInterface) :
-	      createPrimRefArray(scene,Mesh::geom_type,false,/*numSplitPrimitives,*/prims0,bvh->scene->progressInterface);
+	      createPrimRefArray(mesh,geomID_,numSplitPrimitives,prims0,bvh->scene->progressInterface) :
+	      createPrimRefArray(scene,Mesh::geom_type,false,numSplitPrimitives,prims0,bvh->scene->progressInterface);
 	
 	    Splitter splitter(scene);
 
