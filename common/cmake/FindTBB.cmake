@@ -6,8 +6,8 @@
 #
 # The user may specify a version and lists of required and optional components:
 #
-# find_package(TBB 2017.0 EXACT REQUIRED 
-#              tbb tbbmalloc 
+# find_package(TBB 2017.0 EXACT REQUIRED
+#              tbb tbbmalloc
 #              OPTIONAL_COMPONENTS tbbmalloc_proxy
 #              QUIET)
 #
@@ -27,7 +27,7 @@
 # component targets TBB::<COMPONENT>, e.g. TBB::tbbmalloc.
 #
 # The targets will attempt to link to release versions of TBB in release mode,
-# and debug versions in debug mode. 
+# and debug versions in debug mode.
 #
 # In addition to the targets, the script defines:
 #
@@ -38,14 +38,6 @@
 
 # We use INTERFACE libraries, which are only supported in 3.x
 cmake_minimum_required(VERSION 3.1)
-
-
-# CMake before 3.12 used to ignore <PKGNAME>_ROOT, but we always use this 
-# variable. Avoid warning by setting the policy to new behaviour, which means
-# the variables are used.
-if(POLICY CMP0074)
-  cmake_policy(SET CMP0074 NEW)
-endif()
 
 # These two are used to automatically find the root and include directories.
 set(_TBB_INCLUDE_SUBDIR "include")
@@ -144,7 +136,9 @@ endmacro()
 
 macro(rk_tbb_check_version)
   # Extract the version we found in our root.
-  if (EXISTS "${TBB_INCLUDE_DIR}/tbb/tbb_stddef.h")
+  if(EXISTS "${TBB_INCLUDE_DIR}/oneapi/tbb/version.h")
+    set(_TBB_VERSION_HEADER "oneapi/tbb/version.h")
+  elseif(EXISTS "${TBB_INCLUDE_DIR}/tbb/tbb_stddef.h")
     set(_TBB_VERSION_HEADER "tbb/tbb_stddef.h")
   elseif(EXISTS "${TBB_INCLUDE_DIR}/tbb/version.h")
     set(_TBB_VERSION_HEADER "tbb/version.h")
@@ -219,7 +213,7 @@ macro(rk_tbb_reuse_existing_target_components)
     set(TBB_FOUND TRUE)
     set(TBB_INCLUDE_DIRS "${TBB_INCLUDE_DIR}")
     return()
-  elseif ((TARGET TBB) OR (NOT _TBB_AVAILABLE_COMPONENTS STREQUAL "")) 
+  elseif ((TARGET TBB) OR (NOT _TBB_AVAILABLE_COMPONENTS STREQUAL ""))
     rk_tbb_error("Ignoring existing TBB targets because required components are missing: ${_TBB_MISSING_COMPONENTS}")
   endif()
 endmacro()
@@ -323,7 +317,7 @@ function(rk_tbb_find_library COMPONENT_NAME BUILD_CONFIG)
     set(DLL_NAME "${LIB_NAME}.dll")
     find_path(${BIN_DIR_VAR}
       NAMES "${DLL_NAME}"
-      PATHS 
+      PATHS
         ${TBB_ROOT}/bin/${TBB_ARCH}/${TBB_VCVER}
         ${TBB_ROOT}/bin
         ${TBB_ROOT}/../redist/${TBB_ARCH}/tbb/${TBB_VCVER}
