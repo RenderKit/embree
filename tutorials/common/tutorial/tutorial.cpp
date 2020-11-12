@@ -1013,7 +1013,7 @@ namespace embree
   {
     /* update camera */
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
-    ISPCCamera ispccamera = camera.getISPCCamera(width,height,true);
+    ISPCCamera ispccamera = camera.getISPCCamera(width,height);
      if (print_camera)
       std::cout << camera.str() << std::endl;
 
@@ -1027,6 +1027,8 @@ namespace embree
     avg_mrayps.add(mrayps);
 
     /* draw pixels to screen */
+    glRasterPos2i(-1,1);
+    glPixelZoom(1.0f,-1.0f);
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
 
     ImGui_ImplGlfwGL2_NewFrame();
