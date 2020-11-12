@@ -14,7 +14,7 @@ namespace embree
   namespace isa
   {
     /*! BVH regular node traversal for single rays. */
-    template<int N, int Nx, int types>
+    template<int N, int types>
     class BVHNNodeTraverser1Hit;
 
 #if defined(__AVX512VL__) // SKX
@@ -45,8 +45,8 @@ namespace embree
 #endif
 
     /* Specialization for BVH4. */
-    template<int Nx, int types>
-    class BVHNNodeTraverser1Hit<4, Nx, types>
+    template<int types>
+    class BVHNNodeTraverser1Hit<4, types>
     {
       typedef BVH4 BVH;
       typedef BVH4::NodeRef NodeRef;
@@ -57,7 +57,7 @@ namespace embree
       /* Traverses a node with at least one hit child. Optimized for finding the closest hit (intersection). */
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    size_t mask,
-                                                   const vfloat<Nx>& tNear,
+                                                   const vfloat4& tNear,
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
@@ -142,7 +142,7 @@ namespace embree
       /* Traverses a node with at least one hit child. Optimized for finding any hit (occlusion). */
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t mask,
-                                               const vfloat<Nx>& tNear,
+                                               const vfloat4& tNear,
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {
@@ -172,8 +172,8 @@ namespace embree
     };
 
     /* Specialization for BVH8. */
-    template<int Nx, int types>
-    class BVHNNodeTraverser1Hit<8, Nx, types>
+    template<int types>
+    class BVHNNodeTraverser1Hit<8, types>
     {
       typedef BVH8 BVH;
       typedef BVH8::NodeRef NodeRef;
@@ -310,7 +310,7 @@ namespace embree
     public:
       static __forceinline void traverseClosestHit(NodeRef& cur,
                                                    size_t mask,
-                                                   const vfloat<Nx>& tNear,
+                                                   const vfloat8& tNear,
                                                    StackItemT<NodeRef>*& stackPtr,
                                                    StackItemT<NodeRef>* stackEnd)
       {
@@ -434,7 +434,7 @@ namespace embree
 
       static __forceinline void traverseAnyHit(NodeRef& cur,
                                                size_t mask,
-                                               const vfloat<Nx>& tNear,
+                                               const vfloat8& tNear,
                                                NodeRef*& stackPtr,
                                                NodeRef* stackEnd)
       {

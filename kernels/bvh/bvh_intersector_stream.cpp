@@ -29,8 +29,8 @@ namespace embree
       (int)1 << 24, (int)1 << 25, (int)1 << 26, (int)1 << 27, (int)1 << 28, (int)1 << 29, (int)1 << 30, (int)1 << 31
     };
 
-    template<int N, int Nx, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
+    template<int N, int types, bool robust, typename PrimitiveIntersector>
+    __forceinline void BVHNIntersectorStream<N, types, robust, PrimitiveIntersector>::intersect(Accel::Intersectors* __restrict__ This,
                                                                                                     RayHitN** inputPackets,
                                                                                                     size_t numOctantRays,
                                                                                                     IntersectContext* context)
@@ -45,9 +45,9 @@ namespace embree
       intersectCoherent(This, (RayHitK<VSIZEL>**)inputPackets, numOctantRays, context);
     }
 
-    template<int N, int Nx, int types, bool robust, typename PrimitiveIntersector>
+    template<int N, int types, bool robust, typename PrimitiveIntersector>
     template<int K>
-    __forceinline void BVHNIntersectorStream<N, Nx, types, robust, PrimitiveIntersector>::intersectCoherent(Accel::Intersectors* __restrict__ This,
+    __forceinline void BVHNIntersectorStream<N, types, robust, PrimitiveIntersector>::intersectCoherent(Accel::Intersectors* __restrict__ This,
                                                                                                             RayHitK<K>** inputPackets,
                                                                                                             size_t numOctantRays,
                                                                                                             IntersectContext* context)
@@ -105,11 +105,11 @@ namespace embree
           __aligned(64) size_t maskK[N];
           for (size_t i = 0; i < N; i++)
             maskK[i] = m_trav_active;
-          vfloat<Nx> dist;
+          vfloat<N> dist;
           const size_t m_node_hit = traverseCoherentStream(m_trav_active, packets, node, frustum, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
 
-          BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseClosestHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
+          BVHNNodeTraverserStreamHitCoherent<N, types>::traverseClosestHit(cur, m_trav_active, vbool<N>((int)m_node_hit), dist, (size_t*)maskK, stackPtr);
           assert(m_trav_active);
         }
 
@@ -153,8 +153,8 @@ namespace embree
       } // traversal + intersection
     }
 
-    template<int N, int Nx, int types, bool robust, typename PrimitiveIntersector>
-    __forceinline void BVHNIntersectorStream<N, Nx, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This,
+    template<int N, int types, bool robust, typename PrimitiveIntersector>
+    __forceinline void BVHNIntersectorStream<N, types, robust, PrimitiveIntersector>::occluded(Accel::Intersectors* __restrict__ This,
                                                                                                    RayN** inputPackets,
                                                                                                    size_t numOctantRays,
                                                                                                    IntersectContext* context)
@@ -170,9 +170,9 @@ namespace embree
         occludedIncoherent(This, (RayK<VSIZEX>**)inputPackets, numOctantRays, context);
     }
 
-    template<int N, int Nx, int types, bool robust, typename PrimitiveIntersector>
+    template<int N, int types, bool robust, typename PrimitiveIntersector>
     template<int K>
-    __noinline void BVHNIntersectorStream<N, Nx, types, robust, PrimitiveIntersector>::occludedCoherent(Accel::Intersectors* __restrict__ This,
+    __noinline void BVHNIntersectorStream<N, types, robust, PrimitiveIntersector>::occludedCoherent(Accel::Intersectors* __restrict__ This,
                                                                                                         RayK<K>** inputPackets,
                                                                                                         size_t numOctantRays,
                                                                                                         IntersectContext* context)
@@ -235,11 +235,11 @@ namespace embree
           for (size_t i = 0; i < N; i++)
             maskK[i] = m_trav_active;
 
-          vfloat<Nx> dist;
+          vfloat<N> dist;
           const size_t m_node_hit = traverseCoherentStream(m_trav_active, packets, node, frustum, maskK, dist);
           if (unlikely(m_node_hit == 0)) goto pop;
 
-          BVHNNodeTraverserStreamHitCoherent<N, Nx, types>::traverseAnyHit(cur, m_trav_active, vbool<Nx>((int)m_node_hit), (size_t*)maskK, stackPtr);
+          BVHNNodeTraverserStreamHitCoherent<N, types>::traverseAnyHit(cur, m_trav_active, vbool<N>((int)m_node_hit), (size_t*)maskK, stackPtr);
           assert(m_trav_active);
         }
 
@@ -283,9 +283,9 @@ namespace embree
     }
 
 
-    template<int N, int Nx, int types, bool robust, typename PrimitiveIntersector>
+    template<int N, int types, bool robust, typename PrimitiveIntersector>
     template<int K>
-    __forceinline void BVHNIntersectorStream<N, Nx, types, robust, PrimitiveIntersector>::occludedIncoherent(Accel::Intersectors* __restrict__ This,
+    __forceinline void BVHNIntersectorStream<N, types, robust, PrimitiveIntersector>::occludedIncoherent(Accel::Intersectors* __restrict__ This,
                                                                                                              RayK<K>** inputPackets,
                                                                                                              size_t numOctantRays,
                                                                                                              IntersectContext* context)
@@ -338,13 +338,13 @@ namespace embree
           if (unlikely(cur.isLeaf())) break;
           const AABBNode* __restrict__ const node = cur.getAABBNode();
 
-          const vint<Nx> vmask = traverseIncoherentStream(cur_mask, packet, node, nf, shiftTable);
+          const vint<N> vmask = traverseIncoherentStream(cur_mask, packet, node, nf, shiftTable);
 
-          size_t mask = movemask(vmask != vint<Nx>(zero));
+          size_t mask = movemask(vmask != vint<N>(zero));
           if (unlikely(mask == 0)) goto pop;
 
-          __aligned(64) unsigned int child_mask[Nx];
-          vint<Nx>::storeu(child_mask, vmask); // this explicit store here causes much better code generation
+          __aligned(64) unsigned int child_mask[N];
+          vint<N>::storeu(child_mask, vmask); // this explicit store here causes much better code generation
           
           /*! one child is hit, continue with that child */
           size_t r = bscf(mask);
@@ -415,22 +415,22 @@ namespace embree
 
     template<bool filter>
     struct Triangle4IntersectorStreamMoeller {
-      template<int K> using Type = ArrayIntersectorKStream<K,TriangleMIntersectorKMoeller<SIMD_MODE(4) COMMA K COMMA true>>;
+      template<int K> using Type = ArrayIntersectorKStream<K,TriangleMIntersectorKMoeller<4 COMMA K COMMA true>>;
     };
 
     template<bool filter>
     struct Triangle4vIntersectorStreamPluecker {
-      template<int K> using Type = ArrayIntersectorKStream<K,TriangleMvIntersectorKPluecker<SIMD_MODE(4) COMMA K COMMA true>>;
+      template<int K> using Type = ArrayIntersectorKStream<K,TriangleMvIntersectorKPluecker<4 COMMA K COMMA true>>;
     };
 
     template<bool filter>
     struct Triangle4iIntersectorStreamMoeller {
-      template<int K> using Type = ArrayIntersectorKStream<K,TriangleMiIntersectorKMoeller<SIMD_MODE(4) COMMA K COMMA true>>;
+      template<int K> using Type = ArrayIntersectorKStream<K,TriangleMiIntersectorKMoeller<4 COMMA K COMMA true>>;
     };
 
     template<bool filter>
     struct Triangle4iIntersectorStreamPluecker {
-      template<int K> using Type = ArrayIntersectorKStream<K,TriangleMiIntersectorKPluecker<SIMD_MODE(4) COMMA K COMMA true>>;
+      template<int K> using Type = ArrayIntersectorKStream<K,TriangleMiIntersectorKPluecker<4 COMMA K COMMA true>>;
     };
 
     template<bool filter>
@@ -465,8 +465,8 @@ namespace embree
     // =====================================================================================================
     // =====================================================================================================
 
-    template<int N, int Nx>
-    void BVHNIntersectorStreamPacketFallback<N, Nx>::intersect(Accel::Intersectors* __restrict__ This,
+    template<int N>
+    void BVHNIntersectorStreamPacketFallback<N>::intersect(Accel::Intersectors* __restrict__ This,
                                                                RayHitN** inputRays,
                                                                size_t numTotalRays,
                                                                IntersectContext* context)
@@ -477,8 +477,8 @@ namespace embree
         intersectK(This, (RayHitK<VSIZEX>**)inputRays, numTotalRays, context);
     }
 
-    template<int N, int Nx>
-    void BVHNIntersectorStreamPacketFallback<N, Nx>::occluded(Accel::Intersectors* __restrict__ This,
+    template<int N>
+    void BVHNIntersectorStreamPacketFallback<N>::occluded(Accel::Intersectors* __restrict__ This,
                                                               RayN** inputRays,
                                                               size_t numTotalRays,
                                                               IntersectContext* context)
@@ -489,9 +489,9 @@ namespace embree
         occludedK(This, (RayK<VSIZEX>**)inputRays, numTotalRays, context);
     }
 
-    template<int N, int Nx>
+    template<int N>
     template<int K>
-    __noinline void BVHNIntersectorStreamPacketFallback<N, Nx>::intersectK(Accel::Intersectors* __restrict__ This,
+    __noinline void BVHNIntersectorStreamPacketFallback<N>::intersectK(Accel::Intersectors* __restrict__ This,
                                                                               RayHitK<K>** inputRays,
                                                                               size_t numTotalRays,
                                                                               IntersectContext* context)
@@ -507,9 +507,9 @@ namespace embree
       }
     }
 
-    template<int N, int Nx>
+    template<int N>
     template<int K>
-    __noinline void BVHNIntersectorStreamPacketFallback<N, Nx>::occludedK(Accel::Intersectors* __restrict__ This,
+    __noinline void BVHNIntersectorStreamPacketFallback<N>::occludedK(Accel::Intersectors* __restrict__ This,
                                                                              RayK<K>** inputRays,
                                                                              size_t numTotalRays,
                                                                              IntersectContext* context)

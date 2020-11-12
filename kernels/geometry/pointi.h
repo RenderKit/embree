@@ -61,11 +61,6 @@ namespace embree
       return vint<M>(step) < vint<M>(numPrimitives);
     }
 
-    /* Returns a mask that tells which line segments are valid */
-    template<int Mx> __forceinline vbool<Mx> valid() const {
-      return vint<Mx>(step) < vint<Mx>(numPrimitives);
-    }
-
     /* Returns if the specified line segment is valid */
     __forceinline bool valid(const size_t i) const
     {

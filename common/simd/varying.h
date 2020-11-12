@@ -56,9 +56,6 @@ namespace embree
 #if defined(__AVX512VL__) // SKX
   const int VSIZEX = 8;  // default size
   const int VSIZEL = 16; // large size
-#elif defined(__AVX512F__) // KNL
-  const int VSIZEX = 16;
-  const int VSIZEL = 16;
 #elif defined(__AVX__)
   const int VSIZEX = 8;
   const int VSIZEL = 8;
@@ -67,22 +64,6 @@ namespace embree
   const int VSIZEL = 4;
 #endif
 
-  /* Extends varying size N to optimal or up to max(N, N2) */
-  template<int N, int N2 = VSIZEX>
-  struct vextend
-  {
-#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
-    /* use 16-wide SIMD calculations on KNL even for 4 and 8 wide SIMD */
-    static const int size = (N2 == VSIZEX) ? VSIZEX : N;
-    #define SIMD_MODE(N) N, 16
-#else
-    /* calculate with same SIMD width otherwise */
-    static const int size = N;
-    #define SIMD_MODE(N) N, N
-#endif
-  };
-
-  
   template<int N>
   struct vtypes {
     using vbool = vboolf_impl<N>;
