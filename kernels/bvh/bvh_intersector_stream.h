@@ -181,17 +181,11 @@ namespace embree
           const vfloat<Nx> tNear  = maxi(tNearX, tNearY, tNearZ, vfloat<Nx>(p.tnear[i]));
           const vfloat<Nx> tFar   = mini(tFarX , tFarY , tFarZ,  vfloat<Nx>(p.tfar[i]));      
 
-#if defined(__AVX512ER__)
-          const vboolx m_node((1 << N)-1);
-          const vbool<Nx> hit_mask = le(m_node, tNear, tFar);
-          vmask = mask_or(hit_mask, vmask, vmask, bitmask);
-#else
           const vbool<Nx> hit_mask = tNear <= tFar;
 #if defined(__AVX2__)
           vmask = vmask | (bitmask & vint<Nx>(hit_mask));
 #else
           vmask = select(hit_mask, vmask | bitmask, vmask);
-#endif
 #endif
         } while(m_active);
         return vmask;        
@@ -230,17 +224,11 @@ namespace embree
           const vfloat<Nx> tFar   = mini(tFarX , tFarY , tFarZ,  vfloat<Nx>(p.tfar[i]));
           const float round_down  = 1.0f-2.0f*float(ulp);
           const float round_up    = 1.0f+2.0f*float(ulp);
-#if defined(__AVX512ER__)
-          const vboolx m_node((1 << N)-1);
-          const vbool<Nx> hit_mask = le(m_node, round_down*tNear, round_up*tFar);
-          vmask = mask_or(hit_mask, vmask, vmask, bitmask);
-#else
           const vbool<Nx> hit_mask = round_down*tNear <= round_up*tFar;
 #if defined(__AVX2__)
           vmask = vmask | (bitmask & vint<Nx>(hit_mask));
 #else
           vmask = select(hit_mask, vmask | bitmask, vmask);
-#endif
 #endif
         } while(m_active);
         return vmask;

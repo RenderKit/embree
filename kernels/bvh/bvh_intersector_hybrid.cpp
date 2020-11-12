@@ -63,14 +63,8 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 
         /* if popped node is too far, pop next one */
-#if defined(__AVX512ER__)
-        /* much faster on KNL */
-        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > tray1.tfar)))
-          continue;
-#else
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
           continue;
-#endif
 
         /* downtraversal loop */
         while (true)

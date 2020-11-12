@@ -135,7 +135,7 @@ namespace embree
       const vfloat<K> lclipMaxZ = (node->upper_z[i] - ray.org.z) * ray.rdir.z;
   #endif
 
-  #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+  #if defined(__AVX512F__) // SKX
       if (K == 16)
       {
         /* use mixed float/int min/max */
@@ -150,7 +150,7 @@ namespace embree
       {
         const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
         const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
-  #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+  #if defined(__AVX512F__) // SKX
         const vbool<K> lhit    = asInt(maxi(lnearP, ray.tnear)) <= asInt(mini(lfarP, ray.tfar));
   #else
         const vbool<K> lhit    = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
@@ -215,7 +215,7 @@ namespace embree
       const vfloat<K> lclipMaxZ = (vupper_z - ray.org.z) * ray.rdir.z;
 #endif
 
-#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+#if defined(__AVX512F__) // SKX
       if (K == 16)
       {
         /* use mixed float/int min/max */
@@ -230,7 +230,7 @@ namespace embree
       {
         const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
         const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
-#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+#if defined(__AVX512F__) // SKX
         const vbool<K> lhit    = asInt(maxi(lnearP, ray.tnear)) <= asInt(mini(lfarP, ray.tfar));
 #else
         const vbool<K> lhit    = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
@@ -265,7 +265,7 @@ namespace embree
       const float round_up   = 1.0f+3.0f*float(ulp);
       const float round_down = 1.0f-3.0f*float(ulp);
 
-#if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+#if defined(__AVX512F__) // SKX
       if (K == 16)
       {
         const vfloat<K> lnearP = round_down*maxi(min(lclipMinX, lclipMaxX), min(lclipMinY, lclipMaxY), min(lclipMinZ, lclipMaxZ));
@@ -480,7 +480,7 @@ namespace embree
       const vfloat<K> lclipMaxZ = (upper_z[i] - ray.org.z) * ray.rdir.z;
   #endif
 
-  #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+  #if defined(__AVX512F__) // SKX
       if (K == 16)
       {
         /* use mixed float/int min/max */
@@ -495,7 +495,7 @@ namespace embree
       {
         const vfloat<K> lnearP = maxi(mini(lclipMinX, lclipMaxX), mini(lclipMinY, lclipMaxY), mini(lclipMinZ, lclipMaxZ));
         const vfloat<K> lfarP  = mini(maxi(lclipMinX, lclipMaxX), maxi(lclipMinY, lclipMaxY), maxi(lclipMinZ, lclipMaxZ));
-  #if defined(__AVX512F__) && !defined(__AVX512ER__) // SKX
+  #if defined(__AVX512F__) // SKX
         const vbool<K> lhit    = asInt(maxi(lnearP, ray.tnear)) <= asInt(mini(lfarP, ray.tfar));
   #else
         const vbool<K> lhit    = maxi(lnearP, ray.tnear) <= mini(lfarP, ray.tfar);
