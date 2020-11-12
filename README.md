@@ -487,7 +487,7 @@ parameters that can be configured in CMake:
   in Debug mode. Defaults to "_debug".
 
 + `EMBREE_MAX_ISA`: Select highest supported ISA (SSE2, SSE4.2, AVX,
-  AVX2, AVX512KNL, AVX512SKX, or NONE). When set to NONE the
+  AVX2, AVX512SKX, or NONE). When set to NONE the
   EMBREE_ISA_* variables can be used to enable ISAs individually. By
   default the option is set to AVX2.
 
@@ -502,9 +502,6 @@ parameters that can be configured in CMake:
 
 + `EMBREE_ISA_AVX2`: Enables AVX2 when EMBREE_MAX_ISA is set to
   NONE. By default this option is turned OFF.
-
-+ `EMBREE_ISA_AVX512KNL`: Enables AVX-512 for Xeon Phi when
-  EMBREE_MAX_ISA is set to NONE. By default this option is turned OFF.
 
 + `EMBREE_ISA_AVX512SKX`: Enables AVX-512 for Skylake when
   EMBREE_MAX_ISA is set to NONE. By default this option is turned OFF.
@@ -1325,8 +1322,8 @@ Possible properties to query are:
     `rtcIntersect16` and `rtcOccluded16` functions preserve packet size
     and ray order when invoking callback functions. This is only the
     case if Embree is compiled with `EMBREE_RAY_PACKETS` and
-    `AVX512SKX` (or `AVX512KNL`) enabled, and if the machine it is
-    running on supports `AVX512SKX` (or `AVX512KNL`).
+    `AVX512SKX` enabled, and if the machine it is
+    running on supports `AVX512SKX`.
 
 -   `RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED`: Queries whether
     `rtcIntersect1M`, `rtcIntersect1Mp`, `rtcIntersectNM`,

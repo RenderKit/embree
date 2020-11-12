@@ -11,7 +11,6 @@ _SET_IF_EMPTY(FLAGS_SSE2  "-msse2")
 _SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
 _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
 _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
-_SET_IF_EMPTY(FLAGS_AVX512KNL "-march=knl")
 _SET_IF_EMPTY(FLAGS_AVX512SKX "-march=skx")
 
 IF (WIN32)

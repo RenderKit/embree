@@ -129,7 +129,7 @@ namespace embree
     /* ray stream SOA to AOS conversion */
 #if defined(EMBREE_RAY_PACKETS)
     RayStreamFilterFuncsType rayStreamFilterFuncs;
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512KNL_AVX512SKX(enabled_cpu_features,rayStreamFilterFuncs);
+    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512SKX(enabled_cpu_features,rayStreamFilterFuncs);
     rayStreamFilters = rayStreamFilterFuncs();
 #endif
   }
@@ -154,9 +154,6 @@ namespace embree
 #endif
 #if defined(EMBREE_TARGET_AVX2)
     v += "AVX2 ";
-#endif
-#if defined(EMBREE_TARGET_AVX512KNL)
-    v += "AVX512KNL ";
 #endif
 #if defined(EMBREE_TARGET_AVX512SKX)
     v += "AVX512SKX ";
@@ -447,7 +444,7 @@ namespace embree
 #endif
 
 #if defined(EMBREE_TARGET_SIMD16) && defined(EMBREE_RAY_PACKETS)
-    case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return hasISA(AVX512KNL) | hasISA(AVX512SKX);
+    case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return hasISA(AVX512SKX);
 #else
     case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return 0;
 #endif

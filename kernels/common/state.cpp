@@ -115,8 +115,6 @@ namespace embree
 #else
     set_affinity = false;
 #endif
-    /* per default enable affinity on KNL */
-    if (hasISA(AVX512KNL)) set_affinity = true;
 
     start_threads = false;
     enable_selockmemoryprivilege = false;
@@ -171,9 +169,6 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX2)
     assert(avx2::getISA() <= AVX2);
 #endif
-#if defined (EMBREE_TARGET_AVX512KNL)
-    assert(avx512knl::getISA() <= AVX512KNL);
-#endif
 #if defined (EMBREE_TARGET_AVX512SKX)
     assert(avx512skx::getISA() <= AVX512SKX);
 #endif
@@ -226,7 +221,6 @@ namespace embree
     else if (isa == "avx") return AVX;
     else if (isa == "avxi") return AVXI;
     else if (isa == "avx2") return AVX2;
-    else if (isa == "avx512knl") return AVX512KNL;
     else if (isa == "avx512skx") return AVX512SKX;
     else return SSE2;
   }
