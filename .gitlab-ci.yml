@@ -5,10 +5,10 @@
 # Continuous Test
 ####################################################################
 
-continuous-macosx-x64-Debug-ICC2020.1-ISPC1.14.1-SSE2-TBB2021.1-beta08:
-  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.14.1 isa:SSE2 tasking:TBB2021.1-beta08 intensity:2"
-  tags:   [embree, mac]
-  only:   [pushes]
+#continuous-macosx-x64-Debug-ICC2020.1-ISPC1.14.1-SSE2-TBB2021.1-beta08:
+#  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.14.1 isa:SSE2 tasking:TBB2021.1-beta08 intensity:2"
+#  tags:   [embree, mac]
+#  only:   [pushes]
 
 continuous-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2019.2:
   script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2019.2 intensity:2"
