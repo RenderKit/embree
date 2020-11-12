@@ -565,12 +565,8 @@ namespace embree
     return shuffle<i,i,i,i>(v);
   }
 
-#if defined (__SSE4_1__) && !defined(__GNUC__)
-  template<int i> __forceinline float extract(const vfloat4& a) { return _mm_cvtss_f32(_mm_extract_ps(a,i)); }
-#else
-  template<int i> __forceinline float extract(const vfloat4& a) { return _mm_cvtss_f32(shuffle<i,i,i,i>(a)); }
-#endif
-  template<> __forceinline float extract<0>(const vfloat4& a) { return _mm_cvtss_f32(a); }
+  template<int i> __forceinline float extract   (const vfloat4& a) { return _mm_cvtss_f32(shuffle<i>(a)); }
+  template<>      __forceinline float extract<0>(const vfloat4& a) { return _mm_cvtss_f32(a); }
 
 #if defined (__SSE4_1__)
   template<int dst, int src, int clr> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
