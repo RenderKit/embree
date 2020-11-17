@@ -545,7 +545,7 @@ namespace embree
     std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
    
     /* read current best from database */
-    double avgdb = 1.0f;
+    double avgdb = 0.0f;
     if (state->database != "")
       avgdb = readDatabase(state);
 
@@ -597,9 +597,12 @@ namespace embree
       updateDatabase(state,bestStat,avgdb);
       
     /* print test result */
-    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << 100.0f*bestStat.getAvgSigma()/bestStat.getAvg() << "%)";
-    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%) (" << i << " attempts)" << std::endl << std::flush;
-    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%) (" << i << " attempts)" << std::endl << std::flush;
+    double rate0 = 0; if (bestStat.getAvg()) rate0 = 100.0f*bestStat.getAvgSigma()/bestStat.getAvg();
+    double rate1 = 0; if (avgdb            ) rate1 = 100.0f*(bestStat.getAvg()-avgdb)/avgdb;
+    
+    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << rate0 << "%)";
+    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << rate1 << "%) (" << i << " attempts)" << std::endl << std::flush;
+    else        std::cout << state->red  (" [FAILED]" ) << " (" << rate1 << "%) (" << i << " attempts)" << std::endl << std::flush;
     if (state->database != "")
       plotDatabase(state);
 

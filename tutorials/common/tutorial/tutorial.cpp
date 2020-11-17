@@ -684,21 +684,27 @@ namespace embree
 
         if (numTotalFrames >= 1024 && (i % 64 == 0))
         {
+          double rate = 0;
+          if (fpsStat.getAvg()) rate = 100.0f*fpsStat.getSigma()/fpsStat.getAvg();
+          
           std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: "
                     << std::setw(8) << fps << " fps, "
                     << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
                     << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
                     << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
-                    << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << 100.0f*fpsStat.getSigma()/fpsStat.getAvg() << "%)" << std::endl << std::flush;
+                    << "sigma = " << std::setw(6) << fpsStat.getSigma() << " (" << rate << "%)" << std::endl << std::flush;
         }
       }
 
+      double rate = 0;
+      if (fpsStat.getAvg()) rate = 100.0f*fpsStat.getAvgSigma()/fpsStat.getAvg();
+      
       std::cout << "frame [" << std::setw(3) << skipBenchmarkFrames << " - " << std::setw(3) << numTotalFrames << "]: "
                 << "              "
                 << "min = " << std::setw(8) << fpsStat.getMin() << " fps, "
                 << "avg = " << std::setw(8) << fpsStat.getAvg() << " fps, "
                 << "max = " << std::setw(8) << fpsStat.getMax() << " fps, "
-                << "sigma = " << std::setw(6) << fpsStat.getAvgSigma() << " (" << 100.0f*fpsStat.getAvgSigma()/fpsStat.getAvg() << "%)" << std::endl;
+                << "sigma = " << std::setw(6) << fpsStat.getAvgSigma() << " (" << rate << "%)" << std::endl;
     }
 
     std::cout << "BENCHMARK_RENDER_MIN " << fpsStat.getMin() << std::endl;
@@ -1048,7 +1054,10 @@ namespace embree
     ImGui::SetNextWindowBgAlpha(0.3f);
     ImGui::Begin("Embree", nullptr, window_flags);
     drawGUI();
-    ImGui::Text("%3.2f fps",1.0f/avg_render_time.get());
+    
+    double time = avg_render_time.get();
+    double fps = time != 0.0 ? 1.0f/time : 0.0;
+    ImGui::Text("%3.2f fps",fps);
 #if defined(RAY_STATS)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
 #endif
