@@ -52,8 +52,12 @@ SET(EMBREE_LIBRARY_FILES
 
   geometry/primitive4.cpp
   geometry/instance_intersector.cpp
-  geometry/curve_intersector_virtual.cpp
-  geometry/curve_intersector_virtual2.cpp
+  geometry/curve_intersector_virtual_4v.cpp
+  geometry/curve_intersector_virtual_4i.cpp
+  geometry/curve_intersector_virtual_4i_mb.cpp
+  geometry/curve_intersector_virtual_8v.cpp
+  geometry/curve_intersector_virtual_8i.cpp
+  geometry/curve_intersector_virtual_8i_mb.cpp
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
@@ -99,8 +103,12 @@ MACRO(embree_files TARGET ISA)
       
   SET(${TARGET}
     geometry/instance_intersector.cpp
-    geometry/curve_intersector_virtual.cpp
-    geometry/curve_intersector_virtual2.cpp
+    geometry/curve_intersector_virtual_4v.cpp
+    geometry/curve_intersector_virtual_4i.cpp
+    geometry/curve_intersector_virtual_4i_mb.cpp
+    geometry/curve_intersector_virtual_8v.cpp
+    geometry/curve_intersector_virtual_8i.cpp
+    geometry/curve_intersector_virtual_8i_mb.cpp
     bvh/bvh_intersector1_bvh4.cpp)
 
   IF (${ISA} EQUAL ${ISA_LOWEST_AVX})
