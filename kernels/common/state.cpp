@@ -170,7 +170,7 @@ namespace embree
     assert(avx2::getISA() <= AVX2);
 #endif
 #if defined (EMBREE_TARGET_AVX512)
-    assert(avx512skx::getISA() <= AVX512);
+    assert(avx512::getISA() <= AVX512);
 #endif
 #endif
   }
@@ -221,7 +221,7 @@ namespace embree
     else if (isa == "avx") return AVX;
     else if (isa == "avxi") return AVXI;
     else if (isa == "avx2") return AVX2;
-    else if (isa == "avx512skx") return AVX512;
+    else if (isa == "avx512") return AVX512;
     else return SSE2;
   }
 
@@ -248,20 +248,20 @@ namespace embree
         start_threads = cin->get().Int();
       
       else if (tok == Token::Id("isa") && cin->trySymbol("=")) {
-        std::string isa = toLowerCase(cin->get().Identifier());
-        enabled_cpu_features = string_to_cpufeatures(isa);
+        std::string isa_str = toLowerCase(cin->get().Identifier());
+        enabled_cpu_features = string_to_cpufeatures(isa_str);
         enabled_builder_cpu_features = enabled_cpu_features;
       }
 
       else if (tok == Token::Id("max_isa") && cin->trySymbol("=")) {
-        std::string isa = toLowerCase(cin->get().Identifier());
-        enabled_cpu_features &= string_to_cpufeatures(isa);
+        std::string isa_str = toLowerCase(cin->get().Identifier());
+        enabled_cpu_features &= string_to_cpufeatures(isa_str);
         enabled_builder_cpu_features &= enabled_cpu_features;
       }
 
       else if (tok == Token::Id("max_builder_isa") && cin->trySymbol("=")) {
-        std::string isa = toLowerCase(cin->get().Identifier());
-        enabled_builder_cpu_features &= string_to_cpufeatures(isa);
+        std::string isa_str = toLowerCase(cin->get().Identifier());
+        enabled_builder_cpu_features &= string_to_cpufeatures(isa_str);
       }
 
       else if (tok == Token::Id("frequency_level") && cin->trySymbol("=")) {

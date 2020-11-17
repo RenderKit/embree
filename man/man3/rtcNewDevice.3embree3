@@ -79,11 +79,11 @@ started upfront.
 This can be useful for benchmarking to exclude thread creation time.
 This option is disabled by default.
 .IP \[bu] 2
-\f[C]isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]\f[]: Use specified
+\f[C]isa=[sse2,sse4.2,avx,avx2,avx512]\f[]: Use specified
 ISA.
 By default the ISA is selected automatically.
 .IP \[bu] 2
-\f[C]max_isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]\f[]: Configures
+\f[C]max_isa=[sse2,sse4.2,avx,avx2,avx512]\f[]: Configures
 the automated ISA selection to use maximally the specified ISA.
 .IP \[bu] 2
 \f[C]hugepages=[0/1]\f[]: Enables or disables usage of huge pages.

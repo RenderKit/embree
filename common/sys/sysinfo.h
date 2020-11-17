@@ -16,7 +16,7 @@
 
 /* define isa namespace and ISA bitvector */
 #if defined (__AVX512VL__)
-#  define isa avx512skx
+#  define isa avx512
 #  define ISA AVX512
 #  define ISA_STR "AVX512"
 #elif defined (__AVX2__)

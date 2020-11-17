@@ -428,9 +428,8 @@ parameters that can be configured in CMake:
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
   default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
-  `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512knl.a`,
-  `embree3_avx512skx.a`). You have to link these libraries in exactly
-  this order of increasing ISA.
+  `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512.a`). You
+  have to link these libraries in exactly this order of increasing ISA.
 
 + `EMBREE_API_NAMESPACE`: Specifies a namespace name to put all Embree
   API symbols inside. By default no namespace is used and plain C symbols
@@ -1143,10 +1142,10 @@ The following configuration is supported:
     started upfront. This can be useful for benchmarking to exclude
     thread creation time. This option is disabled by default.
 
--   `isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Use
+-   `isa=[sse2,sse4.2,avx,avx2,avx512]`: Use
     specified ISA. By default the ISA is selected automatically.
 
--   `max_isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Configures
+-   `max_isa=[sse2,sse4.2,avx,avx2,avx512]`: Configures
     the automated ISA selection to use maximally the specified ISA.
 
 -   `hugepages=[0/1]`: Enables or disables usage of huge pages. Under
