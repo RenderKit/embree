@@ -77,7 +77,6 @@ continuous-linux-x64-Debug-GCC-ISPC1.13.0-SSE2-TBB-KLOCKWORK:
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.13.0 isa:SSE2 tasking:TBB klocwork:ON intensity:0"
   tags:   [embree, docker]
   dependencies: []
-  allow_failure: true
 
 continuous-linux-x64-PROTEX:
   image: amd64/openjdk:8
