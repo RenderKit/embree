@@ -206,7 +206,7 @@ namespace embree {
 
     std::cout << primitives << " primitives, " << objects << " objects, "
               << time/iterations << " s, "
-              << 1.0 / (time/iterations) * primitives / 1000000.0 << " Mprims/s" << std::endl;
+              << 1.0 / (time/max(size_t(1),iterations)) * primitives / 1000000.0 << " Mprims/s" << std::endl;
 
     rtcReleaseScene (g_scene);
     g_scene = nullptr;

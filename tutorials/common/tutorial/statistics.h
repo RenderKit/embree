@@ -38,7 +38,12 @@ namespace embree
 
     float getMin() const { return vmin; }
     float getMax() const { return vmax; }
-    float getAvg() const { return float(v/N); }
+    
+    float getAvg() const
+    {
+      if (N == 0) return 0.0f;
+      else return float(v/N);
+    }
 
   private:
     double v;   // sum of all values

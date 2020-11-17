@@ -545,7 +545,7 @@ namespace embree
     std::cout << std::setw(TEXT_ALIGN) << name << ": " << std::flush;
    
     /* read current best from database */
-    double avgdb = 0.0f;
+    double avgdb = 1.0f;
     if (state->database != "")
       avgdb = readDatabase(state);
 
@@ -604,20 +604,17 @@ namespace embree
       plotDatabase(state);
 
     /* print dart measurement */
-    if (state->cdash) 
-    {
-      //std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << bestStat.getAvg() << "</DartMeasurement>" << std::endl;
-      //std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << bestStat.getAvgSigma() << "</DartMeasurement>" << std::endl;
-
+    //if (state->cdash) 
+    //{
       /* send plot only when test failed */
-      if (!passed)
-      {
-        FileName base = state->database+FileName(name);
-        std::string command = std::string("cd ")+state->database.str()+std::string(" && gnuplot ") + FileName(name).addExt(".plot").str();
-        if (system(command.c_str()) == 0)
-          std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
-      }
-    }   
+      //if (!passed)
+      //{
+      //  FileName base = state->database+FileName(name);
+      //  std::string command = std::string("cd ")+state->database.str()+std::string(" && gnuplot ") + FileName(name).addExt(".plot").str();
+      //  if (system(command.c_str()) == 0)
+      //    std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
+      //}
+    //}   
 
     sleepSeconds(0.1);
     cleanup(state);
@@ -2940,7 +2937,7 @@ namespace embree
       }
       AssertNoError(device);
 
-      double failRate = double(numFailures) / double(numTests);
+      double failRate = double(numFailures) / double(max(size_t(1),numTests));
       bool failed = failRate > 0.00002;
       if (!silent) { printf(" (%f%%)", 100.0f*failRate); fflush(stdout); }
       return (VerifyApplication::TestReturnValue)(!failed);
@@ -3009,7 +3006,7 @@ namespace embree
       }
       AssertNoError(device);
 
-      double failRate = double(numFailures) / double(numTests);
+      double failRate = double(numFailures) / double(max(size_t(1),numTests));
       bool failed = failRate > 0.00002;
       if (!silent) { printf(" (%f%%)", 100.0f*failRate); fflush(stdout); }
       return (VerifyApplication::TestReturnValue)(!failed);
