@@ -21,8 +21,8 @@ if [ ${PACKAGE: -4} == ".pkg" ]; then
 fi
 
 primary_bundle_id="com.intel.embree3"
-user=$notarization_user
-password="@env:notarization_password"
+user=$MACOS_NOTARIZATION_USER
+password=$MACOS_NOTARIZATION_PASSWORD
 
 xcrun altool --notarize-app --asc-provider 'IntelCorporationApps' --primary-bundle-id "$primary_bundle_id" --username "$user" --password "$password" --file $PACKAGE 2>&1 | tee notarization_request.log
 
