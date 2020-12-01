@@ -213,7 +213,7 @@ namespace embree
         if (unlikely(intersectPluecker(ray,vtx0,vtx1,vtx2,flags,hit)))
         {
           /* correct U,V interpolation across the entire grid */
-          interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));            
+          interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));
           if (unlikely(epilog(hit.valid,hit)))
             return true;
         }
@@ -435,7 +435,6 @@ namespace embree
           /* avoid division by 0 */
           valid &= den != vfloat<M>(zero);
           if (unlikely(none(valid))) return false;
-          
           /* update hit information */
           new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,UVW,t,tri_Ng,flags);
           return true;
@@ -467,7 +466,6 @@ namespace embree
                                     const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
         Intersect1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
-
         SubGridQuadHitPlueckerM<4> hit;
         if (SubGridQuadMIntersectorKPlueckerBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,vboolf4(false),hit))
         {
@@ -504,5 +502,55 @@ namespace embree
       }
     };
 
+
+#if defined (__AVX__)
+
+    /*! Intersects 4 quads with 1 ray using AVX */
+    template<int K, bool filter>
+      struct SubGridQuadMIntersectorKPluecker<4,K,filter> : public SubGridQuadMIntersectorKPlueckerBase<4,K,filter>
+    {
+      __forceinline SubGridQuadMIntersectorKPluecker(const vbool<K>& valid, const RayK<K>& ray)
+        : SubGridQuadMIntersectorKPlueckerBase<4,K,filter>(valid,ray) {}
+      
+      template<typename Epilog>
+        __forceinline bool intersect1(RayK<K>& ray, size_t k,const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, 
+                                      const GridMesh::Grid &g, const SubGrid &subgrid, const Epilog& epilog) const
+      {
+        const Vec3vf8 vtx0(vfloat8(v0.x,v2.x),vfloat8(v0.y,v2.y),vfloat8(v0.z,v2.z));
+#if !defined(EMBREE_BACKFACE_CULLING)
+        const Vec3vf8 vtx1(vfloat8(v1.x),vfloat8(v1.y),vfloat8(v1.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x),vfloat8(v3.y),vfloat8(v3.z));
+#else
+        const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
+        const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
+#endif
+        const vbool8 flags(0,0,0,0,1,1,1,1);
+
+        SubGridQuadHitPlueckerM<8> hit;
+        if (SubGridQuadMIntersectorKPlueckerBase<8,K,filter>::intersect1(ray,k,v0,v1,v3,flags,hit))
+        {
+          /* correct U,V interpolation across the entire grid */
+          interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));
+          if (unlikely(epilog(hit.valid,hit)))
+            return true;
+        }
+        return false;
+      }
+      
+      __forceinline bool intersect1(RayHitK<K>& ray, size_t k, IntersectContext* context,
+                                    const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
+      {
+        return intersect1(ray,k,v0,v1,v2,v3,g,subgrid,Intersect1KEpilogMU<8,K,filter>(ray,k,context,subgrid.geomID(),subgrid.primID()));
+      }
+      
+      __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
+                                   const Vec3vf4& v0, const Vec3vf4& v1, const Vec3vf4& v2, const Vec3vf4& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
+      {
+        return intersect1(ray,k,v0,v1,v2,v3,g,subgrid,Occluded1KEpilogMU<8,K,filter>(ray,k,context,subgrid.geomID(),subgrid.primID()));
+      }
+    };
+#endif
+
+    
   }
 }
