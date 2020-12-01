@@ -47,7 +47,7 @@ namespace embree
 
         /* create primref array */
         prims.resize(numPrimitives);
-        const PrimInfo pinfo = createPrimRefArray(scene,Geometry::MTY_CURVES,false,prims,scene->progressInterface);
+        const PrimInfo pinfo = createPrimRefArray(scene,Geometry::MTY_CURVES,false,numPrimitives,prims,scene->progressInterface);
 
         /* estimate acceleration structure size */
         const size_t node_bytes = pinfo.size()*sizeof(typename BVH::OBBNode)/(4*N);

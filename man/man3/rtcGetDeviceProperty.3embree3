@@ -64,9 +64,8 @@ and if the machine it is running on supports \f[C]AVX\f[] (or
 \f[C]rtcIntersect16\f[] and \f[C]rtcOccluded16\f[] functions preserve
 packet size and ray order when invoking callback functions.
 This is only the case if Embree is compiled with
-\f[C]EMBREE_RAY_PACKETS\f[] and \f[C]AVX512SKX\f[] (or
-\f[C]AVX512KNL\f[]) enabled, and if the machine it is running on
-supports \f[C]AVX512SKX\f[] (or \f[C]AVX512KNL\f[]).
+\f[C]EMBREE_RAY_PACKETS\f[] and \f[C]AVX512\f[] enabled, and if the machine it is running on
+supports \f[C]AVX512\f[].
 .IP \[bu] 2
 \f[C]RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED\f[]: Queries whether
 \f[C]rtcIntersect1M\f[], \f[C]rtcIntersect1Mp\f[],

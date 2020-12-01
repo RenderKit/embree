@@ -51,7 +51,8 @@ namespace embree
       stack[0].dist = neg_inf;
 
       /* load the ray into SIMD registers */
-      TravRay<N,Nx,robust> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
+      TravRay<N,robust> tray1;
+      tray1.template init<K>(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
 
       /* pop loop */
       while (true) pop:
@@ -62,22 +63,16 @@ namespace embree
         NodeRef cur = NodeRef(stackPtr->ptr);
 
         /* if popped node is too far, pop next one */
-#if defined(__AVX512ER__)
-        /* much faster on KNL */
-        if (unlikely(any(vfloat<Nx>(*(float*)&stackPtr->dist) > tray1.tfar)))
-          continue;
-#else
         if (unlikely(*(float*)&stackPtr->dist > ray.tfar[k]))
           continue;
-#endif
 
         /* downtraversal loop */
         while (true)
         {
           /* intersect node */
-          size_t mask; vfloat<Nx> tNear;
+          size_t mask; vfloat<N> tNear;
           STAT3(normal.trav_nodes, 1, 1, 1);
-          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
+          bool nodeIntersected = BVHNNodeIntersector1<N, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
           if (unlikely(!nodeIntersected)) { STAT3(normal.trav_nodes,-1,-1,-1); break; }
 
           /* if no child is hit, pop next node */
@@ -85,7 +80,7 @@ namespace embree
             goto pop;
 
           /* select next child and push other children */
-          BVHNNodeTraverser1Hit<N, Nx, types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
+          BVHNNodeTraverser1Hit<N, types>::traverseClosestHit(cur, mask, tNear, stackPtr, stackEnd);
         }
 
         /* this is a leaf node */
@@ -415,7 +410,8 @@ namespace embree
         tray.tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
         tray.tfar  = select(octant_valid, org_ray_tfar , vfloat<K>(neg_inf));
 
-        Frustum<robust> frustum(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
+        Frustum<robust> frustum;
+        frustum.template init<K>(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
 
         StackItemT<NodeRef> stack[stackSizeSingle];  // stack of nodes
         StackItemT<NodeRef>* stackPtr = stack + 1;   // current stack pointer
@@ -442,8 +438,8 @@ namespace embree
             const NodeRef nodeRef = cur;
             const AABBNode* __restrict__ const node = nodeRef.getAABBNode();
 
-            vfloat<Nx> fmin;
-            size_t m_frustum_node = intersectNodeFrustum<N,Nx>(node, frustum, fmin);
+            vfloat<N> fmin;
+            size_t m_frustum_node = intersectNodeFrustum<N>(node, frustum, fmin);
 
             if (unlikely(!m_frustum_node)) goto pop;
             cur = BVH::emptyNode;
@@ -518,7 +514,7 @@ namespace embree
           if (likely(any((ray.tfar < tray.tfar) & valid_leaf)))
           {
             tray.tfar = select(valid_leaf, ray.tfar, tray.tfar);
-            frustum.updateMaxDist(tray.tfar);
+            frustum.template updateMaxDist<K>(tray.tfar);
           }
 
           if (unlikely(lazy_node)) {
@@ -552,7 +548,8 @@ namespace embree
         stack[0] = root;
 
         /* load the ray into SIMD registers */
-        TravRay<N,Nx,robust> tray1(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
+        TravRay<N,robust> tray1;
+        tray1.template init<K>(k, tray.org, tray.dir, tray.rdir, tray.nearXYZ, tray.tnear[k], tray.tfar[k]);
 
 	/* pop loop */
 	while (true) pop:
@@ -566,9 +563,9 @@ namespace embree
           while (true)
           {
             /* intersect node */
-            size_t mask; vfloat<Nx> tNear;
+            size_t mask; vfloat<N> tNear;
             STAT3(shadow.trav_nodes, 1, 1, 1);
-            bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
+            bool nodeIntersected = BVHNNodeIntersector1<N, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
             if (unlikely(!nodeIntersected)) { STAT3(shadow.trav_nodes,-1,-1,-1); break; }
 
             /* if no child is hit, pop next node */
@@ -576,7 +573,7 @@ namespace embree
               goto pop;
 
             /* select next child and push other children */
-            BVHNNodeTraverser1Hit<N, Nx, types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
+            BVHNNodeTraverser1Hit<N, types>::traverseAnyHit(cur, mask, tNear, stackPtr, stackEnd);
           }
 
           /* this is a leaf node */
@@ -826,7 +823,8 @@ namespace embree
         tray.tnear = select(octant_valid, org_ray_tnear, vfloat<K>(pos_inf));
         tray.tfar  = select(octant_valid, org_ray_tfar,  vfloat<K>(neg_inf));
 
-        const Frustum<robust> frustum(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
+        Frustum<robust> frustum;
+        frustum.template init<K>(octant_valid, tray.org, tray.rdir, tray.tnear, tray.tfar, N);
 
         StackItemMaskT<NodeRef> stack[stackSizeSingle];  // stack of nodes
         StackItemMaskT<NodeRef>* stackPtr = stack + 1;   // current stack pointer
@@ -853,8 +851,8 @@ namespace embree
             const NodeRef nodeRef = cur;
             const AABBNode* __restrict__ const node = nodeRef.getAABBNode();
 
-            vfloat<Nx> fmin;
-            size_t m_frustum_node = intersectNodeFrustum<N,Nx>(node, frustum, fmin);
+            vfloat<N> fmin;
+            size_t m_frustum_node = intersectNodeFrustum<N>(node, frustum, fmin);
 
             if (unlikely(!m_frustum_node)) goto pop;
             cur = BVH::emptyNode;

@@ -53,14 +53,14 @@ namespace embree
         return accel->pointQuery(query, context);
       }
 
-      template<int Nx, bool robust>
-        static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+      template<bool robust>
+        static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
       {
-        BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+        BVHNQuantizedBaseNodeIntersector1<N,robust> isec1;
 
         for (size_t i=0;i<num;i++)
         {
-          vfloat<Nx> dist;
+          vfloat<N> dist;
           size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
 #if defined(__AVX__)
           STAT3(normal.trav_hit_boxes[popcnt(mask)],1,1,1);
@@ -75,15 +75,15 @@ namespace embree
           }
         }
       }
-      template<int Nx, bool robust>        
-        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+      template<bool robust>        
+        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
 
       {
-        BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+        BVHNQuantizedBaseNodeIntersector1<N,robust> isec1;
 
         for (size_t i=0;i<num;i++)
         {
-          vfloat<Nx> dist;
+          vfloat<N> dist;
           size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
           while(mask != 0)
           {
@@ -155,14 +155,14 @@ namespace embree
         return accel->pointQuery(query, context);
       }
 
-      template<int Nx, bool robust>
-        static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+      template<bool robust>
+        static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
       {
-        BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+        BVHNQuantizedBaseNodeIntersector1<N,robust> isec1;
 
         for (size_t i=0;i<num;i++)
         {
-          vfloat<Nx> dist;
+          vfloat<N> dist;
           size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
 #if defined(__AVX__)
           STAT3(normal.trav_hit_boxes[popcnt(mask)],1,1,1);
@@ -178,14 +178,14 @@ namespace embree
         }
       }
 
-      template<int Nx, bool robust>        
-        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+      template<bool robust>        
+        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
       {
-        BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+        BVHNQuantizedBaseNodeIntersector1<N,robust> isec1;
 
         for (size_t i=0;i<num;i++)
         {
-          vfloat<Nx> dist;
+          vfloat<N> dist;
           size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
           while(mask != 0)
           {
@@ -326,14 +326,14 @@ namespace embree
           return !valid0;
         }
         
-        template<int Nx, bool robust>        
-          static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+        template<bool robust>        
+          static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
         {
-          BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+          BVHNQuantizedBaseNodeIntersector1<N,robust> isec1;
 
           for (size_t i=0;i<num;i++)
           {
-            vfloat<Nx> dist;
+            vfloat<N> dist;
             size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
@@ -346,14 +346,14 @@ namespace embree
           }
         }
         
-        template<int Nx, bool robust>
-        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+        template<bool robust>
+        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
         {
-          BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+          BVHNQuantizedBaseNodeIntersector1<N,robust> isec1;
 
           for (size_t i=0;i<num;i++)
           {
-            vfloat<Nx> dist;
+            vfloat<N> dist;
             size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
@@ -470,14 +470,14 @@ namespace embree
           return !valid0;
         }
         
-        template<int Nx, bool robust>        
-          static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+        template<bool robust>        
+          static __forceinline void intersect(const Accel::Intersectors* This, Precalculations& pre, RayHitK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
         {
-          BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+          BVHNQuantizedBaseNodeIntersector1<N,robust> isec1;
 
           for (size_t i=0;i<num;i++)
           {
-            vfloat<Nx> dist;
+            vfloat<N> dist;
             size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
@@ -490,14 +490,14 @@ namespace embree
           }
         }
         
-        template<int Nx, bool robust>
-        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,Nx,robust> &tray, size_t& lazy_node)
+        template<bool robust>
+        static __forceinline bool occluded(const Accel::Intersectors* This, Precalculations& pre, RayK<K>& ray, size_t k, IntersectContext* context, const Primitive* prim, size_t num, const TravRay<N,robust> &tray, size_t& lazy_node)
         {
-          BVHNQuantizedBaseNodeIntersector1<N,Nx,robust> isec1;
+          BVHNQuantizedBaseNodeIntersector1<N,robust> isec1;
 
           for (size_t i=0;i<num;i++)
           {
-            vfloat<Nx> dist;
+            vfloat<N> dist;
             size_t mask = isec1.intersect(&prim[i].qnode,tray,dist); 
             while(mask != 0)
             {
@@ -511,8 +511,5 @@ namespace embree
           return false;
         }
     };
-
-
-
   }
 }

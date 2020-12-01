@@ -597,27 +597,27 @@ namespace embree
       updateDatabase(state,bestStat,avgdb);
       
     /* print test result */
-    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << 100.0f*bestStat.getAvgSigma()/bestStat.getAvg() << "%)";
-    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%) (" << i << " attempts)" << std::endl << std::flush;
-    else        std::cout << state->red  (" [FAILED]" ) << " (" << 100.0f*(bestStat.getAvg()-avgdb)/avgdb << "%) (" << i << " attempts)" << std::endl << std::flush;
+    double rate0 = 0; if (bestStat.getAvg()) rate0 = 100.0f*bestStat.getAvgSigma()/bestStat.getAvg();
+    double rate1 = 0; if (avgdb            ) rate1 = 100.0f*(bestStat.getAvg()-avgdb)/avgdb;
+    
+    std::cout << std::setw(8) << std::setprecision(3) << std::fixed << bestStat.getAvg() << " " << unit << " (+/-" << rate0 << "%)";
+    if (passed) std::cout << state->green(" [PASSED]" ) << " (" << rate1 << "%) (" << i << " attempts)" << std::endl << std::flush;
+    else        std::cout << state->red  (" [FAILED]" ) << " (" << rate1 << "%) (" << i << " attempts)" << std::endl << std::flush;
     if (state->database != "")
       plotDatabase(state);
 
     /* print dart measurement */
-    if (state->cdash) 
-    {
-      //std::cout << "<DartMeasurement name=\"" + name + ".avg\" type=\"numeric/float\">" << bestStat.getAvg() << "</DartMeasurement>" << std::endl;
-      //std::cout << "<DartMeasurement name=\"" + name + ".sigma\" type=\"numeric/float\">" << bestStat.getAvgSigma() << "</DartMeasurement>" << std::endl;
-
+    //if (state->cdash) 
+    //{
       /* send plot only when test failed */
-      if (!passed)
-      {
-        FileName base = state->database+FileName(name);
-        std::string command = std::string("cd ")+state->database.str()+std::string(" && gnuplot ") + FileName(name).addExt(".plot").str();
-        if (system(command.c_str()) == 0)
-          std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
-      }
-    }   
+      //if (!passed)
+      //{
+      //  FileName base = state->database+FileName(name);
+      //  std::string command = std::string("cd ")+state->database.str()+std::string(" && gnuplot ") + FileName(name).addExt(".plot").str();
+      //  if (system(command.c_str()) == 0)
+      //    std::cout << "<DartMeasurementFile name=\"" << name << "\" type=\"image/png\">" << base.addExt(".png") << "</DartMeasurementFile>" << std::endl;
+      //}
+    //}   
 
     sleepSeconds(0.1);
     cleanup(state);
@@ -2940,7 +2940,7 @@ namespace embree
       }
       AssertNoError(device);
 
-      double failRate = double(numFailures) / double(numTests);
+      double failRate = double(numFailures) / double(max(size_t(1),numTests));
       bool failed = failRate > 0.00002;
       if (!silent) { printf(" (%f%%)", 100.0f*failRate); fflush(stdout); }
       return (VerifyApplication::TestReturnValue)(!failed);
@@ -3009,7 +3009,7 @@ namespace embree
       }
       AssertNoError(device);
 
-      double failRate = double(numFailures) / double(numTests);
+      double failRate = double(numFailures) / double(max(size_t(1),numTests));
       bool failed = failRate > 0.00002;
       if (!silent) { printf(" (%f%%)", 100.0f*failRate); fflush(stdout); }
       return (VerifyApplication::TestReturnValue)(!failed);
@@ -5160,11 +5160,8 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX2)
     if (hasISA(AVX2)) isas.push_back(AVX2);
 #endif
-#if defined(EMBREE_TARGET_AVX512KNL)
-    if (hasISA(AVX512KNL)) isas.push_back(AVX512KNL);
-#endif
-#if defined(EMBREE_TARGET_AVX512SKX)
-    if (hasISA(AVX512SKX)) isas.push_back(AVX512SKX);
+#if defined(EMBREE_TARGET_AVX512)
+    if (hasISA(AVX512)) isas.push_back(AVX512);
 #endif
     
     /* create list of all intersect modes to test */

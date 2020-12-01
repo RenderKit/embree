@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.12.2
+-   Removed optimizations for Knights Landing.
+
 ### Embree 3.12.1
 
 -   Changed default frequency level to SIMD128 for Skylake, Cannon Lake, Comet Lake and Tiger Lake CPUs.

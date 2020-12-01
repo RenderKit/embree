@@ -16,7 +16,7 @@ namespace embree
     /* ----------------------------- */
 
     template<int M>
-      __forceinline void interpolateUV(MoellerTrumboreHitM<M> &hit,const GridMesh::Grid &g, const SubGrid& subgrid) 
+    __forceinline void interpolateUV(MoellerTrumboreHitM<M,UVIdentity<M>> &hit,const GridMesh::Grid &g, const SubGrid& subgrid) 
     {
       /* correct U,V interpolation across the entire grid */
       const vint<M> sx((int)subgrid.x());
@@ -43,19 +43,20 @@ namespace embree
                                      const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                      const GridMesh::Grid &g, const SubGrid& subgrid) const
         {
-          MoellerTrumboreHitM<M> hit;
+          UVIdentity<M> mapUV;
+          MoellerTrumboreHitM<M,UVIdentity<M>> hit(mapUV);
           MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
           Intersect1EpilogMU<M,filter> epilog(ray,context,subgrid.geomID(),subgrid.primID());
 
           /* intersect first triangle */
-          if (intersector.intersect(ray,v0,v1,v3,hit)) 
+          if (intersector.intersect(ray,v0,v1,v3,mapUV,hit)) 
           {
             interpolateUV<M>(hit,g,subgrid);
             epilog(hit.valid,hit);
           }
 
           /* intersect second triangle */
-          if (intersector.intersect(ray,v2,v3,v1,hit)) 
+          if (intersector.intersect(ray,v2,v3,v1,mapUV,hit)) 
           {
             hit.U = hit.absDen - hit.U;
             hit.V = hit.absDen - hit.V;
@@ -68,12 +69,13 @@ namespace embree
                                     const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                     const GridMesh::Grid &g, const SubGrid& subgrid) const
         {
-          MoellerTrumboreHitM<M> hit;
+          UVIdentity<M> mapUV;
+          MoellerTrumboreHitM<M,UVIdentity<M>> hit(mapUV);
           MoellerTrumboreIntersector1<M> intersector(ray,nullptr);
           Occluded1EpilogMU<M,filter> epilog(ray,context,subgrid.geomID(),subgrid.primID());
           
           /* intersect first triangle */
-          if (intersector.intersect(ray,v0,v1,v3,hit)) 
+          if (intersector.intersect(ray,v0,v1,v3,mapUV,hit)) 
           {
             interpolateUV<M>(hit,g,subgrid);
             if (epilog(hit.valid,hit))
@@ -81,7 +83,7 @@ namespace embree
           }
 
           /* intersect second triangle */
-          if (intersector.intersect(ray,v2,v3,v1,hit)) 
+          if (intersector.intersect(ray,v2,v3,v1,mapUV,hit)) 
           {
             hit.U = hit.absDen - hit.U;
             hit.V = hit.absDen - hit.V;
@@ -114,10 +116,11 @@ namespace embree
         const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
         const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
 #endif
-        MoellerTrumboreHitM<8> hit;
+        UVIdentity<8> mapUV;
+        MoellerTrumboreHitM<8,UVIdentity<8>> hit(mapUV);
         MoellerTrumboreIntersector1<8> intersector(ray,nullptr);
         const vbool8 flags(0,0,0,0,1,1,1,1);
-        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,hit)))
+        if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,mapUV,hit)))
         {
           vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
 
@@ -320,7 +323,7 @@ namespace embree
                                               const Vec3vf<M>& tri_e1,
                                               const Vec3vf<M>& tri_e2,
                                               const Vec3vf<M>& tri_Ng,
-                                              MoellerTrumboreHitM<M> &hit)
+                                              MoellerTrumboreHitM<M,UVIdentity<M>> &hit)
         {
           /* calculate denominator */
           const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
@@ -349,7 +352,7 @@ namespace embree
           if (likely(none(valid))) return false;
         
           /* calculate hit information */
-          new (&hit) MoellerTrumboreHitM<M>(valid,U,V,T,absDen,tri_Ng);
+          new (&hit) MoellerTrumboreHitM<M,UVIdentity<M>>(valid,U,V,T,absDen,tri_Ng,UVIdentity<M>());
           return true;
         }
 
@@ -358,7 +361,7 @@ namespace embree
                                              const Vec3vf<M>& v0,
                                              const Vec3vf<M>& v1,
                                              const Vec3vf<M>& v2,
-                                             MoellerTrumboreHitM<M> &hit)
+                                             MoellerTrumboreHitM<M,UVIdentity<M>> &hit)
         {
           const Vec3vf<M> e1 = v0-v1;
           const Vec3vf<M> e2 = v2-v0;
@@ -379,7 +382,8 @@ namespace embree
       {
         Intersect1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
 
-        MoellerTrumboreHitM<4> hit;
+        UVIdentity<4> mapUV;
+        MoellerTrumboreHitM<4,UVIdentity<4>> hit(mapUV);
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
         {
           interpolateUV<M>(hit,g,subgrid);
@@ -401,7 +405,8 @@ namespace embree
       {
         Occluded1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
 
-        MoellerTrumboreHitM<4> hit;
+        UVIdentity<4> mapUV;
+        MoellerTrumboreHitM<4,UVIdentity<4>> hit(mapUV);
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
         {
           interpolateUV<M>(hit,g,subgrid);
@@ -443,7 +448,8 @@ namespace embree
 #endif
         const vbool8 flags(0,0,0,0,1,1,1,1);
 
-        MoellerTrumboreHitM<8> hit;
+        UVIdentity<8> mapUV;
+        MoellerTrumboreHitM<8,UVIdentity<8>> hit(mapUV);
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<8,K,filter>::intersect1(ray,k,vtx0,vtx1,vtx2,hit))
         {
           vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;

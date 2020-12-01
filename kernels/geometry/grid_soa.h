@@ -132,7 +132,7 @@ namespace embree
         __forceinline MapUV(const float* const grid_uv, size_t line_offset, const size_t lines)
           : grid_uv(grid_uv), line_offset(line_offset), lines(lines) {}
 
-        __forceinline void operator() (vfloat& u, vfloat& v) const {
+        __forceinline void operator() (vfloat& u, vfloat& v, Vec3<vfloat>& Ng) const {
           const Vec3<vfloat> tri_v012_uv = Loader::gather(grid_uv,line_offset,lines);	
           const Vec2<vfloat> uv0 = GridSOA::decodeUV(tri_v012_uv[0]);
           const Vec2<vfloat> uv1 = GridSOA::decodeUV(tri_v012_uv[1]);

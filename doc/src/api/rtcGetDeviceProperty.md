@@ -52,8 +52,8 @@ Possible properties to query are:
     `rtcIntersect16` and `rtcOccluded16` functions preserve packet
     size and ray order when invoking callback functions. This is only
     the case if Embree is compiled with `EMBREE_RAY_PACKETS` and
-    `AVX512SKX` (or `AVX512KNL`) enabled, and if the machine it is
-    running on supports `AVX512SKX` (or `AVX512KNL`).
+    `AVX512` enabled, and if the machine it is
+    running on supports `AVX512`.
 
 +   `RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED`: Queries whether
     `rtcIntersect1M`, `rtcIntersect1Mp`, `rtcIntersectNM`,

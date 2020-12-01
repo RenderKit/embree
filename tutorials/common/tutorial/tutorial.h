@@ -55,7 +55,8 @@ namespace embree
           num++;
         }
       }
-      return sum/Ty(num);
+      if (num == 0) return 0;
+      else return sum/Ty(num);
     }
 
     std::deque<std::pair<double,Ty>> values;

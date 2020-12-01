@@ -1,7 +1,7 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.h"
+#include "interpolation_device.h"
 #include "../common/tutorial/optics.h"
 
 namespace embree {
@@ -15,7 +15,7 @@ namespace embree {
 
 /* scene data */
 RTCScene g_scene = nullptr;
-Vec3fa* vertex_colors = nullptr;
+TutorialData data;
 unsigned int triCubeID, quadCubeID;
 
 #define NUM_VERTICES 8
@@ -314,8 +314,9 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  /* create scene */
-  g_scene = rtcNewScene(g_device);
+   /* create scene */
+  TutorialData_Constructor(&data);
+  g_scene = data.scene = rtcNewScene(g_device);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -332,7 +333,7 @@ extern "C" void device_init (char* cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
@@ -341,7 +342,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersect1(data.scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -353,7 +354,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     if (ray.geomID > 0)
     {
       unsigned int geomID = ray.geomID; {
-        rtcInterpolate0(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
+        rtcInterpolate0(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
       }
       //return diffuse;
       diffuse = 0.5f*diffuse;
@@ -364,7 +365,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     if (ray.geomID == 2 || ray.geomID == 3) {
       Vec3fa dPdu,dPdv;
       unsigned int geomID = ray.geomID; {
-        rtcInterpolate1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
+        rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       //return dPdu;
       Ng = cross(dPdu,dPdv);
@@ -377,7 +378,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,&context,RTCRay_(shadow));
+    rtcOccluded1(data.scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -391,35 +392,23 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   return color;
 }
 
-/* renders a single screen tile */
-void renderTileStandard(int taskIndex,
-                        int threadIndex,
-                        int* pixels,
-                        const unsigned int width,
-                        const unsigned int height,
-                        const float time,
-                        const ISPCCamera& camera,
-                        const int numTilesX,
-                        const int numTilesY)
+void renderPixelWrite(const TutorialData& data,
+                      int x, int y,
+                      int* pixels,
+                      const unsigned int width,
+                      const unsigned int height,
+                      const float time,
+                      const ISPCCamera& camera,
+                      RayStats& stats)
 {
-  const unsigned int tileY = taskIndex / numTilesX;
-  const unsigned int tileX = taskIndex - tileY * numTilesX;
-  const unsigned int x0 = tileX * TILE_SIZE_X;
-  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const unsigned int y0 = tileY * TILE_SIZE_Y;
-  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-  {
-    /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
+  /* calculate pixel color */
+  Vec3fa color = renderPixel(data,(float)x,(float)y,camera,stats);
+  
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* task that renders a single screen tile */
@@ -431,7 +420,17 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
                          const int numTilesX,
                          const int numTilesY)
 {
-  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  const unsigned int tileY = taskIndex / numTilesX;
+  const unsigned int tileX = taskIndex - tileY * numTilesX;
+  const unsigned int x0 = tileX * TILE_SIZE_X;
+  const unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const unsigned int y0 = tileY * TILE_SIZE_Y;
+  const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
+  {
+    renderPixelWrite(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+  }
 }
 
 extern "C" void renderFrameStandard (int* pixels,
@@ -467,7 +466,7 @@ extern "C" void device_render (int* pixels,
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

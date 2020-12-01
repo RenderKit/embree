@@ -3,6 +3,14 @@
 
 #pragma once
 
+#define vboolf vboolf_impl
+#define vboold vboold_impl
+#define vint vint_impl
+#define vuint vuint_impl
+#define vllong vllong_impl
+#define vfloat vfloat_impl
+#define vdouble vdouble_impl
+
 namespace embree
 {
   /* 8-wide AVX bool type */
@@ -184,3 +192,11 @@ namespace embree
                        << a[4] << ", " << a[5] << ", " << a[6] << ", " << a[7] << ">";
   }
 }
+
+#undef vboolf
+#undef vboold
+#undef vint
+#undef vuint
+#undef vllong
+#undef vfloat
+#undef vdouble

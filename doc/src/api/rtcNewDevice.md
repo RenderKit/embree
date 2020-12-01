@@ -65,10 +65,10 @@ The following configuration is supported:
   upfront. This can be useful for benchmarking to exclude thread
   creation time. This option is disabled by default.
 
-+ `isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Use specified
++ `isa=[sse2,sse4.2,avx,avx2,avx512]`: Use specified
   ISA. By default the ISA is selected automatically.
 
-+ `max_isa=[sse2,sse4.2,avx,avx2,avx512knl,avx512skx]`: Configures the
++ `max_isa=[sse2,sse4.2,avx,avx2,avx512]`: Configures the
   automated ISA selection to use maximally the specified ISA.
 
 + `hugepages=[0/1]`: Enables or disables usage of huge pages. Under

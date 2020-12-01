@@ -3,6 +3,14 @@
 
 #pragma once
 
+#define vboolf vboolf_impl
+#define vboold vboold_impl
+#define vint vint_impl
+#define vuint vuint_impl
+#define vllong vllong_impl
+#define vfloat vfloat_impl
+#define vdouble vdouble_impl
+
 namespace embree
 {
   /* 16-wide AVX-512 float type */
@@ -194,12 +202,8 @@ namespace embree
   __forceinline vfloat16 signmsk(const vfloat16& a) { return _mm512_castsi512_ps(_mm512_and_epi32(_mm512_castps_si512(a),_mm512_set1_epi32(0x80000000))); }
 
   __forceinline vfloat16 rcp(const vfloat16& a) {
-#if defined(__AVX512ER__)
-    return _mm512_rcp28_ps(a);
-#else
     const vfloat16 r = _mm512_rcp14_ps(a);
     return _mm512_mul_ps(r, _mm512_fnmadd_ps(r, a, vfloat16(2.0f)));
-#endif
   }
 
   __forceinline vfloat16 sqr (const vfloat16& a) { return _mm512_mul_ps(a,a); }
@@ -271,25 +275,17 @@ namespace embree
   }; 
 
   __forceinline vfloat16 mini(const vfloat16& a, const vfloat16& b) {
-#if !defined(__AVX512ER__) // SKX
     const vint16 ai = _mm512_castps_si512(a);
     const vint16 bi = _mm512_castps_si512(b);
     const vint16 ci = _mm512_min_epi32(ai,bi);
     return _mm512_castsi512_ps(ci);
-#else // KNL
-    return min(a,b);
-#endif
   }
 
   __forceinline vfloat16 maxi(const vfloat16& a, const vfloat16& b) {
-#if !defined(__AVX512ER__) // SKX
     const vint16 ai = _mm512_castps_si512(a);
     const vint16 bi = _mm512_castps_si512(b);
     const vint16 ci = _mm512_max_epi32(ai,bi);
     return _mm512_castsi512_ps(ci);
-#else // KNL
-    return max(a,b);
-#endif
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -769,3 +765,11 @@ namespace embree
     return cout;
   }
 }
+
+#undef vboolf
+#undef vboold
+#undef vint
+#undef vuint
+#undef vllong
+#undef vfloat
+#undef vdouble

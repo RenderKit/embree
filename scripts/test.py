@@ -212,10 +212,8 @@ def runConfig(config):
     else                 : conf.append("-D EMBREE_ISA_AVX=OFF")
     if "AVX2"      in isa: conf.append("-D EMBREE_ISA_AVX2=ON")
     else                 : conf.append("-D EMBREE_ISA_AVX2=OFF")
-    if "AVX512KNL" in isa: conf.append("-D EMBREE_ISA_AVX512KNL=ON")
-    else                 : conf.append("-D EMBREE_ISA_AVX512KNL=OFF")
-    if "AVX512SKX" in isa: conf.append("-D EMBREE_ISA_AVX512SKX=ON")
-    else                 : conf.append("-D EMBREE_ISA_AVX512SKX=OFF")
+    if "AVX512" in isa: conf.append("-D EMBREE_ISA_AVX512=ON")
+    else                 : conf.append("-D EMBREE_ISA_AVX512=OFF")
 
   if "tasking" in config:
     tasking  = config["tasking"]

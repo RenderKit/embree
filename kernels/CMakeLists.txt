@@ -52,8 +52,12 @@ SET(EMBREE_LIBRARY_FILES
 
   geometry/primitive4.cpp
   geometry/instance_intersector.cpp
-  geometry/curve_intersector_virtual.cpp
-  geometry/curve_intersector_virtual2.cpp
+  geometry/curve_intersector_virtual_4v.cpp
+  geometry/curve_intersector_virtual_4i.cpp
+  geometry/curve_intersector_virtual_4i_mb.cpp
+  geometry/curve_intersector_virtual_8v.cpp
+  geometry/curve_intersector_virtual_8i.cpp
+  geometry/curve_intersector_virtual_8i_mb.cpp
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
@@ -99,15 +103,19 @@ MACRO(embree_files TARGET ISA)
       
   SET(${TARGET}
     geometry/instance_intersector.cpp
-    geometry/curve_intersector_virtual.cpp
-    geometry/curve_intersector_virtual2.cpp
+    geometry/curve_intersector_virtual_4v.cpp
+    geometry/curve_intersector_virtual_4i.cpp
+    geometry/curve_intersector_virtual_4i_mb.cpp
+    geometry/curve_intersector_virtual_8v.cpp
+    geometry/curve_intersector_virtual_8i.cpp
+    geometry/curve_intersector_virtual_8i_mb.cpp
     bvh/bvh_intersector1_bvh4.cpp)
 
   IF (${ISA} EQUAL ${ISA_LOWEST_AVX})
     LIST(APPEND ${TARGET} geometry/primitive8.cpp)
   ENDIF() 
 
-  IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX2} OR ${ISA} EQUAL ${AVX512KNL} OR ${ISA} EQUAL ${AVX512SKX} OR ${ISA_LOWEST} EQUAL ${ISA})
+  IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX2} OR ${ISA} EQUAL ${AVX512} OR ${ISA_LOWEST} EQUAL ${ISA})
     
     LIST(APPEND ${TARGET}
       common/scene_user_geometry.cpp
@@ -134,7 +142,7 @@ MACRO(embree_files TARGET ISA)
     ENDIF()
   ENDIF()
 
-  IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX2} OR ${ISA} EQUAL ${AVX512KNL} OR ${ISA_LOWEST} EQUAL ${ISA})
+  IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX2} OR ${ISA_LOWEST} EQUAL ${ISA})
     LIST(APPEND ${TARGET}
       bvh/bvh_builder_morton.cpp
       bvh/bvh_rotate.cpp
@@ -185,15 +193,13 @@ ENDMACRO()
 embree_files(EMBREE_LIBRARY_FILES_SSE42 ${SSE42})
 embree_files(EMBREE_LIBRARY_FILES_AVX ${AVX})
 embree_files(EMBREE_LIBRARY_FILES_AVX2 ${AVX2})
-embree_files(EMBREE_LIBRARY_FILES_AVX512KNL ${AVX512KNL})
-embree_files(EMBREE_LIBRARY_FILES_AVX512SKX ${AVX512SKX})
+embree_files(EMBREE_LIBRARY_FILES_AVX512 ${AVX512})
 
 #message("SSE2: ${EMBREE_LIBRARY_FILES_SSE2}")
 #message("SSE42: ${EMBREE_LIBRARY_FILES_SSE42}")
 #message("AVX: ${EMBREE_LIBRARY_FILES_AVX}")
 #message("AVX2: ${EMBREE_LIBRARY_FILES_AVX2}")
-#message("AVX512KNL: ${EMBREE_LIBRARY_FILES_AVX512KNL}")
-#message("AVX512SKX: ${EMBREE_LIBRARY_FILES_AVX512SKX}")
+#message("AVX512: ${EMBREE_LIBRARY_FILES_AVX512}")
 
 # replaces all .cpp files with a dummy file that includes that .cpp file
 # this is to work around an ICC name mangling issue related to lambda functions under windows
@@ -215,8 +221,7 @@ ENDMACRO()
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_SSE42     sse42     ${EMBREE_LIBRARY_FILES_SSE42})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX       avx       ${EMBREE_LIBRARY_FILES_AVX})
 CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX2      avx2      ${EMBREE_LIBRARY_FILES_AVX2})
-CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512KNL avx512knl ${EMBREE_LIBRARY_FILES_AVX512KNL})
-CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512SKX avx512skx ${EMBREE_LIBRARY_FILES_AVX512SKX})
+CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512    avx512    ${EMBREE_LIBRARY_FILES_AVX512})
 
 MACRO (CheckGlobals library)
   IF (NOT WIN32 AND NOT APPLE)
@@ -286,31 +291,17 @@ IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
   ENDIF()
 ENDIF()
 
-IF (EMBREE_ISA_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
-  DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES_AVX512KNL})
-  ADD_LIBRARY(embree_avx512knl STATIC ${EMBREE_LIBRARY_FILES_AVX512KNL})
-  TARGET_LINK_LIBRARIES(embree_avx512knl PRIVATE tasking)
-  SET_TARGET_PROPERTIES(embree_avx512knl PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512KNL}")
-  SET_PROPERTY(TARGET embree_avx512knl PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512knl)
-  CheckGlobals(embree_avx512knl)
+IF (EMBREE_ISA_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
+  DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES_AVX512})
+  ADD_LIBRARY(embree_avx512 STATIC ${EMBREE_LIBRARY_FILES_AVX512})
+  TARGET_LINK_LIBRARIES(embree_avx512 PRIVATE tasking)
+  SET_TARGET_PROPERTIES(embree_avx512 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512}")
+  SET_PROPERTY(TARGET embree_avx512 PROPERTY FOLDER kernels)
+  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512)
+  CheckGlobals(embree_avx512)
   IF (EMBREE_STATIC_LIB)
-    INSTALL(TARGETS embree_avx512knl EXPORT embree_avx512knl-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
-    INSTALL(EXPORT embree_avx512knl-targets DESTINATION ${EMBREE_CMAKEEXPORT_DIR} COMPONENT devel)
-  ENDIF()
-ENDIF()
-
-IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
-  DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES_AVX512SKX})
-  ADD_LIBRARY(embree_avx512skx STATIC ${EMBREE_LIBRARY_FILES_AVX512SKX})
-  TARGET_LINK_LIBRARIES(embree_avx512skx PRIVATE tasking)
-  SET_TARGET_PROPERTIES(embree_avx512skx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512SKX}")
-  SET_PROPERTY(TARGET embree_avx512skx PROPERTY FOLDER kernels)
-  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512skx)
-  CheckGlobals(embree_avx512skx)
-  IF (EMBREE_STATIC_LIB)
-    INSTALL(TARGETS embree_avx512skx EXPORT embree_avx512skx-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
-    INSTALL(EXPORT embree_avx512skx-targets DESTINATION ${EMBREE_CMAKEEXPORT_DIR} COMPONENT devel)
+    INSTALL(TARGETS embree_avx512 EXPORT embree_avx512-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(EXPORT embree_avx512-targets DESTINATION ${EMBREE_CMAKEEXPORT_DIR} COMPONENT devel)
   ENDIF()
 ENDIF()
 

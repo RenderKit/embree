@@ -3,6 +3,7 @@
 
 #include "bvh.h"
 #include "../builders/bvh_builder_sah.h"
+#include "../builders/bvh_builder_msmblur.h"
 
 namespace embree
 {

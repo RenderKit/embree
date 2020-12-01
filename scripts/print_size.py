@@ -62,13 +62,12 @@ def split_list(l,s):
   b=filter(lambda x: x[1].find(s) == -1,l)
   return (a,b)
 
-(symbols_avx512skx, symbols) = split_list(symbols,"::avx512skx::")
-(symbols_avx512knl, symbols) = split_list(symbols,"::avx512knl::")
+(symbols_avx512, symbols) = split_list(symbols,"::avx512::")
 (symbols_avx2, symbols) = split_list(symbols,"::avx2::")
 (symbols_avx, symbols) = split_list(symbols,"::avx::")
 (symbols_sse42, symbols) = split_list(symbols,"::sse42::")
 (symbols_sse2, symbols) = split_list(symbols,"::sse2::")
-isa_symbols = (symbols,symbols_sse2,symbols_sse42,symbols_avx,symbols_avx2,symbols_avx512knl,symbols_avx512skx)
+isa_symbols = (symbols,symbols_sse2,symbols_sse42,symbols_avx,symbols_avx2,symbols_avx512)
 
 component_names=[
   ("Intersectors",
@@ -135,7 +134,7 @@ def add7((a0,a1,a2,a3,a4,a5,a6),(b0,b1,b2,b3,b4,b5,b6)):
 
 def print_header():
    sys.stdout.write(' ' + '{0:<40}'.format("Component"))
-   sys.stdout.write('        NONE        SSE2      SSE4.2         AVX        AVX2   AVX512knl   AVX512skx         SUM\n')
+   sys.stdout.write('        NONE        SSE2      SSE4.2         AVX        AVX2   AVX512         SUM\n')
 
 def sum_component(c):
   if type(c) is tuple:

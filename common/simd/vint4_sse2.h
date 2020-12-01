@@ -5,6 +5,14 @@
 
 #include "../math/math.h"
 
+#define vboolf vboolf_impl
+#define vboold vboold_impl
+#define vint vint_impl
+#define vuint vuint_impl
+#define vllong vllong_impl
+#define vfloat vfloat_impl
+#define vdouble vdouble_impl
+
 namespace embree
 {
   /* 4-wide SSE integer type */
@@ -581,3 +589,10 @@ namespace embree
   }
 }
 
+#undef vboolf
+#undef vboold
+#undef vint
+#undef vuint
+#undef vllong
+#undef vfloat
+#undef vdouble

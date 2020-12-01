@@ -3,6 +3,14 @@
 
 #pragma once
 
+#define vboolf vboolf_impl
+#define vboold vboold_impl
+#define vint vint_impl
+#define vuint vuint_impl
+#define vllong vllong_impl
+#define vfloat vfloat_impl
+#define vdouble vdouble_impl
+
 namespace embree
 {
   /* 4-wide SSE float type */
@@ -230,7 +238,19 @@ namespace embree
     }
   };
 
+  ////////////////////////////////////////////////////////////////////////////////
+  /// Load/Store
+  ////////////////////////////////////////////////////////////////////////////////
 
+  template<> struct mem<vfloat4>
+  {
+    static __forceinline vfloat4 load (const vboolf4& mask, const void* ptr) { return vfloat4::load (mask,ptr); }
+    static __forceinline vfloat4 loadu(const vboolf4& mask, const void* ptr) { return vfloat4::loadu(mask,ptr); }
+    
+    static __forceinline void store (const vboolf4& mask, void* ptr, const vfloat4& v) { vfloat4::store (mask,ptr,v); }
+    static __forceinline void storeu(const vboolf4& mask, void* ptr, const vfloat4& v) { vfloat4::storeu(mask,ptr,v); }
+  };
+    
   ////////////////////////////////////////////////////////////////////////////////
   /// Unary Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -545,12 +565,8 @@ namespace embree
     return shuffle<i,i,i,i>(v);
   }
 
-#if defined (__SSE4_1__) && !defined(__GNUC__)
-  template<int i> __forceinline float extract(const vfloat4& a) { return _mm_cvtss_f32(_mm_extract_ps(a,i)); }
-#else
-  template<int i> __forceinline float extract(const vfloat4& a) { return _mm_cvtss_f32(shuffle<i,i,i,i>(a)); }
-#endif
-  template<> __forceinline float extract<0>(const vfloat4& a) { return _mm_cvtss_f32(a); }
+  template<int i> __forceinline float extract   (const vfloat4& a) { return _mm_cvtss_f32(shuffle<i>(a)); }
+  template<>      __forceinline float extract<0>(const vfloat4& a) { return _mm_cvtss_f32(a); }
 
 #if defined (__SSE4_1__)
   template<int dst, int src, int clr> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
@@ -706,3 +722,11 @@ namespace embree
   }
 
 }
+
+#undef vboolf
+#undef vboold
+#undef vint
+#undef vuint
+#undef vllong
+#undef vfloat
+#undef vdouble

@@ -30,8 +30,7 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
        --skip .*SSE4.*              # to run faster
        --skip .*AVX.*               # valgrind does not support AVX
        --skip .*AVX2.*              # valgrind does not support AVX2
-       --skip .*AVX512KNL.*         # valgrind does not support AVX512KNL
-       --skip .*AVX512SKX.*         # valgrind does not support AVX512SKX
+       --skip .*AVX512.*         # valgrind does not support AVX512
     )
     set_tests_properties(verify_memcheck PROPERTIES TIMEOUT 15000)
   ENDIF()

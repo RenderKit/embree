@@ -1,7 +1,7 @@
 // Copyright 2009-2020 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.isph"
+#include "interpolation_device.isph"
 #include "../common/tutorial/optics.isph"
 
 //#define FORCE_FIXED_EDGE_TESSELLATION
@@ -13,7 +13,7 @@
 
 /* scene data */
 RTCScene g_scene = NULL;
-uniform Vec3fa* uniform vertex_colors = NULL;
+uniform TutorialData data;
 uniform unsigned int triCubeID, quadCubeID;
 
 #define NUM_VERTICES 8
@@ -312,8 +312,9 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* create scene */
-  g_scene = rtcNewScene(g_device);
+   /* create scene */
+  TutorialData_Constructor(&data);
+  g_scene = data.scene = rtcNewScene(g_device);
 
   /* add ground plane */
   addGroundPlane(g_scene);
@@ -330,7 +331,7 @@ export void device_init (uniform int8* uniform cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
@@ -339,7 +340,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(data.scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -351,7 +352,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     if (ray.geomID > 0)
     {
       foreach_unique (geomID in ray.geomID) {
-        rtcInterpolateV0(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
+        rtcInterpolateV0(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
       }
       //return diffuse;
       diffuse = 0.5f*diffuse;
@@ -362,7 +363,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     if (ray.geomID == 2 || ray.geomID == 3) {
       Vec3f dPdu,dPdv;
       foreach_unique (geomID in ray.geomID) {
-        rtcInterpolateV1(rtcGetGeometry(g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
+        rtcInterpolateV1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu.x,&dPdv.x,3);
       }
       //return dPdu;
       Ng = cross(dPdu,dPdv);
@@ -375,7 +376,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
+    rtcOccludedV(data.scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -389,35 +390,23 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   return color;
 }
 
-/* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex,
-                        uniform int threadIndex,
-                        uniform int* uniform pixels,
-                        const uniform unsigned int width,
-                        const uniform unsigned int height,
-                        const uniform float time,
-                        const uniform ISPCCamera& camera,
-                        const uniform int numTilesX,
-                        const uniform int numTilesY)
+void renderPixelWrite(const uniform TutorialData& data,
+                      int x, int y,
+                      uniform int* uniform pixels,
+                      const uniform unsigned int width,
+                      const uniform unsigned int height,
+                      const uniform float time,
+                      const uniform ISPCCamera& camera,
+                      uniform RayStats& stats)
 {
-  const uniform unsigned int tileY = taskIndex / numTilesX;
-  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
-
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
+  /* calculate pixel color */
+  Vec3f color = renderPixel(data,(float)x,(float)y,camera,stats);
+  
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* task that renders a single screen tile */
@@ -429,7 +418,17 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    renderPixelWrite(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+  }
 }
 
 export void renderFrameStandard (uniform int* uniform pixels,
@@ -461,5 +460,5 @@ export void device_render (uniform int* uniform pixels,
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = NULL;
+  TutorialData_Destructor(&data);
 }
