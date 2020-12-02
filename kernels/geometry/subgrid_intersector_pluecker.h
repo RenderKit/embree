@@ -302,15 +302,13 @@ namespace embree
                                           const Vec3vf<K>& tri_v0,
                                           const Vec3vf<K>& tri_v1,
                                           const Vec3vf<K>& tri_v2,
-                                          const Vec3vf<K>& tri_Ng,
                                           const vbool<K>& flags,
                                           const GridMesh::Grid &g, 
                                           const SubGrid &subgrid,
                                           const unsigned int i,
                                           const Epilog& epilog) const
         { 
-          /* calculate denominator */
-        /* calculate vertices relative to ray origin */
+	  /* calculate vertices relative to ray origin */
           vbool<K> valid = valid0;
           const Vec3vf<K> O = ray.org;
           const Vec3vf<K> D = ray.dir;
@@ -348,28 +346,10 @@ namespace embree
           if (unlikely(none(valid))) return false;
           
           /* calculate hit information */
-          SubGridQuadHitPlueckerK<K> hit(U,V,UVW,t,tri_Ng,flags,g,subgrid,i);
+          SubGridQuadHitPlueckerK<K> hit(U,V,UVW,t,Ng,flags,g,subgrid,i);
           return epilog(valid,hit);
         }
       
-        template<typename Epilog>
-        __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
-                                          RayK<K>& ray,
-                                          const Vec3vf<K>& v0,
-                                          const Vec3vf<K>& v1,
-                                          const Vec3vf<K>& v2,
-                                          const vbool<K>& flags,
-                                          const GridMesh::Grid &g, 
-                                          const SubGrid &subgrid,
-                                          const unsigned int i,
-                                          const Epilog& epilog) const
-        {
-          const Vec3vf<K> e1 = v0-v1;
-          const Vec3vf<K> e2 = v2-v0;
-          const Vec3vf<K> Ng = cross(e2,e1);
-          return intersectK(valid0,ray,v0,v1,v2,Ng,flags,g,subgrid,i,epilog);
-        }
-
         template<typename Epilog>
         __forceinline bool intersectK(const vbool<K>& valid0, 
                                       RayK<K>& ray,
@@ -388,14 +368,13 @@ namespace embree
           return none(valid0);
         }
 
-        static  __forceinline bool intersect1(RayK<K>& ray,
-                                              size_t k,
-                                              const Vec3vf<M>& tri_v0,
-                                              const Vec3vf<M>& tri_v1,
-                                              const Vec3vf<M>& tri_v2,
-                                              const Vec3vf<M>& tri_Ng,
-                                              const vbool<M>& flags,
-                                              SubGridQuadHitPlueckerM<M> &hit)
+	static __forceinline bool intersect1(RayK<K>& ray,
+					     size_t k,
+					     const Vec3vf<M>& tri_v0,
+					     const Vec3vf<M>& tri_v1,
+					     const Vec3vf<M>& tri_v2,
+					     const vbool<M>& flags,
+					     SubGridQuadHitPlueckerM<M> &hit) 
         {
           /* calculate vertices relative to ray origin */
           const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
@@ -412,7 +391,7 @@ namespace embree
           /* perform edge tests */
           const vfloat<M> U = dot(cross(e0,v2+v0),D);
           const vfloat<M> V = dot(cross(e1,v0+v1),D);
-          const vfloat<M> W = dot(cross(e2,v1+v2),D);
+          const vfloat<M> W = dot(cross(e2,v1+v2),D);	  
           const vfloat<M> UVW = U+V+W;
           const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
@@ -436,22 +415,8 @@ namespace embree
           valid &= den != vfloat<M>(zero);
           if (unlikely(none(valid))) return false;
           /* update hit information */
-          new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,UVW,t,tri_Ng,flags);
+          new (&hit) SubGridQuadHitPlueckerM<M>(valid,U,V,UVW,t,Ng,flags);
           return true;
-        }
-
-        static __forceinline bool intersect1(RayK<K>& ray,
-                                             size_t k,
-                                             const Vec3vf<M>& v0,
-                                             const Vec3vf<M>& v1,
-                                             const Vec3vf<M>& v2,
-                                             const vbool<M>& flags,
-                                             SubGridQuadHitPlueckerM<M> &hit)
-        {
-          const Vec3vf<M> e1 = v0-v1;
-          const Vec3vf<M> e2 = v2-v0;
-          const Vec3vf<M> Ng = cross(e2,e1); // FIXME: optimize!!!
-          return intersect1(ray,k,v0,v1,v2,Ng,flags,hit);
         }
 
       };
@@ -465,6 +430,7 @@ namespace embree
       __forceinline void intersect1(RayHitK<K>& ray, size_t k, IntersectContext* context,
                                     const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
+
         Intersect1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
         SubGridQuadHitPlueckerM<4> hit;
         if (SubGridQuadMIntersectorKPlueckerBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,vboolf4(false),hit))
@@ -525,9 +491,8 @@ namespace embree
         const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
 #endif
         const vbool8 flags(0,0,0,0,1,1,1,1);
-
         SubGridQuadHitPlueckerM<8> hit;
-        if (SubGridQuadMIntersectorKPlueckerBase<8,K,filter>::intersect1(ray,k,v0,v1,v3,flags,hit))
+	if (SubGridQuadMIntersectorKPlueckerBase<8,K,filter>::intersect1(ray,k,vtx0,vtx1,vtx2,flags,hit))
         {
           /* correct U,V interpolation across the entire grid */
           interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));

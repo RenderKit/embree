@@ -559,7 +559,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
   /* intersect ray with scene */
   rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
-
+  
   /* shade pixels */
   Vec3f color = make_Vec3f(0.0f);
   if (ray.geomID != RTC_INVALID_GEOMETRY_ID)

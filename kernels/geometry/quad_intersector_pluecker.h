@@ -259,18 +259,19 @@ namespace embree
           const Vec3vf<M> e0 = v2-v0;
           const Vec3vf<M> e1 = v0-v1;
           const Vec3vf<M> e2 = v1-v2;
-          
+	  
           /* perform edge tests */
           const vfloat<M> U = dot(cross(e0,v2+v0),D);
           const vfloat<M> V = dot(cross(e1,v0+v1),D);
           const vfloat<M> W = dot(cross(e2,v1+v2),D);
+	  
           const vfloat<M> UVW = U+V+W;
           const vfloat<M> eps = float(ulp)*abs(UVW);
 #if defined(EMBREE_BACKFACE_CULLING)
           vbool<M> valid = max(U,V,W) <= eps;
 #else
           vbool<M> valid = (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
-#endif
+#endif	
           if (unlikely(none(valid))) return false;
           
           /* calculate geometry normal and denominator */
