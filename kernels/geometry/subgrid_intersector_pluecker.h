@@ -80,6 +80,20 @@ namespace embree
     }
 
     template<int M>
+    __forceinline void interpolateUV(PlueckerHitM<M,UVIdentity<M>> &hit,const GridMesh::Grid &g, const SubGrid& subgrid, const vint<M> &stepX, const vint<M> &stepY) 
+    {
+      /* correct U,V interpolation across the entire grid */
+      const vint<M> sx((int)subgrid.x());
+      const vint<M> sy((int)subgrid.y());
+      const vint<M> sxM(sx + stepX);
+      const vint<M> syM(sy + stepY);
+      const float inv_resX = rcp((float)((int)g.resX-1));
+      const float inv_resY = rcp((float)((int)g.resY-1));          
+      hit.vu = (hit.vu + vfloat<M>(sxM)) * inv_resX;
+      hit.vv = (hit.vv + vfloat<M>(syM)) * inv_resY;
+    }
+    
+    template<int M>
     __forceinline static bool intersectPluecker(Ray& ray,
                                                 const Vec3vf<M>& tri_v0,
                                                 const Vec3vf<M>& tri_v1,
@@ -142,19 +156,26 @@ namespace embree
                                      const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                      const GridMesh::Grid &g, const SubGrid& subgrid) const
         {
-          SubGridQuadHitPlueckerM<M> hit;
+          //SubGridQuadHitPlueckerM<M> hit;
+          UVIdentity<M> mapUV;
+          PlueckerHitM<M,UVIdentity<M>> hit(mapUV);
+          PlueckerIntersector1<M> intersector(ray,nullptr);
+	  
           Intersect1EpilogMU<M,filter> epilog(ray,context,subgrid.geomID(),subgrid.primID());
 
           /* intersect first triangle */
-          if (intersectPluecker(ray,v0,v1,v3,vbool<M>(false),hit)) 
+          //if (intersectPluecker(ray,v0,v1,v3,vbool<M>(false),hit))
+	  if (intersector.intersect(ray,v0,v1,v3,mapUV,hit)) 
           {
             interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
             epilog(hit.valid,hit);
           }
 
           /* intersect second triangle */
-          if (intersectPluecker(ray,v2,v3,v1,vbool<M>(true),hit)) 
+          //if (intersectPluecker(ray,v2,v3,v1,vbool<M>(true),hit))
+	  if (intersector.intersect(ray,v2,v3,v1,mapUV,hit)) 
           {
+	    std::swap(hit.vu,hit.vv);
             interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
             epilog(hit.valid,hit);
           }

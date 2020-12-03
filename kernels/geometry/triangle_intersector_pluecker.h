@@ -22,8 +22,10 @@ namespace embree
     template<int M, typename UVMapper>
     struct PlueckerHitM
     {
-      __forceinline PlueckerHitM(const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& UVW, const vfloat<M>& t, const Vec3vf<M>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), UVW(UVW), mapUV(mapUV), vt(t), vNg(Ng) {}
+      __forceinline PlueckerHitM(const UVMapper& mapUV) : mapUV(mapUV) {}
+      
+      __forceinline PlueckerHitM(const vbool<M>& valid, const vfloat<M>& U, const vfloat<M>& V, const vfloat<M>& UVW, const vfloat<M>& t, const Vec3vf<M>& Ng, const UVMapper& mapUV)
+        :  U(U), V(V), UVW(UVW), mapUV(mapUV), valid(valid), vt(t), vNg(Ng) {}
       
       __forceinline void finalize() 
       {
@@ -49,6 +51,7 @@ namespace embree
       const UVMapper& mapUV;
       
     public:
+      vbool<M> valid;      
       vfloat<M> vu;
       vfloat<M> vv;
       vfloat<M> vt;
@@ -62,14 +65,14 @@ namespace embree
 
       __forceinline PlueckerIntersector1(const Ray& ray, const void* ptr) {}
 
-      template<typename UVMapper, typename Epilog>
+      template<typename UVMapper>
       __forceinline bool intersect(const vbool<M>& valid0,
                                    Ray& ray,
                                    const Vec3vf<M>& tri_v0,
                                    const Vec3vf<M>& tri_v1,
                                    const Vec3vf<M>& tri_v2,
                                    const UVMapper& mapUV,
-                                   const Epilog& epilog) const
+				   PlueckerHitM<M,UVMapper>& hit) const
       {
         vbool<M> valid = valid0;
         
@@ -110,41 +113,98 @@ namespace embree
         if (unlikely(early_out && none(valid))) return false;
 
         /* update hit information */
-        PlueckerHitM<M,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
-        return epilog(valid,hit);
+        new (&hit) PlueckerHitM<M,UVMapper>(valid,U,V,UVW,t,Ng,mapUV);
+        return true;
+      }
+
+      template<typename UVMapper>
+      __forceinline bool intersectEdge(const vbool<M>& valid,
+				       Ray& ray,
+				       const Vec3vf<M>& tri_v0,
+				       const Vec3vf<M>& tri_v1,
+				       const Vec3vf<M>& tri_v2,
+				       const UVMapper& mapUV,
+				       PlueckerHitM<M,UVMapper>& hit) const
+      {
+        return intersect(valid,ray,tri_v0,tri_v1,tri_v2,mapUV,hit);
+      }
+
+      template<typename UVMapper>
+      __forceinline bool intersectEdge(Ray& ray,
+				       const Vec3vf<M>& tri_v0,
+				       const Vec3vf<M>& tri_v1,
+				       const Vec3vf<M>& tri_v2,
+				       const UVMapper& mapUV,				       
+				       PlueckerHitM<M,UVMapper>& hit) const
+      {
+	vbool<M> valid = true;
+        return intersect(valid,ray,tri_v0,tri_v1,tri_v2,mapUV,hit);
+      }
+
+      template<typename UVMapper>
+      __forceinline bool intersect(Ray& ray,
+                                   const Vec3vf<M>& tri_v0,
+                                   const Vec3vf<M>& tri_v1,
+                                   const Vec3vf<M>& tri_v2,
+                                   const UVMapper& mapUV,				   
+                                   PlueckerHitM<M,UVMapper>& hit) const
+      {
+        return intersectEdge(ray,tri_v0,tri_v1,tri_v2,mapUV,hit);
       }
 
       template<typename UVMapper, typename Epilog>
-      __forceinline bool intersect(Ray& ray,
-                                   const Vec3vf<M>& tri_v0,
-                                   const Vec3vf<M>& tri_v1,
-                                   const Vec3vf<M>& tri_v2,
+      __forceinline bool intersectEdge(Ray& ray,
+                                       const Vec3vf<M>& v0,
+                                       const Vec3vf<M>& e1,
+                                       const Vec3vf<M>& e2,
+                                       const UVMapper& mapUV,
+                                       const Epilog& epilog) const
+      {
+        PlueckerHitM<M,UVMapper> hit(mapUV);
+        if (likely(intersectEdge(ray,v0,e1,e2,mapUV,hit))) return epilog(hit.valid,hit);
+        return false;
+      }
+
+      template<typename UVMapper, typename Epilog>
+        __forceinline bool intersect(Ray& ray,
+                                     const Vec3vf<M>& v0,
+                                     const Vec3vf<M>& v1,
+                                     const Vec3vf<M>& v2,
+                                     const UVMapper& mapUV,
+                                     const Epilog& epilog) const
+      {
+        PlueckerHitM<M,UVMapper> hit(mapUV);
+        if (likely(intersect(ray,v0,v1,v2,mapUV,hit))) return epilog(hit.valid,hit);
+        return false;
+      }
+
+      template<typename Epilog>
+        __forceinline bool intersect(Ray& ray,
+                                     const Vec3vf<M>& v0,
+                                     const Vec3vf<M>& v1,
+                                     const Vec3vf<M>& v2,
+                                     const Epilog& epilog) const
+      {
+        auto mapUV = UVIdentity<M>();
+        PlueckerHitM<M,UVIdentity<M>> hit(mapUV);
+        if (likely(intersect(ray,v0,v1,v2,mapUV,hit))) return epilog(hit.valid,hit);
+        return false;
+      }
+
+      template<typename UVMapper, typename Epilog>
+      __forceinline bool intersect(const vbool<M>& valid,
+                                   Ray& ray,
+                                   const Vec3vf<M>& v0,
+                                   const Vec3vf<M>& v1,
+                                   const Vec3vf<M>& v2,
                                    const UVMapper& mapUV,
                                    const Epilog& epilog) const
       {
-        return intersect(true,ray,tri_v0,tri_v1,tri_v2,mapUV,epilog);
+        PlueckerHitM<M,UVMapper> hit(mapUV);
+        if (likely(intersect(valid,ray,v0,v1,v2,mapUV,hit))) return epilog(hit.valid,hit);
+        return false;
       }
-
-      template<typename Epilog>
-      __forceinline bool intersect(Ray& ray,
-                                   const Vec3vf<M>& tri_v0,
-                                   const Vec3vf<M>& tri_v1,
-                                   const Vec3vf<M>& tri_v2,
-                                   const Epilog& epilog) const
-      {
-        return intersect(ray,tri_v0,tri_v1,tri_v2,UVIdentity<M>(),epilog);
-      }
-
-      template<typename Epilog>
-      __forceinline bool intersect(const vbool<M>& valid0,
-                                   Ray& ray,
-                                   const Vec3vf<M>& tri_v0,
-                                   const Vec3vf<M>& tri_v1,
-                                   const Vec3vf<M>& tri_v2,
-                                   const Epilog& epilog) const
-      {
-        return intersect(valid0,ray,tri_v0,tri_v1,tri_v2,UVIdentity<M>(),epilog);
-      }
+      
     };
 
     template<int K, typename UVMapper>
@@ -292,7 +352,7 @@ namespace embree
         if (unlikely(none(valid))) return false;
 
         /* update hit information */
-        PlueckerHitM<M,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
+        PlueckerHitM<M,UVMapper> hit(valid,U,V,UVW,t,Ng,mapUV);
         return epilog(valid,hit);
       }
 
