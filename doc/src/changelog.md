@@ -2,6 +2,7 @@ Version History
 ---------------
 
 ### Embree 3.12.2
+-   Fixed wrong uv and Ng for grid intersector in robust mode for AVX.
 -   Removed optimizations for Knights Landing.
 
 ### Embree 3.12.1
