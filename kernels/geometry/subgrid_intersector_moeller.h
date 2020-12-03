@@ -16,13 +16,13 @@ namespace embree
     /* ----------------------------- */
 
     template<int M>
-    __forceinline void interpolateUV(MoellerTrumboreHitM<M,UVIdentity<M>> &hit,const GridMesh::Grid &g, const SubGrid& subgrid) 
+    __forceinline void interpolateUV(MoellerTrumboreHitM<M,UVIdentity<M>> &hit,const GridMesh::Grid &g, const SubGrid& subgrid, const vint<M> &stepX, const vint<M> &stepY) 
     {
       /* correct U,V interpolation across the entire grid */
       const vint<M> sx((int)subgrid.x());
       const vint<M> sy((int)subgrid.y());
-      const vint<M> sxM(sx + vint<M>(0,1,1,0));
-      const vint<M> syM(sy + vint<M>(0,0,1,1));
+      const vint<M> sxM(sx + stepX); 
+      const vint<M> syM(sy + stepY); 
       const float inv_resX = rcp((float)((int)g.resX-1));
       const float inv_resY = rcp((float)((int)g.resY-1));          
       hit.U = (hit.U + (vfloat<M>)sxM * hit.absDen) * inv_resX;
@@ -51,7 +51,7 @@ namespace embree
           /* intersect first triangle */
           if (intersector.intersect(ray,v0,v1,v3,mapUV,hit)) 
           {
-            interpolateUV<M>(hit,g,subgrid);
+            interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
             epilog(hit.valid,hit);
           }
 
@@ -60,7 +60,7 @@ namespace embree
           {
             hit.U = hit.absDen - hit.U;
             hit.V = hit.absDen - hit.V;
-            interpolateUV<M>(hit,g,subgrid);
+            interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
             epilog(hit.valid,hit);
           }
         }
@@ -77,7 +77,7 @@ namespace embree
           /* intersect first triangle */
           if (intersector.intersect(ray,v0,v1,v3,mapUV,hit)) 
           {
-            interpolateUV<M>(hit,g,subgrid);
+            interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
             if (epilog(hit.valid,hit))
               return true;
           }
@@ -87,7 +87,7 @@ namespace embree
           {
             hit.U = hit.absDen - hit.U;
             hit.V = hit.absDen - hit.V;
-            interpolateUV<M>(hit,g,subgrid);
+            interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
             if (epilog(hit.valid,hit))
               return true;
           }
@@ -122,26 +122,8 @@ namespace embree
         const vbool8 flags(0,0,0,0,1,1,1,1);
         if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,mapUV,hit)))
         {
-          vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
-
-#if !defined(EMBREE_BACKFACE_CULLING)
-          hit.U = select(flags,absDen-V,U);
-          hit.V = select(flags,absDen-U,V);
-          hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); 
-#else
-          hit.U = select(flags,absDen-U,U);
-          hit.V = select(flags,absDen-V,V);
-#endif
-          /* correct U,V interpolation across the entire grid */
-          const vint8 sx((int)subgrid.x());
-          const vint8 sy((int)subgrid.y());
-          const vint8 sx8(sx + vint8(0,1,1,0,0,1,1,0));
-          const vint8 sy8(sy + vint8(0,0,1,1,0,0,1,1));
-          const float inv_resX = rcp((float)((int)g.resX-1));
-          const float inv_resY = rcp((float)((int)g.resY-1));          
-          hit.U = (hit.U + (vfloat8)sx8 * absDen) * inv_resX;
-          hit.V = (hit.V + (vfloat8)sy8 * absDen) * inv_resY;          
-
+	  /* correct U,V interpolation across the entire grid */
+          interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));
           if (unlikely(epilog(hit.valid,hit)))
             return true;
         }
@@ -386,7 +368,7 @@ namespace embree
         MoellerTrumboreHitM<4,UVIdentity<4>> hit(mapUV);
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
         {
-          interpolateUV<M>(hit,g,subgrid);
+          interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
           epilog(hit.valid,hit);
         }
 
@@ -394,7 +376,7 @@ namespace embree
         {
           hit.U = hit.absDen - hit.U;
           hit.V = hit.absDen - hit.V;
-          interpolateUV<M>(hit,g,subgrid);
+          interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
           epilog(hit.valid,hit);
         }
 
@@ -409,7 +391,7 @@ namespace embree
         MoellerTrumboreHitM<4,UVIdentity<4>> hit(mapUV);
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
         {
-          interpolateUV<M>(hit,g,subgrid);
+          interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
           if (epilog(hit.valid,hit)) return true;
         }
 
@@ -417,7 +399,7 @@ namespace embree
         {
           hit.U = hit.absDen - hit.U;
           hit.V = hit.absDen - hit.V;
-          interpolateUV<M>(hit,g,subgrid);
+          interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
           if (epilog(hit.valid,hit)) return true;
         }
         return false;
@@ -452,25 +434,7 @@ namespace embree
         MoellerTrumboreHitM<8,UVIdentity<8>> hit(mapUV);
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<8,K,filter>::intersect1(ray,k,vtx0,vtx1,vtx2,hit))
         {
-          vfloat8 U = hit.U, V = hit.V, absDen = hit.absDen;
-#if !defined(EMBREE_BACKFACE_CULLING)
-          hit.U = select(flags,absDen-V,U);
-          hit.V = select(flags,absDen-U,V);
-          hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); 
-#else
-          hit.U = select(flags,absDen-U,U);
-          hit.V = select(flags,absDen-V,V);
-#endif
-
-          /* correct U,V interpolation across the entire grid */
-          const vint8 sx((int)subgrid.x());
-          const vint8 sy((int)subgrid.y());
-          const vint8 sx8(sx + vint8(0,1,1,0,0,1,1,0));
-          const vint8 sy8(sy + vint8(0,0,1,1,0,0,1,1));
-          const float inv_resX = rcp((float)((int)g.resX-1));
-          const float inv_resY = rcp((float)((int)g.resY-1));          
-          hit.U = (hit.U + (vfloat8)sx8 * absDen) * inv_resX;
-          hit.V = (hit.V + (vfloat8)sy8 * absDen) * inv_resY;          
+	  interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));
           if (unlikely(epilog(hit.valid,hit)))
             return true;
 
