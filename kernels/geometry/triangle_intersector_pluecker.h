@@ -210,23 +210,23 @@ namespace embree
     template<int K, typename UVMapper>
     struct PlueckerHitK
     {
+      __forceinline PlueckerHitK(const UVMapper& mapUV) : mapUV(mapUV) {}
+      
       __forceinline PlueckerHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& UVW, const vfloat<K>& t, const Vec3vf<K>& Ng, const UVMapper& mapUV)
-        : U(U), V(V), UVW(UVW), t(t), Ng(Ng), mapUV(mapUV) {}
+        :  U(U), V(V), UVW(UVW), t(t), Ng(Ng), mapUV(mapUV) {}
       
       __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
       {
         const vbool<K> invalid = abs(UVW) < min_rcp_input;
         const vfloat<K> rcpUVW = select(invalid,vfloat<K>(0.0f),rcp(UVW));
-        vfloat<K> u = U * rcpUVW;
-        vfloat<K> v = V * rcpUVW;
+        vfloat<K> u = min(U * rcpUVW,1.0f);
+        vfloat<K> v = min(V * rcpUVW,1.0f);
         Vec3vf<K> vNg = Ng;
         mapUV(u,v,vNg);
         return std::make_tuple(u,v,t,vNg);
       }
-      
-    private:
-      const vfloat<K> U;
-      const vfloat<K> V;
+      vfloat<K> U;
+      vfloat<K> V;
       const vfloat<K> UVW;
       const vfloat<K> t;
       const Vec3vf<K> Ng;
@@ -240,14 +240,14 @@ namespace embree
       __forceinline PlueckerIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
 
       /*! Intersects K rays with one of M triangles. */
-      template<typename UVMapper, typename Epilog>
+      template<typename UVMapper>
       __forceinline vbool<K> intersectK(const vbool<K>& valid0,
-                                        RayK<K>& ray,
-                                        const Vec3vf<K>& tri_v0,
-                                        const Vec3vf<K>& tri_v1,
-                                        const Vec3vf<K>& tri_v2,
-                                        const UVMapper& mapUV,
-                                        const Epilog& epilog) const
+				    RayK<K>& ray,
+				    const Vec3vf<K>& tri_v0,
+				    const Vec3vf<K>& tri_v1,
+				    const Vec3vf<K>& tri_v2,
+				    const UVMapper& mapUV,
+				    PlueckerHitK<K,UVMapper> &hit) const
       {
         /* calculate vertices relative to ray origin */
         vbool<K> valid = valid0;
@@ -273,7 +273,7 @@ namespace embree
 #else
         valid &= (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
 #endif
-        if (unlikely(none(valid))) return false;
+        if (unlikely(none(valid))) return valid;
 
          /* calculate geometry normal and denominator */
         const Vec3vf<K> Ng = stable_triangle_normal(e0,e1,e2);
@@ -284,11 +284,11 @@ namespace embree
         const vfloat<K> t = rcp(den)*T;
         valid &= ray.tnear() <= t & t <= ray.tfar;
         valid &= den != vfloat<K>(zero);
-        if (unlikely(none(valid))) return false;
+        if (unlikely(none(valid))) return valid;
         
         /* calculate hit information */
-        PlueckerHitK<K,UVMapper> hit(U,V,UVW,t,Ng,mapUV);
-        return epilog(valid,hit);
+        new (&hit) PlueckerHitK<K,UVMapper>(U,V,UVW,t,Ng,mapUV);
+        return valid;
       }
 
       template<typename Epilog>
@@ -299,9 +299,26 @@ namespace embree
                                         const Vec3vf<K>& tri_v2,
                                         const Epilog& epilog) const
       {
-        return intersectK(valid0,ray,tri_v0,tri_v1,tri_v2,UVIdentity<K>(),epilog);
+	UVIdentity<K> mapUV;	
+        PlueckerHitK<K,UVIdentity<K>> hit(mapUV);		
+        const vbool<K> valid = intersectK(valid0,ray,tri_v0,tri_v1,tri_v2,mapUV,hit);
+	return epilog(valid,hit);
       }
 
+      template<typename UVMapper, typename Epilog>
+      __forceinline vbool<K> intersectK(const vbool<K>& valid0,
+                                        RayK<K>& ray,
+                                        const Vec3vf<K>& tri_v0,
+                                        const Vec3vf<K>& tri_v1,
+                                        const Vec3vf<K>& tri_v2,
+					const UVMapper& mapUV,
+                                        const Epilog& epilog) const
+      {
+        PlueckerHitK<K,UVMapper> hit(mapUV);		
+        const vbool<K> valid = intersectK(valid0,ray,tri_v0,tri_v1,tri_v2,mapUV,hit);
+	return epilog(valid,hit);
+      }
+      
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
       template<typename UVMapper>
       __forceinline bool intersect(RayK<K>& ray, size_t k,
@@ -367,9 +384,7 @@ namespace embree
       {
         PlueckerHitM<M,UVMapper> hit(mapUV);	
         if (intersect(ray,k,tri_v0,tri_v1,tri_v2,mapUV,hit))
-	  {
-	    return epilog(hit.valid,hit);
-	  }
+	  return epilog(hit.valid,hit);
 	return false;
       }
 
@@ -383,9 +398,7 @@ namespace embree
 	UVIdentity<M> mapUV;	
         PlueckerHitM<M,UVIdentity<M>> hit(mapUV);	
         if (intersect(ray,k,tri_v0,tri_v1,tri_v2,mapUV,hit))
-	  {
-	    return epilog(hit.valid,hit);
-	  }
+	  return epilog(hit.valid,hit);
 	return false;
       }
       

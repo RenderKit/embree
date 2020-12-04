@@ -200,11 +200,25 @@ namespace embree
       };
 
 
+    template<int K>
+    __forceinline void interpolateUV(const vbool<K>& valid, PlueckerHitK<K,UVIdentity<K>> &hit,const GridMesh::Grid &g, const SubGrid& subgrid, const unsigned int i) 
+    {
+      /* correct U,V interpolation across the entire grid */
+      const unsigned int sx = subgrid.x() + (unsigned int)(i % 2);
+      const unsigned int sy = subgrid.y() + (unsigned int)(i >>1);
+      const float inv_resX = rcp((float)(int)(g.resX-1));
+      const float inv_resY = rcp((float)(int)(g.resY-1));      
+      hit.U = select(valid,(hit.U + vfloat<K>((float)sx) * hit.UVW) * inv_resX,hit.U);
+      hit.V = select(valid,(hit.V + vfloat<K>((float)sy) * hit.UVW) * inv_resY,hit.V);
+    }
+    
+
     template<int M, int K, bool filter>
       struct SubGridQuadMIntersectorKPlueckerBase
       {
         __forceinline SubGridQuadMIntersectorKPlueckerBase(const vbool<K>& valid, const RayK<K>& ray) {}
-            
+
+#if 1	
         template<typename Epilog>
         __forceinline vbool<K> intersectK(const vbool<K>& valid0,
                                           RayK<K>& ray,
@@ -258,9 +272,9 @@ namespace embree
           SubGridQuadHitPlueckerK<K> hit(U,V,UVW,t,Ng,flags,g,subgrid,i);
           return epilog(valid,hit);
         }
-      
+#endif      
         template<typename Epilog>
-        __forceinline bool intersectK(const vbool<K>& valid0, 
+        __forceinline bool intersectK(const vbool<K>& valid, 
                                       RayK<K>& ray,
                                       const Vec3vf<K>& v0,
                                       const Vec3vf<K>& v1,
@@ -271,65 +285,77 @@ namespace embree
                                       const unsigned int i,
                                       const Epilog& epilog) const
         {
-          intersectK(valid0,ray,v0,v1,v3,vbool<K>(false),g,subgrid,i,epilog);
-          if (none(valid0)) return true;
-          intersectK(valid0,ray,v2,v3,v1,vbool<K>(true ),g,subgrid,i,epilog);
-          return none(valid0);
-        }
+	  UVIdentity<K> mapUV;
+	  PlueckerHitK<K,UVIdentity<K>> hit(mapUV);
+	  PlueckerIntersectorK<M,K> intersector;
 
-	static __forceinline bool intersect1(RayK<K>& ray,
-					     size_t k,
-					     const Vec3vf<M>& tri_v0,
-					     const Vec3vf<M>& tri_v1,
-					     const Vec3vf<M>& tri_v2,
-					     const vbool<M>& flags,
-					     PlueckerHitM<M,UVIdentity<M>> &hit) 
-        {
-          /* calculate vertices relative to ray origin */
-          const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
-          const Vec3vf<M> D = broadcast<vfloat<M>>(ray.dir,k);
-          const Vec3vf<M> v0 = tri_v0-O;
-          const Vec3vf<M> v1 = tri_v1-O;
-          const Vec3vf<M> v2 = tri_v2-O;
-          
-          /* calculate triangle edges */
-          const Vec3vf<M> e0 = v2-v0;
-          const Vec3vf<M> e1 = v0-v1;
-          const Vec3vf<M> e2 = v1-v2;
-          
-          /* perform edge tests */
-          const vfloat<M> U = dot(cross(e0,v2+v0),D);
-          const vfloat<M> V = dot(cross(e1,v0+v1),D);
-          const vfloat<M> W = dot(cross(e2,v1+v2),D);	  
-          const vfloat<M> UVW = U+V+W;
-          const vfloat<M> eps = float(ulp)*abs(UVW);
-#if defined(EMBREE_BACKFACE_CULLING)
-          vbool<M> valid = max(U,V,W) <= eps ;
-#else
-          vbool<M> valid = (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
+#if 1
+          const vbool<K> valid0 = intersector.intersectK(valid,ray,v0,v1,v3,mapUV,hit);
+	  if (any(valid0))
+	    {
+	      interpolateUV(valid0,hit,g,subgrid,i);
+	      epilog(valid0,hit);
+	    }
+          const vbool<K> valid1 = intersector.intersectK(valid,ray,v2,v3,v1,mapUV,hit);
+	  if (any(valid1))
+	    {
+	      hit.U = hit.UVW - hit.U;
+	      hit.V = hit.UVW - hit.V;	      
+	      interpolateUV(valid1,hit,g,subgrid,i);
+	      epilog(valid1,hit);
+	    }
+	  return any(valid0|valid1);
+#else    
+          intersectK(valid,ray,v0,v1,v3,vbool<K>(false),g,subgrid,i,epilog);
+          if (none(valid)) return true;
+          intersectK(valid,ray,v2,v3,v1,vbool<K>(true ),g,subgrid,i,epilog);
+          return none(valid);
 #endif
-          if (unlikely(none(valid))) return false;
-          
-          /* calculate geometry normal and denominator */
-          const Vec3vf<M> Ng = stable_triangle_normal(e0,e1,e2);
-          const vfloat<M> den = twice(dot(Ng,D));
-
-          /* perform depth test */
-          const vfloat<M> T = twice(dot(v0,Ng));
-          const vfloat<M> t = rcp(den)*T;
-          valid &= vfloat<M>(ray.tnear()[k]) <= t & t <= vfloat<M>(ray.tfar[k]);
-          if (unlikely(none(valid))) return false;
-          
-          /* avoid division by 0 */
-          valid &= den != vfloat<M>(zero);
-          if (unlikely(none(valid))) return false;
-          /* update hit information */
-	  UVIdentity<M> mapUV;
-          new (&hit) PlueckerHitM<M,UVIdentity<M>>(valid,U,V,UVW,t,Ng,mapUV);
-          return true;
+	  
         }
 
+       template<typename Epilog>
+        __forceinline bool occludedK(const vbool<K>& valid, 
+				     RayK<K>& ray,
+				     const Vec3vf<K>& v0,
+				     const Vec3vf<K>& v1,
+				     const Vec3vf<K>& v2,
+				     const Vec3vf<K>& v3,
+				     const GridMesh::Grid &g, 
+				     const SubGrid &subgrid,
+				     const unsigned int i,
+				     const Epilog& epilog) const
+        {
+	  UVIdentity<K> mapUV;
+	  PlueckerHitK<K,UVIdentity<K>> hit(mapUV);
+	  PlueckerIntersectorK<M,K> intersector;
+
+	  vbool<K> valid_final = valid;
+          const vbool<K> valid0 = intersector.intersectK(valid,ray,v0,v1,v3,mapUV,hit);
+	  if (any(valid0))
+	    {
+	      interpolateUV(valid0,hit,g,subgrid,i);
+	      epilog(valid0,hit);
+	      valid_final &= !valid0;
+	    }
+	  if (none(valid_final)) return true;	      	  
+          const vbool<K> valid1 = intersector.intersectK(valid,ray,v2,v3,v1,mapUV,hit);
+	  if (any(valid1))
+	    {
+	      hit.U = hit.UVW - hit.U;
+	      hit.V = hit.UVW - hit.V;	      
+	      interpolateUV(valid1,hit,g,subgrid,i);
+	      epilog(valid1,hit);
+	      valid_final &= !valid1;	      
+	    }
+	  return none(valid_final);
+        }
+
+	
       };
+
+
+    
 
     template<int M, int K, bool filter>
       struct SubGridQuadMIntersectorKPluecker : public SubGridQuadMIntersectorKPlueckerBase<M,K,filter>
@@ -409,12 +435,10 @@ namespace embree
         const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
         const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
 #endif
-        //const vbool8 flags(0,0,0,0,1,1,1,1);
 	UVIdentity<8> mapUV;
 	PlueckerHitM<8,UVIdentity<8>> hit(mapUV);
 	PlueckerIntersectorK<8,K> intersector;
 	
-	//if (SubGridQuadMIntersectorKPlueckerBase<8,K,filter>::intersect1(ray,k,vtx0,vtx1,vtx2,flags,hit))
         if (unlikely(intersector.intersect(ray,k,vtx0,vtx1,vtx2,mapUV,hit)))	
         {
           /* correct U,V interpolation across the entire grid */
