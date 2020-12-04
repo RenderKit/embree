@@ -118,10 +118,15 @@ namespace embree
         UVIdentity<8> mapUV;
         PlueckerHitM<8,UVIdentity<8>> hit(mapUV);
         PlueckerIntersector1<8> intersector(ray,nullptr);
-        //const vbool8 flags(0,0,0,0,1,1,1,1);
+        const vbool8 flags(0,0,0,0,1,1,1,1);
         if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,mapUV,hit)))
         {
 	  /* correct U,V interpolation across the entire grid */
+	  const vfloat8 U = select(flags,hit.UVW - hit.V,hit.U);	  
+	  const vfloat8 V = select(flags,hit.UVW - hit.U,hit.V);
+	  hit.U = U;
+	  hit.V = V;	  
+	  hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); 
           interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));
           if (unlikely(epilog(hit.valid,hit)))
             return true;
@@ -325,10 +330,15 @@ namespace embree
 	UVIdentity<8> mapUV;
 	PlueckerHitM<8,UVIdentity<8>> hit(mapUV);
 	PlueckerIntersectorK<8,K> intersector;
-	
+	const vbool8 flags(0,0,0,0,1,1,1,1);
         if (unlikely(intersector.intersect(ray,k,vtx0,vtx1,vtx2,mapUV,hit)))	
         {
           /* correct U,V interpolation across the entire grid */
+	  const vfloat8 U = select(flags,hit.UVW - hit.V,hit.U);	  
+	  const vfloat8 V = select(flags,hit.UVW - hit.U,hit.V);
+	  hit.U = U;
+	  hit.V = V;	  
+	  hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); 
           interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));
           if (unlikely(epilog(hit.valid,hit)))
             return true;
