@@ -118,7 +118,7 @@ namespace embree
         UVIdentity<8> mapUV;
         PlueckerHitM<8,UVIdentity<8>> hit(mapUV);
         PlueckerIntersector1<8> intersector(ray,nullptr);
-        const vbool8 flags(0,0,0,0,1,1,1,1);
+        //const vbool8 flags(0,0,0,0,1,1,1,1);
         if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,mapUV,hit)))
         {
 	  /* correct U,V interpolation across the entire grid */
@@ -343,34 +343,42 @@ namespace embree
 	UVIdentity<M> mapUV;
 	PlueckerHitM<M,UVIdentity<M>> hit(mapUV);
         Intersect1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
-        if (SubGridQuadMIntersectorKPlueckerBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,vboolf4(false),hit))
-        {
-          interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
-          epilog(hit.valid,hit);
-        }
+	PlueckerIntersectorK<M,K> intersector;
+	
+	/* intersect first triangle */
+	if (intersector.intersect(ray,k,v0,v1,v3,mapUV,hit)) 
+          {
+            interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
+            epilog(hit.valid,hit);
+          }
 
-        if (SubGridQuadMIntersectorKPlueckerBase<4,K,filter>::intersect1(ray,k,v2,v3,v1,vboolf4(true),hit))
-        {
-          interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
-          epilog(hit.valid,hit);
-        }
-
+	/* intersect second triangle */
+	if (intersector.intersect(ray,k,v2,v3,v1,mapUV,hit)) 
+          {
+	    hit.U = hit.UVW - hit.U;
+	    hit.V = hit.UVW - hit.V;
+            interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
+            epilog(hit.valid,hit);
+          }
       }
       
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
                                    const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
 	UVIdentity<M> mapUV;
-	PlueckerHitM<M,UVIdentity<M>> hit(mapUV);	
-        Occluded1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
-
-        if (SubGridQuadMIntersectorKPlueckerBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,vboolf4(false),hit))
+	PlueckerHitM<M,UVIdentity<M>> hit(mapUV);
+        Occluded1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());	
+	PlueckerIntersectorK<M,K> intersector;
+	
+	/* intersect first triangle */
+	if (intersector.intersect(ray,k,v0,v1,v3,mapUV,hit)) 
         {
           interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
           if (epilog(hit.valid,hit)) return true;
         }
 
-        if (SubGridQuadMIntersectorKPlueckerBase<4,K,filter>::intersect1(ray,k,v2,v3,v1,vboolf4(true),hit))
+	/* intersect second triangle */
+	if (intersector.intersect(ray,k,v2,v3,v1,mapUV,hit)) 
         {
           interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
           if (epilog(hit.valid,hit)) return true;
@@ -401,10 +409,13 @@ namespace embree
         const Vec3vf8 vtx1(vfloat8(v1.x,v3.x),vfloat8(v1.y,v3.y),vfloat8(v1.z,v3.z));
         const Vec3vf8 vtx2(vfloat8(v3.x,v1.x),vfloat8(v3.y,v1.y),vfloat8(v3.z,v1.z));
 #endif
-        const vbool8 flags(0,0,0,0,1,1,1,1);
+        //const vbool8 flags(0,0,0,0,1,1,1,1);
 	UVIdentity<8> mapUV;
 	PlueckerHitM<8,UVIdentity<8>> hit(mapUV);
-	if (SubGridQuadMIntersectorKPlueckerBase<8,K,filter>::intersect1(ray,k,vtx0,vtx1,vtx2,flags,hit))
+	PlueckerIntersectorK<8,K> intersector;
+	
+	//if (SubGridQuadMIntersectorKPlueckerBase<8,K,filter>::intersect1(ray,k,vtx0,vtx1,vtx2,flags,hit))
+        if (unlikely(intersector.intersect(ray,k,vtx0,vtx1,vtx2,mapUV,hit)))	
         {
           /* correct U,V interpolation across the entire grid */
           interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));

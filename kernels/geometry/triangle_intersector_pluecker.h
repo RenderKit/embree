@@ -236,6 +236,7 @@ namespace embree
     template<int M, int K>
     struct PlueckerIntersectorK
     {
+      __forceinline PlueckerIntersectorK() {}      
       __forceinline PlueckerIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
 
       /*! Intersects K rays with one of M triangles. */
@@ -302,13 +303,13 @@ namespace embree
       }
 
       /*! Intersect k'th ray from ray packet of size K with M triangles. */
-      template<typename UVMapper, typename Epilog>
+      template<typename UVMapper>
       __forceinline bool intersect(RayK<K>& ray, size_t k,
                                    const Vec3vf<M>& tri_v0,
                                    const Vec3vf<M>& tri_v1,
                                    const Vec3vf<M>& tri_v2,
                                    const UVMapper& mapUV,
-                                   const Epilog& epilog) const
+				   PlueckerHitM<M,UVMapper> &hit) const
       {
         /* calculate vertices relative to ray origin */
         const Vec3vf<M> O = broadcast<vfloat<M>>(ray.org,k);
@@ -352,8 +353,24 @@ namespace embree
         if (unlikely(none(valid))) return false;
 
         /* update hit information */
-        PlueckerHitM<M,UVMapper> hit(valid,U,V,UVW,t,Ng,mapUV);
-        return epilog(valid,hit);
+        new (&hit) PlueckerHitM<M,UVMapper>(valid,U,V,UVW,t,Ng,mapUV);
+        return true;
+      }
+
+      template<typename UVMapper, typename Epilog>
+      __forceinline bool intersect(RayK<K>& ray, size_t k,
+                                   const Vec3vf<M>& tri_v0,
+                                   const Vec3vf<M>& tri_v1,
+                                   const Vec3vf<M>& tri_v2,
+                                   const UVMapper& mapUV,				   
+                                   const Epilog& epilog) const
+      {
+        PlueckerHitM<M,UVMapper> hit(mapUV);	
+        if (intersect(ray,k,tri_v0,tri_v1,tri_v2,mapUV,hit))
+	  {
+	    return epilog(hit.valid,hit);
+	  }
+	return false;
       }
 
       template<typename Epilog>
@@ -363,8 +380,15 @@ namespace embree
                                    const Vec3vf<M>& tri_v2,
                                    const Epilog& epilog) const
       {
-        return intersect(ray,k,tri_v0,tri_v1,tri_v2,UVIdentity<M>(),epilog);
+	UVIdentity<M> mapUV;	
+        PlueckerHitM<M,UVIdentity<M>> hit(mapUV);	
+        if (intersect(ray,k,tri_v0,tri_v1,tri_v2,mapUV,hit))
+	  {
+	    return epilog(hit.valid,hit);
+	  }
+	return false;
       }
+      
     };
   }
 }
