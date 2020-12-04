@@ -123,6 +123,11 @@ namespace embree
         if (unlikely(intersector.intersect(ray,vtx0,vtx1,vtx2,mapUV,hit)))
         {
 	  /* correct U,V interpolation across the entire grid */
+	  const vfloat8 U = select(flags,hit.absDen - hit.V,hit.U);	  
+	  const vfloat8 V = select(flags,hit.absDen - hit.U,hit.V);
+	  hit.U = U;
+	  hit.V = V;
+	  hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); 	  
           interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));
           if (unlikely(epilog(hit.valid,hit)))
             return true;
@@ -363,7 +368,6 @@ namespace embree
                                     const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
         Intersect1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
-
         UVIdentity<4> mapUV;
         MoellerTrumboreHitM<4,UVIdentity<4>> hit(mapUV);
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<4,K,filter>::intersect1(ray,k,v0,v1,v3,hit))
@@ -434,6 +438,11 @@ namespace embree
         MoellerTrumboreHitM<8,UVIdentity<8>> hit(mapUV);
         if (SubGridQuadMIntersectorKMoellerTrumboreBase<8,K,filter>::intersect1(ray,k,vtx0,vtx1,vtx2,hit))
         {
+	  const vfloat8 U = select(flags,hit.absDen - hit.V,hit.U);	  
+	  const vfloat8 V = select(flags,hit.absDen - hit.U,hit.V);
+	  hit.U = U;
+	  hit.V = V;
+	  hit.vNg *= select(flags,vfloat8(-1.0f),vfloat8(1.0f)); 	  	  
 	  interpolateUV<8>(hit,g,subgrid,vint<8>(0,1,1,0,0,1,1,0),vint<8>(0,0,1,1,0,0,1,1));
           if (unlikely(epilog(hit.valid,hit)))
             return true;

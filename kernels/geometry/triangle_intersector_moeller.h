@@ -245,6 +245,7 @@ namespace embree
     template<int M, int K>
     struct MoellerTrumboreIntersectorK
     {
+      __forceinline MoellerTrumboreIntersectorK() {}
       __forceinline MoellerTrumboreIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
       
       /*! Intersects K rays with one of M triangles. */
