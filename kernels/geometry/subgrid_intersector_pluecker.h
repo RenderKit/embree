@@ -152,55 +152,6 @@ namespace embree
     /* ----------------------------- */
 
     template<int K>
-      struct SubGridQuadHitPlueckerK
-      {
-         __forceinline SubGridQuadHitPlueckerK(const vfloat<K>& U,
-                                               const vfloat<K>& V,
-                                               const vfloat<K>& UVW,
-                                               const vfloat<K>& t,
-                                               const Vec3vf<K>& Ng,
-                                               const vbool<K>& flags,
-                                               const GridMesh::Grid &g, 
-                                               const SubGrid& subgrid,
-                                               const unsigned int i)
-         : U(U), V(V), UVW(UVW), t(t), flags(flags), tri_Ng(Ng), g(g), subgrid(subgrid), i(i) {}
-
-        __forceinline std::tuple<vfloat<K>,vfloat<K>,vfloat<K>,Vec3vf<K>> operator() () const
-        {
-          const vbool<K> invalid = abs(UVW) < min_rcp_input;
-          const vfloat<K> rcpUVW = select(invalid,vfloat<K>(0.0f),rcp(UVW));
-          const vfloat<K> u0 = min(U * rcpUVW,1.0f);
-          const vfloat<K> v0 = min(V * rcpUVW,1.0f);
-          const vfloat<K> u1 = vfloat<K>(1.0f) - u0;
-          const vfloat<K> v1 = vfloat<K>(1.0f) - v0;
-          const vfloat<K> uu = select(flags,u1,u0);
-          const vfloat<K> vv = select(flags,v1,v0);
-          const unsigned int sx = subgrid.x() + (unsigned int)(i % 2);
-          const unsigned int sy = subgrid.y() + (unsigned int)(i >>1);
-          const float inv_resX = rcp((float)(int)(g.resX-1));
-          const float inv_resY = rcp((float)(int)(g.resY-1));
-          const vfloat<K> u = (uu + (float)(int)sx) * inv_resX;
-          const vfloat<K> v = (vv + (float)(int)sy) * inv_resY;
-          const Vec3vf<K> Ng(tri_Ng.x,tri_Ng.y,tri_Ng.z);
-          return std::make_tuple(u,v,t,Ng);
-        }
-
-      private:
-        const vfloat<K> U;
-        const vfloat<K> V;
-        const vfloat<K> UVW;
-        const vfloat<K> t;
-        const vfloat<K> absDen;
-        const vbool<K> flags;
-        const Vec3vf<K> tri_Ng;
-
-        const GridMesh::Grid &g;
-        const SubGrid& subgrid;
-        const size_t i;
-      };
-
-
-    template<int K>
     __forceinline void interpolateUV(const vbool<K>& valid, PlueckerHitK<K,UVIdentity<K>> &hit,const GridMesh::Grid &g, const SubGrid& subgrid, const unsigned int i) 
     {
       /* correct U,V interpolation across the entire grid */
@@ -212,67 +163,11 @@ namespace embree
       hit.V = select(valid,(hit.V + vfloat<K>((float)sy) * hit.UVW) * inv_resY,hit.V);
     }
     
-
     template<int M, int K, bool filter>
       struct SubGridQuadMIntersectorKPlueckerBase
       {
         __forceinline SubGridQuadMIntersectorKPlueckerBase(const vbool<K>& valid, const RayK<K>& ray) {}
 
-#if 1	
-        template<typename Epilog>
-        __forceinline vbool<K> intersectK(const vbool<K>& valid0,
-                                          RayK<K>& ray,
-                                          const Vec3vf<K>& tri_v0,
-                                          const Vec3vf<K>& tri_v1,
-                                          const Vec3vf<K>& tri_v2,
-                                          const vbool<K>& flags,
-                                          const GridMesh::Grid &g, 
-                                          const SubGrid &subgrid,
-                                          const unsigned int i,
-                                          const Epilog& epilog) const
-        { 
-	  /* calculate vertices relative to ray origin */
-          vbool<K> valid = valid0;
-          const Vec3vf<K> O = ray.org;
-          const Vec3vf<K> D = ray.dir;
-          const Vec3vf<K> v0 = tri_v0-O;
-          const Vec3vf<K> v1 = tri_v1-O;
-          const Vec3vf<K> v2 = tri_v2-O;
-          
-          /* calculate triangle edges */
-          const Vec3vf<K> e0 = v2-v0;
-          const Vec3vf<K> e1 = v0-v1;
-          const Vec3vf<K> e2 = v1-v2;
-           
-          /* perform edge tests */
-          const vfloat<K> U = dot(Vec3vf<K>(cross(e0,v2+v0)),D);
-          const vfloat<K> V = dot(Vec3vf<K>(cross(e1,v0+v1)),D);
-          const vfloat<K> W = dot(Vec3vf<K>(cross(e2,v1+v2)),D);
-          const vfloat<K> UVW = U+V+W;
-          const vfloat<K> eps = float(ulp)*abs(UVW);
-#if defined(EMBREE_BACKFACE_CULLING)
-          valid &= max(U,V,W) <= eps;
-#else
-          valid &= (min(U,V,W) >= -eps) | (max(U,V,W) <= eps);
-#endif
-          if (unlikely(none(valid))) return false;
-          
-          /* calculate geometry normal and denominator */
-          const Vec3vf<K> Ng = stable_triangle_normal(e0,e1,e2);
-          const vfloat<K> den = twice(dot(Vec3vf<K>(Ng),D));
-
-          /* perform depth test */
-          const vfloat<K> T = twice(dot(v0,Vec3vf<K>(Ng)));
-          const vfloat<K> t = rcp(den)*T;
-          valid &= ray.tnear() <= t & t <= ray.tfar;
-          valid &= den != vfloat<K>(zero);
-          if (unlikely(none(valid))) return false;
-          
-          /* calculate hit information */
-          SubGridQuadHitPlueckerK<K> hit(U,V,UVW,t,Ng,flags,g,subgrid,i);
-          return epilog(valid,hit);
-        }
-#endif      
         template<typename Epilog>
         __forceinline bool intersectK(const vbool<K>& valid, 
                                       RayK<K>& ray,
@@ -289,7 +184,6 @@ namespace embree
 	  PlueckerHitK<K,UVIdentity<K>> hit(mapUV);
 	  PlueckerIntersectorK<M,K> intersector;
 
-#if 1
           const vbool<K> valid0 = intersector.intersectK(valid,ray,v0,v1,v3,mapUV,hit);
 	  if (any(valid0))
 	    {
@@ -304,14 +198,7 @@ namespace embree
 	      interpolateUV(valid1,hit,g,subgrid,i);
 	      epilog(valid1,hit);
 	    }
-	  return any(valid0|valid1);
-#else    
-          intersectK(valid,ray,v0,v1,v3,vbool<K>(false),g,subgrid,i,epilog);
-          if (none(valid)) return true;
-          intersectK(valid,ray,v2,v3,v1,vbool<K>(true ),g,subgrid,i,epilog);
-          return none(valid);
-#endif
-	  
+	  return any(valid0|valid1);	  
         }
 
        template<typename Epilog>
