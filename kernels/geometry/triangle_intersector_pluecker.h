@@ -31,8 +31,8 @@ namespace embree
       {
         const vbool<M> invalid = abs(UVW) < min_rcp_input;
         const vfloat<M> rcpUVW = select(invalid,vfloat<M>(0.0f),rcp(UVW));
-        vu = U * rcpUVW;
-        vv = V * rcpUVW;
+        vu = min(U * rcpUVW,1.0f);
+        vv = min(V * rcpUVW,1.0f);	
         mapUV(vu,vv,vNg);
       }
 
@@ -44,10 +44,10 @@ namespace embree
       __forceinline float t  (const size_t i) const { return vt[i]; }
       __forceinline Vec3fa Ng(const size_t i) const { return Vec3fa(vNg.x[i],vNg.y[i],vNg.z[i]); }
       
-    private:
-      const vfloat<M> U;
-      const vfloat<M> V;
-      const vfloat<M> UVW;
+    public:
+      vfloat<M> U;
+      vfloat<M> V;
+      vfloat<M> UVW;
       const UVMapper& mapUV;
       
     public:

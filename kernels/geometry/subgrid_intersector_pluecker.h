@@ -89,8 +89,8 @@ namespace embree
       const vint<M> syM(sy + stepY);
       const float inv_resX = rcp((float)((int)g.resX-1));
       const float inv_resY = rcp((float)((int)g.resY-1));          
-      hit.vu = (hit.vu + vfloat<M>(sxM)) * inv_resX;
-      hit.vv = (hit.vv + vfloat<M>(syM)) * inv_resY;
+      hit.U = (hit.U + vfloat<M>(sxM) * hit.UVW) * inv_resX;
+      hit.V = (hit.V + vfloat<M>(syM) * hit.UVW) * inv_resY;
     }
     
     template<int M>
@@ -156,7 +156,7 @@ namespace embree
                                      const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3,
                                      const GridMesh::Grid &g, const SubGrid& subgrid) const
         {
-#if 1	  
+#if 0	  
           SubGridQuadHitPlueckerM<M> hit;
           Intersect1EpilogMU<M,filter> epilog(ray,context,subgrid.geomID(),subgrid.primID());
 
@@ -190,9 +190,8 @@ namespace embree
           /* intersect second triangle */
 	  if (intersector.intersect(ray,v2,v3,v1,mapUV,hit)) 
           {
-	    hit.vu = 1.0f - hit.vu;
-	    hit.vv = 1.0f - hit.vv;
-	    //hit.Ng *= vfloat<M>(1.0f);
+	    hit.U = hit.UVW - hit.U;
+	    hit.V = hit.UVW - hit.V;
             interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
             epilog(hit.valid,hit);
           }
