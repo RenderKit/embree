@@ -219,6 +219,7 @@ namespace embree
     template<int K, typename UVMapper>
     struct MoellerTrumboreHitK
     {
+      __forceinline MoellerTrumboreHitK(const UVMapper& mapUV) : mapUV(mapUV) {}
       __forceinline MoellerTrumboreHitK(const vfloat<K>& U, const vfloat<K>& V, const vfloat<K>& T, const vfloat<K>& absDen, const Vec3vf<K>& Ng, const UVMapper& mapUV)
         : U(U), V(V), T(T), absDen(absDen), Ng(Ng), mapUV(mapUV) {}
       
@@ -233,9 +234,8 @@ namespace embree
         return std::make_tuple(u,v,t,vNg);
       }
       
-    private:
-      const vfloat<K> U;
-      const vfloat<K> V;
+      vfloat<K> U;
+      vfloat<K> V;
       const vfloat<K> T;
       const vfloat<K> absDen;
       const Vec3vf<K> Ng;
@@ -249,7 +249,7 @@ namespace embree
       __forceinline MoellerTrumboreIntersectorK(const vbool<K>& valid, const RayK<K>& ray) {}
       
       /*! Intersects K rays with one of M triangles. */
-      template<typename UVMapper, typename Epilog>
+      template<typename UVMapper>
       __forceinline vbool<K> intersectK(const vbool<K>& valid0,
                                         //RayK<K>& ray,
                                         const Vec3vf<K>& ray_org,
@@ -261,7 +261,7 @@ namespace embree
                                         const Vec3vf<K>& tri_e2,
                                         const Vec3vf<K>& tri_Ng,
                                         const UVMapper& mapUV,
-                                        const Epilog& epilog) const
+                                        MoellerTrumboreHitK<K,UVMapper> &hit) const
       { 
         /* calculate denominator */
         vbool<K> valid = valid0;
@@ -301,9 +301,26 @@ namespace embree
 #endif
         
         /* calculate hit information */
-        MoellerTrumboreHitK<K,UVMapper> hit(U,V,T,absDen,tri_Ng,mapUV);
-        return epilog(valid,hit);
+        new (&hit) MoellerTrumboreHitK<K,UVMapper>(U,V,T,absDen,tri_Ng,mapUV);
+        return valid;
       }
+
+      /*! Intersects K rays with one of M triangles. */
+      template<typename UVMapper>
+      __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
+                                        RayK<K>& ray,
+                                        const Vec3vf<K>& tri_v0,
+                                        const Vec3vf<K>& tri_v1,
+                                        const Vec3vf<K>& tri_v2,
+                                        const UVMapper& mapUV,
+                                        MoellerTrumboreHitK<K,UVMapper> &hit) const
+      {
+        const Vec3vf<K> e1 = tri_v0-tri_v1;
+        const Vec3vf<K> e2 = tri_v2-tri_v0;
+        const Vec3vf<K> Ng = cross(e2,e1);
+        return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,e1,e2,Ng,mapUV,hit);
+      }
+      
       
       /*! Intersects K rays with one of M triangles. */
       template<typename UVMapper, typename Epilog>
@@ -315,12 +332,16 @@ namespace embree
                                         const UVMapper& mapUV,
                                         const Epilog& epilog) const
       {
+        MoellerTrumboreHitK<K,UVIdentity<K>> hit(mapUV);		
         const Vec3vf<K> e1 = tri_v0-tri_v1;
         const Vec3vf<K> e2 = tri_v2-tri_v0;
         const Vec3vf<K> Ng = cross(e2,e1);
-        return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,e1,e2,Ng,mapUV,epilog);
+        const vbool<K> valid = intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,e1,e2,Ng,mapUV,hit);
+	return epilog(valid,hit);
       }
 
+
+      
       template<typename Epilog>
       __forceinline vbool<K> intersectK(const vbool<K>& valid0, 
                                         RayK<K>& ray,
@@ -329,10 +350,13 @@ namespace embree
                                         const Vec3vf<K>& tri_v2,
                                         const Epilog& epilog) const
       {
+	UVIdentity<K> mapUV;	
+        MoellerTrumboreHitK<K,UVIdentity<K>> hit(mapUV);			
         const Vec3vf<K> e1 = tri_v0-tri_v1;
         const Vec3vf<K> e2 = tri_v2-tri_v0;
         const Vec3vf<K> Ng = cross(e2,e1);
-        return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,e1,e2,Ng,UVIdentity<K>(),epilog);
+        const vbool<K> valid = intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,e1,e2,Ng,mapUV,hit);
+	return epilog(valid,hit);
       }
 
       /*! Intersects K rays with one of M triangles. */
@@ -345,8 +369,10 @@ namespace embree
                                             const UVMapper& mapUV,
                                             const Epilog& epilog) const
       {
+        MoellerTrumboreHitK<K,UVIdentity<K>> hit(mapUV);			
         const Vec3vf<K> tri_Ng = cross(tri_e2,tri_e1);
-        return intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,tri_e1,tri_e2,tri_Ng,mapUV,epilog);
+        const vbool<K> valid = intersectK(valid0,ray.org,ray.dir,ray.tnear(),ray.tfar,tri_v0,tri_e1,tri_e2,tri_Ng,mapUV,hit);
+	return epilog(valid,hit);
       }
       
       /*! Intersect k'th ray from ray packet of size K with M triangles. */

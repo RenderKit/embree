@@ -298,6 +298,8 @@ namespace embree
 	/* intersect second triangle */
 	if (intersector.intersect(ray,k,v2,v3,v1,mapUV,hit)) 
         {
+	  hit.U = hit.UVW - hit.U;
+	  hit.V = hit.UVW - hit.V;	  
           interpolateUV<M>(hit,g,subgrid,vint<M>(0,1,1,0),vint<M>(0,0,1,1));
           if (epilog(hit.valid,hit)) return true;
         }
