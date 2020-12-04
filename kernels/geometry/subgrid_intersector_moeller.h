@@ -273,11 +273,17 @@ namespace embree
       __forceinline void intersect1(RayHitK<K>& ray, size_t k, IntersectContext* context,
                                     const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
+#if 0        
 	UVIdentity<M> mapUV;
 	MoellerTrumboreHitM<M,UVIdentity<M>> hit(mapUV);
         Intersect1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
 	MoellerTrumboreIntersectorK<M,K> intersector;
-	
+#else
+	UVIdentity<4> mapUV;
+	MoellerTrumboreHitM<4,UVIdentity<4>> hit(mapUV);
+        Intersect1KEpilogMU<4,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());
+	MoellerTrumboreIntersectorK<4,K> intersector;        
+#endif        
 	/* intersect first triangle */
 	if (intersector.intersectEdge(ray,k,v0,v1,v3,mapUV,hit)) 
           {
@@ -298,11 +304,17 @@ namespace embree
       __forceinline bool occluded1(RayK<K>& ray, size_t k, IntersectContext* context,
                                    const Vec3vf<M>& v0, const Vec3vf<M>& v1, const Vec3vf<M>& v2, const Vec3vf<M>& v3, const GridMesh::Grid &g, const SubGrid &subgrid) const
       {
+#if 0                
 	UVIdentity<M> mapUV;
         MoellerTrumboreHitM<M,UVIdentity<M>> hit(mapUV);
         Occluded1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());	
 	MoellerTrumboreIntersectorK<M,K> intersector;
-	
+#else
+	UVIdentity<4> mapUV;
+	MoellerTrumboreHitM<4,UVIdentity<4>> hit(mapUV);
+        Occluded1KEpilogMU<M,K,filter> epilog(ray,k,context,subgrid.geomID(),subgrid.primID());	        
+	MoellerTrumboreIntersectorK<4,K> intersector;                
+#endif        
 	/* intersect first triangle */
 	if (intersector.intersectEdge(ray,k,v0,v1,v3,mapUV,hit)) 
         {
