@@ -438,6 +438,20 @@ namespace embree
         return false;
       }
 
+      template<typename UVMapper>
+      __forceinline bool intersect(RayK<K>& ray,
+                                   size_t k,
+                                   const Vec3vf<M>& v0, 
+                                   const Vec3vf<M>& v1, 
+                                   const Vec3vf<M>& v2,
+                                   const UVMapper& mapUV,
+                                   MoellerTrumboreHitM<M,UVMapper>& hit) const      
+      {
+        const Vec3vf<M> e1 = v0-v1;
+        const Vec3vf<M> e2 = v2-v0;
+        return intersectEdge(ray,k,v0,e1,e2,mapUV,hit);
+      }
+      
       template<typename UVMapper, typename Epilog>
       __forceinline bool intersectEdge(RayK<K>& ray,
                                        size_t k,
