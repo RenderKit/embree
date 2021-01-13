@@ -1,4 +1,4 @@
-// Copyright 2009-2020 Intel Corporation
+// Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #if defined (CPPTUTORIAL) && !defined(_MATERIALS_H_CPPTUTORIAL) || !defined(_MATERIALS_H_)

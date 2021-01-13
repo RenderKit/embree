@@ -1,3 +1,5 @@
+## Copyright 2009-2021 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
 
 ispc2cpp: common triangle_geometry point_geometry dynamic_scene user_geometry viewer viewer_stream viewer_anim instanced_geometry intersection_filter pathtracer hair_geometry subdivision_geometry displacement_geometry lazy_geometry motion_blur_geometry interpolation_geometry curve_geometry grid_geometry quaternion_motion_blur
 

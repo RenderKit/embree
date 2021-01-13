@@ -1,3 +1,6 @@
+## Copyright 2009-2021 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
 images_jpg := $(addprefix images/, $(addsuffix .jpg, displacement_geometry instanced_geometry pathtracer dynamic_scene subdivision_geometry user_geometry hair_geometry intersection_filter triangle_geometry viewer viewer_stream interpolation motion_blur_geometry curve_geometry voronoi closest_point multi_level_instancing point_geometry grid_geometry quaternion_motion_blur collide))
 images_png := $(addprefix images/, $(addsuffix .png, quad_uv triangle_uv half_edges))
 images_pdf := $(addprefix images/, $(addsuffix .pdf, quad_uv triangle_uv half_edges))

@@ -1,3 +1,6 @@
+rem ## Copyright 2009-2021 Intel Corporation
+rem ## SPDX-License-Identifier: Apache-2.0
+
 @echo off
 
 set build_type=%1

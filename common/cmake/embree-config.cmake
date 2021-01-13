@@ -1,4 +1,4 @@
-## Copyright 2009-2020 Intel Corporation
+## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
 SET(EMBREE_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/@EMBREE_RELATIV_ROOT_DIR@)
