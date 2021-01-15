@@ -21,7 +21,7 @@ def baseName(name,model):
 def render(name,modelname,model):
   executable = tutorial
   base = baseName(name,modelname)
-  os.system('mkdir -p ' + statDir)
+  os.mkdir(statDir)
   logFile = statDir + dash + base + '.log'
   if not os.path.exists(logFile):
     command = executable
