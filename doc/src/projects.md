@@ -24,6 +24,8 @@ note](mailto:embree_support@intel.com).
 
 * [LibThree](http://libthree.com/): 3D Visualization Made Easy
 
+* [Bella Renderer](https://bellarender.com)
+
 * An Autodesk [Maya 2014 viewport
   plugin](https://software.intel.com/en-us/articles/an-embree-based-viewport-plugin-for-autodesk-maya)
   is based on the [Embree Example Renderer].
