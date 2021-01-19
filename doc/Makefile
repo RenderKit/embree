@@ -5,14 +5,15 @@ images_pdf := $(addprefix images/, $(addsuffix .pdf, quad_uv triangle_uv half_ed
 webpages := $(addprefix www/, $(addsuffix .html, index api tutorials downloads renderer related legal))
 webimages := $(addprefix www/, $(images_jpg))
 docfiles := $(addprefix doc/, README.md CHANGELOG.md readme.pdf)
-
+spec := embree-spec.rst
 man_src := $(wildcard src/api/*.md)
 manfiles := $(patsubst src/api/%.md,man/man3/%.3embree3,$(man_src))
 
-all: www images man doc
+all: www images man doc spec
 www: $(webpages) $(webimages)
 doc: $(docfiles)
 man: $(manfiles)
+spec: $(spec)
 images: $(images_jpg) $(images_png) $(images_pdf)
 
 .PHONY: all www doc images
@@ -71,7 +72,7 @@ markdown2web = $(PANDOC) --email-obfuscation=none -f markdown $(filter-out tmp/w
 #markdown2web = $(PANDOC) $(filter-out tmp/webtemplate.html,$+) --template tmp/webtemplate -V select_$(basename $(@F)) -o $@ -s --mathjax=https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML
 
 
-$(webpages): tmp/links_web.md tmp/images_local_png.md tmp/webtemplate.html
+$(spec) $(webpages): tmp/links_web.md tmp/images_local_png.md tmp/webtemplate.html
 
 www/%.html:
 	$(markdown2web)
@@ -87,6 +88,11 @@ www/legal.html: tmp/legal.md
 www/api.html: tmp/api.md
 	$(PANDOC) $(filter-out tmp/webtemplate.html,$+) --filter src/IncludeFilter.py -t markdown | $(convertbsp) > tmp/api_webinc.md
 	$(PANDOC) --email-obfuscation=none -f markdown --template tmp/webtemplate tmp/api_webinc.md  tmp/links_web.md tmp/images_local_png.md --indented-code-classes=cpp -V select_$(basename $(@F)) -o $@
+
+embree-spec.rst: tmp/spec.md
+	$(PANDOC) $(filter-out tmp/webtemplate.html,$+) --filter src/IncludeFilter.py -t markdown | $(convertbsp) > tmp/spec_webinc.md
+	$(PANDOC) --email-obfuscation=none -f markdown tmp/spec_webinc.md  tmp/links_web.md tmp/images_local_png.md --indented-code-classes=cpp -V select_$(basename $(@F)) --to rst -o embree-spec.rst
+
 
 www/images/%.jpg: images/%.jpg
 	cp $< $@ 
@@ -174,4 +180,4 @@ man/man3/%.3embree3: src/api/%.md
 ########################################################################
 
 clean:
-	rm -rf doc tmp man www
+	rm -rf doc tmp man www embree-spec.rst
