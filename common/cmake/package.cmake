@@ -106,18 +106,18 @@ ELSE()
   ENDIF()
 ENDIF()
 
-IF (WIN32 OR EMBREE_ZIP_MODE)
+#IF (WIN32 OR EMBREE_ZIP_MODE)
   # for local "installs" and on Windows we want the cmake config files placed
   # in the install root, such that users can point the CMake variable
   # embree_DIR just to the install folder
-  SET(EMBREE_CMAKECONFIG_DIR ".")
-  SET(EMBREE_CMAKEEXPORT_DIR "cmake")
-  SET(EMBREE_RELATIV_ROOT_DIR ".")
-ELSE()
-  SET(EMBREE_CMAKECONFIG_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}")
-  SET(EMBREE_CMAKEEXPORT_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}")
-  FILE(RELATIVE_PATH EMBREE_RELATIV_ROOT_DIR "/${EMBREE_CMAKECONFIG_DIR}" "/")
-ENDIF()
+#  SET(EMBREE_CMAKECONFIG_DIR ".")
+#  SET(EMBREE_CMAKEEXPORT_DIR "cmake")
+#  SET(EMBREE_RELATIVE_ROOT_DIR ".")
+#ELSE()
+SET(EMBREE_CMAKECONFIG_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}")
+SET(EMBREE_CMAKEEXPORT_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/embree-${EMBREE_VERSION}")
+FILE(RELATIVE_PATH EMBREE_RELATIVE_ROOT_DIR "/${EMBREE_CMAKECONFIG_DIR}" "/")
+#ENDIF()
 
 CONFIGURE_FILE(common/cmake/embree-config.cmake embree-config-install.cmake @ONLY)
 CONFIGURE_FILE(common/cmake/embree-config-version.cmake embree-config-version.cmake @ONLY)
