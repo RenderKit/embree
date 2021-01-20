@@ -315,16 +315,29 @@ function(rk_tbb_find_library COMPONENT_NAME BUILD_CONFIG)
 
     # On window, also search the DLL so that the client may install it.
     set(DLL_NAME "${LIB_NAME}.dll")
-    find_path(${BIN_DIR_VAR}
-      NAMES "${DLL_NAME}"
+
+    # lib name with version suffix to handle oneTBB tbb12.dll
+    set(LIB_NAME_VERSION "") 
+    if (${COMPONENT_NAME} STREQUAL "tbb")
+      if (BUILD_CONFIG STREQUAL "DEBUG")
+        set(LIB_NAME_VERSION "tbb12_debug")
+      else()
+        set(LIB_NAME_VERSION "tbb12")
+      endif()
+    endif()
+    set(DLL_NAME_VERSION "${LIB_NAME_VERSION}.dll")
+
+    find_file(BIN_FILE
+      NAMES ${DLL_NAME} ${DLL_NAME_VERSION}
       PATHS
-        ${TBB_ROOT}/bin/${TBB_ARCH}/${TBB_VCVER}
-        ${TBB_ROOT}/bin
-        ${TBB_ROOT}/../redist/${TBB_ARCH}/tbb/${TBB_VCVER}
-        ${TBB_ROOT}/../redist/${TBB_ARCH}_win/tbb/${TBB_VCVER}
-      NO_DEFAULT_PATH
-    )
-    set(${DLL_VAR} "${${BIN_DIR_VAR}}/${DLL_NAME}" CACHE PATH "${COMPONENT_NAME} ${BUILD_CONFIG} dll path")
+        "${TBB_ROOT}/bin/${TBB_ARCH}/${TBB_VCVER}"
+        "${TBB_ROOT}/bin"
+        "${TBB_ROOT}/redist/${TBB_ARCH}/${TBB_VCVER}"
+        "${TBB_ROOT}/../redist/${TBB_ARCH}/tbb/${TBB_VCVER}"
+        "${TBB_ROOT}/../redist/${TBB_ARCH}_win/tbb/${TBB_VCVER}"
+      NO_DEFAULT_PATH)
+    get_filename_component(${BIN_DIR_VAR} ${BIN_FILE} DIRECTORY)
+    set(${DLL_VAR} "${BIN_FILE}" CACHE PATH "${COMPONENT_NAME} ${BUILD_CONFIG} dll path")
   elseif(APPLE)
     set(LIB_PATHS ${TBB_ROOT}/lib)
   else()
