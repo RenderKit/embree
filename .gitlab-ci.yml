@@ -5,8 +5,8 @@
 # Continuous Test
 ####################################################################
 
-#continuous-macosx-x64-Debug-ICC2020.1-ISPC1.14.1-SSE2-TBB2021.1-beta08:
-#  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.14.1 isa:SSE2 tasking:TBB2021.1-beta08 intensity:2"
+#continuous-macosx-x64-Debug-ICC2020.1-ISPC1.14.1-SSE2-TBB2021.1.1:
+#  script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.14.1 isa:SSE2 tasking:TBB2021.1.1 intensity:2"
 #  tags:   [embree, mac]
 #  only:   [pushes]
 
@@ -138,8 +138,8 @@ nightly-windows-x64-RelWithDebInfo-ICC19-ISPC1.13.0-AVX512-TBB2019.9:
   tags:   [embree, win10, icc19, avx512vl]
   only:   [schedules]
 
-nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.14.1-AVX2-TBB2021.1-beta08:
-  script: "python scripts\\test.py platform:x64 build:Release compiler:V142 ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.1-beta08 intensity:2"
+nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.14.1-AVX2-TBB2021.1.1:
+  script: "python scripts\\test.py platform:x64 build:Release compiler:V142 ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.1.1 intensity:2"
   tags:   [embree, win10, v142]
   only:   [schedules]
 
@@ -278,9 +278,9 @@ nightly-ubuntu20.04-x64-Debug-GCC-ISPC1.13.0-AVX2-TBB:
   tags:   [embree, docker]
   only:   [schedules]
 
-nightly-ubuntu20.04-x64-Release-GCC-ISPC1.14.1-AVX2-TBB2021.1-beta08:
+nightly-ubuntu20.04-x64-Release-GCC-ISPC1.14.1-AVX2-TBB2021.1.1:
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
-  script: "scripts/test.py platform:x64 build:Release compiler:GCC ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.1-beta08 intensity:2"
+  script: "scripts/test.py platform:x64 build:Release compiler:GCC ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.1.1 intensity:2"
   tags:   [embree, docker]
   only:   [schedules]
   
