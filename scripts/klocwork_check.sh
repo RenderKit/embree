@@ -1,22 +1,21 @@
-#!/bin/bash
-
-## Copyright 2009-2021 Intel Corporation
+#!/bin/bash -xe
+## Copyright 2020-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-set -e
-export KW_BUILD_NUMBER=$(cat ./kw_build_number)
-export KW_PROJECT_NAME=embree
-export KW_CRITICAL_OUTPUT_PATH=./kw_critical.out
+KW_ISSUES_FILE=/tmp/issues
+KW_SERVER_API_URL=http://$KW_SERVER_IP:$KW_SERVER_PORT/review/api
+KW_BUILD_NAME=$(cat $CI_PROJECT_DIR/klocwork/build_name)
 
-echo "Checking for critical issues in $KW_BUILD_NUMBER ..."
-no_proxy=$KW_SERVER_IP curl -f --data "action=search&project=$KW_PROJECT_NAME&query=build:'$KW_BUILD_NUMBER'%20severity:Error,Critical%20status:Analyze,Fix&user=$KW_USER&ltoken=$KW_LTOKEN" http://$KW_SERVER_IP:$KW_SERVER_PORT/review/api -o $KW_CRITICAL_OUTPUT_PATH
+echo "Checking for issues in $KW_BUILD_NAME ..."
+curl -f --data "action=search&project=$KW_PROJECT_NAME&query=build:'$KW_BUILD_NAME'%20status:Analyze,Fix,Fix%20in%20Next%20Release,Fix%20in%20Later%20Release,Defer,Filter&user=$KW_USER&ltoken=$KW_LTOKEN" $KW_SERVER_API_URL -o $KW_ISSUES_FILE
 getCriticalCount() {
-    cat $KW_CRITICAL_OUTPUT_PATH | wc -l
+    cat $KW_ISSUES_FILE | wc -l
 }
-if [ -f $KW_CRITICAL_OUTPUT_PATH ]; then
-    echo "****** ERROR ****** Critical issues found - $(getCriticalCount) in $KW_BUILD_NUMBER";
-    cat $KW_CRITICAL_OUTPUT_PATH
+if [ -f $KW_ISSUES_FILE ]; then
+    echo "Issues found - $(getCriticalCount) in $KW_BUILD_NAME";
+    while IFS= read -r line; do echo $line | python -m json.tool; done < $KW_ISSUES_FILE
     exit 1;
 else
-    echo "****** PASS ****** No critical issues were found in $KW_BUILD_NUMBER"
+    echo "There are no issues which should be take care in $KW_BUILD_NAME"
 fi
+
