@@ -1,7 +1,7 @@
 Embree API
 ==========
 
-``` {include=src/api/intro.md}
+``` {include=src/intro.md}
 ```
 
 Upgrading from Embree 2 to Embree 3
@@ -292,7 +292,7 @@ Miscellaneous
 Embree API Reference
 ====================
 
-``` {include=src/api/api-ref.md}
+``` {include=src/api-ref.md}
 ```
 
 Performance Recommendations
