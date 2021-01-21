@@ -27,9 +27,9 @@ include(ProcessorCount)
 
 ## Superbuild options ##
 
-set(BUILD_OSPCOMMON_VERSION "v1.3.0" CACHE STRING "Which version of ospcommon to build?")
-set(TBB_VERSION "2020.2" CACHE STRING "Which version of TBB to download?")
-set(BUILD_OPENVKL_VERSION "v0.9.0" CACHE STRING "Which version of OpenVKL to build?")
+set(BUILD_RKCOMMON_VERSION "v1.5.1" CACHE STRING "Which version of rkcommon to build?")
+set(TBB_VERSION "2021.1.1" CACHE STRING "Which version of TBB to download?")
+set(BUILD_OPENVKL_VERSION "v0.11.0" CACHE STRING "Which version of OpenVKL to build?")
 
 set(installDir ${CMAKE_INSTALL_PREFIX})
 get_filename_component(INSTALL_DIR_ABSOLUTE ${installDir} ABSOLUTE BASE_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -45,14 +45,18 @@ endif()
 
 set(DEFAULT_BUILD_COMMAND cmake --build . --config release ${PARALLEL_JOBS_OPTS})
 
-set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/ispc)
+set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}) # install all components in one directory
+list(APPEND CMAKE_PREFIX_PATH ${COMPONENT_PATH})
+string(REPLACE ";" "|" CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
 
+set(ISPC_VERSION "v1.14.1")
+set(ISPC_BASE_URL "https://github.com/ispc/ispc/releases/download")
 if (APPLE)
-  set(ISPC_URL http://sdvis.org/ospray/download/dependencies/osx/ispc-v1.12.0-macOS.tar.gz)
+  set(ISPC_URL ${ISPC_BASE_URL}/${ISPC_VERSION}/ispc-${ISPC_VERSION}-macOS.tar.gz)
 elseif(WIN32)
-  set(ISPC_URL http://sdvis.org/ospray/download/dependencies/win/ispc-v1.12.0-windows.zip)
+  set(ISPC_URL ${ISPC_BASE_URL}/${ISPC_VERSION}/ispc-${ISPC_VERSION}-windows.zip)
 else()
-  set(ISPC_URL http://sdvis.org/ospray/download/dependencies/linux/ispc-v1.12.0-linux.tar.gz)
+  set(ISPC_URL ${ISPC_BASE_URL}/${ISPC_VERSION}/ispc-${ISPC_VERSION}-linux.tar.gz)
 endif()
 
 ExternalProject_Add(ispc
@@ -72,14 +76,12 @@ ExternalProject_Add(ispc
 
 set(ISPC_PATH "${COMPONENT_PATH}/bin/ispc${CMAKE_EXECUTABLE_SUFFIX}")
 
-set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/tbb)
-
 if (APPLE)
-  set(TBB_URL "http://github.com/intel/tbb/releases/download/v${TBB_VERSION}/tbb-${TBB_VERSION}-mac.tgz")
+  set(TBB_URL "http://github.com/intel/tbb/releases/download/v${TBB_VERSION}/oneapi-tbb-${TBB_VERSION}-mac.tgz")
 elseif (WIN32)
-  set(TBB_URL "http://github.com/intel/tbb/releases/download/v${TBB_VERSION}/tbb-${TBB_VERSION}-win.zip")
+  set(TBB_URL "http://github.com/intel/tbb/releases/download/v${TBB_VERSION}/oneapi-tbb-${TBB_VERSION}-win.zip")
 else()
-  set(TBB_URL "http://github.com/intel/tbb/releases/download/v${TBB_VERSION}/tbb-${TBB_VERSION}-lin.tgz")
+  set(TBB_URL "http://github.com/intel/tbb/releases/download/v${TBB_VERSION}/oneapi-tbb-${TBB_VERSION}-lin.tgz")
 endif()
 
 ExternalProject_Add(tbb
@@ -93,23 +95,20 @@ ExternalProject_Add(tbb
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ""
   INSTALL_COMMAND "${CMAKE_COMMAND}" -E copy_directory
-    <SOURCE_DIR>/tbb
+    <SOURCE_DIR>
     ${COMPONENT_PATH}
   BUILD_ALWAYS OFF
 )
 
 set(TBB_PATH "${COMPONENT_PATH}")
 
-
-set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/ospcommon)
-
-ExternalProject_Add(ospcommon
-  PREFIX ospcommon
-  DOWNLOAD_DIR ospcommon
-  STAMP_DIR ospcommon/stamp
-  SOURCE_DIR ospcommon/src
-  BINARY_DIR ospcommon/build
-  URL "http://github.com/ospray/ospcommon/archive/${BUILD_OSPCOMMON_VERSION}.zip"
+ExternalProject_Add(rkcommon
+  PREFIX rkcommon
+  DOWNLOAD_DIR rkcommon
+  STAMP_DIR rkcommon/stamp
+  SOURCE_DIR rkcommon/src
+  BINARY_DIR rkcommon/build
+  URL "http://github.com/ospray/rkcommon/archive/${BUILD_RKCOMMON_VERSION}.zip"
   DOWNLOAD_NO_PROGRESS ON
   CMAKE_ARGS
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -121,17 +120,12 @@ ExternalProject_Add(ospcommon
     -DCMAKE_BUILD_TYPE=Release
     -DINSTALL_DEPS=OFF
     -DBUILD_TESTING=OFF
-    -DOSPCOMMON_TBB_ROOT=${TBB_PATH}
+    -DRKCOMMON_TBB_ROOT=${TBB_PATH}
   BUILD_COMMAND ${DEFAULT_BUILD_COMMAND}
   BUILD_ALWAYS ${ALWAYS_REBUILD}
 )
 
-list(APPEND CMAKE_PREFIX_PATH ${COMPONENT_PATH})
-string(REPLACE ";" "|" CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
-
-ExternalProject_Add_StepDependencies(ospcommon configure tbb)
-
-set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/embree)
+ExternalProject_Add_StepDependencies(rkcommon configure tbb)
 
 ExternalProject_Add(embree
     PREFIX embree
@@ -147,12 +141,6 @@ ExternalProject_Add(embree
       ${COMPONENT_PATH}
     BUILD_ALWAYS OFF
   )
-
-list(APPEND CMAKE_PREFIX_PATH ${COMPONENT_PATH})
-string(REPLACE ";" "|" CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
-
-
-set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/openvkl)
 
 ExternalProject_Add(openvkl
   PREFIX openvkl
@@ -173,7 +161,7 @@ ExternalProject_Add(openvkl
     -DCMAKE_INSTALL_DOCDIR=${CMAKE_INSTALL_DOCDIR}
     -DCMAKE_INSTALL_BINDIR=${CMAKE_INSTALL_BINDIR}
     -DCMAKE_BUILD_TYPE=Release
-    -DOSPCOMMON_TBB_ROOT=${TBB_PATH}
+    -DRKCOMMON_TBB_ROOT=${TBB_PATH}
     -DISPC_EXECUTABLE=${ISPC_PATH}
     -DBUILD_BENCHMARKS=OFF
     -DBUILD_EXAMPLES=OFF
@@ -182,18 +170,12 @@ ExternalProject_Add(openvkl
   BUILD_ALWAYS ${ALWAYS_REBUILD}
 )
 
-list(APPEND CMAKE_PREFIX_PATH ${COMPONENT_PATH})
-string(REPLACE ";" "|" CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
-
 ExternalProject_Add_StepDependencies(openvkl
   configure
-    ospcommon
+    rkcommon
     embree
     ispc
 )
-
-
-set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/glfw)
 
 ExternalProject_Add(glfw
   PREFIX glfw
@@ -218,15 +200,9 @@ ExternalProject_Add(glfw
   BUILD_ALWAYS ${ALWAYS_REBUILD}
 )
 
-list(APPEND CMAKE_PREFIX_PATH ${COMPONENT_PATH})
-string(REPLACE ";" "|" CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
-
-
-set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}/ospray)
-
 ExternalProject_Add(ospray
   PREFIX ospray
-  URL "https://github.com/ospray/ospray/archive/v2.1.0.tar.gz"
+  URL "https://github.com/ospray/ospray/archive/v2.4.0.tar.gz"
   DOWNLOAD_NO_PROGRESS ON
   GIT_SUBMODULES ""
   STAMP_DIR ospray/stamp
@@ -250,19 +226,16 @@ ExternalProject_Add(ospray
     -DOSPRAY_STRICT_BUILD=ON
     -DOSPRAY_WARN_AS_ERRORS=OFF
     -DISPC_EXECUTABLE=${ISPC_PATH}
-    -DOSPCOMMON_TBB_ROOT=${TBB_PATH}
+    -DRKCOMMON_TBB_ROOT=${TBB_PATH}
   BUILD_COMMAND ${DEFAULT_BUILD_COMMAND}
   BUILD_ALWAYS OFF
 )
 
 ExternalProject_Add_StepDependencies(ospray
   configure
-  ospcommon
+  rkcommon
   embree
   openvkl
   glfw
   ispc
 )
-
-list(APPEND CMAKE_PREFIX_PATH ${COMPONENT_PATH})
-string(REPLACE ";" "|" CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
