@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.12.1
+% Embree: High Performance Ray Tracing Kernels 3.12.2
 % Intel Corporation
 
 Embree Overview
@@ -80,7 +80,7 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.12.1-x64.vc14.msi](https://github.com/embree/embree/releases/download/v3.12.1/embree-3.12.1.x64.vc14.msi). This
+[embree-3.12.2-x64.vc14.msi](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x64.vc14.msi). This
 will install the 64-bit Embree version by default in `Program
 Files\Intel\Embree3`.
 
@@ -95,13 +95,13 @@ Files\Intel\Embree3`.
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.12.1 x64` and uninstall it.
+3.12.2 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-3.12.1.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.12.1/embree-3.12.1.x64.vc14.windows.zip). After
+[embree-3.12.2.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree, you also have to set the
@@ -115,13 +115,13 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.12.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.12.1/embree-3.12.1.x86_64.linux.tar.gz). Unpack
+[embree-3.12.2.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-3.12.1.x86_64.linux.tar.gz
-    source embree-3.12.1.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.12.2.x86_64.linux.tar.gz
+    source embree-3.12.2.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -134,7 +134,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.12.1.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.12.1/embree-3.12.1.x86_64.pkg). This
+[embree-3.12.2.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -156,13 +156,13 @@ macOS ZIP file
 -----------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-3.12.1.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.12.1/embree-3.12.1.x86_64.macosx.zip). Unpack
+[embree-3.12.2.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-3.12.1.x64.macosx.zip
-    source embree-3.12.1.x64.macosx/embree-vars.sh
+    unzip embree-3.12.2.x64.macosx.zip
+    source embree-3.12.2.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -428,8 +428,8 @@ parameters that can be configured in CMake:
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
   default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
-  `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512.a`). You
-  have to link these libraries in exactly this order of increasing ISA.
+  `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512.a`). You have
+  to link these libraries in exactly this order of increasing ISA.
 
 + `EMBREE_API_NAMESPACE`: Specifies a namespace name to put all Embree
   API symbols inside. By default no namespace is used and plain C symbols
@@ -582,8 +582,7 @@ contains additional functions that operate on ray packets with a size
 of the native SIMD width used by ISPC. For simplicity this document
 refers to the C99 version of the API functions. For changes when
 upgrading from the Embree 2 to the current Embree 3 API see Section
-[Upgrading from Embree 2 to Embree
-3](#upgrading-from-embree-2-to-embree-3).
+[Upgrading from Embree 2 to Embree 3].
 
 The API supports scenes consisting of different geometry types such as
 triangle meshes, quad meshes (triangle pairs), grid meshes, flat
@@ -598,13 +597,13 @@ functions) are both supported. The API supports queries for single
 rays, ray packets, and ray streams. See Section [Ray
 Queries](#ray-queries) for more information.
 
-The API is designed in an object-oriented manner, e.g. it contains
+The API is designed in an object-oriented manner, e.g. it contains
 device objects (`RTCDevice` type), scene objects (`RTCScene` type),
 geometry objects (`RTCGeometry` type), buffer objects (`RTCBuffer`
 type), and BVH objects (`RTCBVH` type). All objects are reference
 counted, and handles can be released by calling the appropriate release
-function (e.g. `rtcReleaseDevice`) or retained by incrementing the
-reference count (e.g. `rtcRetainDevice`). In general, API calls that
+function (e.g. `rtcReleaseDevice`) or retained by incrementing the
+reference count (e.g. `rtcRetainDevice`). In general, API calls that
 access the same object are not thread-safe, unless specified
 differently. However, attaching geometries to the same scene and
 performing ray queries in a scene is thread-safe.
@@ -615,22 +614,20 @@ Device Object
 Embree supports a device concept, which allows different components of
 the application to use the Embree API without interfering with each
 other. An application typically first creates a device using the
-[rtcNewDevice](#rtcnewdevice) function. This device can then be used to
-construct further objects, such as scenes and geometries. Before the
-application exits, it should release all devices by invoking
-[rtcReleaseDevice](#rtcreleasedevice). An application typically creates
-only a single device. If required differently, it should only use a
-small number of devices at any given time.
+[rtcNewDevice] function. This device can then be used to construct
+further objects, such as scenes and geometries. Before the application
+exits, it should release all devices by invoking [rtcReleaseDevice].
+An application typically creates only a single device. If required
+differently, it should only use a small number of devices at any given
+time.
 
 Each user thread has its own error flag per device. If an error occurs
 when invoking an API function, this flag is set to an error code (if it
 isn't already set by a previous error). See Section
-[rtcGetDeviceError](#rtcgetdeviceerror) for information on how to read
-the error code and Section
-[rtcSetDeviceErrorFunction](#rtcsetdeviceerrorfunction) on how to
-register a callback that is invoked for each error encountered. It is
-recommended to always set a error callback function, to detect all
-errors.
+[rtcGetDeviceError] for information on how to read the error code and
+Section [rtcSetDeviceErrorFunction] on how to register a callback
+that is invoked for each error encountered. It is recommended to always
+set a error callback function, to detect all errors.
 
 Scene Object
 ------------
@@ -647,8 +644,7 @@ geometries use the `rtcAttachGeometry` call, and to detach them use the
 scene description and trigger building of internal data structures.
 After the scene got committed, it is safe to perform ray queries (see
 Section [Ray Queries](#ray-queries)) or to query the scene bounding box
-(see [rtcGetSceneBounds](#rtcgetscenebounds) and
-[rtcGetSceneLinearBounds](#rtcgetscenelinearbounds)).
+(see [rtcGetSceneBounds] and [rtcGetSceneLinearBounds]).
 
 If scene geometries get modified or attached or detached, the
 `rtcCommitScene` call must be invoked before performing any further ray
@@ -656,18 +652,17 @@ queries for the scene; otherwise the effect of the ray query is
 undefined. The modification of a geometry, committing the scene, and
 tracing of rays must always happen sequentially, and never at the same
 time. Any API call that sets a property of the scene or geometries
-contained in the scene count as scene modification, e.g. including
+contained in the scene count as scene modification, e.g. including
 setting of intersection filter functions.
 
 Scene flags can be used to configure a scene to use less memory
 (`RTC_SCENE_FLAG_COMPACT`), use more robust traversal algorithms
 (`RTC_SCENE_FLAG_ROBUST`), and to optimize for dynamic content. See
-Section [rtcSetSceneFlags](#rtcsetsceneflags) for more details.
+Section [rtcSetSceneFlags] for more details.
 
 A build quality can be specified for a scene to balance between
 acceleration structure build performance and ray query performance. See
-Section [rtcSetSceneBuildQuality](#rtcsetscenebuildquality) for more
-details on build quality.
+Section [rtcSetSceneBuildQuality] for more details on build quality.
 
 Geometry Object
 ---------------
@@ -695,7 +690,7 @@ defined by linearly interpolating the geometries of neighboring time
 steps. To construct a motion blur geometry, first the number of time
 steps of the geometry must be specified using the
 `rtcSetGeometryTimeStepCount` function, and then a vertex buffer for
-each time step must be bound, e.g. using the
+each time step must be bound, e.g. using the
 `rtcSetSharedGeometryBuffer` function. Optionally, a time range
 defining the start (and end time) of the first (and last) time step can
 be set using the `rtcSetGeometryTimeRange` function. This feature will
@@ -709,7 +704,7 @@ intersection found during the `rtcIntersect`-type or `rtcOccluded`-type
 calls. The former ones are called geometry intersection filter
 functions, the latter ones geometry occlusion filter functions. These
 filter functions are designed to be used to ignore intersections
-outside of a user-defined silhouette of a primitive, e.g. to model tree
+outside of a user-defined silhouette of a primitive, e.g. to model tree
 leaves using transparency textures.
 
 Ray Queries
@@ -733,9 +728,8 @@ streams of ray packets (`rtcIntersectNM` and `rtcOccludedNM`), and
 large packet-like streams in structure of pointer layout
 (`rtcIntersectNp` and `rtcOccludedNp`).
 
-See Sections [rtcIntersect1](#rtcintersect1) and
-[rtcOccluded1](#rtcoccluded1) for a detailed description of how to set
-up and trace a ray.
+See Sections [rtcIntersect1] and [rtcOccluded1] for a detailed
+description of how to set up and trace a ray.
 
 See tutorial [Triangle Geometry] for a complete example of how to
 trace single rays and ray packets. Also have a look at the tutorial
@@ -751,8 +745,8 @@ called which allows queries such as finding the closest point on the
 surface geometries of the scene (see Tutorial [Closest Point]) or
 nearest neighbour queries (see Tutorial [Voronoi]).
 
-See Section [rtcPointQuery](#rtcpointquery) for a detailed description
-of how to set up point queries.
+See Section [rtcPointQuery] for a detailed description of how to set
+up point queries.
 
 Collision Detection
 -------------------
@@ -762,8 +756,8 @@ scenes consisting only of user geometries. Embree only performs
 broadphase collision detection, the narrow phase detection can be
 performed through a callback function.
 
-See Section [rtcCollide](#rtccollide) for a detailed description of how
-to set up collision detection.
+See Section [rtcCollide] for a detailed description of how to set up
+collision detection.
 
 Seen tutorial [Collision Detection](#collision-detection) for a
 complete example of collsion detection being used on a simple cloth
@@ -774,7 +768,7 @@ Miscellaneous
 
 A context filter function, which can be set per ray query is supported
 (see `rtcInitIntersectContext`). This filter function is designed to
-change the semantics of the ray query, e.g. to accumulate opacity for
+change the semantics of the ray query, e.g. to accumulate opacity for
 transparent shadows, count the number of surfaces along a ray, collect
 all hits along a ray, etc.
 
@@ -784,9 +778,7 @@ BVH in a user-specified format over user-specified primitives. See the
 documentation of the `rtcBuildBVH` call for more details.
 
 For getting the most performance out of Embree, see the Section
-[Performance Recommendations](#performance-recommendations).
-
-
+[Performance Recommendations].
 
 Upgrading from Embree 2 to Embree 3
 ===================================
@@ -815,7 +807,7 @@ Apply the script to each source file of your project that contains
 Embree API calls or types. The input file and output file can also be
 identical to perform the patch in-place. Please always backup your
 original code before running the script, and inspect the code changes
-done by the script using diff (e.g. `git diff`), to make sure no
+done by the script using diff (e.g. `git diff`), to make sure no
 undesired code locations got changed. Grep the code for comments
 containing `EMBREE_FIXME` and perform the action described in the
 comment.
@@ -843,10 +835,10 @@ Device
 Scene
 -----
 
--   The API no longer distinguishes between a static and a
-    dynamic scene. Some users had issues as they wanted to do minor
-    modifications to static scenes, but maintain high
-    traversal performance.
+-   The API no longer distinguishes between a static and a dynamic
+    scene. Some users had issues as they wanted to do minor
+    modifications to static scenes, but maintain high traversal
+    performance.
 
     The new approach gives more flexibility, as each scene is
     changeable, and build quality settings can be changed on a commit
@@ -875,15 +867,15 @@ Geometry
     Operations like `rtcInterpolate` can now be performed on the
     geometry object directly without the need of a scene. Further, an
     application can choose to create its geometries independent of a
-    scene, e.g. each time a geometry node is added to its scene graph.
+    scene, e.g. each time a geometry node is added to its scene graph.
 
     This modification changed many API functions to get passed one
     `RTCGeometry` object instead of a `RTCScene` and `geomID`. The
     script does all required changed automatically. However, in some
     cases the script may introduce `rtcGetGeometry(scene, geomID)`
     calls to retrieve the geometry handle. Best store the geometry
-    handle inside your scene representation (and release it in
-    the destructor) and access the handle directly instead of calling
+    handle inside your scene representation (and release it in the
+    destructor) and access the handle directly instead of calling
     `rtcGetGeometry`.
 
 -   Geometries are not included inside a scene anymore but can be
@@ -896,8 +888,8 @@ Geometry
     earlier error checking and pre-calculating internal data per
     geometry object.
 
-    Such commit points were previously not required in the Embree
-    2 API. The upgrade script attempts to insert the commits
+    Such commit points were previously not required in the Embree 2
+    API. The upgrade script attempts to insert the commits
     automatically, but cannot do so properly under all circumstances.
     Thus please check if every `rtcCommitGeometry` call inserted by the
     script is properly placed, and if a `rtcCommitGeometry` call is
@@ -971,7 +963,7 @@ Buffers
     `RTC_USER_VERTEX_BUFFER_TYPE` and additional `slot` specifies a
     vertex attribute.
 
-Miscellaneous
+Miscellaneous {#miscellaneous}
 -------------
 
 -   The header files for Embree 3 are now inside the `embree3` folder
@@ -980,8 +972,8 @@ Miscellaneous
     by side. We made the headers C99 compliant.
 
 -   All API objects are now reference counted with release functions to
-    decrement and retain functions to increment the reference count
-    (if required).
+    decrement and retain functions to increment the reference count (if
+    required).
 
 -   Most callback functions no longer get different arguments as input,
     but a pointer to a structure containing all arguments. This results
@@ -997,11 +989,11 @@ Miscellaneous
     function with a wrong type if the conversion did not detect some
     callbacks as such). If the script does not detect a callback
     function, make sure the argument types match exactly the types in
-    the header (e.g. write `const int` instead of `int const` or
+    the header (e.g. write `const int` instead of `int const` or
     convert the callback manually).
 
--   An intersection context is now required for each ray
-    query invocation. The context should be initialized using the
+-   An intersection context is now required for each ray query
+    invocation. The context should be initialized using the
     `rtcInitIntersectContext` function.
 
 -   The `rtcIntersect`-type functions get as input an `RTCRayHit` type,
@@ -1033,13 +1025,13 @@ Miscellaneous
     context with a pointer to that data.
 
     This change cannot be done by the script. Further, code will still
-    work if you extend the ray as the implementation did not
-    change yet.
+    work if you extend the ray as the implementation did not change
+    yet.
 
--   The ray structure now contains an additional `id` and
-    `flags` field. The `id` can be used to store the index of the ray
-    with respect to a ray packet or ray stream. The `flags` is reserved
-    for future use, and currently must be set to 0.
+-   The ray structure now contains an additional `id` and `flags`
+    field. The `id` can be used to store the index of the ray with
+    respect to a ray packet or ray stream. The `flags` is reserved for
+    future use, and currently must be set to 0.
 
 -   All previous intersection filter callback variants have been
     removed, except for the `RTCFilterFuncN` which gets a varying size
@@ -1050,25 +1042,25 @@ Miscellaneous
 
     We kept the guarantee that for `rtcIntersect1/4/8/16` and
     `rtcOccluded1/4/8/16` calls the packet size and ray order will not
-    change from the initial size and ordering when entering a
-    filter callback.
+    change from the initial size and ordering when entering a filter
+    callback.
 
 -   We no longer export ISPC-specific symbols. This has the advantage
-    that certain linking issues went away, e.g. it is now possible to
+    that certain linking issues went away, e.g. it is now possible to
     link an ISPC application compiled for any combination of ISAs, and
-    link this to an Embree library compiled with a different set
-    of ISAs. Previously the ISAs of the application had to be a subset
-    of the ISAs of Embree, and when the user enabled exactly one ISA,
-    they had to do this in Embree and the application.
+    link this to an Embree library compiled with a different set of
+    ISAs. Previously the ISAs of the application had to be a subset of
+    the ISAs of Embree, and when the user enabled exactly one ISA, they
+    had to do this in Embree and the application.
 
 -   We no longer export the ISPC tasking system, which means that the
     application has the responsibility to implement the ISPC tasking
     system itself. ISPC comes with example code on how to do this. This
     change is not performed by the script and must be done manually.
 
--   Fixed many naming inconsistencies, and changed names of further
-    API functions. All these renamings are properly done by the script
-    and need no further attention.
+-   Fixed many naming inconsistencies, and changed names of further API
+    functions. All these renamings are properly done by the script and
+    need no further attention.
 
 
 
@@ -1130,23 +1122,23 @@ The following configuration is supported:
     used to join and participate in a scene commit using
     `rtcJoinCommitScene`. The tasking system will only use
     threads-user\_threads many worker threads, thus if the app wants to
-    solely use its threads to commit scenes, just set threads equal
-    to user\_threads. This option only has effect with the Intel(R)
+    solely use its threads to commit scenes, just set threads equal to
+    user\_threads. This option only has effect with the Intel(R)
     Threading Building Blocks (TBB) tasking system.
 
 -   `set_affinity=[0/1]`: When enabled, build threads are affinitized
     to hardware threads. This option is disabled by default on standard
     CPUs, and enabled by default on Xeon Phi Processors.
 
--   `start_threads=[0/1]`: When enabled, the build threads are
-    started upfront. This can be useful for benchmarking to exclude
-    thread creation time. This option is disabled by default.
+-   `start_threads=[0/1]`: When enabled, the build threads are started
+    upfront. This can be useful for benchmarking to exclude thread
+    creation time. This option is disabled by default.
 
--   `isa=[sse2,sse4.2,avx,avx2,avx512]`: Use
-    specified ISA. By default the ISA is selected automatically.
+-   `isa=[sse2,sse4.2,avx,avx2,avx512]`: Use specified ISA. By default
+    the ISA is selected automatically.
 
--   `max_isa=[sse2,sse4.2,avx,avx2,avx512]`: Configures
-    the automated ISA selection to use maximally the specified ISA.
+-   `max_isa=[sse2,sse4.2,avx,avx2,avx512]`: Configures the automated
+    ISA selection to use maximally the specified ISA.
 
 -   `hugepages=[0/1]`: Enables or disables usage of huge pages. Under
     Linux huge pages are used by default but under Windows and macOS
@@ -1158,30 +1150,30 @@ The following configuration is supported:
     is ignored on other platforms. See Section [Huge Page Support]
     for more details.
 
--   `ignore_config_files=[0/1]`: When set to 1, configuration files
-    are ignored. Default is 0.
+-   `ignore_config_files=[0/1]`: When set to 1, configuration files are
+    ignored. Default is 0.
 
 -   `verbose=[0,1,2,3]`: Sets the verbosity of the output. When set to
     0, no output is printed by Embree, when set to a higher level more
-    output is printed. By default Embree does not print anything on
-    the console.
+    output is printed. By default Embree does not print anything on the
+    console.
 
 -   `frequency_level=[simd128,simd256,simd512]`: Specifies the
     frequency level the application want to run on, which can be
     either:
-
-a)  simd128 to run at highest frequency
-b)  simd256 to run at AVX2-heavy frequency level
-c)  simd512 to run at heavy AVX512 frequency level. When some frequency
-    level is specified, Embree will avoid doing optimizations that may
-    reduce the frequency level below the level specified. E.g. if your
-    app does not use AVX instructions setting
-    "frequency\_level=simd128" will cause some CPUs to run at highest
-    frequency, which may result in higher application performance if
-    you do much shading. If you application heavily uses AVX code, you
-    should best set the frequency level to simd256. Per default Embree
-    tries to avoid reducing the frequency of the CPU by setting the
-    simd256 level only when the CPU has no significant down clocking.
+    a)  simd128 to run at highest frequency
+    b)  simd256 to run at AVX2-heavy frequency level
+    c)  simd512 to run at heavy AVX512 frequency level. When some
+        frequency level is specified, Embree will avoid doing
+        optimizations that may reduce the frequency level below the
+        level specified. E.g. if your app does not use AVX instructions
+        setting "frequency\_level=simd128" will cause some CPUs to run
+        at highest frequency, which may result in higher application
+        performance if you do much shading. If you application heavily
+        uses AVX code, you should best set the frequency level to
+        simd256. Per default Embree tries to avoid reducing the
+        frequency of the CPU by setting the simd256 level only when the
+        CPU has no significant down clocking.
 
 Different configuration options should be separated by commas, e.g.:
 
@@ -1290,9 +1282,9 @@ property is an integer of type `ssize_t`.
 
 Possible properties to query are:
 
--   `RTC_DEVICE_PROPERTY_VERSION`: Queries the combined version
-    number (MAJOR.MINOR.PATCH) with two decimal digits per component.
-    E.g. for Embree 2.8.3 the integer 208003 is returned.
+-   `RTC_DEVICE_PROPERTY_VERSION`: Queries the combined version number
+    (MAJOR.MINOR.PATCH) with two decimal digits per component. E.g. for
+    Embree 2.8.3 the integer 208003 is returned.
 
 -   `RTC_DEVICE_PROPERTY_VERSION_MAJOR`: Queries the major version
     number of Embree.
@@ -1320,9 +1312,8 @@ Possible properties to query are:
 -   `RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED`: Queries whether the
     `rtcIntersect16` and `rtcOccluded16` functions preserve packet size
     and ray order when invoking callback functions. This is only the
-    case if Embree is compiled with `EMBREE_RAY_PACKETS` and
-    `AVX512` enabled, and if the machine it is
-    running on supports `AVX512`.
+    case if Embree is compiled with `EMBREE_RAY_PACKETS` and `AVX512`
+    enabled, and if the machine it is running on supports `AVX512`.
 
 -   `RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED`: Queries whether
     `rtcIntersect1M`, `rtcIntersect1Mp`, `rtcIntersectNM`,
@@ -1380,14 +1371,15 @@ Possible properties to query are:
     0.  internal tasking system
     1.  Intel Threading Building Blocks (TBB)
     2.  Parallel Patterns Library (PPL)
+
 -   `RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED`: Queries whether
     `rtcJoinCommitScene` is supported. This is not the case when Embree
     is compiled with PPL or older versions of TBB.
 
 -   `RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED`: Queries whether
-    `rtcCommitScene` can get invoked from multiple TBB worker
-    threads concurrently. This feature is only supported starting with
-    TBB 2019 Update 9.
+    `rtcCommitScene` can get invoked from multiple TBB worker threads
+    concurrently. This feature is only supported starting with TBB 2019
+    Update 9.
 
 #### EXIT STATUS {#exit-status}
 
@@ -1561,15 +1553,15 @@ threads concurrently.
 
 The application can track the current memory usage of the Embree device
 by atomically accumulating the `bytes` input parameter provided to the
-callback function. This parameter will be &gt;0 for allocations and
-&lt;0 for deallocations.
+callback function. This parameter will be \>0 for allocations and \<0
+for deallocations.
 
 Embree will continue its operation normally when returning `true` from
 the callback function. If `false` is returned, Embree will cancel the
 current operation with the `RTC_ERROR_OUT_OF_MEMORY` error code.
 Issuing multiple cancel requests from different threads is allowed.
 Canceling will only happen when the callback was called for allocations
-(bytes &gt; 0), otherwise the cancel request will be ignored.
+(bytes \> 0), otherwise the cancel request will be ignored.
 
 If a callback to cancel was invoked before the allocation happens
 (`post == false`), then the `bytes` parameter should not be
@@ -1925,7 +1917,7 @@ queries for the scene; otherwise the effect of the ray query is
 undefined. The modification of a geometry, committing the scene, and
 tracing of rays must always happen sequentially, and never at the same
 time. Any API call that sets a property of the scene or geometries
-contained in the scene count as scene modification, e.g. including
+contained in the scene count as scene modification, e.g. including
 setting of intersection filter functions.
 
 The kind of acceleration structure built can be influenced using scene
@@ -1933,10 +1925,10 @@ flags (see `rtcSetSceneFlags`), and the quality can be specified using
 the `rtcSetSceneBuildQuality` function.
 
 Embree silently ignores primitives during spatial acceleration
-structure construction that would cause numerical issues, e.g.
-primitives containing NaNs, INFs, or values greater than 1.844E18f (as
-no reasonable calculations can be performed with such values without
-causing overflows).
+structure construction that would cause numerical issues,
+e.g. primitives containing NaNs, INFs, or values greater than 1.844E18f
+(as no reasonable calculations can be performed with such values
+without causing overflows).
 
 #### EXIT STATUS {#exit-status}
 
@@ -2113,11 +2105,11 @@ The `rtcSetSceneBuildQuality` function sets the build quality
 (`quality` argument) for the specified scene (`scene` argument).
 Possible values for the build quality are:
 
--   `RTC_BUILD_QUALITY_LOW`: Create lower quality data structures, e.g.
-    for dynamic scenes. A two-level spatial index structure is built
-    when enabling this mode, which supports fast partial scene updates,
-    and allows for setting a per-geometry build quality through the
-    `rtcSetGeometryBuildQuality` function.
+-   `RTC_BUILD_QUALITY_LOW`: Create lower quality data structures,
+    e.g. for dynamic scenes. A two-level spatial index structure is
+    built when enabling this mode, which supports fast partial scene
+    updates, and allows for setting a per-geometry build quality
+    through the `rtcSetGeometryBuildQuality` function.
 
 -   `RTC_BUILD_QUALITY_MEDIUM`: Default build quality for most usages.
     Gives a good compromise between build and render performance.
@@ -2170,15 +2162,15 @@ for the specified scene (`scene` argument). Possible scene flags are:
 -   `RTC_SCENE_FLAG_ROBUST`: Uses acceleration structures that allow
     for robust traversal, and avoids optimizations that reduce
     arithmetic accuracy. This mode is typically used for avoiding
-    artifacts caused by rays shooting through edges of
-    neighboring primitives.
+    artifacts caused by rays shooting through edges of neighboring
+    primitives.
 
 -   `RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION`: Enables support for a
     filter function inside the intersection context for this scene. See
     Section [rtcInitIntersectContext] for more details.
 
-Multiple flags can be enabled using an `or` operation, e.g.
-`RTC_SCENE_FLAG_COMPACT | RTC_SCENE_FLAG_ROBUST`.
+Multiple flags can be enabled using an `or` operation,
+e.g. `RTC_SCENE_FLAG_COMPACT | RTC_SCENE_FLAG_ROBUST`.
 
 #### EXIT STATUS {#exit-status}
 
@@ -2207,7 +2199,7 @@ rtcGetSceneFlags
 #### DESCRIPTION {#description}
 
 Queries the flags of a scene. This function can be useful when setting
-individual flags, e.g. to just set the robust mode without changing
+individual flags, e.g. to just set the robust mode without changing
 other flags the following way:
 
     RTCSceneFlags flags = rtcGetSceneFlags(scene);
@@ -2560,8 +2552,8 @@ over the quadrilateral the following way:
 
 Mixed triangle/quad meshes are supported by encoding a triangle as a
 quad, which can be achieved by replicating the last triangle vertex
-(`v0,v1,v2` -&gt; `v0,v1,v2,v2`). This way the second triangle is a
-line (which can never get hit), and the parametrization of the first
+(`v0,v1,v2` -\> `v0,v1,v2,v2`). This way the second triangle is a line
+(which can never get hit), and the parametrization of the first
 triangle is compatible with the standard triangle parametrization.
 
 A quad whose vertices are laid out counter-clockwise has its geometry
@@ -2627,9 +2619,9 @@ Each grid in the grid buffer is of the type `RTCGrid`:
 
 The `RTCGrid` structure describes a 2D grid of vertices (with respect
 to the vertex buffer of the grid mesh). The `width` and `height`
-members specify the number of vertices in u and v direction, e.g.
-setting both `width` and `height` to 3 sets up a 3×3 vertex grid. The
-maximum allowed `width` and `height` is 32767. The `startVertexID`
+members specify the number of vertices in u and v direction,
+e.g. setting both `width` and `height` to 3 sets up a 3×3 vertex grid.
+The maximum allowed `width` and `height` is 32767. The `startVertexID`
 specifies the ID of the top-left vertex in the vertex grid, while the
 `stride` parameter specifies a stride (in number of vertices) used to
 step to the next row.
@@ -2819,7 +2811,7 @@ slot `j` can be assigned to use a topology for interpolation using the
 
 The face buffer (`RTC_BUFFER_TYPE_FACE` type) is shared between all
 topologies, which means that the `n`-th primitive always has the same
-number of vertices (e.g. being a triangle or a quad) for each topology.
+number of vertices (e.g. being a triangle or a quad) for each topology.
 However, the indices of the topologies themselves may be different.
 
 #### EXIT STATUS {#exit-status}
@@ -2990,7 +2982,7 @@ make up a cardinal cubic B-spline (implicit equidistant knot vector).
 This basis is not interpolating, thus the curve does in general not go
 through any of the control points directly. A big advantage of this
 basis is that 3 control points can be shared for two continuous
-neighboring curve segments, e.g. the curves (p0,p1,p2,p3) and
+neighboring curve segments, e.g. the curves (p0,p1,p2,p3) and
 (p1,p2,p3,p4) are C1 continuous. This feature make this basis a good
 choise to construct continuous multi-segment curves, as memory
 consumption can be kept minimal.
@@ -3233,7 +3225,7 @@ Please have a look at the `rtcSetGeometryBoundsFunction`,
 functions on the implementation of the callback functions.
 
 Primitives of a user geometry are ignored during rendering when their
-bounds are empty, thus bounds have lower&gt;upper in at least one
+bounds are empty, thus bounds have lower\>upper in at least one
 dimension.
 
 See tutorial [User Geometry] for an example of how to use the
@@ -3334,8 +3326,8 @@ RTCCurveFlags
 
     #include <embree3/rtcore.h>
 
-enum RTCCurveFlags { RTC\_CURVE\_FLAG\_NEIGHBOR\_LEFT = (1 &lt;&lt; 0),
-RTC\_CURVE\_FLAG\_NEIGHBOR\_RIGHT = (1 &lt;&lt; 1) };
+enum RTCCurveFlags { RTC\_CURVE\_FLAG\_NEIGHBOR\_LEFT = (1 \<\< 0),
+RTC\_CURVE\_FLAG\_NEIGHBOR\_RIGHT = (1 \<\< 1) };
 
 #### DESCRIPTION {#description}
 
@@ -3699,7 +3691,7 @@ This geometry mask is used together with the ray mask stored inside the
 `mask` field of the ray. The primitives of the geometry are hit by the
 ray only if the bitwise `and` operation of the geometry mask with the
 ray mask is not 0. This feature can be used to disable selected
-geometries for specifically tagged rays, e.g. to disable shadow casting
+geometries for specifically tagged rays, e.g. to disable shadow casting
 for certain geometries.
 
 Ray masks are disabled in Embree by default at compile time, and can be
@@ -3746,8 +3738,8 @@ two-level acceleration structure is build, and geometries build a
 separate acceleration structure using the geometry build quality. The
 per-geometry build quality can be one of:
 
--   `RTC_BUILD_QUALITY_LOW`: Creates lower quality data
-    structures, e.g. for dynamic scenes.
+-   `RTC_BUILD_QUALITY_LOW`: Creates lower quality data structures,
+    e.g. for dynamic scenes.
 
 -   `RTC_BUILD_QUALITY_MEDIUM`: Default build quality for most usages.
     Gives a good compromise between build and render performance.
@@ -3990,12 +3982,12 @@ calls.
 The `RTC_FORMAT_UINT/2/3/4` format are used to specify that data
 buffers store unsigned integers, or unsigned integer vectors of size
 2,3 or 4. This format has typically to get used when specifying index
-buffers, e.g. `RTC_FORMAT_UINT3` for triangle meshes.
+buffers, e.g. `RTC_FORMAT_UINT3` for triangle meshes.
 
 The `RTC_FORMAT_FLOAT/2/3/4...` format are used to specify that data
 buffers store single precision floating point values, or vectors there
 of (size 2,3,4, etc.). This format is typcally used to specify to
-format of vertex buffers, e.g. the `RTC_FORMAT_FLOAT3` type for vertex
+format of vertex buffers, e.g. the `RTC_FORMAT_FLOAT3` type for vertex
 buffers of triangle meshes.
 
 The `RTC_FORMAT_FLOAT3X4_ROW_MAJOR` and
@@ -4881,7 +4873,7 @@ transformations are composed of translation, rotation and uniform
 scaling and if a matrix M defines a similarity transformation, there is
 a scaling factor D such that for all x,y: dist(Mx, My) = D \* dist(x,
 y). In this case the parameter `scalingFactor` is this scaling factor D
-and otherwise it is 0. A valid similarity scale (`similarityScale` &gt;
+and otherwise it is 0. A valid similarity scale (`similarityScale` \>
 0) allows to compute distance information in instance space and scale
 the distances into world space (for example, to update the query
 radius, see below) by dividing the instance space distance with the
@@ -4904,7 +4896,7 @@ domain (in instance space) is approximated by its axis aligned bounding
 box internally and therefore inner nodes that do not intersect the
 original domain might intersect the approximative bounding box which
 results in unneccessary callbacks. In any case, the callbacks are
-conservative, i.e. if a primitive is inside the query domain a callback
+conservative, i.e. if a primitive is inside the query domain a callback
 will be invoked but the reverse is not neccessarily true.
 
 For efficiency, the radius of the `query` object can be decreased (in
@@ -5986,8 +5978,8 @@ is considered valid.
 
 The ray segment must be in the range $[0, ∞]$, thus ranges that start
 behind the ray origin are not allowed, but ranges can reach to
-infinity. For rays inside a ray stream, `tfar` &lt; `tnear` identifies
-an inactive ray.
+infinity. For rays inside a ray stream, `tfar` \< `tnear` identifies an
+inactive ray.
 
 The ray further contains a motion blur time in the range $[0, 1]$
 (`time` member), a ray mask (`mask` member), a ray ID (`id` member),
@@ -6130,7 +6122,7 @@ RTCRayN
 
 #### DESCRIPTION {#description}
 
-When the ray packet size is not known at compile time (e.g. when Embree
+When the ray packet size is not known at compile time (e.g. when Embree
 returns a ray packet in the `RTCFilterFuncN` callback function), Embree
 uses the `RTCRayN` type for ray packets. These ray packets can only
 have sizes of 1, 4, 8, or 16. No other packet size will be used.
@@ -6142,7 +6134,7 @@ helper functions to access the ray packet components.
 
 These helper functions get a pointer to the ray packet (`ray`
 argument), the packet size (`N` argument), and returns a reference to a
-component (e.g. x-component of origin) of the the i-th ray of the
+component (e.g. x-component of origin) of the the i-th ray of the
 packet (`i` argument).
 
 #### EXIT STATUS {#exit-status}
@@ -6179,7 +6171,7 @@ RTCHitN
 
 #### DESCRIPTION {#description}
 
-When the hit packet size is not known at compile time (e.g. when Embree
+When the hit packet size is not known at compile time (e.g. when Embree
 returns a hit packet in the `RTCFilterFuncN` callback function), Embree
 uses the `RTCHitN` type for hit packets. These hit packets can only
 have sizes of 1, 4, 8, or 16. No other packet size will be used.
@@ -6191,7 +6183,7 @@ helper functions to access hit packet components.
 
 These helper functions get a pointer to the hit packet (`hit`
 argument), the packet size (`N` argument), and returns a reference to a
-component (e.g. x component of `Ng`) of the the i-th hit of the packet
+component (e.g. x component of `Ng`) of the the i-th hit of the packet
 (`i` argument).
 
 #### EXIT STATUS {#exit-status}
@@ -6221,7 +6213,7 @@ RTCRayHitN
 #### DESCRIPTION {#description}
 
 When the packet size of a ray/hit structure is not known at compile
-time (e.g. when Embree returns a ray/hit packet in the
+time (e.g. when Embree returns a ray/hit packet in the
 `RTCIntersectFunctionN` callback function), Embree uses the
 `RTCRayHitN` type for ray packets. These ray/hit packets can only have
 sizes of 1, 4, 8, or 16. No other packet size will be used.
@@ -6285,7 +6277,7 @@ A per ray-query intersection context (`RTCIntersectContext` type) is
 supported that can be used to configure intersection flags (`flags`
 member), specify a filter callback function (`filter` member), specify
 the chain of IDs of the current instance (`instID` and `instStackSize`
-members), and to attach arbitrary data to the query (e.g. per ray
+members), and to attach arbitrary data to the query (e.g. per ray
 data).
 
 The `rtcInitIntersectContext` function initializes the context to
@@ -6297,14 +6289,14 @@ The intersection context flag can be used to tune the behavior of the
 traversal algorithm. Using the `RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT`
 flags uses an optimized traversal algorithm for incoherent rays
 (default), while `RTC_INTERSECT_CONTEXT_FLAG_COHERENT` uses an
-optimized traversal algorithm for coherent rays (e.g. primary camera
+optimized traversal algorithm for coherent rays (e.g. primary camera
 rays).
 
 Best primary ray performance can be obtained by using the ray stream
 API and setting the intersect context flag to
 `RTC_INTERSECT_CONTEXT_FLAG_COHERENT`. For secondary rays, it is
 typically better to use the `RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT`
-flag, unless the rays are known to be very coherent too (e.g. for
+flag, unless the rays are known to be very coherent too (e.g. for
 primary transparency rays).
 
 A filter function can be specified inside the context. This filter
@@ -6714,7 +6706,7 @@ arbitrarily and re-pack rays into ray packets of different size. For
 this reason, callback functions may be invoked with an arbitrary packet
 size (of size 1, 4, 8, or 16) and different ordering as specified
 initially. For this reason, one may have to use the `rayID` component
-of the ray to identify the original ray, e.g. to access a per-ray
+of the ray to identify the original ray, e.g. to access a per-ray
 payload.
 
 A ray in a ray stream is considered inactive if its `tnear` value is
@@ -6774,7 +6766,7 @@ arbitrarily and re-pack rays into ray packets of different size. For
 this reason, callback functions may be invoked with an arbitrary packet
 size (of size 1, 4, 8, or 16) and different ordering as specified
 initially. For this reason, one may have to use the `rayID` component
-of the ray to identify the original ray, e.g. to access a per-ray
+of the ray to identify the original ray, e.g. to access a per-ray
 payload.
 
 A ray in a ray stream is considered inactive if its `tnear` value is
@@ -6833,7 +6825,7 @@ arbitrarily and re-pack rays into ray packets of different size. For
 this reason, callback functions may be invoked with an arbitrary packet
 size (of size 1, 4, 8, or 16) and different ordering as specified
 initially. For this reason, one may have to use the `rayID` component
-of the ray to identify the original ray, e.g. to access a per-ray
+of the ray to identify the original ray, e.g. to access a per-ray
 payload.
 
 A ray in a ray stream is considered inactive if its `tnear` value is
@@ -6892,7 +6884,7 @@ arbitrarily and re-pack rays into ray packets of different size. For
 this reason, callback functions may be invoked with an arbitrary packet
 size (of size 1, 4, 8, or 16) and different ordering as specified
 initially. For this reason, one may have to use the `rayID` component
-of the ray to identify the original ray, e.g. to access a per-ray
+of the ray to identify the original ray, e.g. to access a per-ray
 payload.
 
 A ray in a ray stream is considered inactive if its `tnear` value is
@@ -6954,7 +6946,7 @@ arbitrarily and re-pack rays into ray packets of different size. For
 this reason, callback functions may be invoked with an arbitrary packet
 size (of size 1, 4, 8, or 16) and different ordering as specified
 initially. For this reason, one may have to use the `rayID` component
-of the ray to identify the original ray, e.g. to access a per-ray
+of the ray to identify the original ray, e.g. to access a per-ray
 payload.
 
 A ray in a ray stream is considered inactive if its `tnear` value is
@@ -7017,7 +7009,7 @@ arbitrarily and re-pack rays into ray packets of different size. For
 this reason, callback functions may be invoked with an arbitrary packet
 size (of size 1, 4, 8, or 16) and different ordering as specified
 initially. For this reason, one may have to use the `rayID` component
-of the ray to identify the original ray, e.g. to access a per-ray
+of the ray to identify the original ray, e.g. to access a per-ray
 payload.
 
 A ray in a ray stream is considered inactive if its `tnear` value is
@@ -7082,7 +7074,7 @@ arbitrarily and re-pack rays into ray packets of different size. For
 this reason, callback functions may be invoked with an arbitrary packet
 size (of size 1, 4, 8, or 16) and different ordering as specified
 initially. For this reason, one may have to use the `rayID` component
-of the ray to identify the original ray, e.g. to access a per-ray
+of the ray to identify the original ray, e.g. to access a per-ray
 payload.
 
 A ray in a ray stream is considered inactive if its `tnear` value is
@@ -7145,7 +7137,7 @@ arbitrarily and re-pack rays into ray packets of different size. For
 this reason, callback functions may be invoked with an arbitrary packet
 size (of size 1, 4, 8, or 16) and different ordering as specified
 initially. For this reason, one may have to use the `rayID` component
-of the ray to identify the original ray, e.g. to access a per-ray
+of the ray to identify the original ray, e.g. to access a per-ray
 payload.
 
 A ray in a ray stream is considered inactive if its `tnear` value is
@@ -7282,7 +7274,7 @@ provided with the primID and geomID of the according primitive,
 however, the geometry information (e.g. triangle index and vertex data)
 has to be determined manually. The `userPtr` argument can be used to
 input geometry data of the scene or output results of the point query
-(e.g. closest point currently found on surface geometry (see tutorial
+(e.g. closest point currently found on surface geometry (see tutorial
 [ClosestPoint])).
 
 The parameter `queryFunc` is optional and can be NULL, in which case
@@ -7742,8 +7734,7 @@ $quaternion_r + quaternion_i  \mathbf{i} + quaternion_j  \mathbf{i} + quaterni
 where $\mathbf{i}$, $\mathbf{j}$ $\mathbf{k}$ are the imaginary
 quaternion units. The passed quaternion will be normalized internally.
 
-\noindent
-The affine transformation matrix corresponding to a
+\noindent The affine transformation matrix corresponding to a
 `RTCQuaternionDecomposition` is $TRS$ and a point
 $p = (p_x, p_y, p_z, 1)^T$ will be transformed as
 $$p' = T  R  S  p.$$
@@ -7831,7 +7822,7 @@ case you want to benchmark the scene build time, you should start the
 threads at application startup. You can let Embree start TBB threads by
 passing `start_threads=1` to the `cfg` parameter of `rtcNewDevice`.
 
-On machines with a high thread count (e.g. dual-socket Xeon or Xeon Phi
+On machines with a high thread count (e.g. dual-socket Xeon or Xeon Phi
 machines), affinitizing TBB worker threads increases build and
 rendering performance. You can let Embree affinitize TBB worker threads
 by passing `set_affinity=1` to the `cfg` parameter of `rtcNewDevice`.
@@ -7849,7 +7840,7 @@ primary or hard shadow rays, it is recommended to use packets or
 streams of single rays/packets with setting the
 `RTC_INTERSECT_CONTEXT_FLAG_COHERENT` flag in the `RTCIntersectContext`
 passed to the `rtcIntersect`/`rtcOccluded` calls. The total number of
-rays in a coherent stream of ray packets should be around 64, e.g. 8
+rays in a coherent stream of ray packets should be around 64, e.g. 8
 times 8-wide packets, or 4 times 16-wide packets. The rays inside each
 packet should be grouped as coherent as possible.
 
@@ -7904,9 +7895,9 @@ Linux](https://www.kernel.org/doc/Documentation/vm/hugetlbpage.txt).
 To use huge pages under Windows, the current user must have the "Lock
 pages in memory" (SeLockMemoryPrivilege) assigned. This can be
 configured through the "Local Security Policy" application, by adding a
-user to "Local Policies" -&gt; "User Rights Assignment" -&gt; "Lock
-pages in memory". You have to log out and in again for this change to
-take effect.
+user to "Local Policies" -\> "User Rights Assignment" -\> "Lock pages
+in memory". You have to log out and in again for this change to take
+effect.
 
 Further, your application must be executed as an elevated process ("Run
 as administrator") and the "SeLockMemoryPrivilege" must be explicitly

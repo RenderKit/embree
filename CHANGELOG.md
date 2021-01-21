@@ -1,6 +1,11 @@
 Version History
 ---------------
 
+### Embree 3.12.2
+-   Fixed wrong uv and Ng for grid intersector in robust mode for AVX.
+-   Removed optimizations for Knights Landing.
+-   Upgrading release builds to use oneTBB 2021.1.1
+
 ### Embree 3.12.1
 
 -   Changed default frequency level to SIMD128 for Skylake, Cannon Lake, Comet Lake and Tiger Lake CPUs.
