@@ -3,7 +3,8 @@
 
 stages:
   - test
-  - scan-report
+  - release
+  - scan
 
 
 #####################################################################
@@ -86,7 +87,7 @@ continuous-linux-x64-Debug-GCC-ISPC1.13.0-SSE2-TBB-KLOCWORK:
     paths: [klocwork/*]
 
 continuous-kw-gen-report:
-  stage: scan-report
+  stage: scan
   image: $DOCKER_REGISTRY/embree/centos:7.4
   needs: [continuous-linux-x64-Debug-GCC-ISPC1.13.0-SSE2-TBB-KLOCWORK]
   script:
@@ -485,6 +486,8 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX2-TBB2020.2-INSTANCE:
 ####################################################################
 
 release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
+  stage: release
+  needs: []
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC19-VC141 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.1.1 intensity:4 package:ZIP"
   tags:   [embree, win10, icc17, avx512vl]
   only:   [web, schedules]
@@ -495,6 +498,8 @@ release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-MSI:
+  stage: release
+  needs: []
   script: "python scripts\\test.py platform:x64 build:Release compiler:ICC19-VC141 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.1.1 intensity:4 package:MSI"
   tags:   [embree, win10, icc17, avx512vl]
   only:   [web, schedules]
@@ -505,6 +510,8 @@ release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-MSI:
     expire_in: 2 mos
 
 release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
+  stage: release
+  needs: []
   script: "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2021.1.1 intensity:4 package:ZIP"
   tags:   [embree, mac, sign]
   only:   [web, schedules]
@@ -515,6 +522,8 @@ release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
     expire_in: 2 mos
 
 release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG:
+  stage: release
+  needs: []
   script: "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
   tags:   [embree, mac, sign]
   only:   [web, schedules]
@@ -525,6 +534,8 @@ release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG:
     expire_in: 2 mos
 
 release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
+  stage: release
+  needs: []
   image: $DOCKER_REGISTRY/embree/centos:7.4
   script:
     - "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.1.1 intensity:4 package:ZIP"
@@ -544,3 +555,33 @@ release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
     when:  always
     expire_in: 2 mos
 
+
+#####################################################################
+# Release binaries scans
+####################################################################
+
+scan-bdba-bin:
+  stage: scan
+  image: $DOCKER_REGISTRY/embree/centos:7.4
+  tags: [docker]
+  needs: [release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP, release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-MSI, release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP, release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG, release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP]
+  script:
+    - scripts/bdba.sh "build/embree-*"
+    - scripts/store_files.sh $CI_PROJECT_NAME $CI_PIPELINE_ID bdba "embree-*.pdf"
+    - scripts/store_files.sh $CI_PROJECT_NAME $CI_PIPELINE_ID bdba "embree-*.csv"
+  only:   [web, schedules]
+  artifacts:
+    paths:
+      - embree-*.pdf
+      - embree-*.csv
+
+av:
+  stage: scan
+  tags: [docker]
+  image: $DOCKER_REGISTRY/clamav:ubuntu20.04
+  needs: [release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP, release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-MSI, release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP, release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG, release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP]
+  script:
+    - freshclam | tee -a /tmp/av_scan.log
+    - clamscan -va --max-filesize=256M --max-scansize=1024M --alert-broken --alert-exceeds-max build/embree* | tee -a /tmp/av_scan.log
+    - scripts/store_files.sh $CI_PROJECT_NAME $CI_PIPELINE_ID av /tmp/av_scan.log
+  only:   [web, schedules]
