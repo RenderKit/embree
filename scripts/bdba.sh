@@ -33,7 +33,7 @@ for file_path in $files ; do
         if [ $CMD_RETURN_CODE == 0 ] && [[ $status == "R" ]]; then
             echo $response | python -m json.tool
             echo "Verdict: $verdict" >> $logfile
-            if [ $verdict != "Pass" ] && [ $verdict != "null" ]; then
+            if [ $verdict != "Pass" ] && [ $verdict != "N/A" ]; then
                 echo "There is a problem - please check report $report_url" >> $logfile
                 failed=1
             fi
