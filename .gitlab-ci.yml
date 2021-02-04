@@ -582,6 +582,6 @@ av:
   needs: [release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP, release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-MSI, release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP, release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG, release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP]
   script:
     - freshclam | tee -a /tmp/av_scan.log
-    - clamscan -va --max-filesize=256M --max-scansize=1024M --alert-broken --alert-exceeds-max build/embree* | tee -a /tmp/av_scan.log
+    - clamscan -va --max-filesize=512M --max-scansize=2048M --alert-broken --alert-exceeds-max build/embree* | tee -a /tmp/av_scan.log
     - scripts/store_files.sh $CI_PROJECT_NAME $CI_PIPELINE_ID av /tmp/av_scan.log
   only:   [web, schedules]
