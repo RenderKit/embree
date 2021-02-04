@@ -506,7 +506,7 @@ release-windows-x64-Release-ICC19-VC141-ISPC1.13.0-TBB2021.1.1-PACKAGE-MSI:
 
 release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2021.1.1 intensity:4 package:ZIP"
-  tags:   [embree, mac]
+  tags:   [embree, mac, sign]
   only:   [web, schedules]
   artifacts:
     name: "$CI_JOB_NAME"
@@ -516,7 +516,7 @@ release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
 
 release-macosx-x64-Release-ICC2020.1-ISPC1.13.0-TBB-PACKAGE-PKG:
   script: "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
-  tags:   [embree, mac]
+  tags:   [embree, mac, sign]
   only:   [web, schedules]
   artifacts:
     name: "$CI_JOB_NAME"
