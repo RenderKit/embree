@@ -5,8 +5,8 @@ Introduction
 ```
 \pagebreak
 
-API Reference
-=============
+Embree API
+==========
 
 ``` {include=src/api-ref.md}
 ```
