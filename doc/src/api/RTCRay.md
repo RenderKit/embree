@@ -35,7 +35,7 @@ and `tfar` members). The ray direction does not have to be normalized,
 and only the parameter range specified by the `tnear`/`tfar` interval
 is considered valid.
 
-The ray segment must be in the range $[0, ∞]$, thus ranges that
+The ray segment must be in the range $[0, \infty]$, thus ranges that
 start behind the ray origin are not allowed, but ranges can reach to
 infinity. For rays inside a ray stream, `tfar` < `tnear` identifies
 an inactive ray.

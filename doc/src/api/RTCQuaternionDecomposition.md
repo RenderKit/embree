@@ -49,7 +49,6 @@ $quaternion_r + quaternion_i \ \mathbf{i} + quaternion_j \ \mathbf{i} + quaterni
 where $\mathbf{i}$, $\mathbf{j}$ $\mathbf{k}$ are the imaginary
 quaternion units. The passed quaternion will be normalized internally.
 
-\noindent
 The affine transformation matrix corresponding to a `RTCQuaternionDecomposition` is $TRS$
 and a point $p = (p_x, p_y, p_z, 1)^T$ will be transformed as 
 $$p' = T \ R \ S \ p.$$

@@ -26,7 +26,7 @@ the scene contains motion blur geometries, also the ray time (`time`
 ray member) must be initialized to a value in the range $[0, 1]$. If
 ray masks are enabled at compile time, the ray mask (`mask` ray member)
 must be initialized as well. The ray segment must be in the range
-$[0, ∞]$, thus ranges that start behind the ray origin are not valid,
+$[0, \infty]$, thus ranges that start behind the ray origin are not valid,
 but ranges can reach to infinity. See Section [RTCRay] for the ray
 layout description.
 

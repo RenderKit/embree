@@ -36,7 +36,7 @@ The `rtcPointQuery` function traverses the BVH using a `RTCPointQuery` object
 intersects the query domain.
 
 The user has to initialize the query location (`x`, `y` and `z` member) and
-query radius in the range $[0, ∞]$. If the scene contains motion blur
+query radius in the range $[0, \infty]$. If the scene contains motion blur
 geometries, also the query time (`time` member) must be initialized to a
 value in the range $[0, 1]$.
 
