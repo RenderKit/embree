@@ -654,7 +654,7 @@ namespace embree
     
     std::atomic<int> passed(true);
 
-#if defined(__WIN32__) && !defined(__X86_64__)
+#if defined(__WIN32__) && !defined(__64BIT__)
 	/* deactivating parallel test execution on win32 platforms due to out-of-memory exceptions */
 	parallel = false;
 #endif
