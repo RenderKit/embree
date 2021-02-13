@@ -26,6 +26,9 @@
 /* detect 32 or 64 Intel platform */
 #if defined(__x86_64__) || defined(__ia64__) || defined(_M_X64)
 #define __X86_64__
+#define __X86_ASM__
+#elif defined(__i386__) || defined(_M_IX86)
+#define __X86_ASM__
 #endif
 
 /* detect 64 bit platform */
