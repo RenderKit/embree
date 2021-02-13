@@ -8,9 +8,13 @@
 #include "constants.h"
 #include <cmath>
 
+#if defined(__ARM_NEON)
+#include "../simd/arm/emulation.h"
+#else
 #include <emmintrin.h>
 #include <xmmintrin.h>
 #include <immintrin.h>
+#endif
 
 #if defined(__WIN32__)
 #if defined(_MSC_VER) && (_MSC_VER <= 1700)
