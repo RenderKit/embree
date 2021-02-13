@@ -21,29 +21,29 @@ namespace embree
   
   std::string getPlatformName() 
   {
-#if defined(__LINUX__) && !defined(__X86_64__)
+#if defined(__LINUX__) && !defined(__64BIT__)
     return "Linux (32bit)";
-#elif defined(__LINUX__) && defined(__X86_64__)
+#elif defined(__LINUX__) && defined(__64BIT__)
     return "Linux (64bit)";
-#elif defined(__FREEBSD__) && !defined(__X86_64__)
+#elif defined(__FREEBSD__) && !defined(__64BIT__)
     return "FreeBSD (32bit)";
-#elif defined(__FREEBSD__) && defined(__X86_64__)
+#elif defined(__FREEBSD__) && defined(__64BIT__)
     return "FreeBSD (64bit)";
-#elif defined(__CYGWIN__) && !defined(__X86_64__)
+#elif defined(__CYGWIN__) && !defined(__64BIT__)
     return "Cygwin (32bit)";
-#elif defined(__CYGWIN__) && defined(__X86_64__)
+#elif defined(__CYGWIN__) && defined(__64BIT__)
     return "Cygwin (64bit)";
-#elif defined(__WIN32__) && !defined(__X86_64__)
+#elif defined(__WIN32__) && !defined(__64BIT__)
     return "Windows (32bit)";
-#elif defined(__WIN32__) && defined(__X86_64__)
+#elif defined(__WIN32__) && defined(__64BIT__)
     return "Windows (64bit)";
-#elif defined(__MACOSX__) && !defined(__X86_64__)
+#elif defined(__MACOSX__) && !defined(__64BIT__)
     return "Mac OS X (32bit)";
-#elif defined(__MACOSX__) && defined(__X86_64__)
+#elif defined(__MACOSX__) && defined(__64BIT__)
     return "Mac OS X (64bit)";
-#elif defined(__UNIX__) && !defined(__X86_64__)
+#elif defined(__UNIX__) && !defined(__64BIT__)
     return "Unix (32bit)";
-#elif defined(__UNIX__) && defined(__X86_64__)
+#elif defined(__UNIX__) && defined(__64BIT__)
     return "Unix (64bit)";
 #else
     return "Unknown";

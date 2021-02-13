@@ -227,7 +227,7 @@ namespace embree
 #endif
   }
   
-#if defined(__X86_64__)
+#if defined(__64BIT__)
   __forceinline unsigned bsf(unsigned v) 
   {
 #if defined(__AVX2__) 
@@ -257,7 +257,7 @@ namespace embree
     return i;
   }
   
-#if defined(__X86_64__)
+#if defined(__64BIT__)
   __forceinline unsigned int bscf(unsigned int& v) 
   {
     unsigned int i = bsf(v);
@@ -281,7 +281,7 @@ namespace embree
 #endif
   }
   
-#if defined(__X86_64__)
+#if defined(__64BIT__)
   __forceinline unsigned bsr(unsigned v) {
 #if defined(__AVX2__) 
     return 31 - _lzcnt_u32(v);
@@ -394,7 +394,7 @@ namespace embree
     return _mm_popcnt_u32(in);
   }
   
-#if defined(__X86_64__)
+#if defined(__64BIT__)
   __forceinline size_t popcnt(size_t in) {
     return _mm_popcnt_u64(in);
   }
