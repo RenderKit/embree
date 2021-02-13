@@ -79,6 +79,7 @@ namespace embree
 
   std::string getCPUVendor()
   {
+#if defined(__X86_ASM__)
     int cpuinfo[4]; 
     __cpuid (cpuinfo, 0); 
     int name[4];
@@ -87,10 +88,14 @@ namespace embree
     name[2] = cpuinfo[2];
     name[3] = 0;
     return (char*)name;
+#else
+    return "Unknown";
+#endif
   }
 
   CPU getCPUModel() 
   {
+#if defined(__X86_ASM__)
     if (getCPUVendor() != "GenuineIntel")
       return CPU::UNKNOWN;
     
@@ -156,6 +161,7 @@ namespace embree
 
     if (DisplayFamily_DisplayModel == 0x0685) return CPU::XEON_PHI_KNIGHTS_MILL;
     if (DisplayFamily_DisplayModel == 0x0657) return CPU::XEON_PHI_KNIGHTS_LANDING;
+#endif
     
     return CPU::UNKNOWN;
   }
@@ -188,6 +194,7 @@ namespace embree
     return "Unknown CPU (error)";
   }
 
+#if defined(__X86_ASM__)
   /* constants to access destination registers of CPUID instruction */
   static const int EAX = 0;
   static const int EBX = 1;
@@ -230,7 +237,9 @@ namespace embree
   
   /* cpuid[eax=7,ecx=0].ecx */
   static const int CPU_FEATURE_BIT_AVX512VBMI = 1 << 1;   // AVX512VBMI (vector bit manipulation instructions)
+#endif
 
+#if defined(__X86_ASM__)
   __noinline int64_t get_xcr0() 
   {
 #if defined (__WIN32__)
@@ -243,9 +252,11 @@ namespace embree
     return xcr0;
 #endif
   }
+#endif
 
   int getCPUFeatures()
   {
+#if defined(__X86_ASM__)
     /* cache CPU features access */
     static int cpu_features = 0;
     if (cpu_features) 
@@ -318,6 +329,10 @@ namespace embree
     if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
     return cpu_features;
+#else
+    /* Unknown CPU. */
+    return 0;
+#endif
   }
 
   std::string stringOfCPUFeatures(int features)
