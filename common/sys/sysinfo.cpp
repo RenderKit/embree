@@ -88,6 +88,8 @@ namespace embree
     name[2] = cpuinfo[2];
     name[3] = 0;
     return (char*)name;
+#elif defined(__ARM_NEON)
+    return "Arm";
 #else
     return "Unknown";
 #endif
@@ -161,6 +163,8 @@ namespace embree
 
     if (DisplayFamily_DisplayModel == 0x0685) return CPU::XEON_PHI_KNIGHTS_MILL;
     if (DisplayFamily_DisplayModel == 0x0657) return CPU::XEON_PHI_KNIGHTS_LANDING;
+#elif defined(__ARM_NEON)
+    return CPU::ARM;
 #endif
     
     return CPU::UNKNOWN;
@@ -189,6 +193,7 @@ namespace embree
     case CPU::NEHALEM                 : return "Nehalem";
     case CPU::CORE2                   : return "Core2";
     case CPU::CORE1                   : return "Core";
+    case CPU::ARM                     : return "Arm";
     case CPU::UNKNOWN                 : return "Unknown CPU";
     }
     return "Unknown CPU (error)";
@@ -329,6 +334,9 @@ namespace embree
     if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
     return cpu_features;
+#elif defined(__ARM_NEON)
+    /* emulated features with sse2neon */
+    return CPU_FEATURE_SSE|CPU_FEATURE_SSE2|CPU_FEATURE_XMM_ENABLED;
 #else
     /* Unknown CPU. */
     return 0;

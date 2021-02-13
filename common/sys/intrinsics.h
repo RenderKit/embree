@@ -9,7 +9,11 @@
 #include <intrin.h>
 #endif
 
+#if defined(__ARM_NEON)
+#include "../simd/arm/emulation.h"
+#else
 #include <immintrin.h>
+#endif
 
 #if defined(__BMI__) && defined(__GNUC__) && !defined(__INTEL_COMPILER)
   #if !defined(_tzcnt_u32)
