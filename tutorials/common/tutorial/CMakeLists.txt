@@ -68,7 +68,7 @@ IF (WIN32 AND NOT EMBREE_EXTERNAL_GLFW)
 ENDIF()
 
 ADD_CUSTOM_COMMAND(TARGET tutorial POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/tutorials/models $<TARGET_FILE_DIR:tutorial>/models
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../../models $<TARGET_FILE_DIR:tutorial>/models
   COMMENT "Copying example models")
 
 
