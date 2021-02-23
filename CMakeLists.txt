@@ -469,15 +469,17 @@ ENDIF()
 # Uninstall
 ##############################################################
 
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake/uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
-    IMMEDIATE @ONLY)
+IF (NOT TARGET uninstall)
+  configure_file(
+      "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake/uninstall.cmake.in"
+      "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
+      IMMEDIATE @ONLY)
 
-add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
+  add_custom_target(uninstall
+      COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
 
-SET_PROPERTY(TARGET uninstall PROPERTY FOLDER CMakePredefinedTargets)
+  SET_PROPERTY(TARGET uninstall PROPERTY FOLDER CMakePredefinedTargets)
+ENDIF()
 
 ##############################################################
 # Has to be last
