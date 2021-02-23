@@ -9,17 +9,47 @@ ELSEIF (TASKING_TBB)
   ##############################################################
   if (NOT ${EMBREE_TBB_ROOT} STREQUAL "")
     set(TBB_ROOT ${EMBREE_TBB_ROOT})
+    set(TBB_DIR ${EMBREE_TBB_ROOT}/lib/cmake/tbb)
   endif()
-  FIND_PACKAGE(TBB REQUIRED tbb)
 
-  ##############################################################
-  # Create tasking target and link against TBB. Also set include directory
-  # information on tasking target to provide the "algorithms" object library
-  # with the TBB header files
-  ##############################################################
   ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
-  TARGET_LINK_LIBRARIES(tasking PUBLIC TBB)
-  TARGET_INCLUDE_DIRECTORIES(tasking PUBLIC "${TBB_INCLUDE_DIRS}")
+  
+  if (TARGET TBB::tbb)
+    message("reuse existing TBB::tbb target")
+    TARGET_LINK_LIBRARIES(tasking PUBLIC TBB::tbb)
+  else()
+    # Try getting TBB via config first
+    find_package(TBB 2021.1 QUIET COMPONENTS tbb CONFIG)
+    if (TBB_FOUND)
+      message("found tbb via config")
+      TARGET_LINK_LIBRARIES(tasking PUBLIC TBB::tbb)
+    else()
+      message("not found tbb via config")
+      # If not found try getting older TBB via module (FindTBB.cmake)
+      unset(TBB_DIR CACHE)
+      find_package(TBB 4.1 REQUIRED tbb)
+      if (TBB_FOUND)
+        message("found tbb via FindTBB.cmake")
+        TARGET_LINK_LIBRARIES(tasking PUBLIC TBB)
+        TARGET_INCLUDE_DIRECTORIES(tasking PUBLIC "${TBB_INCLUDE_DIRS}")
+      else()
+        message("not found tbb via FindTBB.cmake")
+      endif()
+    endif()
+    if (TBB_FOUND)
+      message("found tbb")
+    else()
+      message("not found tbb")
+    endif()
+  endif()
+
+  ###############################################################
+  ## Create tasking target and link against TBB. Also set include directory
+  ## information on tasking target to provide the "algorithms" object library
+  ## with the TBB header files
+  ###############################################################
+  #TARGET_LINK_LIBRARIES(tasking PUBLIC TBB)
+  #TARGET_INCLUDE_DIRECTORIES(tasking PUBLIC "${TBB_INCLUDE_DIRS}")
 
   include(installTBB)
 
