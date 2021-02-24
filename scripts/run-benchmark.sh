@@ -39,21 +39,22 @@ benny insert code_context "${PROJECT_NAME}" ${SOURCE_ROOT} --save-json code_cont
 benny insert run_context ${TOKEN} ./code_context.json --save-json run_context.json
 
 
-####################
+###################
 # build benchmarks #
 ####################
 
 SUITE_NAME="TestSuiteEmbreeBuild"
 
 ## subsuites of build benchmarks
-subsuites="update_dynamic_deformable \
-           update_dynamic_dynamic \
-           update_dynamic_static \
-           create_dynamic_deformable \
-           create_dynamic_dynamic \
-           create_dynamic_static \
-           create_static_static \
-           create_high_quality_static_static"
+subsuites="create_static_static"
+#subsuites="update_dynamic_deformable \
+#           update_dynamic_dynamic \
+#           update_dynamic_static \
+#           create_dynamic_deformable \
+#           create_dynamic_dynamic \
+#           create_dynamic_static \
+#           create_static_static \
+#           create_high_quality_static_static"
 
 for i in ${subsuites}
 do

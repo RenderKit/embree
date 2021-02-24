@@ -145,6 +145,8 @@ int TutorialBenchmark::main(int argc, char** argv, std::string name)
 
     while (getline(file, line))
     {
+      if (startsWith(line, "#"))
+        continue;
       std::istringstream iss(line);
       std::vector<std::string> tokens{std::istream_iterator<std::string>{iss},
                                       std::istream_iterator<std::string>{}};
