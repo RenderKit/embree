@@ -22,6 +22,7 @@ export LD_LIBRARY_PATH=`pwd`/build:${LD_LIBRARY_PATH}
 cd build
 rm -f *.json
 
+
 ################################# PLEASE READ ##################################
 #
 # Note that suites and subsuites must exist in the database _before_ attempting
