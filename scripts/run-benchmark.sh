@@ -14,7 +14,7 @@ SOURCE_ROOT=`pwd`
 PROJECT_NAME="TestProject"
 
 NUMACTL="numactl --physcpubind=+0-28 --"
-BENCHMARK="--benchmark 10 5"
+BENCHMARK="--benchmark 5 0 --benchmark_repetitions=20"
 THREADS="--set_affinity 1"
 
 export LD_LIBRARY_PATH=`pwd`/build:${LD_LIBRARY_PATH}
