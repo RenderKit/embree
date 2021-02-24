@@ -13,7 +13,7 @@ source ~/system_token.sh
 SOURCE_ROOT=`pwd`
 PROJECT_NAME="TestProject"
 
-NUMACTL="numactl --physcpubind=+0-28 --"
+NUMACTL="numactl --physcpubind=+0-27 --"
 BENCHMARK="--benchmark 5 0 --benchmark_repetitions=20"
 THREADS="--set_affinity 1"
 
