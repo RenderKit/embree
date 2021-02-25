@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.12.3
+-   RTC_SUBDIVISION_MODE_NO_BOUNDARY now works properly for non-manifold edges.
+
 ### Embree 3.12.2
 -   Fixed wrong uv and Ng for grid intersector in robust mode for AVX.
 -   Removed optimizations for Knights Landing.
