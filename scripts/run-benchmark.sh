@@ -27,6 +27,7 @@ rm -f *.json
 BUILD_SCENES_FILE="../tutorials/models/build.bench"
 TRACE_SCENES_FILE="../tutorials/models/trace.bench"
 
+
 RUN_BUILD_BENCHMARKS=true
 RUN_TRACE_BENCHMARKS=true
 
