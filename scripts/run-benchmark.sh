@@ -124,7 +124,7 @@ if ${RUN_TRACE_BENCHMARKS}; then
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-    echo "${NUMACTL} ./viewer --verbose 2 --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
+    echo "${NUMACTL} ./viewer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
     ${NUMACTL} ./viewer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}
     benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
 
@@ -133,7 +133,7 @@ if ${RUN_TRACE_BENCHMARKS}; then
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-    echo "${NUMACTL} ./pathtracer --verbose 2 --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
+    echo "${NUMACTL} ./pathtracer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
     ${NUMACTL} ./pathtracer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}
     benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
 
