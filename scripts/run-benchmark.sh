@@ -28,8 +28,9 @@ BUILD_SCENES_FILE="../tutorials/models/build.bench"
 TRACE_SCENES_FILE="../tutorials/models/trace.bench"
 
 
-RUN_BUILD_BENCHMARKS=true
+RUN_BUILD_BENCHMARKS=false
 RUN_TRACE_BENCHMARKS=true
+RUN_TUT_BENCHMARKS=false
 
 ################################# PLEASE READ ##################################
 #
@@ -123,7 +124,7 @@ if ${RUN_TRACE_BENCHMARKS}; then
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-    echo "${NUMACTL} ./viewer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
+    echo "${NUMACTL} ./viewer --verbose 2 --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
     ${NUMACTL} ./viewer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}
     benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
 
@@ -132,30 +133,32 @@ if ${RUN_TRACE_BENCHMARKS}; then
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-    echo "${NUMACTL} ./pathtracer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
+    echo "${NUMACTL} ./pathtracer --verbose 2 --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
     ${NUMACTL} ./pathtracer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}
     benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
 
   done < "${TRACE_SCENES_FILE}"
 
-  SUBSUITE_NAME="tutorials"
-  benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
-  benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
+  if ${RUN_TUT_BENCHMARKS}; then
+    SUBSUITE_NAME="tutorials"
+    benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
+    benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-  tutorials="triangle_geometry \
-             grid_geometry \
-             curve_geometry \
-             displacement_geometry \
-             hair_geometry \
-             instanced_geometry \
-             intersection_filter \
-             point_geometry \
-             subdivision_geometry \
-             user_geometry"
+    tutorials="triangle_geometry \
+               grid_geometry \
+               curve_geometry \
+               displacement_geometry \
+               hair_geometry \
+               instanced_geometry \
+               intersection_filter \
+               point_geometry \
+               subdivision_geometry \
+               user_geometry"
 
-  for i in ${tutorials}
-  do
-    ${NUMACTL} ./${i} --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} ${THREADS}
-    benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
-  done
+    for i in ${tutorials}
+    do
+      ${NUMACTL} ./${i} --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} ${THREADS}
+      benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
+    done
+  fi
 fi
