@@ -1,4 +1,4 @@
-#!/bin/bash -xe
+#!/bin/bash
 
 ## Copyright 2020 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
@@ -27,10 +27,9 @@ rm -f *.json
 BUILD_SCENES_FILE="../tutorials/models/build.bench"
 TRACE_SCENES_FILE="../tutorials/models/trace.bench"
 
-
-RUN_BUILD_BENCHMARKS=false
+RUN_BUILD_BENCHMARKS=true
 RUN_TRACE_BENCHMARKS=true
-RUN_TUT_BENCHMARKS=false
+RUN_TUT_BENCHMARKS=true
 
 ################################# PLEASE READ ##################################
 #
