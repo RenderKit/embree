@@ -15,10 +15,6 @@
 #include <benchmark/benchmark.h>
 #endif
 
-#ifndef SCENE_DIR
-#define SCENE_DIR ""
-#endif
-
 namespace embree {
 
 //////////////////////////////////////////////
@@ -111,6 +107,8 @@ int TutorialBenchmark::main(int argc, char** argv, std::string name)
 #if USE_GOOGLE_BENCHMARK
   if (!params.legacy && params.minTimeOrIterations > 0)
     commandLine.add({"--benchmark_min_time=" + std::to_string(params.minTimeOrIterations)});
+  if (!params.legacy && params.repetitions > 0)
+    commandLine.add({"--benchmark_repetitions=" + std::to_string(params.repetitions)});
 #endif
 
   argc = commandLine.argc();
@@ -125,49 +123,20 @@ int TutorialBenchmark::main(int argc, char** argv, std::string name)
 
   postParseCommandLine();
 
+  std::string benchmark_name = name;
   if (endsWith(inputFile, ".xml")) {
     commandLine.add({"-i", inputFile});
-    std::string sceneName = getFileName(inputFile);
-    registerBenchmark(sceneName, commandLine.argc(), commandLine.argv());
+    benchmark_name = getFileName(inputFile);
   }
   else if (endsWith(inputFile, ".ecs")) {
     commandLine.add({"-c", inputFile});
-    std::string sceneName = getFileName(inputFile);
-    registerBenchmark(sceneName, commandLine.argc(), commandLine.argv());
+    benchmark_name = getFileName(inputFile);
   }
-  else if (endsWith(inputFile, ".bench")) {
-    std::string line;
-    std::ifstream file(inputFile.c_str());
-    if (!file.is_open()) {
-      std::cout << "file " << inputFile << " not found\n" << std::endl;
-      return 1;
-    }
 
-    while (getline(file, line))
-    {
-      if (startsWith(line, "#"))
-        continue;
-      std::istringstream iss(line);
-      std::vector<std::string> tokens{std::istream_iterator<std::string>{iss},
-                                      std::istream_iterator<std::string>{}};
-      std::string scene = removeQuotes(tokens[1]);
-      if (!endsWith(scene, ".ecs") && !endsWith(scene, ".xml")) continue;
-      std::string file(std::string(SCENE_DIR) + "/" + scene);
-      CommandLine benchmarkCommandLine(commandLine.argc(), commandLine.argv());
-      if (endsWith(scene, ".ecs"))
-        benchmarkCommandLine.add({"-c", file});
-      if (endsWith(scene, ".xml"))
-        benchmarkCommandLine.add({"-i", file});
-      for (size_t j = 2; j < tokens.size(); ++j) {
-        benchmarkCommandLine.add({tokens[j]});
-      }
-      registerBenchmark(tokens[0], benchmarkCommandLine.argc(), benchmarkCommandLine.argv());
-    }
-    file.close();
-  }
-  else {
-    registerBenchmark(name, commandLine.argc(), commandLine.argv());
-  }
+  if (params.name != "")
+    benchmark_name = params.name;
+
+  registerBenchmark(benchmark_name, commandLine.argc(), commandLine.argv());
 
 #ifdef USE_GOOGLE_BENCHMARK
   if (!params.legacy)
@@ -238,12 +207,12 @@ void callBuildBenchFunc(benchmark::State& state, int argc, char** argv, BenchPar
 
 void TutorialBuildBenchmark::registerBuildBenchmark(std::string name, BuildBenchType buildBenchType, int argc, char** argv)
 {
-  if (buildParams.buildBenchMask & buildBenchType) {
+  if (buildParams.buildBenchType & buildBenchType) {
     // attach benchmark name if more than one bit in buildBenchMask is set
-    bool attach = (buildParams.buildBenchMask & (buildParams.buildBenchMask - 1)) != 0;
+    bool attach = (buildParams.buildBenchType & (buildParams.buildBenchType - 1)) != 0;
     if (attach) name += "_" + getBuildBenchTypeString(buildBenchType);
     BuildBenchParams p = buildParams;
-    p.buildBenchMask = buildBenchType;
+    p.buildBenchType = buildBenchType;
 #ifdef USE_GOOGLE_BENCHMARK
     if (params.legacy) {
       std::cout << "BENCHMARK SCENE: " << name << std::endl;
@@ -277,9 +246,9 @@ void TutorialBuildBenchmark::registerBenchmark(std::string const& name, int argc
 void TutorialBuildBenchmark::postParseCommandLine()
 {
   if (buildParams.userThreads > 0) {
-    buildParams.buildBenchMask = BuildBenchType::CREATE_USER_THREADS_STATIC_STATIC;
+    buildParams.buildBenchType = BuildBenchType::CREATE_USER_THREADS_STATIC_STATIC;
   } else {
-    buildParams.buildBenchMask = (BuildBenchType)(buildParams.buildBenchMask & ~(BuildBenchType::CREATE_USER_THREADS_STATIC_STATIC));
+    buildParams.buildBenchType = (BuildBenchType)(buildParams.buildBenchType & ~(BuildBenchType::CREATE_USER_THREADS_STATIC_STATIC));
   }
 }
 

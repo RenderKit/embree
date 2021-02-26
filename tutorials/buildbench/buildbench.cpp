@@ -40,44 +40,47 @@ namespace embree
     }
   };
 
+  std::unique_ptr<Tutorial> tutorial {};
+
   static void buildBench(BenchState& state, BenchParams& params, BuildBenchParams& buildParams, int argc, char** argv)
   {
-
-    Tutorial tutorial;
-    tutorial.main(argc,argv);
+    if (!tutorial) {
+      tutorial.reset(new Tutorial());
+      tutorial->main(argc,argv);
+    }
 
     if (buildParams.userThreads == 0)
     {
       /* set error handler */
-      if (buildParams.buildBenchMask & BuildBenchType::UPDATE_DYNAMIC_DEFORMABLE) {
-        Benchmark_Dynamic_Update(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_REFIT);
+      if (buildParams.buildBenchType & BuildBenchType::UPDATE_DYNAMIC_DEFORMABLE) {
+        Benchmark_Dynamic_Update(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_REFIT);
       }
-      if (buildParams.buildBenchMask & BuildBenchType::UPDATE_DYNAMIC_DYNAMIC) {
-        Benchmark_Dynamic_Update(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_LOW);
+      if (buildParams.buildBenchType & BuildBenchType::UPDATE_DYNAMIC_DYNAMIC) {
+        Benchmark_Dynamic_Update(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_LOW);
       }
-      if (buildParams.buildBenchMask & BuildBenchType::UPDATE_DYNAMIC_STATIC) {
-        Benchmark_Dynamic_Update(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM);
+      if (buildParams.buildBenchType & BuildBenchType::UPDATE_DYNAMIC_STATIC) {
+        Benchmark_Dynamic_Update(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM);
       }
-      if (buildParams.buildBenchMask & BuildBenchType::CREATE_DYNAMIC_DEFORMABLE) {
-        Benchmark_Dynamic_Create(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_REFIT);
+      if (buildParams.buildBenchType & BuildBenchType::CREATE_DYNAMIC_DEFORMABLE) {
+        Benchmark_Dynamic_Create(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_REFIT);
       }
-      if (buildParams.buildBenchMask & BuildBenchType::CREATE_DYNAMIC_DYNAMIC) {
-        Benchmark_Dynamic_Create(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_LOW);
+      if (buildParams.buildBenchType & BuildBenchType::CREATE_DYNAMIC_DYNAMIC) {
+        Benchmark_Dynamic_Create(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_LOW);
       }
-      if (buildParams.buildBenchMask & BuildBenchType::CREATE_DYNAMIC_STATIC) {
-        Benchmark_Dynamic_Create(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM);
+      if (buildParams.buildBenchType & BuildBenchType::CREATE_DYNAMIC_STATIC) {
+        Benchmark_Dynamic_Create(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM);
       }
-      if (buildParams.buildBenchMask & BuildBenchType::CREATE_STATIC_STATIC) {
-        Benchmark_Static_Create(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
+      if (buildParams.buildBenchType & BuildBenchType::CREATE_STATIC_STATIC) {
+        Benchmark_Static_Create(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
       }
-      if (buildParams.buildBenchMask & BuildBenchType::CREATE_HIGH_QUALITY_STATIC_STATIC) {
-        Benchmark_Static_Create(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_HIGH);
+      if (buildParams.buildBenchType & BuildBenchType::CREATE_HIGH_QUALITY_STATIC_STATIC) {
+        Benchmark_Static_Create(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_HIGH);
       }
     }
     else
     {
-      if (buildParams.buildBenchMask & BuildBenchType::CREATE_USER_THREADS_STATIC_STATIC) {
-        Benchmark_Static_Create_UserThreads(state, params, buildParams, tutorial.ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
+      if (buildParams.buildBenchType & BuildBenchType::CREATE_USER_THREADS_STATIC_STATIC) {
+        Benchmark_Static_Create_UserThreads(state, params, buildParams, tutorial->ispc_scene.get(), RTC_BUILD_QUALITY_MEDIUM,RTC_BUILD_QUALITY_MEDIUM);
       }
     }
   }

@@ -8,6 +8,6 @@ barbarian_msmblur_instancing barbarian/barbarian_msmblur_instancing.xml
 #barbarian_subdiv_msmblur barbarian/barbarian_subdiv_msmblur.xml
 sophie sophie/sophie.xml
 #sophie_mblur sophie_mblur/sophie_mblur.xml
-#conference conference/conference.xml
 crown crown/crown.xml
+#conference conference/conference.xml
 #powerplant powerplant/powerplant.xml

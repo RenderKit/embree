@@ -8,6 +8,6 @@ barbarian_msmblur_instancing barbarian/barbarian_msmblur_instancing.ecs
 #barbarian_subdiv_msmblur barbarian/barbarian_subdiv_msmblur.ecs
 sophie sophie/sophie.ecs
 #sophie_mblur sophie_mblur/sophie_mblur.ecs
-#conference conference/conference.ecs
 crown crown/crown.ecs
+#conference conference/conference.ecs
 #powerplant powerplant/powerplant.ecs

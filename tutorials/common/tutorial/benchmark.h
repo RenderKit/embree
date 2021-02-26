@@ -60,11 +60,13 @@ struct BenchState {
 struct BenchParams {
   int skipIterations = 0;
   int minTimeOrIterations = 0;
+  int repetitions = 0;
   bool legacy = false;
+  std::string name = "";
 };
 
 struct BuildBenchParams {
-  BuildBenchType buildBenchMask = BuildBenchType::ALL;
+  BuildBenchType buildBenchType = BuildBenchType::ALL;
   int userThreads = 0;
 };
 
@@ -92,7 +94,7 @@ struct TutorialBenchmark
         inputFile = cin->getString();
         processedCommandLineOptions.push_back("-i");
         processedCommandLineOptions.push_back("-c");
-      }, "-i <filepath>: .xml, .ecs or .bench file");
+      }, "-i <filepath>: .xml or .ecs");
     commandLineParser.registerOptionAlias("i", "c");
     commandLineParser.registerOption("benchmark", [&] (Ref<ParseStream> cin, const FileName& path) {
         params.skipIterations = cin->getInt();
@@ -103,6 +105,14 @@ struct TutorialBenchmark
         params.legacy = true;
         processedCommandLineOptions.push_back("--legacy");
       }, "--legacy: run old benchmark version (without google benchmark)");
+    commandLineParser.registerOption("benchmark_repetitions", [&] (Ref<ParseStream> cin, const FileName& path) {
+        params.repetitions = cin->getInt();
+        processedCommandLineOptions.push_back("--benchmark_repetitions");
+      }, "--benchmark_repetitions <R>: run R repetitions when using google benchmark");
+    commandLineParser.registerOption("benchmark_name", [&] (Ref<ParseStream> cin, const FileName& path) {
+        params.name = cin->getString();
+        processedCommandLineOptions.push_back("--benchmark_name");
+      }, "--benchmark_name <string>: override name of the benchmark");
   }
 
   TutorialBenchmark() : TutorialBenchmark(nullptr)
@@ -132,11 +142,11 @@ struct TutorialBuildBenchmark : public TutorialBenchmark
 {
   TutorialBuildBenchmark(BuildBenchFunc func) : TutorialBenchmark(), buildBenchFunc(func)
   {
-    commandLineParser.registerOption("benchmark_mask", [&] (Ref<ParseStream> cin, const FileName& path) {
+    commandLineParser.registerOption("benchmark_type", [&] (Ref<ParseStream> cin, const FileName& path) {
         std::string str = cin->getString();
-        buildParams.buildBenchMask = getBuildBenchType(str);
-        processedCommandLineOptions.push_back("--benchmark_mask");
-      }, "--benchmark_mask <string>: select which build types to benchmark");
+        buildParams.buildBenchType = getBuildBenchType(str);
+        processedCommandLineOptions.push_back("--benchmark_type");
+      }, "--benchmark_type <string>: select which build types to benchmark");
     commandLineParser.registerOption("user_threads", [this] (Ref<ParseStream> cin, const FileName& path) {
         buildParams.userThreads = cin->getInt();
       }, "--user_threads <int>: invokes user thread benchmark with specified number of application provided build threads");
