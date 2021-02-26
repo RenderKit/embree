@@ -47,7 +47,6 @@ RUN_TUT_BENCHMARKS=true
 benny insert code_context "${PROJECT_NAME}" ${SOURCE_ROOT} --save-json code_context.json
 benny insert run_context ${TOKEN} ./code_context.json --save-json run_context.json
 
-
 ####################
 # build benchmarks #
 ####################
