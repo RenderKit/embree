@@ -14,7 +14,7 @@ SOURCE_ROOT=`pwd`
 PROJECT_NAME="TestProject"
 
 NUMACTL="numactl --physcpubind=+0-27 --"
-BENCHMARK="--benchmark 10 0 --benchmark_repetitions 21"
+BENCHMARK="--benchmark 15 0 --benchmark_repetitions 31"
 THREADS="--set_affinity 1"
 
 MODEL_DIR="${HOME}/embree-models"
