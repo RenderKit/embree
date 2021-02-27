@@ -5,6 +5,7 @@
 
 git log -1
 
+
 # environment for benchmark client
 source ~/benchmark_client.git/env.sh
 source ~/system_token.sh
