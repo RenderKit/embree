@@ -551,7 +551,8 @@ av:
 ####################################################################
 benchmark:
   stage:  benchmark
-  when:   [manual, schedules]
+  only:   [schedules]
+  when:   manual
   tags:
     - vis-perf-x8280-1
   script:
