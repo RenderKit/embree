@@ -3,6 +3,7 @@ Version History
 
 ### Embree 3.12.3
 -   RTC_SUBDIVISION_MODE_NO_BOUNDARY now works properly for non-manifold edges.
+-   CMake target 'uninstall' is not defined if it already exists.
 
 ### Embree 3.12.2
 -   Fixed wrong uv and Ng for grid intersector in robust mode for AVX.
