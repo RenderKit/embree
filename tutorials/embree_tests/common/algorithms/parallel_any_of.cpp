@@ -11,9 +11,9 @@
 
 using namespace embree;
 
-namespace __parallel_any_of_unit_tests_internal {
+namespace parallel_any_of_unit_tests {
 
-TEST_CASE ("Test parallel any of", "[parallel_any_of]")
+TEST_CASE ("Test parallel_any_of", "[parallel_any_of]")
 {
   const size_t num_threads = std::thread::hardware_concurrency();
   TaskScheduler::create(num_threads, true, false);
