@@ -15,7 +15,7 @@ SOURCE_ROOT=`pwd`
 PROJECT_NAME="TestProject"
 
 NUMACTL="numactl --physcpubind=+0-27 --"
-BENCHMARK="--benchmark 15 0 --benchmark_repetitions 31"
+BENCHMARK="--benchmark 10 0 --benchmark_repetitions 11"
 THREADS="--set_affinity 1"
 
 MODEL_DIR="${HOME}/embree-models"
@@ -57,11 +57,7 @@ if ${RUN_BUILD_BENCHMARKS}; then
 
   ## subsuites of build benchmarks
   subsuites="update_dynamic_deformable \
-             update_dynamic_dynamic \
-             update_dynamic_static \
-             create_dynamic_deformable \
              create_dynamic_dynamic \
-             create_dynamic_static \
              create_static_static \
              create_high_quality_static_static"
 
@@ -87,16 +83,6 @@ if ${RUN_BUILD_BENCHMARKS}; then
       ${NUMACTL} ./buildbench --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} --benchmark_type ${SUBSUITE_NAME} -i ${SCENE} ${array[@]} ${THREADS}
       benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
     done
-
-    # user thread benchmark
-    SUBSUITE_NAME="create_user_threads_static_static"
-    benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
-    benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
-
-    echo "${NUMACTL} ./buildbench --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} --benchmark_type ${SUBSUITE_NAME} -i ${SCENE} ${array[@]} --user_threads 8 ${THREADS}"
-    ${NUMACTL} ./buildbench --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} --benchmark_type ${SUBSUITE_NAME} -i ${SCENE} ${array[@]} --user_threads 8 ${THREADS}
-    benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
-
   done < "${BUILD_SCENES_FILE}"
 fi
 
@@ -123,7 +109,7 @@ if ${RUN_TRACE_BENCHMARKS}; then
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-    echo "${NUMACTL} ./viewer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
+    echo "${NUMACTL} ./viewer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS} --size 256 256"
     ${NUMACTL} ./viewer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}
     benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
 
@@ -132,7 +118,7 @@ if ${RUN_TRACE_BENCHMARKS}; then
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-    echo "${NUMACTL} ./pathtracer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}"
+    echo "${NUMACTL} ./pathtracer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS} --size 256 256 --spp 32"
     ${NUMACTL} ./pathtracer --benchmark_out=results-${SUITE_NAME}-${SUBSUITE_NAME}.json ${BENCHMARK} -i ${SCENE} ${array[@]} ${THREADS}
     benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
 

@@ -551,10 +551,10 @@ av:
 ####################################################################
 benchmark:
   stage:  benchmark
-  only:   [schedules]
+  only:   [pushes]
   tags:
     - vis-perf-x8280-1
   script:
-    - "scripts/test.py platform:x64 build:Release compiler:GCC ispc:ispc1.12.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.1.1 intensity:0 --benchmark"
+    - "scripts/test.py platform:x64 build:Release compiler:GCC ispc:ispc1.12.0 isas:AVX512 tasking:TBB2021.1.1 intensity:0 --benchmark"
     - "chmod +x scripts/run-benchmark.sh"
     - "scripts/run-benchmark.sh"
