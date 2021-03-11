@@ -3,9 +3,9 @@
 
 stages:
   - test
+  - benchmark
   - release
   - scan
-  - benchmark
 
 #####################################################################
 # Continuous Test
@@ -117,12 +117,12 @@ nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-AVX-TBB2019.2:
   tags:   [embree, win10, v120, avx]
   only:   [schedules]
 
- nightly-macosx-x64-Debug-ICC2019.4-ISPC1.13.0-AVX2-TBB2020.2:
+nightly-macosx-x64-Debug-ICC2019.4-ISPC1.13.0-AVX2-TBB2020.2:
    script: "scripts/test.py platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd256 tasking:TBB2020.2 intensity:4"
    tags:   [embree, mac]
    only:   [schedules]
 
- nightly-macosx-x64-Debug-ICC2020.1-ISPC1.13.0-AVX2-TBB2019.9:
+nightly-macosx-x64-Debug-ICC2020.1-ISPC1.13.0-AVX2-TBB2019.9:
    script: "scripts/test.py platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2019.9 intensity:4"
    tags:   [embree, mac]
    only:   [schedules]
@@ -557,6 +557,7 @@ av:
     - "scripts/test.py platform:x64 build:Release compiler:GCC ispc:ispc1.12.0 isas:AVX512 tasking:TBB2021.1.1 intensity:0 --benchmark"
     - "chmod +x scripts/run-benchmark.sh"
     - "scripts/run-benchmark.sh"
+  needs: []
 
 benchmark_nightly:
   extends: .benchmark
@@ -566,4 +567,3 @@ benchmark_manual:
   extends: .benchmark
   except:   [schedules]
   when: manual
-

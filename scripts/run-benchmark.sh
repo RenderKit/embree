@@ -5,14 +5,13 @@
 
 git log -1
 
-
 # environment for benchmark client
 source ~/benchmark_client.git/env.sh
 source ~/system_token.sh
 
 # benchmark configuration
 SOURCE_ROOT=`pwd`
-PROJECT_NAME="TestProject"
+PROJECT_NAME="Embree"
 
 NUMACTL="numactl --physcpubind=+0-27 --"
 BENCHMARK="--benchmark 10 0 --benchmark_repetitions 11"
@@ -53,7 +52,7 @@ benny insert run_context ${TOKEN} ./code_context.json --save-json run_context.js
 ####################
 
 if ${RUN_BUILD_BENCHMARKS}; then
-  SUITE_NAME="TestSuiteEmbreeBuild"
+  SUITE_NAME="Build"
 
   ## subsuites of build benchmarks
   subsuites="update_dynamic_deformable \
@@ -91,7 +90,7 @@ fi
 ####################
 
 if ${RUN_TRACE_BENCHMARKS}; then
-  SUITE_NAME="TestSuiteEmbreeTrace"
+  SUITE_NAME="Trace"
 
   while IFS= read -r line
   do
@@ -105,7 +104,7 @@ if ${RUN_TRACE_BENCHMARKS}; then
     unset "array[0]"
     unset "array[1]"
 
-    SUBSUITE_NAME="viewer"
+    SUBSUITE_NAME="Viewer"
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
@@ -114,7 +113,7 @@ if ${RUN_TRACE_BENCHMARKS}; then
     benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ./results-${SUITE_NAME}-${SUBSUITE_NAME}.json
 
 
-    SUBSUITE_NAME="pathtracer"
+    SUBSUITE_NAME="Pathtracer"
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
@@ -125,7 +124,7 @@ if ${RUN_TRACE_BENCHMARKS}; then
   done < "${TRACE_SCENES_FILE}"
 
   if ${RUN_TUT_BENCHMARKS}; then
-    SUBSUITE_NAME="tutorials"
+    SUBSUITE_NAME="Tutorials"
     benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
     benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
