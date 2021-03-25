@@ -100,7 +100,6 @@ namespace embree
     instancing_open_max_depth = 32;
     instancing_open_max = 50000000;
 
-    ignore_config_files = false;
     float_exceptions = false;
     quality_flags = -1;
     scene_flags = -1;
@@ -278,8 +277,6 @@ namespace embree
         hugepages = cin->get().Int();
       }
 
-      else if (tok == Token::Id("ignore_config_files") && cin->trySymbol("="))
-        ignore_config_files = cin->get().Int();
       else if (tok == Token::Id("float_exceptions") && cin->trySymbol("=")) 
         float_exceptions = cin->get().Int();
 

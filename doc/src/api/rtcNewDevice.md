@@ -30,19 +30,6 @@ A configuration string (`config` argument) can be passed to the
 device construction. This configuration string can be `NULL` to use
 the default configuration.
 
-When creating the device, Embree reads configurations for the device
-from the following locations in order:
-
-1) `config` string passed to the `rtcNewDevice` function
-2) `.embree3` file in the application folder
-3) `.embree3` file in the home folder
-
-Settings performed later overwrite previous settings. This way the
-configuration for the application can be changed globally (either
-through the `rtcNewDevice` call or through the `.embree3` file in the
-application folder), and each user has the option to modify the
-configuration to fit their needs.
-
 The following configuration is supported:
 
 + `threads=[int]`: Specifies a number of build threads to use. A value
@@ -80,9 +67,6 @@ The following configuration is supported:
   on Windows. This option has an effect only under Windows and is
   ignored on other platforms. See Section [Huge Page Support] for more
   details.
-
-+  `ignore_config_files=[0/1]`: When set to 1, configuration files are
-   ignored. Default is 0.
 
 +  `verbose=[0,1,2,3]`: Sets the verbosity of the output. When set to
    0, no output is printed by Embree, when set to a higher level more

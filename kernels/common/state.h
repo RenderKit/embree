@@ -118,7 +118,6 @@ namespace embree
     size_t instancing_open_max;            //!< instancing opens tree to maximally that number of subtrees
 
   public:
-    bool ignore_config_files;              //!< if true no more config files get parse
     bool float_exceptions;                 //!< enable floating point exceptions
     int quality_flags;
     int scene_flags;
