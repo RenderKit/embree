@@ -1,17 +1,8 @@
 Intel(R) Embree Third Party Programs File
 
-This file contains the list of third party software (third party
-programs) contained in the Intel software and their required notices
-and/or license terms. This third party software, even if included with
-the distribution of the Intel software, may be governed by separate
-license terms, including without limitation, third party license
-terms, other Intel software license terms, and open source software
-license terms. These separate license terms govern your use of the
-third party programs as set forth in the third-party-programs.txt or
-other similarly-named text file.
+This file contains the list of third party software (third party programs) contained in the Intel software and their required notices and/or license terms. This third party software, even if included with the distribution of the Intel software, may be governed by separate license terms, including without limitation, third party license terms, other Intel software license terms, and open source software license terms. These separate license terms govern your use of the third party programs as set forth in the third-party-programs.txt or other similarly-named text file.
 
-Third party programs and their corresponding required notices and/or
-license terms are listed below.
+Third party programs and their corresponding required notices and/or license terms are listed below.
 
 -------------------------------------------------------------
 
@@ -251,7 +242,8 @@ tree and in the comment header of each source file.
 3. imgui
    Copyright (c) 2014-2020 Omar Cornut
 
-
+   SSE2NEON
+   
 The MIT License (MIT)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -337,64 +329,21 @@ DEALINGS IN THE SOFTWARE.
 -------------------------------------------------------------
 6. Visual C++ Redistributables for Visual Studio
 
-1. License. This software package from Intel (the Software Package)
-contains code from Microsoft (the Distributable Code).  You are
-provided a non-transferable, non-exclusive, non-sublicensable, limited
-right and license only to use the Distributable Code as part of this
-Software Package.  You are not allowed to copy, modify, remove the
-Distributable Code from the Software Package or redistribute the
-Distributable Code.
-
-2. Restrictions. The Distributable Code is licensed, not sold. You are
-only provided the above rights to use the Distributable Code.  Intel
-and Microsoft reserve all other rights. Unless applicable law gives
-you more rights, you may use the Distributable Code only as expressly
-permitted in these terms. In using the Distributable Code, you must
-comply with any technical limitations in the Distributable Code that
-only allow you to use it in certain ways. You may not:
-
-  work around any technical limitations in the Distributable Code;
-  
-  reverse engineer, decompile or disassemble the software, or
-  otherwise attempt to derive the source code for the Distributable
-  Code, except and to the extent required by third party licensing
-  terms governing use of certain open source components that may be
-  included in the Distributable Code;
-  
-  remove, minimize, block or modify any notices of Intel, Microsoft or
-  its suppliers in the Distributable Code;
-  
-  use the Distributable Code in any way that is against the law; or
-  share, publish, rent or lease the software, or provide the
-  Distributable Code as a stand-alone offering for others to use. 
-
-3. NO WARRANTY.  THE DISTRIBUTABLE CODE IS PROVIDED AS IS WITHOUT ANY
-EXPRESS OR IMPLIED WARRANTY OF ANY KIND INCLUDING WARRANTIES OF
-MERCHANTABILITY, NONINFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE.
-
-4. LIMITATION ON AND EXCLUSION OF DAMAGES. YOU CAN RECOVER FROM INTEL,
-MICROSOFT OR THEIR SUPPLIERS ONLY DIRECT DAMAGES UP TO $5.00. YOU
-CANNOT RECOVER ANY OTHER DAMAGES, INCLUDING CONSEQUENTIAL, LOST
-PROFITS, SPECIAL, INDIRECT OR INCIDENTAL DAMAGES.  This limitation
-applies to (a) anything related to the Distributable Code; and (b)
-claims for breach of contract, breach of warranty, guarantee or
-condition, strict liability, negligence, or other tort to the extent
-permitted by applicable law.  It also applies even if Intel or
-Microsoft knew or should have known about the possibility of the
-damages. The above limitation or exclusion may not apply to you
-because your state or country may not allow the exclusion or
-limitation of incidental, consequential or other damages.
-
-5. Export Restrictions. You must comply with all domestic and
-international export laws and regulations that apply to the software,
-which include restrictions on destinations, end users, and end
-use. For further information on export restrictions, visit
-www.microsoft.com/exporting.
+1.	License. This software package from Intel (the “Software Package”) contains code from Microsoft (the “Distributable Code”).  You are provided a non-transferable, non-exclusive, non-sublicensable, limited right and license only to use the Distributable Code as part of this Software Package.  You are not allowed to copy, modify, remove the Distributable Code from the Software Package or redistribute the Distributable Code.
+2.	Restrictions. The Distributable Code is licensed, not sold. You are only provided the above rights to use the Distributable Code.  Intel and Microsoft reserve all other rights. Unless applicable law gives you more rights, you may use the Distributable Code only as expressly permitted in these terms. In using the Distributable Code, you must comply with any technical limitations in the Distributable Code that only allow you to use it in certain ways. You may not:
+•	work around any technical limitations in the Distributable Code; 
+•	reverse engineer, decompile or disassemble the software, or otherwise attempt to derive the source code for the Distributable Code, except and to the extent required by third party licensing terms governing use of certain open source components that may be included in the Distributable Code; 
+•	remove, minimize, block or modify any notices of Intel, Microsoft or its suppliers in the Distributable Code; 
+•	use the Distributable Code in any way that is against the law; or
+•	share, publish, rent or lease the software, or provide the Distributable Code as a stand-alone offering for others to use. 
+3.	NO WARRANTY.  THE  DISTRIBUTABLE CODE IS PROVIDED “AS IS” WITHOUT ANY EXPRESS OR IMPLIED WARRANTY OF ANY KIND INCLUDING WARRANTIES OF MERCHANTABILITY, NONINFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE.  
+4.	LIMITATION ON AND EXCLUSION OF DAMAGES. YOU CAN RECOVER FROM INTEL, MICROSOFT OR THEIR SUPPLIERS ONLY DIRECT DAMAGES UP TO $5.00. YOU CANNOT RECOVER ANY OTHER DAMAGES, INCLUDING CONSEQUENTIAL, LOST PROFITS, SPECIAL, INDIRECT OR INCIDENTAL DAMAGES. 
+This limitation applies to (a) anything related to the Distributable Code; and (b) claims for breach of contract, breach of warranty, guarantee or condition, strict liability, negligence, or other tort to the extent permitted by applicable law.  It also applies even if Intel or Microsoft knew or should have known about the possibility of the damages. The above limitation or exclusion may not apply to you because your state or country may not allow the exclusion or limitation of incidental, consequential or other damages. 
+5.	Export Restrictions. You must comply with all domestic and international export laws and regulations that apply to the software, which include restrictions on destinations, end users, and end use. For further information on export restrictions, visit www.microsoft.com/exporting.
 
 -------------------------------------------------------------
 
-The following third party programs have their own third party program
-files. These additional third party program files are as follows:
+The following third party programs have their own third party program files. These additional third party program files are as follows:
 
 1. Intel(R) Threading Building Blocks
 licenses located in the third-party-programs-TBB.txt file.
