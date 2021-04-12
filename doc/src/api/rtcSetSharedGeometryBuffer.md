@@ -45,7 +45,7 @@ longer required.
 
 Sharing buffers can significantly reduce the memory required by the
 application, thus we recommend using this feature. When enabling the
-`RTC_SCENE_COMPACT` scene flag, the spatial index structures index
+`RTC_SCENE_FLAG_COMPACT` scene flag, the spatial index structures index
 into the vertex buffer, resulting in even higher memory savings.
 
 #### EXIT STATUS
