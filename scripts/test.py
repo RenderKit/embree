@@ -236,6 +236,8 @@ def runConfig(config):
       elif OS == "macosx":
         if tasking == "TBB":
           conf.append("-D EMBREE_TBB_ROOT=/opt/local")
+        elif tasking == "TBB_HOMEBREW":
+          conf.append("-D EMBREE_TBB_ROOT=/opt/homebrew")
         elif tasking.startswith("TBB"):
           conf.append("-D EMBREE_TBB_ROOT="+nas_macosx+"/tbb/tbb-"+tasking[3:]+"-osx")
         else:
