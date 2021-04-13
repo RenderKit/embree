@@ -12,7 +12,7 @@ stages:
 ####################################################################
 
 continuous-macosx-ARM-Debug-CLANG-ISPC1.13.0-SSE2-TBB2020.2:
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG ISPC_SUPPORT:OFF ispc:ispc isa:SSE2 tasking:TBB_HOMEBREW intensity:2"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG ISPC_SUPPORT:OFF ispc:ispc isa:NEON tasking:TBB_HOMEBREW intensity:2"
   tags:   [embree, mac-arm]
   only:   [pushes]
 
