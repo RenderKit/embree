@@ -284,10 +284,14 @@ namespace embree
   /*! set affinity of the calling thread */
   void setAffinity(ssize_t affinity)
   {
+#if !defined(__ARM_NEON) // affinity seems not supported on M1 chip
+    
     thread_affinity_policy ap;
     ap.affinity_tag = affinity;
     if (thread_policy_set(mach_thread_self(),THREAD_AFFINITY_POLICY,(thread_policy_t)&ap,THREAD_AFFINITY_POLICY_COUNT) != KERN_SUCCESS)
       WARNING("setting thread affinity failed"); // on purpose only a warning
+    
+#endif
   }
 }
 #endif
