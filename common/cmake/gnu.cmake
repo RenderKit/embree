@@ -12,6 +12,7 @@ _SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
 _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
 _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 _SET_IF_EMPTY(FLAGS_AVX512 "-mavx512f -mavx512dq -mavx512cd -mavx512bw -mavx512vl -mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2 -mprefer-vector-width=256")
+_SET_IF_EMPTY(FLAGS_NEON   "-D__SSE__ -D__SSE2__")
 
 OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
 IF (EMBREE_IGNORE_CMAKE_CXX_FLAGS)
@@ -27,7 +28,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-class-memaccess")        # disables
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-overflow")            # assume that signed overflow occurs
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-delete-null-pointer-checks") # keep all checks for NULL pointers
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv")                         # this option instructs the compiler to assume that signed arithmetic overflow warps around.
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")                   # treat char as signed on all processors, including Arm
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")                   # treat char as signed on all processors, including ARM
 
 IF (NOT APPLE)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")                       # enables support for more secure position independent execution

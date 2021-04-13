@@ -89,7 +89,7 @@ namespace embree
     name[3] = 0;
     return (char*)name;
 #elif defined(__ARM_NEON)
-    return "Arm";
+    return "ARM";
 #else
     return "Unknown";
 #endif
@@ -163,6 +163,7 @@ namespace embree
 
     if (DisplayFamily_DisplayModel == 0x0685) return CPU::XEON_PHI_KNIGHTS_MILL;
     if (DisplayFamily_DisplayModel == 0x0657) return CPU::XEON_PHI_KNIGHTS_LANDING;
+    
 #elif defined(__ARM_NEON)
     return CPU::ARM;
 #endif
@@ -193,7 +194,7 @@ namespace embree
     case CPU::NEHALEM                 : return "Nehalem";
     case CPU::CORE2                   : return "Core2";
     case CPU::CORE1                   : return "Core";
-    case CPU::ARM                     : return "Arm";
+    case CPU::ARM                     : return "ARM";
     case CPU::UNKNOWN                 : return "Unknown CPU";
     }
     return "Unknown CPU (error)";
