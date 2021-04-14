@@ -286,18 +286,20 @@ namespace embree
   __forceinline vfloat4 rsqrt(const vfloat4& a)
   {
 #if defined(__AVX512VL__)
-    const vfloat4 r = _mm_rsqrt14_ps(a);
+    vfloat4 r = _mm_rsqrt14_ps(a);
 #else
-    const vfloat4 r = _mm_rsqrt_ps(a);
+    vfloat4 r = _mm_rsqrt_ps(a);
 #endif
 
-#if defined(__AVX2__)
-    return _mm_fmadd_ps(_mm_set1_ps(1.5f), r,
-                        _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
+#if defined(__ARM_NEON)
+    r = _mm_fmadd_ps(_mm_set1_ps(1.5f), r, _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
+    r = _mm_fmadd_ps(_mm_set1_ps(1.5f), r, _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
+#elif defined(__AVX2__)
+    r = _mm_fmadd_ps(_mm_set1_ps(1.5f), r, _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
 #else
-    return _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f), r),
-                      _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
+    r = _mm_add_ps(_mm_mul_ps(_mm_set1_ps(1.5f), r), _mm_mul_ps(_mm_mul_ps(_mm_mul_ps(a, _mm_set1_ps(-0.5f)), r), _mm_mul_ps(r, r)));
 #endif
+    return r;
   }
 
   __forceinline vboolf4 isnan(const vfloat4& a) {

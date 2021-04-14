@@ -81,13 +81,15 @@ namespace embree
   {
     const __m128 a = _mm_set_ss(x);
 #if defined(__AVX512VL__)
-    const __m128 r = _mm_rsqrt14_ss(_mm_set_ss(0.0f),a);
+    __m128 r = _mm_rsqrt14_ss(_mm_set_ss(0.0f),a);
 #else
-    const __m128 r = _mm_rsqrt_ss(a);
+    __m128 r = _mm_rsqrt_ss(a);
 #endif
-    const __m128 c = _mm_add_ss(_mm_mul_ss(_mm_set_ss(1.5f), r),
-                                _mm_mul_ss(_mm_mul_ss(_mm_mul_ss(a, _mm_set_ss(-0.5f)), r), _mm_mul_ss(r, r)));
-    return _mm_cvtss_f32(c);
+    r = _mm_add_ss(_mm_mul_ss(_mm_set_ss(1.5f), r), _mm_mul_ss(_mm_mul_ss(_mm_mul_ss(a, _mm_set_ss(-0.5f)), r), _mm_mul_ss(r, r)));
+#if defined(__ARM_NEON)
+    r = _mm_add_ss(_mm_mul_ss(_mm_set_ss(1.5f), r), _mm_mul_ss(_mm_mul_ss(_mm_mul_ss(a, _mm_set_ss(-0.5f)), r), _mm_mul_ss(r, r)));
+#endif
+    return _mm_cvtss_f32(r);
   }
 
 #if defined(__WIN32__) && defined(_MSC_VER) && (_MSC_VER <= 1700)

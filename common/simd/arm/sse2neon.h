@@ -66,6 +66,9 @@
 #ifndef SSE2NEON_PRECISE_SQRT
 #define SSE2NEON_PRECISE_SQRT (0)
 #endif
+#ifndef SSE2NEON_PRECISE_RSQRT
+#define SSE2NEON_PRECISE_RSQRT (0)
+#endif
 
 #if defined(__GNUC__) || defined(__clang__)
 #pragma push_macro("FORCE_INLINE")
@@ -3960,7 +3963,7 @@ FORCE_INLINE __m128 _mm_sqrt_ss(__m128 in)
 FORCE_INLINE __m128 _mm_rsqrt_ps(__m128 in)
 {
     float32x4_t out = vrsqrteq_f32(vreinterpretq_f32_m128(in));
-#if SSE2NEON_PRECISE_SQRT
+#if SSE2NEON_PRECISE_RSQRT
     // Additional Netwon-Raphson iteration for accuracy
     out = vmulq_f32(
         out, vrsqrtsq_f32(vmulq_f32(vreinterpretq_f32_m128(in), out), out));
