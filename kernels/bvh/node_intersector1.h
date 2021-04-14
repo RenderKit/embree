@@ -29,7 +29,7 @@ namespace embree
         org = Vec3vf<N>(ray_org.x,ray_org.y,ray_org.z);
         dir = Vec3vf<N>(ray_dir.x,ray_dir.y,ray_dir.z);
         rdir = Vec3vf<N>(ray_rdir.x,ray_rdir.y,ray_rdir.z);
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
         const Vec3fa ray_org_rdir = ray_org*ray_rdir;
         org_rdir = Vec3vf<N>(ray_org_rdir.x,ray_org_rdir.y,ray_org_rdir.z);
 #endif
@@ -49,7 +49,7 @@ namespace embree
         org  = Vec3vf<N>(ray_org.x[k], ray_org.y[k], ray_org.z[k]);
         dir  = Vec3vf<N>(ray_dir.x[k], ray_dir.y[k], ray_dir.z[k]);
         rdir = Vec3vf<N>(ray_rdir.x[k], ray_rdir.y[k], ray_rdir.z[k]);
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
 	org_rdir = org*rdir;
 #endif
 	nearX = nearXYZ.x[k];
@@ -62,7 +62,7 @@ namespace embree
 
       Vec3fa org_xyz, dir_xyz;
       Vec3vf<N> org, dir, rdir;
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
       Vec3vf<N> org_rdir;
 #endif
       size_t nearX, nearY, nearZ;
@@ -404,7 +404,7 @@ namespace embree
     template<>
       __forceinline size_t intersectNode<4>(const typename BVH4::AABBNode* node, const TravRay<4,false>& ray, vfloat4& dist)
     {
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
       const vfloat4 tNearX = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
       const vfloat4 tNearY = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
       const vfloat4 tNearZ = msub(vfloat4::load((float*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.org_rdir.z);
@@ -445,7 +445,7 @@ namespace embree
     template<>
       __forceinline size_t intersectNode<8>(const typename BVH8::AABBNode* node, const TravRay<8,false>& ray, vfloat8& dist)
     {
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
       const vfloat8 tNearX = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearX)), ray.rdir.x, ray.org_rdir.x);
       const vfloat8 tNearY = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearY)), ray.rdir.y, ray.org_rdir.y);
       const vfloat8 tNearZ = msub(vfloat8::load((float*)((const char*)&node->lower_x+ray.nearZ)), ray.rdir.z, ray.org_rdir.z);
@@ -517,7 +517,7 @@ namespace embree
       const vfloat<N>* pFarX  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farX);
       const vfloat<N>* pFarY  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farY);
       const vfloat<N>* pFarZ  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farZ);
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
       const vfloat<N> tNearX = msub(madd(time,pNearX[6],vfloat<N>(pNearX[0])), ray.rdir.x, ray.org_rdir.x);
       const vfloat<N> tNearY = msub(madd(time,pNearY[6],vfloat<N>(pNearY[0])), ray.rdir.y, ray.org_rdir.y);
       const vfloat<N> tNearZ = msub(madd(time,pNearZ[6],vfloat<N>(pNearZ[0])), ray.rdir.z, ray.org_rdir.z);
@@ -593,7 +593,7 @@ namespace embree
       const vfloat<N>* pFarX  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farX);
       const vfloat<N>* pFarY  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farY);
       const vfloat<N>* pFarZ  = (const vfloat<N>*)((const char*)&node->lower_x+ray.farZ);
-#if defined (__AVX2__)
+#if defined (__AVX2__) || defined(__ARM_NEON)
       const vfloat<N> tNearX = msub(madd(time,pNearX[6],vfloat<N>(pNearX[0])), ray.rdir.x, ray.org_rdir.x);
       const vfloat<N> tNearY = msub(madd(time,pNearY[6],vfloat<N>(pNearY[0])), ray.rdir.y, ray.org_rdir.y);
       const vfloat<N> tNearZ = msub(madd(time,pNearZ[6],vfloat<N>(pNearZ[0])), ray.rdir.z, ray.org_rdir.z);
@@ -682,7 +682,7 @@ namespace embree
       const vfloat4 lower_z = madd(node->dequantize<4>(ray.nearZ >> 2),scale_z,start_z);
       const vfloat4 upper_z = madd(node->dequantize<4>(ray.farZ  >> 2),scale_z,start_z);
 
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
       const vfloat4 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat4 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
       const vfloat4 tNearZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
@@ -770,7 +770,7 @@ namespace embree
       const vfloat8 lower_z = madd(node->dequantize<8>(ray.nearZ >> 2),scale_z,start_z);
       const vfloat8 upper_z = madd(node->dequantize<8>(ray.farZ  >> 2),scale_z,start_z);
 
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
       const vfloat8 tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat8 tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
       const vfloat8 tNearZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
@@ -852,7 +852,7 @@ namespace embree
       const vfloat<N> upper_y   = node->dequantizeUpperY(time);
       const vfloat<N> lower_z   = node->dequantizeLowerZ(time);
       const vfloat<N> upper_z   = node->dequantizeUpperZ(time);     
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
       const vfloat<N> tNearX = msub(lower_x, ray.rdir.x, ray.org_rdir.x);
       const vfloat<N> tNearY = msub(lower_y, ray.rdir.y, ray.org_rdir.y);
       const vfloat<N> tNearZ = msub(lower_z, ray.rdir.z, ray.org_rdir.z);
