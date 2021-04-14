@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<scene>
+
+  <assign type="scene" id="cornell_box_1">
+    <Transform>
+      <AffineSpace>
+        0.00178826 0 0 0
+        0 0.00178826 0 0
+        0 0 0.00178826 0
+      </AffineSpace>
+      <extern src="cornell_box.obj"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_1_00">
+    <Transform>
+      <AffineSpace>
+        1 0 0 0
+        0 1 0 0
+        0 0 1 0
+      </AffineSpace>
+      <ref id="cornell_box_1"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_1_01">
+    <Transform>
+      <AffineSpace>
+        1 0 0 0
+        0 1 0 +1
+        0 0 1 0
+      </AffineSpace>
+      <ref id="cornell_box_1"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_1_10">
+    <Transform>
+      <AffineSpace>
+        1 0 0 +1
+        0 1 0 0
+        0 0 1 0
+      </AffineSpace>
+      <ref id="cornell_box_1"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_1_11">
+    <Transform>
+      <AffineSpace>
+        1 0 0 +1
+        0 1 0 +1
+        0 0 1 0
+      </AffineSpace>
+      <ref id="cornell_box_1"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_4">
+    <Group>
+      <ref id="cornell_box_1_00"/>
+      <ref id="cornell_box_1_01"/>
+      <ref id="cornell_box_1_10"/>
+      <ref id="cornell_box_1_11"/>
+    </Group>
+  </assign>
+
+  <assign type="scene" id="cornell_box_4_00">
+    <Transform>
+      <AffineSpace>
+        1 0 0 0
+        0 1 0 0
+        0 0 1 0
+      </AffineSpace>
+      <ref id="cornell_box_4"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_4_01">
+    <Transform>
+      <AffineSpace>
+        1 0 0 0
+        0 1 0 +2
+        0 0 1 0
+      </AffineSpace>
+      <ref id="cornell_box_4"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_4_10">
+    <Transform>
+      <AffineSpace>
+        1 0 0 +2
+        0 1 0 0
+        0 0 1 0
+      </AffineSpace>
+      <ref id="cornell_box_4"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_4_11">
+    <Transform>
+      <AffineSpace>
+        1 0 0 +2
+        0 1 0 +2
+        0 0 1 0
+      </AffineSpace>
+      <ref id="cornell_box_4"/>
+    </Transform>
+  </assign>
+
+  <assign type="scene" id="cornell_box_4">
+    <Group>
+      <ref id="cornell_box_4_00"/>
+      <ref id="cornell_box_4_01"/>
+      <ref id="cornell_box_4_10"/>
+      <ref id="cornell_box_4_11"/>
+    </Group>
+  </assign>
+
+  
+  <Group>
+    <ref id="cornell_box_4"/>
+  </Group>
+</scene>
