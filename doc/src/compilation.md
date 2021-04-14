@@ -25,11 +25,15 @@ Linux
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
 
-macOS
+macOS x86
 
   - Intel® Compiler 2020 Update 1
   - Intel® Compiler 2019 Update 4
   - Apple LLVM 10.0.1 (macOS 10.14.6)
+
+macOS M1
+
+  - Apple Clang 12.0.0
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend

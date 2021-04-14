@@ -2,7 +2,7 @@ Version History
 ---------------
 
 ### Embree 3.12.3
--   Added support for ARM CPUs with NEON intrinsics.
+-   Added support for Apple M1 CPUs.
 -   RTC_SUBDIVISION_MODE_NO_BOUNDARY now works properly for non-manifold edges.
 -   CMake target 'uninstall' is not defined if it already exists.
 -   Embree no longer reads the .embree3 config files, thus all configuration has
