@@ -187,13 +187,9 @@ namespace embree
 
   __forceinline vfloat16 rsqrt(const vfloat16& a)
   {
-#if defined(__AVX512VL__)
     const vfloat16 r = _mm512_rsqrt14_ps(a);
     return _mm512_fmadd_ps(_mm512_set1_ps(1.5f), r,
                            _mm512_mul_ps(_mm512_mul_ps(_mm512_mul_ps(a, _mm512_set1_ps(-0.5f)), r), _mm512_mul_ps(r, r))); 
-#else
-    return _mm512_rsqrt28_ps(a);
-#endif
   }
 
   ////////////////////////////////////////////////////////////////////////////////
@@ -370,24 +366,6 @@ namespace embree
     return _mm512_shuffle_f32x4(v, v, _MM_SHUFFLE(i3, i2, i1, i0));
   }
 
-  __forceinline vfloat16 interleave_even(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_shuffle_epi32(_mm512_castps_si512(a), mm512_int2mask(0xaaaa), _mm512_castps_si512(b), (_MM_PERM_ENUM)0xb1));
-  }
-
-  __forceinline vfloat16 interleave_odd(const vfloat16& a, const vfloat16& b) {
-    return _mm512_castsi512_ps(_mm512_mask_shuffle_epi32(_mm512_castps_si512(b), mm512_int2mask(0x5555), _mm512_castps_si512(a), (_MM_PERM_ENUM)0xb1));
-  }
-
-  __forceinline vfloat16 interleave2_even(const vfloat16& a, const vfloat16& b) {
-    /* mask should be 8-bit but is 16-bit to reuse for interleave_even */
-    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), mm512_int2mask(0xaaaa), _mm512_castps_si512(b), (_MM_PERM_ENUM)0xb1));
-  }
-
-  __forceinline vfloat16 interleave2_odd(const vfloat16& a, const vfloat16& b) {
-    /* mask should be 8-bit but is 16-bit to reuse for interleave_odd */
-    return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(b), mm512_int2mask(0x5555), _mm512_castps_si512(a), (_MM_PERM_ENUM)0xb1));
-  }
-
   __forceinline vfloat16 interleave4_even(const vfloat16& a, const vfloat16& b) {
     return _mm512_castsi512_ps(_mm512_mask_permutex_epi64(_mm512_castps_si512(a), mm512_int2mask(0xcc), _mm512_castps_si512(b), (_MM_PERM_ENUM)0x4e));
   }
@@ -452,17 +430,6 @@ namespace embree
   __forceinline void transpose(const vfloat16& r0, const vfloat16& r1, const vfloat16& r2, const vfloat16& r3,
                                vfloat16& c0, vfloat16& c1, vfloat16& c2, vfloat16& c3)
   {
-#if defined(__AVX512F__) && !defined(__AVX512VL__) // KNL
-    vfloat16 a0a1_c0c1 = interleave_even(r0, r1);
-    vfloat16 a2a3_c2c3 = interleave_even(r2, r3);
-    vfloat16 b0b1_d0d1 = interleave_odd (r0, r1);
-    vfloat16 b2b3_d2d3 = interleave_odd (r2, r3);
-
-    c0 = interleave2_even(a0a1_c0c1, a2a3_c2c3);
-    c1 = interleave2_even(b0b1_d0d1, b2b3_d2d3);
-    c2 = interleave2_odd (a0a1_c0c1, a2a3_c2c3);
-    c3 = interleave2_odd (b0b1_d0d1, b2b3_d2d3);
-#else
     vfloat16 a0a2_b0b2 = unpacklo(r0, r2);
     vfloat16 c0c2_d0d2 = unpackhi(r0, r2);
     vfloat16 a1a3_b1b3 = unpacklo(r1, r3);
@@ -472,7 +439,6 @@ namespace embree
     c1 = unpackhi(a0a2_b0b2, a1a3_b1b3);
     c2 = unpacklo(c0c2_d0d2, c1c3_d1d3);
     c3 = unpackhi(c0c2_d0d2, c1c3_d1d3);
-#endif
   }
 
   __forceinline void transpose(const vfloat4& r0,  const vfloat4& r1,  const vfloat4& r2,  const vfloat4& r3,
@@ -628,44 +594,6 @@ namespace embree
     v = max(v,align_shift_right<4>(z,v));
     v = max(v,align_shift_right<8>(z,v));
     return v;  
-  }
-
-  ////////////////////////////////////////////////////////////////////////////////
-  /// Memory load and store operations
-  ////////////////////////////////////////////////////////////////////////////////
-
-  __forceinline vfloat16 loadAOS4to16f(const float& x, const float& y, const float& z)
-  {
-    vfloat16 f = zero;
-    f = select(0x1111,vfloat16::broadcast(&x),f);
-    f = select(0x2222,vfloat16::broadcast(&y),f);
-    f = select(0x4444,vfloat16::broadcast(&z),f);
-    return f;
-  }
-
-  __forceinline vfloat16 loadAOS4to16f(unsigned int index,
-                                       const vfloat16& x,
-                                       const vfloat16& y,
-                                       const vfloat16& z)
-  {
-    vfloat16 f = zero;
-    f = select(0x1111,vfloat16::broadcast((float*)&x + index),f);
-    f = select(0x2222,vfloat16::broadcast((float*)&y + index),f);
-    f = select(0x4444,vfloat16::broadcast((float*)&z + index),f);
-    return f;
-  }
-
-  __forceinline vfloat16 loadAOS4to16f(unsigned int index,
-                                       const vfloat16& x,
-                                       const vfloat16& y,
-                                       const vfloat16& z,
-                                       const vfloat16& fill)
-  {
-    vfloat16 f = fill;
-    f = select(0x1111,vfloat16::broadcast((float*)&x + index),f);
-    f = select(0x2222,vfloat16::broadcast((float*)&y + index),f);
-    f = select(0x4444,vfloat16::broadcast((float*)&z + index),f);
-    return f;
   }
 
   __forceinline vfloat16 rcp_safe(const vfloat16& a) {
