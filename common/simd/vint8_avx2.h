@@ -436,9 +436,6 @@ namespace embree
   __forceinline size_t select_min(const vboolf8& valid, const vint8& v) { const vint8 a = select(valid,v,vint8(pos_inf)); return bsf(movemask(valid & (a == vreduce_min(a)))); }
   __forceinline size_t select_max(const vboolf8& valid, const vint8& v) { const vint8 a = select(valid,v,vint8(neg_inf)); return bsf(movemask(valid & (a == vreduce_max(a)))); }
 
-
-  __forceinline vint8 assign(const vint4& a) { return _mm256_castsi128_si256(a); }
-
   ////////////////////////////////////////////////////////////////////////////////
   /// Sorting networks
   ////////////////////////////////////////////////////////////////////////////////

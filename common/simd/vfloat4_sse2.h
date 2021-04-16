@@ -74,13 +74,6 @@ namespace embree
 
 #if defined(__AVX512VL__)
 
-    static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &v) {
-      return _mm_mask_compress_ps(v, mask, v);
-    }
-    static __forceinline vfloat4 compact(const vboolf4& mask, vfloat4 &a, const vfloat4& b) {
-      return _mm_mask_compress_ps(a, mask, b);
-    }
-
     static __forceinline vfloat4 load (const vboolf4& mask, const void* ptr) { return _mm_mask_load_ps (_mm_setzero_ps(),mask,(float*)ptr); }
     static __forceinline vfloat4 loadu(const vboolf4& mask, const void* ptr) { return _mm_mask_loadu_ps(_mm_setzero_ps(),mask,(float*)ptr); }
 
@@ -547,12 +540,6 @@ namespace embree
   __forceinline vfloat4 shuffle(const vfloat4& a, const vfloat4& b) {
     return _mm_shuffle_ps(a, b, _MM_SHUFFLE(i3, i2, i1, i0));
   }
-
-#if defined (__SSSE3__)
-  __forceinline vfloat4 shuffle8(const vfloat4& a, const vint4& shuf) {
-    return _mm_castsi128_ps(_mm_shuffle_epi8(_mm_castps_si128(a), shuf)); 
-  }
-#endif
 
 #if defined(__SSE3__)
   template<> __forceinline vfloat4 shuffle<0, 0, 2, 2>(const vfloat4& v) { return _mm_moveldup_ps(v); }
