@@ -274,10 +274,6 @@ namespace embree
   __forceinline vboold4 le(const vboold4& mask, const vllong4& a, const vllong4& b) { return mask & (a <= b); }
 #endif
 
-  __forceinline void xchg(const vboold4& m, vllong4& a, vllong4& b) {
-    const vllong4 c = a; a = select(m,b,a); b = select(m,c,b);
-  }
-
   __forceinline vboold4 test(const vllong4& a, const vllong4& b) {
 #if defined(__AVX512VL__)
     return _mm256_test_epi64_mask(a,b);

@@ -300,10 +300,6 @@ namespace embree
     return _mm512_mask_or_epi32(f,m,t,t); 
   }
 
-  __forceinline void xchg(const vboolf16& m, vuint16& a, vuint16& b) {
-    const vuint16 c = a; a = select(m,b,a); b = select(m,c,b);
-  }
-
   __forceinline vboolf16 test(const vboolf16& m, const vuint16& a, const vuint16& b) {
     return _mm512_mask_test_epi32_mask(m,a,b);
   }

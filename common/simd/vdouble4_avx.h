@@ -247,10 +247,6 @@ namespace embree
 #endif
   }
 
-  __forceinline void xchg(const vboold4& m, vdouble4& a, vdouble4& b) {
-    const vdouble4 c = a; a = select(m,b,a); b = select(m,c,b);
-  }
-
   __forceinline vboold4 test(const vdouble4& a, const vdouble4& b) {
 #if defined(__AVX512VL__)
     return _mm256_test_epi64_mask(_mm256_castpd_si256(a),_mm256_castpd_si256(b));

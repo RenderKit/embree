@@ -315,13 +315,6 @@ namespace embree
     return madd(t,b-a,a);
   }
 
-  __forceinline void xchg(vboolf16 m, vfloat16& a, vfloat16& b)
-  {
-    vfloat16 c = a;
-    a = select(m,b,a);
-    b = select(m,c,b); 
-  }
-
   ////////////////////////////////////////////////////////////////////////////////
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////

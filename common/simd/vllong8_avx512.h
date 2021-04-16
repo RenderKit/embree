@@ -256,10 +256,6 @@ namespace embree
     return _mm512_mask_or_epi64(f,m,t,t); 
   }
 
-  __forceinline void xchg(const vboold8& m, vllong8& a, vllong8& b) {
-    const vllong8 c = a; a = select(m,b,a); b = select(m,c,b);
-  }
-
   __forceinline vboold8 test(const vboold8& m, const vllong8& a, const vllong8& b) {
     return _mm512_mask_test_epi64_mask(m,a,b);
   }
