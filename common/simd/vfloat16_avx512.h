@@ -81,11 +81,11 @@ namespace embree
     }
 
     /* WARNING: due to f64x4 the mask is considered as an 8bit mask */
-    __forceinline vfloat(const vboolf16& mask, const vfloat8& a, const vfloat8& b) {
+    /*__forceinline vfloat(const vboolf16& mask, const vfloat8& a, const vfloat8& b) {
       __m512d aa = _mm512_broadcast_f64x4(_mm256_castps_pd(a));
       aa = _mm512_mask_broadcast_f64x4(aa,mask,_mm256_castps_pd(b));
       v = _mm512_castpd_ps(aa);
-    }
+      }*/
     
     __forceinline explicit vfloat(const vint16& a) {
       v = _mm512_cvtepi32_ps(a);
@@ -129,30 +129,6 @@ namespace embree
 
     static __forceinline vfloat16 broadcast(const float* f) {
       return _mm512_set1_ps(*f);
-    }
-
-    static __forceinline vfloat16 compact(const vboolf16& mask, vfloat16 &v) {
-      return _mm512_mask_compress_ps(v, mask, v);
-    }
-    static __forceinline vfloat16 compact(const vboolf16& mask, vfloat16 &a, const vfloat16& b) {
-      return _mm512_mask_compress_ps(a, mask, b);
-    }
-
-    static __forceinline vfloat16 expand(const vboolf16& mask, const vfloat16& a, vfloat16& b) {
-      return _mm512_mask_expand_ps(b, mask, a);
-    }
-
-    static __forceinline vfloat16 loadu_compact(const vboolf16& mask, const void* ptr) {
-      return _mm512_mask_expandloadu_ps(_mm512_setzero_ps(), mask, (float*)ptr);
-    }
-
-    static __forceinline void storeu_compact(const vboolf16& mask, float *addr, const vfloat16 reg) {
-      _mm512_mask_compressstoreu_ps(addr, mask, reg);
-    }
-    
-    static __forceinline void storeu_compact_single(const vboolf16& mask, float * addr, const vfloat16& reg) {
-      //_mm512_mask_compressstoreu_ps(addr,mask,reg);
-      *addr = mm512_cvtss_f32(_mm512_mask_compress_ps(reg, mask, reg));
     }
 
     template<int scale = 4>
@@ -246,33 +222,13 @@ namespace embree
     return  _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b))); 
   }
   
-  __forceinline vfloat16 min(const vfloat16& a, const vfloat16& b) {
-    return _mm512_min_ps(a,b); 
-  }
-  __forceinline vfloat16 min(const vfloat16& a, float b) {
-    return _mm512_min_ps(a,vfloat16(b));
-  }
-  __forceinline vfloat16 min(const float& a, const vfloat16& b) {
-    return _mm512_min_ps(vfloat16(a),b);
-  }
+  __forceinline vfloat16 min(const vfloat16& a, const vfloat16& b) { return _mm512_min_ps(a,b);  }
+  __forceinline vfloat16 min(const vfloat16& a, float           b) { return _mm512_min_ps(a,vfloat16(b)); }
+  __forceinline vfloat16 min(const float&    a, const vfloat16& b) { return _mm512_min_ps(vfloat16(a),b); }
 
-  __forceinline vfloat16 max(const vfloat16& a, const vfloat16& b) {
-    return _mm512_max_ps(a,b); 
-  }
-  __forceinline vfloat16 max(const vfloat16& a, float b) {
-    return _mm512_max_ps(a,vfloat16(b));
-  }
-  __forceinline vfloat16 max(const float& a, const vfloat16& b) {
-    return _mm512_max_ps(vfloat16(a),b);
-  }
-
-  __forceinline vfloat16 mask_add(const vboolf16& mask, const vfloat16& c, const vfloat16& a, const vfloat16& b) { return _mm512_mask_add_ps (c,mask,a,b); }
-  __forceinline vfloat16 mask_min(const vboolf16& mask, const vfloat16& c, const vfloat16& a, const vfloat16& b) {
-    return _mm512_mask_min_ps(c,mask,a,b); 
-  }; 
-  __forceinline vfloat16 mask_max(const vboolf16& mask, const vfloat16& c, const vfloat16& a, const vfloat16& b) {
-    return _mm512_mask_max_ps(c,mask,a,b); 
-  }; 
+  __forceinline vfloat16 max(const vfloat16& a, const vfloat16& b) { return _mm512_max_ps(a,b); }
+  __forceinline vfloat16 max(const vfloat16& a, float           b) { return _mm512_max_ps(a,vfloat16(b)); }
+  __forceinline vfloat16 max(const float&    a, const vfloat16& b) { return _mm512_max_ps(vfloat16(a),b); }
 
   __forceinline vfloat16 mini(const vfloat16& a, const vfloat16& b) {
     const vint16 ai = _mm512_castps_si512(a);
@@ -296,43 +252,6 @@ namespace embree
   __forceinline vfloat16 msub (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmsub_ps(a,b,c); }
   __forceinline vfloat16 nmadd(const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fnmadd_ps(a,b,c); }
   __forceinline vfloat16 nmsub(const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fnmsub_ps(a,b,c); }
-
-  __forceinline vfloat16 mask_msub(const vboolf16& mask,const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_mask_fmsub_ps(a,mask,b,c); }
-  
-  __forceinline vfloat16 madd231 (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmadd_ps(c,b,a); }
-  __forceinline vfloat16 msub213 (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmsub_ps(a,b,c); }
-  __forceinline vfloat16 msub231 (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmsub_ps(c,b,a); }
-  __forceinline vfloat16 msubr231(const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fnmadd_ps(c,b,a); }
-
-
-  ////////////////////////////////////////////////////////////////////////////////
-  /// Operators with rounding
-  ////////////////////////////////////////////////////////////////////////////////
-  
-  __forceinline vfloat16 madd_round_down(const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmadd_round_ps(a,b,c,_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
-  __forceinline vfloat16 madd_round_up  (const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_fmadd_round_ps(a,b,c,_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
-
-  __forceinline vfloat16 mul_round_down(const vfloat16& a, const vfloat16& b) { return _mm512_mul_round_ps(a,b,_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
-  __forceinline vfloat16 mul_round_up  (const vfloat16& a, const vfloat16& b) { return _mm512_mul_round_ps(a,b,_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
-
-  __forceinline vfloat16 add_round_down(const vfloat16& a, const vfloat16& b) { return _mm512_add_round_ps(a,b,_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
-  __forceinline vfloat16 add_round_up  (const vfloat16& a, const vfloat16& b) { return _mm512_add_round_ps(a,b,_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
-
-  __forceinline vfloat16 sub_round_down(const vfloat16& a, const vfloat16& b) { return _mm512_sub_round_ps(a,b,_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
-  __forceinline vfloat16 sub_round_up  (const vfloat16& a, const vfloat16& b) { return _mm512_sub_round_ps(a,b,_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
-
-  __forceinline vfloat16 div_round_down(const vfloat16& a, const vfloat16& b) { return _mm512_div_round_ps(a,b,_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
-  __forceinline vfloat16 div_round_up  (const vfloat16& a, const vfloat16& b) { return _mm512_div_round_ps(a,b,_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
-
-  __forceinline vfloat16 mask_msub_round_down(const vboolf16& mask,const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_mask_fmsub_round_ps(a,mask,b,c,_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
-  __forceinline vfloat16 mask_msub_round_up  (const vboolf16& mask,const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_mask_fmsub_round_ps(a,mask,b,c,_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
-  
-  __forceinline vfloat16 mask_mul_round_down(const vboolf16& mask,const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_mask_mul_round_ps(a,mask,b,c,_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
-  __forceinline vfloat16 mask_mul_round_up  (const vboolf16& mask,const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_mask_mul_round_ps(a,mask,b,c,_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
-
-  __forceinline vfloat16 mask_sub_round_down(const vboolf16& mask,const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_mask_sub_round_ps(a,mask,b,c,_MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC); }
-  __forceinline vfloat16 mask_sub_round_up  (const vboolf16& mask,const vfloat16& a, const vfloat16& b, const vfloat16& c) { return _mm512_mask_sub_round_ps(a,mask,b,c,_MM_FROUND_TO_POS_INF | _MM_FROUND_NO_EXC); }
-
   
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
