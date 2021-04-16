@@ -103,10 +103,6 @@ namespace embree
 #endif
     }
 
-    static __forceinline vllong4 broadcast64bit(size_t v) {
-      return _mm256_set1_epi64x(v);
-    }
-
     static __forceinline size_t extract64bit(const vllong4& v)
     {
       return _mm_cvtsi128_si64(_mm256_castsi256_si128(v));

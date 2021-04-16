@@ -154,10 +154,6 @@ namespace embree
       _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
     }
 
-    static __forceinline vint16 broadcast64bit(size_t v) {
-      return _mm512_set1_epi64(v);
-    }
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////

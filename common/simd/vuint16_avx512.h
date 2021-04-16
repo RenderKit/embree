@@ -158,10 +158,6 @@ namespace embree
       _mm512_mask_i32scatter_epi32((int*)ptr,mask,index,v,scale);
     }
 
-    static __forceinline vuint16 broadcast64bit(size_t v) {
-      return _mm512_set1_epi64(v);
-    }
-
     static __forceinline size_t extract64bit(const vuint16& v)
     {
       return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
