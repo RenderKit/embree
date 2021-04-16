@@ -353,10 +353,6 @@ namespace embree
 
   template<int i> __forceinline vint16 insert4(const vint16& a, const vint4& b) { return _mm512_inserti32x4(a, b, i); }
 
-  __forceinline size_t extract64bit(const vint16& v) {
-    return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
-  }
-
   template<int N, int i>
   vint<N> extractN(const vint16& v);
 

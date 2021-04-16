@@ -118,12 +118,6 @@ namespace embree
       return _mm512_mask_expand_epi64(b,mask,a);
     }
 
-    static __forceinline size_t extract64bit(const vllong8& v)
-    {
-      return _mm_cvtsi128_si64(_mm512_castsi512_si128(v));
-    }
-
-
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
