@@ -505,7 +505,12 @@ namespace embree
   /// Rounding Functions
   ////////////////////////////////////////////////////////////////////////////////
 
-#if defined (__SSE4_1__)
+#if defined(__aarch64__)
+  __forceinline vfloat4 floor(const vfloat4& a) { return vrndmq_f32(a.v); }
+  __forceinline vfloat4 ceil (const vfloat4& a) { return vrndpq_f32(a.v); }
+  __forceinline vfloat4 trunc(const vfloat4& a) { return vrndq_f32(a.v); }
+  __forceinline vfloat4 round(const vfloat4& a) { return vrndnq_f32(a.v); }
+#elif defined (__SSE4_1__)
   __forceinline vfloat4 floor(const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
   __forceinline vfloat4 ceil (const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
   __forceinline vfloat4 trunc(const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO       ); }
