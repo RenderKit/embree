@@ -419,8 +419,13 @@ namespace embree
       const vfloat4 tFarY  = (vfloat4::load((float*)((const char*)&node->lower_x+ray.farY )) - ray.org.y) * ray.rdir.y;
       const vfloat4 tFarZ  = (vfloat4::load((float*)((const char*)&node->lower_x+ray.farZ )) - ray.org.z) * ray.rdir.z;
 #endif
-      
-#if defined(__SSE4_1__) && !defined(__AVX512F__) // up to HSW
+
+#if defined(__aarch64__)
+      const vfloat4 tNear = maxi(tNearX, tNearY, tNearZ, ray.tnear);
+      const vfloat4 tFar = mini(tFarX, tFarY, tFarZ, ray.tfar);
+      const vbool4 vmask = asInt(tNear) <= asInt(tFar);
+      const size_t mask = movemask(vmask);
+#elif defined(__SSE4_1__) && !defined(__AVX512F__) // up to HSW
       const vfloat4 tNear = maxi(tNearX,tNearY,tNearZ,ray.tnear);
       const vfloat4 tFar  = mini(tFarX ,tFarY ,tFarZ ,ray.tfar);
       const vbool4 vmask = asInt(tNear) > asInt(tFar);
