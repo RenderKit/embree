@@ -117,20 +117,6 @@ namespace embree
 
     static __forceinline void store_nt(void* __restrict__ ptr, const vint16& a) { _mm512_stream_si512((__m512i*)ptr,a); }
 
-    /* pass by value to avoid compiler generating inefficient code */
-    static __forceinline void storeu_compact(const vboolf16 mask, void* addr, vint16 reg) {
-      _mm512_mask_compressstoreu_epi32(addr,mask,reg);
-    }
-
-    static __forceinline void storeu_compact_single(const vboolf16 mask, void* addr, vint16 reg) {
-      //_mm512_mask_compressstoreu_epi32(addr,mask,reg);
-      *(float*)addr = mm512_cvtss_f32(_mm512_mask_compress_ps(_mm512_castsi512_ps(reg),mask,_mm512_castsi512_ps(reg)));
-    }
-
-    static __forceinline vint16 compact64bit(const vboolf16& mask, vint16 &v) {
-      return _mm512_mask_compress_epi64(v,mask,v);
-    }
-
     static __forceinline vint16 compact(const vboolf16& mask, vint16 &v) {
       return _mm512_mask_compress_epi32(v,mask,v);
     }

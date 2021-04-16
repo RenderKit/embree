@@ -121,20 +121,6 @@ namespace embree
       _mm512_mask_store_epi32(addr,mask,v2);
     }
 
-    /* pass by value to avoid compiler generating inefficient code */
-    static __forceinline void storeu_compact(const vboolf16 mask, void* addr, const vuint16 reg) {
-      _mm512_mask_compressstoreu_epi32(addr,mask,reg);
-    }
-
-    static __forceinline void storeu_compact_single(const vboolf16 mask, void* addr, vuint16 reg) {
-      //_mm512_mask_compressstoreu_epi32(addr,mask,reg);
-      *(float*)addr = mm512_cvtss_f32(_mm512_mask_compress_ps(_mm512_castsi512_ps(reg),mask,_mm512_castsi512_ps(reg)));
-    }
-
-    static __forceinline vuint16 compact64bit(const vboolf16& mask, vuint16& v) {
-      return _mm512_mask_compress_epi64(v,mask,v);
-    }
-
     static __forceinline vuint16 compact(const vboolf16& mask, vuint16& v) {
       return _mm512_mask_compress_epi32(v,mask,v);
     }

@@ -99,15 +99,6 @@ namespace embree
       _mm512_mask_store_pd(addr, mask, v2);
     }
 
-    /* pass by value to avoid compiler generating inefficient code */
-    static __forceinline void storeu_compact(const vboold8 mask,void * addr, const vdouble8& reg) {
-      _mm512_mask_compressstoreu_pd(addr, mask, reg);
-    }
-
-    static __forceinline vdouble8 compact64bit(const vboold8& mask, vdouble8& v) {
-      return _mm512_mask_compress_pd(v, mask, v);
-    }
-
     static __forceinline vdouble8 compact(const vboold8& mask, vdouble8& v) {
       return _mm512_mask_compress_pd(v, mask, v);
     }
