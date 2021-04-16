@@ -259,14 +259,6 @@ namespace embree
     return _mm512_mask_or_pd(f,m,t,t);
   }
 
-  __forceinline vboold8 test(const vboold8& m, const vdouble8& a, const vdouble8& b) {
-    return _mm512_mask_test_epi64_mask(m,_mm512_castpd_si512(a),_mm512_castpd_si512(b));
-  }
-
-  __forceinline vboold8 test(const vdouble8& a, const vdouble8& b) {
-    return _mm512_test_epi64_mask(_mm512_castpd_si512(a),_mm512_castpd_si512(b));
-  }
-
   ////////////////////////////////////////////////////////////////////////////////
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////

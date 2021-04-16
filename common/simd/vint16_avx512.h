@@ -303,14 +303,6 @@ namespace embree
     return _mm512_mask_or_epi32(f,m,t,t); 
   }
 
-  __forceinline vboolf16 test(const vboolf16& m, const vint16& a, const vint16& b) {
-    return _mm512_mask_test_epi32_mask(m,a,b);
-  }
-
-  __forceinline vboolf16 test(const vint16& a, const vint16& b) {
-    return _mm512_test_epi32_mask(a,b);
-  }
-
   ////////////////////////////////////////////////////////////////////////////////
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////

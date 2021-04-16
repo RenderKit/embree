@@ -274,14 +274,6 @@ namespace embree
   __forceinline vboold4 le(const vboold4& mask, const vllong4& a, const vllong4& b) { return mask & (a <= b); }
 #endif
 
-  __forceinline vboold4 test(const vllong4& a, const vllong4& b) {
-#if defined(__AVX512VL__)
-    return _mm256_test_epi64_mask(a,b);
-#else
-    return _mm256_testz_si256(a,b);
-#endif
-  }
-
   ////////////////////////////////////////////////////////////////////////////////
   // Movement/Shifting/Shuffling Functions
   ////////////////////////////////////////////////////////////////////////////////
