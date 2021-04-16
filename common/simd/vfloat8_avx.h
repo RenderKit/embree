@@ -79,10 +79,6 @@ namespace embree
 #endif
     }
 
-    static __forceinline vfloat8 broadcast4f(const vfloat4* ptr) {
-      return _mm256_broadcast_ps((__m128*)ptr); 
-    }
-
     static __forceinline vfloat8 load(const char* ptr) {
 #if defined(__AVX2__)
       return _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(_mm_loadu_si128((__m128i*)ptr)));
@@ -565,14 +561,6 @@ namespace embree
     return _mm256_cvtph_ps(a);
   }
 #endif
-
-  __forceinline vfloat4 broadcast4f(const vfloat8& a, const size_t k) {
-    return vfloat4::broadcast(&a[k]);
-  }
-
-  __forceinline vfloat8 broadcast8f(const vfloat8& a, const size_t k) {
-    return vfloat8::broadcast(&a[k]);
-  }
 
 #if defined(__AVX512VL__)
   static __forceinline vfloat8 shift_right_1(const vfloat8& x) {

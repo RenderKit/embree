@@ -579,10 +579,6 @@ namespace embree
 
   __forceinline float toScalar(const vfloat4& v) { return _mm_cvtss_f32(v); }
 
-  __forceinline vfloat4 broadcast4f(const vfloat4& a, size_t k) {
-    return vfloat4::broadcast(&a[k]);
-  }
-
   __forceinline vfloat4 shift_right_1(const vfloat4& x) {
     return _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(x), 4)); 
   }
