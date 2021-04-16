@@ -114,23 +114,6 @@ namespace embree
 #endif
     } 
 
-    static __forceinline void store_uchar(unsigned char* ptr, const vuint4& v) {
-#if defined(__SSE4_1__)
-      __m128i x = v;
-      x = _mm_packus_epi32(x, x);
-      x = _mm_packus_epi16(x, x);
-      *(unsigned*)ptr = _mm_cvtsi128_si32(x);
-#else
-      for (size_t i=0;i<4;i++)
-        ptr[i] = (unsigned char)v[i];
-#endif
-    }
-
-    static __forceinline void store_uchar(unsigned short* ptr, const vuint4& v) {
-      for (size_t i=0;i<4;i++)
-        ptr[i] = (unsigned short)v[i];
-    }
-
     static __forceinline vuint4 load_nt(void* ptr) {
 #if defined(__SSE4_1__)
       return _mm_stream_load_si128((__m128i*)ptr); 

@@ -379,8 +379,6 @@ namespace embree
   template<> __forceinline vuint8 shuffle<1, 1, 3, 3>(const vuint8& v) { return _mm256_castps_si256(_mm256_movehdup_ps(_mm256_castsi256_ps(v))); }
   template<> __forceinline vuint8 shuffle<0, 1, 0, 1>(const vuint8& v) { return _mm256_castps_si256(_mm256_castpd_ps(_mm256_movedup_pd(_mm256_castps_pd(_mm256_castsi256_ps(v))))); }
 
-  __forceinline vuint8 broadcast(const unsigned int* ptr) { return _mm256_castps_si256(_mm256_broadcast_ss((const float*)ptr)); }
-
   template<int i> __forceinline vuint8 insert4(const vuint8& a, const vuint4& b) { return _mm256_insertf128_si256(a, b, i); }
   template<int i> __forceinline vuint4 extract4(const vuint8& a) { return _mm256_extractf128_si256(a, i); }
   template<> __forceinline vuint4 extract4<0>(const vuint8& a) { return _mm256_castsi256_si128(a); }
