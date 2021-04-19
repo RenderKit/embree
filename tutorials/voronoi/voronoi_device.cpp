@@ -3,11 +3,6 @@
 
 #include "../common/tutorial/tutorial_device.h"
 
-#include <GLFW/glfw3.h>
-
-/* include ImGUI */
-#include "../common/imgui/imgui.h"
-
 #include <functional>
 #include <queue>
 
