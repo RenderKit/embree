@@ -31,8 +31,8 @@ continuous-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2019.2:
 #  tags:   [embree, win10, v140]
 #  only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V141-ISPC1.13.0-SSE2-TBB2020.2:
-  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.13.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8"
+continuous-windows-x64-RelWithDebInfo-V141-ISPC1.13.0-SSE2-TBB2021.2.0:
+  script: "python scripts\\test.py platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.13.0 isa:SSE2 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:8"
   tags:   [embree, win10, v141]
   only:   [pushes]
 
@@ -47,9 +47,9 @@ continuous-linux-avx512vl-x64-Debug-ICC2019.4-ISPC1.12.0-AVX512-TBB2019.9:
   tags:   [embree, docker, avx512vl]
   only:   [pushes]
 
-continuous-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512-TBB2020.2:
+continuous-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX512-TBB2021.2.0:
   image: $DOCKER_REGISTRY/embree/fedora:26
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512 frequency_level:simd128 tasking:TBB2020.2 GLFW:OFF intensity:2"
+  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX512 frequency_level:simd128 tasking:TBB2021.2.0 GLFW:OFF intensity:2"
   tags:   [embree, docker, avx512vl]
   only:   [pushes]
 
@@ -59,7 +59,7 @@ continuous-linux-x64-Debug-CLANG5.0.0-ISPC1.13.0-AVX2-INT-ADDRSANITIZER:
   tags:   [embree, docker]
   only:   [pushes]
 
-continuous-ubuntu20.04-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB-NAMESPACE:
+continuous-ubuntu20.04-x64-Debug-GCC-ISPC1.15.0-AVX2-TBB-NAMESPACE:
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   script: "scripts/test.py platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 frequency_level:simd256 tasking:TBB intensity:1 api_namespace:myembree"
   tags:   [embree, docker]
