@@ -20,10 +20,10 @@ ELSEIF (TASKING_TBB)
     TARGET_LINK_LIBRARIES(tasking PUBLIC TBB::tbb)
   else()
     # Try getting TBB via config first
-    find_package(TBB 2021.1 QUIET COMPONENTS tbb CONFIG ${TBB_FIND_PACKAGE_OPTION})
+    find_package(TBB 2021 COMPONENTS tbb CONFIG ${TBB_FIND_PACKAGE_OPTION})
     if (TBB_FOUND)
       TARGET_LINK_LIBRARIES(tasking PUBLIC TBB::tbb)
-      message("-- Found TBB: ${TBB_VERSION} at ${TBB_DIR}")
+      message("-- Found TBB: ${TBB_VERSION} at ${TBB_DIR} via TBBConfig.cmake")
     else()
       # If not found try getting older TBB via module (FindTBB.cmake)
       unset(TBB_DIR CACHE)
@@ -37,6 +37,13 @@ ELSEIF (TASKING_TBB)
       endif()
     endif()
   endif()
+
+  IF(WIN32)
+    GET_TARGET_PROPERTY(DLL_PATH TBB::tbb IMPORTED_LOCATION_RELEASE)
+    GET_TARGET_PROPERTY(DLL_PATH_DEBUG TBB::tbb IMPORTED_LOCATION_DEBUG)
+    SET_TARGET_PROPERTIES(tasking PROPERTIES IMPORTED_LOCATION_RELEASE ${DLL_PATH})
+    SET_TARGET_PROPERTIES(tasking PROPERTIES IMPORTED_LOCATION_DEBUG ${DLL_PATH_DEBUG})
+  ENDIF()
 
   ###############################################################
   ## Create tasking target and link against TBB. Also set include directory
