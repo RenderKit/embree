@@ -202,7 +202,7 @@ ExternalProject_Add(glfw
 
 ExternalProject_Add(ospray
   PREFIX ospray
-  URL "https://github.com/ospray/ospray/archive/v2.4.0.tar.gz"
+  URL "https://github.com/ospray/ospray/archive/v2.5.0.tar.gz"
   DOWNLOAD_NO_PROGRESS ON
   GIT_SUBMODULES ""
   STAMP_DIR ospray/stamp

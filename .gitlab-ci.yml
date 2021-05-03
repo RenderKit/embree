@@ -548,7 +548,7 @@ release-linux-x64-Release-ICC2020.1-ISPC1.13.0-TBB2021.1.1-PACKAGE-ZIP:
   needs: []
   image: $DOCKER_REGISTRY/embree/centos:7.4
   script:
-    - "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.13.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.1.1 intensity:4 package:ZIP"
+    - "scripts/test.py platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.15.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.2.0 intensity:4 package:ZIP"
     - tar xzf build/embree-*.x86_64.linux.tar.gz
     - mv embree*.x86_64.linux embree
     - mkdir ospray_build
