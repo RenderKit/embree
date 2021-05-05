@@ -119,49 +119,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   return scene_out;
 }
 
-
-void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISPCGeometry* uniform geometry, int& materialID)
-{
-  if (geometry->type == TRIANGLE_MESH)
-  {
-    uniform ISPCTriangleMesh* uniform mesh = (uniform ISPCTriangleMesh* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == QUAD_MESH)
-  {
-    uniform ISPCQuadMesh* uniform mesh = (uniform ISPCQuadMesh* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == SUBDIV_MESH)
-  {
-    uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == CURVES)
-  {
-    uniform ISPCHairSet* uniform mesh = (uniform ISPCHairSet* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == GRID_MESH)
-  {
-    uniform ISPCGridMesh* uniform mesh = (uniform ISPCGridMesh* uniform) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == POINTS)
-  {
-    uniform ISPCPointSet* uniform set = (uniform ISPCPointSet* uniform) geometry;
-    materialID = set->geom.materialID;
-  }
-  else if (geometry->type == GROUP) {
-    foreach_unique (geomID in ray.geomID) {
-      postIntersectGeometry(ray,dg,((uniform ISPCGroup*) geometry)->geometries[geomID],materialID);
-    }
-  }
-  else
-    assert(false);
-}
-
-AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instance, float gtime)
+AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* instance, float gtime)
 {
   if (instance->numTimeSteps == 1)
     return make_AffineSpace3f(instance->spaces[0]);
@@ -174,39 +132,31 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
   return (1.0f-ftime)*make_AffineSpace3f(instance->spaces[itime+0]) + ftime*make_AffineSpace3f(instance->spaces[itime+1]);
 }
 
-typedef ISPCInstance* uniform ISPCInstancePtr;
+typedef ISPCInstance* ISPCInstancePtr;
 
-inline int postIntersect(const uniform TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
+unsigned int postIntersect(const uniform TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
 {
-  int materialID = 0;
-  foreach_unique (instID in ray.instID[0]) {
-    foreach_unique (geomID in ray.geomID) {
-      ISPCGeometry* uniform geometry = NULL;
-      if (data.instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* uniform instance = (ISPCInstancePtr) data.ispc_scene->geometries[instID];
-        geometry = instance->child;
-      } else {
-        geometry = data.ispc_scene->geometries[geomID];
-      }
-      postIntersectGeometry(ray,dg,geometry,materialID);
-    }
-  }
-
-  if (data.instancing_mode != ISPC_INSTANCING_NONE)
+  AffineSpace3f local2world = make_AffineSpace3f_scale(make_Vec3f(1));
+  ISPCGeometry* uniform* geometries = data.ispc_scene->geometries;
+  
+  for (uniform int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
   {
-    foreach_unique (instID in ray.instID[0])
-    {
-      /* get instance and geometry pointers */
-      ISPCInstance* uniform instance = (ISPCInstancePtr) data.ispc_scene->geometries[instID];
+    const unsigned int instID = ray.instID[i];
+    if (instID == -1) break;
 
-      /* convert normals */
-      //AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
-      AffineSpace3f space = calculate_interpolated_space(instance,ray.time);
-      dg.Ng = xfmVector(space,dg.Ng);
-      dg.Ns = xfmVector(space,dg.Ns);
-    }
+    ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
+    local2world = local2world * calculate_interpolated_space(instance,ray.time);
+
+    assert(instance->child->type == GROUP);
+    geometries = ((ISPCGroup*)instance->child)->geometries;
   }
 
+  ISPCGeometry* mesh = geometries[ray.geomID];
+  unsigned int materialID = mesh->materialID;
+  
+  dg.Ng = xfmVector(local2world,dg.Ng);
+  dg.Ns = xfmVector(local2world,dg.Ns);
+  
   return materialID;
 }
 

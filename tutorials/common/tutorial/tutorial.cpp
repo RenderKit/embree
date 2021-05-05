@@ -435,12 +435,14 @@ namespace embree
         else if (mode == "geometry") instancing_mode = SceneGraph::INSTANCING_GEOMETRY;
         else if (mode == "group"   ) instancing_mode = SceneGraph::INSTANCING_GROUP;
         else if (mode == "flattened") instancing_mode = SceneGraph::INSTANCING_FLATTENED;
+        else if (mode == "multi_level") instancing_mode = SceneGraph::INSTANCING_MULTI_LEVEL;
         else throw std::runtime_error("unknown instancing mode: "+mode);
         g_instancing_mode = instancing_mode;
       }, "--instancing: set instancing mode\n"
-      "  none: no instancing\n"
+      "  none: perform no instancing and flatten entire scene\n"
       "  geometry: instance individual geometries as scenes\n"
       "  group: instance geometry groups as scenes\n"
+      "  multi_level: use multi-level instancing\n"
       "  flattened: assume flattened scene graph");
 
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
