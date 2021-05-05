@@ -39,7 +39,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
-  mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+  rtcAttachGeometry(scene_out,geom);
 }
 
 void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
@@ -53,7 +53,7 @@ void convertQuadMesh(ISPCQuadMesh* mesh, RTCScene scene_out)
   rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
-  mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+  rtcAttachGeometry(scene_out,geom);
 }
 
 void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
@@ -76,7 +76,7 @@ void convertSubdivMesh(ISPCSubdivMesh* mesh, RTCScene scene_out)
   rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
   rtcCommitGeometry(geom);
   mesh->geom.geometry = geom;
-  mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+  rtcAttachGeometry(scene_out,geom);
 }
 
 void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
@@ -94,7 +94,7 @@ void convertCurveGeometry(ISPCHairSet* hair, RTCScene scene_out)
     rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   hair->geom.geometry = geom;
-  hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
+  rtcAttachGeometry(scene_out,geom);
 }
 
 unsigned int getNumObjects(ISPCScene* scene_in) {

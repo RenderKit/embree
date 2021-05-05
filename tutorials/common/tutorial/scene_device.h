@@ -66,13 +66,13 @@ namespace embree
   struct ISPCGeometry
   {
 #if !defined(ISPC)
-    ISPCGeometry (ISPCType type) : type(type), geometry(nullptr), scene(nullptr), geomID(-1), materialID(-1) {}
+    ISPCGeometry (ISPCType type) : type(type), geometry(nullptr), scene(nullptr), unused(-1), materialID(-1) {}
     ~ISPCGeometry () { if (geometry) rtcReleaseGeometry(geometry); }
 #endif
     ISPCType type;
     RTCGeometry geometry;
     RTCScene scene;
-    unsigned int geomID;
+    unsigned int unused;
     unsigned int materialID;
   };
 
@@ -327,10 +327,18 @@ namespace embree
     unsigned int numLights;               //!< number of lights
   };
 
-#if !defined(ISPC)  
-  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality);
+#if !defined(ISPC)
+  typedef void (*AssignShaderTy)(ISPCGeometry* geometry);
+  extern "C" { extern AssignShaderTy assignShadersFunc; };
 #else
-  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCBuildQuality quality);
+  typedef unmasked void (*AssignShaderTy)(uniform ISPCGeometry* uniform geometry);
+  extern uniform AssignShaderTy assignShadersFunc;
+#endif
+  
+#if !defined(ISPC)  
+  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags = RTC_SCENE_FLAG_NONE);
+#else
+  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCBuildQuality quality, uniform RTCSceneFlags flags = RTC_SCENE_FLAG_NONE);
 #endif
 
 #if !defined(ISPC)                    
