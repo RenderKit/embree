@@ -1750,14 +1750,15 @@ namespace embree
     
     SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing)
     {
-       in->calculateInDegree();
-       in->calculateClosed(instancing == SceneGraph::INSTANCING_GROUP);
+      in->calculateInDegree();
+      in->calculateClosed(instancing == SceneGraph::INSTANCING_GROUP);
 
       std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
-        if (instancing == SceneGraph::INSTANCING_FLATTENED) convertFlattenedInstances(geometries,in);
-        else                                                convertInstances(geometries,in,one);
+        if      (instancing == SceneGraph::INSTANCING_FLATTENED  ) convertFlattenedInstances(geometries,in);
+        else if (instancing == SceneGraph::INSTANCING_MULTI_LEVEL) convertMultiLevelInstances(geometries,in);
+        else                                                       convertInstances(geometries,in,one);
         convertLightsAndCameras(geometries,in,one);
       }
       else
@@ -1854,6 +1855,53 @@ namespace embree
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (const auto& child : groupNode->children) convertInstances(group,child,spaces);
       }
+    }
+
+    void convertMultiLevelInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node)
+    {
+      if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (const auto& child : groupNode->children) convertMultiLevelInstances(group,child);
+      }
+      else if (node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::GridMeshNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::HairSetNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::PointSetNode>()) {
+        group.push_back(node);
+      }
+      else if (object_mapping.find(node) != object_mapping.end()) {
+        group.push_back(object_mapping[node]);
+      }
+      else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>())
+      {
+        auto new_node = new SceneGraph::TransformNode(xfmNode->spaces,convertMultiLevelInstances(xfmNode->child));
+        object_mapping[node] = new_node;
+        group.push_back(new_node);
+      } 
+    }
+      
+    Ref<SceneGraph::Node> convertMultiLevelInstances(const Ref<SceneGraph::Node>& node)
+    {
+      if (object_mapping.find(node) != object_mapping.end()) {
+        return object_mapping[node];
+      }
+      
+      std::vector<Ref<SceneGraph::Node>> group;
+      convertMultiLevelInstances(group,node);
+      auto new_node = new SceneGraph::GroupNode(group);
+      object_mapping[node] = new_node;
+      return new_node;
     }
 
     void convertFlattenedInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node)

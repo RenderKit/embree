@@ -28,7 +28,7 @@ namespace embree
       }
     }
   }
-  
+
   unsigned TutorialScene::materialID(Ref<SceneGraph::MaterialNode> material) 
   {
     if (material->id == -1) {

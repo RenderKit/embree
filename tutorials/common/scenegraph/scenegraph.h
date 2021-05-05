@@ -1345,7 +1345,7 @@ namespace embree
     };
 
     
-    enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GROUP, INSTANCING_FLATTENED };
+    enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GROUP, INSTANCING_FLATTENED, INSTANCING_MULTI_LEVEL };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode);
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode);
 
