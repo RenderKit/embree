@@ -65,7 +65,6 @@ task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, co
   uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[taskIndex];
   if (geometry->type != SUBDIV_MESH) return;
   uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
-  uniform unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
     rtcUpdateGeometryBuffer(geometry->geometry,RTC_BUFFER_TYPE_LEVEL,0);
@@ -101,16 +100,6 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa&
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   RTCScene scene_out = ConvertScene(g_device, scene_in,RTC_BUILD_QUALITY_MEDIUM);
-
-  /* commit individual objects in case of instancing */
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
-  {
-    for (uniform unsigned int i=0; i<scene_in->numGeometries; i++) {
-      ISPCGeometry* uniform geometry = g_ispc_scene->geometries[i];
-      if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
-    }
-  }
-
   return scene_out;
 }
 

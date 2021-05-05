@@ -34,7 +34,7 @@ namespace embree {
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     rtcCommitGeometry(geom);
-    mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
 
@@ -48,7 +48,7 @@ namespace embree {
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     rtcCommitGeometry(geom);
-    mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
 
@@ -71,7 +71,7 @@ namespace embree {
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT, mesh->vertex_crease_weights, 0, sizeof(float),          mesh->numVertexCreases);
     rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
     rtcCommitGeometry(geom);
-    mesh->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
 
@@ -88,7 +88,7 @@ namespace embree {
     if (hair->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE)
       rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
     rtcCommitGeometry(geom);
-    hair->geom.geomID = rtcAttachGeometry(scene_out,geom);
+    rtcAttachGeometry(scene_out,geom);
     rtcReleaseGeometry(geom);
   }
 
@@ -154,26 +154,22 @@ namespace embree {
     return scene_in->numGeometries;
   }
 
-  void updateObjects(ISPCScene* scene_in, RTCScene scene_out)  // FIXME: geomID can be accessed easier now
+  void updateObjects(ISPCScene* scene_in, RTCScene scene_out)
   {
     size_t numGeometries = scene_in->numGeometries;
     for (size_t i=0; i<numGeometries; i++)
     {
-      ISPCGeometry* geometry = scene_in->geometries[i];
-      RTCGeometry geom = rtcGetGeometry(scene_out,geometry->geomID);
+      RTCGeometry geom = rtcGetGeometry(scene_out,i);
       rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX, 0);
       rtcCommitGeometry(geom);
     }
   }
 
-  void deleteObjects(ISPCScene* scene_in, RTCScene scene_out) // FIXME: geomID can be accessed easier now
+  void deleteObjects(ISPCScene* scene_in, RTCScene scene_out)
   {
     size_t numGeometries = scene_in->numGeometries;
     for (size_t i=0; i<numGeometries; i++)
-    {
-      ISPCGeometry* geometry = scene_in->geometries[i];
-      rtcDetachGeometry(scene_out,geometry->geomID);
-    }
+      rtcDetachGeometry(scene_out,i);
   }
   
 #ifdef USE_GOOGLE_BENCHMARK

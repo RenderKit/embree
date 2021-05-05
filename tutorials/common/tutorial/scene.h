@@ -29,9 +29,7 @@ namespace embree
     ~TutorialScene();
     
     void add (Ref<SceneGraph::GroupNode> node);
-    unsigned addGeometry(Ref<SceneGraph::Node> node);
     unsigned materialID(Ref<SceneGraph::MaterialNode> material);
-    unsigned geometryID(Ref<SceneGraph::Node> geometry);
     void print_camera_names ();
     Ref<SceneGraph::PerspectiveCameraNode> getDefaultCamera();
     Ref<SceneGraph::PerspectiveCameraNode> getCamera(const std::string& name);

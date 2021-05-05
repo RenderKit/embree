@@ -950,11 +950,6 @@ void assignShaders(ISPCGeometry* geometry)
     rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterHair);
   }
 #endif
-  else if (geometry->type == GROUP) {
-    ISPCGroup* group = (ISPCGroup*) geometry;
-    for (unsigned int i=0; i<group->numGeometries; i++)
-      assignShaders(group->geometries[i]);
-  }
 }
 
 typedef ISPCInstance* ISPCInstance_ptr;
@@ -970,21 +965,9 @@ RTCScene convertScene(ISPCScene* scene_in)
     }
   }
 
+  assignShadersFunc = assignShaders;
+  
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
-
-  /* assign shaders */
-  for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-    assignShaders(scene_in->geometries[i]);
-  }
-
-  /* commit individual objects in case of instancing */
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
-  {
-    for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      ISPCGeometry* geometry = g_ispc_scene->geometries[i];
-      if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
-    }
-  }
 
   /* commit changes to scene */
   //progressStart();
