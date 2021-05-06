@@ -1,9 +1,14 @@
 Version History
 ---------------
 
-### Embree 3.12.3
+### Embree 3.13.0
+-   Added support for Apple M1 CPUs.
 -   RTC_SUBDIVISION_MODE_NO_BOUNDARY now works properly for non-manifold edges.
 -   CMake target 'uninstall' is not defined if it already exists.
+-   Embree no longer reads the .embree3 config files, thus all configuration has
+    to get passed through the config string to rtcNewDevice.
+-   Releases upgrade to TBB 2021.2.0 and ISPC 1.15.0
+-   TBB dll is automatically copied into build folder after build on windows.
 
 ### Embree 3.12.2
 -   Fixed wrong uv and Ng for grid intersector in robust mode for AVX.

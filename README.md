@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.12.2
+% Embree: High Performance Ray Tracing Kernels 3.13.0-alpha.0
 % Intel Corporation
 
 Embree Overview
@@ -48,8 +48,8 @@ Supported Platforms
 -------------------
 
 Embree supports Windows (32-bit and 64-bit), Linux (64-bit), and macOS
-(64-bit). The code compiles with the Intel® Compiler, GCC, Clang,
-and the Microsoft Compiler.
+(64-bit) both x86 and Apple M1 based. The code compiles with the Intel®
+Compiler, GCC, Clang, and the Microsoft Compiler.
 
 Using the Intel® Compiler improves performance by approximately
 10%. Performance also varies across different operating
@@ -57,9 +57,8 @@ systems, with Linux typically performing best as it supports
 transparently transitioning to 2MB pages.
 
 Embree is optimized for Intel CPUs supporting SSE, AVX, AVX2, and
-AVX-512 instructions, and requires at least a CPU with support for
-SSE2.
-
+AVX-512 instructions. Embree requires at least an x86 CPU with support for
+SSE2 or an Apple M1 CPU.
 Embree Support and Contact
 --------------------------
 
@@ -80,7 +79,7 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.12.2-x64.vc14.msi](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x64.vc14.msi). This
+[embree-3.13.0-alpha.0-x64.vc14.msi](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x64.vc14.msi). This
 will install the 64-bit Embree version by default in `Program
 Files\Intel\Embree3`.
 
@@ -95,13 +94,13 @@ Files\Intel\Embree3`.
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.12.2 x64` and uninstall it.
+3.13.0-alpha.0 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-3.12.2.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x64.vc14.windows.zip). After
+[embree-3.13.0-alpha.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree, you also have to set the
@@ -115,13 +114,13 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.12.2.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x86_64.linux.tar.gz). Unpack
+[embree-3.13.0-alpha.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-3.12.2.x86_64.linux.tar.gz
-    source embree-3.12.2.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.13.0-alpha.0.x86_64.linux.tar.gz
+    source embree-3.13.0-alpha.0.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -134,7 +133,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.12.2.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x86_64.pkg). This
+[embree-3.13.0-alpha.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -156,13 +155,13 @@ macOS ZIP file
 -----------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-3.12.2.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.12.2/embree-3.12.2.x86_64.macosx.zip). Unpack
+[embree-3.13.0-alpha.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-3.12.2.x64.macosx.zip
-    source embree-3.12.2.x64.macosx/embree-vars.sh
+    unzip embree-3.13.0-alpha.0.x64.macosx.zip
+    source embree-3.13.0-alpha.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -198,11 +197,15 @@ Linux
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
 
-macOS
+macOS x86
 
   - Intel® Compiler 2020 Update 1
   - Intel® Compiler 2019 Update 4
   - Apple LLVM 10.0.1 (macOS 10.14.6)
+
+macOS M1
+
+  - Apple Clang 12.0.0
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -1099,19 +1102,6 @@ A configuration string (`config` argument) can be passed to the device
 construction. This configuration string can be `NULL` to use the
 default configuration.
 
-When creating the device, Embree reads configurations for the device
-from the following locations in order:
-
-1)  `config` string passed to the `rtcNewDevice` function
-2)  `.embree3` file in the application folder
-3)  `.embree3` file in the home folder
-
-Settings performed later overwrite previous settings. This way the
-configuration for the application can be changed globally (either
-through the `rtcNewDevice` call or through the `.embree3` file in the
-application folder), and each user has the option to modify the
-configuration to fit their needs.
-
 The following configuration is supported:
 
 -   `threads=[int]`: Specifies a number of build threads to use. A
@@ -1149,9 +1139,6 @@ The following configuration is supported:
     pages on Windows. This option has an effect only under Windows and
     is ignored on other platforms. See Section [Huge Page Support]
     for more details.
-
--   `ignore_config_files=[0/1]`: When set to 1, configuration files are
-    ignored. Default is 0.
 
 -   `verbose=[0,1,2,3]`: Sets the verbosity of the output. When set to
     0, no output is printed by Embree, when set to a higher level more
@@ -3865,8 +3852,8 @@ longer required.
 
 Sharing buffers can significantly reduce the memory required by the
 application, thus we recommend using this feature. When enabling the
-`RTC_SCENE_COMPACT` scene flag, the spatial index structures index into
-the vertex buffer, resulting in even higher memory savings.
+`RTC_SCENE_FLAG_COMPACT` scene flag, the spatial index structures index
+into the vertex buffer, resulting in even higher memory savings.
 
 #### EXIT STATUS {#exit-status}
 
@@ -5976,8 +5963,8 @@ and `tfar` members). The ray direction does not have to be normalized,
 and only the parameter range specified by the `tnear`/`tfar` interval
 is considered valid.
 
-The ray segment must be in the range $[0, ∞]$, thus ranges that start
-behind the ray origin are not allowed, but ranges can reach to
+The ray segment must be in the range $[0, \infty]$, thus ranges that
+start behind the ray origin are not allowed, but ranges can reach to
 infinity. For rays inside a ray stream, `tfar` \< `tnear` identifies an
 inactive ray.
 
@@ -6366,9 +6353,9 @@ scene contains motion blur geometries, also the ray time (`time` ray
 member) must be initialized to a value in the range $[0, 1]$. If ray
 masks are enabled at compile time, the ray mask (`mask` ray member)
 must be initialized as well. The ray segment has to be in the range
-$[0, ∞]$, thus ranges that start behind the ray origin are not valid,
-but ranges can reach to infinity. See Section [RTCRay] for the ray
-layout description.
+$[0, \infty]$, thus ranges that start behind the ray origin are not
+valid, but ranges can reach to infinity. See Section [RTCRay] for the
+ray layout description.
 
 The geometry ID (`geomID` hit member) of the hit data must be
 initialized to `RTC_INVALID_GEOMETRY_ID` (-1).
@@ -6456,9 +6443,9 @@ the scene contains motion blur geometries, also the ray time (`time`
 ray member) must be initialized to a value in the range $[0, 1]$. If
 ray masks are enabled at compile time, the ray mask (`mask` ray member)
 must be initialized as well. The ray segment must be in the range
-$[0, ∞]$, thus ranges that start behind the ray origin are not valid,
-but ranges can reach to infinity. See Section [RTCRay] for the ray
-layout description.
+$[0, \infty]$, thus ranges that start behind the ray origin are not
+valid, but ranges can reach to infinity. See Section [RTCRay] for the
+ray layout description.
 
 When no intersection is found, the ray data is not updated. In case a
 hit was found, the `tfar` component of the ray is set to `-inf`.
@@ -7258,8 +7245,8 @@ object (`query` argument) and calls a user defined callback function
 argument) that intersects the query domain.
 
 The user has to initialize the query location (`x`, `y` and `z` member)
-and query radius in the range $[0, ∞]$. If the scene contains motion
-blur geometries, also the query time (`time` member) must be
+and query radius in the range $[0, \infty]$. If the scene contains
+motion blur geometries, also the query time (`time` member) must be
 initialized to a value in the range $[0, 1]$.
 
 Further, a `RTCPointQueryContext` (`context` argument) must be created
@@ -7734,7 +7721,7 @@ $quaternion_r + quaternion_i  \mathbf{i} + quaternion_j  \mathbf{i} + quaterni
 where $\mathbf{i}$, $\mathbf{j}$ $\mathbf{k}$ are the imaginary
 quaternion units. The passed quaternion will be normalized internally.
 
-\noindent The affine transformation matrix corresponding to a
+The affine transformation matrix corresponding to a
 `RTCQuaternionDecomposition` is $TRS$ and a point
 $p = (p_x, p_y, p_z, 1)^T$ will be transformed as
 $$p' = T  R  S  p.$$
