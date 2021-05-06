@@ -1317,11 +1317,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
       dg.Ng = dg.Ns = normalize(cross(dg.Ty,dg.Tx));
     }
   }
-  else if (geometry->type == GROUP) {
-    foreach_unique (geomID in dg.geomID) {
-      postIntersectGeometry(ray,dg,((uniform ISPCGroup*) geometry)->geometries[geomID],materialID);
-    }
-  }
   else
     assert(false);
 
@@ -1329,7 +1324,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, uniform ISP
     dg.Ns = make_Vec3f(1, 0, 0);
 }
 
-AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instance, float gtime)
+AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* instance, float gtime)
 {
   if (instance->numTimeSteps == 1)
     return make_AffineSpace3f(instance->spaces[0]);
@@ -1342,41 +1337,35 @@ AffineSpace3f calculate_interpolated_space (uniform ISPCInstance* uniform instan
   return (1.0f-ftime)*make_AffineSpace3f(instance->spaces[itime+0]) + ftime*make_AffineSpace3f(instance->spaces[itime+1]);
 }
 
-typedef ISPCInstance* uniform ISPCInstancePtr;
+typedef ISPCInstance* ISPCInstancePtr;
 
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+   
+  AffineSpace3f local2world = make_AffineSpace3f_scale(make_Vec3f(1));
+  ISPCGeometry* uniform* geometries = g_ispc_scene->geometries;
+  
+  for (uniform int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+  {
+    const unsigned int instID = ray.instID[i];
+    if (instID == -1) break;
+
+    ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
+    local2world = local2world * calculate_interpolated_space(instance,ray.time);
+
+    assert(instance->child->type == GROUP);
+    geometries = ((ISPCGroup*)instance->child)->geometries;
+  }
 
   int materialID = 0;
-  foreach_unique (instID in dg.instID) {
-    foreach_unique (geomID in dg.geomID) {
-      ISPCGeometry* uniform geometry = NULL;
-      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* uniform instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
-        geometry = instance->child;
-      } else {
-        geometry = g_ispc_scene->geometries[geomID];
-      }
-      postIntersectGeometry(ray,dg,geometry,materialID);
-    }
+  ISPCGeometry* geom = geometries[ray.geomID];
+  foreach_unique (g in geom) {
+    postIntersectGeometry(ray,dg,g,materialID);
   }
-
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
-  {
-    foreach_unique (instID in dg.instID)
-    {
-      /* get instance and geometry pointers */
-      ISPCInstance* uniform instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
-
-      /* convert normals */
-      //AffineSpace3f space = (1.0f-ray.time)*make_AffineSpace3f(instance->space0) + ray.time*make_AffineSpace3f(instance->space1);
-      AffineSpace3f space = calculate_interpolated_space(instance,ray.time);
-      dg.Ng = xfmVector(space,dg.Ng);
-      dg.Ns = xfmVector(space,dg.Ns);
-    }
-  }
-
+  dg.Ng = xfmVector(local2world,dg.Ng);
+  dg.Ns = xfmVector(local2world,dg.Ns);
+  
   return materialID;
 }
 

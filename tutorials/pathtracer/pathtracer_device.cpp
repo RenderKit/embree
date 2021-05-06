@@ -1319,11 +1319,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       dg.Ng = dg.Ns = normalize(cross(dg.Ty,dg.Tx));
     }
   }
-  else if (geometry->type == GROUP) {
-    unsigned int geomID = dg.geomID; {
-      postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
-    }
-  }
   else
     assert(false);
 
@@ -1350,34 +1345,25 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
 
-  int materialID = 0;
-  unsigned int instID = dg.instID; {
-    unsigned int geomID = dg.geomID; {
-      ISPCGeometry* geometry = nullptr;
-      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
-        geometry = instance->child;
-      } else {
-        geometry = g_ispc_scene->geometries[geomID];
-      }
-      postIntersectGeometry(ray,dg,geometry,materialID);
-    }
-  }
-
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
+  AffineSpace3fa local2world = one;
+  ISPCGeometry** geometries = g_ispc_scene->geometries;
+  
+  for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
   {
-    unsigned int instID = dg.instID;
-    {
-      /* get instance and geometry pointers */
-      ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
+    const unsigned int instID = ray.instID[i];
+    if (instID == -1) break;
 
-      /* convert normals */
-      //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
-      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time());
-      dg.Ng = xfmVector(space,dg.Ng);
-      dg.Ns = xfmVector(space,dg.Ns);
-    }
+    ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
+    local2world = local2world * calculate_interpolated_space(instance,ray.time());
+
+    assert(instance->child->type == GROUP);
+    geometries = ((ISPCGroup*)instance->child)->geometries;
   }
+
+  int materialID = 0;
+  postIntersectGeometry(ray,dg,geometries[ray.geomID],materialID);
+  dg.Ng = xfmVector(local2world,dg.Ng);
+  dg.Ns = xfmVector(local2world,dg.Ns);
 
   return materialID;
 }
