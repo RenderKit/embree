@@ -301,6 +301,7 @@ namespace embree
     ISPCGeometry geom;
     ISPCGeometry** geometries;
     unsigned int numGeometries;
+    unsigned int requiredInstancingDepth; // instancing depth required for this group
   };
   
   struct ISPCScene
