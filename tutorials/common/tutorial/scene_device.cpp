@@ -671,31 +671,28 @@ namespace embree
     }
   }
   
-  typedef ISPCInstance* ISPCInstance_ptr;
-  typedef ISPCGeometry* ISPCGeometry_ptr;
-  
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags)
   {
     RTCScene scene_out = rtcNewScene(g_device);
     rtcSetSceneFlags(scene_out, flags);
     
-    for (unsigned int i=0; i<scene_in->numGeometries; i++)
+    for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
     {
-      ISPCGeometry* geometry = scene_in->geometries[i];
+      ISPCGeometry* geometry = scene_in->geometries[geomID];
       if (geometry->type == SUBDIV_MESH)
-        ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry, quality, flags, scene_out, i);
+        ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry, quality, flags, scene_out, geomID);
       else if (geometry->type == TRIANGLE_MESH)
-        ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry, quality, flags, scene_out, i);
+        ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry, quality, flags, scene_out, geomID);
       else if (geometry->type == QUAD_MESH)
-        ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, flags, scene_out, i);
+        ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, flags, scene_out, geomID);
       else if (geometry->type == CURVES)
-        ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, flags, scene_out, i);
+        ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, flags, scene_out, geomID);
       else if (geometry->type == GRID_MESH)
-        ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, flags, scene_out, i);
+        ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, flags, scene_out, geomID);
       else if (geometry->type == POINTS)
-        ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, flags, scene_out, i);
+        ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, flags, scene_out, geomID);
       else if (geometry->type == INSTANCE)
-        ConvertInstance(g_device, (ISPCInstance*) geometry, quality, flags, scene_out, i);
+        ConvertInstance(g_device, (ISPCInstance*) geometry, quality, flags, scene_out, geomID);
       else
         assert(false);
     }
