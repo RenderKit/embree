@@ -66,13 +66,11 @@ namespace embree
   struct ISPCGeometry
   {
 #if !defined(ISPC)
-    ISPCGeometry (ISPCType type) : type(type), geometry(nullptr), scene(nullptr), unused(-1), materialID(-1) {}
+    ISPCGeometry (ISPCType type) : type(type), geometry(nullptr), materialID(-1) {}
     ~ISPCGeometry () { if (geometry) rtcReleaseGeometry(geometry); }
 #endif
     ISPCType type;
     RTCGeometry geometry;
-    RTCScene scene;
-    unsigned int unused;
     unsigned int materialID;
   };
 
@@ -299,6 +297,7 @@ namespace embree
   public:
 #endif
     ISPCGeometry geom;
+    RTCScene scene;
     ISPCGeometry** geometries;
     unsigned int numGeometries;
     unsigned int requiredInstancingDepth; // instancing depth required for this group

@@ -341,7 +341,7 @@ namespace embree
   }
 
   ISPCGroup::ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
-    : geom(GROUP), requiredInstancingDepth(0)
+    : geom(GROUP), scene(nullptr), requiredInstancingDepth(0)
   {
     numGeometries = (unsigned int) in->size();
     geometries = new ISPCGeometry*[numGeometries];
@@ -355,7 +355,7 @@ namespace embree
       deleteGeometry(geometries[i]);
     delete[] geometries;
 
-    rtcReleaseScene(geom.scene);
+    rtcReleaseScene(scene);
   }
 
   ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
@@ -400,7 +400,6 @@ namespace embree
     rtcCommitGeometry(geom);
     rtcAttachGeometryByID(scene_out,geom,geomID);
     mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
 
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
   }
@@ -419,7 +418,6 @@ namespace embree
     rtcCommitGeometry(geom);
     rtcAttachGeometryByID(scene_out,geom,geomID);
     mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
 
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
   }
@@ -438,7 +436,6 @@ namespace embree
     rtcCommitGeometry(geom);
     rtcAttachGeometryByID(scene_out,geom,geomID);
     mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
 
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
   }
@@ -494,7 +491,6 @@ namespace embree
 
     rtcAttachGeometryByID(scene_out,geom,geomID);
     mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
 
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
   }
@@ -546,7 +542,6 @@ namespace embree
 
     rtcAttachGeometryByID(scene_out,geom,geomID);
     mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
 
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
   }
@@ -576,7 +571,6 @@ namespace embree
 
     rtcAttachGeometryByID(scene_out,geom,geomID);
     mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
 
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
   }
@@ -585,7 +579,7 @@ namespace embree
 
   unsigned int ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth)
   {
-    if (group->geom.scene)
+    if (group->scene)
       return group->requiredInstancingDepth;
     
     RTCScene scene_out = rtcNewScene(device);
@@ -614,8 +608,7 @@ namespace embree
       else
         assert(false);
     }
-    group->geom.geometry = nullptr;
-    group->geom.scene = scene_out;
+    group->scene = scene_out;
     group->requiredInstancingDepth = requiredInstancingDepth;
 
     rtcCommitScene(scene_out);
@@ -629,7 +622,7 @@ namespace embree
 
     ISPCGroup* group = (ISPCGroup*) instance->child;
     unsigned int requiredInstancingDepth = 1+ConvertGroup(device, group, quality, flags, depth+1);
-    RTCScene scene_inst = group->geom.scene;
+    RTCScene scene_inst = group->scene;
 
     if (depth + requiredInstancingDepth > RTC_MAX_INSTANCE_LEVEL_COUNT)
       THROW_RUNTIME_ERROR("scene instancing depth is too large");
@@ -648,7 +641,6 @@ namespace embree
       rtcCommitGeometry(geom);
       rtcAttachGeometryByID(scene_out,geom,geomID);
       instance->geom.geometry = geom;
-      instance->geom.scene = scene_out;
       return requiredInstancingDepth;
     }
     else
@@ -669,7 +661,6 @@ namespace embree
       rtcCommitGeometry(geom);
       rtcAttachGeometryByID(scene_out,geom,geomID);
       instance->geom.geometry = geom;
-      instance->geom.scene = scene_out;
       return requiredInstancingDepth;
     }
   }
