@@ -146,7 +146,7 @@ typedef ISPCInstance* ISPCInstancePtr;
 
 unsigned int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
 {
-  AffineSpace3fa local2world = one;
+  AffineSpace3fa local2world = AffineSpace3fa::scale(Vec3fa(1));
   ISPCGeometry** geometries = data.ispc_scene->geometries;
   
   for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
@@ -225,7 +225,7 @@ void renderPixelStandard(const TutorialData& data,
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3fa dPdu,dPdv;
-      unsigned int geomID = ray.geomID; {
+      auto geomID = ray.geomID; {
         rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       dg.Ns = cross(dPdv,dPdu);

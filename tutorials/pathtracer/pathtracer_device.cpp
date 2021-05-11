@@ -759,7 +759,7 @@ Vec3fa HairMaterial__sample(ISPCHairMaterial* This, const BRDF& brdf, const Vec3
 
 inline void Material__preprocess(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
-  unsigned int id = materialID;
+  auto id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -785,7 +785,7 @@ inline void Material__preprocess(ISPCMaterial** materials, unsigned int material
 inline Vec3fa Material__eval(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   Vec3fa c = Vec3fa(0.0f);
-  unsigned int id = materialID;
+  auto id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -811,7 +811,7 @@ inline Vec3fa Material__eval(ISPCMaterial** materials, unsigned int materialID, 
 inline Vec3fa Material__sample(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3fa c = Vec3fa(0.0f);
-  unsigned int id = materialID;
+  auto id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -1344,8 +1344,8 @@ typedef ISPCInstance* ISPCInstancePtr;
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
-
-  AffineSpace3fa local2world = one;
+   
+  AffineSpace3fa local2world = AffineSpace3fa::scale(Vec3fa(1));
   ISPCGeometry** geometries = g_ispc_scene->geometries;
   
   for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
@@ -1361,10 +1361,13 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   }
 
   int materialID = 0;
-  postIntersectGeometry(ray,dg,geometries[dg.geomID],materialID);
+  ISPCGeometry* geom = geometries[dg.geomID];
+  auto g = geom; {
+    postIntersectGeometry(ray,dg,g,materialID);
+  }
   dg.Ng = xfmVector(local2world,dg.Ng);
   dg.Ns = xfmVector(local2world,dg.Ns);
-
+  
   return materialID;
 }
 
@@ -1512,7 +1515,7 @@ void occlusionFilterHair(const RTCFilterFunctionNArguments* args)
   
   unsigned int hit_geomID = RTCHitN_geomID(hit,N,rayID);
   Vec3fa Kt = Vec3fa(0.0f);
-  unsigned int geomID = hit_geomID;
+  auto geomID = hit_geomID;
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == CURVES)

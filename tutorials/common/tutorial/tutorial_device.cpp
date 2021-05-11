@@ -275,7 +275,7 @@ Vec3fa renderPixelTexCoords(const DebugShaderData& data, float x, float y, const
   else if (data.ispc_scene)
   {
     Vec2f st = Vec2f(0,0);
-    unsigned int geomID = ray.geomID; {
+    auto geomID = ray.geomID; {
       RTCGeometry geometry = rtcGetGeometry(data.scene,geomID);
       rtcInterpolate0(geometry,ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,2,&st.x,2);
     }
@@ -508,7 +508,7 @@ Vec3fa renderPixelDifferentials(const DebugShaderData& data, float x, float y, c
   Vec3fa dP00du, dP01du, dP10du, dP11du;
   Vec3fa dP00dv, dP01dv, dP10dv, dP11dv;
   Vec3fa dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
-  unsigned int geomID = ray.geomID; {
+  auto geomID = ray.geomID; {
     RTCGeometry geometry = rtcGetGeometry(data.scene,geomID);
     rtcInterpolate1(geometry,ray.primID,ray.u+0.f,ray.v+0.f,RTC_BUFFER_TYPE_VERTEX,0,&P00.x,&dP00du.x,&dP00dv.x,3);
     rtcInterpolate1(geometry,ray.primID,ray.u+0.f,ray.v+eps,RTC_BUFFER_TYPE_VERTEX,0,&P01.x,&dP01du.x,&dP01dv.x,3);
