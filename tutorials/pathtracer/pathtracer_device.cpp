@@ -1350,7 +1350,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   
   for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
   {
-    const unsigned int instID = ray.instID[i];
+    const unsigned int instID = dg.instIDs[i];
     if (instID == -1) break;
 
     ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
@@ -1361,7 +1361,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
   }
 
   int materialID = 0;
-  postIntersectGeometry(ray,dg,geometries[ray.geomID],materialID);
+  postIntersectGeometry(ray,dg,geometries[dg.geomID],materialID);
   dg.Ng = xfmVector(local2world,dg.Ng);
   dg.Ns = xfmVector(local2world,dg.Ns);
 
@@ -1393,7 +1393,9 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
   //const float tfar          = RTCHitN_t(hit,N,rayID);
   const float tfar          = ray->tfar;
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(hit,N,rayID, 0);
+  for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+    dg.instIDs[i] = RTCHitN_instID(hit,N,rayID, i);
+  
   dg.geomID = RTCHitN_geomID(hit,N,rayID);
   dg.primID = RTCHitN_primID(hit,N,rayID);
   dg.u = RTCHitN_u(hit,N,rayID);
@@ -1417,15 +1419,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
-  {
     ray->tfar   = tfar;
-    // ray->instID = dg.instID;
-    // ray->geomID = dg.geomID;
-    // ray->primID = dg.primID;    
-    // ray->u      = dg.u;
-    // ray->v      = dg.v;
-    // ray->Ng     = Ng;
-  }
   else
     valid_i[0] = 0;
 }
@@ -1468,7 +1462,9 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* args)
   const float tfar          = ray->tfar;
 
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(hit,N,rayID, 0);
+  for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+    dg.instIDs[i] = RTCHitN_instID(hit,N,rayID, i);
+  
   dg.geomID = RTCHitN_geomID(hit,N,rayID);
   dg.primID = RTCHitN_primID(hit,N,rayID);
   dg.u = RTCHitN_u(hit,N,rayID);
@@ -1584,7 +1580,9 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     Vec3fa Ns = normalize(ray.Ng);
 
     /* compute differential geometry */
-    dg.instID = ray.instID[0];
+    for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+      dg.instIDs[i] = ray.instID[i];
+    
     dg.geomID = ray.geomID;
     dg.primID = ray.primID;
     dg.u = ray.u;
