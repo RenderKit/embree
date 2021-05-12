@@ -11,6 +11,8 @@
 namespace embree
 {
   extern "C" RTCDevice g_device;
+
+  void (*SceneGraph::opaque_geometry_destruction)(void*) = nullptr;
   
   Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename, const bool singleObject)
   {
@@ -35,12 +37,12 @@ namespace embree
   }
 
   void SceneGraph::PerspectiveCameraNode::print(std::ostream& cout, int depth) {
-    cout << "PerspectiveCameraNode { closed = " << closed << " }" << std::endl;
+    cout << "PerspectiveCameraNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::TransformNode::print(std::ostream& cout, int depth)
   {
-    cout << "TransformNode { " << std::endl;
+    cout << "TransformNode @ " << this << " { " << std::endl;
     tab(cout, depth+1); cout << "closed = " << closed << std::endl;
     tab(cout, depth+1); cout << "numTimeSteps = " << spaces.size() << std::endl;
     tab(cout, depth+1); cout << "child = "; child->print(cout,depth+1);
@@ -49,7 +51,7 @@ namespace embree
 
   void SceneGraph::GroupNode::print(std::ostream& cout, int depth)
   {
-    cout << "GroupNode { " << std::endl;
+    cout << "GroupNode @ " << this << " { " << std::endl;
     tab(cout, depth+1); cout << "closed = " << closed << std::endl;
     for (size_t i=0; i<children.size(); i++) {
       tab(cout, depth+1); cout << "child" << i << " = "; children[i]->print(cout,depth+1);
@@ -58,35 +60,35 @@ namespace embree
   }
 
   void SceneGraph::MaterialNode::print(std::ostream& cout, int depth) {
-    cout << "MaterialNode { closed = " << closed << " }" << std::endl;
+    cout << "MaterialNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
   
   void SceneGraph::LightNode::print(std::ostream& cout, int depth) {
-    cout << "LightNode { closed = " << closed << " }" << std::endl;
+    cout << "LightNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::TriangleMeshNode::print(std::ostream& cout, int depth) {
-    cout << "TriangleMeshNode { closed = " << closed << " }" << std::endl;
+    cout << "TriangleMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::QuadMeshNode::print(std::ostream& cout, int depth) {
-    cout << "QuadMeshNode { closed = " << closed << " }" << std::endl;
+    cout << "QuadMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::SubdivMeshNode::print(std::ostream& cout, int depth) {
-    cout << "SubdivMeshNode { closed = " << closed << " }" << std::endl;
+    cout << "SubdivMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::HairSetNode::print(std::ostream& cout, int depth) {
-    cout << "HairSetNode { closed = " << closed << " }" << std::endl;
+    cout << "HairSetNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::PointSetNode::print(std::ostream& cout, int depth) {
-    cout << "PointSetNode { closed = " << closed << " }" << std::endl;
+    cout << "PointSetNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::GridMeshNode::print(std::ostream& cout, int depth) {
-    cout << "GridMeshNode { closed = " << closed << " }" << std::endl;
+    cout << "GridMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
     
   void SceneGraph::Node::calculateStatistics(Statistics& stat) {
