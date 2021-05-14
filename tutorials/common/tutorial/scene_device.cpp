@@ -16,6 +16,9 @@ namespace embree
   
   void deleteGeometry(ISPCGeometry* geom)
   {
+    if (geom == nullptr)
+      return;
+    
     switch (geom->type) {
     case TRIANGLE_MESH: delete (ISPCTriangleMesh*) geom; break;
     case SUBDIV_MESH  : delete (ISPCSubdivMesh*) geom; break;
@@ -31,6 +34,8 @@ namespace embree
   
   ISPCScene::ISPCScene(TutorialScene* in)
   {
+    SceneGraph::opaque_geometry_destruction = (void(*)(void*)) deleteGeometry;
+    
     geometries = new ISPCGeometry*[in->geometries.size()];
     for (size_t i=0; i<in->geometries.size(); i++)
       geometries[i] = convertGeometry(in,in->geometries[i]);
@@ -52,10 +57,6 @@ namespace embree
 
   ISPCScene::~ISPCScene()
   {
-    /* delete all geometries */
-    for (size_t i=0; i<numGeometries; i++) 
-      deleteGeometry(geometries[i]);
-
     delete[] geometries;
     delete[] materials;
     for (size_t i=0; i<numLights; i++)
@@ -351,11 +352,9 @@ namespace embree
 
   ISPCGroup::~ISPCGroup()
   {
-    for (size_t i=0; i<numGeometries; i++)
-      deleteGeometry(geometries[i]);
     delete[] geometries;
-
     rtcReleaseScene(scene);
+
   }
 
   ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)

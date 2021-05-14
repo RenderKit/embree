@@ -47,6 +47,8 @@ namespace embree
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
     void convert_mblur_to_nonmblur(Ref<Node> node);
 
+    extern void (*opaque_geometry_destruction)(void*);
+
     struct Statistics
     {
       Statistics ()
@@ -103,6 +105,11 @@ namespace embree
 
       Node (const std::string& name) 
         : name(name), indegree(0), closed(false), id(-1), geometry(nullptr) {}
+
+      ~Node() {
+        if (opaque_geometry_destruction)
+          opaque_geometry_destruction(geometry);
+      }
 
       /* prints scenegraph */
       virtual void print(std::ostream& cout, int depth = 0) = 0;
