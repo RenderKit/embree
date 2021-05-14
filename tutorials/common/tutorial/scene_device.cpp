@@ -354,7 +354,6 @@ namespace embree
   {
     delete[] geometries;
     rtcReleaseScene(scene);
-
   }
 
   ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
