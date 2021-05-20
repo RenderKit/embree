@@ -590,11 +590,11 @@ namespace embree
 
     struct AnimatedPerspectiveCameraNode : public PerspectiveCameraNode
     {
-      AnimatedPerspectiveCameraNode (std::vector<Ref<PerspectiveCameraNode>>&& cameras, const std::string& id = "")
-        : time_range(0,1), cameras(cameras) {}
+      AnimatedPerspectiveCameraNode (std::vector<Ref<PerspectiveCameraNode>>&& cameras, BBox1f time_range, const std::string& id = "")
+        : time_range(time_range), cameras(cameras) {}
 
       AnimatedPerspectiveCameraNode (const Ref<AnimatedPerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
-        : PerspectiveCameraNode(id), time_range(0,1)
+        : PerspectiveCameraNode(id), time_range(other->time_range)
       {
         cameras.resize(other->size());
         for (size_t i=0; i<other->size(); i++)
@@ -603,10 +603,10 @@ namespace embree
 
       virtual PerspectiveCameraData get(float time) const
       {
-        time = frac(time-time_range.lower)/time_range.size();
+        time = frac((time-time_range.lower)/time_range.size());
         time = (cameras.size()-1)*time;
         int   itime = (int)floor(time);
-        itime = min(max(itime,0),(int)cameras.size()-1);
+        itime = min(max(itime,0),(int)cameras.size()-2);
         float ftime = time - (float)itime;
         return lerp(cameras[itime+0]->get(time), cameras[itime+1]->get(time), ftime);
       }

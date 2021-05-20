@@ -777,7 +777,8 @@ namespace embree
     for (size_t i=0; i<numCameras; i++) 
       cameras[i] = loadPerspectiveCamera(xml->child(i)).dynamicCast<SceneGraph::PerspectiveCameraNode>();
 
-    return new SceneGraph::AnimatedPerspectiveCameraNode(std::move(cameras));
+    const Vec2f time_range = xml->parm_Vec2f("time_range");
+    return new SceneGraph::AnimatedPerspectiveCameraNode(std::move(cameras),BBox1f(time_range.x,time_range.y));
   }
 
   Parms XMLLoader::loadMaterialParms(const Ref<XML>& parms)

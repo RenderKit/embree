@@ -1847,7 +1847,7 @@ namespace embree
           for (size_t i=0; i<spaces.size(); i++)
             cameras[i] = new SceneGraph::PerspectiveCameraNode(cameraNode,spaces[i]);
           
-          group.push_back(new SceneGraph::AnimatedPerspectiveCameraNode(std::move(cameras),makeUniqueID(cameraNode->name)));
+          group.push_back(new SceneGraph::AnimatedPerspectiveCameraNode(std::move(cameras),spaces.time_range,makeUniqueID(cameraNode->name)));
         }
       }
     }
