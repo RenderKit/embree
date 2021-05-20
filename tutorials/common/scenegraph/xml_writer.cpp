@@ -9,7 +9,7 @@ namespace embree
   {
   public:
 
-    XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials);
+    XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials, bool binaryFormat);
 
   public:
     void tab();
@@ -20,9 +20,27 @@ namespace embree
     void store(const char* name, const char* str);
     void store(const char* name, const float& v);
     void store(const char* name, const Vec3fa& v);
-    template<typename T> void store(const char* name, const std::vector<T>& vec);
-    void store(const char* name, const avector<Vec3fa>& vec);
-    void store4f(const char* name, const avector<Vec3ff>& vec);
+
+    void store_array_elt(const int& v);
+    void store_array_elt(const Vec2f& v);
+    void store_array_elt(const Vec3f& v);
+    void store_array_elt(const Vec3fa& v);
+    void store_array_elt(const Vec3ff& v);
+    void store_array_elt(const SceneGraph::TriangleMeshNode::Triangle& v);
+    void store_array_elt(const SceneGraph::QuadMeshNode::Quad& v);
+    
+    template<typename T> void store_array_text  (const char* name, const std::vector<T>& vec);
+    template<typename T> void store_array_binary(const char* name, const std::vector<T>& vec);
+    template<typename T> void store             (const char* name, const std::vector<T>& vec);
+
+    void store_array_text  (const char* name, const avector<Vec3fa>& vec);
+    void store_array_binary(const char* name, const avector<Vec3fa>& vec);
+    void store             (const char* name, const avector<Vec3fa>& vec);
+
+    void store_array_text  (const char* name, const avector<Vec3ff>& vec);
+    void store_array_binary(const char* name, const avector<Vec3ff>& vec);
+    void store             (const char* name, const avector<Vec3ff>& vec);
+    
     void store_parm(const char* name, const float& v);
     void store_parm(const char* name, const Vec3fa& v);
     void store_parm(const char* name, const std::shared_ptr<Texture> tex);
@@ -70,6 +88,7 @@ namespace embree
     std::map<std::shared_ptr<Texture>, size_t> textureMap; // FIXME: use Ref<Texture>
     bool embedTextures;
     bool referenceMaterials;
+    bool binaryFormat;
   };
 
   //////////////////////////////////////////////////////////////////////////////
@@ -113,26 +132,101 @@ namespace embree
     tab(); xml << "<" << name << ">" << v.x << " " << v.y << " " << v.z << "</" << name << ">" << std::endl;
   }
 
+  void XMLWriter::store_array_elt(const int& v) {
+    xml << v << std::endl;
+  }
+  
+  void XMLWriter::store_array_elt(const Vec2f& v) {
+    xml << v.x << " " << v.y << std::endl;
+  }
+  
+  void XMLWriter::store_array_elt(const Vec3f& v) {
+    xml << v.x << " " << v.y << " " << v.z << std::endl;
+  }
+
+  void XMLWriter::store_array_elt(const Vec3fa& v) {
+    xml << v.x << " " << v.y << " " << v.z << std::endl;
+  }
+
+  void XMLWriter::store_array_elt(const Vec3ff& v) {
+    xml << v.x << " " << v.y << " " << v.z << " " << v.w << std::endl;
+  }
+
+  void XMLWriter::store_array_elt(const SceneGraph::TriangleMeshNode::Triangle& v) {
+    xml << v.v0 << " " << v.v1 << " " << v.v2 << std::endl;
+  }
+
+  void XMLWriter::store_array_elt(const SceneGraph::QuadMeshNode::Quad& v) {
+    xml << v.v0 << " " << v.v1 << " " << v.v2 << " "  << v.v3 << std::endl;
+  }
+
   template<typename T>
-  void XMLWriter::store(const char* name, const std::vector<T>& vec)
+  void XMLWriter::store_array_text(const char* name, const std::vector<T>& vec)
+  {
+    open(name);
+    for (size_t i=0; i<vec.size(); i++) {
+      tab(); store_array_elt(vec[i]);
+    }
+    close(name);
+  }
+
+  template<typename T>
+  void XMLWriter::store_array_binary(const char* name, const std::vector<T>& vec)
   {
     std::streampos offset = bin.tellg();
     tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
     if (vec.size()) bin.write((char*)vec.data(),vec.size()*sizeof(T));
   }
 
-  void XMLWriter::store(const char* name, const avector<Vec3fa>& vec)
+  template<typename T>
+  void XMLWriter::store(const char* name, const std::vector<T>& vec)
+  {
+    if (binaryFormat) store_array_binary(name,vec);
+    else              store_array_text  (name,vec);
+  }
+
+  void XMLWriter::store_array_text(const char* name, const avector<Vec3fa>& vec)
+  {
+    open(name);
+    for (size_t i=0; i<vec.size(); i++) {
+      tab(); store_array_elt(vec[i]);
+    }
+    close(name);
+  }
+  
+  void XMLWriter::store_array_binary(const char* name, const avector<Vec3fa>& vec)
   {
     std::streampos offset = bin.tellg();
     tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
     for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3f));
   }
 
-  void XMLWriter::store4f(const char* name, const avector<Vec3ff>& vec)
+  void XMLWriter::store(const char* name, const avector<Vec3fa>& vec)
+  {
+    if (binaryFormat) store_array_binary(name,vec);
+    else              store_array_text  (name,vec);
+  }
+
+  void XMLWriter::store_array_text(const char* name, const avector<Vec3ff>& vec)
+  {
+    open(name);
+    for (size_t i=0; i<vec.size(); i++) {
+      tab(); store_array_elt(vec[i]);
+    }
+    close(name);
+  }
+  
+  void XMLWriter::store_array_binary(const char* name, const avector<Vec3ff>& vec)
   {
     std::streampos offset = bin.tellg();
     tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
-    for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3fa));
+    for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3ff));
+  }
+
+  void XMLWriter::store(const char* name, const avector<Vec3ff>& vec)
+  {
+    if (binaryFormat) store_array_binary(name,vec);
+    else              store_array_text  (name,vec);
   }
 
   void XMLWriter::store_parm(const char* name, const float& v) {
@@ -511,7 +605,7 @@ namespace embree
     open("Curves type=\""+str_subtype+"\" basis=\""+str_type+"\"",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions) store4f("positions",p);
+    for (const auto& p : mesh->positions) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     if (mesh->normals.size()) {
       if (mesh->numTimeSteps() != 1) open("animated_normals");
@@ -633,15 +727,18 @@ namespace embree
     else throw std::runtime_error("unknown node type");
   }
  
-  XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials) 
-    : ident(0), currentNodeID(0), embedTextures(embedTextures), referenceMaterials(referenceMaterials)
+  XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials, bool binaryFormat) 
+    : ident(0), currentNodeID(0), embedTextures(embedTextures), referenceMaterials(referenceMaterials), binaryFormat(binaryFormat)
   {
-    FileName binFileName = fileName.addExt(".bin");
-
     xml.exceptions (std::fstream::failbit | std::fstream::badbit);
     xml.open (fileName, std::fstream::out);
-    bin.exceptions (std::fstream::failbit | std::fstream::badbit);
-    bin.open (binFileName, std::fstream::out | std::fstream::binary);
+
+    if (binaryFormat)
+    {
+      const FileName binFileName = fileName.addExt(".bin");
+      bin.exceptions (std::fstream::failbit | std::fstream::badbit);
+      bin.open (binFileName, std::fstream::out | std::fstream::binary);
+    }
 
     xml << "<?xml version=\"1.0\"?>" << std::endl;
     root->calculateInDegree();
@@ -651,7 +748,7 @@ namespace embree
     root->resetInDegree();
   }
 
-  void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials) {
-    XMLWriter(root,fileName,embedTextures,referenceMaterials);
+  void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials, bool binaryFormat) {
+    XMLWriter(root,fileName,embedTextures,referenceMaterials,binaryFormat);
   }
 }
