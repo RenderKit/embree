@@ -769,6 +769,9 @@ namespace embree
   Ref<SceneGraph::Node> XMLLoader::loadAnimatedPerspectiveCamera(const Ref<XML>& xml) 
   {
     size_t numCameras = xml->size();
+    if (numCameras == 0)
+      return nullptr;
+    
     std::vector<Ref<SceneGraph::PerspectiveCameraNode>> cameras(numCameras);
     
     for (size_t i=0; i<numCameras; i++) 

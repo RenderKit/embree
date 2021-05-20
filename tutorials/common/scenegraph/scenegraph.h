@@ -546,6 +546,15 @@ namespace embree
       PerspectiveCameraData (const PerspectiveCameraData& other, const AffineSpace3fa& space)
         : from(xfmPoint(space,other.from)), to(xfmPoint(space,other.to)), up(xfmVector(space,other.up)), fov(other.fov) {}
 
+      friend PerspectiveCameraData lerp(const PerspectiveCameraData& a, const PerspectiveCameraData& b, const float t)
+      {
+        const Vec3fa from = embree::lerp(a.from, b.from, t);
+        const Vec3fa to   = embree::lerp(a.to  , b.to  , t);
+        const Vec3fa up   = embree::lerp(a.up  , b.up  , t);
+        const float  fov  = embree::lerp(a.fov , b.fov , t);
+        return PerspectiveCameraData(from,to,up,fov);
+      }
+
     public:
       Vec3fa from;   //!< position of camera
       Vec3fa to;     //!< look at point
@@ -566,7 +575,7 @@ namespace embree
       PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id = "")
         : Node(id), data(other->data,space) {}
 
-      virtual PerspectiveCameraData get(unsigned int frameID) const {
+      virtual PerspectiveCameraData get(float time) const {
         return data;
       }
       
@@ -581,23 +590,25 @@ namespace embree
 
     struct AnimatedPerspectiveCameraNode : public PerspectiveCameraNode
     {
-      ALIGNED_STRUCT_(16);
-
       AnimatedPerspectiveCameraNode (std::vector<Ref<PerspectiveCameraNode>>&& cameras, const std::string& id = "")
-        : cameras(cameras) {}
+        : time_range(0,1), cameras(cameras) {}
 
       AnimatedPerspectiveCameraNode (const Ref<AnimatedPerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
-        : PerspectiveCameraNode(id)
+        : PerspectiveCameraNode(id), time_range(0,1)
       {
         cameras.resize(other->size());
         for (size_t i=0; i<other->size(); i++)
           cameras[i] = new PerspectiveCameraNode(other->cameras[i],space);
       }
 
-      virtual PerspectiveCameraData get(unsigned int frameID) const
+      virtual PerspectiveCameraData get(float time) const
       {
-        frameID = frameID % size();
-        return cameras[frameID]->get(frameID);
+        time = frac(time-time_range.lower)/time_range.size();
+        time = (cameras.size()-1)*time;
+        int   itime = (int)floor(time);
+        itime = min(max(itime,0),(int)cameras.size()-1);
+        float ftime = time - (float)itime;
+        return lerp(cameras[itime+0]->get(time), cameras[itime+1]->get(time), ftime);
       }
       
       virtual void print(std::ostream& cout, int depth);
@@ -608,6 +619,7 @@ namespace embree
       size_t size() const { return cameras.size(); }
 
     public:
+      BBox1f time_range;
       std::vector<Ref<PerspectiveCameraNode>> cameras;
     };
 

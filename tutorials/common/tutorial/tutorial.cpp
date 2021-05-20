@@ -947,7 +947,7 @@ namespace embree
 
     /* update animated camera */
     if (sg_camera)
-      camera = Camera(sg_camera->get((int)time),camera.handedness);
+      camera = Camera(sg_camera->get(time),camera.handedness);
     
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
      if (print_camera)
