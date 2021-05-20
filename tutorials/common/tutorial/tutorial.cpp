@@ -946,10 +946,9 @@ namespace embree
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
 
     /* update animated camera */
-    if (sg_camera) {
-      sg_camera->update((int)time);
-      camera = Camera(sg_camera->from,sg_camera->to,sg_camera->up,sg_camera->fov,camera.handedness);
-    }
+    if (sg_camera)
+      camera = Camera(sg_camera->get((int)time),camera.handedness);
+    
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
      if (print_camera)
       std::cout << camera.str() << std::endl;
@@ -1306,17 +1305,14 @@ namespace embree
     /* use specified camera */
     if (camera_name != "") {
       sg_camera = obj_scene.getCamera(camera_name);
-      sg_camera->update(0);
-      camera = Camera(sg_camera->from,sg_camera->to,sg_camera->up,sg_camera->fov,camera.handedness);
+      camera = Camera(sg_camera->get(0),camera.handedness);
     }
 
     /* otherwise use default camera */
     else if (!command_line_camera) {
       sg_camera = obj_scene.getDefaultCamera();
-      if (sg_camera) {
-        sg_camera->update(0);
-        camera = Camera(sg_camera->from,sg_camera->to,sg_camera->up,sg_camera->fov,camera.handedness);
-      }
+      if (sg_camera)
+        camera = Camera(sg_camera->get(0),camera.handedness);
     }
 
     /* send model */

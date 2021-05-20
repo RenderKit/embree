@@ -41,10 +41,10 @@ namespace embree
     if (name != "") {
       tab(cout, depth+1); cout << "name = " << name << std::endl;
     }
-    tab(cout, depth+1); cout << "from = " << from << std::endl;
-    tab(cout, depth+1); cout << "to   = " << to   << std::endl;
-    tab(cout, depth+1); cout << "up   = " << up   << std::endl;
-    tab(cout, depth+1); cout << "fov  = " << fov  << std::endl;
+    tab(cout, depth+1); cout << "from = " << data.from << std::endl;
+    tab(cout, depth+1); cout << "to   = " << data.to   << std::endl;
+    tab(cout, depth+1); cout << "up   = " << data.up   << std::endl;
+    tab(cout, depth+1); cout << "fov  = " << data.fov  << std::endl;
     tab(cout, depth); cout << "}" << std::endl;
   }
 

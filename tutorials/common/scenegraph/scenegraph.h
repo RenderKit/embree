@@ -535,20 +535,40 @@ namespace embree
       return normals_out;
     }
 
+    struct PerspectiveCameraData
+    {
+      PerspectiveCameraData()
+        : from(1,0,0), to(0,0,0), up(0,1,0), fov(30) {}
+      
+      PerspectiveCameraData (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
+        : from(from), to(to), up(up), fov(fov) {}
+
+      PerspectiveCameraData (const PerspectiveCameraData& other, const AffineSpace3fa& space)
+        : from(xfmPoint(space,other.from)), to(xfmPoint(space,other.to)), up(xfmVector(space,other.up)), fov(other.fov) {}
+
+    public:
+      Vec3fa from;   //!< position of camera
+      Vec3fa to;     //!< look at point
+      Vec3fa up;     //!< up vector
+      float fov;     //!< vertical field of view
+    };
+
     struct PerspectiveCameraNode : public Node
     {
       ALIGNED_STRUCT_(16);
 
       PerspectiveCameraNode (std::string name = "")
-        : Node(name), from(1,0,0), to(0,0,0), up(0,1,0), fov(30) {}
+        : Node(name) {}
       
       PerspectiveCameraNode (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
-        : from(from), to(to), up(up), fov(fov) {}
+        : data(from, to, up, fov) {}
 
       PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id = "")
-        : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
+        : Node(id), data(other->data,space) {}
 
-      virtual void update(unsigned int frameID) {}
+      virtual PerspectiveCameraData get(unsigned int frameID) const {
+        return data;
+      }
       
       virtual void print(std::ostream& cout, int depth);
       
@@ -556,10 +576,7 @@ namespace embree
       virtual bool calculateClosed(bool group_instancing);
             
     public:
-      Vec3fa from;   //!< position of camera
-      Vec3fa to;     //!< look at point
-      Vec3fa up;     //!< up vector
-      float fov;     //!< vertical field of view
+      PerspectiveCameraData data;
     };
 
     struct AnimatedPerspectiveCameraNode : public PerspectiveCameraNode
@@ -577,13 +594,10 @@ namespace embree
           cameras[i] = new PerspectiveCameraNode(other->cameras[i],space);
       }
 
-      virtual void update(unsigned int frameID)
+      virtual PerspectiveCameraData get(unsigned int frameID) const
       {
         frameID = frameID % size();
-        from = cameras[frameID]->from;
-        to   = cameras[frameID]->to;
-        up   = cameras[frameID]->up;
-        fov  = cameras[frameID]->fov;
+        return cameras[frameID]->get(frameID);
       }
       
       virtual void print(std::ostream& cout, int depth);

@@ -623,10 +623,10 @@ namespace embree
     xml << "<PerspectiveCamera " <<
       "id=\"" << id << "\" " << 
       "name=\"" << camera->name << "\" " <<
-      "from=\"" << camera->from.x << " " << camera->from.y << " " << camera->from.z << "\" " <<
-      "to=\"" << camera->to.x << " " << camera->to.y << " " << camera->to.z << "\" " <<
-      "up=\"" << camera->up.x << " " << camera->up.y << " " << camera->up.z << "\" " <<
-      "fov=\"" << camera->fov << "\" " << "/>" << std::endl;
+      "from=\"" << camera->data.from.x << " " << camera->data.from.y << " " << camera->data.from.z << "\" " <<
+      "to=\""   << camera->data.to.x   << " " << camera->data.to.y   << " " << camera->data.to.z << "\" " <<
+      "up=\""   << camera->data.up.x   << " " << camera->data.up.y   << " " << camera->data.up.z << "\" " <<
+      "fov=\""  << camera->data.fov << "\" " << "/>" << std::endl;
   }
 
   void XMLWriter::store(Ref<SceneGraph::TransformNode> node, ssize_t id)
