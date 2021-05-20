@@ -37,7 +37,26 @@ namespace embree
   }
 
   void SceneGraph::PerspectiveCameraNode::print(std::ostream& cout, int depth) {
-    cout << "PerspectiveCameraNode @ " << this << " { closed = " << closed << " }" << std::endl;
+    cout << "PerspectiveCameraNode @ " << this << " { " << std::endl;
+    if (name != "") {
+      tab(cout, depth+1); cout << "name = " << name << std::endl;
+    }
+    tab(cout, depth+1); cout << "from = " << from << std::endl;
+    tab(cout, depth+1); cout << "to   = " << to   << std::endl;
+    tab(cout, depth+1); cout << "up   = " << up   << std::endl;
+    tab(cout, depth+1); cout << "fov  = " << fov  << std::endl;
+    tab(cout, depth); cout << "}" << std::endl;
+  }
+
+  void SceneGraph::AnimatedPerspectiveCameraNode::print(std::ostream& cout, int depth) {
+    cout << "AnimatedPerspectiveCameraNode @ " << this << " { " << std::endl;
+    if (name != "") {
+      tab(cout, depth+1); cout << "name = " << name << std::endl;
+    }
+    for (size_t i=0; i<cameras.size(); i++) {
+      tab(cout,depth+1); cameras[i]->print(cout,depth+1);
+    }
+    tab(cout, depth); cout << "}" << std::endl;
   }
 
   void SceneGraph::TransformNode::print(std::ostream& cout, int depth)
@@ -96,6 +115,12 @@ namespace embree
   }
 
   void SceneGraph::PerspectiveCameraNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) stat.numCameras++;
+  }
+
+  void SceneGraph::AnimatedPerspectiveCameraNode::calculateStatistics(Statistics& stat)
   {
     indegree++;
     if (indegree == 1) stat.numCameras++;
@@ -314,6 +339,14 @@ namespace embree
   }
 
   bool SceneGraph::PerspectiveCameraNode::calculateClosed(bool group_instancing)
+  {
+    assert(indegree);
+    closed = true;
+    hasLightOrCamera = true;
+    return indegree == 1;
+  }
+
+  bool SceneGraph::AnimatedPerspectiveCameraNode::calculateClosed(bool group_instancing)
   {
     assert(indegree);
     closed = true;
@@ -1800,8 +1833,22 @@ namespace embree
       else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
         group.push_back(new SceneGraph::LightNode(lightNode->light->transform(spaces[0])));
       }
-      else if (Ref<SceneGraph::PerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) {
-        group.push_back(new SceneGraph::PerspectiveCameraNode(cameraNode,spaces[0],makeUniqueID(cameraNode->name)));
+      else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>()) {
+        if (spaces.size() != 1) throw std::runtime_error("animated cameras cannot get instantiated with a transform animation");
+        group.push_back(new SceneGraph::AnimatedPerspectiveCameraNode(cameraNode,spaces[0],makeUniqueID(cameraNode->name)));
+      }
+      else if (Ref<SceneGraph::PerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>())
+      {
+        if (spaces.size() == 1)
+          group.push_back(new SceneGraph::PerspectiveCameraNode(cameraNode,spaces[0],makeUniqueID(cameraNode->name)));
+        else
+        {
+          std::vector<Ref<SceneGraph::PerspectiveCameraNode>> cameras(spaces.size());
+          for (size_t i=0; i<spaces.size(); i++)
+            cameras[i] = new SceneGraph::PerspectiveCameraNode(cameraNode,spaces[i]);
+          
+          group.push_back(new SceneGraph::AnimatedPerspectiveCameraNode(std::move(cameras),makeUniqueID(cameraNode->name)));
+        }
       }
     }
 

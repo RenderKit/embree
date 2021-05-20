@@ -939,16 +939,24 @@ namespace embree
 
   void TutorialApplication::displayFunc()
   {
+    double t0 = getSeconds();
+    const float time = float(t0-time0);
+    
     /* update camera */
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
+
+    /* update animated camera */
+    if (sg_camera) {
+      sg_camera->update((int)time);
+      camera = Camera(sg_camera->from,sg_camera->to,sg_camera->up,sg_camera->fov,camera.handedness);
+    }
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
      if (print_camera)
       std::cout << camera.str() << std::endl;
 
     /* render image using ISPC */
     initRayStats();
-    double t0 = getSeconds();
-    render(pixels,width,height,float(time0-t0),ispccamera);
+    render(pixels,width,height,time,ispccamera);
     double dt0 = getSeconds()-t0;
     avg_render_time.add(dt0);
     double mrayps = double(getNumRays())/(1000000.0*dt0);
@@ -977,8 +985,8 @@ namespace embree
     ImGui::Begin("Embree", nullptr, window_flags);
     drawGUI();
     
-    double time = avg_render_time.get();
-    double fps = time != 0.0 ? 1.0f/time : 0.0;
+    double avg_time = avg_render_time.get();
+    double fps = avg_time != 0.0 ? 1.0f/avg_time : 0.0;
     ImGui::Text("%3.2f fps",fps);
 #if defined(RAY_STATS)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
@@ -1297,14 +1305,18 @@ namespace embree
 
     /* use specified camera */
     if (camera_name != "") {
-      Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getCamera(camera_name);
-      camera = Camera(c->from,c->to,c->up,c->fov,camera.handedness);
+      sg_camera = obj_scene.getCamera(camera_name);
+      sg_camera->update(0);
+      camera = Camera(sg_camera->from,sg_camera->to,sg_camera->up,sg_camera->fov,camera.handedness);
     }
 
     /* otherwise use default camera */
     else if (!command_line_camera) {
-      Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getDefaultCamera();
-      if (c) camera = Camera(c->from,c->to,c->up,c->fov,camera.handedness);
+      sg_camera = obj_scene.getDefaultCamera();
+      if (sg_camera) {
+        sg_camera->update(0);
+        camera = Camera(sg_camera->from,sg_camera->to,sg_camera->up,sg_camera->fov,camera.handedness);
+      }
     }
 
     /* send model */

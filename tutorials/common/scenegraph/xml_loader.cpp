@@ -240,6 +240,7 @@ namespace embree
  
   private:
     Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadAnimatedPerspectiveCamera(const Ref<XML>& xml);
     Ref<SceneGraph::MaterialNode> loadMaterial(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadTransformNode(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadMultiTransformNode(const Ref<XML>& xml);
@@ -763,6 +764,17 @@ namespace embree
     const Vec3fa up = xml->parm_Vec3fa("up");
     const float fov = xml->parm_float("fov");
     return new SceneGraph::PerspectiveCameraNode(from,to,up,fov);
+  }
+
+  Ref<SceneGraph::Node> XMLLoader::loadAnimatedPerspectiveCamera(const Ref<XML>& xml) 
+  {
+    size_t numCameras = xml->size();
+    std::vector<Ref<SceneGraph::PerspectiveCameraNode>> cameras(numCameras);
+    
+    for (size_t i=0; i<numCameras; i++) 
+      cameras[i] = loadPerspectiveCamera(xml->child(i)).dynamicCast<SceneGraph::PerspectiveCameraNode>();
+
+    return new SceneGraph::AnimatedPerspectiveCameraNode(std::move(cameras));
   }
 
   Parms XMLLoader::loadMaterialParms(const Ref<XML>& parms)
@@ -1471,6 +1483,7 @@ namespace embree
         node = state.sceneMap[id] = loadCurves(xml,type);
       }
       else if (xml->name == "PerspectiveCamera") node = state.sceneMap[id] = loadPerspectiveCamera(xml);
+      else if (xml->name == "AnimatedPerspectiveCamera") node = state.sceneMap[id] = loadAnimatedPerspectiveCamera(xml);
       else if (xml->name == "Group"           ) node = state.sceneMap[id] = loadGroupNode       (xml);
       else if (xml->name == "Transform"       ) node = state.sceneMap[id] = loadTransformNode   (xml);
       else if (xml->name == "MultiTransform"  ) node = state.sceneMap[id] = loadMultiTransformNode(xml);

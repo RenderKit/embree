@@ -539,12 +539,17 @@ namespace embree
     {
       ALIGNED_STRUCT_(16);
 
+      PerspectiveCameraNode (std::string name = "")
+        : Node(name), from(1,0,0), to(0,0,0), up(0,1,0), fov(30) {}
+      
       PerspectiveCameraNode (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
         : from(from), to(to), up(up), fov(fov) {}
 
-      PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
+      PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id = "")
         : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
 
+      virtual void update(unsigned int frameID) {}
+      
       virtual void print(std::ostream& cout, int depth);
       
       virtual void calculateStatistics(Statistics& stat);
@@ -555,6 +560,41 @@ namespace embree
       Vec3fa to;     //!< look at point
       Vec3fa up;     //!< up vector
       float fov;     //!< vertical field of view
+    };
+
+    struct AnimatedPerspectiveCameraNode : public PerspectiveCameraNode
+    {
+      ALIGNED_STRUCT_(16);
+
+      AnimatedPerspectiveCameraNode (std::vector<Ref<PerspectiveCameraNode>>&& cameras, const std::string& id = "")
+        : cameras(cameras) {}
+
+      AnimatedPerspectiveCameraNode (const Ref<AnimatedPerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
+        : PerspectiveCameraNode(id)
+      {
+        cameras.resize(other->size());
+        for (size_t i=0; i<other->size(); i++)
+          cameras[i] = new PerspectiveCameraNode(other->cameras[i],space);
+      }
+
+      virtual void update(unsigned int frameID)
+      {
+        frameID = frameID % size();
+        from = cameras[frameID]->from;
+        to   = cameras[frameID]->to;
+        up   = cameras[frameID]->up;
+        fov  = cameras[frameID]->fov;
+      }
+      
+      virtual void print(std::ostream& cout, int depth);
+
+      virtual void calculateStatistics(Statistics& stat);
+      virtual bool calculateClosed(bool group_instancing);
+
+      size_t size() const { return cameras.size(); }
+
+    public:
+      std::vector<Ref<PerspectiveCameraNode>> cameras;
     };
 
     struct TransformNode : public Node
