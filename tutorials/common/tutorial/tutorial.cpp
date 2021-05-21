@@ -952,8 +952,8 @@ namespace embree
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
 
     /* update animated camera */
-    if (sg_camera)
-      camera = Camera(sg_camera->get(time),camera.handedness);
+    if (animated_camera)
+      camera = Camera(animated_camera->get(time),camera.handedness);
     
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
      if (print_camera)
@@ -1310,15 +1310,18 @@ namespace embree
 
     /* use specified camera */
     if (camera_name != "") {
-      sg_camera = obj_scene.getCamera(camera_name);
-      camera = Camera(sg_camera->get(0),camera.handedness);
+      auto cam = obj_scene.getCamera(camera_name);
+      camera = Camera(cam->get(0),camera.handedness);
+      if (cam->isAnimated()) animated_camera = cam;
     }
 
     /* otherwise use default camera */
     else if (!command_line_camera) {
-      sg_camera = obj_scene.getDefaultCamera();
-      if (sg_camera)
-        camera = Camera(sg_camera->get(0),camera.handedness);
+      auto cam = obj_scene.getDefaultCamera();
+      if (cam) {
+        camera = Camera(cam->get(0),camera.handedness);
+        if (cam->isAnimated()) animated_camera = cam;
+      }
     }
 
     /* send model */

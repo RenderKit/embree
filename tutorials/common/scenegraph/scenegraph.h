@@ -575,6 +575,10 @@ namespace embree
       PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id = "")
         : Node(id), data(other->data,space) {}
 
+      virtual bool isAnimated() const {
+        return false;
+      }
+
       virtual PerspectiveCameraData get(float time) const {
         return data;
       }
@@ -599,6 +603,10 @@ namespace embree
         cameras.resize(other->size());
         for (size_t i=0; i<other->size(); i++)
           cameras[i] = new PerspectiveCameraNode(other->cameras[i],space);
+      }
+
+      virtual bool isAnimated() const {
+        return true;
       }
 
       virtual PerspectiveCameraData get(float time) const

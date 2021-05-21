@@ -134,7 +134,7 @@ namespace embree
     std::string tutorialName;
 
     /* render settings */
-    Ref<SceneGraph::PerspectiveCameraNode> sg_camera;
+    Ref<SceneGraph::PerspectiveCameraNode> animated_camera;
     Camera camera;
     Shader shader;
 
