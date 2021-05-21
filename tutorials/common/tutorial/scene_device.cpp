@@ -35,7 +35,7 @@ namespace embree
   }
   
   ISPCScene::ISPCScene(TutorialScene* in)
-    : scene(nullptr)
+    : scene(nullptr), tutorialScene(in)
   {
     SceneGraph::opaque_geometry_destruction = (void(*)(void*)) deleteGeometry;
     
@@ -53,7 +53,7 @@ namespace embree
     numLights = 0;
     for (size_t i=0; i<in->lights.size(); i++)
     {
-      Light* light = convertLight(in->lights[i]);
+      Light* light = convertLight(in->lights[i]->get(0.0f));
       if (light) lights[numLights++] = light;
     }
   }
@@ -69,54 +69,56 @@ namespace embree
   
   Light* ISPCScene::convertLight(Ref<SceneGraph::LightNode> in)
   {
-    void* out = 0;
-    
-    switch (in->getType())
-    {
-    case SceneGraph::LIGHT_AMBIENT:
-    {
-      SceneGraph::AmbientLight inAmbient = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>()->light;
-      out = AmbientLight_create();
-      AmbientLight_set(out, inAmbient.L);
-      break;
+    Light* l = createLight(in);
+    updateLight(in->get(0.0f),l);
+    return l;
+  }
+
+  template<> void ISPCScene::updateLight(const SceneGraph::AmbientLight& in, Light* out) {
+    AmbientLight_set(out, in.L);
+  }
+
+  template<> void ISPCScene::updateLight(const SceneGraph::DirectionalLight& in, Light* out) {
+    DirectionalLight_set(out, -normalize(in.D), in.E, 1.0f);
+  }
+
+  template<> void ISPCScene::updateLight(const SceneGraph::DistantLight& in, Light* out)
+  {
+    DirectionalLight_set(out,
+                         -normalize(in.D),
+                         in.L * rcp(uniformSampleConePDF(in.cosHalfAngle)),
+                         in.cosHalfAngle);
+  }
+
+  template<> void ISPCScene::updateLight(const SceneGraph::PointLight& in, Light* out) {
+    PointLight_set(out, in.P, in.I, 0.f);
+  }
+
+  Light* ISPCScene::createLight(Ref<SceneGraph::LightNode> in)
+  {
+    switch (in->getType()) {
+    case SceneGraph::LIGHT_AMBIENT    : return (Light*) AmbientLight_create();
+    case SceneGraph::LIGHT_DIRECTIONAL: return (Light*) DirectionalLight_create();
+    case SceneGraph::LIGHT_DISTANT    : return (Light*) DirectionalLight_create();
+    case SceneGraph::LIGHT_POINT      : return (Light*) PointLight_create();
+    case SceneGraph::LIGHT_SPOT       : return nullptr;
+    case SceneGraph::LIGHT_TRIANGLE   : return nullptr;
+    case SceneGraph::LIGHT_QUAD       : return nullptr;
+    default                           : THROW_RUNTIME_ERROR("unknown light type");
     }
-    case SceneGraph::LIGHT_DIRECTIONAL:
-    {
-      SceneGraph::DirectionalLight inDirectional = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>()->light;
-      out = DirectionalLight_create();
-      DirectionalLight_set(out, -normalize(inDirectional.D), inDirectional.E, 1.0f);
-      break;
-    }
-    case SceneGraph::LIGHT_DISTANT:
-    {
-      SceneGraph::DistantLight inDistant = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>()->light;
-      out = DirectionalLight_create();
-      DirectionalLight_set(out,
-                           -normalize(inDistant.D),
-                           inDistant.L * rcp(uniformSampleConePDF(inDistant.cosHalfAngle)),
-                           inDistant.cosHalfAngle);
-      break;
-    }
-    case SceneGraph::LIGHT_POINT:
-    {
-      SceneGraph::PointLight inPoint = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>()->light;
-      out = PointLight_create();
-      PointLight_set(out, inPoint.P, inPoint.I, 0.f);
-      break;
-    }
-    case SceneGraph::LIGHT_SPOT:
-    case SceneGraph::LIGHT_TRIANGLE:
-    case SceneGraph::LIGHT_QUAD:
-    {
-      // FIXME: not implemented yet
-      break;
-    }
-    
-    default:
-      THROW_RUNTIME_ERROR("unknown light type");
-    }
-    
-    return (Light*)out;
+    return nullptr;
+  }
+
+  void ISPCScene::updateLight(const Ref<SceneGraph::LightNode>& in, Light* out)
+  {
+    if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>())
+      updateLight(light->light, out);
+    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>())
+      updateLight(light->light, out);
+    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>())
+      updateLight(light->light, out);
+    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>())
+      updateLight(light->light, out);
   }
   
   ISPCTriangleMesh::ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
@@ -741,5 +743,9 @@ namespace embree
     }
 
     rtcCommitScene(scene_in->scene);
+
+    TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
+    for (unsigned int i=0; i<scene_in->numLights; i++)
+      ISPCScene::updateLight(tutorial_scene->lights[i]->get(timeStep), scene_in->lights[i]);
   }
 }

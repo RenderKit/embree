@@ -27,6 +27,7 @@
 extern uniform int g_spp;
 extern uniform int g_max_path_length;
 extern uniform bool g_accumulate;
+extern uniform int g_animation_mode;
 
 uniform bool g_subdiv_mode = false;
 uniform unsigned int keyframeID = 0;
@@ -1785,6 +1786,8 @@ export void renderFrameStandard (uniform int* uniform pixels,
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
+uniform int frameID = 0;
+
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform unsigned int width,
@@ -1810,7 +1813,7 @@ export void device_render (uniform int* uniform pixels,
   }
 
   /* reset accumulator */
-  uniform bool camera_changed = g_changed || !g_accumulate; g_changed = false;
+  uniform bool camera_changed = g_changed || !g_accumulate || g_animation_mode; g_changed = false;
   camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
   camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
   camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
@@ -1829,6 +1832,9 @@ export void device_render (uniform int* uniform pixels,
   }
   else
     g_accu_count++;
+
+  if (g_animation_mode)
+      UpdateScene(g_ispc_scene, frameID++);
 
 } // device_render
 

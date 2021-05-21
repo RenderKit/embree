@@ -311,6 +311,10 @@ namespace embree
     
     static ISPCGeometry* convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in);   
     static Light* convertLight(Ref<SceneGraph::LightNode> in);
+    static Light* createLight(Ref<SceneGraph::LightNode> in);
+
+    template<typename LightNode> static void updateLight(const LightNode& in, Light* out);
+    static void updateLight(const Ref<SceneGraph::LightNode>& in, Light* out);
     
   private:
     ISPCScene (const ISPCScene& other) DELETED; // do not implement
@@ -326,6 +330,7 @@ namespace embree
     
     Light** lights;              //!< list of lights
     unsigned int numLights;               //!< number of lights
+    void* tutorialScene;
   };
 
 #if !defined(ISPC)

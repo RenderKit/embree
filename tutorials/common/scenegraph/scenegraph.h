@@ -808,6 +808,8 @@ namespace embree
 
       virtual LightType getType() const = 0;
       virtual Ref<LightNode> transform(const AffineSpace3fa& space) const = 0;
+      virtual Ref<LightNode> lerp(const Ref<LightNode>& light1_in, float f) const = 0;
+      virtual Ref<LightNode> get(float time) const = 0;
     };
 
     template<typename Light>
@@ -822,6 +824,17 @@ namespace embree
       
       virtual Ref<LightNode> transform(const AffineSpace3fa& space) const {
         return new LightNodeImpl(light.transform(space));
+      }
+
+      virtual Ref<LightNode> get(float time) const {
+        return (LightNode*) this;
+      }
+
+      virtual Ref<LightNode> lerp(const Ref<LightNode>& light1_in, float f) const
+      {
+        const Ref<LightNodeImpl<Light>> light1 = light1_in.dynamicCast<LightNodeImpl<Light>>();
+        assert(light1);
+        return new LightNodeImpl(Light::lerp(light,light1->light,f));
       }
       
       Light light;
@@ -843,7 +856,24 @@ namespace embree
           xfm_lights[i] = lights[i]->transform(space);
         return new AnimatedLightNode(std::move(xfm_lights), time_range);
       }
+
+      virtual Ref<LightNode> get(float time) const
+      {
+        time = frac((time-time_range.lower)/time_range.size());
+        time = (lights.size()-1)*time;
+        int   itime = (int)floor(time);
+        itime = min(max(itime,0),(int)lights.size()-2);
+        float ftime = time - (float)itime;
+        Ref<LightNode> light0 = lights[itime+0]->get(time);
+        Ref<LightNode> light1 = lights[itime+1]->get(time);
+        return light0->lerp(light1,ftime);
+      }
+
+      virtual Ref<LightNode> lerp(const Ref<LightNode>& light1_in, float f) const {
+        assert(false); return nullptr;
+      }
       
+    public: 
       std::vector<Ref<LightNode>> lights;
       BBox1f time_range;
     };
