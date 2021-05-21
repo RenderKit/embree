@@ -285,8 +285,6 @@ export void renderFrameStandard (uniform int* uniform pixels,
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 }
 
-uniform int frameID = 0;
-
 /* called by the C++ code to render */
 export void device_render (uniform int* uniform pixels,
                            const uniform unsigned int width,
@@ -319,7 +317,7 @@ export void device_render (uniform int* uniform pixels,
     }
 
     if (g_animation_mode)
-      UpdateScene(g_ispc_scene, frameID++);
+      UpdateScene(g_ispc_scene, time);
   }
 }
 

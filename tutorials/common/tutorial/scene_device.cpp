@@ -680,22 +680,32 @@ namespace embree
     }
   }
  
-  void UpdateInstance(ISPCInstance* instance, unsigned int timeStep)
+  void UpdateInstance(ISPCInstance* instance, float time)
   {
     if (instance->child->type != GROUP)
       THROW_RUNTIME_ERROR("invalid scene structure");
     
     if (instance->numTimeSteps <= 1)
       return;
+
+    int numTimeSteps = instance->numTimeSteps;
+    BBox1f time_range(instance->startTime, instance->endTime);
+    time = frac((time-time_range.lower)/time_range.size());
+    time = (numTimeSteps-1)*time;
+    int   itime = (int)floor(time);
+    itime = min(max(itime,0),(int)numTimeSteps-2);
+    float ftime = time - (float)itime;
     
-    timeStep = timeStep % instance->numTimeSteps;
-     
+    const AffineSpace3fa xfm0 = instance->spaces[itime+0];
+    const AffineSpace3fa xfm1 = instance->spaces[itime+1];
+    const AffineSpace3fa xfm  = lerp(xfm0,xfm1,ftime);
+
     RTCGeometry geom = instance->geom.geometry;
     if (instance->quaternion) {
-      QuaternionDecomposition qd = quaternionDecomposition(instance->spaces[timeStep]);
+      const QuaternionDecomposition qd = quaternionDecomposition(xfm);
       rtcSetGeometryTransformQuaternion(geom,0,(RTCQuaternionDecomposition*)&qd);
     } else {
-      rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[timeStep].l.vx.x);
+      rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&xfm.l.vx.x);
     }
     rtcCommitGeometry(geom);
   }
@@ -733,19 +743,19 @@ namespace embree
     return scene;
   }
 
-  extern "C" void UpdateScene(ISPCScene* scene_in, unsigned int timeStep)
+  extern "C" void UpdateScene(ISPCScene* scene_in, float time)
   {
     for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = scene_in->geometries[geomID];
       if (geometry->type != INSTANCE) continue;
-      UpdateInstance((ISPCInstance*) geometry, timeStep);
+      UpdateInstance((ISPCInstance*) geometry, time);
     }
 
     rtcCommitScene(scene_in->scene);
 
     TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
     for (unsigned int i=0; i<scene_in->numLights; i++)
-      ISPCScene::updateLight(tutorial_scene->lights[i]->get(timeStep), scene_in->lights[i]);
+      ISPCScene::updateLight(tutorial_scene->lights[i]->get(time), scene_in->lights[i]);
   }
 }

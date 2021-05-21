@@ -299,8 +299,6 @@ extern "C" void renderFrameStandard (int* pixels,
   }); 
 }
 
-int frameID = 0;
-
 /* called by the C++ code to render */
 extern "C" void device_render (int* pixels,
                            const unsigned int width,
@@ -333,7 +331,7 @@ extern "C" void device_render (int* pixels,
     }
 
     if (g_animation_mode)
-      UpdateScene(g_ispc_scene, frameID++);
+      UpdateScene(g_ispc_scene, time);
   }
 }
 
