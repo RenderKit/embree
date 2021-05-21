@@ -229,6 +229,8 @@ namespace embree
     Ref<SceneGraph::Node> loadTriangleLight(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadQuadLight(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadHDRILight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadLight(const Ref<XML>& xml);
+    Ref<SceneGraph::Node> loadAnimatedLight(const Ref<XML>& xml);
     
     Ref<SceneGraph::Node> loadTriangleMesh(const Ref<XML>& xml);
     Ref<SceneGraph::Node> loadQuadMesh(const Ref<XML>& xml);
@@ -723,6 +725,42 @@ namespace embree
     const Vec3fa v2 = xfmPoint(space, Vec3fa(1, 1, 0));
     const Vec3fa v3 = xfmPoint(space, Vec3fa(1, 0, 0));
     return new SceneGraph::LightNodeImpl<SceneGraph::QuadLight>(SceneGraph::QuadLight(v0,v1,v2,v3,L));
+  }
+
+   Ref<SceneGraph::Node> XMLLoader::loadLight(const Ref<XML>& xml) 
+   {
+     const std::string id = xml->parm("id");
+     if      (xml->name == "PointLight"      ) return state.sceneMap[id] = loadPointLight      (xml);
+     else if (xml->name == "SpotLight"       ) return state.sceneMap[id] = loadSpotLight       (xml);
+     else if (xml->name == "DirectionalLight") return state.sceneMap[id] = loadDirectionalLight(xml);
+     else if (xml->name == "DistantLight"    ) return state.sceneMap[id] = loadDistantLight    (xml);
+     else if (xml->name == "AmbientLight"    ) return state.sceneMap[id] = loadAmbientLight    (xml);
+     else if (xml->name == "TriangleLight"   ) return state.sceneMap[id] = loadTriangleLight   (xml);
+     else if (xml->name == "AnimatedLight"   ) return state.sceneMap[id] = loadAnimatedLight   (xml);
+     else if (xml->name == "QuadLight"       ) return state.sceneMap[id] = loadQuadLight       (xml);
+     else THROW_RUNTIME_ERROR(xml->loc.str()+": invalid light node: "+xml->name);
+   }
+  
+  Ref<SceneGraph::Node> XMLLoader::loadAnimatedLight(const Ref<XML>& xml) 
+  {
+    size_t numLights = xml->size();
+    if (numLights == 0)
+      return nullptr;
+
+    /* load list of lights */
+    std::vector<Ref<SceneGraph::LightNode>> lights(numLights);
+    for (size_t i=0; i<numLights; i++) 
+      lights[i] = loadLight(xml->child(i)).dynamicCast<SceneGraph::LightNode>();
+
+    /* check that all lights are of same type */
+    auto light_type = lights[0]->getType();
+    for (size_t i=1; i<numLights; i++) {
+      if (light_type != lights[i]->getType())
+        THROW_RUNTIME_ERROR(xml->loc.str()+": light types do not match");
+    }
+
+    const Vec2f time_range = xml->parm_Vec2f("time_range");
+    return new SceneGraph::AnimatedLightNode(std::move(lights),BBox1f(time_range.x,time_range.y));
   }
 
   std::shared_ptr<Texture> XMLLoader::loadTextureParm(const Ref<XML>& xml)
@@ -1394,6 +1432,7 @@ namespace embree
       else if (xml->name == "DistantLight"    ) node = state.sceneMap[id] = loadDistantLight    (xml);
       else if (xml->name == "AmbientLight"    ) node = state.sceneMap[id] = loadAmbientLight    (xml);
       else if (xml->name == "TriangleLight"   ) node = state.sceneMap[id] = loadTriangleLight   (xml);
+      else if (xml->name == "AnimatedLight"   ) node = state.sceneMap[id] = loadAnimatedLight   (xml);
       else if (xml->name == "QuadLight"       ) node = state.sceneMap[id] = loadQuadLight       (xml);
       else if (xml->name == "TriangleMesh"    ) node = state.sceneMap[id] = loadTriangleMesh    (xml);
       else if (xml->name == "QuadMesh"        ) node = state.sceneMap[id] = loadQuadMesh        (xml);

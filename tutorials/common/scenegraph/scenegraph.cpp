@@ -1830,10 +1830,25 @@ namespace embree
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (const auto& child : groupNode->children) convertLightsAndCameras(group,child,spaces);
       }
-      else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
+      else if (Ref<SceneGraph::AnimatedLightNode> lightNode = node.dynamicCast<SceneGraph::AnimatedLightNode>()) {
+        if (spaces.size() != 1) throw std::runtime_error("animated lights cannot get instantiated with a transform animation");
         group.push_back(lightNode->transform(spaces[0]).dynamicCast<SceneGraph::Node>());
       }
-      else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>()) {
+      else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>())
+      {
+        if (spaces.size() == 1)
+          group.push_back(lightNode->transform(spaces[0]).dynamicCast<SceneGraph::Node>());
+        else
+        {
+          std::vector<Ref<SceneGraph::LightNode>> lights(spaces.size());
+          for (size_t i=0; i<spaces.size(); i++)
+            lights[i] = lightNode->transform(spaces[i]);
+          
+          group.push_back(new SceneGraph::AnimatedLightNode(std::move(lights),spaces.time_range));
+        }
+      }
+      else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>())
+      {
         if (spaces.size() != 1) throw std::runtime_error("animated cameras cannot get instantiated with a transform animation");
         group.push_back(new SceneGraph::AnimatedPerspectiveCameraNode(cameraNode,spaces[0],makeUniqueID(cameraNode->name)));
       }

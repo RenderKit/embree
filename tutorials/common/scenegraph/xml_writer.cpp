@@ -54,6 +54,7 @@ namespace embree
     void store(const SceneGraph::TriangleLight& light, ssize_t id);
     void store(const SceneGraph::QuadLight& light, ssize_t id);
     void store(Ref<SceneGraph::LightNode> light, ssize_t id);
+    void store(Ref<SceneGraph::AnimatedLightNode> light, ssize_t id);
     
     void store(Ref<MatteMaterial> material, ssize_t id);
     void store(Ref<MirrorMaterial> material, ssize_t id);
@@ -72,6 +73,7 @@ namespace embree
     void store(Ref<SceneGraph::HairSetNode> hair, ssize_t id);
 
     void store(Ref<SceneGraph::PerspectiveCameraNode> camera, ssize_t id);
+    void store(Ref<SceneGraph::AnimatedPerspectiveCameraNode> camera, ssize_t id);
     void store(Ref<SceneGraph::TransformNode> node, ssize_t id);
     void store(std::vector<Ref<SceneGraph::TransformNode>> nodes);
     void store(Ref<SceneGraph::GroupNode> group, ssize_t id);
@@ -350,6 +352,17 @@ namespace embree
       store(light->light,id);
     else
       throw std::runtime_error("unsupported light");
+  }
+
+  void XMLWriter::store(Ref<SceneGraph::AnimatedLightNode> node, ssize_t id)
+  {
+    open(std::string("AnimatedLight ")+
+         "time_range=\""+std::to_string(node->time_range.lower)+" "+std::to_string(node->time_range.upper)+"\"");
+    
+    for (size_t i=0; i<node->lights.size(); i++)
+      store(node->lights[i].dynamicCast<SceneGraph::Node>());
+    
+    close("AnimatedLight");
   }
 
   void XMLWriter::store(Ref<MatteMaterial> material, ssize_t id)
@@ -633,6 +646,18 @@ namespace embree
       "fov=\""  << camera->data.fov << "\" " << "/>" << std::endl;
   }
 
+  void XMLWriter::store(Ref<SceneGraph::AnimatedPerspectiveCameraNode> camera, ssize_t id)
+  {
+    open(std::string("AnimatedPerspectiveCamera ")+
+         "name=\"" + camera->name + "\" "
+         "time_range=\""+std::to_string(camera->time_range.lower)+" "+std::to_string(camera->time_range.upper)+"\"");
+    
+    for (size_t i=0; i<camera->size(); i++)
+      store(camera->cameras[i].dynamicCast<SceneGraph::Node>());
+    
+    close("AnimatedPerspectiveCamera");
+  }
+
   void XMLWriter::store(Ref<SceneGraph::TransformNode> node, ssize_t id)
   {
     if (node->spaces.size() == 1)
@@ -717,14 +742,16 @@ namespace embree
     const ssize_t id = nodeMap[node] = currentNodeID++;
     if (node->fileName != "") {
       tab(); xml << "<extern id=\"" << id << "\" src=\"" << node->fileName << "\"/>" << std::endl; return;
-    } 
+    }
 
-    if      (Ref<SceneGraph::LightNode> cnode = node.dynamicCast<SceneGraph::LightNode>()) store(cnode,id);
+    if      (Ref<SceneGraph::AnimatedLightNode> cnode = node.dynamicCast<SceneGraph::AnimatedLightNode>()) store(cnode,id);
+    else if (Ref<SceneGraph::LightNode> cnode = node.dynamicCast<SceneGraph::LightNode>()) store(cnode,id);
     //else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TriangleMeshNode> cnode = node.dynamicCast<SceneGraph::TriangleMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::QuadMeshNode> cnode = node.dynamicCast<SceneGraph::QuadMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::SubdivMeshNode> cnode = node.dynamicCast<SceneGraph::SubdivMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::HairSetNode> cnode = node.dynamicCast<SceneGraph::HairSetNode>()) store(cnode,id);
+    else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cnode = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>()) store(cnode,id);
     else if (Ref<SceneGraph::PerspectiveCameraNode> cnode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TransformNode> cnode = node.dynamicCast<SceneGraph::TransformNode>()) store(cnode,id);
     else if (Ref<SceneGraph::GroupNode> cnode = node.dynamicCast<SceneGraph::GroupNode>()) store(cnode,id);

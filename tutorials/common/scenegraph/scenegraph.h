@@ -826,6 +826,28 @@ namespace embree
       
       Light light;
     };
+
+    struct AnimatedLightNode : public LightNode
+    {
+      AnimatedLightNode (const std::vector<Ref<LightNode>>&& lights, BBox1f time_range)
+        : lights(lights), time_range(time_range) {}
+
+      virtual LightType getType() const {
+        return lights[0]->getType();
+      }
+      
+      virtual Ref<LightNode> transform(const AffineSpace3fa& space) const
+      {
+        std::vector<Ref<LightNode>> xfm_lights(lights.size());
+        for (size_t i=0; i<lights.size(); i++)
+          xfm_lights[i] = lights[i]->transform(space);
+        return new AnimatedLightNode(std::move(xfm_lights), time_range);
+      }
+      
+      std::vector<Ref<LightNode>> lights;
+      BBox1f time_range;
+    };
+
     
     struct MaterialNode : public Node
     {
