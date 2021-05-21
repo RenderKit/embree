@@ -20,7 +20,7 @@ namespace embree
       LIGHT_QUAD,
     };
 
-    class Light : public RefCount
+    class Light
     {
       ALIGNED_CLASS_(16)
 
@@ -28,7 +28,6 @@ namespace embree
       Light(LightType type) : type(type) {}
 
       LightType getType() const { return type; }
-      virtual Ref<Light> transform(const AffineSpace3fa& space) const = 0;
 
     private:
       LightType type;
@@ -40,8 +39,8 @@ namespace embree
       AmbientLight (const Vec3fa& L)
         : Light(LIGHT_AMBIENT), L(L) {}
 
-      Ref<Light> transform(const AffineSpace3fa& space) const {
-        return new AmbientLight(L);
+      AmbientLight transform(const AffineSpace3fa& space) const {
+        return AmbientLight(L);
       }
 
     public:
@@ -54,8 +53,8 @@ namespace embree
       PointLight (const Vec3fa& P, const Vec3fa& I)
         : Light(LIGHT_POINT), P(P), I(I) {}
 
-      Ref<Light> transform(const AffineSpace3fa& space) const {
-        return new PointLight(xfmPoint(space,P),I);
+      PointLight transform(const AffineSpace3fa& space) const {
+        return PointLight(xfmPoint(space,P),I);
       }
 
     public:
@@ -69,8 +68,8 @@ namespace embree
       DirectionalLight (const Vec3fa& D, const Vec3fa& E)
         : Light(LIGHT_DIRECTIONAL), D(D), E(E) {}
 
-      Ref<Light> transform(const AffineSpace3fa& space) const {
-        return new DirectionalLight(xfmVector(space,D),E);
+      DirectionalLight transform(const AffineSpace3fa& space) const {
+        return DirectionalLight(xfmVector(space,D),E);
       }
 
     public:
@@ -84,8 +83,8 @@ namespace embree
       SpotLight (const Vec3fa& P, const Vec3fa& D, const Vec3fa& I, float angleMin, float angleMax)
         : Light(LIGHT_SPOT), P(P), D(D), I(I), angleMin(angleMin), angleMax(angleMax) {}
 
-      Ref<Light> transform(const AffineSpace3fa& space) const {
-        return new SpotLight(xfmPoint(space,P),xfmVector(space,D),I,angleMin,angleMax);
+      SpotLight transform(const AffineSpace3fa& space) const {
+        return SpotLight(xfmPoint(space,P),xfmVector(space,D),I,angleMin,angleMax);
       }
 
     public:
@@ -101,8 +100,8 @@ namespace embree
       DistantLight (const Vec3fa& D, const Vec3fa& L, const float halfAngle)
         : Light(LIGHT_DISTANT), D(D), L(L), halfAngle(halfAngle), radHalfAngle(deg2rad(halfAngle)), cosHalfAngle(cos(deg2rad(halfAngle))) {}
 
-      Ref<Light> transform(const AffineSpace3fa& space) const {
-        return new DistantLight(xfmVector(space,D),L,halfAngle);
+      DistantLight transform(const AffineSpace3fa& space) const {
+        return DistantLight(xfmVector(space,D),L,halfAngle);
       }
 
     public:
@@ -119,8 +118,8 @@ namespace embree
       TriangleLight (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& L)
         : Light(LIGHT_TRIANGLE), v0(v0), v1(v1), v2(v2), L(L) {}
 
-      Ref<Light> transform(const AffineSpace3fa& space) const {
-        return new TriangleLight(xfmPoint(space,v0),xfmPoint(space,v1),xfmPoint(space,v2),L);
+      TriangleLight transform(const AffineSpace3fa& space) const {
+        return TriangleLight(xfmPoint(space,v0),xfmPoint(space,v1),xfmPoint(space,v2),L);
       }
 
     public:
@@ -136,8 +135,8 @@ namespace embree
       QuadLight (const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3, const Vec3fa& L)
         : Light(LIGHT_QUAD), v0(v0), v1(v1), v2(v2), v3(v3), L(L) {}
 
-      Ref<Light> transform(const AffineSpace3fa& space) const {
-        return new QuadLight(xfmPoint(space,v0),xfmPoint(space,v1),xfmPoint(space,v2),xfmPoint(space,v3),L);
+      QuadLight transform(const AffineSpace3fa& space) const {
+        return QuadLight(xfmPoint(space,v0),xfmPoint(space,v1),xfmPoint(space,v2),xfmPoint(space,v3),L);
       }
 
     public:

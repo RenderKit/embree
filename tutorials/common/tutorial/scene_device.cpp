@@ -64,7 +64,7 @@ namespace embree
     delete[] lights;
   }
   
-  Light* ISPCScene::convertLight(Ref<SceneGraph::Light> in)
+  Light* ISPCScene::convertLight(Ref<SceneGraph::LightNode> in)
   {
     void* out = 0;
     
@@ -72,33 +72,33 @@ namespace embree
     {
     case SceneGraph::LIGHT_AMBIENT:
     {
-      Ref<SceneGraph::AmbientLight> inAmbient = in.dynamicCast<SceneGraph::AmbientLight>();
+      SceneGraph::AmbientLight inAmbient = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>()->light;
       out = AmbientLight_create();
-      AmbientLight_set(out, inAmbient->L);
+      AmbientLight_set(out, inAmbient.L);
       break;
     }
     case SceneGraph::LIGHT_DIRECTIONAL:
     {
-      Ref<SceneGraph::DirectionalLight> inDirectional = in.dynamicCast<SceneGraph::DirectionalLight>();
+      SceneGraph::DirectionalLight inDirectional = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>()->light;
       out = DirectionalLight_create();
-      DirectionalLight_set(out, -normalize(inDirectional->D), inDirectional->E, 1.0f);
+      DirectionalLight_set(out, -normalize(inDirectional.D), inDirectional.E, 1.0f);
       break;
     }
     case SceneGraph::LIGHT_DISTANT:
     {
-      Ref<SceneGraph::DistantLight> inDistant = in.dynamicCast<SceneGraph::DistantLight>();
+      SceneGraph::DistantLight inDistant = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>()->light;
       out = DirectionalLight_create();
       DirectionalLight_set(out,
-                           -normalize(inDistant->D),
-                           inDistant->L * rcp(uniformSampleConePDF(inDistant->cosHalfAngle)),
-                           inDistant->cosHalfAngle);
+                           -normalize(inDistant.D),
+                           inDistant.L * rcp(uniformSampleConePDF(inDistant.cosHalfAngle)),
+                           inDistant.cosHalfAngle);
       break;
     }
     case SceneGraph::LIGHT_POINT:
     {
-      Ref<SceneGraph::PointLight> inPoint = in.dynamicCast<SceneGraph::PointLight>();
+      SceneGraph::PointLight inPoint = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>()->light;
       out = PointLight_create();
-      PointLight_set(out, inPoint->P, inPoint->I, 0.f);
+      PointLight_set(out, inPoint.P, inPoint.I, 0.f);
       break;
     }
     case SceneGraph::LIGHT_SPOT:

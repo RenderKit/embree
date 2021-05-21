@@ -334,18 +334,22 @@ namespace embree
 
   void XMLWriter::store(Ref<SceneGraph::LightNode> node, ssize_t id)
   {
-    switch (node->light->getType())
-    {
-    case SceneGraph::LIGHT_AMBIENT     : store(*node->light.dynamicCast<SceneGraph::AmbientLight>(),id); break;
-    case SceneGraph::LIGHT_POINT       : store(*node->light.dynamicCast<SceneGraph::PointLight>(),id); break;
-    case SceneGraph::LIGHT_DIRECTIONAL : store(*node->light.dynamicCast<SceneGraph::DirectionalLight>(),id); break;
-    case SceneGraph::LIGHT_SPOT        : store(*node->light.dynamicCast<SceneGraph::SpotLight>(),id); break;
-    case SceneGraph::LIGHT_DISTANT     : store(*node->light.dynamicCast<SceneGraph::DistantLight>(),id); break;
-    case SceneGraph::LIGHT_TRIANGLE    : store(*node->light.dynamicCast<SceneGraph::TriangleLight>(),id); break;
-    case SceneGraph::LIGHT_QUAD        : store(*node->light.dynamicCast<SceneGraph::QuadLight>(),id); break;
-
-    default: throw std::runtime_error("unsupported light");
-    }
+    if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::SpotLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::TriangleLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::QuadLight>>())
+      store(light->light,id);
+    else
+      throw std::runtime_error("unsupported light");
   }
 
   void XMLWriter::store(Ref<MatteMaterial> material, ssize_t id)

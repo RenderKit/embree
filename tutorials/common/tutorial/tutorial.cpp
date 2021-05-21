@@ -447,20 +447,20 @@ namespace embree
 
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f L = cin->getVec3f();
-        futures.push_back([=]() { scene->add(new SceneGraph::LightNode(new SceneGraph::AmbientLight(L))); });
+        futures.push_back([=]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>(SceneGraph::AmbientLight(L))); });
       }, "--ambientlight r g b: adds an ambient light with intensity rgb");
     registerOptionAlias("ambientlight","ambient");
 
     registerOption("pointlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f P = cin->getVec3f();
         const Vec3f I = cin->getVec3f();
-        futures.push_back([=]() { scene->add(new SceneGraph::LightNode(new SceneGraph::PointLight(P,I))); });
+        futures.push_back([=]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::PointLight>(SceneGraph::PointLight(P,I))); });
       }, "--pointlight x y z r g b: adds a point light at position xyz with intensity rgb");
 
     registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f D = cin->getVec3f();
         const Vec3f E = cin->getVec3f();
-        futures.push_back([=]() { scene->add(new SceneGraph::LightNode(new SceneGraph::DirectionalLight(D,E))); });
+        futures.push_back([=]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>(SceneGraph::DirectionalLight(D,E))); });
       }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
     registerOptionAlias("directionallight","dirlight");
 
@@ -468,7 +468,7 @@ namespace embree
         const Vec3f D = cin->getVec3f();
         const Vec3f L = cin->getVec3f();
         const float halfAngle = cin->getFloat();
-        futures.push_back([=]() { scene->add(new SceneGraph::LightNode(new SceneGraph::DistantLight(D,L,halfAngle))); });
+        futures.push_back([=]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::DistantLight>(SceneGraph::DistantLight(D,L,halfAngle))); });
       }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
 
     registerOption("triangle-plane", [this] (Ref<ParseStream> cin, const FileName& path) {

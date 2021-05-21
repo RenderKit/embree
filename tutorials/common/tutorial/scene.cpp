@@ -18,7 +18,7 @@ namespace embree
     for (auto& node : group->children) 
     {
       if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
-        lights.push_back(lightNode->light);
+        lights.push_back(lightNode);
       } 
       else if (Ref<SceneGraph::PerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) {
         cameras.push_back(cameraNode);

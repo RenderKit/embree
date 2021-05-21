@@ -1831,7 +1831,7 @@ namespace embree
         for (const auto& child : groupNode->children) convertLightsAndCameras(group,child,spaces);
       }
       else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
-        group.push_back(new SceneGraph::LightNode(lightNode->light->transform(spaces[0])));
+        group.push_back(lightNode->transform(spaces[0]).dynamicCast<SceneGraph::Node>());
       }
       else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>()) {
         if (spaces.size() != 1) throw std::runtime_error("animated cameras cannot get instantiated with a transform animation");

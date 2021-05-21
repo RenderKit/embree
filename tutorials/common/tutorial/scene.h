@@ -38,6 +38,6 @@ namespace embree
     std::vector<Ref<SceneGraph::PerspectiveCameraNode>> cameras;  //!< list of all cameras
     std::vector<Ref<SceneGraph::MaterialNode>> materials; //!< list of materials
     std::vector<Ref<SceneGraph::Node> > geometries;   //!< list of geometries
-    std::vector<Ref<SceneGraph::Light>> lights;       //!< list of lights
+    std::vector<Ref<SceneGraph::LightNode>> lights;       //!< list of lights
   };
 }

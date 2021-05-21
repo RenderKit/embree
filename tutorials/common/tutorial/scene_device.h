@@ -310,7 +310,7 @@ namespace embree
     ~ISPCScene();
     
     static ISPCGeometry* convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in);   
-    static Light* convertLight(Ref<SceneGraph::Light> in);
+    static Light* convertLight(Ref<SceneGraph::LightNode> in);
     
   private:
     ISPCScene (const ISPCScene& other) DELETED; // do not implement

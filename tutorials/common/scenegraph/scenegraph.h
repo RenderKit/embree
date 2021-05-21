@@ -799,17 +799,32 @@ namespace embree
     public:
       std::vector<Ref<Node> > children;
     };
-    
+
     struct LightNode : public Node
     {
-      LightNode (Ref<Light> light)
-        : light(light) {}
-
       virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual bool calculateClosed(bool group_instancing);
+
+      virtual LightType getType() const = 0;
+      virtual Ref<LightNode> transform(const AffineSpace3fa& space) const = 0;
+    };
+
+    template<typename Light>
+    struct LightNodeImpl : public LightNode
+    {
+      LightNodeImpl (const Light& light)
+        : light(light) {}
+
+      virtual LightType getType() const {
+        return light.getType();
+      }
       
-      Ref<Light> light;
+      virtual Ref<LightNode> transform(const AffineSpace3fa& space) const {
+        return new LightNodeImpl(light.transform(space));
+      }
+      
+      Light light;
     };
     
     struct MaterialNode : public Node
