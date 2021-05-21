@@ -13,6 +13,8 @@ namespace embree
     float g_min_width_max_radius_scale = 1.0f;
     AssignShaderTy assignShadersFunc = nullptr;
   }
+
+  extern "C" int g_animation_mode;
   
   void deleteGeometry(ISPCGeometry* geom)
   {
@@ -33,6 +35,7 @@ namespace embree
   }
   
   ISPCScene::ISPCScene(TutorialScene* in)
+    : scene(nullptr)
   {
     SceneGraph::opaque_geometry_destruction = (void(*)(void*)) deleteGeometry;
     
@@ -634,7 +637,7 @@ namespace embree
     if (instance->geom.geometry)
       return requiredInstancingDepth;
       
-    if (instance->numTimeSteps == 1)
+    if (instance->numTimeSteps == 1 || g_animation_mode)
     {
       RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
       instance->geom.geometry = geom;
@@ -674,11 +677,32 @@ namespace embree
       return requiredInstancingDepth;
     }
   }
+ 
+  void UpdateInstance(ISPCInstance* instance, unsigned int timeStep)
+  {
+    if (instance->child->type != GROUP)
+      THROW_RUNTIME_ERROR("invalid scene structure");
+    
+    if (instance->numTimeSteps <= 1)
+      return;
+    
+    timeStep = timeStep % instance->numTimeSteps;
+     
+    RTCGeometry geom = instance->geom.geometry;
+    if (instance->quaternion) {
+      QuaternionDecomposition qd = quaternionDecomposition(instance->spaces[timeStep]);
+      rtcSetGeometryTransformQuaternion(geom,0,(RTCQuaternionDecomposition*)&qd);
+    } else {
+      rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[timeStep].l.vx.x);
+    }
+    rtcCommitGeometry(geom);
+  }
   
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags)
   {
     RTCScene scene = rtcNewScene(g_device);
     rtcSetSceneFlags(scene, flags);
+    scene_in->scene = scene;
     
     for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
     {
@@ -705,5 +729,17 @@ namespace embree
 
     Application::instance->log(1,"creating Embree objects done");
     return scene;
+  }
+
+  extern "C" void UpdateScene(ISPCScene* scene_in, unsigned int timeStep)
+  {
+    for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
+    {
+      ISPCGeometry* geometry = scene_in->geometries[geomID];
+      if (geometry->type != INSTANCE) continue;
+      UpdateInstance((ISPCInstance*) geometry, timeStep);
+    }
+
+    rtcCommitScene(scene_in->scene);
   }
 }

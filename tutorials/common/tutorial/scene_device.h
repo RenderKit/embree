@@ -318,6 +318,7 @@ namespace embree
     
   public:
 #endif
+    RTCScene scene;
     ISPCGeometry** geometries;   //!< list of geometries
     ISPCMaterial** materials;     //!< material list
     unsigned int numGeometries;           //!< number of geometries
@@ -335,9 +336,11 @@ namespace embree
   extern uniform AssignShaderTy assignShadersFunc;
 #endif
   
-#if !defined(ISPC)  
+#if !defined(ISPC)
+  extern "C" void UpdateScene(ISPCScene* scene_in, unsigned int timeStep);
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags = RTC_SCENE_FLAG_NONE);
 #else
+  unmasked extern "C" void UpdateScene(ISPCScene* uniform scene_in, uniform unsigned int timeStep);
   unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCBuildQuality quality, uniform RTCSceneFlags flags = RTC_SCENE_FLAG_NONE);
 #endif
 

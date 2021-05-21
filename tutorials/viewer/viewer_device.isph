@@ -9,6 +9,7 @@
 extern uniform ISPCScene* uniform g_ispc_scene;
 extern uniform int g_instancing_mode;
 extern uniform float g_min_width;
+extern uniform int g_animation_mode;
 
 struct TutorialData
 {

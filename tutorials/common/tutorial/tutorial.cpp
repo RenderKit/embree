@@ -63,6 +63,8 @@ namespace embree
     RTCIntersectContextFlags g_iflags_coherent = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
     RTCIntersectContextFlags g_iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
+    int g_animation_mode = false;
+
     RayStats* g_stats = nullptr;
 
     unsigned int render_texcoords_mode = 0;
@@ -444,6 +446,10 @@ namespace embree
       "  group: instance geometry groups as scenes\n"
       "  multi_level: use multi-level instancing\n"
       "  flattened: assume flattened scene graph");
+
+    registerOption("animation", [] (Ref<ParseStream> cin, const FileName& path) {
+         g_animation_mode = true;
+      }, "--animation: render animated geometries");
 
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
         const Vec3f L = cin->getVec3f();

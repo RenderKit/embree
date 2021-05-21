@@ -11,6 +11,7 @@ namespace embree {
 extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
 extern "C" float g_min_width;
+extern "C" int g_animation_mode;
 
 struct TutorialData
 {
