@@ -823,6 +823,8 @@ namespace embree
     template<typename Light>
     struct LightNodeImpl : public LightNode
     {
+      ALIGNED_STRUCT_(16);
+      
       LightNodeImpl (const Light& light)
         : light(light) {}
 
