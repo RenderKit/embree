@@ -89,6 +89,8 @@ namespace embree
     ISPCTriangleMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
     ~ISPCTriangleMesh ();
 
+    void commit();
+
   private:
     ISPCTriangleMesh (const ISPCTriangleMesh& other) DELETED; // do not implement
     ISPCTriangleMesh& operator= (const ISPCTriangleMesh& other) DELETED; // do not implement
@@ -115,6 +117,8 @@ namespace embree
     ISPCQuadMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
     ~ISPCQuadMesh ();
 
+    void commit();
+
   private:
     ISPCQuadMesh (const ISPCQuadMesh& other) DELETED; // do not implement
     ISPCQuadMesh& operator= (const ISPCQuadMesh& other) DELETED; // do not implement
@@ -140,6 +144,8 @@ namespace embree
 #if !defined(ISPC)
     ISPCSubdivMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in);
     ~ISPCSubdivMesh ();
+
+    void commit();
     
   private:
     ISPCSubdivMesh (const ISPCSubdivMesh& other) DELETED; // do not implement
@@ -186,6 +192,8 @@ namespace embree
     ISPCHairSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
 
+    void commit();
+
   private:
     ISPCHairSet (const ISPCHairSet& other) DELETED; // do not implement
     ISPCHairSet& operator= (const ISPCHairSet& other) DELETED; // do not implement
@@ -220,6 +228,8 @@ namespace embree
     ISPCPointSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in);
     ~ISPCPointSet();
 
+    void commit();
+
   private:
     ISPCPointSet (const ISPCPointSet& other) DELETED; // do not implement
     ISPCPointSet& operator= (const ISPCPointSet& other) DELETED; // do not implement
@@ -243,6 +253,8 @@ namespace embree
 #if !defined(ISPC)
     ISPCGridMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in);
     ~ISPCGridMesh ();
+
+    void commit();
 
   private:
     ISPCGridMesh (const ISPCGridMesh& other) DELETED; // do not implement
@@ -269,6 +281,8 @@ namespace embree
     ISPCInstance (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
     ~ISPCInstance();
 
+    void commit();
+
   private:
     ISPCInstance (const ISPCInstance& other) DELETED; // do not implement
     ISPCInstance& operator= (const ISPCInstance& other) DELETED; // do not implement
@@ -290,6 +304,8 @@ namespace embree
 #if !defined(ISPC)
     ISPCGroup (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::GroupNode> in);
     ~ISPCGroup();
+
+    void commit();
     
   private:
     ISPCGroup (const ISPCGroup& other) DELETED; // do not implement
@@ -309,6 +325,8 @@ namespace embree
 #if !defined(ISPC)
     ISPCScene(RTCDevice device, TutorialScene* in);
     ~ISPCScene();
+
+    void commit();
     
     static ISPCGeometry* convertGeometry (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::Node> in);   
     static Light* convertLight(Ref<SceneGraph::LightNode> in);
