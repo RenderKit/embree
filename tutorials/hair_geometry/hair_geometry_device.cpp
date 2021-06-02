@@ -69,7 +69,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   /* create scene */
-  RTCScene scene_out = rtcNewScene(g_device);
+  RTCScene scene_out = scene_in->scene;
 
   for (unsigned int i=0; i<scene_in->numGeometries; i++)
   {
