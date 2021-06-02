@@ -693,7 +693,7 @@ namespace embree
 
   void TutorialApplication::set_scene (TutorialScene* in)
   {
-    ispc_scene.reset(new ISPCScene(in));
+    ispc_scene.reset(new ISPCScene(g_device,in));
     g_ispc_scene = ispc_scene.get();
   }
 

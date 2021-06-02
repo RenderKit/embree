@@ -34,14 +34,14 @@ namespace embree
     }
   }
   
-  ISPCScene::ISPCScene(TutorialScene* in)
-    : scene(nullptr), tutorialScene(in)
+  ISPCScene::ISPCScene(RTCDevice device, TutorialScene* in)
+    : scene(rtcNewScene(device)), tutorialScene(in)
   {
     SceneGraph::opaque_geometry_destruction = (void(*)(void*)) deleteGeometry;
     
     geometries = new ISPCGeometry*[in->geometries.size()];
     for (size_t i=0; i<in->geometries.size(); i++)
-      geometries[i] = convertGeometry(in,in->geometries[i]);
+      geometries[i] = convertGeometry(device,in,in->geometries[i]);
     numGeometries = unsigned(in->geometries.size());
     
     materials = new ISPCMaterial*[in->materials.size()];
@@ -121,9 +121,11 @@ namespace embree
       updateLight(light->light, out);
   }
   
-  ISPCTriangleMesh::ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
+  ISPCTriangleMesh::ISPCTriangleMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
     : geom(TRIANGLE_MESH), positions(nullptr), normals(nullptr)
   {
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
@@ -149,9 +151,11 @@ namespace embree
     if (normals) delete[] normals;
   }
   
-  ISPCQuadMesh::ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
+  ISPCQuadMesh::ISPCQuadMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
     : geom(QUAD_MESH), positions(nullptr), normals(nullptr)
   {
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
@@ -178,9 +182,11 @@ namespace embree
   }
 
 
-  ISPCGridMesh::ISPCGridMesh (TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in) 
+  ISPCGridMesh::ISPCGridMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in) 
     : geom(GRID_MESH), positions(nullptr)
   {
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
@@ -199,9 +205,11 @@ namespace embree
   }
 
 
-  ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
+  ISPCSubdivMesh::ISPCSubdivMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
     : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr)
   {
+    geom.geometry = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
@@ -258,9 +266,11 @@ namespace embree
     if (face_offsets) delete[] face_offsets;
   }
   
-  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in)
+  ISPCHairSet::ISPCHairSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in)
     : geom(CURVES), normals(nullptr), tangents(nullptr), dnormals(nullptr), hairs(nullptr), flags(nullptr), type(type)
   {
+    geom.geometry = rtcNewGeometry(device, type);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = (Vec3fa*) in->positions[i].data();
@@ -304,9 +314,11 @@ namespace embree
     delete[] dnormals;
   }
 
-  ISPCPointSet::ISPCPointSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in)
+  ISPCPointSet::ISPCPointSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in)
     : geom(POINTS), positions(nullptr), normals(nullptr), type(type)
   {
+    geom.geometry = rtcNewGeometry(device, type);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = (Vec3fa*) in->positions[i].data();
@@ -330,11 +342,12 @@ namespace embree
   }
 
 
-  ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
+  ISPCInstance::ISPCInstance (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
     : geom(INSTANCE), numTimeSteps(unsigned(in->spaces.size()))
   {
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
     spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
-    child = ISPCScene::convertGeometry(scene,in->child);
+    child = ISPCScene::convertGeometry(device,scene,in->child);
     startTime  = in->spaces.time_range.lower;
     endTime    = in->spaces.time_range.upper;
     quaternion = in->spaces.quaternion;
@@ -346,13 +359,13 @@ namespace embree
     alignedFree(spaces);
   }
 
-  ISPCGroup::ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
-    : geom(GROUP), scene(nullptr), requiredInstancingDepth(0)
+  ISPCGroup::ISPCGroup (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
+    : geom(GROUP), scene(rtcNewScene(device)), requiredInstancingDepth(0)
   {
     numGeometries = (unsigned int) in->size();
     geometries = new ISPCGeometry*[numGeometries];
     for (size_t i=0; i<numGeometries; i++)
-      geometries[i] = ISPCScene::convertGeometry(scene,in->child(i));
+      geometries[i] = ISPCScene::convertGeometry(device,scene,in->child(i));
   }
 
   ISPCGroup::~ISPCGroup()
@@ -361,27 +374,27 @@ namespace embree
     rtcReleaseScene(scene);
   }
 
-  ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
+  ISPCGeometry* ISPCScene::convertGeometry (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::Node> in)
   {
     ISPCGeometry* geom = nullptr;
     if (in->geometry)
       return (ISPCGeometry*) in->geometry;
     else if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
-      geom = (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCTriangleMesh(device,scene,mesh);
     else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
-      geom = (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCQuadMesh(device,scene,mesh);
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
-      geom = (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCSubdivMesh(device,scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-      geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh);
+      geom = (ISPCGeometry*) new ISPCHairSet(device,scene,mesh->type,mesh);
     else if (Ref<SceneGraph::GridMeshNode> mesh = in.dynamicCast<SceneGraph::GridMeshNode>())
-      geom = (ISPCGeometry*) new ISPCGridMesh(scene,mesh); 
+      geom = (ISPCGeometry*) new ISPCGridMesh(device,scene,mesh); 
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
-      geom = (ISPCGeometry*) new ISPCInstance(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCInstance(device,scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
-      geom = (ISPCGeometry*) new ISPCGroup(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCGroup(device,scene,mesh);
     else if (Ref<SceneGraph::PointSetNode> mesh = in.dynamicCast<SceneGraph::PointSetNode>())
-      geom = (ISPCGeometry*) new ISPCPointSet(scene, mesh->type, mesh);
+      geom = (ISPCGeometry*) new ISPCPointSet(device,scene, mesh->type, mesh);
     else
       THROW_RUNTIME_ERROR("unknown geometry type");
 
@@ -394,9 +407,7 @@ namespace embree
     if (mesh->geom.visited) return;
     mesh->geom.visited = true;
     
-    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
-    mesh->geom.geometry = geom;
-    
+    RTCGeometry geom = mesh->geom.geometry;
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
@@ -415,9 +426,7 @@ namespace embree
     if (mesh->geom.visited) return;
     mesh->geom.visited = true;
     
-    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
-    mesh->geom.geometry = geom;
-    
+    RTCGeometry geom = mesh->geom.geometry;
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
@@ -436,9 +445,7 @@ namespace embree
     if (mesh->geom.visited) return;
     mesh->geom.visited = true;
     
-    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
-    mesh->geom.geometry = geom;
-    
+    RTCGeometry geom = mesh->geom.geometry;
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
@@ -457,9 +464,7 @@ namespace embree
     if (mesh->geom.visited) return;
     mesh->geom.visited = true;
     
-    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
-    mesh->geom.geometry = geom;
-    
+    RTCGeometry geom = mesh->geom.geometry;
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
@@ -514,9 +519,7 @@ namespace embree
     if (mesh->geom.visited) return;
     mesh->geom.visited = true;
 
-    RTCGeometry geom = rtcNewGeometry(device, mesh->type);
-    mesh->geom.geometry = geom;
-    
+    RTCGeometry geom = mesh->geom.geometry;
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
@@ -567,9 +570,7 @@ namespace embree
     if (mesh->geom.visited) return;
     mesh->geom.visited = true;
     
-    RTCGeometry geom = rtcNewGeometry(device, mesh->type);
-    mesh->geom.geometry = geom;
-    
+    RTCGeometry geom = mesh->geom.geometry;
     rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
     rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
     rtcSetGeometryBuildQuality(geom, quality);
@@ -600,7 +601,7 @@ namespace embree
     if (group->geom.visited) return group->requiredInstancingDepth;
     group->geom.visited = true;
     
-    RTCScene scene = rtcNewScene(device);
+    RTCScene scene = group->scene;
     rtcSetSceneFlags(scene, flags);
 
     unsigned int requiredInstancingDepth = 0;
@@ -630,9 +631,7 @@ namespace embree
     }
     rtcCommitScene(scene);
     
-    group->scene = scene;
     group->requiredInstancingDepth = requiredInstancingDepth;
-
     return requiredInstancingDepth;
   }
 
@@ -650,12 +649,10 @@ namespace embree
 
     if (instance->geom.visited) return requiredInstancingDepth;
     instance->geom.visited = true;
-      
+
     if (instance->numTimeSteps == 1 || g_animation_mode)
     {
-      RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
-      instance->geom.geometry = geom;
-      
+      RTCGeometry geom = instance->geom.geometry;
       rtcSetGeometryInstancedScene(geom,scene_inst);
       rtcSetGeometryTimeStepCount(geom,1);
       if (instance->quaternion) {
@@ -671,9 +668,7 @@ namespace embree
     }
     else
     {
-      RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
-      instance->geom.geometry = geom;
-      
+      RTCGeometry geom = instance->geom.geometry;
       rtcSetGeometryInstancedScene(geom,scene_inst);
       rtcSetGeometryTimeStepCount(geom,instance->numTimeSteps);
       rtcSetGeometryTimeRange(geom,instance->startTime,instance->endTime);
@@ -724,9 +719,8 @@ namespace embree
   
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    RTCScene scene = rtcNewScene(g_device);
+    RTCScene scene = scene_in->scene;
     rtcSetSceneFlags(scene, flags);
-    scene_in->scene = scene;
     
     for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
     {

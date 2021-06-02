@@ -86,7 +86,7 @@ namespace embree
   struct ISPCTriangleMesh
   {
 #if !defined(ISPC)
-    ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
+    ISPCTriangleMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
     ~ISPCTriangleMesh ();
 
   private:
@@ -112,7 +112,7 @@ namespace embree
   struct ISPCQuadMesh
   {
 #if !defined(ISPC)
-    ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
+    ISPCQuadMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
     ~ISPCQuadMesh ();
 
   private:
@@ -138,7 +138,7 @@ namespace embree
   struct ISPCSubdivMesh
   {
 #if !defined(ISPC)
-    ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in);
+    ISPCSubdivMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in);
     ~ISPCSubdivMesh ();
     
   private:
@@ -183,7 +183,7 @@ namespace embree
   struct ISPCHairSet
   {
 #if !defined(ISPC)
-    ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in);
+    ISPCHairSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
 
   private:
@@ -217,7 +217,7 @@ namespace embree
   struct ISPCPointSet
   {
 #if !defined(ISPC)
-    ISPCPointSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in);
+    ISPCPointSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in);
     ~ISPCPointSet();
 
   private:
@@ -241,7 +241,7 @@ namespace embree
   struct ISPCGridMesh
   {
 #if !defined(ISPC)
-    ISPCGridMesh (TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in);
+    ISPCGridMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in);
     ~ISPCGridMesh ();
 
   private:
@@ -266,7 +266,7 @@ namespace embree
   struct ISPCInstance
   {
 #if !defined(ISPC)
-    ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
+    ISPCInstance (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
     ~ISPCInstance();
 
   private:
@@ -288,7 +288,7 @@ namespace embree
   struct ISPCGroup
   {
 #if !defined(ISPC)
-    ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in);
+    ISPCGroup (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::GroupNode> in);
     ~ISPCGroup();
     
   private:
@@ -307,10 +307,10 @@ namespace embree
   struct ISPCScene
   {
 #if !defined(ISPC)
-    ISPCScene(TutorialScene* in);
+    ISPCScene(RTCDevice device, TutorialScene* in);
     ~ISPCScene();
     
-    static ISPCGeometry* convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in);   
+    static ISPCGeometry* convertGeometry (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::Node> in);   
     static Light* convertLight(Ref<SceneGraph::LightNode> in);
     static Light* createLight(Ref<SceneGraph::LightNode> in);
 
