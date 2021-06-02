@@ -403,9 +403,9 @@ namespace embree
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
     rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
     
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
+    rtcCommitGeometry(geom);
   }
   
   void ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
@@ -422,9 +422,9 @@ namespace embree
     }
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
     rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-
+    
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
+    rtcCommitGeometry(geom);
   }
 
   void ConvertGridMesh(RTCDevice device, ISPCGridMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
@@ -441,9 +441,9 @@ namespace embree
     }    
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_GRID, mesh->grids, 0, sizeof(ISPCGrid), mesh->numGrids);
     rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-    
+       
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
+     rtcCommitGeometry(geom);
   }
   
   void ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
@@ -496,9 +496,9 @@ namespace embree
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,  0, RTC_FORMAT_UINT,   mesh->vertex_creases,        0, sizeof(unsigned int),   mesh->numVertexCreases);
     rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT,  mesh->vertex_crease_weights, 0, sizeof(float),          mesh->numVertexCreases);
     rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-
+    
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
+    rtcCommitGeometry(geom);
   }
   
   void ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
@@ -547,9 +547,9 @@ namespace embree
       rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, mesh->flags, 0, sizeof(unsigned char), mesh->numHairs);
     }
     rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-
+   
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
+    rtcCommitGeometry(geom);
   }
 
   void ConvertPoints(RTCDevice device, ISPCPointSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
@@ -576,9 +576,9 @@ namespace embree
 #endif
       
     rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-
+    
     if (assignShadersFunc) assignShadersFunc(&mesh->geom);
+    rtcCommitGeometry(geom);
   }
 
   unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth);
