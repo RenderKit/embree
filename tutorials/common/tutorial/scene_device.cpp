@@ -391,7 +391,9 @@ namespace embree
 
   void ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    if (mesh->geom.geometry) return;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
     mesh->geom.geometry = geom;
     
@@ -410,7 +412,9 @@ namespace embree
   
   void ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    if (mesh->geom.geometry) return;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
     mesh->geom.geometry = geom;
     
@@ -429,7 +433,9 @@ namespace embree
 
   void ConvertGridMesh(RTCDevice device, ISPCGridMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    if (mesh->geom.geometry) return;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    
     RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
     mesh->geom.geometry = geom;
     
@@ -448,7 +454,9 @@ namespace embree
   
   void ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    if (mesh->geom.geometry) return;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    
     RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
     mesh->geom.geometry = geom;
     
@@ -503,7 +511,9 @@ namespace embree
   
   void ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    if (mesh->geom.geometry) return;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+
     RTCGeometry geom = rtcNewGeometry(device, mesh->type);
     mesh->geom.geometry = geom;
     
@@ -554,7 +564,9 @@ namespace embree
 
   void ConvertPoints(RTCDevice device, ISPCPointSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    if (mesh->geom.geometry) return;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    
     RTCGeometry geom = rtcNewGeometry(device, mesh->type);
     mesh->geom.geometry = geom;
     
@@ -585,8 +597,8 @@ namespace embree
 
   unsigned int ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth)
   {
-    if (group->scene)
-      return group->requiredInstancingDepth;
+    if (group->geom.visited) return group->requiredInstancingDepth;
+    group->geom.visited = true;
     
     RTCScene scene = rtcNewScene(device);
     rtcSetSceneFlags(scene, flags);
@@ -636,8 +648,8 @@ namespace embree
     if (depth + requiredInstancingDepth > RTC_MAX_INSTANCE_LEVEL_COUNT)
       THROW_RUNTIME_ERROR("scene instancing depth is too large");
 
-    if (instance->geom.geometry)
-      return requiredInstancingDepth;
+    if (instance->geom.visited) return requiredInstancingDepth;
+    instance->geom.visited = true;
       
     if (instance->numTimeSteps == 1 || g_animation_mode)
     {
