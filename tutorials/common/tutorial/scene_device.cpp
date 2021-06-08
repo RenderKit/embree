@@ -757,9 +757,11 @@ namespace embree
 
     RTCGeometry geom = instance->geom.geometry;
     if (instance->quaternion) {
+      instance->spaces[0] = quaternionDecompositionToAffineSpace(xfm);
       const QuaternionDecomposition qd = quaternionDecomposition(xfm);
       rtcSetGeometryTransformQuaternion(geom,0,(RTCQuaternionDecomposition*)&qd);
     } else {
+      instance->spaces[0] = xfm;
       rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&xfm.l.vx.x);
     }
     rtcCommitGeometry(geom);
