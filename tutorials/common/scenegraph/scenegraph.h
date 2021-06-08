@@ -670,6 +670,25 @@ namespace embree
         return child->numPrimitives();
       }
 
+      virtual AffineSpace3ff get(float time) const
+      {
+        if (spaces.size() <= 1) return spaces[0];
+
+        int numTimeSteps = spaces.size();
+        
+        BBox1f time_range = spaces.time_range;
+        time = frac((time-time_range.lower)/time_range.size());
+        time = (numTimeSteps-1)*time;
+        int   itime = (int)floor(time);
+        itime = min(max(itime,0),(int)numTimeSteps-2);
+        float ftime = time - (float)itime;
+    
+        const AffineSpace3ff xfm0 = spaces[itime+0];
+        const AffineSpace3ff xfm1 = spaces[itime+1];
+        const AffineSpace3ff xfm  = lerp(xfm0,xfm1,ftime);
+        return xfm;
+      }
+
     public:
       Transformations spaces;
       Ref<Node> child;

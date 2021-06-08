@@ -523,16 +523,27 @@ namespace embree
   }
 
   ISPCInstance::ISPCInstance (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
-    : geom(INSTANCE), numTimeSteps(unsigned(in->spaces.size()))
+    : geom(INSTANCE), child(nullptr), startTime(0.0f), endTime(1.0f), numTimeSteps(1), quaternion(false), spaces(nullptr)
   {
     geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
-    spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
-    child = ISPCScene::convertGeometry(device,scene,in->child);
-    startTime  = in->spaces.time_range.lower;
-    endTime    = in->spaces.time_range.upper;
-    quaternion = in->spaces.quaternion;
-    for (size_t i=0; i<numTimeSteps; i++)
-      spaces[i] = in->spaces[i];
+    
+    if (g_animation_mode)
+    {
+      spaces = (AffineSpace3fa*) alignedMalloc(sizeof(AffineSpace3fa),16);
+      child = ISPCScene::convertGeometry(device,scene,in->child);
+      spaces[0] = in->get(0.0f);
+    }
+    else
+    {
+      spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
+      child = ISPCScene::convertGeometry(device,scene,in->child);
+      startTime  = in->spaces.time_range.lower;
+      endTime    = in->spaces.time_range.upper;
+      numTimeSteps = unsigned(in->spaces.size());
+      quaternion = in->spaces.quaternion;
+      for (size_t i=0; i<numTimeSteps; i++)
+        spaces[i] = in->spaces[i];
+    }
   }
 
   ISPCInstance::~ISPCInstance() {
@@ -738,26 +749,11 @@ namespace embree
     
     return requiredInstancingDepth;
   }
- 
-  void UpdateInstance(ISPCInstance* instance, float time)
+
+  void UpdateInstance(ISPCInstance* instance, const AffineSpace3ff& xfm)
   {
     if (instance->child->type != GROUP)
       THROW_RUNTIME_ERROR("invalid scene structure");
-    
-    if (instance->numTimeSteps <= 1)
-      return;
-
-    int numTimeSteps = instance->numTimeSteps;
-    BBox1f time_range(instance->startTime, instance->endTime);
-    time = frac((time-time_range.lower)/time_range.size());
-    time = (numTimeSteps-1)*time;
-    int   itime = (int)floor(time);
-    itime = min(max(itime,0),(int)numTimeSteps-2);
-    float ftime = time - (float)itime;
-    
-    const AffineSpace3fa xfm0 = instance->spaces[itime+0];
-    const AffineSpace3fa xfm1 = instance->spaces[itime+1];
-    const AffineSpace3fa xfm  = lerp(xfm0,xfm1,ftime);
 
     RTCGeometry geom = instance->geom.geometry;
     if (instance->quaternion) {
@@ -803,16 +799,22 @@ namespace embree
 
   extern "C" void UpdateScene(ISPCScene* scene_in, float time)
   {
+    TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
+    if (!tutorial_scene) return;
+    if (!g_animation_mode) return;
+    
     for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = scene_in->geometries[geomID];
       if (geometry->type != INSTANCE) continue;
-      UpdateInstance((ISPCInstance*) geometry, time);
+
+      Ref<SceneGraph::TransformNode> node = tutorial_scene->geometries[geomID].dynamicCast<SceneGraph::TransformNode>();
+      assert(node);
+      UpdateInstance((ISPCInstance*) geometry, node->get(time));
     }
 
     rtcCommitScene(scene_in->scene);
 
-    TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
     for (unsigned int i=0; i<scene_in->numLights; i++)
       ISPCScene::updateLight(tutorial_scene->lights[i]->get(time), scene_in->lights[i]);
   }
