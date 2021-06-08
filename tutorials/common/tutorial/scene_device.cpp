@@ -750,23 +750,6 @@ namespace embree
     return requiredInstancingDepth;
   }
 
-  void UpdateInstance(ISPCInstance* instance, const AffineSpace3ff& xfm)
-  {
-    if (instance->child->type != GROUP)
-      THROW_RUNTIME_ERROR("invalid scene structure");
-
-    RTCGeometry geom = instance->geom.geometry;
-    if (instance->quaternion) {
-      instance->spaces[0] = quaternionDecompositionToAffineSpace(xfm);
-      const QuaternionDecomposition qd = quaternionDecomposition(xfm);
-      rtcSetGeometryTransformQuaternion(geom,0,(RTCQuaternionDecomposition*)&qd);
-    } else {
-      instance->spaces[0] = xfm;
-      rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&xfm.l.vx.x);
-    }
-    rtcCommitGeometry(geom);
-  }
-  
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags)
   {
     RTCScene scene = scene_in->scene;
@@ -809,10 +792,12 @@ namespace embree
     {
       ISPCGeometry* geometry = scene_in->geometries[geomID];
       if (geometry->type != INSTANCE) continue;
+      ISPCInstance* inst = (ISPCInstance*) geometry;
 
       Ref<SceneGraph::TransformNode> node = tutorial_scene->geometries[geomID].dynamicCast<SceneGraph::TransformNode>();
       assert(node);
-      UpdateInstance((ISPCInstance*) geometry, node->get(time));
+      inst->spaces[0] = node->get(time);
+      inst->commit();
     }
 
     rtcCommitScene(scene_in->scene);
