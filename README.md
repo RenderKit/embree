@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.13.0-alpha.0
+% Embree: High Performance Ray Tracing Kernels 3.13.1
 % Intel Corporation
 
 Embree Overview
@@ -79,7 +79,7 @@ Windows MSI Installer
 ---------------------
 
 You can install the Embree library using the Windows MSI installer
-[embree-3.13.0-alpha.0-x64.vc14.msi](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x64.vc14.msi). This
+[embree-3.13.1-x64.vc14.msi](https://github.com/embree/embree/releases/download/v3.13.1/embree-3.13.1.x64.vc14.msi). This
 will install the 64-bit Embree version by default in `Program
 Files\Intel\Embree3`.
 
@@ -94,13 +94,13 @@ Files\Intel\Embree3`.
 To uninstall Embree, open `Programs and Features` by clicking the
 `Start button`, clicking `Control Panel`, clicking `Programs`, and
 then clicking `Programs and Features`. Select `Embree
-3.13.0-alpha.0 x64` and uninstall it.
+3.13.1 x64` and uninstall it.
 
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-3.13.0-alpha.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x64.vc14.windows.zip). After
+[embree-3.13.1.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.1/embree-3.13.1.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree. To compile applications with Embree, you also have to set the
@@ -114,13 +114,13 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.13.0-alpha.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x86_64.linux.tar.gz). Unpack
+[embree-3.13.1.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.1/embree-3.13.1.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-3.13.0-alpha.0.x86_64.linux.tar.gz
-    source embree-3.13.0-alpha.0.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.13.1.x86_64.linux.tar.gz
+    source embree-3.13.1.x86_64.linux/embree-vars.sh
 
 If you want to ship Embree with your application, best use the Embree
 version provided in the `tar.gz` file.
@@ -133,7 +133,7 @@ macOS PKG Installer
 
 To install the Embree library on your macOS system use the
 provided package installer inside
-[embree-3.13.0-alpha.0.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x86_64.pkg). This
+[embree-3.13.1.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.13.1/embree-3.13.1.x86_64.pkg). This
 will install Embree by default into `/opt/local/lib` and
 `/opt/local/include` directories. The Embree tutorials are installed
 into the `/Applications/Embree3` directory.
@@ -155,13 +155,13 @@ macOS ZIP file
 -----------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-3.13.0-alpha.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.0-alpha.0/embree-3.13.0-alpha.0.x86_64.macosx.zip). Unpack
+[embree-3.13.1.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.1/embree-3.13.1.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-3.13.0-alpha.0.x64.macosx.zip
-    source embree-3.13.0-alpha.0.x64.macosx/embree-vars.sh
+    unzip embree-3.13.1.x64.macosx.zip
+    source embree-3.13.1.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
