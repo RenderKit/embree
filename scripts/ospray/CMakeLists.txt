@@ -27,9 +27,9 @@ include(ProcessorCount)
 
 ## Superbuild options ##
 
-set(BUILD_RKCOMMON_VERSION "v1.6.1" CACHE STRING "Which version of rkcommon to build?")
-set(TBB_VERSION "2021.3.0" CACHE STRING "Which version of TBB to download?")
-set(BUILD_OPENVKL_VERSION "v0.13.0" CACHE STRING "Which version of OpenVKL to build?")
+set(BUILD_RKCOMMON_VERSION "v1.6.0" CACHE STRING "Which version of rkcommon to build?")
+set(TBB_VERSION "2021.2.0" CACHE STRING "Which version of TBB to download?")
+set(BUILD_OPENVKL_VERSION "v0.12.1" CACHE STRING "Which version of OpenVKL to build?")
 
 set(installDir ${CMAKE_INSTALL_PREFIX})
 get_filename_component(INSTALL_DIR_ABSOLUTE ${installDir} ABSOLUTE BASE_DIR ${CMAKE_CURRENT_BINARY_DIR})
@@ -49,7 +49,7 @@ set(COMPONENT_PATH ${INSTALL_DIR_ABSOLUTE}) # install all components in one dire
 list(APPEND CMAKE_PREFIX_PATH ${COMPONENT_PATH})
 string(REPLACE ";" "|" CMAKE_PREFIX_PATH "${CMAKE_PREFIX_PATH}")
 
-set(ISPC_VERSION "v1.16.1")
+set(ISPC_VERSION "v1.15.0")
 set(ISPC_BASE_URL "https://github.com/ispc/ispc/releases/download")
 if (APPLE)
   set(ISPC_URL ${ISPC_BASE_URL}/${ISPC_VERSION}/ispc-${ISPC_VERSION}-macOS.tar.gz)
