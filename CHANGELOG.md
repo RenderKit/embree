@@ -1,6 +1,10 @@
 Version History
 ---------------
 
+### Embree 3.13.1
+-   Added support for ISPC+ARM.
+-   Releases upgrade to TBB 2021.3.0 and ISPC 1.16.1
+
 ### Embree 3.13.0
 -   Added support for Apple M1 CPUs.
 -   RTC_SUBDIVISION_MODE_NO_BOUNDARY now works properly for non-manifold edges.
