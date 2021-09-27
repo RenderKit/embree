@@ -251,9 +251,14 @@ namespace embree
               add(dim,l,l,l,prim.bounds());
               continue;
             }
-            const size_t bin_start = bin0[dim];
-            const size_t bin_end   = bin1[dim];
+            size_t bin_start = bin0[dim];
+            size_t bin_end   = bin1[dim];
             BBox3fa rest = prim.bounds();
+
+            /* assure that split position always overlaps the primitive bounds */
+            while (mapping.pos(bin_start+1,dim) <= rest.lower[dim]) bin_start++;
+            while (mapping.pos(bin_end    ,dim) >= rest.upper[dim]) bin_end--;
+
             const auto splitter = splitterFactory(prim);
             for (bin=bin_start; bin<bin_end; bin++) 
             {

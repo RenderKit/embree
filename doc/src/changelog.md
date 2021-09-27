@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.13.2
+-   Avoiding spatial split positions that are out of geometry bounds.
+
 ### Embree 3.13.1
 -   Added support for ISPC+ARM.
 -   Releases upgrade to TBB 2021.3.0 and ISPC 1.16.1
