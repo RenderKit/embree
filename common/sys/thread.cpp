@@ -217,6 +217,8 @@ namespace embree
 
     /* find correct thread to affinitize to */
     cpu_set_t set;
+    CPU_ZERO(&set);
+    
     if (pthread_getaffinity_np(pthread_self(), sizeof(set), &set) == 0)
     {
       for (int i=0, j=0; i<CPU_SETSIZE; i++)
