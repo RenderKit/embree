@@ -190,8 +190,8 @@ namespace embree
             BBox3fa rest = prim.bounds();
 
             /* assure that split position always overlaps the primitive bounds */
-            while (mapping.pos(bin_start+1,dim) <= rest.lower[dim]) bin_start++;
-            while (mapping.pos(bin_end    ,dim) >= rest.upper[dim]) bin_end--;
+            while (bin_start < bin_end && mapping.pos(bin_start+1,dim) <= rest.lower[dim]) bin_start++;
+            while (bin_start < bin_end && mapping.pos(bin_end    ,dim) >= rest.upper[dim]) bin_end--;
 
             const auto splitter = splitterFactory(prim);
             for (bin=bin_start; bin<bin_end; bin++) 
