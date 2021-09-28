@@ -13,9 +13,6 @@ _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
 _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 _SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
 
-_SET_IF_EMPTY(FLAGS_NEON   "-D__SSE__ -D__SSE2__")
-_SET_IF_EMPTY(FLAGS_AVX2NEON "-D__SSE__ -D__SSE2__ -D__AVX2__ -D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__ -DNEON_AVX2_EMULATION")
-
 IF (WIN32)
 
   SET(COMMON_CXX_FLAGS "")

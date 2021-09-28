@@ -48,3 +48,7 @@ __forceinline void _mm_mfence()
 {
   __sync_synchronize();
 }
+
+#if defined(__AVX__)
+#include "avx2neon.h"
+#endif

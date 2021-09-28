@@ -10,9 +10,6 @@
 
 #if defined(__ARM_NEON)
 #include "../simd/arm/emulation.h"
- #if defined(NEON_AVX2_EMULATION)
- #include "../simd/arm/AVX2NEON.h"
- #endif
 #else
 #include <emmintrin.h>
 #include <xmmintrin.h>
