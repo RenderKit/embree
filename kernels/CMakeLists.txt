@@ -153,7 +153,7 @@ MACRO(embree_files TARGET ISA)
     LIST(APPEND ${TARGET} bvh/bvh_intersector1_bvh8.cpp)
   ENDIF()
 
-  IF (${ISA} EQUAL ${AVX})
+  IF (${ISA} EQUAL ${ISA_LOWEST_AVX})
     LIST(APPEND ${TARGET}
       bvh/bvh.cpp
       bvh/bvh_statistics.cpp)

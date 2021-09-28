@@ -337,7 +337,6 @@ namespace embree
     return cpu_features;
 #elif defined(__ARM_NEON)
     
-#if defined(NEON_AVX2_EMULATION)
      int cpu_features = CPU_FEATURE_NEON|CPU_FEATURE_SSE|CPU_FEATURE_SSE2;
       cpu_features |= CPU_FEATURE_SSE3|CPU_FEATURE_SSSE3|CPU_FEATURE_SSE42;
       cpu_features |= CPU_FEATURE_XMM_ENABLED;
@@ -353,12 +352,7 @@ namespace embree
       cpu_features |= CPU_FEATURE_NEON_2X;
 
       return cpu_features;
-#else 
-	/* emulated features with sse2neon */
-    return CPU_FEATURE_SSE|CPU_FEATURE_SSE2|CPU_FEATURE_XMM_ENABLED;
  
-#endif // NEON_AVX2_EMULATION
-    
 #else
     /* Unknown CPU. */
     return 0;
