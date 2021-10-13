@@ -3,6 +3,7 @@ Version History
 
 ### Embree 3.13.2
 -   Avoiding spatial split positions that are out of geometry bounds.
+-   Introduced rtcGetGeometryThreadSafe function, which is a thread safe version of rtcGetGeometry.
 
 ### Embree 3.13.1
 -   Added support for ISPC+ARM.

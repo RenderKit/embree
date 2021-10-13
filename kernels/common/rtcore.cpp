@@ -1757,4 +1757,19 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
+  RTC_API RTCGeometry rtcGetGeometryThreadSafe (RTCScene hscene, unsigned int geomID)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryThreadSafe);
+#if defined(DEBUG)
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_VERIFY_GEOMID(geomID);
+#endif
+    Ref<Geometry> geom = scene->get_locked(geomID);
+    return (RTCGeometry) geom.ptr; 
+    RTC_CATCH_END2(scene);
+    return nullptr;
+  }
+
 RTC_NAMESPACE_END

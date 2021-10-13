@@ -73,6 +73,11 @@
 ```
 \pagebreak
 
+## rtcGetGeometryThreadSafe
+``` {include=src/api/rtcGetGeometryThreadSafe.md}
+```
+\pagebreak
+
 ## rtcCommitScene
 ``` {include=src/api/rtcCommitScene.md}
 ```
