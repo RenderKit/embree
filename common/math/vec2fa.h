@@ -104,10 +104,11 @@ namespace embree
 #endif
 
 #if defined(__AVX2__)
-    const Vec2fa res = _mm_mul_ps(r,_mm_fnmadd_ps(r, a, vfloat4(2.0f)));
+    const Vec2fa h_n = _mm_fnmadd_ps(a, r, vfloat4(1.0));  // First, compute 1 - a * r (which will be very close to 0)
+    const Vec2fa res = _mm_fmadd_ps(r, h_n, r);            // Then compute r + r * h_n
 #else
-    const Vec2fa res = _mm_mul_ps(r,_mm_sub_ps(vfloat4(2.0f), _mm_mul_ps(r, a)));
-    //return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+    const Vec2fa h_n = _mm_sub_ps(vfloat4(1.0f), _mm_mul_ps(a, r));  // First, compute 1 - a * r (which will be very close to 0)
+    const Vec2fa res = _mm_add_ps(r,_mm_mul_ps(r, h_n));             // Then compute r + r * h_n  
 #endif
 
     return res;

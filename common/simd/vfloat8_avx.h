@@ -241,7 +241,7 @@ namespace embree
     // Then compute r + r * h_n
     return _mm256_fmadd_ps(r, h_n, r);
 #else
-    return _mm256_mul_ps(r, _mm256_sub_ps(vfloat8(2.0f), _mm256_mul_ps(r, a)));
+    return _mm256_add_ps(r,_mm256_mul_ps(r, _mm256_sub_ps(vfloat8(1.0f), _mm256_mul_ps(a, r))));  // computes r + r * (1 - a * r)
 #endif
   }
   __forceinline vfloat8 sqr (const vfloat8& a) { return _mm256_mul_ps(a,a); }

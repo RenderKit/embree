@@ -157,7 +157,7 @@ namespace embree
 #else
     const Color r = _mm_rcp_ps(a.m128);
 #endif
-    return _mm_sub_ps(_mm_add_ps(r, r), _mm_mul_ps(_mm_mul_ps(r, r), a));
+    return _mm_add_ps(r,_mm_mul_ps(r, _mm_sub_ps(_mm_set1_ps(1.0f), _mm_mul_ps(a, r))));   // computes r + r * (1 - a * r)
   }
   __forceinline const Color rsqrt( const Color& a )
   {
