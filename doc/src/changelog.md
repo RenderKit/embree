@@ -2,11 +2,10 @@ Version History
 ---------------
 
 ### Embree 3.13.2
--   Avoiding spatial split positions that are out of geometry bounds.
+-   Avoiding spatial split positions that are slightly out of geometry bounds.
 -   Introduced rtcGetGeometryThreadSafe function, which is a thread safe version of rtcGetGeometry.
--   Using more accurate rcp implementation
--   Bugfix to high quality BVH builder, when pre-splitting codepath was used. This issue could
-    only get triggered for scenes containing triangles and more than 134M geometries.
+-   Using more accurate rcp implementation.
+-   Bugfix to rare corner case of high quality BVH builder.
 
 ### Embree 3.13.1
 -   Added support for ISPC+ARM.
