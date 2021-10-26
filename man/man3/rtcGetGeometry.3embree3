@@ -28,14 +28,18 @@ This function just looks up the handle and does \f[I]not\f[R] increment
 the reference count.
 If you want to get ownership of the handle, you need to additionally
 call \f[C]rtcRetainGeometry\f[R].
-For this reason, this function is fast and can be used during rendering.
+.PP
+This function is not thread safe and thus can be used during rendering.
 However, it is generally recommended to store the geometry handle inside
 the application\[cq]s geometry representation and look up the geometry
 handle from that representation directly.
+.PP
+If you need a thread safe version of this function please use
+[rtcGetGeometryThreadSafe].
 .SS EXIT STATUS
 .PP
 On failure \f[C]NULL\f[R] is returned and an error code is set that can
 be queried using \f[C]rtcGetDeviceError\f[R].
 .SS SEE ALSO
 .PP
-[rtcAttachGeometry], [rtcAttachGeometryByID]
+[rtcAttachGeometry], [rtcAttachGeometryByID], [rtcGetGeometryThreadSafe]

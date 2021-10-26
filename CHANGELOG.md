@@ -1,6 +1,12 @@
 Version History
 ---------------
 
+### Embree 3.13.2
+-   Avoiding spatial split positions that are slightly out of geometry bounds.
+-   Introduced rtcGetGeometryThreadSafe function, which is a thread safe version of rtcGetGeometry.
+-   Using more accurate rcp implementation.
+-   Bugfix to rare corner case of high quality BVH builder.
+
 ### Embree 3.13.1
 -   Added support for ISPC+ARM.
 -   Releases upgrade to TBB 2021.3.0 and ISPC 1.16.1
