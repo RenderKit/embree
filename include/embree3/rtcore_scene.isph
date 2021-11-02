@@ -142,7 +142,7 @@ RTC_API void rtcIntersectNM(RTCScene scene, uniform RTCIntersectContext* uniform
 
 /* Intersects a stream of M ray packets of native packet size with the scene. */
 RTC_FORCEINLINE void rtcIntersectVM(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform rayhit, uniform unsigned int M, uniform uintptr_t byteStride) {
-  rtcIntersectNM(scene, context, (struct RTCRayHitN*)rayhit, sizeof(varying float)/4, M, byteStride);
+  rtcIntersectNM(scene, context, (struct RTCRayHitN* uniform)rayhit, sizeof(varying float)/4, M, byteStride);
 }
 
 /* Intersects a stream of M ray packets of size N in SOA format with the scene. */
@@ -187,7 +187,7 @@ RTC_API void rtcOccludedNM(RTCScene scene, uniform RTCIntersectContext* uniform 
 
 /* Tests a stream of M ray packets of native size in SOA format for occlusion with the scene. */
 RTC_FORCEINLINE void rtcOccludedVM(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray, uniform unsigned int M, uniform uintptr_t byteStride) {
-  rtcOccludedNM(scene, context, (struct RTCRayN*)ray, sizeof(varying float)/4, M, byteStride);
+  rtcOccludedNM(scene, context, (struct RTCRayN* uniform)ray, sizeof(varying float)/4, M, byteStride);
 }
 
 /* Tests a stream of M ray packets of size N in SOA format for occlusion with the scene. */
