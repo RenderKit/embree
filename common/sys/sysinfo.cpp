@@ -21,7 +21,11 @@ namespace embree
   
   std::string getPlatformName() 
   {
-#if defined(__LINUX__) && !defined(__64BIT__)
+#if defined(__ANDROID__) && !defined(__64BIT__)
+    return "Android (32bit)";
+#elif defined(__ANDROID__) && defined(__64BIT__)
+    return "Android (64bit)";
+#elif defined(__LINUX__) && !defined(__64BIT__)
     return "Linux (32bit)";
 #elif defined(__LINUX__) && defined(__64BIT__)
     return "Linux (64bit)";
@@ -618,7 +622,7 @@ namespace embree
     static int nThreads = -1;
     if (nThreads != -1) return nThreads;
 
-#if defined(__MACOSX__)
+#if defined(__MACOSX__) || defined(__ANDROID__)
     nThreads = sysconf(_SC_NPROCESSORS_ONLN); // does not work in Linux LXC container
     assert(nThreads);
 #else
