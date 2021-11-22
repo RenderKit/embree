@@ -158,7 +158,7 @@ namespace embree
 /// Linux Platform
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__LINUX__)
+#if defined(__LINUX__) && !defined(__ANDROID__)
 
 #include <fstream>
 #include <sstream>
@@ -245,6 +245,26 @@ namespace embree
     CPU_SET(threadID, &cset);
 
     pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset);
+  }
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
+/// Android Platform
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__ANDROID__)
+
+namespace embree
+{
+  /*! set affinity of the calling thread */
+  void setAffinity(ssize_t affinity)
+  {
+    cpu_set_t cset;
+    CPU_ZERO(&cset);
+    CPU_SET(affinity, &cset);
+
+    sched_setaffinity(0, sizeof(cset), &cset);
   }
 }
 #endif
@@ -357,7 +377,7 @@ namespace embree
     pthread_attr_destroy(&attr);
 
     /* set affinity */
-#if defined(__LINUX__)
+#if defined(__LINUX__) && !defined(__ANDROID__)
     if (threadID >= 0) {
       cpu_set_t cset;
       CPU_ZERO(&cset);
@@ -371,6 +391,13 @@ namespace embree
       CPU_ZERO(&cset);
       CPU_SET(threadID, &cset);
       pthread_setaffinity_np(*tid, sizeof(cset), &cset);
+    }
+#elif defined(__ANDROID__)
+    if (threadID >= 0) {
+      cpu_set_t cset;
+      CPU_ZERO(&cset);
+      CPU_SET(threadID, &cset);
+      sched_setaffinity(pthread_gettid_np(*tid), sizeof(cset), &cset);
     }
 #endif
 
@@ -391,8 +418,12 @@ namespace embree
 
   /*! destroy a hardware thread by its handle */
   void destroyThread(thread_t tid) {
+#if defined(__ANDROID__)
+    FATAL("Can't destroy threads on Android."); // pthread_cancel not implemented.
+#else
     pthread_cancel(*(pthread_t*)tid);
     delete (pthread_t*)tid;
+#endif
   }
 
   /*! creates thread local storage */
