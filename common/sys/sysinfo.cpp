@@ -252,7 +252,7 @@ namespace embree
 #if defined(__X86_ASM__)
   __noinline int64_t get_xcr0() 
   {
-#if defined (__WIN32__)
+#if defined (__WIN32__) && !defined (__MINGW32__)
     int64_t xcr0 = 0; // int64_t is workaround for compiler bug under VS2013, Win32
     xcr0 = _xgetbv(0);
     return xcr0;
