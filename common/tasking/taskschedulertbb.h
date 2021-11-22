@@ -11,7 +11,7 @@
 #include "../sys/condition.h"
 #include "../sys/ref.h"
 
-#if defined(__WIN32__)
+#if defined(__WIN32__) && !defined(NOMINMAX)
 #  define NOMINMAX
 #endif
 

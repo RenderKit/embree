@@ -34,7 +34,9 @@
 #endif
 
 #if defined(__WIN32__)
-#  define NOMINMAX
+#  if !defined(NOMINMAX)
+#    define NOMINMAX
+#  endif
 #  include <windows.h>
 #endif
 
