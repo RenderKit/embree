@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.13.3
+-   Invalid multi segment motion blurred normal oriented curves are properly excluded from BVH build.
+
 ### Embree 3.13.2
 -   Avoiding spatial split positions that are slightly out of geometry bounds.
 -   Introduced rtcGetGeometryThreadSafe function, which is a thread safe version of rtcGetGeometry.
