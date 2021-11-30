@@ -374,7 +374,7 @@ namespace embree
 
             const size_t begin = set.begin();
             const size_t end   = set.end();
-            const size_t center = (begin + end)/2;
+            const size_t center = (begin + end + 1) / 2;
 
             PrimInfoMB linfo = empty;
             for (size_t i=begin; i<center; i++)
