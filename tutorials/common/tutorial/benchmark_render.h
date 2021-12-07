@@ -11,6 +11,11 @@
 #include <benchmark/benchmark.h>
 #endif
 
+/* ray statistics */
+#if !defined(TASKING_PPL) // not supported with PPL because threadIndex is not unique and atomics are too expensive
+#define RAY_STATS
+#endif
+
 namespace embree
 {
 
