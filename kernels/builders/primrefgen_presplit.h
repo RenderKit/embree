@@ -343,7 +343,7 @@ namespace embree
               unsigned int numSubPrims = 0;
               splitPrimitive(Splitter,prims[primrefID],geomID,primID,split_levels,grid_base,grid_scale,grid_extend,subPrims,numSubPrims);
               const size_t newID = numPrimitives + primOffset1[j-center];              
-              assert(newID+numSubPrims <= alloc_numPrimitives);
+              assert(newID+numSubPrims-1 <= alloc_numPrimitives);
               prims[primrefID] = subPrims[0];
               for (size_t i=1;i<numSubPrims;i++)
                 prims[newID+i-1] = subPrims[i];
