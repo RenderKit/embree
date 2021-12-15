@@ -147,7 +147,7 @@ in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 Embree will either find the Intel® Threading Building Blocks (TBB)
 installation that comes with the Intel® Compiler, or you can install the
 binary distribution of TBB directly from
-[www.threadingbuildingblocks.org](https://www.threadingbuildingblocks.org/download)
+[https://github.com/oneapi-src/oneTBB/releases](https://github.com/oneapi-src/oneTBB/releases)
 into a folder named `tbb` into your Embree root directory. You also have
 to make sure that the libraries `tbb.dll` and `tbb_malloc.dll` can be
 found when executing your Embree applications, e.g. by putting the path

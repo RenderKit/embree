@@ -70,7 +70,7 @@ using [MacPorts](http://www.macports.org/):
     sudo port install tbb
 
 Alternatively you can download the latest TBB version from
-[https://www.threadingbuildingblocks.org/download](https://www.threadingbuildingblocks.org/download)
+[https://github.com/oneapi-src/oneTBB/releases](https://github.com/oneapi-src/oneTBB/releases)
 and set the `DYLD_LIBRARY_PATH` environment variable to point
 to the TBB library.
 
