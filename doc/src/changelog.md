@@ -11,8 +11,8 @@ Version History
 -   Bugfix to rare corner case of high quality BVH builder.
 
 ### Embree 3.13.1
--   Added support for ISPC+ARM.
--   Releases upgrade to TBB 2021.3.0 and ISPC 1.16.1
+-   Added support for Intel® ISPC ARM target.
+-   Releases upgrade to TBB 2021.3.0 and Intel® ISPC 1.16.1
 
 ### Embree 3.13.0
 -   Added support for Apple M1 CPUs.
@@ -20,7 +20,7 @@ Version History
 -   CMake target 'uninstall' is not defined if it already exists.
 -   Embree no longer reads the .embree3 config files, thus all configuration has
     to get passed through the config string to rtcNewDevice.
--   Releases upgrade to TBB 2021.2.0 and ISPC 1.15.0
+-   Releases upgrade to TBB 2021.2.0 and Intel® ISPC 1.15.0
 -   TBB dll is automatically copied into build folder after build on windows.
 
 ### Embree 3.12.2
@@ -72,7 +72,7 @@ Version History
     15% performance impact. This new mode is disabled by default.
 -   Compile fix for oneTBB 2021.1-beta05
 -   Releases upgrade to TBB 2020.2
--   Compile fix for ISPC v1.13.0
+-   Compile fix for Intel® ISPC v1.13.0
 -   Adding RPATH to libembree.so in releases
 -   Increased required CMake version to 3.1.0
 -   Made instID member for array of pointers ray stream layout optional again.
@@ -130,7 +130,7 @@ Version History
 ### New Features in Embree 3.6.1
 -   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
 -   Fixed bug in subgrid intersector
--   Removed point query alignment in ISPC header
+-   Removed point query alignment in Intel® ISPC header
 
 ### New Features in Embree 3.6
 -   Added Catmull-Rom curve types.
@@ -343,7 +343,7 @@ Version History
     fixed, and one can enable only AVX2 and still get best
     performance by using an 8-wide BVH.
 -   Fixed rtcOccluded1 and rtcOccluded1Ex API functions which were
-    broken in ISPC.
+    broken in Intel® ISPC.
 -   Providing MSI installer for Windows.
 
 ### New Features in Embree 2.16.5
@@ -610,7 +610,7 @@ Version History
 ### New Features in Embree 2.7.1
 
 -   Internal tasking system supports cancellation of build operations.
--   ISPC mode for robust and compact scenes got significantly faster
+-   Intel® ISPC mode for robust and compact scenes got significantly faster
     (implemented hybrid traversal for bvh4.triangle4v and
     bvh4.triangle4i).
 -   Hair rendering got faster as we fixed some issues with the SAH
@@ -800,7 +800,7 @@ Version History
 -   Support for the Intel® Xeon Phi™ coprocessor platform
 -   Support for high-performance "packet" kernels on SSE, AVX, and Xeon
     Phi
--   Integration with the Intel® SPMD Program Compiler (ISPC)
+-   Integration with the Intel® Implicit SPMD Program Compiler (Intel® ISPC)
 -   Instantiation and fast BVH reconstruction
--   Example photo-realistic rendering engine for both C++ and ISPC
+-   Example photo-realistic rendering engine for both C++ and Intel® ISPC
 
