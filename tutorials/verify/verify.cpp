@@ -1700,6 +1700,88 @@ namespace embree
     }
   };
   
+  struct DisableAndDetachGeometryTest : public VerifyApplication::Test
+  {
+    SceneFlags sflags;
+
+    DisableAndDetachGeometryTest (std::string name, int isa, SceneFlags sflags)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      RTCIntersectContext context;
+      rtcInitIntersectContext(&context);
+
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+      VerifyScene scene(device,sflags);
+      AssertNoError(device);
+      unsigned geom[] = {
+        scene.addSphere      (sampler,RTC_BUILD_QUALITY_MEDIUM,Vec3fa(-1,0,-1),1.0f,50).first,
+        scene.addQuadSphere  (sampler,RTC_BUILD_QUALITY_MEDIUM,Vec3fa(-1,0,+1),1.0f,50).first,
+        scene.addSubdivSphere(sampler,RTC_BUILD_QUALITY_MEDIUM,Vec3fa(+1,0,-1),1.0f,5,4).first,
+        scene.addHair        (sampler,RTC_BUILD_QUALITY_MEDIUM,Vec3fa(+1,0,+1),1.0f,1.0f,1).first,
+      };
+      RTCGeometry hgeom[] = {
+        rtcGetGeometry(scene,geom[0]),
+        rtcGetGeometry(scene,geom[1]),
+        rtcGetGeometry(scene,geom[2]),
+        rtcGetGeometry(scene,geom[3]),
+      };
+      AssertNoError(device);
+
+      for (size_t j=0; j<4; ++j)
+      {
+        rtcEnableGeometry(hgeom[j]);
+      }
+      rtcCommitScene (scene);
+      AssertNoError(device);
+
+      bool allOk = true;
+      for (size_t i=0; i<5; i++)
+      {
+        RTCRayHit ray0 = makeRay(Vec3fa(-1,10,-1),Vec3fa(0,-1,0));
+        RTCRayHit ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0));
+        RTCRayHit ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0));
+        RTCRayHit ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0));
+        rtcIntersect1(scene,&context,&ray0);
+        rtcIntersect1(scene,&context,&ray1);
+        rtcIntersect1(scene,&context,&ray2);
+        rtcIntersect1(scene,&context,&ray3);
+        bool ok0 = i<=0 ? ray0.hit.geomID == 0 : ray0.hit.geomID == RTC_INVALID_GEOMETRY_ID;
+        bool ok1 = i<=1 ? ray1.hit.geomID == 1 : ray1.hit.geomID == RTC_INVALID_GEOMETRY_ID;
+        bool ok2 = i<=2 ? ray2.hit.geomID == 2 : ray2.hit.geomID == RTC_INVALID_GEOMETRY_ID;
+        bool ok3 = i<=3 ? ray3.hit.geomID == 3 : ray3.hit.geomID == RTC_INVALID_GEOMETRY_ID;
+        if (!ok0 || !ok1 || !ok2 || !ok3)
+        {
+          std::cout << "!" << std::flush;
+          allOk = false;
+        }
+        else
+        {
+          std::cout << "." << std::flush;
+        }
+
+        if (i<4)
+        {
+          rtcDisableGeometry(hgeom[i]);
+          AssertNoError(device);
+          rtcDetachGeometry(scene,geom[i]);
+          AssertNoError(device);
+          rtcCommitScene (scene);
+          AssertNoError(device);
+        }
+      }
+      AssertNoError(device);
+
+      if (allOk)
+        return VerifyApplication::PASSED;
+      else
+        return VerifyApplication::FAILED;
+    }
+  };
+
   struct UpdateTest : public VerifyApplication::IntersectTest
   {
     SceneFlags sflags;
@@ -5298,6 +5380,11 @@ namespace embree
         groups.top()->add(new EnableDisableGeometryTest(to_string(sflags),isa,sflags));
       groups.pop();
       
+      push(new TestGroup("disable_detach_geometry",true,true));
+      for (auto sflags : sceneFlagsDynamic)
+        groups.top()->add(new DisableAndDetachGeometryTest(to_string(sflags),isa,sflags));
+      groups.pop();
+
       push(new TestGroup("update",true,true));
       for (auto sflags : sceneFlagsDynamic) {
         for (auto imode : intersectModes) {
