@@ -220,12 +220,6 @@ nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.12.0-SSE2-TBB-NAMESPACE:
   tags:   [embree, docker]
   only:   [schedules]
 
-nightly-linux-x64-Debug-CLANG4.0.0-ISPC1.13.0-AVX-TBB2019.9-VALGRIND:
-  image: $DOCKER_REGISTRY/embree/fedora:26
-  script: "scripts/test.py platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.13.0 isa:AVX tasking:TBB2019.9 intensity:4 memcheck:ON"
-  tags:   [embree, docker] # avx
-  only:   [schedules]
-
 nightly-linux-x64-Debug-CLANG5.0.0-ISPC1.15.0-AVX2-INT-ADDRSANITIZER:
   image: $DOCKER_REGISTRY/embree/fedora:26
   script: "scripts/test.py platform:x64 build:Debug compiler:CLANG5.0.0 ispc:ispc1.15.0 isa:AVX tasking:INT intensity:2 addrsanitizer:ON"
