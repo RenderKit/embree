@@ -138,7 +138,7 @@ SET(CPACK_STRIP_FILES TRUE)
 SET(CPACK_PACKAGE_VERSION_MAJOR ${EMBREE_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${EMBREE_VERSION_MINOR})
 SET(CPACK_PACKAGE_VERSION_PATCH ${EMBREE_VERSION_PATCH})
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Intel(R) Embree implements high performance ray tracing kernels including accelertion structure construction and traversal.")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Intel(R) Embree implements high performance ray tracing kernels including acceleration structure construction and traversal.")
 SET(CPACK_PACKAGE_VENDOR "Intel Corporation")
 SET(CPACK_PACKAGE_CONTACT embree_support@intel.com)
 

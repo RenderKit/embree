@@ -1201,7 +1201,7 @@ void renderTileStandardStream(int taskIndex,
     }
     Ns = face_forward(primary.dir,normalize(Ns));
     
-    /* add light contrinution */
+    /* add light contribution */
     Vec3fa diffuse = Vec3fa(0.0f);
     if      (primary.instID[0] ==  0) diffuse = data.colors[primary.instID[0]][primary.primID];
     else if (primary.instID[0] == -1) diffuse = data.colors[4][primary.primID];      

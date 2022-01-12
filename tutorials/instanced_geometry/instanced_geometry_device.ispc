@@ -360,7 +360,7 @@ void renderTileStandardStream(uniform int taskIndex,
     if (primary.instID[0] != RTC_INVALID_GEOMETRY_ID)
       diffuse = data.colors[primary.instID[0]][primary.geomID];
 
-    /* add light contrinution */
+    /* add light contribution */
     Ray& shadow = shadow_stream[N];
     if (shadow.tfar >= 0.0f) {
       color_stream[N] = color_stream[N] + diffuse*clamp(-dot(lightDir,Ns),0.0f,1.0f);
@@ -427,7 +427,7 @@ export void device_render (uniform int* uniform pixels,
   xfm.vy = make_Vec3f(0,1,0);
   xfm.vz = make_Vec3f(-sin(t1),0,cos(t1));
 
-  /* calculate transformations to move instances in cirle */
+  /* calculate transformations to move instances in circle */
   for (uniform int i=0; i<4; i++) {
     uniform float t = t0+i*2.0f*M_PI/4.0f;
     data.instance_xfm[i] = make_AffineSpace3f(xfm,2.2f*make_Vec3f(+cos(t),0.0f,+sin(t)));

@@ -5,7 +5,7 @@
 #define __EMBREE_QUATERNION_ISPH__
 
 /*
- * Structure for transformation respresentation as a matrix decomposition using
+ * Structure for transformation representation as a matrix decomposition using
  * a quaternion
  */
 struct RTC_ALIGN(16) RTCQuaternionDecomposition

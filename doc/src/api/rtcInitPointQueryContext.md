@@ -46,7 +46,7 @@ tutorial [ClosestPoint] for a reference implementation of point queries with
 user defined instancing).
 
 The context is an necessary argument to [rtcPointQuery] and Embree internally
-uses the topmost instance tranformation of the stack to transform the point
+uses the topmost instance transformation of the stack to transform the point
 query into instance space.
 
 #### EXIT STATUS

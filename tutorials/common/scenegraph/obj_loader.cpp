@@ -459,7 +459,7 @@ namespace embree
   unsigned int OBJLoader::fix_vt(int index) { return (index > 0 ? index - 1 : (index == 0 ? 0 : (int) vt.size() + index)); }
   unsigned int OBJLoader::fix_vn(int index) { return (index > 0 ? index - 1 : (index == 0 ? 0 : (int) vn.size() + index)); }
 
-  /*! Parse differently formated triplets like: n0, n0/n1/n2, n0//n2, n0/n1.          */
+  /*! Parse differently formatted triplets like: n0, n0/n1/n2, n0//n2, n0/n1.          */
   /*! All indices are converted to C-style (from 0). Missing entries are assigned -1. */
   Vertex OBJLoader::getUInt3(const char*& token)
   {

@@ -244,7 +244,7 @@ namespace embree {
     const size_t primitives = getNumPrimitives(ispc_scene);
     const size_t objects = getNumObjects(ispc_scene);
 
-    // warmup
+    // warm-up
     for (int i = 0; i < params.minTimeOrIterations; ++i) {
       updateObjects(ispc_scene,scene);
       rtcCommitScene(scene);
@@ -332,7 +332,7 @@ namespace embree {
     const size_t primitives = getNumPrimitives(ispc_scene);
     const size_t objects = getNumObjects(ispc_scene);
     
-    // warmup
+    // warm-up
     for (int i = 0; i < params.minTimeOrIterations; ++i) {
       deleteObjects(ispc_scene, scene);
       convertScene(scene, ispc_scene, quality);
@@ -426,7 +426,7 @@ namespace embree {
     const size_t primitives = getNumPrimitives(ispc_scene);
     const size_t objects = getNumObjects(ispc_scene);
     
-    // warmup
+    // warm-up
     for (int i = 0; i < params.minTimeOrIterations; ++i) {
       RTCScene scene = createScene(RTC_SCENE_FLAG_NONE, qflags);
       convertScene(scene, ispc_scene, quality);
@@ -585,7 +585,7 @@ namespace embree {
     for (size_t i=1; i<numThreads; i++) 
       threads.push_back(std::thread(&Helper::perform_work, &helper, i));
     
-    // warmup
+    // warm-up
     for (int i = 0; i < params.minTimeOrIterations; ++i) {
       helper.scene = createScene(RTC_SCENE_FLAG_NONE,qflags);
       convertScene(helper.scene,ispc_scene,quality);

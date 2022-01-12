@@ -12,7 +12,7 @@ ENDMACRO ()
 
 IF (EMBREE_ISPC_SUPPORT)
 
-# ISPC versions to look for, in decending order (newest first)
+# ISPC versions to look for, in descending order (newest first)
 SET(ISPC_VERSION_WORKING "1.9.1" "1.9.0" "1.8.3" "1.8.2")
 LIST(GET ISPC_VERSION_WORKING -1 ISPC_VERSION_REQUIRED)
 

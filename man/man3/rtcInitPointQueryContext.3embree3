@@ -54,7 +54,7 @@ instancing (see tutorial [ClosestPoint] for a reference implementation
 of point queries with user defined instancing).
 .PP
 The context is an necessary argument to [rtcPointQuery] and Embree
-internally uses the topmost instance tranformation of the stack to
+internally uses the topmost instance transformation of the stack to
 transform the point query into instance space.
 .SS EXIT STATUS
 .PP

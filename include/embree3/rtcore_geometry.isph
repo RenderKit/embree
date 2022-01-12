@@ -64,7 +64,7 @@ enum RTCSubdivisionMode
 enum RTCCurveFlags
 {
   RTC_CURVE_FLAG_NEIGHBOR_LEFT  = (1 << 0), // left segment exists
-  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1)  // right segement exists
+  RTC_CURVE_FLAG_NEIGHBOR_RIGHT = (1 << 1)  // right segment exists
 };
 
 /* Arguments for RTCBoundsFunction */

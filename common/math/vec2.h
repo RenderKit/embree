@@ -144,7 +144,7 @@ namespace embree
   }
   
   ////////////////////////////////////////////////////////////////////////////////
-  /// Euclidian Space Operators
+  /// Euclidean Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
   template<typename T> __forceinline T       dot      ( const Vec2<T>& a, const Vec2<T>& b ) { return madd(a.x,b.x,a.y*b.y); }
