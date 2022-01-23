@@ -106,22 +106,24 @@ namespace embree
           const Vec3fa dbt1 = cross(dn1,dp1) + cross(n1,ddp1);
             
           const Vec3fa k0  = normalize(bt0);
-          const Vec3fa dk0 = dnormalize(bt0,dbt0);
-          
+          Vec3fa dk0 = p0.w * dnormalize(bt0,dbt0);
+          dk0 *= min(1.0f, length(dp0) / length(dk0));
+
           const Vec3fa k1 = normalize(bt1);
-          const Vec3fa dk1 = dnormalize(bt1,dbt1);
-                    
+          Vec3fa dk1 = p1.w * dnormalize(bt1,dbt1);
+          dk1 *= min(1.0f, length(dp1) / length(dk1));
+
           const Vec3fa l0 = p0 - p0.w*k0;
-          const Vec3fa dl0 = dp0 - (dp0.w*k0 + p0.w*dk0);
+          const Vec3fa dl0 = dp0 - (dp0.w*k0 + dk0);
 
           const Vec3fa r0 = p0 + p0.w*k0;
-          const Vec3fa dr0 = dp0 + (dp0.w*k0 + p0.w*dk0);
+          const Vec3fa dr0 = dp0 + (dp0.w*k0 + dk0);
 
           const Vec3fa l1 = p1 - p1.w*k1;
-          const Vec3fa dl1 = dp1 - (dp1.w*k1 + p1.w*dk1);
+          const Vec3fa dl1 = dp1 - (dp1.w*k1 + dk1);
 
           const Vec3fa r1 = p1 + p1.w*k1;
-          const Vec3fa dr1 = dp1 + (dp1.w*k1 + p1.w*dk1);
+          const Vec3fa dr1 = dp1 + (dp1.w*k1 + dk1);
 
           const float scale = 1.0f/3.0f;
           CubicBezierCurve<V> L(l0,l0+scale*dl0,l1-scale*dl1,l1);
