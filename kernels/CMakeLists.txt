@@ -213,7 +213,7 @@ MACRO (CreateISADummyFiles list isa)
       COMMAND ${CMAKE_COMMAND} 
        -D src=${src_file}
        -D dst=${dst_file}
-       -P ${PROJECT_SOURCE_DIR}/common/cmake/create_isa_dummy_file.cmake
+       -P "${PROJECT_SOURCE_DIR}/common/cmake/create_isa_dummy_file.cmake"
       DEPENDS ${src_file})
   ENDFOREACH()
 ENDMACRO()
@@ -225,7 +225,7 @@ CreateISADummyFiles(EMBREE_LIBRARY_FILES_AVX512    avx512    ${EMBREE_LIBRARY_FI
 
 MACRO (CheckGlobals library)
   IF (NOT WIN32 AND NOT APPLE)
-    ADD_CUSTOM_TARGET(${library}_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:${library}> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake DEPENDS ${library})
+    ADD_CUSTOM_TARGET(${library}_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:${library}> -P "${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake" DEPENDS ${library})
   ENDIF()
 ENDMACRO()
 
@@ -235,7 +235,7 @@ SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_FLAGS "${FLAGS_LOWEST}")
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_DEFINITIONS "EMBREE_LOWEST_ISA")
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 IF (NOT WIN32 AND NOT  APPLE)
-  ADD_CUSTOM_TARGET(embree_check_stack_frame_size COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_stack_frame_size.cmake DEPENDS embree)
+  ADD_CUSTOM_TARGET(embree_check_stack_frame_size COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree> -P "${PROJECT_SOURCE_DIR}/common/cmake/check_stack_frame_size.cmake" DEPENDS embree)
 ENDIF()
 
 #IF (EMBREE_ISA_SSE2 AND EMBREE_LIBRARY_FILES_SSE2)
@@ -322,11 +322,11 @@ ENDIF()
 
 IF (WIN32)
 ELSEIF (APPLE)
-  SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,-exported_symbols_list,${PROJECT_SOURCE_DIR}/kernels/export.macosx.map)
-  SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/kernels/export.macosx.map) 
+  SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,-exported_symbols_list, "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map")
+  SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map") 
 ELSE()
-  SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,--version-script=${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
-  SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
+  SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,--version-script="${PROJECT_SOURCE_DIR}/kernels/export.linux.map")
+  SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS "${PROJECT_SOURCE_DIR}/kernels/export.linux.map")
 ENDIF()
 
 IF (EMBREE_ZIP_MODE)
