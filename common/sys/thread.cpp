@@ -10,6 +10,9 @@
 #include "../simd/arm/emulation.h"
 #else
 #include <xmmintrin.h>
+#if defined(__EMSCRIPTEN__)
+#include "../simd/wasm/emulation.h"
+#endif
 #endif
 
 #if defined(PTHREADS_WIN32)
