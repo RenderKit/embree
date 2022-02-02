@@ -17,7 +17,7 @@ message(STATUS "Fetch intelstyle repository ${intelstyle_url}")
 include(FetchContent)
 FetchContent_Declare(IntelStyle
                      GIT_REPOSITORY ${intelstyle_url}
-                     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/intelstyle)
+                     SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/intelstyle")
 
 FetchContent_GetProperties(IntelStyle)
 if(NOT IntelStyle_POPULATED)

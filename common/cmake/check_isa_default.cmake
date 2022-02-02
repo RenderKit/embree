@@ -14,22 +14,22 @@
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
 
-SET(CHECK_ISA_DIR ${CMAKE_CURRENT_LIST_DIR})
+SET(CHECK_ISA_DIR "${CMAKE_CURRENT_LIST_DIR}")
 FUNCTION(CHECK_ISA_DEFAULT OUTVAR)
 
-  TRY_COMPILE(COMPILER_SUPPORTS_ARM_NEON ${CMAKE_BINARY_DIR} ${PROJECT_SOURCE_DIR}/common/cmake/check_arm_neon.cpp)
+  TRY_COMPILE(COMPILER_SUPPORTS_ARM_NEON "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/common/cmake/check_arm_neon.cpp")
   IF (COMPILER_SUPPORTS_ARM_NEON)
     SET(ISA_DEFAULT "NEON")
     SET(${OUTVAR} ${ISA_DEFAULT} PARENT_SCOPE)
     RETURN()
   ENDIF()
   
-  SET(ISA_DEFAULT_BIN ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/check_isa_default.bin)
-  SET(SRC ${CHECK_ISA_DIR}/check_isa.cpp)
+  SET(ISA_DEFAULT_BIN "${CMAKE_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/check_isa_default.bin")
+  SET(SRC "${CHECK_ISA_DIR}/check_isa.cpp")
   TRY_COMPILE(ISA_DEFAULT_COMPILE
-    ${CMAKE_BINARY_DIR}
-    ${SRC}
-    COPY_FILE ${ISA_DEFAULT_BIN}
+    "${CMAKE_BINARY_DIR}"
+    "${SRC}"
+    COPY_FILE "${ISA_DEFAULT_BIN}"
   )
   IF(NOT ISA_DEFAULT_COMPILE)
     SET(ISA_DEFAULT "SSE2")

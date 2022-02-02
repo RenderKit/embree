@@ -9,7 +9,7 @@ ADD_EXECUTABLE(embree_verify ../../kernels/embree.rc verify.cpp ../common/tutori
 TARGET_LINK_LIBRARIES(embree_verify sys math scenegraph embree tasking)
 SET_PROPERTY(TARGET embree_verify PROPERTY FOLDER tutorials)
 SET_PROPERTY(TARGET embree_verify APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
-INSTALL(TARGETS embree_verify DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
+INSTALL(TARGETS embree_verify DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
 SIGN_TARGET(embree_verify)
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)

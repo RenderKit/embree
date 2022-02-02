@@ -17,8 +17,8 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 # We use our own strip tool on macOS to sign during install. This is required as CMake modifies RPATH of the binary during install.
 IF (APPLE AND EMBREE_SIGN_FILE)
   SET(EMBREE_STRIP ${CMAKE_STRIP})
-  SET(CMAKE_STRIP ${PROJECT_BINARY_DIR}/post_install_target.sh)
-  CONFIGURE_FILE(scripts/post_install_target.sh.in ${PROJECT_BINARY_DIR}/post_install_target.sh @ONLY)
+  SET(CMAKE_STRIP "${PROJECT_BINARY_DIR}/post_install_target.sh")
+  CONFIGURE_FILE(scripts/post_install_target.sh.in "${PROJECT_BINARY_DIR}/post_install_target.sh" @ONLY)
 ENDIF()
 
 MACRO (SIGN_TARGET target)
@@ -31,7 +31,7 @@ MACRO (SIGN_TARGET target)
       # on MacOSX we strip and sign here for testing purposes but also during install, as CMake modifies binary during install
       ADD_CUSTOM_COMMAND(TARGET ${target} POST_BUILD
         COMMAND ${EMBREE_STRIP} -x $<TARGET_FILE:${target}>
-        COMMAND ${EMBREE_SIGN_FILE} -o runtime -e ${CMAKE_SOURCE_DIR}/common/cmake/embree.entitlements $<TARGET_FILE:${target}>)
+        COMMAND ${EMBREE_SIGN_FILE} -o runtime -e "${CMAKE_SOURCE_DIR}/common/cmake/embree.entitlements" $<TARGET_FILE:${target}>)
     ELSE()
       # on Linux signing of binaries is not supported and stripping is done during install
     ENDIF()
@@ -39,7 +39,7 @@ MACRO (SIGN_TARGET target)
 ENDMACRO()
 
 # find git version
-IF(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+IF(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
   FIND_PACKAGE(Git)
   IF(GIT_FOUND)
     EXECUTE_PROCESS(
@@ -80,7 +80,7 @@ MARK_AS_ADVANCED(CMAKE_OSX_DEPLOYMENT_TARGET)
 MARK_AS_ADVANCED(CMAKE_OSX_SYSROOT)
 MARK_AS_ADVANCED(CLEAR CMAKE_CXX_COMPILER)
 
-SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PATH})
+SET(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake" ${CMAKE_MODULE_PATH})
 
 IF (BUILD_TESTING)
   INCLUDE(test)
@@ -237,7 +237,7 @@ IF(DEFINED EMBREE_ISA_AVX512SKX)
   SET(EMBREE_ISA_AVX512 ${EMBREE_ISA_AVX512SKX} CACHE BOOL "")
 ENDIF()
 
-TRY_COMPILE(COMPILER_SUPPORTS_ARM_NEON ${CMAKE_BINARY_DIR} ${PROJECT_SOURCE_DIR}/common/cmake/check_arm_neon.cpp)
+TRY_COMPILE(COMPILER_SUPPORTS_ARM_NEON "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/common/cmake/check_arm_neon.cpp")
 
 IF (CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
   SET(EMBREE_MAX_ISA "DEFAULT" CACHE STRING "Selects highest ISA to support.")
@@ -252,9 +252,9 @@ ELSE()
 ENDIF()
 
 IF (EMBREE_MAX_ISA STREQUAL "NONE")
-  TRY_COMPILE(COMPILER_SUPPORTS_AVX    ${CMAKE_BINARY_DIR} ${PROJECT_SOURCE_DIR}/common/cmake/check_isa.cpp COMPILE_DEFINITIONS ${FLAGS_AVX})
-  TRY_COMPILE(COMPILER_SUPPORTS_AVX2   ${CMAKE_BINARY_DIR} ${PROJECT_SOURCE_DIR}/common/cmake/check_isa.cpp COMPILE_DEFINITIONS ${FLAGS_AVX2})
-  TRY_COMPILE(COMPILER_SUPPORTS_AVX512 ${CMAKE_BINARY_DIR} ${PROJECT_SOURCE_DIR}/common/cmake/check_isa.cpp COMPILE_DEFINITIONS ${FLAGS_AVX512})
+  TRY_COMPILE(COMPILER_SUPPORTS_AVX    "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/common/cmake/check_isa.cpp" COMPILE_DEFINITIONS ${FLAGS_AVX})
+  TRY_COMPILE(COMPILER_SUPPORTS_AVX2   "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/common/cmake/check_isa.cpp" COMPILE_DEFINITIONS ${FLAGS_AVX2})
+  TRY_COMPILE(COMPILER_SUPPORTS_AVX512 "${CMAKE_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/common/cmake/check_isa.cpp" COMPILE_DEFINITIONS ${FLAGS_AVX512})
 
   IF (COMPILER_SUPPORTS_ARM_NEON)
     OPTION(EMBREE_ISA_NEON "Enables NEON ISA." ON)
@@ -516,7 +516,7 @@ IF (NOT TARGET uninstall)
       IMMEDIATE @ONLY)
 
   add_custom_target(uninstall
-      COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
+      COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake")
 
   SET_PROPERTY(TARGET uninstall PROPERTY FOLDER CMakePredefinedTargets)
 ENDIF()

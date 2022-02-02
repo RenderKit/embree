@@ -8,7 +8,7 @@ ADD_EXECUTABLE(embree_tests ../../kernels/embree.rc
 TARGET_LINK_LIBRARIES(embree_tests tasking sys math scenegraph embree)
 SET_PROPERTY(TARGET embree_tests PROPERTY FOLDER tutorials)
 SET_PROPERTY(TARGET embree_tests APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
-INSTALL(TARGETS embree_tests DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT examples)
+INSTALL(TARGETS embree_tests DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)
 SIGN_TARGET(embree_tests)
 
 IF (BUILD_TESTING)
