@@ -124,6 +124,13 @@ continuous-ubuntu20.04-x64-Debug-GCC-ISPC1.15.0-AVX2-TBB-NAMESPACE:
   tags:   [embree, docker]
   only:   [pushes]
 
+continuous-linux-avx512vl-x64-Debug-ICX2022.1.2-ISPC1.16.1-AVX512-TBB2021.2.0:
+  extends: .build_and_test
+  before_script: ["python scripts/test.py configure platform:x64 build:Debug compiler:ICX2022.1.2 ispc:ispc1.16.1 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:  [embree, docker, avx512vl]
+  only:  [pushes]
+
 #continuous-ubuntu17.10-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB-NAMESPACE:
 #  extends: .build_and_test
 #  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree"]

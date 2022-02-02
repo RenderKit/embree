@@ -105,6 +105,10 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128")                 # enable SIMD intrinsics
   ENDIF()
 
+  IF(${CMAKE_CXX_COMPILER} MATCHES ".*icpx")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel")             # links intel runtime statically
+  ENDIF()
+
   SET(CMAKE_CXX_FLAGS_DEBUG "")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")              # generate debug information
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")         # enable assertions

@@ -179,6 +179,8 @@ def runConfig(config):
       conf.append("-D CMAKE_CXX_COMPILER=g++ -D CMAKE_C_COMPILER=gcc")
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
+    elif (compiler.startswith("ICX")):
+      conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"/compiler/latest/linux/bin/icpx -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"/compiler/latest/linux/bin/icx")
     elif (compiler.startswith("ICC")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icpc -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icc")
     elif (compiler.startswith("CLANG")):
