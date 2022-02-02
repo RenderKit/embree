@@ -383,12 +383,8 @@ CMake find Embree using the `FIND_PACKAGE` function inside your
 
      FIND_PACKAGE(embree 3.0 REQUIRED)
 
-If you installed Embree using the Linux RPM or macOS PKG installer,
-this will automatically find Embree. If you used the `zip` or `tar.gz`
-files to extract Embree, you need to set the `embree_DIR` variable to
-the folder you extracted Embree to. If you used the Windows MSI
-installer, you need to set `embree_DIR` to point to the Embree install
-location (e.g. `C:\Program Files\Intel\Embree3`).
+To cmake to properly find Embree you need to set the `embree_DIR`
+variable to the folder you extracted Embree to.
 
 The `FIND_PACKAGE` function will create an embree target that
 you can add to your target link libraries:

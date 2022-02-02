@@ -6,6 +6,7 @@ Version History
 -   Fixed crash caused by disabling a geometry and then detaching it from the scene.
 -   Bugfix in emulated ray packet intersection when EMBREE_RAY_PACKETS is turned off.
 -   Bugfix for linear quaternion interpolation fallback.
+-   We do no longer provide installers for Windows and macOS, please use the ZIP files instead.
 
 ### Embree 3.13.2
 -   Avoiding spatial split positions that are slightly out of geometry bounds.

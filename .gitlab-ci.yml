@@ -624,26 +624,6 @@ release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP-manua
   only:   [pushes]
   when:   manual
 
-release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-MSI:
-  stage: release
-  needs: []
-  script:
-    - "python scripts/test.py configure platform:x64 build:Release compiler:ICC19-VC141 ispc:ispc1.16.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.3.0 intensity:4 package:MSI"
-    - "python scripts/test.py build"
-    - "python scripts/test.py test"
-  tags:   [embree, win10, icc17, avx512vl]
-  only:   [web, schedules]
-  artifacts:
-    name: "$env:CI_JOB_NAME"
-    paths: [build/*.msi]
-    when:  always
-    expire_in: 2 mos
-
-release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-MSI-manual:
-  extends: release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-MSI
-  only:   [pushes]
-  when:   manual
-
 release-macosx-x64-Release-ICC2021.1.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP:
   stage: release
   needs: []
@@ -661,26 +641,6 @@ release-macosx-x64-Release-ICC2021.1.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP:
 
 release-macosx-x64-Release-ICC2021.1.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP-manual:
   extends: release-macosx-x64-Release-ICC2021.1.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP
-  only:   [pushes]
-  when:   manual
-  
-release-macosx-x64-Release-CLANG-ISPC1.16.1-TBB-PACKAGE-PKG:
-  stage: release
-  needs: []
-  script:
-    - "scripts/test.py configure platform:x64 build:Release compiler:CLANG ispc:ispc1.16.1 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB intensity:4 package:PKG"
-    - "scripts/test.py build"
-    - "scripts/test.py test"
-  tags:   [embree, mac, sign]
-  only:   [web, schedules]
-  artifacts:
-    name: "$CI_JOB_NAME"
-    paths: [build/*.pkg]
-    when:  always
-    expire_in: 2 mos
-
-release-macosx-x64-Release-CLANG-ISPC1.16.1-TBB-PACKAGE-PKG-manual:
-  extends: release-macosx-x64-Release-CLANG-ISPC1.16.1-TBB-PACKAGE-PKG
   only:   [pushes]
   when:   manual
   
@@ -722,7 +682,7 @@ scan-bdba-bin:
   stage: scan
   image: $DOCKER_REGISTRY/embree/centos:7.4
   tags: [docker]
-  needs: [release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP, release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-MSI, release-macosx-x64-Release-ICC2021.1.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP, release-macosx-x64-Release-CLANG-ISPC1.16.1-TBB-PACKAGE-PKG, release-linux-x64-Release-ICC2020.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP]
+  needs: [release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP, release-macosx-x64-Release-ICC2021.1.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP, release-linux-x64-Release-ICC2020.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP]
   script:
     - scripts/bdba.sh "build/embree-*"
     - scripts/store_files.sh $CI_PROJECT_NAME $CI_PIPELINE_ID bdba "embree-*.pdf"
@@ -737,7 +697,7 @@ av:
   stage: scan
   tags: [docker]
   image: $DOCKER_REGISTRY/clamav:ubuntu20.04
-  needs: [release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP, release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-MSI, release-macosx-x64-Release-ICC2021.1.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP, release-macosx-x64-Release-CLANG-ISPC1.16.1-TBB-PACKAGE-PKG, release-linux-x64-Release-ICC2020.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP]
+  needs: [release-windows-x64-Release-ICC19-VC141-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP, release-macosx-x64-Release-ICC2021.1.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP, release-linux-x64-Release-ICC2020.1-ISPC1.16.1-TBB2021.3.0-PACKAGE-ZIP]
   script:
     - freshclam | tee -a /tmp/av_scan.log
     - clamscan -va --max-filesize=512M --max-scansize=2048M --alert-broken --alert-exceeds-max build/embree* | tee -a /tmp/av_scan.log
