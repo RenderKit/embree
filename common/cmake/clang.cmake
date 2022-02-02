@@ -63,6 +63,11 @@ IF (WIN32)
 
   INCLUDE(msvc_post)
 
+  IF(${CMAKE_CXX_COMPILER} MATCHES ".*icx")
+    # workaround for file encoding problems of kernels/embree.rc found here https://gitlab.kitware.com/cmake/cmake/-/issues/18311
+    set(CMAKE_NINJA_CMCLDEPS_RC OFF)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:precise")        # dpcpp has fp-model fast as default
+  ENDIF()
 ELSE()
 
   OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
@@ -107,6 +112,7 @@ ELSE()
 
   IF(${CMAKE_CXX_COMPILER} MATCHES ".*icpx")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel")             # links intel runtime statically
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffp-model=precise")        # dpcpp has fp-model fast as default
   ENDIF()
 
   SET(CMAKE_CXX_FLAGS_DEBUG "")
