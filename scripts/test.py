@@ -69,6 +69,9 @@ elif OS == "linux":
 elif OS == "macosx":
   NAS = os.environ["NAS_MACOSX"]
 
+# path of oneapi installation on windows machines
+ONE_API_PATH_WINDOWS="C:\\Program Files (x86)\\Intel\\oneAPI\\"
+
 # configures tests for specified host machine
 def runConfig(config):
 
@@ -78,6 +81,8 @@ def runConfig(config):
 
   build = config["build"]
   conf.append("-D CMAKE_BUILD_TYPE="+build+"")
+
+  cmake_build_suffix = ""
 
   if "memcheck" in config:
     conf.append("-D EMBREE_TESTING_MEMCHECK="+config["memcheck"]+"")
@@ -108,6 +113,7 @@ def runConfig(config):
   platform = config["platform"]
   ispc_ext = "-vs2013"
   if OS == "windows":
+    cmake_build_suffix = "-- /m /t:rebuild"
     ext = ""
     if platform == "x64":
       ext = " Win64"
@@ -171,6 +177,11 @@ def runConfig(config):
       conf.append("-G \"Visual Studio 15 2017"+ext+"\"")
       conf.append("-T \"v141_clang_c2\"")
       ispc_ext = "-vs2015"
+    elif (compiler.startswith("ICX")):
+      cmake_build_suffix = ""
+      ispc_ext = "-vs2015"
+      env.append('"'+ONE_API_PATH_WINDOWS+'setvars.bat"')
+      conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
@@ -399,7 +410,7 @@ def runConfig(config):
   if parallel:
     ctest_suffix = " -j " + str(os.cpu_count()) + ctest_suffix
 
-  ctest_conf = [ctest_env, ctest_suffix]
+  ctest_conf = [ctest_env, ctest_suffix, cmake_build_suffix]
   pickle.dump(ctest_conf, open(".ctest_conf", "wb"), 0)
 
 # builds or runs tests for specified host machine
@@ -408,8 +419,8 @@ def run(mode):
     sys.stderr.write("unknown mode: "+mode+". should be 'build' or 'test'")
     sys.exit(1)
   
-  [ctest_env, ctest_suffix] = pickle.load(open(".ctest_conf", "rb"))
-  cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode) + ctest_suffix
+  [ctest_env, ctest_suffix, cmake_build_suffix] = pickle.load(open(".ctest_conf", "rb"))
+  cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
   
   if mode == "test" and not OS == "windows":
     fix_cmake_paths()

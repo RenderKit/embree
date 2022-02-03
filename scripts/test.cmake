@@ -70,10 +70,6 @@ ENDMACRO()
 # configure and build            #
 ##################################
 MACRO(build)
-  message("build")
-  # enable testing in Embree
-  # SET (CTEST_BUILD_OPTIONS "${CTEST_BUILD_OPTIONS} -D BUILD_TESTING:BOOL=ON -D EMBREE_TESTING_MODEL_DIR:PATH=${TEST_MODELS_DIRECTORY}")
-
   # build using as many processes as we have processors
   include(ProcessorCount)
   ProcessorCount(numProcessors)
@@ -83,7 +79,7 @@ MACRO(build)
 
   set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
   IF (WIN32)
-    set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE} -- /m /t:rebuild ")
+    set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE} ${BUILD_SUFFIX}")
   ELSE()
     set(CTEST_BUILD_COMMAND "make -j ${numProcessors}")
   ENDIF()
@@ -111,7 +107,6 @@ ENDMACRO()
 # configure and execute the test #
 ##################################
 MACRO(test)
-  message("test")
   ctest_start("Continuous")
 
   IF (EMBREE_UPDATE_MODELS AND EMBREE_TESTING_INTENSITY GREATER 0)
