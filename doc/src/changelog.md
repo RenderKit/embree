@@ -8,6 +8,7 @@ Version History
 -   Bugfix for linear quaternion interpolation fallback.
 -   We do no longer provide installers for Windows and macOS, please use the ZIP files instead.
 -   Fixed issues with spaces in path to embree build folder.
+-   Some fixes to compile Embree in SSE mode using WebAssembly.
 
 ### Embree 3.13.2
 -   Avoiding spatial split positions that are slightly out of geometry bounds.
