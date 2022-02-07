@@ -10,6 +10,7 @@ Version History
 -   Fixed issues with spaces in path to embree build folder.
 -   Some fixes to compile Embree in SSE mode using WebAssembly.
 -   Bugfix for occlusion rays with grids and ray packets.
+-   Fixing issue with normal oriented curve construction when center curve curvature is very large.
 
 ### Embree 3.13.2
 -   Avoiding spatial split positions that are slightly out of geometry bounds.

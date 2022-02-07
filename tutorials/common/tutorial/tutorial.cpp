@@ -169,7 +169,7 @@ namespace embree
 
     registerOption("compare-threshold", [this] (Ref<ParseStream> cin, const FileName& path) {
         referenceImageThreshold = cin->getFloat();
-      }, "--compare--threshold <float>: threshold in number of wrong pixels when image is considered wrong");
+      }, "--compare-threshold <float>: threshold in number of wrong pixels when image is considered wrong");
 
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {

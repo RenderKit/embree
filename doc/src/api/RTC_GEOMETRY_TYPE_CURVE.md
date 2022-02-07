@@ -217,7 +217,10 @@ cross product of the normal from the normal spline and tangent of the
 vertex spline. Note that this construction does not work when the
 provided normals are parallel to the curve direction. For this reason
 the provided normals should best be kept as perpendicular to the curve
-direction as possible.
+direction as possible. We further assume second order derivatives of
+the center curve to be zero for this construction, as otherwise very
+large curvatures occuring in corner cases, can thicken the constructed
+curve significantly.
 
 ##### Round Curves
 
