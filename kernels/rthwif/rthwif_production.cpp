@@ -31,7 +31,11 @@ SYCL_EXTERNAL rayquery_t intel_ray_query_init( unsigned int bvh_level, RayDescIN
 {
   rtas_t* accel_i = sycl::global_ptr<rtas_t>(_accel_i).get();
   HWAccel* accel = (HWAccel*)accel_i;
+#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  rtglobals_t dispatchGlobalsPtr = (rtglobals_t) intel_get_implicit_dispatch_globals();
+#else
   rtglobals_t dispatchGlobalsPtr = (rtglobals_t) accel->dispatchGlobalsPtr;
+#endif
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)intel_get_rt_stack( (rtglobals_t)dispatchGlobalsPtr )).get();
     
   /* init ray */
