@@ -12,6 +12,7 @@ Version History
 -   Bugfix for occlusion rays with grids and ray packets.
 -   Fixing issue with normal oriented curve construction when center curve curvature is very large.
 -   Upgrading to ISPC 1.17.0 for release build.
+-   Upgrading to oneTBB 2021.5.0 for release build.
 
 ### Embree 3.13.2
 -   Avoiding spatial split positions that are slightly out of geometry bounds.
