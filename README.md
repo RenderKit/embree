@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.13.2
+% Embree: High Performance Ray Tracing Kernels 3.13.3
 % Intel Corporation
 
 Embree Overview
@@ -17,12 +17,12 @@ highest benefit from future improvements. Intel® Embree is released as Open
 Source under the
 [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0).
 
-Intel® Embree supports applications written with the Intel® SPMD Program
-Compiler (ISPC, <https://ispc.github.io/>) by also providing an ISPC
+Intel® Embree supports applications written with the Intel® Implicit SPMD
+Program Compiler (Intel® ISPC, <https://ispc.github.io/>) by also providing an Intel® ISPC
 interface to the core ray tracing algorithms. This makes it possible
-to write a renderer in ISPC that automatically vectorizes and
-leverages SSE, AVX, AVX2, and AVX-512 instructions. ISPC also supports
-runtime code selection, thus ISPC will select the best code path for
+to write a renderer in Intel® ISPC that automatically vectorizes and
+leverages SSE, AVX, AVX2, and AVX-512 instructions. Intel® ISPC also supports
+runtime code selection, thus Intel® ISPC will select the best code path for
 your application.
 
 Intel® Embree contains algorithms optimized for incoherent workloads (e.g.
@@ -75,93 +75,41 @@ list](https://groups.google.com/d/forum/embree/).
 Installation of Embree
 ======================
 
-Windows MSI Installer
----------------------
-
-You can install the Embree library using the Windows MSI installer
-[embree-3.13.2-x64.vc14.msi](https://github.com/embree/embree/releases/download/v3.13.2/embree-3.13.2.x64.vc14.msi). This
-will install the 64-bit Embree version by default in `Program
-Files\Intel\Embree3`.
-
-You have to set the path to the `bin` folders manually to your `PATH`
-environment variable for applications to find Embree.
-
-To compile applications with Embree using CMake, please have a look at
-the `find_embree` tutorial. To compile this tutorial, you need to set
-the `embree_DIR` CMake variable of this tutorial to `Program
-Files\Intel\Embree3`.
-
-To uninstall Embree, open `Programs and Features` by clicking the
-`Start button`, clicking `Control Panel`, clicking `Programs`, and
-then clicking `Programs and Features`. Select `Embree
-3.13.2 x64` and uninstall it.
-
 Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-3.13.2.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.2/embree-3.13.2.x64.vc14.windows.zip). After
+[embree-3.13.3.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
-Embree. To compile applications with Embree, you also have to set the
-`Include Directories` path in Visual Studio to the `include` folder of
-the Embree installation.
-
-If you plan to ship Embree with your application, best use the Embree
-version from this ZIP file.
+Embree.
 
 Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.13.2.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.2/embree-3.13.2.x86_64.linux.tar.gz). Unpack
+[embree-3.13.3.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-3.13.2.x86_64.linux.tar.gz
-    source embree-3.13.2.x86_64.linux/embree-vars.sh
-
-If you want to ship Embree with your application, best use the Embree
-version provided in the `tar.gz` file.
+    tar xzf embree-3.13.3.x86_64.linux.tar.gz
+    source embree-3.13.3.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
-
-macOS PKG Installer
--------------------
-
-To install the Embree library on your macOS system use the
-provided package installer inside
-[embree-3.13.2.x86_64.pkg](https://github.com/embree/embree/releases/download/v3.13.2/embree-3.13.2.x86_64.pkg). This
-will install Embree by default into `/opt/local/lib` and
-`/opt/local/include` directories. The Embree tutorials are installed
-into the `/Applications/Embree3` directory.
-
-You also have to install the Intel® Threading Building Blocks (TBB)
-using [MacPorts](http://www.macports.org/):
-
-    sudo port install tbb
-
-Alternatively you can download the latest TBB version from
-[https://www.threadingbuildingblocks.org/download](https://www.threadingbuildingblocks.org/download)
-and set the `DYLD_LIBRARY_PATH` environment variable to point
-to the TBB library.
-
-To uninstall Embree, execute the uninstaller script
-`/Applications/Embree3/uninstall.command`.
 
 macOS ZIP file
 -----------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-3.13.2.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.2/embree-3.13.2.x86_64.macosx.zip). Unpack
+[embree-3.13.3.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-3.13.2.x64.macosx.zip
-    source embree-3.13.2.x64.macosx/embree-vars.sh
+    unzip embree-3.13.3.x64.macosx.zip
+    source embree-3.13.3.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -213,15 +161,15 @@ to use Embree with the Intel® Threading Building Blocks (TBB) and best
 also use TBB inside your application. Optionally you can disable TBB
 in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 
-Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
+Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
 straightforward parallelization of an entire renderer. If you do not
-want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
-CMake. Otherwise, download and install the ISPC binaries (we have
-tested ISPC version 1.9.1) from
+want to use Intel® ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
+CMake. Otherwise, download and install the Intel® ISPC binaries (we have
+tested Intel® ISPC version 1.9.1) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
-`ISPC_EXECUTABLE` variable during CMake configuration.
+`EMBREE_ISPC_EXECUTABLE` variable during CMake configuration.
 
 You additionally have to install CMake 3.1.0 or higher and the developer
 version of GLUT.
@@ -319,28 +267,28 @@ in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 Embree will either find the Intel® Threading Building Blocks (TBB)
 installation that comes with the Intel® Compiler, or you can install the
 binary distribution of TBB directly from
-[www.threadingbuildingblocks.org](https://www.threadingbuildingblocks.org/download)
+[https://github.com/oneapi-src/oneTBB/releases](https://github.com/oneapi-src/oneTBB/releases)
 into a folder named `tbb` into your Embree root directory. You also have
 to make sure that the libraries `tbb.dll` and `tbb_malloc.dll` can be
 found when executing your Embree applications, e.g. by putting the path
 to these libraries into your `PATH` environment variable.
 
-Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
+Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
 straightforward parallelization of an entire renderer. When installing
-ISPC, make sure to download an ISPC version from
+Intel® ISPC, make sure to download an Intel® ISPC version from
 [ispc.github.io](https://ispc.github.io/downloads.html) that is
 compatible with your Visual Studio version. After installation, put
 the path to `ispc.exe` permanently into your `PATH` environment
-variable or you need to correctly set the `ISPC_EXECUTABLE` variable
-during CMake configuration. If you do not want to use ISPC then you
+variable or you need to correctly set the `EMBREE_ISPC_EXECUTABLE` variable
+during CMake configuration. If you do not want to use Intel® ISPC then you
 can disable `EMBREE_ISPC_SUPPORT` in CMake.
 
-We have tested Embree with the following ISPC versions:
+We have tested Embree with the following Intel® ISPC versions:
 
-  - ISPC 1.14.1
-  - ISPC 1.13.0
-  - ISPC 1.12.0
-  - ISPC 1.9.2
+  - Intel® ISPC 1.14.1
+  - Intel® ISPC 1.13.0
+  - Intel® ISPC 1.12.0
+  - Intel® ISPC 1.9.2
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.11 or higher). Note that you need a native Windows CMake
@@ -425,7 +373,7 @@ parameters that can be configured in CMake:
 + `EMBREE_STACK_PROTECTOR`: Enables protection of return address
   from buffer overwrites. This option is OFF by default.
 
-+ `EMBREE_ISPC_SUPPORT`: Enables ISPC support of Embree. This option
++ `EMBREE_ISPC_SUPPORT`: Enables Intel® ISPC support of Embree. This option
   is ON by default.
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
@@ -472,19 +420,19 @@ parameters that can be configured in CMake:
   only), or an internal tasking system (INTERNAL). By default TBB is
   used.
 
-+ `EMBREE_TBB_ROOT`: If Intel® Threading TBB Building Blocks (TBB)
++ `EMBREE_TBB_ROOT`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, search the library in this directory
   tree.
 
-+ `EMBREE_TBB_POSTFIX`: If Intel® Threading TBB Building Blocks (TBB)
++ `EMBREE_TBB_POSTFIX`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, link to tbb<EMBREE_TBB_POSTFIX>.(so,dll,lib).
   Defaults to the empty string.
 
-+ `EMBREE_TBB_DEBUG_ROOT`: If Intel® Threading TBB Building Blocks (TBB)
++ `EMBREE_TBB_DEBUG_ROOT`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, search the library in this directory
   tree in Debug mode. Defaults to `EMBREE_TBB_ROOT`.
 
-+ `EMBREE_TBB_DEBUG_POSTFIX`: If Intel® Threading TBB Building Blocks (TBB)
++ `EMBREE_TBB_DEBUG_POSTFIX`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, link to tbb<EMBREE_TBB_DEBUG_POSTFIX>.(so,dll,lib)
   in Debug mode. Defaults to "_debug".
 
@@ -555,12 +503,8 @@ CMake find Embree using the `FIND_PACKAGE` function inside your
 
      FIND_PACKAGE(embree 3.0 REQUIRED)
 
-If you installed Embree using the Linux RPM or macOS PKG installer,
-this will automatically find Embree. If you used the `zip` or `tar.gz`
-files to extract Embree, you need to set the `embree_DIR` variable to
-the folder you extracted Embree to. If you used the Windows MSI
-installer, you need to set `embree_DIR` to point to the Embree install
-location (e.g. `C:\Program Files\Intel\Embree3`).
+To cmake to properly find Embree you need to set the `embree_DIR`
+variable to the folder you extracted Embree to.
 
 The `FIND_PACKAGE` function will create an embree target that
 you can add to your target link libraries:
@@ -580,12 +524,13 @@ construct 3D scenes and perform ray queries of different types inside
 these scenes. All API calls carry the prefix `rtc` (or `RTC` for types)
 which stands for **r**ay **t**racing **c**ore.
 
-The API also exists in an ISPC version, which is almost identical but
-contains additional functions that operate on ray packets with a size
-of the native SIMD width used by ISPC. For simplicity this document
-refers to the C99 version of the API functions. For changes when
-upgrading from the Embree 2 to the current Embree 3 API see Section
-[Upgrading from Embree 2 to Embree 3].
+The API also exists in an Intel® Implicit SPMD Program Compiler (Intel®
+ISPC) version, which is almost identical but contains additional
+functions that operate on ray packets with a size of the native SIMD
+width used by Intel® ISPC. For simplicity this document refers to the
+C99 version of the API functions. For changes when upgrading from the
+Embree 2 to the current Embree 3 API see Section [Upgrading from
+Embree 2 to Embree 3].
 
 The API supports scenes consisting of different geometry types such as
 triangle meshes, quad meshes (triangle pairs), grid meshes, flat
@@ -801,7 +746,7 @@ files:
     ./scripts/cpp-patch.py --patch embree2_to_embree3.patch
       --in infile.cpp --out outfile.cpp
 
-When invoked for ISPC files, add the `--ispc` option:
+When invoked for Intel® ISPC files, add the `--ispc` option:
 
     ./scripts/cpp-patch.py --ispc --patch embree2_to_embree3.patch
       --in infile.ispc --out outfile.ispc
@@ -1048,18 +993,20 @@ Miscellaneous {#miscellaneous}
     change from the initial size and ordering when entering a filter
     callback.
 
--   We no longer export ISPC-specific symbols. This has the advantage
-    that certain linking issues went away, e.g. it is now possible to
-    link an ISPC application compiled for any combination of ISAs, and
-    link this to an Embree library compiled with a different set of
-    ISAs. Previously the ISAs of the application had to be a subset of
-    the ISAs of Embree, and when the user enabled exactly one ISA, they
-    had to do this in Embree and the application.
+-   We no longer export Intel® ISPC-specific symbols. This has the
+    advantage that certain linking issues went away, e.g. it is now
+    possible to link an Intel® ISPC application compiled for any
+    combination of ISAs, and link this to an Embree library compiled
+    with a different set of ISAs. Previously the ISAs of the
+    application had to be a subset of the ISAs of Embree, and when the
+    user enabled exactly one ISA, they had to do this in Embree and the
+    application.
 
--   We no longer export the ISPC tasking system, which means that the
-    application has the responsibility to implement the ISPC tasking
-    system itself. ISPC comes with example code on how to do this. This
-    change is not performed by the script and must be done manually.
+-   We no longer export the Intel® ISPC tasking system, which means
+    that the application has the responsibility to implement the Intel®
+    ISPC tasking system itself. Intel® ISPC comes with example code on
+    how to do this. This change is not performed by the script and must
+    be done manually.
 
 -   Fixed many naming inconsistencies, and changed names of further API
     functions. All these renamings are properly done by the script and
@@ -3072,7 +3019,10 @@ product of the normal from the normal spline and tangent of the vertex
 spline. Note that this construction does not work when the provided
 normals are parallel to the curve direction. For this reason the
 provided normals should best be kept as perpendicular to the curve
-direction as possible.
+direction as possible. We further assume second order derivatives of
+the center curve to be zero for this construction, as otherwise very
+large curvatures occuring in corner cases, can thicken the constructed
+curve significantly.
 
 ##### Round Curves
 
@@ -3880,7 +3830,7 @@ elements (`byteStride` argument), the format of the buffer elements
 
 The start address (`byteOffset` argument) and stride (`byteStride`
 argument) must be both aligned to 4 bytes; otherwise the
-`rtcSetGeometryBuffer` function will fail.
+`rtcSetSharedGeometryBuffer` function will fail.
 
 When the buffer will be used as a vertex buffer
 (`RTC_BUFFER_TYPE_VERTEX` and `RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE`), the
@@ -7967,12 +7917,12 @@ Embree Tutorials
 Embree comes with a set of tutorials aimed at helping users understand
 how Embree can be used and extended. There is a very basic minimal
 that can be compiled as both C and C++, which should get new users started quickly. 
-All other tutorials exist in an ISPC and C++ version to demonstrate 
+All other tutorials exist in an Intel® ISPC and C++ version to demonstrate 
 the two versions of the API. Look for files
-named `tutorialname_device.ispc` for the ISPC implementation of the
+named `tutorialname_device.ispc` for the Intel® ISPC implementation of the
 tutorial, and files named `tutorialname_device.cpp` for the single ray C++
 version of the tutorial. To start the C++ version use the `tutorialname`
-executables, to start the ISPC version use the `tutorialname_ispc`
+executables, to start the Intel® ISPC version use the `tutorialname_ispc`
 executables. All tutorials can print available command line options
 using the `--help` command line parameter.
 

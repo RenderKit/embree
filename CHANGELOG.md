@@ -1,6 +1,20 @@
 Version History
 ---------------
 
+### Embree 3.13.3
+-   Invalid multi segment motion blurred normal oriented curves are properly excluded from BVH build.
+-   Fixing issue with normal oriented curve construction when center curve curvature is very large.
+    Due to this change normal oriented curve shape changes slightly.
+-   Fixed crash caused by disabling a geometry and then detaching it from the scene.
+-   Bugfix in emulated ray packet intersection when EMBREE_RAY_PACKETS is turned off.
+-   Bugfix for linear quaternion interpolation fallback.
+-   Fixed issues with spaces in path to Embree build folder.
+-   Some fixes to compile Embree in SSE mode using WebAssembly.
+-   Bugfix for occlusion rays with grids and ray packets.
+-   We do no longer provide installers for Windows and macOS, please use the ZIP files instead.
+-   Upgrading to Intel® ISPC 1.17.0 for release build.
+-   Upgrading to Intel® oneTBB 2021.5.0 for release build.
+
 ### Embree 3.13.2
 -   Avoiding spatial split positions that are slightly out of geometry bounds.
 -   Introduced rtcGetGeometryThreadSafe function, which is a thread safe version of rtcGetGeometry.
@@ -8,8 +22,8 @@ Version History
 -   Bugfix to rare corner case of high quality BVH builder.
 
 ### Embree 3.13.1
--   Added support for ISPC+ARM.
--   Releases upgrade to TBB 2021.3.0 and ISPC 1.16.1
+-   Added support for Intel® ISPC ARM target.
+-   Releases upgrade to Intel® TBB 2021.3.0 and Intel® ISPC 1.16.1
 
 ### Embree 3.13.0
 -   Added support for Apple M1 CPUs.
@@ -17,13 +31,13 @@ Version History
 -   CMake target 'uninstall' is not defined if it already exists.
 -   Embree no longer reads the .embree3 config files, thus all configuration has
     to get passed through the config string to rtcNewDevice.
--   Releases upgrade to TBB 2021.2.0 and ISPC 1.15.0
--   TBB dll is automatically copied into build folder after build on windows.
+-   Releases upgrade to Intel® TBB 2021.2.0 and Intel® ISPC 1.15.0
+-   Intel® TBB dll is automatically copied into build folder after build on windows.
 
 ### Embree 3.12.2
 -   Fixed wrong uv and Ng for grid intersector in robust mode for AVX.
 -   Removed optimizations for Knights Landing.
--   Upgrading release builds to use oneTBB 2021.1.1
+-   Upgrading release builds to use Intel® oneTBB 2021.1.1
 
 ### Embree 3.12.1
 
@@ -46,7 +60,7 @@ Version History
     coordinates for grid primitive.
 -   Fixed handling of motion blur time range for sphere, discs, and oriented disc geometries.
 -   Fixed missing model data in releases.
--   Ensure compatibility to newer versions of oneTBB.
+-   Ensure compatibility to newer versions of Intel® oneTBB.
 -   Motion blur BVH nodes no longer store NaN values.
 
 ### Embree 3.11.0
@@ -67,9 +81,9 @@ Version History
 -   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
     leaves to reduce memory consumption in compact mode by an additional 40% at about
     15% performance impact. This new mode is disabled by default.
--   Compile fix for oneTBB 2021.1-beta05
--   Releases upgrade to TBB 2020.2
--   Compile fix for ISPC v1.13.0
+-   Compile fix for Intel® oneTBB 2021.1-beta05
+-   Releases upgrade to Intel® TBB 2020.2
+-   Compile fix for Intel® ISPC v1.13.0
 -   Adding RPATH to libembree.so in releases
 -   Increased required CMake version to 3.1.0
 -   Made instID member for array of pointers ray stream layout optional again.
@@ -116,18 +130,18 @@ Version History
     for SAH heuristic were counted wrong due to some numerical issues.
 -   Fixed an accuracy issue with rendering very short fat curves.
 -   rtcCommitScene can now get called during rendering from multiple threads
-    to lazily build geometry. When TBB is used this causes a much lower overhead
+    to lazily build geometry. When Intel® TBB is used this causes a much lower overhead
     than using rtcJoinCommitScene.
 -   Geometries can now get attached to multiple scenes at the same time, which
     simplifies mapping general scene graphs to API.
--   Updated to TBB 2019.9 for release builds.
+-   Updated to Intel® TBB 2019.9 for release builds.
 -   Fixed a bug in the BVH builder for Grid geometries.
 -   Added macOS Catalina support to Embree releases.
 
 ### New Features in Embree 3.6.1
 -   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
 -   Fixed bug in subgrid intersector
--   Removed point query alignment in ISPC header
+-   Removed point query alignment in Intel® ISPC header
 
 ### New Features in Embree 3.6
 -   Added Catmull-Rom curve types.
@@ -137,7 +151,7 @@ Version History
     specified.
 -   Fixed bug in external BVH builder when configured for dynamic build.
 -   Added support for new config flag "user_threads=N" to device initialization
-    which sets the number of threads used by TBB but created by the user.
+    which sets the number of threads used by Intel® TBB but created by the user.
 -   Fixed automatic vertex buffer padding when using rtcSetNewGeometry API function.
 
 ### New Features in Embree 3.5.2
@@ -171,7 +185,7 @@ Version History
 -   Added point primitives (spheres, ray-oriented discs, normal-oriented discs).
 -   Fixed crash triggered by scenes with only invalid primitives.
 -   Improved robustness of quad/grid-based intersectors.
--   Upgraded to TBB 2019.2 for release builds.
+-   Upgraded to Intel® TBB 2019.2 for release builds.
 
 ### New Features in Embree 3.3.0
 -   Added support for motion blur time range per geometry. This way geometries
@@ -340,7 +354,7 @@ Version History
     fixed, and one can enable only AVX2 and still get best
     performance by using an 8-wide BVH.
 -   Fixed rtcOccluded1 and rtcOccluded1Ex API functions which were
-    broken in ISPC.
+    broken in Intel® ISPC.
 -   Providing MSI installer for Windows.
 
 ### New Features in Embree 2.16.5
@@ -529,14 +543,14 @@ Version History
     If you use Embree v2.11.0 please upgrade to Embree v2.12.0.
 -   Reduced memory consumption for dynamic scenes containing small
     meshes.
--   Added support to start and affinitize TBB worker threads by passing
+-   Added support to start and affinitize Intel® TBB worker threads by passing
     "`start_threads=1,set_affinity=1`" to `rtcNewDevice`. These settings
     are recommended on systems with a high thread count.
 -   `rtcInterpolate2` can now be called within a displacement shader.
 -   Added initial support for Microsoft's Parallel Pattern Library (PPL)
-    as tasking system alternative (for optimal performance TBB is
+    as tasking system alternative (for optimal performance Intel® TBB is
     highly recommended).
--   Updated to TBB 2017 which is released under the Apache v2.0 license.
+-   Updated to Intel® TBB 2017 which is released under the Apache v2.0 license.
 -   Dropped support for Visual Studio 2012 Win32 compiler. Visual Studio
     2012 x64 is still supported.
 
@@ -600,14 +614,14 @@ Version History
 -   Added support for quad geometry (replaces triangle-pairs feature).
 -   Added support for linear motion blur of user geometries.
 -   Improved performance through AVX-512 optimizations.
--   Improved performance of lazy scene build (when using TBB 4.4 update
+-   Improved performance of lazy scene build (when using Intel® TBB 4.4 update
     2).
 -   Improved performance through huge page support under linux.
 
 ### New Features in Embree 2.7.1
 
 -   Internal tasking system supports cancellation of build operations.
--   ISPC mode for robust and compact scenes got significantly faster
+-   Intel® ISPC mode for robust and compact scenes got significantly faster
     (implemented hybrid traversal for bvh4.triangle4v and
     bvh4.triangle4i).
 -   Hair rendering got faster as we fixed some issues with the SAH
@@ -706,10 +720,10 @@ Version History
     progress and cancel long build operations
 -   BVH builders can be used to build user defined hierarchies inside
     the application (see tutorial [BVH Builder])
--   Switched to TBB as default tasking system on Xeon to get even faster
+-   Switched to Intel® TBB as default tasking system on Xeon to get even faster
     hierarchy build times and better integration for applications that
-    also use TBB
--   `rtcCommit` can get called from multiple TBB threads to join the
+    also use Intel® TBB
+-   `rtcCommit` can get called from multiple Intel® TBB threads to join the
     hierarchy build operations
 
 ### New Features in Embree 2.4
@@ -797,7 +811,7 @@ Version History
 -   Support for the Intel® Xeon Phi™ coprocessor platform
 -   Support for high-performance "packet" kernels on SSE, AVX, and Xeon
     Phi
--   Integration with the Intel® SPMD Program Compiler (ISPC)
+-   Integration with the Intel® Implicit SPMD Program Compiler (Intel® ISPC)
 -   Instantiation and fast BVH reconstruction
--   Example photo-realistic rendering engine for both C++ and ISPC
+-   Example photo-realistic rendering engine for both C++ and Intel® ISPC
 
