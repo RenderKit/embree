@@ -253,7 +253,7 @@ nightly-windows-x64-RelWithDebInfo-ICC19-ISPC1.13.0-AVX512-TBB2019.9:
 
 nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1.14.1-AVX2-TBB2021.5.0:
   extends: .build_and_test
-  before_script: ["python scripts\\test.py configure platform:x64 build:Release compiler:V142 ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.5. intensity:2"]
+  before_script: ["python scripts\\test.py configure platform:x64 build:Release compiler:V142 ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.5.0 intensity:2"]
   tags:   [embree, win10, v142]
   only:   [schedules]
 
