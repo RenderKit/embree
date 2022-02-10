@@ -3,14 +3,15 @@ Version History
 
 ### Embree 3.13.3
 -   Invalid multi segment motion blurred normal oriented curves are properly excluded from BVH build.
+-   Fixing issue with normal oriented curve construction when center curve curvature is very large.
+    Due to this change normal oriented curve shape changes slightly.
 -   Fixed crash caused by disabling a geometry and then detaching it from the scene.
 -   Bugfix in emulated ray packet intersection when EMBREE_RAY_PACKETS is turned off.
 -   Bugfix for linear quaternion interpolation fallback.
--   We do no longer provide installers for Windows and macOS, please use the ZIP files instead.
--   Fixed issues with spaces in path to embree build folder.
+-   Fixed issues with spaces in path to Embree build folder.
 -   Some fixes to compile Embree in SSE mode using WebAssembly.
 -   Bugfix for occlusion rays with grids and ray packets.
--   Fixing issue with normal oriented curve construction when center curve curvature is very large.
+-   We do no longer provide installers for Windows and macOS, please use the ZIP files instead.
 -   Upgrading to ISPC 1.17.0 for release build.
 -   Upgrading to oneTBB 2021.5.0 for release build.
 
