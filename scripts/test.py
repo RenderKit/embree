@@ -70,7 +70,7 @@ elif OS == "macosx":
   NAS = os.environ["NAS_MACOSX"]
 
 # path of oneapi installation on windows machines
-ONE_API_PATH_WINDOWS="C:\\Program Files (x86)\\Intel\\oneAPI\\"
+ONE_API_PATH_WINDOWS="C:\\Program Files (x86)\\Intel\\oneAPI\\compiler"
 
 # configures tests for specified host machine
 def runConfig(config):
@@ -180,7 +180,7 @@ def runConfig(config):
     elif (compiler.startswith("ICX")):
       cmake_build_suffix = ""
       ispc_ext = "-vs2015"
-      env.append('"'+ONE_API_PATH_WINDOWS+'setvars.bat"')
+      env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat"')
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
