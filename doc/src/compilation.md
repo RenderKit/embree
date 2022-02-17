@@ -12,6 +12,7 @@ C++11. Embree is tested with the following compilers:
 
 Linux
 
+  - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
   - Intel® Compiler 2020 Update 1
   - Intel® Compiler 2019 Update 4
   - Intel® Compiler 2017 Update 1
@@ -132,6 +133,7 @@ Embree is tested using the following compilers under Windows:
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update\ 1)
+  - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
   - Intel® Compiler 2019 Update 6
   - Intel® Compiler 2017 Update 8
   - LLVM Clang 9.0.0
