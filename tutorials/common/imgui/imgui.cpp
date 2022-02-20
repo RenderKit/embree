@@ -124,7 +124,7 @@
     - Call ImGui::NewFrame() to begin the frame
     - You can use any ImGui function you want between NewFrame() and Render()
     - Call ImGui::Render() as late as you can to end the frame and finalize render data. it will call your io.RenderDrawListFn handler.
-       (Even if you don't render, call Render() and ignore the callback, or call EndFrame() instead. Otherwhise some features will break)
+       (Even if you don't render, call Render() and ignore the callback, or call EndFrame() instead. Otherwise some features will break)
  - All rendering information are stored into command-lists until ImGui::Render() is called.
  - Dear ImGui never touches or knows about your GPU state. the only function that knows about GPU is the RenderDrawListFn handler that you provide.
  - Effectively it means you can create widgets at any time in your code, regardless of considerations of being in "update" vs "render" phases 
@@ -272,7 +272,7 @@
  - 2018/02/07 (1.60) - reorganized context handling to be more explicit,
                        - YOU NOW NEED TO CALL ImGui::CreateContext() AT THE BEGINNING OF YOUR APP, AND CALL ImGui::DestroyContext() AT THE END.
                        - removed Shutdown() function, as DestroyContext() serve this purpose.
-                       - you may pass a ImFontAtlas* pointer to CreateContext() to share a font atlas between contexts. Otherwhise CreateContext() will create its own font atlas instance.
+                       - you may pass a ImFontAtlas* pointer to CreateContext() to share a font atlas between contexts. Otherwise CreateContext() will create its own font atlas instance.
                        - removed allocator parameters from CreateContext(), they are now setup with SetAllocatorFunctions(), and shared by all contexts.
                        - removed the default global context and font atlas instance, which were confusing for users of DLL reloading and users of multiple contexts.
  - 2018/01/31 (1.60) - moved sample TTF files from extra_fonts/ to misc/fonts/. If you loaded files directly from the imgui repo you may need to update your paths.
@@ -433,7 +433,7 @@
      perfectly fine, as the bool toggle fairly rarely. If you have on a touch device, you might find use for an early call to NewFrameUpdateHoveredWindowAndCaptureFlags().
     Note: Text input widget releases focus on "Return KeyDown", so the subsequent "Return KeyUp" event that your application receive will typically 
      have 'io.WantCaptureKeyboard=false'. Depending on your application logic it may or not be inconvenient. You might want to track which key-downs
-     were targetted for Dear ImGui, e.g. with an array of bool, and filter out the corresponding key-ups.)
+     were targeted for Dear ImGui, e.g. with an array of bool, and filter out the corresponding key-ups.)
 
  Q: How can I display an image? What is ImTextureID, how does it works?
  A: ImTextureID is a void* used to pass renderer-agnostic texture references around until it hits your render function.
@@ -775,7 +775,7 @@ static void             ImeSetInputScreenPosFn_DefaultImpl(int x, int y);
 // Context
 //-----------------------------------------------------------------------------
 
-// Current context pointer. Implicitely used by all ImGui functions. Always assumed to be != NULL. 
+// Current context pointer. Implicitly used by all ImGui functions. Always assumed to be != NULL. 
 // CreateContext() will automatically set this pointer if it is NULL. Change to a different context by calling ImGui::SetCurrentContext(). 
 // If you use DLL hotreloading you might need to call SetCurrentContext() after reloading code from this file. 
 // ImGui functions are not thread-safe because of this pointer. If you want thread-safety to allow N threads to access N different contexts, you can:
@@ -2494,7 +2494,7 @@ bool ImGui::IsItemHovered(ImGuiHoveredFlags flags)
     if (window->DC.ItemFlags & ImGuiItemFlags_Disabled)
         return false;
     
-    // Special handling for the 1st item after Begin() which represent the title bar. When the window is collapsed (SkipItems==true) that last item will never be overwritten so we need to detect tht case.
+    // Special handling for the 1st item after Begin() which represent the title bar. When the window is collapsed (SkipItems==true) that last item will never be overwritten so we need to detect that case.
     if (window->DC.LastItemId == window->MoveId && window->WriteAccessed)
         return false;
     return true;
@@ -5457,7 +5457,7 @@ static ImVec2 CalcSizeAutoFit(ImGuiWindow* window, const ImVec2& size_contents)
     ImVec2 size_auto_fit;
     if ((flags & ImGuiWindowFlags_Tooltip) != 0)
     {
-        // Tooltip always resize. We keep the spacing symmetric on both axises for aesthetic purpose.
+        // Tooltip always resize. We keep the spacing symmetric on both axes for aesthetic purpose.
         size_auto_fit = size_contents;
     }
     else
@@ -8001,7 +8001,7 @@ bool ImGui::TreeNodeBehaviorIsOpen(ImGuiID id, ImGuiTreeNodeFlags flags)
     if (flags & ImGuiTreeNodeFlags_Leaf)
         return true;
 
-    // We only write to the tree storage if the user clicks (or explicitely use SetNextTreeNode*** functions)
+    // We only write to the tree storage if the user clicks (or explicitly use SetNextTreeNode*** functions)
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
     ImGuiStorage* storage = window->DC.StateStorage;
@@ -11427,7 +11427,7 @@ static inline ImU32 ImAlphaBlendColor(ImU32 col_a, ImU32 col_b)
 }
 
 // NB: This is rather brittle and will show artifact when rounding this enabled if rounded corners overlap multiple cells. Caller currently responsible for avoiding that.
-// I spent a non reasonable amount of time trying to getting this right for ColorButton with rounding+anti-aliasing+ImGuiColorEditFlags_HalfAlphaPreview flag + various grid sizes and offsets, and eventually gave up... probably more reasonable to disable rounding alltogether.
+// I spent a non reasonable amount of time trying to getting this right for ColorButton with rounding+anti-aliasing+ImGuiColorEditFlags_HalfAlphaPreview flag + various grid sizes and offsets, and eventually gave up... probably more reasonable to disable rounding altogether.
 void ImGui::RenderColorRectWithAlphaCheckerboard(ImVec2 p_min, ImVec2 p_max, ImU32 col, float grid_step, ImVec2 grid_off, float rounding, int rounding_corners_flags)
 {
     ImGuiWindow* window = GetCurrentWindow();

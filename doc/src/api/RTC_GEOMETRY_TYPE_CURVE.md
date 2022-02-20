@@ -30,7 +30,7 @@
       flat normal oriented curve geometry with Catmull-Rom basis
 
     RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE -
-      capped cone curve geometry with linear basis - discontinous at edge boundaries
+      capped cone curve geometry with linear basis - discontinuous at edge boundaries
 
     RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE -
       capped cone curve geometry with linear basis and spherical ending
@@ -130,14 +130,14 @@ neighbor bits are automatically calculated base on the index buffer
 segment exists if segment(id+1)-1 == segment(id)).
 
 A left neighbor segment is assumed to end at the start vertex of the
-current segement, and to start at the previous vertex in the vertex
+current segment, and to start at the previous vertex in the vertex
 buffer. Similarly, the right neighbor segment is assumed to start at
 the end vertex of the current segment, and to end at the next vertex
 in the vertex buffer.
 
 Only when the left and right bits are properly specified the current
 segment can properly attach to the left and/or right neighbor,
-otherwise the touching area may not get rendererd properly.
+otherwise the touching area may not get rendered properly.
 
 ##### Bézier Basis
 
@@ -157,8 +157,8 @@ vector). This basis is not interpolating, thus the curve does in
 general not go through any of the control points directly. A big
 advantage of this basis is that 3 control points can be shared for two
 continuous neighboring curve segments, e.g. the curves (p0,p1,p2,p3)
-and (p1,p2,p3,p4) are C1 continuous. This feature make this basis a
-good choise to construct continuous multi-segment curves, as memory
+and (p1,p2,p3,p4) are C1 continuous. This feature makes this basis a
+good choice to construct continuous multi-segment curves, as memory
 consumption can be kept minimal.
 
 ##### Hermite Basis
@@ -172,7 +172,7 @@ the first order derivative at the begin and end matches exactly the
 value specified in the tangent buffer. When connecting two segments
 continuously, the end point and tangent of the previous segment can be
 shared. Different versions of Catmull-Rom splines can be easily
-constructed usig the Hermite basis, by calculating a proper tangent
+constructed using the Hermite basis, by calculating a proper tangent
 buffer from the control points.
 
 ##### Catmull-Rom Basis
@@ -219,7 +219,7 @@ provided normals are parallel to the curve direction. For this reason
 the provided normals should best be kept as perpendicular to the curve
 direction as possible. We further assume second order derivatives of
 the center curve to be zero for this construction, as otherwise very
-large curvatures occuring in corner cases, can thicken the constructed
+large curvatures occurring in corner cases, can thicken the constructed
 curve significantly.
 
 ##### Round Curves
@@ -233,7 +233,7 @@ touches a start-sphere and end-sphere. The start sphere is rendered
 when no previous segments is indicated by the neighbor bits. The end
 sphere is always rendered but parts that lie inside the next segment
 are clipped away (if that next segment exists). This way a curve is
-closed on both ends and the interiour will render properly as long as
+closed on both ends and the interior will render properly as long as
 only neighboring segments penetrate into a segment. For this to work
 properly it is important that the flags buffer is properly populated
 with neighbor information.

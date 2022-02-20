@@ -100,7 +100,7 @@ struct TutorialBenchmark
         params.skipIterations = cin->getInt();
         params.minTimeOrIterations = cin->getInt();
         processedCommandLineOptions.push_back("--benchmark");
-      }, "--benchmark <N> <M>: run benchmark for M seconds (M iterations in legacy mode) with N iterations warmup");
+      }, "--benchmark <N> <M>: run benchmark for M seconds (M iterations in legacy mode) with N iterations warm-up");
     commandLineParser.registerOption("legacy", [&] (Ref<ParseStream> cin, const FileName& path) {
         params.legacy = true;
         processedCommandLineOptions.push_back("--legacy");

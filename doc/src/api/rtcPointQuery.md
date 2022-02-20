@@ -75,7 +75,7 @@ Point queries can be used with (multilevel)-instancing. However, care has to
 be taken when the instance transformation contains anisotropic scaling or
 sheering. In these cases distance computations have to be performed in world
 space to ensure correctness and the ellipsoidal query domain (in instance
-space) will be approximated with its axis aligned bounding box interally.
+space) will be approximated with its axis aligned bounding box internally.
 Therefore, the callback function might be invoked even for primitives in
 inner BVH nodes that do not intersect the query domain. See
 [rtcSetGeometryPointQueryFunction] for details.
@@ -84,7 +84,7 @@ The point query structure must be aligned to 16 bytes.
 
 #### SUPPORTED PRIMITIVES
 
-Currenly, all primitive types are supported by the point query API except of
+Currently, all primitive types are supported by the point query API except of
 points (see [RTC_GEOMETRY_TYPE_POINT]), curves (see
 [RTC_GEOMETRY_TYPE_CURVE]) and sudivision surfaces (see
 [RTC_GEOMETRY_SUBDIVISION]).

@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
   /* create new Embree device */
   RTCDevice device = rtcNewDevice("verbose=1");
 
-  /* ddelete device again */
+  /* delete device again */
   rtcReleaseDevice(device);
   
   return 0;

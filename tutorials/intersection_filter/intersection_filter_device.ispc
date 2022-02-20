@@ -515,7 +515,7 @@ void renderTileStandardStream(uniform int taskIndex,
       if (valid_stream[N] == false) continue;
       numActive++;
 
-      /* add light contrinution */
+      /* add light contribution */
       float opacity = 1.0f-primary.transparency;
       Vec3f diffuse = data.colors[primary.ray.primID];
       Ray2& shadow = shadow_stream[N];

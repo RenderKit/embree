@@ -47,7 +47,7 @@ Vec3f g_sphere_locations[2*g_num_point_queries] = {
   Vec3f( 5.50f,  0.50f,  -6.50f), Vec3f(0.0f),
   Vec3f( 7.25f, -3.00f,  -1.00f), Vec3f(0.0f),
   Vec3f(-0.25f, -0.50f,  -4.25f), Vec3f(0.0f),
-}; // consequtive pairs of (query point, closest point)
+}; // consecutive pairs of (query point, closest point)
 RTCGeometry g_spheres = nullptr;
 RTCGeometry g_lines = nullptr;
 unsigned int g_spheres_geomID = 111111;
@@ -154,7 +154,7 @@ inline void pushInstanceIdAndTransform(RTCPointQueryContext* context,
 {
   context->instID[context->instStackSize] = id;
 
-  // local copies of const references to fullfill alignment constraints
+  // local copies of const references to fulfill alignment constraints
   AffineSpace3fa w2i = w2i_in;
   AffineSpace3fa i2w = i2w_in;
 
@@ -294,14 +294,14 @@ bool closestPointFunc(RTCPointQueryFunctionArguments* args)
   if (stackSize > 0 && args->similarityScale > 0)
   {
     // Instance transform is a similarity transform, therefore we 
-    // can comute distance insformation in instance space. Therefore,
+    // can compute distance insformation in instance space. Therefore,
     // transform query position into local instance space.
     AffineSpace3fa const& m = (*(AffineSpace3fa*)context->world2inst[stackPtr]);
     q = xfmPoint(m, q);
   }
   else if (stackSize > 0)
   {
-    // Instance transform is not a similarity tranform. We have to transform the
+    // Instance transform is not a similarity transform. We have to transform the
     // primitive data into world space and perform distance computations in
     // world space to ensure correctness.
     v0 = xfmPoint(inst2world, v0);

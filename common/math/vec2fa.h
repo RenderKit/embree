@@ -228,7 +228,7 @@ namespace embree
   __forceinline bool operator !=( const Vec2fa& a, const Vec2fa& b ) { return (_mm_movemask_ps(_mm_cmpneq_ps(a.m128, b.m128)) & 3) != 0; }
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// Euclidian Space Operators
+  /// Euclidean Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined(__SSE4_1__)

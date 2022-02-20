@@ -241,7 +241,7 @@ namespace embree
           SpatialBinner binner(empty); 
           const SpatialBinMapping<SPATIAL_BINS> mapping(set);
           binner.bin2(splitterFactory,prims0,set.begin(),set.end(),mapping);
-          /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
+          /* todo: best spatial split not exceeding the extended range does not provide any benefit ?*/
           return binner.best(mapping,logBlockSize); //,set.ext_size());
         }
 
@@ -256,7 +256,7 @@ namespace embree
                                      binner.bin2(splitterFactory,prims0,r.begin(),r.end(),_mapping);
                                      return binner; },
                                    [&] (const SpatialBinner& b0, const SpatialBinner& b1) -> SpatialBinner { return SpatialBinner::reduce(b0,b1); });
-          /* todo: best spatial split not exeeding the extended range does not provide any benefit ?*/
+          /* todo: best spatial split not exceeding the extended range does not provide any benefit ?*/
           return binner.best(mapping,logBlockSize); //,set.ext_size());
         }
 

@@ -409,7 +409,7 @@ parameters that can be configured in CMake:
 + `EMBREE_RAY_PACKETS`: Enables ray packet traversal kernels. This
   feature is turned ON by default. When turned on packet traversal is
   used internally and packets passed to rtcIntersect4/8/16 are kept
-  intact in callbacks (when the ISA of appropiate width is enabled).
+  intact in callbacks (when the ISA of appropriate width is enabled).
 
 + `EMBREE_IGNORE_INVALID_RAYS`: Makes code robust against the risk of
   full-tree traversals caused by invalid rays (e.g. rays containing
@@ -708,7 +708,7 @@ See Section [rtcCollide] for a detailed description of how to set up
 collision detection.
 
 Seen tutorial [Collision Detection](#collision-detection) for a
-complete example of collsion detection being used on a simple cloth
+complete example of collision detection being used on a simple cloth
 solver.
 
 Miscellaneous
@@ -1665,8 +1665,8 @@ rtcAttachGeometry
 The `rtcAttachGeometry` function attaches a geometry (`geometry`
 argument) to a scene (`scene` argument) and assigns a geometry ID to
 that geometry. All geometries attached to a scene are defined to be
-included inside the scene. A geometry can get attached to multiplee
-scene. The geometry ID is unique for the scene, and is used to identify
+included inside the scene. A geometry can get attached to multiple
+scenes. The geometry ID is unique for the scene, and is used to identify
 the geometry when hit by a ray during ray queries.
 
 This function is thread-safe, thus multiple threads can attach
@@ -2835,7 +2835,7 @@ RTC\_GEOMETRY\_TYPE\_CURVE
       flat normal oriented curve geometry with Catmull-Rom basis
 
     RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE -
-      capped cone curve geometry with linear basis - discontinous at edge boundaries
+      capped cone curve geometry with linear basis - discontinuous at edge boundaries
 
     RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE -
       capped cone curve geometry with linear basis and spherical ending
@@ -2933,14 +2933,14 @@ neighbor bits are automatically calculated base on the index buffer
 segment exists if segment(id+1)-1 == segment(id)).
 
 A left neighbor segment is assumed to end at the start vertex of the
-current segement, and to start at the previous vertex in the vertex
+current segment, and to start at the previous vertex in the vertex
 buffer. Similarly, the right neighbor segment is assumed to start at
 the end vertex of the current segment, and to end at the next vertex in
 the vertex buffer.
 
 Only when the left and right bits are properly specified the current
 segment can properly attach to the left and/or right neighbor,
-otherwise the touching area may not get rendererd properly.
+otherwise the touching area may not get rendered properly.
 
 ##### Bézier Basis
 
@@ -2961,7 +2961,7 @@ through any of the control points directly. A big advantage of this
 basis is that 3 control points can be shared for two continuous
 neighboring curve segments, e.g. the curves (p0,p1,p2,p3) and
 (p1,p2,p3,p4) are C1 continuous. This feature make this basis a good
-choise to construct continuous multi-segment curves, as memory
+choice to construct continuous multi-segment curves, as memory
 consumption can be kept minimal.
 
 ##### Hermite Basis
@@ -2975,7 +2975,7 @@ order derivative at the begin and end matches exactly the value
 specified in the tangent buffer. When connecting two segments
 continuously, the end point and tangent of the previous segment can be
 shared. Different versions of Catmull-Rom splines can be easily
-constructed usig the Hermite basis, by calculating a proper tangent
+constructed using the Hermite basis, by calculating a proper tangent
 buffer from the control points.
 
 ##### Catmull-Rom Basis
@@ -3021,7 +3021,7 @@ normals are parallel to the curve direction. For this reason the
 provided normals should best be kept as perpendicular to the curve
 direction as possible. We further assume second order derivatives of
 the center curve to be zero for this construction, as otherwise very
-large curvatures occuring in corner cases, can thicken the constructed
+large curvatures occurring in corner cases, can thicken the constructed
 curve significantly.
 
 ##### Round Curves
@@ -3035,7 +3035,7 @@ touches a start-sphere and end-sphere. The start sphere is rendered
 when no previous segments is indicated by the neighbor bits. The end
 sphere is always rendered but parts that lie inside the next segment
 are clipped away (if that next segment exists). This way a curve is
-closed on both ends and the interiour will render properly as long as
+closed on both ends and the interior will render properly as long as
 only neighboring segments penetrate into a segment. For this to work
 properly it is important that the flags buffer is properly populated
 with neighbor information.
@@ -4867,7 +4867,7 @@ efficient. If there is no instance transform, the similarity scale is
 1.
 
 The callback function will potentially be called for primitives outside
-the query domain for two resons: First, the callback is invoked for all
+the query domain for two reasons: First, the callback is invoked for all
 primitives inside a BVH leaf node since no geometry data of primitives
 is determined internally and therefore individual primitives are not
 culled (only their (aggregated) bounding boxes). Second, in case non
@@ -4875,9 +4875,9 @@ similarity transformations are used, the resulting ellipsoidal query
 domain (in instance space) is approximated by its axis aligned bounding
 box internally and therefore inner nodes that do not intersect the
 original domain might intersect the approximative bounding box which
-results in unneccessary callbacks. In any case, the callbacks are
+results in unnecessary callbacks. In any case, the callbacks are
 conservative, i.e. if a primitive is inside the query domain a callback
-will be invoked but the reverse is not neccessarily true.
+will be invoked but the reverse is not necessarily true.
 
 For efficiency, the radius of the `query` object can be decreased (in
 world space) inside the callback function to improve culling of
@@ -7186,7 +7186,7 @@ instancing (see tutorial [ClosestPoint] for a reference
 implementation of point queries with user defined instancing).
 
 The context is an necessary argument to [rtcPointQuery] and Embree
-internally uses the topmost instance tranformation of the stack to
+internally uses the topmost instance transformation of the stack to
 transform the point query into instance space.
 
 #### EXIT STATUS {#exit-status}
@@ -7279,7 +7279,7 @@ has to be taken when the instance transformation contains anisotropic
 scaling or sheering. In these cases distance computations have to be
 performed in world space to ensure correctness and the ellipsoidal
 query domain (in instance space) will be approximated with its axis
-aligned bounding box interally. Therefore, the callback function might
+aligned bounding box internally. Therefore, the callback function might
 be invoked even for primitives in inner BVH nodes that do not intersect
 the query domain. See [rtcSetGeometryPointQueryFunction] for details.
 
@@ -7287,7 +7287,7 @@ The point query structure must be aligned to 16 bytes.
 
 #### SUPPORTED PRIMITIVES
 
-Currenly, all primitive types are supported by the point query API
+Currently, all primitive types are supported by the point query API
 except of points (see [RTC\_GEOMETRY\_TYPE\_POINT]), curves (see
 [RTC\_GEOMETRY\_TYPE\_CURVE]) and sudivision surfaces (see
 [RTC\_GEOMETRY\_SUBDIVISION]).
@@ -7605,7 +7605,7 @@ build flags (`buildFlags` member), re-build performance for dynamic
 scenes is improved at the cost of higher memory requirements.
 
 To spatially split primitives in high quality mode, the builder needs
-extra space at the end of the build primitive array to store splitted
+extra space at the end of the build primitive array to store split
 primitives. The total capacity of the build primitive array is passed
 using the `primitiveArrayCapacity` member, and should be about twice
 the number of primitives when using spatial splits.

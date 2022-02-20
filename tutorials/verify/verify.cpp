@@ -67,7 +67,7 @@ namespace embree
   {
     RTCError error = rtcGetDeviceError(device);
     if (error != RTC_ERROR_NONE) 
-      throw std::runtime_error("Error occured: "+string_of(error));
+      throw std::runtime_error("Error occurred: "+string_of(error));
   }
 
   void AssertAnyError(RTCDevice device)
@@ -2076,7 +2076,7 @@ namespace embree
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
-      size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
+      size_t M = num_interpolation_vertices*N+16; // pads the arrays with some valid data
       
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
       AssertNoError(device);
@@ -2170,7 +2170,7 @@ namespace embree
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
 
-      size_t M = num_interpolation_vertices*N+16; // padds the arrays with some valid data
+      size_t M = num_interpolation_vertices*N+16; // pads the arrays with some valid data
       
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
       AssertNoError(device);
@@ -2265,7 +2265,7 @@ namespace embree
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
 
-      size_t M = 16*N+16; // padds the arrays with some valid data
+      size_t M = 16*N+16; // pads the arrays with some valid data
       
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_GRID);
       AssertNoError(device);
@@ -2352,7 +2352,7 @@ namespace embree
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
 
-      size_t M = num_interpolation_hair_vertices*N+16; // padds the arrays with some valid data
+      size_t M = num_interpolation_hair_vertices*N+16; // pads the arrays with some valid data
       
       RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE);
       AssertNoError(device);
@@ -5218,7 +5218,7 @@ namespace embree
       database(""), update_database(false), benchmark_tolerance(0.05f),
       usecolors(true)
   {
-    rtcore = ""; // do not start threads nor set affinty for normal tests 
+    rtcore = ""; // do not start threads nor set affinity for normal tests
     device = rtcNewDevice(rtcore.c_str());
 
 #if defined(__WIN32__)

@@ -289,7 +289,7 @@ parameters that can be configured in CMake:
 + `EMBREE_RAY_PACKETS`: Enables ray packet traversal kernels. This
   feature is turned ON by default. When turned on packet traversal is
   used internally and packets passed to rtcIntersect4/8/16 are kept
-  intact in callbacks (when the ISA of appropiate width is enabled).
+  intact in callbacks (when the ISA of appropriate width is enabled).
 
 + `EMBREE_IGNORE_INVALID_RAYS`: Makes code robust against the risk of
   full-tree traversals caused by invalid rays (e.g. rays containing

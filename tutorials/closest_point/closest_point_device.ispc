@@ -160,14 +160,14 @@ unmasked bool closestPointFunc(RTCPointQueryFunctionArguments* uniform args)
   if (stackSize > 0 && args->similarityScale > 0)
   {
     // Instance transform is a similarity transform, therefore we 
-    // can comute distance insformation in instance space. Therefore,
+    // can compute distance insformation in instance space. Therefore,
     // transform query position into local instance space.
     uniform AffineSpace3f m = from_raw(context->world2inst[stackPtr]);
     q = xfmPoint(m, q);
   }
   else if (stackSize > 0)
   {
-    // Instance transform is not a similarity tranform. We have to transform the
+    // Instance transform is not a similarity transform. We have to transform the
     // primitive data into world space and perform distance computations in
     // world space to ensure correctness.
     v0 = xfmPoint(inst2world, v0);
@@ -213,7 +213,7 @@ inline void pushInstanceIdAndTransform(uniform RTCPointQueryContext* uniform con
 {
   context->instID[context->instStackSize] = id;
 
-  // local copies of const references to fullfill alignment constraints
+  // local copies of const references to fulfill alignment constraints
   uniform AffineSpace3f w2i = w2i_in;
   uniform AffineSpace3f i2w = i2w_in;
 

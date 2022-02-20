@@ -692,7 +692,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
                 idx1 = idx2;
             }
 
-            // Add vertexes
+            // Add vertices
             for (int i = 0; i < points_count; i++)
             {
                 _VtxWritePtr[0].pos = points[i];          _VtxWritePtr[0].uv = uv; _VtxWritePtr[0].col = col;
@@ -751,7 +751,7 @@ void ImDrawList::AddPolyline(const ImVec2* points, const int points_count, ImU32
                 idx1 = idx2;
             }
 
-            // Add vertexes
+            // Add vertices
             for (int i = 0; i < points_count; i++)
             {
                 _VtxWritePtr[0].pos = temp_points[i*4+0]; _VtxWritePtr[0].uv = uv; _VtxWritePtr[0].col = col_trans;
