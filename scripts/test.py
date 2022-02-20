@@ -432,7 +432,7 @@ def run(mode):
     try:
       subprocess.check_call(cmd, stderr=subprocess.STDOUT, shell=True)
     except subprocess.CalledProcessError as e:
-      sys.stderr.write("windows test invokation failed with return code "+str(e.returncode))
+      sys.stderr.write("windows test invocation failed with return code "+str(e.returncode))
       sys.exit(1)
 
 g_config = {}

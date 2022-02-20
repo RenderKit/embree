@@ -3021,7 +3021,7 @@ normals are parallel to the curve direction. For this reason the
 provided normals should best be kept as perpendicular to the curve
 direction as possible. We further assume second order derivatives of
 the center curve to be zero for this construction, as otherwise very
-large curvatures occuring in corner cases, can thicken the constructed
+large curvatures occurring in corner cases, can thicken the constructed
 curve significantly.
 
 ##### Round Curves
