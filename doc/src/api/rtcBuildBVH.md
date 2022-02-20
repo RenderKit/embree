@@ -144,7 +144,7 @@ performance for dynamic scenes is improved at the cost of higher
 memory requirements.
 
 To spatially split primitives in high quality mode, the builder needs
-extra space at the end of the build primitive array to store splitted
+extra space at the end of the build primitive array to store split
 primitives. The total capacity of the build primitive array is passed
 using the `primitiveArrayCapacity` member, and should be about twice
 the number of primitives when using spatial splits.

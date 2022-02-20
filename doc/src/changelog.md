@@ -95,7 +95,7 @@ Version History
     the curve segments.
 -   Added rtcGetSceneDevice API function, that returns the device a scene got created in.
 -   Improved performance of round curve rendering by up to 1.8x.
--   Bugfix to sphere intersection filter invokation for back hit.
+-   Bugfix to sphere intersection filter invocation for back hit.
 -   Fixed wrong assertion that triggered for invalid curves which anyway get filtered out.
 -   RelWithDebInfo mode no longer enables assertions.
 -   Fixed an issue in FindTBB.cmake that caused compile error with Debug build under Linux.
@@ -119,7 +119,7 @@ Version History
     instantiate a motion blurred scene.
 -   In robust mode the depth test consistently uses tnear <= t <= tfar now in order
     to robustly continue traversal at a previous hit point
-    in a way that guarentees reaching all hits, even hits at the same place.
+    in a way that guarantees reaching all hits, even hits at the same place.
 -   Fixed depth test in robust mode to be precise at tnear and tfar.
 -   Added next_hit tutorial to demonstrate robustly collecting all hits
     along a ray using multiple ray queries.
@@ -343,7 +343,7 @@ Version History
     by 5-15%.
 -   Fixed tbb_debug.lib linking error under Windows.
 -   Fast coherent ray stream and packet code paths now also work in robust mode.
--   Using less agressive prefetching for large BVH nodes which
+-   Using less aggressive prefetching for large BVH nodes which
     results in 1-2% higher ray tracing performance.
 -   Precompiled binaries have stack-protector enabled, except for
     traversal kernels. BVH builders can be slightly slower due to this
@@ -380,7 +380,7 @@ Version History
     cracks when using displacement mapping but reduces performance
     at irregular vertices.
 -   Fixed a bug where subdivision geometry was not properly updated
-    when modifying only the tesselation rate and vertex array.
+    when modifying only the tessellation rate and vertex array.
 
 ### New Features in Embree 2.16.2
 -   Fixed bug that caused NULL intersection context in intersection
@@ -646,7 +646,7 @@ Version History
 -   Added device concept to Embree to allow different components of an
     application to use Embree without interfering with each other.
 -   Fixed memory leak in twolevel builder used for dynamic scenes.
--   Fixed bug in tesselation cache that caused crashes for subdivision
+-   Fixed bug in tessellation cache that caused crashes for subdivision
     surfaces.
 -   Fixed bug in internal task scheduler that caused deadlocks when
     using `rtcCommitThread`.

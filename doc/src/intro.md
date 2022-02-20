@@ -187,7 +187,7 @@ performed through a callback function.
 See Section [rtcCollide] for a detailed description of how to set up collision
 detection.
 
-Seen tutorial [Collision Detection] for a complete example of collsion 
+Seen tutorial [Collision Detection] for a complete example of collision 
 detection being used on a simple cloth solver.
 
 

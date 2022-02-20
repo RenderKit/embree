@@ -197,7 +197,7 @@ namespace embree
   template<typename T> __forceinline Vec3<bool> ge_mask( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<bool>(a.x>=b.x,a.y>=b.y,a.z>=b.z); }
 
   ////////////////////////////////////////////////////////////////////////////////
-  /// Euclidian Space Operators
+  /// Euclidean Space Operators
   ////////////////////////////////////////////////////////////////////////////////
 
   template<typename T> __forceinline T       sqr      ( const Vec3<T>& a )                   { return dot(a,a); }

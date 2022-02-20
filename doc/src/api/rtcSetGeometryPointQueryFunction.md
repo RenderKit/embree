@@ -87,17 +87,17 @@ transformed into instance space which can be more efficient. If there is no
 instance transform, the similarity scale is 1.
 
 The callback function will potentially be called for primitives outside the
-query domain for two resons: First, the callback is invoked for all
+query domain for two reasons: First, the callback is invoked for all
 primitives inside a BVH leaf node since no geometry data of primitives is
 determined internally and therefore individual primitives are not culled
 (only their (aggregated) bounding boxes). Second, in case non similarity
 transformations are used, the resulting ellipsoidal query domain (in instance
 space) is approximated by its axis aligned bounding box internally and
 therefore inner nodes that do not intersect the original domain might
-intersect the approximative bounding box which results in unneccessary
+intersect the approximative bounding box which results in unnecessary
 callbacks. In any case, the callbacks are conservative, i.e. if a primitive
 is inside the query domain a callback will be invoked but the reverse is not
-neccessarily true.
+necessarily true.
 
 For efficiency, the radius of the `query` object can be decreased (in world
 space) inside the callback function to improve culling of geometry during BVH

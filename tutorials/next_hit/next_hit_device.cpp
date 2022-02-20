@@ -166,7 +166,7 @@ void single_pass(const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayS
   /* sort hits by extended order */
   std::sort(&context.hits.hits[context.hits.begin],&context.hits.hits[context.hits.end]);
 
-  /* ignore duplicated hits that can occur for tesselated primitives */
+  /* ignore duplicated hits that can occur for tessellated primitives */
   if (hits_o.size())
   {
     unsigned int i=0, j=1;

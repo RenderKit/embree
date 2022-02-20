@@ -43,7 +43,7 @@ namespace embree
       last_resident_memory(0)
   {
     if (instance)
-      throw std::runtime_error("internal error: applicaton already created");
+      throw std::runtime_error("internal error: application already created");
 
     instance = this;
 
