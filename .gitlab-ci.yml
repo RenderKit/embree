@@ -90,11 +90,11 @@ continuous-windows-x64-RelWithDebInfo-V141-ISPC1.17.0-SSE2-TBB2021.5.0:
   tags:   [embree, win10, v141]
   only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-ICX2022.0.0-ISPC1.16.1-AVX512:
-  extends: .build_and_test
-  before_script: ["python scripts\\test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2022.0.0 ispc:ispc1.16.1 isa:AVX512 intensity:2"]
-  tags:   [embree, win10, avx512vl]
-  only:   [pushes]
+#continuous-windows-x64-RelWithDebInfo-ICX2022.0.0-ISPC1.16.1-AVX512:
+#  extends: .build_and_test
+#  before_script: ["python scripts\\test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2022.0.0 ispc:ispc1.16.1 isa:AVX512 intensity:2"]
+#  tags:   [embree, win10, avx512vl]
+#  only:   [pushes]
 
 continuous-macosx-x64-Debug-CLANG-ISPC1.17.0-SSE2-TBB2020.2:
   extends: .build_and_test
