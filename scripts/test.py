@@ -83,6 +83,10 @@ def runConfig(config):
   conf.append("-D CMAKE_BUILD_TYPE="+build+"")
 
   cmake_build_suffix = ""
+  threads = "0"
+
+  if "threads" in config:
+    threads = config["threads"]
 
   if "memcheck" in config:
     conf.append("-D EMBREE_TESTING_MEMCHECK="+config["memcheck"]+"")
@@ -403,14 +407,7 @@ def runConfig(config):
   for e in env:
     ctest_env += e + " && "
 
-  parallel = False
-  for e in env:
-    if (e == "CTEST_PARALLEL=ON"):
-      parallel = True
-  if parallel:
-    ctest_suffix = " -j " + str(os.cpu_count()) + ctest_suffix
-
-  ctest_conf = [ctest_env, ctest_suffix, cmake_build_suffix]
+  ctest_conf = [ctest_env, ctest_suffix, cmake_build_suffix, threads]
   pickle.dump(ctest_conf, open(".ctest_conf", "wb"), 0)
 
 # builds or runs tests for specified host machine
@@ -419,8 +416,8 @@ def run(mode):
     sys.stderr.write("unknown mode: "+mode+". should be 'build' or 'test'")
     sys.exit(1)
   
-  [ctest_env, ctest_suffix, cmake_build_suffix] = pickle.load(open(".ctest_conf", "rb"))
-  cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
+  [ctest_env, ctest_suffix, cmake_build_suffix, threads] = pickle.load(open(".ctest_conf", "rb"))
+  cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DTHREADS="+threads+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
   
   if mode == "test" and not OS == "windows":
     fix_cmake_paths()

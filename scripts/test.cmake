@@ -70,18 +70,22 @@ ENDMACRO()
 # configure and build            #
 ##################################
 MACRO(build)
-  # build using as many processes as we have processors
+
   include(ProcessorCount)
   ProcessorCount(numProcessors)
   if(numProcessors EQUAL 0)
     SET(numProcessors 1)
   endif()
 
+  if (${THREADS} EQUAL 0)
+    SET(THREADS ${numProcessors})
+  endif()
+
   set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
   IF (WIN32)
-    set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE} ${BUILD_SUFFIX}")
+    set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . -j ${THREADS} --config ${CTEST_CONFIGURATION_TYPE} ${BUILD_SUFFIX}")
   ELSE()
-    set(CTEST_BUILD_COMMAND "make -j ${numProcessors}")
+    set(CTEST_BUILD_COMMAND "make -j ${THREADS}")
   ENDIF()
 
   IF (NOT WIN32)

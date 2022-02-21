@@ -74,7 +74,7 @@ continuous-macosx-ARM-Debug-CLANG-ISPC1.17.0-NEON-TBB_HOMEBREW:
 #
 continuous-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2021.5.0:
   extends: .build_and_test
-  before_script: ["python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2021.5.0 intensity:2"]
+  before_script: ["python scripts/test.py configure platform:x64 threads:4 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2021.5.0 intensity:2"]
   tags: [embree, win10, v120]
   only: [pushes]
 
@@ -132,7 +132,7 @@ continuous-ubuntu20.04-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB-NAMESPACE:
 
 continuous-linux-avx512vl-x64-Debug-ICX2022.1.2-ISPC1.17.0-AVX512-TBB2021.5.0:
   extends: .build_and_test
-  before_script: ["python scripts/test.py configure platform:x64 build:Debug compiler:ICX2022.1.2 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2"]
+  before_script: ["python scripts/test.py configure platform:x64 build:Debug threads:4 compiler:ICX2022.1.2 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2"]
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:  [embree, docker, avx512vl]
   only:  [pushes]
