@@ -7,12 +7,16 @@ MACRO(_SET_IF_EMPTY VAR VALUE)
   ENDIF()
 ENDMACRO()
 
-_SET_IF_EMPTY(FLAGS_SSE2  "-msse2")
-_SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
-_SET_IF_EMPTY(FLAGS_AVX   "-mavx")
-_SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
-_SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
-_SET_IF_EMPTY(FLAGS_NEON   "-D__SSE__ -D__SSE2__")
+IF (EMBREE_ARM)
+   # No thing to declare.
+ELSE ()
+  # for `thread` keyword
+  _SET_IF_EMPTY(FLAGS_SSE2  "-fms-extensions -msse -msse2 -mno-sse4.2")
+  _SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
+  _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
+  _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
+  _SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
+ENDIF ()
 
 IF (WIN32)
 
@@ -79,7 +83,11 @@ ELSE()
   ENDIF()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")                       # generate position independent code suitable for shared libraries
   SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC")                       # generate position independent code suitable for shared libraries
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++11 features
+  IF (APPLE)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")                  # enables C++17 features
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++11 features
+  ENDIF()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")         # makes all symbols hidden by default
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden") # makes all inline symbols hidden by default
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")        # disables strict aliasing rules
@@ -120,7 +128,13 @@ ELSE()
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3")             # enable full optimizations
 
   IF (APPLE)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")   # makes sure code runs on older MacOSX versions
+    IF (MACOS)
+      IF (EMBREE_TASKING_SYSTEM STREQUAL "TBB")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.14")   # makes sure code runs on older MacOSX versions
+      ELSE()
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.12")   # makes sure code runs on older MacOSX versions
+      ENDIF()
+    ENDIF()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")             # link against libc++ which supports C++11 features
   ELSE(APPLE)
     IF (NOT EMBREE_ADDRESS_SANITIZER) # for address sanitizer this causes link errors
