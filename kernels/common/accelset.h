@@ -16,13 +16,11 @@ namespace embree
   
   struct IntersectFunctionNArguments : public RTCIntersectFunctionNArguments
   {
-    IntersectContext* internal_context;
     Geometry* geometry;
   };
 
   struct OccludedFunctionNArguments : public RTCOccludedFunctionNArguments
   {
-    IntersectContext* internal_context;
     Geometry* geometry;
   };
 
@@ -154,7 +152,6 @@ namespace embree
         args.N = 1;
         args.geomID = geomID;
         args.primID = primID;
-        args.internal_context = context;
         args.geometry = this;
         
         intersectorN.intersect(&args);
@@ -175,7 +172,6 @@ namespace embree
         args.N = 1;
         args.geomID = geomID;
         args.primID = primID;
-        args.internal_context = context;
         args.geometry = this;
         
         intersectorN.occluded(&args);
@@ -197,7 +193,6 @@ namespace embree
         args.N = K;
         args.geomID = geomID;
         args.primID = primID;
-        args.internal_context = context;
         args.geometry = this;
          
         intersectorN.intersect(&args);
@@ -219,7 +214,6 @@ namespace embree
         args.N = K;
         args.geomID = geomID;
         args.primID = primID;
-        args.internal_context = context;
         args.geometry = this;
         
         intersectorN.occluded(&args);
