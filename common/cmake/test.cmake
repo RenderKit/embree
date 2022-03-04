@@ -4,7 +4,11 @@
 INCLUDE(CTest)
 
 IF (WIN32)
-    SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+    IF(${CMAKE_CXX_COMPILER} MATCHES ".*icx")
+      SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+    ELSE()
+      SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+    ENDIF()
 ELSE()
     SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 ENDIF()
@@ -27,22 +31,22 @@ SET_PROPERTY(CACHE EMBREE_TESTING_SDE PROPERTY STRINGS OFF pnr nhm wsm snb ivb h
 
 SET(EMBREE_MODEL_DIR "none")
 IF (EMBREE_TESTING_MODEL_DIR)
-  SET(EMBREE_MODEL_DIR ${EMBREE_TESTING_MODEL_DIR})
+  SET(EMBREE_MODEL_DIR "${EMBREE_TESTING_MODEL_DIR}")
 ENDIF()
 
 MACRO (ADD_EMBREE_NORMAL_CPP_TEST name reference executable args)  
   IF (BUILD_TESTING)  
     ADD_TEST(NAME ${name}
-             WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND ${executable} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+             WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
+             COMMAND ${executable} --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
   ENDIF()
 ENDMACRO()
 
 MACRO (ADD_EMBREE_NORMAL_ISPC_TEST name reference executable args)  
   IF (BUILD_TESTING AND EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
     ADD_TEST(NAME ${name}_ispc
-             WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND ${executable}_ispc --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+             WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
+             COMMAND ${executable}_ispc --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
   ENDIF()       
 ENDMACRO()
 
@@ -62,15 +66,15 @@ ENDMACRO()
 MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
   IF (BUILD_TESTING)  
     ADD_TEST(NAME ${name}
-             WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-             COMMAND ${executable} -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+             WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
+             COMMAND ${executable} -c "${EMBREE_MODEL_DIR}/${model}" --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
   ENDIF()
   
   IF (EMBREE_ISPC_SUPPORT AND EMBREE_RAY_PACKETS)
     IF (BUILD_TESTING)  
       ADD_TEST(NAME ${name}_ispc
-               WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
-               COMMAND COMMAND ${executable}_ispc -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+               WORKING_DIRECTORY "${MY_PROJECT_BINARY_DIR}"
+               COMMAND COMMAND ${executable}_ispc -c "${EMBREE_MODEL_DIR}/${model}" --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
     ENDIF()
   ENDIF()
 ENDMACRO()
@@ -78,7 +82,7 @@ ENDMACRO()
 MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
   IF (BUILD_TESTING)  
 
-    SET(full_model_list_file ${EMBREE_TESTING_MODEL_DIR}/${model_list_file})
+    SET(full_model_list_file "${EMBREE_TESTING_MODEL_DIR}/${model_list_file}")
     
     IF(NOT EXISTS "${full_model_list_file}")
       MESSAGE(FATAL_ERROR "File ${EMBREE_TESTING_MODEL_DIR}/${model_list_file} does not exist!")
@@ -88,7 +92,11 @@ MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
     STRING(REGEX REPLACE "\n" ";" models "${models}")
     
     FOREACH (model ${models})
-      STRING(REGEX REPLACE "/" "_" modelname "${model}")
+      IF (model MATCHES "^#")
+        CONTINUE()
+      ENDIF()
+      STRING(REGEX REPLACE " .*" "" modelname "${model}")
+      STRING(REGEX REPLACE "/" "_" modelname "${modelname}")
       STRING(REGEX REPLACE ".ecs" "" modelname "${modelname}")
       ADD_EMBREE_MODEL_TEST(${name}_${modelname} ${reference}_${modelname} ${executable} "${ARGN}" ${model})
     ENDFOREACH()
@@ -97,8 +105,8 @@ ENDMACRO()
 
 # add klocwork test
 IF (EMBREE_TESTING_KLOCWORK)
-  ADD_TEST(NAME Klocwork-Build WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/klocwork_build.sh)
-  ADD_TEST(NAME Klocwork-Check WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR} COMMAND ${PROJECT_SOURCE_DIR}/scripts/klocwork_check.sh)
+  ADD_TEST(NAME Klocwork-Build WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND "${PROJECT_SOURCE_DIR}/scripts/klocwork_build.sh")
+  ADD_TEST(NAME Klocwork-Check WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND "${PROJECT_SOURCE_DIR}/scripts/klocwork_check.sh")
   SET_TESTS_PROPERTIES(Klocwork-Build PROPERTIES TIMEOUT 2400)
   SET_TESTS_PROPERTIES(Klocwork-Check PROPERTIES TIMEOUT 300)
 ENDIF()
@@ -113,6 +121,6 @@ IF (EMBREE_TESTING_MEMCHECK)
   FUNCTION(ADD_MEMCHECK_TEST name binary)
     set(memcheck_command "${EMBREE_MEMORYCHECK_COMMAND} ${EMBREE_MEMORYCHECK_COMMAND_OPTIONS}")
     separate_arguments(memcheck_command)
-    add_test(NAME ${name} COMMAND ${memcheck_command} ${MY_PROJECT_BINARY_DIR}/${binary} ${ARGN})
+    add_test(NAME ${name} COMMAND ${memcheck_command} "${MY_PROJECT_BINARY_DIR}/${binary}" ${ARGN})
   ENDFUNCTION()
 ENDIF()

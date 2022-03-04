@@ -479,7 +479,7 @@ RTC_NAMESPACE_BEGIN;
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray4* ray4 = (Ray4*) rayhit;
+    RayHit4* ray4 = (RayHit4*) rayhit;
     for (size_t i=0; i<4; i++) {
       if (!valid[i]) continue;
       RayHit ray1; ray4->get(i,ray1);
@@ -510,7 +510,7 @@ RTC_NAMESPACE_BEGIN;
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray8* ray8 = (Ray8*) rayhit;
+    RayHit8* ray8 = (RayHit8*) rayhit;
     for (size_t i=0; i<8; i++) {
       if (!valid[i]) continue;
       RayHit ray1; ray8->get(i,ray1);
@@ -543,7 +543,7 @@ RTC_NAMESPACE_BEGIN;
 
     IntersectContext context(scene,user_context);
 #if !defined(EMBREE_RAY_PACKETS)
-    Ray16* ray16 = (Ray16*) rayhit;
+    RayHit16* ray16 = (RayHit16*) rayhit;
     for (size_t i=0; i<16; i++) {
       if (!valid[i]) continue;
       RayHit ray1; ray16->get(i,ray1);
@@ -1753,6 +1753,21 @@ RTC_NAMESPACE_BEGIN;
     RTC_VERIFY_GEOMID(geomID);
 #endif
     return (RTCGeometry) scene->get(geomID);
+    RTC_CATCH_END2(scene);
+    return nullptr;
+  }
+
+  RTC_API RTCGeometry rtcGetGeometryThreadSafe (RTCScene hscene, unsigned int geomID)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryThreadSafe);
+#if defined(DEBUG)
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_VERIFY_GEOMID(geomID);
+#endif
+    Ref<Geometry> geom = scene->get_locked(geomID);
+    return (RTCGeometry) geom.ptr; 
     RTC_CATCH_END2(scene);
     return nullptr;
   }

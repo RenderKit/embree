@@ -196,11 +196,11 @@ namespace embree
   }
 
   template<> __inline bool subset( const BBox<Vec3fa>& a, const BBox<Vec3fa>& b ) {
-    return all(ge_mask(a.lower,b.lower)) & all(le_mask(a.upper,b.upper));
+    return all(ge_mask(a.lower,b.lower)) && all(le_mask(a.upper,b.upper));
   }
 
   template<> __inline bool subset( const BBox<Vec3fx>& a, const BBox<Vec3fx>& b ) {
-    return all(ge_mask(a.lower,b.lower)) & all(le_mask(a.upper,b.upper));
+    return all(ge_mask(a.lower,b.lower)) && all(le_mask(a.upper,b.upper));
   }
   
   /*! blending */

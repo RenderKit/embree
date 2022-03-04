@@ -5,12 +5,12 @@ Embree Tutorials
 Embree comes with a set of tutorials aimed at helping users understand
 how Embree can be used and extended. There is a very basic minimal
 that can be compiled as both C and C++, which should get new users started quickly. 
-All other tutorials exist in an ISPC and C++ version to demonstrate 
+All other tutorials exist in an Intel® ISPC and C++ version to demonstrate 
 the two versions of the API. Look for files
-named `tutorialname_device.ispc` for the ISPC implementation of the
+named `tutorialname_device.ispc` for the Intel® ISPC implementation of the
 tutorial, and files named `tutorialname_device.cpp` for the single ray C++
 version of the tutorial. To start the C++ version use the `tutorialname`
-executables, to start the ISPC version use the `tutorialname_ispc`
+executables, to start the Intel® ISPC version use the `tutorialname_ispc`
 executables. All tutorials can print available command line options
 using the `--help` command line parameter.
 

@@ -15,7 +15,7 @@ namespace embree
 {
   Ref<Image> loadOIIO(const FileName& fileName)
   {
-    std::unique_ptr<ImageInput> in = ImageInput::open(fileName.str().c_str());
+    std::unique_ptr<ImageInput> in(ImageInput::open(fileName.str().c_str()));
     if (!in)
       THROW_RUNTIME_ERROR("error opening file " + fileName.str());
 
@@ -46,7 +46,7 @@ namespace embree
 
   void storeOIIO(const Ref<Image>& img, const FileName& fileName)
   {
-    std::unique_ptr<ImageOutput> out = ImageOutput::create(fileName.c_str());
+    std::unique_ptr<ImageOutput> out(ImageOutput::create(fileName.c_str()));
     if (!out) THROW_RUNTIME_ERROR("unsupported output file format " + fileName.str());
 
     std::vector<unsigned char> pixels(img->width*img->height*3);

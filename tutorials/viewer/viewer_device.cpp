@@ -63,7 +63,6 @@ void updateMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCScene* 
   ISPCGeometry* geometry = g_ispc_scene->geometries[taskIndex];
   if (geometry->type != SUBDIV_MESH) return;
   ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-  unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
     rtcUpdateGeometryBuffer(geometry->geometry, RTC_BUFFER_TYPE_LEVEL, 0);
@@ -126,59 +125,8 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
   rtcSetSceneProgressMonitorFunction(scene_out,monitorProgressFunction,nullptr);
 
-  /* commit individual objects in case of instancing */
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
-  {
-    for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      ISPCGeometry* geometry = g_ispc_scene->geometries[i];
-      if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
-    }
-  }
-
   /* commit changes to scene */
   return scene_out;
-}
-
-
-void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometry* geometry, int& materialID)
-{
-  if (geometry->type == TRIANGLE_MESH)
-  {
-    ISPCTriangleMesh* mesh = (ISPCTriangleMesh*) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == QUAD_MESH)
-  {
-    ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == SUBDIV_MESH)
-  {
-    ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == CURVES)
-  {
-    ISPCHairSet* mesh = (ISPCHairSet*) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == GRID_MESH)
-  {
-    ISPCGridMesh* mesh = (ISPCGridMesh*) geometry;
-    materialID = mesh->geom.materialID;
-  }
-  else if (geometry->type == POINTS)
-  {
-    ISPCPointSet* set = (ISPCPointSet*) geometry;
-    materialID = set->geom.materialID;
-  }
-  else if (geometry->type == GROUP) {
-    unsigned int geomID = ray.geomID; {
-      postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
-    }
-  }
-  else
-    assert(false);
 }
 
 AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime)
@@ -196,37 +144,29 @@ AffineSpace3fa calculate_interpolated_space (ISPCInstance* instance, float gtime
 
 typedef ISPCInstance* ISPCInstancePtr;
 
-inline int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
+unsigned int postIntersect(const TutorialData& data, const Ray& ray, DifferentialGeometry& dg)
 {
-  int materialID = 0;
-  unsigned int instID = ray.instID[0]; {
-    unsigned int geomID = ray.geomID; {
-      ISPCGeometry* geometry = nullptr;
-      if (data.instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* instance = (ISPCInstancePtr) data.ispc_scene->geometries[instID];
-        geometry = instance->child;
-      } else {
-        geometry = data.ispc_scene->geometries[geomID];
-      }
-      postIntersectGeometry(ray,dg,geometry,materialID);
-    }
-  }
-
-  if (data.instancing_mode != ISPC_INSTANCING_NONE)
+  AffineSpace3fa local2world = AffineSpace3fa::scale(Vec3fa(1));
+  ISPCGeometry** geometries = data.ispc_scene->geometries;
+  
+  for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
   {
-    unsigned int instID = ray.instID[0];
-    {
-      /* get instance and geometry pointers */
-      ISPCInstance* instance = (ISPCInstancePtr) data.ispc_scene->geometries[instID];
+    const unsigned int instID = ray.instID[i];
+    if (instID == -1) break;
 
-      /* convert normals */
-      //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
-      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time());
-      dg.Ng = xfmVector(space,dg.Ng);
-      dg.Ns = xfmVector(space,dg.Ns);
-    }
+    ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
+    local2world = local2world * calculate_interpolated_space(instance,ray.time());
+
+    assert(instance->child->type == GROUP);
+    geometries = ((ISPCGroup*)instance->child)->geometries;
   }
 
+  ISPCGeometry* mesh = geometries[ray.geomID];
+  unsigned int materialID = mesh->materialID;
+  
+  dg.Ng = xfmVector(local2world,dg.Ng);
+  dg.Ns = xfmVector(local2world,dg.Ns);
+  
   return materialID;
 }
 
@@ -285,7 +225,7 @@ void renderPixelStandard(const TutorialData& data,
     if (ray.geomID != RTC_INVALID_GEOMETRY_ID) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
       Vec3fa dPdu,dPdv;
-      unsigned int geomID = ray.geomID; {
+      auto geomID = ray.geomID; {
         rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       dg.Ns = cross(dPdv,dPdu);
@@ -389,6 +329,9 @@ extern "C" void device_render (int* pixels,
       updateEdgeLevels(g_ispc_scene,camera.xfm.p);
       rtcCommitScene (data.scene);
     }
+
+    if (g_animation_mode)
+      UpdateScene(g_ispc_scene, time);
   }
 }
 

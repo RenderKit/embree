@@ -22,7 +22,7 @@ namespace embree
     struct GridMeshNode;
 
     Ref<Node> load(const FileName& fname, bool singleObject = false);
-    void store(Ref<Node> root, const FileName& fname, bool embedTextures, bool referenceMaterials);
+    void store(Ref<Node> root, const FileName& fname, bool embedTextures, bool referenceMaterials, bool binaryFormat);
     void extend_animation(Ref<Node> node0, Ref<Node> node1);
     void optimize_animation(Ref<Node> node0);
     void set_motion_vector(Ref<Node> node, const Vec3fa& dP);
@@ -46,6 +46,8 @@ namespace embree
 
     Ref<Node> remove_mblur(Ref<Node> node, bool mblur);
     void convert_mblur_to_nonmblur(Ref<Node> node);
+
+    extern void (*opaque_geometry_destruction)(void*);
 
     struct Statistics
     {
@@ -103,6 +105,11 @@ namespace embree
 
       Node (const std::string& name) 
         : name(name), indegree(0), closed(false), id(-1), geometry(nullptr) {}
+
+      ~Node() {
+        if (opaque_geometry_destruction)
+          opaque_geometry_destruction(geometry);
+      }
 
       /* prints scenegraph */
       virtual void print(std::ostream& cout, int depth = 0) = 0;
@@ -528,26 +535,100 @@ namespace embree
       return normals_out;
     }
 
+    struct PerspectiveCameraData
+    {
+      PerspectiveCameraData()
+        : from(1,0,0), to(0,0,0), up(0,1,0), fov(30) {}
+      
+      PerspectiveCameraData (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
+        : from(from), to(to), up(up), fov(fov) {}
+
+      PerspectiveCameraData (const PerspectiveCameraData& other, const AffineSpace3fa& space)
+        : from(xfmPoint(space,other.from)), to(xfmPoint(space,other.to)), up(xfmVector(space,other.up)), fov(other.fov) {}
+
+      friend PerspectiveCameraData lerp(const PerspectiveCameraData& a, const PerspectiveCameraData& b, const float t)
+      {
+        const Vec3fa from = embree::lerp(a.from, b.from, t);
+        const Vec3fa to   = embree::lerp(a.to  , b.to  , t);
+        const Vec3fa up   = embree::lerp(a.up  , b.up  , t);
+        const float  fov  = embree::lerp(a.fov , b.fov , t);
+        return PerspectiveCameraData(from,to,up,fov);
+      }
+
+    public:
+      Vec3fa from;   //!< position of camera
+      Vec3fa to;     //!< look at point
+      Vec3fa up;     //!< up vector
+      float fov;     //!< vertical field of view
+    };
+
     struct PerspectiveCameraNode : public Node
     {
       ALIGNED_STRUCT_(16);
 
+      PerspectiveCameraNode (std::string name = "")
+        : Node(name) {}
+      
       PerspectiveCameraNode (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, const float fov)
-        : from(from), to(to), up(up), fov(fov) {}
+        : data(from, to, up, fov) {}
 
-      PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
-        : Node(id), from(xfmPoint(space,other->from)), to(xfmPoint(space,other->to)), up(xfmVector(space,other->up)), fov(other->fov) {}
+      PerspectiveCameraNode (const Ref<PerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id = "")
+        : Node(id), data(other->data,space) {}
 
+      virtual bool isAnimated() const {
+        return false;
+      }
+
+      virtual PerspectiveCameraData get(float time) const {
+        return data;
+      }
+      
       virtual void print(std::ostream& cout, int depth);
       
       virtual void calculateStatistics(Statistics& stat);
       virtual bool calculateClosed(bool group_instancing);
             
     public:
-      Vec3fa from;   //!< position of camera
-      Vec3fa to;     //!< look at point
-      Vec3fa up;     //!< up vector
-      float fov;     //!< vertical field of view
+      PerspectiveCameraData data;
+    };
+
+    struct AnimatedPerspectiveCameraNode : public PerspectiveCameraNode
+    {
+      AnimatedPerspectiveCameraNode (std::vector<Ref<PerspectiveCameraNode>>&& cameras, BBox1f time_range, const std::string& id = "")
+        : time_range(time_range), cameras(cameras) {}
+
+      AnimatedPerspectiveCameraNode (const Ref<AnimatedPerspectiveCameraNode>& other, const AffineSpace3fa& space, const std::string& id)
+        : PerspectiveCameraNode(id), time_range(other->time_range)
+      {
+        cameras.resize(other->size());
+        for (size_t i=0; i<other->size(); i++)
+          cameras[i] = new PerspectiveCameraNode(other->cameras[i],space);
+      }
+
+      virtual bool isAnimated() const {
+        return true;
+      }
+
+      virtual PerspectiveCameraData get(float time) const
+      {
+        time = frac((time-time_range.lower)/time_range.size());
+        time = (cameras.size()-1)*time;
+        int   itime = (int)floor(time);
+        itime = min(max(itime,0),(int)cameras.size()-2);
+        float ftime = time - (float)itime;
+        return lerp(cameras[itime+0]->get(time), cameras[itime+1]->get(time), ftime);
+      }
+      
+      virtual void print(std::ostream& cout, int depth);
+
+      virtual void calculateStatistics(Statistics& stat);
+      virtual bool calculateClosed(bool group_instancing);
+
+      size_t size() const { return cameras.size(); }
+
+    public:
+      BBox1f time_range;
+      std::vector<Ref<PerspectiveCameraNode>> cameras;
     };
 
     struct TransformNode : public Node
@@ -587,6 +668,25 @@ namespace embree
 
       virtual size_t numPrimitives() const {
         return child->numPrimitives();
+      }
+
+      virtual AffineSpace3ff get(float time) const
+      {
+        if (spaces.size() <= 1) return spaces[0];
+
+        int numTimeSteps = spaces.size();
+        
+        BBox1f time_range = spaces.time_range;
+        time = frac((time-time_range.lower)/time_range.size());
+        time = (numTimeSteps-1)*time;
+        int   itime = (int)floor(time);
+        itime = min(max(itime,0),(int)numTimeSteps-2);
+        float ftime = time - (float)itime;
+    
+        const AffineSpace3ff xfm0 = spaces[itime+0];
+        const AffineSpace3ff xfm1 = spaces[itime+1];
+        const AffineSpace3ff xfm  = lerp(xfm0,xfm1,ftime);
+        return xfm;
       }
 
     public:
@@ -726,18 +826,87 @@ namespace embree
     public:
       std::vector<Ref<Node> > children;
     };
-    
+
     struct LightNode : public Node
     {
-      LightNode (Ref<Light> light)
-        : light(light) {}
-
       virtual void print(std::ostream& cout, int depth);
       virtual void calculateStatistics(Statistics& stat);
       virtual bool calculateClosed(bool group_instancing);
-      
-      Ref<Light> light;
+
+      virtual LightType getType() const = 0;
+      virtual Ref<LightNode> transform(const AffineSpace3fa& space) const = 0;
+      virtual Ref<LightNode> lerp(const Ref<LightNode>& light1_in, float f) const = 0;
+      virtual Ref<LightNode> get(float time) const = 0;
     };
+
+    template<typename Light>
+    struct LightNodeImpl : public LightNode
+    {
+      ALIGNED_STRUCT_(16);
+      
+      LightNodeImpl (const Light& light)
+        : light(light) {}
+
+      virtual LightType getType() const {
+        return light.getType();
+      }
+      
+      virtual Ref<LightNode> transform(const AffineSpace3fa& space) const {
+        return new LightNodeImpl(light.transform(space));
+      }
+
+      virtual Ref<LightNode> get(float time) const {
+        return (LightNode*) this;
+      }
+
+      virtual Ref<LightNode> lerp(const Ref<LightNode>& light1_in, float f) const
+      {
+        const Ref<LightNodeImpl<Light>> light1 = light1_in.dynamicCast<LightNodeImpl<Light>>();
+        assert(light1);
+        return new LightNodeImpl(Light::lerp(light,light1->light,f));
+      }
+      
+      Light light;
+    };
+
+    struct AnimatedLightNode : public LightNode
+    {
+      AnimatedLightNode (const std::vector<Ref<LightNode>>&& lights, BBox1f time_range)
+        : lights(lights), time_range(time_range) {}
+
+      virtual LightType getType() const {
+        return lights[0]->getType();
+      }
+      
+      virtual Ref<LightNode> transform(const AffineSpace3fa& space) const
+      {
+        std::vector<Ref<LightNode>> xfm_lights(lights.size());
+        for (size_t i=0; i<lights.size(); i++)
+          xfm_lights[i] = lights[i]->transform(space);
+        return new AnimatedLightNode(std::move(xfm_lights), time_range);
+      }
+
+      virtual Ref<LightNode> get(float time) const
+      {
+        time = frac((time-time_range.lower)/time_range.size());
+        time = (lights.size()-1)*time;
+        int   itime = (int)floor(time);
+        itime = min(max(itime,0),(int)lights.size()-2);
+        float ftime = time - (float)itime;
+        Ref<LightNode> light0 = lights[itime+0]->get(time);
+        Ref<LightNode> light1 = lights[itime+1]->get(time);
+        return light0->lerp(light1,ftime);
+      }
+
+      virtual Ref<LightNode> lerp(const Ref<LightNode>& light1_in, float f) const {
+        assert(false); return nullptr;
+      }
+      
+    public: 
+      std::vector<Ref<LightNode>> lights;
+      BBox1f time_range;
+    };
+
     
     struct MaterialNode : public Node
     {
@@ -1345,7 +1514,7 @@ namespace embree
     };
 
     
-    enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GROUP, INSTANCING_FLATTENED };
+    enum InstancingMode { INSTANCING_NONE, INSTANCING_GEOMETRY, INSTANCING_GROUP, INSTANCING_FLATTENED, INSTANCING_MULTI_LEVEL };
     Ref<Node> flatten(Ref<Node> node, InstancingMode mode);
     Ref<GroupNode> flatten(Ref<GroupNode> node, InstancingMode mode);
 

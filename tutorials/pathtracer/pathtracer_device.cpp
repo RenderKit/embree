@@ -29,7 +29,8 @@ namespace embree {
 extern "C" int g_spp;
 extern "C" int g_max_path_length;
 extern "C" bool g_accumulate;
-
+extern "C" int g_animation_mode;
+  
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
 
@@ -759,7 +760,7 @@ Vec3fa HairMaterial__sample(ISPCHairMaterial* This, const BRDF& brdf, const Vec3
 
 inline void Material__preprocess(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Medium& medium)
 {
-  unsigned int id = materialID;
+  auto id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -785,7 +786,7 @@ inline void Material__preprocess(ISPCMaterial** materials, unsigned int material
 inline Vec3fa Material__eval(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& wo, const DifferentialGeometry& dg, const Vec3fa& wi)
 {
   Vec3fa c = Vec3fa(0.0f);
-  unsigned int id = materialID;
+  auto id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -811,7 +812,7 @@ inline Vec3fa Material__eval(ISPCMaterial** materials, unsigned int materialID, 
 inline Vec3fa Material__sample(ISPCMaterial** materials, unsigned int materialID, unsigned int numMaterials, const BRDF& brdf, const Vec3fa& Lw, const Vec3fa& wo, const DifferentialGeometry& dg, Sample3f& wi_o, Medium& medium, const Vec2f& s)
 {
   Vec3fa c = Vec3fa(0.0f);
-  unsigned int id = materialID;
+  auto id = materialID;
   {
     if (id < numMaterials) // FIXME: workaround for ISPC bug, location reached with empty execution mask
     {
@@ -950,11 +951,6 @@ void assignShaders(ISPCGeometry* geometry)
     rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterHair);
   }
 #endif
-  else if (geometry->type == GROUP) {
-    ISPCGroup* group = (ISPCGroup*) geometry;
-    for (unsigned int i=0; i<group->numGeometries; i++)
-      assignShaders(group->geometries[i]);
-  }
 }
 
 typedef ISPCInstance* ISPCInstance_ptr;
@@ -970,21 +966,9 @@ RTCScene convertScene(ISPCScene* scene_in)
     }
   }
 
+  assignShadersFunc = assignShaders;
+  
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
-
-  /* assign shaders */
-  for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-    assignShaders(scene_in->geometries[i]);
-  }
-
-  /* commit individual objects in case of instancing */
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
-  {
-    for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      ISPCGeometry* geometry = g_ispc_scene->geometries[i];
-      if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
-    }
-  }
 
   /* commit changes to scene */
   //progressStart();
@@ -1336,11 +1320,6 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
       dg.Ng = dg.Ns = normalize(cross(dg.Ty,dg.Tx));
     }
   }
-  else if (geometry->type == GROUP) {
-    unsigned int geomID = dg.geomID; {
-      postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
-    }
-  }
   else
     assert(false);
 
@@ -1366,36 +1345,30 @@ typedef ISPCInstance* ISPCInstancePtr;
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   dg.eps = 32.0f*1.19209e-07f*max(max(abs(dg.P.x),abs(dg.P.y)),max(abs(dg.P.z),ray.tfar));
+   
+  AffineSpace3fa local2world = AffineSpace3fa::scale(Vec3fa(1));
+  ISPCGeometry** geometries = g_ispc_scene->geometries;
+  
+  for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+  {
+    const unsigned int instID = dg.instIDs[i];
+    if (instID == -1) break;
+
+    ISPCInstance* instance = (ISPCInstancePtr) geometries[instID];
+    local2world = local2world * calculate_interpolated_space(instance,ray.time());
+
+    assert(instance->child->type == GROUP);
+    geometries = ((ISPCGroup*)instance->child)->geometries;
+  }
 
   int materialID = 0;
-  unsigned int instID = dg.instID; {
-    unsigned int geomID = dg.geomID; {
-      ISPCGeometry* geometry = nullptr;
-      if (g_instancing_mode != ISPC_INSTANCING_NONE) {
-        ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
-        geometry = instance->child;
-      } else {
-        geometry = g_ispc_scene->geometries[geomID];
-      }
-      postIntersectGeometry(ray,dg,geometry,materialID);
-    }
+  ISPCGeometry* geom = geometries[dg.geomID];
+  auto g = geom; {
+    postIntersectGeometry(ray,dg,g,materialID);
   }
-
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
-  {
-    unsigned int instID = dg.instID;
-    {
-      /* get instance and geometry pointers */
-      ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
-
-      /* convert normals */
-      //AffineSpace3fa space = (1.0f-ray.time())*AffineSpace3fa(instance->space0) + ray.time()*AffineSpace3fa(instance->space1);
-      AffineSpace3fa space = calculate_interpolated_space(instance,ray.time());
-      dg.Ng = xfmVector(space,dg.Ng);
-      dg.Ns = xfmVector(space,dg.Ns);
-    }
-  }
-
+  dg.Ng = xfmVector(local2world,dg.Ng);
+  dg.Ns = xfmVector(local2world,dg.Ns);
+  
   return materialID;
 }
 
@@ -1424,7 +1397,9 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
   //const float tfar          = RTCHitN_t(hit,N,rayID);
   const float tfar          = ray->tfar;
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(hit,N,rayID, 0);
+  for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+    dg.instIDs[i] = RTCHitN_instID(hit,N,rayID, i);
+  
   dg.geomID = RTCHitN_geomID(hit,N,rayID);
   dg.primID = RTCHitN_primID(hit,N,rayID);
   dg.u = RTCHitN_u(hit,N,rayID);
@@ -1448,15 +1423,7 @@ void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
   Medium medium = make_Medium_Vacuum();
   Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
   if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
-  {
     ray->tfar   = tfar;
-    // ray->instID = dg.instID;
-    // ray->geomID = dg.geomID;
-    // ray->primID = dg.primID;    
-    // ray->u      = dg.u;
-    // ray->v      = dg.v;
-    // ray->Ng     = Ng;
-  }
   else
     valid_i[0] = 0;
 }
@@ -1499,7 +1466,9 @@ void occlusionFilterOBJ(const RTCFilterFunctionNArguments* args)
   const float tfar          = ray->tfar;
 
   DifferentialGeometry dg;
-  dg.instID = RTCHitN_instID(hit,N,rayID, 0);
+  for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+    dg.instIDs[i] = RTCHitN_instID(hit,N,rayID, i);
+  
   dg.geomID = RTCHitN_geomID(hit,N,rayID);
   dg.primID = RTCHitN_primID(hit,N,rayID);
   dg.u = RTCHitN_u(hit,N,rayID);
@@ -1547,7 +1516,7 @@ void occlusionFilterHair(const RTCFilterFunctionNArguments* args)
   
   unsigned int hit_geomID = RTCHitN_geomID(hit,N,rayID);
   Vec3fa Kt = Vec3fa(0.0f);
-  unsigned int geomID = hit_geomID;
+  auto geomID = hit_geomID;
   {
     ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
     if (geometry->type == CURVES)
@@ -1615,7 +1584,9 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     Vec3fa Ns = normalize(ray.Ng);
 
     /* compute differential geometry */
-    dg.instID = ray.instID[0];
+    for (int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
+      dg.instIDs[i] = ray.instID[i];
+    
     dg.geomID = ray.geomID;
     dg.primID = ray.primID;
     dg.u = ray.u;
@@ -1850,7 +1821,7 @@ extern "C" void device_render (int* pixels,
   }
 
   /* reset accumulator */
-  bool camera_changed = g_changed || !g_accumulate; g_changed = false;
+  bool camera_changed = g_changed || !g_accumulate || g_animation_mode; g_changed = false;
   camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
   camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
   camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
@@ -1869,6 +1840,9 @@ extern "C" void device_render (int* pixels,
   }
   else
     g_accu_count++;
+
+  if (g_animation_mode)
+      UpdateScene(g_ispc_scene, time);
 
 } // device_render
 

@@ -92,10 +92,10 @@ struct TutorialBenchmark
       }, "--help: prints help for all supported command line options");
     commandLineParser.registerOption("i", [&] (Ref<ParseStream> cin, const FileName& path) {
         inputFile = cin->getString();
-        processedCommandLineOptions.push_back("-i");
-        processedCommandLineOptions.push_back("-c");
-      }, "-i <filepath>: .xml or .ecs");
-    commandLineParser.registerOptionAlias("i", "c");
+      }, "-i <filepath>: .xml ");
+    commandLineParser.registerOption("c", [&] (Ref<ParseStream> cin, const FileName& path) {
+        inputFile = cin->getString();
+      }, "-c <filepath>: .ecs ");
     commandLineParser.registerOption("benchmark", [&] (Ref<ParseStream> cin, const FileName& path) {
         params.skipIterations = cin->getInt();
         params.minTimeOrIterations = cin->getInt();

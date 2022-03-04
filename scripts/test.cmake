@@ -66,6 +66,65 @@ MACRO(update_test_models)
   check_return_code()
 ENDMACRO()
 
+##################################
+# configure and build            #
+##################################
+MACRO(build)
+  # build using as many processes as we have processors
+  include(ProcessorCount)
+  ProcessorCount(numProcessors)
+  if(numProcessors EQUAL 0)
+    SET(numProcessors 1)
+  endif()
+
+  set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
+  IF (WIN32)
+    set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE} ${BUILD_SUFFIX}")
+  ELSE()
+    set(CTEST_BUILD_COMMAND "make -j ${numProcessors}")
+  ENDIF()
+
+  IF (NOT WIN32)
+    ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
+  ENDIF()
+
+  ctest_start("Continuous")
+
+  set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_BUILD_OPTIONS} ..")
+  ctest_configure(RETURN_VALUE retval)
+  IF (NOT retval EQUAL 0)
+    message(FATAL_ERROR "test.cmake: configure failed")
+  ENDIF()
+
+  ctest_build(RETURN_VALUE retval)
+  message("test.cmake: ctest_build return value = ${retval}")
+  IF (NOT retval EQUAL 0)
+    message(FATAL_ERROR "test.cmake: build failed")
+  ENDIF()
+ENDMACRO()
+
+##################################
+# configure and execute the test #
+##################################
+MACRO(test)
+  ctest_start("Continuous")
+
+  IF (EMBREE_UPDATE_MODELS AND EMBREE_TESTING_INTENSITY GREATER 0)
+    update_test_models()
+  ENDIF()
+
+  set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} -DBUILD_TESTING:BOOL=ON -DEMBREE_TESTING_MODEL_DIR:PATH=${TEST_MODELS_DIRECTORY} -DEMBREE_TESTING_INTENSITY=${EMBREE_TESTING_INTENSITY} ..")
+  ctest_configure()
+
+  IF (EMBREE_TESTING_INTENSITY GREATER 0 OR EMBREE_TESTING_KLOCWORK)
+    ctest_test(RETURN_VALUE retval)
+    message("test.cmake: ctest_test return value = ${retval}")
+    IF (NOT retval EQUAL 0)
+      message(FATAL_ERROR "test.cmake: some tests failed")
+    ENDIF()
+  ENDIF()
+ENDMACRO()
+
 # increase default output sizes for test outputs
 IF (NOT DEFINED CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE)
   SET(CTEST_CUSTOM_MAXIMUM_PASSED_TEST_OUTPUT_SIZE 100000)
@@ -74,80 +133,11 @@ IF(NOT DEFINED CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE)
   SET(CTEST_CUSTOM_MAXIMUM_FAILED_TEST_OUTPUT_SIZE 800000)
 ENDIF()
 
-# enable testing in Embree
-SET (CTEST_BUILD_OPTIONS "${CTEST_BUILD_OPTIONS} -D BUILD_TESTING:BOOL=ON -D EMBREE_TESTING_MODEL_DIR:PATH=${TEST_MODELS_DIRECTORY}")
-
-# set site based on this machine's hostname
-SITE_NAME(HOSTNAME)
-set(CTEST_SITE "${HOSTNAME}")
-
-# drop location
-set(CTEST_DROP_METHOD "http")
-IF(NOT CTEST_DROP_SITE)
-   set(CTEST_DROP_SITE "10.123.110.90")
+IF (${STAGE} STREQUAL "build")
+  build()
+ELSEIF (${STAGE} STREQUAL "test")
+  test()
+ELSE ()
+  message("unknown stage ${STAGE}. Should be \"build\" or \"test\"")
 ENDIF()
-set(CTEST_DROP_LOCATION "/CDash/submit.php?project=${CTEST_PROJECT_NAME}")
-set(CTEST_DROP_SITE_CDASH TRUE)
-
-# get OS and CPU information
-#find_program(UNAME NAMES uname)
-#macro(getuname name flag)
-#  exec_program("${UNAME}" ARGS "${flag}" OUTPUT_VARIABLE "${name}")
-#endmacro(getuname)
-
-#getuname(osname -s)
-#getuname(osrel  -r)
-#getuname(cpu    -m)
-
-# build using as many processes as we have processors
-include(ProcessorCount)
-ProcessorCount(numProcessors)
-if(numProcessors EQUAL 0)
-  SET(numProcessors 1)
-endif()
-
-# set build name
-#set(CTEST_BUILD_NAME "${osname}-${cpu}")
-set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
-IF (WIN32)
-  set(CTEST_BUILD_COMMAND "${CMAKE_COMMAND} --build . --config ${CTEST_CONFIGURATION_TYPE} -- /m /t:rebuild ")
-ELSE()
-  set(CTEST_BUILD_COMMAND "make -j ${numProcessors}")
-ENDIF()
-
-###################
-# execute the test
-###################
-
-# requires CMake 2.8 or higher for git!!!
-#set(CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
-
-set(CTEST_CONFIGURE_COMMAND "${CMAKE_COMMAND} ${CTEST_BUILD_OPTIONS} ..")
-
-# start the test
-IF (NOT WIN32)
-  ctest_empty_binary_directory(${CTEST_BINARY_DIRECTORY})
-ENDIF()
-ctest_start("Continuous")
-#ctest_update (RETURN_VALUE count)
-IF (EMBREE_TESTING_INTENSITY GREATER 0)
-  update_test_models()
-ENDIF()
-ctest_configure()
-
-ctest_build(RETURN_VALUE retval)
-message("test.cmake: ctest_build return value = ${retval}")
-
-IF (NOT retval EQUAL 0)
-  message(FATAL_ERROR "test.cmake: build failed")
-ENDIF()
-
-IF (EMBREE_TESTING_INTENSITY GREATER 0 OR EMBREE_TESTING_KLOCWORK)
-  ctest_test(RETURN_VALUE retval)
-  message("test.cmake: ctest_test return value = ${retval}")
-  IF (NOT retval EQUAL 0)
-    message(FATAL_ERROR "test.cmake: some tests failed")
-  ENDIF()
-ENDIF()
-#ctest_submit()
 

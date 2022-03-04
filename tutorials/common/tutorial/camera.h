@@ -8,6 +8,7 @@
 #include "../../../common/math/math.h"
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/affinespace.h"
+#include "../scenegraph/scenegraph.h"
 #include <sstream>
 
 namespace embree
@@ -35,8 +36,11 @@ namespace embree
     Camera ()
     : from(0.0001f,0.0001f,-3.0f), to(0,0,0), up(0,1,0), fov(90), handedness(RIGHT_HANDED) {}
 
-    Camera (Vec3fa& from, Vec3fa& to, Vec3fa& up, float fov, Handedness handedness)
+    Camera (const Vec3fa& from, const Vec3fa& to, const Vec3fa& up, float fov, Handedness handedness)
     : from(from), to(to), up(up), fov(fov), handedness(handedness) {}
+
+    Camera (const SceneGraph::PerspectiveCameraData& cam, Handedness handedness)
+    : from(cam.from), to(cam.to), up(cam.up), fov(cam.fov), handedness(handedness) {}
 
     std::string str() const 
     {

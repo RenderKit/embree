@@ -353,7 +353,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     Vec3fa diffuse = Vec3fa(1.0f,0.0f,0.0f);
     if (ray.geomID > 0)
     {
-      unsigned int geomID = ray.geomID; {
+      auto geomID = ray.geomID; {
         rtcInterpolate0(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
       }
       //return diffuse;
@@ -364,7 +364,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     Vec3fa Ng = ray.Ng;
     if (ray.geomID == 2 || ray.geomID == 3) {
       Vec3fa dPdu,dPdv;
-      unsigned int geomID = ray.geomID; {
+      auto geomID = ray.geomID; {
         rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       //return dPdu;

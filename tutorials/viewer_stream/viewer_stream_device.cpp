@@ -67,7 +67,6 @@ void updateMeshEdgeLevelBufferTask (int taskIndex, int threadIndex,  ISPCScene* 
   ISPCGeometry* geometry = g_ispc_scene->geometries[taskIndex];
   if (geometry->type != SUBDIV_MESH) return;
   ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
-  unsigned int geomID = mesh->geom.geomID;
   if (mesh->numFaces < 10000) {
     updateEdgeLevelBuffer(mesh,cam_pos,0,mesh->numFaces);
     rtcUpdateGeometryBuffer(geometry->geometry,RTC_BUFFER_TYPE_LEVEL,0);
@@ -111,16 +110,6 @@ void updateEdgeLevels(ISPCScene* scene_in, const Vec3fa& cam_pos)
 RTCScene convertScene(ISPCScene* scene_in)
 {
   RTCScene scene_out = ConvertScene(g_device, scene_in,RTC_BUILD_QUALITY_MEDIUM);
-
-  /* commit individual objects in case of instancing */
-  if (g_instancing_mode != ISPC_INSTANCING_NONE)
-  {
-    for (unsigned int i=0; i<scene_in->numGeometries; i++) {
-      ISPCGeometry* geometry = g_ispc_scene->geometries[i];
-      if (geometry->type == GROUP) rtcCommitScene(geometry->scene);
-    }
-  }
-
   return scene_out;
 }
 
@@ -221,7 +210,7 @@ void postIntersectGeometry(const Ray& ray, DifferentialGeometry& dg, ISPCGeometr
     materialID = mesh->geom.materialID;
   }
   else if (geometry->type == GROUP) {
-    unsigned int geomID = ray.geomID; {
+    auto geomID = ray.geomID; {
       postIntersectGeometry(ray,dg,((ISPCGroup*) geometry)->geometries[geomID],materialID);
     }
   }
@@ -247,8 +236,8 @@ typedef ISPCInstance* ISPCInstancePtr;
 inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 {
   int materialID = 0;
-  unsigned int instID = ray.instID[0]; {
-    unsigned int geomID = ray.geomID; {
+  auto instID = ray.instID[0]; {
+    auto geomID = ray.geomID; {
       ISPCGeometry* geometry = nullptr;
       if (g_instancing_mode != ISPC_INSTANCING_NONE) {
         ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];
@@ -262,7 +251,7 @@ inline int postIntersect(const Ray& ray, DifferentialGeometry& dg)
 
   if (g_instancing_mode != ISPC_INSTANCING_NONE)
   {
-    unsigned int instID = ray.instID[0];
+    auto instID = ray.instID[0];
     {
       /* get instance and geometry pointers */
       ISPCInstance* instance = (ISPCInstancePtr) g_ispc_scene->geometries[instID];

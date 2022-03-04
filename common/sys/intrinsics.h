@@ -13,6 +13,9 @@
 #include "../simd/arm/emulation.h"
 #else
 #include <immintrin.h>
+#if defined(__EMSCRIPTEN__)
+#include "../simd/wasm/emulation.h"
+#endif
 #endif
 
 #if defined(__BMI__) && defined(__GNUC__) && !defined(__INTEL_COMPILER)
@@ -34,7 +37,9 @@
 #endif
 
 #if defined(__WIN32__)
-#  define NOMINMAX
+#  if !defined(NOMINMAX)
+#    define NOMINMAX
+#  endif
 #  include <windows.h>
 #endif
 
@@ -298,7 +303,7 @@ namespace embree
 #endif
   }
   
-#if defined(__64BIT__)
+#if defined(__64BIT__) || defined(__EMSCRIPTEN__)
   __forceinline unsigned bsr(unsigned v) {
 #if defined(__AVX2__) 
     return 31 - _lzcnt_u32(v);
@@ -362,7 +367,7 @@ namespace embree
 #if defined(__X86_ASM__)
     int r = 0; asm ("bts %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
 #else
-    return (v | (v << i));
+    return (v | (1 << i));
 #endif
   }
   
@@ -370,7 +375,7 @@ namespace embree
 #if defined(__X86_ASM__)
     int r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
 #else
-    return (v & ~(v << i));
+    return (v & ~(1 << i));
 #endif
   }
   
@@ -386,7 +391,7 @@ namespace embree
 #if defined(__X86_ASM__)
     size_t r = 0; asm ("bts %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
 #else
-    return (v | (v << i));
+    return (v | (1 << i));
 #endif
   }
   
@@ -394,7 +399,7 @@ namespace embree
 #if defined(__X86_ASM__)
     size_t r = 0; asm ("btr %1,%0" : "=r"(r) : "r"(i), "0"(v) : "flags"); return r;
 #else
-    return (v & ~(v << i));
+    return (v & ~(1 << i));
 #endif
   }
 

@@ -184,6 +184,7 @@ namespace embree
 
     // special variants for grid meshes
 
+#if defined(EMBREE_GEOMETRY_GRID)
     PrimInfo createPrimRefArrayGrids(Scene* scene, mvector<PrimRef>& prims, mvector<SubGridBuildData>& sgrids)
     {
       PrimInfo pinfo(empty);
@@ -293,6 +294,7 @@ namespace embree
 
       return pinfo;
     }
+#endif
     
     // ====================================================================================================
     // ====================================================================================================

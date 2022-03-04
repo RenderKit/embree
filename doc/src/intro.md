@@ -3,9 +3,10 @@ construct 3D scenes and perform ray queries of different types inside
 these scenes. All API calls carry the prefix `rtc` (or `RTC` for
 types) which stands for **r**ay **t**racing **c**ore.
 
-The API also exists in an ISPC version, which is almost identical but
+The API also exists in an Intel® Implicit SPMD Program Compiler
+(Intel® ISPC) version, which is almost identical but
 contains additional functions that operate on ray packets with a size
-of the native SIMD width used by ISPC. For simplicity this document
+of the native SIMD width used by Intel® ISPC. For simplicity this document
 refers to the C99 version of the API functions. For changes when
 upgrading from the Embree 2 to the current Embree 3 API see Section
 [Upgrading from Embree 2 to Embree 3].

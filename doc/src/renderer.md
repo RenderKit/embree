@@ -42,8 +42,8 @@ Compiling under Windows
 -----------------------
 
 For compilation under Windows you first have to install the Embree ray
-tracing kernels including the Intel® SPMD Compiler (ISPC). After
-installation you have to set the `EMBREE_INSTALL_DIR` environment
+tracing kernels including the Intel® Implicit SPMD Program Compiler
+(Intel® ISPC). After installation you have to set the `EMBREE_INSTALL_DIR` environment
 variable to the root folder of Embree.
 
 Use the Visual Studio 2008 or Visual Studio 2010 solution file to
@@ -53,13 +53,13 @@ on the solution and then selecting the compiler. The project compiles
 with both compilers in 32-bit and 64-bit mode. We recommend using
 64-bit mode and the Intel Compiler for best performance.
 
-To enable AVX and AVX2 for the ISPC code select the build configurations
+To enable AVX and AVX2 for the Intel® ISPC code select the build configurations
 `ReleaseAVX` and `ReleaseAVX2`. You have to compile the Embree kernels
 with the same or higher instruction set than the Embree example
 renderer.
 
-By default, the solution file requires ISPC to be installed properly.
-For compiling the solution without ISPC, simply delete the device_ispc
+By default, the solution file requires Intel® ISPC to be installed properly.
+For compiling the solution without Intel® ISPC, simply delete the device_ispc
 project from the solution file.
 
 Compiling under Linux and macOS
@@ -85,11 +85,11 @@ configure which parts of the Embree Example Renderer to build:
   BUILD_SINGLE_RAY_DEVICE_XEON_PHI   Single ray rendering device for the
                                      Intel® Xeon Phi™ coprocessor.
 
-  BUILD_ISPC_DEVICE                  ISPC CPU rendering device operating
+  BUILD_ISPC_DEVICE                  Intel® ISPC CPU rendering device operating
                                      on ray packets of size 4 (SSE) or
                                      8 (AVX).
 
-  BUILD_ISPC_DEVICE_XEON_PHI         ISPC Xeon Phi rendering device
+  BUILD_ISPC_DEVICE_XEON_PHI         Intel® ISPC Xeon Phi rendering device
                                      operating on ray packets of size 16.
 
   BUILD_NETWORK_DEVICE               Network device to render on render
@@ -97,14 +97,14 @@ configure which parts of the Embree Example Renderer to build:
   ---------------------------------- -----------------------------------
   : CMake build options for Embree Example Renderer.
 
-When enabling any ISPC renderer, you also have to install ISPC. If you
+When enabling any Intel® ISPC renderer, you also have to install Intel® ISPC. If you
 select `BUILD_ISPC_DEVICE`, you should select which instructions sets to
-enable for ISPC (`TARGET_SSE2`, `TARGET_SSE41`, `TARGET_AVX`, and
+enable for Intel® ISPC (`TARGET_SSE2`, `TARGET_SSE41`, `TARGET_AVX`, and
 `TARGET_AVX2`).
 
 All target ISAs you select when compiling the Embree Example Render,
 have also to be enabled when compiling Embree. Due to some limitation of
-ISPC you have to enable more than one target ISA if you also enabled
+Intel® ISPC you have to enable more than one target ISA if you also enabled
 more than one target ISA when compiling Embree, otherwise you will get
 link errors.
 

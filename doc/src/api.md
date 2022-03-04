@@ -22,7 +22,7 @@ way for CPP files:
     ./scripts/cpp-patch.py --patch embree2_to_embree3.patch
       --in infile.cpp --out outfile.cpp
 
-When invoked for ISPC files, add the `--ispc` option:
+When invoked for Intel® ISPC files, add the `--ispc` option:
 
     ./scripts/cpp-patch.py --ispc --patch embree2_to_embree3.patch
       --in infile.ispc --out outfile.ispc
@@ -270,17 +270,17 @@ Miscellaneous
     change from the initial size and ordering when entering a filter
     callback.
 
-*   We no longer export ISPC-specific symbols. This has the advantage
+*   We no longer export Intel® ISPC-specific symbols. This has the advantage
     that certain linking issues went away, e.g. it is now possible to
-    link an ISPC application compiled for any combination of ISAs, and
+    link an Intel® ISPC application compiled for any combination of ISAs, and
     link this to an Embree library compiled with a different set of
     ISAs. Previously the ISAs of the application had to be a subset of
     the ISAs of Embree, and when the user enabled exactly one ISA, they
     had to do this in Embree and the application.
 
-*   We no longer export the ISPC tasking system, which means that the
-    application has the responsibility to implement the ISPC tasking
-    system itself. ISPC comes with example code on how to do this. This
+*   We no longer export the Intel® ISPC tasking system, which means that the
+    application has the responsibility to implement the Intel® ISPC tasking
+    system itself. Intel® ISPC comes with example code on how to do this. This
     change is not performed by the script and must be done manually.
 
 *   Fixed many naming inconsistencies, and changed names of further API

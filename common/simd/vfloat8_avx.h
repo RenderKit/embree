@@ -236,9 +236,12 @@ namespace embree
 #endif
 
 #if defined(__AVX2__)
-    return _mm256_mul_ps(r, _mm256_fnmadd_ps(r, a, vfloat8(2.0f)));
+    // First, compute 1 - a * r (which will be very close to 0)
+    const vfloat8 h_n = _mm256_fnmadd_ps(a, r, vfloat8(1.0f));
+    // Then compute r + r * h_n
+    return _mm256_fmadd_ps(r, h_n, r);
 #else
-    return _mm256_mul_ps(r, _mm256_sub_ps(vfloat8(2.0f), _mm256_mul_ps(r, a)));
+    return _mm256_add_ps(r,_mm256_mul_ps(r, _mm256_sub_ps(vfloat8(1.0f), _mm256_mul_ps(a, r))));  // computes r + r * (1 - a * r)
 #endif
   }
   __forceinline vfloat8 sqr (const vfloat8& a) { return _mm256_mul_ps(a,a); }

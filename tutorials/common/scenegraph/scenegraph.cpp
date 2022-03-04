@@ -11,6 +11,8 @@
 namespace embree
 {
   extern "C" RTCDevice g_device;
+
+  void (*SceneGraph::opaque_geometry_destruction)(void*) = nullptr;
   
   Ref<SceneGraph::Node> SceneGraph::load(const FileName& filename, const bool singleObject)
   {
@@ -21,10 +23,10 @@ namespace embree
     else throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
-  void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename, bool embedTextures, bool referenceMaterials)
+  void SceneGraph::store(Ref<SceneGraph::Node> root, const FileName& filename, bool embedTextures, bool referenceMaterials, bool binaryFormat)
   {
     if (toLowerCase(filename.ext()) == std::string("xml")) {
-      storeXML(root,filename,embedTextures,referenceMaterials);
+      storeXML(root,filename,embedTextures,referenceMaterials,binaryFormat);
     }
     else
       throw std::runtime_error("unknown scene format: " + filename.ext());
@@ -35,12 +37,31 @@ namespace embree
   }
 
   void SceneGraph::PerspectiveCameraNode::print(std::ostream& cout, int depth) {
-    cout << "PerspectiveCameraNode { closed = " << closed << " }" << std::endl;
+    cout << "PerspectiveCameraNode @ " << this << " { " << std::endl;
+    if (name != "") {
+      tab(cout, depth+1); cout << "name = " << name << std::endl;
+    }
+    tab(cout, depth+1); cout << "from = " << data.from << std::endl;
+    tab(cout, depth+1); cout << "to   = " << data.to   << std::endl;
+    tab(cout, depth+1); cout << "up   = " << data.up   << std::endl;
+    tab(cout, depth+1); cout << "fov  = " << data.fov  << std::endl;
+    tab(cout, depth); cout << "}" << std::endl;
+  }
+
+  void SceneGraph::AnimatedPerspectiveCameraNode::print(std::ostream& cout, int depth) {
+    cout << "AnimatedPerspectiveCameraNode @ " << this << " { " << std::endl;
+    if (name != "") {
+      tab(cout, depth+1); cout << "name = " << name << std::endl;
+    }
+    for (size_t i=0; i<cameras.size(); i++) {
+      tab(cout,depth+1); cameras[i]->print(cout,depth+1);
+    }
+    tab(cout, depth); cout << "}" << std::endl;
   }
 
   void SceneGraph::TransformNode::print(std::ostream& cout, int depth)
   {
-    cout << "TransformNode { " << std::endl;
+    cout << "TransformNode @ " << this << " { " << std::endl;
     tab(cout, depth+1); cout << "closed = " << closed << std::endl;
     tab(cout, depth+1); cout << "numTimeSteps = " << spaces.size() << std::endl;
     tab(cout, depth+1); cout << "child = "; child->print(cout,depth+1);
@@ -49,7 +70,7 @@ namespace embree
 
   void SceneGraph::GroupNode::print(std::ostream& cout, int depth)
   {
-    cout << "GroupNode { " << std::endl;
+    cout << "GroupNode @ " << this << " { " << std::endl;
     tab(cout, depth+1); cout << "closed = " << closed << std::endl;
     for (size_t i=0; i<children.size(); i++) {
       tab(cout, depth+1); cout << "child" << i << " = "; children[i]->print(cout,depth+1);
@@ -58,35 +79,35 @@ namespace embree
   }
 
   void SceneGraph::MaterialNode::print(std::ostream& cout, int depth) {
-    cout << "MaterialNode { closed = " << closed << " }" << std::endl;
+    cout << "MaterialNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
   
   void SceneGraph::LightNode::print(std::ostream& cout, int depth) {
-    cout << "LightNode { closed = " << closed << " }" << std::endl;
+    cout << "LightNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::TriangleMeshNode::print(std::ostream& cout, int depth) {
-    cout << "TriangleMeshNode { closed = " << closed << " }" << std::endl;
+    cout << "TriangleMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::QuadMeshNode::print(std::ostream& cout, int depth) {
-    cout << "QuadMeshNode { closed = " << closed << " }" << std::endl;
+    cout << "QuadMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::SubdivMeshNode::print(std::ostream& cout, int depth) {
-    cout << "SubdivMeshNode { closed = " << closed << " }" << std::endl;
+    cout << "SubdivMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::HairSetNode::print(std::ostream& cout, int depth) {
-    cout << "HairSetNode { closed = " << closed << " }" << std::endl;
+    cout << "HairSetNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::PointSetNode::print(std::ostream& cout, int depth) {
-    cout << "PointSetNode { closed = " << closed << " }" << std::endl;
+    cout << "PointSetNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
 
   void SceneGraph::GridMeshNode::print(std::ostream& cout, int depth) {
-    cout << "GridMeshNode { closed = " << closed << " }" << std::endl;
+    cout << "GridMeshNode @ " << this << " { closed = " << closed << " }" << std::endl;
   }
     
   void SceneGraph::Node::calculateStatistics(Statistics& stat) {
@@ -94,6 +115,12 @@ namespace embree
   }
 
   void SceneGraph::PerspectiveCameraNode::calculateStatistics(Statistics& stat)
+  {
+    indegree++;
+    if (indegree == 1) stat.numCameras++;
+  }
+
+  void SceneGraph::AnimatedPerspectiveCameraNode::calculateStatistics(Statistics& stat)
   {
     indegree++;
     if (indegree == 1) stat.numCameras++;
@@ -312,6 +339,14 @@ namespace embree
   }
 
   bool SceneGraph::PerspectiveCameraNode::calculateClosed(bool group_instancing)
+  {
+    assert(indegree);
+    closed = true;
+    hasLightOrCamera = true;
+    return indegree == 1;
+  }
+
+  bool SceneGraph::AnimatedPerspectiveCameraNode::calculateClosed(bool group_instancing)
   {
     assert(indegree);
     closed = true;
@@ -1750,14 +1785,15 @@ namespace embree
     
     SceneGraphFlattener (Ref<SceneGraph::Node> in, SceneGraph::InstancingMode instancing)
     {
-       in->calculateInDegree();
-       in->calculateClosed(instancing == SceneGraph::INSTANCING_GROUP);
+      in->calculateInDegree();
+      in->calculateClosed(instancing == SceneGraph::INSTANCING_GROUP);
 
       std::vector<Ref<SceneGraph::Node>> geometries;      
       if (instancing != SceneGraph::INSTANCING_NONE) 
       {
-        if (instancing == SceneGraph::INSTANCING_FLATTENED) convertFlattenedInstances(geometries,in);
-        else                                                convertInstances(geometries,in,one);
+        if      (instancing == SceneGraph::INSTANCING_FLATTENED  ) convertFlattenedInstances(geometries,in);
+        else if (instancing == SceneGraph::INSTANCING_MULTI_LEVEL) convertMultiLevelInstances(geometries,in);
+        else                                                       convertInstances(geometries,in,one);
         convertLightsAndCameras(geometries,in,one);
       }
       else
@@ -1794,11 +1830,40 @@ namespace embree
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (const auto& child : groupNode->children) convertLightsAndCameras(group,child,spaces);
       }
-      else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
-        group.push_back(new SceneGraph::LightNode(lightNode->light->transform(spaces[0])));
+      else if (Ref<SceneGraph::AnimatedLightNode> lightNode = node.dynamicCast<SceneGraph::AnimatedLightNode>()) {
+        if (spaces.size() != 1) throw std::runtime_error("animated lights cannot get instantiated with a transform animation");
+        group.push_back(lightNode->transform(spaces[0]).dynamicCast<SceneGraph::Node>());
       }
-      else if (Ref<SceneGraph::PerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) {
-        group.push_back(new SceneGraph::PerspectiveCameraNode(cameraNode,spaces[0],makeUniqueID(cameraNode->name)));
+      else if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>())
+      {
+        if (spaces.size() == 1)
+          group.push_back(lightNode->transform(spaces[0]).dynamicCast<SceneGraph::Node>());
+        else
+        {
+          std::vector<Ref<SceneGraph::LightNode>> lights(spaces.size());
+          for (size_t i=0; i<spaces.size(); i++)
+            lights[i] = lightNode->transform(spaces[i]);
+          
+          group.push_back(new SceneGraph::AnimatedLightNode(std::move(lights),spaces.time_range));
+        }
+      }
+      else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>())
+      {
+        if (spaces.size() != 1) throw std::runtime_error("animated cameras cannot get instantiated with a transform animation");
+        group.push_back(new SceneGraph::AnimatedPerspectiveCameraNode(cameraNode,spaces[0],makeUniqueID(cameraNode->name)));
+      }
+      else if (Ref<SceneGraph::PerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>())
+      {
+        if (spaces.size() == 1)
+          group.push_back(new SceneGraph::PerspectiveCameraNode(cameraNode,spaces[0],makeUniqueID(cameraNode->name)));
+        else
+        {
+          std::vector<Ref<SceneGraph::PerspectiveCameraNode>> cameras(spaces.size());
+          for (size_t i=0; i<spaces.size(); i++)
+            cameras[i] = new SceneGraph::PerspectiveCameraNode(cameraNode,spaces[i]);
+          
+          group.push_back(new SceneGraph::AnimatedPerspectiveCameraNode(std::move(cameras),spaces.time_range,makeUniqueID(cameraNode->name)));
+        }
       }
     }
 
@@ -1854,6 +1919,53 @@ namespace embree
       else if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
         for (const auto& child : groupNode->children) convertInstances(group,child,spaces);
       }
+    }
+
+    void convertMultiLevelInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node)
+    {
+      if (Ref<SceneGraph::GroupNode> groupNode = node.dynamicCast<SceneGraph::GroupNode>()) {
+        for (const auto& child : groupNode->children) convertMultiLevelInstances(group,child);
+      }
+      else if (node.dynamicCast<SceneGraph::TriangleMeshNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::QuadMeshNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::GridMeshNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::SubdivMeshNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::HairSetNode>()) {
+        group.push_back(node);
+      }
+      else if (node.dynamicCast<SceneGraph::PointSetNode>()) {
+        group.push_back(node);
+      }
+      else if (object_mapping.find(node) != object_mapping.end()) {
+        group.push_back(object_mapping[node]);
+      }
+      else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>())
+      {
+        auto new_node = new SceneGraph::TransformNode(xfmNode->spaces,convertMultiLevelInstances(xfmNode->child));
+        object_mapping[node] = new_node;
+        group.push_back(new_node);
+      } 
+    }
+      
+    Ref<SceneGraph::Node> convertMultiLevelInstances(const Ref<SceneGraph::Node>& node)
+    {
+      if (object_mapping.find(node) != object_mapping.end()) {
+        return object_mapping[node];
+      }
+      
+      std::vector<Ref<SceneGraph::Node>> group;
+      convertMultiLevelInstances(group,node);
+      auto new_node = new SceneGraph::GroupNode(group);
+      object_mapping[node] = new_node;
+      return new_node;
     }
 
     void convertFlattenedInstances(std::vector<Ref<SceneGraph::Node>>& group, const Ref<SceneGraph::Node>& node)

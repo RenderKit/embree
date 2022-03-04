@@ -275,9 +275,9 @@ namespace embree
 #endif
 
 #if defined(__AVX2__)
-    return _mm_mul_ps(r,_mm_fnmadd_ps(r, a, vfloat4(2.0f)));
+    return _mm_fmadd_ps(r, _mm_fnmadd_ps(a, r, vfloat4(1.0f)), r);                    // computes r + r * (1 - a * r)
 #else
-    return _mm_mul_ps(r,_mm_sub_ps(vfloat4(2.0f), _mm_mul_ps(r, a)));
+    return _mm_add_ps(r,_mm_mul_ps(r, _mm_sub_ps(vfloat4(1.0f), _mm_mul_ps(a, r))));  // computes r + r * (1 - a * r)
 #endif
   }
   __forceinline vfloat4 sqr (const vfloat4& a) { return _mm_mul_ps(a,a); }

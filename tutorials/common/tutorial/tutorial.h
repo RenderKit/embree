@@ -134,6 +134,7 @@ namespace embree
     std::string tutorialName;
 
     /* render settings */
+    Ref<SceneGraph::PerspectiveCameraNode> animated_camera;
     Camera camera;
     Shader shader;
 
@@ -196,6 +197,10 @@ namespace embree
 
     virtual int main(int argc, char** argv);
 
+    bool scene_empty_post_parse() const {
+      return scene->size() == 0 && sceneFilename.size() == 0 && futures.size() == 0;
+    }
+
   public:
     TutorialScene obj_scene;
     Ref<SceneGraph::GroupNode> scene;
@@ -215,6 +220,7 @@ namespace embree
       CONVERT_MBLUR_TO_NONMBLUR,
     };
     std::vector<SceneGraphOperations> sgop;
+    std::vector<std::function<void()>> futures; // future scene graph operations
 
     float convert_tris_to_quads_prop;
     unsigned grid_resX, grid_resY;

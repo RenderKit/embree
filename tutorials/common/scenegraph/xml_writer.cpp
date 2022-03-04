@@ -9,7 +9,7 @@ namespace embree
   {
   public:
 
-    XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials);
+    XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials, bool binaryFormat);
 
   public:
     void tab();
@@ -20,9 +20,27 @@ namespace embree
     void store(const char* name, const char* str);
     void store(const char* name, const float& v);
     void store(const char* name, const Vec3fa& v);
-    template<typename T> void store(const char* name, const std::vector<T>& vec);
-    void store(const char* name, const avector<Vec3fa>& vec);
-    void store4f(const char* name, const avector<Vec3ff>& vec);
+
+    void store_array_elt(const int& v);
+    void store_array_elt(const Vec2f& v);
+    void store_array_elt(const Vec3f& v);
+    void store_array_elt(const Vec3fa& v);
+    void store_array_elt(const Vec3ff& v);
+    void store_array_elt(const SceneGraph::TriangleMeshNode::Triangle& v);
+    void store_array_elt(const SceneGraph::QuadMeshNode::Quad& v);
+    
+    template<typename T> void store_array_text  (const char* name, const std::vector<T>& vec);
+    template<typename T> void store_array_binary(const char* name, const std::vector<T>& vec);
+    template<typename T> void store             (const char* name, const std::vector<T>& vec);
+
+    void store_array_text  (const char* name, const avector<Vec3fa>& vec);
+    void store_array_binary(const char* name, const avector<Vec3fa>& vec);
+    void store             (const char* name, const avector<Vec3fa>& vec);
+
+    void store_array_text  (const char* name, const avector<Vec3ff>& vec);
+    void store_array_binary(const char* name, const avector<Vec3ff>& vec);
+    void store             (const char* name, const avector<Vec3ff>& vec);
+    
     void store_parm(const char* name, const float& v);
     void store_parm(const char* name, const Vec3fa& v);
     void store_parm(const char* name, const std::shared_ptr<Texture> tex);
@@ -36,6 +54,7 @@ namespace embree
     void store(const SceneGraph::TriangleLight& light, ssize_t id);
     void store(const SceneGraph::QuadLight& light, ssize_t id);
     void store(Ref<SceneGraph::LightNode> light, ssize_t id);
+    void store(Ref<SceneGraph::AnimatedLightNode> light, ssize_t id);
     
     void store(Ref<MatteMaterial> material, ssize_t id);
     void store(Ref<MirrorMaterial> material, ssize_t id);
@@ -54,6 +73,7 @@ namespace embree
     void store(Ref<SceneGraph::HairSetNode> hair, ssize_t id);
 
     void store(Ref<SceneGraph::PerspectiveCameraNode> camera, ssize_t id);
+    void store(Ref<SceneGraph::AnimatedPerspectiveCameraNode> camera, ssize_t id);
     void store(Ref<SceneGraph::TransformNode> node, ssize_t id);
     void store(std::vector<Ref<SceneGraph::TransformNode>> nodes);
     void store(Ref<SceneGraph::GroupNode> group, ssize_t id);
@@ -70,6 +90,7 @@ namespace embree
     std::map<std::shared_ptr<Texture>, size_t> textureMap; // FIXME: use Ref<Texture>
     bool embedTextures;
     bool referenceMaterials;
+    bool binaryFormat;
   };
 
   //////////////////////////////////////////////////////////////////////////////
@@ -113,26 +134,101 @@ namespace embree
     tab(); xml << "<" << name << ">" << v.x << " " << v.y << " " << v.z << "</" << name << ">" << std::endl;
   }
 
+  void XMLWriter::store_array_elt(const int& v) {
+    xml << v << std::endl;
+  }
+  
+  void XMLWriter::store_array_elt(const Vec2f& v) {
+    xml << v.x << " " << v.y << std::endl;
+  }
+  
+  void XMLWriter::store_array_elt(const Vec3f& v) {
+    xml << v.x << " " << v.y << " " << v.z << std::endl;
+  }
+
+  void XMLWriter::store_array_elt(const Vec3fa& v) {
+    xml << v.x << " " << v.y << " " << v.z << std::endl;
+  }
+
+  void XMLWriter::store_array_elt(const Vec3ff& v) {
+    xml << v.x << " " << v.y << " " << v.z << " " << v.w << std::endl;
+  }
+
+  void XMLWriter::store_array_elt(const SceneGraph::TriangleMeshNode::Triangle& v) {
+    xml << v.v0 << " " << v.v1 << " " << v.v2 << std::endl;
+  }
+
+  void XMLWriter::store_array_elt(const SceneGraph::QuadMeshNode::Quad& v) {
+    xml << v.v0 << " " << v.v1 << " " << v.v2 << " "  << v.v3 << std::endl;
+  }
+
   template<typename T>
-  void XMLWriter::store(const char* name, const std::vector<T>& vec)
+  void XMLWriter::store_array_text(const char* name, const std::vector<T>& vec)
+  {
+    open(name);
+    for (size_t i=0; i<vec.size(); i++) {
+      tab(); store_array_elt(vec[i]);
+    }
+    close(name);
+  }
+
+  template<typename T>
+  void XMLWriter::store_array_binary(const char* name, const std::vector<T>& vec)
   {
     std::streampos offset = bin.tellg();
     tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
     if (vec.size()) bin.write((char*)vec.data(),vec.size()*sizeof(T));
   }
 
-  void XMLWriter::store(const char* name, const avector<Vec3fa>& vec)
+  template<typename T>
+  void XMLWriter::store(const char* name, const std::vector<T>& vec)
+  {
+    if (binaryFormat) store_array_binary(name,vec);
+    else              store_array_text  (name,vec);
+  }
+
+  void XMLWriter::store_array_text(const char* name, const avector<Vec3fa>& vec)
+  {
+    open(name);
+    for (size_t i=0; i<vec.size(); i++) {
+      tab(); store_array_elt(vec[i]);
+    }
+    close(name);
+  }
+  
+  void XMLWriter::store_array_binary(const char* name, const avector<Vec3fa>& vec)
   {
     std::streampos offset = bin.tellg();
     tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
     for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3f));
   }
 
-  void XMLWriter::store4f(const char* name, const avector<Vec3ff>& vec)
+  void XMLWriter::store(const char* name, const avector<Vec3fa>& vec)
+  {
+    if (binaryFormat) store_array_binary(name,vec);
+    else              store_array_text  (name,vec);
+  }
+
+  void XMLWriter::store_array_text(const char* name, const avector<Vec3ff>& vec)
+  {
+    open(name);
+    for (size_t i=0; i<vec.size(); i++) {
+      tab(); store_array_elt(vec[i]);
+    }
+    close(name);
+  }
+  
+  void XMLWriter::store_array_binary(const char* name, const avector<Vec3ff>& vec)
   {
     std::streampos offset = bin.tellg();
     tab(); xml << "<" << name << " ofs=\"" << offset << "\" size=\"" << vec.size() << "\"/>" << std::endl;
-    for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3fa));
+    for (size_t i=0; i<vec.size(); i++) bin.write((char*)&vec[i],sizeof(Vec3ff));
+  }
+
+  void XMLWriter::store(const char* name, const avector<Vec3ff>& vec)
+  {
+    if (binaryFormat) store_array_binary(name,vec);
+    else              store_array_text  (name,vec);
   }
 
   void XMLWriter::store_parm(const char* name, const float& v) {
@@ -240,18 +336,33 @@ namespace embree
 
   void XMLWriter::store(Ref<SceneGraph::LightNode> node, ssize_t id)
   {
-    switch (node->light->getType())
-    {
-    case SceneGraph::LIGHT_AMBIENT     : store(*node->light.dynamicCast<SceneGraph::AmbientLight>(),id); break;
-    case SceneGraph::LIGHT_POINT       : store(*node->light.dynamicCast<SceneGraph::PointLight>(),id); break;
-    case SceneGraph::LIGHT_DIRECTIONAL : store(*node->light.dynamicCast<SceneGraph::DirectionalLight>(),id); break;
-    case SceneGraph::LIGHT_SPOT        : store(*node->light.dynamicCast<SceneGraph::SpotLight>(),id); break;
-    case SceneGraph::LIGHT_DISTANT     : store(*node->light.dynamicCast<SceneGraph::DistantLight>(),id); break;
-    case SceneGraph::LIGHT_TRIANGLE    : store(*node->light.dynamicCast<SceneGraph::TriangleLight>(),id); break;
-    case SceneGraph::LIGHT_QUAD        : store(*node->light.dynamicCast<SceneGraph::QuadLight>(),id); break;
+    if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::SpotLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::TriangleLight>>())
+      store(light->light,id);
+    else if (auto light = node.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::QuadLight>>())
+      store(light->light,id);
+    else
+      throw std::runtime_error("unsupported light");
+  }
 
-    default: throw std::runtime_error("unsupported light");
-    }
+  void XMLWriter::store(Ref<SceneGraph::AnimatedLightNode> node, ssize_t id)
+  {
+    open(std::string("AnimatedLight ")+
+         "time_range=\""+std::to_string(node->time_range.lower)+" "+std::to_string(node->time_range.upper)+"\"");
+    
+    for (size_t i=0; i<node->lights.size(); i++)
+      store(node->lights[i].dynamicCast<SceneGraph::Node>());
+    
+    close("AnimatedLight");
   }
 
   void XMLWriter::store(Ref<MatteMaterial> material, ssize_t id)
@@ -511,7 +622,7 @@ namespace embree
     open("Curves type=\""+str_subtype+"\" basis=\""+str_type+"\"",id);
     store(mesh->material);
     if (mesh->numTimeSteps() != 1) open("animated_positions");
-    for (const auto& p : mesh->positions) store4f("positions",p);
+    for (const auto& p : mesh->positions) store("positions",p);
     if (mesh->numTimeSteps() != 1) close("animated_positions");
     if (mesh->normals.size()) {
       if (mesh->numTimeSteps() != 1) open("animated_normals");
@@ -529,10 +640,22 @@ namespace embree
     xml << "<PerspectiveCamera " <<
       "id=\"" << id << "\" " << 
       "name=\"" << camera->name << "\" " <<
-      "from=\"" << camera->from.x << " " << camera->from.y << " " << camera->from.z << "\" " <<
-      "to=\"" << camera->to.x << " " << camera->to.y << " " << camera->to.z << "\" " <<
-      "up=\"" << camera->up.x << " " << camera->up.y << " " << camera->up.z << "\" " <<
-      "fov=\"" << camera->fov << "\" " << "/>" << std::endl;
+      "from=\"" << camera->data.from.x << " " << camera->data.from.y << " " << camera->data.from.z << "\" " <<
+      "to=\""   << camera->data.to.x   << " " << camera->data.to.y   << " " << camera->data.to.z << "\" " <<
+      "up=\""   << camera->data.up.x   << " " << camera->data.up.y   << " " << camera->data.up.z << "\" " <<
+      "fov=\""  << camera->data.fov << "\" " << "/>" << std::endl;
+  }
+
+  void XMLWriter::store(Ref<SceneGraph::AnimatedPerspectiveCameraNode> camera, ssize_t id)
+  {
+    open(std::string("AnimatedPerspectiveCamera ")+
+         "name=\"" + camera->name + "\" "
+         "time_range=\""+std::to_string(camera->time_range.lower)+" "+std::to_string(camera->time_range.upper)+"\"");
+    
+    for (size_t i=0; i<camera->size(); i++)
+      store(camera->cameras[i].dynamicCast<SceneGraph::Node>());
+    
+    close("AnimatedPerspectiveCamera");
   }
 
   void XMLWriter::store(Ref<SceneGraph::TransformNode> node, ssize_t id)
@@ -619,29 +742,34 @@ namespace embree
     const ssize_t id = nodeMap[node] = currentNodeID++;
     if (node->fileName != "") {
       tab(); xml << "<extern id=\"" << id << "\" src=\"" << node->fileName << "\"/>" << std::endl; return;
-    } 
+    }
 
-    if      (Ref<SceneGraph::LightNode> cnode = node.dynamicCast<SceneGraph::LightNode>()) store(cnode,id);
+    if      (Ref<SceneGraph::AnimatedLightNode> cnode = node.dynamicCast<SceneGraph::AnimatedLightNode>()) store(cnode,id);
+    else if (Ref<SceneGraph::LightNode> cnode = node.dynamicCast<SceneGraph::LightNode>()) store(cnode,id);
     //else if (Ref<SceneGraph::MaterialNode> cnode = node.dynamicCast<SceneGraph::MaterialNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TriangleMeshNode> cnode = node.dynamicCast<SceneGraph::TriangleMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::QuadMeshNode> cnode = node.dynamicCast<SceneGraph::QuadMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::SubdivMeshNode> cnode = node.dynamicCast<SceneGraph::SubdivMeshNode>()) store(cnode,id);
     else if (Ref<SceneGraph::HairSetNode> cnode = node.dynamicCast<SceneGraph::HairSetNode>()) store(cnode,id);
+    else if (Ref<SceneGraph::AnimatedPerspectiveCameraNode> cnode = node.dynamicCast<SceneGraph::AnimatedPerspectiveCameraNode>()) store(cnode,id);
     else if (Ref<SceneGraph::PerspectiveCameraNode> cnode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) store(cnode,id);
     else if (Ref<SceneGraph::TransformNode> cnode = node.dynamicCast<SceneGraph::TransformNode>()) store(cnode,id);
     else if (Ref<SceneGraph::GroupNode> cnode = node.dynamicCast<SceneGraph::GroupNode>()) store(cnode,id);
     else throw std::runtime_error("unknown node type");
   }
  
-  XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials) 
-    : ident(0), currentNodeID(0), embedTextures(embedTextures), referenceMaterials(referenceMaterials)
+  XMLWriter::XMLWriter(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials, bool binaryFormat) 
+    : ident(0), currentNodeID(0), embedTextures(embedTextures), referenceMaterials(referenceMaterials), binaryFormat(binaryFormat)
   {
-    FileName binFileName = fileName.addExt(".bin");
-
     xml.exceptions (std::fstream::failbit | std::fstream::badbit);
     xml.open (fileName, std::fstream::out);
-    bin.exceptions (std::fstream::failbit | std::fstream::badbit);
-    bin.open (binFileName, std::fstream::out | std::fstream::binary);
+
+    if (binaryFormat)
+    {
+      const FileName binFileName = fileName.addExt(".bin");
+      bin.exceptions (std::fstream::failbit | std::fstream::badbit);
+      bin.open (binFileName, std::fstream::out | std::fstream::binary);
+    }
 
     xml << "<?xml version=\"1.0\"?>" << std::endl;
     root->calculateInDegree();
@@ -651,7 +779,7 @@ namespace embree
     root->resetInDegree();
   }
 
-  void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials) {
-    XMLWriter(root,fileName,embedTextures,referenceMaterials);
+  void SceneGraph::storeXML(Ref<SceneGraph::Node> root, const FileName& fileName, bool embedTextures, bool referenceMaterials, bool binaryFormat) {
+    XMLWriter(root,fileName,embedTextures,referenceMaterials,binaryFormat);
   }
 }

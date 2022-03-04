@@ -41,15 +41,15 @@ to use Embree with the Intel® Threading Building Blocks (TBB) and best
 also use TBB inside your application. Optionally you can disable TBB
 in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 
-Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
+Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
 straightforward parallelization of an entire renderer. If you do not
-want to use ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
-CMake. Otherwise, download and install the ISPC binaries (we have
-tested ISPC version 1.9.1) from
+want to use Intel® ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
+CMake. Otherwise, download and install the Intel® ISPC binaries (we have
+tested Intel® ISPC version 1.9.1) from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
-`ISPC_EXECUTABLE` variable during CMake configuration.
+`EMBREE_ISPC_EXECUTABLE` variable during CMake configuration.
 
 You additionally have to install CMake 3.1.0 or higher and the developer
 version of GLUT.
@@ -147,28 +147,28 @@ in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 Embree will either find the Intel® Threading Building Blocks (TBB)
 installation that comes with the Intel® Compiler, or you can install the
 binary distribution of TBB directly from
-[www.threadingbuildingblocks.org](https://www.threadingbuildingblocks.org/download)
+[https://github.com/oneapi-src/oneTBB/releases](https://github.com/oneapi-src/oneTBB/releases)
 into a folder named `tbb` into your Embree root directory. You also have
 to make sure that the libraries `tbb.dll` and `tbb_malloc.dll` can be
 found when executing your Embree applications, e.g. by putting the path
 to these libraries into your `PATH` environment variable.
 
-Embree supports the Intel® SPMD Program Compiler (ISPC), which allows
+Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
 straightforward parallelization of an entire renderer. When installing
-ISPC, make sure to download an ISPC version from
+Intel® ISPC, make sure to download an Intel® ISPC version from
 [ispc.github.io](https://ispc.github.io/downloads.html) that is
 compatible with your Visual Studio version. After installation, put
 the path to `ispc.exe` permanently into your `PATH` environment
-variable or you need to correctly set the `ISPC_EXECUTABLE` variable
-during CMake configuration. If you do not want to use ISPC then you
+variable or you need to correctly set the `EMBREE_ISPC_EXECUTABLE` variable
+during CMake configuration. If you do not want to use Intel® ISPC then you
 can disable `EMBREE_ISPC_SUPPORT` in CMake.
 
-We have tested Embree with the following ISPC versions:
+We have tested Embree with the following Intel® ISPC versions:
 
-  - ISPC 1.14.1
-  - ISPC 1.13.0
-  - ISPC 1.12.0
-  - ISPC 1.9.2
+  - Intel® ISPC 1.14.1
+  - Intel® ISPC 1.13.0
+  - Intel® ISPC 1.12.0
+  - Intel® ISPC 1.9.2
 
 You additionally have to install [CMake](http://www.cmake.org/download/)
 (version 2.8.11 or higher). Note that you need a native Windows CMake
@@ -253,7 +253,7 @@ parameters that can be configured in CMake:
 + `EMBREE_STACK_PROTECTOR`: Enables protection of return address
   from buffer overwrites. This option is OFF by default.
 
-+ `EMBREE_ISPC_SUPPORT`: Enables ISPC support of Embree. This option
++ `EMBREE_ISPC_SUPPORT`: Enables Intel® ISPC support of Embree. This option
   is ON by default.
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
@@ -300,19 +300,19 @@ parameters that can be configured in CMake:
   only), or an internal tasking system (INTERNAL). By default TBB is
   used.
 
-+ `EMBREE_TBB_ROOT`: If Intel® Threading TBB Building Blocks (TBB)
++ `EMBREE_TBB_ROOT`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, search the library in this directory
   tree.
 
-+ `EMBREE_TBB_POSTFIX`: If Intel® Threading TBB Building Blocks (TBB)
++ `EMBREE_TBB_POSTFIX`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, link to tbb<EMBREE_TBB_POSTFIX>.(so,dll,lib).
   Defaults to the empty string.
 
-+ `EMBREE_TBB_DEBUG_ROOT`: If Intel® Threading TBB Building Blocks (TBB)
++ `EMBREE_TBB_DEBUG_ROOT`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, search the library in this directory
   tree in Debug mode. Defaults to `EMBREE_TBB_ROOT`.
 
-+ `EMBREE_TBB_DEBUG_POSTFIX`: If Intel® Threading TBB Building Blocks (TBB)
++ `EMBREE_TBB_DEBUG_POSTFIX`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, link to tbb<EMBREE_TBB_DEBUG_POSTFIX>.(so,dll,lib)
   in Debug mode. Defaults to "_debug".
 
@@ -383,12 +383,8 @@ CMake find Embree using the `FIND_PACKAGE` function inside your
 
      FIND_PACKAGE(embree 3.0 REQUIRED)
 
-If you installed Embree using the Linux RPM or macOS PKG installer,
-this will automatically find Embree. If you used the `zip` or `tar.gz`
-files to extract Embree, you need to set the `embree_DIR` variable to
-the folder you extracted Embree to. If you used the Windows MSI
-installer, you need to set `embree_DIR` to point to the Embree install
-location (e.g. `C:\Program Files\Intel\Embree3`).
+To cmake to properly find Embree you need to set the `embree_DIR`
+variable to the folder you extracted Embree to.
 
 The `FIND_PACKAGE` function will create an embree target that
 you can add to your target link libraries:

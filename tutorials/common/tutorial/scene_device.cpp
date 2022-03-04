@@ -11,10 +11,16 @@ namespace embree
   extern "C" {
     int g_instancing_mode = SceneGraph::INSTANCING_NONE;
     float g_min_width_max_radius_scale = 1.0f;
+    AssignShaderTy assignShadersFunc = nullptr;
   }
 
+  extern "C" int g_animation_mode;
+  
   void deleteGeometry(ISPCGeometry* geom)
   {
+    if (geom == nullptr)
+      return;
+    
     switch (geom->type) {
     case TRIANGLE_MESH: delete (ISPCTriangleMesh*) geom; break;
     case SUBDIV_MESH  : delete (ISPCSubdivMesh*) geom; break;
@@ -28,11 +34,14 @@ namespace embree
     }
   }
   
-  ISPCScene::ISPCScene(TutorialScene* in)
+  ISPCScene::ISPCScene(RTCDevice device, TutorialScene* in)
+    : scene(rtcNewScene(device)), tutorialScene(in)
   {
+    SceneGraph::opaque_geometry_destruction = (void(*)(void*)) deleteGeometry;
+    
     geometries = new ISPCGeometry*[in->geometries.size()];
     for (size_t i=0; i<in->geometries.size(); i++)
-      geometries[i] = convertGeometry(in,in->geometries[i]);
+      geometries[i] = convertGeometry(device,in,in->geometries[i]);
     numGeometries = unsigned(in->geometries.size());
     
     materials = new ISPCMaterial*[in->materials.size()];
@@ -44,17 +53,13 @@ namespace embree
     numLights = 0;
     for (size_t i=0; i<in->lights.size(); i++)
     {
-      Light* light = convertLight(in->lights[i]);
+      Light* light = convertLight(in->lights[i]->get(0.0f));
       if (light) lights[numLights++] = light;
     }
   }
 
   ISPCScene::~ISPCScene()
   {
-    /* delete all geometries */
-    for (size_t i=0; i<numGeometries; i++) 
-      deleteGeometry(geometries[i]);
-
     delete[] geometries;
     delete[] materials;
     for (size_t i=0; i<numLights; i++)
@@ -62,61 +67,76 @@ namespace embree
     delete[] lights;
   }
   
-  Light* ISPCScene::convertLight(Ref<SceneGraph::Light> in)
+  Light* ISPCScene::convertLight(Ref<SceneGraph::LightNode> in)
   {
-    void* out = 0;
-    
-    switch (in->getType())
-    {
-    case SceneGraph::LIGHT_AMBIENT:
-    {
-      Ref<SceneGraph::AmbientLight> inAmbient = in.dynamicCast<SceneGraph::AmbientLight>();
-      out = AmbientLight_create();
-      AmbientLight_set(out, inAmbient->L);
-      break;
+    Light* l = createLight(in);
+    updateLight(in->get(0.0f),l);
+    return l;
+  }
+
+  template<> void ISPCScene::updateLight(const SceneGraph::AmbientLight& in, Light* out) {
+    AmbientLight_set(out, in.L);
+  }
+
+  template<> void ISPCScene::updateLight(const SceneGraph::DirectionalLight& in, Light* out) {
+    DirectionalLight_set(out, -normalize(in.D), in.E, 1.0f);
+  }
+
+  template<> void ISPCScene::updateLight(const SceneGraph::DistantLight& in, Light* out)
+  {
+    DirectionalLight_set(out,
+                         -normalize(in.D),
+                         in.L * rcp(uniformSampleConePDF(in.cosHalfAngle)),
+                         in.cosHalfAngle);
+  }
+
+  template<> void ISPCScene::updateLight(const SceneGraph::PointLight& in, Light* out) {
+    PointLight_set(out, in.P, in.I, 0.f);
+  }
+
+  Light* ISPCScene::createLight(Ref<SceneGraph::LightNode> in)
+  {
+    switch (in->getType()) {
+    case SceneGraph::LIGHT_AMBIENT    : return (Light*) AmbientLight_create();
+    case SceneGraph::LIGHT_DIRECTIONAL: return (Light*) DirectionalLight_create();
+    case SceneGraph::LIGHT_DISTANT    : return (Light*) DirectionalLight_create();
+    case SceneGraph::LIGHT_POINT      : return (Light*) PointLight_create();
+    case SceneGraph::LIGHT_SPOT       : return nullptr;
+    case SceneGraph::LIGHT_TRIANGLE   : return nullptr;
+    case SceneGraph::LIGHT_QUAD       : return nullptr;
+    default                           : THROW_RUNTIME_ERROR("unknown light type");
     }
-    case SceneGraph::LIGHT_DIRECTIONAL:
+    return nullptr;
+  }
+
+  void ISPCScene::updateLight(const Ref<SceneGraph::LightNode>& in, Light* out)
+  {
+    if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>>())
+      updateLight(light->light, out);
+    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>>())
+      updateLight(light->light, out);
+    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::DistantLight>>())
+      updateLight(light->light, out);
+    else if (auto light = in.dynamicCast<SceneGraph::LightNodeImpl<SceneGraph::PointLight>>())
+      updateLight(light->light, out);
+  }
+
+  void ISPCScene::commit()
+  {
+    for (unsigned int geomID=0; geomID<numGeometries; geomID++)
     {
-      Ref<SceneGraph::DirectionalLight> inDirectional = in.dynamicCast<SceneGraph::DirectionalLight>();
-      out = DirectionalLight_create();
-      DirectionalLight_set(out, -normalize(inDirectional->D), inDirectional->E, 1.0f);
-      break;
+      ISPCGeometry* geometry = geometries[geomID];
+      rtcAttachGeometryByID(scene,geometry->geometry,geomID);
     }
-    case SceneGraph::LIGHT_DISTANT:
-    {
-      Ref<SceneGraph::DistantLight> inDistant = in.dynamicCast<SceneGraph::DistantLight>();
-      out = DirectionalLight_create();
-      DirectionalLight_set(out,
-                           -normalize(inDistant->D),
-                           inDistant->L * rcp(uniformSampleConePDF(inDistant->cosHalfAngle)),
-                           inDistant->cosHalfAngle);
-      break;
-    }
-    case SceneGraph::LIGHT_POINT:
-    {
-      Ref<SceneGraph::PointLight> inPoint = in.dynamicCast<SceneGraph::PointLight>();
-      out = PointLight_create();
-      PointLight_set(out, inPoint->P, inPoint->I, 0.f);
-      break;
-    }
-    case SceneGraph::LIGHT_SPOT:
-    case SceneGraph::LIGHT_TRIANGLE:
-    case SceneGraph::LIGHT_QUAD:
-    {
-      // FIXME: not implemented yet
-      break;
-    }
-    
-    default:
-      THROW_RUNTIME_ERROR("unknown light type");
-    }
-    
-    return (Light*)out;
+
+    rtcCommitScene(scene);
   }
   
-  ISPCTriangleMesh::ISPCTriangleMesh (TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
+  ISPCTriangleMesh::ISPCTriangleMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
     : geom(TRIANGLE_MESH), positions(nullptr), normals(nullptr)
   {
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
@@ -141,10 +161,28 @@ namespace embree
     if (positions) delete[] positions;
     if (normals) delete[] normals;
   }
+
+  void ISPCTriangleMesh::commit()
+  {
+    RTCGeometry g = geom.geometry;
+    rtcSetGeometryTimeStepCount(g,numTimeSteps);
+    rtcSetGeometryTimeRange(g,startTime,endTime);
+
+    for (unsigned int t=0; t<numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, positions[t], 0, sizeof(Vec3fa), numVertices);
+    }
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, triangles, 0, sizeof(ISPCTriangle), numTriangles);
+    rtcSetGeometryUserData(g, this);
+    
+    if (assignShadersFunc) assignShadersFunc(&geom);
+    rtcCommitGeometry(g);
+  }
   
-  ISPCQuadMesh::ISPCQuadMesh (TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
+  ISPCQuadMesh::ISPCQuadMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in) 
     : geom(QUAD_MESH), positions(nullptr), normals(nullptr)
   {
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
@@ -170,10 +208,27 @@ namespace embree
     if (normals) delete[] normals;
   }
 
-
-  ISPCGridMesh::ISPCGridMesh (TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in) 
+  void ISPCQuadMesh::commit()
+  {
+    RTCGeometry g = geom.geometry;
+    rtcSetGeometryTimeStepCount(g,numTimeSteps);
+    rtcSetGeometryTimeRange(g,startTime,endTime);
+  
+    for (unsigned int t=0; t<numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, positions[t], 0, sizeof(Vec3fa), numVertices);
+    }
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, quads, 0, sizeof(ISPCQuad), numQuads);
+    rtcSetGeometryUserData(g, this);
+    
+    if (assignShadersFunc) assignShadersFunc(&geom);
+    rtcCommitGeometry(g);
+  }
+  
+  ISPCGridMesh::ISPCGridMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in) 
     : geom(GRID_MESH), positions(nullptr)
   {
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
@@ -191,10 +246,27 @@ namespace embree
     if (positions) delete[] positions;
   }
 
-
-  ISPCSubdivMesh::ISPCSubdivMesh (TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
+  void ISPCGridMesh::commit()
+  {
+    RTCGeometry g = geom.geometry;
+    rtcSetGeometryTimeStepCount(g,numTimeSteps);
+    rtcSetGeometryTimeRange(g,startTime,endTime);
+    
+    for (unsigned int t=0; t<numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, positions[t], 0, sizeof(Vec3fa), numVertices);
+    }    
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_GRID, grids, 0, sizeof(ISPCGrid), numGrids);
+    rtcSetGeometryUserData(g, this);
+       
+    if (assignShadersFunc) assignShadersFunc(&geom);
+    rtcCommitGeometry(g);
+  }
+  
+  ISPCSubdivMesh::ISPCSubdivMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in) 
     : geom(SUBDIV_MESH), positions(nullptr), normals(nullptr)
   {
+    geom.geometry = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = in->positions[i].data();
@@ -250,10 +322,64 @@ namespace embree
     if (subdivlevel) delete[] subdivlevel;
     if (face_offsets) delete[] face_offsets;
   }
+
+  void ISPCSubdivMesh::commit()
+  {
+    RTCGeometry g = geom.geometry;
+    rtcSetGeometryTimeStepCount(g,numTimeSteps);
+    rtcSetGeometryTimeRange(g,startTime,endTime);
+
+    for (unsigned int i=0; i<numEdges; i++) subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
+    for (unsigned int t=0; t<numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, positions[t], 0, sizeof(Vec3fa), numVertices);
+    }
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, subdivlevel, 0, sizeof(float), numEdges);
+
+    /* create geometry topology */
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, position_indices, 0, sizeof(unsigned int), numEdges);
+    rtcSetGeometrySubdivisionMode(g, 0, position_subdiv_mode);
+
+    /* set normal buffers and optionally normal topology */
+    if (normals) {
+      rtcSetGeometryVertexAttributeCount(g,2);
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, RTC_FORMAT_FLOAT3, normals[0], 0, sizeof(Vec3fa), numNormals);
+      if (normal_indices) {
+        rtcSetGeometryTopologyCount(g,2);
+        rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_INDEX, 1, RTC_FORMAT_UINT, normal_indices, 0, sizeof(unsigned int), numEdges);
+        rtcSetGeometryVertexAttributeTopology(g, 1, 1);
+        rtcSetGeometrySubdivisionMode(g, 1, normal_subdiv_mode);
+      }
+    }
+
+    /* set texcoord buffer and optionally texcoord topology */
+    if (texcoords) {
+      rtcSetGeometryVertexAttributeCount(g,3);
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 2, RTC_FORMAT_FLOAT2, texcoords, 0, sizeof(Vec2f), numTexCoords);
+      if (texcoord_indices) {
+        rtcSetGeometryTopologyCount(g,3);
+        rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_INDEX, 2, RTC_FORMAT_UINT, texcoord_indices, 0, sizeof(unsigned int), numEdges);
+        rtcSetGeometryVertexAttributeTopology(g, 2, 2);
+        rtcSetGeometrySubdivisionMode(g, 2, texcoord_subdiv_mode);
+      }
+    }
+
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_FACE,                 0, RTC_FORMAT_UINT,   verticesPerFace,       0, sizeof(unsigned int),   numFaces);
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_HOLE,                 0, RTC_FORMAT_UINT,   holes,                 0, sizeof(unsigned int),   numHoles);
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    0, RTC_FORMAT_UINT2,  edge_creases,          0, 2*sizeof(unsigned int), numEdgeCreases);
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   0, RTC_FORMAT_FLOAT,  edge_crease_weights,   0, sizeof(float),          numEdgeCreases);
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,  0, RTC_FORMAT_UINT,   vertex_creases,        0, sizeof(unsigned int),   numVertexCreases);
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT,  vertex_crease_weights, 0, sizeof(float),          numVertexCreases);
+    rtcSetGeometryUserData(g, this);
+    
+    if (assignShadersFunc) assignShadersFunc(&geom);
+    rtcCommitGeometry(g);
+  }
   
-  ISPCHairSet::ISPCHairSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in)
+  ISPCHairSet::ISPCHairSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in)
     : geom(CURVES), normals(nullptr), tangents(nullptr), dnormals(nullptr), hairs(nullptr), flags(nullptr), type(type)
   {
+    geom.geometry = rtcNewGeometry(device, type);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = (Vec3fa*) in->positions[i].data();
@@ -297,9 +423,58 @@ namespace embree
     delete[] dnormals;
   }
 
-  ISPCPointSet::ISPCPointSet (TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in)
+  void ISPCHairSet::commit()
+  {
+    RTCGeometry g = geom.geometry;
+    rtcSetGeometryTimeStepCount(g,numTimeSteps);
+    rtcSetGeometryTimeRange(g,startTime,endTime);
+
+    for (unsigned int t=0; t<numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, positions[t], 0, sizeof(Vec3fa), numVertices);
+    }
+    
+    if (normals) {
+      for (unsigned int t=0; t<numTimeSteps; t++) {
+        rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, normals[t], 0, sizeof(Vec3fa), numVertices);
+      }
+    }
+    
+    if (tangents) {
+      for (unsigned int t=0; t<numTimeSteps; t++) {
+        rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_TANGENT, t, RTC_FORMAT_FLOAT4, tangents[t], 0, sizeof(Vec3fa), numVertices);
+      }
+    }
+
+    if (dnormals) {
+      for (unsigned int t=0; t<numTimeSteps; t++) {
+        rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_NORMAL_DERIVATIVE, t, RTC_FORMAT_FLOAT3, dnormals[t], 0, sizeof(Vec3fa), numVertices);
+      }
+    }
+    
+    rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, hairs, 0, sizeof(ISPCHair), numHairs);
+    if (type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE && type != RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE && type != RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE) {
+      rtcSetGeometryTessellationRate(g,(float)tessellation_rate);
+    }
+    
+#if RTC_MIN_WIDTH
+    if (g_min_width_max_radius_scale >= 1.0f)
+      rtcSetGeometryMaxRadiusScale(g,g_min_width_max_radius_scale);
+#endif
+
+    if (flags) {
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, flags, 0, sizeof(unsigned char), numHairs);
+    }
+    rtcSetGeometryUserData(g, this);
+   
+    if (assignShadersFunc) assignShadersFunc(&geom);
+    rtcCommitGeometry(g);
+  }
+
+  ISPCPointSet::ISPCPointSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in)
     : geom(POINTS), positions(nullptr), normals(nullptr), type(type)
   {
+    geom.geometry = rtcNewGeometry(device, type);
+    
     positions = new Vec3fa*[in->numTimeSteps()];
     for (size_t i=0; i<in->numTimeSteps(); i++)
       positions[i] = (Vec3fa*) in->positions[i].data();
@@ -322,63 +497,146 @@ namespace embree
     if (normals) delete[] normals;
   }
 
-
-  ISPCInstance::ISPCInstance (TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
-    : geom(INSTANCE), numTimeSteps(unsigned(in->spaces.size())) 
+  void ISPCPointSet::commit()
   {
-    spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
-    geom.geomID = scene->geometryID(in->child);
-    child = ISPCScene::convertGeometry(scene,in->child);
-    startTime  = in->spaces.time_range.lower;
-    endTime    = in->spaces.time_range.upper;
-    quaternion = in->spaces.quaternion;
-    for (size_t i=0; i<numTimeSteps; i++)
-      spaces[i] = in->spaces[i];
+    RTCGeometry g = geom.geometry;
+    rtcSetGeometryTimeStepCount(g,numTimeSteps);
+    rtcSetGeometryTimeRange(g,startTime,endTime);
+    
+    for (unsigned int t=0; t<numTimeSteps; t++) {
+      rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, positions[t], 0, sizeof(Vec3fa), numVertices);
+    }
+    if (normals) {
+      for (unsigned int t=0; t<numTimeSteps; t++) {
+        rtcSetSharedGeometryBuffer(g, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, normals[t], 0, sizeof(Vec3fa), numVertices);
+      }
+    }
+#if RTC_MIN_WIDTH
+    if (g_min_width_max_radius_scale >= 1.0f)
+      rtcSetGeometryMaxRadiusScale(g,g_min_width_max_radius_scale);
+#endif
+      
+    rtcSetGeometryUserData(g, this);
+    
+    if (assignShadersFunc) assignShadersFunc(&geom);
+    rtcCommitGeometry(g);
+  }
+
+  ISPCInstance::ISPCInstance (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
+    : geom(INSTANCE), child(nullptr), startTime(0.0f), endTime(1.0f), numTimeSteps(1), quaternion(false), spaces(nullptr)
+  {
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
+    
+    if (g_animation_mode)
+    {
+      spaces = (AffineSpace3fa*) alignedMalloc(sizeof(AffineSpace3fa),16);
+      child = ISPCScene::convertGeometry(device,scene,in->child);
+      spaces[0] = in->get(0.0f);
+    }
+    else
+    {
+      spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
+      child = ISPCScene::convertGeometry(device,scene,in->child);
+      startTime  = in->spaces.time_range.lower;
+      endTime    = in->spaces.time_range.upper;
+      numTimeSteps = unsigned(in->spaces.size());
+      quaternion = in->spaces.quaternion;
+      for (size_t i=0; i<numTimeSteps; i++)
+        spaces[i] = in->spaces[i];
+    }
   }
 
   ISPCInstance::~ISPCInstance() {
     alignedFree(spaces);
   }
 
-  ISPCGroup::ISPCGroup (TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
-    : geom(GROUP)
+  void ISPCInstance::commit()
+  {
+    if (child->type != GROUP)
+      THROW_RUNTIME_ERROR("invalid scene structure");
+
+    ISPCGroup* group = (ISPCGroup*) child;
+    RTCScene scene_inst = group->scene;
+    
+    if (numTimeSteps == 1 || g_animation_mode)
+    {
+      RTCGeometry g = geom.geometry;
+      rtcSetGeometryInstancedScene(g,scene_inst);
+      rtcSetGeometryTimeStepCount(g,1);
+      if (quaternion) {
+        QuaternionDecomposition qd = quaternionDecomposition(spaces[0]);
+        rtcSetGeometryTransformQuaternion(g,0,(RTCQuaternionDecomposition*)&qd);
+      } else {
+        rtcSetGeometryTransform(g,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&spaces[0].l.vx.x);
+      }
+      rtcSetGeometryUserData(g, this);
+      rtcCommitGeometry(g);
+    }
+    else
+    {
+      RTCGeometry g = geom.geometry;
+      rtcSetGeometryInstancedScene(g,scene_inst);
+      rtcSetGeometryTimeStepCount(g,numTimeSteps);
+      rtcSetGeometryTimeRange(g,startTime,endTime);
+      for (size_t t=0; t<numTimeSteps; t++) {
+        if (quaternion) {
+          QuaternionDecomposition qd = quaternionDecomposition(spaces[t]);
+          rtcSetGeometryTransformQuaternion(g,t,(RTCQuaternionDecomposition*)&qd);
+        } else {
+          rtcSetGeometryTransform(g,(unsigned int)t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&spaces[t].l.vx.x);
+        }
+      }
+      rtcSetGeometryUserData(g, this);
+      rtcCommitGeometry(g);
+    }
+  }
+
+  ISPCGroup::ISPCGroup (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
+    : geom(GROUP), scene(rtcNewScene(device)), requiredInstancingDepth(0)
   {
     numGeometries = (unsigned int) in->size();
     geometries = new ISPCGeometry*[numGeometries];
     for (size_t i=0; i<numGeometries; i++)
-      geometries[i] = ISPCScene::convertGeometry(scene,in->child(i));
+      geometries[i] = ISPCScene::convertGeometry(device,scene,in->child(i));
   }
 
   ISPCGroup::~ISPCGroup()
   {
-    for (size_t i=0; i<numGeometries; i++)
-      deleteGeometry(geometries[i]);
     delete[] geometries;
-
-    rtcReleaseScene(geom.scene);
+    rtcReleaseScene(scene);
   }
 
-  ISPCGeometry* ISPCScene::convertGeometry (TutorialScene* scene, Ref<SceneGraph::Node> in)
+  void ISPCGroup::commit()
+  {
+    for (unsigned int geomID=0; geomID<numGeometries; geomID++)
+    {
+      ISPCGeometry* geometry = geometries[geomID];
+      rtcAttachGeometryByID(scene,geometry->geometry,geomID);
+    }
+    rtcCommitScene(scene);
+  }
+
+  ISPCGeometry* ISPCScene::convertGeometry (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::Node> in)
   {
     ISPCGeometry* geom = nullptr;
     if (in->geometry)
       return (ISPCGeometry*) in->geometry;
     else if (Ref<SceneGraph::TriangleMeshNode> mesh = in.dynamicCast<SceneGraph::TriangleMeshNode>())
-      geom = (ISPCGeometry*) new ISPCTriangleMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCTriangleMesh(device,scene,mesh);
     else if (Ref<SceneGraph::QuadMeshNode> mesh = in.dynamicCast<SceneGraph::QuadMeshNode>())
-      geom = (ISPCGeometry*) new ISPCQuadMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCQuadMesh(device,scene,mesh);
     else if (Ref<SceneGraph::SubdivMeshNode> mesh = in.dynamicCast<SceneGraph::SubdivMeshNode>())
-      geom = (ISPCGeometry*) new ISPCSubdivMesh(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCSubdivMesh(device,scene,mesh);
     else if (Ref<SceneGraph::HairSetNode> mesh = in.dynamicCast<SceneGraph::HairSetNode>())
-      geom = (ISPCGeometry*) new ISPCHairSet(scene,mesh->type,mesh);
+      geom = (ISPCGeometry*) new ISPCHairSet(device,scene,mesh->type,mesh);
     else if (Ref<SceneGraph::GridMeshNode> mesh = in.dynamicCast<SceneGraph::GridMeshNode>())
-      geom = (ISPCGeometry*) new ISPCGridMesh(scene,mesh); 
+      geom = (ISPCGeometry*) new ISPCGridMesh(device,scene,mesh); 
     else if (Ref<SceneGraph::TransformNode> mesh = in.dynamicCast<SceneGraph::TransformNode>())
-      geom = (ISPCGeometry*) new ISPCInstance(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCInstance(device,scene,mesh);
     else if (Ref<SceneGraph::GroupNode> mesh = in.dynamicCast<SceneGraph::GroupNode>())
-      geom = (ISPCGeometry*) new ISPCGroup(scene,mesh);
+      geom = (ISPCGeometry*) new ISPCGroup(device,scene,mesh);
     else if (Ref<SceneGraph::PointSetNode> mesh = in.dynamicCast<SceneGraph::PointSetNode>())
-      geom = (ISPCGeometry*) new ISPCPointSet(scene, mesh->type, mesh);
+      geom = (ISPCGeometry*) new ISPCPointSet(device,scene, mesh->type, mesh);
     else
       THROW_RUNTIME_ERROR("unknown geometry type");
 
@@ -386,321 +644,165 @@ namespace embree
     return geom;
   }
 
-  unsigned int ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  void ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
-    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
-    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
-    rtcSetGeometryBuildQuality(geom, quality);
-    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
-    }
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, mesh->triangles, 0, sizeof(ISPCTriangle), mesh->numTriangles);
-    rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-    rtcAttachGeometryByID(scene_out,geom,geomID);
-    mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
-    mesh->geom.geomID = geomID;
-    return geomID;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
+    mesh->commit();
   }
   
-  unsigned int ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  void ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
-    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
-    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
-    rtcSetGeometryBuildQuality(geom, quality);
-    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
-    }
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, mesh->quads, 0, sizeof(ISPCQuad), mesh->numQuads);
-    rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-    rtcAttachGeometryByID(scene_out,geom,geomID);
-    mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
-    mesh->geom.geomID = geomID;
-    return geomID;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
+    mesh->commit();
   }
 
-  unsigned int ConvertGridMesh(RTCDevice device, ISPCGridMesh* mesh, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  void ConvertGridMesh(RTCDevice device, ISPCGridMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
-    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
-    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
-    rtcSetGeometryBuildQuality(geom, quality);
-    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
-    }    
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_GRID, 0, RTC_FORMAT_GRID, mesh->grids, 0, sizeof(ISPCGrid), mesh->numGrids);
-    rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-    rtcAttachGeometryByID(scene_out,geom,geomID);
-    mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
-    mesh->geom.geomID = geomID;
-    return geomID;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
+    mesh->commit();
   }
   
-  unsigned int ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  void ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
-    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
-    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
-    rtcSetGeometryBuildQuality(geom, quality);
-    for (unsigned int i=0; i<mesh->numEdges; i++) mesh->subdivlevel[i] = FIXED_EDGE_TESSELLATION_VALUE;
-    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT3, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
-    }
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_LEVEL, 0, RTC_FORMAT_FLOAT, mesh->subdivlevel, 0, sizeof(float), mesh->numEdges);
-
-    /* create geometry topology */
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, mesh->position_indices, 0, sizeof(unsigned int), mesh->numEdges);
-    rtcSetGeometrySubdivisionMode(geom, 0, mesh->position_subdiv_mode);
-
-    /* set normal buffers and optionally normal topology */
-    if (mesh->normals) {
-      rtcSetGeometryVertexAttributeCount(geom,2);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, RTC_FORMAT_FLOAT3, mesh->normals[0], 0, sizeof(Vec3fa), mesh->numNormals);
-      if (mesh->normal_indices) {
-        rtcSetGeometryTopologyCount(geom,2);
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 1, RTC_FORMAT_UINT, mesh->normal_indices, 0, sizeof(unsigned int), mesh->numEdges);
-        rtcSetGeometryVertexAttributeTopology(geom, 1, 1);
-        rtcSetGeometrySubdivisionMode(geom, 1, mesh->normal_subdiv_mode);
-      }
-    }
-
-    /* set texcoord buffer and optionally texcoord topology */
-    if (mesh->texcoords) {
-      rtcSetGeometryVertexAttributeCount(geom,3);
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 2, RTC_FORMAT_FLOAT2, mesh->texcoords, 0, sizeof(Vec2f), mesh->numTexCoords);
-      if (mesh->texcoord_indices) {
-        rtcSetGeometryTopologyCount(geom,3);
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 2, RTC_FORMAT_UINT, mesh->texcoord_indices, 0, sizeof(unsigned int), mesh->numEdges);
-        rtcSetGeometryVertexAttributeTopology(geom, 2, 2);
-        rtcSetGeometrySubdivisionMode(geom, 2, mesh->texcoord_subdiv_mode);
-      }
-    }
-
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FACE,                 0, RTC_FORMAT_UINT,   mesh->verticesPerFace,       0, sizeof(unsigned int),   mesh->numFaces);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_HOLE,                 0, RTC_FORMAT_UINT,   mesh->holes,                 0, sizeof(unsigned int),   mesh->numHoles);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_INDEX,    0, RTC_FORMAT_UINT2,  mesh->edge_creases,          0, 2*sizeof(unsigned int), mesh->numEdgeCreases);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT,   0, RTC_FORMAT_FLOAT,  mesh->edge_crease_weights,   0, sizeof(float),          mesh->numEdgeCreases);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX,  0, RTC_FORMAT_UINT,   mesh->vertex_creases,        0, sizeof(unsigned int),   mesh->numVertexCreases);
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT, 0, RTC_FORMAT_FLOAT,  mesh->vertex_crease_weights, 0, sizeof(float),          mesh->numVertexCreases);
-    rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-
-    rtcAttachGeometryByID(scene_out,geom,geomID);
-    mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
-    mesh->geom.geomID = geomID;
-    return geomID;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
+    mesh->commit();
   }
   
-  unsigned int ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  void ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    RTCGeometry geom = rtcNewGeometry(device, mesh->type);
-    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
-    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
-    rtcSetGeometryBuildQuality(geom, quality);
-
-    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
-    }
-    
-    if (mesh->normals) {
-      for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, mesh->normals[t], 0, sizeof(Vec3fa), mesh->numVertices);
-      }
-    }
-    
-    if (mesh->tangents) {
-      for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_TANGENT, t, RTC_FORMAT_FLOAT4, mesh->tangents[t], 0, sizeof(Vec3fa), mesh->numVertices);
-      }
-    }
-
-    if (mesh->dnormals) {
-      for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL_DERIVATIVE, t, RTC_FORMAT_FLOAT3, mesh->dnormals[t], 0, sizeof(Vec3fa), mesh->numVertices);
-      }
-    }
-    
-    rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT, mesh->hairs, 0, sizeof(ISPCHair), mesh->numHairs);
-    if (mesh->type != RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE && mesh->type != RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE) {
-      rtcSetGeometryTessellationRate(geom,(float)mesh->tessellation_rate);
-    }
-    
-#if RTC_MIN_WIDTH
-    if (g_min_width_max_radius_scale >= 1.0f)
-      rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
-#endif
-
-    if (mesh->flags) {
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_FLAGS, 0, RTC_FORMAT_UCHAR, mesh->flags, 0, sizeof(unsigned char), mesh->numHairs);
-    }
-    rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-
-    rtcAttachGeometryByID(scene_out,geom,geomID);
-    mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
-    mesh->geom.geomID = geomID;
-    return geomID;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
+    mesh->commit();
   }
 
-  unsigned int ConvertPoints(RTCDevice device, ISPCPointSet* mesh, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  void ConvertPoints(RTCDevice device, ISPCPointSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    RTCGeometry geom = rtcNewGeometry(device, mesh->type);
-    rtcSetGeometryTimeStepCount(geom,mesh->numTimeSteps);
-    rtcSetGeometryTimeRange(geom,mesh->startTime,mesh->endTime);
-    rtcSetGeometryBuildQuality(geom, quality);
-
-    for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-      rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, t, RTC_FORMAT_FLOAT4, mesh->positions[t], 0, sizeof(Vec3fa), mesh->numVertices);
-    }
-    if (mesh->normals) {
-      for (unsigned int t=0; t<mesh->numTimeSteps; t++) {
-        rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_NORMAL, t, RTC_FORMAT_FLOAT3, mesh->normals[t], 0, sizeof(Vec3fa), mesh->numVertices);
-      }
-    }
-#if RTC_MIN_WIDTH
-    if (g_min_width_max_radius_scale >= 1.0f)
-      rtcSetGeometryMaxRadiusScale(geom,g_min_width_max_radius_scale);
-#endif
-      
-    rtcSetGeometryUserData(geom, mesh);
-    rtcCommitGeometry(geom);
-
-    rtcAttachGeometryByID(scene_out,geom,geomID);
-    mesh->geom.geometry = geom;
-    mesh->geom.scene = scene_out;
-    mesh->geom.geomID = geomID;
-    return geomID;
+    if (mesh->geom.visited) return;
+    mesh->geom.visited = true;
+    rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
+    mesh->commit();
   }
 
-  void ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCScene scene_out, unsigned int geomID)
+  unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth);
+
+  unsigned int ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth)
   {
-    for (unsigned int i=0; i<group->numGeometries; i++)
+    if (group->geom.visited) return group->requiredInstancingDepth;
+    group->geom.visited = true;
+    
+    RTCScene scene = group->scene;
+    rtcSetSceneFlags(scene, flags);
+
+    unsigned int requiredInstancingDepth = 0;
+    for (unsigned int geomID=0; geomID<group->numGeometries; geomID++)
     {
-      ISPCGeometry* geometry = group->geometries[i];
+      ISPCGeometry* geometry = group->geometries[geomID];
       if (geometry->type == SUBDIV_MESH)
-        ConvertSubdivMesh(device,(ISPCSubdivMesh*) geometry, quality, scene_out, i);
+        ConvertSubdivMesh(device,(ISPCSubdivMesh*) geometry, quality, flags);
       else if (geometry->type == TRIANGLE_MESH)
-        ConvertTriangleMesh(device,(ISPCTriangleMesh*) geometry, quality, scene_out, i);
+        ConvertTriangleMesh(device,(ISPCTriangleMesh*) geometry, quality, flags);
       else if (geometry->type == QUAD_MESH)
-        ConvertQuadMesh(device,(ISPCQuadMesh*) geometry, quality, scene_out, i);
+        ConvertQuadMesh(device,(ISPCQuadMesh*) geometry, quality, flags);
       else if (geometry->type == CURVES)
-        ConvertCurveGeometry(device,(ISPCHairSet*) geometry, quality, scene_out, i);
+        ConvertCurveGeometry(device,(ISPCHairSet*) geometry, quality, flags);
       else if (geometry->type == GRID_MESH)
-        ConvertGridMesh(device,(ISPCGridMesh*) geometry, quality, scene_out, i);
+        ConvertGridMesh(device,(ISPCGridMesh*) geometry, quality, flags);
       else if (geometry->type == POINTS)
-        ConvertPoints(device,(ISPCPointSet*) geometry, quality, scene_out, i);
+        ConvertPoints(device,(ISPCPointSet*) geometry, quality, flags);
+      else if (geometry->type == INSTANCE) {
+        unsigned int reqDepth = ConvertInstance(device,(ISPCInstance*) geometry, quality, flags, depth);
+        requiredInstancingDepth = max(requiredInstancingDepth, reqDepth);
+      }
       else
         assert(false);
     }
-    group->geom.geometry = nullptr;
-    group->geom.scene = scene_out;
-    group->geom.geomID = geomID;
+    
+    group->commit();
+    
+    group->requiredInstancingDepth = requiredInstancingDepth;
+    return requiredInstancingDepth;
   }
 
-  unsigned int ConvertInstance(RTCDevice device, ISPCScene* scene_in, ISPCInstance* instance, RTCScene scene_out, unsigned int geomID)
+  unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth)
   {
-    RTCScene scene_inst = instance->child->scene;
-    if (instance->numTimeSteps == 1) {
-      RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
-      rtcSetGeometryInstancedScene(geom,scene_inst);
-      rtcSetGeometryTimeStepCount(geom,1);
-      if (instance->quaternion) {
-        QuaternionDecomposition qd = quaternionDecomposition(instance->spaces[0]);
-        rtcSetGeometryTransformQuaternion(geom,0,(RTCQuaternionDecomposition*)&qd);
-      } else {
-        rtcSetGeometryTransform(geom,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[0].l.vx.x);
-      }
-      rtcSetGeometryUserData(geom, instance);
-      rtcCommitGeometry(geom);
-      rtcAttachGeometryByID(scene_out,geom,geomID);
-      instance->geom.geometry = geom;
-      instance->geom.scene = scene_out;
-      instance->geom.geomID = geomID;
-      return geomID;
-    }
-    else
-    {
-      RTCGeometry geom = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
-      rtcSetGeometryInstancedScene(geom,scene_inst);
-      rtcSetGeometryTimeStepCount(geom,instance->numTimeSteps);
-      rtcSetGeometryTimeRange(geom,instance->startTime,instance->endTime);
-      for (size_t t=0; t<instance->numTimeSteps; t++) {
-        if (instance->quaternion) {
-          QuaternionDecomposition qd = quaternionDecomposition(instance->spaces[t]);
-          rtcSetGeometryTransformQuaternion(geom,t,(RTCQuaternionDecomposition*)&qd);
-        } else {
-          rtcSetGeometryTransform(geom,(unsigned int)t,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,&instance->spaces[t].l.vx.x);
-        }
-      }
-      rtcSetGeometryUserData(geom, instance);
-      rtcCommitGeometry(geom);
-      rtcAttachGeometryByID(scene_out,geom,geomID);
-      instance->geom.geometry = geom;
-      instance->geom.scene = scene_out;
-      instance->geom.geomID = geomID;
-      return geomID;
-    }
+    if (instance->child->type != GROUP)
+      THROW_RUNTIME_ERROR("invalid scene structure");
+
+    ISPCGroup* group = (ISPCGroup*) instance->child;
+    unsigned int requiredInstancingDepth = 1+ConvertGroup(device, group, quality, flags, depth+1);
+
+    if (depth + requiredInstancingDepth > RTC_MAX_INSTANCE_LEVEL_COUNT)
+      THROW_RUNTIME_ERROR("scene instancing depth is too large");
+
+    if (instance->geom.visited) return requiredInstancingDepth;
+    instance->geom.visited = true;
+    instance->commit();
+    
+    return requiredInstancingDepth;
   }
-  
-  typedef ISPCInstance* ISPCInstance_ptr;
-  typedef ISPCGeometry* ISPCGeometry_ptr;
-  
-  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality)
+
+  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags)
   {
-    RTCScene scene_out = rtcNewScene(g_device);
+    RTCScene scene = scene_in->scene;
+    rtcSetSceneFlags(scene, flags);
     
-    /* use scene instancing feature */
-    if (g_instancing_mode != SceneGraph::INSTANCING_NONE)
+    for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
     {
-      for (unsigned int i=0; i<scene_in->numGeometries; i++)
-      {
-        ISPCGeometry* geometry = scene_in->geometries[i];
-        if (geometry->type == GROUP) {
-          RTCScene objscene = rtcNewScene(g_device);
-          ConvertGroup(g_device,(ISPCGroup*) geometry,quality,objscene,i);
-          //rtcCommitScene(objscene);
-        }
-        else if (geometry->type == INSTANCE) {
-          ConvertInstance(g_device,scene_in, (ISPCInstance*) geometry, scene_out, i);
-        }
-        else
-          assert(false);
-      }
-    }
-    
-    /* no instancing */
-    else
-    {
-      for (unsigned int i=0; i<scene_in->numGeometries; i++)
-      {
-        ISPCGeometry* geometry = scene_in->geometries[i];
-        if (geometry->type == SUBDIV_MESH)
-          ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry, quality, scene_out, i);
-        else if (geometry->type == TRIANGLE_MESH)
-          ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry, quality, scene_out, i);
-        else if (geometry->type == QUAD_MESH)
-          ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, scene_out, i);
-        else if (geometry->type == CURVES)
-          ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, scene_out, i);
-         else if (geometry->type == GRID_MESH)
-          ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, scene_out, i);
-         else if (geometry->type == POINTS)
-          ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, scene_out, i);
-        else
-          assert(false);
-      }
+      ISPCGeometry* geometry = scene_in->geometries[geomID];
+      if (geometry->type == SUBDIV_MESH)
+        ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry, quality, flags);
+      else if (geometry->type == TRIANGLE_MESH)
+        ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry, quality, flags);
+      else if (geometry->type == QUAD_MESH)
+        ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, flags);
+      else if (geometry->type == CURVES)
+        ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, flags);
+      else if (geometry->type == GRID_MESH)
+        ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, flags);
+      else if (geometry->type == POINTS)
+        ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, flags);
+      else if (geometry->type == INSTANCE)
+        ConvertInstance(g_device, (ISPCInstance*) geometry, quality, flags, 0);
+      else
+        assert(false);
+
+      rtcAttachGeometryByID(scene,geometry->geometry,geomID);
     }
 
     Application::instance->log(1,"creating Embree objects done");
-    return scene_out;
+    return scene;
+  }
+
+  extern "C" void UpdateScene(ISPCScene* scene_in, float time)
+  {
+    TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
+    if (!tutorial_scene) return;
+    if (!g_animation_mode) return;
+    
+    for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
+    {
+      ISPCGeometry* geometry = scene_in->geometries[geomID];
+      if (geometry->type != INSTANCE) continue;
+      ISPCInstance* inst = (ISPCInstance*) geometry;
+
+      Ref<SceneGraph::TransformNode> node = tutorial_scene->geometries[geomID].dynamicCast<SceneGraph::TransformNode>();
+      assert(node);
+      inst->spaces[0] = node->get(time);
+      inst->commit();
+    }
+
+    rtcCommitScene(scene_in->scene);
+
+    for (unsigned int i=0; i<scene_in->numLights; i++)
+      ISPCScene::updateLight(tutorial_scene->lights[i]->get(time), scene_in->lights[i]);
   }
 }

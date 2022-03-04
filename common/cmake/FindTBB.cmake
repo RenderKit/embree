@@ -146,7 +146,7 @@ macro(rk_tbb_check_version)
     rk_tbb_error("Missing TBB version information. Could not find"
       "tbb/tbb_stddef.h or tbb/version.h in ${TBB_INCLUDE_DIR}")
   endif()
-  file(READ ${TBB_INCLUDE_DIR}/${_TBB_VERSION_HEADER} VERSION_HEADER_CONTENT)
+  file(READ "${TBB_INCLUDE_DIR}/${_TBB_VERSION_HEADER}" VERSION_HEADER_CONTENT)
   string(REGEX MATCH "#define TBB_VERSION_MAJOR ([0-9]+)" DUMMY "${VERSION_HEADER_CONTENT}")
   set(TBB_VERSION_MAJOR ${CMAKE_MATCH_1})
   string(REGEX MATCH "#define TBB_VERSION_MINOR ([0-9]+)" DUMMY "${VERSION_HEADER_CONTENT}")

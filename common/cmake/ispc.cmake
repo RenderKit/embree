@@ -32,7 +32,7 @@ IF (NOT EMBREE_ISPC_EXECUTABLE)
   ENDIF()
   FOREACH(ver ${ISPC_VERSION_WORKING})
     FOREACH(suffix ${ISPC_DIR_SUFFIX})
-      LIST(APPEND ISPC_DIR_HINT ${PROJECT_SOURCE_DIR}/../ispc-v${ver}-${suffix})
+      LIST(APPEND ISPC_DIR_HINT "${PROJECT_SOURCE_DIR}/../ispc-v${ver}-${suffix}")
     ENDFOREACH()
   ENDFOREACH()
 
@@ -73,12 +73,16 @@ MACRO (ISPC_COMPILE)
   STRING(REPLACE ";" "," ISPC_TARGET_ARGS "${ISPC_TARGETS}")
 
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(ISPC_ARCHITECTURE "x86-64")
+    IF (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm64|aarch64")
+      SET(ISPC_ARCHITECTURE "aarch64")
+    ELSE()
+      SET(ISPC_ARCHITECTURE "x86-64")
+    ENDIF()
   ELSE()
     SET(ISPC_ARCHITECTURE "x86")
   ENDIF()
 
-  SET(ISPC_TARGET_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  SET(ISPC_TARGET_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
   IF(ISPC_INCLUDE_DIR)
     STRING(REPLACE ";" ";-I;" ISPC_INCLUDE_DIR_PARMS "${ISPC_INCLUDE_DIR}")
@@ -104,7 +108,7 @@ MACRO (ISPC_COMPILE)
     GET_FILENAME_COMPONENT(dir ${src} PATH)
 
     SET(outdir "${ISPC_TARGET_DIR}/${dir}")
-    SET(input ${CMAKE_CURRENT_SOURCE_DIR}/${src})
+    SET(input "${CMAKE_CURRENT_SOURCE_DIR}/${src}")
 
     SET(deps "")
     IF (EXISTS ${outdir}/${fname}.dev.idep)
@@ -133,10 +137,10 @@ MACRO (ISPC_COMPILE)
     ENDIF()
 
     ADD_CUSTOM_COMMAND(
-      OUTPUT ${results} ${ISPC_TARGET_DIR}/${fname}_ispc.h
+      OUTPUT ${results} "${ISPC_TARGET_DIR}/${fname}_ispc.h"
       COMMAND ${CMAKE_COMMAND} -E make_directory ${outdir}
       COMMAND ${EMBREE_ISPC_EXECUTABLE}
-      -I ${CMAKE_CURRENT_SOURCE_DIR}
+      -I "${CMAKE_CURRENT_SOURCE_DIR}"
       ${ISPC_INCLUDE_DIR_PARMS}
       ${ISPC_DEFINITIONS}
       --arch=${ISPC_ARCHITECTURE}
@@ -146,7 +150,7 @@ MACRO (ISPC_COMPILE)
       --woff
       --opt=fast-math
       ${ISPC_ADDITIONAL_ARGS}
-      -h ${ISPC_TARGET_DIR}/${fname}_ispc.h
+      -h "${ISPC_TARGET_DIR}/${fname}_ispc.h"
       -MMM  ${outdir}/${fname}.dev.idep
       -o ${outdir}/${fname}.dev${ISPC_TARGET_EXT}
       ${input}

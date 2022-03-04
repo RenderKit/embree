@@ -16,6 +16,7 @@ namespace embree
   bool embedTextures = true;
   bool referenceMaterials = false;
   bool referenceObjects = true;
+  bool binaryFormat = true;
   float centerScale = 0.0f;
   Vec3fa centerTranslate(0.0f,0.0f,0.0f);
 
@@ -266,6 +267,16 @@ namespace embree
         referenceObjects = true;
       }
 
+      /* enable binary format */
+      else if (tag == "-binary") {
+        binaryFormat = true;
+      }
+
+      /* enable text format */
+      else if (tag == "-text") {
+        binaryFormat = false;
+      }
+
       else if (tag == "-centerScaleTranslate") {
         centerScale       = cin->getFloat();
         centerTranslate.x = cin->getFloat();
@@ -275,7 +286,7 @@ namespace embree
 
       /* output filename */
       else if (tag == "-o") {
-        SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName(),embedTextures,referenceMaterials);
+        SceneGraph::store(g_scene.dynamicCast<SceneGraph::Node>(),path + cin->getFileName(),embedTextures,referenceMaterials,binaryFormat);
       }
 
       /* skip unknown command line parameter */

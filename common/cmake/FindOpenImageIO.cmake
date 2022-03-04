@@ -36,7 +36,7 @@ FIND_PATH(OPENIMAGEIO_ROOT include/OpenImageIO/imageio.h
   DOC "Root of OpenImageIO installation"
   HINTS ${OPENIMAGEIO_ROOT}
   PATHS
-    ${PROJECT_SOURCE_DIR}/oiio
+    "${PROJECT_SOURCE_DIR}/oiio"
     /usr/local
     /usr
     /

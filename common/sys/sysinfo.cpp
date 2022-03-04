@@ -21,7 +21,11 @@ namespace embree
   
   std::string getPlatformName() 
   {
-#if defined(__LINUX__) && !defined(__64BIT__)
+#if defined(__ANDROID__) && !defined(__64BIT__)
+    return "Android (32bit)";
+#elif defined(__ANDROID__) && defined(__64BIT__)
+    return "Android (64bit)";
+#elif defined(__LINUX__) && !defined(__64BIT__)
     return "Linux (32bit)";
 #elif defined(__LINUX__) && defined(__64BIT__)
     return "Linux (64bit)";
@@ -248,7 +252,7 @@ namespace embree
 #if defined(__X86_ASM__)
   __noinline int64_t get_xcr0() 
   {
-#if defined (__WIN32__)
+#if defined (__WIN32__) && !defined (__MINGW32__)
     int64_t xcr0 = 0; // int64_t is workaround for compiler bug under VS2013, Win32
     xcr0 = _xgetbv(0);
     return xcr0;
@@ -335,7 +339,7 @@ namespace embree
     if (cpuid_leaf_7[ECX] & CPU_FEATURE_BIT_AVX512VBMI) cpu_features |= CPU_FEATURE_AVX512VBMI;
 
     return cpu_features;
-#elif defined(__ARM_NEON)
+#elif defined(__ARM_NEON) || defined(__EMSCRIPTEN__)
     /* emulated features with sse2neon */
     return CPU_FEATURE_SSE|CPU_FEATURE_SSE2|CPU_FEATURE_XMM_ENABLED;
 #else
@@ -611,6 +615,10 @@ namespace embree
 #include <sys/time.h>
 #include <pthread.h>
 
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#endif
+
 namespace embree
 {
   unsigned int getNumberOfLogicalThreads() 
@@ -618,9 +626,25 @@ namespace embree
     static int nThreads = -1;
     if (nThreads != -1) return nThreads;
 
-#if defined(__MACOSX__)
+#if defined(__MACOSX__) || defined(__ANDROID__)
     nThreads = sysconf(_SC_NPROCESSORS_ONLN); // does not work in Linux LXC container
     assert(nThreads);
+#elif defined(__EMSCRIPTEN__)
+    // WebAssembly supports pthreads, but not pthread_getaffinity_np. Get the number of logical
+    // threads from the browser or Node.js using JavaScript.
+    nThreads = MAIN_THREAD_EM_ASM_INT({
+        const isBrowser = typeof window !== 'undefined';
+        const isNode = typeof process !== 'undefined' && process.versions != null &&
+            process.versions.node != null;
+        if (isBrowser) {
+            // Return 1 if the browser does not expose hardwareConcurrency.
+            return window.navigator.hardwareConcurrency || 1;
+        } else if (isNode) {
+            return require('os').cpus().length;
+        } else {
+            return 1;
+        }
+    });
 #else
     cpu_set_t set;
     if (pthread_getaffinity_np(pthread_self(), sizeof(set), &set) == 0)

@@ -63,6 +63,8 @@ namespace embree
     RTCIntersectContextFlags g_iflags_coherent = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
     RTCIntersectContextFlags g_iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
+    int g_animation_mode = false;
+
     RayStats* g_stats = nullptr;
 
     unsigned int render_texcoords_mode = 0;
@@ -167,7 +169,7 @@ namespace embree
 
     registerOption("compare-threshold", [this] (Ref<ParseStream> cin, const FileName& path) {
         referenceImageThreshold = cin->getFloat();
-      }, "--compare--threshold <float>: threshold in number of wrong pixels when image is considered wrong");
+      }, "--compare-threshold <float>: threshold in number of wrong pixels when image is considered wrong");
 
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -435,173 +437,193 @@ namespace embree
         else if (mode == "geometry") instancing_mode = SceneGraph::INSTANCING_GEOMETRY;
         else if (mode == "group"   ) instancing_mode = SceneGraph::INSTANCING_GROUP;
         else if (mode == "flattened") instancing_mode = SceneGraph::INSTANCING_FLATTENED;
+        else if (mode == "multi_level") instancing_mode = SceneGraph::INSTANCING_MULTI_LEVEL;
         else throw std::runtime_error("unknown instancing mode: "+mode);
         g_instancing_mode = instancing_mode;
       }, "--instancing: set instancing mode\n"
-      "  none: no instancing\n"
+      "  none: perform no instancing and flatten entire scene\n"
       "  geometry: instance individual geometries as scenes\n"
       "  group: instance geometry groups as scenes\n"
+      "  multi_level: use multi-level instancing\n"
       "  flattened: assume flattened scene graph");
 
+    registerOption("animation", [] (Ref<ParseStream> cin, const FileName& path) {
+         g_animation_mode = true;
+      }, "--animation: render animated geometries");
+
     registerOption("ambientlight", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa L = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode(new SceneGraph::AmbientLight(L)));
+        const Vec3f L = cin->getVec3f();
+        futures.push_back([=]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::AmbientLight>(SceneGraph::AmbientLight(L))); });
       }, "--ambientlight r g b: adds an ambient light with intensity rgb");
     registerOptionAlias("ambientlight","ambient");
 
     registerOption("pointlight", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa P = cin->getVec3fa();
-        const Vec3fa I = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode(new SceneGraph::PointLight(P,I)));
+        const Vec3f P = cin->getVec3f();
+        const Vec3f I = cin->getVec3f();
+        futures.push_back([=]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::PointLight>(SceneGraph::PointLight(P,I))); });
       }, "--pointlight x y z r g b: adds a point light at position xyz with intensity rgb");
 
     registerOption("directionallight", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa D = cin->getVec3fa();
-        const Vec3fa E = cin->getVec3fa();
-        scene->add(new SceneGraph::LightNode(new SceneGraph::DirectionalLight(D,E)));
+        const Vec3f D = cin->getVec3f();
+        const Vec3f E = cin->getVec3f();
+        futures.push_back([=]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::DirectionalLight>(SceneGraph::DirectionalLight(D,E))); });
       }, "--directionallight x y z r g b: adds a directional light with direction xyz and intensity rgb");
     registerOptionAlias("directionallight","dirlight");
 
     registerOption("distantlight", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa D = cin->getVec3fa();
-        const Vec3fa L = cin->getVec3fa();
+        const Vec3f D = cin->getVec3f();
+        const Vec3f L = cin->getVec3f();
         const float halfAngle = cin->getFloat();
-        scene->add(new SceneGraph::LightNode(new SceneGraph::DistantLight(D,L,halfAngle)));
+        futures.push_back([=]() { scene->add(new SceneGraph::LightNodeImpl<SceneGraph::DistantLight>(SceneGraph::DistantLight(D,L,halfAngle))); });
       }, "--distantlight x y z r g b a: adds a distant light with direction xyz, intensity rgb, and opening angle a");
 
     registerOption("triangle-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p0 = cin->getVec3fa();
-        const Vec3fa dx = cin->getVec3fa();
-        const Vec3fa dy = cin->getVec3fa();
+        const Vec3f p0 = cin->getVec3f();
+        const Vec3f dx = cin->getVec3f();
+        const Vec3f dy = cin->getVec3f();
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
-        scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createTrianglePlane(p0,dx,dy,width,height,new OBJMaterial)); });
       }, "--triangle-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of triangles originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
 
     registerOption("quad-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p0 = cin->getVec3fa();
-        const Vec3fa dx = cin->getVec3fa();
-        const Vec3fa dy = cin->getVec3fa();
+        const Vec3f p0 = cin->getVec3f();
+        const Vec3f dx = cin->getVec3f();
+        const Vec3f dy = cin->getVec3f();
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
-        scene->add(SceneGraph::createQuadPlane(p0,dx,dy,width,height,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createQuadPlane(p0,dx,dy,width,height,new OBJMaterial)); });
       }, "--quad-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane build of quadrilaterals originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
 
     registerOption("grid-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p0 = cin->getVec3fa();
-        const Vec3fa dx = cin->getVec3fa();
-        const Vec3fa dy = cin->getVec3fa();
+        const Vec3f p0 = cin->getVec3f();
+        const Vec3f dx = cin->getVec3f();
+        const Vec3f dy = cin->getVec3f();
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
-        scene->add(SceneGraph::createGridPlane(p0,dx,dy,width,height,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createGridPlane(p0,dx,dy,width,height,new OBJMaterial)); });
       }, "--grid-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height: adds a plane using a grid mesh build. The plane is originated at p0 and spanned by the vectors dx and dy with a tesselation width/height.");
 
     registerOption("subdiv-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p0 = cin->getVec3fa();
-        const Vec3fa dx = cin->getVec3fa();
-        const Vec3fa dy = cin->getVec3fa();
+        const Vec3f p0 = cin->getVec3f();
+        const Vec3f dx = cin->getVec3f();
+        const Vec3f dy = cin->getVec3f();
         const size_t width = cin->getInt();
         const size_t height = cin->getInt();
         const float tessellationRate = cin->getFloat();
-        scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,tessellationRate,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createSubdivPlane(p0,dx,dy,width,height,tessellationRate,new OBJMaterial)); });
       }, "--subdiv-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z width height tessellationRate: adds a plane build as a Catmull Clark subdivision surface originated at p0 and spanned by the vectors dx and dy. The plane consists of widt x height many patches, and each patch has the specified tesselation rate.");
 
     registerOption("hair-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p0 = cin->getVec3fa();
-        const Vec3fa dx = cin->getVec3fa();
-        const Vec3fa dy = cin->getVec3fa();
+        const Vec3f p0 = cin->getVec3f();
+        const Vec3f dx = cin->getVec3f();
+        const Vec3f dy = cin->getVec3f();
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::FLAT_CURVE,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::FLAT_CURVE,new OBJMaterial)); });
       }, "--hair-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius num: adds a hair plane originated at p0 and spanned by the vectors dx and dy. num hairs are generated with speficied length and radius.");
 
     registerOption("curve-plane", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p0 = cin->getVec3fa();
-        const Vec3fa dx = cin->getVec3fa();
-        const Vec3fa dy = cin->getVec3fa();
+        const Vec3f p0 = cin->getVec3f();
+        const Vec3f dx = cin->getVec3f();
+        const Vec3f dy = cin->getVec3f();
         const float len = cin->getFloat();
         const float r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::ROUND_CURVE,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createHairyPlane(0,p0,dx,dy,len,r,N,SceneGraph::ROUND_CURVE,new OBJMaterial)); });
       }, "--curve-plane p.x p.y p.z dx.x dx.y dx.z dy.x dy.y dy.z length radius: adds a plane build of bezier curves originated at p0 and spanned by the vectors dx and dy. num curves are generated with speficied length and radius.");
 
      registerOption("sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
-         const Vec3fa p = cin->getVec3fa();
+         const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
-        scene->add(SceneGraph::createSphere(p, r, new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createSphere(p, r, new OBJMaterial)); });
       }, "--sphere p.x p.y p.z r: adds a sphere at position p with radius r");
      
     registerOption("triangle-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
+        const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        scene->add(SceneGraph::createTriangleSphere(p,r,numPhi,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createTriangleSphere(p,r,numPhi,new OBJMaterial)); });
       }, "--triangle-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of triangles.");
 
     registerOption("quad-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
+        const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial)); });
       }, "--quad-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r and tesselation numPhi build of quadrilaterals.");
 
     registerOption("grid-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
+        const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t N = cin->getInt();
-        scene->add(SceneGraph::createGridSphere(p,r,N,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createGridSphere(p,r,N,new OBJMaterial)); });
       }, "--grid-sphere p.x p.y p.z r N: adds a grid sphere at position p with radius r using a cube topology and N*N quads at each face.");
 
-    registerOption("quad-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
-        const Vec3fa dp = cin->getVec3fa();
+    registerOption("triangle-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3f p = cin->getVec3f();
+        const Vec3f dp = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        Ref<SceneGraph::Node> mesh = SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial);
-        mesh->set_motion_vector(dp); 
-        scene->add(mesh);
-      }, "--quad-sphere-mb p.x p.y p.z d.x d.y d.z r numPhi : adds a motion blurred sphere build of quadrilaterals at position p, with motion vector d, radius r, and tesselation numPhi.");
+        futures.push_back([=]() {
+          Ref<SceneGraph::Node> mesh = SceneGraph::createTriangleSphere(p,r,numPhi,new OBJMaterial);
+          mesh->set_motion_vector(dp); 
+          scene->add(mesh);
+        });
+      }, "--triangle-sphere-mblur p.x p.y p.z d.x d.y d.z r numPhi : adds a motion blurred sphere build of triangles at position p, with motion vector d, radius r, and tesselation numPhi.");
+
+    registerOption("quad-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
+        const Vec3f p = cin->getVec3f();
+        const Vec3f dp = cin->getVec3f();
+        const float  r = cin->getFloat();
+        const size_t numPhi = cin->getInt();
+        futures.push_back([=]() {
+          Ref<SceneGraph::Node> mesh = SceneGraph::createQuadSphere(p,r,numPhi,new OBJMaterial);
+          mesh->set_motion_vector(dp); 
+          scene->add(mesh);
+        });
+      }, "--quad-sphere-mblur p.x p.y p.z d.x d.y d.z r numPhi : adds a motion blurred sphere build of quadrilaterals at position p, with motion vector d, radius r, and tesselation numPhi.");
 
     registerOption("subdiv-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
+        const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const size_t numPhi = cin->getInt();
         const float tessellationRate = cin->getFloat();
-        scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createSubdivSphere(p,r,numPhi,tessellationRate,new OBJMaterial)); });
       }, "--subdiv-sphere p.x p.y p.z r numPhi: adds a sphere at position p with radius r build of Catmull Clark subdivision surfaces. The sphere consists of numPhi x numPhi many patches and each path has the specified tessellation rate.");
 
     registerOption("point-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
+        const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const float pointR = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial)); });
       }, "--point-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tesselation numPhi build of spheres.");
 
      registerOption("point-sphere-mblur", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
-        const Vec3fa dp = cin->getVec3fa();
+        const Vec3f p = cin->getVec3f();
+        const Vec3f dp = cin->getVec3f();
         const float  r = cin->getFloat();
         const float pointR = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial)->set_motion_vector(dp));
+        futures.push_back([=]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::SPHERE, new OBJMaterial)->set_motion_vector(dp)); });
       }, "--point-sphere p.x p.y p.z d.x d.y d.z r pointR numPhi: adds a sphere at position p, motion vector d, with radius r and tesselation numPhi build of spheres.");
 
     registerOption("disc-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
+        const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const float pointR = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::DISC, new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::DISC, new OBJMaterial)); });
       }, "--disc-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tesselation numPhi build of discs.");
 
     registerOption("oriented-disc-sphere", [this] (Ref<ParseStream> cin, const FileName& path) {
-        const Vec3fa p = cin->getVec3fa();
+        const Vec3f p = cin->getVec3f();
         const float  r = cin->getFloat();
         const float pointR = cin->getFloat();
         const size_t numPhi = cin->getInt();
-        scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::ORIENTED_DISC, new OBJMaterial));
+        futures.push_back([=]() { scene->add(SceneGraph::createPointSphere(p, r, pointR, numPhi, SceneGraph::ORIENTED_DISC, new OBJMaterial)); });
       }, "--oriented-disc-sphere p.x p.y p.z r pointR numPhi: adds a sphere at position p with radius r and tesselation numPhi build of oriented discs.");
 
     registerOption("print-cameras", [this] (Ref<ParseStream> cin, const FileName& path) {
@@ -671,7 +693,7 @@ namespace embree
 
   void TutorialApplication::set_scene (TutorialScene* in)
   {
-    ispc_scene.reset(new ISPCScene(in));
+    ispc_scene.reset(new ISPCScene(g_device,in));
     g_ispc_scene = ispc_scene.get();
   }
 
@@ -923,16 +945,23 @@ namespace embree
 
   void TutorialApplication::displayFunc()
   {
+    double t0 = getSeconds();
+    const float time = float(t0-time0);
+    
     /* update camera */
     camera.move(moveDelta.x*speed, moveDelta.y*speed, moveDelta.z*speed);
+
+    /* update animated camera */
+    if (animated_camera)
+      camera = Camera(animated_camera->get(time),camera.handedness);
+    
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
      if (print_camera)
       std::cout << camera.str() << std::endl;
 
     /* render image using ISPC */
     initRayStats();
-    double t0 = getSeconds();
-    render(pixels,width,height,float(time0-t0),ispccamera);
+    render(pixels,width,height,time,ispccamera);
     double dt0 = getSeconds()-t0;
     avg_render_time.add(dt0);
     double mrayps = double(getNumRays())/(1000000.0*dt0);
@@ -961,8 +990,8 @@ namespace embree
     ImGui::Begin("Embree", nullptr, window_flags);
     drawGUI();
     
-    double time = avg_render_time.get();
-    double fps = time != 0.0 ? 1.0f/time : 0.0;
+    double avg_time = avg_render_time.get();
+    double fps = avg_time != 0.0 ? 1.0f/avg_time : 0.0;
     ImGui::Text("%3.2f fps",fps);
 #if defined(RAY_STATS)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
@@ -1182,6 +1211,9 @@ namespace embree
     rtcSetDeviceErrorFunction(g_device,error_handler,nullptr);
   
     log(1,"application start");
+
+    /* execute postponed scene graph operations */
+    for (auto& f : futures) f();
     
     /* load scene */
     if (sceneFilename.size())
@@ -1278,14 +1310,18 @@ namespace embree
 
     /* use specified camera */
     if (camera_name != "") {
-      Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getCamera(camera_name);
-      camera = Camera(c->from,c->to,c->up,c->fov,camera.handedness);
+      auto cam = obj_scene.getCamera(camera_name);
+      camera = Camera(cam->get(0),camera.handedness);
+      if (cam->isAnimated()) animated_camera = cam;
     }
 
     /* otherwise use default camera */
     else if (!command_line_camera) {
-      Ref<SceneGraph::PerspectiveCameraNode> c = obj_scene.getDefaultCamera();
-      if (c) camera = Camera(c->from,c->to,c->up,c->fov,camera.handedness);
+      auto cam = obj_scene.getDefaultCamera();
+      if (cam) {
+        camera = Camera(cam->get(0),camera.handedness);
+        if (cam->isAnimated()) animated_camera = cam;
+      }
     }
 
     /* send model */

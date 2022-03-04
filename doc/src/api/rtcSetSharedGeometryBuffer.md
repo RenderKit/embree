@@ -34,7 +34,7 @@ elements (`byteStride` argument), the format of the buffer elements
 
 The start address (`byteOffset` argument) and stride (`byteStride`
 argument) must be both aligned to 4 bytes; otherwise the
-`rtcSetGeometryBuffer` function will fail.
+`rtcSetSharedGeometryBuffer` function will fail.
 
 ``` {include=src/api/inc/buffer_padding.md}
 ```

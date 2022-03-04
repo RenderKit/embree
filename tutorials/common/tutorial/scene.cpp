@@ -18,30 +18,17 @@ namespace embree
     for (auto& node : group->children) 
     {
       if (Ref<SceneGraph::LightNode> lightNode = node.dynamicCast<SceneGraph::LightNode>()) {
-        lights.push_back(lightNode->light);
+        lights.push_back(lightNode);
       } 
-      else if (Ref<SceneGraph::TransformNode> xfmNode = node.dynamicCast<SceneGraph::TransformNode>()) {
-        addGeometry(xfmNode->child);
-        addGeometry(node);
-      }
       else if (Ref<SceneGraph::PerspectiveCameraNode> cameraNode = node.dynamicCast<SceneGraph::PerspectiveCameraNode>()) {
         cameras.push_back(cameraNode);
       } 
       else {
-        addGeometry(node);
+        geometries.push_back(node);
       }
     }
   }
-  
-  unsigned TutorialScene::addGeometry(Ref<SceneGraph::Node> node) 
-  {
-    if (node->id == -1) {
-      geometries.push_back(node);
-      node->id = unsigned(geometries.size()-1);
-    }
-    return node->id;
-  }
-  
+
   unsigned TutorialScene::materialID(Ref<SceneGraph::MaterialNode> material) 
   {
     if (material->id == -1) {
@@ -49,12 +36,6 @@ namespace embree
       material->id = unsigned(materials.size()-1);
     }
     return material->id;
-  }
-  
-  unsigned TutorialScene::geometryID(Ref<SceneGraph::Node> geometry) 
-  {
-    assert(geometry->id != -1);
-    return geometry->id;
   }
   
   void TutorialScene::print_camera_names ()

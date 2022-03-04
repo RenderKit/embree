@@ -25,7 +25,7 @@ namespace embree
     void postParseCommandLine() override
     {
       /* load default scene if none specified */
-      if (scene->size() == 0 && sceneFilename.size() == 0) {
+      if (scene_empty_post_parse()) {
         FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }

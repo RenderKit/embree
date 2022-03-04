@@ -125,11 +125,9 @@ int TutorialBenchmark::main(int argc, char** argv, std::string name)
 
   std::string benchmark_name = name;
   if (endsWith(inputFile, ".xml")) {
-    commandLine.add({"-i", inputFile});
     benchmark_name = getFileName(inputFile);
   }
   else if (endsWith(inputFile, ".ecs")) {
-    commandLine.add({"-c", inputFile});
     benchmark_name = getFileName(inputFile);
   }
 

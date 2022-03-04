@@ -3,11 +3,12 @@
 
 #pragma once
 
+#include "../../../include/embree3/rtcore.isph"
 #include "../math/vec.isph"
 
 struct DifferentialGeometry
 {
-  unsigned int instID;
+  unsigned int instIDs[RTC_MAX_INSTANCE_LEVEL_COUNT];
   unsigned int geomID;
   unsigned int primID;
   float u,v;

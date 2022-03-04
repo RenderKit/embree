@@ -533,7 +533,6 @@ namespace embree
         {
           if (!valid(ctype, j, make_range<size_t>(0, numTimeSegments()))) continue;
           const BBox3fa box = bounds(j);
-          if (box.empty()) continue; // checks oriented curves with invalid normals which cause NaNs here
           const PrimRef prim(box,geomID,unsigned(j));
           pinfo.add_center2(prim);
           prims[k++] = prim;
@@ -548,7 +547,6 @@ namespace embree
         {
           if (!valid(ctype, j, this->timeSegmentRange(t0t1))) continue;
           const LBBox3fa lbox = linearBounds(j,t0t1);
-          if (lbox.bounds0.empty() || lbox.bounds1.empty()) continue; // checks oriented curves with invalid normals which cause NaNs here
           const PrimRefMB prim(lbox,this->numTimeSegments(),this->time_range,this->numTimeSegments(),geomID,unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;

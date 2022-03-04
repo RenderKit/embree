@@ -99,7 +99,7 @@
 #define dll_import 
 #endif
 
-#ifdef __WIN32__
+#if defined(__WIN32__) && !defined(__MINGW32__)
 #if !defined(__noinline)
 #define __noinline             __declspec(noinline)
 #endif
@@ -149,12 +149,14 @@
   #define DELETED  = delete
 #endif
 
+#if !defined(likely)
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)
 #define   likely(expr) (expr)
 #define unlikely(expr) (expr)
 #else
 #define   likely(expr) __builtin_expect((bool)(expr),true )
 #define unlikely(expr) __builtin_expect((bool)(expr),false)
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
