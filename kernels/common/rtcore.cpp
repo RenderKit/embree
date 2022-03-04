@@ -7,6 +7,7 @@
 #include "device.h"
 #include "scene.h"
 #include "context.h"
+#include "../geometry/filter.h"
 #include "../../include/embree3/rtcore_ray.h"
 using namespace embree;
 
@@ -1094,13 +1095,13 @@ RTC_NAMESPACE_BEGIN;
   RTC_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
-    args->report(args,filter_args);
+    isa::reportIntersection1(args, filter_args);
   }
 
   RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
-    args->report(args,filter_args);
+    isa::reportOcclusion1(args,filter_args);
   }
   
   RTC_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)
