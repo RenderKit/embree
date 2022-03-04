@@ -15,6 +15,10 @@
 #include <regex>
 #include <stack>
 
+#if defined(__APPLE__)
+#include "TargetConditionals.h"
+#endif
+
 #define random  use_random_function_of_test // do use random_int() and random_float() from Test class
 #define drand48 use_random_function_of_test // do use random_int() and random_float() from Test class
 
@@ -4193,36 +4197,38 @@ namespace embree
       for (unsigned int j=0; j<10; j++) 
       {
         Vec3fa pos = 100.0f*RandomSampler_get3D(task->sampler);
-	int type = RandomSampler_getInt(task->sampler)%11;
+        int type = RandomSampler_getInt(task->sampler)%11;
         switch (RandomSampler_getInt(task->sampler)%16) {
         case 0: pos = Vec3fa(nan); break;
         case 1: pos = Vec3fa(inf); break;
         case 2: pos = Vec3fa(1E30f); break;
         default: break;
         };
-	size_t numPhi = RandomSampler_getInt(task->sampler)%50;
-	if (type == 2) numPhi = RandomSampler_getInt(task->sampler)%10;
-        size_t numTriangles = 2*2*numPhi*(numPhi-1);
-	numTriangles = RandomSampler_getInt(task->sampler)%(numTriangles+1);
-        switch (type) {
-        case 0: task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); break;
-	case 1: task->scene->addSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
-        case 2: task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); break;
-	case 3: task->scene->addQuadSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
-        case 4: task->scene->addGridSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles); break;
-	case 5: task->scene->addGridSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,numTriangles,task->test->random_motion_vector(1.0f)); break;
-	case 6: task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles); break;
-        case 7: task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); break;
-	case 8: task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles); break;
-	case 9: task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles,task->test->random_motion_vector(1.0f)); break; 
+        size_t numPhi = RandomSampler_getInt(task->sampler) % 50;
+        if (type == 2) numPhi = RandomSampler_getInt(task->sampler) % 10;
+        size_t numTriangles = 2 * 2 * numPhi*(numPhi - 1);
+        numTriangles = RandomSampler_getInt(task->sampler) % (numTriangles + 1);
+        switch (type)
+        {
+          case 0: task->scene->addSphere(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 2.0f, numPhi, numTriangles); break;
+          case 1: task->scene->addSphere(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 2.0f, numPhi, numTriangles, task->test->random_motion_vector(1.0f)); break;
+          case 2: task->scene->addQuadSphere(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 2.0f, numPhi, numTriangles); break;
+          case 3: task->scene->addQuadSphere(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 2.0f, numPhi, numTriangles, task->test->random_motion_vector(1.0f)); break;
+          case 4: task->scene->addGridSphere(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 2.0f, numPhi, numTriangles); break;
+          case 5: task->scene->addGridSphere(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 2.0f, numPhi, numTriangles, task->test->random_motion_vector(1.0f)); break;
+          case 6: task->scene->addSubdivSphere(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 2.0f, numPhi, 4, numTriangles); break;
+          case 7: task->scene->addSubdivSphere(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 2.0f, numPhi, 4, numTriangles, task->test->random_motion_vector(1.0f)); break;
+          case 8: task->scene->addHair(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 1.0f, 2.0f, numTriangles); break;
+          case 9: task->scene->addHair(task->sampler, RTC_BUILD_QUALITY_MEDIUM, pos, 1.0f, 2.0f, numTriangles, task->test->random_motion_vector(1.0f)); break;
 
-        case 10: {
-	  std::unique_ptr<Sphere> sphere(new Sphere(pos,2.0f));  
-	  task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,sphere.get());
-          spheres.push_back(std::move(sphere));
-          break;
+          case 10:
+          {
+            std::unique_ptr<Sphere> sphere(new Sphere(pos,2.0f));
+            task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,sphere.get());
+            spheres.push_back(std::move(sphere));
+            break;
+          }
         }
-	}
         //if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) task->errorCounter++;;
         if (rtcGetDeviceError(thread->device) != RTC_ERROR_NONE) {
           task->errorCounter++;
@@ -5245,6 +5251,10 @@ namespace embree
 #endif
 #if defined(EMBREE_TARGET_AVX512)
     if (hasISA(AVX512)) isas.push_back(AVX512);
+#endif
+#if defined(__ARM_NEON)
+    assert(hasISA(NEON));
+    isas.push_back(NEON);
 #endif
     
     /* create list of all intersect modes to test */

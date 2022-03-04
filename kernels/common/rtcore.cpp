@@ -8,18 +8,31 @@
 #include "scene.h"
 #include "context.h"
 #include "../../include/embree3/rtcore_ray.h"
+
+#if defined(APPLE) && defined(__aarch64__)
+#include <mutex>
+#endif
+
 using namespace embree;
 
 RTC_NAMESPACE_BEGIN;
 
   /* mutex to make API thread safe */
-  static MutexSys g_mutex;
+#if defined(APPLE) && defined(__aarch64__)
+    static std::mutex g_mutex;
+#else
+    static MutexSys g_mutex;
+#endif
 
   RTC_API RTCDevice rtcNewDevice(const char* config)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewDevice);
+#if defined(APPLE) && defined(__aarch64__)
+    std::scoped_lock lock(g_mutex);
+#else
     Lock<MutexSys> lock(g_mutex);
+#endif
     Device* device = new Device(config);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
@@ -32,7 +45,11 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcRetainDevice);
     RTC_VERIFY_HANDLE(hdevice);
+#if defined(APPLE) && defined(__aarch64__)
+    std::scoped_lock lock(g_mutex);
+#else
     Lock<MutexSys> lock(g_mutex);
+#endif
     device->refInc();
     RTC_CATCH_END(nullptr);
   }
@@ -43,7 +60,11 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcReleaseDevice);
     RTC_VERIFY_HANDLE(hdevice);
+#if defined(APPLE) && defined(__aarch64__)
+    std::scoped_lock lock(g_mutex);
+#else
     Lock<MutexSys> lock(g_mutex);
+#endif
     device->refDec();
     RTC_CATCH_END(nullptr);
   }
@@ -54,7 +75,11 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetDeviceProperty);
     RTC_VERIFY_HANDLE(hdevice);
+#if defined(APPLE) && defined(__aarch64__)
+    std::scoped_lock lock(g_mutex);
+#else
     Lock<MutexSys> lock(g_mutex);
+#endif
     return device->getProperty(prop);
     RTC_CATCH_END(device);
     return 0;
@@ -67,7 +92,11 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetDeviceProperty);
     const bool internal_prop = (size_t)prop >= 1000000 && (size_t)prop < 1000004;
     if (!internal_prop) RTC_VERIFY_HANDLE(hdevice); // allow NULL device for special internal settings
+#if defined(APPLE) && defined(__aarch64__)
+    std::scoped_lock lock(g_mutex);
+#else
     Lock<MutexSys> lock(g_mutex);
+#endif
     device->setProperty(prop,val);
     RTC_CATCH_END(device);
   }
@@ -183,7 +212,11 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSceneProgressMonitorFunction);
     RTC_VERIFY_HANDLE(hscene);
+#if defined(APPLE) && defined(__aarch64__)
+    std::scoped_lock lock(g_mutex);
+#else
     Lock<MutexSys> lock(g_mutex);
+#endif
     scene->setProgressMonitorFunction(progress,ptr);
     RTC_CATCH_END2(scene);
   }

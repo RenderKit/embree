@@ -155,6 +155,16 @@ SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 1 CACHE STRING "Maximum number of instance l
 SET(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR 2.0 CACHE STRING "Self intersection avoidance factor for flat curves. Specify floating point value in range 0 to inf.")
 OPTION(EMBREE_MIN_WIDTH "Enables min-width feature to enlarge curve and point thickness to pixel width." OFF)
 
+##############################################################
+# Platform detection and defaults
+##############################################################
+
+IF (APPLE)
+  IF (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    INCLUDE(platforms/darwin)
+  ENDIF()
+ENDIF()
+
 SET(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
 IF (WIN32)
   SET_PROPERTY(CACHE EMBREE_TASKING_SYSTEM PROPERTY STRINGS TBB INTERNAL PPL)
@@ -351,6 +361,20 @@ ENDIF()
 IF(CMAKE_CXX_COMPILER_WRAPPER STREQUAL "CrayPrgEnv")
   SET(EMBREE_ISA_SSE42 OFF)
 ENDIF()
+
+IF(EMBREE_NEON_AVX2_EMULATION)
+  MESSAGE(STATUS "Emulation of AVX2 by 2xNEON" )
+  ADD_DEFINITIONS(-DNEON_AVX2_EMULATION)
+  SET(EMBREE_ISA_SSE2 ON)
+  SET(EMBREE_ISA_SSE42 ON)
+  SET(EMBREE_ISA_AVX ON)
+  SET(EMBREE_ISA_AVX2 ON)
+  SET(FLAGS_SSE2 "")
+  SET(FLAGS_SSE42 "-D__SSE4_2__  -D__SSE4_1__  ")
+  SET(FLAGS_AVX "-D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__")
+  SET(FLAGS_AVX2 "-D__AVX2__ -D__AVX__ -D__SSE4_2__  -D__SSE4_1__  -D__BMI__ -D__BMI2__ -D__LZCNT__")
+ENDIf()
+
 
 IF (APPLE AND EMBREE_STATIC_LIB)
 

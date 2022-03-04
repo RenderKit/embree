@@ -340,7 +340,7 @@ namespace embree
       return occluded;
     }
 
-#if defined(__SSE__)
+#if defined(__SSE__) || defined(__ARM_NEON)
     template struct InstanceIntersectorK<4>;
     template struct InstanceIntersectorKMB<4>;
 #endif

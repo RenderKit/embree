@@ -23,7 +23,6 @@ namespace embree
       if (!TaskScheduler::wait())
         throw std::runtime_error("task cancelled");
     }
-    
 #elif defined(TASKING_TBB)
   #if TBB_INTERFACE_VERSION >= 12002
     tbb::task_group_context context;

@@ -155,6 +155,12 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX512)
     v += "AVX512 ";
 #endif
+#if defined(__ARM_NEON)
+    v += "NEON ";
+#if defined(NEON_AVX2_EMULATION)
+    v += "2xNEON ";
+#endif
+#endif
     return v;
   }
 
