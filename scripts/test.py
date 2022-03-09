@@ -260,6 +260,9 @@ def runConfig(config):
     if "AVX512"    in isa: conf.append("-D EMBREE_ISA_AVX512=ON")
     else                 : conf.append("-D EMBREE_ISA_AVX512=OFF")
 
+  if "NEON_AVX2" in config:
+    conf.append("-D EMBREE_NEON_AVX2_EMULATION="+config["NEON_AVX2"]+"")
+    
   if "tasking" in config:
     tasking  = config["tasking"]
     if tasking == "INT":
