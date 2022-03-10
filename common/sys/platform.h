@@ -116,7 +116,6 @@
 #define __restrict__           //__restrict // causes issues with MSVC
 #endif
 #if !defined(__thread)
-// NOTE: Require `-fms-extensions` for clang
 #define __thread               __declspec(thread)
 #endif
 #if !defined(__aligned)
