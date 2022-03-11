@@ -195,7 +195,11 @@ def runConfig(config):
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     elif (compiler.startswith("ICX")):
-      conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"/compiler/latest/linux/bin/icpx -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"/compiler/latest/linux/bin/icx")
+      env.append("source "+NAS+"/intel/"+compiler[3:]+"/compiler/latest/env/vars.sh")
+      conf.append("-D CMAKE_CXX_COMPILER=icpx -D CMAKE_C_COMPILER=icx")
+    elif (compiler.startswith("DPCPP")):
+      env.append("source "+NAS+"/intel/"+compiler[5:]+"/compiler/latest/env/vars.sh")
+      conf.append("-D CMAKE_CXX_COMPILER=dpcpp -D CMAKE_C_COMPILER=icx")
     elif (compiler.startswith("ICC")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icpc -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icc")
     elif (compiler.startswith("CLANG")):
@@ -427,7 +431,10 @@ def run(mode):
     print(cmd)
   else:
     try:
-      subprocess.check_call(cmd, stderr=subprocess.STDOUT, shell=True)
+      if OS == "windows":
+        subprocess.check_call(cmd, stderr=subprocess.STDOUT, shell=True)
+      else:
+        subprocess.check_call(cmd, stderr=subprocess.STDOUT, shell=True, executable='/bin/bash')
     except subprocess.CalledProcessError as e:
       sys.stderr.write("windows test invocation failed with return code "+str(e.returncode))
       sys.exit(1)

@@ -62,10 +62,6 @@ IF (WIN32)
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SECURE_LINKER_FLAGS}")
 
   INCLUDE(msvc_post)
-
-  # workaround for file encoding problems of kernels/embree.rc found here https://gitlab.kitware.com/cmake/cmake/-/issues/18311
-  set(CMAKE_NINJA_CMCLDEPS_RC OFF)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:precise")        # dpcpp has fp-model fast as default
 ELSE()
 
   OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
