@@ -109,9 +109,9 @@ continuous-linux-avx512vl-x64-Debug-ICC2019.4-ISPC1.12.0-AVX512-TBB2021.5.0:
   tags:  [embree, docker, avx512vl]
   only:  [pushes]
 
-continuous-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.17.0-AVX512-TBB2021.5.0:
+continuous-linux-avx512vl-x64-Debug-CLANG4.0.0-ISPC1.17.0-AVX512-TBB2021.2.0:
   extends: .build_and_test
-  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd128 tasking:TBB2021.5.0 GLFW:OFF intensity:2"]
+  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd128 tasking:TBB2021.2.0 GLFW:OFF intensity:2"]
   image: $DOCKER_REGISTRY/embree/fedora:26
   tags:   [embree, docker, avx512vl]
   only:   [pushes]
