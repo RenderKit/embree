@@ -102,21 +102,6 @@ void _mm_maskstore_epi32 (int * mem_addr, __m128i mask, __m128i a)
 
 #define _mm_fnmadd_ss _mm_fnmadd_ps
 
-
-AVX2NEON_ABI
-__m128 _mm_broadcast_ss (float const * mem_addr)
-{
-    return vdupq_n_f32(*mem_addr);
-}
-
-AVX2NEON_ABI __m128 _mm_madd_ps(__m128 a, __m128 b, __m128 c)
-{
-    return vmlaq_f32(c, a, b);
-}
-
-
-
-
 #define _mm_fmsub_ss _mm_fmsub_ps
 #define _mm_fmadd_ps _mm_madd_ps
 #define _mm_fmadd_ss _mm_madd_ps

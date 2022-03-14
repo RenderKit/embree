@@ -59,6 +59,16 @@ __forceinline __m128 _mm_fnmsub_ps(__m128 a, __m128 b, __m128 c) {
   return vreinterpretq_m128_f32(vnegq_f32(vreinterpretq_f32_m128(_mm_fmadd_ps(a,b,c))));
 }
 
+__forceinline __m128 _mm_broadcast_ss (float const * mem_addr)
+{
+    return vdupq_n_f32(*mem_addr);
+}
+
+__forceinline __m128 _mm_madd_ps(__m128 a, __m128 b, __m128 c)
+{
+    return vmlaq_f32(c, a, b);
+}
+
 // AVX2 emulation leverages Intel FMA defs above.  Include after them.
 #if defined(NEON_AVX2_EMULATION)
 #include "avx2neon.h"
