@@ -3,12 +3,12 @@
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
-#include "../subdiv/patch_eval.h"
-#include "../subdiv/patch_eval_simd.h"
+#include "kernels/subdiv/patch_eval.h"
+#include "kernels/subdiv/patch_eval_simd.h"
 
-#include "../../common/algorithms/parallel_sort.h"
-#include "../../common/algorithms/parallel_prefix_sum.h"
-#include "../../common/algorithms/parallel_for.h"
+#include "common/algorithms/parallel_sort.h"
+#include "common/algorithms/parallel_prefix_sum.h"
+#include "common/algorithms/parallel_for.h"
 
 /*! maximum number of user vertex buffers for subdivision surfaces */
 #define RTC_MAX_USER_VERTEX_BUFFERS 65536

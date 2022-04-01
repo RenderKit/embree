@@ -5,12 +5,12 @@
 
 #include "geometry.h"
 #include "buffer.h"
-#include "../subdiv/half_edge.h"
-#include "../subdiv/tessellation_cache.h"
-#include "../subdiv/catmullclark_coefficients.h"
-#include "../subdiv/patch.h"
-#include "../../common/algorithms/parallel_map.h"
-#include "../../common/algorithms/parallel_set.h"
+#include "kernels/subdiv/half_edge.h"
+#include "kernels/subdiv/tessellation_cache.h"
+#include "kernels/subdiv/catmullclark_coefficients.h"
+#include "kernels/subdiv/patch.h"
+#include "common/algorithms/parallel_map.h"
+#include "common/algorithms/parallel_set.h"
 
 namespace embree
 {

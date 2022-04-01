@@ -9,8 +9,8 @@
 #include "context.h"
 #include "alloc.h"
 
-#include "../builders/bvh_builder_sah.h"
-#include "../builders/bvh_builder_morton.h"
+#include "kernels/builders/bvh_builder_sah.h"
+#include "kernels/builders/bvh_builder_morton.h"
 
 namespace embree
 { 

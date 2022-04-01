@@ -4,13 +4,13 @@
 #include "bvh_refit.h"
 #include "bvh_statistics.h"
 
-#include "../geometry/linei.h"
-#include "../geometry/triangle.h"
-#include "../geometry/trianglev.h"
-#include "../geometry/trianglei.h"
-#include "../geometry/quadv.h"
-#include "../geometry/object.h"
-#include "../geometry/instance.h"
+#include "kernels/geometry/linei.h"
+#include "kernels/geometry/triangle.h"
+#include "kernels/geometry/trianglev.h"
+#include "kernels/geometry/trianglei.h"
+#include "kernels/geometry/quadv.h"
+#include "kernels/geometry/object.h"
+#include "kernels/geometry/instance.h"
 
 namespace embree
 {

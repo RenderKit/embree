@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "instance_intersector.h"
-#include "../common/scene.h"
-#include "../common/instance_stack.h"
+#include "kernels/common/scene.h"
+#include "kernels/common/instance_stack.h"
 
 namespace embree
 {

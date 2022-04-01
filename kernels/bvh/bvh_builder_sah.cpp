@@ -3,23 +3,23 @@
 
 #include "bvh.h"
 #include "bvh_builder.h"
-#include "../builders/primrefgen.h"
-#include "../builders/splitter.h"
+#include "kernels/builders/primrefgen.h"
+#include "kernels/builders/splitter.h"
 
-#include "../geometry/linei.h"
-#include "../geometry/triangle.h"
-#include "../geometry/trianglev.h"
-#include "../geometry/trianglev_mb.h"
-#include "../geometry/trianglei.h"
-#include "../geometry/quadv.h"
-#include "../geometry/quadi.h"
-#include "../geometry/object.h"
-#include "../geometry/instance.h"
-#include "../geometry/subgrid.h"
+#include "kernels/geometry/linei.h"
+#include "kernels/geometry/triangle.h"
+#include "kernels/geometry/trianglev.h"
+#include "kernels/geometry/trianglev_mb.h"
+#include "kernels/geometry/trianglei.h"
+#include "kernels/geometry/quadv.h"
+#include "kernels/geometry/quadi.h"
+#include "kernels/geometry/object.h"
+#include "kernels/geometry/instance.h"
+#include "kernels/geometry/subgrid.h"
 
-#include "../common/state.h"
-#include "../../common/algorithms/parallel_for_for.h"
-#include "../../common/algorithms/parallel_for_for_prefix_sum.h"
+#include "kernels/common/state.h"
+#include "common/algorithms/parallel_for_for.h"
+#include "common/algorithms/parallel_for_for_prefix_sum.h"
 
 #define PROFILE 0
 #define PROFILE_RUNS 20

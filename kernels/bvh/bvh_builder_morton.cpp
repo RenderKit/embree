@@ -4,19 +4,19 @@
 #include "bvh.h"
 #include "bvh_statistics.h"
 #include "bvh_rotate.h"
-#include "../common/profile.h"
-#include "../../common/algorithms/parallel_prefix_sum.h"
+#include "kernels/common/profile.h"
+#include "common/algorithms/parallel_prefix_sum.h"
 
-#include "../builders/primrefgen.h"
-#include "../builders/bvh_builder_morton.h"
+#include "kernels/builders/primrefgen.h"
+#include "kernels/builders/bvh_builder_morton.h"
 
-#include "../geometry/triangle.h"
-#include "../geometry/trianglev.h"
-#include "../geometry/trianglei.h"
-#include "../geometry/quadv.h"
-#include "../geometry/quadi.h"
-#include "../geometry/object.h"
-#include "../geometry/instance.h"
+#include "kernels/geometry/triangle.h"
+#include "kernels/geometry/trianglev.h"
+#include "kernels/geometry/trianglei.h"
+#include "kernels/geometry/quadv.h"
+#include "kernels/geometry/quadi.h"
+#include "kernels/geometry/object.h"
+#include "kernels/geometry/instance.h"
 
 #if defined(__64BIT__)
 #  define ROTATE_TREE 1 // specifies number of tree rotation rounds to perform

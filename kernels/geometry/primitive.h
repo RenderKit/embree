@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "../common/default.h"
-#include "../common/scene.h"
-#include "../../common/simd/simd.h"
-#include "../common/primref.h"
-#include "../common/primref_mb.h"
+#include "kernels/common/default.h"
+#include "kernels/common/scene.h"
+#include "common/simd/simd.h"
+#include "kernels/common/primref.h"
+#include "kernels/common/primref_mb.h"
 
 namespace embree
 {

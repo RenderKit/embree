@@ -4,8 +4,8 @@
 #pragma once
 
 #include "priminfo.h"
-#include "../../common/algorithms/parallel_reduce.h"
-#include "../../common/algorithms/parallel_partition.h"
+#include "common/algorithms/parallel_reduce.h"
+#include "common/algorithms/parallel_partition.h"
 
 namespace embree
 {

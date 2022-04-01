@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "state.h"
-#include "../../common/lexers/streamfilters.h"
+#include "common/lexers/streamfilters.h"
 
 namespace embree
 {
