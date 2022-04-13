@@ -19,12 +19,14 @@ namespace embree
     sycl::private_ptr<IntersectContext> context;
     const unsigned int geomID;
     const unsigned int primID;
+    const bool filter;
     
     __forceinline Intersect1Epilog1_HWIF(RayHit& ray,
                                          sycl::private_ptr<IntersectContext> context,
                                          const unsigned int geomID,
-                                         const unsigned int primID)
-      : ray(ray), context(context), geomID(geomID), primID(primID) {}
+                                         const unsigned int primID,
+                                         const bool filter)
+      : ray(ray), context(context), geomID(geomID), primID(primID), filter(filter) {}
     
     template<typename Hit_i>
     __forceinline bool operator() (Hit_i& hit_i) const
@@ -42,7 +44,7 @@ namespace embree
 
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
-      if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter()))
+      if (filter && (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())))
       {
         Hit h(context->user,geomID,primID,Vec2f(hit_i.u,hit_i.v),hit_i.Ng);
         float old_t = ray.tfar;
@@ -86,7 +88,7 @@ namespace embree
       
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
-      if (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter()))
+      if (filter && (unlikely(context->hasContextFilter() || geometry->hasIntersectionFilter())))
       {
         Hit h(context->user,geomID,primID,uv,Ng);
         float old_t = ray.tfar;
@@ -119,12 +121,14 @@ namespace embree
     sycl::private_ptr<IntersectContext> context;
     const unsigned int geomID;
     const unsigned int primID;
+    const bool filter;
     
     __forceinline Intersect1Epilog1_HWIF(Ray& ray,
                                          sycl::private_ptr<IntersectContext> context,
                                          const unsigned int geomID,
-                                         const unsigned int primID)
-      : ray(ray), context(context), geomID(geomID), primID(primID) {}
+                                         const unsigned int primID,
+                                         const bool filter)
+      : ray(ray), context(context), geomID(geomID), primID(primID), filter(filter) {}
     
     template<typename Hit_i>
     __forceinline bool operator() (Hit_i& hit_i) const
@@ -142,7 +146,7 @@ namespace embree
 
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
-      if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
+      if (filter && (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())))
       {
         Hit h(context->user,geomID,primID,Vec2f(hit_i.u,hit_i.v),hit_i.Ng);
         float old_t = ray.tfar;
@@ -175,7 +179,7 @@ namespace embree
 
       /* call intersection filter function */
 #if defined(EMBREE_FILTER_FUNCTION) 
-      if (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter()))
+      if (filter && (unlikely(context->hasContextFilter() || geometry->hasOcclusionFilter())))
       {
         const Vec3fa Ng = hit_i.Ng();
         const Vec2f uv = hit_i.uv();
