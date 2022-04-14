@@ -8,6 +8,8 @@ namespace embree {
 RTCScene g_scene = nullptr;
 TutorialData data;
 
+class triangle_geometry_tutorial;
+
 /* adds a cube to the scene */
 unsigned int addCube (RTCScene scene_i)
 {
@@ -114,16 +116,21 @@ void renderPixelStandard(const TutorialData& data,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
-                         const ISPCCamera& camera, RayStats& stats)
+                         const ISPCCamera& camera,
+                         RayStats& stats,
+                         const RTCFeatureFlags feature_mask)
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = feature_mask;
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -138,7 +145,7 @@ void renderPixelStandard(const TutorialData& data,
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
-    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow));
+    rtcOccludedEx1(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -171,9 +178,11 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex], RTC_FEATURE_TRIANGLE);
   }
 }
+
+const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_ALL);
 
 /* called by the C++ code to render */
 extern "C" void renderFrameStandard (int* pixels,
@@ -185,12 +194,14 @@ extern "C" void renderFrameStandard (int* pixels,
 #if defined(EMBREE_SYCL_TUTORIAL)
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    cgh.set_specialization_constant<rtc_feature_mask>(RTC_FEATURE_TRIANGLE);
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;
-      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+      const RTCFeatureFlags feature_mask = kh.get_specialization_constant<rtc_feature_mask>();
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
     });
   });
   global_gpu_queue->wait_and_throw();
