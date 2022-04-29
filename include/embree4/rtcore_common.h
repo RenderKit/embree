@@ -169,6 +169,8 @@ struct RTC_ALIGN(16) RTCLinearBounds
 
 /* Feature flags for SYCL specialization constants */
 enum RTCFeatureFlags {
+  RTC_FEATURE_NONE = 0,
+
   RTC_FEATURE_MOTION_BLUR = 1 << 0,
 
   RTC_FEATURE_TRIANGLE = 1 << 1,
