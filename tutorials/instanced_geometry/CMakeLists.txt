@@ -1,10 +1,14 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+IF (EMBREE_GEOMETRY_INSTANCE)
+
 INCLUDE(tutorial)
 ADD_TUTORIAL(instanced_geometry)
 ADD_TUTORIAL_ISPC(instanced_geometry)
+ADD_TUTORIAL_SYCL(instanced_geometry)
 
+IF (NOT EMBREE_DPCPP_PVC) # fails on PVC
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
   ADD_EMBREE_TEST(instanced_geometry)
   IF(EMBREE_RAY_PACKETS)
@@ -12,4 +16,6 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
     ADD_EMBREE_TEST2(instanced_geometry_stream_incoherent instanced_geometry "--mode stream --incoherent")
   ENDIF()
 ENDIF()
+ENDIF()
 
+ENDIF()

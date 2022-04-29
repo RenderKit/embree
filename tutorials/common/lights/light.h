@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "../device_default.h"
 #include "../core/differential_geometry.h"
 
 namespace embree {
@@ -44,11 +45,11 @@ struct Light
   Light_EvalFunc eval;
 };
 
-Light_EvalRes Light_eval(const Light* self, const DifferentialGeometry& dg, const Vec3fa& dir);
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes Light_eval(const Light* self, const DifferentialGeometry& dg, const Vec3fa& dir);
 
 inline void Light_Constructor(Light* self)
 {
-  self->eval = Light_eval;
+  self->eval = GET_FUNCTION_POINTER(Light_eval);
 }
 
 } // namespace embree

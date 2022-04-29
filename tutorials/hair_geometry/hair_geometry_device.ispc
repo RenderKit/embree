@@ -2,38 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../common/math/random_sampler.isph"
-#include "../common/tutorial/tutorial_device.isph"
-#include "../common/tutorial/scene_device.h"
+// #include "../common/tutorial/tutorial_device.isph"
+// #include "../common/tutorial/scene_device.h"
 #include "../common/tutorial/optics.isph"
-
-/* accumulation buffer */
-uniform Vec3ff* uniform g_accu = NULL;
-uniform unsigned int g_accu_width = 0;
-uniform unsigned int g_accu_height = 0;
-uniform unsigned int g_accu_count = 0;
-uniform Vec3fa g_accu_vx;
-uniform Vec3fa g_accu_vy;
-uniform Vec3fa g_accu_vz;
-uniform Vec3fa g_accu_p;
-extern uniform bool g_changed;
-uniform bool g_subdiv_mode = false;
-
-/* light settings */
-extern uniform Vec3fa g_dirlight_direction;
-extern uniform Vec3fa g_dirlight_intensity;
-extern uniform Vec3fa g_ambient_intensity;
-
-/* hair material */
-uniform Vec3f hair_K;
-uniform Vec3f hair_dK;
-uniform Vec3f hair_Kr;    //!< reflectivity of hair
-uniform Vec3f hair_Kt;    //!< transparency of hair
-
-unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args);
+#include "hair_geometry_device.isph"
 
 /* scene data */
-extern uniform ISPCScene* uniform g_ispc_scene;
 RTCScene g_scene = NULL;
+uniform TutorialData data;
+extern uniform bool g_changed;
+
+RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args);
 
 void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_out)
 {
@@ -42,7 +21,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(uniform Vertex),mesh->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
-  rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
+  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -57,7 +36,7 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
   if (hair->flags)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(uniform int8),hair->numHairs);
-  rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
+  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
@@ -196,7 +175,7 @@ typedef uniform Vec3fa* uniform uniform_Vec3fa_ptr;
 inline Vec3fa evalBezier(const unsigned int geomID, const unsigned int primID, const float t)
 {
   const float t0 = 1.0f - t, t1 = t;
-  const ISPCHairSet* hair = (const ISPCHairSet*) g_ispc_scene->geometries[geomID];
+  const ISPCHairSet* hair = (const ISPCHairSet*) data.ispc_scene->geometries[geomID];
   const Vec3fa* vertices = hair->positions[0];
   const ISPCHair* hairs = hair->hairs;
 
@@ -218,10 +197,11 @@ inline Vec3fa evalBezier(const unsigned int geomID, const unsigned int primID, c
 }
 
 /* occlusion filter function */
-unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args)
+RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args)
 
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  const TutorialData* data = (const TutorialData* uniform) context->tutorialData;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
     
@@ -234,12 +214,12 @@ unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args)
  
   /* make all surfaces opaque */
   varying unsigned int geomID = RTCHitN_geomID(hit,N,0);
-  uniform ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
+  uniform ISPCGeometry* geometry = data->ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     *transparency = make_Vec3f(0.0f);
     return;
   }
-  Vec3f T = hair_Kt;
+  Vec3f T = data->hair_Kt;
   T = T * *transparency;
   *transparency = T;
   if (eq(T,make_Vec3f(0.0f)))
@@ -262,16 +242,17 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   RandomSampler sampler;
-  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
+  RandomSampler_init(sampler, (int)x, (int)y, data.accu_count);
   x += RandomSampler_get1D(sampler);
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
 
   uniform IntersectContext context;
   InitIntersectionContext(&context);
+  context.tutorialData = (void*) &data;
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -283,22 +264,22 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   while (true)
   {
     /* terminate ray path */
-    if (reduce_max(weight) < 0.01 || depth > 20)
+    if (reduce_max(weight) < 0.01f || depth > 20)
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersectV(g_scene,&context.context,RTCRayHit_(ray));
+    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
-      return color + weight*make_Vec3f(g_ambient_intensity);
+      return color + weight*make_Vec3f(data.ambient_intensity);
 
     /* calculate transmissivity of hair */
     AnisotropicBlinn brdf;
     float eps = 0.0001f;
 
-    uniform ISPCGeometry* geometry = g_ispc_scene->geometries[ray.geomID];
+    uniform ISPCGeometry* geometry = data.ispc_scene->geometries[ray.geomID];
     if (geometry->type == CURVES)
     {
       /* calculate tangent space */
@@ -307,8 +288,8 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       const Vec3f dz = normalize(cross(dy,dx));
 
       /* generate anisotropic BRDF */
-      AnisotropicBlinn__Constructor(&brdf,hair_Kr,hair_Kt,dx,20.0f,dy,2.0f,dz);
-      brdf.Kr = hair_Kr;
+      AnisotropicBlinn__Constructor(&brdf,data.hair_Kr,data.hair_Kt,dx,20.0f,dy,2.0f,dz);
+      brdf.Kr = data.hair_Kr;
     }
     else if (geometry->type == TRIANGLE_MESH)
     {
@@ -326,11 +307,11 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
       return color;
 
     /* sample directional light */
-    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(make_Vec3f(g_dirlight_direction)), eps, inf, time);
-    Vec3f T = occluded(g_scene,&context,shadow);
+    Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(make_Vec3f(data.dirlight_direction)), eps, inf, time);
+    Vec3f T = occluded(data.scene,&context,shadow);
     RayStats_addShadowRay(stats);
-    Vec3f c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(make_Vec3f(g_dirlight_direction)));
-    color = color + weight*c*T*make_Vec3f(g_dirlight_intensity);
+    Vec3f c = AnisotropicBlinn__eval(&brdf,neg(ray.dir),neg(make_Vec3f(data.dirlight_direction)));
+    color = color + weight*c*T*make_Vec3f(data.dirlight_intensity);
 
 #if 1
     /* sample BRDF */
@@ -368,37 +349,24 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
   return color;
 }
 
-/* renders a single screen tile */
-void renderTileStandard(uniform int taskIndex,
-                        uniform int threadIndex,
-                        uniform int* uniform pixels,
-                        const uniform unsigned int width,
-                        const uniform unsigned int height,
-                        const uniform float time,
-                        const uniform ISPCCamera& camera,
-                        const uniform int numTilesX,
-                        const uniform int numTilesY)
+/* task that renders a single screen tile */
+void renderPixelStandard(const uniform TutorialData& data,
+                         int x, int y, 
+                         int* uniform pixels,
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
+                         const float time,
+                         const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
-  const uniform unsigned int tileY = taskIndex / numTilesX;
-  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
-  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
-  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
-  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
-  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+  Vec3f color = renderPixel(data, (float)x,(float)y,camera,stats);
 
-  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
-  {
-    /* calculate pixel color */
-    Vec3f color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    Vec3ff accu_color = g_accu[y*width+x] + make_Vec3ff(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
-    float f = rcp(max(0.001f,accu_color.w));
-    unsigned int r = (unsigned int) (255.01f * clamp(accu_color.x*f,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.01f * clamp(accu_color.y*f,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.01f * clamp(accu_color.z*f,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-  }
+  /* write color to framebuffer */
+  Vec3ff accu_color = data.accu[y*width+x] + make_Vec3ff(color.x,color.y,color.z,1.0f); data.accu[y*width+x] = accu_color;
+  float f = rcp(max(0.001f,accu_color.w));
+  unsigned int r = (unsigned int) (255.01f * clamp(accu_color.x*f,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.01f * clamp(accu_color.y*f,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.01f * clamp(accu_color.z*f,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* task that renders a single screen tile */
@@ -410,26 +378,27 @@ task void renderTileTask(uniform int* uniform pixels,
                          const uniform int numTilesX,
                          const uniform int numTilesY)
 {
-  renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  const uniform unsigned int tileY = taskIndex / numTilesX;
+  const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
+  const uniform unsigned int x0 = tileX * TILE_SIZE_X;
+  const uniform unsigned int x1 = min(x0+TILE_SIZE_X,width);
+  const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
+  const uniform unsigned int y1 = min(y0+TILE_SIZE_Y,height);
+
+  foreach_tiled (y = y0 ... y1, x = x0 ... x1)
+  {
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+  }
 }
 
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  /* initialize last seen camera */
-  g_accu_vx = make_Vec3fa(0.0f);
-  g_accu_vy = make_Vec3fa(0.0f);
-  g_accu_vz = make_Vec3fa(0.0f);
-  g_accu_p  = make_Vec3fa(0.0f);
-
-  /* initialize hair colors */
-  hair_K  = make_Vec3f(0.8f,0.57f,0.32f);
-  hair_dK = make_Vec3f(0.1f,0.12f,0.08f);
-  hair_Kr = 0.2f*hair_K;    //!< reflectivity of hair
-  hair_Kt = 0.8f*hair_K;    //!< transparency of hair
-
+  TutorialData_Constructor(&data);
+  data.occlusionFilter = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilter);
+  
   /* create scene */
-  g_scene = convertScene(g_ispc_scene);
+  g_scene = data.scene = convertScene(data.ispc_scene);
 }
 
 export void renderFrameStandard (uniform int* uniform pixels,
@@ -439,9 +408,29 @@ export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform ISPCCamera& camera)
 {
   /* render frame */
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+  
+#else
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+#endif
 }
 
 /* called by the C++ code to render */
@@ -452,34 +441,30 @@ export void device_render (uniform int* uniform pixels,
                            const uniform ISPCCamera& camera)
 {
   /* create accumulator */
-  if (g_accu_width != width || g_accu_height != height) {
-    g_accu = uniform new uniform Vec3ff[width*height];
-    g_accu_width = width;
-    g_accu_height = height;
+  if (data.accu_width != width || data.accu_height != height) {
+    data.accu = uniform new uniform Vec3ff[width*height];
+    data.accu_width = width;
+    data.accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3ff(0.0f);
+      data.accu[i] = make_Vec3ff(0.0f);
   }
 
   /* reset accumulator */
   uniform bool camera_changed = g_changed; g_changed = false;
-  camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
-  camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
-  camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
-  camera_changed |= ne(g_accu_p, camera.xfm.p   ); g_accu_p  = camera.xfm.p;
-  g_accu_count++;
+  camera_changed |= ne(data.accu_vx,camera.xfm.l.vx); data.accu_vx = camera.xfm.l.vx;
+  camera_changed |= ne(data.accu_vy,camera.xfm.l.vy); data.accu_vy = camera.xfm.l.vy;
+  camera_changed |= ne(data.accu_vz,camera.xfm.l.vz); data.accu_vz = camera.xfm.l.vz;
+  camera_changed |= ne(data.accu_p, camera.xfm.p   ); data.accu_p  = camera.xfm.p;
+  data.accu_count++;
   if (camera_changed) {
-    g_accu_count=0;
+    data.accu_count=0;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3ff(0.0f);
+      data.accu[i] = make_Vec3ff(0.0f);
   }
 }
 
 /* called by the C++ code for cleanup */
 export void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = NULL;
-  delete[] g_accu; g_accu = NULL;
-  g_accu_width = 0;
-  g_accu_height = 0;
-  g_accu_count = 0;
+  TutorialData_Destructor(&data);
 }

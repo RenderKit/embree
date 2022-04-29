@@ -10,4 +10,4 @@
 #include "../../common/math/vec3.h"
 #include "../../common/math/affinespace.h"
 #include "../../common/sys/filename.h"
-#include "../../common/sys/string.h"
+#include "../../common/sys/estring.h"

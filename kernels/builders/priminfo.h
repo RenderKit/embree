@@ -41,6 +41,10 @@ namespace embree
         centBounds.extend(center);
       }
 
+      static void extend_ref (CentGeom& pinfo, const PrimRef& ref) {
+        pinfo.extend_primref(ref);
+      };
+      
        template<typename PrimRef> 
          __forceinline void extend_center2(const PrimRef& prim) 
        {
@@ -83,6 +87,9 @@ namespace embree
 
       __forceinline PrimInfoT (EmptyTy) 
 	: CentGeom<BBox>(empty), begin(0), end(0) {}
+
+      __forceinline PrimInfoT (size_t N) 
+	: CentGeom<BBox>(empty), begin(0), end(N) {}
 
       __forceinline PrimInfoT (size_t begin, size_t end, const CentGeomBBox3fa& centGeomBounds) 
         : CentGeom<BBox>(centGeomBounds), begin(begin), end(end) {}

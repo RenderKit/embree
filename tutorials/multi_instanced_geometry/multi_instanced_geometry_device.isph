@@ -1,0 +1,74 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+#include "../common/math/linearspace.isph"
+#include "../common/math/random_sampler.isph"
+#include "../common/math/sampling.isph"
+#include "../../include/embree3/rtcore.isph"
+//#include "scene.isph"
+
+struct InstanceLevels
+{
+  uniform unsigned int numLevels;
+  uniform unsigned int* uniform numInstancesOnLevel;
+  uniform LinearSpace3fa* uniform * uniform normalTransforms;
+};
+
+struct TutorialData
+{
+  RTCScene g_scene;
+  uniform InstanceLevels g_instanceLevels;
+
+  /* accumulation buffer */
+  uniform Vec3ff* uniform g_accu;
+  uniform unsigned int g_accu_width;
+  uniform unsigned int g_accu_height;
+  uniform unsigned int g_accu_count;
+  uniform Vec3f g_accu_vx;
+  uniform Vec3f g_accu_vy;
+  uniform Vec3f g_accu_vz;
+  uniform Vec3f g_accu_p;
+
+  LinearSpace3fa** g_normalTransforms;
+};
+
+#if __SYCL_COMPILER_VERSION >= 20210801
+}
+namespace sycl {
+  template<> struct is_device_copyable<embree::TutorialData> : std::true_type {};
+  template<> struct is_device_copyable<const embree::TutorialData> : std::true_type {};
+}
+namespace embree {
+#endif
+
+extern "C" uniform RTCScene initializeScene(uniform TutorialData& data, uniform RTCDevice device);
+
+extern "C" void cleanupScene(uniform TutorialData& data);
+
+inline void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->g_scene  = NULL;
+  This->g_accu = NULL;
+  This->g_accu_width = 0;
+  This->g_accu_height = 0;
+  This->g_accu_count = 0;
+  This->g_accu_vx = make_Vec3f(0.0f);
+  This->g_accu_vy = make_Vec3f(0.0f);
+  This->g_accu_vz = make_Vec3f(0.0f);
+  This->g_accu_p  = make_Vec3f(0.0f);
+  This->g_normalTransforms = NULL;
+  This->g_instanceLevels.numLevels = 0;
+  This->g_instanceLevels.numInstancesOnLevel = NULL;
+  This->g_instanceLevels.normalTransforms = NULL;
+}
+
+inline void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+  cleanupScene(*This);
+  delete[] This->g_accu; This->g_accu = NULL;
+  This->g_accu_width = 0;
+  This->g_accu_height = 0;
+  This->g_accu_count = 0;
+}

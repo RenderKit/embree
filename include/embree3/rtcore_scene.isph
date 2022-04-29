@@ -131,6 +131,60 @@ RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, uniform RTCIntersectContext* 
     rtcIntersect16((uniform int* uniform)&imask, scene, context, rayhit);
 }
 
+/* Intersects a varying ray with the scene. */
+RTC_FORCEINLINE void rtcIntersectExV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform rayhit, uniform RTCIntersectArguments& args) 
+{
+  context->filter = args.filter;
+#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+  context->intersect = args.intersect;
+#endif
+  rtcIntersectV(scene,context,rayhit);
+}
+
+/* Forwards ray intersection query inside user geometry callback. */
+RTC_FORCEINLINE void rtcForwardIntersectV(const RTCIntersectFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray)
+{
+  varying RTCRayHit* uniform oray = (varying RTCRayHit* uniform) args->rayhit;
+  RTCIntersectContext* uniform context = args->context;
+  
+  const float oray_org_x = oray->ray.org_x;
+  const float oray_org_y = oray->ray.org_y;
+  const float oray_org_z = oray->ray.org_z;
+  const float oray_tnear = oray->ray.tnear;
+  const float oray_dir_x = oray->ray.dir_x;
+  const float oray_dir_y = oray->ray.dir_y;
+  const float oray_dir_z = oray->ray.dir_z;
+  const float oray_time  = oray->ray.time;
+  const int   oray_mask  = oray->ray.mask;
+  
+  oray->ray.org_x = iray->org_x;
+  oray->ray.org_y = iray->org_y;
+  oray->ray.org_z = iray->org_z;
+  oray->ray.tnear = iray->tnear;
+  oray->ray.dir_x = iray->dir_x;
+  oray->ray.dir_y = iray->dir_y;
+  oray->ray.dir_z = iray->dir_z;
+  oray->ray.time = iray->time;
+    
+  rtcIntersectV(scene,context,oray);
+
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+#else
+  context->instID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
+
+  oray->ray.org_x = oray_org_x;
+  oray->ray.org_y = oray_org_y;
+  oray->ray.org_z = oray_org_z;
+  oray->ray.tnear = oray_tnear;
+  oray->ray.dir_x = oray_dir_x;
+  oray->ray.dir_y = oray_dir_y;
+  oray->ray.dir_z = oray_dir_z;
+  oray->ray.time = oray_time;
+  oray->ray.mask = oray_mask;
+}
+
 /* Intersects a stream of M rays with the scene. */
 RTC_API void rtcIntersect1M(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHit* uniform rayhit, uniform unsigned int M, uniform uintptr_t byteStride);
 
@@ -174,6 +228,60 @@ RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* u
     rtcOccluded8((uniform int* uniform)&imask, scene, context, ray);
   else if (sizeof(varying float) == 64)
     rtcOccluded16((uniform int* uniform)&imask, scene, context, ray);
+}
+
+/* Tests a varying ray for occlusion with the scene. */
+RTC_FORCEINLINE void rtcOccludedExV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray, uniform RTCIntersectArguments& args)
+{
+  context->filter = args.filter;
+#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+  context->intersect = args.intersect;
+#endif
+  rtcOccludedV(scene,context,ray);
+}
+
+/* Forwards ray occlusion query inside user geometry callback. */
+RTC_FORCEINLINE void rtcForwardOccludedV(const RTCOccludedFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray)
+{
+  varying RTCRay* uniform oray = (varying RTCRay* uniform) args->ray;
+  RTCIntersectContext* uniform context = args->context;
+
+  const float oray_org_x = oray->org_x;
+  const float oray_org_y = oray->org_y;
+  const float oray_org_z = oray->org_z;
+  const float oray_tnear = oray->tnear;
+  const float oray_dir_x = oray->dir_x;
+  const float oray_dir_y = oray->dir_y;
+  const float oray_dir_z = oray->dir_z;
+  const float oray_time  = oray->time;
+  const int   oray_mask  = oray->mask;
+  
+  oray->org_x = iray->org_x;
+  oray->org_y = iray->org_y;
+  oray->org_z = iray->org_z;
+  oray->tnear = iray->tnear;
+  oray->dir_x = iray->dir_x;
+  oray->dir_y = iray->dir_y;
+  oray->dir_z = iray->dir_z;
+  oray->time = iray->time;
+  
+  rtcOccludedV(scene,context,oray);
+
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
+#else
+  context->instID[0] = RTC_INVALID_GEOMETRY_ID;
+#endif
+
+  oray->org_x = oray_org_x;
+  oray->org_y = oray_org_y;
+  oray->org_z = oray_org_z;
+  oray->tnear = oray_tnear;
+  oray->dir_x = oray_dir_x;
+  oray->dir_y = oray_dir_y;
+  oray->dir_z = oray_dir_z;
+  oray->time = oray_time;
+  oray->mask = oray_mask;
 }
 
 /* Tests a stream of M rays for occlusion with the scene. */

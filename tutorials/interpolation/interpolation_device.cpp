@@ -123,7 +123,7 @@ inline float updateEdgeLevel(const Vec3fa& cam_pos, Vec3fa* vtx, unsigned int* i
   const Vec3fa v1 = vtx[indices[e1]];
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
-  const Vec3fa dist = cam_pos - P;
+  const Vec3fa dist = Vec3fa(cam_pos) - P;
   const float level = max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
   return level;
 }
@@ -235,8 +235,13 @@ unsigned int addTriangleCube (RTCScene scene_i, const Vec3fa& pos)
   for (unsigned int i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
 
   rtcSetGeometryVertexAttributeCount(geom,1);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT3,  cube_tri_indices,   0, 3*sizeof(unsigned int), NUM_TRI_INDICES/3);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, cube_vertex_colors, 0, sizeof(Vec3fa),         NUM_VERTICES);
+  //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT3,  cube_tri_indices,   0, 3*sizeof(unsigned int), NUM_TRI_INDICES/3);
+  void* indices = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, 3*sizeof(unsigned int), NUM_TRI_INDICES/3);
+  memcpy(indices, cube_tri_indices, NUM_TRI_INDICES*sizeof(unsigned int));
+  
+  //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, cube_vertex_colors, 0, sizeof(Vec3fa),         NUM_VERTICES);
+  void* colors = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), NUM_VERTICES);
+  memcpy(colors, cube_vertex_colors, NUM_VERTICES*sizeof(Vec3fa));
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
@@ -254,9 +259,14 @@ unsigned int addQuadCube (RTCScene scene_i, const Vec3fa& pos)
   for (unsigned int i=0; i<NUM_VERTICES; i++) vtx[i] = Vec3fa(cube_vertices[i][0]+pos.x,cube_vertices[i][1]+pos.y,cube_vertices[i][2]+pos.z);
 
   rtcSetGeometryVertexAttributeCount(geom,1);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT4,  cube_quad_indices,  0, 4*sizeof(unsigned int), NUM_QUAD_INDICES/4);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, cube_vertex_colors, 0, sizeof(Vec3fa),         NUM_VERTICES);
-
+  //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT4,  cube_quad_indices,  0, 4*sizeof(unsigned int), NUM_QUAD_INDICES/4);
+  void* indices = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, 4*sizeof(unsigned int), NUM_QUAD_INDICES/4);
+  memcpy(indices, cube_quad_indices, NUM_QUAD_INDICES*sizeof(unsigned int));
+  
+  //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, cube_vertex_colors, 0, sizeof(Vec3fa),         NUM_VERTICES);
+  void* colors = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), NUM_VERTICES);
+  memcpy(colors, cube_vertex_colors, NUM_VERTICES*sizeof(Vec3fa));
+  
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene_i, geom);
   rtcReleaseGeometry(geom);
@@ -278,8 +288,14 @@ unsigned int addCurve (RTCScene scene, const Vec3fa& pos)
   }
 
   rtcSetGeometryVertexAttributeCount(geom,1);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(unsigned int), 1);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, hair_vertex_colors, 0, sizeof(Vec3fa),       NUM_HAIR_VERTICES);
+  
+  //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT,   hair_indices,       0, sizeof(unsigned int), 1);
+  void* indices = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,            0, RTC_FORMAT_UINT,   sizeof(unsigned int), 1);
+  memcpy(indices, hair_indices, 1*sizeof(unsigned int));
+  
+  //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, hair_vertex_colors, 0, sizeof(Vec3fa),       NUM_HAIR_VERTICES);
+  void* colors = rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, RTC_FORMAT_FLOAT3, sizeof(Vec3fa), NUM_HAIR_VERTICES);
+  memcpy(colors, hair_vertex_colors, NUM_HAIR_VERTICES*sizeof(Vec3fa));
 
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene, geom);
@@ -323,8 +339,8 @@ extern "C" void device_init (char* cfg)
 
   /* add cubes */
   addCurve(g_scene,Vec3fa(4.0f,-1.0f,-3.5f));
-  quadCubeID = addQuadSubdivCube(g_scene,Vec3fa(4.0f,0.0f,0.0f));
-  triCubeID  = addTriangleSubdivCube(g_scene,Vec3fa(4.0f,0.0f,3.5f));
+  //quadCubeID = addQuadSubdivCube(g_scene,Vec3fa(4.0f,0.0f,0.0f));
+  //triCubeID  = addTriangleSubdivCube(g_scene,Vec3fa(4.0f,0.0f,3.5f));
   addTriangleCube(g_scene,Vec3fa(0.0f,0.0f,-3.0f));
   addQuadCube(g_scene,Vec3fa(0.0f,0.0f,3.0f));
 
@@ -362,14 +378,14 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
 
     /* calculate smooth shading normal */
     Vec3fa Ng = ray.Ng;
-    if (ray.geomID == 2 || ray.geomID == 3) {
+    /*if (ray.geomID == 2 || ray.geomID == 3) {
       Vec3fa dPdu,dPdv;
       auto geomID = ray.geomID; {
         rtcInterpolate1(rtcGetGeometry(data.scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,nullptr,&dPdu.x,&dPdv.x,3);
       }
       //return dPdu;
       Ng = cross(dPdu,dPdv);
-    }
+    }*/
     Ng = normalize(Ng);
     color = color + diffuse*0.5f;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
@@ -392,14 +408,14 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   return color;
 }
 
-void renderPixelWrite(const TutorialData& data,
-                      int x, int y,
-                      int* pixels,
-                      const unsigned int width,
-                      const unsigned int height,
-                      const float time,
-                      const ISPCCamera& camera,
-                      RayStats& stats)
+void renderPixelStandard(const TutorialData& data,
+                         int x, int y,
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera,
+                         RayStats& stats)
 {
   /* calculate pixel color */
   Vec3fa color = renderPixel(data,(float)x,(float)y,camera,stats);
@@ -429,7 +445,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    renderPixelWrite(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
 
@@ -439,6 +455,25 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+  
+#else
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
@@ -446,6 +481,7 @@ extern "C" void renderFrameStandard (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+#endif
 }
 
 /* called by the C++ code to render */
@@ -456,8 +492,8 @@ extern "C" void device_render (int* pixels,
                            const ISPCCamera& camera)
 {
 #if !defined(FORCE_FIXED_EDGE_TESSELLATION)
-  setQuadSubdivCubeLevels (rtcGetGeometry(g_scene, quadCubeID), camera.xfm.p);
-  setTriangleSubdivCubeLevels (rtcGetGeometry(g_scene, triCubeID), camera.xfm.p);
+  //setQuadSubdivCubeLevels (rtcGetGeometry(g_scene, quadCubeID), camera.xfm.p);
+  //setTriangleSubdivCubeLevels (rtcGetGeometry(g_scene, triCubeID), camera.xfm.p);
 #endif
 
   rtcCommitScene(g_scene);

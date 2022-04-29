@@ -101,25 +101,31 @@ namespace embree
   {
 #if !defined(ISPC) && !defined(CPPTUTORIAL)
     OBJMaterial (const std::string name = "")
-      : SceneGraph::MaterialNode(name), base(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+      : SceneGraph::MaterialNode(name), base(MATERIAL_OBJ), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f),
+        map_d(nullptr), map_Ka(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Kt(nullptr), map_Ns(nullptr), map_Displ(nullptr) {}
 
     OBJMaterial (float d, const Vec3fa& Kd, const Vec3fa& Ks, const float Ns, const std::string name = "")
-      : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), map_d(nullptr), map_Kd(nullptr), map_Displ(nullptr) {}
+      : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f),
+        map_d(nullptr), map_Ka(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Kt(nullptr), map_Ns(nullptr), map_Displ(nullptr) {}
 
-    OBJMaterial (float d, const std::shared_ptr<Texture> map_d, 
+    OBJMaterial (float d, const std::shared_ptr<Texture> map_d,
+                 const Vec3fa& Ka, const std::shared_ptr<Texture> map_Ka, 
                  const Vec3fa& Kd, const std::shared_ptr<Texture> map_Kd, 
-                 const Vec3fa& Ks, const std::shared_ptr<Texture> map_Ks, 
+                 const Vec3fa& Ks, const std::shared_ptr<Texture> map_Ks,
+                 const Vec3fa& Kt, const std::shared_ptr<Texture> map_Kt, 
                  const float Ns, const std::shared_ptr<Texture> map_Ns, 
                  const std::shared_ptr<Texture> map_Displ)
-      : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(0.f), Kd(Kd), Ks(Ks), Kt(1.0f), 
-      map_d(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Ns(nullptr), map_Displ(nullptr),
-      _map_d(map_d), _map_Kd(map_Kd), _map_Ks(map_Ks), _map_Ns(map_Ns), _map_Displ(map_Displ) {}
+      : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(Ka), Kd(Kd), Ks(Ks), Kt(Kt), 
+      map_d(nullptr), map_Ka(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Kt(nullptr), map_Ns(nullptr), map_Displ(nullptr),
+      _map_d(map_d), _map_Ka(map_Ka), _map_Kd(map_Kd), _map_Ks(map_Ks), _map_Kt(map_Kt), _map_Ns(map_Ns), _map_Displ(map_Displ) {}
 
     virtual Material* material() 
     { 
       map_d = _map_d.get();
+      map_Ka = _map_Ka.get();
       map_Kd = _map_Kd.get();
       map_Ks = _map_Ks.get();
+      map_Kt = _map_Kt.get();
       map_Ns = _map_Ns.get();
       map_Displ = _map_Displ.get();
       return &base; 
@@ -141,15 +147,19 @@ namespace embree
     Vec3fa Kt;              /*< transmission filter */
 
     const Texture* map_d;            /*< d texture */
+    const Texture* map_Ka;           /*< Ka texture */
     const Texture* map_Kd;           /*< Kd texture */
     const Texture* map_Ks;           /*< Ks texture */
+    const Texture* map_Kt;           /*< Kt texture */
     const Texture* map_Ns;           /*< Ns texture */
     const Texture* map_Displ;        /*< Displ texture */
 
 #if !defined(ISPC) && !defined(CPPTUTORIAL)
     std::shared_ptr<Texture> _map_d;            /*< d texture */
+    std::shared_ptr<Texture> _map_Ka;           /*< Ka texture */
     std::shared_ptr<Texture> _map_Kd;           /*< Kd texture */
     std::shared_ptr<Texture> _map_Ks;           /*< Ks texture */
+    std::shared_ptr<Texture> _map_Kt;           /*< Kt texture */
     std::shared_ptr<Texture> _map_Ns;           /*< Ns texture */
     std::shared_ptr<Texture> _map_Displ;        /*< Displ texture */
 #endif

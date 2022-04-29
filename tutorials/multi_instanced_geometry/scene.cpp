@@ -1,11 +1,7 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/math/affinespace.h"
-#include "../common/math/linearspace.h"
-#include "../common/math/random_sampler.h"
-#include "../common/tutorial/scene.h"
-#include "scene.h"
+#include "multi_instanced_geometry_device.h"
 
 /*
  * Our scene has multiple instantiated trees on the root level,
@@ -179,31 +175,32 @@ void addInstances(RTCDevice device,
 #include "geometry/tree.cpp"
 #include "geometry/trees.cpp"
 
-static const unsigned int g_instancesOnLevel[] = { Trees::instances.numInstances, 
-                                                   Twigs01::instances.numInstances };
-static LinearSpace3fa** g_normalTransforms;
-
-void cleanupScene()
+extern "C" void cleanupScene(TutorialData& data)
 {
-  if ( g_normalTransforms )
+  if ( data.g_normalTransforms )
   {
-    alignedFree(g_normalTransforms[0]);
-    alignedFree(g_normalTransforms[1]);
-    alignedFree(g_normalTransforms);
-    g_normalTransforms = nullptr;
+#if 0     // workaround
+    if (data.g_normalTransforms[0]) { alignedUSMFree(data.g_normalTransforms[0]); data.g_normalTransforms[0] = nullptr; }
+    if (data.g_normalTransforms[1]) { alignedUSMFree(data.g_normalTransforms[1]); data.g_normalTransforms[1] = nullptr; }
+    if (data.g_normalTransforms) { alignedUSMFree(data.g_normalTransforms); data.g_normalTransforms = nullptr; }
+    if (data.g_instanceLevels.numInstancesOnLevel) { alignedUSMFree(data.g_instanceLevels.numInstancesOnLevel); data.g_instanceLevels.numInstancesOnLevel = nullptr; }
+#endif    
+    data.g_normalTransforms = nullptr;
   }
 }
 
-RTCScene initializeScene(RTCDevice device, InstanceLevels* levels)
+extern "C" RTCScene initializeScene(TutorialData& data, RTCDevice device)
 {
-  cleanupScene();
+  cleanupScene(data);
 
-  g_normalTransforms = (LinearSpace3fa**)alignedMalloc(2*sizeof(LinearSpace3fa*), 16);
-  g_normalTransforms[0] = (LinearSpace3fa*)alignedMalloc(g_instancesOnLevel[0]*sizeof(LinearSpace3fa), 16);
-  g_normalTransforms[1] = (LinearSpace3fa*)alignedMalloc(g_instancesOnLevel[1]*sizeof(LinearSpace3fa), 16);
-  levels->numLevels = 2;
-  levels->numInstancesOnLevel = g_instancesOnLevel;
-  levels->normalTransforms = g_normalTransforms;
+  data.g_instanceLevels.numLevels = 2;
+  data.g_instanceLevels.numInstancesOnLevel = (unsigned int*)alignedUSMMalloc(2*sizeof(unsigned int), 16);
+  data.g_instanceLevels.numInstancesOnLevel[0] = Trees::instances.numInstances;
+  data.g_instanceLevels.numInstancesOnLevel[1] = Twigs01::instances.numInstances;
+  data.g_normalTransforms = (LinearSpace3fa**)alignedUSMMalloc(2*sizeof(LinearSpace3fa*), 16);
+  data.g_normalTransforms[0] = (LinearSpace3fa*)alignedUSMMalloc(data.g_instanceLevels.numInstancesOnLevel[0]*sizeof(LinearSpace3fa), 16);
+  data.g_normalTransforms[1] = (LinearSpace3fa*)alignedUSMMalloc(data.g_instanceLevels.numInstancesOnLevel[1]*sizeof(LinearSpace3fa), 16);
+  data.g_instanceLevels.normalTransforms = data.g_normalTransforms;
 
   RandomSampler sampler;
   RandomSampler_init(sampler, 98248);
@@ -215,7 +212,7 @@ RTCScene initializeScene(RTCDevice device, InstanceLevels* levels)
 
   RTCScene tree = rtcNewScene(device);
   rtcSetSceneFlags(tree, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
-  addInstances(device, tree, twig, Twigs01::instances, g_normalTransforms[1]);
+  addInstances(device, tree, twig, Twigs01::instances, data.g_normalTransforms[1]);
 
   addMesh(device, tree, Tree01::mesh);
   rtcCommitScene(tree);
@@ -223,7 +220,7 @@ RTCScene initializeScene(RTCDevice device, InstanceLevels* levels)
 
   RTCScene scene = rtcNewScene(device);
   rtcSetSceneFlags(scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
-  addInstances(device, scene, tree, Trees::instances, g_normalTransforms[0]);
+  addInstances(device, scene, tree, Trees::instances, data.g_normalTransforms[0]);
   addMesh(device, scene, Ground::mesh);
 
   rtcReleaseScene(tree);
@@ -235,14 +232,3 @@ RTCScene initializeScene(RTCDevice device, InstanceLevels* levels)
 // -----------------------------------------------------------------------------
 } // namespace embree 
 // -----------------------------------------------------------------------------
-
-extern "C" RTCScene initializeScene(RTCDevice device,
-                                    InstanceLevels* levels)
-{
-  return embree::initializeScene(device, levels);
-}
-
-extern "C" void cleanupScene()
-{
-  embree::cleanupScene();
-}

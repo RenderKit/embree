@@ -3,7 +3,7 @@
 
 #include "sysinfo.h"
 #include "intrinsics.h"
-#include "string.h"
+#include "estring.h"
 #include "ref.h"
 #if defined(__FREEBSD__)
 #include <sys/cpuset.h>

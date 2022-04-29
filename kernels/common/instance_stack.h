@@ -19,7 +19,8 @@ static_assert(RTC_MAX_INSTANCE_LEVEL_COUNT > 0,
 /* 
  * Push an instance to the stack. 
  */
-RTC_FORCEINLINE bool push(RTCIntersectContext* context, 
+template<typename Context>
+RTC_FORCEINLINE bool push(Context context, 
                           unsigned instanceId)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
@@ -39,12 +40,12 @@ RTC_FORCEINLINE bool push(RTCIntersectContext* context,
 #endif
 }
 
-
 /* 
  * Pop the last instance pushed to the stack. 
  * Do not call on an empty stack. 
  */
-RTC_FORCEINLINE void pop(RTCIntersectContext* context)
+template<typename Context>
+RTC_FORCEINLINE void pop(Context context)
 {
   assert(context);
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
@@ -54,6 +55,48 @@ RTC_FORCEINLINE void pop(RTCIntersectContext* context)
   assert(context->instID[0] != RTC_INVALID_GEOMETRY_ID);
   context->instID[0] = RTC_INVALID_GEOMETRY_ID;
 #endif
+}
+
+
+/* Push an instance to the stack. Used for point queries*/
+RTC_FORCEINLINE bool push(RTCPointQueryContext* context,
+                          unsigned int instanceId,
+                          AffineSpace3fa const& w2i,
+                          AffineSpace3fa const& i2w)
+{
+  assert(context);
+  const size_t stackSize = context->instStackSize;
+  assert(stackSize < RTC_MAX_INSTANCE_LEVEL_COUNT);
+  context->instID[stackSize] = instanceId;
+
+  AffineSpace3fa_store_unaligned(w2i,(AffineSpace3fa*)context->world2inst[stackSize]);
+  AffineSpace3fa_store_unaligned(i2w,(AffineSpace3fa*)context->inst2world[stackSize]);
+
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  if (unlikely(stackSize > 0))
+  {
+    const AffineSpace3fa world2inst = AffineSpace3fa_load_unaligned((AffineSpace3fa*)context->world2inst[stackSize  ])
+                                    * AffineSpace3fa_load_unaligned((AffineSpace3fa*)context->world2inst[stackSize-1]);
+    const AffineSpace3fa inst2world = AffineSpace3fa_load_unaligned((AffineSpace3fa*)context->inst2world[stackSize-1])
+                                    * AffineSpace3fa_load_unaligned((AffineSpace3fa*)context->inst2world[stackSize  ]);
+    AffineSpace3fa_store_unaligned(world2inst,(AffineSpace3fa*)context->world2inst[stackSize]);
+    AffineSpace3fa_store_unaligned(inst2world,(AffineSpace3fa*)context->inst2world[stackSize]);
+  }
+#endif
+  context->instStackSize++;
+  return true;
+}
+
+template<>
+RTC_FORCEINLINE void pop(RTCPointQueryContext* context)
+{
+  assert(context);
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  assert(context->instStackSize > 0);
+#else
+  assert(context->instID[0] != RTC_INVALID_GEOMETRY_ID);
+#endif
+  context->instID[--context->instStackSize] = RTC_INVALID_GEOMETRY_ID;
 }
 
 /*
@@ -77,6 +120,26 @@ RTC_FORCEINLINE void copy_UU(const unsigned* src, unsigned* tgt)
 #endif
 }
 
+RTC_FORCEINLINE void copy_UU(const RTCIntersectContext* context, unsigned* tgt)
+{
+  const unsigned* src = context->instID;
+
+#if (RTC_MAX_INSTANCE_LEVEL_COUNT == 1)
+  tgt[0] = src[0];
+  
+#else
+  
+  unsigned int depth = context->instStackSize;
+  
+  for (unsigned l = 0; l < depth; ++l)
+    tgt[l] = src[l];
+  
+  for (unsigned l = depth; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
+    tgt[l] = RTC_INVALID_GEOMETRY_ID;
+
+#endif
+}
+  
 template <int K>
 RTC_FORCEINLINE void copy_UV(const unsigned* src, vuint<K>* tgt)
 {

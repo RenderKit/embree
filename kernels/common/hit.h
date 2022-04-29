@@ -22,8 +22,13 @@ namespace embree
     {
       for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
         instID[l] = RTC_INVALID_GEOMETRY_ID;
+      
       instance_id_stack::copy_UV<K>(context->instID, instID);
     }
+
+    /* Constructs a hit */
+    __forceinline HitK(const RTCIntersectContext* context, const vuint<K>& geomID, const vuint<K>& primID, const Vec2vf<K>& uv, const Vec3vf<K>& Ng)
+      : HitK(context,geomID,primID,uv.x,uv.y,Ng) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return K; }
@@ -48,8 +53,12 @@ namespace embree
     __forceinline HitK(const RTCIntersectContext* context, unsigned int geomID, unsigned int primID, float u, float v, const Vec3fa& Ng)
       : Ng(Ng.x,Ng.y,Ng.z), u(u), v(v), primID(primID), geomID(geomID)
     {
-      instance_id_stack::copy_UU(context->instID, instID);
+      instance_id_stack::copy_UU(context, instID);
     }
+
+    /* Constructs a hit */
+    __forceinline HitK(const RTCIntersectContext* context, unsigned int geomID, unsigned int primID, const Vec2f& uv, const Vec3fa& Ng)
+      : HitK<1>(context,geomID,primID,uv.x,uv.y,Ng) {}
 
     /* Returns the size of the hit */
     static __forceinline size_t size() { return 1; }
@@ -68,6 +77,7 @@ namespace embree
   typedef HitK<4>  Hit4;
   typedef HitK<8>  Hit8;
   typedef HitK<16> Hit16;
+  typedef HitK<VSIZEX> Hitx;
 
   /* Outputs hit to stream */
   template<int K>
@@ -100,7 +110,7 @@ namespace embree
   }
 
   template<int K>
-    __forceinline void copyHitToRay(const vbool<K> &mask, RayHitK<K> &ray, const HitK<K> &hit)
+    __forceinline void copyHitToRay(const vbool<K>& mask, RayHitK<K>& ray, const HitK<K>& hit)
   {
     vfloat<K>::storeu(mask,&ray.Ng.x, hit.Ng.x);
     vfloat<K>::storeu(mask,&ray.Ng.y, hit.Ng.y);

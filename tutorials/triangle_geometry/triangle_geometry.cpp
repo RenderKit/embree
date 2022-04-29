@@ -4,12 +4,18 @@
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/benchmark_render.h"
 
+#if defined(EMBREE_SYCL_TUTORIAL)
+#  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
+#else
+#  define FEATURES FEATURE_RTCORE
+#endif
+
 namespace embree
 {
   struct Tutorial : public TutorialApplication
   {
     Tutorial()
-      : TutorialApplication("triangle_geometry",FEATURE_RTCORE)
+      : TutorialApplication("triangle_geometry",FEATURES)
     {
       /* set default camera */
       camera.from = Vec3fa(1.5f,1.5f,-1.5f);

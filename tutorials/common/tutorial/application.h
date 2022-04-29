@@ -72,7 +72,7 @@ namespace embree
   class Application
   {
   public:
-    enum Features { FEATURE_RTCORE = 1, FEATURE_STREAM = 2 };
+    enum Features { FEATURE_RTCORE = 1, FEATURE_STREAM = 2, FEATURE_SYCL = 4 };
 
     Application (int features);
     virtual ~Application();
@@ -114,7 +114,7 @@ namespace embree
   public:
     std::string rtcore;      // embree configuration
     int verbosity;           // verbosity of output
-    
+    Features features;
     CommandLineParser commandLineParser;
 
   public:

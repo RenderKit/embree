@@ -18,9 +18,9 @@ struct AmbientLight
 
 // XXX importance sampling is only done into the positive hemisphere
 // ==> poor support for translucent materials
-Light_SampleRes AmbientLight_sample(const uniform Light* uniform super,
-                                    const DifferentialGeometry& dg,
-                                    const Vec2f& s)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes AmbientLight_sample(const uniform Light* uniform super,
+                                                                 const DifferentialGeometry& dg,
+                                                                 const Vec2f& s)
 {
   uniform AmbientLight* uniform self = (uniform AmbientLight* uniform)super;
   Light_SampleRes res;
@@ -34,9 +34,9 @@ Light_SampleRes AmbientLight_sample(const uniform Light* uniform super,
   return res;
 }
 
-Light_EvalRes AmbientLight_eval(const uniform Light* uniform super,
-                                const DifferentialGeometry& dg,
-                                const Vec3f& dir)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes AmbientLight_eval(const uniform Light* uniform super,
+                                                             const DifferentialGeometry& dg,
+                                                             const Vec3f& dir)
 {
   uniform AmbientLight* uniform self = (uniform AmbientLight* uniform)super;
   Light_EvalRes res;
@@ -54,8 +54,8 @@ void AmbientLight_Constructor(uniform AmbientLight* uniform self,
 {
   Light_Constructor(&self->super);
   self->radiance = radiance;
-  self->super.sample = AmbientLight_sample;
-  self->super.eval = AmbientLight_eval;
+  self->super.sample = GET_FUNCTION_POINTER(AmbientLight_sample);
+  self->super.eval = GET_FUNCTION_POINTER(AmbientLight_eval);
 }
 
 

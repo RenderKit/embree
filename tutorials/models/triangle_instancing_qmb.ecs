@@ -1,0 +1,5 @@
+-i triangle_instancing_qmb.xml
+--vp 0 0 -2 --vi 0 0 1 --vu 0 1 0 --fov 90 --righthanded
+--dirlight -1 -1 1 3 3 3
+--instancing scene_group
+

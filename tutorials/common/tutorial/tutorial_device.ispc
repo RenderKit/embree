@@ -16,8 +16,6 @@ extern uniform bool g_changed;
 
 extern uniform float g_debug;
 
-extern uniform unsigned int render_texcoords_mode;
-
 struct DebugShaderData
 {
   RTCScene scene;
@@ -28,7 +26,7 @@ struct DebugShaderData
 
   uniform float debug;
 
-  uniform unsigned int render_texcoords_mode;
+  uniform Shader shader;
 };
 
 void DebugShaderData_Constructor(uniform DebugShaderData* uniform This)
@@ -37,7 +35,7 @@ void DebugShaderData_Constructor(uniform DebugShaderData* uniform This)
   This->ispc_scene = g_ispc_scene;
   This->scale = scale;
   This->debug = g_debug;
-  This->render_texcoords_mode = render_texcoords_mode;
+  This->shader = shader;
 }
 
 #define RENDER_FRAME_FUNCTION_ISPC(Name)                             \
@@ -159,162 +157,31 @@ void DebugShaderData_Constructor(uniform DebugShaderData* uniform This)
       });                                                               \
   }
 
-/* renders a single pixel with eyelight shading */
-Vec3f renderPixelEyeLight(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
-{
-  /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f_(camera.xfm.p);
-  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = data.debug;
-
-  /* intersect ray with scene */
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
-    return make_Vec3f(0.0f);
-  else if (dot(ray.dir,ray.Ng) < 0.0f)
-    return make_Vec3f(0.0f,abs(dot(ray.dir,normalize(ray.Ng))),0.0f);
-  else
-    return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))),0.0f,0.0f);
-}
-
-RENDER_FRAME_FUNCTION_ISPC(EyeLight)
-
-/* renders a single pixel with occlusion shading */
-Vec3f renderPixelOcclusion(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
-{
-  /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f_(camera.xfm.p);
-  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = data.debug;
-
-  /* intersect ray with scene */
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcOccludedV(data.scene,&context.context,RTCRay_(ray));
-  RayStats_addRay(stats);
-
-  /* return black if nothing hit */
-  if (ray.tfar >= 0.0f) 
-    return make_Vec3f(0.0f,0.0f,0.0f);
-  else 
-    return make_Vec3f(1.0f,1.0f,1.0f);
-}
-
-RENDER_FRAME_FUNCTION_ISPC(Occlusion)
-
-/* renders a single pixel with UV shading */
-Vec3f renderPixelUV(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
-{
-  /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f_(camera.xfm.p);
-  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = data.debug;
-
-  /* intersect ray with scene */
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
-  else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
-}
-
-RENDER_FRAME_FUNCTION_ISPC(UV)
-
-/* renders a single pixel with TexCoords shading */
-Vec3f renderPixelTexCoords(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
-{
-  /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f_(camera.xfm.p);
-  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = data.debug;
-
-  /* intersect ray with scene */
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
-    return make_Vec3f(0.0f,0.0f,1.0f);
-
-  else if (data.ispc_scene)
-  {
-    Vec2f st = make_Vec2f(0,0);
-    foreach_unique (geomID in ray.geomID) {
-      RTCGeometry geometry = rtcGetGeometry(data.scene,geomID);
-      rtcInterpolateV0(geometry,ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,2,&st.x,2);
-    }
-    if (data.render_texcoords_mode%2 == 0)
-      return make_Vec3f(st.x,st.y,0.0f);
-    else if (data.render_texcoords_mode%2 == 1)
-      return ((int)(10.0f*st.x)+(int)(10.0f*st.y)) % 2 == 0 ? make_Vec3f(1,0,0) : make_Vec3f(0,1,0);
+#define RENDER_FRAME_FUNCTION_SYCL(Name)                                \
+  extern "C" void renderFrame##Name (uniform int* uniform pixels,       \
+                          const uniform unsigned int width,             \
+                          const uniform unsigned int height,            \
+                          const uniform float time,                     \
+                          const uniform ISPCCamera& camera)             \
+  {                                                                     \
+    DebugShaderData data;                                               \
+    DebugShaderData_Constructor(&data);                                 \
+    global_gpu_queue->submit([=](sycl::handler& cgh){                   \
+        const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1)); \
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {          \
+            const unsigned int x = item.get_global_id(0);                       \
+            const unsigned int y = item.get_global_id(1);                       \
+            RayStats stats;                                             \
+            Vec3f color = renderPixel##Name(data,x,y,camera,stats);  \
+            unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
+            unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
+            unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
+            pixels[y*width+x] = (b << 16) + (g << 8) + r;               \
+          });                                                           \
+      });                                                               \
+    global_gpu_queue->wait_and_throw();                                 \
   }
 
-  return make_Vec3f(1.0f);
-}
-
-RENDER_FRAME_FUNCTION_ISPC(TexCoords)
-
-/* renders a single pixel with geometry normal shading */
-Vec3f renderPixelNg(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
-{
-  /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f_(camera.xfm.p);
-  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = data.debug;
-
-  /* intersect ray with scene */
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
-  else return abs(normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
-  //else return normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z));
-}
-
-RENDER_FRAME_FUNCTION_ISPC(Ng)
 
 Vec3f randomColor(const int ID)
 {
@@ -325,8 +192,8 @@ Vec3f randomColor(const int ID)
   return make_Vec3f(r*oneOver255f,g*oneOver255f,b*oneOver255f);
 }
 
-/* geometry ID shading */
-Vec3f renderPixelGeomID(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+/* renders a single pixel with eyelight shading */
+Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   Ray ray;
@@ -342,73 +209,86 @@ Vec3f renderPixelGeomID(const uniform DebugShaderData& data, float x, float y, c
   /* intersect ray with scene */
   uniform IntersectContext context;
   InitIntersectionContext(&context);
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
 
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  else return randomColor(ray.geomID);
-}
-
-RENDER_FRAME_FUNCTION_ISPC(GeomID)
-
-/* geometry ID and primitive ID shading */
-Vec3f renderPixelGeomIDPrimID(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
-{
-  /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f_(camera.xfm.p);
-  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = data.debug;
-
-  /* intersect ray with scene */
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-  else return randomColor(ray.geomID ^ ray.primID)*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
-}
-
-RENDER_FRAME_FUNCTION_ISPC(GeomIDPrimID)
-
-/* vizualizes the traversal cost of a pixel */
-Vec3f renderPixelCycles(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
-{
-  /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f_(camera.xfm.p);
-  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = data.debug;
-
-  /* intersect ray with scene */
   uniform int64 c0 = get_tsc();
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
+  if (data.shader == SHADER_OCCLUSION)
+    rtcOccludedV(data.scene,&context.context,RTCRay_(ray));
+  else
+    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
+
   uniform int64 c1 = get_tsc();
   RayStats_addRay(stats);
 
   /* shade pixel */
-  return make_Vec3f((uniform float)(c1-c0)*data.scale,0.0f,0.0f);
+  switch (data.shader)
+  {
+  case SHADER_EYELIGHT:
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
+      return make_Vec3f(0.0f);
+    else if (dot(ray.dir,ray.Ng) < 0.0f)
+      return make_Vec3f(0.0f,abs(dot(ray.dir,normalize(ray.Ng))),0.0f);
+    else
+      return make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))),0.0f,0.0f);
+
+  case SHADER_OCCLUSION:
+    if (ray.tfar >= 0.0f) 
+      return make_Vec3f(0.0f,0.0f,0.0f);
+    else 
+      return make_Vec3f(1.0f,1.0f,1.0f);
+
+  case SHADER_UV:
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
+    else return make_Vec3f(ray.u,ray.v,1.0f-ray.u-ray.v);
+
+  case SHADER_TEXCOORDS:
+  case SHADER_TEXCOORDS_GRID:
+
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
+      return make_Vec3f(0.0f,0.0f,1.0f);
+
+    else if (data.ispc_scene)
+    {
+      Vec2f st = make_Vec2f(0,0);
+      foreach_unique (geomID in ray.geomID) {
+        RTCGeometry geometry = rtcGetGeometry(data.scene,geomID);
+        rtcInterpolateV0(geometry,ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,2,&st.x,2);
+      }
+      if (data.shader == SHADER_TEXCOORDS)
+        return make_Vec3f(st.x,st.y,0.0f);
+      else
+        return ((int)(10.0f*st.x)+(int)(10.0f*st.y)) % 2 == 0 ? make_Vec3f(1,0,0) : make_Vec3f(0,1,0);
+    }
+    
+    return make_Vec3f(1.0f);
+
+  case SHADER_NG:
+
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f,0.0f,1.0f);
+    else return abs(normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z)));
+    //else return normalize(make_Vec3f(ray.Ng.x,ray.Ng.y,ray.Ng.z));
+
+  case SHADER_GEOMID:
+
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
+    else return randomColor(ray.geomID);
+    
+  case SHADER_GEOMID_PRIMID:
+
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
+    else return randomColor(ray.geomID ^ ray.primID)*make_Vec3f(abs(dot(ray.dir,normalize(ray.Ng))));
+    
+  case SHADER_CYCLES:
+    return make_Vec3f((uniform float)(c1-c0)*data.scale,0.0f,0.0f);
+    
+  case SHADER_DEFAULT:
+    return make_Vec3f(0,0,0);
+  }
+  
+  return make_Vec3f(0,0,0);
 }
 
-RENDER_FRAME_FUNCTION_ISPC(Cycles)
-
-/* renders a single pixel with ambient occlusion */
-Vec3f renderPixelAmbientOcclusion(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+/* renders a single pixel with eyelight shading */
+Vec3f renderPixelAOShader(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* initialize ray */
   Ray ray;
@@ -474,92 +354,9 @@ Vec3f renderPixelAmbientOcclusion(const uniform DebugShaderData& data, float x, 
   return col * intensity;
 }
 
-RENDER_FRAME_FUNCTION_ISPC(AmbientOcclusion)
+RENDER_FRAME_FUNCTION_ISPC(DebugShader)
+RENDER_FRAME_FUNCTION_ISPC(AOShader)
 
-/* differential visualization */
-extern uniform int differentialMode;
-Vec3f renderPixelDifferentials(const uniform DebugShaderData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
-{
-  /* initialize ray */
-  Ray ray;
-  ray.org = make_Vec3f_(camera.xfm.p);
-  ray.dir = make_Vec3f_(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time = data.debug;
-
-  /* intersect ray with scene */
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
-  RayStats_addRay(stats);
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return make_Vec3f(0.0f);
-
-  /* calculate differentials */
-  float eps = 0.001f/16.0f;
-  Vec3f P00, P01, P10, P11;
-  Vec3f dP00du, dP01du, dP10du, dP11du;
-  Vec3f dP00dv, dP01dv, dP10dv, dP11dv;
-  Vec3f dPdu1, dPdv1, ddPdudu1, ddPdvdv1, ddPdudv1;
-  foreach_unique (geomID in ray.geomID) {
-    RTCGeometry geometry = rtcGetGeometry(data.scene,geomID);
-    rtcInterpolateV1(geometry,ray.primID,ray.u+0.f,ray.v+0.f,RTC_BUFFER_TYPE_VERTEX,0,&P00.x,&dP00du.x,&dP00dv.x,3);
-    rtcInterpolateV1(geometry,ray.primID,ray.u+0.f,ray.v+eps,RTC_BUFFER_TYPE_VERTEX,0,&P01.x,&dP01du.x,&dP01dv.x,3);
-    rtcInterpolateV1(geometry,ray.primID,ray.u+eps,ray.v+0.f,RTC_BUFFER_TYPE_VERTEX,0,&P10.x,&dP10du.x,&dP10dv.x,3);
-    rtcInterpolateV1(geometry,ray.primID,ray.u+eps,ray.v+eps,RTC_BUFFER_TYPE_VERTEX,0,&P11.x,&dP11du.x,&dP11dv.x,3);
-    rtcInterpolateV2(geometry,ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX,0,NULL,&dPdu1.x,&dPdv1.x,&ddPdudu1.x,&ddPdvdv1.x,&ddPdudv1.x,3);
-  }
-  Vec3f dPdu0 = (P10-P00)/eps;
-  Vec3f dPdv0 = (P01-P00)/eps;
-  Vec3f ddPdudu0 = (dP10du-dP00du)/eps;
-  Vec3f ddPdvdv0 = (dP01dv-dP00dv)/eps;
-  Vec3f ddPdudv0 = (dP01du-dP00du)/eps;
-
-  Vec3f color = make_Vec3f(0.0f);
-  switch (differentialMode)
-  {
-  case  0: color = dPdu0; break;
-  case  1: color = dPdu1; break;
-  case  2: color = 10.0f*(dPdu1-dPdu0); break;
-
-  case  3: color = dPdv0; break;
-  case  4: color = dPdv1; break;
-  case  5: color = 10.0f*(dPdv1-dPdv0); break;
-
-  case  6: color = ddPdudu0; break;
-  case  7: color = ddPdudu1; break;
-  case  8: color = 10.0f*(ddPdudu1-ddPdudu0); break;
-
-  case  9: color = ddPdvdv0; break;
-  case 10: color = ddPdvdv1; break;
-  case 11: color = 10.0f*(ddPdvdv1-ddPdvdv0); break;
-
-  case 12: color = ddPdudv0; break;
-  case 13: color = ddPdudv1; break;
-  case 14: color = 10.0f*(ddPdudv1-ddPdudv0); break;
-
-  case 15: {
-    color.x = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1);
-    color.y = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1);
-    color.z = 0.0f;
-    break;
-  }
-  case 16: {
-    float Cu = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudu1,dPdv1)+cross(dPdu1,ddPdudv1)))/length(dPdu1);
-    float Cv = length(dnormalize(cross(dPdu1,dPdv1),cross(ddPdudv1,dPdv1)+cross(dPdu1,ddPdvdv1)))/length(dPdv1);
-    color = make_Vec3f(sqrt(Cu*Cu + Cv*Cv));
-    break;
-  }
-  }
-  return clamp(color,make_Vec3f(0.0f),make_Vec3f(1.0f));
-}
-
-RENDER_FRAME_FUNCTION_ISPC(Differentials)
 
 /* returns the point seen through specified pixel */
 export uniform bool device_pick(const uniform float x,
@@ -631,10 +428,6 @@ Vec2f getTextureCoordinatesSubdivMesh(void* uniform _mesh, const unsigned int pr
 	  const float v1 = 1.0f - v;
 	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;
 	}
-#if defined(_DEBUG)
-      else
-	PRINT("not supported");
-#endif
     }
   return st;
 }

@@ -9,20 +9,73 @@
 
 namespace embree
 {
-#define ALIGNED_STRUCT_(align)                                           \
-  void* operator new(size_t size) { return alignedMalloc(size,align); } \
-  void operator delete(void* ptr) { alignedFree(ptr); }                 \
+#if defined(EMBREE_DPCPP_SUPPORT)
+
+  /* enables SYCL USM allocation */
+  void enableUSMAllocEmbree(sycl::context* context, sycl::device* device, sycl::queue* queue);
+  void enableUSMAllocTutorial(sycl::context* context, sycl::device* device, sycl::queue* queue);
+
+  /* disables SYCL USM allocation */
+  void disableUSMAllocEmbree();
+  void disableUSMAllocTutorial();
+
+  /* makes device read-only USM writeable again */  
+  void makeUSMDeviceWriteable(void* ptr, size_t size);
+
+#endif
+  
+#define ALIGNED_STRUCT_(align)                                            \
+  void* operator new(size_t size) { return alignedMalloc(size,align); }   \
+  void operator delete(void* ptr) { alignedFree(ptr); }                   \
   void* operator new[](size_t size) { return alignedMalloc(size,align); } \
   void operator delete[](void* ptr) { alignedFree(ptr); }
-
-#define ALIGNED_CLASS_(align)                                           \
- public:                                                               \
-    ALIGNED_STRUCT_(align)                                              \
- private:
   
+#define ALIGNED_STRUCT_USM_(align)                                          \
+  void* operator new(size_t size) { return alignedUSMMalloc(size,align); }   \
+  void operator delete(void* ptr) { alignedUSMFree(ptr); }                   \
+  void* operator new[](size_t size) { return alignedUSMMalloc(size,align); } \
+  void operator delete[](void* ptr) { alignedUSMFree(ptr); }
+  
+#define ALIGNED_CLASS_(align)                                          \
+ public:                                                               \
+    ALIGNED_STRUCT_(align)                                             \
+ private:
+
+#define ALIGNED_CLASS_USM_(align)                                          \
+ public:                                                               \
+    ALIGNED_STRUCT_USM_(align)                                             \
+ private:
+
   /*! aligned allocation */
   void* alignedMalloc(size_t size, size_t align);
   void alignedFree(void* ptr);
+
+  /*! aligned allocation using SYCL USM */
+  void* alignedUSMMalloc(size_t size, size_t align = 16); //, sycl::usm::alloc mode = sycl::usm::alloc::shared);
+  void alignedUSMFree(void* ptr);
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+  
+  /*! aligned allocation using SYCL USM */
+  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, sycl::queue* queue, size_t size, size_t align, sycl::usm::alloc mode = sycl::usm::alloc::shared);
+  void alignedSYCLFree(sycl::context* context, void* ptr);
+
+  enum class SYCLMallocMode { DYNAMIC0, DYNAMIC1, DEFAULT, SYCL_MALLOC };
+  SYCLMallocMode setSYCLMallocMode(SYCLMallocMode mode);
+  void* alignedSYCLMallocWorkaround(sycl::context* context, sycl::device* device, sycl::queue* queue, size_t size, size_t align, sycl::usm::alloc mode = sycl::usm::alloc::shared);
+  
+  // deleter functor to use as deleter in std unique or shared pointers that
+  // capture raw pointers created by sycl::malloc and it's variants
+  template<typename T>
+  struct sycl_deleter
+  {
+    void operator()(T const* ptr)
+    {
+      alignedUSMFree((void*)ptr);
+    }
+  };
+
+#endif
   
   /*! allocator that performs aligned allocations */
   template<typename T, size_t alignment>

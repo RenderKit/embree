@@ -13,7 +13,6 @@ import re
 cwd = os.getcwd()
 
 g_debugMode = False
-g_benchmarkMode = False
 g_intensity = 2
 
 def escape(str):
@@ -39,6 +38,42 @@ def fix_cmake_paths():
 
   with open('build/CMakeCache.txt', 'w') as file:
       file.write(file_content)
+
+def get_dpcpp_and_gfx_version(config, compiler, OS):
+  if OS == "windows":
+    DPCPP_VERSION_IDENTIFIER = "DPCPP_VERSION_WIN"
+    GFX_VERSION_IDENTIFIER = "GFX_VERSION_WIN"
+  else:
+    DPCPP_VERSION_IDENTIFIER = "DPCPP_VERSION_LINUX"
+    GFX_VERSION_IDENTIFIER = "GFX_VERSION_LINUX_DG2"
+    if "sycl" in config and config["sycl"].startswith("pvc"):
+      GFX_VERSION_IDENTIFIER = "GFX_VERSION_LINUX_PVC"
+
+  DPCPP_VERSION = ""
+  if (compiler[5:] != ""):
+    DPCPP_VERSION = compiler[6:] # [6:] to parse dpcpp/
+  else:
+    # if DPCPP_VERSION is not set explicitly read version from .ci-env.yaml file
+    with open(".ci-env.yaml") as f:
+      for line in f:
+        line = line.strip()
+        if not line.startswith(DPCPP_VERSION_IDENTIFIER):
+          continue
+        key, value = line.split(":", 1)
+        DPCPP_VERSION = value.strip()
+
+  # set up gfx version
+  GFX_VERSION=""
+  # read version from .ci-env.yaml file
+  with open(".ci-env.yaml") as f:
+    for line in f:
+      line = line.strip()
+      if not line.startswith(GFX_VERSION_IDENTIFIER):
+        continue
+      key, value = line.split(":", 1)
+      GFX_VERSION = value.strip()
+
+  return DPCPP_VERSION, GFX_VERSION
 
 # detect platform
 if sys.platform.startswith("win"):
@@ -184,8 +219,37 @@ def runConfig(config):
     elif (compiler.startswith("ICX")):
       cmake_build_suffix = ""
       ispc_ext = "-vs2015"
-      env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat"')
+      env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat" --include-intel-llvm')
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
+    elif (compiler.startswith("dpcpp")):
+      cmake_build_suffix=""
+      DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
+      DPCPP_VERSION=DPCPP_VERSION.replace("/", "\\")
+      GFX_VERSION=GFX_VERSION.replace("/", "\\")
+
+      dpcpp_dir = ""+NAS+"\\dpcpp-compiler-win\\"+DPCPP_VERSION
+      gfx_dir = ""+NAS+"\\gfx-driver-win\\"+GFX_VERSION
+
+      conf.append("-G Ninja")
+      conf.append("-D CMAKE_CXX_FLAGS=-fuse-ld=link")
+      conf.append("-D CMAKE_C_FLAGS=-fuse-ld=link")
+      conf.append("-D CMAKE_CXX_COMPILER=clang++")
+      conf.append("-D CMAKE_C_COMPILER=clang")
+
+      sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
+      sys.stderr.write("dpcpp_dir = "+dpcpp_dir+"\n")
+
+      env.append("call scripts\\vars.bat "+dpcpp_dir+" "+gfx_dir+" --include-intel-llvm")
+      env.append("where clang++")
+
+      # set up backend
+      if "backend" in config: # opencl or level_zero
+        print("using "+config["backend"]+" backend")
+        env.append("set SYCL_DEVICE_FILTER="+config["backend"])
+      else:
+        print("using level_zero backend")
+        env.append("set SYCL_DEVICE_FILTER=level_zero")
+
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
@@ -204,6 +268,42 @@ def runConfig(config):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icpc -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"/bin/icc")
     elif (compiler.startswith("CLANG")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang++ -D CMAKE_C_COMPILER="+NAS+"/clang/v"+compiler[5:]+"/bin/clang")
+    elif (compiler.startswith("dpcpp")):
+      DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
+
+      # set up backend
+      if "backend" in config: # opencl or level_zero
+        print("using "+config["backend"]+" backend")
+        env.append("export SYCL_DEVICE_FILTER="+config["backend"])
+      else:
+        print("using level_zero backend")
+        env.append("export SYCL_DEVICE_FILTER=level_zero")
+
+      dpcpp_dir = ""
+      gfx_dir = ""+NAS+"/gfx-driver/"+GFX_VERSION+"/install"
+      
+      if (compiler.startswith("dpcpp/internal")):
+        dpcpp_dir = ""+NAS+"/dpcpp_compiler/"+DPCPP_VERSION
+        conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/dpcpp")
+        #conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/dpcpp")
+      else:
+        dpcpp_dir = ""+NAS+"/dpcpp_compiler/"+DPCPP_VERSION+"/dpcpp_compiler"
+        conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
+        conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
+
+      sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
+      sys.stderr.write("dpcpp_dir = "+dpcpp_dir+"\n")
+        
+      env.append("export PATH="+dpcpp_dir+"/bin:"+dpcpp_dir+"/bin-llvm:"+gfx_dir+"/usr/bin:"+gfx_dir+"/usr/local/bin:$PATH")
+      env.append("export CPATH="+dpcpp_dir+"/include/sycl:" + dpcpp_dir+"/include")
+      LD_LIBRARY_PATH_SYCL=dpcpp_dir+"/lib:"+dpcpp_dir+"/compiler/lib/intel64_lin:"+gfx_dir+"/usr/lib/x86_64-linux-gnu:" + gfx_dir+"/usr/local/lib"
+      os.environ["LD_LIBRARY_PATH_SYCL"]=LD_LIBRARY_PATH_SYCL
+      env.append("export LD_LIBRARY_PATH="+LD_LIBRARY_PATH_SYCL+":$LD_LIBRARY_PATH")
+      env.append("export LIBRARY_PATH="+dpcpp_dir+"/lib:$LIBRARY_PATH")
+      env.append("export OCL_ICD_FILENAMES="+gfx_dir+"/usr/lib/x86_64-linux-gnu/intel-opencl/libigdrcl.so"+":"+gfx_dir+"/usr/local/lib/intel-opencl/libigdrcl.so")
+      env.append("export OCL_ICD_VENDORS="+gfx_dir+"/etc/OpenCL/vendors/intel.icd")
+      env.append("export OPENCL_INCLUDE_DIR="+dpcpp_dir+"/include/sycl")
+      env.append("export OPENCL_LIBRARY="+dpcpp_dir+"/lib/libOpenCL.so")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
@@ -307,8 +407,6 @@ def runConfig(config):
     conf.append("-D EMBREE_API_NAMESPACE="+config["api_namespace"])
     conf.append("-D EMBREE_LIBRARY_NAME="+config["api_namespace"])  # we test different library name at the same time
     conf.append("-D EMBREE_ISPC_SUPPORT=OFF")
-  if "ISPC_SUPPORT" in config:
-    conf.append("-D EMBREE_ISPC_SUPPORT="+config["ISPC_SUPPORT"])
   if "STATIC_LIB" in config:
     conf.append("-D EMBREE_STATIC_LIB="+config["STATIC_LIB"])
   if "TUTORIALS" in config:
@@ -321,6 +419,8 @@ def runConfig(config):
     conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
   if "FILTER_FUNCTION" in config:
     conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
+  if "DPCPP_MBLUR" in config:
+    conf.append("-D EMBREE_DPCPP_MBLUR="+config["DPCPP_MBLUR"])
   if "RAY_MASK" in config:
     conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
   if "RAY_PACKETS" in config:
@@ -339,6 +439,8 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
   if "USERGEOM" in config:
     conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
+  if "USERGEOM_CONTEXT" in config:
+    conf.append("-D EMBREE_GEOMETRY_USER_IN_CONTEXT="+config["USERGEOM_CONTEXT"])
   if "INSTANCE" in config:
     conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
   if "POINT" in config:
@@ -351,6 +453,28 @@ def runConfig(config):
     conf.append("-D EMBREE_TUTORIALS_GLFW="+config["GLFW"])
   if "frequency_level" in config:
     rtcore.append("frequency_level="+config["frequency_level"])
+
+  if "sycl" in config:
+      conf.append("-D EMBREE_DPCPP_AOT_DEVICES="+config["sycl"])
+  if "sycl_mblur" in config:
+    conf.append("-D EMBREE_DPCPP_MBLUR="+config["sycl_mblur"])
+  if "sycl_simd_width" in config:
+    conf.append("-D EMBREE_DPCPP_SIMD_WIDTH="+config["sycl_simd_width"])
+  if "sycl_test" in config:
+    conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
+  if "EMBREE_DPCPP_SUPPORT" in config:
+    conf.append("-D EMBREE_DPCPP_SUPPORT="+config["EMBREE_DPCPP_SUPPORT"])
+  elif "sycl" in config:
+    conf.append("-D EMBREE_DPCPP_SUPPORT=ON")
+  else:
+    conf.append("-D EMBREE_DPCPP_SUPPORT=OFF")
+
+  if "EMBREE_USE_GOOGLE_BENCHMARK" in config:
+    conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK="+config["EMBREE_USE_GOOGLE_BENCHMARK"])
+  else:
+    conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK=OFF")
+  if "EMBREE_GOOGLE_BENCHMARK_DIR" in config:
+    conf.append("-D benchmark_DIR:PATH="+config["EMBREE_GOOGLE_BENCHMARK_DIR"])
 
   if "package" in config:
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
@@ -389,12 +513,23 @@ def runConfig(config):
       sys.stderr.write("unknown package mode: "+OS+":"+config["package"])
       sys.exit(1)
 
+  if OS == "linux" and compiler.startswith("dpcpp"):
+    # some additional debug output of gfx and dpcpp version
+    if (compiler.startswith("dpcpp/internal")):
+      which_dpcpp = str(subprocess.check_output(escape(" && ".join(env)) + " && which dpcpp", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
+      print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which dpcpp: ", which_dpcpp)
+      assert which_dpcpp == NAS+"/dpcpp_compiler/"+DPCPP_VERSION+"/bin/dpcpp"
+    else:
+      which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
+      print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which clang++: ", which_clang)
+      assert which_clang == NAS+"/dpcpp_compiler/"+DPCPP_VERSION+"/dpcpp_compiler/bin/clang++"
+      
+    which_ocloc = str(subprocess.check_output(escape(" && ".join(env)) + " && which ocloc", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
+    print("DEBUG - GFX version:", GFX_VERSION, " - which ocloc: ", which_ocloc)
+    assert which_ocloc == NAS+"/gfx-driver/"+GFX_VERSION+"/install/usr/bin/ocloc" or which_ocloc == NAS+"/gfx-driver/"+GFX_VERSION+"/install/usr/local/bin/ocloc"
+
   if rtcore:
     conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))
-
-  if g_benchmarkMode and OS == "linux":
-    conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK=ON")
-    conf.append("-D benchmark_DIR:PATH="+NAS+"/google-benchmark/vis-perf-x8280-1/lib64/cmake/benchmark")
 
   ctest_suffix = ""
   ctest_suffix += " -D EMBREE_TESTING_INTENSITY="+str(g_intensity)
@@ -416,13 +551,18 @@ def runConfig(config):
 
 # builds or runs tests for specified host machine
 def run(mode):
-  if not (mode == "build" or mode=="test"):
-    sys.stderr.write("unknown mode: "+mode+". should be 'build' or 'test'")
-    sys.exit(1)
-  
+
   [ctest_env, ctest_suffix, cmake_build_suffix, threads] = pickle.load(open(".ctest_conf", "rb"))
-  cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DTHREADS="+threads+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
-  
+
+  # needed for sycl_test to find .so libraries in build folder
+  if mode != "build" and OS == "linux":
+    ctest_env += "export LD_LIBRARY_PATH="+os.getcwd()+"/build:$LD_LIBRARY_PATH && "
+
+  if mode == "test" or mode == "build":
+    cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DTHREADS="+threads+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
+  else:
+    cmd = ctest_env + os.path.join("scripts",mode)
+
   if mode == "test" and not OS == "windows":
     fix_cmake_paths()
 
@@ -443,18 +583,12 @@ g_config = {}
 def parseCommandLine(argv):
   global g_config
   global g_debugMode
-  global g_benchmarkMode
   if len(argv) == 0:
-    #printUsage()
     return;
   elif len(argv)>=1 and argv[0] == "--debug":
     g_debugMode = True
     parseCommandLine(argv[1:len(argv)])
-  elif len(argv)>=1 and argv[0] == "--benchmark":
-    g_benchmarkMode = True
-    parseCommandLine(argv[1:len(argv)])
   elif len(argv)>=1 and argv[0] == "--help":
-    #printUsage()
     return
   elif ':' in argv[0]:
     p = argv[0].split(":")
@@ -470,21 +604,12 @@ def parseCommandLine(argv):
 argv = sys.argv
 g_mode = ""
 if len(argv) < 2:
-  #printUsage()
   sys.exit(1)
 else:
   g_mode = argv[1]
-  if not (g_mode == "configure" or g_mode == "build" or g_mode == "test"):
-    #printUsage()
-    sys.exit(1)
   parseCommandLine(argv[2:len(argv)])
 
 if (g_mode == "configure"):
   runConfig(g_config)
-elif (g_mode == "build"):
-  run("build")
-elif (g_mode == "test"):
-  run("test")
 else:
-  sys.stderr.write("unknown mode: "+g_mode+". should be 'configure', 'build', or 'test'")
-  sys.exit(1)
+  run(g_mode)

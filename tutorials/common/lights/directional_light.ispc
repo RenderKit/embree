@@ -22,9 +22,9 @@ struct DirectionalLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-Light_SampleRes DirectionalLight_sample(const uniform Light* uniform super,
-                                        const DifferentialGeometry& dg,
-                                        const Vec2f& s)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes DirectionalLight_sample(const uniform Light* uniform super,
+                                                                     const DifferentialGeometry& dg,
+                                                                     const Vec2f& s)
 {
   const DirectionalLight* uniform self = (DirectionalLight* uniform)super;
   Light_SampleRes res;
@@ -41,9 +41,9 @@ Light_SampleRes DirectionalLight_sample(const uniform Light* uniform super,
   return res;
 }
 
-Light_EvalRes DirectionalLight_eval(const uniform Light* uniform super,
-                                    const DifferentialGeometry&,
-                                    const Vec3f& dir)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes DirectionalLight_eval(const uniform Light* uniform super,
+                                                                 const DifferentialGeometry&,
+                                                                 const Vec3f& dir)
 {
   uniform DirectionalLight* uniform self = (uniform DirectionalLight* uniform)super;
   Light_EvalRes res;
@@ -82,8 +82,8 @@ export void* uniform DirectionalLight_create()
 {
   uniform DirectionalLight* uniform self = uniform new uniform DirectionalLight;
   Light_Constructor(&self->super);
-  self->super.sample = DirectionalLight_sample;
-  self->super.eval = DirectionalLight_eval;
+  self->super.sample = GET_FUNCTION_POINTER(DirectionalLight_sample);
+  self->super.eval = GET_FUNCTION_POINTER(DirectionalLight_eval);
 
   DirectionalLight_set(self, make_Vec3f(0.f, 0.f, 1.f), make_Vec3f(1.f), 1.f);
   return self;

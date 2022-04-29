@@ -22,9 +22,9 @@ struct SpotLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-Light_SampleRes SpotLight_sample(const uniform Light* uniform super,
-                                 const DifferentialGeometry& dg,
-                                 const Vec2f& s)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes SpotLight_sample(const uniform Light* uniform super,
+                                                              const DifferentialGeometry& dg,
+                                                              const Vec2f& s)
 {
   const SpotLight* uniform self = (SpotLight* uniform)super;
   Light_SampleRes res;
@@ -32,7 +32,7 @@ Light_SampleRes SpotLight_sample(const uniform Light* uniform super,
   // extant light vector from the hit point
   res.dir = self->position - dg.P;
 
-  if (self->radius > 0.)
+  if (self->radius > 0.0f)
     res.dir = self->frame * uniformSampleDisk(self->radius, s) + res.dir;
 
   const float dist2 = dot(res.dir, res.dir);
@@ -46,7 +46,7 @@ Light_SampleRes SpotLight_sample(const uniform Light* uniform super,
   const float cosAngle = -dot(self->frame.vz, res.dir);
   const float angularAttenuation = clamp((cosAngle - self->cosAngleMax) * self->cosAngleScale);
 
-  if (self->radius > 0.)
+  if (self->radius > 0.0f)
     res.pdf = self->diskPdf * dist2 * abs(cosAngle);
   else
     res.pdf = inf; // we always take this res
@@ -57,23 +57,23 @@ Light_SampleRes SpotLight_sample(const uniform Light* uniform super,
   return res;
 }
 
-Light_EvalRes SpotLight_eval(const uniform Light* uniform super,
-                             const DifferentialGeometry& dg,
-                             const Vec3f& dir)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes SpotLight_eval(const uniform Light* uniform super,
+                                                          const DifferentialGeometry& dg,
+                                                          const Vec3f& dir)
 {
   const SpotLight* uniform self = (SpotLight* uniform)super;
   Light_EvalRes res;
-  res.value = make_Vec3f(0.f);
+  res.value = make_Vec3f(0.0f);
   res.dist = inf;
-  res.pdf = 0.f;
+  res.pdf = 0.0f;
 
-  if (self->radius > 0.f) {
+  if (self->radius > 0.0f) {
     // intersect disk
     const float cosAngle = -dot(dir, self->frame.vz);
     if (cosAngle > self->cosAngleMax) { // inside illuminated cone?
       const Vec3f vp = dg.P - self->position;
       const float dp = dot(vp, self->frame.vz);
-      if (dp > 0.f) { // in front of light?
+      if (dp > 0.0f) { // in front of light?
         const float t = dp*rcp(cosAngle);
         const Vec3f vd = vp + t * dir;
         if (dot(vd, vd) < sqr(self->radius)) { // inside disk?
@@ -119,8 +119,8 @@ export void* uniform SpotLight_create()
   uniform SpotLight* uniform self = uniform new uniform SpotLight;
 
   Light_Constructor(&self->super);
-  self->super.sample = SpotLight_sample;
-  self->super.eval = SpotLight_eval;
+  self->super.sample = GET_FUNCTION_POINTER(SpotLight_sample);
+  self->super.eval = GET_FUNCTION_POINTER(SpotLight_eval);
 
   SpotLight_set(self,
                 make_Vec3f(0.f),

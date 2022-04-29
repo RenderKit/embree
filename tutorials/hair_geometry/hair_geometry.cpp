@@ -4,6 +4,12 @@
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/benchmark_render.h"
 
+#if defined(EMBREE_SYCL_TUTORIAL)
+#  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
+#else
+#  define FEATURES FEATURE_RTCORE
+#endif
+
 namespace embree
 {
   extern "C" {
@@ -15,7 +21,17 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication 
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("hair_geometry",FEATURE_RTCORE) {}
+      : SceneLoadingTutorialApplication("hair_geometry",FEATURES)
+    {
+#if defined(EMBREE_SYCL_TUTORIAL)
+      std::cout << "WARNING: setting CFEFusedEUDispatch=1 as workaround to get stack calls working!" << std::endl;
+#if defined(__WIN32__)
+      _putenv_s("CFEFusedEUDispatch","1");
+#else
+      setenv("CFEFusedEUDispatch","1",1);
+#endif
+#endif
+    }
 
     void postParseCommandLine() override
     {

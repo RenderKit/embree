@@ -66,6 +66,8 @@ namespace embree
   struct ISPCGeometry
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+    
     ISPCGeometry (ISPCType type) : type(type), geometry(nullptr), materialID(-1), visited(false) {}
     ~ISPCGeometry () { if (geometry) rtcReleaseGeometry(geometry); }
 #endif
@@ -86,6 +88,9 @@ namespace embree
   struct ISPCTriangleMesh
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+
+    ISPCTriangleMesh (RTCDevice device, unsigned int numTriangles, unsigned int numPositions, bool hasNormals, bool hasTexcoords, unsigned int numTimeSteps = 1);
     ISPCTriangleMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in);
     ~ISPCTriangleMesh ();
 
@@ -114,6 +119,8 @@ namespace embree
   struct ISPCQuadMesh
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+    
     ISPCQuadMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::QuadMeshNode> in);
     ~ISPCQuadMesh ();
 
@@ -142,6 +149,8 @@ namespace embree
   struct ISPCSubdivMesh
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+    
     ISPCSubdivMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::SubdivMeshNode> in);
     ~ISPCSubdivMesh ();
 
@@ -189,6 +198,8 @@ namespace embree
   struct ISPCHairSet
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+    
     ISPCHairSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::HairSetNode> in);
     ~ISPCHairSet();
 
@@ -225,6 +236,8 @@ namespace embree
   struct ISPCPointSet
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+    
     ISPCPointSet (RTCDevice device, TutorialScene* scene_in, RTCGeometryType type, Ref<SceneGraph::PointSetNode> in);
     ~ISPCPointSet();
 
@@ -251,6 +264,8 @@ namespace embree
   struct ISPCGridMesh
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+    
     ISPCGridMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::GridMeshNode> in);
     ~ISPCGridMesh ();
 
@@ -278,6 +293,9 @@ namespace embree
   struct ISPCInstance
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+
+    ISPCInstance (RTCDevice device, unsigned int numTimeSteps = 1);
     ISPCInstance (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::TransformNode> in);
     ~ISPCInstance();
 
@@ -302,6 +320,9 @@ namespace embree
   struct ISPCGroup
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+
+    ISPCGroup (RTCDevice device,  unsigned int numGeometries);
     ISPCGroup (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::GroupNode> in);
     ~ISPCGroup();
 
@@ -323,6 +344,9 @@ namespace embree
   struct ISPCScene
   {
 #if !defined(ISPC)
+    ALIGNED_STRUCT_USM_(16);
+
+    ISPCScene(RTCDevice device, unsigned int numGeometries, unsigned int numMaterials, unsigned int numLights);
     ISPCScene(RTCDevice device, TutorialScene* in);
     ~ISPCScene();
 

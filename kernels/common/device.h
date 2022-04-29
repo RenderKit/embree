@@ -15,7 +15,53 @@ namespace embree
   class Device : public State, public MemoryMonitorInterface
   {
     ALIGNED_CLASS_(16);
+    
+  public:
+    
+    /*! allocator that performs unified shared memory allocations */
+    template<typename T, size_t alignment>
+    struct allocator
+    {
+      typedef T value_type;
+      typedef T* pointer;
+      typedef const T* const_pointer;
+      typedef T& reference;
+      typedef const T& const_reference;
+      typedef std::size_t size_type;
+      typedef std::ptrdiff_t difference_type;
+      
+      allocator() {}
+      
+      allocator(Device* device)
+        : device(device) {}
+      
+      __forceinline pointer allocate( size_type n ) {
+        assert(device);
+        return (pointer) device->malloc(n*sizeof(T),alignment);
+      }
+      
+      __forceinline void deallocate( pointer p, size_type n ) {
+        if (device) device->free(p);
+      }
+      
+      __forceinline void construct( pointer p, const_reference val ) {
+        new (p) T(val);
+      }
+      
+      __forceinline void destroy( pointer p ) {
+        p->~T();
+      }
+      
+      Device* device = nullptr;
+    };
 
+    /*! vector class that performs aligned allocations from Device object */
+    template<typename T>
+    using vector = vector_t<T,allocator<T,std::alignment_of<T>::value>>;
+
+    template<typename T, size_t alignment>
+    using avector = vector_t<T,allocator<T,alignment>>;
+    
   public:
 
     /*! Device construction */
@@ -54,6 +100,18 @@ namespace embree
     /*! gets a property */
     ssize_t getProperty(const RTCDeviceProperty prop);
 
+    /*! enter device by setting up some global state */
+    virtual void enter() {}
+
+    /*! leave device by setting up some global state */
+    virtual void leave() {}
+
+    /*! buffer allocation */
+    virtual void* malloc(size_t size, size_t align);
+
+    /*! buffer deallocation */
+    virtual void free(void* ptr);
+
   private:
 
     /*! initializes the tasking system */
@@ -74,12 +132,62 @@ namespace embree
 #if defined(EMBREE_TARGET_SIMD8)
     std::unique_ptr<BVH8Factory> bvh8_factory;
 #endif
-    
+
 #if USE_TASK_ARENA
     std::unique_ptr<tbb::task_arena> arena;
 #endif
     
     /* ray streams filter */
     RayStreamFilterFuncs rayStreamFilters;
+  };
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+     
+  class DeviceGPU : public Device
+  {
+  public:
+
+    DeviceGPU(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* cfg);
+    ~DeviceGPU();
+
+    virtual void enter() override;
+    virtual void leave() override;
+    virtual void* malloc(size_t size, size_t align) override;
+    virtual void free(void* ptr) override;
+
+  private:
+    sycl::device  *gpu_device;
+    sycl::queue   *gpu_queue = nullptr;
+    sycl::context *gpu_context;
+    
+    unsigned int gpu_maxWorkGroupSize;
+    unsigned int gpu_maxComputeUnits;
+
+  public:
+    void* dispatchGlobalsPtr = nullptr;
+
+  public:
+    inline bool rthw_support() { return dispatchGlobalsPtr != nullptr; }
+    inline sycl::queue   &getGPUQueue()   { return *gpu_queue; }
+    inline sycl::device  &getGPUDevice()  { return *gpu_device; }        
+    inline sycl::context &getGPUContext() { return *gpu_context; }    
+
+    inline unsigned int getGPUMaxWorkGroupSize() { return gpu_maxWorkGroupSize; }
+
+    void init_rthw_level_zero();
+    void init_rthw_opencl();
+  };
+
+#endif
+
+  struct DeviceEnterLeave
+  {
+    DeviceEnterLeave (RTCDevice hdevice);
+    DeviceEnterLeave (RTCScene hscene);
+    DeviceEnterLeave (RTCGeometry hgeometry);
+    DeviceEnterLeave (RTCBuffer hbuffer);
+    ~DeviceEnterLeave();
+  private:
+    Device* device;
   };
 }

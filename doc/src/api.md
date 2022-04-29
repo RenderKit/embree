@@ -3,6 +3,12 @@ Embree API
 
 ``` {include=src/intro.md}
 ```
+Upgrading from Embree 3 to Embree 4
+===================================
+
+- User geometries have to return valid=-1 when a hit was found, or valid=0 when no hit was found.
+- For best performance geometry masks should just use 7 mask bits only.
+- The default geometry mask got changed from 0xFFFFFFFF to 0x1
 
 Upgrading from Embree 2 to Embree 3
 ===================================

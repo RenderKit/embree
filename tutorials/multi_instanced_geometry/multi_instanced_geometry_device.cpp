@@ -1,25 +1,12 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.h"
-#include "../common/math/random_sampler.h"
-#include "../common/math/sampling.h"
-#include "scene.h"
+#include "multi_instanced_geometry_device.h"
 
 namespace embree {
 
 RTCScene g_scene = nullptr;
-InstanceLevels g_instanceLevels;
-
-/* accumulation buffer */
-Vec3ff* g_accu = nullptr;
-unsigned int g_accu_width = 0;
-unsigned int g_accu_height = 0;
-unsigned int g_accu_count = 0;
-Vec3fa g_accu_vx;
-Vec3fa g_accu_vy;
-Vec3fa g_accu_vz;
-Vec3fa g_accu_p;
+TutorialData g_data;
 extern "C" bool g_changed;
 
 #define STREAM_SIZE (TILE_SIZE_X * TILE_SIZE_Y)
@@ -35,16 +22,17 @@ extern "C" bool g_changed;
  * Accumulate an instance transformation given an instance stack. 
  * We use this only for normal transformations in this example.
  */
-LinearSpace3fa accumulateNormalTransform(const Ray& ray,
+LinearSpace3fa accumulateNormalTransform(const TutorialData& data,
+                                        const Ray& ray,
                                         float time)
 {
   LinearSpace3fa transform = LinearSpace3fa(one);
   for (unsigned int level = 0; level < RTC_MAX_INSTANCE_LEVEL_COUNT && ray.instID[level] != RTC_INVALID_GEOMETRY_ID; ++level)
   {
-    assert(level < g_instanceLevels.numLevels);
+    assert(level < data.g_instanceLevels.numLevels);
     const unsigned int instId = ray.instID[level];
-    assert(instId < g_instanceLevels.numInstancesOnLevel[level]);
-    LinearSpace3fa M = g_instanceLevels.normalTransforms[level][instId];
+    assert(instId < data.g_instanceLevels.numInstancesOnLevel[level]);
+    LinearSpace3fa M = data.g_instanceLevels.normalTransforms[level][instId];
     transform = transform * LinearSpace3fa(M);
   }
   return transform;
@@ -62,7 +50,7 @@ void sampleLightDirection(const Vec3fa& xi,
   const Vec3fa sunDir = normalize(Vec3fa(-1.f, 1.f, 1.f));
   const Vec3fa sunEmission = Vec3fa(1.f);
   const Vec3fa skyEmission = Vec3fa(.2f);
-  const float skyPdf = 1.f/4.f/float(pi);
+  const float skyPdf = 1.f/4.f/float(M_PI);
   const float sunWeight = .1f; // Put most samples into the sky, the sun will converge instantly.
 
   if (xi.z < sunWeight)
@@ -71,7 +59,7 @@ void sampleLightDirection(const Vec3fa& xi,
   {
     // Uniform sphere sampling around +Y axis.
     const float theta = acos(1.f - 2.f * xi.x);
-    const float phi = 2.f * float(pi) * xi.y;
+    const float phi = 2.f * float(M_PI) * xi.y;
     const float st = sin(theta);
     dir = Vec3fa(st * cos(phi), cos(theta), -st * sin(phi));
   }
@@ -109,7 +97,7 @@ inline void invalidateRay(Ray& ray)
  */
 Vec2f sampleGaussianPixelFilter(RandomSampler& sampler)
 {
-  const float phi = 2.f * float(pi) * RandomSampler_get1D(sampler);
+  const float phi = 2.f * float(M_PI) * RandomSampler_get1D(sampler);
   const float threeSigma = 1.f;
   const float sigma = threeSigma / 3.f;
 
@@ -127,7 +115,8 @@ Vec2f sampleGaussianPixelFilter(RandomSampler& sampler)
 /*
  * Sample a primary ray.
  */
-Ray samplePrimaryRay(unsigned int x,
+Ray samplePrimaryRay(const TutorialData& data,
+                     unsigned int x,
                      unsigned int x0,
                      unsigned int y,
                      unsigned int y0,
@@ -135,7 +124,7 @@ Ray samplePrimaryRay(unsigned int x,
                      RandomSampler& sampler,
                      RayStats& stats)
 {
-  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
+  RandomSampler_init(sampler, (int)x, (int)y, data.g_accu_count);
 
   const unsigned int id = (y-y0) * TILE_SIZE_X + (x-x0);
   const Vec2f offset = sampleGaussianPixelFilter(sampler);
@@ -172,7 +161,8 @@ inline Ray makeShadowRay(const Ray& primary,
 /*
  * Our shader for this scene: Lambertian shading with normal display.
  */
-Vec3fa shader(const Ray& primaryRay, 
+Vec3fa shade(const TutorialData& data,
+             const Ray& primaryRay, 
              const Ray& shadowRay,
              const Vec3fa& lightDir,
              const Vec3fa& emission)
@@ -180,7 +170,7 @@ Vec3fa shader(const Ray& primaryRay,
   if (primaryRay.geomID == RTC_INVALID_GEOMETRY_ID || shadowRay.tfar < 0.f)
     return Vec3fa(0.f);
 
-  const LinearSpace3fa xfm = accumulateNormalTransform(primaryRay, 0.f);
+  const LinearSpace3fa xfm = accumulateNormalTransform(data,primaryRay, 0.f);
   Vec3fa Ns = normalize(xfmVector(xfm, Vec3fa(primaryRay.Ng)));
 
   const float cosThetaOut = dot(Ns, lightDir);
@@ -222,15 +212,16 @@ inline unsigned int packRGB8(const Vec3fa& color)
 /*
  * Splat a color into the framebuffer.
  */
-void splat(int* pixels,
+void splat(const TutorialData& data,
+           int* pixels,
            const unsigned int width,
            unsigned int x,
            unsigned int y,
            const Vec3fa& color)
 {
   const unsigned int pixIdx = y * width + x;
-  const Vec3ff accu_color = g_accu[pixIdx] + Vec3ff(color.x,color.y,color.z,1.0f); 
-  g_accu[pixIdx] = accu_color;
+  const Vec3ff accu_color = data.g_accu[pixIdx] + Vec3ff(color.x,color.y,color.z,1.0f); 
+  data.g_accu[pixIdx] = accu_color;
   if (accu_color.w > 0)
   {
     float f = rcp(accu_color.w);
@@ -243,16 +234,24 @@ void splat(int* pixels,
  */
 void renderTileStream(int* pixels,
                       const unsigned int width,
+                      const unsigned int height,
                       const float time,
                       const ISPCCamera& camera,
                       const unsigned int x0,
                       const unsigned int x1,
                       const unsigned int y0,
                       const unsigned int y1,
-                      IntersectContext& primaryContext,
-                      IntersectContext& shadowContext,
                       RayStats& stats)
 {
+  IntersectContext primaryContext;
+  InitIntersectionContext(&primaryContext);
+  IntersectContext shadowContext;
+  InitIntersectionContext(&shadowContext);
+
+  // Primary rays in this scene are coherent. This is not the case
+  // for shadow rays, since there is a spherical environment light.
+  primaryContext.context.flags = g_iflags_coherent;
+
   RandomSampler sampler;
   Ray primary[STREAM_SIZE];
   Ray shadow[STREAM_SIZE];
@@ -264,12 +263,12 @@ void renderTileStream(int* pixels,
   {
     FOREACH_TILED_MITIGATION
 
-    primary[numPackets] = samplePrimaryRay(x, x0, y, y0, camera, sampler, stats);
+    primary[numPackets] = samplePrimaryRay(g_data, x, x0, y, y0, camera, sampler, stats);
 
     ++numPackets;
   }
 
-  rtcIntersect1M(g_scene, 
+  rtcIntersect1M(g_data.g_scene, 
                  &primaryContext.context,
                  (RTCRayHit*)&primary,
                  numPackets,
@@ -296,7 +295,7 @@ void renderTileStream(int* pixels,
     ++numPackets;
   }
 
-  rtcOccluded1M(g_scene, 
+  rtcOccluded1M(g_data.g_scene, 
                 &shadowContext.context, 
                 (RTCRay*)&shadow,
                 numPackets, 
@@ -307,15 +306,50 @@ void renderTileStream(int* pixels,
   {
     FOREACH_TILED_MITIGATION
 
-    const Vec3fa color = shader(primary[numPackets],
+    const Vec3fa color = shade(g_data,
+                               primary[numPackets],
                                shadow[numPackets],
                                lightDir[numPackets],
                                emission[numPackets]);
 
-    splat(pixels, width, x, y, color);
+    splat(g_data, pixels, width, x, y, color);
 
     ++numPackets;
   }
+}
+
+void renderPixelStandard(const TutorialData& data, int x, int y,
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera, RayStats& stats)
+{
+  IntersectContext primaryContext;
+  InitIntersectionContext(&primaryContext);
+  IntersectContext shadowContext;
+  InitIntersectionContext(&shadowContext);
+
+  // Primary rays in this scene are coherent. This is not the case
+  // for shadow rays, since there is a spherical environment light.
+  //primaryContext.context.flags = g_iflags_coherent;
+  
+  RandomSampler sampler;
+  Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
+  rtcIntersect1(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay));
+  
+  Vec3fa color = Vec3fa(0.f);
+  if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
+  {
+    Vec3fa lightDir;
+    Vec3fa emission;
+    sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
+    Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
+    rtcOccluded1(data.g_scene, &shadowContext.context, RTCRay_(shadowRay));
+    color = shade(data, primaryRay, shadowRay, lightDir, emission);
+  }
+  
+  splat(data, pixels, width, x, y, color);
 }
 
 /*
@@ -323,37 +357,19 @@ void renderTileStream(int* pixels,
  */
 void renderTileNormal(int* pixels,
                       const unsigned int width,
+                      const unsigned int height,
                       const float time,
                       const ISPCCamera& camera,
                       const unsigned int x0,
                       const unsigned int x1,
                       const unsigned int y0,
                       const unsigned int y1,
-                      IntersectContext& primaryContext,
-                      IntersectContext& shadowContext,
                       RayStats& stats)
 {
-  RandomSampler sampler;
-
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    FOREACH_TILED_MITIGATION
-
-    Ray primaryRay = samplePrimaryRay(x, x0, y, y0, camera, sampler, stats);
-    rtcIntersect1(g_scene, &primaryContext.context, RTCRayHit_(primaryRay));
-
-    Vec3fa color = Vec3fa(0.f);
-    if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
-    {
-      Vec3fa lightDir;
-      Vec3fa emission;
-      sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
-      Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-      rtcOccluded1(g_scene, &shadowContext.context, RTCRay_(shadowRay));
-      color = shader(primaryRay, shadowRay, lightDir, emission);
-    }
-
-    splat(pixels, width, x, y, color);
+    FOREACH_TILED_MITIGATION;
+    renderPixelStandard(g_data,x,y,pixels,width,height,time,camera,stats);
   }
 }
 
@@ -365,12 +381,12 @@ void renderTileNormal(int* pixels,
  * A task that renders a single screen tile.
  */
 void renderTileTask (int taskIndex, int threadIndex, int* pixels,
-  const unsigned int width,
-  const unsigned int height,
-  const float time,
-  const ISPCCamera& camera,
-  const int numTilesX,
-  const int numTilesY)
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera,
+                         const int numTilesX,
+                         const int numTilesY)
 {
   const unsigned int tileY = taskIndex / numTilesX;
   const unsigned int tileX = taskIndex - tileY * numTilesX;
@@ -379,29 +395,15 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   const unsigned int y0 = tileY * TILE_SIZE_Y;
   const unsigned int y1 = min(y0 + TILE_SIZE_Y, height);
 
-  IntersectContext primaryContext;
-  IntersectContext shadowContext;
-
-  InitIntersectionContext(&primaryContext);
-  InitIntersectionContext(&shadowContext);
-
-  // Primary rays in this scene are coherent. This is not the case
-  // for shadow rays, since there is a spherical environment light.
-  primaryContext.context.flags = g_iflags_coherent; 
-
   if (g_mode == MODE_NORMAL) 
-    renderTileNormal(pixels, width,
+    renderTileNormal(pixels, width, height,
                      time, camera,
                      x0, x1, y0, y1,
-                     primaryContext,
-                     shadowContext,
                      g_stats[threadIndex]);
   else                       
-    renderTileStream(pixels, width,
+    renderTileStream(pixels, width, height,
                      time, camera,
                      x0, x1, y0, y1,
-                     primaryContext,
-                     shadowContext,
                      g_stats[threadIndex]);
 }
 
@@ -410,15 +412,36 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
  */
 extern "C" void device_init(char* cfg)
 {
-  g_scene = initializeScene(g_device, &g_instanceLevels);
+  TutorialData_Constructor(&g_data);
+  g_scene = g_data.g_scene = initializeScene(g_data, g_device);
 }
 
+
 extern "C" void renderFrameStandard(int* pixels,
-                         const unsigned int width,
-                         const unsigned int height,
-                         const float time,
-                         const ISPCCamera& camera)
+                                const unsigned int width,
+                                const unsigned int height,
+                                const float time,
+                                const ISPCCamera& camera)
 {
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = g_data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+  
+#else
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
@@ -426,6 +449,7 @@ extern "C" void renderFrameStandard(int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+#endif
 }
 
 /* 
@@ -437,30 +461,30 @@ extern "C" void device_render(int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
-  if (g_accu_width != width || g_accu_height != height) {
-    alignedFree(g_accu);
-    g_accu = (Vec3ff*) alignedMalloc(width*height*sizeof(Vec3ff),16);
-    g_accu_width = width;
-    g_accu_height = height;
+  if (g_data.g_accu_width != width || g_data.g_accu_height != height) {
+    alignedUSMFree(g_data.g_accu);
+    g_data.g_accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16);
+    g_data.g_accu_width = width;
+    g_data.g_accu_height = height;
     for (unsigned int i=0; i<width*height; i++)
-      g_accu[i] = Vec3ff(0.0f);
+      g_data.g_accu[i] = Vec3ff(0.0f);
   }
-
+  
   bool camera_changed = g_changed; 
   g_changed = false;
-  camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
-  camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
-  camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
-  camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
+  camera_changed |= ne(g_data.g_accu_vx,camera.xfm.l.vx); g_data.g_accu_vx = camera.xfm.l.vx;
+  camera_changed |= ne(g_data.g_accu_vy,camera.xfm.l.vy); g_data.g_accu_vy = camera.xfm.l.vy;
+  camera_changed |= ne(g_data.g_accu_vz,camera.xfm.l.vz); g_data.g_accu_vz = camera.xfm.l.vz;
+  camera_changed |= ne(g_data.g_accu_p, camera.xfm.p);    g_data.g_accu_p  = camera.xfm.p;
 
   if (camera_changed)
   {
-    g_accu_count=0;
+    g_data.g_accu_count=0;
     for (unsigned int i=0; i<width*height; i++)
-      g_accu[i] = Vec3ff(0.0f);
+      g_data.g_accu[i] = Vec3ff(0.0f);
   }
   else
-    g_accu_count++;
+    g_data.g_accu_count++;
 }
 
 /*
@@ -468,14 +492,20 @@ extern "C" void device_render(int* pixels,
  */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene(g_scene);
-  g_scene = nullptr;
-  cleanupScene();
-  alignedFree(g_accu); 
-  g_accu = nullptr;
-  g_accu_width = 0;
-  g_accu_height = 0;
-  g_accu_count = 0;
+  TutorialData_Destructor(&g_data);
 }
+
+/*
+ * This must be here for the linker to find, but we will not use it.
+ */
+void renderTileStandard(int taskIndex,
+                        int threadIndex,
+                        int* pixels,
+                        const unsigned int width,
+                        const unsigned int height,
+                        const float time,
+                        const ISPCCamera& camera,
+                        const int numTilesX,
+                        const int numTilesY) { }
 
 } // namespace embree

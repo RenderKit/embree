@@ -419,6 +419,11 @@ namespace embree
       skew = string_to_Vec3f(xml->parm("skew"));
     if (xml->parm("shift") != "")
       shift = string_to_Vec3f(xml->parm("shift"));
+    if (xml->parm("rotate") != "") {
+      q = string_to_Vec4f(xml->parm("rotate"));
+      Quaternion3f Q = Quaternion3f::rotate(Vec3fa(q.x, q.y, q.z), q.w);
+      q = Vec4f(Q.i, Q.j, Q.k, Q.r);
+    }
     if (xml->parm("quaternion") != "") {
       q = string_to_Vec4f(xml->parm("quaternion"));
     }
@@ -786,7 +791,8 @@ namespace embree
       if (ftell(binFile) + width*height*bytesPerTexel > (unsigned)binFileSize)
         THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
       
-      texture = std::make_shared<Texture>(width,height,format);
+      //texture = std::make_shared<Texture>(width,height,format);
+      texture = std::shared_ptr<Texture>(new Texture(width,height,format));
       if (width*height != fread(texture->data, bytesPerTexel, width*height, binFile)) 
         THROW_RUNTIME_ERROR("error reading from binary file: "+binFileName.str());
     }
@@ -887,16 +893,20 @@ namespace embree
     }
     else if (type == "OBJ") 
     {
-      const std::shared_ptr<Texture> map_d = parms.getTexture("map_d");  
       const float d = parms.getFloat("d", 1.0f);
-      const std::shared_ptr<Texture> map_Kd = parms.getTexture("map_Kd");  
+      const std::shared_ptr<Texture> map_d = parms.getTexture("map_d");  
+      const Vec3fa Ka = parms.getVec3fa("Ka", zero);
+      const std::shared_ptr<Texture> map_Ka = parms.getTexture("map_Ka");  
       const Vec3fa Kd = parms.getVec3fa("Kd", one);
-      const std::shared_ptr<Texture> map_Ks = parms.getTexture("map_Ks");  
+      const std::shared_ptr<Texture> map_Kd = parms.getTexture("map_Kd");  
       const Vec3fa Ks = parms.getVec3fa("Ks", zero);
+      const std::shared_ptr<Texture> map_Ks = parms.getTexture("map_Ks");  
+      const Vec3fa Kt = parms.getVec3fa("Kt", zero);
+      const std::shared_ptr<Texture> map_Kt = parms.getTexture("map_Kt");  
+      const float Ns = parms.getFloat("Ns", 10.0f); 
       const std::shared_ptr<Texture> map_Ns = parms.getTexture("map_Ns");  
-      const float Ns = parms.getFloat("Ns", 10.0f);
-      const std::shared_ptr<Texture> map_Bump = parms.getTexture("map_Bump");
-      return new OBJMaterial(d,map_d,Kd,map_Kd,Ks,map_Ks,Ns,map_Ns,map_Bump);
+      const std::shared_ptr<Texture> map_Displ = parms.getTexture("map_Displ");
+      return new OBJMaterial(d,map_d,Ka,map_Ka,Kd,map_Kd,Ks,map_Ks,Kt,map_Kt,Ns,map_Ns,map_Displ);
     }
     else if (type == "OBJMaterial")  // for BGF file format
     {
@@ -1278,26 +1288,32 @@ namespace embree
     bool quaternion = false;
     AffineSpace3ff space;
     avector<AffineSpace3ff> spaces(time_steps);
-    if (xml->children[0]->name == "AffineSpace") {
-      space = (AffineSpace3ff) load<AffineSpace3fa>(xml->children[0]);
+    size_t j = 0;
+    for (size_t i=0; i<time_steps; i++) {
+      AffineSpace3ff space;
+      if (xml->children[i]->name == "AffineSpace") {
+        space = (AffineSpace3ff) load<AffineSpace3fa>(xml->children[i]);
+        spaces[j++] = space;
+      }
+      else if (xml->children[i]->name == "Quaternion") {
+        space = loadQuaternion(xml->children[i]);
+        quaternion = true;
+        spaces[j++] = space;
+      }
+      else {
+        THROW_RUNTIME_ERROR(xml->loc.str()+": unknown transformation representation");
+      }
     }
-    else if (xml->children[0]->name == "Quaternion") {
-      space = loadQuaternion(xml->children[0]);
-      quaternion = true;
-    }
-    else {
-      THROW_RUNTIME_ERROR(xml->loc.str()+": unknown transformation representation");
-    }
-    for (size_t i=0; i<time_steps; i++) spaces[i] = space;
+    assert(j == time_steps);
     
-    if (xml->size() == 2) {
-      auto node = new SceneGraph::TransformNode(spaces,loadNode(xml->children[1]));
+    if (xml->size() == time_steps+1) {
+      auto node = new SceneGraph::TransformNode(spaces,loadNode(xml->children[time_steps]));
       node->spaces.quaternion = quaternion;
       return node;
     }
   
     Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
-    for (size_t i=1; i<xml->size(); i++)
+    for (size_t i=time_steps; i<xml->size(); i++)
       group->add(loadNode(xml->children[i]));
     
     auto node = new  SceneGraph::TransformNode(spaces,group.dynamicCast<SceneGraph::Node>());

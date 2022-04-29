@@ -1,0 +1,15 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#pragma once
+
+#define SYCL_EXTERNAL
+
+/* include embree API */
+#include "../../include/embree3/rtcore.isph"
+RTC_NAMESPACE_USE
+#include "../../kernels/config.h"
+
+#define GET_FUNCTION_POINTER(f) f
+
+  

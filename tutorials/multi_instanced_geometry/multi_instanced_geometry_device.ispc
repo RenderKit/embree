@@ -1,23 +1,10 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.isph"
-#include "../common/math/random_sampler.isph"
-#include "../common/math/sampling.isph"
-#include "scene.isph"
+#include "multi_instanced_geometry_device.isph"
 
 RTCScene g_scene = NULL;
-uniform InstanceLevels g_instanceLevels;
-
-/* accumulation buffer */
-uniform Vec3fa* uniform g_accu = NULL;
-uniform unsigned int g_accu_width = 0;
-uniform unsigned int g_accu_height = 0;
-uniform unsigned int g_accu_count = 0;
-uniform Vec3fa g_accu_vx;
-uniform Vec3fa g_accu_vy;
-uniform Vec3fa g_accu_vz;
-uniform Vec3fa g_accu_p;
+uniform TutorialData g_data;
 extern uniform bool g_changed;
 
 #define STREAM_SIZE (TILE_SIZE_X * TILE_SIZE_Y)
@@ -33,16 +20,17 @@ extern uniform bool g_changed;
  * Accumulate an instance transformation given an instance stack. 
  * We use this only for normal transformations in this example.
  */
-LinearSpace3f accumulateNormalTransform(const Ray& ray,
+LinearSpace3f accumulateNormalTransform(const uniform TutorialData& data,
+                                        const Ray& ray,
                                         float time)
 {
   LinearSpace3f transform = make_LinearSpace3f_identity();
   for (unsigned int level = 0; level < RTC_MAX_INSTANCE_LEVEL_COUNT && ray.instID[level] != RTC_INVALID_GEOMETRY_ID; ++level)
   {
-    assert(level < g_instanceLevels.numLevels);
+    assert(level < data.g_instanceLevels.numLevels);
     const unsigned int instId = ray.instID[level];
-    assert(instId < g_instanceLevels.numInstancesOnLevel[level]);
-    LinearSpace3fa M = g_instanceLevels.normalTransforms[level][instId];
+    assert(instId < data.g_instanceLevels.numInstancesOnLevel[level]);
+    LinearSpace3fa M = data.g_instanceLevels.normalTransforms[level][instId];
     transform = transform * make_LinearSpace3f(M);
   }
   return transform;
@@ -94,8 +82,8 @@ inline void invalidateRay(Ray& ray)
   // in streamed mode, active state of lanes is forgotten between ray
   // generation and traversal.
   unmasked {
-    ray.org = make_Vec3f(0.f);
-    ray.dir = make_Vec3f(0.f);
+    ray.org = make_Vec3f_(0.f);
+    ray.dir = make_Vec3f_(0.f);
     ray.tnear = pos_inf;
     ray.tfar = neg_inf;
   }
@@ -125,7 +113,8 @@ Vec2f sampleGaussianPixelFilter(RandomSampler& sampler)
 /*
  * Sample a primary ray.
  */
-Ray samplePrimaryRay(unsigned int x,
+Ray samplePrimaryRay(const uniform TutorialData& data,
+                     unsigned int x,
                      unsigned int x0,
                      unsigned int y,
                      unsigned int y0,
@@ -133,7 +122,7 @@ Ray samplePrimaryRay(unsigned int x,
                      RandomSampler& sampler,
                      uniform RayStats& stats)
 {
-  RandomSampler_init(sampler, (int)x, (int)y, g_accu_count);
+  RandomSampler_init(sampler, (int)x, (int)y, data.g_accu_count);
 
   const unsigned int id = (y-y0) * TILE_SIZE_X + (x-x0);
   const Vec2f offset = sampleGaussianPixelFilter(sampler);
@@ -170,7 +159,8 @@ inline Ray makeShadowRay(const Ray& primary,
 /*
  * Our shader for this scene: Lambertian shading with normal display.
  */
-Vec3f shader(const Ray& primaryRay, 
+Vec3f shade(const uniform TutorialData& data,
+             const Ray& primaryRay, 
              const Ray& shadowRay,
              const Vec3f& lightDir,
              const Vec3f& emission)
@@ -178,7 +168,7 @@ Vec3f shader(const Ray& primaryRay,
   if (primaryRay.geomID == RTC_INVALID_GEOMETRY_ID || shadowRay.tfar < 0.f)
     return make_Vec3f(0.f);
 
-  const LinearSpace3f xfm = accumulateNormalTransform(primaryRay, 0.f);
+  const LinearSpace3f xfm = accumulateNormalTransform(data,primaryRay, 0.f);
   Vec3f Ns = normalize(xfmVector(xfm, make_Vec3f(primaryRay.Ng)));
 
   const float cosThetaOut = dot(Ns, lightDir);
@@ -220,15 +210,16 @@ inline unsigned int packRGB8(const Vec3f& color)
 /*
  * Splat a color into the framebuffer.
  */
-void splat(uniform int* uniform pixels,
+void splat(const uniform TutorialData& data,
+           uniform int* uniform pixels,
            const uniform unsigned int width,
            unsigned int x,
            unsigned int y,
            const Vec3f& color)
 {
   const unsigned int pixIdx = y * width + x;
-  const Vec3fa accu_color = g_accu[pixIdx] + make_Vec3fa(color.x,color.y,color.z,1.0f); 
-  g_accu[pixIdx] = accu_color;
+  const Vec3ff accu_color = data.g_accu[pixIdx] + make_Vec3ff(color.x,color.y,color.z,1.0f); 
+  data.g_accu[pixIdx] = accu_color;
   if (accu_color.w > 0)
   {
     float f = rcp(accu_color.w);
@@ -241,16 +232,24 @@ void splat(uniform int* uniform pixels,
  */
 void renderTileStream(uniform int* uniform pixels,
                       const uniform unsigned int width,
+                      const uniform unsigned int height,
                       const uniform float time,
                       const uniform ISPCCamera& camera,
                       const uniform unsigned int x0,
                       const uniform unsigned int x1,
                       const uniform unsigned int y0,
                       const uniform unsigned int y1,
-                      uniform IntersectContext& primaryContext,
-                      uniform IntersectContext& shadowContext,
                       uniform RayStats& stats)
 {
+  uniform IntersectContext primaryContext;
+  InitIntersectionContext(&primaryContext);
+  uniform IntersectContext shadowContext;
+  InitIntersectionContext(&shadowContext);
+
+  // Primary rays in this scene are coherent. This is not the case
+  // for shadow rays, since there is a spherical environment light.
+  primaryContext.context.flags = g_iflags_coherent;
+
   RandomSampler sampler;
   Ray primary[STREAM_SIZE];
   Ray shadow[STREAM_SIZE];
@@ -262,12 +261,12 @@ void renderTileStream(uniform int* uniform pixels,
   {
     FOREACH_TILED_MITIGATION
 
-    primary[numPackets] = samplePrimaryRay(x, x0, y, y0, camera, sampler, stats);
+    primary[numPackets] = samplePrimaryRay(g_data, x, x0, y, y0, camera, sampler, stats);
 
     ++numPackets;
   }
 
-  rtcIntersectVM(g_scene, 
+  rtcIntersectVM(g_data.g_scene, 
                  &primaryContext.context,
                  (varying RTCRayHit* uniform)&primary,
                  numPackets,
@@ -294,7 +293,7 @@ void renderTileStream(uniform int* uniform pixels,
     ++numPackets;
   }
 
-  rtcOccludedVM(g_scene, 
+  rtcOccludedVM(g_data.g_scene, 
                 &shadowContext.context, 
                 (varying RTCRay* uniform)&shadow,
                 numPackets, 
@@ -305,15 +304,50 @@ void renderTileStream(uniform int* uniform pixels,
   {
     FOREACH_TILED_MITIGATION
 
-    const Vec3f color = shader(primary[numPackets],
+    const Vec3f color = shade(g_data,
+                               primary[numPackets],
                                shadow[numPackets],
                                lightDir[numPackets],
                                emission[numPackets]);
 
-    splat(pixels, width, x, y, color);
+    splat(g_data, pixels, width, x, y, color);
 
     ++numPackets;
   }
+}
+
+void renderPixelStandard(const uniform TutorialData& data, int x, int y,
+                         uniform int* uniform pixels,
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
+                         const uniform float time,
+                         const uniform ISPCCamera& camera, uniform RayStats& stats)
+{
+  uniform IntersectContext primaryContext;
+  InitIntersectionContext(&primaryContext);
+  uniform IntersectContext shadowContext;
+  InitIntersectionContext(&shadowContext);
+
+  // Primary rays in this scene are coherent. This is not the case
+  // for shadow rays, since there is a spherical environment light.
+  //primaryContext.context.flags = g_iflags_coherent;
+  
+  RandomSampler sampler;
+  Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
+  rtcIntersectV(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay));
+  
+  Vec3f color = make_Vec3f(0.f);
+  if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
+  {
+    Vec3f lightDir;
+    Vec3f emission;
+    sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
+    Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
+    rtcOccludedV(data.g_scene, &shadowContext.context, RTCRay_(shadowRay));
+    color = shade(data, primaryRay, shadowRay, lightDir, emission);
+  }
+  
+  splat(data, pixels, width, x, y, color);
 }
 
 /*
@@ -321,37 +355,19 @@ void renderTileStream(uniform int* uniform pixels,
  */
 void renderTileNormal(uniform int* uniform pixels,
                       const uniform unsigned int width,
+                      const uniform unsigned int height,
                       const uniform float time,
                       const uniform ISPCCamera& camera,
                       const uniform unsigned int x0,
                       const uniform unsigned int x1,
                       const uniform unsigned int y0,
                       const uniform unsigned int y1,
-                      uniform IntersectContext& primaryContext,
-                      uniform IntersectContext& shadowContext,
                       uniform RayStats& stats)
 {
-  RandomSampler sampler;
-
   foreach_tiled(y = y0 ... y1, x = x0 ... x1)
   {
-    FOREACH_TILED_MITIGATION
-
-    Ray primaryRay = samplePrimaryRay(x, x0, y, y0, camera, sampler, stats);
-    rtcIntersectV(g_scene, &primaryContext.context, RTCRayHit_(primaryRay));
-
-    Vec3f color = make_Vec3f(0.f);
-    if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
-    {
-      Vec3f lightDir;
-      Vec3f emission;
-      sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
-      Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-      rtcOccludedV(g_scene, &shadowContext.context, RTCRay_(shadowRay));
-      color = shader(primaryRay, shadowRay, lightDir, emission);
-    }
-
-    splat(pixels, width, x, y, color);
+    FOREACH_TILED_MITIGATION;
+    renderPixelStandard(g_data,x,y,pixels,width,height,time,camera,stats);
   }
 }
 
@@ -363,12 +379,12 @@ void renderTileNormal(uniform int* uniform pixels,
  * A task that renders a single screen tile.
  */
 task void renderTileTask(uniform int* uniform pixels,
-  const uniform unsigned int width,
-  const uniform unsigned int height,
-  const uniform float time,
-  const uniform ISPCCamera& camera,
-  const uniform int numTilesX,
-  const uniform int numTilesY)
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
+                         const uniform float time,
+                         const uniform ISPCCamera& camera,
+                         const uniform int numTilesX,
+                         const uniform int numTilesY)
 {
   const uniform unsigned int tileY = taskIndex / numTilesX;
   const uniform unsigned int tileX = taskIndex - tileY * numTilesX;
@@ -377,29 +393,15 @@ task void renderTileTask(uniform int* uniform pixels,
   const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
   const uniform unsigned int y1 = min(y0 + TILE_SIZE_Y, height);
 
-  uniform IntersectContext primaryContext;
-  uniform IntersectContext shadowContext;
-
-  InitIntersectionContext(&primaryContext);
-  InitIntersectionContext(&shadowContext);
-
-  // Primary rays in this scene are coherent. This is not the case
-  // for shadow rays, since there is a spherical environment light.
-  primaryContext.context.flags = g_iflags_coherent; 
-
   if (g_mode == MODE_NORMAL) 
-    renderTileNormal(pixels, width,
+    renderTileNormal(pixels, width, height,
                      time, camera,
                      x0, x1, y0, y1,
-                     primaryContext,
-                     shadowContext,
                      g_stats[threadIndex]);
   else                       
-    renderTileStream(pixels, width,
+    renderTileStream(pixels, width, height,
                      time, camera,
                      x0, x1, y0, y1,
-                     primaryContext,
-                     shadowContext,
                      g_stats[threadIndex]);
 }
 
@@ -408,7 +410,8 @@ task void renderTileTask(uniform int* uniform pixels,
  */
 export void device_init(uniform int8* uniform cfg)
 {
-  g_scene = initializeScene(g_device, &g_instanceLevels);
+  TutorialData_Constructor(&g_data);
+  g_scene = g_data.g_scene = initializeScene(g_data, g_device);
 }
 
 
@@ -418,9 +421,29 @@ export void renderFrameStandard(uniform int* uniform pixels,
                                 const uniform float time,
                                 const uniform ISPCCamera& camera)
 {
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = g_data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+  
+#else
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+#endif
 }
 
 /* 
@@ -432,30 +455,30 @@ export void device_render(uniform int* uniform pixels,
                           const uniform float time,
                           const uniform ISPCCamera& camera)
 {
-  if (g_accu_width != width || g_accu_height != height) {
-    delete[] g_accu;
-    g_accu = uniform new uniform Vec3fa[width*height];
-    g_accu_width = width;
-    g_accu_height = height;
+  if (g_data.g_accu_width != width || g_data.g_accu_height != height) {
+    delete[] g_data.g_accu;
+    g_data.g_accu = uniform new uniform Vec3ff[width*height];
+    g_data.g_accu_width = width;
+    g_data.g_accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_data.g_accu[i] = make_Vec3ff(0.0f);
   }
-
+  
   uniform bool camera_changed = g_changed; 
   g_changed = false;
-  camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
-  camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
-  camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
-  camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
+  camera_changed |= ne(g_data.g_accu_vx,camera.xfm.l.vx); g_data.g_accu_vx = camera.xfm.l.vx;
+  camera_changed |= ne(g_data.g_accu_vy,camera.xfm.l.vy); g_data.g_accu_vy = camera.xfm.l.vy;
+  camera_changed |= ne(g_data.g_accu_vz,camera.xfm.l.vz); g_data.g_accu_vz = camera.xfm.l.vz;
+  camera_changed |= ne(g_data.g_accu_p, camera.xfm.p);    g_data.g_accu_p  = camera.xfm.p;
 
   if (camera_changed)
   {
-    g_accu_count=0;
+    g_data.g_accu_count=0;
     for (uniform unsigned int i=0; i<width*height; i++)
-      g_accu[i] = make_Vec3fa(0.0f);
+      g_data.g_accu[i] = make_Vec3ff(0.0f);
   }
   else
-    g_accu_count++;
+    g_data.g_accu_count++;
 }
 
 /*
@@ -463,14 +486,7 @@ export void device_render(uniform int* uniform pixels,
  */
 export void device_cleanup ()
 {
-  rtcReleaseScene(g_scene);
-  g_scene = NULL;
-  cleanupScene();
-  delete[] g_accu; 
-  g_accu = NULL;
-  g_accu_width = 0;
-  g_accu_height = 0;
-  g_accu_count = 0;
+  TutorialData_Destructor(&g_data);
 }
 
 /*

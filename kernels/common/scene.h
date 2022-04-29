@@ -26,7 +26,7 @@ namespace embree
   /*! Base class all scenes are derived from */
   class Scene : public AccelN
   {
-    ALIGNED_CLASS_(std::alignment_of<Scene>::value);
+    ALIGNED_CLASS_USM_(std::alignment_of<Scene>::value);
 
   public:
     template<typename Ty, bool mblur = false>
@@ -140,6 +140,7 @@ namespace embree
     ~Scene () noexcept;
 
   private:
+    
     /*! class is non-copyable */
     Scene (const Scene& other) DELETED; // do not implement
     Scene& operator= (const Scene& other) DELETED; // do not implement
@@ -274,15 +275,18 @@ namespace embree
     /* test if scene got already build */
     __forceinline bool isBuild() const { return is_build; }
 
-  public:
-    IDPool<unsigned,0xFFFFFFFE> id_pool;
-    vector<Ref<Geometry>> geometries; //!< list of all user geometries
-    vector<unsigned int> geometryModCounters_;
-    vector<float*> vertices;
-    
+    void* createQBVH6Accel();
+
   public:
     Device* device;
 
+  public:
+    IDPool<unsigned,0xFFFFFFFE> id_pool;
+    Device::vector<Ref<Geometry>> geometries = device; //!< list of all user geometries
+    avector<unsigned int> geometryModCounters_;
+    Device::vector<float*> vertices = device;
+    
+  public:
     /* these are to detect if we need to recreate the acceleration structures */
     bool flags_modified;
     unsigned int enabled_geometry_types;
@@ -292,6 +296,10 @@ namespace embree
     MutexSys buildMutex;
     SpinLock geometriesMutex;
     bool is_build;
+
+  public:
+    Device::avector<char,64> hwaccel;
+
   private:
     bool modified;                   //!< true if scene got modified
 
@@ -366,6 +374,19 @@ namespace embree
       
       if (mask & Geometry::MTY_GRID_MESH)
         count += mblur  ? world.numMBGrids : world.numGrids;
+      
+      return count;
+    }
+
+    __forceinline size_t getNumSubPrimitives(Geometry::GTypeMask mask, bool mblur) const
+    {
+      size_t count = 0;
+      
+      if (mask & Geometry::MTY_GRID_MESH)
+        count += mblur  ? world.numMBSubGrids : world.numSubGrids;
+
+      Geometry::GTypeMask new_mask = (Geometry::GTypeMask)(mask & ~Geometry::MTY_GRID_MESH);
+      count += getNumPrimitives(new_mask, mblur);
       
       return count;
     }

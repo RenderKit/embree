@@ -26,7 +26,8 @@ namespace embree
         numUserGeometries(0), numMBUserGeometries(0), 
         numInstancesCheap(0), numMBInstancesCheap(0), 
         numInstancesExpensive(0), numMBInstancesExpensive(0), 
-        numGrids(0), numMBGrids(0), 
+        numGrids(0), numMBGrids(0),
+        numSubGrids(0), numMBSubGrids(0), 
         numPoints(0), numMBPoints(0) {}
 
     __forceinline size_t size() const {
@@ -83,6 +84,8 @@ namespace embree
       ret.numMBInstancesExpensive = numMBInstancesExpensive + rhs.numMBInstancesExpensive;
       ret.numGrids = numGrids + rhs.numGrids;
       ret.numMBGrids = numMBGrids + rhs.numMBGrids;
+      ret.numSubGrids = numSubGrids + rhs.numSubGrids;
+      ret.numMBSubGrids = numMBSubGrids + rhs.numMBSubGrids;
       ret.numPoints = numPoints + rhs.numPoints;
       ret.numMBPoints = numMBPoints + rhs.numMBPoints;
 
@@ -108,6 +111,8 @@ namespace embree
     size_t numMBInstancesExpensive;  //!< number of enabled motion blurred expensive instances
     size_t numGrids;                 //!< number of enabled grid geometries
     size_t numMBGrids;               //!< number of enabled motion blurred grid geometries
+    size_t numSubGrids;              //!< number of enabled grid geometries
+    size_t numMBSubGrids;            //!< number of enabled motion blurred grid geometries
     size_t numPoints;                //!< number of enabled points
     size_t numMBPoints;              //!< number of enabled motion blurred points
   };
@@ -115,6 +120,8 @@ namespace embree
   /*! Base class all geometries are derived from */
   class Geometry : public RefCount
   {
+    ALIGNED_CLASS_USM_(16);
+    
     friend class Scene;
   public:
 
@@ -222,7 +229,9 @@ namespace embree
 
       MTY_INSTANCE_CHEAP = 1ul << GTY_INSTANCE_CHEAP,
       MTY_INSTANCE_EXPENSIVE = 1ul << GTY_INSTANCE_EXPENSIVE,
-      MTY_INSTANCE = MTY_INSTANCE_CHEAP | MTY_INSTANCE_EXPENSIVE
+      MTY_INSTANCE = MTY_INSTANCE_CHEAP | MTY_INSTANCE_EXPENSIVE,
+
+      MTY_ALL = -1
     };
 
     static const char* gtype_names[GTY_END];
@@ -265,6 +274,11 @@ namespace embree
     /*! returns geometry type mask */
     __forceinline GTypeMask getTypeMask() const { return (GTypeMask)(1 << gtype); }
 
+    /*! returns true of geometry contains motion blur */
+    __forceinline bool hasMotionBlur () const {
+      return numTimeSteps > 1;
+    }
+
     /*! returns number of primitives */
     __forceinline size_t size() const { return numPrimitives; }
 
@@ -276,6 +290,9 @@ namespace embree
 
     /*! sets motion blur time range */
     void setTimeRange (const BBox1f range);
+
+    /*! gets motion blur time range */
+    BBox1f getTimeRange () const;
 
     /*! sets number of vertex attributes */
     virtual void setVertexAttributeCount (unsigned int N) {
@@ -502,12 +519,25 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
     }
 
+    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, mvector<SubGridBuildData>& sgrids, const range<size_t>& r, size_t k, unsigned int geomID) const {
+      return createPrimRefArray(prims,r,k,geomID);
+    }
+
     virtual PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
     }
 
+    /*! Calculates the PrimRef over the complete time interval */
+    virtual PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry");
+    }
+
     virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
+    }
+
+    virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, mvector<SubGridBuildData>& sgrids, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
+      return createPrimRefMBArray(prims,t0t1,r,k,geomID);
     }
 
     virtual LinearSpace3fa computeAlignedSpace(const size_t primID) const {
@@ -541,6 +571,10 @@ namespace embree
     virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
     }
+
+    virtual LBBox3fa vlinearBounds(size_t primID, const BBox1f& time_range, const SubGridBuildData * const sgrids) const {
+      return vlinearBounds(primID,time_range);
+    }
     
     virtual LBBox3fa vlinearBounds(const LinearSpace3fa& space, size_t primID, const BBox1f& time_range) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"vlinearBounds not implemented for this geometry"); 
@@ -566,7 +600,7 @@ namespace embree
     
     unsigned int mask;             //!< for masking out geometry
     unsigned int modCounter_ = 1; //!< counter for every modification - used to rebuild scenes when geo is modified
-    
+
     struct {
       GType gtype : 8;                //!< geometry type
       GSubType gsubtype : 8;          //!< geometry subtype

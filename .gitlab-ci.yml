@@ -1,7 +1,20 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+variables:
+  COMMON: "platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 tasking:TBB2019.9"
+  # Retry mechanism knobs in case of sporadic errors
+  GET_SOURCES_ATTEMPTS: 10
+  ARTIFACT_DOWNLOAD_ATTEMPTS: 10
+  EXECUTOR_JOB_SECTION_ATTEMPTS: 3
+
+
+####################################################################
+# Stages
+####################################################################
+
 stages:
+  - setup
   - build
   - test
   - benchmark
@@ -9,38 +22,145 @@ stages:
   - scan
   - protex
 
+
 ####################################################################
 # Templates
 ####################################################################
 
 .build:
   stage: build
-  script: "python scripts/test.py build"
-  after_script: [sleep 5]   # required to get job log
-  retry: 1
+  script:
+    - "python scripts/test.py build --debug"
+    - "python scripts/test.py build"
   artifacts:
     paths:
         - build/
         - .ctest_conf
     expire_in: 1 day
 
+.build_nightly:
+  extends: .build
+  only:   [schedules, triggers, manual]
+
 .test:
   stage: test
-  script: "python scripts/test.py test"
-  after_script: [sleep 5]   # required to get job log
-  retry: 1
-  
+  script:
+    - "python scripts/test.py test --debug"
+    - "python scripts/test.py test"
+
+.test_dg2:
+  extends: .test
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [docker-gpu, dg2]
+
+.test_pvc:
+  extends: .test
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [docker-gpu, pvc]
+
+.test_nightly:
+  extends: .test
+  only:   [schedules, triggers, manual]
+
 .build_and_test:
   stage: build
   script:
+    - "python scripts/test.py build --debug"
     - "python scripts/test.py build"
+    - "python scripts/test.py test --debug"
     - "python scripts/test.py test"
-  after_script: [sleep 5]   # required to get job log
-  retry: 1
 
-#####################################################################
+
+####################################################################
+# Setup dpcpp and gfx if not already on NAS
+####################################################################
+
+setup_dpcpp:
+    stage: setup
+    image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+    tags: [docker]
+    script:
+      - DPCPP_VERSION=$(cat .ci-env.yaml | grep DPCPP_VERSION_LINUX | sed 's/.*:\ //')
+      - echo "Setup DPCPP ${DPCPP_VERSION}"
+      - ./scripts/download_dpcpp.sh ${GITHUB_TOKEN} ${DPCPP_VERSION} /NAS/packages/apps/dpcpp_compiler
+
+setup_gfx:
+    stage: setup
+    image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+    tags: [docker]
+    script:
+      - GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_DG2 | sed 's/.*:\ //')
+      - echo "Setup GFX ${GFX_VERSION}"
+      - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
+      - GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_PVC | sed 's/.*:\ //')
+      - echo "Setup GFX ${GFX_VERSION}"
+      - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
+
+
+####################################################################
 # Continuous Test
 ####################################################################
+
+continuous-linux-DG2-AOT-dpcpp:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON compiler:dpcpp/internal/20211117 sycl:dg2-b0-512 tasking:TBB intensity:3"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [docker-gpu, dg2]
+
+continuous-linux-DG2-AOT-dpcpp-test:
+  extends: .test_dg2
+  needs: ["continuous-linux-DG2-AOT-dpcpp"]
+
+continuous-linux-DG2-AOT-multilevel:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2-b0-512 maxinstancelevelcount:2 tasking:TBB intensity:3"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [embree, docker]
+
+continuous-linux-DG2-AOT-multilevel-test:
+  extends: .test_dg2
+  needs: ["continuous-linux-DG2-AOT-multilevel"]
+
+continuous-linux-DG2-AOT:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2-b0-512 tasking:TBB intensity:4"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [embree, docker]
+
+continuous-linux-DG2-AOT-test:
+  extends: .test_dg2
+  needs: ["continuous-linux-DG2-AOT"]
+
+continuous-linux-DG2-JIT:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none CURVE:OFF tasking:TBB intensity:1"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [embree, docker]
+
+continuous-linux-DG2-JIT-test:
+  extends: .test_dg2
+  needs: ["continuous-linux-DG2-JIT"]
+
+continuous-linux-PVC-AOT:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:pvc tasking:TBB intensity:4"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [embree, docker]
+
+continuous-linux-PVC-AOT-test:
+  extends: .test_pvc
+  needs: ["continuous-linux-PVC-AOT"]
+
+continuous-windows-DG2-AOT:
+  stage: build
+  script:
+    - whoami
+    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:dg2 intensity:3
+    - dir \\vis-nassie.an.intel.com\NAS\packages\apps\tbb\tbb-2021.1.1-windows
+    - dir \\vis-nassie.an.intel.com\NAS\packages\apps\dpcpp-compiler-win\sycl-nightly\165\bin
+    - python scripts/test.py build
+    - python scripts/test.py test
+  tags:   [vis-sdp-dg2-05]
 
 continuous-linux-WebAssembly:
   stage: build
@@ -48,7 +168,7 @@ continuous-linux-WebAssembly:
     - source /emsdk/emsdk_env.sh
     - mkdir build
     - cd build
-    - emcmake cmake -DCMAKE_BUILD_TYPE=Release -DEMBREE_TUTORIALS=OFF -DEMBREE_TASKING_SYSTEM=INTERNAL ..
+    - emcmake cmake -DCMAKE_BUILD_TYPE=Release -DEMBREE_TUTORIALS=OFF -DEMBREE_TASKING_SYSTEM=INTERNAL -DEMBREE_DPCPP_SUPPORT=OFF ..
     - emmake make -j
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags: [embree, docker]
@@ -56,13 +176,13 @@ continuous-linux-WebAssembly:
   
 continuous-macosx-ARM-Debug-CLANG-SSE2-TBB_HOMEBREW:
   extends: .build_and_test
-  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:CLANG ISPC_SUPPORT:OFF isa:NEON tasking:TBB_HOMEBREW intensity:2"]
+  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:CLANG isa:NEON tasking:TBB_HOMEBREW intensity:2"]
   tags: [embree, mac-arm]
   only: [pushes]
 
 continuous-macosx-ARM-Debug-CLANG-ISPC1.17.0-NEON-TBB_HOMEBREW:
   extends: .build_and_test
-  before_script: ["python scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ISPC_SUPPORT:ON ispc:ispc1.17.0 isa:NEON tasking:TBB_HOMEBREW intensity:2"]
+  before_script: ["python scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:NEON tasking:TBB_HOMEBREW intensity:2"]
   tags: [embree, mac-arm]
   only: [pushes]
 
@@ -90,11 +210,11 @@ continuous-windows-x64-RelWithDebInfo-V141-ISPC1.17.0-SSE2-TBB2021.2.0:
   tags:   [embree, win10, v141]
   only:   [pushes]
 
-  #continuous-windows-x64-RelWithDebInfo-ICX2022.0.0-ISPC1.16.1-AVX512:
-  #  extends: .build_and_test
-  #  before_script: ["python scripts\\test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2022.0.0 ispc:ispc1.16.1 isa:AVX512 tasking:INT threads:16 intensity:2"]
-  #  tags:   [embree, win10, avx512vl]
-  #  only:   [pushes]
+continuous-windows-x64-RelWithDebInfo-ICX2022.0.0-ISPC1.16.1-AVX512-INT:
+  extends: .build_and_test
+  before_script: ["python scripts\\test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2022.0.0 ispc:ispc1.16.1 isa:AVX512 tasking:INT threads:16 intensity:2"]
+  tags:   [embree, win10, avx512vl]
+  only:   [pushes]
 
 continuous-macosx-x64-Debug-CLANG-ISPC1.17.0-SSE2-TBB2020.2:
   extends: .build_and_test
@@ -130,9 +250,9 @@ continuous-ubuntu20.04-x64-Debug-GCC-ISPC1.12.0-AVX2-TBB-NAMESPACE:
   tags:   [embree, docker]
   only:   [pushes]
 
-continuous-linux-avx512vl-x64-Debug-ICX2022.1.2-ISPC1.17.0-AVX512-TBB2021.2.0:
+continuous-linux-avx512vl-x64-Debug-ICX2022.1.2-ISPC1.17.0-AVX512-INT:
   extends: .build_and_test
-  before_script: ["python scripts/test.py configure platform:x64 build:Debug threads:4 compiler:ICX2022.1.2 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2"]
+  before_script: ["python scripts/test.py configure platform:x64 build:Debug threads:4 compiler:ICX2022.1.2 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:INT intensity:2"]
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:  [embree, docker, avx512vl]
   only:  [pushes]
@@ -186,9 +306,10 @@ continuous-linux-x64-PROTEX:
   dependencies: []
   needs: []
 
+
 #####################################################################
-# Intensive Nightly Tests
-####################################################################
+## Intensive Nightly Tests
+#####################################################################
 
 nightly-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-SSE2-INT:
   extends: .build_and_test
@@ -404,6 +525,7 @@ nightly-linux-x64-Debug-ICC2020.1-ISPC1.17.0-AVX2-TBB2019.9:
   tags:   [embree, docker] # avx2
   only:   [web, schedules]
 
+
 # Testing on different Linux distributions
 
 nightly-ubuntu20.04-x64-Debug-GCC-ISPC1.17.0-AVX2-TBB:
@@ -481,7 +603,7 @@ nightly-fedora25-x64-Debug-GCC-ISPC-AVX2-TBB:
 
 nightly-linux-x64-Debug-CLANG4.0.0-AVX2-TBB2019.9-NO-ISPC:
   extends: .build_and_test
-  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.17.0 isa:AVX2 tasking:TBB2019.9 ISPC_SUPPORT:OFF intensity:0"]
+  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:CLANG4.0.0 isa:AVX2 tasking:TBB2019.9 intensity:0"]
   image: $DOCKER_REGISTRY/embree/fedora:25
   tags:   [embree, docker]
   only:   [web, schedules]
@@ -677,14 +799,14 @@ release-linux-x64-Release-ICC2020.1-ISPC1.17.0-TBB2021.2.0-PACKAGE-ZIP:
     - "scripts/test.py configure platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.2.0 intensity:4 package:ZIP"
     - "scripts/test.py build"
     - "scripts/test.py test"
-    - tar xzf build/embree-*.x86_64.linux.tar.gz
-    - mv embree*.x86_64.linux embree
-    - mkdir ospray_build
-    - cd ospray_build
-    - cmake ../scripts/ospray
-    - cmake --build .
-    - cd ospray/build
-    - LD_LIBRARY_PATH="$CI_PROJECT_DIR/ospray_build/install/lib:$LD_LIBRARY_PATH" PATH="$CI_PROJECT_DIR/ospray_build/ospray/build/:$PATH" ../src/ospray/scripts/tests/run_tests.sh "$CI_PROJECT_DIR/ospray_build/ospray/src/ospray"
+#    - tar xzf build/embree-*.x86_64.linux.tar.gz
+#    - mv embree*.x86_64.linux embree
+#    - mkdir ospray_build
+#    - cd ospray_build
+#    - cmake ../scripts/ospray
+#    - cmake --build .
+#    - cd ospray/build
+#    - LD_LIBRARY_PATH="$CI_PROJECT_DIR/ospray_build/install/lib:$LD_LIBRARY_PATH" PATH="$CI_PROJECT_DIR/ospray_build/ospray/build/:$PATH" ../src/ospray/scripts/tests/run_tests.sh "$CI_PROJECT_DIR/ospray_build/ospray/src/ospray"
   tags:   [embree, docker, avx512vl]
   only:   [web, schedules]
   artifacts:
@@ -698,10 +820,9 @@ release-linux-x64-Release-ICC2020.1-ISPC1.17.0-TBB2021.2.0-PACKAGE-ZIP-manual:
   only:   [pushes]
   when:   manual
 
-
 #####################################################################
 # Release binaries scans
-####################################################################
+#####################################################################
 
 scan-bdba-bin:
   stage: scan
@@ -729,19 +850,19 @@ av:
     - scripts/store_files.sh $CI_PROJECT_NAME $CI_PIPELINE_ID av /tmp/av_scan.log
   only:   [web, schedules]
 
-#####################################################################
+####################################################################
 # Preliminary benchmark setup
 ####################################################################
+
 .benchmark:
   stage:  benchmark
   tags:
     - vis-perf-x8280-1
   script:
-    - "scripts/test.py configure platform:x64 build:Release compiler:GCC ispc:ispc1.17.0 isas:AVX512 tasking:TBB2021.2.0 intensity:0 --benchmark"
+    - "scripts/test.py configure platform:x64 build:Release compiler:GCC ispc:ispc1.17.0 isas:AVX512 tasking:TBB2021.2.0 intensity:0 EMBREE_USE_GOOGLE_BENCHMARK:ON EMBREE_GOOGLE_BENCHMARK_DIR:/NAS/packages/apps/google-benchmark/vis-perf-x8280-1/lib64/cmake/benchmark"
     - "scripts/test.py build"
     - "scripts/test.py test"
-    - "chmod +x scripts/run-benchmark.sh"
-    - "scripts/run-benchmark.sh"
+    - "scripts/test.py run-benchmark.sh"
   needs: []
 
 benchmark_nightly:
@@ -750,5 +871,26 @@ benchmark_nightly:
 
 benchmark_manual:
   extends: .benchmark
+  except:   [schedules]
+  when: manual
+
+.benchmark_gpu:
+  stage:  benchmark
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04_benchmark
+  tags:   [docker-gpu, dg2, perf]
+  script:
+    - "if [ -d '/home/visuser/benchmark_client.git' ]; then rm -Rf /home/visuser/benchmark_client.git; fi"
+    - "git clone http://oauth2:H2xDxz_gauUXeeXJEMor@vis-gitlab.an.intel.com/renderkit/benchmark_client.git /home/visuser/benchmark_client.git"
+    - "pushd `pwd` && cd /home/visuser/benchmark_client.git && ./setup_venv.sh && source env.sh && popd"
+    - "scripts/run-benchmark-gpu.sh"
+    - "scripts/record-benchmark-gpu.sh"
+  needs: []
+
+benchmark_gpu_nightly:
+  extends: .benchmark_gpu
+  only:   [schedules]
+
+benchmark_gpu_manual:
+  extends: .benchmark_gpu
   except:   [schedules]
   when: manual

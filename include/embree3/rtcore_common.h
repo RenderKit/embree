@@ -172,7 +172,7 @@ enum RTCIntersectContextFlags
 {
   RTC_INTERSECT_CONTEXT_FLAG_NONE       = 0,
   RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT = (0 << 0), // optimize for incoherent rays
-  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0)  // optimize for coherent rays
+  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0), // optimize for coherent rays
 };
 
 /* Arguments for RTCFilterFunctionN */
@@ -187,13 +187,51 @@ struct RTCFilterFunctionNArguments
 };
 
 /* Filter callback function */
-typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* args);
+typedef void (*RTCFilterFunctionN)(const /*struct RTCFilterFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+
+/* Intersection callback function */
+typedef void (*RTCIntersectFunctionN)(const /*struct RTCIntersectFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+
+/* Occlusion callback function */
+typedef void (*RTCOccludedFunctionN)(const /*struct RTCOccludedFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+
+/* Intersection arguments passed to intersect/occluded calls */
+struct RTCIntersectArguments
+{
+  RTCFilterFunctionN filter;                         // filter function to execute
+  
+#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+  union {
+    RTCIntersectFunctionN intersect;                 // user geometry intersection callback to execute
+    RTCOccludedFunctionN occluded;                   // user geometry occlusion callback to execute
+  };
+#endif
+};
+
+/* Initializes an intersection arguments. */
+#if defined(__cplusplus)
+RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments& args)
+{
+  args.filter = nullptr;
+  
+#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+  args.intersect = nullptr;
+#endif
+}
+#endif
 
 /* Intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext
 {
   enum RTCIntersectContextFlags flags;               // intersection flags
   RTCFilterFunctionN filter;                         // filter function to execute
+
+#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+  union {
+    RTCIntersectFunctionN intersect;                 // user geometry intersection callback to execute
+    RTCOccludedFunctionN occluded;                   // user geometry occlusion callback to execute
+  };
+#endif
   
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   unsigned int instStackSize;                        // Number of instances currently on the stack.
@@ -211,6 +249,10 @@ RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context
   unsigned l = 0;
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
+
+#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+  context->intersect = NULL;
+#endif
   
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   context->instStackSize = 0;
@@ -308,7 +350,7 @@ struct RTC_ALIGN(16) RTCPointQueryFunctionArguments
   struct RTCPointQueryContext* context;
 
   // If the current instance transform M (= context->world2inst[context->instStackSize]) 
-  // is a similarity matrix, i.e there is a constant factor similarityScale such that,
+  // is a similarity matrix, i.e there is a constant factor similarityScale such that
   //    for all x,y: dist(Mx, My) = similarityScale * dist(x, y),
   // The similarity scale is 0, if the current instance transform is not a
   // similarity transform and vice versa. The similarity scale allows to compute
@@ -322,5 +364,31 @@ struct RTC_ALIGN(16) RTCPointQueryFunctionArguments
 };
 
 typedef bool (*RTCPointQueryFunction)(struct RTCPointQueryFunctionArguments* args);
-  
+
+#if defined(__cplusplus) && defined(EMBREE_DPCPP_SUPPORT)
+
+/* returns function pointer to be usable in SYCL kernel */
+template<auto F>
+inline decltype(F) rtcGetSYCLFunctionPointer(sycl::queue& queue)
+{
+  sycl::buffer<cl_ulong> fptr_buf(1);
+  {
+    auto fptr_acc = fptr_buf.get_access<sycl::access::mode::write>();
+    fptr_acc[0] = 0;
+  }
+
+  queue.submit([&](sycl::handler& cgh) {
+      auto fptr_acc = fptr_buf.get_access<sycl::access::mode::discard_write>(cgh);
+      cgh.single_task([=]() RTC_SYCL_SIMD_WIDTH {
+	  fptr_acc[0] = reinterpret_cast<cl_ulong>(F);
+	});
+    });
+  queue.wait_and_throw();
+
+  auto fptr_acc = fptr_buf.get_access<sycl::access::mode::read>();
+  return (decltype(F)) fptr_acc[0];
+}
+
+#endif
+
 RTC_NAMESPACE_END

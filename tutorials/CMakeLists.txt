@@ -38,6 +38,9 @@ IF (EMBREE_TUTORIALS_GLFW)
       GLFW_INCLUDE_DIR
       GLFW_LIBRARY
     )
+
+    # workaround for internal dpcpp on windows: link to .lib instead .dll
+    STRING(REGEX REPLACE "[.]dll$" ".lib" GLFW_LIBRARY ${GLFW_LIBRARY})
   ENDIF()
 
   FIND_PACKAGE(OpenGL)
@@ -55,36 +58,44 @@ ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(verify)
 ADD_SUBDIRECTORY(triangle_geometry)
 ADD_SUBDIRECTORY(dynamic_scene)
+ADD_SUBDIRECTORY(voronoi)
+ADD_SUBDIRECTORY(closest_point)
 ADD_SUBDIRECTORY(user_geometry)
 ADD_SUBDIRECTORY(viewer)
 ADD_SUBDIRECTORY(instanced_geometry)
-
-if ("${EMBREE_MAX_INSTANCE_LEVEL_COUNT}" GREATER "1")
-  ADD_SUBDIRECTORY(multi_instanced_geometry)
-endif()
-
+ADD_SUBDIRECTORY(multi_instanced_geometry)
 ADD_SUBDIRECTORY(intersection_filter)
-ADD_SUBDIRECTORY(pathtracer)
-ADD_SUBDIRECTORY(hair_geometry)
+IF (NOT WIN32)
+  ADD_SUBDIRECTORY(pathtracer) # doesn't work on Windows with release driver
+ENDIF()
+IF (EMBREE_MAX_INSTANCE_LEVEL_COUNT EQUAL 1 AND NOT WIN32) # broken since comp_igc/13796
+  ADD_SUBDIRECTORY(hair_geometry) # doesn't work on Windows with release driver
+ENDIF()
 ADD_SUBDIRECTORY(subdivision_geometry)
 ADD_SUBDIRECTORY(displacement_geometry)
 ADD_SUBDIRECTORY(grid_geometry)
 ADD_SUBDIRECTORY(bvh_builder)
 ADD_SUBDIRECTORY(lazy_geometry)
 ADD_SUBDIRECTORY(bvh_access)
-ADD_SUBDIRECTORY(minimal)
-ADD_SUBDIRECTORY(motion_blur_geometry)
+
+IF (EMBREE_DPCPP_MBLUR AND NOT WIN32)
+  ADD_SUBDIRECTORY(quaternion_motion_blur) # doesn't work on Windows with release driver
+ENDIF()
+
+IF (EMBREE_GEOMETRY_CURVE AND EMBREE_DPCPP_MBLUR AND NOT WIN32) # doesn't work on Windows with release driver
+  ADD_SUBDIRECTORY(motion_blur_geometry)
+ENDIF()
+
 ADD_SUBDIRECTORY(interpolation)
-ADD_SUBDIRECTORY(convert)
 ADD_SUBDIRECTORY(curve_geometry)
 ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
+ADD_SUBDIRECTORY(convert)
 ADD_SUBDIRECTORY(collide)
-ADD_SUBDIRECTORY(closest_point)
-ADD_SUBDIRECTORY(voronoi)
-ADD_SUBDIRECTORY(next_hit)
+IF (NOT EMBREE_DPCPP_PVC AND NOT WIN32) # started to hang on PVC and doesn't work on Windows release driver
+  ADD_SUBDIRECTORY(next_hit)
+ENDIF()
 ADD_SUBDIRECTORY(multiscene_geometry)
-ADD_SUBDIRECTORY(quaternion_motion_blur)
 
 IF (EMBREE_RAY_PACKETS)
   ADD_SUBDIRECTORY(viewer_stream)
@@ -92,6 +103,8 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 ADD_SUBDIRECTORY(embree_tests)
+
+ADD_SUBDIRECTORY(minimal)
 
 ENDIF()
 

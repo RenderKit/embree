@@ -101,7 +101,7 @@ namespace embree
         }
       };
 
-#if defined (__AVX2__)
+#if defined (__AVX2__) || defined(__SYCL_DEVICE_ONLY__)
 
       /*! for AVX2 there is a fast scalar bitInterleave */
       struct MortonCodeGenerator

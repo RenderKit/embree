@@ -7,5 +7,6 @@
 
 struct ISPCCamera
 {
-  AffineSpace3fa xfm;
+  AffineSpace3f xfm;
+  float render_time;
 };

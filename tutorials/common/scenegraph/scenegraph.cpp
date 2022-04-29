@@ -32,10 +32,6 @@ namespace embree
       throw std::runtime_error("unknown scene format: " + filename.ext());
   }
 
-  void tab(std::ostream& cout, int n) {
-    for (int i=0; i<n; i++) cout << "  ";
-  }
-
   void SceneGraph::PerspectiveCameraNode::print(std::ostream& cout, int depth) {
     cout << "PerspectiveCameraNode @ " << this << " { " << std::endl;
     if (name != "") {

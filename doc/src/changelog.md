@@ -1,6 +1,10 @@
 Version History
 ---------------
 
+### Embree 4.0.0
+-   Added support for user geometry callback function pointer passed through intersection context
+-   rtcFilterIntersection now only invokes geometry filter function, not the context filter function.
+
 ### Embree 3.13.3
 -   Invalid multi segment motion blurred normal oriented curves are properly excluded from BVH build.
 -   Fixing issue with normal oriented curve construction when center curve curvature is very large.

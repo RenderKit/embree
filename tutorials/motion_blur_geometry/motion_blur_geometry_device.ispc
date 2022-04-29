@@ -13,7 +13,7 @@ extern uniform unsigned int g_num_time_steps;
 extern uniform unsigned int g_num_time_steps2;
 
 
-__aligned(16) uniform float cube_vertices[8][4] =
+uniform float cube_vertices[8][4] =
 {
   { -1.0f, -1.0f, -1.0f, 0.0f },
   {  1.0f, -1.0f, -1.0f, 0.0f },
@@ -43,19 +43,19 @@ uniform unsigned int cube_quad_indices[24] = {
   0, 1, 2, 3,
 };
 
-__aligned(16) uniform float cube_vertex_crease_weights[8] = {
+uniform float cube_vertex_crease_weights[8] = {
   inf, inf,inf, inf, inf, inf, inf, inf
 };
 
-__aligned(16) uniform unsigned int cube_vertex_crease_indices[8] = {
+uniform unsigned int cube_vertex_crease_indices[8] = {
   0,1,2,3,4,5,6,7
 };
 
-__aligned(16) uniform float cube_edge_crease_weights[12] = {
+uniform float cube_edge_crease_weights[12] = {
   inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf, inf
 };
 
-__aligned(16) uniform unsigned int cube_edge_crease_indices[24] =
+uniform unsigned int cube_edge_crease_indices[24] =
 {
   0,1, 1,2, 2,3, 3,0,
   4,5, 5,6, 6,7, 7,4,
@@ -102,7 +102,7 @@ uniform unsigned int addTriangleCube (RTCScene scene, const uniform Vec3f& pos, 
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_triangle_indices, 0, 3*sizeof(uniform unsigned int), 12);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, data.cube_triangle_indices, 0, 3*sizeof(uniform unsigned int), 12);
 
   for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
@@ -144,7 +144,7 @@ uniform unsigned int addQuadCube (RTCScene scene, const uniform Vec3f& pos, unif
   /* create a quad cube with 6 quads and 8 vertices */
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD);
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, cube_quad_indices, 0, 4*sizeof(uniform unsigned int), 6);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, data.cube_quad_indices, 0, 4*sizeof(uniform unsigned int), 6);
 
   for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
@@ -282,8 +282,8 @@ RTCScene addInstancedTriangleCube (RTCScene global_scene, const uniform Vec3f& p
 {
   RTCScene scene = rtcNewScene(g_device);
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT3,  cube_triangle_indices, 0, 3*sizeof(uniform unsigned int), 12);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, cube_vertices, 0, 4*sizeof(uniform float), 8);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT3,  data.cube_triangle_indices, 0, 3*sizeof(uniform unsigned int), 12);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT3, data.cube_vertices, 0, 4*sizeof(uniform float), 8);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
@@ -314,7 +314,7 @@ RTCScene addInstancedQuadCube (RTCScene global_scene, const uniform Vec3f& pos, 
   RTCScene scene = rtcNewScene(g_device);
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_QUAD);
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, cube_quad_indices, 0, 4*sizeof(uniform unsigned int), 6);
+  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT4, data.cube_quad_indices, 0, 4*sizeof(uniform unsigned int), 6);
 
   for (uniform unsigned int t=0; t<num_time_steps; t++)
   {
@@ -373,9 +373,11 @@ unmasked void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* uniform 
   bounds_o->upper_z = p.z+sphere.r;
 }
 
-unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform args)
+uniform RTCIntersectFunctionN sphereIntersectFuncPtr = NULL;
+
+RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform args)
 {
-  const uniform int* uniform valid = args->valid;
+  uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geometryUserPtr;
   RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
   uniform unsigned int primID = args->primID;
@@ -383,8 +385,8 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
   const uniform Sphere& sphere = spheres[primID];
 
-  if (!valid[programIndex])
-    return;
+  if (!valid[programIndex]) return;
+  valid[programIndex] = 0;
   
   varying Ray *uniform ray = (varying Ray *uniform)rays;
   
@@ -415,6 +417,7 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     ray->geomID = sphere.geomID;
     ray->primID = (unsigned int) primID;
     ray->Ng = ray->org+t0*ray->dir-sphere_p;
+    valid[programIndex] = -1;
   }
   if ((ray->tnear < t1) & (t1 < ray->tfar)) {
     ray->u = 0.0f;
@@ -423,12 +426,15 @@ unmasked void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* uniform
     ray->geomID = sphere.geomID;
     ray->primID = (unsigned int) primID;
     ray->Ng = ray->org+t1*ray->dir-sphere_p;
+    valid[programIndex] = -1;
   }
 }
 
-unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform args)
+uniform RTCOccludedFunctionN sphereOccludedFuncPtr = NULL;
+
+RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform args)
 {
-  const uniform int* uniform valid = args->valid;
+  uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geometryUserPtr;
   RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
   uniform unsigned int primID = args->primID;
@@ -436,8 +442,8 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform a
   const uniform Sphere* uniform spheres = (const uniform Sphere* uniform)ptr;
   const uniform Sphere& sphere = spheres[primID];
 
-  if (!valid[programIndex])
-    return;
+  if (!valid[programIndex]) return;
+  valid[programIndex] = 0;
   
   varying Ray *uniform ray = (varying Ray *uniform)rays;
   const int time_segments = sphere.num_time_steps-1;
@@ -462,9 +468,11 @@ unmasked void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* uniform a
   const float t1 = 0.5f*rcpA*(-B+Q);
   if ((ray->tnear < t0) & (t0 < ray->tfar)) {
     ray->tfar = neg_inf;
+    valid[programIndex] = -1;
   }
   if ((ray->tnear < t1) & (t1 < ray->tfar)) {
     ray->tfar = neg_inf;
+    valid[programIndex] = -1;
   }
 }
 
@@ -480,8 +488,8 @@ uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetGeometryUserData(geom,sphere);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
-  rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
-  rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
+  rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
+  rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncPtr);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return sphere;
@@ -514,6 +522,9 @@ uniform unsigned int addGroundPlane (RTCScene scene)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
+  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFuncN);
+  sphereOccludedFuncPtr  = (RTCOccludedFunctionN ) GET_FUNCTION_POINTER(sphereOccludedFuncN);
+  
   /* create scene */
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
@@ -526,8 +537,10 @@ export void device_init (uniform int8* uniform cfg)
   addQuadCube    (g_scene,make_Vec3f( 0,1,-5),g_num_time_steps);
   addQuadCube    (g_scene,make_Vec3f( 0,5,-5),g_num_time_steps2);
 
-  addSubdivCube  (g_scene,make_Vec3f(+5,1,-5),g_num_time_steps);
-  addSubdivCube  (g_scene,make_Vec3f(+5,5,-5),g_num_time_steps2);
+  addQuadCube    (g_scene,make_Vec3f( +5,1,-5),g_num_time_steps);
+  addQuadCube    (g_scene,make_Vec3f( +5,5,-5),g_num_time_steps2);
+  //addSubdivCube  (g_scene,make_Vec3f(+5,1,-5),g_num_time_steps);
+  //addSubdivCube  (g_scene,make_Vec3f(+5,5,-5),g_num_time_steps2);
 
   addLines       (g_scene,make_Vec3f(-5,1, 0),g_num_time_steps);
   addLines       (g_scene,make_Vec3f(-5,5, 0),g_num_time_steps2);
@@ -560,22 +573,20 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommitScene (g_scene);
 }
 
-uniform int frameID = 50;
-
 /* task that renders a single screen tile */
 Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
   
-  uniform float time = abs((uniform int)(0.01f*frameID) - 0.01f*frameID);
+  uniform float time = abs((uniform int)(0.01f*data.frameID) - 0.01f*data.frameID);
   if (data.g_time != -1) time = data.g_time;
 
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, time);
 
   /* intersect ray with scene */
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -606,7 +617,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, time);
 
     /* trace shadow ray */
-    rtcOccludedV(g_scene,&context,RTCRay_(shadow));
+    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -616,7 +627,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
   return color;
 }
 
-void updatePixel(const uniform TutorialData& data, int x, int y,
+void renderPixelStandard(const uniform TutorialData& data, int x, int y,
                   uniform int* uniform pixels,
                   const uniform unsigned int width,
                   const uniform unsigned int height,
@@ -655,7 +666,7 @@ void renderTileStandard(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    updatePixel(data,(float)x,(float)y,pixels,width,height,time,camera,g_stats[threadIndex]);
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
 
@@ -678,9 +689,28 @@ export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform ISPCCamera& camera)
 {
   /* render next frame */
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+#else
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+#endif
 }
 
 /* called by the C++ code to render */
@@ -714,7 +744,7 @@ export void device_render (uniform int* uniform pixels,
   }
 
   /* render next frame */
-  frameID++;
+  data.frameID++;
 }
 
 /* called by the C++ code for cleanup */

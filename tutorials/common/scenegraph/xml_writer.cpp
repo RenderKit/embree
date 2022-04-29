@@ -15,6 +15,7 @@ namespace embree
     void tab();
     void open(std::string str);
     void open(std::string str, size_t id);
+    void open(std::string str, size_t id, std::string name);
     void close(std::string str);
     
     void store(const char* name, const char* str);
@@ -112,6 +113,12 @@ namespace embree
   void XMLWriter::open(std::string str, size_t id)
   {
     tab(); xml << "<" << str << " id=\"" << id << "\">" << std::endl;
+    ident+=2;
+  }
+
+  void XMLWriter::open(std::string str, size_t id, std::string name)
+  {
+    tab(); xml << "<" << str << " id=\"" << id << "\" name=\"" << name << "\">" << std::endl;
     ident+=2;
   }
 
@@ -367,7 +374,7 @@ namespace embree
 
   void XMLWriter::store(Ref<MatteMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","Matte");
     open("parameters");
     store_parm("reflectance",material->reflectance);
@@ -377,7 +384,7 @@ namespace embree
 
   void XMLWriter::store(Ref<MirrorMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","Mirror");
     open("parameters");
     store_parm("reflectance",material->reflectance);
@@ -387,7 +394,7 @@ namespace embree
 
   void XMLWriter::store(Ref<ThinDielectricMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","ThinDielectric");
     open("parameters");
     store_parm("transmission",material->transmission);
@@ -399,22 +406,28 @@ namespace embree
 
   void XMLWriter::store(Ref<OBJMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","OBJ");
     open("parameters");
     store_parm("d",material->d);
+    store_parm("Ka",material->Ka);
     store_parm("Kd",material->Kd);
     store_parm("Ks",material->Ks);
+    store_parm("Kt",material->Kt);
     store_parm("Ns",material->Ns);
+    store_parm("Ni",material->Ni);
     store_parm("map_d",material->_map_d);
     store_parm("map_Kd",material->_map_Kd);
+    store_parm("map_Ks",material->_map_Ks);
+    store_parm("map_Ns",material->_map_Ns);
+    store_parm("map_Displ",material->_map_Displ);
     close("parameters");
     close("material");
   }
 
   void XMLWriter::store(Ref<MetalMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","Metal");
     open("parameters");
     store_parm("reflectance",material->reflectance);
@@ -427,7 +440,7 @@ namespace embree
 
   void XMLWriter::store(Ref<VelvetMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","Velvet");
     open("parameters");
     store_parm("reflectance",material->reflectance);
@@ -440,7 +453,7 @@ namespace embree
 
   void XMLWriter::store(Ref<DielectricMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","Dielectric");
     open("parameters");
     store_parm("transmissionOutside",material->transmissionOutside);
@@ -453,7 +466,7 @@ namespace embree
 
   void XMLWriter::store(Ref<MetallicPaintMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","MetallicPaint");
     open("parameters");
     store_parm("shadeColor",material->shadeColor);
@@ -466,7 +479,7 @@ namespace embree
 
   void XMLWriter::store(Ref<HairMaterial> material, ssize_t id)
   {
-    open("material",id);
+    open("material",id,material->name);
     store("code","Hair");
     open("parameters");
     store_parm("Kr",material->Kr);

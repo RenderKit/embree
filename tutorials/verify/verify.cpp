@@ -369,8 +369,8 @@ namespace embree
       AssertNoError(device);
       rtcSetGeometryBoundsFunction(geom,BoundsFunc,nullptr);
       rtcSetGeometryUserData(geom,sphere);
-      rtcSetGeometryIntersectFunction(geom,IntersectFuncN);
-      rtcSetGeometryOccludedFunction(geom,OccludedFuncN);
+      rtcSetGeometryIntersectFunction(geom,(RTCIntersectFunctionN)IntersectFuncN);
+      rtcSetGeometryOccludedFunction(geom,(RTCOccludedFunctionN)OccludedFuncN);
       rtcCommitGeometry(geom);
       unsigned int geomID = rtcAttachGeometry(scene,geom);
       rtcReleaseGeometry(geom);
@@ -2749,8 +2749,8 @@ namespace embree
       else        geomID0 = scene.addPlane       (sampler,quality, 4, p0, dx, dy).first;
       RTCGeometry geom0 = rtcGetGeometry(scene,geomID0);
       rtcSetGeometryUserData(geom0,(void*)123);
-      rtcSetGeometryIntersectFilterFunction (geom0,intersectionFilterN);
-      rtcSetGeometryOccludedFilterFunction (geom0,intersectionFilterN);
+      rtcSetGeometryIntersectFilterFunction (geom0,(RTCFilterFunctionN)intersectionFilterN);
+      rtcSetGeometryOccludedFilterFunction (geom0,(RTCFilterFunctionN)intersectionFilterN);
       rtcCommitScene (scene);
       AssertNoError(device);
       
@@ -2847,7 +2847,7 @@ namespace embree
       sflags.sflags = sflags.sflags | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
       IntersectContext ctx;
       rtcInitIntersectContext(&ctx.context);
-      ctx.context.filter = intersectFilter;
+      ctx.context.filter = (RTCFilterFunctionN) intersectFilter;
 
       VerifyScene scene(device, sflags);
       scene.addGeometry(quality, parent);
@@ -2953,8 +2953,8 @@ namespace embree
     SceneFlags sflags;
     std::string model;
     Vec3fa pos;
-    static const size_t N = 10;
-    static const size_t maxStreamSize = 100;
+    static const size_t N = 5;
+    static const size_t maxStreamSize = 30;
     
     WatertightTest (std::string name, int isa, SceneFlags sflags, IntersectMode imode, std::string model, const Vec3fa& pos)
       : VerifyApplication::IntersectTest(name,isa,imode,VARIANT_INTERSECT,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), model(model), pos(pos) {}
@@ -2972,7 +2972,7 @@ namespace embree
       motion_vector.push_back(Vec3fa(0.0f));
 
       VerifyScene scene(device,sflags);
-      size_t size = state->intensity < 1.0f ? 50 : 500;
+      size_t size = state->intensity < 1.0f ? 50 : 200;
       if      (model == "sphere.triangles") scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createTriangleSphere(pos,2.0f,size));
       else if (model == "sphere.quads"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createQuadSphere    (pos,2.0f,size));
       else if (model == "sphere.grids"    ) scene.addGeometry(RTC_BUILD_QUALITY_MEDIUM,SceneGraph::createGridSphere    (pos,2.0f,size));
@@ -3505,8 +3505,8 @@ namespace embree
           bounds_o->upper_y = sphere.y+sphere.w;
           bounds_o->upper_z = sphere.z+sphere.w;
         };
-        auto intersectFunc = [](const RTCIntersectFunctionNArguments* args) {};
-        auto occludedFunc  = [](const RTCOccludedFunctionNArguments* args)  {};
+        auto intersectFunc = [](const void* /*RTCIntersectFunctionNArguments*/ args) {};
+        auto occludedFunc  = [](const void* /*RTCOccludedFunctionNArguments*/ args)  {};
         
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryBuildQuality(geom, sflags.qflags);
@@ -4021,7 +4021,7 @@ namespace embree
       std::vector<embree::Vec3f> hits;
       intersectContext.userRayExt = &hits;
       rtcInitIntersectContext(&(intersectContext.context));
-      intersectContext.context.filter = &countHits;
+      intersectContext.context.filter = (RTCFilterFunctionN) &countHits;
       
       RTCRayHit rayHit;
       rayHit.ray.org_x = 0;

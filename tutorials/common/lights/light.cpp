@@ -5,9 +5,9 @@
 
 namespace embree {
 
-Light_EvalRes Light_eval(const Light* uniform,
-                         const DifferentialGeometry&,
-                         const Vec3fa&)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes Light_eval(const Light* uniform,
+                                                      const DifferentialGeometry&,
+                                                      const Vec3fa&)
 {
   Light_EvalRes res;
   res.value = Vec3fa(0.f);
@@ -18,7 +18,7 @@ Light_EvalRes Light_eval(const Light* uniform,
 
 extern "C" void Light_destroy(Light* light)
 {
-  alignedFree(light);
+  alignedUSMFree(light);
 }
 
 extern "C" void dummy() {} // just to avoid linker warning under MacOSX

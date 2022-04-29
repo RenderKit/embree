@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "../device_default.isph"
 #include "../core/differential_geometry.isph"
 
 struct Light;
@@ -42,9 +43,9 @@ struct Light
   Light_EvalFunc eval;
 };
 
-Light_EvalRes Light_eval(const uniform Light* uniform self, const DifferentialGeometry& dg, const Vec3f& dir);
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes Light_eval(const uniform Light* uniform self, const DifferentialGeometry& dg, const Vec3f& dir);
 
 inline void Light_Constructor(uniform Light* uniform self)
 {
-  self->eval = Light_eval;
+  self->eval = GET_FUNCTION_POINTER(Light_eval);
 }

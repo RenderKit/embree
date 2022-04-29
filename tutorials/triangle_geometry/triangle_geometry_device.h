@@ -22,8 +22,8 @@ inline void TutorialData_Constructor(TutorialData* This)
 inline void TutorialData_Destructor(TutorialData* This)
 {
   rtcReleaseScene (This->g_scene); This->g_scene = nullptr;
-  alignedFree(This->face_colors); This->face_colors = nullptr;
-  alignedFree(This->vertex_colors); This->vertex_colors = nullptr;
+  alignedUSMFree(This->face_colors); This->face_colors = nullptr;
+  alignedUSMFree(This->vertex_colors); This->vertex_colors = nullptr;
 }
 
 } // namespace embree

@@ -3,6 +3,12 @@
 
 #include "../common/tutorial/tutorial.h"
 
+#if defined(EMBREE_SYCL_TUTORIAL)
+#  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
+#else
+#  define FEATURES FEATURE_RTCORE
+#endif
+
 namespace embree
 {
   extern "C" {
@@ -13,7 +19,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("closest_point",FEATURE_RTCORE | FEATURE_STREAM) 
+      : TutorialApplication("closest_point", FEATURES)
     {
       camera.from = Vec3fa(8.74064f, 8.84506f, 7.48329f);
       camera.to = Vec3fa(-0.106665f, -1.8421f, -6.5347f);

@@ -1,26 +1,23 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.h"
+#include "voronoi_device.h"
 
 #include <functional>
 #include <queue>
 
 namespace embree {
 
-struct Point;
+RTCScene g_scene;
+TutorialData data;
 
 /* scene data */
-RTCScene g_scene = nullptr;
-Point* g_points = nullptr;
-Point* g_points_tmp = nullptr;
-Vec3fa* g_colors = nullptr;
-extern "C" Vec3fa g_query_point;
-const int g_num_colors = 27;
+#define NUM_COLORS 27
+int g_num_points_current;
 
 typedef void (*DrawGUI)(void);
 
-int g_num_points_current;
+extern "C" Vec3fa g_query_point;
 extern "C" int g_num_points;
 extern "C" int g_num_knn;
 extern "C" bool g_show_voronoi;
@@ -37,14 +34,16 @@ struct Neighbour
 
 struct KNNResult
 {
-  KNNResult() 
+  KNNResult(int num_knn, Point const * const points) 
+    : points(points)
   {
-    visited.reserve(2 * g_num_knn);
+    visited.reserve(2 * num_knn);
   }
 
   unsigned int k;
   std::priority_queue<Neighbour, std::vector<Neighbour>> knn;
   std::vector<unsigned int> visited; // primIDs of all visited points
+  Point const * const points;
 };
 
 // ======================================================================== //
@@ -75,13 +74,15 @@ void pointBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 bool pointQueryFunc(struct RTCPointQueryFunctionArguments* args)
 {
   RTCPointQuery* query = (RTCPointQuery*)args->query;
+  assert(args->query);
+
+  KNNResult* result = (KNNResult*)args->userPtr;
+  assert(result);
   const unsigned int primID = args->primID;
   const Vec3f q(query->x, query->y, query->z);
-  const Point& point = g_points[primID];
+  const Point& point = result->points[primID];
   const float d = distance(point.p, q);
     
-  assert(args->query);
-  KNNResult* result = (KNNResult*)args->userPtr;
   result->visited.push_back(primID);
 
   if (d < query->radius && (result->knn.size() < result->k || d < result->knn.top().d))
@@ -115,51 +116,59 @@ void knnQuery(Vec3f const& q, float radius, KNNResult* result)
   query.time = 0.f;
   RTCPointQueryContext context;
   rtcInitPointQueryContext(&context);
-  rtcPointQuery(g_scene, &query, &context, pointQueryFunc, (void*)result);
+  rtcPointQuery(data.scene, &query, &context, pointQueryFunc, (void*)result);
 }
 
-Point* createPoints (RTCScene scene, unsigned int N)
+void createPoints (TutorialData& data)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  g_points = (Point*) alignedMalloc(N*sizeof(Point), 16);
-  g_points_tmp = (Point*) alignedMalloc(N*sizeof(Point), 16);
-  unsigned int geomID = rtcAttachGeometry(scene, geom);
-  for (unsigned int i=0; i<N; i++) {
-    g_points[i].geometry = geom;
-    g_points[i].geomID = geomID;
-    g_points_tmp[i].geometry = geom;
-    g_points_tmp[i].geomID = geomID;
+  data.points = (Point*) alignedMalloc(data.num_points*sizeof(Point), 16);
+  data.points_tmp = (Point*) alignedMalloc(data.num_points*sizeof(Point), 16);
+  unsigned int geomID = rtcAttachGeometry(data.scene, geom);
+  for (unsigned int i=0; i<data.num_points; i++) {
+    data.points[i].geometry = geom;
+    data.points[i].geomID = geomID;
+    data.points_tmp[i].geometry = geom;
+    data.points_tmp[i].geomID = geomID;
   }
-  rtcSetGeometryUserPrimitiveCount(geom, N);
-  rtcSetGeometryUserData(geom, g_points);
+  rtcSetGeometryUserPrimitiveCount(geom, data.num_points);
+  rtcSetGeometryUserData(geom, data.points);
   rtcSetGeometryBoundsFunction(geom, pointBoundsFunc, nullptr);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
 
   RandomSampler rs;
   RandomSampler_init(rs, 42);
-  for (unsigned int i = 0; i < N; ++i) 
+  for (unsigned int i = 0; i < data.num_points; ++i) 
   {
     float xi1 = RandomSampler_getFloat(rs);
     float xi2 = RandomSampler_getFloat(rs);
-    g_points[i].p = Vec3f(xi1, 0.f, xi2);
+    data.points[i].p = Vec3f(xi1, 0.f, xi2);
   }
 
-  g_num_points_current = N;
-  return g_points;
+  g_num_points_current = data.num_points;
 }
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
   /* create scene */
-  g_scene = rtcNewScene(g_device);
-  g_points = createPoints(g_scene, g_num_points);
-  rtcCommitScene(g_scene);
+  TutorialData_Constructor(&data);
 
-  g_colors = (Vec3fa*) alignedMalloc(g_num_colors*sizeof(Point), 16);
+  data.query_point = g_query_point;
+  data.num_points = g_num_points;
+  data.num_knn = g_num_knn;
+  data.show_voronoi = g_show_voronoi;
+  data.point_repulsion = g_point_repulsion;
+  data.tmax = g_tmax;
+
+  g_scene = data.scene = rtcNewScene(g_device);
+  createPoints(data);
+  rtcCommitScene(data.scene);
+
+  data.colors = (Vec3fa*) alignedMalloc(NUM_COLORS*sizeof(Point), 16);
   for (int r = 0; r < 3; ++r) for (int g = 0; g < 3; ++g) for (int b = 0; b < 3; ++b) 
-    g_colors[r * 9 + g * 3 + b] = Vec3fa(0.2f + 0.3f * r, 0.2f + 0.3f * g, 0.2f + 0.3f * b); 
+    data.colors[r * 9 + g * 3 + b] = Vec3fa(0.2f + 0.3f * r, 0.2f + 0.3f * g, 0.2f + 0.3f * b); 
 }
 
 /* renders a single screen tile */
@@ -183,17 +192,17 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     Vec3fa color = Vec3fa(0.f);
-    if (g_show_voronoi)
+    if (data.show_voronoi)
     {
       Vec3fa q = Vec3fa((float(x) + 0.5f) / width, 0.f, (float(y) + 0.5f) / height);
 
-      KNNResult result;
+      KNNResult result(data.num_knn, data.points);
       result.k = 1;
-      knnQuery(q, g_tmax, &result);
+      knnQuery(q, data.tmax, &result);
       unsigned int primID = result.knn.empty() ? RTC_INVALID_GEOMETRY_ID : result.knn.top().primID;
 
       if (primID != RTC_INVALID_GEOMETRY_ID)
-        color = g_colors[primID % 27];
+        color = data.colors[primID % 27];
     }
 
     /* write color to framebuffer */
@@ -236,16 +245,16 @@ void splat_color(int* pixels,
 
 void rebuild_bvh()
 {
-  rtcReleaseScene (g_scene); 
-  g_scene = rtcNewScene(g_device);
+  rtcReleaseScene (data.scene); 
+  g_scene = data.scene = rtcNewScene(g_device);
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  rtcAttachGeometry(g_scene, geom);
-  rtcSetGeometryUserPrimitiveCount(geom, g_num_points);
-  rtcSetGeometryUserData(geom, g_points);
+  rtcAttachGeometry(data.scene, geom);
+  rtcSetGeometryUserPrimitiveCount(geom, data.num_points);
+  rtcSetGeometryUserData(geom, data.points);
   rtcSetGeometryBoundsFunction(geom, pointBoundsFunc, nullptr);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
-  rtcCommitScene(g_scene);
+  rtcCommitScene(data.scene);
 }
 
 extern "C" void renderFrameStandard (int* pixels,
@@ -263,25 +272,32 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
-  if (g_num_points != g_num_points_current)
+  data.query_point = g_query_point;
+  data.num_points = g_num_points;
+  data.num_knn = g_num_knn;
+  data.show_voronoi = g_show_voronoi;
+  data.point_repulsion = g_point_repulsion;
+  data.tmax = g_tmax;
+
+  if (data.num_points != g_num_points_current)
   {
-    rtcReleaseScene (g_scene); 
-    g_scene = rtcNewScene(g_device);
-    alignedFree(g_points);
-    alignedFree(g_points_tmp);
-    g_points = createPoints(g_scene, g_num_points);
-    rtcCommitScene(g_scene);
+    rtcReleaseScene (data.scene); 
+    g_scene = data.scene = rtcNewScene(g_device);
+    alignedFree(data.points);
+    alignedFree(data.points_tmp);
+    createPoints(data);
+    rtcCommitScene(data.scene);
   }
 
-  if (g_point_repulsion)
+  if (data.point_repulsion)
   {
-    parallel_for(size_t(0), size_t(g_num_points), [&](const range<size_t>& range) {
+    parallel_for(size_t(0), size_t(data.num_points), [&](const range<size_t>& range) {
       for (size_t i = range.begin(); i < range.end(); i++)
       {
         // perform nearest neighbour search for point 
-        KNNResult result;
-        result.k = g_num_knn + 1;
-        knnQuery(g_points[i].p, g_tmax, &result);
+        KNNResult result(data.num_knn, data.points);
+        result.k = data.num_knn + 1;
+        knnQuery(data.points[i].p, data.tmax, &result);
         if (result.knn.empty())
           continue;
 
@@ -296,17 +312,17 @@ extern "C" void device_render (int* pixels,
         Vec3fa dx(0.f);
         while (!result.knn.empty())
         {
-          Point const& q = g_points[result.knn.top().primID];
-          dx += (g_points[i].p - q.p) * (D / (result.knn.top().d + 1e-4f) - 1.f);
+          Point const& q = data.points[result.knn.top().primID];
+          dx += (data.points[i].p - q.p) * (D / (result.knn.top().d + 1e-4f) - 1.f);
           result.knn.pop();
         }
-        g_points_tmp[i].p = min(Vec3fa(1.f), max(Vec3fa(0.f), g_points[i].p + (1.f / K) * dx));
+        data.points_tmp[i].p = min(Vec3fa(1.f), max(Vec3fa(0.f), data.points[i].p + (1.f / K) * dx));
       }
     });
 
     // copy new point locations and rebuild bvh
-    for (int i = 0; i < g_num_points; ++i)
-      g_points[i] = g_points_tmp[i];
+    for (int i = 0; i < data.num_points; ++i)
+      data.points[i] = data.points_tmp[i];
     rebuild_bvh();
   }
 
@@ -320,22 +336,22 @@ extern "C" void device_render (int* pixels,
   });
 
   // draw points
-  parallel_for(size_t(0), size_t(g_num_points), [&](const range<size_t>& range) {
+  parallel_for(size_t(0), size_t(data.num_points), [&](const range<size_t>& range) {
     for (size_t i = range.begin(); i < range.end(); i++)
     {
-      Point const& p = g_points[i];
+      Point const& p = data.points[i];
       Vec3fa color = Vec3fa(0.9f);
-      if (g_show_voronoi) color = g_colors[i%g_num_colors] / 0.8f;
+      if (data.show_voronoi) color = data.colors[i%NUM_COLORS] / 0.8f;
       splat_color(pixels, width, height, 2, p.p.x, p.p.z, color);
     }
   });
 
-  if (!g_show_voronoi)
+  if (!data.show_voronoi)
   {
     // perform nearest neighbour query for query point
-    KNNResult result;
-    result.k = g_num_knn;
-    knnQuery(g_query_point, g_tmax, &result);
+    KNNResult result(data.num_knn, data.points);
+    result.k = data.num_knn;
+    knnQuery(data.query_point, data.tmax, &result);
 
     if (!result.knn.empty())
     {
@@ -357,9 +373,9 @@ extern "C" void device_render (int* pixels,
               if ( pixels[y*width + x] > 0) 
                 continue;
               Vec3fa color(0.0f, 0.0f, 0.0f);
-              if (distance(q, g_query_point) < result.knn.top().d)
+              if (distance(q, data.query_point) < result.knn.top().d)
                 color = Vec3fa(0.2f, 0.2f, 0.8f);
-              else if (distance(q, g_query_point) < g_tmax)
+              else if (distance(q, data.query_point) < data.tmax)
                   color = Vec3fa(0.2f, 0.2f, 0.2f);
               else {
                 continue;
@@ -376,31 +392,28 @@ extern "C" void device_render (int* pixels,
     // draw all visited points
     for (unsigned int primID : result.visited)
     {
-      Point const& p = g_points[primID];
+      Point const& p = data.points[primID];
       splat_color(pixels, width, height, 2, p.p.x, p.p.z, Vec3fa(0.8f, 0.2f, 0.2f));
     }
 
     // draw nearest neighbours
     while (!result.knn.empty())
     {
-      Point const& p = g_points[result.knn.top().primID];
+      Point const& p = data.points[result.knn.top().primID];
       splat_color(pixels, width, height, 2, p.p.x, p.p.z, Vec3fa(0.2f, 0.8f, 0.2f));
       result.knn.pop();
     }
 
     // draw query point
-    splat_color(pixels, width, height, 2, g_query_point.x, g_query_point.z, Vec3fa(0.8f, 0.8f, 0.2f));
+    splat_color(pixels, width, height, 2, data.query_point.x, data.query_point.z, Vec3fa(0.8f, 0.8f, 0.2f));
   }
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = nullptr;
   rtcReleaseDevice(g_device); g_device = nullptr;
-  alignedFree(g_points); g_points = nullptr;
-  alignedFree(g_points_tmp); g_points_tmp = nullptr;
-  alignedFree(g_colors); g_colors = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

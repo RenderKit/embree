@@ -24,6 +24,15 @@ struct TutorialData
   Vec3fa colors[4][4];
 };
 
+#if __SYCL_COMPILER_VERSION >= 20210801
+}
+namespace sycl {
+  template<> struct is_device_copyable<embree::TutorialData> : std::true_type {};
+  template<> struct is_device_copyable<const embree::TutorialData> : std::true_type {};
+}
+namespace embree {
+#endif
+
 void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene  = nullptr;

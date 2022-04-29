@@ -24,11 +24,20 @@ namespace embree
       __forceinline Vec2f uv(const size_t i) const {
         return Vec2f(0.0f, 0.0f);
       }
+      __forceinline Vec2vf<M> uv() const {
+        return Vec2vf<M>(0.0f, 0.0f);
+      }
       __forceinline float t(const size_t i) const {
         return vt[i];
       }
+      __forceinline vfloat<M> t() const {
+        return vt;
+      }
       __forceinline Vec3fa Ng(const size_t i) const {
         return Vec3fa(vNg.x[i], vNg.y[i], vNg.z[i]);
+      }
+      __forceinline Vec3vf<M> Ng() const { 
+        return vNg;
       }
 
      public:
@@ -36,12 +45,39 @@ namespace embree
       Vec3vf<M> vNg;
     };
 
+    template<>
+    struct SphereIntersectorHitM<1>
+    {
+      __forceinline SphereIntersectorHitM() {}
+
+      __forceinline SphereIntersectorHitM(const float& t, const Vec3f& Ng)
+        : vt(t), vNg(Ng) {}
+
+      __forceinline void finalize() {}
+
+      __forceinline Vec2f uv() const {
+        return Vec2f(0.0f, 0.0f);
+      }
+
+      __forceinline float t() const {
+        return vt;
+      }
+
+      __forceinline Vec3f Ng() const { 
+        return vNg;
+      }
+
+     public:
+      float vt;
+      Vec3f vNg;
+    };
+
     template<int M>
     struct SphereIntersector1
     {
       typedef CurvePrecalculations1 Precalculations;
 
-      template<typename Epilog>
+      template<typename Ray, typename Epilog>
       static __forceinline bool intersect(
           const vbool<M>& valid_i, Ray& ray,
           const Precalculations& pre, const Vec4vf<M>& v0, const Epilog& epilog)

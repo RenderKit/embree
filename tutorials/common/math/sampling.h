@@ -51,7 +51,7 @@ inline Vec3fa cartesian(const float phi, const float cosTheta)
 
 inline Vec3fa cosineSampleHemisphere(const Vec2f s)
 {
-  const float phi =float(two_pi) * s.x;
+  const float phi = 2.0f * float(M_PI) * s.x;
   const float cosTheta = sqrt(s.y);
   const float sinTheta = sqrt(1.0f - s.y);
   return cartesian(phi, sinTheta, cosTheta);

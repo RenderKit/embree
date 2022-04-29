@@ -84,7 +84,10 @@ static void renderBenchmarkLegacy(BenchState& state, BenchParams& params ,int ar
       double t0 = getSeconds();
       tutorial.render(tutorial.pixels,tutorial.width,tutorial.height,0.0f,ispccamera);
       double t1 = getSeconds();
-      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/(t1-t0) << " fps (skipped)" << std::endl << std::flush;
+      double dt = t1-t0;
+      if (ispccamera.render_time != 0.0)
+	dt = ispccamera.render_time;
+      std::cout << "frame [" << std::setw(3) << i << " / " << std::setw(3) << numTotalFrames << "]: " <<  std::setw(8) << 1.0/dt << " fps (skipped)" << std::endl << std::flush;
     }
 
     for (size_t i=params.skipIterations; i<numTotalFrames; i++)
@@ -93,11 +96,14 @@ static void renderBenchmarkLegacy(BenchState& state, BenchParams& params ,int ar
       double t0 = getSeconds();
       tutorial.render(tutorial.pixels,tutorial.width,tutorial.height,0.0f,ispccamera);
       double t1 = getSeconds();
+      double dt = t1-t0;
+      if (ispccamera.render_time != 0.0)
+	dt = ispccamera.render_time;
 
-      float fps = float(1.0/(t1-t0));
+      float fps = float(1.0/dt);
       fpsStat.add(fps);
 
-      float mrayps = float(double(tutorial.getNumRays())/(1000000.0*(t1-t0)));
+      float mrayps = float(double(tutorial.getNumRays())/(1000000.0*dt));
       mraypsStat.add(mrayps);
 
       if (numTotalFrames >= 1024 && (i % 64 == 0))

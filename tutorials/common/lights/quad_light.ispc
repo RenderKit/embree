@@ -20,9 +20,9 @@ struct QuadLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-Light_SampleRes QuadLight_sample(const uniform Light* uniform super,
-                                 const DifferentialGeometry& dg,
-                                 const Vec2f& s)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes QuadLight_sample(const uniform Light* uniform super,
+                                                              const DifferentialGeometry& dg,
+                                                              const Vec2f& s)
 {
   const QuadLight* uniform self = (QuadLight* uniform)super;
   Light_SampleRes res;
@@ -77,7 +77,7 @@ export void* uniform QuadLight_create()
   uniform QuadLight* uniform self = uniform new uniform QuadLight;
 
   Light_Constructor(&self->super);
-  self->super.sample = QuadLight_sample;
+  self->super.sample = GET_FUNCTION_POINTER(QuadLight_sample);
 
   QuadLight_set(self,
                 make_Vec3f(0.f),

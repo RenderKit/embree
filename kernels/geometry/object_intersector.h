@@ -47,6 +47,40 @@ namespace embree
         accel->occluded(ray,prim.geomID(),prim.primID(),context);
         return ray.tfar < 0.0f;
       }
+
+      static __forceinline bool intersect(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) {
+        return occluded(pre,ray,context,prim);
+      }
+
+      static __forceinline void intersect(unsigned int k, const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim) 
+      {
+        AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID());
+
+        /* perform ray mask test */
+#if defined(EMBREE_RAY_MASK)
+        if ((ray.mask & accel->mask) == 0) 
+          return;
+#endif
+
+        accel->intersect(k,ray,prim.geomID(),prim.primID(),context);
+      }
+      
+      static __forceinline bool occluded(unsigned int k, const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
+      {
+        AccelSet* accel = (AccelSet*) context->scene->get(prim.geomID());
+        /* perform ray mask test */
+#if defined(EMBREE_RAY_MASK)
+        if ((ray.mask & accel->mask) == 0) 
+          return false;
+#endif
+
+        accel->occluded(k, ray,prim.geomID(),prim.primID(),context);
+        return ray.tfar < 0.0f;
+      }
+
+      static __forceinline bool intersect(unsigned int k, const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim) {
+        return occluded(k,pre,ray,context,prim);
+      }
       
       static __forceinline bool pointQuery(PointQuery* query, PointQueryContext* context, const Primitive& prim)
       {

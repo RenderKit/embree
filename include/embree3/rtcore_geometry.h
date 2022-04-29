@@ -92,9 +92,6 @@ struct RTCIntersectFunctionNArguments
   unsigned int geomID;
 };
 
-/* Intersection callback function */
-typedef void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArguments* args);
-
 /* Arguments for RTCOccludedFunctionN */
 struct RTCOccludedFunctionNArguments
 {
@@ -106,9 +103,6 @@ struct RTCOccludedFunctionNArguments
   unsigned int N;
   unsigned int geomID;
 };
-
-/* Occlusion callback function */
-typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* args);
 
 /* Arguments for RTCDisplacementFunctionN */
 struct RTCDisplacementFunctionNArguments
@@ -196,7 +190,7 @@ RTC_API void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, RTCFilte
 RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* ptr);
 
 /* Gets the user-defined data pointer of the geometry. */
-RTC_API void* rtcGetGeometryUserData(RTCGeometry geometry);
+RTC_SYCL_API void* rtcGetGeometryUserData(RTCGeometry geometry);
 
 /* Set the point query callback function of a geometry. */
 RTC_API void rtcSetGeometryPointQueryFunction(RTCGeometry geometry, RTCPointQueryFunction pointQuery);
@@ -214,11 +208,10 @@ RTC_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, RTCIntersectF
 RTC_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, RTCOccludedFunctionN occluded);
 
 /* Invokes the intersection filter from the intersection callback function. */
-RTC_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* args, const struct RTCFilterFunctionNArguments* filterArgs);
+RTC_SYCL_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 /* Invokes the occlusion filter from the occlusion callback function. */
-RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* args, const struct RTCFilterFunctionNArguments* filterArgs);
-
+RTC_SYCL_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* args, const struct RTCFilterFunctionNArguments* filterArgs);
 
 /* Sets the instanced scene of an instance geometry. */
 RTC_API void rtcSetGeometryInstancedScene(RTCGeometry geometry, RTCScene scene);
@@ -283,7 +276,7 @@ struct RTCInterpolateArguments
 };
 
 /* Interpolates vertex data to some u/v location and optionally calculates all derivatives. */
-RTC_API void rtcInterpolate(const struct RTCInterpolateArguments* args);
+RTC_SYCL_API void rtcInterpolate(const struct RTCInterpolateArguments* args);
 
 /* Interpolates vertex data to some u/v location. */
 RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot, float* P, unsigned int valueCount)

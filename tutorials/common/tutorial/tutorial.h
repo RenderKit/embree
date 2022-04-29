@@ -81,6 +81,9 @@ namespace embree
     /* virtual main function, contains all tutorial logic */
     virtual int main(int argc, char** argv);
 
+    /* creates the Embree device */
+    void create_device();
+    
     /* callback called after command line parsing finished */
     virtual void postParseCommandLine() {}
 
@@ -136,7 +139,6 @@ namespace embree
     /* render settings */
     Ref<SceneGraph::PerspectiveCameraNode> animated_camera;
     Camera camera;
-    Shader shader;
 
     /* framebuffer settings */
     unsigned width;
@@ -165,6 +167,10 @@ namespace embree
     float speed;
     Vec3f moveDelta;
 
+    bool motion_blur;  // motion blur on/off
+    bool animate;      // if mblur off -> animate on/off
+    float render_time; // if animate off -> render this time
+
     bool command_line_camera;
     bool print_frame_rate;
     Averaged<double> avg_render_time;
@@ -181,7 +187,18 @@ namespace embree
     RTCIntersectContextFlags iflags_incoherent;
 
     std::unique_ptr<ISPCScene> ispc_scene;
+
+  private:
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+  public:
+    sycl::queue* queue = nullptr;
+    sycl::device* device = nullptr;
+    sycl::context* context = nullptr;
+#endif
     
+  public:
+
     /* ray statistics */
     void initRayStats();
     int64_t getNumRays();

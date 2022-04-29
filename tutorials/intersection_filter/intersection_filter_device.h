@@ -9,18 +9,25 @@ struct TutorialData
 {
   RTCScene g_scene;
   Vec3fa* colors;
+
+  //RTCFilterFunctionN intersectionFilter;
+  //RTCFilterFunctionN occlusionFilter;
+  void* intersectionFilter;
+  void* occlusionFilter;
 };
 
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene = nullptr;
   This->colors = nullptr;
+  This->intersectionFilter = nullptr;
+  This->occlusionFilter = nullptr;
 }
 
 inline void TutorialData_Destructor(TutorialData* This)
 {
   rtcReleaseScene (This->g_scene); This->g_scene = nullptr;
-  alignedFree(This->colors); This->colors = nullptr;
+  alignedUSMFree(This->colors); This->colors = nullptr;
 }
 
 } // namespace embree

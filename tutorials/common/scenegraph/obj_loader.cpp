@@ -282,18 +282,14 @@ namespace embree
 
     enum Type { NONE, MATTE, GLASS, METAL, METALLIC_PAINT };
 
-    ExtObjMaterial ()
-      : type(NONE), illum(0), d(1.f), Ns(1.f), Ni(1.f), Ka(0.f), Kd(1.f), Ks(0.f), Kt(1.0f),
-        roughness(0.0f), coat_eta(1.0f), coat_roughness(0.0f), bump(0.0f), eta(1.4f), k(3.0f) {}
-
     Ref<SceneGraph::MaterialNode> select() const 
     {
       std::shared_ptr<Texture> nulltex;
       if (type == NONE) {
-        return new OBJMaterial(d,map_d,Kd,map_Kd,Ks,map_Ks,Ns,map_Ns,map_Displ);
+        return new OBJMaterial(d,map_d,Ka,map_Ka,Kd,map_Kd,Ks,map_Ks,Kt,map_Kt,Ns,map_Ns,map_Displ);
       } else if (type == MATTE) {
         if (coat_eta != 1.0f) return new MetallicPaintMaterial (Kd,zero,0.0f,eta.x);
-        else                  return new OBJMaterial(1.0f,nulltex,Kd,map_Kd,Ks,nulltex,1.0f/(1E-6f+roughness),nulltex,nulltex);
+        else                  return new OBJMaterial(1.0f,nulltex,zero,nulltex,Kd,map_Kd,Ks,nulltex,zero,nulltex,1.0f/(1E-6f+roughness),nulltex,nulltex);
       } else if (type == GLASS) {
         return new ThinDielectricMaterial(Vec3fa(1.0f),eta.x,0.1f);
       } else if (type == METAL) {
@@ -309,32 +305,34 @@ namespace embree
     }
 
   public:
-    Type type;
+    Type type = NONE;
 
-    int illum;             /*< illumination model */
-    float d;               /*< dissolve factor, 1=opaque, 0=transparent */
-    float Ns;              /*< specular exponent */
-    float Ni;              /*< optical density for the surface (index of refraction) */
+    int illum = 0;             /*< illumination model */
+    float d = 1.0f;               /*< dissolve factor, 1=opaque, 0=transparent */
+    float Ns = 1.0f;              /*< specular exponent */
+    float Ni = 1.0f;              /*< optical density for the surface (index of refraction) */
 
-    Vec3fa Ka;              /*< ambient reflectivity */
-    Vec3fa Kd;              /*< diffuse reflectivity */
-    Vec3fa Ks;              /*< specular reflectivity */
-    Vec3fa Kt;              /*< transmission filter */
+    Vec3fa Ka = zero;              /*< ambient reflectivity */
+    Vec3fa Kd = one;              /*< diffuse reflectivity */
+    Vec3fa Ks = zero;              /*< specular reflectivity */
+    Vec3fa Kt = zero;              /*< transmission filter */
 
     std::shared_ptr<Texture> map_d;            /*< d texture */
+    std::shared_ptr<Texture> map_Ka;           /*< Ka texture */
     std::shared_ptr<Texture> map_Kd;           /*< Kd texture */
     std::shared_ptr<Texture> map_Ks;           /*< Ks texture */
+    std::shared_ptr<Texture> map_Kt;           /*< Kt texture */
     std::shared_ptr<Texture> map_Ns;           /*< Ns texture */
     std::shared_ptr<Texture> map_Displ;        /*< Displ texture */
 
-    float roughness;
+    float roughness = zero;
     std::shared_ptr<Texture> roughnessMap;
-    float coat_eta;
-    float coat_roughness;
+    float coat_eta = one;
+    float coat_roughness = zero;
     std::shared_ptr<Texture> coat_roughnessMap;
-    float bump;
-    Vec3f eta;
-    Vec3f k;
+    float bump = zero;
+    Vec3f eta = Vec3f(1.4f);
+    Vec3f k = Vec3f(3.0f);
   };
 
   std::shared_ptr<Texture> OBJLoader::loadTexture(const FileName& fname)
@@ -400,15 +398,36 @@ namespace embree
           cur.map_d = loadTexture(FileName(token));
           continue;
         }
-        if (!strncmp(token, "map_Ka", 6) || !strncmp(token, "Ka_map", 6)) { continue; }
+        if (!strncmp(token, "map_Ka", 6) || !strncmp(token, "Ka_map", 6)) {
+          parseSep(token += 6);
+          cur.map_Ka = loadTexture(FileName(token));
+          continue;
+        }
         if (!strncmp(token, "map_Kd", 6) || !strncmp(token, "Kd_map", 6)) {
           parseSep(token += 6);
           cur.map_Kd = loadTexture(FileName(token));
           continue;
         }
-        
-        if (!strncmp(token, "map_Ks", 6) || !strncmp(token, "Ks_map", 6)) { continue; }
-        if (!strncmp(token, "map_Tf", 6) || !strncmp(token, "Tf_map", 6)) { continue; }
+        if (!strncmp(token, "map_Ks", 6) || !strncmp(token, "Ks_map", 6)) {
+          parseSep(token += 6);
+          cur.map_Ks = loadTexture(FileName(token));
+          continue;
+        }
+        if (!strncmp(token, "map_Kt", 6) || !strncmp(token, "Kt_map", 6)) {
+          parseSep(token += 6);
+          cur.map_Kt = loadTexture(FileName(token));
+          continue;
+        }
+        if (!strncmp(token, "map_Tf", 6) || !strncmp(token, "Tf_map", 6)) {
+          parseSep(token += 6);
+          cur.map_Kt = loadTexture(FileName(token));
+          continue;
+        }
+        if (!strncmp(token, "map_Ns", 6) || !strncmp(token, "Ns_map", 6)) {
+          parseSep(token += 6);
+          cur.map_Ns = loadTexture(FileName(token));
+          continue;
+        }
         if (!strncmp(token, "map_Displ", 9) || !strncmp(token, "Displ_map", 9)) {
           parseSep(token += 9);
           cur.map_Displ = loadTexture(FileName(token));
@@ -418,6 +437,7 @@ namespace embree
         if (!strncmp(token, "Ka", 2)) { parseSep(token += 2);  cur.Ka = getVec3f(token); continue; }
         if (!strncmp(token, "Kd", 2)) { parseSep(token += 2);  cur.Kd = getVec3f(token); continue; }
         if (!strncmp(token, "Ks", 2)) { parseSep(token += 2);  cur.Ks = getVec3f(token); continue; }
+        if (!strncmp(token, "Kt", 2)) { parseSep(token += 2);  cur.Kt = getVec3f(token); continue; }
         if (!strncmp(token, "Tf", 2)) { parseSep(token += 2);  cur.Kt = getVec3f(token); continue; }
         
         /* extended OBJ */
@@ -427,19 +447,33 @@ namespace embree
           else if (type == "glass") cur.type = ExtObjMaterial::GLASS;
           else if (type == "metal") cur.type = ExtObjMaterial::METAL;
           else if (type == "metallicPaint") cur.type = ExtObjMaterial::METALLIC_PAINT;
+          else if (type == "principled") cur.type = ExtObjMaterial::NONE;
+          else if (type == "luminous") cur.type = ExtObjMaterial::NONE;
+          continue;
         }
-        if (!strncmp(token, "roughnessMap",     12)) { parseSep(token += 12); cur.roughnessMap = loadTexture(FileName(token)); }
-        if (!strncmp(token, "roughness",         9)) { parseSep(token +=  9); cur.roughness = getFloat(token); }
-        if (!strncmp(token, "colorMap",          8)) { parseSep(token +=  8); cur.map_Kd  = loadTexture(FileName(token)); }
-        if (!strncmp(token, "color",             5)) { parseSep(token +=  5); cur.Kd      = getVec3f(token); }
-        if (!strncmp(token, "coat.color",       10)) { parseSep(token += 10); cur.Kd      = getVec3f(token); }
-        if (!strncmp(token, "coat.eta",          8)) { parseSep(token +=  8); cur.coat_eta  = getFloat(token); }
-        if (!strncmp(token, "coat.roughnessMap",17)) { parseSep(token += 17); cur.coat_roughnessMap   = loadTexture(FileName(token)); }
-        if (!strncmp(token, "coat.roughness",   14)) { parseSep(token += 14); cur.coat_roughness = getFloat(token); }
-        if (!strncmp(token, "bumpMap",           7)) { parseSep(token +=  7); cur.map_Displ = loadTexture(FileName(token)); }
-        if (!strncmp(token, "bump",              4)) { parseSep(token +=  4); cur.bump   = getFloat(token); }
-        if (!strncmp(token, "eta",               3)) { parseSep(token +=  3); cur.eta = getVec3f(token); }
-        if (!strncmp(token, "k",                 1)) { parseSep(token +=  1); cur.k = getVec3f(token); }
+
+        /* OSPRay principled material extensions */
+        if (!strncmp(token, "baseColor",         9)) { parseSep(token +=  9); cur.Kd  = getVec3f(token); continue; }
+        if (!strncmp(token, "ior",               3)) { parseSep(token +=  3); cur.Ni = getFloat(token); continue; }
+        if (!strncmp(token, "map_baseColor",    13)) { parseSep(token += 13); cur.map_Kd = loadTexture(FileName(token)); continue; }
+        if (!strncmp(token, "map_specular",     12)) { parseSep(token += 12); cur.map_Ks = loadTexture(FileName(token)); continue; }
+        if (!strncmp(token, "map_normal.scale", 16)) { parseSep(token += 16); continue; }
+        if (!strncmp(token, "map_normal",       10)) { parseSep(token += 10); cur.map_Displ = loadTexture(FileName(token)); continue; }
+        if (!strncmp(token, "transmissionColor",17)) { parseSep(token += 17); cur.Kt = getVec3f(token); continue; }
+        if (!strncmp(token, "transmission",     12)) { parseSep(token += 12); cur.Kt = Vec3f(getFloat(token)); continue; }
+                
+        if (!strncmp(token, "roughnessMap",     12)) { parseSep(token += 12); cur.roughnessMap = loadTexture(FileName(token)); continue; }
+        if (!strncmp(token, "roughness",         9)) { parseSep(token +=  9); cur.roughness = getFloat(token); cur.Ns = 1.0f/(cur.roughness+1E-6f); continue; }
+        if (!strncmp(token, "colorMap",          8)) { parseSep(token +=  8); cur.map_Kd  = loadTexture(FileName(token)); continue; }
+        if (!strncmp(token, "color",             5)) { parseSep(token +=  5); cur.Kd      = getVec3f(token); continue; }
+        if (!strncmp(token, "coat.color",       10)) { parseSep(token += 10); cur.Kd      = getVec3f(token); continue; }
+        if (!strncmp(token, "coat.eta",          8)) { parseSep(token +=  8); cur.coat_eta  = getFloat(token); continue; }
+        if (!strncmp(token, "coat.roughnessMap",17)) { parseSep(token += 17); cur.coat_roughnessMap   = loadTexture(FileName(token)); continue; }
+        if (!strncmp(token, "coat.roughness",   14)) { parseSep(token += 14); cur.coat_roughness = getFloat(token); continue; }
+        if (!strncmp(token, "bumpMap",           7)) { parseSep(token +=  7); cur.map_Displ = loadTexture(FileName(token)); continue; }
+        if (!strncmp(token, "bump",              4)) { parseSep(token +=  4); cur.bump   = getFloat(token); continue; }
+        if (!strncmp(token, "eta",               3)) { parseSep(token +=  3); cur.eta = getVec3f(token); continue; }
+        if (!strncmp(token, "k",                 1)) { parseSep(token +=  1); cur.k = getVec3f(token); continue; }
       } 
       catch (const std::runtime_error& e) {
         std::cerr << "Error: " << e.what() << std::endl;

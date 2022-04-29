@@ -12,6 +12,7 @@ extern "C" ISPCScene* g_ispc_scene;
 extern "C" int g_instancing_mode;
 extern "C" float g_min_width;
 extern "C" int g_animation_mode;
+extern "C" bool g_motion_blur;
 
 struct TutorialData
 {
@@ -22,6 +23,7 @@ struct TutorialData
   /* scene data */
   RTCScene scene;
   bool subdiv_mode;
+  bool motion_blur;
 
   float min_width;
 };
@@ -33,6 +35,7 @@ void TutorialData_Constructor(TutorialData* This)
   This->iflags_coherent = g_iflags_coherent;
   This->scene = nullptr;
   This->subdiv_mode = false;
+  This->motion_blur = g_motion_blur;
   This->min_width = g_min_width;
 }
 

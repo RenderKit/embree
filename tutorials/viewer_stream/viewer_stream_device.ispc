@@ -24,18 +24,18 @@ RTCScene g_scene = NULL;
 #define MIN_EDGE_LEVEL  4.0f
 #define LEVEL_FACTOR   64.0f
 
-inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, const uniform unsigned int e0, const uniform unsigned int e1)
+inline uniform float updateEdgeLevel( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3f& cam_pos, const uniform unsigned int e0, const uniform unsigned int e1)
 {
   const uniform Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
   const uniform Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
   const uniform Vec3fa edge = v1-v0;
   const uniform Vec3fa P = 0.5f*(v1+v0);
-  const uniform Vec3fa dist = cam_pos - P;
+  const uniform Vec3fa dist = make_Vec3fa(cam_pos) - P;
   return max(min(LEVEL_FACTOR*(0.5f*length(edge)/length(dist)),MAX_EDGE_LEVEL),MIN_EDGE_LEVEL);
 }
 
 
-void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos, uniform unsigned int startID, uniform unsigned int endID )
+void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3f& cam_pos, uniform unsigned int startID, uniform unsigned int endID )
 {
   for (uniform unsigned int f=startID; f<endID;f++) {
     uniform unsigned int e = mesh->face_offsets[f];
@@ -53,14 +53,14 @@ void updateEdgeLevelBuffer( uniform ISPCSubdivMesh* uniform mesh, const uniform 
 }
 
 #if defined(ISPC)
-task void updateSubMeshEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3fa& cam_pos )
+task void updateSubMeshEdgeLevelBufferTask( uniform ISPCSubdivMesh* uniform mesh, const uniform Vec3f& cam_pos )
 {
   const uniform unsigned int size = mesh->numFaces;
   const uniform unsigned int startID = ((taskIndex+0)*size)/taskCount;
   const uniform unsigned int endID   = ((taskIndex+1)*size)/taskCount;
   updateEdgeLevelBuffer(mesh,cam_pos,startID,endID);
 }
-task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos )
+task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, const uniform Vec3f& cam_pos )
 {
   uniform ISPCGeometry* uniform geometry = g_ispc_scene->geometries[taskIndex];
   if (geometry->type != SUBDIV_MESH) return;
@@ -73,7 +73,7 @@ task void updateMeshEdgeLevelBufferTask( uniform ISPCScene* uniform scene_in, co
 }
 #endif
 
-void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3fa& cam_pos)
+void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3f& cam_pos)
 {
   /* first update small meshes */
 #if defined(ISPC)

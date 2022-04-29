@@ -13,9 +13,7 @@
 struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
 struct Triangle { int v0, v1, v2; };
 
-/* include embree API */
-#include "../../../include/embree3/rtcore.isph"
-RTC_NAMESPACE_USE
+#include "../device_default.isph"
 
 /* include optional vector library */
 #include "../math/math.isph"
@@ -34,16 +32,35 @@ enum Mode {
   MODE_STREAM = 1
 };
 
+enum Shader { 
+  SHADER_DEFAULT, 
+  SHADER_EYELIGHT,
+  SHADER_OCCLUSION,
+  SHADER_UV,
+  SHADER_TEXCOORDS,
+  SHADER_TEXCOORDS_GRID,
+  SHADER_NG,
+  SHADER_CYCLES,
+  SHADER_GEOMID,
+  SHADER_GEOMID_PRIMID,
+  SHADER_AO
+};
+
 extern RTCDevice g_device;
 extern uniform Mode g_mode;
 extern uniform RTCIntersectContextFlags g_iflags_coherent;
 extern uniform RTCIntersectContextFlags g_iflags_incoherent;
+extern uniform Shader shader;
 
 /* error reporting function */
 unmasked void error_handler(void* uniform userPtr, uniform RTCError code, const uniform int8* uniform str = NULL);
 
 /* returns time stamp counter */
+#if defined(__SYCL_DEVICE_ONLY__)
+inline int64 get_tsc() { return 0; }
+#else
 extern "C" uniform int64 get_tsc();
+#endif
 
 /* declare some standard library functions */
 extern "C" void abort ();
@@ -94,10 +111,9 @@ extern "C" unmasked void progressStart();
 extern "C" unmasked uniform bool progressMonitor(void* uniform ptr, const uniform double n);
 extern "C" unmasked void progressEnd();
 
-Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
-
-float  getTextureTexel1f(const uniform Texture* uniform texture, float u, float v);
-Vec3f  getTextureTexel3f(const uniform Texture* uniform texture, float u, float v);
+SYCL_EXTERNAL Vec2f  getTextureCoordinatesSubdivMesh(void* uniform mesh, const unsigned int primID, const float u, const float v);
+SYCL_EXTERNAL float  getTextureTexel1f(const uniform Texture* uniform texture, float u, float v);
+SYCL_EXTERNAL Vec3f  getTextureTexel3f(const uniform Texture* uniform texture, float u, float v);
 
 enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GROUP };
 

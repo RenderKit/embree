@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "../../kernels/config.h"
 #include "../../common/sys/platform.h"
 #include "../../common/sys/sysinfo.h"
 #include "../../common/sys/ref.h"
@@ -14,7 +15,7 @@
 #include "../../common/math/lbbox.h"
 #include "../../common/math/affinespace.h"
 #include "../../common/sys/filename.h"
-#include "../../common/sys/string.h"
+#include "../../common/sys/estring.h"
 #include "../../common/lexers/tokenstream.h"
 #include "../../common/lexers/streamfilters.h"
 #include "../../common/lexers/parsestream.h"

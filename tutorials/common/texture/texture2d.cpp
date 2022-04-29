@@ -185,7 +185,7 @@ static Texture2D_get Texture2D_get_addr(const uint32_t type,
 extern "C" void *Texture2D_create(Vec2i &size, void *data,
     uint32_t type, uint32_t flags)
 {
-  Texture2D *self = (Texture2D*) alignedMalloc(sizeof(Texture2D),16);
+  Texture2D *self = (Texture2D*) alignedUSMMalloc(sizeof(Texture2D),16);
   self->size      = size;
 
   // Due to float rounding frac(x) can be exactly 1.0f (e.g. for very small

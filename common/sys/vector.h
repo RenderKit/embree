@@ -8,6 +8,8 @@
 
 namespace embree
 {
+  class Device;
+  
    template<typename T, typename allocator>
     class vector_t
     {
@@ -25,6 +27,9 @@ namespace embree
       template<typename M>
       __forceinline explicit vector_t (M alloc, size_t sz) 
       : alloc(alloc), size_active(0), size_alloced(0), items(nullptr) { internal_resize_init(sz); }
+
+      __forceinline vector_t (Device* alloc)
+        : vector_t(alloc,0) {}
     
       __forceinline ~vector_t() {
         clear();
@@ -63,6 +68,10 @@ namespace embree
         size_alloced = other.size_alloced; other.size_alloced = 0;
         items = other.items; other.items = nullptr;
         return *this;
+      }
+
+      __forceinline allocator& getAlloc() {
+	return alloc;
       }
 
       /********************** Iterators  ****************************/
@@ -127,14 +136,14 @@ namespace embree
       {
         assert(!empty());
         size_active--;
-        alloc.destroy(&items[size_active]);
+        std::allocator_traits<allocator>::destroy(alloc, &items[size_active]);
       }
 
       __forceinline void clear() 
       {
         /* destroy elements */
         for (size_t i=0; i<size_active; i++)
-          alloc.destroy(&items[i]);
+          std::allocator_traits<allocator>::destroy(alloc, &items[i]);
         
         /* free memory */
         alloc.deallocate(items,size_alloced); 
@@ -179,7 +188,7 @@ namespace embree
         if (new_active < size_active) 
         {
           for (size_t i=new_active; i<size_active; i++)
-            alloc.destroy(&items[i]);
+            std::allocator_traits<allocator>::destroy(alloc, &items[i]);
           size_active = new_active;
         }
 
@@ -195,7 +204,7 @@ namespace embree
         items = alloc.allocate(new_alloced);
         for (size_t i=0; i<size_active; i++) {
           ::new (&items[i]) T(std::move(old_items[i]));
-          alloc.destroy(&old_items[i]);
+          std::allocator_traits<allocator>::destroy(alloc, &old_items[i]);
         }
 
         for (size_t i=size_active; i<new_active; i++) {
@@ -235,7 +244,7 @@ namespace embree
   /*! vector class that performs aligned allocations */
   template<typename T>
     using avector = vector_t<T,aligned_allocator<T,std::alignment_of<T>::value> >;
-  
+
   /*! vector class that performs OS allocations */
   template<typename T>
     using ovector = vector_t<T,os_allocator<T> >;

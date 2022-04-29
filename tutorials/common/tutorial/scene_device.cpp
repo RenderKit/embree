@@ -14,6 +14,20 @@ namespace embree
     AssignShaderTy assignShadersFunc = nullptr;
   }
 
+  template<typename Ty>
+  Ty* copyArrayToUSM(const avector<Ty>& in) {
+    Ty* out = (Ty*)alignedUSMMalloc(in.size()*sizeof(Ty));
+    memcpy(out,in.data(),in.size()*sizeof(Ty));
+    return out;
+  }
+
+  template<typename Ty>
+  Ty* copyArrayToUSM(const std::vector<Ty>& in) {
+    Ty* out = (Ty*)alignedUSMMalloc(in.size()*sizeof(Ty));
+    memcpy(out,in.data(),in.size()*sizeof(Ty));
+    return out;
+  }
+
   extern "C" int g_animation_mode;
   
   void deleteGeometry(ISPCGeometry* geom)
@@ -33,23 +47,37 @@ namespace embree
     default: assert(false); break;
     }
   }
+
+  ISPCScene::ISPCScene(RTCDevice device, unsigned int numGeometries, unsigned int numMaterials, unsigned int numLights)
+    : scene(rtcNewScene(device)), geometries(nullptr), materials(nullptr), numGeometries(numGeometries), numMaterials(numMaterials), lights(0), numLights(numLights), tutorialScene(nullptr)
+  {
+    geometries = (ISPCGeometry**) alignedUSMMalloc(numGeometries*sizeof(ISPCGeometry*));
+    for (size_t i=0; i<numGeometries; i++) geometries[i] = nullptr;
+    
+    materials = (ISPCMaterial**) alignedUSMMalloc(numMaterials*sizeof(ISPCMaterial*));
+    for (size_t i=0; i<numMaterials; i++) materials[i] = nullptr;
+    
+    lights = (Light**) alignedUSMMalloc(numLights*sizeof(Light*));
+    for (size_t i=0; i<numLights; i++) lights[i] = nullptr;
+  }
   
   ISPCScene::ISPCScene(RTCDevice device, TutorialScene* in)
     : scene(rtcNewScene(device)), tutorialScene(in)
   {
     SceneGraph::opaque_geometry_destruction = (void(*)(void*)) deleteGeometry;
-    
-    geometries = new ISPCGeometry*[in->geometries.size()];
+
+    geometries = (ISPCGeometry**) alignedUSMMalloc(sizeof(ISPCGeometry*)*in->geometries.size());
+
     for (size_t i=0; i<in->geometries.size(); i++)
       geometries[i] = convertGeometry(device,in,in->geometries[i]);
     numGeometries = unsigned(in->geometries.size());
     
-    materials = new ISPCMaterial*[in->materials.size()];
+    materials = (ISPCMaterial**) alignedUSMMalloc(sizeof(ISPCMaterial*)*in->materials.size());
     for (size_t i=0; i<in->materials.size(); i++)
       materials[i] = (ISPCMaterial*) in->materials[i]->material();
     numMaterials = unsigned(in->materials.size());
     
-    lights = new Light*[in->lights.size()];
+    lights = (Light**) alignedUSMMalloc(sizeof(Light*)*in->lights.size());
     numLights = 0;
     for (size_t i=0; i<in->lights.size(); i++)
     {
@@ -60,11 +88,12 @@ namespace embree
 
   ISPCScene::~ISPCScene()
   {
-    delete[] geometries;
-    delete[] materials;
+    alignedUSMFree(geometries);
+    alignedUSMFree(materials);
+
     for (size_t i=0; i<numLights; i++)
       Light_destroy(lights[i]);
-    delete[] lights;
+    alignedUSMFree(lights);
   }
   
   Light* ISPCScene::convertLight(Ref<SceneGraph::LightNode> in)
@@ -131,35 +160,72 @@ namespace embree
 
     rtcCommitScene(scene);
   }
+
+  ISPCTriangleMesh::ISPCTriangleMesh (RTCDevice device, unsigned int numTriangles, unsigned int numVertices, bool hasNormals, bool hasTexcoords, unsigned int numTimeSteps)
+    : geom(TRIANGLE_MESH),
+      positions(nullptr), normals(nullptr), texcoords(nullptr), triangles(nullptr), startTime(0.0f), endTime(1.0f),
+      numTimeSteps(numTimeSteps), numVertices(numVertices), numTriangles(numTriangles)
+  {
+    assert(numTimeSteps);
+
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
+    
+    positions = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*numTimeSteps);
+    for (size_t i=0; i<numTimeSteps; i++)
+      positions[i] = (Vec3fa*) alignedUSMMalloc(sizeof(Vec3fa)*numVertices);
+
+    if (hasNormals) {
+      normals = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*numTimeSteps);
+      for (size_t i=0; i<numTimeSteps; i++)
+        normals[i] = (Vec3fa*) alignedUSMMalloc(sizeof(Vec3fa)*numVertices);
+    }
+
+    if (hasTexcoords)
+      texcoords = (Vec2f*) alignedUSMMalloc(sizeof(Vec2f)*numVertices);
+
+    triangles = (ISPCTriangle*) alignedUSMMalloc(sizeof(ISPCTriangle)*numTriangles);
+  }
   
   ISPCTriangleMesh::ISPCTriangleMesh (RTCDevice device, TutorialScene* scene_in, Ref<SceneGraph::TriangleMeshNode> in) 
     : geom(TRIANGLE_MESH), positions(nullptr), normals(nullptr)
   {
     geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_TRIANGLE);
-    
-    positions = new Vec3fa*[in->numTimeSteps()];
+   
+    positions = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
     for (size_t i=0; i<in->numTimeSteps(); i++)
-      positions[i] = in->positions[i].data();
+      positions[i] = copyArrayToUSM(in->positions[i]);
     
     if (in->normals.size()) {
-      normals = new Vec3fa*[in->numTimeSteps()];
+      normals = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
       for (size_t i=0; i<in->numTimeSteps(); i++)
-        normals[i] = in->normals[i].data();
+        normals[i] = copyArrayToUSM(in->normals[i]);
     }
     
-    texcoords = in->texcoords.data();
-    triangles = (ISPCTriangle*) in->triangles.data();
+    texcoords = copyArrayToUSM(in->texcoords);
+
     startTime = in->time_range.lower;
     endTime   = in->time_range.upper;
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numTriangles = (unsigned) in->numPrimitives();
     geom.materialID = scene_in->materialID(in->material);
+    triangles = (ISPCTriangle*) copyArrayToUSM(in->triangles);
   }
 
-  ISPCTriangleMesh::~ISPCTriangleMesh () {
-    if (positions) delete[] positions;
-    if (normals) delete[] normals;
+  ISPCTriangleMesh::~ISPCTriangleMesh ()
+  {
+    if (positions) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(positions[i]);
+      alignedUSMFree(positions);
+    }
+    
+    if (normals) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(normals[i]);
+      alignedUSMFree(normals);
+    }
+
+    alignedUSMFree(texcoords);
+    alignedUSMFree(triangles);
   }
 
   void ISPCTriangleMesh::commit()
@@ -183,18 +249,18 @@ namespace embree
   {
     geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_QUAD);
     
-    positions = new Vec3fa*[in->numTimeSteps()];
+    positions = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
     for (size_t i=0; i<in->numTimeSteps(); i++)
-      positions[i] = in->positions[i].data();
+      positions[i] = copyArrayToUSM(in->positions[i]);
 
     if (in->normals.size()) {
-      normals = new Vec3fa*[in->numTimeSteps()];
+      normals = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
       for (size_t i=0; i<in->numTimeSteps(); i++)
-        normals[i] = in->normals[i].data();
+        normals[i] = copyArrayToUSM(in->normals[i]);
     }
     
-    texcoords = in->texcoords.data();
-    quads = (ISPCQuad*) in->quads.data();
+    texcoords = copyArrayToUSM(in->texcoords);
+    quads = (ISPCQuad*) copyArrayToUSM(in->quads);
     startTime = in->time_range.lower;
     endTime   = in->time_range.upper;
     numTimeSteps = (unsigned) in->numTimeSteps();
@@ -203,9 +269,20 @@ namespace embree
     geom.materialID = scene_in->materialID(in->material);
   }
 
-  ISPCQuadMesh::~ISPCQuadMesh () {
-    if (positions) delete[] positions;
-    if (normals) delete[] normals;
+  ISPCQuadMesh::~ISPCQuadMesh ()
+  {
+    if (positions) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(positions[i]);
+      alignedUSMFree(positions);
+    }
+    
+    if (normals) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(normals[i]);
+      alignedUSMFree(normals);
+    }
+
+    alignedUSMFree(texcoords);
+    alignedUSMFree(quads);
   }
 
   void ISPCQuadMesh::commit()
@@ -229,21 +306,27 @@ namespace embree
   {
     geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_GRID);
     
-    positions = new Vec3fa*[in->numTimeSteps()];
+    positions = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
     for (size_t i=0; i<in->numTimeSteps(); i++)
-      positions[i] = in->positions[i].data();
+      positions[i] = copyArrayToUSM(in->positions[i]);
 
-    grids = (ISPCGrid*) in->grids.data();
     startTime = in->time_range.lower;
     endTime   = in->time_range.upper;
     numTimeSteps = (unsigned) in->numTimeSteps();
     numVertices = (unsigned) in->numVertices();
     numGrids = (unsigned) in->numPrimitives();
     geom.materialID = scene_in->materialID(in->material);
+    grids = (ISPCGrid*) copyArrayToUSM(in->grids);
   }
 
-  ISPCGridMesh::~ISPCGridMesh () {
-    if (positions) delete[] positions;
+  ISPCGridMesh::~ISPCGridMesh ()
+  {
+    if (positions) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(positions[i]);
+      alignedUSMFree(positions);
+    }
+
+    alignedUSMFree(grids);
   }
 
   void ISPCGridMesh::commit()
@@ -380,32 +463,32 @@ namespace embree
   {
     geom.geometry = rtcNewGeometry(device, type);
     
-    positions = new Vec3fa*[in->numTimeSteps()];
+    positions = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
     for (size_t i=0; i<in->numTimeSteps(); i++)
-      positions[i] = (Vec3fa*) in->positions[i].data();
+      positions[i] = (Vec3fa*) copyArrayToUSM(in->positions[i]);
 
     if (in->normals.size()) {
-      normals = new Vec3fa*[in->numTimeSteps()];
+      normals = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
       for (size_t i=0; i<in->numTimeSteps(); i++)
-        normals[i] = in->normals[i].data();
+        normals[i] = copyArrayToUSM(in->normals[i]);
     }
 
     if (in->tangents.size()) {
-      tangents = new Vec3fa*[in->numTimeSteps()];
+      tangents = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
       for (size_t i=0; i<in->numTimeSteps(); i++)
-        tangents[i] = (Vec3fa*) in->tangents[i].data();
+        tangents[i] = (Vec3fa*) copyArrayToUSM(in->tangents[i]);
     }
 
     if (in->dnormals.size()) {
-      dnormals = new Vec3fa*[in->numTimeSteps()];
+      dnormals = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
       for (size_t i=0; i<in->numTimeSteps(); i++)
-        dnormals[i] = in->dnormals[i].data();
+        dnormals[i] = copyArrayToUSM(in->dnormals[i]);
     }
     
-    hairs = (ISPCHair*) in->hairs.data();
+    hairs = (ISPCHair*) copyArrayToUSM(in->hairs);
 
     if (in->flags.size())
-      flags = (unsigned char*)in->flags.data();
+      flags = (unsigned char*) copyArrayToUSM(in->flags);
     
     startTime = in->time_range.lower;
     endTime   = in->time_range.upper;
@@ -416,11 +499,30 @@ namespace embree
     tessellation_rate = in->tessellation_rate;
   }
 
-  ISPCHairSet::~ISPCHairSet() {
-    delete[] positions;
-    delete[] normals;
-    delete[] tangents;
-    delete[] dnormals;
+  ISPCHairSet::~ISPCHairSet()
+  {
+    if (positions) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(positions[i]);
+      alignedUSMFree(positions);
+    }
+    
+    if (normals) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(normals[i]);
+      alignedUSMFree(normals);
+    }
+
+    if (tangents) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(tangents[i]);
+      alignedUSMFree(tangents);
+    }
+    
+    if (dnormals) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(dnormals[i]);
+      alignedUSMFree(dnormals);
+    }
+
+    alignedUSMFree(hairs);
+    alignedUSMFree(flags);
   }
 
   void ISPCHairSet::commit()
@@ -475,14 +577,14 @@ namespace embree
   {
     geom.geometry = rtcNewGeometry(device, type);
     
-    positions = new Vec3fa*[in->numTimeSteps()];
+    positions = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
     for (size_t i=0; i<in->numTimeSteps(); i++)
-      positions[i] = (Vec3fa*) in->positions[i].data();
+      positions[i] = (Vec3fa*) copyArrayToUSM(in->positions[i]);
 
     if (in->normals.size()) {
-      normals = new Vec3fa*[in->numTimeSteps()];
+      normals = (Vec3fa**) alignedUSMMalloc(sizeof(Vec3fa*)*in->numTimeSteps());
       for (size_t i=0; i<in->numTimeSteps(); i++)
-        normals[i] = in->normals[i].data();
+        normals[i] = copyArrayToUSM(in->normals[i]);
     }
 
     startTime = in->time_range.lower;
@@ -492,9 +594,17 @@ namespace embree
     geom.materialID = scene_in->materialID(in->material);
   }
 
-  ISPCPointSet::~ISPCPointSet () {
-    if (positions) delete[] positions;
-    if (normals) delete[] normals;
+  ISPCPointSet::~ISPCPointSet ()
+  {
+    if (positions) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(positions[i]);
+      alignedUSMFree(positions);
+    }
+    
+    if (normals) {
+      for (size_t i=0; i<numTimeSteps; i++) alignedUSMFree(normals[i]);
+      alignedUSMFree(normals);
+    }
   }
 
   void ISPCPointSet::commit()
@@ -522,6 +632,17 @@ namespace embree
     rtcCommitGeometry(g);
   }
 
+
+  ISPCInstance::ISPCInstance (RTCDevice device, unsigned int numTimeSteps)
+    : geom(INSTANCE), child(nullptr), startTime(0.0f), endTime(1.0f), numTimeSteps(numTimeSteps), quaternion(false), spaces(nullptr)
+  {
+    assert(numTimeSteps);
+    geom.geometry = rtcNewGeometry (device, RTC_GEOMETRY_TYPE_INSTANCE);
+    spaces = (AffineSpace3fa*) alignedUSMMalloc(numTimeSteps*sizeof(AffineSpace3fa),16);
+    for (size_t i=0; i<numTimeSteps; i++)
+      spaces[i] = AffineSpace3fa(one);
+  }
+  
   ISPCInstance::ISPCInstance (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::TransformNode> in)
     : geom(INSTANCE), child(nullptr), startTime(0.0f), endTime(1.0f), numTimeSteps(1), quaternion(false), spaces(nullptr)
   {
@@ -529,13 +650,13 @@ namespace embree
     
     if (g_animation_mode)
     {
-      spaces = (AffineSpace3fa*) alignedMalloc(sizeof(AffineSpace3fa),16);
+      spaces = (AffineSpace3fa*) alignedUSMMalloc(sizeof(AffineSpace3fa),16);
       child = ISPCScene::convertGeometry(device,scene,in->child);
       spaces[0] = in->get(0.0f);
     }
     else
     {
-      spaces = (AffineSpace3fa*) alignedMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
+      spaces = (AffineSpace3fa*) alignedUSMMalloc(in->spaces.size()*sizeof(AffineSpace3fa),16);
       child = ISPCScene::convertGeometry(device,scene,in->child);
       startTime  = in->spaces.time_range.lower;
       endTime    = in->spaces.time_range.upper;
@@ -547,7 +668,7 @@ namespace embree
   }
 
   ISPCInstance::~ISPCInstance() {
-    alignedFree(spaces);
+    alignedUSMFree(spaces);
   }
 
   void ISPCInstance::commit()
@@ -591,18 +712,24 @@ namespace embree
     }
   }
 
+  ISPCGroup::ISPCGroup( RTCDevice device, unsigned int numGeometries )
+    : geom(GROUP), scene(rtcNewScene(device)), geometries(nullptr), numGeometries(numGeometries), requiredInstancingDepth(0)
+  {
+    geometries = (ISPCGeometry**) alignedUSMMalloc(sizeof(ISPCGeometry*)*numGeometries);
+  }
+  
   ISPCGroup::ISPCGroup (RTCDevice device, TutorialScene* scene, Ref<SceneGraph::GroupNode> in)
     : geom(GROUP), scene(rtcNewScene(device)), requiredInstancingDepth(0)
   {
     numGeometries = (unsigned int) in->size();
-    geometries = new ISPCGeometry*[numGeometries];
+    geometries = (ISPCGeometry**) alignedUSMMalloc(sizeof(ISPCGeometry*)*numGeometries);
     for (size_t i=0; i<numGeometries; i++)
       geometries[i] = ISPCScene::convertGeometry(device,scene,in->child(i));
   }
 
   ISPCGroup::~ISPCGroup()
   {
-    delete[] geometries;
+    alignedUSMFree(geometries);
     rtcReleaseScene(scene);
   }
 
@@ -746,12 +873,15 @@ namespace embree
     if (instance->geom.visited) return requiredInstancingDepth;
     instance->geom.visited = true;
     instance->commit();
-    
+
     return requiredInstancingDepth;
   }
 
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags)
   {
+    TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
+    if (!tutorial_scene) return scene_in->scene;
+    
     RTCScene scene = scene_in->scene;
     rtcSetSceneFlags(scene, flags);
     
@@ -778,7 +908,9 @@ namespace embree
       rtcAttachGeometryByID(scene,geometry->geometry,geomID);
     }
 
-    Application::instance->log(1,"creating Embree objects done");
+    if (Application::instance)
+      Application::instance->log(1,"creating Embree objects done");
+    
     return scene;
   }
 

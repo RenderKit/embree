@@ -16,14 +16,14 @@ namespace embree
     if (object) object->refInc();
     gsubtype = GTY_SUBTYPE_INSTANCE_LINEAR;
     world2local0 = one;
-    local2world = (AffineSpace3ff*) alignedMalloc(numTimeSteps*sizeof(AffineSpace3ff),16);
+    local2world = (AffineSpace3ff*) device->malloc(numTimeSteps*sizeof(AffineSpace3ff),16);
     for (size_t i = 0; i < numTimeSteps; i++)
       local2world[i] = one;
   }
 
   Instance::~Instance()
   {
-    alignedFree(local2world);
+    device->free(local2world);
     if (object) object->refDec();
   }
 
@@ -32,7 +32,7 @@ namespace embree
     if (numTimeSteps_in == numTimeSteps)
       return;
 
-    AffineSpace3ff* local2world2 = (AffineSpace3ff*) alignedMalloc(numTimeSteps_in*sizeof(AffineSpace3ff),16);
+    AffineSpace3ff* local2world2 = (AffineSpace3ff*) device->malloc(numTimeSteps_in*sizeof(AffineSpace3ff),16);
 
     for (size_t i = 0; i < min(numTimeSteps, numTimeSteps_in); i++) {
       local2world2[i] = local2world[i];
@@ -42,7 +42,7 @@ namespace embree
       local2world2[i] = one;
     }
 
-    alignedFree(local2world);
+    device->free(local2world);
     local2world = local2world2;
 
     Geometry::setNumTimeSteps(numTimeSteps_in);

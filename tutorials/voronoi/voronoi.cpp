@@ -3,6 +3,12 @@
 
 #include "../common/tutorial/tutorial.h"
 
+#if defined(EMBREE_SYCL_TUTORIAL)
+#  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
+#else
+#  define FEATURES FEATURE_RTCORE
+#endif
+
 namespace embree
 {
   typedef void (*DrawGUI)(void);
@@ -19,7 +25,7 @@ namespace embree
   struct Tutorial : public TutorialApplication 
   {
     Tutorial()
-      : TutorialApplication("voronoi", FEATURE_RTCORE | FEATURE_STREAM) {}
+      : TutorialApplication("voronoi", FEATURES) {}
 
 #if defined(USE_GLFW)
     
@@ -39,8 +45,8 @@ namespace embree
     {
       if (key == GLFW_KEY_RIGHT) g_query_point.x += 0.01f;
       if (key == GLFW_KEY_LEFT)  g_query_point.x -= 0.01f;
-      if (key == GLFW_KEY_UP)    g_query_point.z += 0.01f;
-      if (key == GLFW_KEY_DOWN)  g_query_point.z -= 0.01f;
+      if (key == GLFW_KEY_UP)    g_query_point.z -= 0.01f;
+      if (key == GLFW_KEY_DOWN)  g_query_point.z += 0.01f;
       g_query_point = max(g_query_point, Vec3fa(0.f));
       g_query_point = min(g_query_point, Vec3fa(1.f));
       

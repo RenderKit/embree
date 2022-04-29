@@ -5,7 +5,7 @@
 
 #include "../../../common/sys/platform.h"
 #include "../../../common/sys/ref.h"
-#include "../../../common/math/math.h"
+#include "../../../common/math/emath.h"
 #include "../../../common/math/vec3.h"
 #include "../../../common/math/affinespace.h"
 #include "../scenegraph/scenegraph.h"
@@ -20,15 +20,16 @@ namespace embree
       LEFT_HANDED,
       RIGHT_HANDED
     };
-    
+
     struct ISPCCamera
     {
     public:
-      ISPCCamera (const AffineSpace3fa& xfm)
+      ISPCCamera (const AffineSpace3f& xfm)
       : xfm(xfm) {}
 
     public:
-      AffineSpace3fa xfm;
+      AffineSpace3f xfm;
+      float render_time = 0.0f;
     };
 
   public:
@@ -77,7 +78,7 @@ namespace embree
       Vec3fa vy = -local2world.l.vy;
       Vec3fa vz = -0.5f*width*local2world.l.vx + 0.5f*height*local2world.l.vy + 0.5f*height*fovScale*local2world.l.vz;
       Vec3fa p =  local2world.p;
-      return ISPCCamera(AffineSpace3fa(vx,vy,vz,p));
+      return ISPCCamera(AffineSpace3f(vx,vy,vz,p));
     }
 
     void move (float dx, float dy, float dz)
@@ -129,3 +130,11 @@ namespace embree
 
   typedef Camera::ISPCCamera ISPCCamera;
 }
+
+#if __SYCL_COMPILER_VERSION >= 20210801
+namespace sycl {
+  template<> struct is_device_copyable<embree::Camera::ISPCCamera> : std::true_type {};
+  template<> struct is_device_copyable<const embree::Camera::ISPCCamera> : std::true_type {};
+}
+#endif
+

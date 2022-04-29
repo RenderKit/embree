@@ -4,10 +4,10 @@
 INCLUDE(CTest)
 
 IF (WIN32)
-    IF(${CMAKE_CXX_COMPILER} MATCHES ".*icx")
-      SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-    ELSE()
+    IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "MSVC")
       SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+    ELSE()
+      SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
     ENDIF()
 ELSE()
     SET(MY_PROJECT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
@@ -19,8 +19,8 @@ FIND_PATH(EMBREE_TESTING_MODEL_DIR
   DOC "Path to the folder containing the Embree models for regression testing."
   NO_DEFAULT_PATHS)
 
-SET(EMBREE_TESTING_INTENSITY 1 CACHE STRING "Intensity of testing (0 = no testing, 1 = verify and tutorials, 2 = light testing, 3 = intensive testing.")
-SET_PROPERTY(CACHE EMBREE_TESTING_INTENSITY PROPERTY STRINGS 0 1 2 3)
+SET(EMBREE_TESTING_INTENSITY 1 CACHE STRING "Intensity of testing (0 = no testing, 1 = verify and tutorials, 2 = light testing, 3 = intensive testing, 4 = very intensive testing.")
+SET_PROPERTY(CACHE EMBREE_TESTING_INTENSITY PROPERTY STRINGS 0 1 2 3 4)
 SET(EMBREE_TESTING_MEMCHECK OFF CACHE BOOL "Turns on memory checking for some tests.")
 SET(EMBREE_TESTING_BENCHMARK OFF CACHE BOOL "Turns benchmarking on.")
 SET(EMBREE_TESTING_BENCHMARK_DATABASE "${PROJECT_BINARY_DIR}" CACHE PATH "Path to database for benchmarking.")
@@ -50,9 +50,19 @@ MACRO (ADD_EMBREE_NORMAL_ISPC_TEST name reference executable args)
   ENDIF()       
 ENDMACRO()
 
+MACRO (ADD_EMBREE_NORMAL_SYCL_TEST name reference executable args)  
+  IF (BUILD_TESTING AND EMBREE_DPCPP_SUPPORT)
+    ADD_TEST(NAME ${name}_sycl
+             WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
+             COMMAND ${executable}_sycl --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+    SET_TESTS_PROPERTIES(${name}_sycl PROPERTIES TIMEOUT 10)
+  ENDIF()
+ENDMACRO()
+
 MACRO (ADD_EMBREE_NORMAL_TEST name reference executable args)
   ADD_EMBREE_NORMAL_CPP_TEST(${name} ${reference} ${executable} "${args}")
   ADD_EMBREE_NORMAL_ISPC_TEST(${name} ${reference} ${executable} "${args}")
+  ADD_EMBREE_NORMAL_SYCL_TEST(${name} ${reference} ${executable} "${args}")
 ENDMACRO()
 
 MACRO (ADD_EMBREE_TEST name)
@@ -77,6 +87,15 @@ MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
                COMMAND COMMAND ${executable}_ispc -c "${EMBREE_MODEL_DIR}/${model}" --compare "${EMBREE_MODEL_DIR}/reference/${reference}.tga" ${args})
     ENDIF()
   ENDIF()
+
+  IF (BUILD_TESTING AND EMBREE_DPCPP_SUPPORT)
+    IF (NOT "${name}" MATCHES ".*subdiv.*")  # skip subdiv models for SYCL mode
+      ADD_TEST(NAME ${name}_sycl
+                 WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
+                 COMMAND COMMAND ${executable}_sycl -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
+      SET_TESTS_PROPERTIES(${name}_sycl PROPERTIES TIMEOUT 20)
+    ENDIF()
+  ENDIF()
 ENDMACRO()
   
 MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
@@ -94,6 +113,11 @@ MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
     FOREACH (model ${models})
       IF (model MATCHES "^#")
         CONTINUE()
+      ENDIF()
+      IF (model MATCHES ".*mblur.*")  # skip mblur models if motion blur is not enabled
+        IF (NOT EMBREE_DPCPP_MBLUR)
+          CONTINUE()
+        ENDIF()
       ENDIF()
       STRING(REGEX REPLACE " .*" "" modelname "${model}")
       STRING(REGEX REPLACE "/" "_" modelname "${modelname}")

@@ -201,8 +201,8 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFunc);
-  rtcSetGeometryPointQueryFunction(instance->geometry, instanceClosestPointFunc);
+  rtcSetGeometryIntersectFunction(instance->geometry,(RTCIntersectFunctionN)instanceIntersectFunc);
+  rtcSetGeometryPointQueryFunction(instance->geometry,instanceClosestPointFunc);
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);
@@ -329,8 +329,8 @@ bool closestPointFunc(RTCPointQueryFunctionArguments* args)
    */
   if (d < args->query->radius)
   {
-    args->query->radius = d;
     ClosestPointResult* result = (ClosestPointResult*)args->userPtr;
+    args->query->radius = d;
     result->p = args->similarityScale > 0 ? xfmPoint(inst2world, p) : p;
     result->primID = primID;
     result->geomID = geomID;
@@ -505,7 +505,7 @@ void updateGeometryAndQueries(float time)
                     * AffineSpace3fa::rotate(Vec3f(0.f, 1.f, 0.f), float(pi)/2.f)
                     * AffineSpace3fa::rotate(Vec3f(1.f, 0.f, 0.f), 0.2f * sin(g_animate_time));
 
-  g_instance_xfm[1] = AffineSpace3fa::translate(Vec3f(0.f, 3.f + 1.5f*sin(g_animate_time), -9.f)) 
+  g_instance_xfm[1] = AffineSpace3fa::translate(Vec3f(0.f, 3.f + 1.5f*sin(g_animate_time), -9.f))
                     * AffineSpace3fa::scale(Vec3fa(1.f, 2.f, 3.f))
                     * AffineSpace3fa::rotate(Vec3f(0.f, 1.f, 0.f), float(pi));
   
@@ -534,14 +534,14 @@ void updateGeometryAndQueries(float time)
   rtcCommitGeometry(g_instanceEmbree[2]);
   rtcCommitScene(g_sceneEmbreeInstance);
   
-  g_instanceUserDefined[0]->local2world = g_instance_xfm[0];
-  g_instanceUserDefined[1]->local2world = g_instance_xfm[1];
-  g_instanceUserDefined[2]->local2world = g_instance_xfm[2];
+  //g_instanceUserDefined[0]->local2world = g_instance_xfm[0];
+  //g_instanceUserDefined[1]->local2world = g_instance_xfm[1];
+  //g_instanceUserDefined[2]->local2world = g_instance_xfm[2];
 
   /* update scene */
-  updateInstance(g_sceneUserDefinedInstance,g_instanceUserDefined[0]);
-  updateInstance(g_sceneUserDefinedInstance,g_instanceUserDefined[1]);
-  updateInstance(g_sceneUserDefinedInstance,g_instanceUserDefined[2]);
+  //updateInstance(g_sceneUserDefinedInstance,g_instanceUserDefined[0]);
+  //updateInstance(g_sceneUserDefinedInstance,g_instanceUserDefined[1]);
+  //updateInstance(g_sceneUserDefinedInstance,g_instanceUserDefined[2]);
   rtcCommitScene(g_sceneUserDefinedInstance);
 
   g_scene = g_userDefinedInstancing ? g_sceneUserDefinedInstance : g_sceneEmbreeInstance;
@@ -600,20 +600,20 @@ extern "C" void device_init (char* cfg)
 
   // add the four objects to all three scenes
   {
-    RTCScene scenes[3] = { g_scene1, g_sceneEmbreeInstance, g_sceneUserDefinedInstance };
+    RTCScene scenes[] = { g_scene1, g_sceneEmbreeInstance, g_sceneUserDefinedInstance };
     for (int m = 0; m < 4; ++m)
-    for (int s = 0; s < 3; ++s) 
+    for (RTCScene scene : scenes)
     {
       RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
       rtcSetGeometryPointQueryFunction(geom, closestPointFunc);
       rtcCommitGeometry(geom);
       rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,g_triangle_meshes[m]->vertices, 0,sizeof(Vertex),  g_triangle_meshes[m]->num_vertices);
       rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX, 0,RTC_FORMAT_UINT3, g_triangle_meshes[m]->triangles,0,sizeof(Triangle),g_triangle_meshes[m]->num_triangles);
-      rtcAttachGeometryByID(scenes[s], geom, m);
+      rtcAttachGeometryByID(scene, geom, m);
       rtcReleaseGeometry(geom);
       rtcCommitGeometry(geom);
+      rtcCommitScene(scene);
     }
-    rtcCommitScene(g_scene1);
   }
 
   /* compute bounding box of the scene that will be instanced */
@@ -636,31 +636,31 @@ extern "C" void device_init (char* cfg)
     rtcAttachGeometryByID(g_sceneEmbreeInstance, g_instanceEmbree[i], 4+i);
     rtcReleaseGeometry(g_instanceEmbree[i]);
     rtcCommitGeometry(g_instanceEmbree[i]);
-    
-    g_instanceUserDefined[i] = createInstance(g_sceneUserDefinedInstance, g_scene1, i, bbmin, bbmax);
+
+    //g_instanceUserDefined[i] = createInstance(g_sceneUserDefinedInstance, g_scene1, i, bbmin, bbmax);
   }
 
   {
     // add visualization spheres to both scenes
-    RTCScene scenes[2] = { g_sceneEmbreeInstance, g_sceneUserDefinedInstance };
-    for (unsigned int s = 0; s < 2; ++s)
-    {
-      g_spheres = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
-      rtcSetSharedGeometryBuffer(g_spheres, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, g_sphere_vertex_buffer, 0, sizeof(Vec4f), 2*g_num_point_queries);
-      rtcAttachGeometryByID(scenes[s], g_spheres, g_spheres_geomID);
-      rtcReleaseGeometry(g_spheres);
-      rtcCommitGeometry(g_spheres);
-      
-      g_lines = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
-      rtcSetSharedGeometryBuffer(g_lines, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, g_line_vertex_buffer, 0, sizeof(Vec4f), 2*g_num_point_queries);
-      rtcSetSharedGeometryBuffer(g_lines, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT, g_line_index_buffer, 0, sizeof(unsigned int), g_num_point_queries);
-      rtcAttachGeometryByID(scenes[s], g_lines, g_lines_geomID);
-      rtcReleaseGeometry(g_lines);
-      rtcCommitGeometry(g_lines);
-    }
-  }
+    RTCScene scenes[] = { g_sceneEmbreeInstance, g_sceneUserDefinedInstance };
 
-  updateGeometryAndQueries(0.f);
+    g_spheres = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
+    rtcSetSharedGeometryBuffer(g_spheres, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, g_sphere_vertex_buffer, 0, sizeof(Vec4f), 2*g_num_point_queries);
+
+    g_lines = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
+    rtcSetSharedGeometryBuffer(g_lines, RTC_BUFFER_TYPE_VERTEX, 0, RTC_FORMAT_FLOAT4, g_line_vertex_buffer, 0, sizeof(Vec4f), 2*g_num_point_queries);
+    rtcSetSharedGeometryBuffer(g_lines, RTC_BUFFER_TYPE_INDEX,  0, RTC_FORMAT_UINT, g_line_index_buffer, 0, sizeof(unsigned int), g_num_point_queries);
+    rtcCommitGeometry(g_spheres);
+    rtcCommitGeometry(g_lines);
+    for (RTCScene scene : scenes)
+    {
+      rtcAttachGeometryByID(scene, g_spheres, g_spheres_geomID);
+      rtcAttachGeometryByID(scene, g_lines, g_lines_geomID);
+      rtcCommitScene(scene);
+    }
+    rtcReleaseGeometry(g_spheres);
+    rtcReleaseGeometry(g_lines);
+  }
 }
 
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {

@@ -1,0 +1,118 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+
+#define NUM_VERTICES 9
+#define NUM_CURVES 6
+
+#define W 2.0f
+
+uniform float static_hair_vertices[NUM_VERTICES][4] =
+{
+{ -1.0f, 0.0f, -   W, 0.2f },
+
+{ +0.0f,-1.0f, +0.0f, 0.2f },
+{ +1.0f, 0.0f, +   W, 0.2f },
+{ -1.0f, 0.0f, +   W, 0.2f },
+{ +0.0f,+1.0f, +0.0f, 0.6f },
+{ +1.0f, 0.0f, -   W, 0.2f },
+{ -1.0f, 0.0f, -   W, 0.2f },
+
+{ +0.0f,-1.0f, +0.0f, 0.2f },
+{ +1.0f, 0.0f, +   W, 0.2f },
+};
+
+uniform float static_hair_normals[NUM_VERTICES][3] =
+{
+{ -1.0f,  0.0f, 0.0f},
+
+{  0.0f, +1.0f, 0.0f},
+{ +1.0f,  0.0f, 0.0f},
+{  0.0f, -1.0f, 0.0f},
+{ -1.0f,  0.0f, 0.0f},
+{  0.0f, +1.0f, 0.0f},
+{ +1.0f,  0.0f, 0.0f},
+
+{  0.0f, -1.0f, 0.0f},
+{ -1.0f,  0.0f, 0.0f},
+};
+
+uniform float static_hair_vertex_colors[NUM_VERTICES][3] =
+{
+{  1.0f,  1.0f,  0.0f},
+
+{  1.0f,  0.0f,  0.0f},
+{  1.0f,  1.0f,  0.0f},
+{  0.0f,  0.0f,  1.0f},
+{  1.0f,  1.0f,  1.0f},
+{  1.0f,  0.0f,  0.0f},
+{  1.0f,  1.0f,  0.0f},
+
+{  1.0f,  0.0f,  0.0f},
+{  1.0f,  1.0f,  0.0f},
+};
+
+uniform unsigned int static_hair_indices[NUM_CURVES] = {
+0, 1, 2, 3, 4, 5
+};
+
+uniform unsigned int static_hair_indices_linear[NUM_CURVES] = {
+1, 2, 3, 4, 5, 6
+};
+
+uniform int8 static_hair_flags_linear[NUM_CURVES] = {
+0x3, 0x3, 0x3, 0x3, 0x3, 0x3
+};
+
+struct TutorialData
+{
+  RTCScene g_scene;
+  Vec4f* hair_vertices;
+  Vec3fa* hair_normals;
+  Vec3fa* hair_vertex_colors;
+  int* hair_indices;
+  int* hair_indices_linear;
+  int8 * hair_flags_linear;
+};
+
+inline void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->g_scene = NULL;
+  This->hair_vertices = uniform new uniform Vec4f[NUM_VERTICES];
+  This->hair_normals = uniform new uniform Vec3fa[NUM_VERTICES];
+  This->hair_vertex_colors = uniform new uniform Vec3fa[NUM_VERTICES];
+  This->hair_indices = uniform new uniform int[NUM_CURVES];
+  This->hair_indices_linear = uniform new uniform int[NUM_CURVES];
+  This->hair_flags_linear = uniform new uniform int8[NUM_CURVES];
+
+  for (uniform int i = 0; i < NUM_VERTICES; i++)
+  {
+    This->hair_vertices[i] = make_Vec4f(static_hair_vertices[i][0],
+                                        static_hair_vertices[i][1],
+                                        static_hair_vertices[i][2],
+                                        static_hair_vertices[i][3]);
+    This->hair_normals[i] = make_Vec3fa(static_hair_normals[i][0],
+                                        static_hair_normals[i][1],
+                                        static_hair_normals[i][2]);
+    This->hair_vertex_colors[i] = make_Vec3fa(static_hair_vertex_colors[i][0],
+                                              static_hair_vertex_colors[i][1],
+                                              static_hair_vertex_colors[i][2]);
+  }
+  for (uniform int i = 0; i < NUM_CURVES; i++) {
+    This->hair_indices[i] = static_hair_indices[i];
+    This->hair_indices_linear[i] = static_hair_indices_linear[i];
+    This->hair_flags_linear[i] = static_hair_flags_linear[i];
+  }
+}
+
+inline void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+  delete[] This->hair_vertices; This->hair_vertices = NULL;
+  delete[] This->hair_normals; This->hair_normals = NULL;
+  delete[] This->hair_vertex_colors; This->hair_vertex_colors = NULL;
+  delete[] This->hair_indices; This->hair_indices = NULL;
+  delete[] This->hair_indices_linear; This->hair_indices_linear = NULL;
+  delete[] This->hair_flags_linear; This->hair_flags_linear = NULL;
+}

@@ -13,6 +13,9 @@ using namespace embree;
 
 RTC_NAMESPACE_BEGIN;
 
+#define RTC_ENTER_DEVICE(arg) \
+  DeviceEnterLeave enterleave(arg);
+
   /* mutex to make API thread safe */
   static MutexSys g_mutex;
 
@@ -26,6 +29,22 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
   }
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+
+  RTC_API RTCDevice rtcNewSYCLDeviceInternal(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config)
+  {
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcNewSYCLDevice);
+    RTC_VERIFY_HANDLE(sycl_context);
+    Lock<MutexSys> lock(g_mutex);
+    DeviceGPU* device = new DeviceGPU(sycl_context,sycl_queue,config);
+    return (RTCDevice) device->refInc();
+    RTC_CATCH_END(nullptr);
+    return (RTCDevice) nullptr;
+  }
+
+#endif
 
   RTC_API void rtcRetainDevice(RTCDevice hdevice) 
   {
@@ -108,6 +127,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewBuffer);
     RTC_VERIFY_HANDLE(hdevice);
+    RTC_ENTER_DEVICE(hdevice);
     Buffer* buffer = new Buffer((Device*)hdevice, byteSize);
     return (RTCBuffer)buffer->refInc();
     RTC_CATCH_END((Device*)hdevice);
@@ -119,6 +139,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewSharedBuffer);
     RTC_VERIFY_HANDLE(hdevice);
+    RTC_ENTER_DEVICE(hdevice);
     Buffer* buffer = new Buffer((Device*)hdevice, byteSize, ptr);
     return (RTCBuffer)buffer->refInc();
     RTC_CATCH_END((Device*)hdevice);
@@ -131,6 +152,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetBufferData);
     RTC_VERIFY_HANDLE(hbuffer);
+    RTC_ENTER_DEVICE(hbuffer);
     return buffer->data();
     RTC_CATCH_END2(buffer);
     return nullptr;
@@ -142,6 +164,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcRetainBuffer);
     RTC_VERIFY_HANDLE(hbuffer);
+    RTC_ENTER_DEVICE(hbuffer);
     buffer->refInc();
     RTC_CATCH_END2(buffer);
   }
@@ -152,6 +175,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcReleaseBuffer);
     RTC_VERIFY_HANDLE(hbuffer);
+    RTC_ENTER_DEVICE(hbuffer);
     buffer->refDec();
     RTC_CATCH_END2(buffer);
   }
@@ -161,6 +185,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewScene);
     RTC_VERIFY_HANDLE(hdevice);
+    RTC_ENTER_DEVICE(hdevice);
     Scene* scene = new Scene((Device*)hdevice);
     return (RTCScene) scene->refInc();
     RTC_CATCH_END((Device*)hdevice);
@@ -184,6 +209,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSceneProgressMonitorFunction);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     Lock<MutexSys> lock(g_mutex);
     scene->setProgressMonitorFunction(progress,ptr);
     RTC_CATCH_END2(scene);
@@ -195,6 +221,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSceneBuildQuality);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     if (quality != RTC_BUILD_QUALITY_LOW &&
         quality != RTC_BUILD_QUALITY_MEDIUM &&
         quality != RTC_BUILD_QUALITY_HIGH)
@@ -209,6 +236,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSceneFlags);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     scene->setSceneFlags(flags);
     RTC_CATCH_END2(scene);
   }
@@ -219,6 +247,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetSceneFlags);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     return scene->getSceneFlags();
     RTC_CATCH_END2(scene);
     return RTC_SCENE_FLAG_NONE;
@@ -230,6 +259,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcCommitScene);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     scene->commit(false);
     RTC_CATCH_END2(scene);
   }
@@ -240,6 +270,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcJoinCommitScene);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     scene->commit(true);
     RTC_CATCH_END2(scene);
   }
@@ -250,6 +281,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetSceneBounds);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene not committed");
     BBox3fa bounds = scene->bounds.bounds();
     bounds_o->lower_x = bounds.lower.x;
@@ -269,6 +301,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetSceneBounds);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     if (bounds_o == nullptr)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid destination pointer");
     if (scene->isModified())
@@ -460,6 +493,39 @@ RTC_NAMESPACE_BEGIN;
 #if defined(DEBUG)
     ((RayHit*)rayhit)->verifyHit();
 #endif
+    RTC_CATCH_END2(scene);
+  }
+
+  RTC_API void rtcForwardIntersect1 (const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay* iray_) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcForwardIntersect1);
+#if defined(DEBUG)
+    RTC_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene not committed");
+    if (((size_t)iray_) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    
+    Ray* iray = (Ray*) iray_;
+    RayHit* oray = (RayHit*)args->rayhit;
+    RTCIntersectContext* user_context = args->context;
+    const Vec3ff ray_org_tnear = oray->org;
+    const Vec3ff ray_dir_time = oray->dir;
+    const float ray_mask = oray->mask;
+    oray->org = iray->org;
+    oray->dir = iray->dir;
+    oray->mask = iray->mask;
+    
+    STAT3(normal.travs,1,1,1);
+    IntersectContext context(scene,user_context);
+    scene->intersectors.intersect(*(RTCRayHit*)oray,&context);
+
+    instance_id_stack::pop(user_context);
+    oray->org = ray_org_tnear;
+    oray->dir = ray_dir_time;
+    oray->mask = ray_mask;
+
     RTC_CATCH_END2(scene);
   }
 
@@ -713,7 +779,40 @@ RTC_NAMESPACE_BEGIN;
     scene->intersectors.occluded(*ray,&context);
     RTC_CATCH_END2(scene);
   }
-  
+
+  RTC_API void rtcForwardOccluded1 (const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay* iray_) 
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcForwardOccluded1);
+    STAT3(shadow.travs,1,1,1);
+#if defined(DEBUG)
+    RTC_VERIFY_HANDLE(hscene);
+    if (scene->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene not committed");
+    if (((size_t)iray_) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
+#endif
+    
+    Ray* iray = (Ray*)iray_;
+    Ray* oray = (Ray*)args->ray;
+    RTCIntersectContext* user_context = args->context;
+    const Vec3ff ray_org_tnear = oray->org;
+    const Vec3ff ray_dir_time = oray->dir;
+    const float ray_mask = oray->mask;
+    oray->org = iray->org;
+    oray->dir = iray->dir;
+    oray->mask = iray->mask;
+
+    IntersectContext context(scene,user_context);
+    scene->intersectors.occluded(*(RTCRay*)oray,&context);
+    
+    instance_id_stack::pop(user_context);
+    oray->org = ray_org_tnear;
+    oray->dir = ray_dir_time;
+    oray->mask = ray_mask;
+
+    RTC_CATCH_END2(scene);
+  }
+
   RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay4* ray) 
   {
     Scene* scene = (Scene*) hscene;
@@ -947,6 +1046,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcRetainScene);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     scene->refInc();
     RTC_CATCH_END2(scene);
   }
@@ -957,6 +1057,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcReleaseScene);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hscene);
     scene->refDec();
     RTC_CATCH_END2(scene);
   }
@@ -969,6 +1070,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetGeometryInstancedScene);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_HANDLE(hscene);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setInstancedScene(scene);
     RTC_CATCH_END2(geometry);
   }
@@ -1043,6 +1145,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetGeometryTransform);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_HANDLE(xfm);
+    RTC_ENTER_DEVICE(hgeometry);
     const AffineSpace3fa transform = loadTransform(format, (const float*)xfm);
     geometry->setTransform(transform, timeStep);
     RTC_CATCH_END2(geometry);
@@ -1055,6 +1158,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetGeometryTransformQuaternion);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_HANDLE(qd);
+    RTC_ENTER_DEVICE(hgeometry);
     
     AffineSpace3fx transform;
     transform.l.vx.x = qd->scale_x;
@@ -1087,6 +1191,7 @@ RTC_NAMESPACE_BEGIN;
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryTransform);
+    RTC_ENTER_DEVICE(hgeometry);
     const AffineSpace3fa transform = geometry->getTransform(time);
     storeTransform(transform, format, (float*)xfm);
     RTC_CATCH_END2(geometry);
@@ -1109,6 +1214,7 @@ RTC_NAMESPACE_BEGIN;
     Device* device = (Device*) hdevice;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewGeometry);
+    RTC_ENTER_DEVICE(hdevice);
     RTC_VERIFY_HANDLE(hdevice);
 
     switch (type)
@@ -1285,6 +1391,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryUserPrimitiveCount);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     
     if (unlikely(geometry->getType() != Geometry::GTY_USER_GEOMETRY))
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for user geometries"); 
@@ -1299,6 +1406,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryTimeStepCount);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
 
     if (timeStepCount > RTC_MAX_TIME_STEP_COUNT)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"number of time steps is out of range");
@@ -1313,6 +1421,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryTimeRange);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
 
     if (startTime > endTime)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"startTime has to be smaller or equal to the endTime");
@@ -1327,6 +1436,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryVertexAttributeCount);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setVertexAttributeCount(N);
     RTC_CATCH_END2(geometry);
   }
@@ -1337,6 +1447,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryTopologyCount);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setTopologyCount(N);
     RTC_CATCH_END2(geometry);
   }
@@ -1347,6 +1458,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryBuildQuality);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     if (quality != RTC_BUILD_QUALITY_LOW &&
         quality != RTC_BUILD_QUALITY_MEDIUM &&
         quality != RTC_BUILD_QUALITY_HIGH &&
@@ -1377,6 +1489,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryMask);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setMask(mask);
     RTC_CATCH_END2(geometry);
   }
@@ -1387,6 +1500,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometrySubdivisionMode);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setSubdivisionMode(topologyID,mode);
     RTC_CATCH_END2(geometry);
   }
@@ -1397,6 +1511,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryVertexAttributeTopology);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setVertexAttributeTopology(vertexAttributeID, topologyID);
     RTC_CATCH_END2(geometry);
   }
@@ -1409,6 +1524,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSetGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_HANDLE(hbuffer);
+    RTC_ENTER_DEVICE(hgeometry);
     
     if (geometry->device != buffer->device)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
@@ -1426,10 +1542,11 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetSharedGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     
     if (itemCount > 0xFFFFFFFFu)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
-    
+
     Ref<Buffer> buffer = new Buffer(geometry->device, itemCount*byteStride, (char*)ptr + byteOffset);
     geometry->setBuffer(type, slot, format, buffer, 0, byteStride, (unsigned int)itemCount);
     RTC_CATCH_END2(geometry);
@@ -1441,6 +1558,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetNewGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
 
     if (itemCount > 0xFFFFFFFFu)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"buffer too large");
@@ -1463,6 +1581,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryBufferData);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     return geometry->getBuffer(type, slot);
     RTC_CATCH_END2(geometry);
     return nullptr;
@@ -1474,6 +1593,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcEnableGeometry);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->enable();
     RTC_CATCH_END2(geometry);
   }
@@ -1484,6 +1604,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcUpdateGeometryBuffer);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->updateBuffer(type, slot);
     RTC_CATCH_END2(geometry);
   }
@@ -1494,6 +1615,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcDisableGeometry);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->disable();
     RTC_CATCH_END2(geometry);
   }
@@ -1504,6 +1626,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryTessellationRate);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setTessellationRate(tessellationRate);
     RTC_CATCH_END2(geometry);
   }
@@ -1514,6 +1637,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryUserData);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setUserData(ptr);
     RTC_CATCH_END2(geometry);
   }
@@ -1524,6 +1648,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryUserData);
     RTC_VERIFY_HANDLE(hgeometry);
+    //RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons !
     return geometry->getUserData();
     RTC_CATCH_END2(geometry);
     return nullptr;
@@ -1535,6 +1660,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryBoundsFunction);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setBoundsFunction(bounds,userPtr);
     RTC_CATCH_END2(geometry);
   }
@@ -1545,6 +1671,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryDisplacementFunction);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setDisplacementFunction(displacement);
     RTC_CATCH_END2(geometry);
   }
@@ -1555,6 +1682,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryIntersectFunction);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setIntersectFunctionN(intersect);
     RTC_CATCH_END2(geometry);
   }
@@ -1565,6 +1693,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryPointQueryFunction);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setPointQueryFunction(pointQuery);
     RTC_CATCH_END2(geometry);
   }
@@ -1574,6 +1703,7 @@ RTC_NAMESPACE_BEGIN;
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryFirstHalfEdge);
+    //RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons
     return geometry->getFirstHalfEdge(faceID);
     RTC_CATCH_END2(geometry);
     return -1;
@@ -1584,6 +1714,7 @@ RTC_NAMESPACE_BEGIN;
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryFace);
+    //RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons
     return geometry->getFace(edgeID);
     RTC_CATCH_END2(geometry);
     return -1;
@@ -1594,6 +1725,7 @@ RTC_NAMESPACE_BEGIN;
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryNextHalfEdge);
+    //RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons
     return geometry->getNextHalfEdge(edgeID);
     RTC_CATCH_END2(geometry);
     return -1;
@@ -1604,6 +1736,7 @@ RTC_NAMESPACE_BEGIN;
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryPreviousHalfEdge);
+    //RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons
     return geometry->getPreviousHalfEdge(edgeID);
     RTC_CATCH_END2(geometry);
     return -1;
@@ -1614,6 +1747,7 @@ RTC_NAMESPACE_BEGIN;
     Geometry* geometry = (Geometry*) hgeometry;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcGetGeometryOppositeHalfEdge);
+    //RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons
     return geometry->getOppositeHalfEdge(topologyID,edgeID);
     RTC_CATCH_END2(geometry);
     return -1;
@@ -1625,6 +1759,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetOccludedFunctionN);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setOccludedFunctionN(occluded);
     RTC_CATCH_END2(geometry);
   }
@@ -1635,6 +1770,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryIntersectFilterFunction);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setIntersectionFilterFunctionN(filter);
     RTC_CATCH_END2(geometry);
   }
@@ -1645,6 +1781,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSetGeometryOccludedFilterFunction);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->setOcclusionFilterFunctionN(filter);
     RTC_CATCH_END2(geometry);
   }
@@ -1657,6 +1794,7 @@ RTC_NAMESPACE_BEGIN;
 #if defined(DEBUG)
     RTC_VERIFY_HANDLE(args->geometry);
 #endif
+    //RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons
     geometry->interpolate(args);
     RTC_CATCH_END2(geometry);
   }
@@ -1669,6 +1807,7 @@ RTC_NAMESPACE_BEGIN;
 #if defined(DEBUG)
     RTC_VERIFY_HANDLE(args->geometry);
 #endif
+    // RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons
     geometry->interpolateN(args);
     RTC_CATCH_END2(geometry);
   }
@@ -1679,6 +1818,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcCommitGeometry);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     return geometry->commit();
     RTC_CATCH_END2(geometry);
   }
@@ -1691,6 +1831,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcAttachGeometry);
     RTC_VERIFY_HANDLE(hscene);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
     return scene->bind(RTC_INVALID_GEOMETRY_ID,geometry);
@@ -1707,6 +1848,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_VERIFY_HANDLE(hscene);
     RTC_VERIFY_HANDLE(hgeometry);
     RTC_VERIFY_GEOMID(geomID);
+    RTC_ENTER_DEVICE(hscene);
     if (scene->device != geometry->device)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"inputs are from different devices");
     scene->bind(geomID,geometry);
@@ -1720,6 +1862,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcDetachGeometry);
     RTC_VERIFY_HANDLE(hscene);
     RTC_VERIFY_GEOMID(geomID);
+    RTC_ENTER_DEVICE(hscene);
     scene->detachGeometry(geomID);
     RTC_CATCH_END2(scene);
   }
@@ -1730,6 +1873,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcRetainGeometry);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->refInc();
     RTC_CATCH_END2(geometry);
   }
@@ -1740,10 +1884,12 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcReleaseGeometry);
     RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
     geometry->refDec();
     RTC_CATCH_END2(geometry);
   }
 
+#if !defined(__SYCL_DEVICE_ONLY__)
   RTC_API RTCGeometry rtcGetGeometry (RTCScene hscene, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
@@ -1753,10 +1899,12 @@ RTC_NAMESPACE_BEGIN;
     RTC_VERIFY_HANDLE(hscene);
     RTC_VERIFY_GEOMID(geomID);
 #endif
+    //RTC_ENTER_DEVICE(hscene); // do not enable for performance reasons
     return (RTCGeometry) scene->get(geomID);
     RTC_CATCH_END2(scene);
     return nullptr;
   }
+#endif
 
   RTC_API RTCGeometry rtcGetGeometryThreadSafe (RTCScene hscene, unsigned int geomID)
   {

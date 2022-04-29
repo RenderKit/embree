@@ -141,13 +141,43 @@ namespace embree
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+    
+    /* build quadID_to_primID_xy mapping when hardware ray tracing is supported */
+    if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
+    {
+      if (gpu_device->rthw_support())
+      {
+        const size_t numQuads = getNumTotalQuads();
+        quadID_to_primID_xy.resize(numQuads);
+        
+        for (uint32_t primID=0, quadID=0; primID<size(); primID++)
+        {
+          const Grid& g = grid(primID);
+          for (ssize_t y=0; y<ssize_t(g.resY)-1; y++)
+            for (ssize_t x=0; x<ssize_t(g.resX)-1; x++)
+              quadID_to_primID_xy[quadID++] = { primID, (ushort) x, (ushort) y };
+        }
+      }
+    }
+
+#endif
+    
     Geometry::commit();
   }
   
-  void GridMesh::addElementsToCount (GeometryCounts & counts) const 
+  void GridMesh::addElementsToCount (GeometryCounts& counts) const 
   {
-    if (numTimeSteps == 1) counts.numGrids += numPrimitives;
-    else                   counts.numMBGrids += numPrimitives;
+    if (numTimeSteps == 1) {
+      counts.numGrids += numPrimitives;
+      for (size_t primID=0; primID<numPrimitives; primID++)
+        counts.numSubGrids += getNumSubGrids(primID);
+    }
+    else {
+      counts.numMBGrids += numPrimitives;
+      for (size_t primID=0; primID<numPrimitives; primID++)
+        counts.numMBSubGrids += getNumSubGrids(primID);
+    }
   }
 
   bool GridMesh::verify() 

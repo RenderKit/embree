@@ -6,7 +6,7 @@
 #include "../sys/platform.h"
 #include "../sys/ref.h"
 #include "../sys/filename.h"
-#include "../sys/string.h"
+#include "../sys/estring.h"
 
 #include <vector>
 #include <iostream>

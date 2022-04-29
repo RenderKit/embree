@@ -910,7 +910,7 @@ namespace embree
     
     struct MaterialNode : public Node
     {
-      ALIGNED_STRUCT_(16);
+      ALIGNED_STRUCT_USM_(16)
 
       MaterialNode(const std::string& name = "")
         : Node(name) {}

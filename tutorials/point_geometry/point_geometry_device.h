@@ -18,13 +18,13 @@ struct TutorialData
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene = nullptr;
-  This->point_colors = (Vec3fa*) alignedMalloc(NUM_POINTS*sizeof(Vec3fa),16);
+  This->point_colors = (Vec3fa*) alignedUSMMalloc((NUM_POINTS)*sizeof(Vec3fa),16);
 }
 
 inline void TutorialData_Destructor(TutorialData* This)
 {
   rtcReleaseScene (This->g_scene); This->g_scene = nullptr;
-  alignedFree(This->point_colors); This->point_colors = nullptr;
+  alignedUSMFree(This->point_colors); This->point_colors = nullptr;
 }
 
 } // namespace embree

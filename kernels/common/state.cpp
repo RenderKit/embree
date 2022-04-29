@@ -404,7 +404,7 @@ namespace embree
           } while (cin->trySymbol("|"));
         }
       }
-      
+
       else if (tok == Token::Id("max_spatial_split_replications") && cin->trySymbol("="))
         max_spatial_split_replications = cin->get().Float();
 

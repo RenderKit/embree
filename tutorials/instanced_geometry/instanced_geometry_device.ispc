@@ -153,7 +153,7 @@ export void device_init (uniform int8* uniform cfg)
 }
 
 /* task that renders a single screen tile */
-Vec3f renderPixelStandard(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
+Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
@@ -196,6 +196,24 @@ Vec3f renderPixelStandard(const uniform TutorialData& data, float x, float y, co
   return color;
 }
 
+void renderPixelStandard(const uniform TutorialData& data,
+                         int x, int y, 
+                         uniform int* uniform pixels,
+                         const uniform unsigned int width,
+                         const uniform unsigned int height,
+                         const uniform float time,
+                         const uniform ISPCCamera& camera, uniform RayStats& stats)
+{
+  /* calculate pixel color */
+  Vec3f color = renderPixel(data, (float)x,(float)y,camera, stats);
+  
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
+}
+
 /* renders a single screen tile */
 void renderTileStandard(uniform int taskIndex,
                         uniform int threadIndex,
@@ -216,14 +234,7 @@ void renderTileStandard(uniform int taskIndex,
 
   foreach_tiled (y = y0 ... y1, x = x0 ... x1)
   {
-    /* calculate pixel color */
-    Vec3f color = renderPixelStandard(data, (float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
 
@@ -406,9 +417,29 @@ export void renderFrameStandard (uniform int* uniform pixels,
                           const uniform ISPCCamera& camera)
 {
   /* render all pixels */
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+  
+#else
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+#endif
 }
 
 /* called by the C++ code to render */

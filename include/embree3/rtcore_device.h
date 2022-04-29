@@ -13,6 +13,11 @@ typedef struct RTCDeviceTy* RTCDevice;
 /* Creates a new Embree device. */
 RTC_API RTCDevice rtcNewDevice(const char* config);
 
+/* Creates a new Embree SYCL device. */
+#if defined(EMBREE_DPCPP_SUPPORT) && defined(__cplusplus)
+RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config);
+#endif
+
 /* Retains the Embree device (increments the reference count). */
 RTC_API void rtcRetainDevice(RTCDevice device);
   

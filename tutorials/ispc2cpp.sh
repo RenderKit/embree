@@ -57,18 +57,19 @@ sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]
 
 sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([][[:alnum:]._]*\))/auto \1 = \2;/g' $2
 
-sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedMalloc(\2\*sizeof(\1),16)/g' $2
-sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_.\>\-]*\)/alignedFree(\1)/g' $2
+sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedUSMMalloc((\2)\*sizeof(\1),16)/g' $2
+sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_.\>\-]*\)/alignedUSMFree(\1)/g' $2
 
-sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*;/(\1\*) alignedMalloc(sizeof(\1),16);/g' $2
-sed -i.backup  's/delete[ ]*\([a-zA-Z0-9_\>\-]*\)[ ]*;/alignedFree(\1);/g' $2
+sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*;/(\1\*) alignedUSMMalloc(sizeof(\1),16);/g' $2
+sed -i.backup  's/delete[ ]*\([a-zA-Z0-9_\>\-]*\)[ ]*;/alignedUSMFree(\1);/g' $2
 
 # embree ray layout
 sed -i.backup  's/[.]tnear/.tnear()/g' $2
 sed -i.backup  's/[.]time/.time()/g' $2
 sed -i.backup  's/[>]tnear/>tnear()/g' $2
 sed -i.backup  's/ray->time/ray->time()/g' $2
-
+sed -i.backup  's/xray\.time()/xray\.time/g' $2
+sed -i.backup  's/xray\.tnear()/xray\.tnear/g' $2
 
 # system library
 sed -i.backup  's/sync;//g' $2
@@ -139,6 +140,9 @@ sed -i.backup  's/rtcOccludedVM/rtcOccluded1M/g' $2
 sed -i.backup  's/rtcIntersectV/rtcIntersect1/g' $2
 sed -i.backup  's/rtcOccludedV/rtcOccluded1/g' $2
 
+sed -i.backup  's/rtcForwardIntersectV/rtcForwardIntersect1/g' $2
+sed -i.backup  's/rtcForwardOccludedV/rtcForwardOccluded1/g' $2
+
 sed -i.backup  's/rtcInterpolateV/rtcInterpolate/g' $2
 
 sed -i.backup  's/Texture_FLOAT32/Texture::FLOAT32/g' $2
@@ -152,6 +156,9 @@ sed -i.backup 's/const Vec3fa defaultValue/const Vec3fa\& defaultValue/g' $2
 sed -i.backup 's/if (all(1 == 0)) continue;//g' $2
 
 sed -i.backup  's/^RENDER_FRAME_FUNCTION_ISPC/RENDER_FRAME_FUNCTION_CPP/g' $2
+
+# hack
+sed -i.backup 's/context\.intersect = (RTCIntersectFunctionN) (void\*) /context\.occluded = /g' $2
 
 # add Embree namespace
 ln=`grep -n -E "#include|#pragma" $2 | tail -1 | cut -d: -f1`

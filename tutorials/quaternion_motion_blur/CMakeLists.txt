@@ -1,10 +1,16 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+IF(EMBREE_GEOMETRY_USER)
+
 INCLUDE(tutorial)
 ADD_TUTORIAL(quaternion_motion_blur)
 ADD_TUTORIAL_ISPC(quaternion_motion_blur)
+ADD_TUTORIAL_SYCL(quaternion_motion_blur)
+
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
   ADD_EMBREE_TEST(quaternion_motion_blur)
+ENDIF()
+
 ENDIF()

@@ -20,9 +20,9 @@ struct AmbientLight
 
 // XXX importance sampling is only done into the positive hemisphere
 // ==> poor support for translucent materials
-Light_SampleRes AmbientLight_sample(const Light* super,
-                                    const DifferentialGeometry& dg,
-                                    const Vec2f& s)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes AmbientLight_sample(const Light* super,
+                                                                 const DifferentialGeometry& dg,
+                                                                 const Vec2f& s)
 {
   AmbientLight* self = (AmbientLight*)super;
   Light_SampleRes res;
@@ -36,9 +36,9 @@ Light_SampleRes AmbientLight_sample(const Light* super,
   return res;
 }
 
-Light_EvalRes AmbientLight_eval(const Light* super,
-                                const DifferentialGeometry& dg,
-                                const Vec3fa& dir)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes AmbientLight_eval(const Light* super,
+                                                             const DifferentialGeometry& dg,
+                                                             const Vec3fa& dir)
 {
   AmbientLight* self = (AmbientLight*)super;
   Light_EvalRes res;
@@ -56,8 +56,8 @@ void AmbientLight_Constructor(AmbientLight* self,
 {
   Light_Constructor(&self->super);
   self->radiance = radiance;
-  self->super.sample = AmbientLight_sample;
-  self->super.eval = AmbientLight_eval;
+  self->super.sample = GET_FUNCTION_POINTER(AmbientLight_sample);
+  self->super.eval = GET_FUNCTION_POINTER(AmbientLight_eval);
 }
 
 
@@ -67,7 +67,7 @@ void AmbientLight_Constructor(AmbientLight* self,
 //! Create an ispc-side AmbientLight object
 extern "C" void *AmbientLight_create()
 {
-  AmbientLight* self = (AmbientLight*) alignedMalloc(sizeof(AmbientLight),16);
+  AmbientLight* self = (AmbientLight*) alignedUSMMalloc(sizeof(AmbientLight),16);
   AmbientLight_Constructor(self, Vec3fa(1.f));
   return self;
 }

@@ -58,7 +58,7 @@ namespace embree
 /// Windows Platform
 ////////////////////////////////////////////////////////////////////////////////
   
-#if defined(__WIN32__)
+#if defined(__WIN32__) && !defined(__INTEL_LLVM_COMPILER)
   
   __forceinline size_t read_tsc()  
   {
@@ -190,38 +190,6 @@ namespace embree
   
 #else
   
-#if defined(__i386__) && defined(__PIC__)
-  
-  __forceinline void __cpuid(int out[4], int op) 
-  {
-    asm volatile ("xchg{l}\t{%%}ebx, %1\n\t"
-                  "cpuid\n\t"
-                  "xchg{l}\t{%%}ebx, %1\n\t"
-                  : "=a"(out[0]), "=r"(out[1]), "=c"(out[2]), "=d"(out[3]) 
-                  : "0"(op)); 
-  }
-  
-  __forceinline void __cpuid_count(int out[4], int op1, int op2) 
-  {
-    asm volatile ("xchg{l}\t{%%}ebx, %1\n\t"
-                  "cpuid\n\t"
-                  "xchg{l}\t{%%}ebx, %1\n\t"
-                  : "=a" (out[0]), "=r" (out[1]), "=c" (out[2]), "=d" (out[3])
-                  : "0" (op1), "2" (op2)); 
-  }
-  
-#elif defined(__X86_ASM__)
-
-  __forceinline void __cpuid(int out[4], int op) {
-    asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op)); 
-  }
-  
-  __forceinline void __cpuid_count(int out[4], int op1, int op2) {
-    asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op1), "c"(op2)); 
-  }
-  
-#endif
-  
   __forceinline uint64_t read_tsc()  {
 #if defined(__X86_ASM__)
     uint32_t high,low;
@@ -242,6 +210,13 @@ namespace embree
     return __builtin_ctz(v);
 #endif
   }
+
+#if defined(__SYCL_DEVICE_ONLY__)
+  __forceinline unsigned int   bsf(unsigned v) {
+    return SYCL_CTZ::ctz(v);
+  }
+
+#else
   
 #if defined(__64BIT__)
   __forceinline unsigned bsf(unsigned v) 
@@ -255,6 +230,13 @@ namespace embree
 #endif
   }
 #endif
+#endif
+  
+#if defined(__SYCL_DEVICE_ONLY__)
+  __forceinline size_t bsf(size_t v) {
+    return SYCL_CTZ::ctz(v);
+  }
+#else
   
   __forceinline size_t bsf(size_t v) {
 #if defined(__AVX2__)
@@ -269,6 +251,7 @@ namespace embree
     return __builtin_ctzl(v);
 #endif
   }
+#endif
 
   __forceinline int bscf(int& v) 
   {
@@ -409,6 +392,41 @@ namespace embree
   
 #endif
   
+#if !defined(__WIN32__)
+
+#if defined(__i386__) && defined(__PIC__)
+
+  __forceinline void __cpuid(int out[4], int op)
+  {
+    asm volatile ("xchg{l}\t{%%}ebx, %1\n\t"
+                  "cpuid\n\t"
+                  "xchg{l}\t{%%}ebx, %1\n\t"
+                  : "=a"(out[0]), "=r"(out[1]), "=c"(out[2]), "=d"(out[3])
+                  : "0"(op));
+  }
+
+  __forceinline void __cpuid_count(int out[4], int op1, int op2)
+  {
+    asm volatile ("xchg{l}\t{%%}ebx, %1\n\t"
+                  "cpuid\n\t"
+                  "xchg{l}\t{%%}ebx, %1\n\t"
+                  : "=a" (out[0]), "=r" (out[1]), "=c" (out[2]), "=d" (out[3])
+                  : "0" (op1), "2" (op2));
+  }
+
+#elif defined(__X86_ASM__)
+
+  __forceinline void __cpuid(int out[4], int op) {
+    asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op));
+  }
+
+  __forceinline void __cpuid_count(int out[4], int op1, int op2) {
+    asm volatile ("cpuid" : "=a"(out[0]), "=b"(out[1]), "=c"(out[2]), "=d"(out[3]) : "a"(op1), "c"(op2));
+  }
+
+#endif
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
 ////////////////////////////////////////////////////////////////////////////////
@@ -434,6 +452,14 @@ namespace embree
 #endif
 #endif
 
+#if defined(__SYCL_DEVICE_ONLY__)
+
+  __forceinline unsigned int popcnt(unsigned int in) {
+    return sycl::popcount(in);
+  }
+  
+#else
+  
 #if defined(__SSE4_2__)
   
   __forceinline int popcnt(int in) {
@@ -448,6 +474,8 @@ namespace embree
   __forceinline size_t popcnt(size_t in) {
     return _mm_popcnt_u64(in);
   }
+#endif
+  
 #endif
   
 #endif

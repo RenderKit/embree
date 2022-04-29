@@ -1,37 +1,26 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/tutorial/tutorial_device.h"
+#include "quaternion_motion_blur_device.h"
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
 
 namespace embree {
 
-/* accumulation buffer */
-Vec3ff* g_accu = nullptr;
-unsigned int g_accu_width = 0;
-unsigned int g_accu_height = 0;
-unsigned int g_accu_count = 0;
-Vec3fa g_accu_vx;
-Vec3fa g_accu_vy;
-Vec3fa g_accu_vz;
-Vec3fa g_accu_p;
+/* scene data */
+RTCScene g_scene = nullptr;
+TutorialData data;
+
 extern "C" bool g_changed;
 extern "C" float g_time;
 extern "C" int g_spp;
 extern "C" int g_numTimeSteps;
-extern "C" float g_time;
 extern "C" float g_shutter_close;
 extern "C" bool g_animate;
-extern "C" bool g_accumulate;
 extern "C" bool g_motion_blur;
 extern "C" bool g_reset;
 
-RTCGeometry g_instance_linear_0 = nullptr;
-RTCGeometry g_instance_linear_1 = nullptr;
-RTCGeometry g_instance_quaternion_0 = nullptr;
-RTCGeometry g_instance_quaternion_1 = nullptr;
-RTCQuaternionDecomposition qdc[10];
+RTCIntersectFunctionN sphereIntersectFuncPtr = nullptr;
 
 AffineSpace3fa fromQuaternionDecomposition(const RTCQuaternionDecomposition& qdc)
 {
@@ -53,67 +42,58 @@ AffineSpace3fa fromQuaternionDecomposition(const RTCQuaternionDecomposition& qdc
 void updateTransformation()
 {
   // transformation matrizes for instance 0 (rotation around axis through sphere center)
-  rtcSetGeometryTimeStepCount(g_instance_linear_0, g_numTimeSteps);
-  rtcSetGeometryTimeStepCount(g_instance_quaternion_0, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(data.g_instance_linear_0, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(data.g_instance_quaternion_0, g_numTimeSteps);
   for (int i = 0; i < g_numTimeSteps; ++i)
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
     float K = g_numTimeSteps > 0 ? ((float)i)/(g_numTimeSteps-1) : 0.f;
-    float R = K * 2.0 * float(M_PI);
-    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * float(M_PI);
+    float R = K * 2.0f * float(M_PI);
+    if (g_numTimeSteps == 3) R = K * (2.0f - 1e-6f) * float(M_PI);
 
     Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), R);
-    rtcInitQuaternionDecomposition(qdc+i);
-    rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
-    rtcQuaternionDecompositionSetScale(qdc+i, 3.f, 3.f, 3.f);
-    rtcQuaternionDecompositionSetTranslation(qdc+i, -5.5f, 0.f, -5.5f);
-    rtcSetGeometryTransformQuaternion(g_instance_quaternion_0, i, qdc+i);
+    rtcInitQuaternionDecomposition(data.qdc+i);
+    rtcQuaternionDecompositionSetQuaternion(data.qdc+i, q.r, q.i, q.j, q.k);
+    rtcQuaternionDecompositionSetScale(data.qdc+i, 3.f, 3.f, 3.f);
+    rtcQuaternionDecompositionSetTranslation(data.qdc+i, -5.5f, 0.f, -5.5f);
+    rtcSetGeometryTransformQuaternion(data.g_instance_quaternion_0, i, data.qdc+i);
 
-    rtcQuaternionDecompositionSetTranslation(qdc+i, -5.5f, 0.f, 5.5f);
-    AffineSpace3fa xfm = fromQuaternionDecomposition(qdc[i]);
-    rtcSetGeometryTransform(g_instance_linear_0, i, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(xfm.l.vx.x));
+    rtcQuaternionDecompositionSetTranslation(data.qdc+i, -5.5f, 0.f, 5.5f);
+    AffineSpace3fa xfm = fromQuaternionDecomposition(data.qdc[i]);
+    rtcSetGeometryTransform(data.g_instance_linear_0, i, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(xfm.l.vx.x));
   }
 
   // transformation matrizes for instance 1 (translation and rotation around origin)
-  rtcSetGeometryTimeStepCount(g_instance_linear_1, g_numTimeSteps);
-  rtcSetGeometryTimeStepCount(g_instance_quaternion_1, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(data.g_instance_linear_1, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(data.g_instance_quaternion_1, g_numTimeSteps);
   for (int i = 0; i < g_numTimeSteps; ++i)
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
     float K = g_numTimeSteps > 0 ? ((float)i)/(g_numTimeSteps-1) : 0.f;
-    float R = K * 2.0 * float(M_PI);
-    if (g_numTimeSteps == 3) R = K * (2.0 - 1e-6f) * float(M_PI);
+    float R = K * 2.0f * float(M_PI);
+    if (g_numTimeSteps == 3) R = K * (2.0f - 1e-6f) * float(M_PI);
 
     Quaternion3f q = Quaternion3f::rotate(Vec3fa(0.f, 1.f, 0.f), R);
-    rtcInitQuaternionDecomposition(qdc+i);
-    rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
-    rtcQuaternionDecompositionSetShift(qdc+i, 3.f, 0.f, 3.f);
-    rtcQuaternionDecompositionSetTranslation(qdc+i, 5.5f, 0.f, -5.5f);
-    rtcSetGeometryTransformQuaternion(g_instance_quaternion_1, i, qdc+i);
+    rtcInitQuaternionDecomposition(data.qdc+i);
+    rtcQuaternionDecompositionSetQuaternion(data.qdc+i, q.r, q.i, q.j, q.k);
+    rtcQuaternionDecompositionSetShift(data.qdc+i, 3.f, 0.f, 3.f);
+    rtcQuaternionDecompositionSetTranslation(data.qdc+i, 5.5f, 0.f, -5.5f);
+    rtcSetGeometryTransformQuaternion(data.g_instance_quaternion_1, i, data.qdc+i);
 
-    rtcQuaternionDecompositionSetTranslation(qdc+i, 5.5f, 0.f, 5.5f);
-    AffineSpace3fa xfm = fromQuaternionDecomposition(qdc[i]);
-    rtcSetGeometryTransform(g_instance_linear_1, i, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(xfm.l.vx.x));
+    rtcQuaternionDecompositionSetTranslation(data.qdc+i, 5.5f, 0.f, 5.5f);
+    AffineSpace3fa xfm = fromQuaternionDecomposition(data.qdc[i]);
+    rtcSetGeometryTransform(data.g_instance_linear_1, i, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&(xfm.l.vx.x));
   }
 
-  rtcCommitGeometry(g_instance_linear_0);
-  rtcCommitGeometry(g_instance_linear_1);
-  rtcCommitGeometry(g_instance_quaternion_0);
-  rtcCommitGeometry(g_instance_quaternion_1);
+  rtcCommitGeometry(data.g_instance_linear_0);
+  rtcCommitGeometry(data.g_instance_linear_1);
+  rtcCommitGeometry(data.g_instance_quaternion_0);
+  rtcCommitGeometry(data.g_instance_quaternion_1);
 }
 
 // ======================================================================== //
 //                     User defined sphere geometry                         //
 // ======================================================================== //
-
-struct Sphere
-{
-  ALIGNED_STRUCT_(16)
-  Vec3fa p;                      //!< position of the sphere
-  float r;                      //!< radius of the sphere
-  RTCGeometry geometry;
-  unsigned int geomID;
-};
 
 void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
 {
@@ -128,7 +108,7 @@ void sphereBoundsFunc(const struct RTCBoundsFunctionArguments* args)
   bounds_o->upper_z = sphere.p.z+sphere.r;
 }
 
-void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
+RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
 {
   int* valid = args->valid;
   void* ptr  = args->geometryUserPtr;
@@ -142,6 +122,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
   const Sphere& sphere = spheres[primID];
 
   if (!valid[0]) return;
+  valid[0] = 0;
 
   const Vec3fa v = ray->org-sphere.p;
   const float A = dot(ray->dir,ray->dir);
@@ -184,8 +165,10 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
     ray->tfar = t0;
     rtcFilterIntersection(args,&fargs);
 
-    if (imask == -1)
+    if (imask == -1) {
       *hit = potentialHit;
+      valid[0] = -1;
+    }
     else
       ray->tfar = old_t;
   }
@@ -215,8 +198,10 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
     ray->tfar = t1;
     rtcFilterIntersection(args,&fargs);
 
-    if (imask == -1)
+    if (imask == -1) {
       *hit = potentialHit;
+      valid[0] = -1;
+    }
     else
       ray->tfar = old_t;
   }
@@ -225,7 +210,7 @@ void sphereIntersectFunc(const RTCIntersectFunctionNArguments* args)
 Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 {
   RTCGeometry geom = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_USER);
-  Sphere* spheres = (Sphere*) alignedMalloc(N*sizeof(Sphere),16);
+  Sphere* spheres = (Sphere*) alignedUSMMalloc((N)*sizeof(Sphere),16);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   for (unsigned int i=0; i<N; i++) {
     spheres[i].geometry = geom;
@@ -234,58 +219,56 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
   rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
-  rtcSetGeometryIntersectFunction(geom,sphereIntersectFunc);
+  rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return spheres;
 }
 
-/* scene data */
-RTCScene g_scene  = nullptr;
-RTCScene g_scene0 = nullptr;
-Sphere* g_spheres = nullptr;
-
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
+  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFunc);
+  
   /* create scene */
-  g_scene = rtcNewScene(g_device);
+  TutorialData_Constructor(&data);
+  g_scene = data.g_scene = rtcNewScene(g_device);
 
   /* create scene with 4 analytical spheres */
-  g_scene0 = rtcNewScene(g_device);
-  g_spheres = createAnalyticalSpheres(g_scene0, 1);
-  g_spheres[0].p = Vec3fa(0, 0, 0);
-  g_spheres[0].r = 1.0f;
-  rtcCommitScene(g_scene0);
+  data.g_scene0 = rtcNewScene(g_device);
+  data.g_spheres = createAnalyticalSpheres(data.g_scene0, 1);
+  data.g_spheres[0].p = Vec3fa(0, 0, 0);
+  data.g_spheres[0].r = 1.0f;
+  rtcCommitScene(data.g_scene0);
 
   // attach multiple times otherwise Embree will optimize and not use
   // internal instancing (magic!)
-  g_instance_linear_0 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  g_instance_linear_1 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  g_instance_quaternion_0 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  g_instance_quaternion_1 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(g_instance_linear_0, g_scene0);
-  rtcSetGeometryInstancedScene(g_instance_linear_1, g_scene0);
-  rtcSetGeometryInstancedScene(g_instance_quaternion_0, g_scene0);
-  rtcSetGeometryInstancedScene(g_instance_quaternion_1, g_scene0);
+  data.g_instance_linear_0 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  data.g_instance_linear_1 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  data.g_instance_quaternion_0 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  data.g_instance_quaternion_1 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(data.g_instance_linear_0, data.g_scene0);
+  rtcSetGeometryInstancedScene(data.g_instance_linear_1, data.g_scene0);
+  rtcSetGeometryInstancedScene(data.g_instance_quaternion_0, data.g_scene0);
+  rtcSetGeometryInstancedScene(data.g_instance_quaternion_1, data.g_scene0);
   updateTransformation();
   for (int i = 0; i < 2; ++i)
   {
-    rtcAttachGeometry(g_scene, g_instance_linear_0);
-    rtcAttachGeometry(g_scene, g_instance_linear_1);
-    rtcAttachGeometry(g_scene, g_instance_quaternion_0);
-    rtcAttachGeometry(g_scene, g_instance_quaternion_1);
+    rtcAttachGeometry(data.g_scene, data.g_instance_linear_0);
+    rtcAttachGeometry(data.g_scene, data.g_instance_linear_1);
+    rtcAttachGeometry(data.g_scene, data.g_instance_quaternion_0);
+    rtcAttachGeometry(data.g_scene, data.g_instance_quaternion_1);
   }
-  rtcReleaseGeometry(g_instance_linear_0);
-  rtcReleaseGeometry(g_instance_linear_1);
-  rtcReleaseGeometry(g_instance_quaternion_0);
-  rtcReleaseGeometry(g_instance_quaternion_1);
-  rtcCommitGeometry(g_instance_linear_0);
-  rtcCommitGeometry(g_instance_linear_1);
-  rtcCommitGeometry(g_instance_quaternion_0);
-  rtcCommitGeometry(g_instance_quaternion_1);
+  rtcReleaseGeometry(data.g_instance_linear_0);
+  rtcReleaseGeometry(data.g_instance_linear_1);
+  rtcReleaseGeometry(data.g_instance_quaternion_0);
+  rtcReleaseGeometry(data.g_instance_quaternion_1);
+  rtcCommitGeometry(data.g_instance_linear_0);
+  rtcCommitGeometry(data.g_instance_linear_1);
+  rtcCommitGeometry(data.g_instance_quaternion_0);
+  rtcCommitGeometry(data.g_instance_quaternion_1);
 
-  rtcCommitScene (g_scene);
+  rtcCommitScene (data.g_scene);
 }
 
 inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
@@ -293,12 +276,16 @@ inline Vec3fa face_forward(const Vec3fa& dir, const Vec3fa& _Ng) {
   return dot(dir,Ng) < 0.0f ? Ng : neg(Ng);
 }
 
-Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixelFunction(const TutorialData& data,
+                          float x, float y,
+                          RandomSampler& sampler,
+                          const ISPCCamera& camera,
+                          RayStats& stats)
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
 
-  float time = g_motion_blur ? RandomSampler_get1D(sampler) * g_shutter_close: g_time;
+  float time = data.g_motion_blur ? RandomSampler_get1D(sampler) * data.g_shutter_close: data.g_time;
 
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p),
@@ -307,7 +294,7 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -323,29 +310,51 @@ Vec3fa renderPixelFunction(float x, float y, RandomSampler& sampler, const ISPCC
     float v = acos(Ng.y) / float(M_PI);
     u = 16*u+0.5f;
     v = 19*v+0.5f;
-    color = ((u-(int)u) < 0.9 && (v-(int)v) < 0.9) ? Vec3fa(0.5f) : Vec3fa(0.2f);
+    color = ((u-(int)u) < 0.9f && (v-(int)v) < 0.9f) ? Vec3fa(0.5f) : Vec3fa(0.2f);
   }
   return color;
 }
 
 /* task that renders a single screen tile */
-Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixelStandard(const TutorialData& data,
+                           float x, float y,
+                           const ISPCCamera& camera,
+                           RayStats& stats)
 {
   RandomSampler sampler;
 
   Vec3fa L = Vec3fa(0.0f);
 
-  for (int i=0; i<g_spp; i++)
+  for (int i=0; i<data.g_spp; i++)
   {
-    RandomSampler_init(sampler, (int)x, (int)y, g_accu_count*g_spp+i);
+    RandomSampler_init(sampler, (int)x, (int)y, data.g_accu_count*data.g_spp+i);
 
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
-    L = L + renderPixelFunction(fx,fy,sampler,camera,stats);
+    L = L + renderPixelFunction(data,fx,fy,sampler,camera,stats);
   }
-  L = L/(float)g_spp;
+  L = L/(float)data.g_spp;
   return L;
+}
+
+void renderPixelStandard(const TutorialData& data,
+                         int x, int y,
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera, RayStats& stats)
+{
+  Vec3fa color = renderPixelStandard(data,(float)x,(float)y,camera,stats);
+
+  /* write color to framebuffer */
+  Vec3ff accu_color = data.g_accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); data.g_accu[y*width+x] = accu_color;
+  float f = rcp(max(1.f,accu_color.w));
+  unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(accu_color.z*f,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
 }
 
 /* renders a single screen tile */
@@ -369,17 +378,7 @@ void renderTileStandard(int taskIndex,
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
     
-
-    /* calculate pixel color */
-    Vec3fa color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    Vec3ff accu_color = g_accu[y*width+x] + Vec3ff(color.x,color.y,color.z,1.0f); g_accu[y*width+x] = accu_color;
-    float f = rcp(max(1.f,accu_color.w));
-    unsigned int r = (unsigned int) (255.0f * clamp(accu_color.x*f,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(accu_color.y*f,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(accu_color.z*f,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
 
@@ -401,6 +400,25 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+  
+#else
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
@@ -408,6 +426,7 @@ extern "C" void renderFrameStandard (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+#endif
 }
 
 
@@ -418,52 +437,53 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
+  data.g_spp = g_spp;
+  data.g_motion_blur = g_motion_blur;
+  data.g_time = g_time;
+  data.g_shutter_close = g_shutter_close;
+
   if (g_animate) {
-    g_time = 0.5f * cos(time) + 0.5f;
-    g_shutter_close = pow(g_time, 4.f);
+    data.g_time = 0.5f * cos(time) + 0.5f;
+    data.g_shutter_close = pow(data.g_time, 4.f);
     g_reset = true;
   }
 
-  if (g_accu_width != width || g_accu_height != height) {
-    alignedFree(g_accu);
-    g_accu = (Vec3ff*) alignedMalloc(width*height*sizeof(Vec3ff),16);
-    g_accu_width = width;
-    g_accu_height = height;
+  if (data.g_accu_width != width || data.g_accu_height != height) {
+    alignedUSMFree(data.g_accu);
+    data.g_accu = (Vec3ff*) alignedUSMMalloc((width*height)*sizeof(Vec3ff),16);
+    data.g_accu_width = width;
+    data.g_accu_height = height;
     for (unsigned int i=0; i<width*height; i++)
-      g_accu[i] = Vec3ff(0.0f);
+      data.g_accu[i] = Vec3ff(0.0f);
   }
 
   if (g_changed || g_reset)
   {
     updateTransformation();
-    rtcCommitScene(g_scene);
+    rtcCommitScene(data.g_scene);
   }
 
 
   /* reset accumulator */
   bool camera_changed = g_changed || g_reset; g_changed = false; g_reset = false;
-  camera_changed |= ne(g_accu_vx,camera.xfm.l.vx); g_accu_vx = camera.xfm.l.vx;
-  camera_changed |= ne(g_accu_vy,camera.xfm.l.vy); g_accu_vy = camera.xfm.l.vy;
-  camera_changed |= ne(g_accu_vz,camera.xfm.l.vz); g_accu_vz = camera.xfm.l.vz;
-  camera_changed |= ne(g_accu_p, camera.xfm.p);    g_accu_p  = camera.xfm.p;
+  camera_changed |= ne(data.g_accu_vx,camera.xfm.l.vx); data.g_accu_vx = camera.xfm.l.vx;
+  camera_changed |= ne(data.g_accu_vy,camera.xfm.l.vy); data.g_accu_vy = camera.xfm.l.vy;
+  camera_changed |= ne(data.g_accu_vz,camera.xfm.l.vz); data.g_accu_vz = camera.xfm.l.vz;
+  camera_changed |= ne(data.g_accu_p, camera.xfm.p);    data.g_accu_p  = camera.xfm.p;
   if (camera_changed) {
-    g_accu_count=0;
+    data.g_accu_count=0;
     for (unsigned int i=0; i<width*height; i++)
-      g_accu[i] = Vec3ff(0.0f);
+      data.g_accu[i] = Vec3ff(0.0f);
   }
   else {
-    g_accu_count++;
+    data.g_accu_count++;
   }
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = nullptr;
-  rtcReleaseScene (g_scene0); g_scene0 = nullptr;
-  rtcReleaseDevice(g_device); g_device = nullptr;
-  alignedFree(g_spheres); g_spheres = nullptr;
-  alignedFree(g_accu); g_accu = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

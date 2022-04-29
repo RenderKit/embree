@@ -4,6 +4,12 @@
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/benchmark_render.h"
 
+#if defined(EMBREE_SYCL_TUTORIAL)
+#  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
+#else
+#  define FEATURES FEATURE_RTCORE
+#endif
+
 namespace embree
 {
   extern "C" float g_min_width = 0.0f;
@@ -12,7 +18,7 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("viewer",FEATURE_RTCORE)
+      : SceneLoadingTutorialApplication("viewer",FEATURES)
     {
 #if RTC_MIN_WIDTH
       registerOption("min-width", [] (Ref<ParseStream> cin, const FileName& path) {

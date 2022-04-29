@@ -22,6 +22,10 @@
 #include "../../common/tasking/taskscheduler.h"
 #include "../../common/sys/alloc.h"
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+#include "../rthwif/rthwif_embree_builder.h"
+#endif
+
 namespace embree
 {
   /*! some global variables that can be set via rtcSetParameter1i for debugging purposes */
@@ -552,5 +556,108 @@ namespace embree
 
     default: throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "unknown readable property"); break;
     };
+  }
+
+  void* Device::malloc(size_t size, size_t align) {
+    return alignedMalloc(size,align);
+  }
+
+  void Device::free(void* ptr) {
+    alignedFree(ptr);
+  }
+
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+
+  DeviceGPU::DeviceGPU(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* cfg)
+    : Device(cfg),  gpu_queue(sycl_queue), gpu_context(sycl_context)
+  {
+    auto devices = gpu_context->get_devices();
+    gpu_device = new sycl::device(devices[0]);
+
+#if defined(__WIN32__)
+    _putenv_s("IGC_EnableOCLNoInlineAttr","1");
+    _putenv_s("IGC_EnableStatelessToStatefull","0");
+    //_putenv_s("IGC_EnablePreemption","0");
+#else
+    setenv("IGC_EnableOCLNoInlineAttr","1",1);
+    setenv("IGC_EnableStatelessToStatefull","0",1);
+    //setenv("IGC_EnablePreemption","0",1);
+#endif
+
+    gpu_maxWorkGroupSize = getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
+    gpu_maxComputeUnits  = getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
+
+    if (State::verbosity(1))
+    {
+      sycl::platform platform = gpu_context->get_platform();
+      std::cout << "  Platform              : " << platform.get_info<sycl::info::platform::name>() << std::endl;
+      std::cout << "    Device              : " << getGPUDevice().get_info<sycl::info::device::name>() << std::endl;
+      std::cout << "    Max Work Group Size : " << gpu_maxWorkGroupSize << std::endl;
+      std::cout << "    Max Compute Units   : " << gpu_maxComputeUnits  << std::endl;
+      std::cout << std::endl;
+    }
+    
+    dispatchGlobalsPtr = rthwifInit(*gpu_device, *gpu_context);
+  }
+
+  DeviceGPU::~DeviceGPU()
+  {
+    rthwifCleanup(dispatchGlobalsPtr, *gpu_context);
+  }
+
+  void DeviceGPU::enter() {
+    enableUSMAllocEmbree(gpu_context,gpu_device,gpu_queue);
+  }
+
+  void DeviceGPU::leave() {
+    disableUSMAllocEmbree();
+  }
+
+  void* DeviceGPU::malloc(size_t size, size_t align) {
+    return alignedSYCLMallocWorkaround(gpu_context,gpu_device,gpu_queue,size,align);
+  }
+
+  void DeviceGPU::free(void* ptr) {
+    alignedSYCLFree(gpu_context,ptr);
+  }
+  
+#endif
+
+  DeviceEnterLeave::DeviceEnterLeave (RTCDevice hdevice)
+    : device((Device*)hdevice)
+  {
+    assert(device);
+    device->refInc();
+    device->enter();
+  }
+  
+  DeviceEnterLeave::DeviceEnterLeave (RTCScene hscene)
+    : device(((Scene*)hscene)->device)
+  {
+    assert(device);
+    device->refInc();
+    device->enter();
+  }
+  
+  DeviceEnterLeave::DeviceEnterLeave (RTCGeometry hgeometry)
+    : device(((Geometry*)hgeometry)->device)
+  {
+    assert(device);
+    device->refInc();
+    device->enter();
+  }
+  
+  DeviceEnterLeave::DeviceEnterLeave (RTCBuffer hbuffer)
+    : device(((Buffer*)hbuffer)->device)
+  {
+    assert(device);
+    device->refInc();
+    device->enter();
+  }
+  
+  DeviceEnterLeave::~DeviceEnterLeave() {
+    device->leave();
+    device->refDec();
   }
 }

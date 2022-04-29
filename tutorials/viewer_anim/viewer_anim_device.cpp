@@ -408,7 +408,7 @@ extern "C" void device_render (int* pixels,
 
   if (g_ispc_scene->numLights)
   {
-    if (ls_positions == nullptr) ls_positions = (Vec3fa*) alignedMalloc(g_ispc_scene->numLights*sizeof(Vec3fa),16);
+    if (ls_positions == nullptr) ls_positions = (Vec3fa*) alignedUSMMalloc((g_ispc_scene->numLights)*sizeof(Vec3fa),16);
     DifferentialGeometry dg;
     dg.geomID = 0;
     dg.primID = 0;

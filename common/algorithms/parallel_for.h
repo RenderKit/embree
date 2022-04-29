@@ -5,7 +5,7 @@
 
 #include "../tasking/taskscheduler.h"
 #include "../sys/array.h"
-#include "../math/math.h"
+#include "../math/emath.h"
 #include "../math/range.h"
 
 namespace embree

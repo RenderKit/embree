@@ -8,20 +8,6 @@
 
 namespace embree
 {
-  enum Shader { 
-    SHADER_DEFAULT, 
-    SHADER_EYELIGHT,
-    SHADER_OCCLUSION,
-    SHADER_UV,
-    SHADER_TEXCOORDS,
-    SHADER_TEXCOORDS_GRID,
-    SHADER_NG,
-    SHADER_CYCLES,
-    SHADER_GEOMID,
-    SHADER_GEOMID_PRIMID,
-    SHADER_AMBIENT_OCCLUSION
-  };
-
   /*! Flattened scene used inside tutorials */
   struct TutorialScene
   {

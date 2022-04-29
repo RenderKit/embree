@@ -5,6 +5,9 @@
 
 namespace embree {
 
+RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilter(const RTCFilterFunctionNArguments* args);
+RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArguments* args);
+
 RTCScene g_scene = nullptr;
 TutorialData data;
 
@@ -66,7 +69,10 @@ void renderPixelStandard(const TutorialData& data,
 
   IntersectContext context;
   InitIntersectionContext(&context);
-  
+
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(args);
+    
   /* initialize ray */
   Ray2 primary;
   init_Ray(primary.ray,Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -79,7 +85,10 @@ void renderPixelStandard(const TutorialData& data,
     context.userRayExt = &primary;
 
     /* intersect ray with scene */
-    rtcIntersect1(data.g_scene,&context.context,RTCRayHit_(primary));
+#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+    args.filter = (RTCFilterFunctionN)intersectionFilter;
+#endif
+    rtcIntersectEx1(data.g_scene,&context.context,RTCRayHit_(primary),args);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -102,7 +111,10 @@ void renderPixelStandard(const TutorialData& data,
     context.userRayExt = &shadow;
 
     /* trace shadow ray */
-    rtcOccluded1(data.g_scene,&context.context,RTCRay_(shadow));
+#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+    args.filter = (RTCFilterFunctionN)occlusionFilter;
+#endif
+    rtcOccludedEx1(data.g_scene,&context.context,RTCRay_(shadow),args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -187,7 +199,7 @@ inline void scatter(unsigned int& ptr, const unsigned int idx, const unsigned in
 
 
 /* intersection filter function for single rays and packets */
-void intersectionFilter(const RTCFilterFunctionNArguments* args)
+RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilter(const RTCFilterFunctionNArguments* args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == nullptr) return;
@@ -217,7 +229,7 @@ void intersectionFilter(const RTCFilterFunctionNArguments* args)
 }
 
 /* intersection filter function for streams of general packets */
-void intersectionFilterN(const RTCFilterFunctionNArguments* args)
+RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterN(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
@@ -263,7 +275,7 @@ void intersectionFilterN(const RTCFilterFunctionNArguments* args)
 }
 
 /* occlusion filter function for single rays and packets */
-void occlusionFilter(const RTCFilterFunctionNArguments* args)
+RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArguments* args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == nullptr) return;
@@ -305,7 +317,7 @@ void occlusionFilter(const RTCFilterFunctionNArguments* args)
 }
 
 /* intersection filter function for streams of general packets */
-void occlusionFilterN(const RTCFilterFunctionNArguments* args)
+RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterN(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
@@ -614,10 +626,12 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
     Vec3fa vtx = Vec3fa(x,y,z);
     ptr[i] = Vec3fa(offset+LinearSpace3fa::rotate(Vec3fa(0,1,0),rotation)*LinearSpace3fa::scale(scale)*vtx);
   }
-  rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_tri_indices, 0, 3*sizeof(unsigned int), NUM_TRI_FACES);
+  //rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, cube_tri_indices, 0, 3*sizeof(unsigned int), NUM_TRI_FACES);
+  Vec3i* index = (Vec3i*)rtcSetNewGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0, RTC_FORMAT_UINT3, 3*sizeof(unsigned int), NUM_TRI_FACES);
+  memcpy(index, cube_tri_indices, 3*sizeof(unsigned int) * NUM_TRI_FACES);
 
   /* create per-triangle color array */
-  data.colors = (Vec3fa*) alignedMalloc(12*sizeof(Vec3fa),16);
+  data.colors = (Vec3fa*) alignedUSMMalloc((12)*sizeof(Vec3fa),16);
   data.colors[0] = Vec3fa(1,0,0); // left side
   data.colors[1] = Vec3fa(1,0,0);
   data.colors[2] = Vec3fa(0,1,0); // right side
@@ -634,13 +648,15 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   /* set intersection filter for the cube */
   if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
   {
-    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilter);
-    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
+#if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
+    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilter);
+    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilter);
+#endif
   }
   else
   {
-    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterN);
-    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterN);
+    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)intersectionFilterN);
+    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)occlusionFilterN);
   }
 
   rtcCommitGeometry(geom);
@@ -661,7 +677,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
   for (unsigned int i=0; i<NUM_QUAD_INDICES; i++) level[i] = 4;
 
   /* create face color array */
-  data.colors = (Vec3fa*) alignedMalloc(6*sizeof(Vec3fa),16);
+  data.colors = (Vec3fa*) alignedUSMMalloc((6)*sizeof(Vec3fa),16);
   data.colors[0] = Vec3fa(1,0,0); // left side
   data.colors[1] = Vec3fa(0,1,0); // right side
   data.colors[2] = Vec3fa(0.5f);  // bottom side
@@ -672,13 +688,15 @@ unsigned int addSubdivCube (RTCScene scene_i)
   /* set intersection filter for the cube */
   if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
   {
-    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilter);
-    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilter);
+#if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
+    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilter);
+    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilter);
+#endif
   }
   else
   {
-    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterN);
-    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterN);
+    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)intersectionFilterN);
+    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)occlusionFilterN);
   }
 
   rtcCommitGeometry(geom);
@@ -714,8 +732,14 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
+#if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
+  data.intersectionFilter = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilter);
+  data.occlusionFilter    = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilter   );
+#endif
+  
   /* create scene */
   g_scene = data.g_scene = rtcNewScene(g_device);
+  rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
   rtcSetSceneBuildQuality(data.g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
 
   /* add cube */
@@ -750,6 +774,25 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+  
+#else
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
@@ -757,6 +800,7 @@ extern "C" void renderFrameStandard (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+#endif
 }
 
 /* called by the C++ code to render */

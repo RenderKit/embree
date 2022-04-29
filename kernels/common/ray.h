@@ -178,6 +178,11 @@ namespace embree
       return all(le_mask(abs(Vec3fa(org)), Vec3fa(FLT_LARGE)) & le_mask(abs(Vec3fa(dir)), Vec3fa(FLT_LARGE))) && abs(tnear()) <= float(inf) && abs(tfar) <= float(inf);
     }
 
+    /* checks if occlusion ray is done */
+    __forceinline bool occluded() const {
+      return tfar < 0.0f;
+    }
+
     /* Ray data */
     Vec3ff org;  // 3 floats for ray origin, 1 float for tnear
     //float tnear; // start of ray segment
@@ -361,12 +366,14 @@ namespace embree
   typedef RayK<4>  Ray4;
   typedef RayK<8>  Ray8;
   typedef RayK<16> Ray16;
+  typedef RayK<VSIZEX> Rayx;
   struct RayN;
 
   typedef RayHitK<1>  RayHit;
   typedef RayHitK<4>  RayHit4;
   typedef RayHitK<8>  RayHit8;
   typedef RayHitK<16> RayHit16;
+  typedef RayHitK<VSIZEX> RayHitx;
   struct RayHitN;
 
   template<int K, bool intersect>
@@ -1183,7 +1190,7 @@ namespace embree
 
     Ray* __restrict__ ptr;
   };
-
+  
   template<>
   __forceinline Ray4 RayStreamAOS::getRayByOffset<4>(const vint4& offset)
   {
@@ -1219,7 +1226,7 @@ namespace embree
 
     return ray;
   }
-
+  
 #if defined(__AVX__)
   template<>
   __forceinline Ray8 RayStreamAOS::getRayByOffset<8>(const vint8& offset)
@@ -1383,7 +1390,7 @@ namespace embree
 
     Ray** __restrict__ ptr;
   };
-
+  
   template<>
   __forceinline Ray4 RayStreamAOP::getRayByIndex<4>(const vint4& index)
   {
@@ -1419,7 +1426,7 @@ namespace embree
 
     return ray;
   }
-
+  
 #if defined(__AVX__)
   template<>
   __forceinline Ray8 RayStreamAOP::getRayByIndex<8>(const vint8& index)

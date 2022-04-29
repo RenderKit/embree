@@ -17,7 +17,7 @@ namespace embree
   {
     ALIGNED_CLASS_(16);
   public:
-    enum Type { TY_UNKNOWN = 0, TY_ACCELN = 1, TY_ACCEL_INSTANCE = 2, TY_BVH4 = 3, TY_BVH8 = 4 };
+    enum Type { TY_UNKNOWN = 0, TY_ACCELN = 1, TY_ACCEL_INSTANCE = 2, TY_BVH4 = 3, TY_BVH8 = 4, TY_GPU = 5 };
 
   public:
     AccelData (const Type type) 

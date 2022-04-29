@@ -30,6 +30,8 @@ namespace embree
 {
   struct Texture // FIXME: should be derived from SceneGraph::Node
   {
+    ALIGNED_STRUCT_USM_(16);
+
     enum Format {
       INVALID = 0,
       RGBA8   = 1,

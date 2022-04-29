@@ -5,6 +5,7 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(viewer_stream)
 ADD_TUTORIAL_ISPC(viewer_stream)
 
+SET(EMBREE_DPCPP_SUPPORT OFF)
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_MODELS_TEST(test-models-intensive2.txt viewer_stream_coherent viewer viewer_stream --coherent)
   ADD_EMBREE_MODELS_TEST(test-models-intensive2.txt viewer_stream_incoherent viewer viewer_stream --incoherent)

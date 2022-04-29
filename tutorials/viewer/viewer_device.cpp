@@ -24,8 +24,8 @@ bool monitorProgressFunction(void* ptr, double dn)
 
 inline float updateEdgeLevel( ISPCSubdivMesh* mesh, const Vec3fa& cam_pos, const unsigned int e0, const unsigned int e1)
 {
-  const Vec3fa v0 = mesh->positions[0][mesh->position_indices[e0]];
-  const Vec3fa v1 = mesh->positions[0][mesh->position_indices[e1]];
+  const Vec3fa v0 = Vec3fa(mesh->positions[0][mesh->position_indices[e0]]);
+  const Vec3fa v1 = Vec3fa(mesh->positions[0][mesh->position_indices[e1]]);
   const Vec3fa edge = v1-v0;
   const Vec3fa P = 0.5f*(v1+v0);
   const Vec3fa dist = cam_pos - P;
@@ -189,7 +189,8 @@ void renderPixelStandard(const TutorialData& data,
   RandomSampler_init(sampler, (int)x, (int)y, 0);
 
   /* initialize ray */
-  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, RandomSampler_get1D(sampler));
+  float ray_time = data.motion_blur ? RandomSampler_get1D(sampler) : time;
+  Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, ray_time);
 
   /* intersect ray with scene */
   RTCIntersectContext context;
@@ -289,6 +290,25 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+ 
+#else
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
@@ -297,6 +317,7 @@ extern "C" void renderFrameStandard (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }); 
+#endif
 }
 
 /* called by the C++ code to render */

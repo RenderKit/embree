@@ -1,12 +1,8 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/math/random_sampler.h"
-#include "../common/core/differential_geometry.h"
-#include "../common/tutorial/tutorial_device.h"
-#include "../common/tutorial/scene_device.h"
-#include <algorithm>
-#include "../common/tutorial/tutorial.h"
+#include "next_hit_device.h"
+#include "../../common/algorithms/parallel_sort.h"
 
 #define SINGLE_PASS 0
 #define MULTI_PASS_FIXED_NEXT_HITS 1
@@ -15,29 +11,19 @@
 
 namespace embree {
 
-extern "C" ISPCScene* g_ispc_scene;
-extern "C" int g_instancing_mode;
-extern "C" int g_next_hit_mode;
-extern "C" unsigned g_max_next_hits;
-extern "C" unsigned g_max_total_hits;
-extern "C" bool g_verify;
-extern "C" bool g_visualize_errors;
-extern "C" bool g_enable_opacity;
-extern "C" float g_curve_opacity;
+#define MAX_TOTAL_HITS 1024 //16*1024
 
-#define MAX_TOTAL_HITS 16*1024
+  RTC_SYCL_INDIRECTLY_CALLABLE void gather_all_hits(const RTCFilterFunctionNArguments* args);
+  RTC_SYCL_INDIRECTLY_CALLABLE void gather_next_hits(const RTCFilterFunctionNArguments* args);
 
-/* number of hits found in previous pass */
-int* g_num_prev_hits = nullptr;
-unsigned int g_num_prev_hits_width = 0;
-unsigned int g_num_prev_hits_height = 0;
-
+RTCScene g_scene = nullptr;
+TutorialData data;
 
 /* extended ray structure that gathers all hits along the ray */
 struct HitList
 {
-  HitList ()
-    : begin(0), end(0) {}
+  HitList (const TutorialData& data)
+    : data(data), begin(0), end(0) {}
 
   /* Hit structure that defines complete order over hits */
   struct Hit
@@ -103,6 +89,7 @@ struct HitList
   }
 
 public:
+  const TutorialData& data;
   unsigned int begin;   // begin of hit list
   unsigned int end;     // end of hit list
   Hit hits[MAX_TOTAL_HITS];   // array to store all found hits to
@@ -111,16 +98,13 @@ public:
 /* we store the Hit list inside the intersection context to access it from the filter functions */
 struct IntersectContext
 {
-  IntersectContext(HitList& hits)
-    : hits(hits), max_next_hits(g_max_next_hits) {}
+  IntersectContext(const TutorialData& data, HitList& hits)
+    : hits(hits), max_next_hits(data.max_next_hits) {}
 
   RTCIntersectContext context;
   HitList& hits;
   unsigned int max_next_hits; // maximal number of hits to collect in a single pass
 };
-
-/* scene data */
-RTCScene g_scene = nullptr;
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
@@ -131,7 +115,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 }
 
 /* Filter callback function that gathers all hits */
-void gather_all_hits(const struct RTCFilterFunctionNArguments* args)
+RTC_SYCL_INDIRECTLY_CALLABLE void gather_all_hits(const RTCFilterFunctionNArguments* args)
 {
   assert(*args->valid == -1);
   IntersectContext* context = (IntersectContext*) args->context;
@@ -146,25 +130,26 @@ void gather_all_hits(const struct RTCFilterFunctionNArguments* args)
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
-  bool opaque = !g_enable_opacity || geometry->type != CURVES;
+  bool opaque = !hits.data.enable_opacity || geometry->type != CURVES;
   
   /* add hit to list */
   hits.hits[hits.end++] = HitList::Hit(opaque,ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 }
 
 /* gathers hits in a single pass */
-void single_pass(const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayStats& stats)
+void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayStats& stats)
 {
   /* trace ray to gather all hits */
   Ray ray = ray_i;
-  IntersectContext context(hits_o);
+  IntersectContext context(data,hits_o);
   rtcInitIntersectContext(&context.context);
-  context.context.filter = gather_all_hits;
-  rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
+  context.context.filter = (RTCFilterFunctionN) data.gather_all_hits;
+  rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* sort hits by extended order */
-  std::sort(&context.hits.hits[context.hits.begin],&context.hits.hits[context.hits.end]);
+  //std::sort(&context.hits.hits[context.hits.begin],&context.hits.hits[context.hits.end]);
+  insertionsort_ascending(&context.hits.hits[context.hits.begin], context.hits.size());
 
   /* ignore duplicated hits that can occur for tessellated primitives */
   if (hits_o.size())
@@ -178,28 +163,28 @@ void single_pass(const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayS
   }
 
   /* drop hits in case we found too many */
-  hits_o.end = std::min(hits_o.end, g_max_total_hits);
+  hits_o.end = std::min(hits_o.end, data.max_total_hits);
 
   /* shade all hits */
-  if (g_enable_opacity)
+  if (data.enable_opacity)
   {
     for (unsigned int i=context.hits.begin; i<context.hits.end; i++)
     {
       /* roussion roulette ray termination */
       bool opaque = context.hits.hits[i].opaque;
-      if (RandomSampler_get1D(sampler) < g_curve_opacity)
-        opaque = true;
+      if (RandomSampler_get1D(sampler) < data.curve_opacity)
+	opaque = true;
       
       if (opaque) {
-        hits_o.end = i+1;
-        return;
+	hits_o.end = i+1;
+	return;
       }
     }
   }
 }
 
 /* Filter callback function that gathers first N hits up to the first opaque surface */
-void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
+RTC_SYCL_INDIRECTLY_CALLABLE void gather_next_hits(const RTCFilterFunctionNArguments* args)
 {
   assert(*args->valid == -1);
   IntersectContext* context = (IntersectContext*) args->context;
@@ -214,7 +199,7 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
 
   /* check if geometry is opaque */
   ISPCGeometry* geometry = (ISPCGeometry*) args->geometryUserPtr;
-  bool opaque = !g_enable_opacity || geometry->type != CURVES;
+  bool opaque = !hits.data.enable_opacity || geometry->type != CURVES;
   
   HitList::Hit nhit(opaque, ray->tfar,hit->primID,hit->geomID,hit->instID[0]);
 
@@ -235,7 +220,7 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
   }
 
   /* store farthest hit if place left and last is not opaque */
-  if (hits.size() < context->max_next_hits && hits.end < g_max_total_hits && !hits.last_is_opaque())
+  if (hits.size() < context->max_next_hits && hits.end < hits.data.max_total_hits && !hits.last_is_opaque())
     hits.hits[hits.end++] = nhit;
 
   /* shrink tfar when we collected sufficient hits for this pass, or the last hit is opaque */
@@ -245,22 +230,22 @@ void gather_next_hits(const struct RTCFilterFunctionNArguments* args)
     args->valid[0] = -1; // accept hit
   }
 }
-
+  
 /* gathers hits in multiple passes */
-void multi_pass(const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats)
+void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats)
 {
   /* configure intersect context */
   Ray ray = ray_i;
-  IntersectContext context(hits_o);
+  IntersectContext context(data,hits_o);
   rtcInitIntersectContext(&context.context);
   context.max_next_hits = max_next_hits;
-  context.context.filter = gather_next_hits;
+  context.context.filter = (RTCFilterFunctionN) data.gather_next_hits;
 
   /* in each pass we collect some hits */
   do {
 
     /* continue from previous fartherst hit */
-    if (context.hits.end) 
+    if (context.hits.end)
       ray.tnear() = context.hits.last().t;
 
     /* initialize ray */
@@ -271,20 +256,20 @@ void multi_pass(const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSamp
     /* insert new hits at previous end of hits list */
     context.hits.begin = context.hits.end;
     for (size_t i=0; i<context.max_next_hits; i++)
-      if (context.hits.begin+i < g_max_total_hits)
+      if (context.hits.begin+i < data.max_total_hits)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
-    rtcIntersect1(g_scene,&context.context,RTCRayHit_(ray));
+    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray));
     RayStats_addRay(stats);
 
     /* shade all hits */
-    if (g_enable_opacity)
+    if (data.enable_opacity)
     {
       for (unsigned int i=context.hits.begin; i<context.hits.end; i++)
       {
         /* roussion roulette ray termination */
         bool opaque = context.hits.hits[i].opaque;
-        if (RandomSampler_get1D(sampler) < g_curve_opacity)
+        if (RandomSampler_get1D(sampler) < data.curve_opacity)
           opaque = true;
 
         /* remove all farther hits in case we terminate here */
@@ -302,7 +287,10 @@ void multi_pass(const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSamp
 }
 
 /* task that renders a single screen tile */
-Vec3ff renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
+                            const unsigned int width,
+                            const unsigned int height,
+                            const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize sampler */
   const int ix = (int)x;
@@ -314,40 +302,41 @@ Vec3ff renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f);
 
   /* either gather hits in single pass or using multiple passes */
-  HitList hits;
-  switch (g_next_hit_mode)
+  HitList hits(data);
+  switch (data.next_hit_mode)
   {
   case SINGLE_PASS:
-    single_pass(ray,hits,mysampler,stats);
+    single_pass(data,ray,hits,mysampler,stats);
     break;
   
   case MULTI_PASS_FIXED_NEXT_HITS:
-    multi_pass (ray,hits,g_max_next_hits,mysampler,stats);
+    multi_pass (data,ray,hits,data.max_next_hits,mysampler,stats);
     break;
-
+#if !defined(EMBREE_SYCL_TUTORIAL)
   case MULTI_PASS_OPTIMAL_NEXT_HITS: {
-    int num_prev_hits = max(1,g_num_prev_hits[iy*TutorialApplication::instance->width+ix]);
-    multi_pass (ray,hits,num_prev_hits,mysampler,stats);
+    int num_prev_hits = max(1,data.num_prev_hits[iy*width+ix]);
+    multi_pass (data,ray,hits,num_prev_hits,mysampler,stats);
     break;
   }
   case MULTI_PASS_ESTIMATED_NEXT_HITS: {
-    int estimated_num_next_hits = (int) min((float)g_max_next_hits, max(1.0f, 0.5f/g_curve_opacity));
-    multi_pass (ray,hits,estimated_num_next_hits,mysampler,stats);
+    int estimated_num_next_hits = (int) min((float)data.max_next_hits, max(1.0f, 0.5f/data.curve_opacity));
+    multi_pass (data,ray,hits,estimated_num_next_hits,mysampler,stats);
     break;
   }
+#endif
   default:
     assert(false);
   }
-   
+
   /* verify result with gathering all hits */
   bool has_error = false;
-  if (g_verify || g_visualize_errors)
+  if (data.verify || data.visualize_errors)
   {
     /* repeat using a single pass, which is assumed to produce the correct result */
-    HitList verify_hits;
+    HitList verify_hits(data);
     RandomSampler verify_sampler;
     RandomSampler_init(verify_sampler, ix, iy, 0);
-    single_pass(ray,verify_hits,verify_sampler,stats);
+    single_pass(data,ray,verify_hits,verify_sampler,stats);
 
     //std::cout << std::hexfloat;
     //for (size_t i=0; i<hits.size(); i++)
@@ -365,8 +354,12 @@ Vec3ff renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
         has_error = true;
     }
 
-    if (!g_visualize_errors && has_error)
+    if (!data.visualize_errors && has_error)
+#if defined(EMBREE_SYCL_TUTORIAL)
+      embree_cout << "error at (" << int(x) << int(y) << ")" << embree_endl;
+#else
       throw std::runtime_error("hits differ");
+#endif
   }
 
   /* calculate random sequence based on hit geomIDs and primIDs */
@@ -385,7 +378,7 @@ Vec3ff renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   color.z = RandomSampler_getFloat(sampler);
 
   /* mark errors red */
-  if (g_visualize_errors)
+  //if (data.visualize_errors)
   {
     color.x = color.y = color.z;
     if (has_error)
@@ -394,6 +387,24 @@ Vec3ff renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
   
   color.w = (float) hits.size();
   return color;
+}
+
+void renderPixelStandard(const TutorialData& data,
+                         int x, int y, 
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera, RayStats& stats)
+{
+  Vec3ff color = renderPixelStandard(data,x,y,width,height,camera,stats);
+
+  /* write color to framebuffer */
+  unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
+  unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
+  unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
+  pixels[y*width+x] = (b << 16) + (g << 8) + r;
+  data.num_prev_hits[y*width+x] = (int) color.w;
 }
 
 /* renders a single screen tile */
@@ -417,14 +428,7 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    Vec3ff color = renderPixelStandard((float)x,(float)y,camera,g_stats[threadIndex]);
-
-    /* write color to framebuffer */
-    unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
-    unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f));
-    unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f));
-    pixels[y*width+x] = (b << 16) + (g << 8) + r;
-    g_num_prev_hits[y*width+x] = (int) color.w;
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
 
@@ -443,6 +447,10 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 /* called by the C++ code for initialization */
 extern "C" void device_init (const char* cfg)
 {
+  TutorialData_Constructor(&data);
+
+  data.gather_all_hits = (uint64_t) GET_FUNCTION_POINTER(gather_all_hits);
+  data.gather_next_hits = (uint64_t) GET_FUNCTION_POINTER(gather_next_hits);
 }
 
 extern "C" void renderFrameStandard (int* pixels,
@@ -451,6 +459,25 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
+#if defined(EMBREE_SYCL_TUTORIAL)
+  TutorialData ldata = data;
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {
+      const unsigned int x = item.get_global_id(0);
+      const unsigned int y = item.get_global_id(1);
+      RayStats stats;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+  const double dt = (t1-t0)*1E-9;
+  ((ISPCCamera*)&camera)->render_time = dt;
+  
+#else
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
   const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
@@ -459,6 +486,17 @@ extern "C" void renderFrameStandard (int* pixels,
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,(int*)pixels,width,height,time,camera,numTilesX,numTilesY);
   });
+#endif
+
+  if (!data.visualize_errors)
+  {
+    for (size_t y=0; y<height; y++) {
+      for (size_t x=0; x<width; x++) {
+        if (pixels[y*width+x] == 0xFF) // red indicates an error
+          throw std::runtime_error("hits differ");
+      }
+    }
+  }
 }
 
 /* called by the C++ code to render */
@@ -470,27 +508,26 @@ extern "C" void device_render (unsigned* pixels,
 {
   /* create scene */
   if (g_scene == nullptr) {
-    g_scene = convertScene(g_ispc_scene);
+    g_scene = data.scene = convertScene(g_ispc_scene);
     rtcCommitScene (g_scene);
   }
 
   /* create buffer to remember previous number of hits found */
-  if (!g_num_prev_hits || g_num_prev_hits_width != width || g_num_prev_hits_height != height)
+  if (!data.num_prev_hits || data.num_prev_hits_width != width || data.num_prev_hits_height != height)
   {
-    delete[] g_num_prev_hits;
-    g_num_prev_hits = new int[width*height];
-    g_num_prev_hits_width = width;
-    g_num_prev_hits_height = height;
+    alignedUSMFree(data.num_prev_hits);
+    data.num_prev_hits = (int*) alignedUSMMalloc(width*height*sizeof(int), 16);
+    data.num_prev_hits_width = width;
+    data.num_prev_hits_height = height;
     for (unsigned int i=0; i<width*height; i++)
-      g_num_prev_hits[i] = 1;
+      data.num_prev_hits[i] = 1;
   }
 }
 
 /* called by the C++ code for cleanup */
 extern "C" void device_cleanup ()
 {
-  rtcReleaseScene (g_scene); g_scene = nullptr;
-  delete[] g_num_prev_hits; g_num_prev_hits = nullptr;
+  TutorialData_Destructor(&data);
 }
 
 } // namespace embree

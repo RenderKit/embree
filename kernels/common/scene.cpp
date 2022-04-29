@@ -6,7 +6,11 @@
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
 #include "../../common/algorithms/parallel_reduce.h"
- 
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+#  include "../rthwif/rthwif_embree_builder.h"
+#endif
+
 namespace embree
 {
   /* error raising rtcIntersect and rtcOccluded functions */
@@ -28,7 +32,7 @@ namespace embree
     device->refInc();
 
     intersectors = Accel::Intersectors(missing_rtcCommit);
-
+    
     /* one can overwrite flags through device for debugging */
     if (device->quality_flags != -1)
       quality_flags = (RTCBuildQuality) device->quality_flags;
@@ -90,10 +94,11 @@ namespace embree
   void Scene::createTriangleAccel()
   {
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
+
     if (device->tri_accel == "default") 
     {
       if (quality_flags != RTC_BUILD_QUALITY_LOW)
-      {
+      {	
         int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
         switch (mode) {
         case /*0b00*/ 0: 
@@ -168,11 +173,13 @@ namespace embree
 #endif
     else throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"unknown triangle acceleration structure "+device->tri_accel);
 #endif
+
   }
 
   void Scene::createTriangleMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
+
     if (device->tri_accel_mb == "default")
     {
       int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
@@ -211,6 +218,7 @@ namespace embree
   void Scene::createQuadAccel()
   {
 #if defined(EMBREE_GEOMETRY_QUAD)
+    
     if (device->quad_accel == "default") 
     {
       if (quality_flags != RTC_BUILD_QUALITY_LOW)
@@ -292,6 +300,7 @@ namespace embree
   void Scene::createQuadMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_QUAD)
+
     if (device->quad_accel_mb == "default") 
     {
       int mode =  2*(int)isCompactAccel() + 1*(int)isRobustAccel(); 
@@ -329,6 +338,7 @@ namespace embree
   void Scene::createHairAccel()
   {
 #if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
+
     if (device->hair_accel == "default")
     {
       int mode = 2*(int)isCompactAccel() + 1*(int)isRobustAccel();
@@ -366,6 +376,7 @@ namespace embree
   void Scene::createHairMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
+
     if (device->hair_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
@@ -416,7 +427,8 @@ namespace embree
   void Scene::createUserGeometryAccel()
   {
 #if defined(EMBREE_GEOMETRY_USER)
-    if (device->object_accel == "default") 
+
+    if (device->object_accel == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
@@ -448,6 +460,7 @@ namespace embree
   void Scene::createUserGeometryMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_USER)
+
     if (device->object_accel_mb == "default"    ) {
 #if defined (EMBREE_TARGET_SIMD8)
       if (device->canUseAVX() && !isCompactAccel())
@@ -467,6 +480,7 @@ namespace embree
   void Scene::createInstanceAccel()
   {
 #if defined(EMBREE_GEOMETRY_INSTANCE)
+
     // if (device->object_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
@@ -494,6 +508,7 @@ namespace embree
   void Scene::createInstanceMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_INSTANCE)
+
     //if (device->instance_accel_mb == "default")
     {
 #if defined (EMBREE_TARGET_SIMD8)
@@ -552,8 +567,10 @@ namespace embree
 
   void Scene::createGridAccel()
   {
-    BVHFactory::IntersectVariant ivariant = isRobustAccel() ? BVHFactory::IntersectVariant::ROBUST : BVHFactory::IntersectVariant::FAST;
 #if defined(EMBREE_GEOMETRY_GRID)
+    
+    BVHFactory::IntersectVariant ivariant = isRobustAccel() ? BVHFactory::IntersectVariant::ROBUST : BVHFactory::IntersectVariant::FAST;
+
     if (device->grid_accel == "default") 
     {
 #if defined (EMBREE_TARGET_SIMD8)
@@ -579,6 +596,7 @@ namespace embree
   void Scene::createGridMBAccel()
   {
 #if defined(EMBREE_GEOMETRY_GRID)
+
     if (device->grid_accel_mb == "default") 
     {
       accels_add(device->bvh4_factory->BVH4GridMB(this,BVHFactory::BuildVariant::STATIC));
@@ -588,7 +606,7 @@ namespace embree
 #endif
 
   }
-  
+
   void Scene::clear() {
   }
 
@@ -676,6 +694,11 @@ namespace embree
     
     /* select acceleration structures to build */
     unsigned int new_enabled_geometry_types = world.enabledGeometryTypesMask();
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+    if (!dynamic_cast<DeviceGPU*>(device)) // do not build software accel for GPU if not required
+#endif
+      
     if (flags_modified || new_enabled_geometry_types != enabled_geometry_types)
     {
       accels_init();
@@ -685,7 +708,7 @@ namespace embree
       parallel_for(geometryModCounters_.size(), [&] ( const size_t i ) {
           geometryModCounters_[i] = 0;
         });
-      
+
       if (getNumPrimitives(TriangleMesh::geom_type,false)) createTriangleAccel();
       if (getNumPrimitives(TriangleMesh::geom_type,true)) createTriangleMBAccel();
       if (getNumPrimitives(QuadMesh::geom_type,false)) createQuadAccel();
@@ -697,12 +720,12 @@ namespace embree
       if (getNumPrimitives(Geometry::MTY_CURVES,false)) createHairAccel();
       if (getNumPrimitives(Geometry::MTY_CURVES,true)) createHairMBAccel();
       if (getNumPrimitives(UserGeometry::geom_type,false)) createUserGeometryAccel();
-      if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();
+      if (getNumPrimitives(UserGeometry::geom_type,true)) createUserGeometryMBAccel();      
       if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,false)) createInstanceAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_CHEAP,true)) createInstanceMBAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,false)) createInstanceExpensiveAccel();
       if (getNumPrimitives(Geometry::MTY_INSTANCE_EXPENSIVE,true)) createInstanceExpensiveMBAccel();
-      
+
       flags_modified = false;
       enabled_geometry_types = new_enabled_geometry_types;
     }
@@ -713,6 +736,13 @@ namespace embree
     /* build all hierarchies of this scene */
     accels_build();
 
+    /* build acceleration structure for rthw */
+#if defined(EMBREE_DPCPP_SUPPORT)
+    if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
+      if (gpu_device->rthw_support())
+        bounds = LBBox<embree::Vec3fa>(rthwifBuild(this,quality_flags,hwaccel));
+#endif
+    
     /* make static geometry immutable */
     if (!isDynamicAccel()) {
       accels_immutable();
@@ -807,7 +837,7 @@ namespace embree
 #if defined(TASKING_TBB)
 
   void Scene::commit (bool join) 
-  {
+  {    
 #if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR < 8)
     if (join)
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcJoinCommitScene not supported with this TBB version");

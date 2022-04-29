@@ -1,0 +1,43 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../common/tutorial/tutorial_device.isph"
+
+#define NUM_SPHERES 20
+#define NUM_PHI 120
+#define NUM_THETA 240
+
+struct TutorialData
+{
+  int numSpheres;
+  int numPhi;
+  int numTheta;
+
+  /* scene data */
+  RTCScene g_scene;
+
+  uniform Vec3fa* uniform position;
+  uniform Vec3fa* uniform colors;
+  uniform float* uniform radius;
+  // int disabledID = -1;
+};
+
+void TutorialData_Constructor(uniform TutorialData* uniform This)
+{
+  This->numSpheres = NUM_SPHERES;
+  This->numPhi = NUM_PHI;
+  This->numTheta = NUM_THETA;
+  This->g_scene  = NULL;
+  This->position = uniform new uniform Vec3fa[NUM_SPHERES];
+  This->colors = uniform new uniform Vec3fa[NUM_SPHERES+1];
+  This->radius = uniform new uniform float[NUM_SPHERES];
+}
+
+void TutorialData_Destructor(uniform TutorialData* uniform This)
+{
+  rtcReleaseScene (This->g_scene); This->g_scene = NULL;
+  delete[] This->position; This->position = NULL;
+  delete[] This->colors; This->colors = NULL;
+  delete[] This->radius; This->radius = NULL;
+}
+

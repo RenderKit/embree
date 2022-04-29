@@ -20,9 +20,9 @@ struct PointLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-Light_SampleRes PointLight_sample(const Light* super,
-                                  const DifferentialGeometry& dg,
-                                  const Vec2f& s)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes PointLight_sample(const Light* super,
+                                                               const DifferentialGeometry& dg,
+                                                               const Vec2f& s)
 {
   const PointLight* self = (PointLight*)super;
   Light_SampleRes res;
@@ -66,9 +66,9 @@ Light_SampleRes PointLight_sample(const Light* super,
   return res;
 }
 
-Light_EvalRes PointLight_eval(const Light* super,
-                              const DifferentialGeometry& dg,
-                              const Vec3fa& dir)
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes PointLight_eval(const Light* super,
+                                                           const DifferentialGeometry& dg,
+                                                           const Vec3fa& dir)
 {
   const PointLight* self = (PointLight*)super;
   Light_EvalRes res;
@@ -121,10 +121,10 @@ extern "C" void PointLight_set(void* super,
 //! Create an ispc-side PointLight object
 extern "C" void* PointLight_create()
 {
-  PointLight* self = (PointLight*) alignedMalloc(sizeof(PointLight),16);
+  PointLight* self = (PointLight*) alignedUSMMalloc(sizeof(PointLight),16);
   Light_Constructor(&self->super);
-  self->super.sample = PointLight_sample;
-  self->super.eval = PointLight_eval;
+  self->super.sample = GET_FUNCTION_POINTER(PointLight_sample);
+  self->super.eval = GET_FUNCTION_POINTER(PointLight_eval);
 
   PointLight_set(self, Vec3fa(0.f), Vec3fa(1.f), 0.f);
   return self;

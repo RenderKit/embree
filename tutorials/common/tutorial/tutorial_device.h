@@ -13,9 +13,7 @@
 struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
 struct Triangle { int v0, v1, v2; };
 
-/* include embree API */
-#include "../../../include/embree3/rtcore.h"
-RTC_NAMESPACE_USE
+#include "../device_default.h"
 
 /* include optional vector library */
 #include "../math/math.h"
@@ -36,22 +34,49 @@ enum Mode {
   MODE_STREAM = 1
 };
 
+enum Shader { 
+  SHADER_DEFAULT, 
+  SHADER_EYELIGHT,
+  SHADER_OCCLUSION,
+  SHADER_UV,
+  SHADER_TEXCOORDS,
+  SHADER_TEXCOORDS_GRID,
+  SHADER_NG,
+  SHADER_CYCLES,
+  SHADER_GEOMID,
+  SHADER_GEOMID_PRIMID,
+  SHADER_AO
+};
+
 extern "C" RTCDevice g_device;
 extern "C" Mode g_mode;
 extern "C" RTCIntersectContextFlags g_iflags_coherent;
 extern "C" RTCIntersectContextFlags g_iflags_incoherent;
+extern "C" Shader shader;
 
 /* error reporting function */
 void error_handler(void* userPtr, RTCError code, const char* str = nullptr);
 
 /* returns time stamp counter */
+#if defined(__SYCL_DEVICE_ONLY__)
+inline int64_t get_tsc() { return 0; }
+#else
 extern "C" int64_t get_tsc();
+#endif
 
+#if defined(__WIN32__) and defined(__INTEL_LLVM_COMPILER)
+/* declare some standard library functions */
+extern "C" __declspec(dllimport) void abort ();
+extern "C" __declspec(dllimport) void exit(int);
+extern "C" __declspec(dllimport) int puts ( const char* str );
+extern "C" __declspec(dllimport) int putchar ( int character );
+#else
 /* declare some standard library functions */
 extern "C" void abort ();
 extern "C" void exit(int);
 extern "C" int puts ( const char* str );
 extern "C" int putchar ( int character );
+#endif
 
 /* face forward for shading normals */
 inline Vec3fa faceforward( const Vec3fa& N, const Vec3fa& I, const Vec3fa& Ng ) {
@@ -96,10 +121,9 @@ extern "C" void progressStart();
 extern "C" bool progressMonitor(void* ptr, const double n);
 extern "C" void progressEnd();
 
-Vec2f  getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
-
-float  getTextureTexel1f(const Texture* texture, float u, float v);
-Vec3fa  getTextureTexel3f(const Texture* texture, float u, float v);
+SYCL_EXTERNAL Vec2f  getTextureCoordinatesSubdivMesh(void* mesh, const unsigned int primID, const float u, const float v);
+SYCL_EXTERNAL float  getTextureTexel1f(const Texture* texture, float u, float v);
+SYCL_EXTERNAL Vec3fa  getTextureTexel3f(const Texture* texture, float u, float v);
 
 enum ISPCInstancingMode { ISPC_INSTANCING_NONE, ISPC_INSTANCING_GEOMETRY, ISPC_INSTANCING_GROUP };
 

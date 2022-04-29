@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "taskschedulerinternal.h"
-#include "../math/math.h"
+#include "../math/emath.h"
 #include "../sys/sysinfo.h"
 #include <algorithm>
 

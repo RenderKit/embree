@@ -5,9 +5,16 @@
 
 namespace embree {
 
+enum UserGeometryType
+{
+  USER_GEOMETRY_INSTANCE = 0,
+  USER_GEOMETRY_SPHERE = 1
+};
+
 struct Sphere
 {
   ALIGNED_STRUCT_(16)
+  UserGeometryType type;
   Vec3fa p;                      //!< position of the sphere
   float r;                      //!< radius of the sphere
   RTCGeometry geometry;
@@ -17,6 +24,7 @@ struct Sphere
 struct Instance
 {
   ALIGNED_STRUCT_(16)
+  UserGeometryType type;
   RTCGeometry geometry;
   RTCScene object;
   int userID;
@@ -43,6 +51,15 @@ struct TutorialData
   Vec3fa colors[5][4];
 };
 
+#if __SYCL_COMPILER_VERSION >= 20210801
+}
+namespace sycl {
+  template<> struct is_device_copyable<embree::TutorialData> : std::true_type {};
+  template<> struct is_device_copyable<const embree::TutorialData> : std::true_type {};
+}
+namespace embree {
+#endif
+
 inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene  = nullptr;
@@ -65,9 +82,9 @@ inline void TutorialData_Destructor(TutorialData* This)
   rtcReleaseScene (This->g_scene1); This->g_scene1 = nullptr;
   rtcReleaseScene (This->g_scene2); This->g_scene2 = nullptr;
   rtcReleaseDevice(g_device); g_device = nullptr;
-  alignedFree(This->g_spheres); This->g_spheres = nullptr;
-  alignedFree(This->g_sphere0); This->g_sphere0 = nullptr;
-  alignedFree(This->g_sphere1); This->g_sphere1 = nullptr;
+  alignedUSMFree(This->g_spheres); This->g_spheres = nullptr;
+  alignedUSMFree(This->g_sphere0); This->g_sphere0 = nullptr;
+  alignedUSMFree(This->g_sphere1); This->g_sphere1 = nullptr;
 }
 
 } // namespace embree

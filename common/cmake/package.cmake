@@ -20,6 +20,18 @@ ELSE()
 ENDIF()
 
 ##############################################################
+# Install SYCL specific stuff
+##############################################################
+
+# SYCL library
+GET_FILENAME_COMPONENT(DPCPP_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
+IF (EMBREE_INSTALL_DEPENDENCIES)
+  FILE(GLOB SYCL_SO_FILES ${DPCPP_COMPILER_DIR}/../lib/*.so)
+  FILE(GLOB SYCL_SPV_FILES ${DPCPP_COMPILER_DIR}/../lib/*.spv)
+  INSTALL(FILES ${SYCL_SO_FILES} ${SYCL_SPV_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+ENDIF()
+
+##############################################################
 # Install MSVC runtime
 ##############################################################
 

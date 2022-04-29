@@ -5,6 +5,12 @@
 
 #include "curveNi.h"
 
+#include "roundline_intersector.h"
+#include "coneline_intersector.h"
+#include "curve_intersector_ribbon.h"
+#include "curve_intersector_oriented.h"
+#include "curve_intersector_sweep.h"
+
 namespace embree
 {
   namespace isa
@@ -20,9 +26,14 @@ namespace embree
       static __forceinline vbool<M> intersect(Ray& ray, const Primitive& prim, vfloat<M>& tNear_o)
       {
         const size_t N = prim.N;
+#if defined(__SYCL_DEVICE_ONLY__)
+        const Vec3fa offset = *prim.offset(N);
+        const float scale  = *prim.scale(N);
+#else
         const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
         const Vec3fa offset = Vec3fa(offset_scale);
         const Vec3fa scale = Vec3fa(shuffle<3,3,3,3>(offset_scale));
+#endif
         const Vec3fa org1 = (ray.org-offset)*scale;
         const Vec3fa dir1 = ray.dir*scale;
         
@@ -297,10 +308,14 @@ namespace embree
       static __forceinline vbool<M> intersect(RayK<K>& ray, const size_t k, const Primitive& prim, vfloat<M>& tNear_o)
       {
         const size_t N = prim.N;
+#if defined(__SYCL_DEVICE_ONLY__)
+        const Vec3fa offset = *prim.offset(N);
+        const float scale  = *prim.scale(N);
+#else
         const vfloat4 offset_scale = vfloat4::loadu(prim.offset(N));
         const Vec3fa offset = Vec3fa(offset_scale);
         const Vec3fa scale = Vec3fa(shuffle<3,3,3,3>(offset_scale));
-
+#endif
         const Vec3fa ray_org(ray.org.x[k],ray.org.y[k],ray.org.z[k]);
         const Vec3fa ray_dir(ray.dir.x[k],ray.dir.y[k],ray.dir.z[k]);
         const Vec3fa org1 = (ray_org-offset)*scale;
@@ -565,5 +580,69 @@ namespace embree
         return false;
       }
     };
+
+     __forceinline void convert_to_bezier(const Geometry::GType gtype,
+                                         Vec3ff& v0, Vec3ff& v1, Vec3ff& v2, Vec3ff& v3,
+                                         Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3)
+    {
+      const Geometry::GType basis = (Geometry::GType)(gtype & Geometry::GTY_BASIS_MASK);
+      const Geometry::GType stype = (Geometry::GType)(gtype & Geometry::GTY_SUBTYPE_MASK);
+      
+      if (basis == Geometry::GTY_BASIS_BSPLINE) {
+        BezierCurveT<Vec3ff> bezier;
+        convert(BSplineCurveT<Vec3ff>(v0,v1,v2,v3),bezier);
+        v0 = bezier.v0; v1 = bezier.v1; v2 = bezier.v2; v3 = bezier.v3;
+      }
+      else if (basis == Geometry::GTY_BASIS_HERMITE) {
+        BezierCurveT<Vec3ff> bezier;
+        convert(HermiteCurveT<Vec3ff>(v0,v1,v2,v3),bezier);
+        v0 = bezier.v0; v1 = bezier.v1; v2 = bezier.v2; v3 = bezier.v3;
+      }
+      else if (basis == Geometry::GTY_BASIS_CATMULL_ROM) {
+        BezierCurveT<Vec3ff> bezier;
+        convert(CatmullRomCurveT<Vec3ff>(v0,v1,v2,v3),bezier);
+        v0 = bezier.v0; v1 = bezier.v1; v2 = bezier.v2; v3 = bezier.v3;
+      }
+
+      if (stype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE)
+      {
+        if (basis == Geometry::GTY_BASIS_BSPLINE) {
+          BezierCurveT<Vec3fa> bezier;
+          convert(BSplineCurveT<Vec3fa>(n0,n1,n2,n3),bezier);
+          n0 = bezier.v0; n1 = bezier.v1; n2 = bezier.v2; n3 = bezier.v3;
+        }
+        else if (basis == Geometry::GTY_BASIS_HERMITE) {
+          BezierCurveT<Vec3fa> bezier;
+          convert(HermiteCurveT<Vec3fa>(n0,n1,n2,n3),bezier);
+          n0 = bezier.v0; n1 = bezier.v1; n2 = bezier.v2; n3 = bezier.v3;
+        }
+        else if (basis == Geometry::GTY_BASIS_CATMULL_ROM) {
+          BezierCurveT<Vec3fa> bezier;
+          convert(CatmullRomCurveT<Vec3fa>(n0,n1,n2,n3),bezier);
+          n0 = bezier.v0; n1 = bezier.v1; n2 = bezier.v2; n3 = bezier.v3;
+        }
+      }
+    }
+
+    __forceinline void convert_to_bezier(const Geometry::GType gtype, Vec3ff& v0, Vec3ff& v1, Vec3ff& v2, Vec3ff& v3)
+    {
+      const Geometry::GType basis = (Geometry::GType)(gtype & Geometry::GTY_BASIS_MASK);
+      
+      if (basis == Geometry::GTY_BASIS_BSPLINE) {
+        BezierCurveT<Vec3ff> bezier;
+        convert(BSplineCurveT<Vec3ff>(v0,v1,v2,v3),bezier);
+        v0 = bezier.v0; v1 = bezier.v1; v2 = bezier.v2; v3 = bezier.v3;
+      }
+      else if (basis == Geometry::GTY_BASIS_HERMITE) {
+        BezierCurveT<Vec3ff> bezier;
+        convert(HermiteCurveT<Vec3ff>(v0,v1,v2,v3),bezier);
+        v0 = bezier.v0; v1 = bezier.v1; v2 = bezier.v2; v3 = bezier.v3;
+      }
+      else if (basis == Geometry::GTY_BASIS_CATMULL_ROM) {
+        BezierCurveT<Vec3ff> bezier;
+        convert(CatmullRomCurveT<Vec3ff>(v0,v1,v2,v3),bezier);
+        v0 = bezier.v0; v1 = bezier.v1; v2 = bezier.v2; v3 = bezier.v3;
+      }
+    }
   }
 }

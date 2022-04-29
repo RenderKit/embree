@@ -20,7 +20,7 @@ namespace embree
     
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     if (!GetConsoleScreenBufferInfo(hStdOutput, &csbi)) {
-      printf("GetConsoleScreenBufferInfo failed: %d\n", GetLastError());
+      printf("GetConsoleScreenBufferInfo failed: %lu\n", GetLastError());
       return;
     }
     
@@ -30,12 +30,13 @@ namespace embree
     
     /* only pause if running in separate console window. */
     printf("\n\tPress any key to exit...\n");
-    int ch = getch();
+    int ch = _getch();
 #endif
   }
   
   Application::Application(int features)
     : rtcore("start_threads=1,set_affinity=1"), verbosity(0),
+      features((Features)features),
       log_delta(false),
       start_time(getSeconds()),
       last_time(start_time),

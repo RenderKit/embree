@@ -17,6 +17,9 @@ namespace embree
     __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context)
       : scene(scene), user(user_context) {}
 
+    __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context, RTCIntersectArguments* args)
+      : scene(scene), user(user_context), args(args) {}
+
     __forceinline bool hasContextFilter() const {
       return user->filter != nullptr;
     }
@@ -28,10 +31,11 @@ namespace embree
     __forceinline bool isIncoherent() const {
       return embree::isIncoherent(user->flags);
     }
-    
+
   public:
     Scene* scene;
     RTCIntersectContext* user;
+    RTCIntersectArguments* args = nullptr;
   };
 
   template<int M, typename Geometry>
@@ -57,6 +61,11 @@ namespace embree
     return v;
 #endif
   }
+
+  template<typename Geometry>
+    __forceinline Vec3ff enlargeRadiusToMinWidth(const IntersectContext* context, const Geometry* geom, const Vec3fa& ray_org, const Vec4f& v) {
+    return enlargeRadiusToMinWidth(context,geom,ray_org,Vec3ff(v.x,v.y,v.z,v.w));
+  }
   
   enum PointQueryType
   {
@@ -66,7 +75,7 @@ namespace embree
   };
 
   typedef bool (*PointQueryFunction)(struct RTCPointQueryFunctionArguments* args);
-  
+
   struct PointQueryContext
   {
   public:
@@ -78,6 +87,7 @@ namespace embree
                                     float similarityScale,
                                     void* userPtr)
       : scene(scene)
+      , tstate(nullptr)
       , query_ws(query_ws)
       , query_type(query_type)
       , func(func)
@@ -88,16 +98,24 @@ namespace embree
       , geomID(RTC_INVALID_GEOMETRY_ID)
       , query_radius(query_ws->radius)
     { 
+      update();
+    }
+
+  public:
+    __forceinline void update()
+    {
       if (query_type == POINT_QUERY_TYPE_AABB) {
         assert(similarityScale == 0.f);
         updateAABB();
+      }
+      else{
+        query_radius = Vec3fa(query_ws->radius * similarityScale);
       }
       if (userContext->instStackSize == 0) {
         assert(similarityScale == 1.f);
       }
     }
 
-  public:
     __forceinline void updateAABB() 
     {
       if (likely(query_ws->radius == (float)inf || userContext->instStackSize == 0)) {
@@ -113,12 +131,13 @@ namespace embree
 
 public:
     Scene* scene;
+    void* tstate;
 
     PointQuery* query_ws; // the original world space point query 
     PointQueryType query_type;
     PointQueryFunction func;
     RTCPointQueryContext* userContext;
-    const float similarityScale;
+    float similarityScale;
 
     void* userPtr;
 

@@ -76,7 +76,6 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_builder_sah_spatial.cpp
   bvh/bvh_builder_sah_mb.cpp
   bvh/bvh_builder_twolevel.cpp
-
   bvh/bvh_intersector1_bvh4.cpp
   )
 
@@ -93,7 +92,6 @@ ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
-
   bvh/bvh_intersector_hybrid4_bvh4.cpp
   bvh/bvh_intersector_stream_bvh4.cpp
   bvh/bvh_intersector_stream_filters.cpp)
@@ -228,9 +226,29 @@ MACRO (CheckGlobals library)
     ADD_CUSTOM_TARGET(${library}_check_globals ALL COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:${library}> -P "${PROJECT_SOURCE_DIR}/common/cmake/check_globals.cmake" DEPENDS ${library})
   ENDIF()
 ENDMACRO()
-
+ 
 DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})
 ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
+
+IF (EMBREE_DPCPP_SUPPORT)
+  
+  ADD_SUBDIRECTORY(rthwif)
+
+  ADD_LIBRARY(embree_sycl STATIC
+    common/rtcore_sycl.cpp
+    rthwif/rthwif_embree.cpp
+    rthwif/rthwif_production.cpp)
+  
+  SET_TARGET_PROPERTIES(embree_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
+  TARGET_LINK_LIBRARIES(embree_sycl PRIVATE tasking)
+
+  IF (EMBREE_STATIC_LIB)
+    INSTALL(TARGETS embree_sycl EXPORT embree_sycl-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+    INSTALL(EXPORT embree_sycl-targets DESTINATION ${EMBREE_CMAKEEXPORT_DIR} COMPONENT devel)
+  ENDIF()
+
+ENDIF()
+
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_FLAGS "${FLAGS_LOWEST}")
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_DEFINITIONS "EMBREE_LOWEST_ISA")
 SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
@@ -305,7 +323,13 @@ IF (EMBREE_ISA_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
   ENDIF()
 ENDIF()
 
-TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)
+IF (EMBREE_DPCPP_SUPPORT)
+  TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking rthwif embree_sycl -lsycl)
+ELSE()
+  TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)
+ENDIF()
+
+#TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking ${CMAKE_LINK_FLAGS_SYCL})  # FIXME: enable this line
 SET_TARGET_PROPERTIES(embree PROPERTIES OUTPUT_NAME ${EMBREE_LIBRARY_NAME})
 target_include_directories(embree PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>

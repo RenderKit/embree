@@ -25,6 +25,13 @@ namespace embree
 #endif
 
 /*! Macros used in the rtcore API implementation */
+#if 0
+#  define RTC_CATCH_BEGIN
+#  define RTC_CATCH_END(device)
+#  define RTC_CATCH_END2(scene)
+#  define RTC_CATCH_END2_FALSE(scene) return false;
+#else
+  
 #define RTC_CATCH_BEGIN try {
   
 #define RTC_CATCH_END(device)                                                \
@@ -40,7 +47,7 @@ namespace embree
   
 #define RTC_CATCH_END2(scene)                                                \
   } catch (std::bad_alloc&) {                                                   \
-    Device* device = scene ? scene->device : nullptr;                           \
+    Device* device = scene ? scene->device : nullptr;		\
     Device::process_error(device,RTC_ERROR_OUT_OF_MEMORY,"out of memory");      \
   } catch (rtcore_error& e) {                                                   \
     Device* device = scene ? scene->device : nullptr;                           \
@@ -72,6 +79,8 @@ namespace embree
     return false;                                                               \
   }
 
+#endif
+  
 #define RTC_VERIFY_HANDLE(handle)                               \
   if (handle == nullptr) {                                         \
     throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"invalid argument"); \

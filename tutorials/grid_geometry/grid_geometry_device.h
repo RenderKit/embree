@@ -15,10 +15,12 @@ struct GridMesh
   Vec3fa* normals;
 };
 
+
 struct TutorialData
 {
   /* scene data */
   RTCScene g_scene;
+
   GridMesh gmesh;
 };
 
@@ -34,7 +36,7 @@ void TutorialData_Constructor(TutorialData* This)
 
 void TutorialData_Destructor(TutorialData* This)
 {
-  alignedFree(This->gmesh.normals);
+  alignedUSMFree(This->gmesh.normals);
   rtcReleaseGeometry(This->gmesh.geom);
   rtcReleaseGeometry(This->gmesh.geomNormals);
   rtcReleaseScene (This->g_scene); This->g_scene = nullptr;

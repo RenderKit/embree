@@ -1,0 +1,3 @@
+-i spheres.obj
+-ambientlight 1 0 0
+-vp 0 2 -8 -vi 0.8 -0.2 1 -vu 0 1 0 -fov 45 

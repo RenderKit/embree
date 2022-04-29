@@ -201,7 +201,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)
 {
-  LazyGeometry* instance = (LazyGeometry*) alignedMalloc(sizeof(LazyGeometry),16);
+  LazyGeometry* instance = (LazyGeometry*) alignedUSMMalloc(sizeof(LazyGeometry),16);
   instance->state = LAZY_INVALID;
   instance->object = nullptr;
   instance->userID = userID;
@@ -211,8 +211,8 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
-  rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
+  rtcSetGeometryIntersectFunction(instance->geometry,(RTCIntersectFunctionN)instanceIntersectFuncN);
+  rtcSetGeometryOccludedFunction (instance->geometry,(RTCOccludedFunctionN)instanceOccludedFuncN);
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);

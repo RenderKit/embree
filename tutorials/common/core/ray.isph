@@ -85,7 +85,7 @@ inline Ray make_Ray(const Vec3f org,
   ray.dir   = dir;  
   ray.time  = time;
   ray.tfar  = tfar;
-  ray.mask  = -1;
+  ray.mask  = mask;
   ray.geomID = geomID;
   ray.primID = primID;
   ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
@@ -107,7 +107,7 @@ inline void init_Ray(Ray &ray,
   ray.dir   = dir;
   ray.time  = time;
   ray.tfar  = tfar;
-  ray.mask  = -1;
+  ray.mask  = mask;
   ray.geomID = geomID;
   ray.primID = primID;
   ray.instID[0] = RTC_INVALID_GEOMETRY_ID;
@@ -122,6 +122,7 @@ struct IntersectContext
 {
   RTCIntersectContext context;
   void* userRayExt;               //!< can be used to pass extended ray data to callbacks
+  void* tutorialData;
 };
 
 inline void InitIntersectionContext(uniform IntersectContext* uniform context)
