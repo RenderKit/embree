@@ -585,9 +585,11 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
 
   uint32_t bvh_id = 0;
 #if defined(EMBREE_DPCPP_MBLUR)
-  QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
-  float time = clamp(ray.time(),0.0f,1.0f);
-  bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
+  if(args->feature_mask & RTC_FEATURE_MOTION_BLUR) {
+    QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
+    float time = clamp(ray.time(),0.0f,1.0f);
+    bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
+  }
 #endif
   
   rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
