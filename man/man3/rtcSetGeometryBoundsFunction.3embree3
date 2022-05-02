@@ -14,7 +14,7 @@ rtcSetGeometryBoundsFunction \- sets a callback to query the
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 struct RTCBoundsFunctionArguments
 {

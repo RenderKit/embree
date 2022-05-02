@@ -260,8 +260,8 @@ parameters that can be configured in CMake:
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
   default). Further multiple static libraries are generated for the
-  different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
-  `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512.a`). You have
+  different ISAs selected (e.g. `embree4.a`, `embree4_sse42.a`,
+  `embree4_avx.a`, `embree4_avx2.a`, `embree4_avx512.a`). You have
   to link these libraries in exactly this order of increasing ISA.
 
 + `EMBREE_API_NAMESPACE`: Specifies a namespace name to put all Embree
@@ -269,7 +269,7 @@ parameters that can be configured in CMake:
   exported.
 
 + `EMBREE_LIBRARY_NAME`: Specifies the name of the Embree library file
-  created. By default the name embree3 is used.
+  created. By default the name embree4 is used.
 
 + `EMBREE_IGNORE_CMAKE_CXX_FLAGS`: When enabled, Embree ignores
   default CMAKE_CXX_FLAGS. This option is turned ON by default.

@@ -13,7 +13,7 @@ rtcGetGeometryPreviousHalfEdge \- returns the previous half edge
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 unsigned int rtcGetGeometryPreviousHalfEdge(
   RTCGeometry geometry,

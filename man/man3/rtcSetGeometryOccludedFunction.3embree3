@@ -14,7 +14,7 @@ rtcSetGeometryOccludedFunction \- sets the callback function to
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 struct RTCOccludedFunctionNArguments
 {

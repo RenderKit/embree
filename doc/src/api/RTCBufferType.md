@@ -6,7 +6,7 @@
 
 #### SYNOPSIS
 
-    #include <embree3/rtcore_ray.h>
+    #include <embree4/rtcore_ray.h>
 
     enum RTCBufferType
     {

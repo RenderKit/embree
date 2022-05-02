@@ -13,7 +13,7 @@ rtcFilterIntersection \- invokes the intersection filter function
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcFilterIntersection(
   const struct RTCIntersectFunctionNArguments* args,

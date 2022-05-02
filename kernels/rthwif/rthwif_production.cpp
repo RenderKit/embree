@@ -5,7 +5,7 @@
 #include "../common/device.h"
 #include "../common/scene.h"
 #include "../common/context.h"
-#include "../../include/embree3/rtcore_ray.h"
+#include "../../include/embree4/rtcore_ray.h"
 
 #include "rthwif_production.h"
 #include "rthwif_internal.h"

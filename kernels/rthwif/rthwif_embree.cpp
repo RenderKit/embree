@@ -5,7 +5,7 @@
 #include "../common/device.h"
 #include "../common/scene.h"
 #include "../common/context.h"
-#include "../../include/embree3/rtcore.h"
+#include "../../include/embree4/rtcore.h"
 
 #include "../geometry/disc_intersector.h"
 #include "../geometry/sphere_intersector.h"

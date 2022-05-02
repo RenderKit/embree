@@ -13,7 +13,7 @@ rtcSetGeometryBuildQuality \- sets the build quality for the geometry
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetGeometryBuildQuality(
   RTCGeometry geometry,

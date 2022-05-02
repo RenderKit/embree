@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../../include/embree3/rtcore.h"
-#include "../../include/embree3/rtcore_ray.h"
+#include "../../include/embree4/rtcore.h"
+#include "../../include/embree4/rtcore_ray.h"
 
 namespace embree
 {

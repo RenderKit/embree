@@ -13,7 +13,7 @@ rtcJoinCommitScene \- commits the scene from multiple threads
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcJoinCommitScene(RTCScene scene);
 \f[R]

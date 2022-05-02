@@ -13,7 +13,7 @@ rtcOccluded4/8/16 \- finds any hits for a ray packet
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcOccluded4(
   const int* valid,

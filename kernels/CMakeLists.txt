@@ -370,7 +370,7 @@ INSTALL(TARGETS embree EXPORT embree-targets
 # export Embree targets
 INSTALL(EXPORT embree-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
 
-# installs libembree3.so link
+# installs libembree4.so link
 IF (NOT EMBREE_STATIC_LIB)
   INSTALL(TARGETS embree
     LIBRARY NAMELINK_ONLY DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT devel

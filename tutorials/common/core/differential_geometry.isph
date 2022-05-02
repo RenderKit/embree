@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../../../include/embree3/rtcore.isph"
+#include "../../../include/embree4/rtcore.isph"
 #include "../math/vec.isph"
 
 struct DifferentialGeometry

@@ -13,7 +13,7 @@ rtcAttachGeometry \- attaches a geometry to the scene
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 unsigned int rtcAttachGeometry(
   RTCScene scene,

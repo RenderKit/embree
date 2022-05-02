@@ -5,7 +5,7 @@
 #include "../common/math/linearspace.h"
 #include "../common/math/random_sampler.h"
 #include "../common/math/sampling.h"
-#include "../../include/embree3/rtcore.h"
+#include "../../include/embree4/rtcore.h"
 //#include "scene.h"
 
 namespace embree {

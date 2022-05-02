@@ -13,7 +13,7 @@ RTCRay \- single ray structure
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore_ray.h>
+#include <embree4/rtcore_ray.h>
 
 struct RTC_ALIGN(16) RTCRay
 {
@@ -60,7 +60,7 @@ The ray ID can be used to identify a ray inside a callback function,
 even if the order of rays inside a ray packet or stream has changed.
 The ray flags are reserved.
 .PP
-The \f[C]embree3/rtcore_ray.h\f[R] header additionally defines the same
+The \f[C]embree4/rtcore_ray.h\f[R] header additionally defines the same
 ray structure in structure of array (SOA) layout for API functions
 accepting ray packets of size 4 (\f[C]RTCRay4\f[R] type), size 8
 (\f[C]RTCRay8\f[R] type), and size 16 (\f[C]RTCRay16\f[R] type).

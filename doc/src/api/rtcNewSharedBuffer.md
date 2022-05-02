@@ -6,7 +6,7 @@
 
 #### SYNOPSIS
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCBuffer rtcNewSharedBuffer(
       RTCDevice device,

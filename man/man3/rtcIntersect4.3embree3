@@ -13,7 +13,7 @@ rtcIntersect4/8/16 \- finds the closest hits for a ray packet
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcIntersect4(
   const int* valid,

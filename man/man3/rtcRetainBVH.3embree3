@@ -13,7 +13,7 @@ rtcRetainBVH \- increments the BVH reference count
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcRetainBVH(RTCBVH bvh);
 \f[R]

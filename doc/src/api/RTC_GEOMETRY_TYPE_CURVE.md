@@ -49,7 +49,7 @@
 
 #### SYNOPSIS
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);

@@ -613,7 +613,7 @@ INCLUDE_DIRECTORIES(${PROJECT_BINARY_DIR})
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/rtcore_config.h.in"
-  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_config.h"
+  "${PROJECT_SOURCE_DIR}/include/embree4/rtcore_config.h"
 )
 
 CONFIGURE_FILE(

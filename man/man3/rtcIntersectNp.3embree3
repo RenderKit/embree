@@ -14,7 +14,7 @@ rtcIntersectNp \- finds the closest hits for a SOA ray stream of
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcIntersectNp(
   RTCScene scene,

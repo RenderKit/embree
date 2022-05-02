@@ -14,7 +14,7 @@ rtcSetNewGeometryBuffer \- creates and assigns a new data buffer to
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void* rtcSetNewGeometryBuffer(
   RTCGeometry geometry,

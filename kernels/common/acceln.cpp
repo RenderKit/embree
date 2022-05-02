@@ -3,7 +3,7 @@
 
 #include "acceln.h"
 #include "ray.h"
-#include "../../include/embree3/rtcore_ray.h"
+#include "../../include/embree4/rtcore_ray.h"
 #include "../../common/algorithms/parallel_for.h"
 
 namespace embree

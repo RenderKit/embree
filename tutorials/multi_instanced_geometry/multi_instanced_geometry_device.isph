@@ -5,7 +5,7 @@
 #include "../common/math/linearspace.isph"
 #include "../common/math/random_sampler.isph"
 #include "../common/math/sampling.isph"
-#include "../../include/embree3/rtcore.isph"
+#include "../../include/embree4/rtcore.isph"
 //#include "scene.isph"
 
 struct InstanceLevels

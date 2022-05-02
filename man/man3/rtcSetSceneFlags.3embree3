@@ -13,7 +13,7 @@ rtcSetSceneFlags \- sets the flags for the scene
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags flags);
 \f[R]

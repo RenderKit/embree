@@ -27,9 +27,9 @@ PANDOC := pandoc
 ### add version
 ########################################################################
 
-tmp/version: ../include/embree3/rtcore_config.h
+tmp/version: ../include/embree4/rtcore_config.h
 	sed -n 's/#define RTC_VERSION_STRING \"\(.*\)\".*/\1/p' $< > $@
-tmp/version_major: ../include/embree3/rtcore_config.h
+tmp/version_major: ../include/embree4/rtcore_config.h
 	sed -n 's/#define RTC_VERSION_MAJOR \([0-9]\)/\1/p' $< > $@
 
 replace_version = sed -e "s/<EMBREE_VERSION>/`cat tmp/version`/g" $< | sed -e "s/<EMBREE_VERSION_MAJOR>/`cat tmp/version_major`/g" > $@

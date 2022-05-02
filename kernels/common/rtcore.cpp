@@ -8,7 +8,7 @@
 #include "scene.h"
 #include "context.h"
 #include "../geometry/filter.h"
-#include "../../include/embree3/rtcore_ray.h"
+#include "../../include/embree4/rtcore_ray.h"
 using namespace embree;
 
 RTC_NAMESPACE_BEGIN;

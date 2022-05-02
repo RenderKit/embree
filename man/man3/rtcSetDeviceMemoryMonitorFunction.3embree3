@@ -14,7 +14,7 @@ rtcSetDeviceMemoryMonitorFunction \- registers a callback function
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 typedef bool (*RTCMemoryMonitorFunction)(
   void* userPtr,

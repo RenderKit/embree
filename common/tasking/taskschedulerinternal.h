@@ -12,7 +12,7 @@
 #include "../sys/ref.h"
 #include "../sys/atomic.h"
 #include "../math/range.h"
-#include "../../include/embree3/rtcore.h"
+#include "../../include/embree4/rtcore.h"
 
 #include <list>
 

@@ -13,7 +13,7 @@ rtcSetDeviceErrorFunction \- sets an error callback function for the device
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 typedef void (*RTCErrorFunction)(
   void* userPtr,

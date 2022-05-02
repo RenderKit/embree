@@ -15,7 +15,7 @@ rtcSetGeometryTransformQuaternion \- sets the transformation for a particular
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetGeometryTransformQuaternion(
   RTCGeometry geometry,

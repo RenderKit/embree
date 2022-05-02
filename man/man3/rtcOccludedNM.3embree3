@@ -14,7 +14,7 @@ rtcOccludedNM \- finds any hits for a stream of M ray packets of
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcOccludedNM(
   RTCScene scene,

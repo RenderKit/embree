@@ -14,7 +14,7 @@ rtcSetSceneProgressMonitorFunction \- registers a callback
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 typedef bool (*RTCProgressMonitorFunction)(
   void* ptr,

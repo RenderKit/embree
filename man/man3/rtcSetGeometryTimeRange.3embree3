@@ -13,7 +13,7 @@ rtcSetGeometryTimeRange \- sets the time range for a motion blur geometry
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetGeometryTimeRange(
   RTCGeometry geometry,

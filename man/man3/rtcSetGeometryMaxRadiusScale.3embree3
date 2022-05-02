@@ -13,7 +13,7 @@ rtcSetGeometryMaxRadiusScale \- assigns a maximal curve radius scale factor for 
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetGeometryMaxRadiusScale(RTCGeometry geometry, float maxRadiusScale);
 \f[R]

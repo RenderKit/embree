@@ -1,7 +1,7 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 RTC_NAMESPACE_USE
 
 #include <xmmintrin.h>

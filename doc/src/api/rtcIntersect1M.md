@@ -7,7 +7,7 @@
 
 #### SYNOPSIS
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcIntersect1M(
       RTCScene scene,

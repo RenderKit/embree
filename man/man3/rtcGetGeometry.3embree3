@@ -14,7 +14,7 @@ rtcGetGeometry \- returns the geometry bound to
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 RTCGeometry rtcGetGeometry(RTCScene scene, unsigned int geomID);
 \f[R]

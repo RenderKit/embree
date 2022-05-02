@@ -6,7 +6,7 @@
 #define SYCL_EXTERNAL
 
 /* include embree API */
-#include "../../include/embree3/rtcore.isph"
+#include "../../include/embree4/rtcore.isph"
 RTC_NAMESPACE_USE
 #include "../../kernels/config.h"
 

@@ -378,8 +378,8 @@ parameters that can be configured in CMake:
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
   default). Further multiple static libraries are generated for the
-  different ISAs selected (e.g. `embree3.a`, `embree3_sse42.a`,
-  `embree3_avx.a`, `embree3_avx2.a`, `embree3_avx512.a`). You have
+  different ISAs selected (e.g. `embree4.a`, `embree4_sse42.a`,
+  `embree4_avx.a`, `embree4_avx2.a`, `embree4_avx512.a`). You have
   to link these libraries in exactly this order of increasing ISA.
 
 + `EMBREE_API_NAMESPACE`: Specifies a namespace name to put all Embree
@@ -387,7 +387,7 @@ parameters that can be configured in CMake:
   exported.
 
 + `EMBREE_LIBRARY_NAME`: Specifies the name of the Embree library file
-  created. By default the name embree3 is used.
+  created. By default the name embree4 is used.
 
 + `EMBREE_IGNORE_CMAKE_CXX_FLAGS`: When enabled, Embree ignores
   default CMAKE_CXX_FLAGS. This option is turned ON by default.
@@ -1026,7 +1026,7 @@ rtcNewDevice
 
 #### SYNOPSIS
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCDevice rtcNewDevice(const char* config);
 
@@ -1134,7 +1134,7 @@ rtcRetainDevice
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcRetainDevice(RTCDevice device);
 
@@ -1166,7 +1166,7 @@ rtcReleaseDevice
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcReleaseDevice(RTCDevice device);
 
@@ -1201,7 +1201,7 @@ rtcGetDeviceProperty
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     ssize_t rtcGetDeviceProperty(
       RTCDevice device,
@@ -1335,7 +1335,7 @@ rtcGetDeviceError
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCError rtcGetDeviceError(RTCDevice device);
 
@@ -1393,7 +1393,7 @@ rtcSetDeviceErrorFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     typedef void (*RTCErrorFunction)(
       void* userPtr,
@@ -1447,7 +1447,7 @@ rtcSetDeviceMemoryMonitorFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     typedef bool (*RTCMemoryMonitorFunction)(
       void* userPtr,
@@ -1524,7 +1524,7 @@ rtcNewScene
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCScene rtcNewScene(RTCDevice device);
 
@@ -1555,7 +1555,7 @@ rtcGetSceneDevice
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCDevice rtcGetSceneDevice(RTCScene scene);
 
@@ -1586,7 +1586,7 @@ rtcRetainScene
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcRetainScene(RTCScene scene);
 
@@ -1618,7 +1618,7 @@ rtcReleaseScene
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcReleaseScene(RTCScene scene);
 
@@ -1653,7 +1653,7 @@ rtcAttachGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     unsigned int rtcAttachGeometry(
       RTCScene scene,
@@ -1705,7 +1705,7 @@ rtcAttachGeometryByID
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcAttachGeometryByID(
       RTCScene scene,
@@ -1754,7 +1754,7 @@ rtcDetachGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcDetachGeometry(RTCScene scene, unsigned int geomID);
 
@@ -1788,7 +1788,7 @@ rtcGetGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry rtcGetGeometry(RTCScene scene, unsigned int geomID);
 
@@ -1830,7 +1830,7 @@ rtcGetGeometryThreadSafe
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry rtcGetGeometryThreadSafe(RTCScene scene, unsigned int geomID);
 
@@ -1867,7 +1867,7 @@ rtcCommitScene
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcCommitScene(RTCScene scene);
 
@@ -1927,7 +1927,7 @@ rtcJoinCommitScene
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcJoinCommitScene(RTCScene scene);
 
@@ -2007,7 +2007,7 @@ rtcSetSceneProgressMonitorFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     typedef bool (*RTCProgressMonitorFunction)(
       void* ptr,
@@ -2069,7 +2069,7 @@ rtcSetSceneBuildQuality
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetSceneBuildQuality(
       RTCScene scene,
@@ -2119,7 +2119,7 @@ rtcSetSceneFlags
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetSceneFlags(RTCScene scene, enum RTCSceneFlags flags);
 
@@ -2169,7 +2169,7 @@ rtcGetSceneFlags
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     enum RTCSceneFlags rtcGetSceneFlags(RTCScene scene);
 
@@ -2202,7 +2202,7 @@ rtcGetSceneBounds
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCORE_ALIGN(16) RTCBounds
     {
@@ -2247,7 +2247,7 @@ rtcGetSceneLinearBounds
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCORE_ALIGN(16) RTCLinearBounds
     {
@@ -2294,7 +2294,7 @@ rtcNewGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     enum RTCGeometryType
     {
@@ -2433,7 +2433,7 @@ RTC\_GEOMETRY\_TYPE\_TRIANGLE
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry geometry =
       rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -2496,7 +2496,7 @@ RTC\_GEOMETRY\_TYPE\_QUAD
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry geometry =
       rtcNewGeometry(device, RTC_GEOMETRY_TYPE_QUAD);
@@ -2564,7 +2564,7 @@ RTC\_GEOMETRY\_TYPE\_GRID
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry geometry =
       rtcNewGeometry(device, RTC_GEOMETRY_TYPE_GRID);
@@ -2635,7 +2635,7 @@ RTC\_GEOMETRY\_TYPE\_SUBDIVISION
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry geometry =
       rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SUBDIVISION);
@@ -2854,7 +2854,7 @@ RTC\_GEOMETRY\_TYPE\_CURVE
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE);
@@ -3096,7 +3096,7 @@ RTC\_GEOMETRY\_TYPE\_POINT
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_DISC_POINT);
@@ -3165,7 +3165,7 @@ RTC\_GEOMETRY\_TYPE\_USER
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry geometry =
       rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
@@ -3233,7 +3233,7 @@ RTC\_GEOMETRY\_TYPE\_INSTANCE
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry geometry =
        rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
@@ -3304,7 +3304,7 @@ RTCCurveFlags
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
 enum RTCCurveFlags { RTC\_CURVE\_FLAG\_NEIGHBOR\_LEFT = (1 \<\< 0),
 RTC\_CURVE\_FLAG\_NEIGHBOR\_RIGHT = (1 \<\< 1) };
@@ -3347,7 +3347,7 @@ rtcRetainGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcRetainGeometry(RTCGeometry geometry);
 
@@ -3379,7 +3379,7 @@ rtcReleaseGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcReleaseGeometry(RTCGeometry geometry);
 
@@ -3410,7 +3410,7 @@ rtcCommitGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcCommitGeometry(RTCGeometry geometry);
 
@@ -3442,7 +3442,7 @@ rtcEnableGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcEnableGeometry(RTCGeometry geometry);
 
@@ -3475,7 +3475,7 @@ rtcDisableGeometry
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcDisableGeometry(RTCGeometry geometry);
 
@@ -3509,7 +3509,7 @@ rtcSetGeometryTimeStepCount
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryTimeStepCount(
       RTCGeometry geometry,
@@ -3560,7 +3560,7 @@ rtcSetGeometryTimeRange
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryTimeRange(
       RTCGeometry geometry,
@@ -3616,7 +3616,7 @@ rtcSetGeometryVertexAttributeCount
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryVertexAttributeCount(
       RTCGeometry geometry,
@@ -3655,7 +3655,7 @@ rtcSetGeometryMask
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryMask(
       RTCGeometry geometry,
@@ -3700,7 +3700,7 @@ rtcSetGeometryBuildQuality
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryBuildQuality(
       RTCGeometry geometry,
@@ -3751,7 +3751,7 @@ rtcSetGeometryBuffer
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryBuffer(
       RTCGeometry geometry,
@@ -3803,7 +3803,7 @@ rtcSetSharedGeometryBuffer
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetSharedGeometryBuffer(
       RTCGeometry geometry,
@@ -3869,7 +3869,7 @@ rtcSetNewGeometryBuffer
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void* rtcSetNewGeometryBuffer(
       RTCGeometry geometry,
@@ -3916,7 +3916,7 @@ RTCFormat
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore_ray.h>
+    #include <embree4/rtcore_ray.h>
 
     enum RTCFormat
     {
@@ -4001,7 +4001,7 @@ RTCBufferType
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore_ray.h>
+    #include <embree4/rtcore_ray.h>
 
     enum RTCBufferType
     {
@@ -4077,7 +4077,7 @@ rtcGetGeometryBufferData
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void* rtcGetGeometryBufferData(
       RTCGeometry geometry,
@@ -4114,7 +4114,7 @@ rtcUpdateGeometryBuffer
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcUpdateGeometryBuffer(
       RTCGeometry geometry,
@@ -4155,7 +4155,7 @@ rtcSetGeometryIntersectFilterFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCFilterFunctionNArguments
     {
@@ -4270,7 +4270,7 @@ rtcSetGeometryOccludedFilterFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryOccludedFilterFunction(
       RTCGeometry geometry,
@@ -4319,7 +4319,7 @@ rtcFilterIntersection
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcFilterIntersection(
       const struct RTCIntersectFunctionNArguments* args,
@@ -4357,7 +4357,7 @@ rtcFilterOcclusion
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcFilterOcclusion(
       const struct RTCOccludedFunctionNArguments* args,
@@ -4396,7 +4396,7 @@ rtcSetGeometryUserData
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryUserData(RTCGeometry geometry, void* userPtr);
 
@@ -4433,7 +4433,7 @@ rtcGetGeometryUserData
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void* rtcGetGeometryUserData(RTCGeometry geometry);
 
@@ -4464,7 +4464,7 @@ rtcSetGeometryUserPrimitiveCount
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryUserPrimitiveCount(
       RTCGeometry geometry,
@@ -4498,7 +4498,7 @@ rtcSetGeometryBoundsFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCBoundsFunctionArguments
     {
@@ -4568,7 +4568,7 @@ rtcSetGeometryIntersectFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCIntersectFunctionNArguments
     {
@@ -4680,7 +4680,7 @@ rtcSetGeometryOccludedFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCOccludedFunctionNArguments
     {
@@ -4784,7 +4784,7 @@ rtcSetGeometryPointQueryFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCPointQueryFunctionArguments
     {
@@ -4913,7 +4913,7 @@ rtcSetGeometryInstancedScene
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryInstancedScene(
       RTCGeometry geometry,
@@ -4947,7 +4947,7 @@ rtcSetGeometryTransform
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryTransform(
       RTCGeometry geometry,
@@ -4997,7 +4997,7 @@ rtcSetGeometryTransformQuaternion
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryTransformQuaternion(
       RTCGeometry geometry,
@@ -5052,7 +5052,7 @@ rtcGetGeometryTransform
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcGetGeometryTransform(
       RTCGeometry geometry,
@@ -5101,7 +5101,7 @@ rtcSetGeometryTessellationRate
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryTessellationRate(
       RTCGeometry geometry,
@@ -5139,7 +5139,7 @@ rtcSetGeometryTopologyCount
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryTopologyCount(
       RTCGeometry geometry,
@@ -5179,7 +5179,7 @@ rtcSetGeometrySubdivisionMode
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometrySubdivisionMode(
       RTCGeometry geometry,
@@ -5236,7 +5236,7 @@ rtcSetGeometryVertexAttributeTopology
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcSetGeometryVertexAttributeTopology(
       RTCGeometry geometry,
@@ -5284,7 +5284,7 @@ rtcSetGeometryDisplacementFunction
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCDisplacementFunctionNArguments
     {
@@ -5371,7 +5371,7 @@ rtcGetGeometryFirstHalfEdge
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     unsigned int rtcGetGeometryFirstHalfEdge(
       RTCGeometry geometry,
@@ -5420,7 +5420,7 @@ rtcGetGeometryFace
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     unsigned int rtcGetGeometryFace(
       RTCGeometry geometry,
@@ -5462,7 +5462,7 @@ rtcGetGeometryNextHalfEdge
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     unsigned int rtcGetGeometryNextHalfEdge(
       RTCGeometry geometry,
@@ -5503,7 +5503,7 @@ rtcGetGeometryPreviousHalfEdge
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     unsigned int rtcGetGeometryPreviousHalfEdge(
       RTCGeometry geometry,
@@ -5545,7 +5545,7 @@ rtcGetGeometryOppositeHalfEdge
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     unsigned int rtcGetGeometryOppositeHalfEdge(
       RTCGeometry geometry,
@@ -5592,7 +5592,7 @@ rtcInterpolate
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCInterpolateArguments
     {
@@ -5679,7 +5679,7 @@ rtcInterpolateN
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCInterpolateNArguments
     {
@@ -5738,7 +5738,7 @@ rtcNewBuffer
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCBuffer rtcNewBuffer(
       RTCDevice device,
@@ -5782,7 +5782,7 @@ rtcNewSharedBuffer
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCBuffer rtcNewSharedBuffer(
       RTCDevice device,
@@ -5835,7 +5835,7 @@ rtcRetainBuffer
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcRetainBuffer(RTCBuffer buffer);
 
@@ -5867,7 +5867,7 @@ rtcReleaseBuffer
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcReleaseBuffer(RTCBuffer buffer);
 
@@ -5898,7 +5898,7 @@ rtcGetBufferData
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void* rtcGetBufferData(RTCBuffer buffer);
 
@@ -5927,7 +5927,7 @@ RTCRay
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore_ray.h>
+    #include <embree4/rtcore_ray.h>
 
     struct RTC_ALIGN(16) RTCRay
     {
@@ -5969,7 +5969,7 @@ details). The ray ID can be used to identify a ray inside a callback
 function, even if the order of rays inside a ray packet or stream has
 changed. The ray flags are reserved.
 
-The `embree3/rtcore_ray.h` header additionally defines the same ray
+The `embree4/rtcore_ray.h` header additionally defines the same ray
 structure in structure of array (SOA) layout for API functions
 accepting ray packets of size 4 (`RTCRay4` type), size 8 (`RTCRay8`
 type), and size 16 (`RTCRay16` type). The header additionally defines
@@ -5993,7 +5993,7 @@ RTCHit
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCHit
     {
@@ -6020,7 +6020,7 @@ and instance ID stack (`instID` member) of the hit. The parametric
 intersection distance is not stored inside the hit, but stored inside
 the `tfar` member of the ray.
 
-The `embree3/rtcore_ray.h` header additionally defines the same hit
+The `embree4/rtcore_ray.h` header additionally defines the same hit
 structure in structure of array (SOA) layout for hit packets of size 4
 (`RTCHit4` type), size 8 (`RTCHit8` type), and size 16 (`RTCHit16`
 type). The header additionally defines an `RTCHitNt` template for hit
@@ -6043,7 +6043,7 @@ RTCRayHit
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore_ray.h>
+    #include <embree4/rtcore_ray.h>
 
     struct RTCORE_ALIGN(16) RTCRayHit
     {
@@ -6057,7 +6057,7 @@ The `RTCRayHit` structure is used as input for the `rtcIntersect`-type
 functions and stores the ray to intersect and some hit fields that hold
 the intersection result afterwards.
 
-The `embree3/rtcore_ray.h` header additionally defines the same ray/hit
+The `embree4/rtcore_ray.h` header additionally defines the same ray/hit
 structure in structure of array (SOA) layout for API functions
 accepting ray packets of size 4 (`RTCRayHit4` type), size 8
 (`RTCRayHit8` type), and size 16 (`RTCRayHit16` type). The header
@@ -6081,7 +6081,7 @@ RTCRayN
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore_ray.h>
+    #include <embree4/rtcore_ray.h>
 
     struct RTCRayN;
 
@@ -6134,7 +6134,7 @@ RTCHitN
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct HitN;
 
@@ -6183,7 +6183,7 @@ RTCRayHitN
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore_ray.h>
+    #include <embree4/rtcore_ray.h>
 
     struct RTCRayHitN;
 
@@ -6222,7 +6222,7 @@ rtcInitIntersectContext
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     enum RTCIntersectContextFlags
     {
@@ -6324,7 +6324,7 @@ rtcIntersect1
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcIntersect1(
       RTCScene scene,
@@ -6416,7 +6416,7 @@ rtcOccluded1
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcOccluded1(
       RTCScene scene,
@@ -6483,7 +6483,7 @@ rtcIntersect4/8/16
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcIntersect4(
       const int* valid,
@@ -6569,7 +6569,7 @@ rtcOccluded4/8/16
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcOccluded4(
       const int* valid,
@@ -6655,7 +6655,7 @@ rtcIntersect1M
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcIntersect1M(
       RTCScene scene,
@@ -6715,7 +6715,7 @@ rtcOccluded1M
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcOccluded1M(
       RTCScene scene,
@@ -6776,7 +6776,7 @@ rtcIntersect1Mp
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcIntersect1Mp(
       RTCScene scene,
@@ -6835,7 +6835,7 @@ rtcOccluded1Mp
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcOccluded1M(
       RTCScene scene,
@@ -6894,7 +6894,7 @@ rtcIntersectNM
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcIntersectNM(
       RTCScene scene,
@@ -6957,7 +6957,7 @@ rtcOccludedNM
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcOccludedNM(
       RTCScene scene,
@@ -7020,7 +7020,7 @@ rtcIntersectNp
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcIntersectNp(
       RTCScene scene,
@@ -7083,7 +7083,7 @@ rtcOccludedNp
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcOccludedNp(
       RTCScene scene,
@@ -7147,7 +7147,7 @@ rtcInitPointQueryContext
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTC_ALIGN(16) RTCPointQueryContext
     {
@@ -7208,7 +7208,7 @@ rtcPointQuery
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTC_ALIGN(16) RTCPointQuery
     {
@@ -7312,7 +7312,7 @@ rtcCollide
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCCollision {
       unsigned int geomID0, primID0;
@@ -7372,7 +7372,7 @@ rtcNewBVH
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCBVH rtcNewBVH(RTCDevice device);
 
@@ -7407,7 +7407,7 @@ rtcRetainBVH
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcRetainBVH(RTCBVH bvh);
 
@@ -7439,7 +7439,7 @@ rtcReleaseBVH
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     void rtcReleaseBVH(RTCBVH bvh);
 
@@ -7469,7 +7469,7 @@ rtcBuildBVH
 
 #### SYNOPSIS {#synopsis}
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTC_ALIGN(32) RTCBuildPrimitive
     {
@@ -8340,7 +8340,7 @@ This tutorial demonstrates how to use the `FIND_PACKAGE` CMake feature
 to use an installed Embree. Under Linux and macOS the tutorial finds
 the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable must be set to the following folder of the Embree
-installation: `C:\Program Files\Intel\Embree3`.
+installation: `C:\Program Files\Intel\Embree4`.
 
 [Source Code](https://github.com/embree/embree/blob/master/tutorials/find_embree/CMakeLists.txt)
 

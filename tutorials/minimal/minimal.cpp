@@ -1,7 +1,7 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 #include <stdio.h>
 #include <math.h>
 #include <limits>
@@ -28,7 +28,7 @@
  *       -o minimal \
  *       minimal.c \
  *       -L<PATH>/<TO>/<EMBREE>/lib \
- *       -lembree3 
+ *       -lembree4 
  *
  * You should be able to compile this using a C or C++ compiler.
  */

@@ -13,7 +13,7 @@ rtcNewSharedBuffer \- creates a new shared data buffer
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 RTCBuffer rtcNewSharedBuffer(
   RTCDevice device,

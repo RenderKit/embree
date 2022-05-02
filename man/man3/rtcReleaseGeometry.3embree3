@@ -13,7 +13,7 @@ rtcReleaseGeometry \- decrements the geometry reference count
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcReleaseGeometry(RTCGeometry geometry);
 \f[R]

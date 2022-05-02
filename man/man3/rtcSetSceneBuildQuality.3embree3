@@ -14,7 +14,7 @@ rtcSetSceneBuildQuality \- sets the build quality for
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetSceneBuildQuality(
   RTCScene scene,

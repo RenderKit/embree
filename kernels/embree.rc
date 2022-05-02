@@ -1,7 +1,7 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../include/embree3/rtcore_config.h"
+#include "../include/embree4/rtcore_config.h"
 
 1 VERSIONINFO
  FILEVERSION RTC_VERSION_MAJOR,RTC_VERSION_MINOR,RTC_VERSION_PATCH,0

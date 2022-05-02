@@ -6,7 +6,7 @@
 
 #### SYNOPSIS
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     RTCGeometry geometry =
       rtcNewGeometry(device, RTC_GEOMETRY_TYPE_QUAD);

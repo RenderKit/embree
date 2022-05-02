@@ -13,7 +13,7 @@ rtcGetGeometryFirstHalfEdge \- returns the first half edge of a face
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 unsigned int rtcGetGeometryFirstHalfEdge(
   RTCGeometry geometry,

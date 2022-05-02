@@ -14,7 +14,7 @@ rtcOccluded1Mp \- find any hits for a stream of M pointers to
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcOccluded1M(
   RTCScene scene,

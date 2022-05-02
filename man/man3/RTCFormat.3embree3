@@ -13,7 +13,7 @@ RTCFormat \- specifies format of data in buffers
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore_ray.h>
+#include <embree4/rtcore_ray.h>
 
 enum RTCFormat
 {

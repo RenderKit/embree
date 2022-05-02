@@ -4,7 +4,7 @@
 #pragma once
 
 #include "lights.h"
-#include "../../../include/embree3/rtcore.h"
+#include "../../../include/embree4/rtcore.h"
 RTC_NAMESPACE_USE
 #include "../math/random_sampler.h"
 

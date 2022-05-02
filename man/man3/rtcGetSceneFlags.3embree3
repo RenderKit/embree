@@ -13,7 +13,7 @@ rtcGetSceneFlags \- returns the flags of the scene
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 enum RTCSceneFlags rtcGetSceneFlags(RTCScene scene);
 \f[R]

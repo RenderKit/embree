@@ -14,7 +14,7 @@ rtcSetGeometryTimeStepCount \- sets the number of time steps of the
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetGeometryTimeStepCount(
   RTCGeometry geometry,

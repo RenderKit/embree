@@ -13,7 +13,7 @@ rtcGetGeometryOppositeHalfEdge \- returns the opposite half edge
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 unsigned int rtcGetGeometryOppositeHalfEdge(
   RTCGeometry geometry,

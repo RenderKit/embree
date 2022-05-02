@@ -13,7 +13,7 @@ RTCCurveFlags \- per segment flags for curve geometry
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 \f[R]
 .fi
 .PP

@@ -14,7 +14,7 @@ rtcInitPointQueryContext \- initializes the context information (e.g.
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 struct RTC_ALIGN(16) RTCPointQueryContext
 {

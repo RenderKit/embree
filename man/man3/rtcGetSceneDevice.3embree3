@@ -13,7 +13,7 @@ rtcGetSceneDevice \- returns the device the scene got created in
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 RTCDevice rtcGetSceneDevice(RTCScene scene);
 \f[R]

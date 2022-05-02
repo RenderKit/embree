@@ -13,7 +13,7 @@ rtcGetDeviceError \- returns the error code of the device
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 RTCError rtcGetDeviceError(RTCDevice device);
 \f[R]

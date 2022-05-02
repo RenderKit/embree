@@ -13,7 +13,7 @@ rtcReleaseDevice \- decrements the device reference count
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcReleaseDevice(RTCDevice device);
 \f[R]

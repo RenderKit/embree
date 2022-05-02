@@ -20,7 +20,7 @@ if [ ${PACKAGE: -4} == ".pkg" ]; then
   fi
 fi
 
-primary_bundle_id="com.intel.embree3"
+primary_bundle_id="com.intel.embree4"
 user=$MACOS_NOTARIZATION_USER
 password=$MACOS_NOTARIZATION_PASSWORD
 

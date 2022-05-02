@@ -13,7 +13,7 @@ rtcBuildBVH \- builds a BVH
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 struct RTC_ALIGN(32) RTCBuildPrimitive
 {

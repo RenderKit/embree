@@ -46,7 +46,7 @@ ENDIF()
 # Install Headers
 ##############################################################
 
-INSTALL(DIRECTORY include/embree3 DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" COMPONENT devel)
+INSTALL(DIRECTORY include/embree4 DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" COMPONENT devel)
 IF (NOT WIN32)
   INSTALL(DIRECTORY man/man3 DESTINATION "${CMAKE_INSTALL_MANDIR}" COMPONENT devel)
 ENDIF()

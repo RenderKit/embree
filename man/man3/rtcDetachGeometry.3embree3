@@ -13,7 +13,7 @@ rtcDetachGeometry \- detaches a geometry from the scene
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcDetachGeometry(RTCScene scene, unsigned int geomID);
 \f[R]

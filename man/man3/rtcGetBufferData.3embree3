@@ -13,7 +13,7 @@ rtcGetBufferData \- gets a pointer to the buffer data
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void* rtcGetBufferData(RTCBuffer buffer);
 \f[R]

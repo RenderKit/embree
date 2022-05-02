@@ -13,7 +13,7 @@ rtcNewBVH \- creates a new BVH object
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 RTCBVH rtcNewBVH(RTCDevice device);
 \f[R]

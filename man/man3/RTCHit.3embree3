@@ -13,7 +13,7 @@ RTCHit \- single hit structure
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 struct RTCHit
 {
@@ -43,7 +43,7 @@ member), geometry ID (\f[C]geomID\f[R] member), and instance ID stack
 The parametric intersection distance is not stored inside the hit, but
 stored inside the \f[C]tfar\f[R] member of the ray.
 .PP
-The \f[C]embree3/rtcore_ray.h\f[R] header additionally defines the same
+The \f[C]embree4/rtcore_ray.h\f[R] header additionally defines the same
 hit structure in structure of array (SOA) layout for hit packets of size
 4 (\f[C]RTCHit4\f[R] type), size 8 (\f[C]RTCHit8\f[R] type), and size 16
 (\f[C]RTCHit16\f[R] type).

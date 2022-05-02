@@ -14,7 +14,7 @@ rtcSetSharedGeometryBuffer \- assigns a view of a shared data buffer
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetSharedGeometryBuffer(
   RTCGeometry geometry,

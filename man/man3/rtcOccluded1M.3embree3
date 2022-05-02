@@ -13,7 +13,7 @@ rtcOccluded1M \- finds any hits for a stream of M single rays
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcOccluded1M(
   RTCScene scene,

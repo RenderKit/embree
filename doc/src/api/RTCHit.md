@@ -6,7 +6,7 @@
 
 #### SYNOPSIS
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     struct RTCHit
     {
@@ -33,7 +33,7 @@ and instance ID stack (`instID` member) of the hit.
 The parametric intersection distance is not stored inside the hit, but stored inside the `tfar`
 member of the ray.
 
-The `embree3/rtcore_ray.h` header additionally defines the same hit
+The `embree4/rtcore_ray.h` header additionally defines the same hit
 structure in structure of array (SOA) layout for hit packets of size 4
 (`RTCHit4` type), size 8 (`RTCHit8` type), and size 16 (`RTCHit16`
 type). The header additionally defines an `RTCHitNt` template for

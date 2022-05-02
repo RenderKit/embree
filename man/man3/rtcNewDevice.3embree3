@@ -13,7 +13,7 @@ rtcNewDevice \- creates a new device
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 RTCDevice rtcNewDevice(const char* config);
 \f[R]

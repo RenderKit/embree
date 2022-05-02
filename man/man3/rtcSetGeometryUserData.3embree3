@@ -14,7 +14,7 @@ rtcSetGeometryUserData \- sets the user\-defined data pointer of the
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 void rtcSetGeometryUserData(RTCGeometry geometry, void* userPtr);
 \f[R]

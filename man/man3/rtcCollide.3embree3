@@ -13,7 +13,7 @@ rtcCollide \- intersects one BVH with another
 .IP
 .nf
 \f[C]
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 struct RTCCollision {
   unsigned int geomID0, primID0;

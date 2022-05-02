@@ -5,7 +5,7 @@
 
 #include <cstdio>
 
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 #include <cstdio>
 #include <limits>
 

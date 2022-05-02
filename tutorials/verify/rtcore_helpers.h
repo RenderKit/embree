@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../../kernels/common/default.h"
-#include "../../include/embree3/rtcore.h"
+#include "../../include/embree4/rtcore.h"
 RTC_NAMESPACE_USE
 #include "../common/math/random_sampler.h"
 

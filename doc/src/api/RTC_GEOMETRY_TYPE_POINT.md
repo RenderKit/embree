@@ -13,7 +13,7 @@
 
 #### SYNOPSIS
 
-    #include <embree3/rtcore.h>
+    #include <embree4/rtcore.h>
 
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_SPHERE_POINT);
     rtcNewGeometry(device, RTC_GEOMETRY_TYPE_DISC_POINT);
