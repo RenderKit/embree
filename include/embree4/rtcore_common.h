@@ -209,16 +209,14 @@ struct RTCIntersectArguments
 };
 
 /* Initializes an intersection arguments. */
-#if defined(__cplusplus)
-RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments& args)
+RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* args)
 {
-  args.filter = nullptr;
+  args->filter = NULL;
   
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  args.intersect = nullptr;
+  args->intersect = NULL;
 #endif
 }
-#endif
 
 /* Intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext

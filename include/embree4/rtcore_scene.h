@@ -99,25 +99,21 @@ RTC_API bool rtcPointQuery16(const int* valid, RTCScene scene, struct RTCPointQu
 RTC_SYCL_API void rtcIntersect1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit);
 
 /* Like rtcIntersect1 but with direct support for callbacks */
-#if defined(__cplusplus)
 #if defined(__SYCL_DEVICE_ONLY__)
-RTC_SYCL_API void rtcIntersectEx1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit, struct RTCIntersectArguments& args);
+RTC_SYCL_API void rtcIntersectEx1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit, struct RTCIntersectArguments* args);
 #else
-inline void rtcIntersectEx1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit, struct RTCIntersectArguments& args)
+inline void rtcIntersectEx1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit, struct RTCIntersectArguments* args)
 {
-  context->filter = args.filter;
+  context->filter = args->filter;
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  context->intersect = args.intersect;
+  context->intersect = args->intersect;
 #endif
   rtcIntersect1(scene,context,rayhit);
 }
 #endif
-#endif
 
 /* Forwards ray intersection query inside user geometry callback. */
-#if defined(__cplusplus)
-RTC_SYCL_API void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* args, RTCScene scene, struct RTCRay* ray);
-#endif
+RTC_SYCL_API void rtcForwardIntersect1(const struct RTCIntersectFunctionNArguments* args, RTCScene scene, struct RTCRay* ray);
 
 /* Intersects a packet of 4 rays with the scene. */
 RTC_API void rtcIntersect4(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRayHit4* rayhit);
@@ -144,25 +140,21 @@ RTC_API void rtcIntersectNp(RTCScene scene, struct RTCIntersectContext* context,
 RTC_SYCL_API void rtcOccluded1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray);
 
 /* Like rtcOccluded1 but with direct support for callbacks */
-#if defined(__cplusplus)
 #if defined(__SYCL_DEVICE_ONLY__)
-RTC_SYCL_API void rtcOccludedEx1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray, struct RTCIntersectArguments& args);
+RTC_SYCL_API void rtcOccludedEx1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray, struct RTCIntersectArguments* args);
 #else
-inline void rtcOccludedEx1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray, struct RTCIntersectArguments& args)
+inline void rtcOccludedEx1(RTCScene scene, struct RTCIntersectContext* context, struct RTCRay* ray, struct RTCIntersectArguments* args)
 {
-  context->filter = args.filter;
+  context->filter = args->filter;
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  context->occluded = args.occluded;
+  context->occluded = args->occluded;
 #endif
   rtcOccluded1(scene,context,ray);
 }
 #endif
-#endif
 
 /* Forwards ray occlusion query inside user geometry callback. */
-#if defined(__cplusplus)
-RTC_SYCL_API void rtcForwardOccluded1(const RTCOccludedFunctionNArguments* args, RTCScene scene, struct RTCRay* ray);
-#endif
+RTC_SYCL_API void rtcForwardOccluded1(const struct RTCOccludedFunctionNArguments* args, RTCScene scene, struct RTCRay* ray);
 
 /* Tests a packet of 4 rays for occlusion occluded with the scene. */
 RTC_API void rtcOccluded4(const int* valid, RTCScene scene, struct RTCIntersectContext* context, struct RTCRay4* ray);

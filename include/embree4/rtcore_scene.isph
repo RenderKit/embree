@@ -132,11 +132,11 @@ RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, uniform RTCIntersectContext* 
 }
 
 /* Intersects a varying ray with the scene. */
-RTC_FORCEINLINE void rtcIntersectExV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform rayhit, uniform RTCIntersectArguments& args) 
+RTC_FORCEINLINE void rtcIntersectExV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform rayhit, uniform RTCIntersectArguments* uniform args) 
 {
-  context->filter = args.filter;
+  context->filter = args->filter;
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  context->intersect = args.intersect;
+  context->intersect = args->intersect;
 #endif
   rtcIntersectV(scene,context,rayhit);
 }
@@ -231,11 +231,11 @@ RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* u
 }
 
 /* Tests a varying ray for occlusion with the scene. */
-RTC_FORCEINLINE void rtcOccludedExV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray, uniform RTCIntersectArguments& args)
+RTC_FORCEINLINE void rtcOccludedExV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray, uniform RTCIntersectArguments* uniform args)
 {
-  context->filter = args.filter;
+  context->filter = args->filter;
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  context->intersect = args.intersect;
+  context->intersect = args->intersect;
 #endif
   rtcOccludedV(scene,context,ray);
 }

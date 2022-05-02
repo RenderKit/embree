@@ -69,7 +69,7 @@ void renderPixelStandard(const uniform TutorialData& data,
   InitIntersectionContext(&context);
 
   uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(args);
+  rtcInitIntersectArguments(&args);
   
   /* initialize ray */
   Ray2 primary;
@@ -86,7 +86,7 @@ void renderPixelStandard(const uniform TutorialData& data,
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
     args.filter = (RTCFilterFunctionN)intersectionFilter;
 #endif    
-    rtcIntersectExV(data.g_scene,&context.context,RTCRayHit_(primary),args);
+    rtcIntersectExV(data.g_scene,&context.context,RTCRayHit_(primary),&args);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -112,7 +112,7 @@ void renderPixelStandard(const uniform TutorialData& data,
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
     args.filter = (RTCFilterFunctionN)occlusionFilter;
 #endif
-    rtcOccludedExV(data.g_scene,&context.context,RTCRay_(shadow),args);
+    rtcOccludedExV(data.g_scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

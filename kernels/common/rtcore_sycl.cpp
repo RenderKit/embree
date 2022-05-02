@@ -33,13 +33,13 @@ RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context* sycl_context, sycl::q
 SYCL_EXTERNAL void rtcIntersect1(RTCScene hscene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit)
 {
   RTCIntersectArguments args;
-  rtcInitIntersectArguments(args);
+  rtcInitIntersectArguments(&args);
   rtcIntersectRTHW(hscene, context, rayhit, &args);
 }
 
-EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcIntersectEx1(RTCScene hscene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit, struct RTCIntersectArguments& args)
+EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcIntersectEx1(RTCScene hscene, struct RTCIntersectContext* context, struct RTCRayHit* rayhit, struct RTCIntersectArguments* args)
 {
-  rtcIntersectRTHW(hscene, context, rayhit, &args); 
+  rtcIntersectRTHW(hscene, context, rayhit, args); 
 }
 
 EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray)
@@ -62,13 +62,13 @@ EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFun
 EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcOccluded1(RTCScene hscene, struct RTCIntersectContext* context, struct RTCRay* ray)
 {
   RTCIntersectArguments args;
-  rtcInitIntersectArguments(args);
+  rtcInitIntersectArguments(&args);
   rtcOccludedRTHW(hscene, context, ray, &args);
 }
 
-EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcOccludedEx1(RTCScene hscene, struct RTCIntersectContext* context, struct RTCRay* ray, struct RTCIntersectArguments& args)
+EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcOccludedEx1(RTCScene hscene, struct RTCIntersectContext* context, struct RTCRay* ray, struct RTCIntersectArguments* args)
 {
-  rtcOccludedRTHW(hscene, context, ray, &args);
+  rtcOccludedRTHW(hscene, context, ray, args);
 }
 
 EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcForwardOccluded1(const RTCOccludedFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray)

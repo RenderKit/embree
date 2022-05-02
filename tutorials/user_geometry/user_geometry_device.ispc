@@ -1123,7 +1123,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
   rtcInitIntersectContext(&context);
 
   uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(args);
+  rtcInitIntersectArguments(&args);
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), 
@@ -1139,7 +1139,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
   args.intersect = contextIntersectFunc;
 #endif
   
-  rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),args);
+  rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -1173,7 +1173,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
     args.intersect = (uniform RTCIntersectFunctionN) (void* uniform) contextOccludedFunc;
 #endif
     
-    rtcOccludedExV(data.g_scene,&context,RTCRay_(shadow),args);
+    rtcOccludedExV(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
