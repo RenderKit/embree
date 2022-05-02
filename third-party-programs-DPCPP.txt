@@ -1,0 +1,110 @@
+
+The oneAPI DPC++ Compiler can be found here:
+
+  https://github.com/intel/llvm
+
+It uses various components with following licenses:
+
+  https://github.com/intel/llvm/blob/master/flang/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/compiler-rt/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/mlir/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/libclc/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/libcxxabi/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/lld/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/cross-project-tests/debuginfo-tests/dexter/LICENSE.txt
+  https://github.com/intel/llvm/blob/master/libc/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/clang-tools-extra/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/clang-tools-extra/clang-tidy/cert/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/clang-tools-extra/clang-tidy/hicpp/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/lldb/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/lldb/third_party/Python/module/ptyprocess-0.6.0/LICENSE
+  https://github.com/intel/llvm/blob/master/lldb/third_party/Python/module/six/LICENSE
+  https://github.com/intel/llvm/blob/master/lldb/third_party/Python/module/pexpect-4.6/LICENSE
+  https://github.com/intel/llvm/blob/master/polly/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/polly/lib/External/isl/LICENSE
+  https://github.com/intel/llvm/blob/master/polly/lib/External/isl/imath/LICENSE
+  https://github.com/intel/llvm/blob/master/polly/tools/GPURuntime/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/sycl/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/llvm-spirv/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/bolt/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/pstl/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/clang/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/llvm/utils/lit/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/llvm/utils/unittest/googletest/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/llvm/utils/unittest/googlemock/LICENSE.txt
+  https://github.com/intel/llvm/blob/master/llvm/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/llvm/include/llvm/Support/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/llvm/lib/Support/BLAKE3/LICENSE
+  https://github.com/intel/llvm/blob/master/llvm/test/YAMLParser/LICENSE.txt
+  https://github.com/intel/llvm/blob/master/libunwind/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/openmp/LICENSE.TXT
+  https://github.com/intel/llvm/blob/master/openmp/runtime/src/thirdparty/ittnotify/LICENSE.txt
+  https://github.com/intel/llvm/blob/master/third-party/benchmark/LICENSE
+  https://github.com/intel/llvm/blob/master/libcxx/LICENSE.TXT
+
+The following people and companies contributed to the LLVM project:
+
+  https://github.com/intel/llvm/blob/master/compiler-rt/CREDITS.TXT
+  https://github.com/intel/llvm/blob/master/libclc/CREDITS.TXT
+  https://github.com/intel/llvm/blob/master/libcxxabi/CREDITS.TXT
+  https://github.com/intel/llvm/blob/master/polly/CREDITS.txt
+  https://github.com/intel/llvm/blob/master/pstl/CREDITS.txt
+  https://github.com/intel/llvm/blob/master/llvm/CREDITS.TXT
+  https://github.com/intel/llvm/blob/master/openmp/CREDITS.txt
+  https://github.com/intel/llvm/blob/master/libcxx/CREDITS.TXT
+
+==============================================================================
+Software from third parties included in the LLVM Project:
+==============================================================================
+The LLVM Project contains third party software which is under different license
+terms. All such code will be identified clearly using at least one of two
+mechanisms:
+1) It will be in a separate directory tree with its own `LICENSE.txt` or
+   `LICENSE` file at the top containing the specific license and restrictions
+   which apply to that software, or
+2) It will contain specific license and restriction terms at the top of every
+   file.
+
+==============================================================================
+Legacy LLVM License (https://llvm.org/docs/DeveloperPolicy.html#legacy):
+==============================================================================
+University of Illinois/NCSA
+Open Source License
+
+Copyright (c) 2003-2020 University of Illinois at Urbana-Champaign.
+All rights reserved.
+
+Developed by:
+
+    LLVM Team
+
+    University of Illinois at Urbana-Champaign
+
+    http://llvm.org
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal with
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimers.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimers in the
+      documentation and/or other materials provided with the distribution.
+
+    * Neither the names of the LLVM Team, University of Illinois at
+      Urbana-Champaign, nor the names of its contributors may be used to
+      endorse or promote products derived from this Software without specific
+      prior written permission.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+CONTRIBUTORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS WITH THE
+SOFTWARE.
