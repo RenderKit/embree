@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.13.3
+% Embree: High Performance Ray Tracing Kernels 4.0.4-alpha.0
 % Intel Corporation
 
 Embree Overview
@@ -79,7 +79,7 @@ Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-3.13.3.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x64.vc14.windows.zip). After
+[embree-4.0.4-alpha.0.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v4.0.4-alpha.0/embree-4.0.4-alpha.0.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -88,13 +88,13 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.13.3.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x86_64.linux.tar.gz). Unpack
+[embree-4.0.4-alpha.0.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v4.0.4-alpha.0/embree-4.0.4-alpha.0.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-3.13.3.x86_64.linux.tar.gz
-    source embree-3.13.3.x86_64.linux/embree-vars.sh
+    tar xzf embree-4.0.4-alpha.0.x86_64.linux.tar.gz
+    source embree-4.0.4-alpha.0.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
@@ -103,17 +103,17 @@ macOS ZIP file
 -----------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-3.13.3.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x86_64.macosx.zip). Unpack
+[embree-4.0.4-alpha.0.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v4.0.4-alpha.0/embree-4.0.4-alpha.0.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-3.13.3.x64.macosx.zip
-    source embree-3.13.3.x64.macosx/embree-vars.sh
+    unzip embree-4.0.4-alpha.0.x64.macosx.zip
+    source embree-4.0.4-alpha.0.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
-library is of the form `@rpath/libembree.3.dylib`
+library is of the form `@rpath/libembree.4.dylib`
 (and similar also for the included TBB library). This ensures that you
 can add a relative `RPATH` to your application that points to the location
 where Embree (and TBB) can be found, e.g. `@loader_path/../lib`.
@@ -132,6 +132,7 @@ C++11. Embree is tested with the following compilers:
 
 Linux
 
+  - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
   - Intel® Compiler 2020 Update 1
   - Intel® Compiler 2019 Update 4
   - Intel® Compiler 2017 Update 1
@@ -252,6 +253,7 @@ Embree is tested using the following compilers under Windows:
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update 1)
+  - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
   - Intel® Compiler 2019 Update 6
   - Intel® Compiler 2017 Update 8
   - LLVM Clang 9.0.0
@@ -728,289 +730,15 @@ documentation of the `rtcBuildBVH` call for more details.
 For getting the most performance out of Embree, see the Section
 [Performance Recommendations].
 
-Upgrading from Embree 2 to Embree 3
+Upgrading from Embree 3 to Embree 4
 ===================================
 
-We decided to introduce an improved API in Embree 3 that is not
-backward compatible with the Embree 2 API. This step was required to
-remove various deprecated API functions that accumulated over time,
-improve extensibility of the API, fix suboptimal design decisions, fix
-design mistakes (such as incompatible single ray and ray packet
-layouts), clean up inconsistent naming, and increase flexibility.
-
-To make porting to the new API easy, we provide a conversion script
-that can do most of the work, and will annotate the code with remaining
-changes required. The script can be invoked the following way for CPP
-files:
-
-    ./scripts/cpp-patch.py --patch embree2_to_embree3.patch
-      --in infile.cpp --out outfile.cpp
-
-When invoked for Intel® ISPC files, add the `--ispc` option:
-
-    ./scripts/cpp-patch.py --ispc --patch embree2_to_embree3.patch
-      --in infile.ispc --out outfile.ispc
-
-Apply the script to each source file of your project that contains
-Embree API calls or types. The input file and output file can also be
-identical to perform the patch in-place. Please always backup your
-original code before running the script, and inspect the code changes
-done by the script using diff (e.g. `git diff`), to make sure no
-undesired code locations got changed. Grep the code for comments
-containing `EMBREE_FIXME` and perform the action described in the
-comment.
-
-The following changes need to be performed when switching from Embree 2
-to Embree 3. Most of these changes are automatically done by the script
-if not described differently.
-
-We strongly recommend to set an error callback function (see
-`rtcSetDeviceErrorFunction`) when porting to Embree 3 to detect all
-runtime errors early.
-
-Device
-------
-
--   `rtcInit` and `rtcExit` got removed. Please use the device concept
-    using the `rtcNewDevice` and `rtcReleaseDevice` functions instead.
-
--   Functions that conceptually should operate on a device but did not
-    get a device argument got removed. The upgrade script replaces
-    these functions by the proper functions that operate on a device,
-    however, manually propagating the device handle to these function
-    calls might still be required.
-
-Scene
------
-
--   The API no longer distinguishes between a static and a dynamic
-    scene. Some users had issues as they wanted to do minor
-    modifications to static scenes, but maintain high traversal
-    performance.
-
-    The new approach gives more flexibility, as each scene is
-    changeable, and build quality settings can be changed on a commit
-    basis to balance between build performance and render performance.
-
--   The `rtcCommitThread` function got removed; use
-    `rtcJoinCommitScene` instead.
-
--   The scene now supports different build quality settings. Please use
-    those instead of the previous way of `RTC_SCENE_STATIC`,
-    `RTC_SCENE_DYNAMIC`, and `RTC_SCENE_HIGH_QUALITY` flags.
-
-Geometry
---------
-
--   There is now only one `rtcNewGeometry` function to create
-    geometries which gets passed an enum to specify the type of
-    geometry to create. The number of vertices and primitives of the
-    geometries is inferred from the size of data buffers.
-
--   We introduced an object type `RTCGeometry` for all geometries.
-    Previously a geometry was not a standalone object and could only
-    exist inside a scene. The new approach comes with more flexibility
-    and more readable code.
-
-    Operations like `rtcInterpolate` can now be performed on the
-    geometry object directly without the need of a scene. Further, an
-    application can choose to create its geometries independent of a
-    scene, e.g. each time a geometry node is added to its scene graph.
-
-    This modification changed many API functions to get passed one
-    `RTCGeometry` object instead of a `RTCScene` and `geomID`. The
-    script does all required changed automatically. However, in some
-    cases the script may introduce `rtcGetGeometry(scene, geomID)`
-    calls to retrieve the geometry handle. Best store the geometry
-    handle inside your scene representation (and release it in the
-    destructor) and access the handle directly instead of calling
-    `rtcGetGeometry`.
-
--   Geometries are not included inside a scene anymore but can be
-    attached to a multiple scenes using the `rtcAttachGeomety` or
-    `rtcAttachGeometryByID` functions.
-
--   As geometries are separate objects, commit semantics got introduced
-    for them too. Thus geometries must be committed through the
-    `rtcCommitGeometry` call before getting used. This allows for
-    earlier error checking and pre-calculating internal data per
-    geometry object.
-
-    Such commit points were previously not required in the Embree 2
-    API. The upgrade script attempts to insert the commits
-    automatically, but cannot do so properly under all circumstances.
-    Thus please check if every `rtcCommitGeometry` call inserted by the
-    script is properly placed, and if a `rtcCommitGeometry` call is
-    placed after a sequence of changes to a geometry.
-
--   Only the latest version of the previous displacement function call
-    (`RTCDisplacementFunc2`) is now supported, and the callback is
-    passed as a structure containing all arguments.
-
--   The deprecated `RTCBoundaryMode` type and `rtcSetBoundaryMode`
-    function got removed and replaced by `RTCSubdivisionMode` enum and
-    the `rtcSetGeometrySubdivisionMode` function. The script does this
-    replacement automatically.
-
--   Ribbon curves and lines now avoid self-intersections automatically
-    The application can be simplified by removing special code paths
-    that previously did the self-intersection handling.
-
--   The previous Embree 2 way of instancing was suboptimal as it
-    required user geometries to update the `instID` field of the ray
-    differently when used inside an instanced scene or inside a
-    top-level scene. The user geometry intersection code now just has
-    to copy the `context.instID` field into the `ray.instID` field to
-    function properly under all circumstances.
-
--   The internal instancing code will update the `context.instID` field
-    properly when entering or leaving an instance. When instancing is
-    implemented manually through user geometries, the code must be
-    modified to set the `context.instID` field properly and no longer
-    pass `instID` through the ray. This change must done manually and
-    cannot be performed by the script.
-
--   We flipped the direction of the geometry normal to the widely used
-    convention that a shape with counter-clockwise layout of vertices
-    has the normal pointing upwards (right-hand rule). Most modeling
-    tools follow that convention.
-
-    The conversion script does not perform this change, thus if
-    required adjust your code to flip `Ng` for triangle, quad, and
-    subdivision surfaces.
-
-Buffers
--------
-
--   With Embree 3 we are introducing explicit `RTCBuffer` objects.
-    However, you can still use the short way of sharing buffers with
-    Embree through the `rtcSetSharedGeometryBuffer` call.
-
--   The `rtcMapBuffer` and `rtcUnmapBuffer` API calls were removed, and
-    we added the `rtcGetBufferData` call instead.
-
-    Previously the `rtcMapBuffer` call had the semantics of creating an
-    internal buffer when no buffer was shared for the corresponding
-    buffer slot. These invocations of `rtcMapBuffer` must be replaced
-    by an explicit creation of an internally managed buffer using the
-    `rtcNewGeometryBuffer` function.
-
-    The upgrade script cannot always detect if the `rtcMapBuffer` call
-    would create an internal buffer or just map the buffer pointer.
-    Thus check whether the `rtcNewGeometryBuffer` and
-    `rtcGetBufferData` calls are correct after the conversion.
-
--   The `rtcUpdateGeometryBuffer` function now must be called for every
-    buffer that got modified by the application. Note that the
-    conversion script cannot automatically detect each location where a
-    buffer update is now required.
-
--   The buffer type no longer encodes the time step or user vertex
-    buffer index. Now `RTC_VERTEX_BUFFER_TYPE` and additional `slot`
-    specifies the vertex buffer for a specific time step, and
-    `RTC_USER_VERTEX_BUFFER_TYPE` and additional `slot` specifies a
-    vertex attribute.
-
-Miscellaneous {#miscellaneous}
--------------
-
--   The header files for Embree 3 are now inside the `embree3` folder
-    (instead of `embree2` folder) and `libembree.so` is now called
-    `libembree3.so` to be able to install multiple Embree versions side
-    by side. We made the headers C99 compliant.
-
--   All API objects are now reference counted with release functions to
-    decrement and retain functions to increment the reference count (if
-    required).
-
--   Most callback functions no longer get different arguments as input,
-    but a pointer to a structure containing all arguments. This results
-    in more readable code, faster callback invocation (as some
-    arguments do not change between invocations) and is extensible, as
-    new members to the structure can be later added in a backward
-    compatible way (if required).
-
-    The conversion script can convert the definition and declaration of
-    the old callback functions in most cases. Before running the
-    script, make sure that you never type-cast a callback function when
-    assigning it (as this has the danger of assigning a callback
-    function with a wrong type if the conversion did not detect some
-    callbacks as such). If the script does not detect a callback
-    function, make sure the argument types match exactly the types in
-    the header (e.g. write `const int` instead of `int const` or
-    convert the callback manually).
-
--   An intersection context is now required for each ray query
-    invocation. The context should be initialized using the
-    `rtcInitIntersectContext` function.
-
--   The `rtcIntersect`-type functions get as input an `RTCRayHit` type,
-    which is similar to before, but has the ray and hit parts split
-    into two sub-structures.
-
-    The `rtcOccluded`-type functions get as input an `RTCRay` type,
-    which does not contain hit data anymore. When an occlusion is
-    found, the `tfar` element of the ray is set to `-inf`.
-
-    Required code changes cannot be done by the upgrade script and need
-    to be done manually.
-
--   The ray layout for single rays and packets of rays had certain
-    incompatibilities (alignment of `org` and `dir` for single rays
-    caused gaps in the single ray layout that were not in the ray
-    packet layout). This issue never showed up because single rays and
-    ray packets were separate in the system initially. This layout
-    issue is now fixed, and a single ray has the same layout as a ray
-    packet of size 1.
-
--   Previously Embree supported placing additional data at the end of
-    the ray structure, and accessing that data inside user geometry
-    callbacks and filter callback functions.
-
-    With Embree 3 this is no longer supported, and the ray passed to a
-    callback function may be copied to a different memory location. To
-    attach additional data to your ray, simply extend the intersection
-    context with a pointer to that data.
-
-    This change cannot be done by the script. Further, code will still
-    work if you extend the ray as the implementation did not change
-    yet.
-
--   The ray structure now contains an additional `id` and `flags`
-    field. The `id` can be used to store the index of the ray with
-    respect to a ray packet or ray stream. The `flags` is reserved for
-    future use, and currently must be set to 0.
-
--   All previous intersection filter callback variants have been
-    removed, except for the `RTCFilterFuncN` which gets a varying size
-    ray packet as input. The semantics of this filter function type
-    have changed from copying the hit on acceptance to clearing the
-    ray's valid argument in case of non-acceptance. This way, chaining
-    multiple filters is more efficient.
-
-    We kept the guarantee that for `rtcIntersect1/4/8/16` and
-    `rtcOccluded1/4/8/16` calls the packet size and ray order will not
-    change from the initial size and ordering when entering a filter
-    callback.
-
--   We no longer export Intel® ISPC-specific symbols. This has the
-    advantage that certain linking issues went away, e.g. it is now
-    possible to link an Intel® ISPC application compiled for any
-    combination of ISAs, and link this to an Embree library compiled
-    with a different set of ISAs. Previously the ISAs of the
-    application had to be a subset of the ISAs of Embree, and when the
-    user enabled exactly one ISA, they had to do this in Embree and the
-    application.
-
--   We no longer export the Intel® ISPC tasking system, which means
-    that the application has the responsibility to implement the Intel®
-    ISPC tasking system itself. Intel® ISPC comes with example code on
-    how to do this. This change is not performed by the script and must
-    be done manually.
-
--   Fixed many naming inconsistencies, and changed names of further API
-    functions. All these renamings are properly done by the script and
-    need no further attention.
+-   User geometries have to return valid=-1 when a hit was found, or
+    valid=0 when no hit was found.
+-   For best performance geometry masks should just use 7 mask bits
+    only.
+-   The default geometry mask got changed from 0xFFFFFFFF to 0x1
+-   The API include folder got renamed from embree3 to embree4
 
 
 
@@ -1666,8 +1394,8 @@ The `rtcAttachGeometry` function attaches a geometry (`geometry`
 argument) to a scene (`scene` argument) and assigns a geometry ID to
 that geometry. All geometries attached to a scene are defined to be
 included inside the scene. A geometry can get attached to multiple
-scenes. The geometry ID is unique for the scene, and is used to identify
-the geometry when hit by a ray during ray queries.
+scenes. The geometry ID is unique for the scene, and is used to
+identify the geometry when hit by a ray during ray queries.
 
 This function is thread-safe, thus multiple threads can attach
 geometries to a scene in parallel.
@@ -2960,7 +2688,7 @@ This basis is not interpolating, thus the curve does in general not go
 through any of the control points directly. A big advantage of this
 basis is that 3 control points can be shared for two continuous
 neighboring curve segments, e.g. the curves (p0,p1,p2,p3) and
-(p1,p2,p3,p4) are C1 continuous. This feature make this basis a good
+(p1,p2,p3,p4) are C1 continuous. This feature makes this basis a good
 choice to construct continuous multi-segment curves, as memory
 consumption can be kept minimal.
 
@@ -4867,15 +4595,15 @@ efficient. If there is no instance transform, the similarity scale is
 1.
 
 The callback function will potentially be called for primitives outside
-the query domain for two reasons: First, the callback is invoked for all
-primitives inside a BVH leaf node since no geometry data of primitives
-is determined internally and therefore individual primitives are not
-culled (only their (aggregated) bounding boxes). Second, in case non
-similarity transformations are used, the resulting ellipsoidal query
-domain (in instance space) is approximated by its axis aligned bounding
-box internally and therefore inner nodes that do not intersect the
-original domain might intersect the approximative bounding box which
-results in unnecessary callbacks. In any case, the callbacks are
+the query domain for two reasons: First, the callback is invoked for
+all primitives inside a BVH leaf node since no geometry data of
+primitives is determined internally and therefore individual primitives
+are not culled (only their (aggregated) bounding boxes). Second, in
+case non similarity transformations are used, the resulting ellipsoidal
+query domain (in instance space) is approximated by its axis aligned
+bounding box internally and therefore inner nodes that do not intersect
+the original domain might intersect the approximative bounding box
+which results in unnecessary callbacks. In any case, the callbacks are
 conservative, i.e. if a primitive is inside the query domain a callback
 will be invoked but the reverse is not necessarily true.
 
@@ -8340,7 +8068,7 @@ This tutorial demonstrates how to use the `FIND_PACKAGE` CMake feature
 to use an installed Embree. Under Linux and macOS the tutorial finds
 the Embree installation automatically, under Windows the `embree_DIR`
 CMake variable must be set to the following folder of the Embree
-installation: `C:\Program Files\Intel\Embree4`.
+installation: `C:\Program Files\Intel\Embree3`.
 
 [Source Code](https://github.com/embree/embree/blob/master/tutorials/find_embree/CMakeLists.txt)
 
