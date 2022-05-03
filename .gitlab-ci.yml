@@ -175,6 +175,17 @@ continuous-windows-DG2-AOT:
     - python scripts/test.py test
   tags:   [vis-sdp-dg2-05]
 
+continuous-windows-DG2-JIT:
+  stage: build
+  script:
+    - whoami
+    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:none igc:ci/sdp/1011314 CURVE:OFF intensity:1
+    - dir \\vis-nassie.an.intel.com\NAS\packages\apps\tbb\tbb-2021.1.1-windows
+    - dir \\vis-nassie.an.intel.com\NAS\packages\apps\dpcpp-compiler-win\sycl-nightly\165\bin
+    - python scripts/test.py build
+    - python scripts/test.py test
+  tags:   [vis-sdp-dg2-05]
+
 continuous-linux-WebAssembly:
   stage: build
   script:
