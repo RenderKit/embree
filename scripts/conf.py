@@ -233,7 +233,8 @@ def runConfig(config):
         conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
         conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
 
-      sys.stderr.write("dpcpp_dir = "+dpcpp_dir)      
+      sys.stderr.write("dpcpp_dir = "+dpcpp_dir)
+      sys.stderr.write("gfx_dir = "+igc_dir)
         
       env.append("PATH="+dpcpp_dir+"/bin:"+dpcpp_dir+"/bin-llvm:"+igc_dir+"/usr/bin:"+igc_dir+"/usr/local/bin:$PATH")
       env.append("CPATH="+dpcpp_dir+"/include/sycl:" + dpcpp_dir+"/include")

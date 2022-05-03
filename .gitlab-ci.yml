@@ -95,6 +95,9 @@ setup_gfx:
       - GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_PVC | sed 's/.*:\ //')
       - echo "Setup GFX ${GFX_VERSION}"
       - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
+      - GFX_VERSION=agama/445
+      - echo "Setup GFX ${GFX_VERSION}"
+      - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
 
 
 ####################################################################
@@ -130,6 +133,16 @@ continuous-linux-DG2-AOT:
 continuous-linux-DG2-AOT-test:
   extends: .test_dg2
   needs: ["continuous-linux-DG2-AOT"]
+
+continuous-linux-DG2-AOT-agama:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} igc:agama/445 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2-b0-512 tasking:TBB intensity:4"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [embree, docker]
+
+continuous-linux-DG2-AOT-agama-test:
+  extends: .test_dg2
+  needs: ["continuous-linux-DG2-AOT-agama"]
 
 continuous-linux-DG2-JIT:
   extends: .build

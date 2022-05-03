@@ -48,7 +48,7 @@ def get_dpcpp_and_gfx_version(config, compiler, OS):
     GFX_VERSION_IDENTIFIER = "GFX_VERSION_LINUX_DG2"
     if "sycl" in config and config["sycl"].startswith("pvc"):
       GFX_VERSION_IDENTIFIER = "GFX_VERSION_LINUX_PVC"
-
+    
   DPCPP_VERSION = ""
   if (compiler[5:] != ""):
     DPCPP_VERSION = compiler[6:] # [6:] to parse dpcpp/
@@ -64,14 +64,17 @@ def get_dpcpp_and_gfx_version(config, compiler, OS):
 
   # set up gfx version
   GFX_VERSION=""
-  # read version from .ci-env.yaml file
-  with open(".ci-env.yaml") as f:
-    for line in f:
-      line = line.strip()
-      if not line.startswith(GFX_VERSION_IDENTIFIER):
-        continue
-      key, value = line.split(":", 1)
-      GFX_VERSION = value.strip()
+  if ("igc" in config):
+    GFX_VERSION = config["igc"]
+  else:
+    # read version from .ci-env.yaml file
+    with open(".ci-env.yaml") as f:
+      for line in f:
+        line = line.strip()
+        if not line.startswith(GFX_VERSION_IDENTIFIER):
+          continue
+        key, value = line.split(":", 1)
+        GFX_VERSION = value.strip()
 
   return DPCPP_VERSION, GFX_VERSION
 
