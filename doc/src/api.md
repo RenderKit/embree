@@ -6,10 +6,63 @@ Embree API
 Upgrading from Embree 3 to Embree 4
 ===================================
 
-- User geometries have to return valid=-1 when a hit was found, or valid=0 when no hit was found.
-- For best performance geometry masks should just use 7 mask bits only.
-- The default geometry mask got changed from 0xFFFFFFFF to 0x1
-- The API include folder got renamed from embree3 to embree4
+This section summarizes API changes between Embree 3 and Embree4. Most
+of these changes are motivated by having a consistent API that works
+properly for the CPU and GPU.
+
+- User geometries callbacks get an valid vector as input to identify
+  valid and invalid rays. In Embree 3 the user geometry callback just
+  had to update the ray hit members when an intersection was found and
+  perform no operation otherwise. In Embree 4 the callback
+  additionally has to return valid=-1 when a hit was found, and
+  valid=0 when no hit was found. This allows Embree to properly pass
+  the new hit distance to the ray tracing hardware only in the case a
+  hit was found.
+
+- Embree supports 32 bit ray masks for geometry masking. On the CPU
+  using any of the 32 bits yields the same performance. The Xe ray
+  tracing hardware only supports 8 bit masks, thus Embree has to
+  emulate the 32 bit masking. For that reason the lower 7 mask bits
+  are hardware accelerated and fast, while the mask bits 7-31 require
+  some software intervention and using them reduces performance.
+
+- The default ray mask for some geometry got changed from 0xFFFFFFFF
+  to 0x1 to get best performance on ray tracing hardware.
+
+- The API include folder got renamed from embree3 to embree4, to be
+  able to install Embree 3 and Embree 4 side by side, without having
+  conflicts in API folder.
+
+- The geometry object of Embree 4 is a host side only object, thus
+  accessing it during rendering from the GPU is not allowed. Thus all
+  API functions that take an RTCGeometry object as argument cannot get
+  used during rendering. Thus in particular the
+  `rtcGetGeometryUserData(RTCGeometry)` call cannot get used, but
+  there is an alternative function `rtcGetGeometryUserData(RTCScene
+  scene,uint geomID)` that should get used instead.
+
+- The `rtcInterpolate` function is forbidden to get used on the
+  GPU. For most primitive types the vertex data interpolation is
+  anyway a trivial operation, and an API call just introduces
+  overheads. On the CPU that overhead is acceptable, but on the GPU it
+  is not. The rtcInterpolate function does not know the geometry type
+  it is interpolating over, thus its implementation on the GPU would
+  contain a large switch statement for all potential geometry types.
+
+- Embree 3 allows to use `rtcIntersect` recursivaly from a user
+  geometry or intersection filter callback to continue a ray inside an
+  instantiated object. In Embree 4 using `rtcIntersect` recursively is
+  disallowed on the GPU but still supported on the CPU. To properly
+  continue a ray inside an instantiated object use the new
+  `rtcForwardIntersect1` function.
+
+- Embree 4 does not support subdivision surfaces on the GPU, but on
+  the CPU.
+
+- Embree 4 does not implement the collision detection `rtcCollide`
+  feature for the GPU.
+
+- Embree 4 does not implement point queries on the GPU.
 
 \pagebreak
 
