@@ -1,6 +1,6 @@
 variables:
-  GFX_VERSION_LINUX_DG2: master/11110
-  GFX_VERSION_LINUX_PVC: master/10703
+  GFX_VERSION_LINUX_DG2: master_release/11110
+  GFX_VERSION_LINUX_PVC: master_release/10703
   GFX_VERSION_WIN: ci/master/11110
   DPCPP_VERSION_LINUX: sycl-nightly/20220418
   DPCPP_VERSION_WIN: sycl-nightly/165
