@@ -40,14 +40,18 @@ def fix_cmake_paths():
       file.write(file_content)
 
 def get_dpcpp_and_gfx_version(config, compiler, OS):
+
   if OS == "windows":
     DPCPP_VERSION_IDENTIFIER = "DPCPP_VERSION_WIN"
     GFX_VERSION_IDENTIFIER = "GFX_VERSION_WIN"
   else:
     DPCPP_VERSION_IDENTIFIER = "DPCPP_VERSION_LINUX"
-    GFX_VERSION_IDENTIFIER = "GFX_VERSION_LINUX_DG2"
-    if "sycl" in config and config["sycl"].startswith("pvc"):
-      GFX_VERSION_IDENTIFIER = "GFX_VERSION_LINUX_PVC"
+    GFX_VERSION_IDENTIFIER = "GFX_VERSION_LINUX"
+
+  if ("gfx" in config):
+    GFX_VERSION_IDENTIFIER = GFX_VERSION_IDENTIFIER + "_" + config["gfx"]
+  else:
+    GFX_VERSION_IDENTIFIER = GFX_VERSION_IDENTIFIER + "_DEFAULT"
     
   DPCPP_VERSION = ""
   if (compiler[5:] != ""):
@@ -62,19 +66,14 @@ def get_dpcpp_and_gfx_version(config, compiler, OS):
         key, value = line.split(":", 1)
         DPCPP_VERSION = value.strip()
 
-  # set up gfx version
-  GFX_VERSION=""
-  if ("gfx" in config):
-    GFX_VERSION = config["gfx"]
-  else:
-    # read version from .ci-env.yaml file
-    with open(".ci-env.yaml") as f:
-      for line in f:
-        line = line.strip()
-        if not line.startswith(GFX_VERSION_IDENTIFIER):
-          continue
-        key, value = line.split(":", 1)
-        GFX_VERSION = value.strip()
+  # read version from .ci-env.yaml file
+  with open(".ci-env.yaml") as f:
+    for line in f:
+      line = line.strip()
+      if not line.startswith(GFX_VERSION_IDENTIFIER):
+        continue
+      key, value = line.split(":", 1)
+      GFX_VERSION = value.strip()
 
   return DPCPP_VERSION, GFX_VERSION
 

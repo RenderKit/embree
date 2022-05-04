@@ -89,19 +89,16 @@ setup_gfx:
     image: $DOCKER_REGISTRY/embree/ubuntu:20.04
     tags: [docker]
     script:
-      - GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_DG2 | sed 's/.*:\ //')
+      - GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_DEFAULT | sed 's/.*:\ //')
       - echo "Setup GFX ${GFX_VERSION}"
       - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
       - GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_PVC | sed 's/.*:\ //')
       - echo "Setup GFX ${GFX_VERSION}"
       - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
-      - GFX_VERSION=agama/445
-      - echo "Setup GFX ${GFX_VERSION}"
-      - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
 
 
 ####################################################################
-# Continuous Test
+# Continuous GPU Tests
 ####################################################################
 
 continuous-linux-DG2-AOT-dpcpp:
@@ -134,16 +131,6 @@ continuous-linux-DG2-AOT-test:
   extends: .test_dg2
   needs: ["continuous-linux-DG2-AOT"]
 
-continuous-linux-DG2-AOT-agama:
-  extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} gfx:agama/445 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2-b0-512 tasking:TBB intensity:4"]
-  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
-  tags:   [embree, docker]
-
-continuous-linux-DG2-AOT-agama-test:
-  extends: .test_dg2
-  needs: ["continuous-linux-DG2-AOT-agama"]
-
 continuous-linux-DG2-JIT:
   extends: .build
   before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none CURVE:OFF tasking:TBB intensity:1"]
@@ -156,7 +143,7 @@ continuous-linux-DG2-JIT-test:
 
 continuous-linux-PVC-AOT:
   extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:pvc tasking:TBB intensity:4"]
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:pvc gfx:PVC tasking:TBB intensity:4"]
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:   [embree, docker]
 
@@ -167,24 +154,37 @@ continuous-linux-PVC-AOT-test:
 continuous-windows-DG2-AOT:
   stage: build
   script:
-    - whoami
     - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:dg2 intensity:3
-    - dir \\vis-nassie.an.intel.com\NAS\packages\apps\tbb\tbb-2021.1.1-windows
-    - dir \\vis-nassie.an.intel.com\NAS\packages\apps\dpcpp-compiler-win\sycl-nightly\165\bin
     - python scripts/test.py build
     - python scripts/test.py test
   tags:   [vis-sdp-dg2-05]
 
-continuous-windows-DG2-JIT:
+
+####################################################################
+# Continuous GPU Tests with public drivers
+####################################################################
+
+continuous-linux-DG2-AOT-PUBLIC:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2-b0-512 gfx:PUBLIC tasking:TBB intensity:4"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [embree, docker]
+
+continuous-linux-DG2-AOT-PUBLIC-test:
+  extends: .test_dg2
+  needs: ["continuous-linux-DG2-AOT-PUBLIC"]
+
+continuous-windows-DG2-JIT-PUBLIC:
   stage: build
   script:
-    - whoami
-    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:none gfx:ci/sdp/1011314 CURVE:OFF intensity:1
-    - dir \\vis-nassie.an.intel.com\NAS\packages\apps\tbb\tbb-2021.1.1-windows
-    - dir \\vis-nassie.an.intel.com\NAS\packages\apps\dpcpp-compiler-win\sycl-nightly\165\bin
+    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:none gfx:PUBLIC CURVE:OFF intensity:1
     - python scripts/test.py build
     - python scripts/test.py test
   tags:   [vis-sdp-dg2-05]
+
+####################################################################
+# Continuous CPU Tests
+####################################################################
 
 continuous-linux-WebAssembly:
   stage: build
