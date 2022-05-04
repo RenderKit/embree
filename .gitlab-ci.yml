@@ -136,7 +136,7 @@ continuous-linux-DG2-AOT-test:
 
 continuous-linux-DG2-AOT-agama:
   extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} igc:agama/445 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2-b0-512 tasking:TBB intensity:4"]
+  before_script: ["scripts/test.py configure ${COMMON} gfx:agama/445 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2-b0-512 tasking:TBB intensity:4"]
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:   [embree, docker]
 
@@ -179,7 +179,7 @@ continuous-windows-DG2-JIT:
   stage: build
   script:
     - whoami
-    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:none igc:ci/sdp/1011314 CURVE:OFF intensity:1
+    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:none gfx:ci/sdp/1011314 CURVE:OFF intensity:1
     - dir \\vis-nassie.an.intel.com\NAS\packages\apps\tbb\tbb-2021.1.1-windows
     - dir \\vis-nassie.an.intel.com\NAS\packages\apps\dpcpp-compiler-win\sycl-nightly\165\bin
     - python scripts/test.py build

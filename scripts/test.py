@@ -64,8 +64,8 @@ def get_dpcpp_and_gfx_version(config, compiler, OS):
 
   # set up gfx version
   GFX_VERSION=""
-  if ("igc" in config):
-    GFX_VERSION = config["igc"]
+  if ("gfx" in config):
+    GFX_VERSION = config["gfx"]
   else:
     # read version from .ci-env.yaml file
     with open(".ci-env.yaml") as f:
