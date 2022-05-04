@@ -258,6 +258,12 @@ parameters that can be configured in CMake:
 + `EMBREE_ISPC_SUPPORT`: Enables Intel® ISPC support of Embree. This option
   is ON by default.
 
++ `EMBREE_DPCPP_SUPPORT`: Enables GPU support using DPC++. When this
+  option is enabled you have to use either the oneAPI DPC++ compiler
+  from https://github.com/intel/llvm or the Intel(R) oneAPI DPC++
+  compiler shipped with Intel(R) oneAPI from
+  https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp
+
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
   default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree4.a`, `embree4_sse42.a`,
