@@ -264,6 +264,25 @@ parameters that can be configured in CMake:
   compiler shipped with Intel(R) oneAPI from
   https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp
 
++ `EMBREE_DPCPP_AOT_DEVICES`: Selects a list of Xe GPU devices for
+  ahead of time (AOT) compilation of GPU code. Possible values are
+  either, "none" which enables only just in time (JIT) compilation, or
+  specifying one of the Embree supported Xe GPUs for AOT compilation:
+
+  * dg2         : Xe HPG devices
+  * XE_HPG_CORE : Xe HPG devices
+  * pvc         : Xe HPC devices
+  * XE_HPC_CORE : Xe HPC devices
+
+  One can also specify multiple Xe devices separated by comma to
+  compile ahead of time for multiple devices, e.g. "dg2,pvc". When
+  enabling AOT compilation for one or multiple Xe devices, JIT
+  compilation will always additionaly be enabled in case the code is
+  started on a device no code is precompiled for.
+  
+  Execute "ocloc compile --help" for more details of possible devices
+  to pass. Embree is only supported on Xe HPG/HPC and newer devices.
+
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
   default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree4.a`, `embree4_sse42.a`,

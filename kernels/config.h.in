@@ -1,22 +1,6 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#cmakedefine EMBREE_DPCPP_SKL
-#cmakedefine EMBREE_DPCPP_DG2
-#cmakedefine EMBREE_DPCPP_PVC
-
-#cmakedefine EMBREE_DPCPP_DG2_A0_128
-#cmakedefine EMBREE_DPCPP_DG2_B0_128
-#cmakedefine EMBREE_DPCPP_DG2_A0_512
-#cmakedefine EMBREE_DPCPP_DG2_A0_512_128
-#cmakedefine EMBREE_DPCPP_DG2_B0_512
-
-#cmakedefine EMBREE_DPCPP_PVC_A0
-#cmakedefine EMBREE_DPCPP_PVC_B0
-
-#cmakedefine EMBREE_DPCPP_AOT_DEVICE "@EMBREE_DPCPP_AOT_DEVICE@"
-#cmakedefine EMBREE_DPCPP_AOT_DEVICE_REVISION @EMBREE_DPCPP_AOT_DEVICE_REVISION@
-
 #cmakedefine EMBREE_RAY_MASK
 #cmakedefine EMBREE_STAT_COUNTERS
 #cmakedefine EMBREE_BACKFACE_CULLING
