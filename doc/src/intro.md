@@ -1,21 +1,29 @@
 The Embree API is a low-level C99 ray tracing API which can be used to
-construct 3D scenes and perform ray queries of different types inside
-these scenes. All API calls carry the prefix `rtc` (or `RTC` for
-types) which stands for **r**ay **t**racing **c**ore.
+construct spatial index structures for 3D scenes and perform ray
+queries of different types. 
 
-The API also exists in an Intel® Implicit SPMD Program Compiler
-(Intel® ISPC) version, which is almost identical but
-contains additional functions that operate on ray packets with a size
-of the native SIMD width used by Intel® ISPC. For simplicity this document
-refers to the C99 version of the API functions. For changes when
-upgrading from the Embree 2 to the current Embree 3 API see Section
-[Upgrading from Embree 2 to Embree 3].
+The API can get used on the CPU using standard C, C++, and ISPC code
+and on Xe GPUs by using DPC++/SYCL code. 
 
-The API supports scenes consisting of different geometry types such as
-triangle meshes, quad meshes (triangle pairs), grid meshes, flat
-curves, round curves, oriented curves, subdivision meshes, instances,
-and user-defined geometries. See Section [Scene Object] for more
-information.
+The Intel® Implicit SPMD Program Compiler (Intel® ISPC) version of the
+API, is almost identical to the standard C99 version, but contains
+additional functions that operate on ray packets with a size of the
+native SIMD width used by Intel® ISPC.
+
+The DPC++/SYCL version of the API is also mostly identical to the C99
+version of the API, with some exceptions listed in section [Embree
+DPC++ API].
+
+For simplicity this document refers to the C99 version of the API
+functions. For changes when upgrading from the Embree 3 to the current
+Embree 4 API see Section [Upgrading from Embree 3 to Embree 4].
+
+All API calls carry the prefix `rtc` (or `RTC` for types) which stands
+for **r**ay **t**racing **c**ore. The API supports scenes consisting
+of different geometry types such as triangle meshes, quad meshes
+(triangle pairs), grid meshes, flat curves, round curves, oriented
+curves, subdivision meshes, instances, and user-defined
+geometries. See Section [Scene Object] for more information.
 
 Finding the closest hit of a ray segment with the scene
 (`rtcIntersect`-type functions), and determining whether any hit
