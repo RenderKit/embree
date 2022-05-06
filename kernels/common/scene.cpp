@@ -821,7 +821,9 @@ namespace embree
 
     /* initiate build */
     try {
-      scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, 1, !join);
+      TaskScheduler::TaskGroupContext context;
+      std::cout << "initiate build" << std::endl;
+      scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, &context, 1, !join);
     }
     catch (...) {
       accels_clear();

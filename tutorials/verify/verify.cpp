@@ -4676,6 +4676,273 @@ namespace embree
       return VerifyApplication::PASSED;
     }
   };
+  
+  struct ParallelForExceptionTest1 : public VerifyApplication::Test
+  {
+    ParallelForExceptionTest1 (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      bool exceptionCaught = false;
+      std::atomic<int> num_executed(0);
+      try {
+        parallel_for(100, [&](size_t i) {
+          num_executed++;
+        });
+      } catch (std::exception& e) {
+        //std::cerr << "exception caught: " << e.what() << std::endl;
+        exceptionCaught = true;
+      }
+
+      AssertNoError(device);
+      const bool success = (!exceptionCaught && (num_executed == 100));
+      return success ? VerifyApplication::PASSED : VerifyApplication::FAILED;
+    }
+  };
+
+  struct ParallelForExceptionTest2 : public VerifyApplication::Test
+  {
+    ParallelForExceptionTest2 (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      bool exceptionCaught = false;
+      bool rightExceptionCaught = false;
+      try {
+        parallel_for(100, [&](size_t i) {
+          if (i == 5) {
+            //std::cerr << "throw error!" << std::endl;
+            throw_RTCError(RTC_ERROR_CANCELLED, "idontlikefive");
+          }
+        });
+      } catch (std::exception& e) {
+        exceptionCaught = true;
+        //std::cerr << "exception caught: " << e.what() << std::endl;
+        if (regex_match(e.what(), ".*idontlikefive"))
+          rightExceptionCaught = true;
+      }
+
+      AssertNoError(device);
+      const bool success = (exceptionCaught && rightExceptionCaught);
+      return success ? VerifyApplication::PASSED : VerifyApplication::FAILED;
+    }
+  };
+
+  struct ParallelForExceptionTest3 : public VerifyApplication::Test
+  {
+    ParallelForExceptionTest3 (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      bool exceptionCaught = false;
+      bool rightExceptionCaught = false;
+      std::vector<int> vec(50);
+      std::atomic<int> sum(0);
+      try {
+        parallel_for(100, [&](size_t i) {
+            sum += vec.at(i);
+        });
+      } catch (std::exception& e) {
+        exceptionCaught = true;
+        std::cerr << "exception caught: " << e.what() << std::endl;
+        if (regex_match(e.what(), ".*vector.*"))
+          rightExceptionCaught = true;
+      }
+
+      AssertNoError(device);
+      const bool success = (exceptionCaught && rightExceptionCaught);
+      return success ? VerifyApplication::PASSED : VerifyApplication::FAILED;
+    }
+  };
+
+  struct ParallelForExceptionTest4 : public VerifyApplication::Test
+  {
+    ParallelForExceptionTest4 (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      bool exceptionCaught = false;
+      std::vector<int> vec(50);
+      std::atomic<int> total(0);
+      try {
+        parallel_for(100, [&](size_t i) {
+            try {
+              total += vec.at(i);
+            } catch(std::exception& e) {
+            }
+        });
+      } catch (std::exception& e) {
+        exceptionCaught = true;
+      }
+
+      AssertNoError(device);
+      const bool success = (!exceptionCaught);
+      return success ? VerifyApplication::PASSED : VerifyApplication::FAILED;
+    }
+  };
+
+  struct ParallelForExceptionTest5 : public VerifyApplication::Test
+  {
+    ParallelForExceptionTest5 (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      bool exceptionCaught = false;
+      bool rightExceptionCaught = false;
+      bool secondParallelForExecuted = false;
+      std::vector<int> vec(50);
+      std::atomic<int> sum(0);
+
+      try {
+        parallel_for(100, [&](size_t i) {
+          sum += vec.at(i);
+        });
+      } catch (std::exception& e) {
+        std::cerr << "\nexception caught: " << e.what() << std::endl;
+        exceptionCaught = true;
+        if (regex_match(e.what(), ".*vector.*"))
+          rightExceptionCaught = true;
+      }
+
+      parallel_for(40, [&](size_t i) {
+        secondParallelForExecuted = true;
+        sum += vec.at(i);
+      });
+
+      //std::cerr << "exception caught: " << exceptionCaught << std::endl;
+      //std::cerr << "right exception caught: " << rightExceptionCaught << std::endl;
+      //std::cerr << "second parallel for executed: " << secondParallelForExecuted << std::endl;
+
+      AssertNoError(device);
+      const bool success = (secondParallelForExecuted && exceptionCaught && rightExceptionCaught);
+      return success ? VerifyApplication::PASSED : VerifyApplication::FAILED;
+    }
+  };
+
+  struct ParallelForExceptionTest6 : public VerifyApplication::Test
+  {
+    ParallelForExceptionTest6 (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+      bool exceptionCaught = false;
+      std::atomic<int> sum(0);
+
+      try {
+
+      std::vector<int> vec = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+      parallel_for(20, [&](size_t j) {
+        parallel_for(10, [&](size_t i) {
+          sum += vec.at(i);
+        });
+      });
+
+      } catch (std::exception& e) {
+        exceptionCaught = true;
+        //std::cerr << "failure: test encountered exception " << e.what() << std::endl;
+      }
+
+      //std::cerr << "sum: " << sum << std::endl;
+      //std::cerr << "exception caught: " << exceptionCaught << std::endl;
+
+      AssertNoError(device);
+      const bool success = (!exceptionCaught && (sum == 1100));
+      return success ? VerifyApplication::PASSED : VerifyApplication::FAILED;
+
+      return VerifyApplication::FAILED;
+    }
+  };
+
+  struct ParallelForExceptionTest7 : public VerifyApplication::Test
+  {
+    ParallelForExceptionTest7 (std::string name, int isa)
+      : VerifyApplication::Test(name,isa,VerifyApplication::TEST_SHOULD_PASS) {}
+
+    VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
+    {
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
+      RTCDeviceRef device = rtcNewDevice(cfg.c_str());
+      errorHandler(nullptr,rtcGetDeviceError(device));
+
+
+      bool exceptionCaught = false;
+      bool caughtExpectedException = false;
+      bool caughtUnexpectedException = false;
+      bool secondParallelForExecuted = false;
+      std::vector<int> vec = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+      std::atomic<int> sum1(0);
+      std::atomic<int> sum2(0);
+      const size_t outerCnt = 1;
+      try {
+        parallel_for(outerCnt, [&](size_t i) {
+          try {
+            parallel_for(100, [&](size_t i) {
+              sum1 += vec.at(i);
+            });
+          } catch (std::exception& e) {
+            std::cerr << "expected exception caught: " << e.what() << std::endl;
+            exceptionCaught = true;
+            if (regex_match(e.what(), ".*vector.*"))
+              caughtExpectedException = true;
+          }
+
+          try {
+            parallel_for(10, [&](size_t i) {
+              secondParallelForExecuted = true;
+              sum2 += vec.at(i);
+            });
+          } catch (std::exception& e) {
+            std::cerr << "secound inner for loop caught unexpected exception: " << e.what() << std::endl;
+            exceptionCaught = true;
+            caughtUnexpectedException = true;
+          }
+        });
+      } catch (std::exception& e) {
+        std::cerr << "outer for loop caught unexpected exception: " << e.what() << std::endl;
+        caughtUnexpectedException = true;
+      }
+
+      //printf("sum: %d\n", sum2.load());
+      //printf("exception caught: %d\n", exceptionCaught);
+      //printf("caught expected exception: %d\n", caughtExpectedException);
+      //printf("caught unexpected exception: %d\n", caughtUnexpectedException);
+      //printf("second parallel for executed: %d\n", secondParallelForExecuted);
+
+      AssertNoError(device);
+      const bool success = (secondParallelForExecuted && exceptionCaught && caughtExpectedException && !caughtUnexpectedException && (sum2 == 55*outerCnt));
+      return success ? VerifyApplication::PASSED : VerifyApplication::FAILED;
+    }
+  };
 
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
@@ -5679,6 +5946,14 @@ namespace embree
 
       groups.top()->add(new MemoryMonitorTest("regression_static_memory_monitor", isa,rtcore_regression_static_thread,30));
       groups.top()->add(new MemoryMonitorTest("regression_dynamic_memory_monitor",isa,rtcore_regression_dynamic_thread,30));
+
+      groups.top()->add(new ParallelForExceptionTest1("parallel_for_exception_test1",isa));
+      groups.top()->add(new ParallelForExceptionTest2("parallel_for_exception_test2",isa));
+      groups.top()->add(new ParallelForExceptionTest3("parallel_for_exception_test3",isa));
+      groups.top()->add(new ParallelForExceptionTest4("parallel_for_exception_test4",isa));
+      groups.top()->add(new ParallelForExceptionTest5("parallel_for_exception_test5",isa));
+      groups.top()->add(new ParallelForExceptionTest6("parallel_for_exception_test6",isa));
+      groups.top()->add(new ParallelForExceptionTest7("parallel_for_exception_test7",isa));
 
       /**************************************************************************/
       /*                  Function Level Testing                                */

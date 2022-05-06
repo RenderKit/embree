@@ -49,11 +49,11 @@ namespace embree
       Task* prevTask = thread.task;
       thread.task = this;
       try {
-        if (thread.scheduler->cancellingException == nullptr)
+        if (context->cancellingException == nullptr)
           closure->execute();
       } catch (...) {
-        if (thread.scheduler->cancellingException == nullptr)
-          thread.scheduler->cancellingException = std::current_exception();
+        if (context->cancellingException == nullptr)
+          context->cancellingException = std::current_exception();
       }
       thread.task = prevTask;
       add_dependencies(-1);
@@ -291,8 +291,7 @@ namespace embree
     size_t threadIndex = allocThreadIndex();
     condition.wait(mutex, [&] () { return hasRootTask.load(); });
     mutex.unlock();
-    std::exception_ptr except = thread_loop(threadIndex);
-    if (except != nullptr) std::rethrow_exception(except);
+    thread_loop(threadIndex);
   }
 
   void TaskScheduler::reset() {
@@ -316,15 +315,15 @@ namespace embree
     return old;
   }
 
-  dll_export bool TaskScheduler::wait()
+  dll_export void TaskScheduler::wait()
   {
     Thread* thread = TaskScheduler::thread();
-    if (thread == nullptr) return true;
+    if (thread == nullptr)
+      return;
     while (thread->tasks.execute_local_internal(*thread,thread->task)) {};
-    return thread->scheduler->cancellingException == nullptr;
   }
 
-  std::exception_ptr TaskScheduler::thread_loop(size_t threadIndex)
+  void TaskScheduler::thread_loop(size_t threadIndex)
   {
     /* allocate thread structure */
     std::unique_ptr<Thread> mthread(new Thread(threadIndex,this)); // too large for stack allocation
@@ -346,10 +345,6 @@ namespace embree
     threadLocal[threadIndex].store(nullptr);
     swapThread(oldThread);
 
-    /* remember exception to throw */
-    std::exception_ptr except = nullptr;
-    if (cancellingException != nullptr) except = cancellingException;
-
     /* wait for all threads to terminate */
     threadCounter--;
 #if defined(__WIN32__)
@@ -367,7 +362,6 @@ namespace embree
           yield();
 #endif
 	}
-    return except;
   }
 
   bool TaskScheduler::steal_from_other_threads(Thread& thread)

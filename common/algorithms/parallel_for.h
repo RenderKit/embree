@@ -16,14 +16,17 @@ namespace embree
   {
 #if defined(TASKING_INTERNAL)
     if (N) {
+      TaskScheduler::TaskGroupContext context;
       TaskScheduler::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
           assert(r.size() == 1);
           func(r.begin());
-        });
-      if (!TaskScheduler::wait())
-        throw std::runtime_error("task cancelled");
+        },&context);
+      TaskScheduler::wait();
+      if (context.cancellingException != nullptr) {
+        std::rethrow_exception(context.cancellingException);
+      }
     }
-    
+
 #elif defined(TASKING_TBB)
   #if TBB_INTERFACE_VERSION >= 12002
     tbb::task_group_context context;
@@ -55,9 +58,12 @@ namespace embree
   {
     assert(first <= last);
 #if defined(TASKING_INTERNAL)
-    TaskScheduler::spawn(first,last,minStepSize,func);
-    if (!TaskScheduler::wait())
-      throw std::runtime_error("task cancelled");
+    TaskScheduler::TaskGroupContext context;
+    TaskScheduler::spawn(first,last,minStepSize,func,&context);
+    TaskScheduler::wait();
+    if (context.cancellingException != nullptr) {
+      std::rethrow_exception(context.cancellingException);
+    }
 
 #elif defined(TASKING_TBB)
   #if TBB_INTERFACE_VERSION >= 12002
