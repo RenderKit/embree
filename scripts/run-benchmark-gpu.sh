@@ -2,7 +2,7 @@
 
 ## Copyright 2020 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
-GPU_BENCHMARK_COMMON="platform:x64 compiler:dpcpp build:Release isa:SSE2 EMBREE_DPCPP_SUPPORT:ON sycl:dg2-b0-512 tasking:TBB2021.5.0 intensity:0 EMBREE_USE_GOOGLE_BENCHMARK:ON"
+GPU_BENCHMARK_COMMON="platform:x64 compiler:dpcpp build:Release isa:SSE2 EMBREE_DPCPP_SUPPORT:ON sycl:dg2 tasking:TBB2021.5.0 intensity:0 EMBREE_USE_GOOGLE_BENCHMARK:ON"
 
 rm -rf benchmark_results && mkdir benchmark_results
 
