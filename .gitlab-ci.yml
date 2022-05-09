@@ -139,6 +139,7 @@ continuous-linux-DG2-JIT:
 
 continuous-linux-DG2-JIT-test:
   extends: .test_dg2
+  tags:  [docker-gpu, dg2, vis-sdp-dg2-03]
   needs: ["continuous-linux-DG2-JIT"]
 
 continuous-linux-PVC-AOT:
