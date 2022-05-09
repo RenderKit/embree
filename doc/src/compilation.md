@@ -125,6 +125,66 @@ administrator rights) you need to add embree_root_directory/build to
 your `LD_LIBRARY_PATH`.
 
 
+Linux DPC++ Compilation
+-----------------------
+
+The Embree DPC++ compilation under Linux has been tested with the following DPC++ compilers:
+
+  - [oneAPI DPC++ compiler 2022.04.18](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220418/dpcpp-compiler.tar.gz)
+  
+Please download and install one of these compilers. E.g. to install
+the oneAPI DPC++ compiler 2022.04.18 compiler:
+
+   wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220418/dpcpp-compiler.tar.gz
+   tar xzf dpcpp-compiler.tar.gz
+   source ./dpcpp-compiler/startup.sh
+
+Now you can compile Embree using CMake. Create a build directory
+inside the Embree root directory and execute `ccmake ..` inside this
+build directory.
+
+    mkdir build
+    cd build
+    ccmake -DCMAKE_CXX_COMPILER=clang++ \
+           -DCMAKE_C_COMPILER=clang \
+           -DEMBREE_DPCPP_SUPPORT=ON \
+           -DEMBREE_DPCPP_AOT_DEVICES=dg2 ..
+    
+The `startup.sh` script above did put the DPC++ version of `clang++`
+and `clang` into your path, thus the CMake compiler selection above
+configures the Embree project to use the just installed DPC++
+compiler.
+
+We also turn on DPC++ support in Embree using the
+`EMBREE_DPCPP_SUPPORT` cmake variable.
+
+Under Linux, code generated with JIT compilation is not functioning at
+the moment, thus AOT compilation for the DG2 device has to get enabled
+as a workaround using the "EMBREE_DPCPP_AOT_DEVICES=dg2" cmake
+setting.
+
+To run the SYCL code, but also for AOT compilation, you need to
+install the KMD and UMD drivers of your Intel Xe HPG/HPC GPUs for one
+of the supported Linux distributions:
+
+  - Ubuntu 20.04
+  - SLES 15SP3
+  - RHEL 8.5
+
+Latest drivers can get found on [intel.com/sdp](https://intel.com/sdp)
+searching for the latest `Xe HPC Family Driver FW and Tools`
+package. Follow the driver installation instructions.
+
+Now you can compile the Embree code:
+
+    make
+
+
+The executables will be generated inside the build folder. The
+executable names of the DPC++ versions of the tutorials end with
+`_sycl`.
+
+
 Windows
 -------
 
@@ -241,6 +301,54 @@ example, to build the Embree library in parallel use
     cmake --build . --config Release --target embree -- /m
 
 
+Windows DPC++ Compilation
+-------------------------
+
+The Embree DPC++ compilation under Windows has been tested with the following DPC++ compilers:
+
+  - [oneAPI DPC++ compiler 2022.03.10](https://github.com/intel/llvm/suites/5602828495/artifacts/182002768)
+  
+Please download and install one of these compilers. Then execute the
+following line with properly configures the environment to use the
+DPC++ compiler:
+
+    call embree\\scripts\\vars.bat path_to_dpcpp_compiler path_to_gfx_driver --include-intel-llvm
+
+The `path_to_dpcpp_compiler` should point to your unpacked DPC++
+compiler, and the `path_to_gfx_driver` is not used and should also
+point to that same folder.
+
+Now you can configure Embree using CMake. Create a build directory
+inside the Embree root directory and execute `ccmake ..` inside this
+build directory.
+
+    mkdir build
+    cd build
+
+    cmake -G Ninja \
+          -D CMAKE_CXX_FLAGS=-fuse-ld=link\
+          -D CMAKE_C_FLAGS=-fuse-ld=link\
+          -D CMAKE_CXX_COMPILER=clang++\
+          -D CMAKE_C_COMPILER=clang\
+          -D EMBREE_DPCPP_SUPPORT=ON \
+          -D EMBREE_DPCPP_AOT_DEVICES=none ..
+          
+
+This uses the Ninja generator which is required for the DPC++
+compiler, and configures CMake to use `clang++` and `clang` from the
+just installed DPC++ compiler.
+
+We also enable DPC++ support in Embree using the
+`EMBREE_DPCPP_SUPPORT` CMake option, and only enable just in time
+compilation (JIT compilation) by setting `EMBREE_DPCPP_AOT_DEVICES` to
+`none`. Ahead of time compilation (AOT compilation) is currently not
+working under Windows.
+
+Now you can build Embree:
+
+    cmake --build . --config Release
+
+
 CMake Configuration
 -------------------
 
@@ -259,10 +367,9 @@ parameters that can be configured in CMake:
   is ON by default.
 
 + `EMBREE_DPCPP_SUPPORT`: Enables GPU support using DPC++. When this
-  option is enabled you have to use either the oneAPI DPC++ compiler
-  from https://github.com/intel/llvm or the Intel(R) oneAPI DPC++
-  compiler shipped with Intel(R) oneAPI from
-  https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp
+  option is enabled you have to use some DPC++ compiler. Please see
+  section [Linux DPC++ Compilation] and [Windows DPC++ Compilation]
+  on supported DPC++ compilers.
 
 + `EMBREE_DPCPP_AOT_DEVICES`: Selects a list of Xe GPU devices for
   ahead of time (AOT) compilation of GPU code. Possible values are
