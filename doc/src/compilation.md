@@ -125,8 +125,7 @@ administrator rights) you need to add embree_root_directory/build to
 your `LD_LIBRARY_PATH`.
 
 
-Linux DPC++ Compilation
------------------------
+### Linux DPC++ Compilation
 
 The Embree DPC++ compilation under Linux has been tested with the following DPC++ compilers:
 
@@ -135,9 +134,9 @@ The Embree DPC++ compilation under Linux has been tested with the following DPC+
 Please download and install one of these compilers. E.g. to install
 the oneAPI DPC++ compiler 2022.04.18 compiler:
 
-   wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220418/dpcpp-compiler.tar.gz
-   tar xzf dpcpp-compiler.tar.gz
-   source ./dpcpp-compiler/startup.sh
+    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220418/dpcpp-compiler.tar.gz
+    tar xzf dpcpp-compiler.tar.gz
+    source ./dpcpp-compiler/startup.sh
 
 Now you can compile Embree using CMake. Create a build directory
 inside the Embree root directory and execute `ccmake ..` inside this
@@ -161,19 +160,8 @@ We also turn on DPC++ support in Embree using the
 Under Linux, code generated with JIT compilation is not functioning at
 the moment, thus AOT compilation for the DG2 device has to get enabled
 as a workaround using the "EMBREE_DPCPP_AOT_DEVICES=dg2" cmake
-setting.
-
-To run the SYCL code, but also for AOT compilation, you need to
-install the KMD and UMD drivers of your Intel Xe HPG/HPC GPUs for one
-of the supported Linux distributions:
-
-  - Ubuntu 20.04
-  - SLES 15SP3
-  - RHEL 8.5
-
-Latest drivers can get found on [intel.com/sdp](https://intel.com/sdp)
-searching for the latest `Xe HPC Family Driver FW and Tools`
-package. Follow the driver installation instructions.
+setting. For AOT compilation to work you have to install the
+[Linux HPG/HPC Driver Installation] section.
 
 Now you can compile the Embree code:
 
@@ -185,9 +173,26 @@ executable names of the DPC++ versions of the tutorials end with
 `_sycl`.
 
 
+### Linux HPG/HPC Driver Installation
+
+To run the SYCL code, but also for AOT compilation, you need to
+install the KMD and UMD drivers of your Intel Xe HPG/HPC GPUs for one
+of the supported Linux distributions:
+
+  - Ubuntu 20.04
+  - SLES 15SP3
+  - RHEL 8.5
+
+Latest drivers can get found on [intel.com/sdp](https://intel.com/sdp)
+searching for the latest `Xe HPC Family Driver FW and Tools`
+package. Follow the driver installation instructions. We tested Embree
+with the `Xe HPC Family Driver FW and Tools #11` driver dated
+2022-03-25.
+
+
 Windows
 -------
-
+        
 Embree is tested using the following compilers under Windows:
 
   - Visual Studio 2019
@@ -301,8 +306,7 @@ example, to build the Embree library in parallel use
     cmake --build . --config Release --target embree -- /m
 
 
-Windows DPC++ Compilation
--------------------------
+### Windows DPC++ Compilation
 
 The Embree DPC++ compilation under Windows has been tested with the following DPC++ compilers:
 
@@ -349,6 +353,16 @@ Now you can build Embree:
     cmake --build . --config Release
 
 
+### Windows HPG Driver Installation
+
+In order to run the DPC++/SYCL tutorials on HPG hardware, you first
+need to install the proper graphics drivers. Latest drivers can get
+found on [intel.com/sdp](https://intel.com/sdp) searching for the
+latest `Discrete Graphics2 (DG2) FRD Kit: DGD25KEF1Q Resource Drive -
+Qual` package. Follow the driver installation instructions. We tested
+Embree with driver dated 2022-03-22.
+
+
 CMake Configuration
 -------------------
 
@@ -384,9 +398,9 @@ parameters that can be configured in CMake:
   One can also specify multiple Xe devices separated by comma to
   compile ahead of time for multiple devices, e.g. "dg2,pvc". When
   enabling AOT compilation for one or multiple Xe devices, JIT
-  compilation will always additionaly be enabled in case the code is
+  compilation will always additionally be enabled in case the code is
   started on a device no code is precompiled for.
-  
+
   Execute "ocloc compile --help" for more details of possible devices
   to pass. Embree is only supported on Xe HPG/HPC and newer devices.
 
