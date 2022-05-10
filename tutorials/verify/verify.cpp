@@ -4694,7 +4694,7 @@ namespace embree
         parallel_for(100, [&](size_t i) {
           num_executed++;
         });
-      } catch (std::exception& e) {
+      } catch (std::exception&) {
         //std::cerr << "exception caught: " << e.what() << std::endl;
         exceptionCaught = true;
       }
@@ -4759,7 +4759,7 @@ namespace embree
         });
       } catch (std::exception& e) {
         exceptionCaught = true;
-        std::cerr << "exception caught: " << e.what() << std::endl;
+        //std::cerr << "exception caught: " << e.what() << std::endl;
         if (regex_match(e.what(), ".*vector.*"))
           rightExceptionCaught = true;
       }
@@ -4788,10 +4788,11 @@ namespace embree
         parallel_for(100, [&](size_t i) {
             try {
               total += vec.at(i);
-            } catch(std::exception& e) {
+            } catch(std::exception&) {
             }
         });
       } catch (std::exception& e) {
+        std::cerr << "\nexception caught: " << e.what() << std::endl;
         exceptionCaught = true;
       }
 
@@ -4823,7 +4824,7 @@ namespace embree
           sum += vec.at(i);
         });
       } catch (std::exception& e) {
-        std::cerr << "\nexception caught: " << e.what() << std::endl;
+        //std::cerr << "\nexception caught: " << e.what() << std::endl;
         exceptionCaught = true;
         if (regex_match(e.what(), ".*vector.*"))
           rightExceptionCaught = true;
@@ -4869,7 +4870,7 @@ namespace embree
 
       } catch (std::exception& e) {
         exceptionCaught = true;
-        //std::cerr << "failure: test encountered exception " << e.what() << std::endl;
+        std::cerr << "failure: test encountered exception " << e.what() << std::endl;
       }
 
       //std::cerr << "sum: " << sum << std::endl;
@@ -4910,7 +4911,7 @@ namespace embree
               sum1 += vec.at(i);
             });
           } catch (std::exception& e) {
-            std::cerr << "expected exception caught: " << e.what() << std::endl;
+            //std::cerr << "expected exception caught: " << e.what() << std::endl;
             exceptionCaught = true;
             if (regex_match(e.what(), ".*vector.*"))
               caughtExpectedException = true;

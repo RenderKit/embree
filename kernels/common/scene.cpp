@@ -822,7 +822,6 @@ namespace embree
     /* initiate build */
     try {
       TaskScheduler::TaskGroupContext context;
-      std::cout << "initiate build" << std::endl;
       scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, &context, 1, !join);
     }
     catch (...) {

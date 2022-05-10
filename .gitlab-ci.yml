@@ -131,6 +131,16 @@ continuous-linux-DG2-AOT-test:
   extends: .test_dg2
   needs: ["continuous-linux-DG2-AOT"]
 
+continuous-linux-DG2-AOT-INT:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2 tasking:INT intensity:4"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [embree, docker]
+
+continuous-linux-DG2-AOT-INT-test:
+  extends: .test_dg2
+  needs: ["continuous-linux-DG2-AOT-INT"]
+
 continuous-linux-DG2-JIT:
   extends: .build
   before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none CURVE:OFF tasking:TBB intensity:1"]
@@ -155,6 +165,14 @@ continuous-windows-DG2-AOT:
   stage: build
   script:
     - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:dg2 intensity:3
+    - python scripts/test.py build
+    - python scripts/test.py test
+  tags:   [vis-sdp-dg2-05]
+
+continuous-windows-DG2-AOT-INT:
+  stage: build
+  script:
+    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON tasking:INT sycl:dg2 intensity:3
     - python scripts/test.py build
     - python scripts/test.py test
   tags:   [vis-sdp-dg2-05]
