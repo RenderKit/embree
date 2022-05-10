@@ -136,7 +136,10 @@ the oneAPI DPC++ compiler 2022.04.18 compiler:
 
     wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220418/dpcpp-compiler.tar.gz
     tar xzf dpcpp-compiler.tar.gz
-    source ./dpcpp-compiler/startup.sh
+    source ./dpcpp_compiler/startup.sh
+
+Please also install all Linux packages described in the previous
+section.
 
 Now you can compile Embree using CMake. Create a build directory
 inside the Embree root directory and execute `ccmake ..` inside this
@@ -146,16 +149,18 @@ build directory.
     cd build
     ccmake -DCMAKE_CXX_COMPILER=clang++ \
            -DCMAKE_C_COMPILER=clang \
+           -DEMBREE_ISPC_SUPPORT=OFF \
            -DEMBREE_DPCPP_SUPPORT=ON \
            -DEMBREE_DPCPP_AOT_DEVICES=dg2 ..
-    
+           
+
 The `startup.sh` script above did put the DPC++ version of `clang++`
 and `clang` into your path, thus the CMake compiler selection above
 configures the Embree project to use the just installed DPC++
 compiler.
 
-We also turn on DPC++ support in Embree using the
-`EMBREE_DPCPP_SUPPORT` cmake variable.
+We disable ISPC with `EMBREE_ISPC_SUPPORT=OFF` and turn on DPC++
+support through `EMBREE_DPCPP_SUPPORT=ON`.
 
 Under Linux, code generated with JIT compilation is not functioning at
 the moment, thus AOT compilation for the DG2 device has to get enabled
