@@ -2,7 +2,6 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 IF (EMBREE_GEOMETRY_USER)
-IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")  # FIXME: not working in JIT mode #1172
     
 INCLUDE(tutorial)
 ADD_TUTORIAL(user_geometry)
@@ -17,5 +16,4 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
   ENDIF()
 ENDIF()
 
-ENDIF()
 ENDIF()
