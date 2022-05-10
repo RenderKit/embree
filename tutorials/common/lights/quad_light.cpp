@@ -51,6 +51,18 @@ RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes QuadLight_sample(const Light* super
   return res;
 }
 
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes QuadLight_eval(const Light* super,
+                                                          const DifferentialGeometry& dg,
+                                                          const Vec3fa& dir)
+  
+{
+  Light_EvalRes res;
+  res.value = Vec3fa(0.f);
+  res.dist = inf;
+  res.pdf = 0.f;
+  return res;
+}
+
 
 // Exports (called from C++)
 //////////////////////////////////////////////////////////////////////////////
@@ -79,7 +91,8 @@ extern "C" void* QuadLight_create()
   QuadLight* self = (QuadLight*) alignedUSMMalloc(sizeof(QuadLight),16);
 
   Light_Constructor(&self->super);
-  self->super.sample = GET_FUNCTION_POINTER(QuadLight_sample);
+  //self->super.sample = GET_FUNCTION_POINTER(QuadLight_sample);
+  self->super.type = LIGHT_QUAD;
 
   QuadLight_set(self,
                 Vec3fa(0.f),

@@ -119,8 +119,9 @@ export void* uniform SpotLight_create()
   uniform SpotLight* uniform self = uniform new uniform SpotLight;
 
   Light_Constructor(&self->super);
-  self->super.sample = GET_FUNCTION_POINTER(SpotLight_sample);
-  self->super.eval = GET_FUNCTION_POINTER(SpotLight_eval);
+  //self->super.sample = GET_FUNCTION_POINTER(SpotLight_sample);
+  //self->super.eval = GET_FUNCTION_POINTER(SpotLight_eval);
+  self->super.type = LIGHT_SPOT;
 
   SpotLight_set(self,
                 make_Vec3f(0.f),

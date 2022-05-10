@@ -121,8 +121,9 @@ extern "C" void* SpotLight_create()
   SpotLight* self = (SpotLight*) alignedUSMMalloc(sizeof(SpotLight),16);
 
   Light_Constructor(&self->super);
-  self->super.sample = GET_FUNCTION_POINTER(SpotLight_sample);
-  self->super.eval = GET_FUNCTION_POINTER(SpotLight_eval);
+  //self->super.sample = GET_FUNCTION_POINTER(SpotLight_sample);
+  //self->super.eval = GET_FUNCTION_POINTER(SpotLight_eval);
+  self->super.type = LIGHT_SPOT;
 
   SpotLight_set(self,
                 Vec3fa(0.f),

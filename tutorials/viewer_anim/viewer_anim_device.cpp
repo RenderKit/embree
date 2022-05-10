@@ -406,6 +406,7 @@ extern "C" void device_render (int* pixels,
   /* samples LS positions as pointlights */
   /* =================================== */
 
+#if 0
   if (g_ispc_scene->numLights)
   {
     if (ls_positions == nullptr) ls_positions = (Vec3fa*) alignedUSMMalloc((g_ispc_scene->numLights)*sizeof(Vec3fa),16);
@@ -425,7 +426,8 @@ extern "C" void device_render (int* pixels,
       ls_positions[i] = ls.dir * ls.dist;
     }
   }
-
+#endif
+  
   /* =============== */
   /* update geometry */
   /* =============== */

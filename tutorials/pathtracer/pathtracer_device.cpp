@@ -3,6 +3,12 @@
 
 #include "pathtracer_device.h"
 
+#include "../common/lights/ambient_light.cpp"
+#include "../common/lights/directional_light.cpp"
+#include "../common/lights/point_light.cpp"
+#include "../common/lights/quad_light.cpp"
+#include "../common/lights/spot_light.cpp"
+
 namespace embree {
 
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterReject(const RTCFilterFunctionNArguments* args);
@@ -36,6 +42,59 @@ extern "C" int g_animation_mode;
 
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
+
+////////////////////////////////////////////////////////////////////////////////
+//                               Lights                                       //
+////////////////////////////////////////////////////////////////////////////////
+
+Light_SampleRes Lights_sample(const Light* self,
+                              const DifferentialGeometry& dg, /*! point to generate the sample for >*/
+                              const Vec2f s)                /*! random numbers to generate the sample >*/
+{
+  TutorialLightType ty = self->type;
+  switch (ty) {
+  case LIGHT_AMBIENT    : return AmbientLight_sample(self,dg,s);
+  case LIGHT_POINT      : return PointLight_sample(self,dg,s);
+  case LIGHT_DIRECTIONAL: return DirectionalLight_sample(self,dg,s);
+  case LIGHT_SPOT       : return SpotLight_sample(self,dg,s);
+  case LIGHT_QUAD       : return QuadLight_sample(self,dg,s);
+  default: {
+    Light_SampleRes res;
+    res.weight = zero;
+    res.dir = zero;
+    res.dist = zero;
+    res.pdf = inf;
+    return res;
+  }
+  }
+}
+  
+Light_EvalRes Lights_eval(const Light* self,
+                          const DifferentialGeometry& dg,
+                          const Vec3fa& dir)
+{
+  TutorialLightType ty = self->type;
+  switch (ty) {
+  case LIGHT_AMBIENT     : return AmbientLight_eval(self,dg,dir);
+  case LIGHT_POINT       : return PointLight_eval(self,dg,dir);
+  case LIGHT_DIRECTIONAL : return DirectionalLight_eval(self,dg,dir);
+  case LIGHT_SPOT        : return SpotLight_eval(self,dg,dir);
+  case LIGHT_QUAD        : return QuadLight_eval(self,dg,dir);
+  default: {
+    Light_EvalRes res;
+    res.value = Vec3fa(0.f);
+    res.dist = inf;
+    res.pdf = 0.f;
+    return res;
+  }
+  }
+}
+
+  
+////////////////////////////////////////////////////////////////////////////////
+//                                 BRDF                                       //
+////////////////////////////////////////////////////////////////////////////////
+
 
 struct BRDF
 {
@@ -1567,7 +1626,8 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
       {
         const Light* l = data.ispc_scene->lights[i];
-        Light_EvalRes le = l->eval(l,dg,ray.dir);
+        //Light_EvalRes le = l->eval(l,dg,ray.dir);
+        Light_EvalRes le = Lights_eval(l,dg,ray.dir);
         L = L + Lw*le.value;
       }
 
@@ -1612,7 +1672,8 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
     {
       const Light* l = data.ispc_scene->lights[i];
-      Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
+      //Light_SampleRes ls = l->sample(l,dg,RandomSampler_get2D(sampler));
+      Light_SampleRes ls = Lights_sample(l,dg,RandomSampler_get2D(sampler));
       if (ls.pdf <= 0.0f) continue;
       Vec3fa transparency = Vec3fa(1.0f);
       Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);

@@ -123,8 +123,9 @@ extern "C" void* PointLight_create()
 {
   PointLight* self = (PointLight*) alignedUSMMalloc(sizeof(PointLight),16);
   Light_Constructor(&self->super);
-  self->super.sample = GET_FUNCTION_POINTER(PointLight_sample);
-  self->super.eval = GET_FUNCTION_POINTER(PointLight_eval);
+  //self->super.sample = GET_FUNCTION_POINTER(PointLight_sample);
+  //self->super.eval = GET_FUNCTION_POINTER(PointLight_eval);
+  self->super.type = LIGHT_POINT;
 
   PointLight_set(self, Vec3fa(0.f), Vec3fa(1.f), 0.f);
   return self;

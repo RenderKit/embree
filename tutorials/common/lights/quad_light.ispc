@@ -49,6 +49,18 @@ RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes QuadLight_sample(const uniform Ligh
   return res;
 }
 
+RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes QuadLight_eval(const uniform Light* uniform super,
+                                                          const DifferentialGeometry& dg,
+                                                          const Vec3f& dir)
+  
+{
+  Light_EvalRes res;
+  res.value = make_Vec3f(0,0,0);
+  res.dist = inf;
+  res.pdf = 0.f;
+  return res;
+}
+
 
 // Exports (called from C++)
 //////////////////////////////////////////////////////////////////////////////
@@ -77,7 +89,8 @@ export void* uniform QuadLight_create()
   uniform QuadLight* uniform self = uniform new uniform QuadLight;
 
   Light_Constructor(&self->super);
-  self->super.sample = GET_FUNCTION_POINTER(QuadLight_sample);
+  //self->super.sample = GET_FUNCTION_POINTER(QuadLight_sample);
+  self->super.type = LIGHT_QUAD;
 
   QuadLight_set(self,
                 make_Vec3f(0.f),

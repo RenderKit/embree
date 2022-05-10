@@ -396,6 +396,7 @@ export void device_render (uniform int* uniform pixels,
   /* samples LS positions as pointlights */
   /* =================================== */
 
+#if 0
   if (g_ispc_scene->numLights)
   {
     if (ls_positions == NULL) ls_positions = uniform new varying Vec3f[g_ispc_scene->numLights];
@@ -415,6 +416,7 @@ export void device_render (uniform int* uniform pixels,
       ls_positions[i] = ls.dir * ls.dist;
     }
   }
+#endif
 
   /* =============== */
   /* update geometry */

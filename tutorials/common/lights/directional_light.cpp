@@ -84,8 +84,9 @@ extern "C" void* DirectionalLight_create()
 {
   DirectionalLight* self = (DirectionalLight*) alignedUSMMalloc(sizeof(DirectionalLight),16);
   Light_Constructor(&self->super);
-  self->super.sample = GET_FUNCTION_POINTER(DirectionalLight_sample);
-  self->super.eval = GET_FUNCTION_POINTER(DirectionalLight_eval);
+  //self->super.sample = GET_FUNCTION_POINTER(DirectionalLight_sample);
+  //self->super.eval = GET_FUNCTION_POINTER(DirectionalLight_eval);
+  self->super.type = LIGHT_DIRECTIONAL;
 
   DirectionalLight_set(self, Vec3fa(0.f, 0.f, 1.f), Vec3fa(1.f), 1.f);
   return self;

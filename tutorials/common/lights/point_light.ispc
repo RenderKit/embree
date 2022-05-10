@@ -121,8 +121,9 @@ export void* uniform PointLight_create()
 {
   uniform PointLight* uniform self = uniform new uniform PointLight;
   Light_Constructor(&self->super);
-  self->super.sample = GET_FUNCTION_POINTER(PointLight_sample);
-  self->super.eval = GET_FUNCTION_POINTER(PointLight_eval);
+  //self->super.sample = GET_FUNCTION_POINTER(PointLight_sample);
+  //self->super.eval = GET_FUNCTION_POINTER(PointLight_eval);
+  self->super.type = LIGHT_POINT;
 
   PointLight_set(self, make_Vec3f(0.f), make_Vec3f(1.f), 0.f);
   return self;

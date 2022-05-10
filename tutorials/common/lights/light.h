@@ -10,6 +10,17 @@ namespace embree {
 
 struct Light;
 
+enum TutorialLightType
+{
+  LIGHT_AMBIENT,
+  LIGHT_POINT,
+  LIGHT_DIRECTIONAL,
+  LIGHT_SPOT,
+  LIGHT_DISTANT,
+  LIGHT_TRIANGLE,
+  LIGHT_QUAD,
+};
+  
 struct Light_SampleRes
 {
   Vec3fa weight;  //!< radiance that arrives at the given point divided by pdf
@@ -41,15 +52,16 @@ typedef Light_EvalRes (*Light_EvalFunc)(const Light* self,
 
 struct Light
 {
-  Light_SampleFunc sample;
-  Light_EvalFunc eval;
+  //Light_SampleFunc sample;
+  //Light_EvalFunc eval;
+  TutorialLightType type;
 };
 
 RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes Light_eval(const Light* self, const DifferentialGeometry& dg, const Vec3fa& dir);
 
 inline void Light_Constructor(Light* self)
 {
-  self->eval = GET_FUNCTION_POINTER(Light_eval);
+  //self->eval = GET_FUNCTION_POINTER(Light_eval);
 }
 
 } // namespace embree

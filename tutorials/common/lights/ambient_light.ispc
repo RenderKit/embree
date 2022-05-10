@@ -54,8 +54,9 @@ void AmbientLight_Constructor(uniform AmbientLight* uniform self,
 {
   Light_Constructor(&self->super);
   self->radiance = radiance;
-  self->super.sample = GET_FUNCTION_POINTER(AmbientLight_sample);
-  self->super.eval = GET_FUNCTION_POINTER(AmbientLight_eval);
+  //self->super.sample = GET_FUNCTION_POINTER(AmbientLight_sample);
+  //self->super.eval = GET_FUNCTION_POINTER(AmbientLight_eval);
+  self->super.type = LIGHT_AMBIENT;
 }
 
 

@@ -82,8 +82,9 @@ export void* uniform DirectionalLight_create()
 {
   uniform DirectionalLight* uniform self = uniform new uniform DirectionalLight;
   Light_Constructor(&self->super);
-  self->super.sample = GET_FUNCTION_POINTER(DirectionalLight_sample);
-  self->super.eval = GET_FUNCTION_POINTER(DirectionalLight_eval);
+  //self->super.sample = GET_FUNCTION_POINTER(DirectionalLight_sample);
+  //self->super.eval = GET_FUNCTION_POINTER(DirectionalLight_eval);
+  self->super.type = LIGHT_DIRECTIONAL;
 
   DirectionalLight_set(self, make_Vec3f(0.f, 0.f, 1.f), make_Vec3f(1.f), 1.f);
   return self;
