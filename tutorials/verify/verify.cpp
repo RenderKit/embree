@@ -2759,8 +2759,8 @@ namespace embree
       {
         for (unsigned int ix=0; ix<4; ix++) 
         {
-          unsigned int primID = iy*4+ix;
-          if (!subdiv) primID *= 2;
+          //unsigned int primID = iy*4+ix;
+          //if (!subdiv) primID *= 2;
           rays[iy*4+ix] = makeRay(Vec3fa(float(ix),float(iy),0.0f),Vec3fa(0,0,-1));
         }
       }

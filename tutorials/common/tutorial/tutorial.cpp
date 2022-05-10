@@ -249,7 +249,7 @@ namespace embree
        }, "--time: sets time for motion blur");
 
     /* output filename */
-    registerOption("shader", [this] (Ref<ParseStream> cin, const FileName& path) {
+     registerOption("shader", [] (Ref<ParseStream> cin, const FileName& path) {
         std::string mode = cin->getString();
         if      (mode == "default" ) shader = SHADER_DEFAULT;
         else if (mode == "eyelight") shader = SHADER_EYELIGHT;

@@ -821,8 +821,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereFilterFunction(const RTCFilterFunctionNA
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
-  const unsigned int N = args->N;
-  assert(N == 1);
+  //const unsigned int N = args->N;
+  //assert(N == 1);
 
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)

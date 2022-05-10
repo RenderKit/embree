@@ -292,7 +292,7 @@ namespace embree
             assert(tri.gflags == tri1.gflags);
             assert(tri.gmask  == tri1.gmask );
             
-            bool pair = pair_triangles(Vec3<uint32_t>(tri.i0,tri.i1,tri.i2),Vec3<uint32_t>(tri1.i0,tri1.i1,tri1.i2),lb0,lb1,lb2);
+            bool pair MAYBE_UNUSED = pair_triangles(Vec3<uint32_t>(tri.i0,tri.i1,tri.i2),Vec3<uint32_t>(tri1.i0,tri1.i1,tri1.i2),lb0,lb1,lb2);
             assert(pair);
             
             if (lb0 == 3) p3 = tri1.p0;
@@ -349,7 +349,7 @@ namespace embree
         
         const ReductionTy createProcedurals(FastAllocator::CachedAllocator alloc, const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
-          const uint32_t numPrims = curRecord.size();
+          const uint32_t numPrims MAYBE_UNUSED = curRecord.size();
           assert(numPrims <= QBVH6::InternalNode6::NUM_CHILDREN);
           
           PrimRange ranges[QBVH6::InternalNode6::NUM_CHILDREN+1];
@@ -611,7 +611,7 @@ namespace embree
           assert(curRecord.depth <= cfg.maxDepth);
           
           /* all primitives have to have the same type */
-          Type ty = getType(prims[curRecord.begin()].geomID());
+          Type ty MAYBE_UNUSED = getType(prims[curRecord.begin()].geomID());
           for (size_t i=curRecord.begin(); i<curRecord.end(); i++)
             assert(getType(prims[i].geomID()) == ty);
           
@@ -849,7 +849,7 @@ namespace embree
           
           const uint32_t targetSubPrims = splitprims;
           const uint32_t geomID = prim.geomID();
-          const uint32_t primID = prim.primID();
+          const uint32_t primID MAYBE_UNUSED = prim.primID();
           assert(primID == 0); // has to be zero as we encode root offset here
 
           const Instance instance = getInstance(geomID,0);

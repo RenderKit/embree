@@ -861,7 +861,7 @@ namespace embree
 #if defined(__AVX__)
             //STAT3(normal.trav_hit_boxes[popcnt(m_frustum_node)], 1, 1, 1);
 #endif
-            size_t num_child_hits = 0;
+            //size_t num_child_hits = 0;
             do {
               const size_t i = bscf(m_frustum_node);
               vfloat<K> lnearP;
@@ -875,7 +875,7 @@ namespace embree
                 assert(child != BVH::emptyNode);
                 BVHN<N>::prefetch(child);
                 if (likely(cur != BVH::emptyNode)) {
-                  num_child_hits++;
+                  //num_child_hits++;
                   stackPtr->ptr  = cur;
                   stackPtr->mask = m_active;
                   stackPtr++;

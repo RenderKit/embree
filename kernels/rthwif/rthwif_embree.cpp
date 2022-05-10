@@ -250,9 +250,9 @@ bool intersect_primitive(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INST
   
   isa::CurvePrecalculations1 pre(ray,context->scene);
   
-  const Geometry::GType gtype = geom->getType();
-  const Geometry::GType stype  = (Geometry::GType)(gtype & Geometry::GTY_SUBTYPE_MASK);
-  const Geometry::GType basis = (Geometry::GType)(gtype & Geometry::GTY_BASIS_MASK);
+  const Geometry::GType gtype MAYBE_UNUSED = geom->getType();
+  const Geometry::GType stype MAYBE_UNUSED = (Geometry::GType)(gtype & Geometry::GTY_SUBTYPE_MASK);
+  const Geometry::GType basis MAYBE_UNUSED = (Geometry::GType)(gtype & Geometry::GTY_BASIS_MASK);
 
 #if defined(EMBREE_DPCPP_MBLUR)
 

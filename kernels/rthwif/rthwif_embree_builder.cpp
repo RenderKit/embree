@@ -191,18 +191,13 @@ namespace embree
       if (scene->get(geomID)->mask & 0xFFFFFF80)
         gflags = GeometryFlags::NONE;
           
-      if (QuadMesh* mesh = scene->getSafe<QuadMesh>(geomID))
-      {
-        const QuadMesh::Quad quad = mesh->quad(primID);
-        const Vec3f p0 = mesh->vertices[0][quad.v[0]];
-        const Vec3f p1 = mesh->vertices[0][quad.v[1]];
-        const Vec3f p2 = mesh->vertices[0][quad.v[2]];
-        const Vec3f p3 = mesh->vertices[0][quad.v[3]];
-        return QBVH6BuilderSAH::Quad(p0,p1,p2,p3,gflags,mask32_to_mask8(mesh->mask));
-      }
-      else {
-        assert(false);
-      }
+      QuadMesh* mesh = scene->get<QuadMesh>(geomID);
+      const QuadMesh::Quad quad = mesh->quad(primID);
+      const Vec3f p0 = mesh->vertices[0][quad.v[0]];
+      const Vec3f p1 = mesh->vertices[0][quad.v[1]];
+      const Vec3f p2 = mesh->vertices[0][quad.v[2]];
+      const Vec3f p3 = mesh->vertices[0][quad.v[3]];
+      return QBVH6BuilderSAH::Quad(p0,p1,p2,p3,gflags,mask32_to_mask8(mesh->mask));
     };
 
     auto getProcedural = [&](unsigned int geomID, unsigned int primID) {
