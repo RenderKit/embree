@@ -216,21 +216,21 @@ continuous-macosx-ARM-Debug-CLANG-ISPC1.17.0-NEON-TBB_HOMEBREW:
 #  tags:   [embree, mac]
 #  only:   [pushes]
 #
-continuous-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2021.2.0:
+continuous-windows-x64-RelWithDebInfo-V140-ISPC1.9.2-SSE2-TBB2020.2:
   extends: .build_and_test
-  before_script: ["python scripts/test.py configure platform:x64 threads:4 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2021.2.0 intensity:2"]
+  before_script: ["python scripts/test.py configure platform:x64 threads:4 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2020.2 intensity:2"]
   tags: [embree, win10, v120]
   only: [pushes]
 
-#continuous-windows-Win32-RelWithDebInfoDebug-V140-ISPC1.12.0-SSE2-TBB2021.2.0:
+#continuous-windows-Win32-RelWithDebInfoDebug-V140-ISPC1.12.0-SSE2-TBB2020.2:
 #  extends: .build_and_test
-#  before_script: ["python scripts\\test.py configure platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2021.2.0 intensity:2"]
+#  before_script: ["python scripts\\test.py configure platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:2"]
 #  tags:   [embree, win10, v140]
 #  only:   [pushes]
 
-continuous-windows-x64-RelWithDebInfo-V141-ISPC1.17.0-SSE2-TBB2021.2.0:
+continuous-windows-x64-RelWithDebInfo-V141-ISPC1.17.0-SSE2-TBB2020.2:
   extends: .build_and_test
-  before_script: ["python scripts\\test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:8"]
+  before_script: ["python scripts\\test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8"]
   tags:   [embree, win10, v141]
   only:   [pushes]
 
