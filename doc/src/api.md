@@ -107,6 +107,18 @@ particular the CPU and other GPUs cannot get used as a DPC++
 device. To render on the CPU just use the standard C99 API without
 relying on DPC++.
 
+Ahead of time compilation (AOT compilation) does currently only work
+for a single device, thus multiple devices cannot get specified with
+the `EMBREE_DPCPP_AOT_DEVICES` CMake option.
+
+The function pointer types `RTCFilterFunctionN` for the filter
+function callback as well as `RTCIntersectFunctionN` and
+`RTCOccludedFunctionN` for the user geometry callbacks are defined
+using a `const void*` input instead a pointer to the proper arguments
+struct. This is a temporary workaround for some DPC++ compiler issue
+that prevents inlining of function pointers passed via the
+`RTCIntersectArguments` struct to ray intersection.
+
 The SYCL language spec puts some language restrictions to device
 functions, such as disallowing: malloc, invokation of virtual
 functions, function pointers, runtime type information, exceptions,
@@ -136,14 +148,6 @@ get used on the device:
   `rtcInterpolate` function does not know the geometry type it is
   interpolating over, thus its implementation on the GPU would contain
   a large switch statement for all potential geometry types.
-
-- The function pointer types `RTCFilterFunctionN` for the filter
-  function callback as well as `RTCIntersectFunctionN` and
-  `RTCOccludedFunctionN` for the user geometry callbacks are defined
-  using a `const void*` input instead a pointer to the proper
-  arguments struct. This is a temporary workaround for some DPC++
-  compiler issue that prevents inlining of function pointers passed
-  via the `RTCIntersectArguments` struct to ray intersection.
 
 - Subdivision surfaces are not supported for Embree DPC++ devices.
 
