@@ -279,6 +279,11 @@
 ```
 \pagebreak
 
+## rtcSetGeometryUserDataFromScene
+``` {include=src/api/rtcSetGeometryUserDataFromScene.md}
+```
+\pagebreak
+
 ## rtcGetGeometryUserData
 ``` {include=src/api/rtcGetGeometryUserData.md}
 ```

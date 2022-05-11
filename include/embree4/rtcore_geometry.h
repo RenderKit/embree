@@ -190,7 +190,7 @@ RTC_API void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, RTCFilte
 RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* ptr);
 
 /* Gets the user-defined data pointer of the geometry. */
-RTC_SYCL_API void* rtcGetGeometryUserData(RTCGeometry geometry);
+RTC_API void* rtcGetGeometryUserData(RTCGeometry geometry);
 
 /* Set the point query callback function of a geometry. */
 RTC_API void rtcSetGeometryPointQueryFunction(RTCGeometry geometry, RTCPointQueryFunction pointQuery);

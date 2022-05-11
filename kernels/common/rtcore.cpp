@@ -1654,6 +1654,21 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
+  RTC_API void* rtcGetGeometryUserDataFromScene (RTCScene hscene, unsigned int geomID)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetGeometryUserDataFromScene);
+#if defined(DEBUG)
+    RTC_VERIFY_HANDLE(hscene);
+    RTC_VERIFY_GEOMID(geomID);
+#endif
+    //RTC_ENTER_DEVICE(hscene); // do not enable for performance reasons
+    return scene->get(geomID)->getUserData();
+    RTC_CATCH_END2(scene);
+    return nullptr;
+  }
+
   RTC_API void rtcSetGeometryBoundsFunction (RTCGeometry hgeometry, RTCBoundsFunction bounds, void* userPtr)
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1889,7 +1904,6 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(geometry);
   }
 
-#if !defined(__SYCL_DEVICE_ONLY__)
   RTC_API RTCGeometry rtcGetGeometry (RTCScene hscene, unsigned int geomID)
   {
     Scene* scene = (Scene*) hscene;
@@ -1904,7 +1918,6 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
     return nullptr;
   }
-#endif
 
   RTC_API RTCGeometry rtcGetGeometryThreadSafe (RTCScene hscene, unsigned int geomID)
   {

@@ -184,8 +184,9 @@ properly for the CPU and GPU.
   API functions that take an RTCGeometry object as argument cannot get
   used during rendering. Thus in particular the
   `rtcGetGeometryUserData(RTCGeometry)` call cannot get used, but
-  there is an alternative function `rtcGetGeometryUserData(RTCScene
-  scene,uint geomID)` that should get used instead.
+  there is an alternative function
+  `rtcGetGeometryUserDataFromScene(RTCScene scene,uint geomID)` that
+  should get used instead.
 
 - For performance reasons, the `rtcInterpolate` function cannot get
   used on the device, and vertex data interpolation should get

@@ -88,30 +88,18 @@ EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcForwardOccluded1(const RTCOccludedFunct
   args->forward_scene = scene;
 }
 
-EMBREE_SYCL_SIMD_N SYCL_EXTERNAL RTCGeometry rtcGetGeometry (RTCScene hscene, unsigned int geomID)
+EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void* rtcGetGeometryUserDataFromScene (RTCScene hscene, unsigned int geomID)
 {
   Scene* scene = (Scene*) hscene;
   //RTC_CATCH_BEGIN;
-  //RTC_TRACE(rtcGetGeometry);
+  //RTC_TRACE(rtcGetGeometryUserDataFromScene);
 #if defined(DEBUG)
   //RTC_VERIFY_HANDLE(hscene);
   //RTC_VERIFY_GEOMID(geomID);
 #endif
   //RTC_ENTER_DEVICE(hscene); // do not enable for performance reasons
-  return (RTCGeometry) scene->get(geomID);
+  return scene->get(geomID)->getUserData();
   //RTC_CATCH_END2(scene);
-  //return nullptr;
-}
-
-EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void* rtcGetGeometryUserData (RTCGeometry hgeometry)
-{
-  Geometry* geometry = (Geometry*) hgeometry; // no ref counting here!
-  //RTC_CATCH_BEGIN;
-  //RTC_TRACE(rtcGetGeometryUserData);
-  //RTC_VERIFY_HANDLE(hgeometry);
-  ////RTC_ENTER_DEVICE(hgeometry); // do not enable for performance reasons !
-  return geometry->getUserData();
-  //RTC_CATCH_END2(geometry);
   //return nullptr;
 }
 
