@@ -615,7 +615,7 @@ namespace embree
   }
 
   void* DeviceGPU::malloc(size_t size, size_t align) {
-    return alignedSYCLMallocWorkaround(gpu_context,gpu_device,gpu_queue,size,align);
+    return alignedSYCLMalloc(gpu_context,gpu_device,gpu_queue,size,align);
   }
 
   void DeviceGPU::free(void* ptr) {

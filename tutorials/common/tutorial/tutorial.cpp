@@ -708,10 +708,6 @@ namespace embree
       
     if (pixels) alignedUSMFree(pixels);
     pixels = (unsigned*) alignedUSMMalloc(width*height*sizeof(unsigned),64);
-
-#if defined(EMBREE_DPCPP_SUPPORT)
-    makeUSMDeviceWriteable(pixels,width*height*sizeof(unsigned));
-#endif
   }
 
   void TutorialApplication::set_scene (TutorialScene* in)
