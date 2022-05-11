@@ -1196,10 +1196,10 @@ namespace embree
             if (verbose) std::cout << "trying BVH build with " << bytes << " bytes" << std::endl;
             
             /* allocate BVH memory */
+            allocator.clear();
             if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(device,bytes));
             memset(accel.data(),0,accel.size()); // FIXME: not required
             
-            allocator.clear();
             allocator.addBlock(accel.data(),accel.size());
             FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
             thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
