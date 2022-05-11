@@ -243,6 +243,7 @@ Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float
   case SHADER_TEXCOORDS:
   case SHADER_TEXCOORDS_GRID:
 
+#if !defined(__SYCL_DEVICE_ONLY__)
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
       return make_Vec3f(0.0f,0.0f,1.0f);
 
@@ -258,6 +259,7 @@ Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float
       else
         return ((int)(10.0f*st.x)+(int)(10.0f*st.y)) % 2 == 0 ? make_Vec3f(1,0,0) : make_Vec3f(0,1,0);
     }
+#endif
     
     return make_Vec3f(1.0f);
 

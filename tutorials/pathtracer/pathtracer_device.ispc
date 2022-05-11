@@ -1269,6 +1269,7 @@ void postIntersectGeometry(const uniform TutorialData& data, const Ray& ray, Dif
       }
     }
   }
+#if !defined(__SYCL_DEVICE_ONLY__)
   else if (geometry->type == SUBDIV_MESH)
   {
     uniform ISPCSubdivMesh* uniform mesh = (uniform ISPCSubdivMesh* uniform) geometry;
@@ -1287,6 +1288,7 @@ void postIntersectGeometry(const uniform TutorialData& data, const Ray& ray, Dif
     dg.u = 0;
     dg.v = 0;
   }
+#endif
   else if (geometry->type == GRID_MESH)
   {
     uniform ISPCGridMesh* uniform mesh = (uniform ISPCGridMesh* uniform) geometry;

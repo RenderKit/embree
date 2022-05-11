@@ -88,40 +88,6 @@ EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcForwardOccluded1(const RTCOccludedFunct
   args->forward_scene = scene;
 }
 
-EMBREE_SYCL_SIMD_N SYCL_EXTERNAL void rtcInterpolate(const struct RTCInterpolateArguments* args)
-{
-  Geometry* geometry = (Geometry*) args->geometry;
-
-  switch (geometry->getType())
-  {
-  case Geometry::GTY_FLAT_LINEAR_CURVE: 
-  case Geometry::GTY_ROUND_LINEAR_CURVE: 
-  case Geometry::GTY_ORIENTED_LINEAR_CURVE: 
-  case Geometry::GTY_CONE_LINEAR_CURVE: ((LineSegments*)geometry)->interpolate_impl<1>(args); break;
-      
-  case Geometry::GTY_FLAT_BEZIER_CURVE:
-  case Geometry::GTY_ROUND_BEZIER_CURVE:
-  case Geometry::GTY_ORIENTED_BEZIER_CURVE: ((isa::CurveGeometryInterface<BezierCurveT>*)geometry)->interpolate_impl<1>(args); break;
-      
-  case Geometry::GTY_FLAT_BSPLINE_CURVE:
-  case Geometry::GTY_ROUND_BSPLINE_CURVE:
-  case Geometry::GTY_ORIENTED_BSPLINE_CURVE: ((isa::CurveGeometryInterface<BSplineCurveT>*)geometry)->interpolate_impl<1>(args); break;
-
-  case Geometry::GTY_FLAT_HERMITE_CURVE:
-  case Geometry::GTY_ROUND_HERMITE_CURVE:
-  case Geometry::GTY_ORIENTED_HERMITE_CURVE: ((isa::HermiteCurveGeometryInterface<HermiteCurveT>*)geometry)->interpolate_impl<1>(args); break;
-      
-  case Geometry::GTY_FLAT_CATMULL_ROM_CURVE:
-  case Geometry::GTY_ROUND_CATMULL_ROM_CURVE:
-  case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE: ((isa::CurveGeometryInterface<CatmullRomCurveT>*)geometry)->interpolate_impl<1>(args); break;
-
-  case Geometry::GTY_TRIANGLE_MESH: ((TriangleMesh*)geometry)->interpolate_impl<1>(args); break;
-  case Geometry::GTY_QUAD_MESH: ((QuadMesh*)geometry)->interpolate_impl<1>(args); break;
-  case Geometry::GTY_GRID_MESH: ((GridMesh*)geometry)->interpolate_impl<1>(args); break;
-  default: break;
-  };
-}
-
 EMBREE_SYCL_SIMD_N SYCL_EXTERNAL RTCGeometry rtcGetGeometry (RTCScene hscene, unsigned int geomID)
 {
   Scene* scene = (Scene*) hscene;

@@ -276,7 +276,7 @@ struct RTCInterpolateArguments
 };
 
 /* Interpolates vertex data to some u/v location and optionally calculates all derivatives. */
-RTC_SYCL_API void rtcInterpolate(const struct RTCInterpolateArguments* args);
+RTC_API void rtcInterpolate(const struct RTCInterpolateArguments* args);
 
 /* Interpolates vertex data to some u/v location. */
 RTC_FORCEINLINE void rtcInterpolate0(RTCGeometry geometry, unsigned int primID, float u, float v, enum RTCBufferType bufferType, unsigned int bufferSlot, float* P, unsigned int valueCount)

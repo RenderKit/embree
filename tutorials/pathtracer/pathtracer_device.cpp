@@ -1272,6 +1272,7 @@ void postIntersectGeometry(const TutorialData& data, const Ray& ray, Differentia
       }
     }
   }
+#if !defined(__SYCL_DEVICE_ONLY__)
   else if (geometry->type == SUBDIV_MESH)
   {
     ISPCSubdivMesh* mesh = (ISPCSubdivMesh*) geometry;
@@ -1290,6 +1291,7 @@ void postIntersectGeometry(const TutorialData& data, const Ray& ray, Differentia
     dg.u = 0;
     dg.v = 0;
   }
+#endif
   else if (geometry->type == GRID_MESH)
   {
     ISPCGridMesh* mesh = (ISPCGridMesh*) geometry;

@@ -244,7 +244,8 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
 
   case SHADER_TEXCOORDS:
   case SHADER_TEXCOORDS_GRID:
-
+    
+#if !defined(__SYCL_DEVICE_ONLY__)
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
       return Vec3fa(0.0f,0.0f,1.0f);
 
@@ -260,6 +261,7 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
       else
         return ((int)(10.0f*st.x)+(int)(10.0f*st.y)) % 2 == 0 ? Vec3fa(1,0,0) : Vec3fa(0,1,0);
     }
+#endif
     
     return Vec3fa(1.0f);
 

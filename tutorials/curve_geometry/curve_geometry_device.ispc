@@ -8,6 +8,43 @@
 RTCScene  g_scene  = NULL;
 uniform TutorialData data;
 
+Vec3f interpolate_linear(const uniform TutorialData& data, unsigned int primID, float u)
+{
+  const Vec3fa c0 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+1];
+  const Vec3fa c1 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+2];
+  return make_Vec3f(c0*(1.0f-u) + c1*u);
+}
+
+Vec3f interpolate_bspline(const uniform TutorialData& data, unsigned int primID, float u)
+{
+  const Vec3fa c0 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+0];
+  const Vec3fa c1 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+1];
+  const Vec3fa c2 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+2];
+  const Vec3fa c3 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+3];
+  const float t  = u;
+  const float s  = 1.0f - u;
+  const float n0 = s*s*s;
+  const float n1 = (4.0f*(s*s*s)+(t*t*t)) + (12.0f*((s*t)*s) + 6.0f*((t*s)*t));
+  const float n2 = (4.0f*(t*t*t)+(s*s*s)) + (12.0f*((t*s)*t) + 6.0f*((s*t)*s));
+  const float n3 = t*t*t;
+  return make_Vec3f((1.0f/6.0f)*(n0*c0 + n1*c1 + n2*c2 + n3*c3));
+}
+
+Vec3f interpolate_catmull_rom(const uniform TutorialData& data, unsigned int primID, float u)
+{
+  const Vec3fa c0 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+0];
+  const Vec3fa c1 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+1];
+  const Vec3fa c2 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+2];
+  const Vec3fa c3 = ((Vec3fa* uniform) data.hair_vertex_colors)[primID+3];
+  const float t  = u;
+  const float s  = 1.0f - u;
+  const float n0 = - t * s * s;
+  const float n1 = 2.0f + t * t * (3.0f * t - 5.0f);
+  const float n2 = 2.0f + s * s * (3.0f * s - 5.0f);
+  const float n3 = - s * t * t;
+  return make_Vec3f(0.5f*(n0*c0 + n1*c1 + n2*c2 + n3*c3));
+}
+
 /* add hair geometry */
 uniform unsigned int addCurve (RTCScene scene, uniform RTCGeometryType gtype, const uniform Vec4f& pos)
 {
@@ -117,9 +154,12 @@ void renderPixelStandard(const uniform TutorialData& data,
     Vec3f diffuse = make_Vec3f(1.0f,0.0f,0.0f);
     if (ray.geomID > 0)
     {
-      foreach_unique (geomID in ray.geomID) {
-        rtcInterpolateV0(rtcGetGeometry(data.g_scene,geomID),ray.primID,ray.u,ray.v,RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,0,&diffuse.x,3);
+      switch (ray.geomID) {
+      case 1: case 2: case 6: diffuse = interpolate_linear(data,ray.primID,ray.u); break;
+      case 3: case 4: case 5: diffuse = interpolate_bspline(data,ray.primID,ray.u); break;
+      case 7: case 8: case 9: diffuse = interpolate_catmull_rom(data,ray.primID,ray.u); break;
       }
+
       diffuse = 0.5f*diffuse;
     }
 
