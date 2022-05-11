@@ -257,10 +257,10 @@ int main()
   Result* result = alignedSYCLMalloc<Result>(queue, 1, 16);
   
   /* This will hit the triangle at t=1. */
-  castRay(queue, scene, 0, 0, -1, 0, 0, 1, result);
+  castRay(queue, scene, 0.33f, 0.33f, -1, 0, 0, 1, result);
 
   /* This will not hit anything. */
-  castRay(queue, scene, 1, 1, -1, 0, 0, 1, result);
+  castRay(queue, scene, 1.00f, 1.00f, -1, 0, 0, 1, result);
   
   alignedSYCLFree(queue, result);
 

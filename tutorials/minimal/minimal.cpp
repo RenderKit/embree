@@ -238,10 +238,10 @@ int main()
   RTCScene scene = initializeScene(device);
 
   /* This will hit the triangle at t=1. */
-  castRay(scene, 0, 0, -1, 0, 0, 1);
+  castRay(scene, 0.33f, 0.33f, -1, 0, 0, 1);
 
   /* This will not hit anything. */
-  castRay(scene, 1, 1, -1, 0, 0, 1);
+  castRay(scene, 1.00f, 1.00f, -1, 0, 0, 1);
 
   /* Though not strictly necessary in this example, you should
    * always make sure to release resources allocated through Embree. */
