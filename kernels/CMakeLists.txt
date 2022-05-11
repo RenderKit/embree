@@ -79,6 +79,14 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_intersector1_bvh4.cpp
   )
 
+IF (EMBREE_DPCPP_SUPPORT)
+  SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
+  rthwif/rthwif_embree_builder.cpp
+  rthwif/builder/qbvh6.cpp
+  rthwif/builder/statistics.cpp
+  )
+ENDIF()
+
 IF (EMBREE_GEOMETRY_SUBDIVISION)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
   common/scene_subdiv_mesh.cpp
@@ -231,15 +239,14 @@ DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})
 ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
 
 IF (EMBREE_DPCPP_SUPPORT)
-  
-  ADD_SUBDIRECTORY(rthwif)
 
   ADD_LIBRARY(embree_sycl STATIC
     common/rtcore_sycl.cpp
     rthwif/rthwif_embree.cpp
     rthwif/rthwif_production.cpp)
-  
+
   SET_TARGET_PROPERTIES(embree_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
+  TARGET_LINK_LIBRARIES(embree_sycl PRIVATE tasking)
 
   INSTALL(TARGETS embree_sycl EXPORT embree_sycl-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
   INSTALL(EXPORT embree_sycl-targets DESTINATION ${EMBREE_CMAKEEXPORT_DIR} COMPONENT devel)
@@ -321,7 +328,7 @@ IF (EMBREE_ISA_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
 ENDIF()
 
 IF (EMBREE_DPCPP_SUPPORT)
-  TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking rthwif -lsycl PUBLIC embree_sycl)
+  TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking -lsycl PUBLIC embree_sycl)
 ELSE()
   TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)
 ENDIF()
