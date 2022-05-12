@@ -317,15 +317,21 @@ The Embree DPC++ compilation under Windows has been tested with the following DP
 
   - [oneAPI DPC++ compiler 2022.03.10](https://github.com/intel/llvm/suites/5602828495/artifacts/182002768)
   
-Please download and install one of these compilers. Then execute the
-following line with properly configures the environment to use the
-DPC++ compiler:
+Please download and install one of these compilers.
 
-    call embree\\scripts\\vars.bat path_to_dpcpp_compiler path_to_gfx_driver --include-intel-llvm
+Then open some "x64 Native Tools Command Prompt" of Visual Studio and
+execute the following line with properly configures the environment to
+use the DPC++ compiler:
+
+    set "DPCPP_DIR=path_to_dpcpp_compiler"
+    set "PATH=%PATH%;%DPCPP_DIR%\bin"
+    set "PATH=%PATH%;%DPCPP_DIR%\lib"
+    set "CPATH=%DPCPP_DIR%\include;%CPATH%"
+    set "INCLUDE=%DPCPP_DIR%\include;%INCLUDE%"
+    set "LIB=%DPCPP_DIR%\lib;%LIB%"
 
 The `path_to_dpcpp_compiler` should point to your unpacked DPC++
-compiler, and the `path_to_gfx_driver` is not used and should also
-point to that same folder.
+compiler.
 
 Now you can configure Embree using CMake. Create a build directory
 inside the Embree root directory and execute `ccmake ..` inside this
@@ -334,18 +340,26 @@ build directory.
     mkdir build
     cd build
 
-    cmake -G Ninja \
-          -D CMAKE_CXX_FLAGS=-fuse-ld=link\
-          -D CMAKE_C_FLAGS=-fuse-ld=link\
-          -D CMAKE_CXX_COMPILER=clang++\
-          -D CMAKE_C_COMPILER=clang\
-          -D EMBREE_DPCPP_SUPPORT=ON \
-          -D EMBREE_DPCPP_AOT_DEVICES=none ..
+    cmake -G Ninja
+          -D CMAKE_BUILD_TYPE=Release
+          -D CMAKE_CXX_COMPILER=clang++
+          -D CMAKE_C_COMPILER=clang
+          -D CMAKE_CXX_FLAGS=-fuse-ld=link
+          -D CMAKE_C_FLAGS=-fuse-ld=link
+          -D EMBREE_MAX_ISA=SSE2
+          -D EMBREE_ISPC_SUPPORT=OFF
+          -D EMBREE_DPCPP_SUPPORT=ON
+          -D EMBREE_DPCPP_AOT_DEVICES=none
+          -D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=OFF
+          -D EMBREE_GEOMETRY_USER_IN_GEOMETRY=OFF 
+          -D TBB_ROOT=path_to_tbb ..
           
-
 This uses the Ninja generator which is required for the DPC++
-compiler, and configures CMake to use `clang++` and `clang` from the
-just installed DPC++ compiler.
+compiler, and configures a release build with using `clang++` and
+`clang` from the just installed DPC++ compiler. The LLVM linker
+`lld-link` is selected by Ninja by default, but that linker is not
+shipped with the DPC++ compiler. Thus linker has to get force to
+the Visual Studio Linker `link` using compilation flags.
 
 We also enable DPC++ support in Embree using the
 `EMBREE_DPCPP_SUPPORT` CMake option, and only enable just in time
@@ -353,9 +367,17 @@ compilation (JIT compilation) by setting `EMBREE_DPCPP_AOT_DEVICES` to
 `none`. Ahead of time compilation (AOT compilation) is currently not
 working under Windows.
 
+Support to store filter function pointers and user geometry callbacks
+inside the geometry object are disabled, as these feature causes low
+performance.
+
 Now you can build Embree:
 
-    cmake --build . --config Release
+    cmake --build .
+
+If you have problems with Ninja re-running CMake in an infinite loop,
+then first remove the "Re-run CMake if any of its inputs changed."
+section from the `build.ninja` file and run the above command again.
 
 
 ### Windows HPG Driver Installation
