@@ -34,6 +34,7 @@ SET(EMBREE_LIBRARY_FILES
   common/rtcore.cpp
   common/rtcore_builder.cpp
   common/scene.cpp
+  common/scene_verify.cpp
   common/alloc.cpp
   common/geometry.cpp
   common/scene_user_geometry.cpp

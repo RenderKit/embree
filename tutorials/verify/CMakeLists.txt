@@ -5,8 +5,12 @@ IF(NOT EMBREE_API_NAMESPACE)
   ADD_LIBRARY(c99_compile_test STATIC api_c99.c)
 ENDIF()
 
-ADD_EXECUTABLE(embree_verify ../../kernels/embree.rc verify.cpp ../common/tutorial/application.cpp ../../kernels/common/geometry.cpp)
-TARGET_LINK_LIBRARIES(embree_verify sys math scenegraph embree tasking)
+ADD_EXECUTABLE(embree_verify ../../kernels/embree.rc verify.cpp
+  ../common/tutorial/application.cpp
+  ../../kernels/common/geometry.cpp
+  ../../kernels/common/scene_verify.cpp
+  )
+TARGET_LINK_LIBRARIES(embree_verify ${EMBREE_LIBRARIES} sys math scenegraph embree tasking)
 SET_PROPERTY(TARGET embree_verify PROPERTY FOLDER tutorials)
 SET_PROPERTY(TARGET embree_verify APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 INSTALL(TARGETS embree_verify DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT examples)

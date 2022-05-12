@@ -206,20 +206,9 @@ namespace embree
     }
 
   protected:
-    
-    __forceinline void checkIfModifiedAndSet () 
-    {
-      if (isModified ()) return;
-      
-      auto geometryIsModified = [this](size_t geomID)->bool {
-        return isGeometryModified(geomID);
-      };
 
-      if (parallel_any_of (size_t(0), geometries.size (), geometryIsModified)) {
-        setModified ();
-      }
-    }
-    
+    void checkIfModifiedAndSet ();
+
   public:
 
     /* get mesh by ID */
