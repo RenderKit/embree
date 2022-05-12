@@ -8,6 +8,8 @@
 #include "scene.h"
 #include "primref.h"
 
+#include "../../common/tasking/taskscheduler.h"
+
 namespace embree
 {
   class FastAllocator

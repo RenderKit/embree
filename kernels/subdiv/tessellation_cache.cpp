@@ -3,6 +3,8 @@
 
 #include "tessellation_cache.h"
 
+#include "../../common/tasking/taskscheduler.h"
+
 namespace embree
 {
   SharedLazyTessellationCache SharedLazyTessellationCache::sharedLazyTessellationCache;
