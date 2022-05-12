@@ -6,7 +6,6 @@
 #include "default.h"
 #include "device.h"
 #include "builder.h"
-#include "../../common/algorithms/parallel_any_of.h"
 #include "scene_triangle_mesh.h"
 #include "scene_quad_mesh.h"
 #include "scene_user_geometry.h"

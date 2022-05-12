@@ -12,6 +12,8 @@
 #include "../geometry/object.h"
 #include "../geometry/instance.h"
 
+#include "../common/algorithms/parallel_for.h"
+
 namespace embree
 {
   namespace isa

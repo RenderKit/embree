@@ -5,6 +5,7 @@
 
 #include "../common/builder.h"
 #include "../../common/algorithms/parallel_reduce.h"
+#include "../../common/algorithms/parallel_sort.h"
 
 namespace embree
 {

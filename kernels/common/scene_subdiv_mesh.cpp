@@ -6,6 +6,8 @@
 #include "../subdiv/patch_eval.h"
 #include "../subdiv/patch_eval_simd.h"
 
+#include "../../common/algorithms/parallel_map.h"
+#include "../../common/algorithms/parallel_set.h"
 #include "../../common/algorithms/parallel_sort.h"
 #include "../../common/algorithms/parallel_prefix_sum.h"
 #include "../../common/algorithms/parallel_for.h"
