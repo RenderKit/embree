@@ -5,14 +5,32 @@
 
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
+
 #include "../../common/algorithms/parallel_reduce.h"
+#include "../../common/tasking/taskscheduler.h"
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 #  include "../rthwif/rthwif_embree_builder.h"
 #endif
 
+
 namespace embree
 {
+
+  struct TaskGroup {
+    /*! global lock step task scheduler */
+#if defined(TASKING_INTERNAL)
+    MutexSys schedulerMutex;
+    Ref<TaskScheduler> scheduler;
+#elif defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
+    tbb::isolated_task_group group;
+#elif defined(TASKING_TBB)
+    tbb::task_group group;
+#elif defined(TASKING_PPL)
+    concurrency::task_group group;
+#endif
+  };
+
   /* error raising rtcIntersect and rtcOccluded functions */
   void missing_rtcCommit()      { throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene not committed"); }
   void invalid_rtcIntersect1()  { throw_RTCError(RTC_ERROR_INVALID_OPERATION,"rtcIntersect and rtcOccluded not enabled"); }
@@ -27,6 +45,7 @@ namespace embree
       scene_flags(RTC_SCENE_FLAG_NONE),
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
       is_build(false), modified(true),
+      taskGroup(new TaskGroup()),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
     device->refInc();
@@ -801,11 +820,11 @@ namespace embree
     /* allocates own taskscheduler for each build */
     Ref<TaskScheduler> scheduler = nullptr;
     { 
-      Lock<MutexSys> lock(schedulerMutex);
-      scheduler = this->scheduler;
+      Lock<MutexSys> lock(taskGroup->schedulerMutex);
+      scheduler = taskGroup->scheduler;
       if (scheduler == null) {
         buildLock.lock();
-        this->scheduler = scheduler = new TaskScheduler;
+        taskGroup->scheduler = scheduler = new TaskScheduler;
       }
     }
 
@@ -822,13 +841,13 @@ namespace embree
     /* initiate build */
     try {
       TaskScheduler::TaskGroupContext context;
-      scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(schedulerMutex); this->scheduler = nullptr; }, &context, 1, !join);
+      scheduler->spawn_root([&]() { commit_task(); Lock<MutexSys> lock(taskGroup->schedulerMutex); taskGroup->scheduler = nullptr; }, &context, 1, !join);
     }
     catch (...) {
       accels_clear();
       updateInterface();
-      Lock<MutexSys> lock(schedulerMutex);
-      this->scheduler = nullptr;
+      Lock<MutexSys> lock(taskGroup->schedulerMutex);
+      taskGroup->scheduler = nullptr;
       throw;
     }
   }
@@ -859,12 +878,12 @@ namespace embree
 
 #if USE_TASK_ARENA
         if (join) {
-          device->arena->execute([&]{ group.wait(); });
+          device->arena->execute([&]{ taskGroup->group.wait(); });
         }
         else
 #endif
         {
-          group.wait();
+          taskGroup->group.wait();
         }
 
         pause_cpu();
@@ -891,19 +910,19 @@ namespace embree
       if (join)
       {
         device->arena->execute([&]{
-            group.run([&]{
+            taskGroup->group.run([&]{
                 tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
               });
-            group.wait();
+            taskGroup->group.wait();
           });
       }
       else
 #endif
       {
-        group.run([&]{
+        taskGroup->group.run([&]{
             tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
           });
-        group.wait();
+        taskGroup->group.wait();
       }
      
       /* reset MXCSR register again */
@@ -944,10 +963,10 @@ namespace embree
     
     try {
 
-      group.run([&]{
+      taskGroup->group.run([&]{
           concurrency::parallel_for(size_t(0), size_t(1), size_t(1), [&](size_t) { commit_task(); });
         });
-      group.wait();
+      taskGroup->group.wait();
 
        /* reset MXCSR register again */
       _mm_setcsr(mxcsr);

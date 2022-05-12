@@ -23,6 +23,8 @@
 
 namespace embree
 {
+  struct TaskGroup;
+
   /*! Base class all scenes are derived from */
   class Scene : public AccelN
   {
@@ -293,18 +295,8 @@ namespace embree
     bool modified;                   //!< true if scene got modified
 
   public:
-    
-    /*! global lock step task scheduler */
-#if defined(TASKING_INTERNAL) 
-    MutexSys schedulerMutex;
-    Ref<TaskScheduler> scheduler;
-#elif defined(TASKING_TBB) && TASKING_TBB_USE_TASK_ISOLATION
-    tbb::isolated_task_group group;
-#elif defined(TASKING_TBB)
-    tbb::task_group group;
-#elif defined(TASKING_PPL)
-    concurrency::task_group group;
-#endif
+
+    std::unique_ptr<TaskGroup> taskGroup;
     
   public:
     struct BuildProgressMonitorInterface : public BuildProgressMonitor {
