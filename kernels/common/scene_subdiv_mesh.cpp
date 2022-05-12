@@ -17,6 +17,16 @@ namespace embree
 {
 #if defined(EMBREE_LOWEST_ISA)
 
+  struct VertexCreaseMap {
+    parallel_map<uint32_t,float> vertexCreaseMap;
+  };
+  struct EdgeCreaseMap {
+    parallel_map<uint64_t,float> edgeCreaseMap;
+  };
+  struct HoleSet{
+    parallel_set<uint32_t> holeSet;
+  };
+
   SubdivMesh::SubdivMesh (Device* device)
     : Geometry(device,GTY_SUBDIV_MESH,0,1), 
       displFunc(nullptr),
@@ -24,7 +34,10 @@ namespace embree
       numHalfEdges(0),
       faceStartEdge(device,0),
       halfEdgeFace(device,0),
+      holeSet(new HoleSet),
       invalid_face(device,0),
+      vertexCreaseMap(new VertexCreaseMap),
+      edgeCreaseMap(new EdgeCreaseMap),
       commitCounter(0)
   {
     
@@ -33,6 +46,8 @@ namespace embree
     topology.resize(1);
     topology[0] = Topology(this);
   }
+
+  SubdivMesh::~SubdivMesh() {}
 
   void SubdivMesh::addElementsToCount (GeometryCounts & counts) const
   {
@@ -438,13 +453,13 @@ namespace embree
 	  edge->next_half_edge_ofs     = nextOfs;
 	  edge->prev_half_edge_ofs     = prevOfs;
 	  edge->opposite_half_edge_ofs = 0;
-	  edge->edge_crease_weight     = mesh->edgeCreaseMap.lookup(key0,0.0f);
-	  edge->vertex_crease_weight   = mesh->vertexCreaseMap.lookup(startVertex0,0.0f);
+	  edge->edge_crease_weight     = mesh->edgeCreaseMap->edgeCreaseMap.lookup(key0,0.0f);
+	  edge->vertex_crease_weight   = mesh->vertexCreaseMap->vertexCreaseMap.lookup(startVertex0,0.0f);
 	  edge->edge_level             = mesh->getEdgeLevel(e+de);
           edge->patch_type             = HalfEdge::COMPLEX_PATCH; // type gets updated below
           edge->vertex_type            = HalfEdge::REGULAR_VERTEX;
 
-          if (unlikely(mesh->holeSet.lookup(unsigned(f)))) 
+          if (unlikely(mesh->holeSet->holeSet.lookup(unsigned(f)))) 
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(std::numeric_limits<uint64_t>::max(),edge);
 	  else
 	    halfEdges1[e+de] = SubdivMesh::KeyHalfEdge(key,edge);
@@ -521,7 +536,7 @@ namespace embree
         {
           /* calculate if face is valid */
           for (size_t t=0; t<mesh->numTimeSteps; t++)
-            mesh->invalidFace(f,t) = !edge->valid(mesh->vertices[t]) || mesh->holeSet.lookup(unsigned(f));
+            mesh->invalidFace(f,t) = !edge->valid(mesh->vertices[t]) || mesh->holeSet->holeSet.lookup(unsigned(f));
         }
 
         /* pin some edges and vertices */
@@ -576,13 +591,13 @@ namespace embree
         
 	if (updateEdgeCreases) {
 	  if (edge.hasOpposite()) // leave weight at inf for borders
-            edge.edge_crease_weight = mesh->edgeCreaseMap.lookup((uint64_t)halfEdgesGeom[i].getEdge(),0.0f);
+            edge.edge_crease_weight = mesh->edgeCreaseMap->edgeCreaseMap.lookup((uint64_t)halfEdgesGeom[i].getEdge(),0.0f);
 	}
         
         /* we only use user specified vertex_crease_weight if the vertex is manifold */
         if (updateVertexCreases && edge.vertex_type != HalfEdge::NON_MANIFOLD_EDGE_VERTEX) 
         {
-	  edge.vertex_crease_weight = mesh->vertexCreaseMap.lookup(halfEdgesGeom[i].vtx_index,0.0f);
+	  edge.vertex_crease_weight = mesh->vertexCreaseMap->vertexCreaseMap.lookup(halfEdgesGeom[i].vtx_index,0.0f);
 
           /* pin corner vertices when requested by user */
           if (subdiv_mode == RTC_SUBDIVISION_MODE_PIN_CORNERS && edge.isCorner())
@@ -693,15 +708,15 @@ namespace embree
     
     /* create set with all vertex creases */
     if (vertex_creases.isLocalModified() || vertex_crease_weights.isLocalModified())
-      vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
+      vertexCreaseMap->vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
     
     /* create map with all edge creases */
     if (edge_creases.isLocalModified() || edge_crease_weights.isLocalModified())
-      edgeCreaseMap.init(edge_creases,edge_crease_weights);
+      edgeCreaseMap->edgeCreaseMap.init(edge_creases,edge_crease_weights);
 
     /* create set with all holes */
     if (holes.isLocalModified())
-      holeSet.init(holes);
+      holeSet->holeSet.init(holes);
 
     /* create topology */
     for (auto& t: topology)
@@ -716,8 +731,8 @@ namespace embree
     /* cleanup some state for static scenes */
     /* if (scene_ == nullptr || scene_->isStaticAccel()) 
     {
-      vertexCreaseMap.clear();
-      edgeCreaseMap.clear();
+      vertexCreaseMap->vertexCreaseMap.clear();
+      edgeCreaseMap->edgeCreaseMap.clear();
     } */
 
     /* clear modified state of all buffers */
