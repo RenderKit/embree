@@ -46,7 +46,7 @@ Device side rendering can then get invoked by submitting a SYCL
 
     queue.submit([=](sycl::handler& cgh)
     {
-      cgh.parallel_for(sycl::range<1>(1),[=](sycl::id<1> item)
+      cgh.parallel_for(sycl::range<1>(1),[=](sycl::id<1> item) RTC_SYCL_KERNEL
       {
         struct RTCIntersectContext context;
         rtcInitIntersectContext(&context);
@@ -81,6 +81,9 @@ traversal from inside a user geometry callback,
 `rtcGetGeometryUserData` to get the user data pointer of some
 geometry. All functions that are allowed to be used during device side
 rendering are marked in the API reference.
+
+The `RTC_SYCL_KERNEL` kernel attribute is required for each kernel
+that invokes ray traversal.
 
 Have a look at the [Minimal] tutorial for a minimal SYCL example.
 

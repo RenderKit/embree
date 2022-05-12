@@ -168,7 +168,7 @@ void DebugShaderData_Constructor(uniform DebugShaderData* uniform This)
     DebugShaderData_Constructor(&data);                                 \
     global_gpu_queue->submit([=](sycl::handler& cgh){                   \
         const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1)); \
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) EMBREE_SYCL_SIMD_N {          \
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {          \
             const unsigned int x = item.get_global_id(0);                       \
             const unsigned int y = item.get_global_id(1);                       \
             RayStats stats;                                             \

@@ -177,11 +177,8 @@ void castRay(sycl::queue& queue, const RTCScene scene,
   {
     const sycl::nd_range<2> nd_range(sycl::range<2>(SYCL_SIMD_WIDTH, 1), 
                                      sycl::range<2>(SYCL_SIMD_WIDTH, 1));
-#if __SYCL_COMPILER_VERSION >= 20210801    
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) [[sycl::reqd_sub_group_size(SYCL_SIMD_WIDTH)]]
-#else                     
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) [[intel::reqd_sub_group_size(SYCL_SIMD_WIDTH)]]
-#endif      
+    
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL
     {
       /*
        * The intersect context can be used to set intersection

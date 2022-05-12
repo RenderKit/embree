@@ -359,21 +359,6 @@ __forceinline std::string toString(long long value) {
 /// SYCL specific
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__SYCL_DEVICE_ONLY__)
-
-#if __SYCL_COMPILER_VERSION >= 20210801
-#  define EMBREE_SYCL_SIMD_N [[intel::reqd_sub_group_size(SYCL_SIMD_WIDTH)]]
-#  define EMBREE_SYCL_SIMD(N) [[intel::reqd_sub_group_size(N)]]  
-#else
-#  define EMBREE_SYCL_SIMD_N [[cl::reqd_sub_group_size(SYCL_SIMD_WIDTH)]]
-#  define EMBREE_SYCL_SIMD(N) [[cl::reqd_sub_group_size(N)]]  
-#endif  
-#  define EMBREE_SYCL_INDIRECTLY_CALLABLE [[intel::device_indirectly_callable]] [[sycl::reqd_sub_group_size(SYCL_SIMD_WIDTH)]]
-#else
-#  define EMBREE_SYCL_SIMD_N
-#  define EMBREE_SYCL_SIMD(N)
-#  define EMBREE_SYCL_INDIRECTLY_CALLABLE
-#endif
 
 #if defined(__SYCL_DEVICE_ONLY__)
 
