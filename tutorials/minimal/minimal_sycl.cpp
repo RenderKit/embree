@@ -241,10 +241,44 @@ void castRay(sycl::queue& queue, const RTCScene scene,
     printf("Did not find any intersection.\n");
 }
 
+/*
+ * Enable persistent JIT compilation caching. These environment
+ * variables must be set before the SYCL device creation.
+ */
+
+void enablePersistentJITCache()
+{
+#if defined(_WIN32)
+  _putenv_s("SYCL_CACHE_PERSISTENT","1");
+  _putenv_s("SYCL_CACHE_DIR","cache");
+#else
+  setenv("SYCL_CACHE_PERSISTENT","1",1);
+  setenv("SYCL_CACHE_DIR","cache",1);
+#endif
+}
+
+/*
+ * Enable pooling for USM allocations which is required if your
+ * application performs many small USM allocations. Embree currently
+ * also relies on this mode to be enabled.
+ */
+
+void enableUSMPooling()
+{
+#if defined(_WIN32)
+  _putenv_s("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M");
+#else
+  setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
+#endif
+}
+
 /* -------------------------------------------------------------------------- */
 
 int main()
 {
+  enablePersistentJITCache();
+  enableUSMPooling();
+
   sycl::queue queue(sycl::gpu_selector{}); 
   sycl::context context = queue.get_context();
   
