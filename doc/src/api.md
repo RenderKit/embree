@@ -101,6 +101,31 @@ variable to some proper directory where the JIT cache should get
 stored. These environment variables have to get set before the Embree
 DPC++/SYCL device is created.
 
+    setenv("SYCL_CACHE_PERSISTENT","1",1);
+    setenv("SYCL_CACHE_DIR","cache_dir",1);
+
+
+DPC++ Memory Pooling
+--------------------
+
+Memory Pooling is a mechanism where small USM memory allocations are
+packed into larger allocation blocks. This mode is required when your
+application performs many small USM allocations, as otherwise only a
+small fraction of GPU memory is usable.
+
+Embree currently also relies on memory pooling to be enabled, but this
+restriction will get fixed.
+
+Memory pooling can get enabled by setting the
+`SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR` environment variable **before** the
+SYCL device creation, e.g.:
+
+    setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
+
+Please see the documentation of that environment variable for details
+on that feature
+(https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md).
+
 
 Embree DPC++/SYCL Limitations
 -----------------------------

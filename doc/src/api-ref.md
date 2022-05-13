@@ -279,16 +279,15 @@
 ```
 \pagebreak
 
-## rtcSetGeometryUserDataFromScene
-``` {include=src/api/rtcSetGeometryUserDataFromScene.md}
-```
-\pagebreak
-
 ## rtcGetGeometryUserData
 ``` {include=src/api/rtcGetGeometryUserData.md}
 ```
 \pagebreak
 
+## rtcGetGeometryUserDataFromScene
+``` {include=src/api/rtcGetGeometryUserDataFromScene.md}
+```
+\pagebreak
 
 ## rtcSetGeometryUserPrimitiveCount
 ``` {include=src/api/rtcSetGeometryUserPrimitiveCount.md}
