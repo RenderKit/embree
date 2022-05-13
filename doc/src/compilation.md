@@ -120,10 +120,12 @@ You can also uninstall Embree again by executing:
 
     sudo make uninstall
 
-If you cannot install Embree on your system (e.g. when you don't have
-administrator rights) you need to add embree_root_directory/build to
-your `LD_LIBRARY_PATH`.
+You can also create an Embree package using the following command:
 
+    make package
+
+Please see the [Building Embree Applications] section on how to build
+your application with such an Embree package.
 
 ### Linux DPC++ Compilation
 
@@ -379,6 +381,13 @@ If you have problems with Ninja re-running CMake in an infinite loop,
 then first remove the "Re-run CMake if any of its inputs changed."
 section from the `build.ninja` file and run the above command again.
 
+You can also create an Embree package using the following command:
+
+    cmake --build . --target PACKAGE
+
+Please see the [Building Embree Applications] section on how to build
+your application with such an Embree package.
+
 
 ### Windows HPG Driver Installation
 
@@ -551,26 +560,6 @@ parameters that can be configured in CMake:
   Instances nested any deeper than this value will silently disappear in
   release mode, and cause assertions in debug mode.
 
-
-Using Embree
-=============
-
-The most convenient way of using Embree is through CMake. Just let
-CMake find Embree using the `FIND_PACKAGE` function inside your
-`CMakeLists.txt` file:
-
-     FIND_PACKAGE(embree 3.0 REQUIRED)
-
-To cmake to properly find Embree you need to set the `embree_DIR`
-variable to the folder you extracted Embree to.
-
-The `FIND_PACKAGE` function will create an embree target that
-you can add to your target link libraries:
-
-    TARGET_LINK_LIBRARIES(application embree)
-
-Now please have a look at the [Embree Tutorials] source code and the
-[Embree API] section to get started.
 
 \pagebreak
 
