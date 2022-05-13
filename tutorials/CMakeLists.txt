@@ -3,6 +3,8 @@
 
 include(CMakeDependentOption)
 
+INSTALL(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README.md" DESTINATION "src" COMPONENT examples)
+
 ADD_SUBDIRECTORY(common/image)
 CMAKE_DEPENDENT_OPTION(EMBREE_TUTORIALS_GLFW  "Enables GLFW usage in tutorials. When disabled tutorial can only render to disk." ON "EMBREE_TUTORIALS" OFF)
 
