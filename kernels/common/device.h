@@ -126,7 +126,7 @@ namespace embree
   public:
 
     // use tasking system arena to execute func
-    void execute(std::function<void()>& func);
+    void execute(bool join, const std::function<void()>& func);
 
     /*! some variables that can be set via rtcSetParameter1i for debugging purposes */
   public:

@@ -399,13 +399,17 @@ namespace embree
 #endif
   }
 
-  void Device::execute(std::function<void()>& func)
+  void Device::execute(bool join, const std::function<void()>& func)
   {
 #if USE_TASK_ARENA
-    arena->arena->execute(func);
-#else
-    func();
+    if (join) {
+      arena->arena->execute(func);
+    }
+    else
 #endif
+    {
+      func();
+    }
   }
 
   void Device::setProperty(const RTCDeviceProperty prop, ssize_t val)

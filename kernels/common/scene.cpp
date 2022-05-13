@@ -876,17 +876,7 @@ namespace embree
 #endif
       
       do {
-
-#if USE_TASK_ARENA
-        if (join) {
-          std::function<void()> func = [&](){ taskGroup->group.wait(); };
-          device->execute(func);
-        }
-        else
-#endif
-        {
-          taskGroup->group.wait();
-        }
+        device->execute(join, [&](){ taskGroup->group.wait(); });
 
         pause_cpu();
         yield();
@@ -907,27 +897,14 @@ namespace embree
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
 #endif
       //ctx.set_priority(tbb::priority_high);
-
-#if USE_TASK_ARENA
-      if (join)
-      {
-        std::function<void()> func = [&](){
-            taskGroup->group.run([&]{
-                tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
-              });
-            taskGroup->group.wait();
-          };
-        device->execute(func);
-      }
-      else
-#endif
+      device->execute(join, [&]()
       {
         taskGroup->group.run([&]{
             tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
           });
         taskGroup->group.wait();
-      }
-     
+      });
+
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);
     } 
