@@ -175,8 +175,8 @@ void castRay(sycl::queue& queue, const RTCScene scene,
 {
   queue.submit([=](sycl::handler& cgh)
   {
-    const sycl::nd_range<2> nd_range(sycl::range<2>(SYCL_SIMD_WIDTH, 1), 
-                                     sycl::range<2>(SYCL_SIMD_WIDTH, 1));
+    const sycl::nd_range<2> nd_range(sycl::range<2>(RTC_SYCL_SIMD_WIDTH, 1), 
+                                     sycl::range<2>(RTC_SYCL_SIMD_WIDTH, 1));
     
     cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL
     {
