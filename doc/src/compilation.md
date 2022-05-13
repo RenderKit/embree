@@ -431,6 +431,9 @@ parameters that can be configured in CMake:
   Execute "ocloc compile --help" for more details of possible devices
   to pass. Embree is only supported on Xe HPG/HPC and newer devices.
 
+  Per default this option is set to "none" under Windows, and "dg2"
+  under Linux.
+
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
   default). Further multiple static libraries are generated for the
   different ISAs selected (e.g. `embree4.a`, `embree4_sse42.a`,
