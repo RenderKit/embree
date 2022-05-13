@@ -12,18 +12,6 @@ namespace embree
   __forceinline bool isCoherent  (RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_COHERENT; }
   __forceinline bool isIncoherent(RTCIntersectContextFlags flags) { return (flags & RTC_INTERSECT_CONTEXT_FLAG_COHERENT) == RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT; }
 
-#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION_MAJOR >= 8)
-#  define USE_TASK_ARENA 1
-#else
-#  define USE_TASK_ARENA 0
-#endif
-
-#if defined(TASKING_TBB) && (TBB_INTERFACE_VERSION >= 11009) // TBB 2019 Update 9
-#  define TASKING_TBB_USE_TASK_ISOLATION 1
-#else
-#  define TASKING_TBB_USE_TASK_ISOLATION 0
-#endif
-
 /*! Macros used in the rtcore API implementation */
 #if 0
 #  define RTC_CATCH_BEGIN

@@ -11,6 +11,7 @@ namespace embree
 {
   class BVH4Factory;
   class BVH8Factory;
+  struct TaskArena;
 
   class Device : public State, public MemoryMonitorInterface
   {
@@ -120,6 +121,13 @@ namespace embree
     /*! shuts down the tasking system */
     void exitTaskingSystem();
 
+    std::unique_ptr<TaskArena> arena;
+
+  public:
+
+    // use tasking system arena to execute func
+    void execute(std::function<void()>& func);
+
     /*! some variables that can be set via rtcSetParameter1i for debugging purposes */
   public:
     static ssize_t debug_int0;
@@ -133,10 +141,6 @@ namespace embree
     std::unique_ptr<BVH8Factory> bvh8_factory;
 #endif
 
-#if USE_TASK_ARENA
-    std::unique_ptr<tbb::task_arena> arena;
-#endif
-    
     /* ray streams filter */
     RayStreamFilterFuncs rayStreamFilters;
   };

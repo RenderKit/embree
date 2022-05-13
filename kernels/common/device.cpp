@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "device.h"
+
+#include "../../common/tasking/taskscheduler.h"
+
 #include "../hash.h"
 #include "scene_triangle_mesh.h"
 #include "scene_user_geometry.h"
@@ -19,7 +22,6 @@
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
 
-#include "../../common/tasking/taskscheduler.h"
 #include "../../common/sys/alloc.h"
 
 #if defined(EMBREE_DPCPP_SUPPORT)
@@ -39,8 +41,15 @@ namespace embree
   static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
   static std::map<Device*,size_t> g_num_threads_map;
+  
+  struct TaskArena
+  {
+#if USE_TASK_ARENA
+    std::unique_ptr<tbb::task_arena> arena;
+#endif
+  };
 
-  Device::Device (const char* cfg)
+  Device::Device (const char* cfg) : arena(new TaskArena())
   {
     /* check that CPU supports lowest ISA */
     if (!hasISA(ISA)) {
@@ -367,7 +376,7 @@ namespace embree
 #if USE_TASK_ARENA
     const size_t nThreads = min(maxNumThreads,TaskScheduler::threadCount());
     const size_t uThreads = min(max(numUserThreads,(size_t)1),nThreads);
-    arena = make_unique(new tbb::task_arena((int)nThreads,(unsigned int)uThreads));
+    arena->arena = make_unique(new tbb::task_arena((int)nThreads,(unsigned int)uThreads));
 #endif
   }
 
@@ -386,7 +395,16 @@ namespace embree
       TaskScheduler::create(maxNumThreads,State::set_affinity,State::start_threads);
     }
 #if USE_TASK_ARENA
-    arena.reset();
+    arena->arena.reset();
+#endif
+  }
+
+  void Device::execute(std::function<void()>& func)
+  {
+#if USE_TASK_ARENA
+    arena->arena->execute(func);
+#else
+    func();
 #endif
   }
 

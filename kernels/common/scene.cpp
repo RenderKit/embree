@@ -3,11 +3,12 @@
 
 #include "scene.h"
 
+#include "../../common/tasking/taskscheduler.h"
+
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
 
 #include "../../common/algorithms/parallel_reduce.h"
-#include "../../common/tasking/taskscheduler.h"
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 #  include "../rthwif/rthwif_embree_builder.h"
@@ -878,7 +879,8 @@ namespace embree
 
 #if USE_TASK_ARENA
         if (join) {
-          device->arena->execute([&]{ taskGroup->group.wait(); });
+          std::function<void()> func = [&](){ taskGroup->group.wait(); };
+          device->execute(func);
         }
         else
 #endif
@@ -909,12 +911,13 @@ namespace embree
 #if USE_TASK_ARENA
       if (join)
       {
-        device->arena->execute([&]{
+        std::function<void()> func = [&](){
             taskGroup->group.run([&]{
                 tbb::parallel_for (size_t(0), size_t(1), size_t(1), [&] (size_t) { commit_task(); }, ctx);
               });
             taskGroup->group.wait();
-          });
+          };
+        device->execute(func);
       }
       else
 #endif
