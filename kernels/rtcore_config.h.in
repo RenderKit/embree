@@ -69,12 +69,10 @@
 #  define RTC_SYCL_INDIRECTLY_CALLABLE
 #elif defined(__SYCL_DEVICE_ONLY__)
 #  define RTC_SYCL_KERNEL              [[intel::reqd_sub_group_size(SYCL_SIMD_WIDTH)]]
-#  define RTC_SYCL_SIMD_WIDTH          [[intel::reqd_sub_group_size(SYCL_SIMD_WIDTH)]]
-#  define RTC_SYCL_API                 [[intel::reqd_sub_group_size(SYCL_SIMD_WIDTH)]] SYCL_EXTERNAL
+#  define RTC_SYCL_API                 SYCL_EXTERNAL
 #  define RTC_SYCL_INDIRECTLY_CALLABLE [[intel::reqd_sub_group_size(SYCL_SIMD_WIDTH)]] [[intel::device_indirectly_callable]] SYCL_EXTERNAL
 #else
 #  define RTC_SYCL_KERNEL
-#  define RTC_SYCL_SIMD_WIDTH 
 #  define RTC_SYCL_API RTC_API
 #  define RTC_SYCL_INDIRECTLY_CALLABLE
 #endif
