@@ -129,10 +129,10 @@ ENDIF()
 ##############################################################################
 # Configurations (add configurations also to common/cmake/embree-config.cmake)
 
-OPTION(EMBREE_ZIP_MODE "Create Embree ZIP package" OFF)
+OPTION(EMBREE_ZIP_MODE "Create Embree ZIP package" ON)
 MARK_AS_ADVANCED(EMBREE_ZIP_MODE)
 
-OPTION(EMBREE_INSTALL_DEPENDENCIES "Install Embree dependencies in binary packages and install" OFF)
+OPTION(EMBREE_INSTALL_DEPENDENCIES "Install Embree dependencies in binary packages and install" ON)
 MARK_AS_ADVANCED(EMBREE_INSTALL_DEPENDENCIES)
 
 OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
