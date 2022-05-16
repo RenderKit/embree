@@ -78,7 +78,7 @@ IF (WIN32)
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")              # FIXME: debug information generation takes forever in SYCL
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
 
-    SET(CMAKE_LINK_FLAGS_SYCL "-fsycl")
+    SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
 
       SET(CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
       #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ControlKernelTotalSize=0")
@@ -137,8 +137,6 @@ IF (WIN32)
       IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
         SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} ${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
       ENDIF()
-
-      SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} ${SYCL_LIBS}")
 
       SET(CMAKE_CXX_FLAGS_SYCL  "${CMAKE_CXX_FLAGS_SYCL}  ${CMAKE_CXX_FLAGS_SYCL_AOT}")
       SET(CMAKE_LINK_FLAGS_SYCL "${CMAKE_LINK_FLAGS_SYCL} ${CMAKE_LINK_FLAGS_SYCL_AOT}")

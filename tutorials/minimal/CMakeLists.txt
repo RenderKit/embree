@@ -22,13 +22,6 @@ ENDIF()
 
 IF (EMBREE_DPCPP_SUPPORT)
   
-  GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
-  if (NOT WIN32 OR EXISTS "${SYCL_COMPILER_DIR}/../lib/sycl.lib")
-    set(SYCL_LIBS "-L${SYCL_COMPILER_DIR}/../lib -lsycl")
-  else()
-    message(FATAL_ERROR "Library sycl.lib not found in ${SYCL_COMPILER_DIR}/../lib")
-  endif()
-
   # with current public drivers, JIT works under Windows and AOT under Linux
   IF (NOT DEFINED EMBREE_DPCPP_AOT_DEVICES)
     IF (WIN32)
@@ -41,14 +34,15 @@ IF (EMBREE_DPCPP_SUPPORT)
   # JIT mode compile flags
   IF(EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
     SET(SYCL_COMPILE_FLAGS "-fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64")
-    SET(SYCL_LINK_FLAGS "${SYCL_LIBS} -fsycl -fsycl-targets=spir64 -Xsycl-target-backend=spir64 \" -options \\\"-cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic\\\" \"")
+    SET(SYCL_LINK_FLAGS "-lsycl -fsycl -fsycl-targets=spir64 -Xsycl-target-backend=spir64 \" -options \\\"-cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic\\\" \"")
 
   # AOT mode compile flags
   ELSE()
     SET(SYCL_COMPILE_FLAGS "-fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64_gen")
-    SET(SYCL_LINK_FLAGS "${SYCL_LIBS} -fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} -revision_id 4 -options \\\"-cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic\\\" \"")
+    SET(SYCL_LINK_FLAGS "-lsycl -fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} -revision_id 4 -options \\\"-cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic\\\" \"")
   ENDIF()
 
+  GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem ${SYCL_COMPILER_DIR}/../include/sycl -isystem ${SYCL_COMPILER_DIR}/../include/")
       
   ADD_EXECUTABLE(minimal_sycl minimal_sycl.cpp)
