@@ -112,13 +112,6 @@ IF (WIN32)
         SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_DPCPP_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
       ENDIF()
       
-      # all the sycl libraries that we have to link against
-      if (EXISTS "${SYCL_COMPILER_DIR}/../lib/sycl.lib")
-        set(SYCL_LIBS "-L${SYCL_COMPILER_DIR}/../lib -lsycl")
-      else()
-        message(FATAL_ERROR "Library sycl.lib not found in ${SYCL_COMPILER_DIR}/../lib")
-      endif()
-
       SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
       #SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -ze-opt-large-register-file")                     # large GRF mode
       SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic")
@@ -216,7 +209,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")              # FIXME: debug information generation takes forever in SYCL
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
 
-    SET(CMAKE_LINK_FLAGS_SYCL "-fsycl")
+    SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
 
       SET(CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
       #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ControlKernelTotalSize=0")
@@ -250,13 +243,6 @@ ELSE()
         SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_DPCPP_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
       ENDIF()
       
-      # all the sycl libraries that we have to link against
-      set(SYCL_LIBS "${SYCL_COMPILER_DIR}/../lib/libsycl-glibc.o")
-      if (EXISTS "${SYCL_COMPILER_DIR}/../lib/libsycl-fallback-cassert.o")
-        list(APPEND SYCL_LIBS "${SYCL_COMPILER_DIR}/../lib/libsycl-fallback-cassert.o")
-      endif()
-      string(REPLACE ";" "  " SYCL_LIBS "${SYCL_LIBS}")
-
       SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
       #SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -ze-opt-large-register-file")                     # large GRF mode
       SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic")
@@ -275,8 +261,6 @@ ELSE()
       IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
         SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} ${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
       ENDIF()
-
-      #SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} ${SYCL_LIBS}")
 
       SET(CMAKE_CXX_FLAGS_SYCL  "${CMAKE_CXX_FLAGS_SYCL}  ${CMAKE_CXX_FLAGS_SYCL_AOT}")
       SET(CMAKE_LINK_FLAGS_SYCL "${CMAKE_LINK_FLAGS_SYCL} ${CMAKE_LINK_FLAGS_SYCL_AOT}")
