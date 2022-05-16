@@ -67,12 +67,8 @@ ADD_SUBDIRECTORY(viewer)
 ADD_SUBDIRECTORY(instanced_geometry)
 ADD_SUBDIRECTORY(multi_instanced_geometry)
 ADD_SUBDIRECTORY(intersection_filter)
-IF (NOT WIN32)
-  ADD_SUBDIRECTORY(pathtracer) # doesn't work on Windows with release driver
-ENDIF()
-IF (EMBREE_MAX_INSTANCE_LEVEL_COUNT EQUAL 1 AND NOT WIN32) # broken since comp_igc/13796
-  ADD_SUBDIRECTORY(hair_geometry) # doesn't work on Windows with release driver
-ENDIF()
+ADD_SUBDIRECTORY(pathtracer)
+ADD_SUBDIRECTORY(hair_geometry)
 ADD_SUBDIRECTORY(subdivision_geometry)
 ADD_SUBDIRECTORY(displacement_geometry)
 ADD_SUBDIRECTORY(grid_geometry)
@@ -84,7 +80,7 @@ IF (EMBREE_DPCPP_MBLUR AND NOT WIN32)
   ADD_SUBDIRECTORY(quaternion_motion_blur) # doesn't work on Windows with release driver
 ENDIF()
 
-IF (EMBREE_GEOMETRY_CURVE AND EMBREE_DPCPP_MBLUR AND NOT WIN32) # doesn't work on Windows with release driver
+IF (EMBREE_GEOMETRY_CURVE AND EMBREE_DPCPP_MBLUR)
   ADD_SUBDIRECTORY(motion_blur_geometry)
 ENDIF()
 
@@ -94,7 +90,7 @@ ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
 ADD_SUBDIRECTORY(convert)
 ADD_SUBDIRECTORY(collide)
-IF (NOT EMBREE_DPCPP_PVC AND NOT WIN32) # started to hang on PVC and doesn't work on Windows release driver
+IF (NOT EMBREE_DPCPP_PVC) # started to hang on PVC
   ADD_SUBDIRECTORY(next_hit)
 ENDIF()
 ADD_SUBDIRECTORY(multiscene_geometry)
@@ -109,4 +105,3 @@ ADD_SUBDIRECTORY(embree_tests)
 ADD_SUBDIRECTORY(minimal)
 
 ENDIF()
-
