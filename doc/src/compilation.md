@@ -354,8 +354,8 @@ build directory.
           -D EMBREE_DPCPP_AOT_DEVICES=none
           -D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=OFF
           -D EMBREE_GEOMETRY_USER_IN_GEOMETRY=OFF 
-          -D TBB_ROOT=path_to_tbb ..
-          
+          -D TBB_ROOT=path_to_tbb\lib\cmake\tbb ..
+
 This uses the Ninja generator which is required for the DPC++
 compiler, and configures a release build with using `clang++` and
 `clang` from the just installed DPC++ compiler. The LLVM linker
@@ -383,7 +383,7 @@ section from the `build.ninja` file and run the above command again.
 
 You can also create an Embree package using the following command:
 
-    cmake --build . --target PACKAGE
+    cmake --build . --target package
 
 Please see the [Building Embree Applications] section on how to build
 your application with such an Embree package.

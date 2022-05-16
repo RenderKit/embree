@@ -48,6 +48,8 @@ IF (EMBREE_DPCPP_SUPPORT)
     SET(SYCL_COMPILE_FLAGS "-fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64_gen")
     SET(SYCL_LINK_FLAGS "${SYCL_LIBS} -fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} -revision_id 4 -options \\\"-cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic\\\" \"")
   ENDIF()
+
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem ${SYCL_COMPILER_DIR}/../include/sycl -isystem ${SYCL_COMPILER_DIR}/../include/")
       
   ADD_EXECUTABLE(minimal_sycl minimal_sycl.cpp)
   TARGET_LINK_LIBRARIES(minimal_sycl embree)
