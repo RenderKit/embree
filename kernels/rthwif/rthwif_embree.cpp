@@ -37,15 +37,26 @@ RTC_NAMESPACE_BEGIN;
 //#endif
 
 #undef TRAV_LOOP
-#if defined(EMBREE_DPCPP_MBLUR)       ||\
+#if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1) ||\
+    defined(EMBREE_DPCPP_MBLUR)       ||\
     defined(EMBREE_GEOMETRY_CURVE)    ||\
     defined(EMBREE_GEOMETRY_GRID)     ||\
     defined(EMBREE_GEOMETRY_POINT)    ||\
     defined(EMBREE_GEOMETRY_USER)     ||\
-    defined(EMBREE_FILTER_FUNCTION)   ||\
-    (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
+    defined(EMBREE_FILTER_FUNCTION)
 #define TRAV_LOOP
 #endif
+
+const constexpr RTCFeatureFlags TRAV_LOOP_FEATURES = (RTCFeatureFlags) (
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+  RTC_FEATURE_ALL |
+#endif
+  RTC_FEATURE_MOTION_BLUR |
+  RTC_FEATURE_ROUND_CURVES | RTC_FEATURE_FLAT_CURVES | RTC_FEATURE_NORMAL_ORIENTED_CURVES |
+  RTC_FEATURE_GRID |
+  RTC_FEATURE_POINT |
+  RTC_FEATURE_USER_GEOMETRY |
+  RTC_FEATURE_FILTER_FUNCTION );
 
 void use_rthwif_embree() {
 }
@@ -525,7 +536,9 @@ void trav_loop(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL
         ray.tfar = t;
         Vec3f Ng = intel_get_hit_triangle_normal(query, POTENTIAL_HIT);
         Hit hit(context->user,geomID,primID,Vec2f(uv.x(),uv.y()),Ng);
-        if (feature_mask & (RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT | RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT))
+#if RTC_MAX_INSTANCE_LEVEL_COUNT == 1
+        if (feature_mask & RTC_FEATURE_FILTER_FUNCTION)
+#endif
           if (invokeTriangleIntersectionFilter(query, geom, bvh_level, ray, hit, context))
             break; // shadow rays break at first hit
       }
@@ -598,7 +611,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   intel_sync_ray_query(query);
   
 #if defined(TRAV_LOOP)
-  if (args->feature_mask ^ RTC_FEATURE_TRIANGLE) {
+  if (args->feature_mask & TRAV_LOOP_FEATURES) {
     trav_loop(query,ray,scenes,&context,args->feature_mask);
   }
 #endif
@@ -693,7 +706,7 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   intel_sync_ray_query(query);
 
 #if defined(TRAV_LOOP)
-  if (args->feature_mask ^ RTC_FEATURE_TRIANGLE) {
+  if (args->feature_mask & TRAV_LOOP_FEATURES) {
     trav_loop(query,ray,scenes,&context,args->feature_mask);
   }
 #endif
