@@ -21,7 +21,7 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
 ENDIF()
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
-  ADD_EMBREE_MODELS_TEST(test-models-subdiv.txt viewer_stream viewer viewer_stream)
+# ADD_EMBREE_MODELS_TEST(test-models-subdiv.txt viewer_stream viewer viewer_stream)
   ADD_EMBREE_MODELS_TEST(test-models-intensity2.txt viewer_stream viewer viewer_stream)
 ENDIF()
 

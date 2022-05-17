@@ -2,9 +2,9 @@
 ## SPDX-License-Identifier: Apache-2.0
 
 INCLUDE(tutorial)
-ADD_TUTORIAL(viewer)
-ADD_TUTORIAL_ISPC(viewer)
-ADD_TUTORIAL_SYCL(viewer)
+ADD_TUTORIAL(viewer tutorial_device.cpp)
+ADD_TUTORIAL_ISPC(viewer tutorial_device.ispc)
+ADD_TUTORIAL_SYCL(viewer tutorial_device.cpp)
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_MODELS_TEST(test-models-intensive2.txt viewer_coherent viewer viewer --coherent)

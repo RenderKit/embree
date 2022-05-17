@@ -99,15 +99,6 @@ void updateEdgeLevels(uniform ISPCScene* uniform scene_in, const uniform Vec3f& 
   }
 }
 
-#if 0
-uniform bool g_use_smooth_normals = false;
-void device_key_pressed_handler(uniform int key)
-{
-  if (key == 110 /*n*/) g_use_smooth_normals = !g_use_smooth_normals;
-  else device_key_pressed_default(key);
-}
-#endif
-
 RTCScene convertScene(uniform ISPCScene* uniform scene_in)
 {
   for (uniform unsigned int i=0; i<scene_in->numGeometries; i++)
