@@ -18,6 +18,12 @@ extern "C" bool g_changed;
 
 extern "C" float g_debug;
 
+#if defined(EMBREE_SYCL_TUTORIAL)
+static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
+#endif
+
+extern "C" RTCFeatureFlags g_feature_mask;
+
 struct DebugShaderData
 {
   RTCScene scene;
@@ -62,7 +68,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
                                                                 \
     for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)                        \
     {                                                                   \
-      Vec3fa color = renderPixel##Name(data,(float)x,(float)y,camera,g_stats[threadIndex]); \
+      Vec3fa color = renderPixel##Name(data,(float)x,(float)y,camera,g_stats[threadIndex],RTC_FEATURE_ALL); \
                                                                         \
       /* write color to framebuffer */                                  \
       unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
@@ -119,7 +125,7 @@ void DebugShaderData_Constructor(DebugShaderData* This)
                                                                 \
     for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)                        \
     {                                                                   \
-      Vec3fa color = renderPixel##Name(data,(float)x,(float)y,camera,g_stats[threadIndex]); \
+      Vec3fa color = renderPixel##Name(data,(float)x,(float)y,camera,g_stats[threadIndex],RTC_FEATURE_ALL); \
                                                                         \
       /* write color to framebuffer */                                  \
       unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
@@ -160,30 +166,58 @@ void DebugShaderData_Constructor(DebugShaderData* This)
   }
 
 #define RENDER_FRAME_FUNCTION_SYCL(Name)                                \
-  extern "C" void renderFrame##Name (int* pixels,       \
-                          const unsigned int width,             \
-                          const unsigned int height,            \
-                          const float time,                     \
-                          const ISPCCamera& camera)             \
-  {                                                                     \
+extern "C" void renderFrame##Name (int* pixels,       \
+                                   const unsigned int width,    \
+                                   const unsigned int height,   \
+                                   const float time,            \
+                                   const ISPCCamera& camera)          \
+{                                                                       \
     DebugShaderData data;                                               \
     DebugShaderData_Constructor(&data);                                 \
-    global_gpu_queue->submit([=](sycl::handler& cgh){                   \
-        const sycl::nd_range<2> nd_range = make_nd_range(height,width); \
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {          \
-            const unsigned int x = item.get_global_id(1); if (x >= width ) return;                       \
-            const unsigned int y = item.get_global_id(0); if (y >= height) return;                       \
-            RayStats stats;                                             \
-            Vec3fa color = renderPixel##Name(data,x,y,camera,stats);  \
-            unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
-            unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
-            unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
-            pixels[y*width+x] = (b << 16) + (g << 8) + r;               \
-          });                                                           \
-      });                                                               \
-    global_gpu_queue->wait_and_throw();                                 \
-  }
-
+    sycl::event event;                                                  \
+  \
+  if (g_feature_mask == RTC_FEATURE_ALL) /* FIXME: this is only required as JIT caching does not work with specialization constants at the moment */  \
+  {\
+    event = global_gpu_queue->submit([=](sycl::handler& cgh) {\
+      const sycl::nd_range<2> nd_range = make_nd_range(height,width);\
+      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL { \
+        const unsigned int x = item.get_global_id(1); if (x >= width ) return; \
+        const unsigned int y = item.get_global_id(0); if (y >= height) return; \
+        RayStats stats;                                                 \
+        const RTCFeatureFlags feature_mask = RTC_FEATURE_ALL;           \
+        Vec3fa color = renderPixel##Name(data,x,y,camera,stats,feature_mask); \
+        unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
+        unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
+        unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
+        pixels[y*width+x] = (b << 16) + (g << 8) + r;                   \
+      });    \
+    });                                \
+  }                                                                     \
+  else                                                                  \
+  {\
+    event = global_gpu_queue->submit([=](sycl::handler& cgh) {\
+      cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);\
+      const sycl::nd_range<2> nd_range = make_nd_range(height,width);   \
+      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL { \
+        const unsigned int x = item.get_global_id(1); if (x >= width ) return; \
+        const unsigned int y = item.get_global_id(0); if (y >= height) return; \
+        RayStats stats;                                                 \
+        const RTCFeatureFlags feature_mask = kh.get_specialization_constant<spec_feature_mask>(); \
+        Vec3fa color = renderPixel##Name(data,x,y,camera,stats,feature_mask); \
+        unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
+        unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
+        unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
+        pixels[y*width+x] = (b << 16) + (g << 8) + r;                   \
+     });                                     \
+   });                                \
+  }\
+  global_gpu_queue->wait_and_throw();\
+  \
+  const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();\
+  const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();\
+  const double dt = (t1-t0)*1E-9;\
+  ((ISPCCamera*)&camera)->render_time = dt;\
+}
 
 Vec3fa randomColor(const int ID)
 {
@@ -195,7 +229,7 @@ Vec3fa randomColor(const int ID)
 }
 
 /* renders a single pixel with eyelight shading */
-Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, const ISPCCamera& camera, RayStats& stats, const RTCFeatureFlags feature_mask)
 {
   /* initialize ray */
   Ray ray;
@@ -211,12 +245,16 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
   /* intersect ray with scene */
   IntersectContext context;
   InitIntersectionContext(&context);
+  
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = feature_mask;
 
   int64_t c0 = get_tsc();
   if (data.shader == SHADER_OCCLUSION)
-    rtcOccluded1(data.scene,&context.context,RTCRay_(ray));
+    rtcOccludedEx1(data.scene,&context.context,RTCRay_(ray),&args);
   else
-    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray));
+    rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
 
   int64_t c1 = get_tsc();
   RayStats_addRay(stats);
@@ -295,7 +333,7 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
 }
 
 /* renders a single pixel with eyelight shading */
-Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const ISPCCamera& camera, RayStats& stats, const RTCFeatureFlags feature_mask)
 {
   /* initialize ray */
   Ray ray;
@@ -311,7 +349,10 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
   /* intersect ray with scene */
   IntersectContext context;
   InitIntersectionContext(&context);
-  rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray));
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = feature_mask;
+  rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -348,7 +389,10 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
     /* trace shadow ray */
     IntersectContext context;
     InitIntersectionContext(&context);
-    rtcOccluded1(data.scene,&context.context,RTCRay_(shadow));
+    RTCIntersectArguments args;
+    rtcInitIntersectArguments(&args);
+    args.feature_mask = feature_mask;
+    rtcOccludedEx1(data.scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -368,124 +412,5 @@ RENDER_FRAME_FUNCTION_SYCL(AOShader)
 RENDER_FRAME_FUNCTION_CPP(DebugShader)
 RENDER_FRAME_FUNCTION_CPP(AOShader)
 #endif
-
-
-/* returns the point seen through specified pixel */
-extern "C" bool device_pick(const float x,
-                                const float y,
-                                const ISPCCamera& camera,
-                                Vec3fa& hitPos)
-{
-  /* initialize ray */
-  Ray1 ray;
-  ray.org = Vec3ff(camera.xfm.p);
-  ray.dir = Vec3ff(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz));
-  ray.tnear() = 0.0f;
-  ray.tfar = inf;
-  ray.geomID = RTC_INVALID_GEOMETRY_ID;
-  ray.primID = RTC_INVALID_GEOMETRY_ID;
-  ray.mask = -1;
-  ray.time() = g_debug;
-
-  /* intersect ray with scene */
-  IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersect1(g_scene,&context.context,RTCRayHit1_(ray));
-
-  /* shade pixel */
-  if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {
-    hitPos = Vec3fa(0.0f,0.0f,0.0f);
-    return false;
-  }
-  else {
-    hitPos = ray.org + ray.tfar*ray.dir;
-    return true;
-  }
-}
-
-Vec2f getTextureCoordinatesSubdivMesh(void* _mesh, const unsigned int primID, const float u, const float v)
-{
-  ISPCSubdivMesh *mesh = (ISPCSubdivMesh *)_mesh;
-  Vec2f st;
-  st.x = u;
-  st.y = v;
-  if (mesh && mesh->texcoord_indices)
-    {
-      assert(primID < mesh->numFaces);
-      const unsigned int face_offset = mesh->face_offsets[primID];
-      if (mesh->verticesPerFace[primID] == 3)
-	{
-	  const unsigned int t0 = mesh->texcoord_indices[face_offset+0];
-	  const unsigned int t1 = mesh->texcoord_indices[face_offset+1];
-	  const unsigned int t2 = mesh->texcoord_indices[face_offset+2];
-	  const Vec2f txt0 = mesh->texcoords[t0];
-	  const Vec2f txt1 = mesh->texcoords[t1];
-	  const Vec2f txt2 = mesh->texcoords[t2];
-	  const float w = 1.0f - u - v;
-	  st = w * txt0 + u * txt1 + v * txt2;
-	}
-      else if (mesh->verticesPerFace[primID] == 4)
-	{
-	  const unsigned int t0 = mesh->texcoord_indices[face_offset+0];
-	  const unsigned int t1 = mesh->texcoord_indices[face_offset+1];
-	  const unsigned int t2 = mesh->texcoord_indices[face_offset+2];
-	  const unsigned int t3 = mesh->texcoord_indices[face_offset+3];
-	  const Vec2f txt0 = mesh->texcoords[t0];
-	  const Vec2f txt1 = mesh->texcoords[t1];
-	  const Vec2f txt2 = mesh->texcoords[t2];
-	  const Vec2f txt3 = mesh->texcoords[t3];
-	  const float u0 = u;
-	  const float v0 = v;
-	  const float u1 = 1.0f - u;
-	  const float v1 = 1.0f - v;
-	  st = u1*v1 * txt0 + u0*v1* txt1 + u0*v0 * txt2 + u1*v0* txt3;
-	}
-    }
-  return st;
-}
-
-float getTextureTexel1f(const Texture* texture, float s, float t)
-{
-  if (!texture) return 0.0f;
-
-  int iu = (int)floor(s * (float)(texture->width));
-  iu = iu % texture->width; if (iu < 0) iu += texture->width;
-  int iv = (int)floor(t * (float)(texture->height));
-  iv = iv % texture->height; if (iv < 0) iv += texture->height;
-
-  if (texture->format == Texture::FLOAT32)
-  {
-    float *data = (float *)texture->data;
-    return data[iv*texture->width + iu];
-  }
-  else if (texture->format == Texture::RGBA8)
-  {
-    const int offset = (iv * texture->width + iu) * 4;
-    unsigned char * t = (unsigned char*)texture->data;
-    return t[offset+0]*(1.0f/255.0f);
-  }
-  return 0.0f;
-}
-
-Vec3fa getTextureTexel3f(const Texture* texture, float s, float t)
-{
-  if (!texture) return Vec3fa(0.0f,0.0f,0.0f);
-
-  int iu = (int)floor(s * (float)(texture->width));
-  iu = iu % texture->width; if (iu < 0) iu += texture->width;
-  int iv = (int)floor(t * (float)(texture->height));
-  iv = iv % texture->height; if (iv < 0) iv += texture->height;
-
-  if (texture->format == Texture::RGBA8)
-  {
-    const int offset = (iv * texture->width + iu) * 4;
-    unsigned char * t = (unsigned char*)texture->data;
-    const unsigned char  r = t[offset+0];
-    const unsigned char  g = t[offset+1];
-    const unsigned char  b = t[offset+2];
-    return Vec3fa(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
-  }
-  return Vec3fa(0.0f,0.0f,0.0f);
-}
 
 } // namespace embree

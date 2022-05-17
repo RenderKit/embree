@@ -10,7 +10,7 @@ extern "C" bool g_changed;
 TutorialData data;
 
 #if defined(EMBREE_SYCL_TUTORIAL)
-const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
+static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
 extern "C" RTCFeatureFlags g_feature_mask;
