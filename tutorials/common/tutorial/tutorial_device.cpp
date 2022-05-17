@@ -169,10 +169,10 @@ void DebugShaderData_Constructor(DebugShaderData* This)
     DebugShaderData data;                                               \
     DebugShaderData_Constructor(&data);                                 \
     global_gpu_queue->submit([=](sycl::handler& cgh){                   \
-        const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(RTC_SYCL_SIMD_WIDTH,1)); \
+        const sycl::nd_range<2> nd_range = make_nd_range(width,height); \
         cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {          \
-            const unsigned int x = item.get_global_id(0);                       \
-            const unsigned int y = item.get_global_id(1);                       \
+            const unsigned int x = item.get_global_id(0); if (x >= width) return;                       \
+            const unsigned int y = item.get_global_id(1); if (y >= height) return;                       \
             RayStats stats;                                             \
             Vec3fa color = renderPixel##Name(data,x,y,camera,stats);  \
             unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \

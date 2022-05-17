@@ -26,6 +26,19 @@ struct Triangle { int v0, v1, v2; };
 #if !defined(ISPC)
 #include "../../../common/algorithms/parallel_for.h"
 
+#if defined(EMBREE_SYCL_TUTORIAL)
+inline sycl::nd_range<2> make_nd_range(unsigned int width, unsigned int height)
+{
+  const sycl::range<2> wg_size = sycl::range<2>(RTC_SYCL_SIMD_WIDTH,1);
+
+  /* align iteration space to work group size */
+  width  = (width/wg_size[0])*wg_size[0];
+  height = (height/wg_size[1])*wg_size[1];
+
+  return sycl::nd_range(sycl::range(width,height),wg_size);
+}
+#endif
+
 namespace embree {
 #endif
 
