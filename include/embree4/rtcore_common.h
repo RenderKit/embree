@@ -168,7 +168,8 @@ struct RTC_ALIGN(16) RTCLinearBounds
 };
 
 /* Feature flags for SYCL specialization constants */
-enum RTCFeatureFlags {
+enum RTCFeatureFlags
+{
   RTC_FEATURE_NONE = 0,
 
   RTC_FEATURE_MOTION_BLUR = 1 << 0,
@@ -203,9 +204,25 @@ enum RTCFeatureFlags {
   RTC_FEATURE_FLAT_CATMULL_ROM_CURVE = 1 << 21,
   RTC_FEATURE_NORMAL_ORIENTED_CATMULL_ROM_CURVE = 1 << 22,
 
-  RTC_FEATURE_ROUND_CURVES = (RTC_FEATURE_ROUND_LINEAR_CURVE | RTC_FEATURE_ROUND_BEZIER_CURVE | RTC_FEATURE_ROUND_BSPLINE_CURVE | RTC_FEATURE_ROUND_HERMITE_CURVE | RTC_FEATURE_ROUND_CATMULL_ROM_CURVE),
-  RTC_FEATURE_FLAT_CURVES = (RTC_FEATURE_FLAT_LINEAR_CURVE | RTC_FEATURE_FLAT_BEZIER_CURVE | RTC_FEATURE_FLAT_BSPLINE_CURVE | RTC_FEATURE_FLAT_HERMITE_CURVE | RTC_FEATURE_FLAT_CATMULL_ROM_CURVE),
-  RTC_FEATURE_NORMAL_ORIENTED_CURVES = (RTC_FEATURE_NORMAL_ORIENTED_BEZIER_CURVE | RTC_FEATURE_NORMAL_ORIENTED_BSPLINE_CURVE | RTC_FEATURE_NORMAL_ORIENTED_HERMITE_CURVE | RTC_FEATURE_NORMAL_ORIENTED_CATMULL_ROM_CURVE),
+  RTC_FEATURE_ROUND_CURVES =
+    RTC_FEATURE_ROUND_LINEAR_CURVE |
+    RTC_FEATURE_ROUND_BEZIER_CURVE |
+    RTC_FEATURE_ROUND_BSPLINE_CURVE |
+    RTC_FEATURE_ROUND_HERMITE_CURVE |
+    RTC_FEATURE_ROUND_CATMULL_ROM_CURVE,
+  
+  RTC_FEATURE_FLAT_CURVES =
+    RTC_FEATURE_FLAT_LINEAR_CURVE |
+    RTC_FEATURE_FLAT_BEZIER_CURVE |
+    RTC_FEATURE_FLAT_BSPLINE_CURVE |
+    RTC_FEATURE_FLAT_HERMITE_CURVE |
+    RTC_FEATURE_FLAT_CATMULL_ROM_CURVE,
+  
+  RTC_FEATURE_NORMAL_ORIENTED_CURVES =
+    RTC_FEATURE_NORMAL_ORIENTED_BEZIER_CURVE |
+    RTC_FEATURE_NORMAL_ORIENTED_BSPLINE_CURVE |
+    RTC_FEATURE_NORMAL_ORIENTED_HERMITE_CURVE |
+    RTC_FEATURE_NORMAL_ORIENTED_CATMULL_ROM_CURVE,
 
   RTC_FEATURE_INSTANCE = 1 << 23,
 
@@ -250,13 +267,15 @@ typedef void (*RTCOccludedFunctionN)(const /*struct RTCOccludedFunctionNArgument
 struct RTCIntersectArguments
 {
   RTCFilterFunctionN filter;                         // filter function to execute
+  
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
   union {
     RTCIntersectFunctionN intersect;                 // user geometry intersection callback to execute
     RTCOccludedFunctionN occluded;                   // user geometry occlusion callback to execute
   };
 #endif
-  enum RTCFeatureFlags feature_mask;                             // selectively enable features for traversal
+  
+  enum RTCFeatureFlags feature_mask;                 // selectively enable features for traversal
 };
 
 /* Initializes an intersection arguments. */

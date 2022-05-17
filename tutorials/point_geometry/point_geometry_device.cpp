@@ -105,6 +105,7 @@ void renderPixelStandard(const TutorialData& data,
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
+  
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (RTCFeatureFlags)(RTC_FEATURE_TRIANGLE | RTC_FEATURE_ORIENTED_DISC_POINT | RTC_FEATURE_DISC_POINT | RTC_FEATURE_SPHERE_POINT);
