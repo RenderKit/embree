@@ -182,7 +182,9 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
   }
 }
 
+#if defined(EMBREE_SYCL_TUTORIAL)
 const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_ALL);
+#endif
 
 /* called by the C++ code to render */
 extern "C" void renderFrameStandard (int* pixels,
