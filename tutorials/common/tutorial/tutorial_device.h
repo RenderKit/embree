@@ -27,15 +27,15 @@ struct Triangle { int v0, v1, v2; };
 #include "../../../common/algorithms/parallel_for.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
-inline sycl::nd_range<2> make_nd_range(unsigned int width, unsigned int height)
+inline sycl::nd_range<2> make_nd_range(unsigned int size0, unsigned int size1)
 {
-  const sycl::range<2> wg_size = sycl::range<2>(RTC_SYCL_SIMD_WIDTH,1);
+  const sycl::range<2> wg_size = sycl::range<2>(4,4);
 
   /* align iteration space to work group size */
-  width  = (width/wg_size[0])*wg_size[0];
-  height = (height/wg_size[1])*wg_size[1];
+  size0 = (size0/wg_size[0])*wg_size[0];
+  size1 = (size1/wg_size[1])*wg_size[1];
 
-  return sycl::nd_range(sycl::range(width,height),wg_size);
+  return sycl::nd_range(sycl::range(size0,size1),wg_size);
 }
 #endif
 
