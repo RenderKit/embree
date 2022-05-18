@@ -5,6 +5,10 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE
+
 RTCScene g_scene = nullptr;
 TutorialData data;
 
@@ -117,14 +121,14 @@ void renderPixelStandard(const TutorialData& data,
                          const unsigned int height,
                          const float time,
                          const ISPCCamera& camera,
-                         RayStats& stats,
-                         const RTCFeatureFlags feature_mask)
+                         RayStats& stats)
 {
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
+  
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.feature_mask = feature_mask;
+  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -178,13 +182,9 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex], RTC_FEATURE_TRIANGLE);
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 }
-
-#if defined(EMBREE_SYCL_TUTORIAL)
-const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_ALL);
-#endif
 
 /* called by the C++ code to render */
 extern "C" void renderFrameStandard (int* pixels,
@@ -196,14 +196,12 @@ extern "C" void renderFrameStandard (int* pixels,
 #if defined(EMBREE_SYCL_TUTORIAL)
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
-    cgh.set_specialization_constant<rtc_feature_mask>(RTC_FEATURE_TRIANGLE);
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;
-      const RTCFeatureFlags feature_mask = kh.get_specialization_constant<rtc_feature_mask>();
-      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
     });
   });
   global_gpu_queue->wait_and_throw();
