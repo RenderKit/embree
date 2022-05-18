@@ -17,7 +17,6 @@ Linux
   - Intel® Compiler 2019 Update 4
   - Intel® Compiler 2017 Update 1
   - Intel® Compiler 2016 Update 3
-  - Intel® Compiler 2015 Update 3
   - Clang 5.0.0
   - Clang 4.0.0
   - GCC 10.0.1 (Fedora 32) AVX512 support

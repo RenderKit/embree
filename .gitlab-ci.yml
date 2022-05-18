@@ -525,13 +525,6 @@ nightly-linux-x64-Debug-GCC-ISPC1.17.0-AVX2-TBB2021.2.0:
 
 # ICC compilation and testing of different ISAs
 
-nightly-linux-x64-Debug-ICC2015.3-ISPC1.16.1-SSE2-TBB2019.2:
-  extends: .build_and_test
-  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:ICC2015.3 ispc:ispc1.16.1 isa:SSE2 tasking:TBB2019.2 intensity:4"]
-  image: $DOCKER_REGISTRY/embree/centos:7.4
-  tags:   [embree, docker]
-  only:   [web, schedules]
-
 nightly-linux-x64-Debug-ICC2016.3-ISPC1.16.1-AVX-TBB2019.2:
   extends: .build_and_test
   before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:ICC2016.3 ispc:ispc1.16.1 isa:AVX tasking:TBB2019.2 intensity:4"]
