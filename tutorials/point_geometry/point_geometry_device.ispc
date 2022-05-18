@@ -3,6 +3,13 @@
 
 #include "point_geometry_device.isph"
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_ORIENTED_DISC_POINT | \
+  RTC_FEATURE_DISC_POINT | \
+  RTC_FEATURE_SPHERE_POINT
+
 RTCScene  g_scene  = NULL;
 uniform TutorialData data;
 
@@ -106,7 +113,7 @@ void renderPixelStandard(const uniform TutorialData& data,
   
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.feature_mask = (RTCFeatureFlags)(RTC_FEATURE_TRIANGLE | RTC_FEATURE_ORIENTED_DISC_POINT | RTC_FEATURE_DISC_POINT | RTC_FEATURE_SPHERE_POINT);
+  args.feature_mask = (RTCFeatureFlags)(FEATURE_MASK);
 
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);

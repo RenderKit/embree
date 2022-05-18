@@ -5,6 +5,13 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_ORIENTED_DISC_POINT | \
+  RTC_FEATURE_DISC_POINT | \
+  RTC_FEATURE_SPHERE_POINT
+
 RTCScene  g_scene  = nullptr;
 TutorialData data;
 
@@ -108,7 +115,7 @@ void renderPixelStandard(const TutorialData& data,
   
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.feature_mask = (RTCFeatureFlags)(RTC_FEATURE_TRIANGLE | RTC_FEATURE_ORIENTED_DISC_POINT | RTC_FEATURE_DISC_POINT | RTC_FEATURE_SPHERE_POINT);
+  args.feature_mask = (RTCFeatureFlags)(FEATURE_MASK);
 
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
