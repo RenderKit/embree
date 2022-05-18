@@ -5,6 +5,13 @@
 #include "../common/math/random_sampler.isph"
 #include "../common/math/sampling.isph"
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_INSTANCE | \
+  RTC_FEATURE_USER_GEOMETRY | \
+  RTC_FEATURE_MOTION_BLUR
+
 /* scene data */
 RTCScene g_scene = NULL;
 uniform TutorialData data;
@@ -283,6 +290,10 @@ Vec3f renderPixelFunction(const uniform TutorialData& data,
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
 
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+
   float time = data.g_motion_blur ? RandomSampler_get1D(sampler) * data.g_shutter_close: data.g_time;
 
   /* initialize ray */
@@ -292,7 +303,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */

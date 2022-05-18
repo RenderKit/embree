@@ -7,6 +7,13 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_INSTANCE | \
+  RTC_FEATURE_USER_GEOMETRY | \
+  RTC_FEATURE_MOTION_BLUR
+  
 /* scene data */
 RTCScene g_scene = nullptr;
 TutorialData data;
@@ -285,6 +292,10 @@ Vec3fa renderPixelFunction(const TutorialData& data,
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
 
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+
   float time = data.g_motion_blur ? RandomSampler_get1D(sampler) * data.g_shutter_close: data.g_time;
 
   /* initialize ray */
@@ -294,7 +305,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray), &args);
   RayStats_addRay(stats);
 
   /* shade pixels */
