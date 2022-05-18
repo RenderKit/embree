@@ -3,6 +3,11 @@
 
 #include "multi_instanced_geometry_device.isph"
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_INSTANCE
+
 RTCScene g_scene = NULL;
 uniform TutorialData g_data;
 extern uniform bool g_changed;
@@ -325,8 +330,13 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
 {
   uniform IntersectContext primaryContext;
   InitIntersectionContext(&primaryContext);
+  
   uniform IntersectContext shadowContext;
   InitIntersectionContext(&shadowContext);
+
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
 
   // Primary rays in this scene are coherent. This is not the case
   // for shadow rays, since there is a spherical environment light.
@@ -334,7 +344,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
   
   RandomSampler sampler;
   Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
-  rtcIntersectV(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay));
+  rtcIntersectExV(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay),&args);
   
   Vec3f color = make_Vec3f(0.f);
   if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
@@ -343,7 +353,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
     Vec3f emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    rtcOccludedV(data.g_scene, &shadowContext.context, RTCRay_(shadowRay));
+    rtcOccludedExV(data.g_scene, &shadowContext.context, RTCRay_(shadowRay), &args);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }
   

@@ -5,6 +5,11 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_INSTANCE
+  
 RTCScene g_scene = nullptr;
 TutorialData g_data;
 extern "C" bool g_changed;
@@ -327,8 +332,13 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
 {
   IntersectContext primaryContext;
   InitIntersectionContext(&primaryContext);
+  
   IntersectContext shadowContext;
   InitIntersectionContext(&shadowContext);
+
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
 
   // Primary rays in this scene are coherent. This is not the case
   // for shadow rays, since there is a spherical environment light.
@@ -336,7 +346,7 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
   
   RandomSampler sampler;
   Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
-  rtcIntersect1(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay));
+  rtcIntersectEx1(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay), &args);
   
   Vec3fa color = Vec3fa(0.f);
   if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
@@ -345,7 +355,7 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
     Vec3fa emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    rtcOccluded1(data.g_scene, &shadowContext.context, RTCRay_(shadowRay));
+    rtcOccludedEx1(data.g_scene, &shadowContext.context, RTCRay_(shadowRay), &args);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }
   
