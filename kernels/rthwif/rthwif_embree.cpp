@@ -443,10 +443,10 @@ bool intersect_primitive(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INST
   return false;
 }
 
-bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_t bvh_level, RayHit& ray, Hit& hit, sycl::private_ptr<IntersectContext> context)
+bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_t bvh_level, RayHit& ray, Hit& hit, sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
 {
 #if defined(EMBREE_FILTER_FUNCTION)
-  if (runIntersectionFilter1SYCL(geom, ray, context, hit))
+  if (!(feature_mask & RTC_FEATURE_FILTER_FUNCTION) || runIntersectionFilter1SYCL(geom, ray, context, hit))
 #endif
   {
     intel_ray_query_commit_potential_hit (query, ray.tfar, float2(hit.u, hit.v));
@@ -457,11 +457,11 @@ bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_
   return false;
 }
 
-bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_t bvh_level, Ray& ray, Hit& hit, sycl::private_ptr<IntersectContext> context)
+bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_t bvh_level, Ray& ray, Hit& hit, sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
 {
   bool ishit = true;
 #if defined(EMBREE_FILTER_FUNCTION)
-  ishit = runIntersectionFilter1SYCL(geom, ray, context, hit);
+  ishit = !(feature_mask & RTC_FEATURE_FILTER_FUNCTION) || runIntersectionFilter1SYCL(geom, ray, context, hit);
   if (ishit)
 #endif
   {
@@ -537,11 +537,8 @@ void trav_loop(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL
         ray.tfar = t;
         Vec3f Ng = intel_get_hit_triangle_normal(query, POTENTIAL_HIT);
         Hit hit(context->user,geomID,primID,Vec2f(uv.x(),uv.y()),Ng);
-#if RTC_MAX_INSTANCE_LEVEL_COUNT == 1
-        if (feature_mask & RTC_FEATURE_FILTER_FUNCTION)
-#endif
-          if (invokeTriangleIntersectionFilter(query, geom, bvh_level, ray, hit, context))
-            break; // shadow rays break at first hit
+        if (invokeTriangleIntersectionFilter(query, geom, bvh_level, ray, hit, context, feature_mask))
+          break; // shadow rays break at first hit
       }
     }
 
