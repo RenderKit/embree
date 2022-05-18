@@ -3,6 +3,11 @@
 
 #include "instanced_geometry_device.isph"
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_INSTANCE
+
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
 
@@ -157,12 +162,16 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
 {
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
+
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -186,7 +195,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow));
+    rtcOccludedExV(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
