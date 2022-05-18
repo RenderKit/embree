@@ -5,6 +5,19 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_USER_GEOMETRY | \
+  RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT
+#else
+#define FEATURE_MASK     \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_USER_GEOMETRY | \
+  RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY
+#endif
+
 #define ENABLE_NATIVE_INSTANCING 0
 
 RTCScene g_scene = nullptr;
@@ -1139,6 +1152,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
   args.intersect = (RTCIntersectFunctionN) contextIntersectFunc;
 #endif
+  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
   rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
@@ -1173,6 +1187,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
     args.occluded = (RTCOccludedFunctionN) contextOccludedFunc;
 #endif
+    args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
     
     rtcOccludedEx1(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);

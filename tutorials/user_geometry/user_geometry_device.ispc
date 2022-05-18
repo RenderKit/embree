@@ -3,6 +3,19 @@
 
 #include "user_geometry_device.isph"
 
+/* all features required by this tutorial */
+#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_USER_GEOMETRY | \
+  RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT
+#else
+#define FEATURE_MASK     \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_USER_GEOMETRY | \
+  RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY
+#endif
+
 #define ENABLE_NATIVE_INSTANCING 0
 
 RTCScene g_scene = NULL;
@@ -1138,6 +1151,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
   args.intersect = contextIntersectFunc;
 #endif
+  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
   rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
@@ -1172,6 +1186,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
     args.intersect = (uniform RTCIntersectFunctionN) (void* uniform) contextOccludedFunc;
 #endif
+    args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
     
     rtcOccludedExV(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
