@@ -9,6 +9,12 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_ROUND_LINEAR_CURVE | \
+  RTC_FEATURE_FILTER_FUNCTION
+
 /* scene data */
 RTCScene g_scene = nullptr;
 TutorialData data;
@@ -238,7 +244,12 @@ Vec3fa occluded(RTCScene scene, IntersectContext* context, Ray& ray)
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  rtcOccluded1(scene,&context->context,RTCRay_(ray));
+
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+  
+  rtcOccludedEx1(scene,&context->context,RTCRay_(ray),&args);
 
   return transparency;
 }
@@ -255,6 +266,10 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   IntersectContext context;
   InitIntersectionContext(&context);
   context.tutorialData = (void*) &data;
+
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -270,7 +285,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray));
+    rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */

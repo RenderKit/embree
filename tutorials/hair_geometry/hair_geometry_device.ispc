@@ -7,6 +7,12 @@
 #include "../common/tutorial/optics.isph"
 #include "hair_geometry_device.isph"
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_ROUND_LINEAR_CURVE | \
+  RTC_FEATURE_FILTER_FUNCTION
+
 /* scene data */
 RTCScene g_scene = NULL;
 uniform TutorialData data;
@@ -236,7 +242,12 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
   ray.geomID = RTC_INVALID_GEOMETRY_ID;
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
-  rtcOccludedV(scene,&context->context,RTCRay_(ray));
+
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+  
+  rtcOccludedExV(scene,&context->context,RTCRay_(ray),&args);
 
   return transparency;
 }
@@ -253,6 +264,10 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
   uniform IntersectContext context;
   InitIntersectionContext(&context);
   context.tutorialData = (void*) &data;
+
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -268,7 +283,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
+    rtcIntersectExV(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
