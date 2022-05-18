@@ -5,6 +5,11 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_GRID
+  
 /* configuration */
 #define EDGE_LEVEL 257
 #define GRID_RESOLUTION_X EDGE_LEVEL
@@ -560,11 +565,15 @@ void renderPixelStandard(const TutorialData& data,
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
 
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
   
   /* shade pixels */
@@ -602,7 +611,7 @@ void renderPixelStandard(const TutorialData& data,
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
-    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow));
+    rtcOccludedEx1(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
