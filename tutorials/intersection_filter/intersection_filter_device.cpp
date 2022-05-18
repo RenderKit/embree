@@ -5,6 +5,23 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT
+#else
+#define FEATURE_MASK     \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY
+#endif
+
+/* FIXME: the following is a bug workaround */
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+#define FEATURE_MASK     \
+  RTC_FEATURE_ALL
+#endif
+
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilter(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArguments* args);
 
@@ -72,6 +89,7 @@ void renderPixelStandard(const TutorialData& data,
 
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
     
   /* initialize ray */
   Ray2 primary;

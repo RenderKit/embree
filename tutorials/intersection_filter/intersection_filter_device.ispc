@@ -3,6 +3,17 @@
 
 #include "intersection_filter_device.isph"
 
+/* all features required by this tutorial */
+#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT
+#else
+#define FEATURE_MASK     \
+  RTC_FEATURE_TRIANGLE | \
+  RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY
+#endif
+
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args);
 
@@ -70,6 +81,7 @@ void renderPixelStandard(const uniform TutorialData& data,
 
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
   /* initialize ray */
   Ray2 primary;
