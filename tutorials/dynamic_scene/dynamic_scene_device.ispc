@@ -3,6 +3,10 @@
 
 #include "dynamic_scene_device.isph"
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_TRIANGLE
+
 RTCScene g_scene = NULL;
 uniform TutorialData data;
 
@@ -157,7 +161,12 @@ void renderPixelStandard(const uniform TutorialData& data,
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray));
+
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+  
+  rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -172,7 +181,7 @@ void renderPixelStandard(const uniform TutorialData& data,
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow));
+    rtcOccludedExV(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
