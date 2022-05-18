@@ -175,10 +175,9 @@ void castRay(sycl::queue& queue, const RTCScene scene,
 {
   queue.submit([=](sycl::handler& cgh)
   {
-    const sycl::nd_range<2> nd_range(sycl::range<2>(RTC_SYCL_SIMD_WIDTH, 1), 
-                                     sycl::range<2>(RTC_SYCL_SIMD_WIDTH, 1));
+    const sycl::range<1> range(1);
     
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL
+    cgh.parallel_for(range,[=](sycl::item<1> item) RTC_SYCL_KERNEL
     {
       /*
        * The intersect context can be used to set intersection
@@ -187,6 +186,14 @@ void castRay(sycl::queue& queue, const RTCScene scene,
        */
       struct RTCIntersectContext context;
       rtcInitIntersectContext(&context);
+
+      /*
+       * The intersect arguments can be used to pass a feature mask,
+       * which improves performance and JIT compile times on the GPU
+       */
+      RTCIntersectArguments args;
+      rtcInitIntersectArguments(&args);
+      args.feature_mask = RTC_FEATURE_TRIANGLE;
 
       /*
        * The ray hit structure holds both the ray and the hit.
@@ -211,13 +218,14 @@ void castRay(sycl::queue& queue, const RTCScene scene,
        * There are multiple variants of rtcIntersect. This one
        * intersects a single ray with the scene.
        */
-      rtcIntersect1(scene, &context, &rayhit);
+      rtcIntersectEx1(scene, &context, &rayhit, &args);
 
-      if (item.get_local_id() == 0) {
-        result->geomID = rayhit.hit.geomID;
-        result->primID = rayhit.hit.primID;
-        result->tfar = rayhit.ray.tfar;
-      }
+      /*
+       * write hit result to output buffer
+       */
+      result->geomID = rayhit.hit.geomID;
+      result->primID = rayhit.hit.primID;
+      result->tfar = rayhit.ray.tfar;
     });
   });
   queue.wait_and_throw();
