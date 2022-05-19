@@ -225,6 +225,7 @@ def runConfig(config):
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     elif (compiler.startswith("dpcpp")):
       cmake_build_suffix=""
+      ispc_ext = "-vs2015"
       DPCPP_VERSION, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
       DPCPP_VERSION=DPCPP_VERSION.replace("/", "\\")
       GFX_VERSION=GFX_VERSION.replace("/", "\\")
