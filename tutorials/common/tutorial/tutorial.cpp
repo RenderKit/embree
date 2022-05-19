@@ -269,7 +269,7 @@ namespace embree
         g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
       }, "--incoherent: force using RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT hint when tracing rays");
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_TUTORIAL)
     registerOption("jit-cache", [this] (Ref<ParseStream> cin, const FileName& path) {
          jit_cache = cin->getInt();
        }, "--jit-cache <0/1>: enabled (1) or disables (0) JIT caching");
