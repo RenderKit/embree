@@ -268,6 +268,12 @@ namespace embree
         g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
         g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
       }, "--incoherent: force using RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT hint when tracing rays");
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+    registerOption("jit-cache", [this] (Ref<ParseStream> cin, const FileName& path) {
+         jit_cache = cin->getInt();
+       }, "--jit-cache <0/1>: enabled (1) or disables (0) JIT caching");
+#endif
   }
 
   TutorialApplication::~TutorialApplication()
@@ -1094,19 +1100,22 @@ namespace embree
     /* create SYCL device */
     if (features & FEATURE_SYCL)
     {
-      /* enable SYCL JIT caching */
-      FileName exe = getExecutableFileName();
-      FileName cache_dir = exe.path() + FileName("cache");
-
+      if (jit_cache)
+      {
+        /* enable SYCL JIT caching */
+        FileName exe = getExecutableFileName();
+        FileName cache_dir = exe.path() + FileName("cache");
+        
 #if defined(__WIN32__)
-      _putenv_s("SYCL_CACHE_PERSISTENT","1");
-      _putenv_s("SYCL_CACHE_DIR",cache_dir.c_str());
-      _putenv_s("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M");
+        _putenv_s("SYCL_CACHE_PERSISTENT","1");
+        _putenv_s("SYCL_CACHE_DIR",cache_dir.c_str());
+        _putenv_s("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M");
 #else
-      setenv("SYCL_CACHE_PERSISTENT","1",1);
-      setenv("SYCL_CACHE_DIR",cache_dir.c_str(),1);
-      setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
+        setenv("SYCL_CACHE_PERSISTENT","1",1);
+        setenv("SYCL_CACHE_DIR",cache_dir.c_str(),1);
+        setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
 #endif
+      }
 
       auto exception_handler = [] (sycl::exception_list exceptions) {
 	 for (std::exception_ptr const& e : exceptions) {

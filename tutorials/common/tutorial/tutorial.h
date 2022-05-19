@@ -195,6 +195,7 @@ namespace embree
     sycl::queue* queue = nullptr;
     sycl::device* device = nullptr;
     sycl::context* context = nullptr;
+    bool jit_cache = true;
 #endif
     
   public:
