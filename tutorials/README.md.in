@@ -13,7 +13,7 @@ Then configure the tutorial you would like to compile (e.g. minimal),
 by pointing to the Embree and TBB installation on your system. Under
 Linux execute:
 
-    cmake -D CMAKE_BUILD_TYPE=Release -D embree_DIR=`pwd`/../../../lib/cmake/embree-4.0.4/ -D TBB_DIR=path_to_tbb_install ..
+    cmake -D CMAKE_BUILD_TYPE=Release -D embree_DIR=`pwd`/../../../lib/cmake/embree-@EMBREE_VERSION@/ -D TBB_DIR=path_to_tbb_install ..
 
 And under Windows:
 
@@ -23,7 +23,7 @@ And under Windows:
           -D CMAKE_CXX_FLAGS=-fuse-ld=link
           -D CMAKE_C_FLAGS=-fuse-ld=link
           -D CMAKE_BUILD_TYPE=Release
-          -D embree_DIR=%cd%\..\..\..\lib\cmake\embree-4.0.4\
+          -D embree_DIR=%cd%\..\..\..\lib\cmake\embree-@EMBREE_VERSION@\
           -D TBB_DIR=path_to_tbb\lib\cmake\tbb ..
 
 Now you can build the tutorial:
