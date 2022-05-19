@@ -127,25 +127,13 @@ on that feature
 (https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md).
 
 
-Embree DPC++/SYCL Limitations
------------------------------
+Embree DPC++ Limitations
+------------------------
 
 Embree only supports Intel Xe HPC/HPG GPUs as DPC++ devices, thus in
 particular the CPU and other GPUs cannot get used as a DPC++
 device. To render on the CPU just use the standard C99 API without
 relying on DPC++.
-
-Ahead of time compilation (AOT compilation) does currently only work
-for a single device, thus multiple devices cannot get specified with
-the `EMBREE_DPCPP_AOT_DEVICES` CMake option.
-
-The function pointer types `RTCFilterFunctionN` for the filter
-function callback as well as `RTCIntersectFunctionN` and
-`RTCOccludedFunctionN` for the user geometry callbacks are defined
-using a `const void*` input instead a pointer to the proper arguments
-struct. This is a temporary workaround for some DPC++ compiler issue
-that prevents inlining of function pointers passed via the
-`RTCIntersectArguments` struct to ray intersection.
 
 The SYCL language spec puts some language restrictions to device
 functions, such as disallowing: malloc, invokation of virtual
@@ -182,6 +170,41 @@ get used on the device:
 - Collision detection (`rtcCollide` API call) is not supported in DPC++ device side code.
 
 - Point queries (`rtcPointQuery` API call) are not supported in DPC++ device side code.
+
+
+Embree DPC++/SYCL Known Issues
+------------------------------
+
+There are some known DPC++ and driver issues:
+
+- Ahead of time compilation (AOT compilation) does currently only work
+  for a single device, thus multiple devices cannot get specified with
+  the `EMBREE_DPCPP_AOT_DEVICES` CMake option.
+
+- The function pointer types `RTCFilterFunctionN` for the filter
+  function callback as well as `RTCIntersectFunctionN` and
+  `RTCOccludedFunctionN` for the user geometry callbacks are defined
+  using a `const void*` input instead a pointer to the proper
+  arguments struct. This is a temporary workaround for some DPC++
+  compiler issue that prevents inlining of function pointers passed
+  via the `RTCIntersectArguments` struct to ray intersection.
+
+- Under Windows the GPU side timers are currently not working with the
+  oneAPI DPC++ compiler 165 from 2022.03.10. Thus under Windows the
+  `--benchmark` mode of the tutorials uses host timers.
+
+- JIT caching does currently not work when specialization constants
+  are used. For that reason the `viewer_sycl` tutorial disables JIT
+  caching when enabling specific Embree features using the
+  `--features` command line option.
+
+- Embree does not yet properly uses global SYCL pointers, which
+  requires using the `-cl-intel-force-global-mem-allocation` and
+  `-cl-intel-no-local-to-generic` option when compiling Embree DPC++
+  application, see section [Building Embree DPC++ Applications]. If
+  this compile option is not used, you get some compile warning that
+  generic address space is used, which will significantly reduce
+  performance.
 
 
 Upgrading from Embree 3 to Embree 4
@@ -446,3 +469,7 @@ degrade a lot. If detailed geometry moves fast, best put the geometry
 into an instance, and apply motion blur the instance itself, to allow
 larger motions. As a fallback, problematic scenes can always still get
 rendered robustly on the CPU.
+
+
+
+

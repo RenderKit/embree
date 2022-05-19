@@ -126,7 +126,8 @@ You can also create an Embree package using the following command:
 Please see the [Building Embree Applications] section on how to build
 your application with such an Embree package.
 
-### Linux DPC++ Compilation
+with DPC++ under Linux
+----------------------
 
 The Embree DPC++ compilation under Linux has been tested with the following DPC++ compilers:
 
@@ -312,11 +313,12 @@ example, to build the Embree library in parallel use
     cmake --build . --config Release --target embree -- /m
 
 
-### Windows DPC++ Compilation
+with DPC++ under Windows
+------------------------
 
 The Embree DPC++ compilation under Windows has been tested with the following DPC++ compilers:
 
-  - [oneAPI DPC++ compiler 2022.03.10](https://github.com/intel/llvm/suites/5602828495/artifacts/182002768)
+  - [oneAPI DPC++ compiler 165 from 2022.03.10](https://github.com/intel/llvm/suites/5602828495/artifacts/182002768)
   
 Please download and install one of these compilers.
 
