@@ -193,7 +193,7 @@ Latest drivers can get found on [intel.com/sdp](https://intel.com/sdp)
 searching for the latest `Xe HPC Family Driver FW and Tools`
 package. Follow the driver installation instructions. We tested Embree
 with the `Xe HPC Family Driver FW and Tools #11` driver dated
-2022-03-25.
+2022-03-29.
 
 
 Windows
