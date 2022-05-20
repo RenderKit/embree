@@ -11,6 +11,10 @@
 
 namespace embree {
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_ALL
+  
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterReject(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args);
@@ -1615,7 +1619,12 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     InitIntersectionContext(&context);
     context.context.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     context.tutorialData = (void*) &data;
-    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray));
+
+    RTCIntersectArguments args;
+    rtcInitIntersectArguments(&args);
+    args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+  
+    rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1680,7 +1689,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       Vec3fa transparency = Vec3fa(1.0f);
       Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccluded1(data.scene,&context.context,RTCRay_(shadow));
+      rtcOccludedEx1(data.scene,&context.context,RTCRay_(shadow),&args);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)

@@ -9,6 +9,10 @@
 #include "../common/lights/quad_light.ispc"
 #include "../common/lights/spot_light.ispc"
 
+/* all features required by this tutorial */
+#define FEATURE_MASK \
+  RTC_FEATURE_ALL
+
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args);
@@ -1612,7 +1616,12 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     InitIntersectionContext(&context);
     context.context.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     context.tutorialData = (void*) &data;
-    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray));
+
+    uniform RTCIntersectArguments args;
+    rtcInitIntersectArguments(&args);
+    args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+  
+    rtcIntersectExV(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1677,7 +1686,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccludedV(data.scene,&context.context,RTCRay_(shadow));
+      rtcOccludedExV(data.scene,&context.context,RTCRay_(shadow),&args);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)
