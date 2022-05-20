@@ -887,7 +887,7 @@ release-linux-x64-Release-DPCPP-ISPC1.17.0-TBB2021.2.0-PACKAGE-ZIP:
   needs: []
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   script:
-    - "scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_DPCPP_SUPPORT:ON sycl:dg2 gfx:PUBLIC ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.2.0 intensity:1 package:ZIP"
+    - "scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_DPCPP_SUPPORT:ON CURVE:OFF sycl:dg2 gfx:PUBLIC ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.2.0 intensity:1 package:ZIP"
     - "scripts/test.py build"
     - "scripts/test.py test"
   tags:   [docker-gpu, dg2]
