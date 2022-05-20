@@ -102,7 +102,7 @@ configured Embree, press `c` (for configure) and `g` (for generate) to
 generate a Makefile and leave the configuration. The code can be
 compiled by executing make.
 
-    make
+    make -j
 
 The executables will be generated inside the build folder. We recommend
 to finally install the Embree library and header files on your
@@ -144,16 +144,16 @@ Please also install all Linux packages described in the previous
 section.
 
 Now you can compile Embree using CMake. Create a build directory
-inside the Embree root directory and execute `ccmake ..` inside this
+inside the Embree root directory and execute `cmake ..` inside this
 build directory.
 
     mkdir build
     cd build
-    ccmake -DCMAKE_CXX_COMPILER=clang++ \
-           -DCMAKE_C_COMPILER=clang \
-           -DEMBREE_ISPC_SUPPORT=OFF \
-           -DEMBREE_DPCPP_SUPPORT=ON \
-           -DEMBREE_DPCPP_AOT_DEVICES=dg2 ..
+    cmake -DCMAKE_CXX_COMPILER=clang++ \
+          -DCMAKE_C_COMPILER=clang \
+          -DEMBREE_ISPC_SUPPORT=OFF \
+          -DEMBREE_DPCPP_SUPPORT=ON \
+          -DEMBREE_DPCPP_AOT_DEVICES=dg2 ..
            
 
 The `startup.sh` script above did put the DPC++ version of `clang++`
@@ -166,14 +166,13 @@ support through `EMBREE_DPCPP_SUPPORT=ON`.
 
 Under Linux, code generated with JIT compilation is not functioning at
 the moment, thus AOT compilation for the DG2 device has to get enabled
-as a workaround using the "EMBREE_DPCPP_AOT_DEVICES=dg2" cmake
+as a workaround using the `EMBREE_DPCPP_AOT_DEVICES=dg2` cmake
 setting. For AOT compilation to work you have to install the
 [Linux HPG/HPC Driver Installation] section.
 
 Now you can compile the Embree code:
 
-    make
-
+    cmake --build . -j
 
 The executables will be generated inside the build folder. The
 executable names of the DPC++ versions of the tutorials end with
@@ -337,7 +336,7 @@ The `path_to_dpcpp_compiler` should point to your unpacked DPC++
 compiler.
 
 Now you can configure Embree using CMake. Create a build directory
-inside the Embree root directory and execute `ccmake ..` inside this
+inside the Embree root directory and execute `cmake ..` inside this
 build directory.
 
     mkdir build
