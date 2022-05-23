@@ -394,9 +394,9 @@ your application with such an Embree package.
 In order to run the DPC++/SYCL tutorials on HPG hardware, you first
 need to install the proper graphics drivers. Latest drivers can get
 found on [intel.com/sdp](https://intel.com/sdp) searching for the
-latest `Discrete Graphics2 (DG2) FRD Kit: DGD25KEF1Q Resource Drive -
-Qual` package. Follow the driver installation instructions. We tested
-Embree with driver dated 2022-03-22.
+latest `Discrete Graphics2 (DG2)` driver. Follow the driver
+installation instructions. We tested Embree with DG2 driver 101.1433
+(Displayed as 30.0.101.1433) dated 2022-03-29.
 
 
 CMake Configuration
