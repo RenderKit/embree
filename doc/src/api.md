@@ -201,6 +201,14 @@ There are some known DPC++ and driver issues:
   generic address space is used, which will significantly reduce
   performance.
 
+- There is currently no way to query if some particular GPU device
+  supports Embree. If you have an integrated Gen device and DG2 card
+  in your system, the Gen device might get selected by default,
+  resulting in an error "Raytracing extensions used on unsupported
+  platform!". If you run into this problem you can the DG2 device by
+  setting the following environment variable
+  `SYCL_DEVICE_FILTER=level_zero:gpu:0`.
+
 
 Upgrading from Embree 3 to Embree 4
 ===================================
