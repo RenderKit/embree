@@ -102,7 +102,7 @@ configured Embree, press `c` (for configure) and `g` (for generate) to
 generate a Makefile and leave the configuration. The code can be
 compiled by executing make.
 
-    make -j
+    make -j 8
 
 The executables will be generated inside the build folder. We recommend
 to finally install the Embree library and header files on your
@@ -172,7 +172,7 @@ setting. For AOT compilation to work you have to install the
 
 Now you can compile the Embree code:
 
-    cmake --build . -j
+    cmake --build . -j 8
 
 The executables will be generated inside the build folder. The
 executable names of the DPC++ versions of the tutorials end with
