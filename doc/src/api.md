@@ -193,11 +193,6 @@ There are some known DPC++ and driver issues:
   oneAPI DPC++ compiler 165 from 2022.03.10. Thus under Windows the
   `--benchmark` mode of the tutorials uses host timers.
 
-- JIT caching does currently not work when specialization constants
-  are used. For that reason the `viewer_sycl` tutorial disables JIT
-  caching when enabling specific Embree features using the
-  `--features` command line option.
-
 - Embree does not yet properly uses global SYCL pointers, which
   requires using the `-cl-intel-force-global-mem-allocation` and
   `-cl-intel-no-local-to-generic` option when compiling Embree DPC++

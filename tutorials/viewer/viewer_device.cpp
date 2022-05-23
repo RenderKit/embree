@@ -296,36 +296,17 @@ extern "C" void renderFrameStandard (int* pixels,
 {
 #if defined(EMBREE_SYCL_TUTORIAL)
   TutorialData ldata = data;
-  sycl::event event;
-
-  /* FIXME: this is only required as JIT caching does not work with specialization constants at the moment */
-  if (g_feature_mask == RTC_FEATURE_ALL)
-  {
-    event = global_gpu_queue->submit([=](sycl::handler& cgh) {
-      const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
-        const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-        const unsigned int y = item.get_global_id(0); if (y >= height) return;
-        RayStats stats;
-        const RTCFeatureFlags feature_mask = RTC_FEATURE_ALL;
-        renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
-      });
-    });
-  }
-  else
-  {
-    event = global_gpu_queue->submit([=](sycl::handler& cgh) {
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);
-      const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL {
-        const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-        const unsigned int y = item.get_global_id(0); if (y >= height) return;
-        RayStats stats;
-        const RTCFeatureFlags feature_mask = kh.get_specialization_constant<spec_feature_mask>();
-        renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
-      });
+    const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL {
+      const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+      const unsigned int y = item.get_global_id(0); if (y >= height) return;
+      RayStats stats;
+      const RTCFeatureFlags feature_mask = kh.get_specialization_constant<spec_feature_mask>();
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
     });
-  }
+  });
   global_gpu_queue->wait_and_throw();
 
   const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();

@@ -176,41 +176,21 @@ extern "C" void renderFrame##Name (int* pixels,       \
     DebugShaderData_Constructor(&data);                                 \
     sycl::event event;                                                  \
   \
-  if (g_feature_mask == RTC_FEATURE_ALL) /* FIXME: this is only required as JIT caching does not work with specialization constants at the moment */  \
-  {\
-    event = global_gpu_queue->submit([=](sycl::handler& cgh) {\
-      const sycl::nd_range<2> nd_range = make_nd_range(height,width);\
-      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL { \
-        const unsigned int x = item.get_global_id(1); if (x >= width ) return; \
-        const unsigned int y = item.get_global_id(0); if (y >= height) return; \
-        RayStats stats;                                                 \
-        const RTCFeatureFlags feature_mask = RTC_FEATURE_ALL;           \
-        Vec3fa color = renderPixel##Name(data,x,y,camera,stats,feature_mask); \
-        unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
-        unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
-        unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
-        pixels[y*width+x] = (b << 16) + (g << 8) + r;                   \
-      });    \
-    });                                \
-  }                                                                     \
-  else                                                                  \
-  {\
-    event = global_gpu_queue->submit([=](sycl::handler& cgh) {\
-      cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);\
-      const sycl::nd_range<2> nd_range = make_nd_range(height,width);   \
-      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL { \
-        const unsigned int x = item.get_global_id(1); if (x >= width ) return; \
-        const unsigned int y = item.get_global_id(0); if (y >= height) return; \
-        RayStats stats;                                                 \
-        const RTCFeatureFlags feature_mask = kh.get_specialization_constant<spec_feature_mask>(); \
-        Vec3fa color = renderPixel##Name(data,x,y,camera,stats,feature_mask); \
-        unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
-        unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
-        unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
-        pixels[y*width+x] = (b << 16) + (g << 8) + r;                   \
-     });                                     \
-   });                                \
-  }\
+  event = global_gpu_queue->submit([=](sycl::handler& cgh) {\
+    cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);\
+    const sycl::nd_range<2> nd_range = make_nd_range(height,width);   \
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL { \
+      const unsigned int x = item.get_global_id(1); if (x >= width ) return; \
+      const unsigned int y = item.get_global_id(0); if (y >= height) return; \
+      RayStats stats;                                                 \
+      const RTCFeatureFlags feature_mask = kh.get_specialization_constant<spec_feature_mask>(); \
+      Vec3fa color = renderPixel##Name(data,x,y,camera,stats,feature_mask); \
+      unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f)); \
+      unsigned int g = (unsigned int) (255.0f * clamp(color.y,0.0f,1.0f)); \
+      unsigned int b = (unsigned int) (255.0f * clamp(color.z,0.0f,1.0f)); \
+      pixels[y*width+x] = (b << 16) + (g << 8) + r;                   \
+   });                                     \
+ });                                \
   global_gpu_queue->wait_and_throw();\
   \
   const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();\

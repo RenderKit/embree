@@ -202,14 +202,6 @@ namespace embree
         FileName file = FileName::executableFolder() + FileName("models/cornell_box.ecs");
         parseCommandLine(new ParseStream(new LineCommentFilter(file, "#")), file.path());
       }
-
-#if defined(EMBREE_SYCL_TUTORIAL)
-      /* due to some bug we need to disable JIT caching when specialization constants are used */
-      if (g_feature_mask != RTC_FEATURE_ALL && jit_cache) {
-        std::cout << "WARNING: Disabling JIT caching when specialization constants are used!" << std::endl;
-        jit_cache = false;
-      }
-#endif
     }
   };
 }
