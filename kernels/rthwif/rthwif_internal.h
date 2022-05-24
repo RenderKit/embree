@@ -69,11 +69,11 @@ struct __attribute__ ((packed,aligned(32))) MemRay
 struct __attribute__ ((packed,aligned(32))) MemHit 
 {
   inline void* getPrimLeafPtr() {
-    return (void*)(uint64_t(primLeafPtr)*64);
+    return sycl::global_ptr<void>((void*)(uint64_t(primLeafPtr)*64)).get();
   }
 
   inline void* getInstanceLeafPtr() {
-    return (void*)(uint64_t(instLeafPtr)*64);
+    return sycl::global_ptr<void>((void*)(uint64_t(instLeafPtr)*64)).get();
   }
   
   float    t;                   // hit distance of current hit (or initial traversal distance)
