@@ -237,8 +237,7 @@ SYCL_EXTERNAL uint32_t intel_get_hit_instanceID( rayquery_t query, HitType hit_t
   //struct InstanceLeaf* __restrict leaf = sycl::global_ptr<InstanceLeaf>((struct InstanceLeaf*)hit.getPrimLeafPtr()).get();
   
   if (leaf == nullptr) return -1;
-  //return leaf->part1.instanceIndex;
-  return leaf->part1.instanceID;
+  return leaf->part1.instanceIndex;
 }
 
 SYCL_EXTERNAL void intel_get_hit_triangle_verts( rayquery_t query, float3 verts_out[3], HitType hit_type )
