@@ -17,8 +17,8 @@ execute the following line which properly configures the environment to
 use the DPC++ compiler:
 
     set "DPCPP_DIR=path_to_dpcpp_compiler"
-    set "PATH=%PATH%;%DPCPP_DIR%\bin"
-    set "PATH=%PATH%;%DPCPP_DIR%\lib"
+    set "PATH=%DPCPP_DIR%\bin;%PATH%"
+    set "PATH=%DPCPP_DIR%\lib;%PATH%"
     set "CPATH=%DPCPP_DIR%\include;%CPATH%"
     set "INCLUDE=%DPCPP_DIR%\include;%INCLUDE%"
     set "LIB=%DPCPP_DIR%\lib;%LIB%"
