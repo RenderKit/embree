@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.13.4
+-   Fixed binning related crash in SAH BVH builder.
+
 ### Embree 3.13.3
 -   Invalid multi segment motion blurred normal oriented curves are properly excluded from BVH build.
 -   Fixing issue with normal oriented curve construction when center curve curvature is very large.
