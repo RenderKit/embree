@@ -3,16 +3,19 @@
 
 #pragma once
 
-#if !defined(EMBREE_DPCPP_SUPPORT)
-#  define SYCL_EXTERNAL
-#endif
-
 #if defined(EMBREE_DPCPP_SUPPORT)
 // If we use the internal clang frontend of the dpc++ compiler directly __INTEL_LLVM_COMPILER is not set.
 // I think doing this is fine because normal clang can not compile dpcpp/sycl code anyway.
 #if defined(__WIN32__) and defined(__clang__) and !defined(__INTEL_LLVM_COMPILER)
   #define __INTEL_LLVM_COMPILER
 #endif
+#endif
+
+#if defined(EMBREE_SYCL_TUTORIAL)
+#  define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
+#  include <CL/sycl.hpp>
+#else
+#  define SYCL_EXTERNAL
 #endif
 
 /* include embree API */

@@ -16,10 +16,16 @@ the [SYCL webpage](https://www.khronos.org/sycl/) for details.
 The Embree DPC++ API is designed for photorealistic rendering use
 cases, where scene setup is performed on the host, and rendering on
 the device. The Embree DPC++ API is very similar to the standard
-Embree C99 API. To use DPC++ the user just initializes a DPC++ Embree
-device using the `rtcNewSYCLDevice` API function by providing a SYCL
-context and queue. Files containing SYCL code, have to get compiled
-with the [Intel(R) oneAPI DPC++
+Embree C99 API. To enable SYCL support you have to include the
+`sycl.hpp` file before the Embree API headers:
+
+    #include <CL/sycl.hpp>
+    #include <embree4/rtcore.h>
+
+Next you need to initializes a DPC++ Embree device using the
+`rtcNewSYCLDevice` API function by providing a SYCL context and
+queue. Files containing SYCL code, have to get compiled with the
+[Intel(R) oneAPI DPC++
 compiler](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp)
 or open source [oneAPI DPC++
 compiler](https://github.com/intel/llvm/). The DPC++ compiler performs

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <CL/sycl.hpp>
 #include "../../include/embree4/rtcore.h"
 #include "../../include/embree4/rtcore_ray.h"
 

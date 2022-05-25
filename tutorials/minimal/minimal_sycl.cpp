@@ -1,11 +1,13 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+/*
+ * To use the Embree DPC++ API you have to include sycl.hpp before the
+ * embree API headers.
+ */
 #include <CL/sycl.hpp>
-
-#include <cstdio>
-
 #include <embree4/rtcore.h>
+
 #include <cstdio>
 #include <limits>
 
