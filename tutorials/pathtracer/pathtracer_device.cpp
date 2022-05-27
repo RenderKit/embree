@@ -10,11 +10,6 @@
 #include "../common/lights/spot_light.cpp"
 
 namespace embree {
-
-/* all features required by this tutorial */
-#define FEATURE_MASK \
-  RTC_FEATURE_ALL
-  
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterReject(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args);
@@ -46,6 +41,11 @@ extern "C" int g_animation_mode;
 
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
+
+#if defined(EMBREE_SYCL_TUTORIAL)
+const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_TRIANGLE);
+#endif
+static RTCFeatureFlags g_used_features = RTC_FEATURE_TRIANGLE;
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               Lights                                       //
@@ -1013,7 +1013,10 @@ RTCScene convertScene(ISPCScene* scene_in)
 
   assignShadersFunc = assignShaders;
   
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_used_features);
+#if ENABLE_FILTER_FUNCTION
+   g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY);
+#endif
 
   /* commit changes to scene */
   //progressStart();
@@ -1593,7 +1596,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterHair(const RTCFilterFunctionNAr
     valid_i[0] = 0;
 }
 
-Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats)
+Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSampler& sampler, const ISPCCamera& camera, RayStats& stats, const RTCFeatureFlags features)
 {
   /* radiance accumulator and weight */
   Vec3fa L = Vec3fa(0.0f);
@@ -1622,7 +1625,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
 
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
-    args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+    args.feature_mask = features;
   
     rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
@@ -1717,7 +1720,9 @@ void renderPixelStandard(const TutorialData& data,
                           const unsigned int width,
                           const unsigned int height,
                           const float time,
-                          const ISPCCamera& camera, RayStats& stats)
+                          const ISPCCamera& camera,
+                          RayStats& stats,
+                          const RTCFeatureFlags features=RTC_FEATURE_ALL)
 {
   RandomSampler sampler;
 
@@ -1730,7 +1735,7 @@ void renderPixelStandard(const TutorialData& data,
     /* calculate pixel color */
     float fx = x + RandomSampler_get1D(sampler);
     float fy = y + RandomSampler_get1D(sampler);
-    L = L + renderPixelFunction(data,fx,fy,sampler,camera,stats);
+    L = L + renderPixelFunction(data,fx,fy,sampler,camera,stats,features);
   }
   L = L/(float)data.spp;
 
@@ -1857,12 +1862,14 @@ extern "C" void renderFrameStandard (int* pixels,
 #if defined(EMBREE_SYCL_TUTORIAL)
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+    cgh.set_specialization_constant<rtc_feature_mask>(g_used_features);
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL {
+      const RTCFeatureFlags feature_mask = kh.get_specialization_constant<rtc_feature_mask>();
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;
-      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
     });
   });
   global_gpu_queue->wait_and_throw();

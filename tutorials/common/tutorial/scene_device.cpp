@@ -877,31 +877,47 @@ namespace embree
     return requiredInstancingDepth;
   }
 
-  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags)
+  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags, RTCFeatureFlags *used_features_out)
   {
     TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
     if (!tutorial_scene) return scene_in->scene;
     
+    unsigned int used_features = RTC_FEATURE_NONE;
+
     RTCScene scene = scene_in->scene;
     rtcSetSceneFlags(scene, flags);
     
     for (unsigned int geomID=0; geomID<scene_in->numGeometries; geomID++)
     {
       ISPCGeometry* geometry = scene_in->geometries[geomID];
-      if (geometry->type == SUBDIV_MESH)
+      if (geometry->type == SUBDIV_MESH) {
         ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry, quality, flags);
-      else if (geometry->type == TRIANGLE_MESH)
+        used_features |= RTC_FEATURE_SUBDIVISION;
+      }
+      else if (geometry->type == TRIANGLE_MESH) {
         ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry, quality, flags);
-      else if (geometry->type == QUAD_MESH)
+        used_features |= RTC_FEATURE_TRIANGLE;
+      }
+      else if (geometry->type == QUAD_MESH) {
         ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, flags);
-      else if (geometry->type == CURVES)
+        used_features |= RTC_FEATURE_QUAD;
+      }
+      else if (geometry->type == CURVES) {
         ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, flags);
-      else if (geometry->type == GRID_MESH)
+        used_features |= RTC_FEATURE_CURVES;
+      }
+      else if (geometry->type == GRID_MESH) {
         ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, flags);
-      else if (geometry->type == POINTS)
+        used_features |= RTC_FEATURE_GRID;
+      }
+      else if (geometry->type == POINTS) {
         ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, flags);
-      else if (geometry->type == INSTANCE)
+        used_features |= RTC_FEATURE_POINT;
+      }
+      else if (geometry->type == INSTANCE) {
         ConvertInstance(g_device, (ISPCInstance*) geometry, quality, flags, 0);
+        used_features |= RTC_FEATURE_INSTANCE;
+      }
       else
         assert(false);
 
@@ -911,6 +927,10 @@ namespace embree
     if (Application::instance)
       Application::instance->log(1,"creating Embree objects done");
     
+    if (used_features_out) {
+      *used_features_out = (RTCFeatureFlags)used_features;
+    }
+
     return scene;
   }
 

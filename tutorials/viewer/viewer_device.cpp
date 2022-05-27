@@ -119,7 +119,7 @@ RTCScene convertScene(ISPCScene* scene_in)
     }
   }
 
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_feature_mask);
   rtcSetSceneProgressMonitorFunction(scene_out,monitorProgressFunction,nullptr);
 
   /* commit changes to scene */
