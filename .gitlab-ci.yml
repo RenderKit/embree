@@ -92,9 +92,6 @@ setup_gfx:
       - GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_DEFAULT | sed 's/.*:\ //')
       - echo "Setup GFX ${GFX_VERSION}"
       - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
-      - GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_PVC | sed 's/.*:\ //')
-      - echo "Setup GFX ${GFX_VERSION}"
-      - ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} /NAS/packages/apps/gfx-driver/
 
 
 ####################################################################
@@ -153,7 +150,7 @@ continuous-linux-DG2-JIT-test:
 
 continuous-linux-PVC-AOT:
   extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:pvc gfx:PVC tasking:TBB intensity:4"]
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:pvc tasking:TBB intensity:4"]
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:   [embree, docker]
 
