@@ -597,16 +597,6 @@ namespace embree
     auto devices = gpu_context->get_devices();
     gpu_device = new sycl::device(devices[0]);
 
-#if defined(__WIN32__)
-    _putenv_s("IGC_EnableOCLNoInlineAttr","1");
-    _putenv_s("IGC_EnableStatelessToStatefull","0");
-    //_putenv_s("IGC_EnablePreemption","0");
-#else
-    setenv("IGC_EnableOCLNoInlineAttr","1",1);
-    setenv("IGC_EnableStatelessToStatefull","0",1);
-    //setenv("IGC_EnablePreemption","0",1);
-#endif
-
     gpu_maxWorkGroupSize = getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
     gpu_maxComputeUnits  = getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
 
