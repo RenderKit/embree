@@ -420,8 +420,19 @@ def runConfig(config):
     conf.append("-D EMBREE_BACKFACE_CULLING_CURVES="+config["BACKFACE_CULLING_CRUVES"])
   if "IGNORE_INVALID_RAYS" in config:
     conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
+
   if "FILTER_FUNCTION" in config:
-    conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
+    if config["FILTER_FUNCTION"] == "CONTEXT":
+      conf.append("-D EMBREE_FILTER_FUNCTION=ON")
+      conf.append("-D EMBREE_FILTER_FUNCTION_IN_CONTEXT=ON")
+      conf.append("-D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=OFF")
+    elif config["FILTER_FUNCTION"] == "GEOMETRY":
+      conf.append("-D EMBREE_FILTER_FUNCTION=ON")
+      conf.append("-D EMBREE_FILTER_FUNCTION_IN_CONTEXT=OFF")
+      conf.append("-D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=ON")
+    else:
+       conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
+      
   if "DPCPP_MBLUR" in config:
     conf.append("-D EMBREE_DPCPP_MBLUR="+config["DPCPP_MBLUR"])
   if "RAY_MASK" in config:
@@ -440,10 +451,19 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_CURVE="+config["CURVE"])
   if "SUBDIV" in config:
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
+
   if "USERGEOM" in config:
-    conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
-  if "USERGEOM_CONTEXT" in config:
-    conf.append("-D EMBREE_GEOMETRY_USER_IN_CONTEXT="+config["USERGEOM_CONTEXT"])
+    if config["USERGEOM"] == "CONTEXT":
+      conf.append("-D EMBREE_GEOMETRY_USER=ON")
+      conf.append("-D EMBREE_GEOMETRY_USER_IN_CONTEXT=ON")
+      conf.append("-D EMBREE_GEOMETRY_USER_IN_GEOMETRY=OFF")
+    elif config["USERGEOM"] == "GEOMETRY":
+      conf.append("-D EMBREE_GEOMETRY_USER=ON")
+      conf.append("-D EMBREE_GEOMETRY_USER_IN_CONTEXT=OFF")
+      conf.append("-D EMBREE_GEOMETRY_USER_IN_GEOMETRY=ON")
+    else:
+      conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
+
   if "INSTANCE" in config:
     conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
   if "POINT" in config:

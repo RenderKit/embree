@@ -4217,7 +4217,7 @@ namespace embree
 	case 8: task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles); break;
 	case 9: task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles,task->test->random_motion_vector(1.0f)); break; 
 
-        case 10: {
+        case 10: if (rtcGetDeviceProperty(thread->device,RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED)) {
 	  std::unique_ptr<Sphere> sphere(new Sphere(pos,2.0f));  
 	  task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,sphere.get());
           spheres.push_back(std::move(sphere));
@@ -4369,9 +4369,15 @@ namespace embree
 	  case 16: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_REFIT,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
 	  case 17: geom[index] = task->scene->addSubdivSphere(task->sampler,RTC_BUILD_QUALITY_LOW,pos,2.0f,numPhi,4,numTriangles,task->test->random_motion_vector(1.0f)); quality[index] = RTC_BUILD_QUALITY_LOW; break;
 
-          case 18: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
-          case 19: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_REFIT,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
-          case 20: spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_LOW,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_LOW; break;
+          case 18: if (rtcGetDeviceProperty(thread->device,RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED)) {
+              spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_MEDIUM,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
+            }
+          case 19: if (rtcGetDeviceProperty(thread->device,RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED)) {
+              spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_REFIT,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
+            }
+          case 20: if (rtcGetDeviceProperty(thread->device,RTC_DEVICE_PROPERTY_USER_GEOMETRY_SUPPORTED)) {
+              spheres[index] = Sphere(pos,2.0f); geom[index] = task->scene->addUserGeometryEmpty(task->sampler,RTC_BUILD_QUALITY_LOW,&spheres[index]); quality[index] = RTC_BUILD_QUALITY_LOW; break;
+            }
 
           case 24: geom[index] = task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_MEDIUM,pos,1.0f,2.0f,numTriangles); quality[index] = RTC_BUILD_QUALITY_MEDIUM; break;
           case 25: geom[index] = task->scene->addHair  (task->sampler,RTC_BUILD_QUALITY_REFIT,pos,1.0f,2.0f,numTriangles); quality[index] = RTC_BUILD_QUALITY_REFIT; break;
@@ -5760,24 +5766,27 @@ namespace embree
                     groups.top()->add(new BackfaceCullingTest(to_string(gtype,sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,gtype,imode,ivariant));
         groups.pop();
       }
-      
-      push(new TestGroup("intersection_filter",true,true));
-      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED)) 
+
+      if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED))
       {
-        for (auto sflags : sceneFlags) 
-          for (auto imode : intersectModes) 
-            for (auto ivariant : intersectVariants)
-              if (has_variant(imode,ivariant)) {
-                groups.top()->add(new IntersectionFilterTest("triangles."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,false,imode,ivariant));
-              }
-        
-        for (auto sflags : sceneFlags) 
-          for (auto imode : intersectModes) 
-            for (auto ivariant : intersectVariants)
-              if (has_variant(imode,ivariant))
+        push(new TestGroup("intersection_filter",true,true));
+        if (rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED)) 
+        {
+          for (auto sflags : sceneFlags) 
+            for (auto imode : intersectModes) 
+              for (auto ivariant : intersectVariants)
+                if (has_variant(imode,ivariant)) {
+                  groups.top()->add(new IntersectionFilterTest("triangles."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,false,imode,ivariant));
+                }
+          
+          for (auto sflags : sceneFlags) 
+            for (auto imode : intersectModes) 
+              for (auto ivariant : intersectVariants)
+                if (has_variant(imode,ivariant))
                   groups.top()->add(new IntersectionFilterTest("subdiv."+to_string(sflags,imode,ivariant),isa,sflags,RTC_BUILD_QUALITY_MEDIUM,true,imode,ivariant));
+        }
+        groups.pop();
       }
-      groups.pop();
 
       push(new TestGroup("instancing",true,true));
         for (auto sflags : sceneFlags) 

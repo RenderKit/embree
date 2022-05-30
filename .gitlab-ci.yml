@@ -130,7 +130,7 @@ continuous-linux-DG2-AOT-test:
 
 continuous-linux-DG2-AOT-INT:
   extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2 tasking:INT intensity:4"]
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:4"]
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:   [embree, docker]
 
@@ -169,7 +169,7 @@ continuous-windows-DG2-AOT:
 continuous-windows-DG2-AOT-INT:
   stage: build
   script:
-    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON tasking:INT sycl:dg2 intensity:3
+    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:3
     - python scripts/test.py build
     - python scripts/test.py test
   tags:   [vis-sdp-dg2-05]
