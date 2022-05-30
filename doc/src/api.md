@@ -195,9 +195,15 @@ Embree DPC++/SYCL Known Issues
 
 There are some known DPC++ and driver issues:
 
-- Ahead of time compilation (AOT compilation) does currently only work
-  for a single device, thus multiple devices cannot get specified with
-  the `EMBREE_DPCPP_AOT_DEVICES` CMake option.
+- When one of the geometry callbacks is enabled
+  (EMBREE_FILTER_FUNCTION_IN_GEOMETRY or
+  EMBREE_GEOMETRY_USER_IN_GEOMETRY) then:
+
+  a) Ahead of time compilation (AOT compilation) does currently only
+     work for a single device, thus multiple devices cannot get
+     specified with the `EMBREE_DPCPP_AOT_DEVICES` CMake option.
+
+  b) JIT compiled code does only run on DG2 and not PVC.
 
 - The function pointer types `RTCFilterFunctionN` for the filter
   function callback as well as `RTCIntersectFunctionN` and
