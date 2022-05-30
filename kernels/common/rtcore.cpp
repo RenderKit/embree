@@ -9,6 +9,10 @@
 #include "context.h"
 #include "../geometry/filter.h"
 #include "../../include/embree4/rtcore_ray.h"
+
+#if defined(EMBREE_DPCPP_SUPPORT)
+#include "../rthwif/rthwif_embree_builder.h"
+#endif
 using namespace embree;
 
 RTC_NAMESPACE_BEGIN;
@@ -38,10 +42,26 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcNewSYCLDevice);
     RTC_VERIFY_HANDLE(sycl_context);
     Lock<MutexSys> lock(g_mutex);
+
+    auto devices = sycl_context->get_devices();
+    for (auto device : devices) {
+      if (!rthwifIsSYCLDeviceSupported(device))
+        throw_RTCError(RTC_ERROR_UNSUPPORTED_DEVICE,"unsupported SYCL device");
+    }
+        
     DeviceGPU* device = new DeviceGPU(sycl_context,sycl_queue,config);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
+  }
+
+  RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device& sycl_device)
+  {
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcIsSYCLDeviceSupported);
+    return rthwifIsSYCLDeviceSupported(sycl_device);
+    RTC_CATCH_END(nullptr);
+    return false;
   }
 
 #endif

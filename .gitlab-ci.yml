@@ -98,15 +98,15 @@ setup_gfx:
 # Continuous GPU Tests
 ####################################################################
 
-continuous-linux-DG2-AOT-dpcpp:
-  extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON compiler:dpcpp/internal/20211117 sycl:dg2 tasking:TBB intensity:3"]
-  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
-  tags:   [docker-gpu, dg2]
+#continuous-linux-DG2-AOT-dpcpp:
+#  extends: .build
+#  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON compiler:dpcpp/internal/20211117 sycl:dg2 tasking:TBB intensity:3"]
+#  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+#  tags:   [docker-gpu, dg2]
 
-continuous-linux-DG2-AOT-dpcpp-test:
-  extends: .test_dg2
-  needs: ["continuous-linux-DG2-AOT-dpcpp"]
+#continuous-linux-DG2-AOT-dpcpp-test:
+#  extends: .test_dg2
+#  needs: ["continuous-linux-DG2-AOT-dpcpp"]
 
 continuous-linux-DG2-AOT-multilevel:
   extends: .build

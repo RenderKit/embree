@@ -7,6 +7,8 @@
 #include "../builders/primrefgen.h"
 #include "rthwif_internal.h"
 
+#include <level_zero/ze_api.h>
+
 namespace embree
 {
   using namespace embree::isa;
@@ -30,8 +32,6 @@ namespace embree
 
   void* rthwifInit(sycl::device device, sycl::context context)
   {
-    //if (getGPUDevice().get_info<sycl::info::device::name>() == "Intel(R) Gen12_8 HD Graphics NEO") {}
-
     size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
 
     size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
@@ -61,6 +61,38 @@ namespace embree
   void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context)
   {
     sycl::free(dispatchGlobalsPtr, context);
+  }
+
+  bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
+  {
+    /* check for Intel vendor */
+    const uint32_t vendor_id = sycl_device.get_info<sycl::info::device::vendor_id>();
+    if (vendor_id != 0x8086) return false;
+
+    /* check for supported device ID */
+    auto native_device = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
+    ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
+    ze_result_t status = zeDeviceGetProperties(native_device, &device_props);
+    if (status != ZE_RESULT_SUCCESS)
+      return false;
+
+    const uint32_t device_id = device_props.deviceId;
+    
+    // DG2
+    if (0x4F80 <= device_id && device_id <= 0x4F88) return true;
+    if (0x5690 <= device_id && device_id <= 0x5698) return true;
+    if (0x56A0 <= device_id && device_id <= 0x56A6) return true;
+    if (0x56B0 <= device_id && device_id <= 0x56B3) return true;
+    if (0x56C0 <= device_id && device_id <= 0x56C1) return true;
+       
+    // ATS-M
+    if (0x0201 <= device_id && device_id <= 0x0210) return true;
+
+    // PVC
+    if (0x0BD0 <= device_id && device_id <= 0x0BDB) return true;
+    if (device_id == 0x0BE5) return true;
+
+    return false;
   }
 
   BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)

@@ -24,7 +24,19 @@ Embree C99 API. To enable SYCL support you have to include the
 
 Next you need to initializes a DPC++ Embree device using the
 `rtcNewSYCLDevice` API function by providing a SYCL context and
-queue. Files containing SYCL code, have to get compiled with the
+queue.
+
+Embree provides the `rtcIsSYCLDeviceSupported` API function to check
+if some SYCL device is supported by Embree. You can also use the
+`RTCDeviceSelector` to conveniently select the first SYCL device that
+is supported by Embree, e.g.:
+
+    sycl::device device(RTCDeviceSelector());
+    sycl::queue queue(device, exception_handler);
+    sycl::context context(queue.get_context());
+    RTCDevice device = rtcNewSYCLDevice(&context,&queue,"");
+
+Files containing SYCL code, have to get compiled with the
 [Intel(R) oneAPI DPC++
 compiler](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp)
 or open source [oneAPI DPC++
@@ -206,14 +218,6 @@ There are some known DPC++ and driver issues:
   this compile option is not used, you get some compile warning that
   generic address space is used, which will significantly reduce
   performance.
-
-- There is currently no way to query if some particular GPU device
-  supports Embree. If you have an integrated Gen device and DG2 card
-  in your system, the Gen device might get selected by default,
-  resulting in an error "Raytracing extensions used on unsupported
-  platform!". If you run into this problem you can the DG2 device by
-  setting the following environment variable
-  `SYCL_DEVICE_FILTER=level_zero:gpu:0`.
 
 
 Upgrading from Embree 3 to Embree 4

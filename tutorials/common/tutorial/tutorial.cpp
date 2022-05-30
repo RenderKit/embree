@@ -85,6 +85,7 @@ namespace embree
     case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
     case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
     case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
+    case RTC_ERROR_UNSUPPORTED_DEVICE: printf("RTC_ERROR_UNSUPPORTED_DEVICE"); break;
     default                         : printf("invalid error code"); break;
     }
     if (str) {
@@ -1128,9 +1129,9 @@ namespace embree
 	 }
       };
 
-      /* select GPU device */
-      device = new sycl::device(sycl::gpu_selector());
-      //queue = new sycl::queue(*device, exception_handler);
+      /* select device supported by Embree */
+      //device = new sycl::device(sycl::gpu_selector());
+      device = new sycl::device(RTCDeviceSelector());
       queue = new sycl::queue(*device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       context = new sycl::context(queue->get_context());
       g_device = rtcNewSYCLDevice(context,queue,rtcore.c_str());

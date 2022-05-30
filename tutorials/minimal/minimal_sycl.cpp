@@ -289,7 +289,8 @@ int main()
   enablePersistentJITCache();
   enableUSMPooling();
 
-  sycl::queue queue(sycl::gpu_selector{}); 
+  /* This will select the first GPU supported by Embree */
+  sycl::queue queue(RTCDeviceSelector{}); 
   sycl::context context = queue.get_context();
   
   RTCDevice device = initializeDevice(context,queue);
