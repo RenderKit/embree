@@ -3,7 +3,7 @@
 
 #include "light.isph"
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes Light_eval(const uniform Light* uniform,
+SYCL_EXTERNAL Light_EvalRes Light_eval(const uniform Light* uniform,
                                                       const DifferentialGeometry&,
                                                       const Vec3f&)
 {

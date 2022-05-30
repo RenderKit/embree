@@ -24,7 +24,7 @@ struct SpotLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes SpotLight_sample(const Light* super,
+SYCL_EXTERNAL Light_SampleRes SpotLight_sample(const Light* super,
                                                               const DifferentialGeometry& dg,
                                                               const Vec2f& s)
 {
@@ -59,7 +59,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes SpotLight_sample(const Light* super
   return res;
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes SpotLight_eval(const Light* super,
+SYCL_EXTERNAL Light_EvalRes SpotLight_eval(const Light* super,
                                                           const DifferentialGeometry& dg,
                                                           const Vec3fa& dir)
 {

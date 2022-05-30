@@ -20,7 +20,7 @@ struct QuadLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes QuadLight_sample(const uniform Light* uniform super,
+SYCL_EXTERNAL Light_SampleRes QuadLight_sample(const uniform Light* uniform super,
                                                               const DifferentialGeometry& dg,
                                                               const Vec2f& s)
 {
@@ -49,7 +49,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes QuadLight_sample(const uniform Ligh
   return res;
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes QuadLight_eval(const uniform Light* uniform super,
+SYCL_EXTERNAL Light_EvalRes QuadLight_eval(const uniform Light* uniform super,
                                                           const DifferentialGeometry& dg,
                                                           const Vec3f& dir)
   

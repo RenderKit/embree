@@ -5,7 +5,7 @@
 
 namespace embree {
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes Light_eval(const Light* uniform,
+SYCL_EXTERNAL Light_EvalRes Light_eval(const Light* uniform,
                                                       const DifferentialGeometry&,
                                                       const Vec3fa&)
 {

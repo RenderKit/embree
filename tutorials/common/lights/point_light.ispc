@@ -18,7 +18,7 @@ struct PointLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes PointLight_sample(const uniform Light* uniform super,
+SYCL_EXTERNAL Light_SampleRes PointLight_sample(const uniform Light* uniform super,
                                                                const DifferentialGeometry& dg,
                                                                const Vec2f& s)
 {
@@ -64,7 +64,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes PointLight_sample(const uniform Lig
   return res;
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes PointLight_eval(const uniform Light* uniform super,
+SYCL_EXTERNAL Light_EvalRes PointLight_eval(const uniform Light* uniform super,
                                                            const DifferentialGeometry& dg,
                                                            const Vec3f& dir)
 {

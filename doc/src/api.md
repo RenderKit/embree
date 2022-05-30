@@ -261,7 +261,7 @@ properly for the CPU and GPU.
 
 - When intersection filter callbacks and user geometry callbacks
   assigned to geometries are used, the traversal kernel must have the
-  `RTC_SYCL_SIMD_WIDTH` attribute attached, the indirectly called
+  `RTC_SYCL_KERNEL` attribute attached, the indirectly called
   functions must be declared with `RTC_SYCL_INDIRECTLY_CALLABLE`, and
   the `rtcGetSYCLFunctionPointer` API function helper should get used
   to obtain the device side function pointer. However, we recommend to

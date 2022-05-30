@@ -55,7 +55,7 @@ struct Light
   TutorialLightType type;
 };
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes Light_eval(const uniform Light* uniform self, const DifferentialGeometry& dg, const Vec3f& dir);
+SYCL_EXTERNAL Light_EvalRes Light_eval(const uniform Light* uniform self, const DifferentialGeometry& dg, const Vec3f& dir);
 
 inline void Light_Constructor(uniform Light* uniform self)
 {

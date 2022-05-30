@@ -22,7 +22,7 @@ struct DirectionalLight
 // Implementation
 //////////////////////////////////////////////////////////////////////////////
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes DirectionalLight_sample(const uniform Light* uniform super,
+SYCL_EXTERNAL Light_SampleRes DirectionalLight_sample(const uniform Light* uniform super,
                                                                      const DifferentialGeometry& dg,
                                                                      const Vec2f& s)
 {
@@ -41,7 +41,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE Light_SampleRes DirectionalLight_sample(const unifo
   return res;
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE Light_EvalRes DirectionalLight_eval(const uniform Light* uniform super,
+SYCL_EXTERNAL Light_EvalRes DirectionalLight_eval(const uniform Light* uniform super,
                                                                  const DifferentialGeometry&,
                                                                  const Vec3f& dir)
 {
