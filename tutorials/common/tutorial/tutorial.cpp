@@ -1110,13 +1110,17 @@ namespace embree
 #if defined(__WIN32__)
         _putenv_s("SYCL_CACHE_PERSISTENT","1");
         _putenv_s("SYCL_CACHE_DIR",cache_dir.c_str());
-        _putenv_s("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M");
 #else
         setenv("SYCL_CACHE_PERSISTENT","1",1);
         setenv("SYCL_CACHE_DIR",cache_dir.c_str(),1);
-        setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
 #endif
       }
+
+#if defined(__WIN32__)
+      _putenv_s("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M");
+#else
+      setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
+#endif
 
       auto exception_handler = [] (sycl::exception_list exceptions) {
 	 for (std::exception_ptr const& e : exceptions) {
