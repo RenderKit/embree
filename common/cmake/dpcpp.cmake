@@ -80,33 +80,35 @@ IF (WIN32)
 
     SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
 
-      SET(CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ControlKernelTotalSize=0")
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableUnmaskedFunctions=1")         # enables unmasked functions
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ByPassAllocaSizeHeuristic=64")      # puts small arrays into registers
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableIndirectCallOptimization=0")  # Enables inlining indirect calls by comparing function addresses
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},FunctionControl=0")                 # 0 = default, 1 = inline, 2 = subroutine, 3 = stackcall, 4 = keep indirect calls
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},forceGlobalRA=1")                   # "force global register allocator
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},TotalGRFNum=128")                   # Total GRF used for register allocation
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},GRFNumToUse=64")                   # "Set the number of general registers to use (64 to totalGRFNum)
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ReplaceIndirectCallWithJmpi=1")     # Replace indirect call with jmpi instruction (HW WA)
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},DisableUniformAnalysis=1")          # Setting this to 1/true adds a compiler switch to disable uniform_analysis
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},DisableLoopUnroll=1")               # Setting this to 1/true adds a compiler switch to disable loop unrolling
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableStatelessToStatefull=0")      #  Enable Stateless To Statefull transformation for global and constant address space in OpenCL kernels
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableRecursionOpenCL=1")           # Enable recursion with OpenCL user functions
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableAdvMemOpt=0")                 # Enable advanced memory optimization
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},UniformMemOptLimit=512")            # "Limit of uniform memory optimization in bits
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnablePreemption=0")                 # Enable generating preeemptable code (SKL+)
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},AllowSubroutineAndInirectdCalls=1")  # Allow subroutine in the presence of indirect calls
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},AllocaRAPressureThreshold=0")        # The threshold for the register pressure potential (this reduces amount of spilling!)
+    LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
+    #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
+    #LIST(APPEND CMAKE_IGC_OPTIONS "SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableUnmaskedFunctions=1")         # enables unmasked functions
+    #LIST(APPEND CMAKE_IGC_OPTIONS "ByPassAllocaSizeHeuristic=64")      # puts small arrays into registers
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableIndirectCallOptimization=0")  # Enables inlining indirect calls by comparing function addresses
+    #LIST(APPEND CMAKE_IGC_OPTIONS "FunctionControl=0")                 # 0 = default, 1 = inline, 2 = subroutine, 3 = stackcall, 4 = keep indirect calls
+    #LIST(APPEND CMAKE_IGC_OPTIONS "forceGlobalRA=1")                   # "force global register allocator
+    #LIST(APPEND CMAKE_IGC_OPTIONS "TotalGRFNum=128")                   # Total GRF used for register allocation
+    #LIST(APPEND CMAKE_IGC_OPTIONS "GRFNumToUse=64")                   # "Set the number of general registers to use (64 to totalGRFNum)
+    #LIST(APPEND CMAKE_IGC_OPTIONS "ReplaceIndirectCallWithJmpi=1")     # Replace indirect call with jmpi instruction (HW WA)
+    #LIST(APPEND CMAKE_IGC_OPTIONS "DisableUniformAnalysis=1")          # Setting this to 1/true adds a compiler switch to disable uniform_analysis
+    #LIST(APPEND CMAKE_IGC_OPTIONS "DisableLoopUnroll=1")               # Setting this to 1/true adds a compiler switch to disable loop unrolling
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableStatelessToStatefull=0")      #  Enable Stateless To Statefull transformation for global and constant address space in OpenCL kernels
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableRecursionOpenCL=1")           # Enable recursion with OpenCL user functions
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableAdvMemOpt=0")                 # Enable advanced memory optimization
+    #LIST(APPEND CMAKE_IGC_OPTIONS "UniformMemOptLimit=512")            # "Limit of uniform memory optimization in bits
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnablePreemption=0")                 # Enable generating preeemptable code (SKL+)
+    #LIST(APPEND CMAKE_IGC_OPTIONS "AllowSubroutineAndInirectdCalls=1")  # Allow subroutine in the presence of indirect calls
+    #LIST(APPEND CMAKE_IGC_OPTIONS "AllocaRAPressureThreshold=0")        # The threshold for the register pressure potential (this reduces amount of spilling!)
+    #LIST(APPEND CMAKE_IGC_OPTIONS "AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
+    LIST(APPEND CMAKE_IGC_OPTIONS "VISAOptions=-scratchAllocForStackInKB 128 -nospillcompression")  # this works around some IGC bug in spill compression
 
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
-      SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},VISAOptions=-scratchAllocForStackInKB 128 -nospillcompression")  # this works around some IGC bug in spill compression
+    IF (CMAKE_BUILD_TYPE STREQUAL "Debug") # to allow printf inside indirectly callable function
+      LIST(APPEND CMAKE_IGC_OPTIONS "ForceInlineStackCallWithImplArg=0")
+      LIST(APPEND CMAKE_IGC_OPTIONS "EnableGlobalStateBuffer=1")   
+    ENDIF()
 
-      IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ForceInlineStackCallWithImplArg=0,EnableGlobalStateBuffer=1")   # to allow printf inside indirectly callable function
-      ENDIF()
+    STRING(REPLACE ";" "," CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS}")
             
       IF (EMBREE_DPCPP_AOT_DEVICE_REVISION GREATER 0)
         SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_DPCPP_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
@@ -211,34 +213,36 @@ ELSE()
 
     SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
 
-      SET(CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ControlKernelTotalSize=0")
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableUnmaskedFunctions=1")         # enables unmasked functions
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ByPassAllocaSizeHeuristic=64")      # puts small arrays into registers
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableIndirectCallOptimization=0")  # Enables inlining indirect calls by comparing function addresses
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},FunctionControl=0")                 # 0 = default, 1 = inline, 2 = subroutine, 3 = stackcall, 4 = keep indirect calls
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},forceGlobalRA=1")                   # "force global register allocator
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},TotalGRFNum=128")                   # Total GRF used for register allocation
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},GRFNumToUse=64")                   # "Set the number of general registers to use (64 to totalGRFNum)
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ReplaceIndirectCallWithJmpi=1")     # Replace indirect call with jmpi instruction (HW WA)
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},DisableUniformAnalysis=1")          # Setting this to 1/true adds a compiler switch to disable uniform_analysis
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},DisableLoopUnroll=1")               # Setting this to 1/true adds a compiler switch to disable loop unrolling
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableStatelessToStatefull=0")      #  Enable Stateless To Statefull transformation for global and constant address space in OpenCL kernels
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableRecursionOpenCL=1")           # Enable recursion with OpenCL user functions
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnableAdvMemOpt=0")                 # Enable advanced memory optimization
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},UniformMemOptLimit=512")            # "Limit of uniform memory optimization in bits
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},EnablePreemption=0")                 # Enable generating preeemptable code (SKL+)
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},AllowSubroutineAndInirectdCalls=1")  # Allow subroutine in the presence of indirect calls
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},AllocaRAPressureThreshold=0")        # The threshold for the register pressure potential (this reduces amount of spilling!)
+    LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
+    #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
+    #LIST(APPEND CMAKE_IGC_OPTIONS "SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableUnmaskedFunctions=1")         # enables unmasked functions
+    #LIST(APPEND CMAKE_IGC_OPTIONS "ByPassAllocaSizeHeuristic=64")      # puts small arrays into registers
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableIndirectCallOptimization=0")  # Enables inlining indirect calls by comparing function addresses
+    #LIST(APPEND CMAKE_IGC_OPTIONS "FunctionControl=0")                 # 0 = default, 1 = inline, 2 = subroutine, 3 = stackcall, 4 = keep indirect calls
+    #LIST(APPEND CMAKE_IGC_OPTIONS "forceGlobalRA=1")                   # "force global register allocator
+    #LIST(APPEND CMAKE_IGC_OPTIONS "TotalGRFNum=128")                   # Total GRF used for register allocation
+    #LIST(APPEND CMAKE_IGC_OPTIONS "GRFNumToUse=64")                   # "Set the number of general registers to use (64 to totalGRFNum)
+    #LIST(APPEND CMAKE_IGC_OPTIONS "ReplaceIndirectCallWithJmpi=1")     # Replace indirect call with jmpi instruction (HW WA)
+    #LIST(APPEND CMAKE_IGC_OPTIONS "DisableUniformAnalysis=1")          # Setting this to 1/true adds a compiler switch to disable uniform_analysis
+    #LIST(APPEND CMAKE_IGC_OPTIONS "DisableLoopUnroll=1")               # Setting this to 1/true adds a compiler switch to disable loop unrolling
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableStatelessToStatefull=0")      #  Enable Stateless To Statefull transformation for global and constant address space in OpenCL kernels
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableRecursionOpenCL=1")           # Enable recursion with OpenCL user functions
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableAdvMemOpt=0")                 # Enable advanced memory optimization
+    #LIST(APPEND CMAKE_IGC_OPTIONS "UniformMemOptLimit=512")            # "Limit of uniform memory optimization in bits
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnablePreemption=0")                 # Enable generating preeemptable code (SKL+)
+    #LIST(APPEND CMAKE_IGC_OPTIONS "AllowSubroutineAndInirectdCalls=1")  # Allow subroutine in the presence of indirect calls
+    #LIST(APPEND CMAKE_IGC_OPTIONS "AllocaRAPressureThreshold=0")        # The threshold for the register pressure potential (this reduces amount of spilling!)
+    #LIST(APPEND CMAKE_IGC_OPTIONS "AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
+    LIST(APPEND CMAKE_IGC_OPTIONS "VISAOptions=-scratchAllocForStackInKB 128 -nospillcompression")  # this works around some IGC bug in spill compression
 
-      #SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
-      SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},VISAOptions=-scratchAllocForStackInKB 128 -nospillcompression")  # this works around some IGC bug in spill compression
+    IF (CMAKE_BUILD_TYPE STREQUAL "Debug") # to allow printf inside indirectly callable function
+      LIST(APPEND CMAKE_IGC_OPTIONS "ForceInlineStackCallWithImplArg=0")
+      LIST(APPEND CMAKE_IGC_OPTIONS "EnableGlobalStateBuffer=1")   
+    ENDIF()
 
-      IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        SET(CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS},ForceInlineStackCallWithImplArg=0,EnableGlobalStateBuffer=1")   # to allow printf inside indirectly callable function
-      ENDIF()
-            
+    STRING(REPLACE ";" "," CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS}")
+              
       IF (EMBREE_DPCPP_AOT_DEVICE_REVISION GREATER 0)
         SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_DPCPP_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
       ENDIF()
