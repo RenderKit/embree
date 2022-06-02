@@ -7,7 +7,7 @@ CONFIG=${1}
 BENCHMARK="--benchmark 10 0 --benchmark_repetitions 1 --benchmark_name ${CONFIG}"
 
 run_benchmark() {
-  
+
   SCENE_NAME=${1}
   SCENE_FILE=${2}
   echo "running ./build/viewer_sycl --benchmark_out=benchmark_results/Embree-Viewer-GPU-${SCENE_NAME}-${CONFIG}.json ${BENCHMARK} -c ${SCENE_FILE}"

@@ -1,10 +1,19 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 ## Copyright 2020 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+git config --global --add safe.directory /builds/renderkit/embree
+git log -1
+
 # environment for benchmark client
-source ~/benchmark_client.git/env.sh
+git clone "http://oauth2:${GITLAB_API_TOKEN}@vis-gitlab.an.intel.com/renderkit/benchmark_client.git" benchmark_client
+pushd `pwd`
+cd benchmark_client
+./setup_venv.sh
+popd
+source ./benchmark_client/env.sh
+
 TOKEN="d_p9I_dcykHloQFpP-sVrQ"
 SOURCE_ROOT=`pwd`
 PROJECT_NAME="TestProject"
@@ -22,13 +31,8 @@ PROJECT_NAME="TestProject"
 #
 ################################# PLEASE READ ###################################
 
-initContext() {
-  if [ -z "$HAVE_CONTEXT" ]; then
-    HAVE_CONTEXT=1
-    benny insert code_context "${PROJECT_NAME}" ${SOURCE_ROOT} --save-json code_context.json
-    benny insert run_context ${TOKEN} ./code_context.json --save-json run_context.json
-  fi
-}
+benny insert code_context "${PROJECT_NAME}" ${SOURCE_ROOT} --save-json code_context.json
+benny insert run_context ${TOKEN} ./code_context.json --save-json run_context.json
 
 record_result() {
   ##############################################################################################
@@ -38,18 +42,14 @@ record_result() {
 
   SUITE_NAME="Embree-Viewer-GPU"
   benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
-
   benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
-  initContext
 
   scripts/merge_json.py benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}-${CONFIG_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
   benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
 
   SUITE_NAME="Embree-Pathtracer-GPU"
   benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
-
   benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
-  initContext
 
   scripts/merge_json.py benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}-${CONFIG_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
   benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json

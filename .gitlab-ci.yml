@@ -967,12 +967,9 @@ benchmark_manual:
 
 .benchmark_gpu:
   stage:  benchmark
-  image: $DOCKER_REGISTRY/embree/ubuntu:20.04_benchmark
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:   [docker-gpu, dg2, perf]
   script:
-    - "if [ -d '/home/visuser/benchmark_client.git' ]; then rm -Rf /home/visuser/benchmark_client.git; fi"
-    - "git clone http://oauth2:H2xDxz_gauUXeeXJEMor@vis-gitlab.an.intel.com/renderkit/benchmark_client.git /home/visuser/benchmark_client.git"
-    - "pushd `pwd` && cd /home/visuser/benchmark_client.git && ./setup_venv.sh && source env.sh && popd"
     - "scripts/run-benchmark-gpu.sh"
     - "scripts/record-benchmark-gpu.sh"
   needs: []
