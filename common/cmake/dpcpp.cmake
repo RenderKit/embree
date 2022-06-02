@@ -14,6 +14,94 @@ _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 _SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
 _SET_IF_EMPTY(FLAGS_NEON   "-D__SSE__ -D__SSE2__")
 
+IF (NOT WIN32)
+  OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
+  IF (EMBREE_IGNORE_CMAKE_CXX_FLAGS)
+    SET(CMAKE_CXX_FLAGS "")
+  ENDIF()
+ENDIF()
+  
+IF (EMBREE_DPCPP_SUPPORT)
+
+  GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
+  GET_FILENAME_COMPONENT(SYCL_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
+  
+  IF (NOT SYCL_COMPILER_NAME STREQUAL "dpcpp")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
+  ENDIF()
+  
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # enables C++17 features
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-sycl")   # makes dpcpp compiler compatible with clang++
+  
+  SET(CMAKE_CXX_FLAGS_SYCL "-fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr")
+  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -Wno-logical-op-parentheses")
+  
+  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")              # FIXME: debug information generation takes forever in SYCL
+  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
+  
+  SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
+  
+  #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
+  #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
+  #LIST(APPEND CMAKE_IGC_OPTIONS "SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
+  #LIST(APPEND CMAKE_IGC_OPTIONS "EnableUnmaskedFunctions=1")         # enables unmasked functions
+  #LIST(APPEND CMAKE_IGC_OPTIONS "ByPassAllocaSizeHeuristic=64")      # puts small arrays into registers
+  #LIST(APPEND CMAKE_IGC_OPTIONS "EnableIndirectCallOptimization=0")  # Enables inlining indirect calls by comparing function addresses
+  #LIST(APPEND CMAKE_IGC_OPTIONS "FunctionControl=0")                 # 0 = default, 1 = inline, 2 = subroutine, 3 = stackcall, 4 = keep indirect calls
+  #LIST(APPEND CMAKE_IGC_OPTIONS "forceGlobalRA=1")                   # "force global register allocator
+  #LIST(APPEND CMAKE_IGC_OPTIONS "TotalGRFNum=128")                   # Total GRF used for register allocation
+  #LIST(APPEND CMAKE_IGC_OPTIONS "GRFNumToUse=64")                   # "Set the number of general registers to use (64 to totalGRFNum)
+  #LIST(APPEND CMAKE_IGC_OPTIONS "ReplaceIndirectCallWithJmpi=1")     # Replace indirect call with jmpi instruction (HW WA)
+  #LIST(APPEND CMAKE_IGC_OPTIONS "DisableUniformAnalysis=1")          # Setting this to 1/true adds a compiler switch to disable uniform_analysis
+  #LIST(APPEND CMAKE_IGC_OPTIONS "DisableLoopUnroll=1")               # Setting this to 1/true adds a compiler switch to disable loop unrolling
+  #LIST(APPEND CMAKE_IGC_OPTIONS "EnableStatelessToStatefull=0")      #  Enable Stateless To Statefull transformation for global and constant address space in OpenCL kernels
+  #LIST(APPEND CMAKE_IGC_OPTIONS "EnableRecursionOpenCL=1")           # Enable recursion with OpenCL user functions
+  #LIST(APPEND CMAKE_IGC_OPTIONS "EnableAdvMemOpt=0")                 # Enable advanced memory optimization
+  #LIST(APPEND CMAKE_IGC_OPTIONS "UniformMemOptLimit=512")            # "Limit of uniform memory optimization in bits
+  #LIST(APPEND CMAKE_IGC_OPTIONS "EnablePreemption=0")                 # Enable generating preeemptable code (SKL+)
+  #LIST(APPEND CMAKE_IGC_OPTIONS "AllowSubroutineAndInirectdCalls=1")  # Allow subroutine in the presence of indirect calls
+  #LIST(APPEND CMAKE_IGC_OPTIONS "AllocaRAPressureThreshold=0")        # The threshold for the register pressure potential (this reduces amount of spilling!)
+  #LIST(APPEND CMAKE_IGC_OPTIONS "AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
+  LIST(APPEND CMAKE_IGC_OPTIONS "VISAOptions=-scratchAllocForStackInKB 128 -nospillcompression")  # this works around some IGC bug in spill compression
+  
+  IF (CMAKE_BUILD_TYPE STREQUAL "Debug") # to allow printf inside indirectly callable function
+    LIST(APPEND CMAKE_IGC_OPTIONS "ForceInlineStackCallWithImplArg=0")
+    LIST(APPEND CMAKE_IGC_OPTIONS "EnableGlobalStateBuffer=1")   
+  ENDIF()
+  
+  STRING(REPLACE ";" "," CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS}")
+  
+  IF (EMBREE_DPCPP_AOT_DEVICE_REVISION GREATER 0)
+    SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_DPCPP_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
+  ENDIF()
+  
+  SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
+  #SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -internal_options -cl-intel-256-GRF-per-thread")          # large GRF mode
+  SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic")
+  
+  IF (EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
+    SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64")
+    SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
+  ELSE()
+    #SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64,spir64_gen")
+    SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64_gen")
+    SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT}")
+  ENDIF()
+  
+  #SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
+  
+  IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
+    SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} ${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
+  ENDIF()
+  
+  SET(CMAKE_CXX_FLAGS_SYCL  "${CMAKE_CXX_FLAGS_SYCL}  ${CMAKE_CXX_FLAGS_SYCL_AOT}")
+  SET(CMAKE_LINK_FLAGS_SYCL "${CMAKE_LINK_FLAGS_SYCL} ${CMAKE_LINK_FLAGS_SYCL_AOT}")
+  
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
+  
+ENDIF(EMBREE_DPCPP_SUPPORT)
+
+
 IF (WIN32)
 
   SET(COMMON_CXX_FLAGS "")
@@ -61,87 +149,16 @@ IF (WIN32)
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SECURE_LINKER_FLAGS}")
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SECURE_LINKER_FLAGS}")
 
-  IF (EMBREE_DPCPP_SUPPORT)
-
-    GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
-    GET_FILENAME_COMPONENT(SYCL_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
-
-    IF (NOT SYCL_COMPILER_NAME STREQUAL "dpcpp")
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
-    ENDIF()
-    
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # enables C++17 features
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-sycl")   # makes dpcpp compiler compatible with clang++
-
-    SET(CMAKE_CXX_FLAGS_SYCL "-Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -Wno-logical-op-parentheses -fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr")
-
-    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")              # FIXME: debug information generation takes forever in SYCL
-    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
-
-    SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
-
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
-    #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
-    #LIST(APPEND CMAKE_IGC_OPTIONS "SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableUnmaskedFunctions=1")         # enables unmasked functions
-    #LIST(APPEND CMAKE_IGC_OPTIONS "ByPassAllocaSizeHeuristic=64")      # puts small arrays into registers
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableIndirectCallOptimization=0")  # Enables inlining indirect calls by comparing function addresses
-    #LIST(APPEND CMAKE_IGC_OPTIONS "FunctionControl=0")                 # 0 = default, 1 = inline, 2 = subroutine, 3 = stackcall, 4 = keep indirect calls
-    #LIST(APPEND CMAKE_IGC_OPTIONS "forceGlobalRA=1")                   # "force global register allocator
-    #LIST(APPEND CMAKE_IGC_OPTIONS "TotalGRFNum=128")                   # Total GRF used for register allocation
-    #LIST(APPEND CMAKE_IGC_OPTIONS "GRFNumToUse=64")                   # "Set the number of general registers to use (64 to totalGRFNum)
-    #LIST(APPEND CMAKE_IGC_OPTIONS "ReplaceIndirectCallWithJmpi=1")     # Replace indirect call with jmpi instruction (HW WA)
-    #LIST(APPEND CMAKE_IGC_OPTIONS "DisableUniformAnalysis=1")          # Setting this to 1/true adds a compiler switch to disable uniform_analysis
-    #LIST(APPEND CMAKE_IGC_OPTIONS "DisableLoopUnroll=1")               # Setting this to 1/true adds a compiler switch to disable loop unrolling
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableStatelessToStatefull=0")      #  Enable Stateless To Statefull transformation for global and constant address space in OpenCL kernels
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableRecursionOpenCL=1")           # Enable recursion with OpenCL user functions
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableAdvMemOpt=0")                 # Enable advanced memory optimization
-    #LIST(APPEND CMAKE_IGC_OPTIONS "UniformMemOptLimit=512")            # "Limit of uniform memory optimization in bits
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnablePreemption=0")                 # Enable generating preeemptable code (SKL+)
-    #LIST(APPEND CMAKE_IGC_OPTIONS "AllowSubroutineAndInirectdCalls=1")  # Allow subroutine in the presence of indirect calls
-    #LIST(APPEND CMAKE_IGC_OPTIONS "AllocaRAPressureThreshold=0")        # The threshold for the register pressure potential (this reduces amount of spilling!)
-    #LIST(APPEND CMAKE_IGC_OPTIONS "AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
-    LIST(APPEND CMAKE_IGC_OPTIONS "VISAOptions=-scratchAllocForStackInKB 128 -nospillcompression")  # this works around some IGC bug in spill compression
-
-    IF (CMAKE_BUILD_TYPE STREQUAL "Debug") # to allow printf inside indirectly callable function
-      LIST(APPEND CMAKE_IGC_OPTIONS "ForceInlineStackCallWithImplArg=0")
-      LIST(APPEND CMAKE_IGC_OPTIONS "EnableGlobalStateBuffer=1")   
-    ENDIF()
-
-    STRING(REPLACE ";" "," CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS}")
-            
-      IF (EMBREE_DPCPP_AOT_DEVICE_REVISION GREATER 0)
-        SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_DPCPP_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
-      ENDIF()
-      
-      SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
-      #SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -internal_options -cl-intel-256-GRF-per-thread")          # large GRF mode
-      SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic")
-
-      IF (EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
-        SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64")
-        SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
-      ELSE()
-        #SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64,spir64_gen")
-        SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64_gen")
-        SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT}")
-      ENDIF()
-
-      #SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
-            
-      IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
-        SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} ${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
-      ENDIF()
-
-      SET(CMAKE_CXX_FLAGS_SYCL  "${CMAKE_CXX_FLAGS_SYCL}  ${CMAKE_CXX_FLAGS_SYCL_AOT}")
-      SET(CMAKE_LINK_FLAGS_SYCL "${CMAKE_LINK_FLAGS_SYCL} ${CMAKE_LINK_FLAGS_SYCL_AOT}")
-
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
-  ENDIF(EMBREE_DPCPP_SUPPORT)
-
   GET_FILENAME_COMPONENT(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME_WE)
   message("compiler name: ${COMPILER_NAME}")
 
+  IF (EMBREE_DPCPP_SUPPORT)
+    IF (NOT SYCL_COMPILER_NAME STREQUAL "dpcpp")
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
+    ENDIF()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move") # disabled: warning: moving a temporary object prevents copy elision [-Wpessimizing-move]
+  ENDIF()
+  
   IF (COMPILER_NAME STREQUAL "icx")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:precise")   # makes dpcpp compiler compatible with clang++
   ELSE()
@@ -155,13 +172,8 @@ IF (WIN32)
 
 ELSE()
 
-  OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)
   OPTION(EMBREE_ADDRESS_SANITIZER "Enabled CLANG address sanitizer." OFF)
-  IF (EMBREE_IGNORE_CMAKE_CXX_FLAGS)
-    SET(CMAKE_CXX_FLAGS "")
-  ENDIF()
 
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}") 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")               # treat char as signed on all processors, including ARM
@@ -175,7 +187,6 @@ ELSE()
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++11 features    
   ENDIF()
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++11 features
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")         # makes all symbols hidden by default
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden") # makes all inline symbols hidden by default
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")        # disables strict aliasing rules
@@ -195,82 +206,11 @@ ELSE()
   ENDIF()
 
   IF (EMBREE_DPCPP_SUPPORT)
-
-    GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
-    GET_FILENAME_COMPONENT(SYCL_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
-
     IF (NOT SYCL_COMPILER_NAME STREQUAL "dpcpp")
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
     ENDIF()
-    
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # enables C++17 features
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-sycl")  # makes dpcpp compiler compatible with clang++
-
-    SET(CMAKE_CXX_FLAGS_SYCL "-fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr")
-
-    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")              # FIXME: debug information generation takes forever in SYCL
-    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
-
-    SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
-
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
-    #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
-    #LIST(APPEND CMAKE_IGC_OPTIONS "SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableUnmaskedFunctions=1")         # enables unmasked functions
-    #LIST(APPEND CMAKE_IGC_OPTIONS "ByPassAllocaSizeHeuristic=64")      # puts small arrays into registers
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableIndirectCallOptimization=0")  # Enables inlining indirect calls by comparing function addresses
-    #LIST(APPEND CMAKE_IGC_OPTIONS "FunctionControl=0")                 # 0 = default, 1 = inline, 2 = subroutine, 3 = stackcall, 4 = keep indirect calls
-    #LIST(APPEND CMAKE_IGC_OPTIONS "forceGlobalRA=1")                   # "force global register allocator
-    #LIST(APPEND CMAKE_IGC_OPTIONS "TotalGRFNum=128")                   # Total GRF used for register allocation
-    #LIST(APPEND CMAKE_IGC_OPTIONS "GRFNumToUse=64")                   # "Set the number of general registers to use (64 to totalGRFNum)
-    #LIST(APPEND CMAKE_IGC_OPTIONS "ReplaceIndirectCallWithJmpi=1")     # Replace indirect call with jmpi instruction (HW WA)
-    #LIST(APPEND CMAKE_IGC_OPTIONS "DisableUniformAnalysis=1")          # Setting this to 1/true adds a compiler switch to disable uniform_analysis
-    #LIST(APPEND CMAKE_IGC_OPTIONS "DisableLoopUnroll=1")               # Setting this to 1/true adds a compiler switch to disable loop unrolling
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableStatelessToStatefull=0")      #  Enable Stateless To Statefull transformation for global and constant address space in OpenCL kernels
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableRecursionOpenCL=1")           # Enable recursion with OpenCL user functions
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableAdvMemOpt=0")                 # Enable advanced memory optimization
-    #LIST(APPEND CMAKE_IGC_OPTIONS "UniformMemOptLimit=512")            # "Limit of uniform memory optimization in bits
-    #LIST(APPEND CMAKE_IGC_OPTIONS "EnablePreemption=0")                 # Enable generating preeemptable code (SKL+)
-    #LIST(APPEND CMAKE_IGC_OPTIONS "AllowSubroutineAndInirectdCalls=1")  # Allow subroutine in the presence of indirect calls
-    #LIST(APPEND CMAKE_IGC_OPTIONS "AllocaRAPressureThreshold=0")        # The threshold for the register pressure potential (this reduces amount of spilling!)
-    #LIST(APPEND CMAKE_IGC_OPTIONS "AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
-    LIST(APPEND CMAKE_IGC_OPTIONS "VISAOptions=-scratchAllocForStackInKB 128 -nospillcompression")  # this works around some IGC bug in spill compression
-
-    IF (CMAKE_BUILD_TYPE STREQUAL "Debug") # to allow printf inside indirectly callable function
-      LIST(APPEND CMAKE_IGC_OPTIONS "ForceInlineStackCallWithImplArg=0")
-      LIST(APPEND CMAKE_IGC_OPTIONS "EnableGlobalStateBuffer=1")   
-    ENDIF()
-
-    STRING(REPLACE ";" "," CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS}")
-              
-      IF (EMBREE_DPCPP_AOT_DEVICE_REVISION GREATER 0)
-        SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_DPCPP_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
-      ENDIF()
-      
-      SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
-      #SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -internal_options -cl-intel-256-GRF-per-thread")          # large GRF mode
-      SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic")
-
-      IF (EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
-        SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64")
-        SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
-      ELSE()
-        #SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64,spir64_gen")
-        SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64_gen")
-        SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT}")
-      ENDIF()
-
-      #SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
-      
-      IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
-        SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} ${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
-      ENDIF()
-
-      SET(CMAKE_CXX_FLAGS_SYCL  "${CMAKE_CXX_FLAGS_SYCL}  ${CMAKE_CXX_FLAGS_SYCL_AOT}")
-      SET(CMAKE_LINK_FLAGS_SYCL "${CMAKE_LINK_FLAGS_SYCL} ${CMAKE_LINK_FLAGS_SYCL_AOT}")
-
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move -isystem ${SYCL_COMPILER_DIR}/../include/sycl -isystem ${SYCL_COMPILER_DIR}/../include/")       # disable warning from SYCL header
-  ENDIF(EMBREE_DPCPP_SUPPORT)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move") # disabled: warning: moving a temporary object prevents copy elision [-Wpessimizing-move]
+  ENDIF()
 
   #SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -static-intel") # links intel runtime statically
   #SET(CMAKE_EXE_LINKER_FLAGS    "${CMAKE_EXE_LINKER_FLAGS}    -static-intel") # links intel runtime statically
