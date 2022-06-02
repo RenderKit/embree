@@ -80,7 +80,7 @@ IF (WIN32)
 
     SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
 
-    LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
     #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
     #LIST(APPEND CMAKE_IGC_OPTIONS "SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
     #LIST(APPEND CMAKE_IGC_OPTIONS "EnableUnmaskedFunctions=1")         # enables unmasked functions
@@ -213,7 +213,7 @@ ELSE()
 
     SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
 
-    LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
+    #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
     #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
     #LIST(APPEND CMAKE_IGC_OPTIONS "SubroutineThreshold=110000")        # Minimal kernel size to enable subroutines
     #LIST(APPEND CMAKE_IGC_OPTIONS "EnableUnmaskedFunctions=1")         # enables unmasked functions
