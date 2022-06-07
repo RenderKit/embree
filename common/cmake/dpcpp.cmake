@@ -78,6 +78,7 @@ IF (EMBREE_DPCPP_SUPPORT)
   SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
   #SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -internal_options -cl-intel-256-GRF-per-thread")          # large GRF mode
   SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic")
+  #SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-private-memory-minimal-size-per-thread 8192")
   
   IF (EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
     SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64")
