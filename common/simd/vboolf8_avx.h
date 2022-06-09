@@ -76,11 +76,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline vboolf(FalseTy) : v(_mm256_setzero_ps()) {}
-#if !defined(__aarch64__)
-    __forceinline vboolf(TrueTy)  : v(_mm256_cmp_ps(_mm256_setzero_ps(), _mm256_setzero_ps(), _CMP_EQ_OQ)) {}
-#else
-    __forceinline vboolf(TrueTy)  : v( _mm256_set1_epi32(0xFFFFFFFF) ) {}
-#endif
+    __forceinline vboolf(TrueTy)  : v(_mm256_castsi256_ps(_mm256_set1_epi32(0xFFFFFFFF))) {}
+
     ////////////////////////////////////////////////////////////////////////////////
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
