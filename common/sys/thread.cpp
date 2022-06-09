@@ -102,7 +102,6 @@ namespace embree
     _mm_setcsr(_mm_getcsr() | /*FTZ:*/ (1<<15) | /*DAZ:*/ (1<<6));
     parg->f(parg->arg);
     delete parg;
-    parg = nullptr;
     return 0;
   }
 
@@ -375,7 +374,6 @@ namespace embree
 
     parg->f(parg->arg);
     delete parg;
-    parg = nullptr;
     return nullptr;
   }
 
