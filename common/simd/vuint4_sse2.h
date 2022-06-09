@@ -384,10 +384,7 @@ namespace embree
     return shuffle<i,i,i,i>(v);
   }
 
-#if defined(__aarch64__)
-  template<int src> __forceinline unsigned int extract(const vuint4& b);
-  template<int dst> __forceinline vuint4 insert(const vuint4& a, const unsigned b);
-#elif defined(__SSE4_1__)
+#if defined(__SSE4_1__) && !defined(__aarch64__)
   template<int src> __forceinline unsigned int extract(const vuint4& b) { return _mm_extract_epi32(b, src); }
   template<int dst> __forceinline vuint4 insert(const vuint4& a, const unsigned b) { return _mm_insert_epi32(a, b, dst); }
 #else
@@ -395,49 +392,9 @@ namespace embree
   template<int dst> __forceinline vuint4 insert(const vuint4& a, const unsigned b) { vuint4 c = a; c[dst&3] = b; return c; }
 #endif
 
-#if defined(__aarch64__)
-  template<> __forceinline unsigned int extract<0>(const vuint4& b) {
-    return b[0];
-  }
-  template<> __forceinline unsigned int extract<1>(const vuint4& b) {
-    return b[1];
-  }
-  template<> __forceinline unsigned int extract<2>(const vuint4& b) {
-    return b[2];
-  }
-  template<> __forceinline unsigned int extract<3>(const vuint4& b) {
-    return b[3];
-  }
-
-  template<> __forceinline vuint4 insert<0>(const vuint4& a, unsigned b){
-    vuint4 c = a;
-    c[0] = b;
-    return c;
-  }
-  template<> __forceinline vuint4 insert<1>(const vuint4& a, unsigned b){
-    vuint4 c = a;
-    c[1] = b;
-    return c;
-  }
-  template<> __forceinline vuint4 insert<2>(const vuint4& a, unsigned b){
-    vuint4 c = a;
-    c[2] = b;
-    return c;
-  }
-  template<> __forceinline vuint4 insert<3>(const vuint4& a, unsigned b){
-    vuint4 c = a;
-    c[3] = b;
-    return c;
-  }
-
-  __forceinline unsigned int toScalar(const vuint4& v) {
-    return v[0];
-  }
-#else
   template<> __forceinline unsigned int extract<0>(const vuint4& b) { return _mm_cvtsi128_si32(b); }
 
   __forceinline unsigned int toScalar(const vuint4& v) { return _mm_cvtsi128_si32(v); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Reductions

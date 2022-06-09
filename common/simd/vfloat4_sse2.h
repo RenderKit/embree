@@ -702,51 +702,13 @@ namespace embree
   }
 
 #if defined(__aarch64__)
-  template<int i> __forceinline float extract(const vfloat4& a);
-  template<> __forceinline float extract<0>(const vfloat4& b) {
-      return b[0];
-  }
-  template<> __forceinline float extract<1>(const vfloat4& b) {
-      return b[1];
-  }
-  template<> __forceinline float extract<2>(const vfloat4& b) {
-      return b[2];
-  }
-  template<> __forceinline float extract<3>(const vfloat4& b) {
-      return b[3];
-  }
+  template<int i> __forceinline float extract(const vfloat4& a) { return a[i]; }
 #else
   template<int i> __forceinline float extract   (const vfloat4& a) { return _mm_cvtss_f32(shuffle<i>(a)); }
   template<>      __forceinline float extract<0>(const vfloat4& a) { return _mm_cvtss_f32(a); }
 #endif
 
-#if defined(__aarch64__)
-  template<int dst>  __forceinline vfloat4 insert(const vfloat4& a, float b);
-  template<> __forceinline vfloat4 insert<0>(const vfloat4& a, float b)
-  {
-        vfloat4 c = a;
-        c[0] = b;
-        return c;
-  }
-  template<> __forceinline vfloat4 insert<1>(const vfloat4& a, float b)
-  {
-        vfloat4 c = a;
-        c[1] = b;
-        return c;
-  }
-  template<> __forceinline vfloat4 insert<2>(const vfloat4& a, float b)
-  {
-        vfloat4 c = a;
-        c[2] = b;
-        return c;
-  }
-  template<> __forceinline vfloat4 insert<3>(const vfloat4& a, float b)
-  {
-        vfloat4 c = a;
-        c[3] = b;
-        return c;
-  }
-#elif defined (__SSE4_1__)
+#if defined (__SSE4_1__) && !defined(__aarch64__)
   template<int dst, int src, int clr> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return _mm_insert_ps(a, b, (dst << 4) | (src << 6) | clr); }
   template<int dst, int src> __forceinline vfloat4 insert(const vfloat4& a, const vfloat4& b) { return insert<dst, src, 0>(a, b); }
   template<int dst> __forceinline vfloat4 insert(const vfloat4& a, const float b) { return insert<dst, 0>(a, _mm_set_ss(b)); }
@@ -755,13 +717,7 @@ namespace embree
   template<int dst>  __forceinline vfloat4 insert(const vfloat4& a, float b) { vfloat4 c = a; c[dst&3] = b; return c; }
 #endif
 
-#if defined(__aarch64__)
-  __forceinline float toScalar(const vfloat4& v) {
-    return v[0];
-  }
-#else
   __forceinline float toScalar(const vfloat4& v) { return _mm_cvtss_f32(v); }
-#endif
 
   __forceinline vfloat4 shift_right_1(const vfloat4& x) {
     return _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(x), 4)); 
@@ -855,9 +811,9 @@ namespace embree
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 #if defined(__aarch64__)
-      __forceinline vfloat4 vreduce_min(const vfloat4& v) { float h = vminvq_f32(v); return vdupq_n_f32(h); }
-      __forceinline vfloat4 vreduce_max(const vfloat4& v) { float h = vmaxvq_f32(v); return vdupq_n_f32(h); }
-      __forceinline vfloat4 vreduce_add(const vfloat4& v) { float h = vaddvq_f32(v); return vdupq_n_f32(h); }
+  __forceinline vfloat4 vreduce_min(const vfloat4& v) { float h = vminvq_f32(v); return vdupq_n_f32(h); }
+  __forceinline vfloat4 vreduce_max(const vfloat4& v) { float h = vmaxvq_f32(v); return vdupq_n_f32(h); }
+  __forceinline vfloat4 vreduce_add(const vfloat4& v) { float h = vaddvq_f32(v); return vdupq_n_f32(h); }
 #else
   __forceinline vfloat4 vreduce_min(const vfloat4& v) { vfloat4 h = min(shuffle<1,0,3,2>(v),v); return min(shuffle<2,3,0,1>(h),h); }
   __forceinline vfloat4 vreduce_max(const vfloat4& v) { vfloat4 h = max(shuffle<1,0,3,2>(v),v); return max(shuffle<2,3,0,1>(h),h); }

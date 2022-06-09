@@ -472,10 +472,7 @@ namespace embree
     return shuffle<i,i,i,i>(v);
   }
 
-#if defined(__aarch64__)
-    template<int src> __forceinline int extract(const vint4& b);
-    template<int dst> __forceinline vint4 insert(const vint4& a, const int b);
-#elif defined(__SSE4_1__)
+#if defined(__SSE4_1__) && !defined(__aarch64__)
   template<int src> __forceinline int extract(const vint4& b) { return _mm_extract_epi32(b, src); }
   template<int dst> __forceinline vint4 insert(const vint4& a, const int b) { return _mm_insert_epi32(a, b, dst); }
 #else
@@ -483,58 +480,17 @@ namespace embree
   template<int dst> __forceinline vint4 insert(const vint4& a, int b) { vint4 c = a; c[dst&3] = b; return c; }
 #endif
 
-#if defined(__aarch64__)
-    template<> __forceinline int extract<0>(const vint4& b) {
-        return b.v[0];
-    }
-    template<> __forceinline int extract<1>(const vint4& b) {
-        return b.v[1];
-    }
-    template<> __forceinline int extract<2>(const vint4& b) {
-        return b.v[2];
-    }
-    template<> __forceinline int extract<3>(const vint4& b) {
-        return b.v[3];
-    }
-    template<> __forceinline vint4 insert<0>(const vint4& a, int b)
-    {
-        vint4 c = a;
-        c[0] = b;
-        return c;
-    }
-    template<> __forceinline vint4 insert<1>(const vint4& a, int b)
-    {
-        vint4 c = a;
-        c[1] = b;
-        return c;
-    }
-    template<> __forceinline vint4 insert<2>(const vint4& a, int b)
-    {
-        vint4 c = a;
-        c[2] = b;
-        return c;
-    }
-    template<> __forceinline vint4 insert<3>(const vint4& a, int b)
-    {
-        vint4 c = a;
-        c[3] = b;
-        return c;
-    }
-
-    __forceinline int toScalar(const vint4& v) {
-        return v[0];
-    }
-
-    __forceinline size_t toSizeT(const vint4& v) {
-        uint64x2_t x = uint64x2_t(v.v);
-        return x[0];
-    }
-#else
   template<> __forceinline int extract<0>(const vint4& b) { return _mm_cvtsi128_si32(b); }
-
+  
   __forceinline int toScalar(const vint4& v) { return _mm_cvtsi128_si32(v); }
-
-  __forceinline size_t toSizeT(const vint4& v) { 
+  
+#if defined(__aarch64__)
+  __forceinline size_t toSizeT(const vint4& v) {
+    uint64x2_t x = uint64x2_t(v.v);
+    return x[0];
+  }
+#else
+__forceinline size_t toSizeT(const vint4& v) { 
 #if defined(__WIN32__) && !defined(__X86_64__) // win32 workaround
     return toScalar(v);
 #elif defined(__ARM_NEON)

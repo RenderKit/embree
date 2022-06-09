@@ -47,13 +47,9 @@ namespace embree
       : v(mm_lookupmask_ps[(size_t(b) << 3) | (size_t(a) << 2) | (size_t(b) << 1) | size_t(a)]) {}
     __forceinline vboolf(bool a, bool b, bool c, bool d)
       : v(mm_lookupmask_ps[(size_t(d) << 3) | (size_t(c) << 2) | (size_t(b) << 1) | size_t(a)]) {}
-#if defined(__aarch64__)
-      __forceinline vboolf(int mask) { v = mm_lookupmask_ps[mask]; }
-      __forceinline vboolf(unsigned int mask) { v = mm_lookupmask_ps[mask]; }
-#else
     __forceinline vboolf(int mask) { assert(mask >= 0 && mask < 16); v = mm_lookupmask_ps[mask]; }
     __forceinline vboolf(unsigned int mask) { assert(mask < 16); v = mm_lookupmask_ps[mask]; }
-#endif
+
     /* return int32 mask */
     __forceinline __m128i mask32() const { 
       return _mm_castps_si128(v);
@@ -70,13 +66,8 @@ namespace embree
     /// Array Access
     ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__aarch64__)
-      __forceinline bool operator [](size_t index) const { return (_mm_movemask_ps(v) >> index) & 1; }
-      __forceinline int& operator [](size_t index)       { return i[index]; }
-#else
     __forceinline bool operator [](size_t index) const { assert(index < 4); return (_mm_movemask_ps(v) >> index) & 1; }
     __forceinline int& operator [](size_t index)       { assert(index < 4); return i[index]; }
-#endif
   };
 
   ////////////////////////////////////////////////////////////////////////////////
