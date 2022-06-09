@@ -308,16 +308,15 @@ namespace embree
   __forceinline float msub  ( const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fmsub_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
   __forceinline float nmadd ( const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fnmadd_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
   __forceinline float nmsub ( const float a, const float b, const float c) { return _mm_cvtss_f32(_mm_fnmsub_ss(_mm_set_ss(a),_mm_set_ss(b),_mm_set_ss(c))); }
+  
 #elif defined (__aarch64__) && defined(__clang__)
 #pragma clang fp contract(fast)
-
-
 __forceinline float madd  ( const float a, const float b, const float c) { return a*b + c; }
 __forceinline float msub  ( const float a, const float b, const float c) { return a*b - c; }
 __forceinline float nmadd ( const float a, const float b, const float c) { return c - a*b; }
 __forceinline float nmsub ( const float a, const float b, const float c) { return -(c + a*b); }
-
 #pragma clang fp contract(on)
+  
 #else
   __forceinline float madd  ( const float a, const float b, const float c) { return a*b+c; }
   __forceinline float msub  ( const float a, const float b, const float c) { return a*b-c; }
@@ -365,14 +364,6 @@ __forceinline float nmsub ( const float a, const float b, const float c) { retur
 
   /*! exchange */
   template<typename T> __forceinline void xchg ( T& a, T& b ) { const T tmp = a; a = b; b = tmp; }
-
-  template<typename T> __forceinline T prod_diff(const T& a,const T& b,const T& c,const T& d) {
-#if 1//!defined(__aarch64__)
-      return msub(a,b,c*d);
-#else
-      return nmadd(c,d,a*b);
-#endif
-  }
 
   /*  load/store */
   template<typename Ty> struct mem;

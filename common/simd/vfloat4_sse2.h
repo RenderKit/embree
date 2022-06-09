@@ -901,7 +901,7 @@ namespace embree
     const vfloat4 b0 = shuffle<1,2,0,3>(b);
     const vfloat4 a1 = shuffle<1,2,0,3>(a);
     const vfloat4 b1 = b;
-    return shuffle<1,2,0,3>(prod_diff(a0,b0,a1,b1));
+    return shuffle<1,2,0,3>(msub(a0,b0,a1*b1));
   }
 
   ////////////////////////////////////////////////////////////////////////////////

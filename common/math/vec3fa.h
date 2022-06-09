@@ -356,7 +356,7 @@ namespace embree
     vfloat4 b0 = shuffle<1,2,0,3>(vfloat4(b.m128));
     vfloat4 a1 = shuffle<1,2,0,3>(vfloat4(a.m128));
     vfloat4 b1 = vfloat4(b.m128);
-    return Vec3fa(shuffle<1,2,0,3>(prod_diff(a0,b0,a1,b1)));
+    return Vec3fa(shuffle<1,2,0,3>(msub(a0,b0,a1*b1)));
   }
 
   __forceinline float  sqr_length ( const Vec3fa& a )                { return dot(a,a); }

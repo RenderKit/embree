@@ -206,7 +206,7 @@ namespace embree
   template<typename T> __forceinline T       rcp_length( const Vec3<T>& a )                  { return rsqrt(sqr(a)); }
   template<typename T> __forceinline Vec3<T> normalize( const Vec3<T>& a )                   { return a*rsqrt(sqr(a)); }
   template<typename T> __forceinline T       distance ( const Vec3<T>& a, const Vec3<T>& b ) { return length(a-b); }
-  template<typename T> __forceinline Vec3<T> cross    ( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<T>(prod_diff(a.y,b.z,a.z,b.y), prod_diff(a.z,b.x,a.x,b.z), prod_diff(a.x,b.y,a.y,b.x)); }
+  template<typename T> __forceinline Vec3<T> cross    ( const Vec3<T>& a, const Vec3<T>& b ) { return Vec3<T>(msub(a.y,b.z,a.z*b.y), msub(a.z,b.x,a.x*b.z), msub(a.x,b.y,a.y*b.x)); }
   template<typename T> __forceinline Vec3<T> stable_triangle_normal( const Vec3<T>& a, const Vec3<T>& b, const Vec3<T>& c )
   {
     const T ab_x = a.z*b.y, ab_y = a.x*b.z, ab_z = a.y*b.x;
