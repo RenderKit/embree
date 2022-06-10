@@ -306,6 +306,10 @@ parameters that can be configured in CMake:
   is used as a tasking system, search the library in this directory
   tree.
 
++ `EMBREE_TBB_COMPONENT`: The component/libary name of Intel® Threading 
+  Building Blocks (TBB). Embree searches for this library name (default: tbb)
+  when TBB is used as tasking system.
+
 + `EMBREE_TBB_POSTFIX`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, link to tbb<EMBREE_TBB_POSTFIX>.(so,dll,lib).
   Defaults to the empty string.
