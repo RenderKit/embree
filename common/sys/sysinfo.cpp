@@ -575,6 +575,29 @@ namespace embree
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
+/// OpenBSD Platform
+////////////////////////////////////////////////////////////////////////////////
+
+#if defined(__OpenBSD__)
+namespace embree
+{
+  std::string getExecutableFileName()
+  {
+    /* not possible on OpenBSD.  if you need it, save argv[0] */
+    return "";
+  }
+
+  size_t getVirtualMemoryBytes() {
+    return 0;
+  }
+   
+  size_t getResidentMemoryBytes() {
+    return 0;
+  }
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////
 /// Mac OS X Platform
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -626,7 +649,7 @@ namespace embree
     static int nThreads = -1;
     if (nThreads != -1) return nThreads;
 
-#if defined(__MACOSX__) || defined(__ANDROID__)
+#if defined(__MACOSX__) || defined(__ANDROID__) || defined(__OpenBSD__)
     nThreads = sysconf(_SC_NPROCESSORS_ONLN); // does not work in Linux LXC container
     assert(nThreads);
 #elif defined(__EMSCRIPTEN__)
