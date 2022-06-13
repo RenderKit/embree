@@ -111,12 +111,7 @@ namespace embree
 #endif
   }
   __forceinline Vec3fa sign ( const Vec3fa& a ) {
-#if defined(__aarch64__)
-    Vec3fa r = blendv_ps(vOne, vmOne, _mm_cmplt_ps (a.m128,vdupq_n_f32(0.0f)));
-    return r;
-#else
     return blendv_ps(Vec3fa(one).m128, (-Vec3fa(one)).m128, _mm_cmplt_ps (a.m128,Vec3fa(zero).m128));
-#endif
   }
 
   __forceinline Vec3fa rcp  ( const Vec3fa& a )
