@@ -55,11 +55,6 @@
 #include <utility>
 #include <sstream>
 
-#if !defined(_DEBUG) && defined(APPLE)
-#undef assert
-#define assert(_EXPR)
-#endif
-
 namespace embree
 {
   ////////////////////////////////////////////////////////////////////////////////
