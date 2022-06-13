@@ -92,11 +92,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef __WIN32__
-#define dll_export __declspec(dllexport)
-#define dll_import __declspec(dllimport)
+#  if defined(EMBREE_STATIC_LIB)
+#    define dll_export
+#    define dll_import
+#  else
+#    define dll_export __declspec(dllexport)
+#    define dll_import __declspec(dllimport)
+#  endif
 #else
-#define dll_export __attribute__ ((visibility ("default")))
-#define dll_import 
+#  define dll_export __attribute__ ((visibility ("default")))
+#  define dll_import
 #endif
 
 #if defined(__WIN32__) && !defined(__MINGW32__)
