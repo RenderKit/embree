@@ -66,7 +66,11 @@ namespace embree
     case CPU::CORE1:           frequency_level = FREQUENCY_SIMD128; break;
     case CPU::XEON_PHI_KNIGHTS_MILL   : frequency_level = FREQUENCY_SIMD512; break;
     case CPU::XEON_PHI_KNIGHTS_LANDING: frequency_level = FREQUENCY_SIMD512; break;
-    case CPU::ARM:             frequency_level = FREQUENCY_SIMD256; break;
+#if defined(__APPLE__)
+    case CPU::ARM:             frequency_level = FREQUENCY_SIMD256; break; // Apple M1 supports high throughput for SIMD4
+#else
+    case CPU::ARM:             frequency_level = FREQUENCY_SIMD128; break;
+#endif
     }
 
     /* initialize global state */
@@ -154,12 +158,6 @@ namespace embree
 #endif
 #if defined(EMBREE_TARGET_AVX512)
     v += "AVX512 ";
-#endif
-#if defined(__ARM_NEON)
-    v += "NEON ";
-#if defined(NEON_AVX2_EMULATION)
-    v += "2xNEON ";
-#endif
 #endif
     return v;
   }

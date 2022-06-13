@@ -343,7 +343,6 @@ namespace embree
 #elif defined(__ARM_NEON) || defined(__EMSCRIPTEN__)
 
     int cpu_features = CPU_FEATURE_NEON|CPU_FEATURE_SSE|CPU_FEATURE_SSE2;
-#if defined(NEON_AVX2_EMULATION)
     cpu_features |= CPU_FEATURE_SSE3|CPU_FEATURE_SSSE3|CPU_FEATURE_SSE42;
     cpu_features |= CPU_FEATURE_XMM_ENABLED;
     cpu_features |= CPU_FEATURE_YMM_ENABLED;
@@ -356,8 +355,6 @@ namespace embree
     cpu_features |= CPU_FEATURE_BMI1;
     cpu_features |= CPU_FEATURE_BMI2;
     cpu_features |= CPU_FEATURE_NEON_2X;
-#endif
-
     return cpu_features;
 
 #else
