@@ -206,8 +206,4 @@ namespace embree
   };
 
   const constexpr UndefinedTy undefined = UndefinedTy();
-
-#if defined(__aarch64__)
-  extern const uint32x4_t movemask_mask;
-#endif
 }

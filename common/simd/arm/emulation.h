@@ -131,14 +131,3 @@ __forceinline __m128i _mm_load4epi16_f32(__m128i *ptr)
     float32x4_t t2 = vcvtq_f32_s32(t1);
     return vreinterpretq_s32_f32(t2);
 }
-
-#if defined(__aarch64__)
-#include "../..//math/constants.h"
-__forceinline int _mm_movemask_popcnt_ps(__m128 a)
-{
-    uint32x4_t t2 = vandq_u32(vreinterpretq_u32_f32(a), embree::movemask_mask);
-    t2 = vreinterpretq_u32_u8(vcntq_u8(vreinterpretq_u8_u32(t2)));
-    return vaddvq_u32(t2);
-
-}
-#endif
