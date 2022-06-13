@@ -594,11 +594,7 @@ namespace embree
 
   unsigned Scene::bind(unsigned geomID, Ref<Geometry> geometry) 
   {
-#if defined(APPLE) && defined(__aarch64__)
-    std::scoped_lock lock(geometriesMutex);
-#else
     Lock<SpinLock> lock(geometriesMutex);
-#endif
     if (geomID == RTC_INVALID_GEOMETRY_ID) {
       geomID = id_pool.allocate();
       if (geomID == RTC_INVALID_GEOMETRY_ID)
@@ -624,12 +620,8 @@ namespace embree
 
   void Scene::detachGeometry(size_t geomID)
   {
-#if defined(APPLE) && defined(__aarch64__)
-    std::scoped_lock lock(geometriesMutex);
-#else
     Lock<SpinLock> lock(geometriesMutex);
-#endif
-
+    
     if (geomID >= geometries.size())
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"invalid geometry ID");
 
@@ -857,8 +849,7 @@ namespace embree
     _mm_setcsr(mxcsr | /* FTZ */ (1<<15) | /* DAZ */ (1<<6));
     
     try {
-#if defined(TASKING_TBB)
-#if TBB_INTERFACE_VERSION_MAJOR < 8
+#if TBB_INTERFACE_VERSION_MAJOR < 8    
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits);
 #else
       tbb::task_group_context ctx( tbb::task_group_context::isolated, tbb::task_group_context::default_traits | tbb::task_group_context::fp_settings );
@@ -886,10 +877,7 @@ namespace embree
      
       /* reset MXCSR register again */
       _mm_setcsr(mxcsr);
-
-#endif  // #if defined(TASKING_TBB)
-
-    }
+    } 
     catch (...)
     {
       /* reset MXCSR register again */
