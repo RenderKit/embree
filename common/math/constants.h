@@ -209,11 +209,6 @@ namespace embree
 
 #if defined(__aarch64__)
   extern const uint32x4_t movemask_mask;
-  extern const uint32x4_t v0x80000000;
-  extern const uint32x4_t v0x7fffffff;
-  extern const uint8x16_t v0022;
-  extern const uint8x16_t v1133;
-  extern const uint8x16_t v0101;
   extern const float32x4_t vOne;
   extern const float32x4_t vmOne;
   extern const float32x4_t vInf;

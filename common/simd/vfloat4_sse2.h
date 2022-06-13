@@ -297,11 +297,7 @@ namespace embree
   __forceinline vfloat4 sign(const vfloat4& a) { return blendv_ps(vfloat4(one), -vfloat4(one), _mm_cmplt_ps(a, vfloat4(zero))); }
 #endif
 
-#if defined(__aarch64__)
-  __forceinline vfloat4 signmsk(const vfloat4& a) { return _mm_and_ps(a, vreinterpretq_f32_u32(v0x80000000)); }
-#else
   __forceinline vfloat4 signmsk(const vfloat4& a) { return _mm_and_ps(a,_mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
-#endif
 
   __forceinline vfloat4 rcp(const vfloat4& a)
   {
@@ -353,11 +349,7 @@ namespace embree
   }
 
   __forceinline vboolf4 isnan(const vfloat4& a) {
-#if defined(__aarch64__)
-    const vfloat4 b = _mm_and_ps(a, vreinterpretq_f32_u32(v0x7fffffff));
-#else
     const vfloat4 b = _mm_and_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x7fffffff)));
-#endif
 #if defined(__AVX512VL__)
     return _mm_cmp_epi32_mask(_mm_castps_si128(b), _mm_set1_epi32(0x7f800000), _MM_CMPINT_GT);
 #else
@@ -635,11 +627,7 @@ namespace embree
   }
 #endif
 
-#if defined(__aarch64__)
-  template<> __forceinline vfloat4 shuffle<0, 0, 2, 2>(const vfloat4& v) { return __m128(vqtbl1q_u8( uint8x16_t(v.v), v0022 )); }
-  template<> __forceinline vfloat4 shuffle<1, 1, 3, 3>(const vfloat4& v) { return __m128(vqtbl1q_u8( uint8x16_t(v.v), v1133)); }
-  template<> __forceinline vfloat4 shuffle<0, 1, 0, 1>(const vfloat4& v) { return __m128(vqtbl1q_u8( uint8x16_t(v.v), v0101)); }
-#elif defined(__SSE3__)
+#if defined(__SSE3__) && !defined(__aarch64__)
   template<> __forceinline vfloat4 shuffle<0, 0, 2, 2>(const vfloat4& v) { return _mm_moveldup_ps(v); }
   template<> __forceinline vfloat4 shuffle<1, 1, 3, 3>(const vfloat4& v) { return _mm_movehdup_ps(v); }
   template<> __forceinline vfloat4 shuffle<0, 1, 0, 1>(const vfloat4& v) { return _mm_castpd_ps(_mm_movedup_pd(_mm_castps_pd(v))); }
