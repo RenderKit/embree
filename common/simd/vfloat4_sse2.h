@@ -559,57 +559,6 @@ namespace embree
 #endif
   }
 
-#if defined(__aarch64__)
-    template<> __forceinline vfloat4 select<0>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vzero));
-    }
-    template<> __forceinline vfloat4 select<1>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(v000F));
-    }
-    template<> __forceinline vfloat4 select<2>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(v00F0));
-    }
-    template<> __forceinline vfloat4 select<3>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(v00FF));
-    }
-    template<> __forceinline vfloat4 select<4>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(v0F00));
-    }
-    template<> __forceinline vfloat4 select<5>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(v0F0F));
-    }
-    template<> __forceinline vfloat4 select<6>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(v0FF0));
-    }
-    template<> __forceinline vfloat4 select<7>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(v0FFF));
-    }
-    template<> __forceinline vfloat4 select<8>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vF000));
-    }
-    template<> __forceinline vfloat4 select<9>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vF00F));
-    }
-    template<> __forceinline vfloat4 select<10>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vF0F0));
-    }
-    template<> __forceinline vfloat4 select<11>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vF0FF));
-    }
-    template<> __forceinline vfloat4 select<12>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vFF00));
-    }
-    template<> __forceinline vfloat4 select<13>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vFF0F));
-    }
-    template<> __forceinline vfloat4 select<14>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vFFF0));
-    }
-    template<> __forceinline vfloat4 select<15>(const vfloat4& t, const vfloat4& f) {
-        return _mm_blendv_ps(f, t, vreinterpretq_f32_u32(vFFFF));
-    }
-#endif
-
   __forceinline vfloat4 lerp(const vfloat4& a, const vfloat4& b, const vfloat4& t) {
     return madd(t,b-a,a);
   }

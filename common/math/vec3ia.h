@@ -137,32 +137,32 @@ namespace embree
 #endif
 
   ////////////////////////////////////////////////////////////////////////////////
+  /// Select
+  ////////////////////////////////////////////////////////////////////////////////
+
+  __forceinline Vec3ia select( const Vec3ba& m, const Vec3ia& t, const Vec3ia& f ) {
+#if defined(__aarch64__) || defined(__SSE4_1__)
+    return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m));
+#else
+    return _mm_or_si128(_mm_and_si128(_mm_castps_si128(m), t), _mm_andnot_si128(_mm_castps_si128(m), f)); 
+#endif
+  }
+
+  ////////////////////////////////////////////////////////////////////////////////
   /// Reductions
   ////////////////////////////////////////////////////////////////////////////////
 #if defined(__aarch64__)
-  __forceinline int reduce_add(const Vec3ia& v) {
-    int32x4_t t = v.m128;
-    t[3] = 0;
-    return vaddvq_s32(t);
-
-  }
+  __forceinline int reduce_add(const Vec3ia& v) { return vaddvq_s32(select(Vec3ba(1,1,1),v,Vec3ia(0))); }
   __forceinline int reduce_mul(const Vec3ia& v) { return v.x*v.y*v.z; }
-  __forceinline int reduce_min(const Vec3ia& v) {
-    int32x4_t t = (__m128i)blendv_ps((__m128)v0x7fffffff, (__m128)v.m128, (__m128)vFFF0);
-    return vminvq_s32(t);
-
-  }
-  __forceinline int reduce_max(const Vec3ia& v) {
-    int32x4_t t = (__m128i)blendv_ps((__m128)v0x80000000, (__m128)v.m128, (__m128)vFFF0);
-    return vmaxvq_s32(t);
-
-  }
+  __forceinline int reduce_min(const Vec3ia& v) { return vminvq_s32(select(Vec3ba(1,1,1),v,Vec3ia(0x7FFFFFFF))); }
+  __forceinline int reduce_max(const Vec3ia& v) { return vmaxvq_s32(select(Vec3ba(1,1,1),v,Vec3ia(0x80000000))); }
 #else
   __forceinline int reduce_add(const Vec3ia& v) { return v.x+v.y+v.z; }
   __forceinline int reduce_mul(const Vec3ia& v) { return v.x*v.y*v.z; }
   __forceinline int reduce_min(const Vec3ia& v) { return min(v.x,v.y,v.z); }
   __forceinline int reduce_max(const Vec3ia& v) { return max(v.x,v.y,v.z); }
 #endif
+  
   ////////////////////////////////////////////////////////////////////////////////
   /// Comparison Operators
   ////////////////////////////////////////////////////////////////////////////////
@@ -179,18 +179,6 @@ namespace embree
   __forceinline Vec3ba eq_mask( const Vec3ia& a, const Vec3ia& b ) { return _mm_castsi128_ps(_mm_cmpeq_epi32 (a.m128, b.m128)); }
   __forceinline Vec3ba lt_mask( const Vec3ia& a, const Vec3ia& b ) { return _mm_castsi128_ps(_mm_cmplt_epi32 (a.m128, b.m128)); }
   __forceinline Vec3ba gt_mask( const Vec3ia& a, const Vec3ia& b ) { return _mm_castsi128_ps(_mm_cmpgt_epi32 (a.m128, b.m128)); }
-
-  ////////////////////////////////////////////////////////////////////////////////
-  /// Select
-  ////////////////////////////////////////////////////////////////////////////////
-
-  __forceinline Vec3ia select( const Vec3ba& m, const Vec3ia& t, const Vec3ia& f ) {
-#if defined(__aarch64__) || defined(__SSE4_1__)
-    return _mm_castps_si128(_mm_blendv_ps(_mm_castsi128_ps(f), _mm_castsi128_ps(t), m));
-#else
-    return _mm_or_si128(_mm_and_si128(_mm_castps_si128(m), t), _mm_andnot_si128(_mm_castps_si128(m), f)); 
-#endif
-  }
 
 #if defined(__aarch64__) || defined(__SSE4_1__)
   __forceinline Vec3ia min( const Vec3ia& a, const Vec3ia& b ) { return _mm_min_epi32(a.m128,b.m128); }
