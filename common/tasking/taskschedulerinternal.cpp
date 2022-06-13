@@ -152,12 +152,6 @@ namespace embree
     assert(newNumThreads);
     newNumThreads = min(newNumThreads, (size_t) getNumberOfLogicalThreads());
 
-    // We are observing a few % gain by increasing number threads by 2 on aarch64.
-#if defined(APPLE) && defined(__aarch64__)
-    numThreads = newNumThreads*2;
-#else
-    numThreads = newNumThreads;
-#endif
     numThreads = newNumThreads;
     if (!startThreads && !running) return;
     running = true;

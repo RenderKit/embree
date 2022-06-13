@@ -108,7 +108,7 @@ __forceinline Vec3fa RandomSampler_get3D(RandomSampler& self)
   const int u = RandomSampler_getUInt(self);
   const int v = RandomSampler_getUInt(self);
   const int w = RandomSampler_getUInt(self);
-  return Vec3fa(srl(static_cast<vuint4>(Vec3ia(u,v,w)), 1)) * 4.656612873077392578125e-10f;
+  return Vec3fa(srl(Vec3ia(u,v,w), 1)) * 4.656612873077392578125e-10f;
 }
 
 } // namespace embree

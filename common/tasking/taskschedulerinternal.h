@@ -137,7 +137,6 @@ namespace embree
 	/* allocate new task on right side of stack */
         size_t oldStackPtr = stackPtr;
         TaskFunction* func = new (alloc(sizeof(ClosureTaskFunction<Closure>))) ClosureTaskFunction<Closure>(closure);
-        /* gcc 8 or later fails to compile without explicit .load() */
         new (&(tasks[right.load()])) Task(func,thread.task,oldStackPtr,size);
         right++;
 

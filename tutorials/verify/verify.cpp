@@ -15,10 +15,6 @@
 #include <regex>
 #include <stack>
 
-#if defined(__APPLE__)
-#include "TargetConditionals.h"
-#endif
-
 #define random  use_random_function_of_test // do use random_int() and random_float() from Test class
 #define drand48 use_random_function_of_test // do use random_int() and random_float() from Test class
 

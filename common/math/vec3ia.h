@@ -101,14 +101,12 @@ namespace embree
   __forceinline Vec3ia operator ^( const Vec3ia& a, const int     b ) { return a ^ Vec3ia(b); }
   __forceinline Vec3ia operator ^( const int     a, const Vec3ia& b ) { return Vec3ia(a) ^ b; }
 
-#if !defined(__ARM_NEON)
   __forceinline Vec3ia operator <<( const Vec3ia& a, const int n ) { return _mm_slli_epi32(a.m128, n); }
   __forceinline Vec3ia operator >>( const Vec3ia& a, const int n ) { return _mm_srai_epi32(a.m128, n); }
 
   __forceinline Vec3ia sll ( const Vec3ia& a, const int b ) { return _mm_slli_epi32(a.m128, b); }
   __forceinline Vec3ia sra ( const Vec3ia& a, const int b ) { return _mm_srai_epi32(a.m128, b); }
   __forceinline Vec3ia srl ( const Vec3ia& a, const int b ) { return _mm_srli_epi32(a.m128, b); }
-#endif
 
   ////////////////////////////////////////////////////////////////////////////////
   /// Assignment Operators
