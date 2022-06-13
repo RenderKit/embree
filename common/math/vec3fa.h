@@ -215,35 +215,16 @@ namespace embree
   /// Ternary Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-#if defined(__AVX2__)
+#if defined(__AVX2__) || defined(__ARM_NEON)
   __forceinline Vec3fa madd  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fmadd_ps(a.m128,b.m128,c.m128); }
   __forceinline Vec3fa msub  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fmsub_ps(a.m128,b.m128,c.m128); }
   __forceinline Vec3fa nmadd ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fnmadd_ps(a.m128,b.m128,c.m128); }
   __forceinline Vec3fa nmsub ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return _mm_fnmsub_ps(a.m128,b.m128,c.m128); }
 #else
-
-#if defined(__aarch64__)
-  __forceinline Vec3fa madd  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) {
-        return _mm_madd_ps(a.m128, b.m128, c.m128);  //a*b+c;
-    }
-  __forceinline Vec3fa nmadd ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) {
-        return _mm_msub_ps(a.m128, b.m128, c.m128);  //-a*b+c;
-    }
-  __forceinline Vec3fa nmsub( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) {
-        Vec3fa t = _mm_madd_ps(a.m128, b.m128, c.m128);
-        return -t;
-    }
-  __forceinline Vec3fa msub( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) {
-        return _mm_madd_ps(a.m128,b.m128,vnegq_f32(c.m128)); //a*b-c
-    }
-
-#else
   __forceinline Vec3fa madd  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return a*b+c; }
   __forceinline Vec3fa nmadd ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return -a*b+c;}
   __forceinline Vec3fa nmsub ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return -a*b-c; }
   __forceinline Vec3fa msub  ( const Vec3fa& a, const Vec3fa& b, const Vec3fa& c) { return a*b-c; }
-#endif
-
 #endif
 
   __forceinline Vec3fa madd  ( const float a, const Vec3fa& b, const Vec3fa& c) { return madd(Vec3fa(a),b,c); }

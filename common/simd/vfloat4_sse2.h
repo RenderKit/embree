@@ -439,22 +439,9 @@ namespace embree
   __forceinline vfloat4 nmadd(const vfloat4& a, const vfloat4& b, const vfloat4& c) { return _mm_fnmadd_ps(a,b,c); }
   __forceinline vfloat4 nmsub(const vfloat4& a, const vfloat4& b, const vfloat4& c) { return _mm_fnmsub_ps(a,b,c); }
 #else
-
-#if defined(__aarch64__)
-  __forceinline vfloat4 madd (const vfloat4& a, const vfloat4& b, const vfloat4& c) {
-    return _mm_madd_ps(a, b, c);  //a*b+c;
-  }
-  __forceinline vfloat4 nmadd(const vfloat4& a, const vfloat4& b, const vfloat4& c) {
-    return _mm_msub_ps(a, b, c);  //-a*b+c;
-  }
-  __forceinline vfloat4 nmsub(const vfloat4& a, const vfloat4& b, const vfloat4& c) {
-    return vnegq_f32(vfmaq_f32(c,a, b));
-  }
-#else
   __forceinline vfloat4 madd (const vfloat4& a, const vfloat4& b, const vfloat4& c) { return a*b+c; }
   __forceinline vfloat4 nmadd(const vfloat4& a, const vfloat4& b, const vfloat4& c) { return -a*b+c;}
   __forceinline vfloat4 nmsub(const vfloat4& a, const vfloat4& b, const vfloat4& c) { return -a*b-c; }
-#endif
   __forceinline vfloat4 msub (const vfloat4& a, const vfloat4& b, const vfloat4& c) { return a*b-c; }
 
 #endif

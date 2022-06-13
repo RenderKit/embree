@@ -11,62 +11,16 @@
 
 #include "sse2neon.h"
 
-__forceinline __m128 _mm_abs_ps(__m128 a)
-{
-    return vabsq_f32(a);
-}
+__forceinline __m128 _mm_abs_ps(__m128 a) { return vabsq_f32(a); }
 
-__forceinline __m128 _mm_msub_ps(__m128 a, __m128 b, __m128 c)
-{
-    return vmlsq_f32(c, a, b);
-}
-
-
-// FMA
-
-// Computes the fused multiply add product of 32-bit floating point numbers.
-//
-// Return Value
-// Multiplies A and B, and adds C to the temporary result before returning it.
-// https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_fmadd
-__forceinline __m128 _mm_fmadd_ps(__m128 a, __m128 b, __m128 c)
-{
-#if defined(__aarch64__)
-    return vreinterpretq_m128_f32(vfmaq_f32(vreinterpretq_f32_m128(c),
-                                            vreinterpretq_f32_m128(b),
-                                            vreinterpretq_f32_m128(a)));
-#else
-    return _mm_add_ps(_mm_mul_ps(a, b), c);
-#endif
-}
-
-__forceinline __m128 _mm_fmsub_ps(__m128 a, __m128 b, __m128 c) {
-   __m128 neg_c = vreinterpretq_m128_f32(vnegq_f32(vreinterpretq_f32_m128(c)));
-  return _mm_fmadd_ps(a, b, neg_c);
-}
-
-__forceinline __m128 _mm_fnmadd_ps(__m128 a, __m128 b, __m128 c) {
-#if defined(__aarch64__)
-    return vreinterpretq_m128_f32(vfmsq_f32(vreinterpretq_f32_m128(c),
-                                            vreinterpretq_f32_m128(b),
-                                            vreinterpretq_f32_m128(a)));
-#else
-    return _mm_sub_ps(c, _mm_mul_ps(a, b));
-#endif
-}
-
-__forceinline __m128 _mm_fnmsub_ps(__m128 a, __m128 b, __m128 c) {
-  return vreinterpretq_m128_f32(vnegq_f32(vreinterpretq_f32_m128(_mm_fmadd_ps(a,b,c))));
-}
+__forceinline __m128 _mm_fmadd_ps (__m128 a, __m128 b, __m128 c) { return vfmaq_f32(c, a, b); }
+__forceinline __m128 _mm_fnmadd_ps(__m128 a, __m128 b, __m128 c) { return vfmsq_f32(c, a, b); }
+__forceinline __m128 _mm_fnmsub_ps(__m128 a, __m128 b, __m128 c) { return vnegq_f32(vfmaq_f32(c, a, b)); }
+__forceinline __m128 _mm_fmsub_ps (__m128 a, __m128 b, __m128 c) { return vnegq_f32(vfmsq_f32(c, a, b)); }
 
 __forceinline __m128 _mm_broadcast_ss (float const * mem_addr)
 {
     return vdupq_n_f32(*mem_addr);
-}
-
-__forceinline __m128 _mm_madd_ps(__m128 a, __m128 b, __m128 c)
-{
-    return vmlaq_f32(c, a, b);
 }
 
 // AVX2 emulation leverages Intel FMA defs above.  Include after them.

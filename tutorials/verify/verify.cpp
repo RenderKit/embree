@@ -1840,10 +1840,10 @@ namespace embree
         rtcCommitScene (scene);
         AssertNoError(device);
 
-        RTCRayHit ray0 = makeRay(pos0+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 0
-        RTCRayHit ray1 = makeRay(pos1+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 1
-        RTCRayHit ray2 = makeRay(pos2+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 2
-        RTCRayHit ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); // hits geomID == 3
+        RTCRayHit ray0 = makeRay(pos0+Vec3fa(0.1f,10,0.1f),Vec3fa(0,-1,0)); // hits geomID == 0
+        RTCRayHit ray1 = makeRay(pos1+Vec3fa(0.1f,10,0.1f),Vec3fa(0,-1,0)); // hits geomID == 1
+        RTCRayHit ray2 = makeRay(pos2+Vec3fa(0.1f,10,0.1f),Vec3fa(0,-1,0)); // hits geomID == 2
+        RTCRayHit ray3 = makeRay(pos3+Vec3fa(0.1f,10,0.1f),Vec3fa(0,-1,0)); // hits geomID == 3
         RTCRayHit testRays[4] = { ray0, ray1, ray2, ray3 };
 
         const unsigned int maxRays = 100;

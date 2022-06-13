@@ -98,15 +98,10 @@ void _mm_maskstore_epi32 (int * mem_addr, __m128i mask, __m128i a)
 }
 
 
-#define _mm_fnmsub_ss _mm_fnmsub_ps
-
-#define _mm_fnmadd_ss _mm_fnmadd_ps
-
+#define _mm_fmadd_ss _mm_fmadd_ps
 #define _mm_fmsub_ss _mm_fmsub_ps
-#define _mm_fmadd_ps _mm_madd_ps
-#define _mm_fmadd_ss _mm_madd_ps
-
-
+#define _mm_fnmsub_ss _mm_fnmsub_ps
+#define _mm_fnmadd_ss _mm_fnmadd_ps
 
 template<int code>
 AVX2NEON_ABI float32x4_t dpps_neon(const float32x4_t& a,const float32x4_t& b)
