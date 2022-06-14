@@ -5246,10 +5246,6 @@ namespace embree
 #if defined(EMBREE_TARGET_AVX512)
     if (hasISA(AVX512)) isas.push_back(AVX512);
 #endif
-#if defined(__ARM_NEON)
-    assert(hasISA(NEON));
-    isas.push_back(NEON);
-#endif
     
     /* create list of all intersect modes to test */
     intersectModes.push_back(MODE_INTERSECT1);
