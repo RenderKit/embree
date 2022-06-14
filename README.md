@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.13.3
+% Embree: High Performance Ray Tracing Kernels 3.13.4
 % Intel Corporation
 
 Embree Overview
@@ -79,7 +79,7 @@ Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-3.13.3.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x64.vc14.windows.zip). After
+[embree-3.13.4.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.4.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -88,13 +88,13 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.13.3.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x86_64.linux.tar.gz). Unpack
+[embree-3.13.4.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.4.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-3.13.3.x86_64.linux.tar.gz
-    source embree-3.13.3.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.13.4.x86_64.linux.tar.gz
+    source embree-3.13.4.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
@@ -103,13 +103,13 @@ macOS ZIP file
 -----------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-3.13.3.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.3/embree-3.13.3.x86_64.macosx.zip). Unpack
+[embree-3.13.4.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.4.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-3.13.3.x64.macosx.zip
-    source embree-3.13.3.x64.macosx/embree-vars.sh
+    unzip embree-3.13.4.x64.macosx.zip
+    source embree-3.13.4.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -132,6 +132,7 @@ C++11. Embree is tested with the following compilers:
 
 Linux
 
+  - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
   - Intel® Compiler 2020 Update 1
   - Intel® Compiler 2019 Update 4
   - Intel® Compiler 2017 Update 1
@@ -252,6 +253,7 @@ Embree is tested using the following compilers under Windows:
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update 1)
+  - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
   - Intel® Compiler 2019 Update 6
   - Intel® Compiler 2017 Update 8
   - LLVM Clang 9.0.0
@@ -423,6 +425,10 @@ parameters that can be configured in CMake:
 + `EMBREE_TBB_ROOT`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, search the library in this directory
   tree.
+
++ `EMBREE_TBB_COMPONENT`: The component/libary name of Intel® Threading 
+  Building Blocks (TBB). Embree searches for this library name (default: tbb)
+  when TBB is used as tasking system.
 
 + `EMBREE_TBB_POSTFIX`: If Intel® Threading Building Blocks (TBB)
   is used as a tasking system, link to tbb<EMBREE_TBB_POSTFIX>.(so,dll,lib).
@@ -1666,8 +1672,8 @@ The `rtcAttachGeometry` function attaches a geometry (`geometry`
 argument) to a scene (`scene` argument) and assigns a geometry ID to
 that geometry. All geometries attached to a scene are defined to be
 included inside the scene. A geometry can get attached to multiple
-scenes. The geometry ID is unique for the scene, and is used to identify
-the geometry when hit by a ray during ray queries.
+scenes. The geometry ID is unique for the scene, and is used to
+identify the geometry when hit by a ray during ray queries.
 
 This function is thread-safe, thus multiple threads can attach
 geometries to a scene in parallel.
@@ -2960,7 +2966,7 @@ This basis is not interpolating, thus the curve does in general not go
 through any of the control points directly. A big advantage of this
 basis is that 3 control points can be shared for two continuous
 neighboring curve segments, e.g. the curves (p0,p1,p2,p3) and
-(p1,p2,p3,p4) are C1 continuous. This feature make this basis a good
+(p1,p2,p3,p4) are C1 continuous. This feature makes this basis a good
 choice to construct continuous multi-segment curves, as memory
 consumption can be kept minimal.
 
@@ -4867,15 +4873,15 @@ efficient. If there is no instance transform, the similarity scale is
 1.
 
 The callback function will potentially be called for primitives outside
-the query domain for two reasons: First, the callback is invoked for all
-primitives inside a BVH leaf node since no geometry data of primitives
-is determined internally and therefore individual primitives are not
-culled (only their (aggregated) bounding boxes). Second, in case non
-similarity transformations are used, the resulting ellipsoidal query
-domain (in instance space) is approximated by its axis aligned bounding
-box internally and therefore inner nodes that do not intersect the
-original domain might intersect the approximative bounding box which
-results in unnecessary callbacks. In any case, the callbacks are
+the query domain for two reasons: First, the callback is invoked for
+all primitives inside a BVH leaf node since no geometry data of
+primitives is determined internally and therefore individual primitives
+are not culled (only their (aggregated) bounding boxes). Second, in
+case non similarity transformations are used, the resulting ellipsoidal
+query domain (in instance space) is approximated by its axis aligned
+bounding box internally and therefore inner nodes that do not intersect
+the original domain might intersect the approximative bounding box
+which results in unnecessary callbacks. In any case, the callbacks are
 conservative, i.e. if a primitive is inside the query domain a callback
 will be invoked but the reverse is not necessarily true.
 
