@@ -3,8 +3,8 @@ Version History
 
 ### Embree 3.13.4
 -   Fixed binning related crash in SAH BVH builder.
--   Added EMBREE_TBB_COMPONENT cmake option to define the component/library name of Intel® TBB 
-    (default: tbb).
+-   Added EMBREE_TBB_COMPONENT cmake option to define the component/library name of Intel® TBB (default: tbb).
+-   Using 8-wide BVH and double pumped NEON instructions on Apple M1 gives 8% performance boost.
 
 ### Embree 3.13.3
 -   Invalid multi segment motion blurred normal oriented curves are properly excluded from BVH build.

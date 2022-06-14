@@ -54,15 +54,15 @@ continuous-linux-WebAssembly:
   tags: [embree, docker]
   only: [pushes]
   
-continuous-macosx-ARM-Debug-CLANG-SSE2-TBB_HOMEBREW:
-  extends: .build_and_test
-  before_script: ["scripts/test.py configure platform:x64 build:Debug compiler:CLANG ISPC_SUPPORT:OFF isa:NEON tasking:TBB_HOMEBREW intensity:2"]
-  tags: [embree, mac-arm]
-  only: [pushes]
-
 continuous-macosx-ARM-Debug-CLANG-ISPC1.17.0-NEON-TBB_HOMEBREW:
   extends: .build_and_test
   before_script: ["python scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ISPC_SUPPORT:ON ispc:ispc1.17.0 isa:NEON tasking:TBB_HOMEBREW intensity:2"]
+  tags: [embree, mac-arm]
+  only: [pushes]
+
+continuous-macosx-ARM-Debug-CLANG-ISPC1.17.0-NEON-AVX2-TBB_HOMEBREW:
+  extends: .build_and_test
+  before_script: ["python scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ISPC_SUPPORT:ON ispc:ispc1.17.0 isa:NEON2X tasking:TBB_HOMEBREW intensity:2"]
   tags: [embree, mac-arm]
   only: [pushes]
 

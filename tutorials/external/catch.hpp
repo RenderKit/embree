@@ -70,8 +70,6 @@
 # include <TargetConditionals.h>
 # if TARGET_OS_OSX == 1
 #  define CATCH_PLATFORM_MAC
-# elif TARGET_OS_IPHONE == 1
-#  define CATCH_PLATFORM_IPHONE
 # endif
 
 #elif defined(linux) || defined(__linux) || defined(__linux__)
