@@ -12,7 +12,6 @@ _SET_IF_EMPTY(FLAGS_SSE42 "-msse4.2")
 _SET_IF_EMPTY(FLAGS_AVX   "-mavx")
 _SET_IF_EMPTY(FLAGS_AVX2  "-mf16c -mavx2 -mfma -mlzcnt -mbmi -mbmi2")
 _SET_IF_EMPTY(FLAGS_AVX512 "-march=skx")
-_SET_IF_EMPTY(FLAGS_NEON   "-D__SSE__ -D__SSE2__")
 
 IF (NOT WIN32)
   OPTION(EMBREE_IGNORE_CMAKE_CXX_FLAGS "When enabled Embree ignores default CMAKE_CXX_FLAGS." ON)

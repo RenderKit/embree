@@ -27,12 +27,18 @@
   #endif
 #endif
 
-#if defined(__LZCNT__)
+#if defined(__aarch64__)
   #if !defined(_lzcnt_u32)
-    #define _lzcnt_u32 __lzcnt32
+    #define _lzcnt_u32 __builtin_clz
   #endif
-  #if !defined(_lzcnt_u64)
-    #define _lzcnt_u64 __lzcnt64
+#else
+  #if defined(__LZCNT__)
+    #if !defined(_lzcnt_u32)
+      #define _lzcnt_u32 __lzcnt32
+    #endif
+    #if !defined(_lzcnt_u64)
+      #define _lzcnt_u64 __lzcnt64
+    #endif
   #endif
 #endif
 
@@ -68,7 +74,7 @@ namespace embree
   }
   
   __forceinline int bsf(int v) {
-#if defined(__AVX2__) 
+#if defined(__AVX2__) && !defined(__aarch64__)
     return _tzcnt_u32(v);
 #else
     unsigned long r = 0; _BitScanForward(&r,v); return r;
@@ -76,7 +82,7 @@ namespace embree
   }
   
   __forceinline unsigned bsf(unsigned v) {
-#if defined(__AVX2__) 
+#if defined(__AVX2__) && !defined(__aarch64__)
     return _tzcnt_u32(v);
 #else
     unsigned long r = 0; _BitScanForward(&r,v); return r;
@@ -117,7 +123,7 @@ namespace embree
 #endif
   
   __forceinline int bsr(int v) {
-#if defined(__AVX2__) 
+#if defined(__AVX2__)  && !defined(__aarch64__)
     return 31 - _lzcnt_u32(v);
 #else
     unsigned long r = 0; _BitScanReverse(&r,v); return r;
@@ -125,7 +131,7 @@ namespace embree
   }
   
   __forceinline unsigned bsr(unsigned v) {
-#if defined(__AVX2__) 
+#if defined(__AVX2__) && !defined(__aarch64__)
     return 31 - _lzcnt_u32(v);
 #else
     unsigned long r = 0; _BitScanReverse(&r,v); return r;
@@ -144,7 +150,7 @@ namespace embree
   
   __forceinline int lzcnt(const int x)
   {
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__aarch64__)
     return _lzcnt_u32(x);
 #else
     if (unlikely(x == 0)) return 32;
@@ -202,12 +208,16 @@ namespace embree
   }
   
   __forceinline int bsf(int v) {
-#if defined(__AVX2__) 
+#if defined(__ARM_NEON)
+    return __builtin_ctz(v);
+#else
+#if defined(__AVX2__)
     return _tzcnt_u32(v);
 #elif defined(__X86_ASM__)
     int r = 0; asm ("bsf %1,%0" : "=r"(r) : "r"(v)); return r;
 #else
     return __builtin_ctz(v);
+#endif
 #endif
   }
 
@@ -221,12 +231,16 @@ namespace embree
 #if defined(__64BIT__)
   __forceinline unsigned bsf(unsigned v) 
   {
-#if defined(__AVX2__) 
+#if defined(__ARM_NEON)
+    return __builtin_ctz(v);
+#else
+#if defined(__AVX2__)
     return _tzcnt_u32(v);
 #elif defined(__X86_ASM__)
     unsigned r = 0; asm ("bsf %1,%0" : "=r"(r) : "r"(v)); return r;
 #else
     return __builtin_ctz(v);
+#endif
 #endif
   }
 #endif
@@ -239,7 +253,7 @@ namespace embree
 #else
   
   __forceinline size_t bsf(size_t v) {
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__aarch64__)
 #if defined(__X86_64__)
     return _tzcnt_u64(v);
 #else
@@ -277,7 +291,7 @@ namespace embree
   }
   
   __forceinline int bsr(int v) {
-#if defined(__AVX2__) 
+#if defined(__AVX2__) && !defined(__aarch64__)
     return 31 - _lzcnt_u32(v);
 #elif defined(__X86_ASM__)
     int r = 0; asm ("bsr %1,%0" : "=r"(r) : "r"(v)); return r;
@@ -299,7 +313,7 @@ namespace embree
 #endif
   
   __forceinline size_t bsr(size_t v) {
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__aarch64__)
 #if defined(__X86_64__)
     return 63 - _lzcnt_u64(v);
 #else
@@ -314,7 +328,7 @@ namespace embree
   
   __forceinline int lzcnt(const int x)
   {
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__aarch64__)
     return _lzcnt_u32(x);
 #else
     if (unlikely(x == 0)) return 32;
@@ -323,18 +337,18 @@ namespace embree
   }
 
   __forceinline size_t blsr(size_t v) {
-#if defined(__AVX2__) 
-#if defined(__INTEL_COMPILER)
+#if defined(__AVX2__) && !defined(__aarch64__)
+  #if defined(__INTEL_COMPILER)
     return _blsr_u64(v);
+  #else
+    #if defined(__X86_64__)
+       return __blsr_u64(v);
+    #else
+       return __blsr_u32(v);
+    #endif
+  #endif
 #else
-#if defined(__X86_64__)
-    return __blsr_u64(v);
-#else
-    return __blsr_u32(v);
-#endif
-#endif
-#else
-    return v & (v-1);
+       return v & (v-1);
 #endif
   }
   
@@ -460,7 +474,7 @@ namespace embree
   
 #else
   
-#if defined(__SSE4_2__)
+#if defined(__SSE4_2__) || defined(__ARM_NEON)
   
   __forceinline int popcnt(int in) {
     return _mm_popcnt_u32(in);
@@ -510,14 +524,14 @@ namespace embree
 #endif
   }
 
-  __forceinline void prefetchL1EX(const void* ptr) { 
-    prefetchEX(ptr); 
+  __forceinline void prefetchL1EX(const void* ptr) {
+    prefetchEX(ptr);
   }
-  
-  __forceinline void prefetchL2EX(const void* ptr) { 
-    prefetchEX(ptr); 
+
+  __forceinline void prefetchL2EX(const void* ptr) {
+    prefetchEX(ptr);
   }
-#if defined(__AVX2__)
+#if defined(__AVX2__) && !defined(__aarch64__)
    __forceinline unsigned int pext(unsigned int a, unsigned int b) { return _pext_u32(a, b); }
    __forceinline unsigned int pdep(unsigned int a, unsigned int b) { return _pdep_u32(a, b); }
 #if defined(__X86_64__)

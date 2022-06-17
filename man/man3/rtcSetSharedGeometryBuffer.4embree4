@@ -43,7 +43,7 @@ to bind (\f[C]itemCount\f[R]).
 .PP
 The start address (\f[C]byteOffset\f[R] argument) and stride
 (\f[C]byteStride\f[R] argument) must be both aligned to 4 bytes;
-otherwise the \f[C]rtcSetGeometryBuffer\f[R] function will fail.
+otherwise the \f[C]rtcSetSharedGeometryBuffer\f[R] function will fail.
 .IP
 .nf
 \f[C]

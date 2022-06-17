@@ -82,7 +82,7 @@ namespace embree
     return lower > upper;
   }
 
-#if defined(__SSE__)
+#if defined(__SSE__) || defined(__ARM_NEON)
   template<> __forceinline bool BBox<Vec3fa>::empty() const {
     return !all(le_mask(lower,upper));
   }
@@ -233,11 +233,11 @@ namespace embree
 /// SSE / AVX / MIC specializations
 ////////////////////////////////////////////////////////////////////////////////
 
-#if defined __SSE__
+#if defined (__SSE__) || defined(__ARM_NEON)
 #include "../simd/sse.h"
 #endif
 
-#if defined __AVX__
+#if defined (__AVX__)
 #include "../simd/avx.h"
 #endif
 
