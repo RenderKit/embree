@@ -39,9 +39,14 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-delete-null-pointer-checks") # keep
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fwrapv")                         # this option instructs the compiler to assume that signed arithmetic overflow warps around.
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")                   # treat char as signed on all processors, including ARM
 
-IF (NOT APPLE)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")                       # enables support for more secure position independent execution
-ENDIF()
+IF (NOT WIN32)
+  IF (NOT APPLE)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIE")                   # enables support for more secure position independent execution
+  ENDIF()
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")                     # generate position independent code suitable for shared libraries
+  SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC")                     # generate position independent code suitable for shared libraries
+ENDIF ()
+
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")                       # generate position independent code suitable for shared libraries
 SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC")                       # generate position independent code suitable for shared libraries
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++11 features
