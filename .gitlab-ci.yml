@@ -56,7 +56,11 @@ stages:
 .test_pvc:
   extends: .test
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
-  tags:   [docker-gpu, pvc]
+  tags:   [docker-gpu, pvc, b4]
+  before_script:
+    # We need to apply this WA for PVC > A0 till this issue will be fixed:
+    # https://jira.devtools.intel.com/browse/XDEPS-3069
+    - "export EnableImplicitScaling=0"
 
 .test_nightly:
   extends: .test
@@ -212,7 +216,7 @@ continuous-linux-WebAssembly:
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags: [embree, docker]
   only: [pushes]
-  
+
 continuous-macosx-ARM-Debug-CLANG-ISPC1.17.0-NEON-TBB_HOMEBREW:
   extends: .build_and_test
   before_script: ["python scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:NEON tasking:TBB_HOMEBREW intensity:2"]
@@ -822,7 +826,7 @@ release-macosx-x64-Release-ICC2021.1.1-ISPC1.17.0-TBB2021.2.0-PACKAGE-ZIP-manual
   extends: release-macosx-x64-Release-ICC2021.1.1-ISPC1.17.0-TBB2021.2.0-PACKAGE-ZIP
   only:   [pushes]
   when:   manual
-  
+
 release-linux-x64-Release-ICC2020.1-ISPC1.17.0-TBB2021.2.0-PACKAGE-ZIP:
   stage: release
   needs: []
