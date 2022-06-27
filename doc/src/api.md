@@ -131,18 +131,11 @@ packed into larger allocation blocks. This mode is required when your
 application performs many small USM allocations, as otherwise only a
 small fraction of GPU memory is usable.
 
-Embree currently also relies on memory pooling to be enabled, but this
-restriction will get fixed.
+Memory pooling is supported for USM allocations that are read-only by
+the device. The following example allocated device read-only memory
+with memory pooling support:
 
-Memory pooling can get enabled by setting the
-`SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR` environment variable **before** the
-SYCL device creation, e.g.:
-
-    setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
-
-Please see the documentation of that environment variable for details
-on that feature
-(https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md).
+    sycl::aligned_alloc_shared(align, bytes, queue, sycl::ext::oneapi::property::usm::device_read_only());
 
 
 Embree DPC++ Limitations

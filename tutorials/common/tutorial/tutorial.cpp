@@ -682,7 +682,7 @@ namespace embree
     this->height = height;
       
     if (pixels) alignedUSMFree(pixels);
-    pixels = (unsigned*) alignedUSMMalloc(width*height*sizeof(unsigned),64);
+    pixels = (unsigned*) alignedUSMMalloc(width*height*sizeof(unsigned),64,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
   }
 
   void TutorialApplication::set_scene (TutorialScene* in)
@@ -1115,12 +1115,6 @@ namespace embree
         setenv("SYCL_CACHE_DIR",cache_dir.c_str(),1);
 #endif
       }
-
-#if defined(__WIN32__)
-      _putenv_s("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M");
-#else
-      setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
-#endif
 
       auto exception_handler = [] (sycl::exception_list exceptions) {
 	 for (std::exception_ptr const& e : exceptions) {

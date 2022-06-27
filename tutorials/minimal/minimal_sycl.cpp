@@ -33,14 +33,38 @@ struct Result {
   float tfar;
 };
 
+/*
+ * This function allocated USM memory that is writeable by the device.
+ */
+
 template<typename T>
-T* alignedSYCLMalloc(const sycl::queue& queue, size_t count, size_t align)
+T* alignedSYCLMallocDeviceReadWrite(const sycl::queue& queue, size_t count, size_t align)
 {
   if (count == 0)
     return nullptr;
 
   assert((align & (align - 1)) == 0);
   T *ptr = (T*)sycl::aligned_alloc(align, count * sizeof(T), queue, sycl::usm::alloc::shared);
+  if (count != 0 && ptr == nullptr)
+    throw std::bad_alloc();
+
+  return ptr;
+}
+
+/*
+ * This function allocated USM memory that is only readable by the
+ * device. Using this mode many small allocations are possible by the
+ * application.
+ */
+
+template<typename T>
+T* alignedSYCLMallocDeviceReadOnly(const sycl::queue& queue, size_t count, size_t align)
+{
+  if (count == 0)
+    return nullptr;
+
+  assert((align & (align - 1)) == 0);
+  T *ptr = (T*)sycl::aligned_alloc_shared(align, count * sizeof(T), queue, sycl::ext::oneapi::property::usm::device_read_only());
   if (count != 0 && ptr == nullptr)
     throw std::bad_alloc();
 
@@ -108,7 +132,7 @@ RTCScene initializeScene(RTCDevice device, const sycl::queue& queue)
    */
   RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
   
-  float* vertices = alignedSYCLMalloc<float>(queue, 3 * 3, 16);
+  float* vertices = alignedSYCLMallocDeviceReadOnly<float>(queue, 3 * 3, 16);
 
   rtcSetSharedGeometryBuffer(geom,
                              RTC_BUFFER_TYPE_VERTEX,
@@ -119,7 +143,7 @@ RTCScene initializeScene(RTCDevice device, const sycl::queue& queue)
                              3*sizeof(float),
                              3);
 
-  unsigned* indices = alignedSYCLMalloc<unsigned>(queue, 3, 16);
+  unsigned* indices = alignedSYCLMallocDeviceReadOnly<unsigned>(queue, 3, 16);
   
   rtcSetSharedGeometryBuffer(geom,
                              RTC_BUFFER_TYPE_INDEX,
@@ -267,27 +291,11 @@ void enablePersistentJITCache()
 #endif
 }
 
-/*
- * Enable pooling for USM allocations which is required if your
- * application performs many small USM allocations. Embree currently
- * also relies on this mode to be enabled.
- */
-
-void enableUSMPooling()
-{
-#if defined(_WIN32)
-  _putenv_s("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M");
-#else
-  setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
-#endif
-}
-
 /* -------------------------------------------------------------------------- */
 
 int main()
 {
   enablePersistentJITCache();
-  enableUSMPooling();
 
   /* This will select the first GPU supported by Embree */
   sycl::queue queue(RTCDeviceSelector{}); 
@@ -296,7 +304,7 @@ int main()
   RTCDevice device = initializeDevice(context,queue);
   RTCScene scene = initializeScene(device, queue);
 
-  Result* result = alignedSYCLMalloc<Result>(queue, 1, 16);
+  Result* result = alignedSYCLMallocDeviceReadWrite<Result>(queue, 1, 16);
   
   /* This will hit the triangle at t=1. */
   castRay(queue, scene, 0.33f, 0.33f, -1, 0, 0, 1, result);

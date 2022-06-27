@@ -85,7 +85,7 @@ namespace embree
 
 #if defined(EMBREE_DPCPP_SUPPORT)
   
-  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, sycl::queue* queue, size_t size, size_t align, sycl::usm::alloc alloc_mode)
+  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, sycl::queue* queue, size_t size, size_t align, EmbreeUSMMode mode)
   {
     assert(context);
     assert(device);
@@ -97,7 +97,12 @@ namespace embree
     assert((align & (align-1)) == 0);
     total_allocations++;    
 
-    void* ptr = sycl::aligned_alloc(align,size,*device,*context,alloc_mode);
+    void* ptr = nullptr;
+    if (mode == EMBREE_USM_SHARED_DEVICE_READ_ONLY)
+      ptr = sycl::aligned_alloc_shared(align,size,*device,*context,sycl::ext::oneapi::property::usm::device_read_only());
+    else
+      ptr = sycl::aligned_alloc_shared(align,size,*device,*context);
+      
     if (size != 0 && ptr == nullptr)
       throw std::bad_alloc();
 
@@ -106,7 +111,7 @@ namespace embree
   
   static MutexSys g_alloc_mutex;
   
-  void* alignedSYCLMalloc(size_t size, size_t align, sycl::usm::alloc mode)
+  void* alignedSYCLMalloc(size_t size, size_t align, EmbreeUSMMode mode)
   {
     if (tls_context_tutorial) return alignedSYCLMalloc(tls_context_tutorial, tls_device_tutorial, tls_queue_tutorial, size, align, mode);
     if (tls_context_embree  ) return alignedSYCLMalloc(tls_context_embree,   tls_device_embree,   tls_queue_embree, size, align, mode);
@@ -129,11 +134,11 @@ namespace embree
 
 #endif
 
-  void* alignedUSMMalloc(size_t size, size_t align) //, sycl::usm::alloc mode)
+  void* alignedUSMMalloc(size_t size, size_t align, EmbreeUSMMode mode)
   {
 #if defined(EMBREE_DPCPP_SUPPORT)
     if (tls_context_embree || tls_context_tutorial)
-      return alignedSYCLMalloc(size,align, sycl::usm::alloc::shared); //mode);
+      return alignedSYCLMalloc(size,align,mode);
     else
 #endif
       return alignedMalloc(size,align);
