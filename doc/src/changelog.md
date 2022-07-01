@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.13.5
+-   Fixed bug in bounding flat Catmull Rom curves of subdivision level 4.
+
 ### Embree 3.13.4
 -   Using 8-wide BVH and double pumped NEON instructions on Apple M1 gives 8% performance boost.
 -   Fixed binning related crash in SAH BVH builder.
