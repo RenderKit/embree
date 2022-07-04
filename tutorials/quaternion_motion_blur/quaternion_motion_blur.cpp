@@ -33,15 +33,6 @@ namespace embree
     Tutorial()
       : TutorialApplication("quaternion motion blur",FEATURES)
     {
-#if defined(EMBREE_SYCL_TUTORIAL)
-      std::cout << "WARNING: setting CFEFusedEUDispatch=1 as workaround to get stack calls working!" << std::endl;
-#if defined(__WIN32__)
-      _putenv_s("CFEFusedEUDispatch","1");
-#else
-      setenv("CFEFusedEUDispatch","1",1);
-#endif
-#endif
-      
       registerOption("spp", [] (Ref<ParseStream> cin, const FileName& path) {
           g_spp = cin->getInt();
         }, "--spp <int>: sets number of samples per pixel");

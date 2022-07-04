@@ -22,15 +22,6 @@ namespace embree
     Tutorial()
       : TutorialApplication("motion_blur_geometry",FEATURES) 
     {
-#if defined(EMBREE_SYCL_TUTORIAL)
-      std::cout << "WARNING: setting CFEFusedEUDispatch=1 as workaround to get stack calls working!" << std::endl;
-#if defined(__WIN32__)
-      _putenv_s("CFEFusedEUDispatch","1");
-#else
-      setenv("CFEFusedEUDispatch","1",1);
-#endif
-#endif
-      
       registerOption("time", [] (Ref<ParseStream> cin, const FileName& path) {
         g_time = cin->getFloat();
       }, "--time <float>: time to render image at");

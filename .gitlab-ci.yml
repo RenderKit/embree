@@ -201,11 +201,13 @@ continuous-linux-DG2-AOT-PUBLIC:
 
 continuous-linux-DG2-AOT-PUBLIC-test:
   extends: .test_dg2
+  before_script: ["set CFEFusedEUDispatch=1"]  # FIXME: remove later
   needs: ["continuous-linux-DG2-AOT-PUBLIC"]
 
 continuous-windows-DG2-JIT-PUBLIC:
   stage: build
   script:
+    - set CFEFusedEUDispatch=1  # FIXME: remove later
     - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:none gfx:PUBLIC CURVE:OFF intensity:1
     - python scripts/test.py build
     - python scripts/test.py test

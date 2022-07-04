@@ -38,15 +38,6 @@ namespace embree
     Tutorial()
       : SceneLoadingTutorialApplication("next_hit",FEATURES)
     {
-#if defined(EMBREE_SYCL_TUTORIAL)
-      std::cout << "WARNING: setting CFEFusedEUDispatch=1 as workaround to get stack calls working!" << std::endl;
-#if defined(__WIN32__)
-      _putenv_s("CFEFusedEUDispatch","1");
-#else
-      setenv("CFEFusedEUDispatch","1",1);
-#endif
-#endif
-      
       registerOption("single_pass", [] (Ref<ParseStream> cin, const FileName& path) {
           g_next_hit_mode = SINGLE_PASS;
         }, "--single_pass: use special all hits kernel to gather all hits along ray");

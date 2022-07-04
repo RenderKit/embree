@@ -17,15 +17,6 @@ namespace embree
     Tutorial()
       : TutorialApplication("intersection_filter",FEATURES) 
     {
-#if defined(EMBREE_SYCL_TUTORIAL)
-      std::cout << "WARNING: setting CFEFusedEUDispatch=1 as workaround to get stack calls working!" << std::endl;
-#if defined(__WIN32__)
-      _putenv_s("CFEFusedEUDispatch","1");
-#else
-      setenv("CFEFusedEUDispatch","1",1);
-#endif
-#endif
-      
       /* set default camera */
       camera.from = Vec3fa(-1.27f,1.75f,-6.75f);
       camera.to   = Vec3fa(0.0f,-2.0f,-3.5f);

@@ -17,15 +17,6 @@ namespace embree
     Tutorial()
       : TutorialApplication("user_geometry",FEATURES) 
     {
-#if defined(EMBREE_SYCL_TUTORIAL)
-      std::cout << "WARNING: setting CFEFusedEUDispatch=1 as workaround to get stack calls working!" << std::endl;
-#if defined(__WIN32__)
-      _putenv_s("CFEFusedEUDispatch","1");
-#else
-      setenv("CFEFusedEUDispatch","1",1);
-#endif
-#endif
-            
       /* set default camera */
       //camera.from = Vec3fa(0.8846014142,2.204180241,-0.6649734378);
       camera.from = Vec3fa(2.5f,2.5f,2.5f);

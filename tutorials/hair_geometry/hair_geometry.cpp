@@ -21,17 +21,7 @@ namespace embree
   struct Tutorial : public SceneLoadingTutorialApplication 
   {
     Tutorial()
-      : SceneLoadingTutorialApplication("hair_geometry",FEATURES)
-    {
-#if defined(EMBREE_SYCL_TUTORIAL)
-      std::cout << "WARNING: setting CFEFusedEUDispatch=1 as workaround to get stack calls working!" << std::endl;
-#if defined(__WIN32__)
-      _putenv_s("CFEFusedEUDispatch","1");
-#else
-      setenv("CFEFusedEUDispatch","1",1);
-#endif
-#endif
-    }
+      : SceneLoadingTutorialApplication("hair_geometry",FEATURES) {}
 
     void postParseCommandLine() override
     {
