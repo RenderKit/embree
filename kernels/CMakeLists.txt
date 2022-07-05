@@ -85,7 +85,6 @@ IF (EMBREE_DPCPP_SUPPORT)
   rthwif/rthwif_embree_builder.cpp
   rthwif/builder/qbvh6.cpp
   rthwif/builder/statistics.cpp
-  rthwif/rthwif_embree_builder_ploc.cpp  
   )
 
 ENDIF()
@@ -245,9 +244,9 @@ IF (EMBREE_DPCPP_SUPPORT)
 
   ADD_LIBRARY(embree_sycl STATIC
     common/rtcore_sycl.cpp
+    rthwif/rthwif_embree_builder_ploc.cpp    
     rthwif/rthwif_embree.cpp
-    rthwif/rthwif_production.cpp
-    rthwif/rthwif_embree_builder_ploc.cpp)
+    rthwif/rthwif_production.cpp)
 
   SET_TARGET_PROPERTIES(embree_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 

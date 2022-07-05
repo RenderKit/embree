@@ -2,7 +2,7 @@
 #include "rthwif_embree_builder.h"
 #include "rthwif_internal.h"
 #include "rthwif_embree_builder_ploc.h"
-#include "builder/qbvh6_builder_sah.h"
+#include "builder/qbvh6.h"
 
 #define SINGLE_WG_SWITCH_THRESHOLD 8*1024
 #define FAST_MC_THRESHOLD          1024*1024
