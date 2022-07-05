@@ -11,6 +11,9 @@
 
 namespace embree
 {
+
+  BBox3fa rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& buffer_o, const bool two_level=false);
+
   using namespace embree::isa;
 
   enum Flags : uint32_t {
@@ -95,8 +98,21 @@ namespace embree
     return false;
   }
 
-  BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+  BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel, int gpu_build)
   {
+    // ======================
+    // === PLOC++ Builder ===
+    // ======================
+    
+    if (gpu_build == 1)
+      return rthwifBuildPloc(scene,quality_flags,accel);
+    if (gpu_build == 2)
+      return rthwifBuildPloc(scene,quality_flags,accel,true);    
+ 
+    // ==========================
+    // === Binned SAH Builder ===
+    // ==========================
+    
     auto getSize = [&](uint32_t geomID) -> size_t {
       Geometry* geom = scene->geometries[geomID].ptr;
       if (geom == nullptr) return 0;
