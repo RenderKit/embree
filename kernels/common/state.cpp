@@ -81,7 +81,7 @@ namespace embree
     object_accel_mb_min_leaf_size = 1;
     object_accel_mb_max_leaf_size = 1;
 
-    gpu_build = 1;    
+    gpu_build = 0;    
     max_spatial_split_replications = 1.2f;
     useSpatialPreSplits = false;
 
