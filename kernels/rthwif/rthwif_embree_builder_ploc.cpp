@@ -58,7 +58,7 @@ namespace embree
     const bool verbose = deviceGPU->verbosity(2);
     
     // ===============================================================================================================
-
+  
     sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
 
     const uint gpu_maxWorkGroupSize = deviceGPU->getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
@@ -74,6 +74,8 @@ namespace embree
       PRINT(gpu_maxLocalMemory);
       PRINT(gpu_maxSubgroups);
     }
+
+    const double host_time0 = getSeconds(); 
     
     // ===============================================================================================================
     const uint numGeoms = scene->size();
@@ -85,13 +87,15 @@ namespace embree
     assert(globals);
     
     const size_t alloc_TriMeshes = sizeof(TriMesh)*(numGeoms+1);
-    TriMesh *triMesh  = (TriMesh*)sycl::aligned_alloc(64,alloc_TriMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared); //FIXME: change to device
     const size_t alloc_GeomPrefixSums = sizeof(uint)*(numGeoms+1);
-    uint *quads_per_geom_prefix_sum  = (uint*)sycl::aligned_alloc(64,alloc_GeomPrefixSums,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
+
+    char *tmpMem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
+    uint *const quads_per_geom_prefix_sum  = (uint*)tmpMem0;
+    TriMesh *const triMesh                 = (TriMesh*)(tmpMem0 + alloc_GeomPrefixSums);
     
     double alloc_time1 = getSeconds();
 	
-    if (unlikely(deviceGPU->verbosity(2)))
+    if (unlikely(deviceGPU->verbosity(1)))
       std::cout << "USM allocation time for globals, tri meshes and prefix sums " << 1000 * (alloc_time1 - alloc_time0) << " ms for " << (double)(alloc_TriMeshes+alloc_GeomPrefixSums) / (1024*1024) << " MBs " << std::endl;     	
 
     // ==============================================
@@ -114,10 +118,8 @@ namespace embree
     
     if (unlikely(deviceGPU->verbosity(2))) PRINT(numGeoms);
 
-    
-    
+        
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
-#if 1
     {	  
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
@@ -125,14 +127,13 @@ namespace embree
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
     }
-#endif    
 
 
     // =============================
     // === count quads per block === 
     // =============================
-    double quadification_time = 0.0f;
-    countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,quadification_time,verbose);
+    double device_quadification_time = 0.0f;
+    countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose);
    
     /* --- prefix sum over quads --- */
     uint numQuadsPerGeom = 0;
@@ -187,7 +188,8 @@ namespace embree
     assert(qbvh);
     char *bvh_mem = (char*)accel.data() + header;
     assert(bvh_mem);
-    const size_t conv_mem_size = sizeof(LeafGenerationData)*numPrimitives;    
+    const size_t conv_mem_size = sizeof(LeafGenerationData)*numPrimitives;
+    
     LeafGenerationData *leafGenData = (LeafGenerationData*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared); // FIXME
     assert(conversionState);
 
@@ -225,8 +227,8 @@ namespace embree
     
     alloc_time1 = getSeconds();
 	
-    if (unlikely(deviceGPU->verbosity(2)))
-      std::cout << "USM allocation time " << 1000 * (alloc_time1 - alloc_time0) << " ms for " << (double)totalUSMAllocations / (1024*1024) << " MBs " << std::endl;     	
+    if (unlikely(deviceGPU->verbosity(1)))
+      std::cout << "USM allocation time for BVH and additional data " << 1000 * (alloc_time1 - alloc_time0) << " ms for " << (double)totalUSMAllocations / (1024*1024) << " MBs " << std::endl;     	
       
     // ======================          
     // ==== init globals ====
@@ -256,7 +258,7 @@ namespace embree
     // ==== merge triangles to quads, write out PLOC primrefs ====
     // ===========================================================
 
-    mergeTriangleToQuads_initPLOCPrimRefs(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,quadification_time,verbose);
+    mergeTriangleToQuads_initPLOCPrimRefs(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,device_quadification_time,verbose);
 
 #if 0    
      for (uint i=0;i<numPrimitives;i++)
@@ -496,7 +498,7 @@ namespace embree
     double time_convert0 = getSeconds();
     
     /* --- convert BVH2 to QBVH6 --- */    
-    convertBVH2toQBVH6(gpu_queue,globals,triMesh,qbvh,bvh2,globals->rootIndex,leafGenData,numPrimitives,node_size/64,verbose);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,triMesh,qbvh,bvh2,globals->rootIndex,leafGenData,numPrimitives,node_size/64,verbose);
 
     /* --- init final QBVH6 header --- */        
     {     
@@ -524,7 +526,7 @@ namespace embree
     if (unlikely(deviceGPU->verbosity(1)))
     {
       const double host_bvh2_qbvh6_conversion_time = (time_convert1 - time_convert0)*1000;
-      std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  host_bvh2_qbvh6_conversion_time << " ms " << std::endl << std::flush;                  
+      std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  host_bvh2_qbvh6_conversion_time << " ms (host) " << conversion_device_time << " ms (device) " << std::endl << std::flush;                  
     }
     
     // ==========================================================
@@ -533,21 +535,26 @@ namespace embree
     BBox3fa geomBounds(Vec3fa(globals->geometryBounds.lower_x,globals->geometryBounds.lower_y,globals->geometryBounds.lower_z),
                        Vec3fa(globals->geometryBounds.upper_x,globals->geometryBounds.upper_y,globals->geometryBounds.upper_z));
     
+    if (deviceGPU) {
+      HWAccel* hwaccel = (HWAccel*) accel.data();
+      hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
+    }
+
+    if (tmpMem0)     sycl::free(tmpMem0,deviceGPU->getGPUContext());    
+    if (globals)     sycl::free(globals,deviceGPU->getGPUContext());
+    if (leafGenData) sycl::free(leafGenData,deviceGPU->getGPUContext());
+
+    const double host_time1 = getSeconds(); 
+    if (unlikely(deviceGPU->verbosity(1)))
+      std::cout << "Total Build Time (incl. USM allocations/frees etc) " << (host_time1-host_time0)*1000  << " ms " << std::endl << std::flush;
+
     if (unlikely(deviceGPU->verbosity(2)))
     {    
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);
     }
-    if (deviceGPU) {
-      HWAccel* hwaccel = (HWAccel*) accel.data();
-      hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
-    }
-
-    if (quads_per_geom_prefix_sum) sycl::free(quads_per_geom_prefix_sum,deviceGPU->getGPUContext());
-    
-    if (globals)        sycl::free(globals,deviceGPU->getGPUContext());
-    if (leafGenData)    sycl::free(leafGenData,deviceGPU->getGPUContext());
+      
     
     return geomBounds;
   }

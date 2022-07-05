@@ -1660,7 +1660,7 @@ namespace embree
     return numChildren;
   }
 
-  __forceinline void convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, TriMesh* triMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, const uint bvh2_index, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
+  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, TriMesh* triMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, const uint bvh2_index, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 16*1024;    
     double total_time = 0.0f;    
@@ -1965,7 +1965,7 @@ namespace embree
       if (unlikely(verbose))      
         PRINT3("final leaf generation ",(float)dt,(float)total_time);            
     }
-    
+    return (float)total_time;
   }
  
   
