@@ -21,7 +21,7 @@ namespace embree
   struct DispatchGlobals
   {
     uint64_t rtMemBasePtr;               // base address of the allocated stack memory
-    uint64_t callStackHandlerKSP;             // this is the KSP of the continuation handler that is invoked by BTD when the read KSP is 0
+    uint64_t callStackHandlerKSP;        // this is the KSP of the continuation handler that is invoked by BTD when the read KSP is 0
     uint32_t asyncStackSize;             // async-RT stack size in 64 byte blocks
     uint32_t numDSSRTStacks : 16;        // number of stacks per DSS
     uint32_t syncRayQueryCount : 4;      // number of ray queries in the sync-RT stack: 0-15 mapped to: 1-16

@@ -81,6 +81,7 @@ namespace embree
     object_accel_mb_min_leaf_size = 1;
     object_accel_mb_max_leaf_size = 1;
 
+    gpu_build = 1;    
     max_spatial_split_replications = 1.2f;
     useSpatialPreSplits = false;
 
@@ -419,6 +420,15 @@ namespace embree
           } while (cin->trySymbol("|"));
         }
       }
+
+      else if (tok == Token::Id("gpu_build"))
+      {
+        if (cin->trySymbol("=")) {
+          Token flag = cin->get();
+          if      (flag == Token::Id("ploc"))          gpu_build = 1;
+          else if (flag == Token::Id("ploc_twolevel")) gpu_build = 2;                              
+        }        
+      }      
 
       else if (tok == Token::Id("max_spatial_split_replications") && cin->trySymbol("="))
         max_spatial_split_replications = cin->get().Float();

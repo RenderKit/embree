@@ -1,7 +1,7 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-ADD_LIBRARY(rthwif STATIC rthwif_embree_builder.cpp builder/qbvh6.cpp builder/statistics.cpp)
+ADD_LIBRARY(rthwif STATIC rthwif_embree_builder.cpp builder/qbvh6.cpp builder/statistics.cpp rthwif_embree_builder_ploc.cpp)
 TARGET_LINK_LIBRARIES(rthwif PRIVATE tasking)
 
 #ADD_LIBRARY(rthwif_sycl STATIC rthwif_embree.cpp rthwif_production.cpp)

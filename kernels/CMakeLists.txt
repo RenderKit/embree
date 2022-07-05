@@ -85,7 +85,11 @@ IF (EMBREE_DPCPP_SUPPORT)
   rthwif/rthwif_embree_builder.cpp
   rthwif/builder/qbvh6.cpp
   rthwif/builder/statistics.cpp
+  rthwif/rthwif_embree_builder_ploc.cpp  
   )
+
+SET_SOURCE_FILES_PROPERTIES(rthwif_embree_builder_ploc.cpp PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS_SYCL}")
+
 ENDIF()
 
 IF (EMBREE_GEOMETRY_SUBDIVISION)
