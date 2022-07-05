@@ -210,7 +210,7 @@ namespace embree
     assert(bvh_mem);
     const size_t conv_mem_size = sizeof(LeafGenerationData)*numPrimitives;
     
-    LeafGenerationData *leafGenData = (LeafGenerationData*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared); // FIXME
+    LeafGenerationData *leafGenData = (LeafGenerationData*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME
     assert(conversionState);
 
     uint *scratch_mem = (uint*)leafGenData;
@@ -282,7 +282,15 @@ namespace embree
     // ==== merge triangles to quads, write out PLOC primrefs ====
     // ===========================================================
 
+    device_quadification_time = 0.0f;
+    double write_quads_time0 = getSeconds();
+
     mergeTriangleToQuads_initPLOCPrimRefs(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,device_quadification_time,verbose);
+
+    double write_quads_time1 = getSeconds();
+
+    if (unlikely(deviceGPU->verbosity(1))) std::cout << "Merge triangles to quads, write out quads: " << (write_quads_time1-write_quads_time0)*1000.0f << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;
+    
 
 #if 0    
      for (uint i=0;i<numPrimitives;i++)
@@ -511,7 +519,7 @@ namespace embree
       leafSAH /= globals->geometryBounds.area();                
       PRINT4(nodes,leaves,nodeSAH,leafSAH);
 
-      /* --- dummy kernel to trigger USM transfer --- */
+      /* --- dummy kernel to trigger USM transfer again to not screw up device timings --- */
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
                                                                     });
