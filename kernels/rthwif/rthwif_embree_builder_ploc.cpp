@@ -75,10 +75,9 @@ namespace embree
       PRINT(gpu_maxSubgroups);
     }
 
-    const double host_time0 = getSeconds(); 
-    
-    // ===============================================================================================================
     const uint numGeoms = scene->size();
+        
+    // ===============================================================================================================
     
 
     double alloc_time0 = getSeconds(); //FIXME free
@@ -117,8 +116,9 @@ namespace embree
     }
     
     if (unlikely(deviceGPU->verbosity(2))) PRINT(numGeoms);
+    
 
-        
+    double first_kernel_time0 = getSeconds();
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
     {	  
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
@@ -127,30 +127,50 @@ namespace embree
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
     }
+    double first_kernel_time1 = getSeconds();
 
-
+    if (unlikely(deviceGPU->verbosity(1))) std::cout << "Dummy kernel launch (triggers USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
+    
+    const double host_time0 = getSeconds(); 
+    
     // =============================
     // === count quads per block === 
     // =============================
+    double count_quads_time0 = getSeconds();
+
     double device_quadification_time = 0.0f;
     countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose);
-   
-    /* --- prefix sum over quads --- */
-    uint numQuadsPerGeom = 0;
-    for (uint ID=0;ID<numGeoms;ID++)
-    {    
-      const uint current = quads_per_geom_prefix_sum[ID];
-      //PRINT2(ID,current);
-      quads_per_geom_prefix_sum[ID] = numQuadsPerGeom;
-      numQuadsPerGeom += current;
 
+    double count_quads_time1 = getSeconds();
+
+    if (unlikely(deviceGPU->verbosity(1))) std::cout << "Count quads: " << (count_quads_time1-count_quads_time0)*1000.0f << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;
+    
+    /* --- prefix sum over quads --- */
+    {	  
+      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+                                                    cgh.single_task([=]() {
+                                                                      uint numQuadsPerGeom = 0;
+                                                                      for (uint ID=0;ID<numGeoms;ID++) //FIXME: WG based prefix sum
+                                                                      {    
+                                                                        const uint current = quads_per_geom_prefix_sum[ID];
+                                                                        //PRINT2(ID,current);
+                                                                        quads_per_geom_prefix_sum[ID] = numQuadsPerGeom;
+                                                                        numQuadsPerGeom += current;
+                                                                      }
+                                                                      quads_per_geom_prefix_sum[numGeoms] = numQuadsPerGeom;
+                                                                      globals->numPrimitives = numQuadsPerGeom;
+                                                                    });
+                                                  });
+      gpu::waitOnQueueAndCatchException(gpu_queue);
+      double dt = gpu::getDeviceExecutionTiming(queue_event);
+      if (unlikely(deviceGPU->verbosity(2)))
+        std::cout << "Prefix sum over quad counts over geometries " << dt << " ms" << std::endl;
     }
-    quads_per_geom_prefix_sum[numGeoms] = numQuadsPerGeom;
-    const uint numPrimitives = numQuadsPerGeom;
-  
+
+    const uint numPrimitives = globals->numPrimitives;
+    
     if (unlikely(deviceGPU->verbosity(2)))    
       PRINT2(org_numPrimitives,numPrimitives);
-
 
     // ==========================================================
     // ==========================================================
@@ -252,6 +272,10 @@ namespace embree
                                                                     });
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
+      double dt = gpu::getDeviceExecutionTiming(queue_event);      
+      if (unlikely(deviceGPU->verbosity(2)))
+        std::cout << "Init globals " << dt << " ms" << std::endl;
+
     }	    
 
     // ===========================================================          
@@ -525,7 +549,7 @@ namespace embree
     double time_convert1 = getSeconds();    
     if (unlikely(deviceGPU->verbosity(1)))
     {
-      const double host_bvh2_qbvh6_conversion_time = (time_convert1 - time_convert0)*1000;
+      const double host_bvh2_qbvh6_conversion_time = (time_convert1 - time_convert0)*1000.0f;
       std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  host_bvh2_qbvh6_conversion_time << " ms (host) " << conversion_device_time << " ms (device) " << std::endl << std::flush;                  
     }
     
@@ -540,9 +564,13 @@ namespace embree
       hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
     }
 
+    double free_time0 = getSeconds();
     if (tmpMem0)     sycl::free(tmpMem0,deviceGPU->getGPUContext());    
     if (globals)     sycl::free(globals,deviceGPU->getGPUContext());
     if (leafGenData) sycl::free(leafGenData,deviceGPU->getGPUContext());
+    double free_time1 = getSeconds();
+    if (unlikely(deviceGPU->verbosity(2)))
+      std::cout << "Time freeing temporary data " << (free_time1-free_time0)*1000.0f  << " ms " << std::endl << std::flush;
 
     const double host_time1 = getSeconds(); 
     if (unlikely(deviceGPU->verbosity(1)))
