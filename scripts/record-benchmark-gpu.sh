@@ -78,3 +78,6 @@ record_result "powerplant"
 record_result "barbarian_mblur"
 record_result "landscape"
 record_result "curly_hair"
+
+record_tutorial_result "user_geometry"
+record_tutorial_result "intersection_filter"
