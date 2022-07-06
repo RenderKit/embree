@@ -41,22 +41,40 @@ record_result() {
   SUBSUITE_NAME=${1}
 
   SUITE_NAME="Embree-Viewer-GPU"
+
   benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
   benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-  scripts/merge_json.py benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}-${CONFIG_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
+  scripts/merge_json.py benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
   benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
 
   SUITE_NAME="Embree-Pathtracer-GPU"
+
   benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
   benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
 
-  scripts/merge_json.py benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}-${CONFIG_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
+  scripts/merge_json.py benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
   benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json
 }
 
+record_tutorial_result() {
+  SUITE_NAME="Tutorial"
+  SUBSUITE_NAME=${1}
+
+  FILE="benchmark_results/${SUITE_NAME}-${SUBSUITE_NAME}.json"
+  echo "check if ${FILE} exists"
+
+  if [ -f "${FILE}" ]; then
+    benny insert suite ${PROJECT_NAME} ${SUITE_NAME}
+    benny insert subsuite ${PROJECT_NAME} ${SUITE_NAME} ${SUBSUITE_NAME}
+    benny insert googlebenchmark ./run_context.json ${SUITE_NAME} ${SUBSUITE_NAME} ${FILE}
+  else
+    echo "file ${FILE} does not exist"
+  fi
+}
+
 record_result "crown"
-record_result "sponza"
-record_result "barbarian_instancing"
+record_result "powerplant"
 record_result "barbarian_mblur"
-#record_result "landscape"
+record_result "landscape"
+record_result "curly_hair"
