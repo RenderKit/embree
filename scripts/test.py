@@ -432,7 +432,9 @@ def runConfig(config):
       conf.append("-D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=ON")
     else:
        conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
-      
+
+  if "LARGEGRF" in config:
+    conf.append("-D EMBREE_DPCPP_LARGEGRF="+config["LARGEGRF"])
   if "DPCPP_MBLUR" in config:
     conf.append("-D EMBREE_DPCPP_MBLUR="+config["DPCPP_MBLUR"])
   if "RAY_MASK" in config:
