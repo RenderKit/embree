@@ -89,6 +89,8 @@ namespace embree
     const size_t alloc_GeomPrefixSums = sizeof(uint)*(numGeoms+1);
 
     char *tmpMem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
+    gpu_queue.prefetch(tmpMem0,alloc_GeomPrefixSums+alloc_TriMeshes);
+
     uint *const quads_per_geom_prefix_sum  = (uint*)tmpMem0;
     TriMesh *const triMesh                 = (TriMesh*)(tmpMem0 + alloc_GeomPrefixSums);
     
@@ -113,6 +115,9 @@ namespace embree
       triMesh[geomID].numVertices  = mesh->numVertices();
       triMesh[geomID].triangles    =  (TriangleMesh::Triangle*)mesh->triangles.getPtr(); 
       triMesh[geomID].vertices     =  (Vec3fa*)mesh->vertices0.getPtr();
+
+      gpu_queue.prefetch(triMesh[geomID].triangles, triMesh[geomID].numTriangles * sizeof(TriangleMesh::Triangle));
+      gpu_queue.prefetch(triMesh[geomID].vertices , triMesh[geomID].numVertices * sizeof(Vec3fa));      
     }
     
     if (unlikely(deviceGPU->verbosity(2))) PRINT(numGeoms);
@@ -136,9 +141,10 @@ namespace embree
     // =============================
     // === count quads per block === 
     // =============================
+    double device_quadification_time = 0.0f;
+
     double count_quads_time0 = getSeconds();
 
-    double device_quadification_time = 0.0f;
     countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose);
 
     double count_quads_time1 = getSeconds();
@@ -203,6 +209,7 @@ namespace embree
     alloc_time0 = getSeconds(); 
     
     if (accel.size() < totalSize) accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
+    gpu_queue.prefetch((char*)accel.data(),totalSize);
 	
     QBVH6* qbvh   = (QBVH6*)accel.data();
     assert(qbvh);
@@ -213,7 +220,10 @@ namespace embree
     LeafGenerationData *leafGenData = (LeafGenerationData*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME
     assert(conversionState);
 
+
     uint *scratch_mem = (uint*)leafGenData;
+
+
     
     char *const leaf_mem = (char*)accel.data() + leaf_data_start;
     BVH2Ploc *const bvh2          = (BVH2Ploc*)(leaf_mem);
