@@ -53,6 +53,8 @@ namespace embree
   
   BBox3fa rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel, const bool two_level=false)
   {
+    double t1,t2,preprocess_time = 0.0f;
+
     DeviceGPU* deviceGPU = dynamic_cast<DeviceGPU*>(scene->device);
     assert(deviceGPU);
     const bool verbose = deviceGPU->verbosity(2);
@@ -264,7 +266,6 @@ namespace embree
     // ==== init globals ====
     // ======================
 
-    double t1,t2,preprocess_time = 0.0f;
           
     {	  
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
@@ -498,15 +499,19 @@ namespace embree
 
     const double ploc_host_time1 = getSeconds();
     const double ploc_host_time = (ploc_host_time1 - ploc_host_time0)*1000;
+
+    
     if (unlikely(deviceGPU->verbosity(2)))    
       PRINT6(iteration,(float)ploc_iteration_time,(float)preprocess_time,(float)(ploc_iteration_time + preprocess_time),(float)ploc_host_time,(float)(ploc_host_time+preprocess_time));          
       
     double total1 = getSeconds();
-    total_diff += (total1-total0); 
+    total_diff += (total1-total0);
+
+    const double device_time = ploc_iteration_time + preprocess_time;
             
     if (unlikely(deviceGPU->verbosity(1)))
     {
-      std::cout << "BVH2 GPU Ploc Builder DONE in " << 1000.*total_diff << " ms (host), " << (float)(ploc_iteration_time + preprocess_time) << " ms (device) : " << numPrimitives*0.000001f/total_diff << " Build MPrims/s (host), " << org_numPrimitives*0.000001f/total_diff << " Original MPrims/s (host) " << std::endl << std::flush;      
+      std::cout << "BVH2 GPU Ploc Builder DONE in " << 1000.*total_diff << " ms (host), " << (float)(ploc_iteration_time + preprocess_time) << " ms (device) => Quads Build : " << numPrimitives*0.000001f/total_diff << " MPrims/s (host) " << numPrimitives*0.001f/device_time << " MPrims/s (device) / Original Tris : " << org_numPrimitives*0.000001f/total_diff << " MPrims/s (host) " <<  org_numPrimitives*0.001f/device_time << " MPrims/s (device) " << std::endl << std::flush;      
     }
     
     assert(bvh2_subtree_size[globals->bvh2_index_allocator-1] == numPrimitives);
