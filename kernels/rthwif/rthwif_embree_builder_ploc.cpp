@@ -93,6 +93,8 @@ namespace embree
     char *tmpMem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
     gpu_queue.prefetch(tmpMem0,alloc_GeomPrefixSums+alloc_TriMeshes);
 
+    //PRINT(alloc_GeomPrefixSums+alloc_TriMeshes);
+    
     uint *const quads_per_geom_prefix_sum  = (uint*)tmpMem0;
     TriMesh *const triMesh                 = (TriMesh*)(tmpMem0 + alloc_GeomPrefixSums);
     
@@ -136,7 +138,7 @@ namespace embree
     }
     double first_kernel_time1 = getSeconds();
 
-    if (unlikely(deviceGPU->verbosity(1))) std::cout << "Dummy kernel launch (triggers USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
+    if (unlikely(deviceGPU->verbosity(1))) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
     
     const double host_time0 = getSeconds(); 
     
@@ -145,13 +147,16 @@ namespace embree
     // =============================
     double device_quadification_time = 0.0f;
 
-    double count_quads_time0 = getSeconds();
+    //for (uint i=0;i<10;i++)
+    {
+      device_quadification_time = 0.0f;
+      double count_quads_time0 = getSeconds();
+      countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose);
+      double count_quads_time1 = getSeconds();
+      if (unlikely(deviceGPU->verbosity(1))) std::cout << "Count quads: " << (count_quads_time1-count_quads_time0)*1000.0f << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
+    }
 
-    countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose);
-
-    double count_quads_time1 = getSeconds();
-
-    if (unlikely(deviceGPU->verbosity(1))) std::cout << "Count quads: " << (count_quads_time1-count_quads_time0)*1000.0f << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;
+    //exit(0);
     
     /* --- prefix sum over quads --- */
     {	  
