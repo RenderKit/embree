@@ -284,6 +284,16 @@ namespace embree
       return range;          
     }
 
+    __forceinline uint64_t delta(const MortonCodePrimitive40x24Bits3D& m0, const MortonCodePrimitive40x24Bits3D& m1)
+    {
+      return m0.getCode()^m1.getCode(); //sycl::ext::intel::ctz(m0.index_code^m1.index_code);
+    }
+  
+    __forceinline uint64_t delta(const uint ID, const MortonCodePrimitive40x24Bits3D *const m)
+    {
+      return delta(m[ID],m[ID+1]);
+    }
+    
   }
 }
 

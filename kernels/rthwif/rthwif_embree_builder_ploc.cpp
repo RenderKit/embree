@@ -418,7 +418,7 @@ namespace embree
     if (!fastMCMode)
       initClusters(gpu_queue,mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,preprocess_time,verbose);
     else
-      initClusters(gpu_queue,(gpu::MortonCodePrimitive40x24Bits3D*)mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,preprocess_time,verbose);
+      initClusters(gpu_queue,(gpu::MortonCodePrimitive40x24Bits3D*)mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,preprocess_time,verbose); 
     
     t2 = getSeconds();
         
@@ -440,6 +440,137 @@ namespace embree
 
     if (two_level)
     {
+      uint *atomic_range = cluster_index_dest;      
+      // === init inner nodes index array ===
+      {
+        static const uint INIT_CLUSTERS_WG_SIZE = 256;    
+        static const uint INIT_CLUSTERS_SUB_GROUP_WIDTH = 16;
+        const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numPrimitives,INIT_CLUSTERS_WG_SIZE)),sycl::range<1>(INIT_CLUSTERS_WG_SIZE)); 
+        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(INIT_CLUSTERS_SUB_GROUP_WIDTH)
+                                                                      {
+                                                                        const uint globalID     = item.get_global_id(0);
+                                                                        if (globalID < numPrimitives)
+                                                                          atomic_range[globalID] = -1;
+                                                                      });
+                                                     
+                                                   });
+        gpu::waitOnQueueAndCatchException(gpu_queue);
+        double dt = gpu::getDeviceExecutionTiming(queue_event);      
+        if (unlikely(verbose)) PRINT2("clear init nodes index array",(float)dt);
+      }
+      
+      
+      {
+        const gpu::MortonCodePrimitive40x24Bits3D *const morton_codes = (gpu::MortonCodePrimitive40x24Bits3D*)mc0;
+        
+        const uint wgSize = 64;
+        const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numPrimitives,wgSize)),sycl::range<1>(wgSize)); 
+        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32)
+                                                                      {
+                                                                        const uint N = numPrimitives;
+                                                                        const uint leafID     = item.get_global_id(0);
+                                                                        if (leafID < numPrimitives)
+                                                                        {
+                                                                          uint current = leafID;
+            
+                                                                          // range
+                                                                          uint L = current;
+                                                                          uint R = current;
+
+                                                                          //gpu::AABB3f bounds = bvh2[cluster_index[leafID]].bounds;
+
+                                                                          bool is_leaf = true;               
+            
+                                                                          // current is leaf or node?
+                                                                          while (1)
+                                                                          {
+                                                                            PRINT4(current,L,R,R-L+1);
+                                                                            // the whole range is covered
+                                                                            if (0 == L && R == N)
+                                                                            {
+                                                                              globals->rootIndex = N + current;
+                                                                              PRINT3(N,current,N+current);
+                                                                              break;
+                                                                            }
+
+                                                                            const uint index = is_leaf ? current : N+current;
+              
+                                                                            // choose parent
+                                                                            uint previous = -1, parent = -1;
+                                                                            if (0 == L || (R != N && delta(R, morton_codes) < delta(L - 1, morton_codes)))
+                                                                            {
+                                                                              // parent is right and "L" doesn't change
+                                                                              parent   = R;
+                                                                              sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> ap(atomic_range[parent]);
+                                                                              previous = ap.exchange(L); // atomic_range[parent].exchange(L);
+                                                                              if((uint)-1 != previous)
+                                                                              {
+                                                                                R = previous;                  
+                                                                              }
+                                                                              bvh2[N + parent].left = index;
+                
+                                                                              //PRINT2(parent,R);
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                              // parent is left and "R" doesn't change
+                                                                              parent   = L - 1;
+                                                                              sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> ap(atomic_range[parent]);
+                                                                              previous = ap.exchange(R); // atomic_range[parent].exchange(R);
+                                                                              if ((uint)-1 != previous)
+                                                                              {
+                                                                                L = previous;                  
+                                                                              }
+                                                                              bvh2[N + parent].right = index;                                                                                
+                
+                                                                              //PRINT2(parent,L);                
+                                                                            }
+
+                                                                            //PRINT(parent);
+                                                                            sycl::atomic_fence(sycl::memory_order::release,sycl::memory_scope::device);         
+
+                                                                            PRINT(previous);
+                                                                            
+                                                                            // terminate this thread
+                                                                            if ((uint)-1 == previous)                
+                                                                            { break; }
+
+                                                                            const uint bvh2_index = N + parent;
+                                                                            const uint leftIndex     = bvh2[bvh2_index].left;
+                                                                            const uint rightIndex    = bvh2[bvh2_index].right;
+                                                                            const gpu::AABB3f leftBounds  = bvh2[leftIndex ].bounds;
+                                                                            const gpu::AABB3f rightBounds = bvh2[rightIndex].bounds;                                                                            
+                                                                            const uint new_size      = bvh2_subtree_size[leftIndex] + bvh2_subtree_size[rightIndex];
+                                                                            PRINT(bvh2_index);
+                                                                            bvh2[bvh2_index].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);
+                                                                            bvh2_subtree_size[bvh2_index] = new_size;
+
+                                                                            sycl::atomic_fence(sycl::memory_order::release,sycl::memory_scope::device);         
+                                                                            
+                                                                            assert(L < R);              
+                                                                            // ascend
+                                                                            current = parent;
+                                                                            is_leaf = false;
+              
+                                                                          }
+                                                                            
+                                                                        }
+                                                                      });
+                                                       
+                                                   });
+        gpu::waitOnQueueAndCatchException(gpu_queue);
+        double dt = gpu::getDeviceExecutionTiming(queue_event);      
+        //total_time += dt;                    
+        PRINT2("bottom-up PLOC pass",(float)dt);                              
+      }
+
+      PRINT(globals->rootIndex);
+      exit(0);
+
+      
+#if 0      
       static const uint PARALLEL_WG_NUM = MAX_WGS;        
       static const uint RANGE_THRESHOLD = numPrimitives/(4*PARALLEL_WG_NUM);
       static const uint BOTTOM_UP_THRESHOLD = 16;
@@ -455,6 +586,8 @@ namespace embree
       parallelWGBuild(gpu_queue, &globals->bvh2_index_allocator, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, globals->numBuildRecords, BOTTOM_UP_THRESHOLD, ploc_iteration_time, verbose);
       
       singleWGTopLevelBuild(gpu_queue, &globals->bvh2_index_allocator, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, globals->numBuildRecords, SEARCH_RADIUS_TOP_LEVEL, ploc_iteration_time, verbose);
+#endif
+      
     }
     else
       for (;numPrims>1;iteration++)
