@@ -440,122 +440,59 @@ namespace embree
 
     if (two_level)
     {
-      uint *atomic_range = cluster_index_dest;      
-      // === init inner nodes index array ===
-      {
-        static const uint INIT_CLUSTERS_WG_SIZE = 256;    
-        static const uint INIT_CLUSTERS_SUB_GROUP_WIDTH = 16;
-        const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numPrimitives,INIT_CLUSTERS_WG_SIZE)),sycl::range<1>(INIT_CLUSTERS_WG_SIZE)); 
-        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(INIT_CLUSTERS_SUB_GROUP_WIDTH)
-                                                                      {
-                                                                        const uint globalID     = item.get_global_id(0);
-                                                                        if (globalID < numPrimitives)
-                                                                          atomic_range[globalID] = -1;
-                                                                      });
-                                                     
-                                                   });
-        gpu::waitOnQueueAndCatchException(gpu_queue);
-        double dt = gpu::getDeviceExecutionTiming(queue_event);      
-        if (unlikely(verbose)) PRINT2("clear init nodes index array",(float)dt);
-      }
+      globals->rootIndex = numPrimitives + numPrimitives - 1;
       
-      
+      uint *const parent_index = bvh2_subtree_size;             
       {
-        const gpu::MortonCodePrimitive40x24Bits3D *const morton_codes = (gpu::MortonCodePrimitive40x24Bits3D*)mc0;
+        struct __aligned(16) MCNode {
+          uint start,end,split;
+
+          __forceinline MCNode() {}
+    
+          __forceinline uint size()    const { return end - start; }
+          __forceinline uint leftID()  const { return split-1; }
+          __forceinline uint rightID() const { return split; }
+
+          __forceinline uint sizeLeft() const { return split - start; }
+          __forceinline uint sizeRight() const { return end - split; }
+    
+          __forceinline bool isLeftLeaf() const { return sizeLeft() <= 1; }
+          __forceinline bool isRightLeaf() const { return sizeRight() <= 1; }
+          __forceinline bool hasLeaves() const { return isLeftLeaf() || isRightLeaf(); }
+          __forceinline uint numLeaves() const { return (isLeftLeaf() ? 1 : 0) + (isRightLeaf() ? 1 : 0); }        
+        };
         
+        const gpu::MortonCodePrimitive40x24Bits3D *const morton_codes = (gpu::MortonCodePrimitive40x24Bits3D*)mc0;
+
         const uint wgSize = 64;
         const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numPrimitives,wgSize)),sycl::range<1>(wgSize)); 
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32)
+                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
                                                                         const uint N = numPrimitives;
-                                                                        const uint leafID     = item.get_global_id(0);
-                                                                        if (leafID < numPrimitives)
+                                                                        const uint nodeID = item.get_global_id(0);
+                                                                        if (nodeID < N)
                                                                         {
-                                                                          uint current = leafID;
-            
-                                                                          // range
-                                                                          uint L = current;
-                                                                          uint R = current;
+                                                                          const gpu::Range range    = findSegment(nodeID,morton_codes,numPrimitives);
+                                                                          const unsigned int split  = findSplit64Bit(range,morton_codes);
 
-                                                                          //gpu::AABB3f bounds = bvh2[cluster_index[leafID]].bounds;
+                                                                          MCNode current;
+                                                                          current.start     = range.start;
+                                                                          current.end       = range.end;
+                                                                          current.split     = split;
 
-                                                                          bool is_leaf = true;               
-            
-                                                                          // current is leaf or node?
-                                                                          while (1)
-                                                                          {
-                                                                            PRINT4(current,L,R,R-L+1);
-                                                                            // the whole range is covered
-                                                                            if (0 == L && R == N)
-                                                                            {
-                                                                              globals->rootIndex = N + current;
-                                                                              PRINT3(N,current,N+current);
-                                                                              break;
-                                                                            }
+                                                                          // optimize bounds
+                                                                          if (!current.isLeftLeaf())
+                                                                            parent_index[N+current.leftID()] = N+nodeID;
+                                                                          else
+                                                                            parent_index[current.leftID()] = N+nodeID;
+                                                                                                                                                          
+                                                                          if (!current.isRightLeaf())
+                                                                            parent_index[N+current.rightID()] = N+nodeID;
+                                                                          else
+                                                                            parent_index[current.rightID()] = N+nodeID;
 
-                                                                            const uint index = is_leaf ? current : N+current;
-              
-                                                                            // choose parent
-                                                                            uint previous = -1, parent = -1;
-                                                                            if (0 == L || (R != N && delta(R, morton_codes) < delta(L - 1, morton_codes)))
-                                                                            {
-                                                                              // parent is right and "L" doesn't change
-                                                                              parent   = R;
-                                                                              sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> ap(atomic_range[parent]);
-                                                                              previous = ap.exchange(L); // atomic_range[parent].exchange(L);
-                                                                              if((uint)-1 != previous)
-                                                                              {
-                                                                                R = previous;                  
-                                                                              }
-                                                                              bvh2[N + parent].left = index;
-                
-                                                                              //PRINT2(parent,R);
-                                                                            }
-                                                                            else
-                                                                            {
-                                                                              // parent is left and "R" doesn't change
-                                                                              parent   = L - 1;
-                                                                              sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> ap(atomic_range[parent]);
-                                                                              previous = ap.exchange(R); // atomic_range[parent].exchange(R);
-                                                                              if ((uint)-1 != previous)
-                                                                              {
-                                                                                L = previous;                  
-                                                                              }
-                                                                              bvh2[N + parent].right = index;                                                                                
-                
-                                                                              //PRINT2(parent,L);                
-                                                                            }
-
-                                                                            //PRINT(parent);
-                                                                            sycl::atomic_fence(sycl::memory_order::release,sycl::memory_scope::device);         
-
-                                                                            PRINT(previous);
-                                                                            
-                                                                            // terminate this thread
-                                                                            if ((uint)-1 == previous)                
-                                                                            { break; }
-
-                                                                            const uint bvh2_index = N + parent;
-                                                                            const uint leftIndex     = bvh2[bvh2_index].left;
-                                                                            const uint rightIndex    = bvh2[bvh2_index].right;
-                                                                            const gpu::AABB3f leftBounds  = bvh2[leftIndex ].bounds;
-                                                                            const gpu::AABB3f rightBounds = bvh2[rightIndex].bounds;                                                                            
-                                                                            const uint new_size      = bvh2_subtree_size[leftIndex] + bvh2_subtree_size[rightIndex];
-                                                                            PRINT(bvh2_index);
-                                                                            bvh2[bvh2_index].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);
-                                                                            bvh2_subtree_size[bvh2_index] = new_size;
-
-                                                                            sycl::atomic_fence(sycl::memory_order::release,sycl::memory_scope::device);         
-                                                                            
-                                                                            assert(L < R);              
-                                                                            // ascend
-                                                                            current = parent;
-                                                                            is_leaf = false;
-              
-                                                                          }
-                                                                            
+                                                                          //PRINT4(current.isLeftLeaf(),current.leftID(),current.isRightLeaf(),current.rightID());
                                                                         }
                                                                       });
                                                        
@@ -563,11 +500,17 @@ namespace embree
         gpu::waitOnQueueAndCatchException(gpu_queue);
         double dt = gpu::getDeviceExecutionTiming(queue_event);      
         //total_time += dt;                    
-        PRINT2("bottom-up PLOC pass",(float)dt);                              
+        PRINT2("parent pointer setup phase",(float)dt);                              
       }
 
       PRINT(globals->rootIndex);
+
+      // for (uint i=0;i<numPrimitives+numPrimitives-1;i++)
+      //   PRINT2(i,parent_index[i]);
+      
       exit(0);
+
+      
 
       
 #if 0      
