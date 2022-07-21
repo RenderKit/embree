@@ -24,7 +24,8 @@ namespace embree
   {
     gpu::AABB3f geometryBounds;
     gpu::AABB3f centroidBounds; 
-    char *qbvh_base_pointer;    
+    char *qbvh_base_pointer;
+    uint64_t wgState;    
     uint node_mem_allocator_start;
     uint node_mem_allocator_cur;
     // 64 bytes
@@ -39,14 +40,16 @@ namespace embree
     uint sync;
     uint totalAllocatedMem;
     uint rootIndex;
-    uint padd[5];
+    uint wgID;
+    uint padd[2];
     // 128 bytes
 
     __forceinline void reset()
     {
       geometryBounds.init();
       centroidBounds.init();
-      qbvh_base_pointer = nullptr;      
+      qbvh_base_pointer = nullptr;
+      wgState                    = 0;      
       node_mem_allocator_cur     = 0;
       node_mem_allocator_start   = 0;
       bvh2_index_allocator       = 0;
@@ -60,6 +63,7 @@ namespace embree
       sync                       = 0;      
       totalAllocatedMem          = 0;
       rootIndex                  = 0;
+      wgID                       = 0;
     }
       
     /* allocate data in the node memory section */
@@ -811,32 +815,46 @@ namespace embree
   }
   
   
-  __forceinline void searchNearestNeighborMergeClustersCreateBVH2 (sycl::queue &gpu_queue, uint *const bvh2_index_allocator, BVH2Ploc *const bvh2, const uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const int RADIUS, const uint NN_SEARCH_WG_NUM, double &iteration_time, const bool verbose)    
+  __forceinline void searchNearestNeighborMergeClustersCreateBVH2 (sycl::queue &gpu_queue, uint *const bvh2_index_allocator, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const int RADIUS, const uint NN_SEARCH_WG_NUM, PLOCGlobals *const globals, double &iteration_time, const bool verbose)    
   {
     static const uint NN_SEARCH_SUB_GROUP_WIDTH = 16;
     static const uint NN_SEARCH_WG_SIZE         = 1024; 
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::accessor< gpu::AABB3f, 1, sycl_read_write, sycl_local> cached_bounds  (sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_neighbor(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_clusterID(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
-        
+        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_clusterID(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);        
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
+
+        
+        sycl::accessor< uint   , 1, sycl_read_write, sycl_local> global_wg_prefix_sum(sycl::range<1>(NN_SEARCH_WG_NUM),cgh);
+        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _wgID(cgh);
         
         const sycl::nd_range<1> nd_range(sycl::range<1>(NN_SEARCH_WG_NUM*NN_SEARCH_WG_SIZE),sycl::range<1>(NN_SEARCH_WG_SIZE));		  
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(NN_SEARCH_SUB_GROUP_WIDTH) {
             const uint localID        = item.get_local_id(0);
-            const uint groupID        = item.get_group(0);                                                             
+            const uint localSize       = item.get_local_range().size();            
             const uint subgroupID      = get_sub_group_id();                                                                                                                          
             const uint subgroupLocalID = get_sub_group_local_id();
             const uint subgroupSize    = get_sub_group_size();                                                                                                                          
+            const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*RADIUS; /* reducing working group set size to 1024 - 4 * radius to avoid loops */
             
+
+            uint &wgID = *_wgID.get_pointer();
+
+            if (localID == 0)
+              wgID = gpu::atomic_add_global(&globals->wgID,(uint)1);
+
+            item.barrier(sycl::access::fence_space::local_space);
+            
+            const uint groupID        = wgID;                                                             
+
             const uint startID        = (groupID + 0)*numPrims / NN_SEARCH_WG_NUM;
             const uint endID          = (groupID + 1)*numPrims / NN_SEARCH_WG_NUM;
             const uint sizeID         = endID-startID;
-            const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*RADIUS; /* reducing working group set size to 1024 - 4 * radius to avoid loops */
             const uint aligned_sizeID = gpu::alignTo(sizeID,WORKING_WG_SIZE);
-              
+            
+            
             uint total_offset = 0;                                                     
             for (uint t=0;t<aligned_sizeID;t+=WORKING_WG_SIZE)
             {
@@ -1021,9 +1039,67 @@ namespace embree
             /* ---------------------------------------------------------------------- */
 
             item.barrier(sycl::access::fence_space::local_space);
-                                                     
-            if (localID == 0) 
-              scratch_mem[groupID] = total_offset; 
+
+            // ================================================================            
+            // set finish flag and spin wait until earlier WGs finished as well
+            // ================================================================
+
+            
+            if (localID == 0)
+            {
+              sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> scratch_mem_counter(scratch_mem[groupID]);
+              
+              //scratch_mem[groupID] = total_offset;
+              scratch_mem_counter.store(total_offset);
+
+              //sycl::atomic_fence(sycl::memory_order::release, sycl::memory_scope::device);
+              
+              sycl::atomic_ref<uint64_t, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_state(globals->wgState);
+              global_state.fetch_add((uint64_t)1 << groupID);
+              const uint64_t mask = ((uint64_t)1 << groupID)-1;
+              while( (global_state.load() & mask) != mask );
+            }
+
+            /* ------------------------------------- */            
+            /* --- make changes globally visible --- */
+            /* ------------------------------------- */
+            
+            item.barrier(sycl::access::fence_space::global_and_local);
+
+            /* ---------------------------------------------------- */                                                       
+            /* --- prefix sum over per WG counts in scratch mem --- */
+            /* ---------------------------------------------------- */
+
+            
+            uint global_total = 0;
+            for (uint i=0;i<NN_SEARCH_WG_NUM;i+=subgroupSize)
+            {
+              const uint subgroup_counts     = i+subgroupLocalID < NN_SEARCH_WG_NUM ? scratch_mem[i+subgroupLocalID] : 0;
+              const uint total               = sub_group_reduce(subgroup_counts, std::plus<uint>());
+              const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
+
+              global_wg_prefix_sum[i+subgroupLocalID] = sums_exclusive_scan + global_total;
+              global_total += total;                                           
+            }            
+            
+            const uint active_count = scratch_mem[groupID]; //total_offset;
+            //const uint active_count = total_offset;
+            
+            item.barrier(sycl::access::fence_space::local_space);
+
+            const uint global_offset = global_wg_prefix_sum[groupID];
+              
+            for (uint t=localID;t<active_count;t+=localSize)
+              cluster_index_source[global_offset + t] = cluster_index_dest[startID + t];                                                               
+
+            /* -------------------------------------------------- */                                                       
+            /* --- update number of clusters after compaction --- */
+            /* -------------------------------------------------- */
+                                         
+            if (localID == 0 && groupID == NN_SEARCH_WG_NUM-1) // need to be the last group as only this one waits until all previous are done
+            {
+              globals->numBuildRecords = global_total;
+            }
                                                      
           });		  
       });
@@ -1037,13 +1113,12 @@ namespace embree
   __forceinline void computePrefixSum_compactClusterReferences(sycl::queue &gpu_queue, uint *const numBuildRecords, const uint *const cluster_index_source, uint *const cluster_index_dest, uint *const scratch_mem, const uint numPrims, const uint PREFIX_SUM_WG_NUM, double &iteration_time, const bool verbose)    
   {
     static const uint PREFIX_SUM_SUB_GROUP_WIDTH = 32;
-    static const uint PREFIX_SUM_WG_SIZE = PREFIX_SUM_SUB_GROUP_WIDTH*PREFIX_SUM_SUB_GROUP_WIDTH; /* needs to be 32*32 */
+    static const uint PREFIX_SUM_WG_SIZE = PREFIX_SUM_SUB_GROUP_WIDTH*PREFIX_SUM_SUB_GROUP_WIDTH; 
 
     sycl::event queue_event;
     queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         const sycl::nd_range<1> nd_range(PREFIX_SUM_WG_NUM*PREFIX_SUM_WG_SIZE,sycl::range<1>(PREFIX_SUM_WG_SIZE));
         /* local variables */
-        sycl::accessor< uint   , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((PREFIX_SUM_WG_SIZE/PREFIX_SUM_SUB_GROUP_WIDTH)),cgh);
         sycl::accessor< uint   , 1, sycl_read_write, sycl_local> global_wg_prefix_sum(sycl::range<1>(PREFIX_SUM_WG_NUM),cgh);
                                                          
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(PREFIX_SUM_SUB_GROUP_WIDTH) {
@@ -1051,10 +1126,8 @@ namespace embree
             const uint groupID         = item.get_group(0);                                                             
             const uint localSize       = item.get_local_range().size();
             const uint subgroupLocalID = get_sub_group_local_id();
-            //const uint subgroupID      = get_sub_group_id();                                                                                                                          
             const uint subgroupSize    = get_sub_group_size();                                                                                                                          
             const uint startID = (groupID + 0)*numPrims / PREFIX_SUM_WG_NUM;
-            //const uint endID   = (groupID + 1)*numPrims / PREFIX_SUM_WG_NUM;
 
             /* ---------------------------------------------------- */                                                       
             /* --- prefix sum over per WG counts in scratch mem --- */

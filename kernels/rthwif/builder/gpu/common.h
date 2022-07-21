@@ -135,6 +135,13 @@ namespace embree
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(*dest);        
         return counter.fetch_max(count);      
       }
+
+    template<typename T>
+      static __forceinline uint atomic_or_global(T *dest, const T count=1)
+      {
+        sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
+        return counter.fetch_or(count);      
+      }
     
 
 
