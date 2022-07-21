@@ -171,12 +171,12 @@ namespace embree
       assert(qupper_x >= 0.0f && qupper_x <= 255.0f);
       assert(qupper_y >= 0.0f && qupper_y <= 255.0f);
       assert(qupper_z >= 0.0f && qupper_z <= 255.0f); 
-      qlower_x = min(max(floorf(qlower_x),0.0f),255.0f);
-      qlower_y = min(max(floorf(qlower_y),0.0f),255.0f);
-      qlower_z = min(max(floorf(qlower_z),0.0f),255.0f);
-      qupper_x = min(max(ceilf(qupper_x),0.0f),255.0f);
-      qupper_y = min(max(ceilf(qupper_y),0.0f),255.0f);
-      qupper_z = min(max(ceilf(qupper_z),0.0f),255.0f);
+      qlower_x = min(max(sycl::floor(qlower_x),0.0f),255.0f);
+      qlower_y = min(max(sycl::floor(qlower_y),0.0f),255.0f);
+      qlower_z = min(max(sycl::floor(qlower_z),0.0f),255.0f);
+      qupper_x = min(max(sycl::ceil(qupper_x),0.0f),255.0f);
+      qupper_y = min(max(sycl::ceil(qupper_y),0.0f),255.0f);
+      qupper_z = min(max(sycl::ceil(qupper_z),0.0f),255.0f);
       gpu::AABB3f qbounds(float3(qlower_x, qlower_y, qlower_z), float3(qupper_x, qupper_y, qupper_z));
       return qbounds;
     }    
