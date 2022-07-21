@@ -441,6 +441,7 @@ namespace embree
 
     if (two_level)
     {
+#if 0      
       globals->rootIndex = numPrimitives + numPrimitives - 1;
       
       uint *const parent_index = bvh2_subtree_size;             
@@ -512,9 +513,8 @@ namespace embree
       exit(0);
 
       PRINT(sizeof(PLOCGlobals));
-
       
-#if 0      
+#else   
       static const uint PARALLEL_WG_NUM = MAX_WGS;        
       static const uint RANGE_THRESHOLD = numPrimitives/(4*PARALLEL_WG_NUM);
       static const uint BOTTOM_UP_THRESHOLD = 16;
@@ -556,20 +556,10 @@ namespace embree
           // ==== nearest neighbor search, merge clusters and create bvh2 nodes (fast path) ====
           // ===================================================================================
 
-          globals->wgID = 0;
-          globals->wgState = 0;
-          
-          const uint MERGED_KERNEL_WG_NUM = MAX_WGS;           
+          const uint MERGED_KERNEL_WG_NUM = min((numPrims+1024-1)/1024,(uint)MAX_WGS);
           const uint radius = SEARCH_RADIUS;          
 
-          searchNearestNeighborMergeClustersCreateBVH2(gpu_queue,&globals->bvh2_index_allocator,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,globals,iteration_time, false);
-
-
-          // ===================================================            
-          // ==== prefix_sum and compact cluster references ====
-          // ===================================================
-          
-          //computePrefixSum_compactClusterReferences(gpu_queue,&globals->numBuildRecords,cluster_index_dest,cluster_index_source,scratch_mem,numPrims,MERGED_KERNEL_WG_NUM,iteration_time,false);
+          iteratePLOC(gpu_queue,&globals->bvh2_index_allocator,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,globals,iteration_time, false);
 
           const uint new_numPrims = globals->numBuildRecords;            
           assert(new_numPrims < numPrims);          

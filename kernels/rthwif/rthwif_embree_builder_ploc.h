@@ -815,7 +815,7 @@ namespace embree
   }
   
   
-  __forceinline void searchNearestNeighborMergeClustersCreateBVH2 (sycl::queue &gpu_queue, uint *const bvh2_index_allocator, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const int RADIUS, const uint NN_SEARCH_WG_NUM, PLOCGlobals *const globals, double &iteration_time, const bool verbose)    
+  __forceinline void iteratePLOC (sycl::queue &gpu_queue, uint *const bvh2_index_allocator, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const int RADIUS, const uint NN_SEARCH_WG_NUM, PLOCGlobals *const globals, double &iteration_time, const bool verbose)    
   {
     static const uint NN_SEARCH_SUB_GROUP_WIDTH = 16;
     static const uint NN_SEARCH_WG_SIZE         = 1024; 
@@ -848,7 +848,6 @@ namespace embree
             item.barrier(sycl::access::fence_space::local_space);
             
             const uint groupID        = wgID;                                                             
-
             const uint startID        = (groupID + 0)*numPrims / NN_SEARCH_WG_NUM;
             const uint endID          = (groupID + 1)*numPrims / NN_SEARCH_WG_NUM;
             const uint sizeID         = endID-startID;
@@ -1048,11 +1047,7 @@ namespace embree
             if (localID == 0)
             {
               sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> scratch_mem_counter(scratch_mem[groupID]);
-              
-              //scratch_mem[groupID] = total_offset;
               scratch_mem_counter.store(total_offset);
-
-              //sycl::atomic_fence(sycl::memory_order::release, sycl::memory_scope::device);
               
               sycl::atomic_ref<uint64_t, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_state(globals->wgState);
               global_state.fetch_add((uint64_t)1 << groupID);
@@ -1099,6 +1094,22 @@ namespace embree
             if (localID == 0 && groupID == NN_SEARCH_WG_NUM-1) // need to be the last group as only this one waits until all previous are done
             {
               globals->numBuildRecords = global_total;
+            }
+
+            /* -------------------------------- */                                                       
+            /* --- last WG does the cleanup --- */
+            /* -------------------------------- */
+
+            if (localID == 0)
+            {
+              const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
+              if (syncID == NN_SEARCH_WG_NUM-1)
+              {
+                /* --- reset atomics --- */
+                globals->wgID = 0;
+                globals->wgState = 0;
+                globals->sync = 0;
+              }
             }
                                                      
           });		  
