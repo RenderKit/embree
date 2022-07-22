@@ -19,7 +19,7 @@ the device. The Embree DPC++ API is very similar to the standard
 Embree C99 API. To enable SYCL support you have to include the
 `sycl.hpp` file before the Embree API headers:
 
-    #include <CL/sycl.hpp>
+    #include <sycl/sycl.hpp>
     #include <embree4/rtcore.h>
 
 Next you need to initializes a DPC++ Embree device using the

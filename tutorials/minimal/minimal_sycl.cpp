@@ -5,7 +5,7 @@
  * To use the Embree DPC++ API you have to include sycl.hpp before the
  * embree API headers.
  */
-#include <CL/sycl.hpp>
+#include <sycl/sycl.hpp>
 #include <embree4/rtcore.h>
 
 #include <cstdio>

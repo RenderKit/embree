@@ -13,7 +13,7 @@
 
 #if defined(EMBREE_SYCL_TUTORIAL)
 #  define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
-#  include <CL/sycl.hpp>
+#  include <sycl/sycl.hpp>
 #else
 #  define SYCL_EXTERNAL
 #endif
