@@ -6,6 +6,8 @@ ADD_TUTORIAL(pathtracer)
 ADD_TUTORIAL_ISPC(pathtracer)
 ADD_TUTORIAL_SYCL(pathtracer)
 
+IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none") # see issue #1209
+
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_MODELS_TEST(test-models-intensive2.txt pathtracer_coherent pathtracer pathtracer --coherent)
 #  ADD_EMBREE_MODELS_TEST(test-models-intensity2.txt pathtracer pathtracer pathtracer)
@@ -44,4 +46,6 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3)
 
   ENDIF()
     
+ENDIF()
+
 ENDIF()
