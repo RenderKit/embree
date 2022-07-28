@@ -147,7 +147,7 @@ IF (EMBREE_DPCPP_SUPPORT)
   ADD_DEFINITIONS("-DEMBREE_DPCPP_SUPPORT")  # FIXME: only use define from rtcore_config.h
 ENDIF()
 
-OPTION(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS "Using L0 allocated Dispatch Globals" OFF)
+OPTION(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS "Using L0 allocated Dispatch Globals" ON)
 IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
   ADD_DEFINITIONS("-DEMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS")
 ENDIF()
@@ -711,3 +711,4 @@ ENDIF()
 ##############################################################
 
 INCLUDE(CPack)
+
