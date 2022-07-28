@@ -53,8 +53,8 @@ struct rtas_t;
 
 struct RayDescINTEL
 {
-  float3 O;
-  float3 D;
+  sycl::float3 O;
+  sycl::float3 D;
   float tmin;
   float tmax;
   uint32_t mask;
@@ -86,7 +86,7 @@ SYCL_EXTERNAL void intel_ray_query_commit_potential_hit(
 SYCL_EXTERNAL void intel_ray_query_commit_potential_hit(
     rayquery_t& query,
     float override_hit_distance,
-    float2 override_uv
+    sycl::float2 override_uv
 );
 
 // start traversal of a ray query
@@ -104,7 +104,7 @@ SYCL_EXTERNAL void intel_ray_query_abandon( rayquery_t& query );
 
 SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL float intel_get_hit_distance( rayquery_t query, HitType hit_type );
-SYCL_EXTERNAL float2 intel_get_hit_barys( rayquery_t query, HitType hit_type );
+SYCL_EXTERNAL sycl::float2 intel_get_hit_barys( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL bool intel_hit_is_front_face( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL uint32_t intel_get_hit_geomID(rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL uint32_t intel_get_hit_primID( rayquery_t query, HitType hit_type );
@@ -113,15 +113,15 @@ SYCL_EXTERNAL uint32_t intel_get_hit_primID_procedural( rayquery_t query, HitTyp
 SYCL_EXTERNAL uint32_t intel_get_hit_instanceID( rayquery_t query, HitType hit_type );
 
 // fetch triangle vertices for a hit
-SYCL_EXTERNAL void intel_get_hit_triangle_verts( rayquery_t query, float3 verts_out[3], HitType hit_type );
+SYCL_EXTERNAL void intel_get_hit_triangle_verts( rayquery_t query, sycl::float3 verts_out[3], HitType hit_type );
 
 //
 // read ray-data
 //  This is used to read transformed rays produced by HW instancing pipeline
 //  during any-hit or intersection shader execution
 //
-SYCL_EXTERNAL float3 intel_get_ray_origin( rayquery_t query, unsigned int bvh_level );
-SYCL_EXTERNAL float3 intel_get_ray_direction( rayquery_t query, unsigned int bvh_level );
+SYCL_EXTERNAL sycl::float3 intel_get_ray_origin( rayquery_t query, unsigned int bvh_level );
+SYCL_EXTERNAL sycl::float3 intel_get_ray_direction( rayquery_t query, unsigned int bvh_level );
 SYCL_EXTERNAL float intel_get_ray_tnear( rayquery_t query, unsigned int bvh_level );
 SYCL_EXTERNAL int intel_get_ray_flags( rayquery_t query, unsigned int bvh_level );
 SYCL_EXTERNAL int intel_get_ray_mask( rayquery_t query, unsigned int bvh_level );

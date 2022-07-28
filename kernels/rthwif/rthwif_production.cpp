@@ -12,6 +12,7 @@
 using namespace embree;
 
 #define sizeof_QBVH6_InternalNode6 64
+#define QBVH6_rootNodeOffset 128
 
  /*struct rayquery_impl_t {
     rtfence_t fence;
@@ -47,7 +48,7 @@ SYCL_EXTERNAL rayquery_t intel_ray_query_init( unsigned int bvh_level, RayDescIN
   rtStack->ray[bvh_level].dir[2] = ray.D.z();
   rtStack->ray[bvh_level].tnear  = ray.tmin;
   rtStack->ray[bvh_level].tfar   = ray.tmax;
-  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + accel->rootNodeOffset + sizeof_QBVH6_InternalNode6*bvh_id;
+  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset + sizeof_QBVH6_InternalNode6*bvh_id;
   rtStack->ray[bvh_level].rayFlags = ray.flags;
   rtStack->ray[bvh_level].hitGroupSRBasePtr = 0;
   rtStack->ray[bvh_level].hitGroupSRStride = 0;
@@ -88,7 +89,7 @@ SYCL_EXTERNAL void intel_ray_query_forward_ray( rayquery_t& query, unsigned int 
   rtStack->ray[bvh_level].dir[2] = ray.D.z();
   rtStack->ray[bvh_level].tnear  = ray.tmin;
   rtStack->ray[bvh_level].tfar   = ray.tmax;
-  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + accel->rootNodeOffset + sizeof_QBVH6_InternalNode6*bvh_id;;
+  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset + sizeof_QBVH6_InternalNode6*bvh_id;
   rtStack->ray[bvh_level].rayFlags = ray.flags;
   rtStack->ray[bvh_level].hitGroupSRBasePtr = 0;
   rtStack->ray[bvh_level].hitGroupSRStride = 0;

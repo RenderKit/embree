@@ -129,7 +129,7 @@ struct __attribute__ ((packed,aligned(64))) RTStack
 
 struct __attribute__ ((packed)) HWAccel
 {
-  uint64_t rootNodeOffset;        // root node offset (and node type in lower 3 bits)
+  uint64_t reserved;
   float bounds[2][3];             // bounding box of the BVH
   uint32_t reserved0[8];
   uint32_t numTimeSegments;
