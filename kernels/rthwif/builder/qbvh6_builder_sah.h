@@ -932,7 +932,7 @@ namespace embree
           }
         }
 
-        ReductionTy build(uint32_t numGeometries, Device::avector<char,64>& accel, PrimInfo& pinfo_o, char* root)
+        ReductionTy build(uint32_t numGeometries, PrimInfo& pinfo_o, char* root)
         {
           double t1 = verbose ? getSeconds() : 0.0;
 
@@ -1037,7 +1037,7 @@ namespace embree
           return r;
         }
 
-        ReductionTy build_mblur(uint32_t numGeometries, Device::avector<char,64>& accel, PrimInfo& pinfo_o, char* root, BBox1f time_range)
+        ReductionTy build_mblur(uint32_t numGeometries, PrimInfo& pinfo_o, char* root, BBox1f time_range)
         {
           auto getSizeMBlur = [&]( unsigned int geomID ) {
             if (getNumTimeSegments(geomID) == 0) return size_t(0);
@@ -1096,6 +1096,66 @@ namespace embree
 
           pinfo_o = pinfo;
           return r;
+        }
+
+        BBox3f build2(size_t numGeometries, char* accel, size_t bytes, void* dispatchGlobalsPtr)
+        {
+          double t0 = verbose ? getSeconds() : 0.0;
+          
+          quadification.resize(numGeometries);
+          for (size_t geomID=0; geomID<numGeometries; geomID++)
+          {
+            const uint32_t N = getSize(geomID);
+            if (N == 0) continue;
+
+            switch (getType(geomID)) {
+            case QBVH6BuilderSAH::TRIANGLE  : quadification[geomID].resize(N); break;
+            case QBVH6BuilderSAH::QUAD      : break;
+            case QBVH6BuilderSAH::PROCEDURAL: break;
+            case QBVH6BuilderSAH::INSTANCE  : break;
+            default: assert(false); break;
+            }
+          }
+          
+          double t1 = verbose ? getSeconds() : 0.0;
+          if (verbose) std::cout << "scene_size   : " << std::setw(10) << (t1-t0)*1000.0 << "ms" << std::endl;
+
+          PrimInfo pinfo;
+          BBox3f bounds = empty;
+
+          if (verbose) std::cout << "trying BVH build with " << bytes << " bytes" << std::endl;
+            
+          /* allocate BVH memory */
+          allocator.clear();
+          //if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(device,bytes));
+          memset(accel,0,bytes); // FIXME: not required
+          
+          allocator.addBlock(accel,bytes);
+          FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
+          thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
+          
+          ReductionTy r;
+          BuildRecord br;
+          
+          uint32_t numRoots = 1;
+          QBVH6::InternalNode6* roots = (QBVH6::InternalNode6*) thread_alloc.malloc0(numRoots*sizeof(QBVH6::InternalNode6),64);
+          assert(roots);
+          
+          /* build BVH static BVH */
+          r = build(numGeometries,pinfo,(char*)(roots+0));
+          bounds.extend(pinfo.geomBounds);
+          
+          /* fill QBVH6 header */
+          allocator.clear();
+          QBVH6* qbvh = new (accel) QBVH6(QBVH6::SizeEstimate());
+          qbvh->numPrims = 0; //numPrimitives;
+          uint64_t rootNodeOffset = QBVH6::Node((char*)(r.node - (char*)qbvh), r.type, r.primRange.cur_prim);
+          assert(rootNodeOffset == QBVH6::rootNodeOffset);
+          qbvh->bounds = bounds;
+          qbvh->numTimeSegments = 1;
+          qbvh->dispatchGlobalsPtr = (uint64_t) dispatchGlobalsPtr;
+                  
+          return bounds;
         }
         
         BBox3f build(size_t numGeometries, Device* device, Device::avector<char,64>& accel, void* dispatchGlobalsPtr)
@@ -1220,7 +1280,7 @@ namespace embree
               assert(roots);
               
               /* build BVH static BVH */
-              r [0] = build(numGeometries,accel,pinfo,(char*)(roots+0));
+              r [0] = build(numGeometries,pinfo,(char*)(roots+0));
               bounds.extend(pinfo.geomBounds);
               
               /* build separate BVH for each time segment */
@@ -1228,7 +1288,7 @@ namespace embree
               {
                 const float t0 = (t+0)/float(maxTimeSegments);
                 const float t1 = (t+1)/float(maxTimeSegments);
-                r [t+1] = build_mblur(numGeometries,accel,pinfo,(char*)(roots+2*t+1),BBox1f(t0,t1));
+                r [t+1] = build_mblur(numGeometries,pinfo,(char*)(roots+2*t+1),BBox1f(t0,t1));
                 bounds.extend(pinfo.geomBounds);
                 roots->copy_to(roots+2*t+0); // copy static root node to t'th BVH
               }
@@ -1337,6 +1397,36 @@ namespace embree
           (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
         
         return builder.build(numGeometries, device, accel, dispatchGlobalsPtr);
+      }
+
+       template<typename getSizeFunc,
+               typename getTypeFunc,
+               typename getNumTimeSegmentsFunc,
+               typename createPrimRefArrayFunc,
+               typename getTriangleFunc,
+               typename getTriangleIndicesFunc,
+               typename getQuadFunc,
+               typename getProceduralFunc,
+               typename getInstanceFunc>
+       
+      static BBox3f build2(size_t numGeometries,
+                          const getSizeFunc& getSize,
+                          const getTypeFunc& getType,
+                          const getNumTimeSegmentsFunc& getNumTimeSegments,
+                          const createPrimRefArrayFunc& createPrimRefArray,
+                          const getTriangleFunc& getTriangle,
+                          const getTriangleIndicesFunc& getTriangleIndices,
+                          const getQuadFunc& getQuad,
+                          const getProceduralFunc& getProcedural,
+                          const getInstanceFunc& getInstance,
+                          char* accel_ptr, size_t accel_bytes,
+                          bool verbose,
+                          void* dispatchGlobalsPtr)
+      {
+        BuilderT<getSizeFunc, getTypeFunc, getNumTimeSegmentsFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
+          (nullptr, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
+        
+        return builder.build2(numGeometries, accel_ptr, accel_bytes, dispatchGlobalsPtr);
       }      
     };
   }
