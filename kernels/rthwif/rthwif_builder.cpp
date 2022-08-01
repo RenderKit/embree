@@ -79,7 +79,7 @@ namespace embree
     if (primID >= geom->AABBCount) return false;
     if (geom->AABBs == nullptr) return false;
     
-    const RTHWIF_AABB rthwif_bounds = (geom->AABBs)(primID);
+    const RTHWIF_AABB rthwif_bounds = (geom->AABBs)(primID,geom->userPtr);
     const BBox3f bounds = (BBox3f&) rthwif_bounds;
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
@@ -92,9 +92,33 @@ namespace embree
   inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom, uint32_t primID, BBox3fa& bbox)
   {
     if (primID >= 1) return false;
-    if (geom->Transform == nullptr) return false;
     if (geom->Accel == nullptr) return false;
 
+    const Vec3fa vx = *(Vec3f*) &geom->Transform.vx;
+    const Vec3fa vy = *(Vec3f*) &geom->Transform.vy;
+    const Vec3fa vz = *(Vec3f*) &geom->Transform.vz;
+    const Vec3fa p  = *(Vec3f*) &geom->Transform.p;
+    const AffineSpace3fa local2world(vx,vy,vz,p);
+
+    HWAccel* accel = (HWAccel*) geom->Accel;
+    const Vec3fa lower(accel->bounds[0][0],accel->bounds[0][1],accel->bounds[0][2]);
+    const Vec3fa upper(accel->bounds[1][0],accel->bounds[1][1],accel->bounds[1][2]);
+    const BBox3fa bounds = xfmBounds(local2world,BBox3fa(lower,upper));
+     
+    if (unlikely(!isvalid(bounds.lower))) return false;
+    if (unlikely(!isvalid(bounds.upper))) return false;
+    if (unlikely(bounds.empty())) return false;
+    
+    bbox = bounds;
+    return true;
+  }
+
+  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom, uint32_t primID, BBox3fa& bbox)
+  {
+    if (primID >= 1) return false;
+    if (geom->Accel == nullptr) return false;
+    if (geom->Transform == nullptr) return false;
+    
     const Vec3fa vx = *(Vec3f*) &geom->Transform->vx;
     const Vec3fa vy = *(Vec3f*) &geom->Transform->vy;
     const Vec3fa vz = *(Vec3f*) &geom->Transform->vz;
@@ -110,7 +134,7 @@ namespace embree
     if (unlikely(!isvalid(bounds.upper))) return false;
     if (unlikely(bounds.empty())) return false;
     
-    bbox = (BBox3f&) bounds;
+    bbox = bounds;
     return true;
   }
 
@@ -183,6 +207,7 @@ namespace embree
     case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return ((RTHWIF_GEOMETRY_AABBS_DESC*) geom)->AABBCount;
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->QuadCount;
     case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return 1;
+    case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return 1;
     default                            : return 0;
     };
   }
@@ -255,6 +280,7 @@ namespace embree
       case RTHWIF_GEOMETRY_TYPE_QUADS      : stats.numQuads += ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->QuadCount;
       case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: stats.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_DESC*) geom)->AABBCount;
       case RTHWIF_GEOMETRY_TYPE_INSTANCES  : stats.numInstances += 1;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: stats.numInstances += 1;
       };
     }
     
@@ -290,6 +316,7 @@ namespace embree
       case RTHWIF_GEOMETRY_TYPE_QUADS: return QBVH6BuilderSAH::QUAD;
       case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return QBVH6BuilderSAH::PROCEDURAL;
       case RTHWIF_GEOMETRY_TYPE_INSTANCES: return QBVH6BuilderSAH::INSTANCE;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return QBVH6BuilderSAH::INSTANCE;
       default: throw std::runtime_error("invalid geometry type");
       };
     };
@@ -308,6 +335,7 @@ namespace embree
       case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,prims,r,k,geomID);
       case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_DESC*    )geom,prims,r,k,geomID);
       case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCEREF_DESC* )geom,prims,r,k,geomID);
       default: throw std::runtime_error("invalid geometry type");
       };
     };
@@ -363,20 +391,27 @@ namespace embree
     
     auto getInstance = [&](unsigned int geomID, unsigned int primID)
     {
-      const RTHWIF_GEOMETRY_INSTANCE_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCE_DESC*) geometries[geomID];
-      assert(geom);
-      void* accel = geom->Accel;
-      RTHWIF_TRANSFORM4X4 local2world = *geom->Transform;
-      return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->GeometryMask); // FIXME: pass instance flags
+      assert(geometries[geomID]);
+      if (geometries[geomID]->GeometryType == RTHWIF_GEOMETRY_TYPE_INSTANCES) {
+        const RTHWIF_GEOMETRY_INSTANCE_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCE_DESC*) geometries[geomID];
+        void* accel = geom->Accel;
+        RTHWIF_TRANSFORM4X4 local2world = geom->Transform;
+        return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->GeometryMask); // FIXME: pass instance flags
+      } else {
+        const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCEREF_DESC*) geometries[geomID];
+        void* accel = geom->Accel;
+        RTHWIF_TRANSFORM4X4 local2world = *geom->Transform;
+        return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->GeometryMask); // FIXME: pass instance flags
+      }
     };
-    
+
     void* dispatchGlobalsPtr = nullptr;
     bool verbose = false;
-    BBox3f bounds = QBVH6BuilderSAH::build2(numGeometries, 
+    BBox3f bounds = QBVH6BuilderSAH::build2(numGeometries, (Device*) args.embree_device,
                                             getSize, getType, getNumTimeSegments,
                                             createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
                                             (char*)args.accel, args.numBytes, verbose, dispatchGlobalsPtr);
-    
+
     if (args.bounds) *(BBox3f*)args.bounds = bounds;
     
     return RTHWIF_ERROR_NONE;

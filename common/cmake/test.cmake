@@ -114,7 +114,7 @@ MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
       IF (model MATCHES "^#")
         CONTINUE()
       ENDIF()
-      IF (model MATCHES ".*mblur.*")  # skip mblur models if motion blur is not enabled
+      IF (model MATCHES ".*mblur.*" OR model MATCHES ".*motion_blur.*")  # skip mblur models if motion blur is not enabled
         IF (NOT EMBREE_DPCPP_MBLUR)
           CONTINUE()
         ENDIF()

@@ -8,6 +8,9 @@ ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/st
 TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE tasking simd sys -lze_loader)
 #SET_TARGET_PROPERTIES(embree_rthwif PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 
+INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+INSTALL(EXPORT embree_rthwif-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
+
 ADD_SUBDIRECTORY(testing)
 
 #ADD_LIBRARY(rthwif_sycl STATIC rthwif_embree.cpp rthwif_production.cpp)

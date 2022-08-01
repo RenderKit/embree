@@ -765,7 +765,7 @@ namespace embree
               bounds.extend(tri1.p2);
               if (!tri1.valid()) continue;
             }
-            
+
             const PrimRef prim(bounds,geomID,unsigned(j));
             pinfo.add_center2(prim);
             prims[k++] = prim;
@@ -1101,11 +1101,13 @@ namespace embree
         BBox3f build2(size_t numGeometries, char* accel, size_t bytes, void* dispatchGlobalsPtr)
         {
           double t0 = verbose ? getSeconds() : 0.0;
-          
+
+          size_t numPrimitives = 0;
           quadification.resize(numGeometries);
           for (size_t geomID=0; geomID<numGeometries; geomID++)
           {
             const uint32_t N = getSize(geomID);
+            numPrimitives += N;
             if (N == 0) continue;
 
             switch (getType(geomID)) {
@@ -1116,6 +1118,8 @@ namespace embree
             default: assert(false); break;
             }
           }
+
+          prims.resize(numPrimitives);
           
           double t1 = verbose ? getSeconds() : 0.0;
           if (verbose) std::cout << "scene_size   : " << std::setw(10) << (t1-t0)*1000.0 << "ms" << std::endl;
@@ -1410,6 +1414,7 @@ namespace embree
                typename getInstanceFunc>
        
       static BBox3f build2(size_t numGeometries,
+                           Device* device,
                           const getSizeFunc& getSize,
                           const getTypeFunc& getType,
                           const getNumTimeSegmentsFunc& getNumTimeSegments,
@@ -1424,7 +1429,7 @@ namespace embree
                           void* dispatchGlobalsPtr)
       {
         BuilderT<getSizeFunc, getTypeFunc, getNumTimeSegmentsFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
-          (nullptr, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
+          (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
         
         return builder.build2(numGeometries, accel_ptr, accel_bytes, dispatchGlobalsPtr);
       }      

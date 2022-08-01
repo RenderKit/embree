@@ -44,9 +44,9 @@ SYCL_EXTERNAL void rtcIntersectEx1(RTCScene hscene, struct RTCIntersectContext* 
 
 SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray)
 {
+  IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_;
   assert(args->N == 1);
   assert(args->forward_scene == nullptr);
-  IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_;
   
   Ray* oray = (Ray*)args->rayhit;
   oray->org.x = iray->org_x;
@@ -73,9 +73,9 @@ SYCL_EXTERNAL void rtcOccludedEx1(RTCScene hscene, struct RTCIntersectContext* c
 
 SYCL_EXTERNAL void rtcForwardOccluded1(const RTCOccludedFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray)
 {
+  OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_;
   assert(args->N == 1);
   assert(args->forward_scene == nullptr);
-  OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_;
    
   Ray* oray = (Ray*)args->ray;
   oray->org.x = iray->org_x;

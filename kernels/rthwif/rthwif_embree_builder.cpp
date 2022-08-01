@@ -6,6 +6,7 @@
 #include "builder/qbvh6_builder_sah.h"
 #include "../builders/primrefgen.h"
 #include "rthwif_internal.h"
+#include "rthwif_builder.h"
 
 #include <level_zero/ze_api.h>
 
@@ -95,7 +96,7 @@ namespace embree
     return false;
   }
 
-  BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+  BBox3fa rthwifBuildDirect(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
   {
     auto getSize = [&](uint32_t geomID) -> size_t {
       Geometry* geom = scene->geometries[geomID].ptr;
@@ -249,5 +250,269 @@ namespace embree
                                   getSize, getType, getNumTimeSegments,
                                   createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
                                   accel, scene->device->verbosity(1), dispatchGlobalsPtr);
+  }
+
+  static void align(size_t& ofs, size_t alignment) {
+    ofs = (ofs+(alignment-1))&(-alignment);
+  }
+
+  size_t sizeof_RTHWIF_GEOMETRY(RTHWIF_GEOMETRY_TYPE type)
+  {
+    switch (type) {
+    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
+    case RTHWIF_GEOMETRY_TYPE_QUADS      : return sizeof(RTHWIF_GEOMETRY_QUADS_DESC);
+    case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return sizeof(RTHWIF_GEOMETRY_AABBS_DESC);
+    case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC);
+    case RTHWIF_GEOMETRY_TYPE_INSTANCEREF  : return sizeof(RTHWIF_GEOMETRY_INSTANCEREF_DESC);
+    default: assert(false); return 0;
+    }
+  }
+
+  size_t alignof_RTHWIF_GEOMETRY(RTHWIF_GEOMETRY_TYPE type)
+  {
+    switch (type) {
+    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return alignof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
+    case RTHWIF_GEOMETRY_TYPE_QUADS      : return alignof(RTHWIF_GEOMETRY_QUADS_DESC);
+    case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return alignof(RTHWIF_GEOMETRY_AABBS_DESC);
+    case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return alignof(RTHWIF_GEOMETRY_INSTANCE_DESC);
+    case RTHWIF_GEOMETRY_TYPE_INSTANCEREF  : return alignof(RTHWIF_GEOMETRY_INSTANCEREF_DESC);
+    default: assert(false); return 0;
+    }
+  }
+
+  RTHWIF_GEOMETRY_FLAGS getGeometryFlags(Scene* scene, Geometry* geom)
+  {
+    /* invoke any hit callback when Embree filter functions are present */
+    RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
+    if (scene->hasContextFilterFunction() || geom->hasFilterFunctions())
+      gflags = RTHWIF_GEOMETRY_FLAG_NONE;
+    
+    /* invoke any hit callback when high mask bits are enabled */
+    if (geom->mask & 0xFFFFFF80)
+      gflags = RTHWIF_GEOMETRY_FLAG_NONE;
+    
+    return gflags;
+  }
+
+  void createGeometryDesc(RTHWIF_GEOMETRY_TRIANGLES_DESC* out, Scene* scene, TriangleMesh* geom)
+  {
+    memset(out,0,sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC));
+    out->GeometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
+    out->GeometryFlags = getGeometryFlags(scene,geom);
+    out->GeometryMask = mask32_to_mask8(geom->mask);
+    out->IndexBuffer = (RTHWIF_UINT3*) geom->triangles.getPtr();
+    out->TriangleCount = geom->triangles.size();
+    out->TriangleStride = geom->triangles.getStride();
+    out->VertexBuffer = (RTHWIF_FLOAT3*) geom->vertices0.getPtr();
+    out->VertexCount = geom->vertices0.size();
+    out->VertexStride = geom->vertices0.getStride();
+  }
+
+  void createGeometryDesc(RTHWIF_GEOMETRY_QUADS_DESC* out, Scene* scene, QuadMesh* geom)
+  {
+    memset(out,0,sizeof(RTHWIF_GEOMETRY_QUADS_DESC));
+    out->GeometryType = RTHWIF_GEOMETRY_TYPE_QUADS;
+    out->GeometryFlags = getGeometryFlags(scene,geom);
+    out->GeometryMask = mask32_to_mask8(geom->mask);
+    out->IndexBuffer = (RTHWIF_UINT4*) geom->quads.getPtr();
+    out->QuadCount = geom->quads.size();
+    out->QuadStride = geom->quads.getStride();
+    out->VertexBuffer = (RTHWIF_FLOAT3*) geom->vertices0.getPtr();
+    out->VertexCount = geom->vertices0.size();
+    out->VertexStride = geom->vertices0.getStride();
+  }
+
+  RTHWIF_AABB getProceduralAABB(const uint32_t primID, void* userPtr)
+  {
+    Geometry* geom = (Geometry*) userPtr;
+    mvector<PrimRef> prim(geom->device,1); // FIXME: not efficient!
+    geom->createPrimRefArray(prim,range<size_t>(primID),0,0);
+    BBox3fa bounds = prim[0].bounds();
+    
+    RTHWIF_AABB obounds;
+    obounds.lower.x = bounds.lower.x;
+    obounds.lower.y = bounds.lower.y;
+    obounds.lower.z = bounds.lower.z;
+    obounds.upper.x = bounds.upper.x;
+    obounds.upper.y = bounds.upper.y;
+    obounds.upper.z = bounds.upper.z;
+    return obounds;
+  };
+
+  void createGeometryDescProcedural(RTHWIF_GEOMETRY_AABBS_DESC* out, Scene* scene, Geometry* geom)
+  {
+    uint32_t numPrimitives = geom->size();
+    if (GridMesh* mesh = dynamic_cast<GridMesh*>(geom))
+      numPrimitives = mesh->getNumTotalQuads(); // FIXME: slow
+    
+    memset(out,0,sizeof(RTHWIF_GEOMETRY_AABBS_DESC));
+    out->GeometryType = RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
+    out->GeometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
+    out->GeometryMask = mask32_to_mask8(geom->mask);
+    out->AABBCount = numPrimitives;
+    out->AABBs = getProceduralAABB;
+    out->userPtr = geom;
+  }
+
+  void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
+  {
+    memset(out,0,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
+    out->GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCES;
+    out->InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+    out->GeometryMask = mask32_to_mask8(geom->mask);
+    out->InstanceID = 0;
+    const AffineSpace3fa local2world = geom->getLocal2World();
+    out->Transform = *(RTHWIF_TRANSFORM4X4*) &local2world;
+    out->Accel = dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+  }
+
+  void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCEREF_DESC* out, Scene* scene, Instance* geom)
+  {
+    assert(geom->gsubtype == AccelSet::GTY_SUBTYPE_DEFAULT);
+    memset(out,0,sizeof(RTHWIF_GEOMETRY_INSTANCEREF_DESC));
+    out->GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCEREF;
+    out->InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+    out->GeometryMask = mask32_to_mask8(geom->mask);
+    out->InstanceID = 0;
+    out->Transform = (RTHWIF_TRANSFORM4X4*) &geom->local2world[0];
+    out->Accel = dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+  }
+
+  void createGeometryDesc(char* out, Scene* scene, Geometry* geom, RTHWIF_GEOMETRY_TYPE type)
+  {
+    switch (type) {
+    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)out,scene,dynamic_cast<TriangleMesh*>(geom));
+    case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*)out,scene,dynamic_cast<QuadMesh*>(geom));
+    case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return createGeometryDescProcedural((RTHWIF_GEOMETRY_AABBS_DESC*)out,scene,geom);
+    case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
+    case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCEREF_DESC*)out,scene,dynamic_cast<Instance*>(geom));
+    default: assert(false);
+    }
+  }
+
+  BBox3fa rthwifBuildDriver(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+  {
+    std::vector<RTHWIF_GEOMETRY_DESC*> geom;
+    geom.resize(scene->size());
+
+    auto getType = [&](unsigned int geomID)
+    {
+      /* no HW support for MB yet */
+      if (scene->get(geomID)->numTimeSegments() > 0)
+        return RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
+
+      switch (scene->get(geomID)->getType()) {
+      case Geometry::GTY_FLAT_LINEAR_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ROUND_LINEAR_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ORIENTED_LINEAR_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_CONE_LINEAR_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      
+      case Geometry::GTY_FLAT_BEZIER_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ROUND_BEZIER_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      
+      case Geometry::GTY_FLAT_BSPLINE_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ROUND_BSPLINE_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      
+      case Geometry::GTY_FLAT_HERMITE_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ROUND_HERMITE_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ORIENTED_HERMITE_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      
+      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      
+      case Geometry::GTY_TRIANGLE_MESH: return RTHWIF_GEOMETRY_TYPE_TRIANGLES; break;
+      case Geometry::GTY_QUAD_MESH    : return RTHWIF_GEOMETRY_TYPE_QUADS; break;
+      case Geometry::GTY_GRID_MESH    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_SUBDIV_MESH  : assert(false); return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      
+      case Geometry::GTY_SPHERE_POINT       : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_DISC_POINT         : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_ORIENTED_DISC_POINT: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      
+      case Geometry::GTY_USER_GEOMETRY     : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+
+#if RTC_MAX_INSTANCE_LEVEL_COUNT < 2
+      case Geometry::GTY_INSTANCE_CHEAP    :
+      case Geometry::GTY_INSTANCE_EXPENSIVE: {
+        Instance* instance = scene->get<Instance>(geomID);
+        QBVH6* object = (QBVH6*)((Scene*)instance->object)->hwaccel.data();
+        if (object->numTimeSegments > 1) return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; // we need to handle instances in procedural mode if instanced scene has motion blur
+        if (instance->mask & 0xFFFFFF80) return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; // we need to handle instances in procedural mode if high mask bits are set
+        else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION) return RTHWIF_GEOMETRY_TYPE_INSTANCES;
+        else return RTHWIF_GEOMETRY_TYPE_INSTANCEREF;
+      }
+#else
+      case Geometry::GTY_INSTANCE_CHEAP    : return RTHWIF_GEOMETRY_TYPE_PROCEDURAL; break;
+      case Geometry::GTY_INSTANCE_EXPENSIVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURAL; break;
+#endif
+
+      default: assert(false); return RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
+      }
+    };
+
+    /* calculate size of geometry descriptor buffer */
+    size_t bytes = 0;
+    for (size_t geomID=0; geomID<geom.size(); geomID++) {
+      const RTHWIF_GEOMETRY_TYPE type = getType(geomID);
+      align(bytes,alignof_RTHWIF_GEOMETRY(type));
+      bytes += sizeof_RTHWIF_GEOMETRY(type);
+    }
+
+    /* fill geomdesc buffer */
+    std::vector<char> geomdesc(bytes);
+    
+    size_t offset = 0;
+    for (size_t geomID=0; geomID<geom.size(); geomID++)
+    {
+      const RTHWIF_GEOMETRY_TYPE type = getType(geomID);
+      align(offset,alignof_RTHWIF_GEOMETRY(type));
+      createGeometryDesc(&geomdesc[offset],scene,scene->get(geomID),type);
+      geom[geomID] = (RTHWIF_GEOMETRY_DESC*) &geomdesc[offset];
+      offset += sizeof_RTHWIF_GEOMETRY(type);
+      assert(offset <= geomdesc.size());
+    }
+
+    /* estimate accel size */
+    RTHWIF_AABB bounds;
+    RTHWIF_BUILD_ACCEL_ARGS args;
+    memset(&args,0,sizeof(args));
+    args.bytes = sizeof(args);
+    args.device = nullptr;
+    args.embree_device = scene->device;
+    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
+    args.numGeometries = geom.size();
+    args.accel = nullptr;
+    args.numBytes = 0;
+    args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
+    args.flags = RTHWIF_BUILD_FLAG_NONE;
+    args.bounds = &bounds;
+    RTHWIF_ACCEL_SIZE size = rthwifGetAccelSize(args);
+
+    /* build BVH */
+    RTHWIF_ERROR err = RTHWIF_ERROR_NONE;
+    for (size_t bytes = size.expectedBytes; bytes < size.worstCaseBytes; bytes*=1.2)
+    {
+      if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
+      memset(accel.data(),0,accel.size()); // FIXME: not required
+      args.accel=accel.data();
+      args.numBytes = accel.size();
+
+      RTHWIF_ERROR err = rthwifBuildAccel(args);
+      if (err != RTHWIF_ERROR_OUT_OF_MEMORY) break;
+    }
+
+    if (err != RTHWIF_ERROR_NONE)
+      throw std::runtime_error("build error");
+
+    return *(BBox3f*) args.bounds;
+  }
+
+  BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+  {
+    return rthwifBuildDirect(scene,quality_flags,accel);
+    //return rthwifBuildDriver(scene,quality_flags,accel);
   }
 }

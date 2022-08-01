@@ -33,11 +33,15 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3)
   IF (NOT EMBREE_GEOMETRY_USER_IN_GEOMETRY)
     
     set_tests_properties(pathtracer_sophie_sophie PROPERTIES DISABLED True)
-    set_tests_properties(pathtracer_sophie_mblur_sophie_mblur PROPERTIES DISABLED True)
+    IF (EMBREE_DPCPP_MBLUR)
+      set_tests_properties(pathtracer_sophie_mblur_sophie_mblur PROPERTIES DISABLED True)
+    ENDIF()
     
     IF (EMBREE_ISPC_SUPPORT)
       set_tests_properties(pathtracer_sophie_sophie_ispc PROPERTIES DISABLED True)
-      set_tests_properties(pathtracer_sophie_mblur_sophie_mblur_ispc PROPERTIES DISABLED True)
+      IF (EMBREE_DPCPP_MBLUR)
+        set_tests_properties(pathtracer_sophie_mblur_sophie_mblur_ispc PROPERTIES DISABLED True)
+      ENDIF()
     ENDIF()
     
     IF (EMBREE_DPCPP_SUPPORT)

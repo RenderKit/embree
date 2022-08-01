@@ -63,6 +63,7 @@ typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
   RTHWIF_GEOMETRY_TYPE_QUADS = 1,
   RTHWIF_GEOMETRY_TYPE_PROCEDURALS = 2,
   RTHWIF_GEOMETRY_TYPE_INSTANCES = 3,
+  RTHWIF_GEOMETRY_TYPE_INSTANCEREF = 4,
 } RTHWIF_GEOMETRY_TYPE;
 
 typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
@@ -104,7 +105,7 @@ typedef struct RTHWIF_GEOMETRY_QUADS_DESC // 32 bytes
   
 } RTHWIF_RAYTRACING_GEOMETRY_QUADS_DESC;
 
-typedef RTHWIF_AABB (*RTHWIF_GET_BOUNDS_FUNC)(uint32_t primID);
+typedef RTHWIF_AABB (*RTHWIF_GET_BOUNDS_FUNC)(const uint32_t primID, void* userPtr);
 
 typedef struct RTHWIF_GEOMETRY_AABBS_DESC // 16 bytes
 {
@@ -115,9 +116,22 @@ typedef struct RTHWIF_GEOMETRY_AABBS_DESC // 16 bytes
   unsigned int AABBCount;
   //RTHWIF_AABB* AABBs;
   RTHWIF_GET_BOUNDS_FUNC AABBs;
+  void* userPtr;
 } RTHWIF_GEOMETRY_AABBS_DESC;
 
-typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 24 bytes
+typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 80 bytes
+{
+  RTHWIF_GEOMETRY_TYPE GeometryType;
+  RTHWIF_INSTANCE_FLAGS InstanceFlags;
+  uint8_t GeometryMask;
+  uint8_t reserved0;
+  unsigned int InstanceID;
+  RTHWIF_TRANSFORM4X4 Transform;
+  void* Accel;
+  
+} RTHWIF_GEOMETRY_INSTANCE_DESC;
+
+typedef struct RTHWIF_GEOMETRY_INSTANCEREF_DESC // 24 bytes
 {
   RTHWIF_GEOMETRY_TYPE GeometryType;
   RTHWIF_INSTANCE_FLAGS InstanceFlags;
@@ -127,7 +141,7 @@ typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 24 bytes
   RTHWIF_TRANSFORM4X4* Transform;
   void* Accel;
   
-} RTHWIF_GEOMETRY_INSTANCE_DESC;
+} RTHWIF_GEOMETRY_INSTANCEREF_DESC;
 
 typedef union RTHWIF_GEOMETRY_DESC
 {
@@ -136,6 +150,7 @@ typedef union RTHWIF_GEOMETRY_DESC
   RTHWIF_GEOMETRY_QUADS_DESC Quads;
   RTHWIF_GEOMETRY_AABBS_DESC AABBs;
   RTHWIF_GEOMETRY_INSTANCE_DESC Instances;
+  RTHWIF_GEOMETRY_INSTANCEREF_DESC InstanceRef;
   
 } RTHWIF_GEOMETRY_DESC;
 
@@ -180,10 +195,12 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
 {
   size_t bytes;
   sycl::device* device;
+  void* embree_device; // FIXME: remove
   const RTHWIF_GEOMETRY_DESC** geometries;
   size_t numGeometries;
   void* accel;
   size_t numBytes;
+  // FIXME: add scratch space buffer
   RTHWIF_BUILD_QUALITY quality;
   RTHWIF_BUILD_FLAGS flags;
   RTHWIF_AABB* bounds;
