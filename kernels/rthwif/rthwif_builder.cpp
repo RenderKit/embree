@@ -222,7 +222,7 @@ namespace embree
     return args;
   }
   
-  RTHWIF_API RTHWIF_ACCEL_SIZE rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
   {
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
@@ -287,10 +287,16 @@ namespace embree
     stats.estimate_quadification();
     stats.estimate_presplits(1.2);
 
+    /* return size to user */
     RTHWIF_ACCEL_SIZE size;
+    memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
     size.expectedBytes = stats.expected_bvh_bytes();
     size.worstCaseBytes = stats.worst_case_bvh_bytes();
-    return size;
+    size_t bytes_o = size_o.bytes;
+    memset(&size_o,0,bytes_o);
+    memcpy(&size_o,&size,bytes_o);
+    size_o.bytes = bytes_o;
+    return RTHWIF_ERROR_NONE;
   }
   
   RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i) try

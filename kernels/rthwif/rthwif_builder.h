@@ -209,11 +209,12 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
 
 typedef struct RTHWIF_ACCEL_SIZE
 {
+  size_t bytes;
   size_t expectedBytes;
   size_t worstCaseBytes;
 } RTHWIF_ACCEL_SIZE;
 
 
-RTHWIF_API RTHWIF_ACCEL_SIZE rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args);
+RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, RTHWIF_ACCEL_SIZE& size_o);
 
 RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args);

@@ -393,6 +393,9 @@ namespace embree
         grid_accel = cin->get().Identifier();
       else if (tok == Token::Id("grid_accel_mb") && cin->trySymbol("="))
         grid_accel_mb = cin->get().Identifier();
+
+      else if (tok == Token::Id("rthw_builder") && cin->trySymbol("="))
+        rthw_builder = cin->get().Identifier();
       
       else if (tok == Token::Id("verbose") && cin->trySymbol("="))
         verbose = cin->get().Int();

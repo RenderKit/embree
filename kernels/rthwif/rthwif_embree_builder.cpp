@@ -489,10 +489,15 @@ namespace embree
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.bounds = &bounds;
-    RTHWIF_ACCEL_SIZE size = rthwifGetAccelSize(args);
+    
+    RTHWIF_ACCEL_SIZE size;
+    memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
+    size.bytes = sizeof(RTHWIF_ACCEL_SIZE);
+    RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
+    if (err != RTHWIF_ERROR_NONE)
+      throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
     /* build BVH */
-    RTHWIF_ERROR err = RTHWIF_ERROR_NONE;
     for (size_t bytes = size.expectedBytes; bytes < size.worstCaseBytes; bytes*=1.2)
     {
       if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
@@ -500,19 +505,23 @@ namespace embree
       args.accel=accel.data();
       args.numBytes = accel.size();
 
-      RTHWIF_ERROR err = rthwifBuildAccel(args);
+      err = rthwifBuildAccel(args);
       if (err != RTHWIF_ERROR_OUT_OF_MEMORY) break;
     }
 
     if (err != RTHWIF_ERROR_NONE)
-      throw std::runtime_error("build error");
+      throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
     return *(BBox3f*) args.bounds;
   }
 
   BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
   {
-    return rthwifBuildDirect(scene,quality_flags,accel);
-    //return rthwifBuildDriver(scene,quality_flags,accel);
+    if (scene->device->rthw_builder == "driver") {
+      return rthwifBuildDriver(scene,quality_flags,accel);
+    }
+    else {
+      return rthwifBuildDirect(scene,quality_flags,accel);
+    }
   }
 }
