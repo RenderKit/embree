@@ -1,7 +1,9 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-ADD_SUBDIRECTORY(rthwif)
+IF (EMBREE_DPCPP_SUPPORT)
+  ADD_SUBDIRECTORY(rthwif)
+ENDIF()
 
 IF (EMBREE_CONFIG)
   ADD_DEFINITIONS(-DEMBREE_CONFIG="${EMBREE_CONFIG}")
