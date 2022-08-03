@@ -1331,6 +1331,7 @@ namespace embree
               /* fill QBVH6 header */
               allocator.clear();
               QBVH6* qbvh = new (accel.data()) QBVH6(QBVH6::SizeEstimate());
+              qbvh->reserved1 = 0;
               qbvh->numPrims = numPrimitives;
               uint64_t rootNodeOffset = QBVH6::Node((char*)(r0.node - (char*)qbvh), r0.type, r0.primRange.cur_prim);
               assert(rootNodeOffset == QBVH6::rootNodeOffset);
