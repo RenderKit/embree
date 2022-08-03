@@ -105,7 +105,7 @@ typedef struct RTHWIF_GEOMETRY_QUADS_DESC // 32 bytes
   
 } RTHWIF_RAYTRACING_GEOMETRY_QUADS_DESC;
 
-typedef RTHWIF_AABB (*RTHWIF_GET_BOUNDS_FUNC)(const uint32_t primID, void* userPtr);
+typedef RTHWIF_AABB (*RTHWIF_GET_BOUNDS_FUNC)(const uint32_t primID, void* geomUserPtr, void* userPtr);
 
 typedef struct RTHWIF_GEOMETRY_AABBS_DESC // 16 bytes
 {
@@ -128,6 +128,7 @@ typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 80 bytes
   unsigned int InstanceID;
   RTHWIF_TRANSFORM4X4 Transform;
   void* Accel;
+  // FIXME: add bounds
   
 } RTHWIF_GEOMETRY_INSTANCE_DESC;
 
@@ -140,6 +141,7 @@ typedef struct RTHWIF_GEOMETRY_INSTANCEREF_DESC // 24 bytes
   unsigned int InstanceID;
   RTHWIF_TRANSFORM4X4* Transform;
   void* Accel;
+  // FIXME: add bounds?
   
 } RTHWIF_GEOMETRY_INSTANCEREF_DESC;
 
@@ -204,6 +206,8 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   RTHWIF_BUILD_QUALITY quality;
   RTHWIF_BUILD_FLAGS flags;
   RTHWIF_AABB* bounds;
+  void* userPtr;
+  // FIXME: return used bytes
   
 } RTHWIF_BUILD_ACCEL_ARGS;
 

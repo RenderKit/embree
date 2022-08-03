@@ -211,7 +211,7 @@ namespace embree
     }
 
   public:
-    uint64_t reseved1;
+    uint64_t reserved1;
     BBox3f bounds;                  // bounding box of the BVH
 
     uint32_t nodeDataStart;         // first 64 byte block of node data

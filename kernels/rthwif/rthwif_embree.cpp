@@ -179,11 +179,18 @@ bool intersect_instance(rayquery_t& query, RayHit& ray, Instance* instance, Scen
   rtas_t* hwaccel_ptr = (rtas_t*) object->hwaccel.data();
   
   uint32_t bvh_id = 0;
-#if defined(EMBREE_DPCPP_MBLUR)
   QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
+#if defined(EMBREE_DPCPP_MBLUR)
   float time = clamp(ray.time(),0.0f,1.0f);
   bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
 #endif
+
+  if (qbvh6->reserved1 == 1) // AccelTable mode
+  {
+    void** AccelTable = (void**) (qbvh6+1);
+    hwaccel_ptr = (rtas_t*) AccelTable[bvh_id];
+    bvh_id = 0;
+  }
   
   intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, bvh_id);
 
@@ -225,11 +232,18 @@ bool intersect_instance(rayquery_t& query, Ray& ray, Instance* instance, Scene* 
   rtas_t* hwaccel_ptr = (rtas_t*) object->hwaccel.data();
   
   uint32_t bvh_id = 0;
-#if defined(EMBREE_DPCPP_MBLUR)
   QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
+#if defined(EMBREE_DPCPP_MBLUR)
   float time = clamp(ray.time(),0.0f,1.0f);
   bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
 #endif
+
+  if (qbvh6->reserved1 == 1) // AccelTable mode
+  {
+    void** AccelTable = (void**) (qbvh6+1);
+    hwaccel_ptr = (rtas_t*) AccelTable[bvh_id];
+    bvh_id = 0;
+  }
 
   intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, bvh_id);
 
@@ -595,13 +609,20 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
 #endif
 
   uint32_t bvh_id = 0;
+  QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
 #if defined(EMBREE_DPCPP_MBLUR)
   if(args->feature_mask & RTC_FEATURE_MOTION_BLUR) {
-    QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
     float time = clamp(ray.time(),0.0f,1.0f);
     bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
   }
 #endif
+
+  if (qbvh6->reserved1 == 1) // AccelTable mode
+  {
+    void** AccelTable = (void**) (qbvh6+1);
+    hwaccel_ptr = (rtas_t*) AccelTable[bvh_id];
+    bvh_id = 0;
+  }
   
   rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
   
@@ -691,13 +712,20 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
 #endif
 
   uint32_t bvh_id = 0;
+  QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
 #if defined(EMBREE_DPCPP_MBLUR)
   if(args->feature_mask & RTC_FEATURE_MOTION_BLUR) {
-    QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
     float time = clamp(ray.time(),0.0f,1.0f);
     bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
   }
 #endif
+
+  if (qbvh6->reserved1 == 1) // AccelTable mode
+  {
+    void** AccelTable = (void**) (qbvh6+1);
+    hwaccel_ptr = (rtas_t*) AccelTable[bvh_id];
+    bvh_id = 0;
+  }
   
   rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
   intel_ray_query_start_traversal(query);

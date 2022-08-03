@@ -33,7 +33,7 @@ namespace embree
     return *(Vec3f*)((char*)geom->VertexBuffer + vertexID*geom->VertexStride);
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID, BBox3fa& bbox)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
   {
     if (primID >= geom->TriangleCount) return false;
     const RTHWIF_UINT3 tri = getPrimitive(geom,primID);
@@ -52,7 +52,7 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t primID, BBox3fa& bbox)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
   {
     if (primID >= geom->QuadCount) return false;
     const RTHWIF_UINT4 tri = getPrimitive(geom,primID);
@@ -74,12 +74,12 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_DESC* geom, uint32_t primID, BBox3fa& bbox)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
   {
     if (primID >= geom->AABBCount) return false;
     if (geom->AABBs == nullptr) return false;
     
-    const RTHWIF_AABB rthwif_bounds = (geom->AABBs)(primID,geom->userPtr);
+    const RTHWIF_AABB rthwif_bounds = (geom->AABBs)(primID,geom->userPtr,userPtr);
     const BBox3f bounds = (BBox3f&) rthwif_bounds;
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
@@ -89,7 +89,7 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom, uint32_t primID, BBox3fa& bbox)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
   {
     if (primID >= 1) return false;
     if (geom->Accel == nullptr) return false;
@@ -113,7 +113,7 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom, uint32_t primID, BBox3fa& bbox)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
   {
     if (primID >= 1) return false;
     if (geom->Accel == nullptr) return false;
@@ -139,13 +139,13 @@ namespace embree
   }
 
   template<typename GeometryType>
-  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
+  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* userPtr, mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
   {
     PrimInfo pinfo(empty);
     for (uint32_t primID=r.begin(); primID<r.end(); primID++)
     {
       BBox3fa bounds = empty;
-      if (!buildBounds(geom,primID,bounds)) continue;
+      if (!buildBounds(geom,primID,bounds,userPtr)) continue;
       const PrimRef prim(bounds,geomID,primID);
       pinfo.add_center2(prim);
       prims[k++] = prim;
@@ -257,7 +257,8 @@ namespace embree
       {
         const size_t blocks = (size()+5)/6;
         const size_t expected_bytes   = 128 + 64*size_t(1+1.5*blocks) + numTriangles*64 + numQuads*64 + numProcedurals*8 + numInstances*128;
-        return 2*4096 + size_t(1.1*expected_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
+        const size_t bytes = 2*4096 + size_t(1.1*expected_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
+        return (bytes+127)&-128;
       }
       
       size_t worst_case_bvh_bytes()
@@ -265,7 +266,8 @@ namespace embree
         const size_t numPrimitives = size();
         const size_t blocks = (numPrimitives+5)/6;
         const size_t worst_case_bytes = 128 + 64*(1+blocks + numPrimitives) + numTriangles*64 + numQuads*64 + numProcedurals*64 + numInstances*128;
-        return 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
+        const size_t bytes = 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
+        return (bytes+127)&-128;
       }
       
     } stats;
@@ -337,11 +339,11 @@ namespace embree
       if (geom == nullptr) return PrimInfo(empty);
       
       switch (geom->GeometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_DESC*    )geom,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCEREF_DESC* )geom,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args.userPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,args.userPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_DESC*    )geom,args.userPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,args.userPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCEREF_DESC* )geom,args.userPtr,prims,r,k,geomID);
       default: throw std::runtime_error("invalid geometry type");
       };
     };
