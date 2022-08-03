@@ -576,12 +576,12 @@ namespace embree
       /* build BVH for each time segment */
       for (uint32_t i=0; i<maxTimeSegments; i++)
       {
-        const float t0 = (i+0)/maxTimeSegments;
-        const float t1 = (i+1)/maxTimeSegments;
+        const float t0 = float(i+0)/float(maxTimeSegments);
+        const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
         
-        args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomStatic.data();
-        args.numGeometries = geomStatic.size();
+        args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomMBlur.data();
+        args.numGeometries = geomMBlur.size();
         args.accel = accel.data() + headerBytes + sizeStatic.expectedBytes + i*sizeMBlur.expectedBytes;
         args.numBytes = sizeMBlur.expectedBytes;
         err = rthwifBuildAccel(args);
