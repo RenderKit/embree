@@ -57,7 +57,6 @@ namespace embree
     __forceinline void radix_sort_single_workgroup(sycl::queue &gpu_queue, uint64_t *_input, uint64_t *_output, const uint numPrimitives,  const uint start_iteration, const uint stop_iteration, double &time)
     {
       static const uint RADIX_SORT_SINGLE_WG_SIZE = 256; 
-      static const uint RADIX_SORT_SINGLE_WG_SUB_GROUP_SIZE = 16;
 
       struct __aligned(RADIX_SORT_SINGLE_WG_SIZE/32 * sizeof(uint)) BinFlags
       {
@@ -73,7 +72,7 @@ namespace embree
                                                      sycl::accessor< uint, 1, sycl_read_write, sycl_local> local_offset(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
                                                      sycl::accessor< BinFlags, 1, sycl_read_write, sycl_local> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
                                                    
-                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(RADIX_SORT_SINGLE_WG_SUB_GROUP_SIZE)                                                                    
+                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)                                                                    
                                                                       {                                                                                                                                            
                                                                         const uint localID     = item.get_local_id(0);
                                                                         const uint step_local  = item.get_local_range().size();

@@ -166,8 +166,8 @@ namespace embree
                                                                         const uint localID         = item.get_local_id(0);
                                                                         const uint localSize       = item.get_local_range().size();                                                                        
                                                                         const uint blockID         = item.get_group(0);                                                                      
-                                                                        const uint subgroupID      = get_sub_group_id();
-                                                                        const uint subgroupLocalID = get_sub_group_local_id();
+                                                                        //const uint subgroupID      = get_sub_group_id();
+                                                                        //const uint subgroupLocalID = get_sub_group_local_id();
 
                                                                         uint *local_histogram = (uint*)_local_histogram.get_pointer();
 
@@ -722,9 +722,7 @@ namespace embree
 
           iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,iteration_time, false);
 
-          //const uint new_numPrims = globals->numBuildRecords;
           const uint new_numPrims = *host_device_tasks;
-          //PRINT2(new_numPrims,*host_device_tasks);
           assert(new_numPrims < numPrims);          
           numPrims = new_numPrims;          
             
@@ -752,17 +750,14 @@ namespace embree
       std::cout << "BVH2 GPU Ploc Builder DONE in " << 1000.*total_diff << " ms (host), " << (float)(ploc_iteration_time + preprocess_time) << " ms (device) => Quads Build : " << numPrimitives*0.000001f/total_diff << " MPrims/s (host) " << numPrimitives*0.001f/device_time << " MPrims/s (device) / Original Tris : " << org_numPrimitives*0.000001f/total_diff << " MPrims/s (host) " <<  org_numPrimitives*0.001f/device_time << " MPrims/s (device) " << std::endl << std::flush;      
     }
     
-    assert(bvh2_subtree_size[globals->bvh2_index_allocator-1] == numPrimitives);
-    if (globals->rootIndex != globals->bvh2_index_allocator-1)
-      FATAL("HERE");
-    globals->rootIndex = globals->bvh2_index_allocator-1;
-    if (globals->bvh2_index_allocator >= 2*numPrimitives)
-      FATAL("BVH2 construction, allocator");
                 
     /* --- check and convert BVH2 (host) --- */        
           
     if (unlikely(deviceGPU->verbosity(2)))
     {
+      if (globals->bvh2_index_allocator >= 2*numPrimitives)
+        FATAL("BVH2 construction, allocator");
+      
       PRINT(globals->rootIndex);
       PRINT(globals->bvh2_index_allocator);
       uint nodes = 0;
@@ -773,7 +768,7 @@ namespace embree
       nodeSAH /= globals->geometryBounds.area();
       leafSAH /= globals->geometryBounds.area();                
       PRINT4(nodes,leaves,nodeSAH,leafSAH);
-
+ 
       /* --- dummy kernel to trigger USM transfer again to not screw up device timings --- */
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
@@ -785,7 +780,7 @@ namespace embree
     double time_convert0 = getSeconds();
     
     /* --- convert BVH2 to QBVH6 --- */    
-    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triMesh,qbvh,bvh2,globals->rootIndex,leafGenData,numPrimitives,node_size/64,verbose);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triMesh,qbvh,bvh2,leafGenData,numPrimitives,node_size/64,verbose);
 
     /* --- init final QBVH6 header --- */        
     {     
