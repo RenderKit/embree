@@ -11,7 +11,9 @@ TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE tasking simd sys -lze_loader)
 INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 INSTALL(EXPORT embree_rthwif-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
 
-ADD_SUBDIRECTORY(testing)
+IF (NOT WIN32) # FIXME
+  ADD_SUBDIRECTORY(testing)
+ENDIF()
 
 #ADD_LIBRARY(rthwif_sycl STATIC rthwif_embree.cpp rthwif_production.cpp)
 #SET_TARGET_PROPERTIES(rthwif_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
