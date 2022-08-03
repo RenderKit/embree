@@ -449,8 +449,8 @@ namespace embree
         else return RTHWIF_GEOMETRY_TYPE_INSTANCEREF;
       }
 #else
-      case Geometry::GTY_INSTANCE_CHEAP    : return RTHWIF_GEOMETRY_TYPE_PROCEDURAL; break;
-      case Geometry::GTY_INSTANCE_EXPENSIVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURAL; break;
+      case Geometry::GTY_INSTANCE_CHEAP    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_INSTANCE_EXPENSIVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
 #endif
 
       default: assert(false); return RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
