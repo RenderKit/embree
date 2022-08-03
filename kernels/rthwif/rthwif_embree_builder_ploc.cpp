@@ -292,7 +292,7 @@ namespace embree
 
     double alloc_time0 = getSeconds(); //FIXME free
 
-    uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,sizeof(uint),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::host); // FIXME
+    uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,sizeof(uint)*4,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::host); // FIXME
     assert(host_device_tasks);
 
     PLOCGlobals *globals  = (PLOCGlobals*)sycl::aligned_alloc(64,sizeof(PLOCGlobals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
@@ -785,7 +785,7 @@ namespace embree
     double time_convert0 = getSeconds();
     
     /* --- convert BVH2 to QBVH6 --- */    
-    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,triMesh,qbvh,bvh2,globals->rootIndex,leafGenData,numPrimitives,node_size/64,verbose);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triMesh,qbvh,bvh2,globals->rootIndex,leafGenData,numPrimitives,node_size/64,verbose);
 
     /* --- init final QBVH6 header --- */        
     {     

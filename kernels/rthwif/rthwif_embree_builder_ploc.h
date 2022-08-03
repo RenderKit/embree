@@ -1758,7 +1758,7 @@ namespace embree
     return numChildren;
   }
 
-  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, TriMesh* triMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, const uint bvh2_index, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
+  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriMesh* triMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, const uint bvh2_index, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 16*1024;    
     double total_time = 0.0f;    
@@ -1843,7 +1843,8 @@ namespace embree
                              {
                                globals->range_start = startBlockID;
                                globals->range_end   = endBlockID;                                                                        
-                               globals->node_mem_allocator_cur = node_mem_allocator_cur;                                                                        
+                               globals->node_mem_allocator_cur = node_mem_allocator_cur;
+                               *host_device_tasks = endBlockID-startBlockID;
                              }
                                                                       
                            });
@@ -1856,14 +1857,18 @@ namespace embree
     }
     /* ---- Phase II: full breadth-first phase until only fatleaves remain--- */
 
-    uint startBlockID = globals->range_start; 
-    uint endBlockID   = globals->range_end; 
+    //uint startBlockID = globals->range_start; 
+    //uint endBlockID   = globals->range_end; 
     
-    while (startBlockID != endBlockID)
+    //while (startBlockID != endBlockID)
+    while(1)
     {
+      //const uint blocks = endBlockID-startBlockID;
+      const uint blocks = *host_device_tasks;
+      if (blocks == 0) break;
+      
       iteration++;
-      const uint blocks = endBlockID-startBlockID;
-      if (endBlockID >= maxNodeBlocks) FATAL("maxNodeBlocks");
+      //if (endBlockID >= maxNodeBlocks) FATAL("maxNodeBlocks");
       const uint wgSize = 512;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -1873,6 +1878,11 @@ namespace embree
                            {
                              const uint localID   = item.get_local_id(0);                                                                      
                              const uint globalID  = item.get_global_id(0);
+                             const uint numGroups   = item.get_group_range(0);
+                             
+                             uint startBlockID = globals->range_start; 
+                             uint endBlockID   = globals->range_end; 
+                             
                              const uint innerID   = startBlockID + globalID;
                              QBVHNodeN &qnode     = _local_qnode.get_pointer()[localID];
 
@@ -1903,6 +1913,27 @@ namespace embree
                                  }
                                }
                              }
+
+                             /* -------------------------------- */                                                       
+                             /* --- last WG does the cleanup --- */
+                             /* -------------------------------- */
+
+                             if (localID == 0)
+                             {
+                               const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
+                               if (syncID == numGroups-1)
+                               {
+                                 /* --- reset atomics --- */
+                                 globals->sync = 0;
+                                 const uint new_startBlockID = globals->range_end;
+                                 const uint new_endBlockID   = globals->node_mem_allocator_cur;
+                                 globals->range_start = new_startBlockID;
+                                 globals->range_end   = new_endBlockID;
+                                 host_device_tasks[0] = new_endBlockID - new_startBlockID;
+                                 host_device_tasks[1] = new_endBlockID - globals->node_mem_allocator_start;
+                               }
+                             }
+                             
                            });
 		  
         });
@@ -1912,15 +1943,13 @@ namespace embree
       if (unlikely(verbose))      
         PRINT4("flattening iteration ",iteration,(float)dt,(float)total_time);
                                                                     
-      startBlockID = endBlockID;
-      endBlockID = globals->node_mem_allocator_cur;
+      //startBlockID = endBlockID;
+      //endBlockID = globals->node_mem_allocator_cur;
     }
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID,geomID pairs for final phase --- */    
     {
-      globals->numBuildRecords = 0;
-      uint startBlockID = globals->node_mem_allocator_start;
-      uint endBlockID   = globals->node_mem_allocator_cur;
-      const uint blocks = endBlockID-startBlockID;
+      //globals->numBuildRecords = 0;
+      const uint blocks = host_device_tasks[1]; //endBlockID-startBlockID;
       
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
@@ -1928,8 +1957,12 @@ namespace embree
           sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);                                                 
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
                            {
-                             const uint localID   = item.get_local_id(0);                                                                      
+                             const uint localID   = item.get_local_id(0);                             
                              const uint globalID  = item.get_global_id(0);
+                             const uint numGroups   = item.get_group_range(0);
+
+                             const uint startBlockID = globals->node_mem_allocator_start;
+                             const uint endBlockID   = globals->node_mem_allocator_cur;                             
                              const uint innerID   = startBlockID + globalID;
                              QBVHNodeN &qnode     = _local_qnode.get_pointer()[localID];
                              QuadLeaf &qleaf      = *(QuadLeaf*)&qnode;
@@ -1997,8 +2030,20 @@ namespace embree
                                                                             
                                  }                                                                            
                                                                             
-                               }                                                                      
-                             }                                                                      
+                               }                                                                     
+                             }
+
+                             if (localID == 0)
+                             {
+                               const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
+                               if (syncID == numGroups-1)
+                               {
+                                 /* --- reset atomics --- */
+                                 globals->sync = 0;
+                                 host_device_tasks[0] = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
+                               }
+                             }
+                             
                            });
 		  
         });
@@ -2011,7 +2056,7 @@ namespace embree
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */        
     {
-      const uint leaves = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
+      const uint leaves = host_device_tasks[0]; //globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
