@@ -15,6 +15,9 @@
 #define RADIX_SORT_MAX_NUM_DSS 128
 #define RADIX_SORT_WG_SIZE     512
 #endif
+
+#define RADIX_ITERATIONS_64BIT 8
+
 //todo access byte directly
 namespace embree
 {

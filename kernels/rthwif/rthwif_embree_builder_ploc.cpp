@@ -12,6 +12,214 @@
 namespace embree
 {
   using namespace embree::isa;
+
+  struct __aligned(64) GlobalHistograms
+  {
+    uint counts[RADIX_ITERATIONS_64BIT][RADIX_SORT_BINS];
+  };
+
+#define BLOCK_SIZE (8*1024)
+  
+  struct __aligned(64) BlockInfo
+  {
+    uint counts[RADIX_SORT_BINS];    
+  };
+
+  
+  template<typename sort_type>
+  void onesweep_sort(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint numPrimitives, char *const scratch_mem, const uint start_iter, const uint end_iter, double &time, const uint RADIX_SORT_NUM_DSS)
+  {
+    const uint numBlocks = (numPrimitives+BLOCK_SIZE-1)/BLOCK_SIZE;
+    PRINT2(numPrimitives,numBlocks);
+    
+    GlobalHistograms *global_histograms = (GlobalHistograms*)(scratch_mem + 0);    
+    BlockInfo         *blockInfo        =        (BlockInfo*)(scratch_mem + sizeof(GlobalHistograms));
+      
+    // === clear global histogram and block info data ===
+    {
+      static const uint CLEAR_WG_SIZE = 256; 
+      
+      const sycl::nd_range<1> nd_range1(sycl::range<1>(numBlocks*CLEAR_WG_SIZE),sycl::range<1>(CLEAR_WG_SIZE));          
+      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                                                                    {
+                                                                      const uint localID     = item.get_local_id(0);
+                                                                      const uint groupID     = item.get_group(0);
+                                                                      blockInfo[groupID].counts[localID] = 0;                                                                      
+                                                                      if (groupID == 0)
+                                                                        for (uint i=0;i<RADIX_ITERATIONS_64BIT;i++)
+                                                                          global_histograms->counts[i][localID] = 0;
+                                                                    });
+                                                 
+                                                 });
+      gpu::waitOnQueueAndCatchException(gpu_queue);
+      const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+      const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+      const double dt = (t1-t0)*1E-6;
+      PRINT2("clear histograms",(float)dt);
+      time += dt;
+    }
+
+    // ==== bin keys into global histograms =====
+    {
+      const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
+      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                   sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_histograms(sycl::range<1>(RADIX_SORT_BINS*RADIX_ITERATIONS_64BIT),cgh);                                                 
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                                                                    {
+                                                                      const uint localID     = item.get_local_id(0);
+                                                                      const uint step_local  = item.get_local_range().size();
+                                                                      const uint groupID     = item.get_group(0);
+
+                                                                      const uint startID = (groupID + 0)*numPrimitives / RADIX_SORT_NUM_DSS;
+                                                                      const uint endID   = (groupID + 1)*numPrimitives / RADIX_SORT_NUM_DSS;
+
+                                                                      uint *local_histograms = (uint*)_local_histograms.get_pointer();
+                                                                     
+                                                                      for (uint i=localID;i<RADIX_SORT_BINS*RADIX_ITERATIONS_64BIT;i+=step_local)
+                                                                        local_histograms[i] = 0;
+
+                                                                      item.barrier(sycl::access::fence_space::local_space);
+                                                                    
+                                                                      for (uint ID = startID + localID; ID < endID; ID += step_local)
+                                                                      {
+                                                                        const uint64_t key = input[ID];                                                                        
+                                                                        for (uint r = 0; r < RADIX_ITERATIONS_64BIT; r++)
+                                                                        {
+                                                                          const uint shift = r*8;
+                                                                          const uint bin = ((uint)(key >> shift)) & (RADIX_SORT_BINS - 1);
+                                                                          gpu::atomic_add_local(local_histograms + RADIX_SORT_BINS * r + bin,(uint)1);
+                                                                        }
+                                                                      }
+
+                                                                      item.barrier(sycl::access::fence_space::local_space);
+                                                                      
+                                                                      if (localID < RADIX_SORT_BINS)
+                                                                        for (uint r = 0; r < RADIX_ITERATIONS_64BIT; r++)                                                                        
+                                                                          gpu::atomic_add_global(&global_histograms->counts[r][localID],local_histograms[RADIX_SORT_BINS * r + localID]);
+                                                                    
+                                                                    });
+                                                 
+                                                 });
+      gpu::waitOnQueueAndCatchException(gpu_queue);
+      const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+      const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+      const double dt = (t1-t0)*1E-6;
+      PRINT2("create global histograms",(float)dt);
+      time += dt;
+    }
+
+    
+    for (uint r=0;r<8;r++)
+    {
+      uint sum = 0;
+      for (uint i=0;i<RADIX_SORT_BINS;i++)
+      {
+        sum += global_histograms->counts[r][i];
+      }
+      PRINT2(r,sum);
+    }
+
+    // ==== compute prefix sum for global histograms =====
+    {
+      const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_ITERATIONS_64BIT*RADIX_SORT_BINS),sycl::range<1>(RADIX_SORT_BINS));          
+      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                   sycl::accessor< uint, 1, sycl_read_write, sycl_local> sums(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                                                                    {
+                                                                      const uint localID         = item.get_local_id(0);
+                                                                      const uint groupID         = item.get_group(0);                                                                      
+                                                                      const uint subgroupID      = get_sub_group_id();
+                                                                      const uint subgroupLocalID = get_sub_group_local_id();
+
+                                                                      const uint count = global_histograms->counts[groupID][localID];
+                                                                      const uint sum = sub_group_reduce(count, std::plus<uint>());
+                                                                      const uint prefix_sum = sub_group_exclusive_scan(count, std::plus<uint>());
+                                                                      sums[subgroupID] = sum;
+                                                                      
+                                                                      item.barrier(sycl::access::fence_space::local_space);
+                                                                      
+                                                                      const uint sums_prefix_sum = sub_group_broadcast(sub_group_exclusive_scan(sums[subgroupLocalID], std::plus<uint>()),subgroupID);                                                                      
+                                                                      global_histograms->counts[groupID][localID] = sums_prefix_sum + prefix_sum;
+                                                                      
+                                                                    });
+                                                 
+                                                 });
+      gpu::waitOnQueueAndCatchException(gpu_queue);
+      
+      const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+      const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+      const double dt = (t1-t0)*1E-6;
+      PRINT2("compute prefix sums",(float)dt);
+      time += dt;          
+    }
+
+    // === scatter iteration ===
+    for (uint iter = start_iter; iter<end_iter; iter++)
+      {
+        static const uint SCATTER_WG_SIZE = 1024; // needs to be bigger than 256
+        const sycl::nd_range<1> nd_range1(sycl::range<1>(numBlocks*SCATTER_WG_SIZE),sycl::range<1>(SCATTER_WG_SIZE));          
+        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                                                                      {
+                                                                        const uint localID         = item.get_local_id(0);
+                                                                        const uint localSize       = item.get_local_range().size();                                                                        
+                                                                        const uint blockID         = item.get_group(0);                                                                      
+                                                                        const uint subgroupID      = get_sub_group_id();
+                                                                        const uint subgroupLocalID = get_sub_group_local_id();
+
+                                                                        uint *local_histogram = (uint*)_local_histogram.get_pointer();
+
+                                                                        if (localID < RADIX_SORT_BINS)
+                                                                          local_histogram[localID] = 0;
+                                                                        
+                                                                        item.barrier(sycl::access::fence_space::local_space);
+                                                                        
+                                                                        const uint shift = iter*8;                                                                        
+                                                                        const uint startID = blockID * BLOCK_SIZE;
+                                                                        const uint endID   = min(startID + BLOCK_SIZE,numPrimitives);
+                                                                        for (uint ID = startID + localID; ID < endID; ID+=localSize)
+                                                                        {
+                                                                          const uint64_t key = input[ID];
+                                                                          const uint bin = ((uint)(key >> shift)) & (RADIX_SORT_BINS - 1);
+                                                                          gpu::atomic_add_local(local_histogram + bin,(uint)1);
+                                                                        }
+
+                                                                        item.barrier(sycl::access::fence_space::local_space);
+
+                                                                        //sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_counts();
+                                                                        //scratch_mem_counter.store(total_offset);
+                                                                        
+
+                                                                        
+                                                                        
+                                                                        
+                                                                      });
+                                                 
+                                                   });
+        gpu::waitOnQueueAndCatchException(gpu_queue);
+      
+        const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+        const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+        const double dt = (t1-t0)*1E-6;
+        PRINT2("compute prefix sums",(float)dt);
+        time += dt;          
+      }
+    
+#if 0    
+    for (uint r=0;r<8;r++)
+    {
+      uint sum = 0;
+      for (uint i=0;i<RADIX_SORT_BINS;i++)
+        PRINT3(r,i,global_histograms->counts[r][i]);
+    }
+#endif    
+    
+    
+    exit(0);
+  }
+  
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
   {
@@ -83,6 +291,9 @@ namespace embree
     
 
     double alloc_time0 = getSeconds(); //FIXME free
+
+    uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,sizeof(uint),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::host); // FIXME
+    assert(host_device_tasks);
 
     PLOCGlobals *globals  = (PLOCGlobals*)sycl::aligned_alloc(64,sizeof(PLOCGlobals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
     assert(globals);
@@ -171,7 +382,7 @@ namespace embree
                                                                         numQuadsPerGeom += current;
                                                                       }
                                                                       quads_per_geom_prefix_sum[numGeoms] = numQuadsPerGeom;
-                                                                      globals->numPrimitives = numQuadsPerGeom;
+                                                                      *host_device_tasks = numQuadsPerGeom;
                                                                     });
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
@@ -180,7 +391,7 @@ namespace embree
         std::cout << "Prefix sum over quad counts over geometries " << dt << " ms" << std::endl;
     }
 
-    const uint numPrimitives = globals->numPrimitives;
+    const uint numPrimitives = *host_device_tasks;
     
     if (unlikely(deviceGPU->verbosity(2)))    
       PRINT2(org_numPrimitives,numPrimitives);
@@ -227,7 +438,7 @@ namespace embree
     
     LeafGenerationData *leafGenData = (LeafGenerationData*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME
     assert(conversionState);
-
+    
 
     uint *scratch_mem = (uint*)leafGenData;
 
@@ -369,13 +580,38 @@ namespace embree
       const uint sortWGs = min(max(min((int)nextPowerOf2/8192,(int)gpu_maxComputeUnits/4 /*RADIX_SORT_MAX_NUM_DSS*/ ),1),(int)scratchMemWGs);
       if (unlikely(deviceGPU->verbosity(2)))      
         PRINT2(scratchMemWGs,sortWGs);
-          
+
+#if 1      
       for (uint i=4;i<8;i++) 
         gpu::sort_iteration_type<false,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
+#else
+      char *radix_sort_scratch_mem = (char*)(mc1 + numPrimitives);
+
+      onesweep_sort<MCPrim>(gpu_queue, mc0, mc1, numPrimitives, radix_sort_scratch_mem, 4, 8, sort_time, sortWGs);
+#endif      
       gpu::waitOnQueueAndCatchException(gpu_queue);
+
+#if 0
+                                
+    t2 = getSeconds();
+        
+    if (unlikely(deviceGPU->verbosity(2)))
+      std::cout << "Sort Morton Codes " << 1000 * (t2 - t1) << " ms" << std::endl;
+      
+    for (uint i=1;i<numPrimitives;i++)
+      if ((uint64_t)mc0[i] < (uint64_t)mc0[i-1])
+      {
+        PRINT3(i,(uint64_t)mc0[i],(uint64_t)mc0[i-1]);
+      }
+    exit(0);
+    
+#endif      
       
       restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,sort_time,verbose);      
-            
+
+
+
+      
       for (uint i=4;i<8;i++) 
         gpu::sort_iteration_type<false,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
     }
@@ -441,80 +677,6 @@ namespace embree
 
     if (two_level)
     {
-#if 0      
-      globals->rootIndex = numPrimitives + numPrimitives - 1;
-      
-      uint *const parent_index = bvh2_subtree_size;             
-      {
-        struct __aligned(16) MCNode {
-          uint start,end,split;
-
-          __forceinline MCNode() {}
-    
-          __forceinline uint size()    const { return end - start; }
-          __forceinline uint leftID()  const { return split-1; }
-          __forceinline uint rightID() const { return split; }
-
-          __forceinline uint sizeLeft() const { return split - start; }
-          __forceinline uint sizeRight() const { return end - split; }
-    
-          __forceinline bool isLeftLeaf() const { return sizeLeft() <= 1; }
-          __forceinline bool isRightLeaf() const { return sizeRight() <= 1; }
-          __forceinline bool hasLeaves() const { return isLeftLeaf() || isRightLeaf(); }
-          __forceinline uint numLeaves() const { return (isLeftLeaf() ? 1 : 0) + (isRightLeaf() ? 1 : 0); }        
-        };
-        
-        const gpu::MortonCodePrimitive40x24Bits3D *const morton_codes = (gpu::MortonCodePrimitive40x24Bits3D*)mc0;
-
-        const uint wgSize = 64;
-        const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numPrimitives,wgSize)),sycl::range<1>(wgSize)); 
-        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
-                                                                      {
-                                                                        const uint N = numPrimitives;
-                                                                        const uint nodeID = item.get_global_id(0);
-                                                                        if (nodeID < N)
-                                                                        {
-                                                                          const gpu::Range range    = findSegment(nodeID,morton_codes,numPrimitives);
-                                                                          const unsigned int split  = findSplit64Bit(range,morton_codes);
-
-                                                                          MCNode current;
-                                                                          current.start     = range.start;
-                                                                          current.end       = range.end;
-                                                                          current.split     = split;
-
-                                                                          // optimize bounds
-                                                                          if (!current.isLeftLeaf())
-                                                                            parent_index[N+current.leftID()] = N+nodeID;
-                                                                          else
-                                                                            parent_index[current.leftID()] = N+nodeID;
-                                                                                                                                                          
-                                                                          if (!current.isRightLeaf())
-                                                                            parent_index[N+current.rightID()] = N+nodeID;
-                                                                          else
-                                                                            parent_index[current.rightID()] = N+nodeID;
-
-                                                                          //PRINT4(current.isLeftLeaf(),current.leftID(),current.isRightLeaf(),current.rightID());
-                                                                        }
-                                                                      });
-                                                       
-                                                   });
-        gpu::waitOnQueueAndCatchException(gpu_queue);
-        double dt = gpu::getDeviceExecutionTiming(queue_event);      
-        //total_time += dt;                    
-        PRINT2("parent pointer setup phase",(float)dt);                              
-      }
-
-      PRINT(globals->rootIndex);
-
-      // for (uint i=0;i<numPrimitives+numPrimitives-1;i++)
-      //   PRINT2(i,parent_index[i]);
-      
-      exit(0);
-
-      PRINT(sizeof(PLOCGlobals));
-      
-#else   
       static const uint PARALLEL_WG_NUM = MAX_WGS;        
       static const uint RANGE_THRESHOLD = numPrimitives/(4*PARALLEL_WG_NUM);
       static const uint BOTTOM_UP_THRESHOLD = 16;
@@ -522,16 +684,15 @@ namespace embree
                     
       gpu::Range *ranges = (gpu::Range*)scratch_mem; //FIXME: need to store ranges somewhere else
         
-      extractRanges(gpu_queue, &globals->numBuildRecords, mc0, ranges, numPrims, RANGE_THRESHOLD , ploc_iteration_time, verbose);
+      extractRanges(gpu_queue, host_device_tasks, mc0, ranges, numPrims, RANGE_THRESHOLD , ploc_iteration_time, verbose);
 
+      const uint numRanges = *host_device_tasks;
       
-      gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t*)ranges, (uint64_t*)ranges + globals->numBuildRecords, globals->numBuildRecords,0,8,ploc_iteration_time);
+      gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t*)ranges, (uint64_t*)ranges + numRanges, numRanges,0,8,ploc_iteration_time);
       
-      parallelWGBuild(gpu_queue, &globals->bvh2_index_allocator, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, globals->numBuildRecords, BOTTOM_UP_THRESHOLD, ploc_iteration_time, verbose);
+      parallelWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, BOTTOM_UP_THRESHOLD, ploc_iteration_time, verbose);
       
-      singleWGTopLevelBuild(gpu_queue, &globals->bvh2_index_allocator, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, globals->numBuildRecords, SEARCH_RADIUS_TOP_LEVEL, ploc_iteration_time, verbose);
-#endif
-      
+      singleWGTopLevelBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, SEARCH_RADIUS_TOP_LEVEL, ploc_iteration_time, verbose);      
     }
     else
       for (;numPrims>1;iteration++)
@@ -546,7 +707,7 @@ namespace embree
         if (numPrims < SINGLE_WG_SWITCH_THRESHOLD)
         {
           double singleWG_time = 0.0f;
-          singleWGBuild(gpu_queue, &globals->bvh2_index_allocator, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, singleWG_time, verbose);
+          singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, singleWG_time, verbose);
           iteration_time += singleWG_time;
           numPrims = 1;
         }
@@ -559,9 +720,11 @@ namespace embree
           const uint MERGED_KERNEL_WG_NUM = min((numPrims+1024-1)/1024,(uint)MAX_WGS);
           const uint radius = SEARCH_RADIUS;          
 
-          iteratePLOC(gpu_queue,&globals->bvh2_index_allocator,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,globals,iteration_time, false);
+          iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,iteration_time, false);
 
-          const uint new_numPrims = globals->numBuildRecords;            
+          //const uint new_numPrims = globals->numBuildRecords;
+          const uint new_numPrims = *host_device_tasks;
+          //PRINT2(new_numPrims,*host_device_tasks);
           assert(new_numPrims < numPrims);          
           numPrims = new_numPrims;          
             
@@ -590,6 +753,8 @@ namespace embree
     }
     
     assert(bvh2_subtree_size[globals->bvh2_index_allocator-1] == numPrimitives);
+    if (globals->rootIndex != globals->bvh2_index_allocator-1)
+      FATAL("HERE");
     globals->rootIndex = globals->bvh2_index_allocator-1;
     if (globals->bvh2_index_allocator >= 2*numPrimitives)
       FATAL("BVH2 construction, allocator");
@@ -663,9 +828,11 @@ namespace embree
     }
 
     double free_time0 = getSeconds();
-    if (tmpMem0)     sycl::free(tmpMem0,deviceGPU->getGPUContext());    
-    if (globals)     sycl::free(globals,deviceGPU->getGPUContext());
-    if (leafGenData) sycl::free(leafGenData,deviceGPU->getGPUContext());
+    if (tmpMem0)           sycl::free(tmpMem0,deviceGPU->getGPUContext());    
+    if (globals)           sycl::free(globals,deviceGPU->getGPUContext());
+    if (leafGenData)       sycl::free(leafGenData,deviceGPU->getGPUContext());
+    if (host_device_tasks) sycl::free(host_device_tasks,deviceGPU->getGPUContext());
+    
     double free_time1 = getSeconds();
     if (unlikely(deviceGPU->verbosity(2)))
       std::cout << "Time freeing temporary data " << (free_time1-free_time0)*1000.0f  << " ms " << std::endl << std::flush;

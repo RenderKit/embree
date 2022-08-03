@@ -815,10 +815,12 @@ namespace embree
   }
   
   
-  __forceinline void iteratePLOC (sycl::queue &gpu_queue, uint *const bvh2_index_allocator, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const int RADIUS, const uint NN_SEARCH_WG_NUM, PLOCGlobals *const globals, double &iteration_time, const bool verbose)    
+  __forceinline void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const int RADIUS, const uint NN_SEARCH_WG_NUM, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     static const uint NN_SEARCH_SUB_GROUP_WIDTH = 16;
-    static const uint NN_SEARCH_WG_SIZE         = 1024; 
+    static const uint NN_SEARCH_WG_SIZE         = 1024;
+    uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
+    
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::accessor< gpu::AABB3f, 1, sycl_read_write, sycl_local> cached_bounds  (sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_neighbor(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
@@ -1094,6 +1096,7 @@ namespace embree
             if (localID == 0 && groupID == NN_SEARCH_WG_NUM-1) // need to be the last group as only this one waits until all previous are done
             {
               globals->numBuildRecords = global_total;
+              *host_device_tasks = global_total;
             }
 
             /* -------------------------------- */                                                       
@@ -1170,7 +1173,9 @@ namespace embree
             /* -------------------------------------------------- */
                                          
             if (localID == 0 && groupID == 0)
-              *numBuildRecords = global_total;
+            {
+              *numBuildRecords = global_total;              
+            }
           });		  
       });
     gpu::waitOnQueueAndCatchException(gpu_queue);
@@ -1423,10 +1428,11 @@ namespace embree
   // ====================================================================================================================================================================================
   // ====================================================================================================================================================================================
   
-  __forceinline void singleWGBuild(sycl::queue &gpu_queue, uint *const bvh2_index_allocator, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)
+  __forceinline void singleWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)
   {
     static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16;
     static const uint SINGLE_WG_SIZE = 1024;
+    uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
     
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         const sycl::nd_range<1> nd_range(SINGLE_WG_SIZE,sycl::range<1>(SINGLE_WG_SIZE));
@@ -1442,6 +1448,9 @@ namespace embree
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(SINGLE_WG_SUB_GROUP_WIDTH) {
             uint &active_counter = *_active_counter.get_pointer();
             wgBuild(item, bvh2_index_allocator, 0, numPrimitives, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, cached_bounds.get_pointer(), cached_neighbor.get_pointer(), cached_clusterID.get_pointer(), counts.get_pointer(),  counts_prefix_sum.get_pointer(), active_counter, 1, SEARCH_RADIUS, SINGLE_WG_SIZE);
+
+            const uint localID        = item.get_local_id(0);                                                                 
+            if (localID == 0) globals->rootIndex = globals->bvh2_index_allocator-1;
           });		  
       });            
     gpu::waitOnQueueAndCatchException(gpu_queue);
@@ -1452,10 +1461,12 @@ namespace embree
 
   
 
-  __forceinline void parallelWGBuild(sycl::queue &gpu_queue, uint *const bvh2_index_allocator, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, gpu::Range *const global_ranges, const uint numRanges, uint BOTTOM_UP_THRESHOLD, double &iteration_time, const bool verbose)
+  __forceinline void parallelWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, gpu::Range *const global_ranges, const uint numRanges, uint BOTTOM_UP_THRESHOLD, double &iteration_time, const bool verbose)
   {
     static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16; 
-    static const uint SINGLE_WG_SIZE = 1024;   
+    static const uint SINGLE_WG_SIZE = 1024;
+    uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
+
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         const sycl::nd_range<1> nd_range(sycl::range<1>(numRanges*SINGLE_WG_SIZE),sycl::range<1>(SINGLE_WG_SIZE));		  
 
@@ -1490,10 +1501,11 @@ namespace embree
     if (unlikely(verbose)) PRINT2("parallel WG build ",(float)dt);    
   }
 
-  __forceinline void singleWGTopLevelBuild(sycl::queue &gpu_queue, uint *const bvh2_index_allocator, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, gpu::Range *const global_ranges, const uint numRanges, const uint SEARCH_RADIUS_TOP_LEVEL, double &iteration_time, const bool verbose)
+  __forceinline void singleWGTopLevelBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, gpu::Range *const global_ranges, const uint numRanges, const uint SEARCH_RADIUS_TOP_LEVEL, double &iteration_time, const bool verbose)
   {
     static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16;
     static const uint SINGLE_WG_SIZE = 1024;
+    uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
     
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         const sycl::nd_range<1> nd_range(SINGLE_WG_SIZE,sycl::range<1>(SINGLE_WG_SIZE));
@@ -1527,6 +1539,8 @@ namespace embree
             item.barrier(sycl::access::fence_space::local_space);
               
             wgBuild(item, bvh2_index_allocator, 0, items, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, cached_bounds.get_pointer(), cached_neighbor.get_pointer(), cached_clusterID.get_pointer(), counts.get_pointer(), counts_prefix_sum.get_pointer(), active_counter, 1, SEARCH_RADIUS_TOP_LEVEL, SINGLE_WG_SIZE);
+
+            if (localID == 0) globals->rootIndex = globals->bvh2_index_allocator-1;
           });		  
       });
     gpu::waitOnQueueAndCatchException(gpu_queue);
