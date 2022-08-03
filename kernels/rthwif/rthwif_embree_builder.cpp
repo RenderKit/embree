@@ -330,9 +330,10 @@ namespace embree
     range<size_t> r(primID);
     size_t k = 0;
     uint32_t geomID = 0;
-    PrimInfo primInfo = geom->numTimeSegments() > 0
-      ? geom->createPrimRefArrayMB(prim,time_range,r,k,geomID)
-      : geom->createPrimRefArray  (prim,r,k,geomID);
+    if (geom->numTimeSegments() > 0)
+      geom->createPrimRefArrayMB(prim,time_range,r,k,geomID);
+    else
+      geom->createPrimRefArray  (prim,r,k,geomID);
     
     RTHWIF_AABB obounds;
     BBox3fa bounds = prim[0].bounds();
@@ -562,8 +563,9 @@ namespace embree
       args.accel = accel.data() + headerBytes;
       args.numBytes = sizeStatic.expectedBytes;
       err = rthwifBuildAccel(args);
-      fullBounds.extend(*(BBox3f*) args.bounds);
-
+      const BBox3f staticBounds = *(BBox3f*) args.bounds;
+      fullBounds.extend(staticBounds);
+      
       if (err == RTHWIF_ERROR_OUT_OF_MEMORY)
       {
         if (sizeStatic.expectedBytes == sizeStatic.worstCaseBytes)
@@ -584,6 +586,11 @@ namespace embree
         args.numGeometries = geomMBlur.size();
         args.accel = accel.data() + headerBytes + sizeStatic.expectedBytes + i*sizeMBlur.expectedBytes;
         args.numBytes = sizeMBlur.expectedBytes;
+        args.AddAccel.Accel = nullptr;
+        if (!staticBounds.empty()) {
+          args.AddAccel.Accel = accel.data() + headerBytes;
+          args.AddAccel.bounds = (RTHWIF_AABB&) staticBounds;
+        }
         err = rthwifBuildAccel(args);
         fullBounds.extend(*(BBox3f*) args.bounds);
 

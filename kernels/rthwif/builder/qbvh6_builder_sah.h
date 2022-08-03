@@ -6,6 +6,7 @@
 #include "qbvh6.h"
 #include "statistics.h"
 #include "quadifier.h"
+#include "../rthwif_builder.h"
 
 #include "../../common/alloc.h"
 #include "../../builders/priminfo.h"
@@ -1098,7 +1099,7 @@ namespace embree
           return r;
         }
 
-        BBox3f build2(size_t numGeometries, char* accel, size_t bytes, void* dispatchGlobalsPtr)
+        BBox3f build2(size_t numGeometries, char* accel, size_t bytes, RTHWIF_ACCEL_REF AddAccel, void* dispatchGlobalsPtr)
         {
           double t0 = verbose ? getSeconds() : 0.0;
 
@@ -1137,17 +1138,28 @@ namespace embree
           allocator.addBlock(accel,bytes);
           FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
           thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
-          
-          ReductionTy r;
-          BuildRecord br;
-          
-          uint32_t numRoots = 1;
+
+          uint32_t numRoots = AddAccel.Accel ? 3 : 1;
           QBVH6::InternalNode6* roots = (QBVH6::InternalNode6*) thread_alloc.malloc0(numRoots*sizeof(QBVH6::InternalNode6),64);
           assert(roots);
-          
+
           /* build BVH static BVH */
-          r = build(numGeometries,pinfo,(char*)(roots+0));
+          QBVH6::InternalNode6* root = AddAccel.Accel ? roots+2 : roots+0;
+          ReductionTy r = build(numGeometries,pinfo,(char*)root);
           bounds.extend(pinfo.geomBounds);
+
+          if (AddAccel.Accel)
+          {
+            ((QBVH6::InternalNode6*) ((char*)AddAccel.Accel + QBVH6::rootNodeOffset))->copy_to(roots+1);
+
+            ReductionTy values[BVH_WIDTH];
+            values[0] = ReductionTy((char*)(roots+1), NODE_TYPE_INTERNAL, 0xFF, PrimRange(1));
+            values[1] = r;
+            BuildRecord children[BVH_WIDTH];
+            children[0].prims.geomBounds = (BBox3f&) AddAccel.bounds;
+            children[1].prims.geomBounds = bounds;
+            r = setNode((char*)roots,sizeof(QBVH6::InternalNode6),NODE_TYPE_INTERNAL,(char*)(roots+1),children,values,2);
+          }      
           
           /* fill QBVH6 header */
           allocator.clear();
@@ -1425,13 +1437,14 @@ namespace embree
                           const getProceduralFunc& getProcedural,
                           const getInstanceFunc& getInstance,
                           char* accel_ptr, size_t accel_bytes,
+                          RTHWIF_ACCEL_REF AddAccel,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
         BuilderT<getSizeFunc, getTypeFunc, getNumTimeSegmentsFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
           (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
         
-        return builder.build2(numGeometries, accel_ptr, accel_bytes, dispatchGlobalsPtr);
+        return builder.build2(numGeometries, accel_ptr, accel_bytes, AddAccel, dispatchGlobalsPtr);
       }      
     };
   }

@@ -1,6 +1,8 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+#pragma once
+
 #include <cstdint>
 #include <sycl/sycl.hpp>
 
@@ -193,6 +195,12 @@ typedef enum RTHWIF_BUILD_FLAGS : uint64_t
   RTHWIF_BUILD_FLAG_ROBUST                  = (1 << 2),
 } RTHWIF_BUILD_FLAGS;
 
+typedef struct RTHWIF_ACCEL_REF
+{
+  void* Accel;
+  RTHWIF_AABB bounds;
+} RTHWIF_ACCEL_REF;
+
 typedef struct RTHWIF_BUILD_ACCEL_ARGS
 {
   size_t bytes;
@@ -207,6 +215,7 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   RTHWIF_BUILD_FLAGS flags;
   RTHWIF_AABB* bounds;
   void* userPtr;
+  RTHWIF_ACCEL_REF AddAccel;   // add link to that acceleration structure
   // FIXME: return used bytes
   
 } RTHWIF_BUILD_ACCEL_ARGS;
