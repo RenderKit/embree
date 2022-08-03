@@ -185,12 +185,14 @@ bool intersect_instance(rayquery_t& query, RayHit& ray, Instance* instance, Scen
   bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
 #endif
 
+#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
   if (qbvh6->reserved1 == 1) // AccelTable mode
   {
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (rtas_t*) AccelTable[bvh_id];
     bvh_id = 0;
   }
+#endif
   
   intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, bvh_id);
 
@@ -238,12 +240,14 @@ bool intersect_instance(rayquery_t& query, Ray& ray, Instance* instance, Scene* 
   bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
 #endif
 
+#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
   if (qbvh6->reserved1 == 1) // AccelTable mode
   {
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (rtas_t*) AccelTable[bvh_id];
     bvh_id = 0;
   }
+#endif
 
   intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, bvh_id);
 
@@ -617,12 +621,14 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   }
 #endif
 
+#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
   if (qbvh6->reserved1 == 1) // AccelTable mode
   {
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (rtas_t*) AccelTable[bvh_id];
     bvh_id = 0;
   }
+#endif
   
   rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
   
@@ -720,12 +726,14 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   }
 #endif
 
+#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
   if (qbvh6->reserved1 == 1) // AccelTable mode
   {
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (rtas_t*) AccelTable[bvh_id];
     bvh_id = 0;
   }
+#endif
   
   rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
   intel_ray_query_start_traversal(query);
