@@ -47,7 +47,7 @@ RTC_NAMESPACE_BEGIN;
 #define TRAV_LOOP
 #endif
 
-const constexpr RTCFeatureFlags TRAV_LOOP_FEATURES = (RTCFeatureFlags) (
+const constexpr uint32_t TRAV_LOOP_FEATURES =
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
   RTC_FEATURE_TRIANGLE |   // filter function enforced for triangles and quads in this case
   RTC_FEATURE_QUAD |
@@ -57,7 +57,7 @@ const constexpr RTCFeatureFlags TRAV_LOOP_FEATURES = (RTCFeatureFlags) (
   RTC_FEATURE_GRID |
   RTC_FEATURE_POINT |
   RTC_FEATURE_USER_GEOMETRY |
-  RTC_FEATURE_FILTER_FUNCTION );
+  RTC_FEATURE_FILTER_FUNCTION;
 
 void use_rthwif_embree() {
 }
