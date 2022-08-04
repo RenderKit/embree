@@ -3,6 +3,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <sycl/sycl.hpp>
+
 typedef __attribute__((opencl_global)) struct rtglobals_t_* rtglobals_t;
 typedef __attribute__((opencl_private)) struct rtfence_t_* rtfence_t;
 

@@ -55,7 +55,7 @@ struct RayDescINTEL
 {
   sycl::float3 O;
   sycl::float3 D;
-  float tmin;
+  float tmin; // FIXME: tmin or tnear?
   float tmax;
   uint32_t mask;
   uint32_t flags;
@@ -66,7 +66,7 @@ SYCL_EXTERNAL rayquery_t intel_ray_query_init(
   unsigned int bvh_level,
   RayDescINTEL ray,
   rtas_t* accel,
-  unsigned int bvh_id
+  unsigned int bvh_id // FIXME: remove bvh_id
 );
 
 // setup for instance traversal using a transformed ray and bottom-level AS
@@ -75,7 +75,7 @@ SYCL_EXTERNAL void intel_ray_query_forward_ray(
   unsigned int new_bvh_level,
   RayDescINTEL Ray,
   rtas_t* accel,
-  unsigned int bvh_id);
+  unsigned int bvh_id); // FIXME: remove bvh_id
 
 // commit the potential hit
 SYCL_EXTERNAL void intel_ray_query_commit_potential_hit(
@@ -123,8 +123,8 @@ SYCL_EXTERNAL void intel_get_hit_triangle_verts( rayquery_t query, sycl::float3 
 SYCL_EXTERNAL sycl::float3 intel_get_ray_origin( rayquery_t query, unsigned int bvh_level );
 SYCL_EXTERNAL sycl::float3 intel_get_ray_direction( rayquery_t query, unsigned int bvh_level );
 SYCL_EXTERNAL float intel_get_ray_tnear( rayquery_t query, unsigned int bvh_level );
-SYCL_EXTERNAL int intel_get_ray_flags( rayquery_t query, unsigned int bvh_level );
-SYCL_EXTERNAL int intel_get_ray_mask( rayquery_t query, unsigned int bvh_level );
+SYCL_EXTERNAL int intel_get_ray_flags( rayquery_t query, unsigned int bvh_level ); // FIXME: uint32_t?
+SYCL_EXTERNAL int intel_get_ray_mask( rayquery_t query, unsigned int bvh_level ); // FIXME: uint32_t?
 
 // test whether traversal has terminated.  If false, the ray has reached
 //  a procedural leaf or a non-opaque triangle leaf, and requires shader processing

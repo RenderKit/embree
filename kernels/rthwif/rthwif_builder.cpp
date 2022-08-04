@@ -364,7 +364,7 @@ namespace embree
       if (unlikely(!isvalid(p0))) return QBVH6BuilderSAH::Triangle();
       if (unlikely(!isvalid(p1))) return QBVH6BuilderSAH::Triangle();
       if (unlikely(!isvalid(p2))) return QBVH6BuilderSAH::Triangle();
-      
+
       const GeometryFlags gflags = (GeometryFlags) geom->GeometryFlags;
       return QBVH6BuilderSAH::Triangle(tri.v0,tri.v1,tri.v2,p0,p1,p2,gflags,geom->GeometryMask);
     };

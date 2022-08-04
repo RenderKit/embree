@@ -1170,6 +1170,21 @@ namespace embree
           qbvh->bounds = bounds;
           qbvh->numTimeSegments = 1;
           qbvh->dispatchGlobalsPtr = (uint64_t) dispatchGlobalsPtr;
+
+#if 0
+          BVHStatistics stats = qbvh->computeStatistics();
+          stats.print(std::cout);
+          stats.print_raw(std::cout);
+          qbvh->print();
+
+          std::cout << "#define bvh_bytes " << bytes << std::endl;
+          std::cout << "const unsigned char bvh_data[bvh_bytes] = {";
+          for (size_t i=0; i<bytes; i++) {
+            if (i % 32 == 0) std::cout << std::endl << "  ";
+            std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned)((unsigned char*)accel)[i] << ", ";
+          }
+          std::cout << std::endl << "};" << std::endl;
+#endif
                   
           return bounds;
         }

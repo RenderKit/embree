@@ -201,6 +201,8 @@ typedef struct RTHWIF_ACCEL_REF
   RTHWIF_AABB bounds;
 } RTHWIF_ACCEL_REF;
 
+#define RTHWIF_BVH_ALIGNMENT 128
+
 typedef struct RTHWIF_BUILD_ACCEL_ARGS
 {
   size_t bytes;
@@ -208,7 +210,7 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   void* embree_device; // FIXME: remove
   const RTHWIF_GEOMETRY_DESC** geometries;
   size_t numGeometries;
-  void* accel;
+  void* accel;  // has to be 128 bytes aligned
   size_t numBytes;
   // FIXME: add scratch space buffer
   RTHWIF_BUILD_QUALITY quality;
