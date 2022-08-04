@@ -837,10 +837,14 @@ namespace embree
       std::cout << "Total Build Time (incl. USM allocations/frees etc) " << (host_time1-host_time0)*1000  << " ms " << std::endl << std::flush;
 
     if (unlikely(deviceGPU->verbosity(2)))
-    {    
+    {
+      PRINT("BEFORE");
+      //qbvh->print(std::cout,qbvh->root(),0,6);
+
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);
+      PRINT("AFTER");
     }
       
     

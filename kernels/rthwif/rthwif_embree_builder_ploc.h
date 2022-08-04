@@ -1763,6 +1763,10 @@ namespace embree
     static const uint STOP_THRESHOLD = 16*1024;    
     double total_time = 0.0f;    
     uint iteration = 0;
+
+    host_device_tasks[0] = 0;
+    host_device_tasks[1] = 0;
+    
     /* ---- Phase I: single WG generates enough work for the breadth-first phase --- */
     {
       const uint wgSize = 1024-4;
@@ -1844,7 +1848,8 @@ namespace embree
                                globals->range_start = startBlockID;
                                globals->range_end   = endBlockID;                                                                        
                                globals->node_mem_allocator_cur = node_mem_allocator_cur;
-                               *host_device_tasks = endBlockID-startBlockID;
+                               host_device_tasks[0] = endBlockID-startBlockID;
+                               host_device_tasks[1] = endBlockID - globals->node_mem_allocator_start;                           
                              }
                                                                       
                            });
@@ -1857,18 +1862,12 @@ namespace embree
     }
     /* ---- Phase II: full breadth-first phase until only fatleaves remain--- */
 
-    //uint startBlockID = globals->range_start; 
-    //uint endBlockID   = globals->range_end; 
-    
-    //while (startBlockID != endBlockID)
     while(1)
-    {
-      //const uint blocks = endBlockID-startBlockID;
-      const uint blocks = *host_device_tasks;
+    {      
+      const uint blocks = host_device_tasks[0]; // = endBlockID-startBlockID;     
       if (blocks == 0) break;
       
       iteration++;
-      //if (endBlockID >= maxNodeBlocks) FATAL("maxNodeBlocks");
       const uint wgSize = 512;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -1914,6 +1913,8 @@ namespace embree
                                }
                              }
 
+                             item.barrier(sycl::access::fence_space::local_space);
+                             
                              /* -------------------------------- */                                                       
                              /* --- last WG does the cleanup --- */
                              /* -------------------------------- */
@@ -1942,15 +1943,12 @@ namespace embree
       total_time += dt;
       if (unlikely(verbose))      
         PRINT4("flattening iteration ",iteration,(float)dt,(float)total_time);
-                                                                    
-      //startBlockID = endBlockID;
-      //endBlockID = globals->node_mem_allocator_cur;
+
     }
-    /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID,geomID pairs for final phase --- */    
+    /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID,geomID pairs for final phase --- */
+    const uint blocks = host_device_tasks[1];    
+    if (blocks)
     {
-      //globals->numBuildRecords = 0;
-      const uint blocks = host_device_tasks[1]; //endBlockID-startBlockID;
-      
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -2054,9 +2052,10 @@ namespace embree
         PRINT3("final flattening iteration ",(float)dt,(float)total_time);      
     }
     
-    /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */        
+    /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
+    const uint leaves = host_device_tasks[0]; // = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;   
+    if (leaves)
     {
-      const uint leaves = host_device_tasks[0]; //globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
