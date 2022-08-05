@@ -99,7 +99,8 @@ namespace embree
                                                                           for (uint ID = localID; ID < numPrimitives; ID += step_local)
                                                                           {
                                                                             const uint bin = ((uint)(input[ID] >> shift)) & (RADIX_SORT_BINS - 1);
-                                                                            localAtomicBallot(histogram.get_pointer(),bin,1);
+                                                                            //localAtomicBallot(histogram.get_pointer(),bin,1);
+                                                                             gpu::atomic_add_local((uint*)histogram.get_pointer() + bin,(uint)1);
                                                                           }
 
                                                                           item.barrier(sycl::access::fence_space::local_space);

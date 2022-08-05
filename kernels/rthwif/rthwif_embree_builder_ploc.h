@@ -1683,7 +1683,7 @@ namespace embree
         const bool isLeaf = BVH2Ploc::getIndex(indices[i]) < numPrimitives; 
         data |= 1;
         if (type == NODE_TYPE_INTERNAL) data |= (isLeaf ? ((NODE_TYPE_QUAD << 2)) : 0);
-        const gpu::AABB3f childBounds = bvh2[BVH2Ploc::getIndex(indices[i])].bounds.conservativeBounds();      
+        const gpu::AABB3f childBounds = bvh2[BVH2Ploc::getIndex(indices[i])].bounds; //.conservativeBounds();      
         const gpu::AABB3f  qbounds    = qnode.quantize_bounds(childBounds);
         lower_x = (uint8_t)qbounds.lower_x;
         lower_y = (uint8_t)qbounds.lower_y;

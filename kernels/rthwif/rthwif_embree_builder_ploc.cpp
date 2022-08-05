@@ -740,7 +740,7 @@ namespace embree
 
 #if 1    
       for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<true,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
+        gpu::sort_iteration_type<false,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
 #else
       onesweep_sort<MCPrim>(gpu_queue, mc0, mc1, numPrimitives, radix_sort_scratch_mem, 4, 8, sort_time, sortWGs, true);
 #endif      
@@ -752,7 +752,7 @@ namespace embree
 
 #if 1      
       for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<true,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
+        gpu::sort_iteration_type<false,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
 #else
       onesweep_sort<MCPrim>(gpu_queue, mc0, mc1, numPrimitives, radix_sort_scratch_mem, 4, 8, sort_time, sortWGs, true);
 #endif      
@@ -772,7 +772,7 @@ namespace embree
         const uint sortWGs = min(max(min((int)nextPowerOf2/1024,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
         if (unlikely(deviceGPU->verbosity(2)))        
           PRINT3(conv_mem_size,scratchMemWGs,sortWGs);
-#if 0            
+#if 1            
         for (uint i=3;i<8;i++) 
           gpu::sort_iteration_type<false,gpu::MortonCodePrimitive40x24Bits3D>(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[i%2], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
 
