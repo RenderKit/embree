@@ -180,6 +180,34 @@ jobs:
         scripts/test.py test --debug
         scripts/test.py test
 
+  continuous-linux-PVC-JIT:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    needs: [setup_gfx, setup_dpcpp]
+    with:
+      image: embree/ubuntu:20.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      artifact-out: continuous-linux-PVC-JIT
+      artifact-path: ./build .ctest_conf
+      cmd: |
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none tasking:TBB intensity:4
+        scripts/test.py build --debug
+        scripts/test.py build
+
+  continuous-linux-PVC-JIT-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    needs: ["continuous-linux-PVC-JIT"]
+    with:
+      image: embree/ubuntu:20.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      artifact-in: continuous-linux-PVC-JIT
+      cmd: |
+        export EnableImplicitScaling=0
+        scripts/test.py test --debug
+        scripts/test.py test
+
 
   ########################################
   # Windows

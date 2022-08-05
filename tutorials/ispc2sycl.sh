@@ -58,10 +58,10 @@ sed -i.backup  's/task[ ]*void[ ]*\([a-zA-Z0-9_]*\)[ ]*(/void \1 (int taskIndex,
 sed -i.backup  's/launch\[\([^]]*\)\][ ]*\([a-zA-Z0-9_]*\)[ ]*(\([^)]*\))/\
   TutorialData ldata = data;\
   global_gpu_queue->submit([=](sycl::handler\& cgh)\{\
-    const sycl::nd_range<2> nd_range(sycl::range<2>(width,height),sycl::range<2>(SYCL_SIMD_WIDTH,1));\
+    const sycl::nd_range<2> nd_range = make_nd_range(height,width);\
     cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL \{\
-        const unsigned int x = item.get_global_id(0);\
-        const unsigned int y = item.get_global_id(1);\
+        const unsigned int x = item.get_global_id(1); if (x >= width ) return;\
+        const unsigned int y = item.get_global_id(0); if (y >= height) return;\
         RayStats stats;\
         renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);\
       \});\
