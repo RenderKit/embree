@@ -5,8 +5,70 @@
 #include "../../../include/embree4/rtcore.h"
 
 #include <vector>
+#include <map>
 #include <iostream>
-#include <iomanip>
+
+struct RandomSampler {
+  unsigned int s;
+};
+
+unsigned int MurmurHash3_mix(unsigned int hash, unsigned int k)
+{
+  const unsigned int c1 = 0xcc9e2d51;
+  const unsigned int c2 = 0x1b873593;
+  const unsigned int r1 = 15;
+  const unsigned int r2 = 13;
+  const unsigned int m = 5;
+  const unsigned int n = 0xe6546b64;
+
+  k *= c1;
+  k = (k << r1) | (k >> (32 - r1));
+  k *= c2;
+
+  hash ^= k;
+  hash = ((hash << r2) | (hash >> (32 - r2))) * m + n;
+
+  return hash;
+}
+
+unsigned int MurmurHash3_finalize(unsigned int hash)
+{
+  hash ^= hash >> 16;
+  hash *= 0x85ebca6b;
+  hash ^= hash >> 13;
+  hash *= 0xc2b2ae35;
+  hash ^= hash >> 16;
+  return hash;
+}
+
+unsigned int LCG_next(unsigned int value)
+{
+  const unsigned int m = 1664525;
+  const unsigned int n = 1013904223;
+  return value * m + n;
+}
+
+void RandomSampler_init(RandomSampler& self, int id)
+{
+  unsigned int hash = 0;
+  hash = MurmurHash3_mix(hash, id);
+  hash = MurmurHash3_finalize(hash);
+  self.s = hash;
+}
+
+int RandomSampler_getInt(RandomSampler& self) {
+  self.s = LCG_next(self.s); return self.s >> 1;
+}
+
+unsigned int RandomSampler_getUInt(RandomSampler& self) {
+  self.s = LCG_next(self.s); return self.s;
+}
+
+float RandomSampler_getFloat(RandomSampler& self) {
+  return (float)RandomSampler_getInt(self) * 4.656612873077392578125e-10f;
+}
+
+RandomSampler rng;
 
 // triangles_committed_hit: triangles
 // quads_committed_hit: quads
@@ -112,7 +174,6 @@ uint32_t compareTestOutput(uint32_t tid, const TestOutput& test, const TestOutpu
 
 void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
 {
-#if 1
   /* setup ray */
   RayDescINTEL ray;
   ray.O = in.org;
@@ -121,25 +182,6 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
   ray.tmax = in.tfar;
   ray.mask = in.mask;
   ray.flags = in.flags;
-#else
-
-  /* fixed camera */
-  unsigned int x = 10;
-  unsigned int y = 10;
-  sycl::float3 vx(-1, -0, -0);
-  sycl::float3 vy(-0, -1, -0);
-  sycl::float3 vz(32, 32, 95.6379f);
-  sycl::float3 p(278, 273, -800);
-  
-  /* compute primary ray */
-  RayDescINTEL ray;
-  ray.O = p;
-  ray.D = float(x)*vx/8.0f + float(y)*vy/8.0f + vz;;
-  ray.tmin = 0.0f;
-  ray.tmax = INFINITY;
-  ray.mask = 0xFF;
-  ray.flags = 0;
-#endif
   
   /* trace ray */
   rayquery_t query = intel_ray_query_init(0,ray,accel,0);
@@ -191,21 +233,50 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
 
 struct Triangle
 {
-  Triangle (sycl::float3 v0, sycl::float3 v1, sycl::float3 v2, uint32_t geomID, uint32_t primID)
-    : v0(v0), v1(v1), v2(v2), geomID(geomID), primID(primID) {}
+  Triangle()
+    : v0(0,0,0), v1(0,0,0), v2(0,0,0), index(0) {}
+  
+  Triangle (sycl::float3 v0, sycl::float3 v1, sycl::float3 v2, uint32_t index)
+    : v0(v0), v1(v1), v2(v2), index(index) {}
 
-  sycl::float3 sample(float u, float v) {
+  sycl::float3 sample(float u, float v) const {
     return (1.0f-u-v)*v0 + u*v1 + v*v2;
   }
 
-  sycl::float3 v0,v1,v2;
-  uint32_t geomID;
-  uint32_t primID;
+  sycl::float3 center() const {
+    return (v0+v1+v2)/3.0f;
+  }
+
+  sycl::float3 v0;
+  sycl::float3 v1;
+  sycl::float3 v2;
+  uint32_t index;
 };
 
+struct less_float3 {
+  bool operator() ( const sycl::float3& a, const sycl::float3& b ) const {
+    if (a.x() != b.x()) return a.x()  < b.x();
+    if (a.y() != b.y()) return a.y()  < b.y();
+    if (a.z() != b.z()) return a.z()  < b.z();
+    return false;
+  }
+};
+
+struct Hit
+{
+  Triangle triangle;
+  uint32_t geomID = -1;
+  uint32_t primID = -1;
+};
+    
 struct TriangleMesh
 {
 public:
+
+  size_t size() const {
+    return triangles.size();
+  }
+  
   RTHWIF_GEOMETRY_TRIANGLES_DESC getDesc()
   {
     RTHWIF_GEOMETRY_TRIANGLES_DESC out;
@@ -222,32 +293,65 @@ public:
     return out;
   }
 
-  Triangle getTriangle( uint32_t geomID, uint32_t primID ) const
+  Triangle getTriangle(uint32_t primID) const
   {
     const sycl::float3 v0 = vertices[triangles[primID].x()];
     const sycl::float3 v1 = vertices[triangles[primID].y()];
     const sycl::float3 v2 = vertices[triangles[primID].z()];
-    return Triangle(v0,v1,v2,geomID,primID);
+    const uint32_t index = indices[primID];
+    return Triangle(v0,v1,v2,index);
+  }
+
+  uint32_t addVertex( const sycl::float3& v )
+  {
+    auto e = vertex_map.find(v);
+    if (e != vertex_map.end()) return e->second;
+    vertices.push_back(v);
+    vertex_map[v] = vertices.size()-1;
+    return vertices.size()-1;
+  }
+
+  void addTriangle( const Triangle& tri )
+  {
+    const uint32_t v0 = addVertex(tri.v0);
+    const uint32_t v1 = addVertex(tri.v1);
+    const uint32_t v2 = addVertex(tri.v2);
+    triangles.push_back(sycl::int3(v0,v1,v2));
+    indices.push_back(tri.index);
+  }
+
+  void split(const sycl::float3 P, const sycl::float3 N, std::shared_ptr<TriangleMesh>& mesh0, std::shared_ptr<TriangleMesh>& mesh1)
+  {
+    mesh0 = std::shared_ptr<TriangleMesh>(new TriangleMesh);
+    mesh1 = std::shared_ptr<TriangleMesh>(new TriangleMesh);
+    
+    for (uint32_t primID=0; primID<(uint32_t) size(); primID++)
+    {
+      const Triangle tri = getTriangle(primID);
+      if (sycl::dot(tri.center()-P,N) < 0.0f) mesh0->addTriangle(tri);
+      else                                    mesh1->addTriangle(tri);
+    }
   }
   
 public:
+  std::vector<uint32_t> indices;
   std::vector<sycl::int3> triangles;
   std::vector<sycl::float3> vertices;
+  std::map<sycl::float3,uint32_t,less_float3> vertex_map;
 };
 
-TriangleMesh createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx, const sycl::float3& dy, size_t width, size_t height)
+std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx, const sycl::float3& dy, size_t width, size_t height)
 {
-  TriangleMesh mesh;
-  mesh.vertices.resize((width+1)*(height+1));
-  mesh.triangles.resize(2*width*height);
+  std::shared_ptr<TriangleMesh> mesh(new TriangleMesh);
+  mesh->indices.resize(2*width*height);
+  mesh->triangles.resize(2*width*height);
+  mesh->vertices.resize((width+1)*(height+1));
   
   for (size_t y=0; y<=height; y++) {
     for (size_t x=0; x<=width; x++) {
       sycl::float3 p = p0+float(x)/float(width)*dx+float(y)/float(height)*dy;
-      //if (x%2 == 0) p += sycl::float3(0,0,0.01f);
-      //else p -= sycl::float3(0,0,0.01f);
       size_t i = y*(width+1)+x;
-      mesh.vertices[i] = p;
+      mesh->vertices[i] = p;
     }
   }
   for (size_t y=0; y<height; y++) {
@@ -257,8 +361,10 @@ TriangleMesh createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx
       size_t p01 = (y+0)*(width+1)+(x+1);
       size_t p10 = (y+1)*(width+1)+(x+0);
       size_t p11 = (y+1)*(width+1)+(x+1);
-      mesh.triangles[i+0] = sycl::int3((int)p00,(int)p01,(int)p10);
-      mesh.triangles[i+1] = sycl::int3((int)p11,(int)p10,(int)p01);
+      mesh->triangles[i+0] = sycl::int3((int)p00,(int)p01,(int)p10);
+      mesh->triangles[i+1] = sycl::int3((int)p11,(int)p10,(int)p01);
+      mesh->indices[i+0] = i+0;
+      mesh->indices[i+1] = i+1;
     }
   }
   return mesh;
@@ -266,30 +372,60 @@ TriangleMesh createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx
 
 struct Scene
 {
-  Scene(uint32_t width, uint32_t height)
+  Scene(uint32_t width, uint32_t height, uint32_t numGeometries)
     : width(width), height(height)
   {
-    TriangleMesh mesh = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
-    geometries.push_back(mesh);
+    std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
+    geometries.push_back(plane);
+
+    for (uint32_t i=0; i<numGeometries-1; i++)
+    {
+      std::shared_ptr<TriangleMesh> mesh = geometries[i];
+
+      const Triangle tri = mesh->getTriangle(RandomSampler_getUInt(rng)%mesh->size());
+      const float u = 2.0f*M_PI*RandomSampler_getFloat(rng);
+      const sycl::float3 P = tri.center();
+      const sycl::float3 N(cosf(u),sinf(u),0.0f);
+      
+      std::shared_ptr<TriangleMesh> mesh0, mesh1;
+      mesh->split(P,N,mesh0,mesh1);
+      geometries[i] = mesh0;
+      geometries.push_back(mesh1);
+    }
+    assert(geometries.size() == (size_t) numGeometries);
+
+    accel.resize(2*width*height);
+
+    for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
+    {
+      auto geometry = geometries[geomID];
+      for (uint32_t primID=0; primID<geometry->size(); primID++)
+      {
+        const Triangle tri = geometry->getTriangle(primID);
+        assert(accel[tri.index].geomID == -1);
+        accel[tri.index].geomID = geomID;
+        accel[tri.index].primID = primID;
+        accel[tri.index].triangle = tri;
+      }
+    }
   }
   
   size_t size() const {
     return geometries.size();
   }
 
-  TriangleMesh& operator[] ( size_t i ) { return geometries[i]; }
+  std::shared_ptr<TriangleMesh> operator[] ( size_t i ) { return geometries[i]; }
 
-  Triangle getTriangle( uint32_t x, uint32_t y, uint32_t id)
+  Hit getHit( uint32_t x, uint32_t y, uint32_t id)
   {
-    uint32_t geomID = 0;
-    uint32_t primID = 2*(y*width+x)+id;
-    TriangleMesh& mesh = geometries[geomID];
-    return mesh.getTriangle(geomID,primID);
+    uint32_t index = 2*(y*width+x)+id;
+    return accel[index];
   }
 
   uint32_t width;
   uint32_t height;
-  std::vector<TriangleMesh> geometries;
+  std::vector<std::shared_ptr<TriangleMesh>> geometries;
+  std::vector<Hit> accel;
 };
 
 void* buildAccel( RTCDevice rtcdevice, sycl::device& device, sycl::context& context, Scene& scene)
@@ -298,7 +434,7 @@ void* buildAccel( RTCDevice rtcdevice, sycl::device& device, sycl::context& cont
   std::vector<RTHWIF_GEOMETRY_TRIANGLES_DESC> desc(scene.size());
   std::vector<const RTHWIF_GEOMETRY_DESC*> geom(scene.size());
   for (size_t geomID=0; geomID<scene.size(); geomID++) {
-    desc[geomID] = scene[geomID].getDesc();
+    desc[geomID] = scene[geomID]->getDesc();
     geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
   }
 
@@ -362,6 +498,8 @@ void exception_handler(sycl::exception_list exceptions)
 
 int main(int argc, char* argv[])
 {
+  RandomSampler_init(rng,0x56FE238A);
+  
   static const int width = 16;
   static const int height = 16;
   
@@ -371,7 +509,7 @@ int main(int argc, char* argv[])
 
   RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
 
-  Scene scene(width,height);
+  Scene scene(width,height,8);
 
   void* accel = buildAccel( rtcdevice, device, context, scene);
 
@@ -395,8 +533,8 @@ int main(int argc, char* argv[])
         size_t tid = 2*(y*width+x)+i;
         assert(tid < numTests);
 
-        Triangle tri = scene.getTriangle(x,y,i);
-        sycl::float3 p = tri.sample(0.1f,0.6f);
+        Hit hit = scene.getHit(x,y,i);
+        sycl::float3 p = hit.triangle.sample(0.1f,0.6f);
         
         in[tid].org = p + sycl::float3(0,0,-1);
         in[tid].dir = sycl::float3(0,0,1);
@@ -426,12 +564,12 @@ int main(int argc, char* argv[])
         out_expected[tid].u = 0.1f;
         out_expected[tid].v = 0.6f;
         out_expected[tid].front_face = 0;
-        out_expected[tid].geomID = tri.geomID;
-        out_expected[tid].primID = tri.primID;
+        out_expected[tid].geomID = hit.geomID;
+        out_expected[tid].primID = hit.primID;
         out_expected[tid].instID = -1;
-        out_expected[tid].v0 = tri.v0;
-        out_expected[tid].v1 = tri.v1;
-        out_expected[tid].v2 = tri.v2;
+        out_expected[tid].v0 = hit.triangle.v0;
+        out_expected[tid].v1 = hit.triangle.v1;
+        out_expected[tid].v2 = hit.triangle.v2;
       }
     }
   }
