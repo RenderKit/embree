@@ -220,7 +220,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
 #endif
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
+void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == nullptr)
@@ -270,7 +270,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFuncN(const RTCIntersectFunct
   }
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
+void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   /* avoid crashing when debug visualizations are used */
   if (args->context == nullptr)
@@ -599,7 +599,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
   }
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
+void sphereIntersectFuncN(const RTCIntersectFunctionNArguments* args)
 {
   int* valid = (int*) args->valid;
   void* ptr  = args->geometryUserPtr;
@@ -707,7 +707,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFuncN(const RTCIntersectFunctio
   }
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
+void sphereOccludedFuncN(const RTCOccludedFunctionNArguments* args)
 {
   int* valid = args->valid;
   void* ptr  = args->geometryUserPtr;
@@ -863,7 +863,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionN
     sphereFilterFunction(args);
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE void sphereFilterFunctionN(const RTCFilterFunctionNArguments* args)
+void sphereFilterFunctionN(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;

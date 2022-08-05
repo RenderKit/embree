@@ -217,7 +217,7 @@ There are some known DPC++ and driver issues:
   oneAPI DPC++ compiler 165 from 2022.03.10. Thus under Windows the
   `--benchmark` mode of the tutorials uses host timers.
 
-- Embree does not yet properly uses global SYCL pointers, which
+- Embree does not yet properly use global SYCL pointers, which
   requires using the `-cl-intel-force-global-mem-allocation` and
   `-cl-intel-no-local-to-generic` option when compiling Embree DPC++
   application, see section [Building Embree DPC++ Applications]. If
@@ -225,6 +225,8 @@ There are some known DPC++ and driver issues:
   generic address space is used, which will significantly reduce
   performance.
 
+- rtcIntersect/rtcOccluded cannot get called from inside an
+  indirectly called function.
 
 Upgrading from Embree 3 to Embree 4
 ===================================
