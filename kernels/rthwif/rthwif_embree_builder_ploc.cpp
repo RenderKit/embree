@@ -38,7 +38,8 @@ namespace embree
     PRINT2(numPrimitives,numBlocks);
     
     GlobalHistograms *global_histograms = (GlobalHistograms*)(scratch_mem + 0);    
-    BlockInfo         *blockInfo        =        (BlockInfo*)(scratch_mem + sizeof(GlobalHistograms));
+    BlockInfo        *blockInfo         =        (BlockInfo*)(scratch_mem + sizeof(GlobalHistograms));
+    uint             *blockIDCounter    =        (uint*)(blockInfo + numBlocks);
       
     // === clear global histogram and block info data ===
     {
@@ -48,12 +49,16 @@ namespace embree
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                     {
+                                                                      const uint globalID    = item.get_global_id(0);                                                                      
                                                                       const uint localID     = item.get_local_id(0);
                                                                       const uint groupID     = item.get_group(0);
                                                                       blockInfo[groupID].counts[localID] = 0;                                                                      
                                                                       if (groupID == 0)
                                                                         for (uint i=0;i<RADIX_ITERATIONS_64BIT;i++)
                                                                           global_histograms->counts[i][localID] = 0;
+
+                                                                      if (globalID == 0)
+                                                                        *blockIDCounter = 0;
                                                                     });
                                                  
                                                  });
@@ -92,11 +97,12 @@ namespace embree
                                                                       for (uint ID = startID + localID; ID < endID; ID += step_local)
                                                                       {
                                                                         const uint64_t key = input[ID];                                                                        
-                                                                        for (uint r = 0; r < RADIX_ITERATIONS_64BIT; r++)
+                                                                        for (uint r = start_iter; r < end_iter; r++)
                                                                         {
                                                                           const uint shift = r*8;
                                                                           const uint bin = ((uint)(key >> shift)) & (RADIX_SORT_BINS - 1);
                                                                           gpu::atomic_add_local(local_histograms + RADIX_SORT_BINS * r + bin,(uint)1);
+                                                                          //gpu::localAtomicBallot(local_histograms + RADIX_SORT_BINS * r,bin,1);
                                                                         }
                                                                       }
 
@@ -206,18 +212,21 @@ namespace embree
         
         
         // === scan over primitives ===        
-        static const uint SCATTER_WG_SIZE = 256; // needs to be >= 256
+        static const uint SCATTER_WG_SIZE = RADIX_SORT_WG_SIZE; // needs to be >= 256
         const sycl::nd_range<1> nd_range1(sycl::range<1>(numBlocks*SCATTER_WG_SIZE),sycl::range<1>(SCATTER_WG_SIZE));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                      sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);
                                                      sycl::accessor< uint, 1, sycl_read_write, sycl_local> _global_prefix_sum(sycl::range<1>(RADIX_SORT_BINS),cgh);
                                                      sycl::accessor< BinFlags, 1, sycl_read_write, sycl_local> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
-                                                     
+                                                     sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _wgID(cgh);
+
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
-                                                                        const uint localID         = item.get_local_id(0);
-                                                                        const uint localSize       = item.get_local_range().size();                                                                        
-                                                                        const uint blockID         = item.get_group(0);                                                                      
+                                                                        const uint localID     = item.get_local_id(0);
+                                                                        const uint localSize   = item.get_local_range().size();
+                                                                        const uint numGroups   = item.get_group_range(0);
+                                                                        
+                                                                        //const uint blockID         = item.get_group(0);                                                                      
                                                                         //const uint subgroupID      = get_sub_group_id();
                                                                         //const uint subgroupLocalID = get_sub_group_local_id();
 
@@ -226,8 +235,19 @@ namespace embree
 
                                                                         if (localID < RADIX_SORT_BINS)
                                                                           local_histogram[localID] = 0;
+
+                                                                        uint &wgID = *_wgID.get_pointer();
+                                                                        if (localID == 0)
+                                                                        {
+                                                                          // get work group ID
+                                                                          wgID = gpu::atomic_add_global(blockIDCounter,(uint)1);
+                                                                          // if we are the last block, reset work group ID
+                                                                          if (wgID == numGroups-1)
+                                                                            *blockIDCounter = 0;
+                                                                        }
                                                                         
                                                                         item.barrier(sycl::access::fence_space::local_space);
+                                                                        const uint blockID = wgID;
                                                                         
                                                                         const uint shift = iter*8;                                                                        
                                                                         const uint startID = blockID * BLOCK_SIZE;
@@ -248,7 +268,9 @@ namespace embree
                                                                           const uint local_bin_count = local_histogram[localID];
                                                                           // === write per block counts ===
                                                                           sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_write(blockInfo[blockID].counts[localID]);
-                                                                          const uint bits = blockID == 0 ? INCLUSIVE_PREFIX_BIT : LOCAL_COUNT_BIT; 
+                                                                          uint bits = LOCAL_COUNT_BIT;
+                                                                          bits |= blockID == 0 ? INCLUSIVE_PREFIX_BIT : 0;
+                                                                          
                                                                           global_write.store( local_bin_count | bits );
                                                                           
                                                                           // === look back to get prefix sum ===
@@ -275,7 +297,7 @@ namespace embree
                                                                          global_prefix_sum[localID] = global_bin_prefix_sum + sum;
                                                                           
                                                                          const uint inclusive_sum = local_bin_count + sum;
-                                                                         global_write.store( inclusive_sum | INCLUSIVE_PREFIX_BIT );
+                                                                         global_write.store( inclusive_sum | INCLUSIVE_PREFIX_BIT |  LOCAL_COUNT_BIT);
                                                                         }
 
                                                                         item.barrier(sycl::access::fence_space::local_space);
@@ -718,9 +740,9 @@ namespace embree
 
 #if 1    
       for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<false,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
+        gpu::sort_iteration_type<true,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
 #else
-      onesweep_sort<MCPrim>(gpu_queue, mc0, mc1, numPrimitives, radix_sort_scratch_mem, 4, 8, sort_time, sortWGs);
+      onesweep_sort<MCPrim>(gpu_queue, mc0, mc1, numPrimitives, radix_sort_scratch_mem, 4, 8, sort_time, sortWGs, true);
 #endif      
       gpu::waitOnQueueAndCatchException(gpu_queue);
       
@@ -730,9 +752,9 @@ namespace embree
 
 #if 1      
       for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<false,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
+        gpu::sort_iteration_type<true,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
 #else
-      onesweep_sort<MCPrim>(gpu_queue, mc0, mc1, numPrimitives, radix_sort_scratch_mem, 4, 8, sort_time, sortWGs);
+      onesweep_sort<MCPrim>(gpu_queue, mc0, mc1, numPrimitives, radix_sort_scratch_mem, 4, 8, sort_time, sortWGs, true);
 #endif      
 
       

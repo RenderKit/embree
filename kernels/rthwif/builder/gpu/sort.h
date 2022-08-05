@@ -241,7 +241,9 @@ namespace embree
                                                                         {
                                                                           const uint64_t key = input[ID];
                                                                           const uint bin = ((uint)(key >> shift)) & (RADIX_SORT_BINS - 1);
-                                                                          gpu::localAtomicBallot(histogram.get_pointer(),bin,1);
+                                                                          //gpu::localAtomicBallot(histogram.get_pointer(),bin,1);
+                                                                          gpu::atomic_add_local((uint*)histogram.get_pointer() + bin,(uint)1);
+                                                                          
                                                                         }
 
                                                                         item.barrier(sycl::access::fence_space::local_space);
@@ -264,6 +266,7 @@ namespace embree
           const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
           const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
           const double dt = (t1-t0)*1E-6;
+          PRINT2("bin phase",(float)dt);
           time += dt;
         }
       }
@@ -392,7 +395,9 @@ namespace embree
           const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
           const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
           const double dt = (t1-t0)*1E-6;
-          time += dt;          
+          time += dt;
+          PRINT2("prefix + scatter phase",(float)dt);
+
         }
       }
     }
