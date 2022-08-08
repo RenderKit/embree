@@ -78,7 +78,6 @@ enum class TestType
   TRIANGLES_ANYHIT_SHADER_REJECT,    // triangles + filter + reject
 };
 
-// quads_committed_hit: quads
 // triangles_hw_instancing: triangles + hw instancing
 // triangles_sw_instancing: triangles + sw instancing
 // procedural_triangles: procedural triangles + commit/reject
@@ -396,19 +395,36 @@ struct Hit
   uint32_t geomID = -1;
   uint32_t primID = -1;
 };
-    
-struct TriangleMesh
+
+struct Geometry
+{
+  enum Type {
+    TRIANGLE_MESH,
+    INSTANCE
+  };
+
+  Geometry (Type type)
+    : type(type) {}
+
+  virtual RTHWIF_GEOMETRY_DESC getDesc() = 0;
+
+  Type type;
+};
+
+struct TriangleMesh : public Geometry
 {
 public:
 
-  TriangleMesh (bool opaque = true)
-    : gflags(opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE) {}
+  TriangleMesh (RTHWIF_GEOMETRY_FLAGS gflags)
+    : Geometry(Type::TRIANGLE_MESH), gflags(gflags) {}
+
+  virtual ~TriangleMesh() {}
 
   size_t size() const {
     return triangles.size();
   }
   
-  RTHWIF_GEOMETRY_TRIANGLES_DESC getDesc()
+  virtual RTHWIF_GEOMETRY_DESC getDesc() override
   {
     RTHWIF_GEOMETRY_TRIANGLES_DESC out;
     memset(&out,0,sizeof(out));
@@ -421,7 +437,10 @@ public:
     out.VertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
     out.VertexCount = vertices.size();
     out.VertexStride = sizeof(sycl::float3);
-    return out;
+
+    RTHWIF_GEOMETRY_DESC desc;
+    desc.Triangles = out;
+    return desc;
   }
 
   Triangle getTriangle(uint32_t primID) const
@@ -453,8 +472,8 @@ public:
 
   void split(const sycl::float3 P, const sycl::float3 N, std::shared_ptr<TriangleMesh>& mesh0, std::shared_ptr<TriangleMesh>& mesh1)
   {
-    mesh0 = std::shared_ptr<TriangleMesh>(new TriangleMesh);
-    mesh1 = std::shared_ptr<TriangleMesh>(new TriangleMesh);
+    mesh0 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags));
+    mesh1 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags));
     
     for (uint32_t primID=0; primID<(uint32_t) size(); primID++)
     {
@@ -472,9 +491,53 @@ public:
   std::map<sycl::float3,uint32_t,less_float3> vertex_map;
 };
 
-std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx, const sycl::float3& dy, size_t width, size_t height)
+template<typename Scene>
+struct InstanceGeometry : public Geometry
 {
-  std::shared_ptr<TriangleMesh> mesh(new TriangleMesh);
+  struct Transform {
+    sycl::float3 vx,vy,vz,p;
+  };
+  
+  InstanceGeometry(Transform& local2world, std::shared_ptr<Scene> scene)
+    : Geometry(Type::INSTANCE), local2world(local2world), scene(scene) {}
+
+  virtual ~InstanceGeometry() {}
+
+  virtual RTHWIF_GEOMETRY_DESC getDesc() override
+  {
+    RTHWIF_GEOMETRY_INSTANCE_DESC out;
+    memset(&out,0,sizeof(out));
+    out.GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCES;
+    out.InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+    out.GeometryMask = 0xFF;
+    out.InstanceID = 0;
+    out.Transform.vx.x = local2world.vx.x();
+    out.Transform.vx.y = local2world.vx.y();
+    out.Transform.vx.z = local2world.vx.z();
+    out.Transform.vy.x = local2world.vy.x();
+    out.Transform.vy.y = local2world.vy.y();
+    out.Transform.vy.z = local2world.vy.z();
+    out.Transform.vz.x = local2world.vz.x();
+    out.Transform.vz.y = local2world.vz.y();
+    out.Transform.vz.z = local2world.vz.z();
+    out.Transform.p.x  = local2world.p.x();
+    out.Transform.p.y  = local2world.p.y();
+    out.Transform.p.z  = local2world.p.z();
+    out.Accel = scene.getAccel();
+
+    RTHWIF_GEOMETRY_DESC desc;
+    desc.Instances = out;
+    return desc;
+  }
+
+  Transform local2world;
+  std::shared_ptr<Scene> scene;
+};
+
+std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx, const sycl::float3& dy, size_t width, size_t height, bool opaque)
+{
+  RTHWIF_GEOMETRY_FLAGS gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
+  std::shared_ptr<TriangleMesh> mesh(new TriangleMesh(gflags));
   mesh->indices.resize(2*width*height);
   mesh->triangles.resize(2*width*height);
   mesh->vertices.resize((width+1)*(height+1));
@@ -504,45 +567,68 @@ std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const
 
 struct Scene
 {
-  Scene(uint32_t width, uint32_t height, uint32_t numGeometries, bool opaque)
+  Scene() {}
+      
+  Scene(uint32_t width, uint32_t height, bool opaque)
     : width(width), height(height)
   {
-    std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
+    std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height, opaque);
     geometries.push_back(plane);
+  }
 
+  void splitIntoGeometries(uint32_t numGeometries)
+  {
     for (uint32_t i=0; i<numGeometries-1; i++)
     {
-      std::shared_ptr<TriangleMesh> mesh = geometries[i];
-
-      const Triangle tri = mesh->getTriangle(RandomSampler_getUInt(rng)%mesh->size());
-      const float u = 2.0f*M_PI*RandomSampler_getFloat(rng);
-      const sycl::float3 P = tri.center();
-      const sycl::float3 N(cosf(u),sinf(u),0.0f);
-      
-      std::shared_ptr<TriangleMesh> mesh0, mesh1;
-      mesh->split(P,N,mesh0,mesh1);
-      geometries[i] = mesh0;
-      geometries.push_back(mesh1);
+      if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i]))
+      {
+        const Triangle tri = mesh->getTriangle(RandomSampler_getUInt(rng)%mesh->size());
+        const float u = 2.0f*M_PI*RandomSampler_getFloat(rng);
+        const sycl::float3 P = tri.center();
+        const sycl::float3 N(cosf(u),sinf(u),0.0f);
+        
+        std::shared_ptr<TriangleMesh> mesh0, mesh1;
+        mesh->split(P,N,mesh0,mesh1);
+        geometries[i] = std::dynamic_pointer_cast<Geometry>(mesh0);
+        geometries.push_back(std::dynamic_pointer_cast<Geometry>(mesh1));
+      }
     }
     assert(geometries.size() == (size_t) numGeometries);
+  }
 
-    /* set opaque property */
-    for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
-      geometries[geomID]->gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
-    
+  /*void createInstances(uint32_t blockSize)
+  {
+    for (uint32_t i=0; i<numGeometries; i+=blockSize)
+    {
+      const uint32_t begin = i;
+      const uint32_t end   = std::min(numGeometries,i+blockSize);
+
+      std::shared_ptr<Scene> scene(new Scene(opaque));
+      for (size_t j=begin; j<end; j++)
+        scene.geometries.push_back(geometries[j]);
+
+      
+    }
+    assert(geometries.size() == (size_t) numGeometries);
+    }*/
+
+  void buildAccel()
+  {
     /* create test acceleration structure */
     accel.resize(2*width*height);
 
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
     {
-      auto geometry = geometries[geomID];
-      for (uint32_t primID=0; primID<geometry->size(); primID++)
+      if (std::shared_ptr<TriangleMesh> geometry = std::dynamic_pointer_cast<TriangleMesh>(geometries[geomID]))
       {
-        const Triangle tri = geometry->getTriangle(primID);
-        assert(accel[tri.index].geomID == -1);
-        accel[tri.index].geomID = geomID;
-        accel[tri.index].primID = primID;
-        accel[tri.index].triangle = tri;
+        for (uint32_t primID=0; primID<geometry->size(); primID++)
+        {
+          const Triangle tri = geometry->getTriangle(primID);
+          assert(accel[tri.index].geomID == -1);
+          accel[tri.index].geomID = geomID;
+          accel[tri.index].primID = primID;
+          accel[tri.index].triangle = tri;
+        }
       }
     }
   }
@@ -551,7 +637,7 @@ struct Scene
     return geometries.size();
   }
 
-  std::shared_ptr<TriangleMesh> operator[] ( size_t i ) { return geometries[i]; }
+  std::shared_ptr<Geometry> operator[] ( size_t i ) { return geometries[i]; }
 
   Hit getHit( uint32_t x, uint32_t y, uint32_t id)
   {
@@ -561,14 +647,14 @@ struct Scene
 
   uint32_t width;
   uint32_t height;
-  std::vector<std::shared_ptr<TriangleMesh>> geometries;
+  std::vector<std::shared_ptr<Geometry>> geometries;
   std::vector<Hit> accel;
 };
 
 void* buildAccel( RTCDevice rtcdevice, sycl::device& device, sycl::context& context, Scene& scene)
 {
   /* fill geometry descriptor buffer */
-  std::vector<RTHWIF_GEOMETRY_TRIANGLES_DESC> desc(scene.size());
+  std::vector<RTHWIF_GEOMETRY_DESC> desc(scene.size());
   std::vector<const RTHWIF_GEOMETRY_DESC*> geom(scene.size());
   for (size_t geomID=0; geomID<scene.size(); geomID++) {
     desc[geomID] = scene[geomID]->getDesc();
@@ -633,8 +719,8 @@ void exception_handler(sycl::exception_list exceptions)
   }
 };
 
-static const int width = 16;
-static const int height = 16;
+static const int width = 128;
+static const int height = 128;
 static const size_t numTests = 2*width*height;
 
 uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
@@ -647,7 +733,10 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; break;
   };
 
-  Scene scene(width,height,8,opaque);
+  Scene scene(width,height,opaque);
+  scene.splitIntoGeometries(16);
+  //scene.createInstances(3);
+  scene.buildAccel();
 
   RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
   void* accel = buildAccel( rtcdevice, device, context, scene);
