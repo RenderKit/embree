@@ -8,6 +8,20 @@
 #include <map>
 #include <iostream>
 
+sycl::device device;
+sycl::context context;
+
+#if defined(__SYCL_DEVICE_ONLY__)
+#define CONSTANT __attribute__((opencl_constant))
+#else
+#define CONSTANT
+#endif
+
+#define sycl_printf0(format, ...) {               \
+    static const CONSTANT char fmt[] = format;               \
+    cl::sycl::ext::oneapi::experimental::printf(fmt, __VA_ARGS__ );   \
+  }
+
 struct RandomSampler {
   unsigned int s;
 };
@@ -83,6 +97,7 @@ enum class TestType
   TRIANGLES_POTENTIAL_HIT,           // triangles + filter + check potential hit
   TRIANGLES_ANYHIT_SHADER_COMMIT,    // triangles + filter + commit
   TRIANGLES_ANYHIT_SHADER_REJECT,    // triangles + filter + reject
+  PROCEDURALS_COMMITTED_HIT,         // procedural triangles
 };
 
 // triangles_hw_instancing: triangles + hw instancing
@@ -191,6 +206,12 @@ uint32_t compareTestOutput(uint32_t tid, const TestOutput& test, const TestOutpu
   return errors;
 }
 
+struct Bounds3f
+{
+  sycl::float3 lower;
+  sycl::float3 upper;
+};
+
 struct Triangle
 {
   Triangle()
@@ -205,6 +226,13 @@ struct Triangle
 
   sycl::float3 center() const {
     return (v0+v1+v2)/3.0f;
+  }
+
+  Bounds3f bounds() const
+  {
+    const sycl::float3 lower = sycl::min(v0,sycl::min(v1,v2));
+    const sycl::float3 upper = sycl::max(v0,sycl::max(v1,v2));
+    return { lower, upper };
   }
 
   sycl::float3 v0;
@@ -254,41 +282,90 @@ struct TriangleMesh : public Geometry
 {
 public:
 
-  TriangleMesh (RTHWIF_GEOMETRY_FLAGS gflags)
-    : Geometry(Type::TRIANGLE_MESH), gflags(gflags) {}
+  TriangleMesh (RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE, bool procedural = false)
+    : Geometry(Type::TRIANGLE_MESH),
+      gflags(gflags), procedural(procedural),
+      triangles_alloc(context,device), triangles(0,triangles_alloc),
+      vertices_alloc(context,device), vertices(0,vertices_alloc) {}
 
   virtual ~TriangleMesh() {}
+
+  void* operator new(size_t size) {
+    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+  }
+  void operator delete(void* ptr) {
+    sycl::free(ptr,context);
+  }
 
   size_t size() const {
     return triangles.size();
   }
+
+  static RTHWIF_AABB getBoundsCallback (const uint32_t primID, void* geomUserPtr, void* userPtr)
+  {
+    const TriangleMesh* mesh = (TriangleMesh*) geomUserPtr;
+    const Bounds3f bounds = mesh->getBounds(primID);
+    
+    RTHWIF_AABB r;
+    r.lower.x = bounds.lower.x();
+    r.lower.y = bounds.lower.y();
+    r.lower.z = bounds.lower.z();
+    r.upper.x = bounds.upper.x();
+    r.upper.y = bounds.upper.y();
+    r.upper.z = bounds.upper.z();
+    return r;
+  }
   
   virtual RTHWIF_GEOMETRY_DESC getDesc() override
   {
-    RTHWIF_GEOMETRY_TRIANGLES_DESC out;
-    memset(&out,0,sizeof(out));
-    out.GeometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
-    out.GeometryFlags = gflags;
-    out.GeometryMask = 0xFF;
-    out.IndexBuffer = (RTHWIF_UINT3*) triangles.data();
-    out.TriangleCount = triangles.size();
-    out.TriangleStride = sizeof(sycl::int3);
-    out.VertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
-    out.VertexCount = vertices.size();
-    out.VertexStride = sizeof(sycl::float3);
+    if (procedural)
+    {
+      //std::cout << "getDesc::ProceduralTriangleMesh" << std::endl;
+      RTHWIF_GEOMETRY_AABBS_DESC out;
+      memset(&out,0,sizeof(out));
+      out.GeometryType = RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
+      out.GeometryFlags = gflags;
+      out.GeometryMask = 0xFF;
+      out.AABBCount = triangles.size();
+      out.AABBs = TriangleMesh::getBoundsCallback;
+      out.userPtr = this;
 
-    RTHWIF_GEOMETRY_DESC desc;
-    desc.Triangles = out;
-    return desc;
+      RTHWIF_GEOMETRY_DESC desc;
+      desc.AABBs = out;
+      return desc;
+    }
+    else
+    {
+      //std::cout << "getDesc::TriangleMesh" << std::endl;
+      RTHWIF_GEOMETRY_TRIANGLES_DESC out;
+      memset(&out,0,sizeof(out));
+      out.GeometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
+      out.GeometryFlags = gflags;
+      out.GeometryMask = 0xFF;
+      out.IndexBuffer = (RTHWIF_UINT3*) triangles.data();
+      out.TriangleCount = triangles.size();
+      out.TriangleStride = sizeof(sycl::int3);
+      out.VertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
+      out.VertexCount = vertices.size();
+      out.VertexStride = sizeof(sycl::float3);
+      
+      RTHWIF_GEOMETRY_DESC desc;
+      desc.Triangles = out;
+      return desc;
+    }
   }
 
-  Triangle getTriangle(uint32_t primID) const
+  Triangle getTriangle( const uint32_t primID ) const
   {
     const sycl::float3 v0 = vertices[triangles[primID].x()];
     const sycl::float3 v1 = vertices[triangles[primID].y()];
     const sycl::float3 v2 = vertices[triangles[primID].z()];
     const uint32_t index = indices[primID];
     return Triangle(v0,v1,v2,index);
+  }
+
+  Bounds3f getBounds( const uint32_t primID ) const {
+    return getTriangle(primID).bounds();
   }
 
   uint32_t addVertex( const sycl::float3& v )
@@ -311,8 +388,8 @@ public:
 
   void split(const sycl::float3 P, const sycl::float3 N, std::shared_ptr<TriangleMesh>& mesh0, std::shared_ptr<TriangleMesh>& mesh1)
   {
-    mesh0 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags));
-    mesh1 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags));
+    mesh0 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags,procedural));
+    mesh1 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags,procedural));
     
     for (uint32_t primID=0; primID<(uint32_t) size(); primID++)
     {
@@ -351,9 +428,18 @@ public:
   
 public:
   RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
+  bool procedural = false;
+  
   std::vector<uint32_t> indices;
-  std::vector<sycl::int3> triangles;
-  std::vector<sycl::float3> vertices;
+
+  typedef sycl::usm_allocator<sycl::int3, sycl::usm::alloc::shared> triangles_alloc_ty;
+  triangles_alloc_ty triangles_alloc;
+  std::vector<sycl::int3, triangles_alloc_ty> triangles;
+
+  typedef sycl::usm_allocator<sycl::float3, sycl::usm::alloc::shared> vertices_alloc_ty;
+  vertices_alloc_ty vertices_alloc;
+  std::vector<sycl::float3, vertices_alloc_ty> vertices;
+  
   std::map<sycl::float3,uint32_t,less_float3> vertex_map;
 };
 
@@ -368,6 +454,13 @@ struct InstanceGeometryT : public Geometry
     : Geometry(Type::INSTANCE), local2world(local2world), scene(scene) {}
 
   virtual ~InstanceGeometryT() {}
+
+  void* operator new(size_t size) {
+    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+  }
+  void operator delete(void* ptr) {
+    sycl::free(ptr,context);
+  }
 
   virtual RTHWIF_GEOMETRY_DESC getDesc() override
   {
@@ -408,10 +501,9 @@ struct InstanceGeometryT : public Geometry
   std::shared_ptr<Scene> scene;
 };
 
-std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx, const sycl::float3& dy, size_t width, size_t height, bool opaque)
+std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx, const sycl::float3& dy, size_t width, size_t height)
 {
-  RTHWIF_GEOMETRY_FLAGS gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
-  std::shared_ptr<TriangleMesh> mesh(new TriangleMesh(gflags));
+  std::shared_ptr<TriangleMesh> mesh(new TriangleMesh);
   mesh->indices.resize(2*width*height);
   mesh->triangles.resize(2*width*height);
   mesh->vertices.resize((width+1)*(height+1));
@@ -445,11 +537,20 @@ struct Scene
   
   Scene() {}
       
-  Scene(uint32_t width, uint32_t height, bool opaque)
-    : width(width), height(height)
+  Scene(uint32_t width, uint32_t height, bool opaque, bool procedural)
   {
-    std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height, opaque);
+    std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
+    plane->gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
+    plane->procedural = procedural;
     geometries.push_back(plane);
+  }
+
+  void* operator new(size_t size) {
+    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+  }
+
+  void operator delete(void* ptr) {
+    sycl::free(ptr,context);
   }
 
   void splitIntoGeometries(uint32_t numGeometries)
@@ -575,8 +676,6 @@ struct Scene
 
   std::shared_ptr<Geometry> operator[] ( size_t i ) { return geometries[i]; }
 
-  uint32_t width;
-  uint32_t height;
   std::vector<std::shared_ptr<Geometry>> geometries;
   void* accel;
 };
@@ -678,8 +777,10 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
   }
 }
 
-void render_loop(uint32_t i, const TestInput& in, TestOutput& out, Scene* scene, rtas_t* accel, TestType test)
+void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_in, rtas_t* accel, TestType test)
 {
+  //sycl_printf0("render_loop = i= %i\n", i);
+  
   /* setup ray */
   RayDescINTEL ray;
   ray.O = in.org;
@@ -712,15 +813,19 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, Scene* scene,
   while (!intel_is_traversal_done(query))
   {
     const CandidateType candidate = intel_get_hit_candidate(query, POTENTIAL_HIT);
+    //sycl_printf0("candidate = %i\n", candidate); 
 
     if (candidate == TRIANGLE)
     {
       if (test == TestType::TRIANGLES_ANYHIT_SHADER_COMMIT)
         intel_ray_query_commit_potential_hit(query);
     }
+
 #if 0
     else if (candidate == PROCEDURAL)
     {
+      Scene* scene = (Scene*) scene_in; // FIXME: cannot pass in scene directly
+
       const uint32_t instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
       const uint32_t geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
       const uint32_t primID = intel_get_hit_primID( query, POTENTIAL_HIT );
@@ -811,16 +916,20 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, Scene* scene,
 
 static const int width = 128;
 static const int height = 128;
+//static const int width = 2;
+//static const int height = 2;
 static const size_t numTests = 2*width*height;
 
 uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, InstancingType inst, TestType test)
 {
   bool opaque = true;
+  bool procedural = false;
   switch (test) {
-  case TestType::TRIANGLES_COMMITTED_HIT: opaque = true; break;
-  case TestType::TRIANGLES_POTENTIAL_HIT: opaque = false; break;
-  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; break;
-  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; break;
+  case TestType::TRIANGLES_COMMITTED_HIT       : opaque = true;  procedural=false; break;
+  case TestType::TRIANGLES_POTENTIAL_HIT       : opaque = false; procedural=false; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; procedural=false; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; procedural=false; break;
+  case TestType::PROCEDURALS_COMMITTED_HIT     : opaque = false; procedural=true;  break;
   };
 
   uint32_t levels = 1;
@@ -828,7 +937,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 
   RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
 
-  std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque);
+  std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
   scene->splitIntoGeometries(16);
   if (inst == InstancingType::HW_INSTANCING)
     scene->createInstances(3);
@@ -854,6 +963,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   case TestType::TRIANGLES_POTENTIAL_HIT: hit_type = TEST_POTENTIAL_HIT; break;
   case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: hit_type = TEST_COMMITTED_HIT; break;
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: hit_type = TEST_MISS; break;
+  case TestType::PROCEDURALS_COMMITTED_HIT: hit_type = TEST_COMMITTED_HIT; break;
   };
 
   for (size_t y=0; y<height; y++)
@@ -901,6 +1011,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         case TestType::TRIANGLES_COMMITTED_HIT:
         case TestType::TRIANGLES_POTENTIAL_HIT:
         case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
+        case TestType::PROCEDURALS_COMMITTED_HIT:
           out_expected[tid].bvh_level = levels-1;
           out_expected[tid].hit_candidate = TRIANGLE;
           out_expected[tid].t = 1.0f;
@@ -921,7 +1032,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 
   /* execute test */
   void* accel = scene->getAccel();
-  Scene* scene_ptr = scene.get();
+  size_t scene_ptr = (size_t) scene.get();
   
   switch (test) {
   case TestType::TRIANGLES_COMMITTED_HIT:
@@ -940,11 +1051,13 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   
   case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT:
+  case TestType::PROCEDURALS_COMMITTED_HIT:
   {
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
                                              const uint i = item.get_id(0);
+                                             //if (i == 0)
                                              render_loop(i,in[i],out_test[i],scene_ptr,(rtas_t*)accel,test);
                                            });
                  });
@@ -956,6 +1069,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   /* verify result */
   uint32_t numErrors = 0;
   for (size_t tid=0; tid<numTests; tid++)
+    //for (size_t tid=0; tid<1; tid++)
     numErrors += compareTestOutput(tid,out_test[tid],out_expected[tid]);
 
   return numErrors;
@@ -987,6 +1101,9 @@ int main(int argc, char* argv[])
     else if (strcmp(argv[i], "--triangles-anyhit-shader-reject") == 0) {
       test = TestType::TRIANGLES_ANYHIT_SHADER_REJECT;
     }
+    else if (strcmp(argv[i], "--procedurals-committed-hit") == 0) {
+      test = TestType::PROCEDURALS_COMMITTED_HIT;
+    }
     else if (strcmp(argv[i], "--no-instancing") == 0) {
       inst = InstancingType::NONE;
     }
@@ -1003,9 +1120,9 @@ int main(int argc, char* argv[])
   }
 
   /* initialize SYCL device */
-  sycl::device device = sycl::device(sycl::gpu_selector());
+  device = sycl::device(sycl::gpu_selector());
   sycl::queue queue = sycl::queue(device,exception_handler);
-  sycl::context context = queue.get_context();
+  context = queue.get_context();
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
