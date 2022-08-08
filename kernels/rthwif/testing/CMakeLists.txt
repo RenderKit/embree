@@ -24,9 +24,14 @@ IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS OR NOT DEFINED EMBREE_DPCPP_IMPLICIT_
            COMMAND rthwif_cornell_box
            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
          
-  ADD_TEST(NAME rthwif_test_triangles_committed_hit        COMMAND rthwif_test --triangles-committed-hit)
-  ADD_TEST(NAME rthwif_test_triangles_potential_hit        COMMAND rthwif_test --triangles-potential-hit)
-  ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_commit COMMAND rthwif_test --triangles-anyhit-shader-commit)
-  ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_reject COMMAND rthwif_test --triangles-anyhit-shader-reject)
+  ADD_TEST(NAME rthwif_test_triangles_committed_hit        COMMAND rthwif_test --no-instancing --triangles-committed-hit)
+  ADD_TEST(NAME rthwif_test_triangles_potential_hit        COMMAND rthwif_test --no-instancing --triangles-potential-hit)
+  ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_commit COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-commit)
+  ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_reject COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-reject)
+
+  ADD_TEST(NAME rthwif_test_hwinstancing_triangles_committed_hit        COMMAND rthwif_test --hw-instancing --triangles-committed-hit)
+  ADD_TEST(NAME rthwif_test_hwinstancing_triangles_potential_hit        COMMAND rthwif_test --hw-instancing --triangles-potential-hit)
+  ADD_TEST(NAME rthwif_test_hwinstancing_triangles_anyhit_shader_commit COMMAND rthwif_test --hw-instancing --triangles-anyhit-shader-commit)
+  ADD_TEST(NAME rthwif_test_hwinstancing_triangles_anyhit_shader_reject COMMAND rthwif_test --hw-instancing --triangles-anyhit-shader-reject)
 
 ENDIF()

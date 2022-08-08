@@ -70,6 +70,13 @@ float RandomSampler_getFloat(RandomSampler& self) {
 
 RandomSampler rng;
 
+enum class InstancingType
+{
+  NONE,
+  SW_INSTANCING,
+  HW_INSTANCING
+};
+
 enum class TestType
 {
   TRIANGLES_COMMITTED_HIT,           // triangles
@@ -262,14 +269,6 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     out.v0 = vertex_out[0];
     out.v1 = vertex_out[1];
     out.v2 = vertex_out[2];
-
-    /* return ray data at current level */
-    uint32_t bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
-    out.rayN_org = intel_get_ray_origin(query,bvh_level);
-    out.rayN_dir = intel_get_ray_direction(query,bvh_level);
-    out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
-    out.rayN_mask = intel_get_ray_mask(query,bvh_level);
-    out.rayN_flags = intel_get_ray_flags(query,bvh_level);
   }
 
   /* miss */
@@ -342,14 +341,6 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel
     out.v0 = vertex_out[0];
     out.v1 = vertex_out[1];
     out.v2 = vertex_out[2];
-
-    /* return ray data at current level */
-    uint32_t bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
-    out.rayN_org = intel_get_ray_origin(query,bvh_level);
-    out.rayN_dir = intel_get_ray_direction(query,bvh_level);
-    out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
-    out.rayN_mask = intel_get_ray_mask(query,bvh_level);
-    out.rayN_flags = intel_get_ray_flags(query,bvh_level);
   }
 
   /* miss */
@@ -392,6 +383,7 @@ struct less_float3 {
 struct Hit
 {
   Triangle triangle;
+  uint32_t instID = -1;
   uint32_t geomID = -1;
   uint32_t primID = -1;
 };
@@ -489,13 +481,28 @@ public:
   }
 
   virtual void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override
-  {    
+  {
+    uint32_t instID = -1;
+    uint32_t geomID = -1;
+    
+    if (id_stack.size()) {
+      geomID = id_stack.back();
+      id_stack.pop_back();
+    }
+    
+    if (id_stack.size()) {
+      instID = id_stack.back();
+      id_stack.pop_back();
+    }
+    assert(id_stack.size() == 0);
+    
     for (uint32_t primID=0; primID<triangles.size(); primID++)
     {
       const Triangle tri = getTriangle(primID);
       assert(tri_map[tri.index].geomID == -1);
-      tri_map[tri.index].geomID = id_stack.back();
       tri_map[tri.index].primID = primID;
+      tri_map[tri.index].geomID = geomID;
+      tri_map[tri.index].instID = instID;
       tri_map[tri.index].triangle = tri;
     }
   }
@@ -712,6 +719,7 @@ struct Scene
     {
       id_stack.push_back(geomID);
       geometries[geomID]->buildTriMap(id_stack,tri_map);
+      id_stack.pop_back();
     }
   }
   
@@ -746,7 +754,7 @@ static const int width = 128;
 static const int height = 128;
 static const size_t numTests = 2*width*height;
 
-uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
+uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, InstancingType inst, TestType test)
 {
   bool opaque = true;
   switch (test) {
@@ -756,11 +764,15 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; break;
   };
 
+  uint32_t levels = 1;
+  if (inst != InstancingType::NONE) levels = 2;
+
   RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
 
   Scene scene(width,height,opaque);
   scene.splitIntoGeometries(16);
-  //scene.createInstances(3);
+  if (inst == InstancingType::HW_INSTANCING)
+    scene.createInstances(3);
   scene.buildAccel(rtcdevice,device,context);
 
   std::vector<Hit> tri_map;
@@ -812,15 +824,17 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         out_expected[tid].ray0_flags = in[tid].flags;
         
         // Ray data at hit bvh_level
-        if (test != TestType::TRIANGLES_ANYHIT_SHADER_REJECT)
-        {
+        switch (test) {
+        default: break;
+        case TestType::TRIANGLES_POTENTIAL_HIT:
           out_expected[tid].rayN_org = in[tid].org;
           out_expected[tid].rayN_dir = in[tid].dir;
           out_expected[tid].rayN_tnear = in[tid].tnear;
           out_expected[tid].rayN_mask = in[tid].mask;
           out_expected[tid].rayN_flags = in[tid].flags;
+          break;
         }
-          
+                 
         // Hit data
         out_expected[tid].hit_type = hit_type;
         switch (test) {
@@ -828,7 +842,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         case TestType::TRIANGLES_COMMITTED_HIT:
         case TestType::TRIANGLES_POTENTIAL_HIT:
         case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
-          out_expected[tid].bvh_level = 0;
+          out_expected[tid].bvh_level = levels-1;
           out_expected[tid].hit_candidate = TRIANGLE;
           out_expected[tid].t = 1.0f;
           out_expected[tid].u = 0.1f;
@@ -836,7 +850,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           out_expected[tid].front_face = 0;
           out_expected[tid].geomID = hit.geomID;
           out_expected[tid].primID = hit.primID;
-          out_expected[tid].instID = -1;
+          out_expected[tid].instID = hit.instID;
           out_expected[tid].v0 = hit.triangle.v0;
           out_expected[tid].v1 = hit.triangle.v1;
           out_expected[tid].v2 = hit.triangle.v2;
@@ -890,27 +904,42 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 int main(int argc, char* argv[])
 {
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
+  InstancingType inst = InstancingType::NONE;
 
   /* command line parsing */
-  if (argc != 2) {
+  if (argc == 1) {
     std::cout << "ERROR: no test specified" << std::endl;
     return 1;
   }
-  else if (strcmp(argv[1], "--triangles-committed-hit") == 0) {
+
+  /* parse all command line options */
+  for (size_t i=1; i<argc; i++)
+  {
+    if (strcmp(argv[i], "--triangles-committed-hit") == 0) {
     test = TestType::TRIANGLES_COMMITTED_HIT;
-  }
-  else if (strcmp(argv[1], "--triangles-potential-hit") == 0) {
-    test = TestType::TRIANGLES_POTENTIAL_HIT;
-  }
-  else if (strcmp(argv[1], "--triangles-anyhit-shader-commit") == 0) {
-    test = TestType::TRIANGLES_ANYHIT_SHADER_COMMIT;
-  }
-  else if (strcmp(argv[1], "--triangles-anyhit-shader-reject") == 0) {
-    test = TestType::TRIANGLES_ANYHIT_SHADER_REJECT;
-  }
-  else {
-    std::cout << "ERROR: invalid test " << argv[1] << " specified" << std::endl;
-    return 1;
+    }
+    else if (strcmp(argv[i], "--triangles-potential-hit") == 0) {
+      test = TestType::TRIANGLES_POTENTIAL_HIT;
+    }
+    else if (strcmp(argv[i], "--triangles-anyhit-shader-commit") == 0) {
+      test = TestType::TRIANGLES_ANYHIT_SHADER_COMMIT;
+    }
+    else if (strcmp(argv[i], "--triangles-anyhit-shader-reject") == 0) {
+      test = TestType::TRIANGLES_ANYHIT_SHADER_REJECT;
+    }
+    else if (strcmp(argv[i], "--no-instancing") == 0) {
+      inst = InstancingType::NONE;
+    }
+    else if (strcmp(argv[i], "--hw-instancing") == 0) {
+      inst = InstancingType::HW_INSTANCING;
+    }
+    else if (strcmp(argv[i], "--sw-instancing") == 0) {
+      inst = InstancingType::SW_INSTANCING;
+    }
+    else {
+      std::cout << "ERROR: invalid command line option " << argv[i] << std::endl;
+      return 1;
+    }
   }
 
   /* initialize SYCL device */
@@ -920,7 +949,7 @@ int main(int argc, char* argv[])
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
-  uint32_t numErrors = executeTest(device,queue,context,test);
+  uint32_t numErrors = executeTest(device,queue,context,inst,test);
   
   return numErrors ? 1 : 0;
 }
