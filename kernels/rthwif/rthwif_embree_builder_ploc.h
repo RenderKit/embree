@@ -141,17 +141,30 @@ namespace embree
   {
     float bounds_lower[3];
     int offset;
-    uint8_t type;
-    uint8_t pad;
-    char exp[3];
-    uint8_t instMask;
-    uint8_t childData[6];
-    uint8_t lower_x[BVH_BRANCHING_FACTOR];
-    uint8_t upper_x[BVH_BRANCHING_FACTOR];
-    uint8_t lower_y[BVH_BRANCHING_FACTOR];
-    uint8_t upper_y[BVH_BRANCHING_FACTOR];
-    uint8_t lower_z[BVH_BRANCHING_FACTOR];
-    uint8_t upper_z[BVH_BRANCHING_FACTOR];
+
+    union {
+      struct {
+        uint8_t type;
+        uint8_t pad;
+        char exp[3];
+        uint8_t instMask;
+        uint8_t childData[6];
+      };
+      uint node_data0[3];
+    };
+
+    union {
+      struct {
+        uint8_t lower_x[BVH_BRANCHING_FACTOR];
+        uint8_t upper_x[BVH_BRANCHING_FACTOR];
+        uint8_t lower_y[BVH_BRANCHING_FACTOR];
+        uint8_t upper_y[BVH_BRANCHING_FACTOR];
+        uint8_t lower_z[BVH_BRANCHING_FACTOR];
+        uint8_t upper_z[BVH_BRANCHING_FACTOR];
+      };
+      uint node_data1[9];
+    };      
+
 
     __forceinline float3 start() const { return float3(bounds_lower[0],bounds_lower[1],bounds_lower[2]); }
     
@@ -1640,7 +1653,70 @@ namespace embree
     }
   }
 
+  struct __aligned(64) WriteQBVHNodeN
+  {
+    QBVHNodeN qnode;
+    //uint16 u16;
 
+    __forceinline void write(void *_dest)
+    {
+#if 1      
+      //uint16 *dest = (uint16*)_dest;
+      //*dest = u16;
+      uint *dest = (GLOBAL uint*)_dest;
+      dest[0] = gpu::as_uint(qnode.bounds_lower[0]);
+      dest[1] = gpu::as_uint(qnode.bounds_lower[1]);
+      dest[2] = gpu::as_uint(qnode.bounds_lower[2]);
+      dest[3] = qnode.offset;
+
+      dest[4] = qnode.node_data0[0];
+      dest[5] = qnode.node_data0[1];
+      dest[6] = qnode.node_data0[2];
+      
+      dest[7] = qnode.node_data1[0];
+      dest[8] = qnode.node_data1[1];
+      dest[9] = qnode.node_data1[2];
+      dest[10] = qnode.node_data1[3];
+      dest[11] = qnode.node_data1[4];
+      dest[12] = qnode.node_data1[5];
+      dest[13] = qnode.node_data1[6];
+      dest[14] = qnode.node_data1[7];
+      dest[15] = qnode.node_data1[8];      
+#else
+      uint8 *dest = (uint8*)_dest;
+
+#ifdef __SYCL_DEVICE_ONLY__                                                                                
+      sycl::uint8 part;
+      part.s0() = u16.s0();
+      part.s1() = u16.s1();
+      part.s2() = u16.s2();
+      part.s3() = u16.s3();
+      part.s4() = u16.s4();
+      part.s5() = u16.s5();
+      part.s6() = u16.s6();
+      part.s7() = u16.s7();                                                                                
+      __builtin_IB_lsc_store_global_uint8( (GLOBAL uint8 *)dest, 0, part, LSC_STCC_L1UC_L3WB);
+
+      part.s0() = u16.s8();
+      part.s1() = u16.s9();
+      part.s2() = u16.sA();
+      part.s3() = u16.sB();
+      part.s4() = u16.sC();
+      part.s5() = u16.sD();
+      part.s6() = u16.sE();
+      part.s7() = u16.sF();                                                                                
+      __builtin_IB_lsc_store_global_uint8( ((GLOBAL uint8 *)dest) + 1, 0, part, LSC_STCC_L1UC_L3WB);
+      
+#endif
+
+#endif
+                                                                                
+    }
+  };
+
+  
+
+  
   __forceinline void initNode(QBVHNodeN &qnode, void *curDataPtr, const gpu::AABB3f &parent_bounds, void *childDataPtr, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
   {
     const float _ulp = std::numeric_limits<float>::epsilon();
@@ -1758,6 +1834,27 @@ namespace embree
     return numChildren;
   }
 
+  __forceinline void write(const QuadLeaf &q, float16 *out) 
+  {
+    out[0].s0() = gpu::as_float(q.header[0]);      
+    out[0].s1() = gpu::as_float(q.header[1]);
+    out[0].s2() = gpu::as_float(q.header[2]);
+    out[0].s3() = gpu::as_float(q.header[3]);
+    out[0].s4() = q.v0.x;
+    out[0].s5() = q.v0.y;
+    out[0].s6() = q.v0.z;
+    out[0].s7() = q.v1.x;
+    out[0].s8() = q.v1.y;
+    out[0].s9() = q.v1.z;
+    out[0].sA() = q.v2.x;
+    out[0].sB() = q.v2.y;
+    out[0].sC() = q.v2.z;
+    out[0].sD() = q.v3.x;
+    out[0].sE() = q.v3.y;
+    out[0].sF() = q.v3.z;      
+    }
+
+
   __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriMesh* triMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 16*1024;    
@@ -1772,88 +1869,95 @@ namespace embree
       const uint wgSize = 1024-4;
       const sycl::nd_range<1> nd_range1(wgSize,sycl::range<1>(wgSize));                    
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);
-          sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _node_mem_allocator_cur(cgh);                                                   
-          cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
-                           {
-                             const uint localID     = item.get_local_id(0);
-                             const uint localSize   = item.get_local_range().size();
-                             QBVHNodeN &qnode       = _local_qnode.get_pointer()[localID]; 
+                                                   //sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);
+                                                   sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _node_mem_allocator_cur(cgh);                                                   
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
+                                                                    {
+                                                                      const uint localID     = item.get_local_id(0);
+                                                                      const uint localSize   = item.get_local_range().size();
+                                                                      //QBVHNodeN &qnode       = _local_qnode.get_pointer()[localID]; 
                                                                       
-                             uint &node_mem_allocator_cur = *_node_mem_allocator_cur.get_pointer();
+                                                                      uint &node_mem_allocator_cur = *_node_mem_allocator_cur.get_pointer();
 
-                             const uint node_start = 2;
-                             const uint node_end   = 3;
+                                                                      const uint node_start = 2;
+                                                                      const uint node_end   = 3;
                                                                       
-                             if (localID == 0)
-                             {
-                               /* init globals */
-                               globals->node_mem_allocator_start = node_start;
-                               globals->node_mem_allocator_cur   = node_end;
-                               globals->qbvh_base_pointer        = (char*)qbvh;
-                               TmpNodeState *root_state = (TmpNodeState*)((char*)qbvh + 64 * node_start);
-                               root_state->init(globals->rootIndex /*bvh2_index*/);
-                               node_mem_allocator_cur = node_end;
-                             }
+                                                                      if (localID == 0)
+                                                                      {
+                                                                        /* init globals */
+                                                                        globals->node_mem_allocator_start = node_start;
+                                                                        globals->node_mem_allocator_cur   = node_end;
+                                                                        globals->qbvh_base_pointer        = (char*)qbvh;
+                                                                        TmpNodeState *root_state = (TmpNodeState*)((char*)qbvh + 64 * node_start);
+                                                                        root_state->init(globals->rootIndex /*bvh2_index*/);
+                                                                        node_mem_allocator_cur = node_end;
+                                                                      }
 
-                             item.barrier(sycl::access::fence_space::global_and_local);
+                                                                      item.barrier(sycl::access::fence_space::global_and_local);
 
-                             uint startBlockID = node_start;
-                             uint endBlockID   = node_mem_allocator_cur;
+                                                                      uint startBlockID = node_start;
+                                                                      uint endBlockID   = node_mem_allocator_cur;
 
-                             while(1)
-                             {                                                                        
-                               item.barrier(sycl::access::fence_space::local_space);
+                                                                      while(1)
+                                                                      {                                                                        
+                                                                        item.barrier(sycl::access::fence_space::local_space);
                                
-                               if (startBlockID == endBlockID || endBlockID-startBlockID>STOP_THRESHOLD) break;
+                                                                        if (startBlockID == endBlockID || endBlockID-startBlockID>STOP_THRESHOLD) break;
                                
-                               for (uint innerID=startBlockID+localID;innerID<endBlockID;innerID+=localSize)
-                               {
-                                 TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
-                                 const uint header = state->header;                                                                        
-                                 const uint index  = state->bvh2_index;
-                                 char* curAddr = (char*)state;
+                                                                        for (uint innerID=startBlockID+localID;innerID<endBlockID;innerID+=localSize)
+                                                                        {
+                                                                          TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
+                                                                          const uint header = state->header;                                                                        
+                                                                          const uint index  = state->bvh2_index;
+                                                                          char* curAddr = (char*)state;
 
-                                 if (header == 0x7fffffff)
-                                 {
-                                   if (!BVH2Ploc::isLeaf(index,numPrimitives))
-                                   {
-                                     if (!BVH2Ploc::isFatLeaf(index))
-                                     {
-                                       uint indices[BVH_BRANCHING_FACTOR];                                                                                
-                                       const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
-                                       const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numChildren);
-                                       char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
+                                                                          if (header == 0x7fffffff)
+                                                                          {
+                                                                            if (!BVH2Ploc::isLeaf(index,numPrimitives))
+                                                                            {
+                                                                              if (!BVH2Ploc::isFatLeaf(index))
+                                                                              {
+                                                                                uint indices[BVH_BRANCHING_FACTOR];                                                                                
+                                                                                const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
+                                                                                const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numChildren);
+                                                                                char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
+
+                                                                                WriteQBVHNodeN write_qnode;
+#if 1
+                                                                                initNode(write_qnode.qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                                write_qnode.write(curAddr);
                                                                                 
-                                       initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                       *(QBVHNodeN *)curAddr = qnode;
+#else                                       
+                                                                                initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                                *(QBVHNodeN *)curAddr = qnode;
+#endif                                       
                                                                           
-                                       for (uint j=0;j<numChildren;j++)
-                                       {
-                                         TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
-                                         childState->init(indices[j]);
-                                       }
-                                     }
-                                   }
-                                 }
-                               }
+                                                                                for (uint j=0;j<numChildren;j++)
+                                                                                {
+                                                                                  TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
+                                                                                  childState->init(indices[j]);
+                                                                                }
+                                                                              }
+                                                                            }
+                                                                          }
+                                                                        }
 
-                               item.barrier(sycl::access::fence_space::global_and_local);
-                               startBlockID = endBlockID;
-                               endBlockID = node_mem_allocator_cur;
-                             }
-                             // write out local node allocator to globals 
-                             if (localID == 0)
-                             {
-                               globals->range_start = startBlockID;
-                               globals->range_end   = endBlockID;                                                                        
-                               globals->node_mem_allocator_cur = node_mem_allocator_cur;
-                               host_device_tasks[0] = endBlockID-startBlockID;
-                               host_device_tasks[1] = endBlockID - globals->node_mem_allocator_start;                           
-                             }
+                                                                        item.barrier(sycl::access::fence_space::global_and_local);
+                                                                        startBlockID = endBlockID;
+                                                                        endBlockID = node_mem_allocator_cur;
+                                                                      }
+                                                                      // write out local node allocator to globals 
+                                                                      if (localID == 0)
+                                                                      {
+                                                                        globals->range_start = startBlockID;
+                                                                        globals->range_end   = endBlockID;                                                                        
+                                                                        globals->node_mem_allocator_cur = node_mem_allocator_cur;
+                                                                        host_device_tasks[0] = endBlockID-startBlockID;
+                                                                        host_device_tasks[1] = endBlockID - globals->node_mem_allocator_start;                           
+                                                                      }
                                                                       
-                           });
-        });
+                                                                    });
+                                                 });
       gpu::waitOnQueueAndCatchException(gpu_queue);
       double dt = gpu::getDeviceExecutionTiming(queue_event);
       total_time += dt;
@@ -1861,7 +1965,8 @@ namespace embree
         PRINT4("initial iteration ",iteration,(float)dt,(float)total_time);
     }
     /* ---- Phase II: full breadth-first phase until only fatleaves remain--- */
-
+    //exit(0);
+#if 1
     while(1)
     {      
       const uint blocks = host_device_tasks[0]; // = endBlockID-startBlockID;     
@@ -1871,73 +1976,80 @@ namespace embree
       const uint wgSize = 512;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);                                                 
+                                                   //sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);                                                 
                                                    
-          cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
-                           {
-                             const uint localID   = item.get_local_id(0);                                                                      
-                             const uint globalID  = item.get_global_id(0);
-                             const uint numGroups   = item.get_group_range(0);
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
+                                                                    {
+                                                                      const uint localID   = item.get_local_id(0);                                                                      
+                                                                      const uint globalID  = item.get_global_id(0);
+                                                                      const uint numGroups   = item.get_group_range(0);
                              
-                             uint startBlockID = globals->range_start; 
-                             uint endBlockID   = globals->range_end; 
+                                                                      uint startBlockID = globals->range_start; 
+                                                                      uint endBlockID   = globals->range_end; 
                              
-                             const uint innerID   = startBlockID + globalID;
-                             QBVHNodeN &qnode     = _local_qnode.get_pointer()[localID];
+                                                                      const uint innerID   = startBlockID + globalID;
+                                                                      //QBVHNodeN &qnode     = _local_qnode.get_pointer()[localID];
 
-                             if (innerID < endBlockID)
-                             {
-                               TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
-                               const uint header = state->header;                                                                        
-                               const uint index  = state->bvh2_index;
-                               char* curAddr = (char*)state;
-                               if (header == 0x7fffffff)
-                               {
-                                 if (!BVH2Ploc::isLeaf(index,numPrimitives))
-                                 {
-                                   if (!BVH2Ploc::isFatLeaf(index))
-                                   {
-                                     uint indices[BVH_BRANCHING_FACTOR];
-                                     const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
-                                     char* childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
-                                     initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                     *(QBVHNodeN *)curAddr = qnode;
+                                                                      if (innerID < endBlockID)
+                                                                      {
+                                                                        TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
+                                                                        const uint header = state->header;                                                                        
+                                                                        const uint index  = state->bvh2_index;
+                                                                        char* curAddr = (char*)state;
+                                                                        if (header == 0x7fffffff)
+                                                                        {
+                                                                          if (!BVH2Ploc::isLeaf(index,numPrimitives))
+                                                                          {
+                                                                            if (!BVH2Ploc::isFatLeaf(index))
+                                                                            {
+                                                                              uint indices[BVH_BRANCHING_FACTOR];
+                                                                              const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
+                                                                              char* childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
+
+#if 1
+                                                                              WriteQBVHNodeN write_qnode;                                                                              
+                                                                              initNode(write_qnode.qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                              write_qnode.write(curAddr);                                       
+#else                                                                              
+                                                                              initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                              *(QBVHNodeN *)curAddr = qnode;
+#endif                                                                              
                                                                           
-                                     for (uint j=0;j<numChildren;j++)
-                                     {
-                                       TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
-                                       childState->init(indices[j]);
-                                     }
-                                   }
-                                 }
-                               }
-                             }
+                                                                              for (uint j=0;j<numChildren;j++)
+                                                                              {
+                                                                                TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
+                                                                                childState->init(indices[j]);
+                                                                              }
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      }
 
-                             item.barrier(sycl::access::fence_space::local_space);
+                                                                      item.barrier(sycl::access::fence_space::local_space);
                              
-                             /* -------------------------------- */                                                       
-                             /* --- last WG does the cleanup --- */
-                             /* -------------------------------- */
+                                                                      /* -------------------------------- */                                                       
+                                                                      /* --- last WG does the cleanup --- */
+                                                                      /* -------------------------------- */
 
-                             if (localID == 0)
-                             {
-                               const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
-                               if (syncID == numGroups-1)
-                               {
-                                 /* --- reset atomics --- */
-                                 globals->sync = 0;
-                                 const uint new_startBlockID = globals->range_end;
-                                 const uint new_endBlockID   = globals->node_mem_allocator_cur;
-                                 globals->range_start = new_startBlockID;
-                                 globals->range_end   = new_endBlockID;
-                                 host_device_tasks[0] = new_endBlockID - new_startBlockID;
-                                 host_device_tasks[1] = new_endBlockID - globals->node_mem_allocator_start;
-                               }
-                             }
+                                                                      if (localID == 0)
+                                                                      {
+                                                                        const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
+                                                                        if (syncID == numGroups-1)
+                                                                        {
+                                                                          /* --- reset atomics --- */
+                                                                          globals->sync = 0;
+                                                                          const uint new_startBlockID = globals->range_end;
+                                                                          const uint new_endBlockID   = globals->node_mem_allocator_cur;
+                                                                          globals->range_start = new_startBlockID;
+                                                                          globals->range_end   = new_endBlockID;
+                                                                          host_device_tasks[0] = new_endBlockID - new_startBlockID;
+                                                                          host_device_tasks[1] = new_endBlockID - globals->node_mem_allocator_start;
+                                                                        }
+                                                                      }
                              
-                           });
+                                                                    });
 		  
-        });
+                                                 });
       gpu::waitOnQueueAndCatchException(gpu_queue);
       double dt = gpu::getDeviceExecutionTiming(queue_event);
       total_time += dt;
@@ -1952,99 +2064,110 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);                                                 
-          cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
-                           {
-                             const uint localID   = item.get_local_id(0);                             
-                             const uint globalID  = item.get_global_id(0);
-                             const uint numGroups   = item.get_group_range(0);
+                                                   //sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);                                                 
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
+                                                                    {
+                                                                      const uint localID   = item.get_local_id(0);                             
+                                                                      const uint globalID  = item.get_global_id(0);
+                                                                      const uint numGroups   = item.get_group_range(0);
 
-                             const uint startBlockID = globals->node_mem_allocator_start;
-                             const uint endBlockID   = globals->node_mem_allocator_cur;                             
-                             const uint innerID   = startBlockID + globalID;
-                             QBVHNodeN &qnode     = _local_qnode.get_pointer()[localID];
-                             QuadLeaf &qleaf      = *(QuadLeaf*)&qnode;
+                                                                      const uint startBlockID = globals->node_mem_allocator_start;
+                                                                      const uint endBlockID   = globals->node_mem_allocator_cur;                             
+                                                                      const uint innerID   = startBlockID + globalID;
+                                                                      //QBVHNodeN &qnode     = _local_qnode.get_pointer()[localID];
+                                                                      //QuadLeaf &qleaf      = *(QuadLeaf*)&qnode;
 
-                             if (innerID < endBlockID)                                                                        
-                             {
-                               TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
-                               const uint header = state->header;                                                                        
-                               const uint index  = state->bvh2_index;
-                               char* curAddr = (char*)state;
+                                                                      if (innerID < endBlockID)                                                                        
+                                                                      {
+                                                                        TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
+                                                                        const uint header = state->header;                                                                        
+                                                                        const uint index  = state->bvh2_index;
+                                                                        char* curAddr = (char*)state;
                                                                         
-                               if (header == 0x7fffffff) // not processed yet
-                               {
-                                 uint indices[BVH_BRANCHING_FACTOR];                                                                          
-                                 char* childAddr = nullptr;
-                                 uint numChildren = 0;
+                                                                        if (header == 0x7fffffff) // not processed yet
+                                                                        {
+                                                                          uint indices[BVH_BRANCHING_FACTOR];                                                                          
+                                                                          char* childAddr = nullptr;
+                                                                          uint numChildren = 0;
                                                                           
-                                 if (!BVH2Ploc::isLeaf(index,numPrimitives)) // fatleaf, generate internal node and numChildren x LeafGenData 
-                                 {
-                                   numChildren = 0;
-                                   getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
-                                   childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
-                                   initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_QUAD);
-                                   *(QBVHNodeN *)curAddr = qnode;
+                                                                          if (!BVH2Ploc::isLeaf(index,numPrimitives)) // fatleaf, generate internal node and numChildren x LeafGenData 
+                                                                          {
+                                                                            numChildren = 0;
+                                                                            getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
+                                                                            childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
+#if 1
+                                                                            WriteQBVHNodeN write_qnode;                                                                              
+                                                                            initNode(write_qnode.qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                            write_qnode.write(curAddr);                                       
+#else                                                                                                                                                          
+                                                                            initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_QUAD);
+                                                                            *(QBVHNodeN *)curAddr = qnode;
+#endif                                                                            
 
-                                   //const uint leafDataID = gpu::atomic_add_global(&globals->numBuildRecords,numChildren);
-                                   const uint leafDataID = (uint)(childAddr - globals->leafLocalPtr())/64;
+                                                                            //const uint leafDataID = gpu::atomic_add_global(&globals->numBuildRecords,numChildren);
+                                                                            const uint leafDataID = (uint)(childAddr - globals->leafLocalPtr())/64;
 
-                                   for (uint j=0;j<numChildren;j++)
-                                   {                                                                                          
-                                     const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
-                                     const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
-                                     leafGenData[leafDataID+j].primID = primID;
-                                     leafGenData[leafDataID+j].geomID = geomID;
-                                   }                                                                            
-                                 }
-                                 else // mixed node, generate data for single leaf
-                                 {
-                                   uint geomID  = bvh2[BVH2Ploc::getIndex(index)].geomID();
-                                   uint primID0 = bvh2[BVH2Ploc::getIndex(index)].primID();                                                                            
-                                   uint primID1 = bvh2[BVH2Ploc::getIndex(index)].primID1();
+                                                                            for (uint j=0;j<numChildren;j++)
+                                                                            {                                                                                          
+                                                                              const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
+                                                                              const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
+                                                                              leafGenData[leafDataID+j].primID = primID;
+                                                                              leafGenData[leafDataID+j].geomID = geomID;
+                                                                            }                                                                            
+                                                                          }
+                                                                          else // mixed node, generate data for single leaf
+                                                                          {
+                                                                            uint geomID  = bvh2[BVH2Ploc::getIndex(index)].geomID();
+                                                                            uint primID0 = bvh2[BVH2Ploc::getIndex(index)].primID();                                                                            
+                                                                            uint primID1 = bvh2[BVH2Ploc::getIndex(index)].primID1();
 
-                                   TriMesh &mesh = triMesh[geomID];
+                                                                            TriMesh &mesh = triMesh[geomID];
                                                                             
-                                   {
-                                     const TriangleMesh::Triangle tri = mesh.triangles[primID0];
-                                     const Vec3f p0 = mesh.vertices[tri.v[0]];
-                                     const Vec3f p1 = mesh.vertices[tri.v[1]];
-                                     const Vec3f p2 = mesh.vertices[tri.v[2]];
-                                     Vec3f p3 = p2;
-                                     uint lb0 = 0,lb1 = 0, lb2 = 0;
+                                                                            {
+                                                                              const TriangleMesh::Triangle tri = mesh.triangles[primID0];
+                                                                              const Vec3f p0 = mesh.vertices[tri.v[0]];
+                                                                              const Vec3f p1 = mesh.vertices[tri.v[1]];
+                                                                              const Vec3f p2 = mesh.vertices[tri.v[2]];
+                                                                              Vec3f p3 = p2;
+                                                                              uint lb0 = 0,lb1 = 0, lb2 = 0;
                                      
-                                     /* handle paired triangle */
-                                     if (primID0 != primID1)
-                                     {
-                                       const TriangleMesh::Triangle tri1 = mesh.triangles[primID1];
+                                                                              /* handle paired triangle */
+                                                                              if (primID0 != primID1)
+                                                                              {
+                                                                                const TriangleMesh::Triangle tri1 = mesh.triangles[primID1];
           
-                                       const uint p3_index = try_pair_triangles(uint3(tri.v[0],tri.v[1],tri.v[2]),uint3(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);                                       
-                                       p3 = mesh.vertices[tri1.v[p3_index]];
-                                     }
-          
-                                     qleaf = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
-                                     *(QuadLeaf*)curAddr = qleaf;
-                                   }
+                                                                                const uint p3_index = try_pair_triangles(uint3(tri.v[0],tri.v[1],tri.v[2]),uint3(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);                                       
+                                                                                p3 = mesh.vertices[tri1.v[p3_index]];
+                                                                              }
+#if 1
+                                                                              const QuadLeaf leaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
+                                                                              write(leaf,(float16*)curAddr);
+#else                                                                              
+                                                                              
+                                                                              qleaf = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
+                                                                              *(QuadLeaf*)curAddr = qleaf;
+#endif                                                                              
+                                                                            }
                                                                             
-                                 }                                                                            
+                                                                          }                                                                            
                                                                             
-                               }                                                                     
-                             }
+                                                                        }                                                                     
+                                                                      }
 
-                             if (localID == 0)
-                             {
-                               const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
-                               if (syncID == numGroups-1)
-                               {
-                                 /* --- reset atomics --- */
-                                 globals->sync = 0;
-                                 host_device_tasks[0] = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
-                               }
-                             }
+                                                                      if (localID == 0)
+                                                                      {
+                                                                        const uint syncID = gpu::atomic_add_global(&globals->sync,(uint)1);
+                                                                        if (syncID == numGroups-1)
+                                                                        {
+                                                                          /* --- reset atomics --- */
+                                                                          globals->sync = 0;
+                                                                          host_device_tasks[0] = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
+                                                                        }
+                                                                      }
                              
-                           });
+                                                                    });
 		  
-        });
+                                                 });
       gpu::waitOnQueueAndCatchException(gpu_queue);
       double dt = gpu::getDeviceExecutionTiming(queue_event);      
       total_time += dt;
@@ -2059,54 +2182,60 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::accessor< QuadLeaf, 1, sycl_read_write, sycl_local> _local_qleaf(sycl::range<1>(wgSize),cgh);                                                 
-          cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
-                           {
-                             const uint localID    = item.get_local_id(0);                                                                      
-                             const uint globalID   = item.get_global_id(0);
-                             QuadLeaf &local_qleaf = _local_qleaf.get_pointer()[localID];
+                                                   sycl::accessor< QuadLeaf, 1, sycl_read_write, sycl_local> _local_qleaf(sycl::range<1>(wgSize),cgh);                                                 
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
+                                                                    {
+                                                                      const uint localID    = item.get_local_id(0);                                                                      
+                                                                      const uint globalID   = item.get_global_id(0);
+                                                                      //QuadLeaf &local_qleaf = _local_qleaf.get_pointer()[localID];
 
-                             if (globalID < leaves)                                                                        
-                             {
-                               QuadLeaf *qleaf = (QuadLeaf *)globals->leafLocalPtr(globalID);                                                                            
-                               uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
-                               uint primID0 = leafGenData[globalID].primID & 0x7fffffff;
-                               uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
+                                                                      if (globalID < leaves)                                                                        
+                                                                      {
+                                                                        QuadLeaf *qleaf = (QuadLeaf *)globals->leafLocalPtr(globalID);                                                                            
+                                                                        uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
+                                                                        uint primID0 = leafGenData[globalID].primID & 0x7fffffff;
+                                                                        uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
 
                                                                         
-                               TriMesh &mesh = triMesh[geomID];
+                                                                        TriMesh &mesh = triMesh[geomID];
                                                                         
-                               //if (TriangleMesh* mesh = scene->get<TriangleMesh>(geomID))
-                               {
-                                 const TriangleMesh::Triangle tri = mesh.triangles[primID0];
-                                 const Vec3f p0 = mesh.vertices[tri.v[0]];
-                                 const Vec3f p1 = mesh.vertices[tri.v[1]];
-                                 const Vec3f p2 = mesh.vertices[tri.v[2]];
-                                 Vec3f p3 = p2;
-                                 uint lb0 = 0,lb1 = 0, lb2 = 0;
+                                                                        //if (TriangleMesh* mesh = scene->get<TriangleMesh>(geomID))
+                                                                        {
+                                                                          const TriangleMesh::Triangle tri = mesh.triangles[primID0];
+                                                                          const Vec3f p0 = mesh.vertices[tri.v[0]];
+                                                                          const Vec3f p1 = mesh.vertices[tri.v[1]];
+                                                                          const Vec3f p2 = mesh.vertices[tri.v[2]];
+                                                                          Vec3f p3 = p2;
+                                                                          uint lb0 = 0,lb1 = 0, lb2 = 0;
                 
-                                 /* handle paired triangle */
-                                 if (primID0 != primID1)
-                                 {
-                                   const TriangleMesh::Triangle tri1 = mesh.triangles[primID1];
+                                                                          /* handle paired triangle */
+                                                                          if (primID0 != primID1)
+                                                                          {
+                                                                            const TriangleMesh::Triangle tri1 = mesh.triangles[primID1];
           
-                                   const uint p3_index = try_pair_triangles(uint3(tri.v[0],tri.v[1],tri.v[2]),uint3(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);
-                                   p3 = mesh.vertices[tri1.v[p3_index]];                                   
-                                 }
-          
-                                 local_qleaf = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
-                                 *qleaf = local_qleaf;
-                               }
-                             }                                                                      
-                           });
+                                                                            const uint p3_index = try_pair_triangles(uint3(tri.v[0],tri.v[1],tri.v[2]),uint3(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);
+                                                                            p3 = mesh.vertices[tri1.v[p3_index]];                                   
+                                                                          }
+
+#if 0                                 
+                                                                          local_qleaf = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
+                                                                          *qleaf = local_qleaf;
+#else
+                                                                          const QuadLeaf leaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
+                                                                          write(leaf,(float16*)qleaf);
+#endif                                 
+                                                                        }
+                                                                      }                                                                      
+                                                                    });
 		  
-        });
+                                                 });
       gpu::waitOnQueueAndCatchException(gpu_queue);
       double dt = gpu::getDeviceExecutionTiming(queue_event);      
       total_time += dt;
       if (unlikely(verbose))      
         PRINT3("final leaf generation ",(float)dt,(float)total_time);            
     }
+#endif    
     return (float)total_time;
   }
  

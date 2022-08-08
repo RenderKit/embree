@@ -173,12 +173,12 @@ namespace embree
 
     NodeType nodeType;    // the type of the node    
     uint8_t pad;          // unused byte
-
+        
     int8_t exp_x;          // 2^exp_x is the size of the grid in x dimension
     int8_t exp_y;          // 2^exp_y is the size of the grid in y dimension
     int8_t exp_z;          // 2^exp_z is the size of the grid in z dimension
     uint8_t nodeMask;      // mask used for ray filtering
-
+    
     struct ChildData
     {
       uint8_t blockIncr : 2; // size of child in 64 byte blocks
@@ -186,12 +186,14 @@ namespace embree
       uint8_t pad : 2; // unused bits
     } childData[NUM_CHILDREN];
 
-    uint8_t lower_x[NUM_CHILDREN];  // the quantized lower bounds in x-dimension
-    uint8_t upper_x[NUM_CHILDREN];  // the quantized upper bounds in x-dimension
-    uint8_t lower_y[NUM_CHILDREN];  // the quantized lower bounds in y-dimension
-    uint8_t upper_y[NUM_CHILDREN];  // the quantized upper bounds in y-dimension
-    uint8_t lower_z[NUM_CHILDREN];  // the quantized lower bounds in z-dimension
-    uint8_t upper_z[NUM_CHILDREN];  // the quantized upper bounds in z-dimension
+    struct {
+      uint8_t lower_x[NUM_CHILDREN];  // the quantized lower bounds in x-dimension
+      uint8_t upper_x[NUM_CHILDREN];  // the quantized upper bounds in x-dimension
+      uint8_t lower_y[NUM_CHILDREN];  // the quantized lower bounds in y-dimension
+      uint8_t upper_y[NUM_CHILDREN];  // the quantized upper bounds in y-dimension
+      uint8_t lower_z[NUM_CHILDREN];  // the quantized lower bounds in z-dimension
+      uint8_t upper_z[NUM_CHILDREN];  // the quantized upper bounds in z-dimension
+    };
   };
 
   static_assert(sizeof(InternalNode6Data) == 64, "InternalNode6Data must be 64 bytes large");
