@@ -19,7 +19,7 @@ the device. The Embree DPC++ API is very similar to the standard
 Embree C99 API. To enable SYCL support you have to include the
 `sycl.hpp` file before the Embree API headers:
 
-    #include <CL/sycl.hpp>
+    #include <sycl/sycl.hpp>
     #include <embree4/rtcore.h>
 
 Next you need to initializes a DPC++ Embree device using the
@@ -131,18 +131,11 @@ packed into larger allocation blocks. This mode is required when your
 application performs many small USM allocations, as otherwise only a
 small fraction of GPU memory is usable.
 
-Embree currently also relies on memory pooling to be enabled, but this
-restriction will get fixed.
+Memory pooling is supported for USM allocations that are read-only by
+the device. The following example allocated device read-only memory
+with memory pooling support:
 
-Memory pooling can get enabled by setting the
-`SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR` environment variable **before** the
-SYCL device creation, e.g.:
-
-    setenv("SYCL_PI_LEVEL_ZERO_USM_ALLOCATOR","1;0;shared:64K,0,2M",1);
-
-Please see the documentation of that environment variable for details
-on that feature
-(https://github.com/intel/llvm/blob/sycl/sycl/doc/EnvironmentVariables.md).
+    sycl::aligned_alloc_shared(align, bytes, queue, sycl::ext::oneapi::property::usm::device_read_only());
 
 
 Embree DPC++ Limitations
@@ -217,7 +210,7 @@ There are some known DPC++ and driver issues:
   oneAPI DPC++ compiler 165 from 2022.03.10. Thus under Windows the
   `--benchmark` mode of the tutorials uses host timers.
 
-- Embree does not yet properly uses global SYCL pointers, which
+- Embree does not yet properly use global SYCL pointers, which
   requires using the `-cl-intel-force-global-mem-allocation` and
   `-cl-intel-no-local-to-generic` option when compiling Embree DPC++
   application, see section [Building Embree DPC++ Applications]. If
@@ -225,6 +218,8 @@ There are some known DPC++ and driver issues:
   generic address space is used, which will significantly reduce
   performance.
 
+- rtcIntersect/rtcOccluded cannot get called from inside an
+  indirectly called function.
 
 Upgrading from Embree 3 to Embree 4
 ===================================

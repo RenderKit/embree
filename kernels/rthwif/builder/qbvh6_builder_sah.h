@@ -734,12 +734,10 @@ namespace embree
             return setNode(curAddr,curBytes,NODE_TYPE_INTERNAL,childBase,children,values,numChildren);
           }
         }
-        
-        const ReductionTy createEmptyNode()
+
+        const ReductionTy createEmptyNode(char* addr)
         {
-          FastAllocator::CachedAllocator alloc = createAlloc();
-          size_t curBytes = sizeof(QBVH6::InternalNode6);
-          char* addr = (char*) alloc.malloc0(curBytes,64);
+          const size_t curBytes = sizeof(QBVH6::InternalNode6);
           new (addr) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
           return ReductionTy(addr, NODE_TYPE_INTERNAL, 0x00, PrimRange(curBytes/64));
         }
@@ -1018,7 +1016,7 @@ namespace embree
           /* exit early if scene is empty */
           if (pinfo.size() == 0) {
             pinfo_o = pinfo;
-            return createEmptyNode();
+            return createEmptyNode(root);
           }
           
           /* build hierarchy */
@@ -1079,7 +1077,7 @@ namespace embree
           /* exit early if scene is empty */
           if (pinfo.size() == 0) {
             pinfo_o = pinfo;
-            return createEmptyNode();
+            return createEmptyNode(root);
           }
           
           /* build hierarchy */
@@ -1206,6 +1204,13 @@ namespace embree
 
             try
             {
+              /* allocate a separate root entry node, one for each time segment */
+              QBVH6::InternalNode6* entry = nullptr;
+              if (maxTimeSegments) {
+                entry = (QBVH6::InternalNode6*) thread_alloc.malloc0(maxTimeSegments*sizeof(QBVH6::InternalNode6),64);
+                assert(entry);
+              }
+                
               uint32_t numBVHs = 1+maxTimeSegments;
               ReductionTy r [numBVHs];
               BuildRecord br[numBVHs];
@@ -1234,10 +1239,6 @@ namespace embree
               ReductionTy r0 = r[0];
               if (maxTimeSegments)
               {
-                /* allocate a separate root entry node, one for each time segment */
-                QBVH6::InternalNode6* entry = (QBVH6::InternalNode6*) thread_alloc.malloc0(maxTimeSegments*sizeof(QBVH6::InternalNode6),64);
-                assert(entry);
-
                 for (uint32_t t=0; t<maxTimeSegments; t++)
                 {
                   ReductionTy values[BVH_WIDTH];
@@ -1255,7 +1256,8 @@ namespace embree
               allocator.clear();
               QBVH6* qbvh = new (accel.data()) QBVH6(QBVH6::SizeEstimate());
               qbvh->numPrims = numPrimitives;
-              qbvh->rootNodeOffset = QBVH6::Node((char*)(r0.node - (char*)qbvh), r0.type, r0.primRange.cur_prim);
+              uint64_t rootNodeOffset = QBVH6::Node((char*)(r0.node - (char*)qbvh), r0.type, r0.primRange.cur_prim);
+              assert(rootNodeOffset == QBVH6::rootNodeOffset);
               qbvh->bounds = bounds;
               qbvh->numTimeSegments = max(1u,maxTimeSegments);
               qbvh->dispatchGlobalsPtr = (uint64_t) dispatchGlobalsPtr;

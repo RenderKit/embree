@@ -140,8 +140,15 @@ OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." OFF)
 
 OPTION(EMBREE_DPCPP_SUPPORT "Enables DPC++ support." ON)
+OPTION(EMBREE_DPCPP_LARGEGRF "Enables DPC++ large GRF support." OFF)
+
 IF (EMBREE_DPCPP_SUPPORT)
   ADD_DEFINITIONS("-DEMBREE_DPCPP_SUPPORT")  # FIXME: only use define from rtcore_config.h
+ENDIF()
+
+OPTION(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS "Using L0 allocated Dispatch Globals" OFF)
+IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  ADD_DEFINITIONS("-DEMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS")
 ENDIF()
 
 OPTION(EMBREE_DPCPP_MBLUR "Enables DPC++ motion blur support" ON)

@@ -28,9 +28,7 @@
 #endif
 
 #define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
-#define SYCL_SIMPLE_SWIZZLES
-#include <CL/sycl.hpp>
-#include <CL/sycl/builtins.hpp>
+#include <sycl/sycl.hpp>
 
 #if __SYCL_COMPILER_VERSION >= 20220207
 #define SYCL_ONEAPI cl::sycl

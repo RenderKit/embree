@@ -26,6 +26,8 @@ namespace embree
   {
     typedef NodeRef Node;
     typedef InternalNode<InternalNode6Data> InternalNode6;
+
+    static constexpr uint64_t rootNodeOffset = 128;
     
     static_assert(sizeof(InternalNode6) == 64, "InternalNode6 must be 64 bytes large");
 
@@ -89,8 +91,6 @@ namespace embree
       assert(size.proceduralBytes % 64 == 0);
       assert(size.bytes() <= (64LL << 32));
 
-      rootNodeOffset = 0;
-
       bounds = embree::empty;
     }
 
@@ -102,7 +102,8 @@ namespace embree
     /* sets root not offset to point to this specified node */
     void setRootNodeOffset(Node node) {
       assert(node.cur_prim == 0);
-      rootNodeOffset = (uint64_t)node - (uint64_t)this;
+      uint64_t MAYBE_UNUSED rootNodeOffset1 = (uint64_t)node - (uint64_t)this;
+      assert(rootNodeOffset == rootNodeOffset1);
     }
 
     /* check if BVH is empty */
@@ -210,7 +211,7 @@ namespace embree
     }
 
   public:
-    uint64_t rootNodeOffset;        // root node offset (and node type in lower 3 bits)
+    uint64_t reseved1;
     BBox3f bounds;                  // bounding box of the BVH
 
     uint32_t nodeDataStart;         // first 64 byte block of node data

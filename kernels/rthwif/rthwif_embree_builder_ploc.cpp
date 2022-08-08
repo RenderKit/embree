@@ -952,7 +952,7 @@ namespace embree
                                                                       qbvh->bounds.upper.x = globals->geometryBounds.upper_x;
                                                                       qbvh->bounds.upper.y = globals->geometryBounds.upper_y;
                                                                       qbvh->bounds.upper.z = globals->geometryBounds.upper_z;
-                                                                      qbvh->rootNodeOffset = 128;
+                                                                      //qbvh->rootNodeOffset = 128;
                                                                       qbvh->numPrims       = org_numPrimitives;                                                                        
                                                                       qbvh->nodeDataStart  = globals->node_mem_allocator_start;
                                                                       qbvh->nodeDataCur    = globals->node_mem_allocator_cur;

@@ -75,7 +75,9 @@ IF (EMBREE_DPCPP_SUPPORT)
   ENDIF()
   
   SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
-  #SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -internal_options -cl-intel-256-GRF-per-thread")          # large GRF mode
+  IF (EMBREE_DPCPP_LARGEGRF)
+    SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -internal_options -cl-intel-256-GRF-per-thread")          # large GRF mode
+  ENDIF()
   SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic")
   #SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-private-memory-minimal-size-per-thread 8192")
   
@@ -97,8 +99,7 @@ IF (EMBREE_DPCPP_SUPPORT)
   SET(CMAKE_CXX_FLAGS_SYCL  "${CMAKE_CXX_FLAGS_SYCL}  ${CMAKE_CXX_FLAGS_SYCL_AOT}")
   SET(CMAKE_LINK_FLAGS_SYCL "${CMAKE_LINK_FLAGS_SYCL} ${CMAKE_LINK_FLAGS_SYCL_AOT}")
 
-  # ${CMAKE_CXX_FLAGS_SYCL}
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
   
 ENDIF(EMBREE_DPCPP_SUPPORT)
 

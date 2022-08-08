@@ -432,7 +432,9 @@ def runConfig(config):
       conf.append("-D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=ON")
     else:
        conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
-      
+
+  if "LARGEGRF" in config:
+    conf.append("-D EMBREE_DPCPP_LARGEGRF="+config["LARGEGRF"])
   if "DPCPP_MBLUR" in config:
     conf.append("-D EMBREE_DPCPP_MBLUR="+config["DPCPP_MBLUR"])
   if "RAY_MASK" in config:
@@ -483,6 +485,8 @@ def runConfig(config):
     conf.append("-D EMBREE_DPCPP_MBLUR="+config["sycl_mblur"])
   if "sycl_simd_width" in config:
     conf.append("-D EMBREE_DPCPP_SIMD_WIDTH="+config["sycl_simd_width"])
+  if "implicit_dispatch_globals" in config:
+    conf.append("-D EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS="+config["implicit_dispatch_globals"])
   if "sycl_test" in config:
     conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
   if "EMBREE_DPCPP_SUPPORT" in config:

@@ -631,7 +631,7 @@ namespace embree
   }
 
   void* DeviceGPU::malloc(size_t size, size_t align) {
-    return alignedSYCLMalloc(gpu_context,gpu_device,gpu_queue,size,align);
+    return alignedSYCLMalloc(gpu_context,gpu_device,gpu_queue,size,align,EMBREE_USM_SHARED_DEVICE_READ_ONLY);
   }
 
   void DeviceGPU::free(void* ptr) {

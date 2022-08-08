@@ -144,7 +144,7 @@ continuous-linux-DG2-AOT-INT-test:
 
 continuous-linux-DG2-JIT:
   extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none CURVE:OFF tasking:TBB intensity:1"]
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none tasking:TBB intensity:4"]
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:   [embree, docker]
 
@@ -161,6 +161,16 @@ continuous-linux-PVC-AOT:
 continuous-linux-PVC-AOT-test:
   extends: .test_pvc
   needs: ["continuous-linux-PVC-AOT"]
+
+continuous-linux-PVC-JIT:
+  extends: .build
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none sycl_simd_width:16 tasking:TBB intensity:4"]
+  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+  tags:   [embree, docker]
+
+continuous-linux-PVC-JIT-test:
+  extends: .test_pvc
+  needs: ["continuous-linux-PVC-JIT"]
 
 continuous-windows-DG2-AOT:
   stage: build

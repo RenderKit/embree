@@ -4,6 +4,8 @@
 ADD_LIBRARY(rthwif STATIC rthwif_embree_builder.cpp builder/qbvh6.cpp builder/statistics.cpp rthwif_embree_builder_ploc.cpp)
 TARGET_LINK_LIBRARIES(rthwif PRIVATE tasking)
 
+ADD_SUBDIRECTORY(testing)
+
 #ADD_LIBRARY(rthwif_sycl STATIC rthwif_embree.cpp rthwif_production.cpp)
 #SET_TARGET_PROPERTIES(rthwif_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 

@@ -8,17 +8,19 @@ typedef __attribute__((opencl_private)) struct rtfence_t_* rtfence_t;
 
 #ifdef __SYCL_DEVICE_ONLY__
 
-SYCL_EXTERNAL extern "C" void *intel_get_rt_stack(rtglobals_t rt_dispatch_globals);
-SYCL_EXTERNAL extern "C" void *intel_get_thread_btd_stack(rtglobals_t rt_dispatch_globals);
-SYCL_EXTERNAL extern "C" void *intel_get_global_btd_stack(rtglobals_t rt_dispatch_globals);
+SYCL_EXTERNAL extern "C" __attribute__((opencl_global)) void* intel_get_implicit_dispatch_globals();
+SYCL_EXTERNAL extern "C" void* intel_get_rt_stack(rtglobals_t rt_dispatch_globals);
+SYCL_EXTERNAL extern "C" void* intel_get_thread_btd_stack(rtglobals_t rt_dispatch_globals);
+SYCL_EXTERNAL extern "C" void* intel_get_global_btd_stack(rtglobals_t rt_dispatch_globals);
 SYCL_EXTERNAL extern "C" rtfence_t intel_dispatch_trace_ray_query(rtglobals_t rt_dispatch_globals, unsigned int bvh_level, unsigned int traceRayCtrl);
 SYCL_EXTERNAL extern "C" void intel_rt_sync(rtfence_t fence);
 
 #else
 
-inline void *intel_get_rt_stack(rtglobals_t rt_dispatch_globals) { return nullptr; }
-inline void *intel_get_thread_btd_stack(rtglobals_t rt_dispatch_globals) { return nullptr; }
-inline void *intel_get_global_btd_stack(rtglobals_t rt_dispatch_globals) { return nullptr; }
+inline void* intel_get_implicit_dispatch_globals() { return nullptr; }
+inline void* intel_get_rt_stack(rtglobals_t rt_dispatch_globals) { return nullptr; }
+inline void* intel_get_thread_btd_stack(rtglobals_t rt_dispatch_globals) { return nullptr; }
+inline void* intel_get_global_btd_stack(rtglobals_t rt_dispatch_globals) { return nullptr; }
 inline rtfence_t intel_dispatch_trace_ray_query(rtglobals_t rt_dispatch_globals, unsigned int bvh_level, unsigned int traceRayCtrl) { return nullptr; }
 inline void intel_rt_sync(rtfence_t fence) {}
 
@@ -127,7 +129,7 @@ struct __attribute__ ((packed,aligned(64))) RTStack
 
 struct __attribute__ ((packed)) HWAccel
 {
-  uint64_t rootNodeOffset;        // root node offset (and node type in lower 3 bits)
+  uint64_t reserved;
   float bounds[2][3];             // bounding box of the BVH
   uint32_t reserved0[8];
   uint32_t numTimeSegments;
