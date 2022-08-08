@@ -408,6 +408,11 @@ struct Geometry
 
   virtual RTHWIF_GEOMETRY_DESC getDesc() = 0;
 
+  virtual void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context) {
+  };
+
+  virtual void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) = 0;
+
   Type type;
 };
 
@@ -482,6 +487,18 @@ public:
       else                                    mesh1->addTriangle(tri);
     }
   }
+
+  virtual void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override
+  {    
+    for (uint32_t primID=0; primID<triangles.size(); primID++)
+    {
+      const Triangle tri = getTriangle(primID);
+      assert(tri_map[tri.index].geomID == -1);
+      tri_map[tri.index].geomID = id_stack.back();
+      tri_map[tri.index].primID = primID;
+      tri_map[tri.index].triangle = tri;
+    }
+  }
   
 public:
   RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
@@ -492,16 +509,16 @@ public:
 };
 
 template<typename Scene>
-struct InstanceGeometry : public Geometry
+struct InstanceGeometryT : public Geometry
 {
   struct Transform {
     sycl::float3 vx,vy,vz,p;
   };
   
-  InstanceGeometry(Transform& local2world, std::shared_ptr<Scene> scene)
+  InstanceGeometryT(Transform& local2world, std::shared_ptr<Scene> scene)
     : Geometry(Type::INSTANCE), local2world(local2world), scene(scene) {}
 
-  virtual ~InstanceGeometry() {}
+  virtual ~InstanceGeometryT() {}
 
   virtual RTHWIF_GEOMETRY_DESC getDesc() override
   {
@@ -523,11 +540,19 @@ struct InstanceGeometry : public Geometry
     out.Transform.p.x  = local2world.p.x();
     out.Transform.p.y  = local2world.p.y();
     out.Transform.p.z  = local2world.p.z();
-    out.Accel = scene.getAccel();
+    out.Accel = scene->getAccel();
 
     RTHWIF_GEOMETRY_DESC desc;
     desc.Instances = out;
     return desc;
+  }
+
+  virtual void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context) override {
+    scene->buildAccel(rtcdevice,device,context);
+  }
+
+  virtual void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override {
+    scene->buildTriMap(id_stack, tri_map);
   }
 
   Transform local2world;
@@ -567,6 +592,8 @@ std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const
 
 struct Scene
 {
+  typedef InstanceGeometryT<Scene> InstanceGeometry;
+  
   Scene() {}
       
   Scene(uint32_t width, uint32_t height, bool opaque)
@@ -596,28 +623,40 @@ struct Scene
     assert(geometries.size() == (size_t) numGeometries);
   }
 
-  /*void createInstances(uint32_t blockSize)
+  void createInstances(uint32_t blockSize)
   {
-    for (uint32_t i=0; i<numGeometries; i+=blockSize)
+    std::vector<std::shared_ptr<Geometry>> instances;
+    
+    for (uint32_t i=0; i<geometries.size(); i+=blockSize)
     {
       const uint32_t begin = i;
-      const uint32_t end   = std::min(numGeometries,i+blockSize);
+      const uint32_t end   = std::min((uint32_t)geometries.size(),i+blockSize);
 
-      std::shared_ptr<Scene> scene(new Scene(opaque));
+      std::shared_ptr<Scene> scene(new Scene);
       for (size_t j=begin; j<end; j++)
-        scene.geometries.push_back(geometries[j]);
+        scene->geometries.push_back(geometries[j]);
 
+      InstanceGeometry::Transform local2world;
+      local2world.vx = sycl::float3(1,0,0);
+      local2world.vy = sycl::float3(0,1,0);
+      local2world.vz = sycl::float3(0,0,1);
+      local2world.p  = sycl::float3(0,0,0);
       
+      std::shared_ptr<InstanceGeometry> instance = std::make_shared<InstanceGeometry>(local2world,scene);
+      instances.push_back(instance);
     }
-    assert(geometries.size() == (size_t) numGeometries);
-    }*/
+
+    geometries = instances;
+  }
 
   void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context)
   {
     /* fill geometry descriptor buffer */
     std::vector<RTHWIF_GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
-    for (size_t geomID=0; geomID<size(); geomID++) {
+    for (size_t geomID=0; geomID<size(); geomID++)
+    {
+      geometries[geomID]->buildAccel(rtcdevice,device,context);
       desc[geomID] = geometries[geomID]->getDesc();
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
@@ -667,24 +706,12 @@ struct Scene
       throw std::runtime_error("build error");
   }
   
-  void buildTriMap()
+  void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map)
   {    
-    /* create test acceleration structure */
-    tri_map.resize(2*width*height);
-
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
     {
-      if (std::shared_ptr<TriangleMesh> geometry = std::dynamic_pointer_cast<TriangleMesh>(geometries[geomID]))
-      {
-        for (uint32_t primID=0; primID<geometry->size(); primID++)
-        {
-          const Triangle tri = geometry->getTriangle(primID);
-          assert(tri_map[tri.index].geomID == -1);
-          tri_map[tri.index].geomID = geomID;
-          tri_map[tri.index].primID = primID;
-          tri_map[tri.index].triangle = tri;
-        }
-      }
+      id_stack.push_back(geomID);
+      geometries[geomID]->buildTriMap(id_stack,tri_map);
     }
   }
   
@@ -698,16 +725,9 @@ struct Scene
 
   std::shared_ptr<Geometry> operator[] ( size_t i ) { return geometries[i]; }
 
-  Hit getHit( uint32_t x, uint32_t y, uint32_t id)
-  {
-    uint32_t index = 2*(y*width+x)+id;
-    return tri_map[index];
-  }
-
   uint32_t width;
   uint32_t height;
   std::vector<std::shared_ptr<Geometry>> geometries;
-  std::vector<Hit> tri_map;
   void* accel;
 };
 
@@ -742,7 +762,11 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   scene.splitIntoGeometries(16);
   //scene.createInstances(3);
   scene.buildAccel(rtcdevice,device,context);
-  scene.buildTriMap();
+
+  std::vector<Hit> tri_map;
+  tri_map.resize(2*width*height);
+  std::vector<uint32_t> id_stack;
+  scene.buildTriMap(id_stack,tri_map);
  
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
   memset(in, 0, numTests*sizeof(TestInput));
@@ -770,7 +794,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         size_t tid = 2*(y*width+x)+i;
         assert(tid < numTests);
 
-        Hit hit = scene.getHit(x,y,i);
+        Hit hit = tri_map[tid];
         sycl::float3 p = hit.triangle.sample(0.1f,0.6f);
         
         in[tid].org = p + sycl::float3(0,0,-1);
