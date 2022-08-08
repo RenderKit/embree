@@ -10,6 +10,7 @@
 
 sycl::device device;
 sycl::context context;
+void* dispatchGlobalsPtr = nullptr;
 
 #if defined(__SYCL_DEVICE_ONLY__)
 #define CONSTANT __attribute__((opencl_constant))
@@ -618,6 +619,7 @@ struct Scene
     args.bytes = sizeof(args);
     args.device = nullptr;
     args.embree_device = (void*) rtcdevice;
+    args.dispatchGlobalsPtr = dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
     args.numGeometries = geom.size();
     args.accel = nullptr;
@@ -1075,6 +1077,51 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   return numErrors;
 }
 
+enum Flags : uint32_t {
+  FLAGS_NONE,
+  DEPTH_TEST_LESS_EQUAL = 1 << 0  // when set we use <= for depth test, otherwise <
+};
+
+struct DispatchGlobals
+{
+  uint64_t rtMemBasePtr;               // base address of the allocated stack memory
+  uint64_t callStackHandlerKSP;             // this is the KSP of the continuation handler that is invoked by BTD when the read KSP is 0
+  uint32_t asyncStackSize;             // async-RT stack size in 64 byte blocks
+  uint32_t numDSSRTStacks : 16;        // number of stacks per DSS
+  uint32_t syncRayQueryCount : 4;      // number of ray queries in the sync-RT stack: 0-15 mapped to: 1-16
+  unsigned _reserved_mbz : 12;
+  uint32_t maxBVHLevels;               // the maximal number of supported instancing levels (0->8, 1->1, 2->2, ...)
+  Flags flags;                         // per context control flags
+};
+
+void* allocDispatchGlobals(sycl::device device, sycl::context context)
+{
+  size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
+  
+  size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
+  size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC
+  size_t dispatchGlobalSize = 128+num_rtstacks*rtstack_bytes;
+  
+  //dispatchGlobalsPtr = this->malloc(dispatchGlobalSize, 64);
+  void* dispatchGlobalsPtr = sycl::aligned_alloc(64,dispatchGlobalSize,device,context,sycl::usm::alloc::shared);
+  memset(dispatchGlobalsPtr, 0, dispatchGlobalSize);
+  
+  if (((size_t)dispatchGlobalsPtr & 0xFFFF000000000000ull) != 0)
+    throw std::runtime_error("internal error in RTStack allocation");
+  
+  DispatchGlobals* dg = (DispatchGlobals*) dispatchGlobalsPtr;
+  dg->rtMemBasePtr = (uint64_t) dispatchGlobalsPtr + dispatchGlobalSize;
+  dg->callStackHandlerKSP = 0;
+  dg->asyncStackSize = 0;
+  dg->numDSSRTStacks = 0;
+  dg->syncRayQueryCount = 0;
+  dg->_reserved_mbz = 0;
+  dg->maxBVHLevels = maxBVHLevels;
+  dg->flags = DEPTH_TEST_LESS_EQUAL;
+  
+  return dispatchGlobalsPtr;
+}
+
 int main(int argc, char* argv[])
 {
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
@@ -1124,9 +1171,13 @@ int main(int argc, char* argv[])
   sycl::queue queue = sycl::queue(device,exception_handler);
   context = queue.get_context();
 
+  dispatchGlobalsPtr = allocDispatchGlobals(device,context);
+
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
   uint32_t numErrors = executeTest(device,queue,context,inst,test);
+
+  sycl::free(dispatchGlobalsPtr, context);
   
   return numErrors ? 1 : 0;
 }

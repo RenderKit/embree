@@ -512,6 +512,7 @@ namespace embree
     args.bytes = sizeof(args);
     args.device = nullptr;
     args.embree_device = scene->device;
+    args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomStatic.data();
     args.numGeometries = geomStatic.size();
     args.accel = nullptr;

@@ -413,12 +413,11 @@ namespace embree
       }
     };
 
-    void* dispatchGlobalsPtr = nullptr;
     bool verbose = false;
     BBox3f bounds = QBVH6BuilderSAH::build2(numGeometries, (Device*) args.embree_device, 
                                             getSize, getType, getNumTimeSegments,
                                             createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                            (char*)args.accel, args.numBytes, args.AddAccel, verbose, dispatchGlobalsPtr);
+                                            (char*)args.accel, args.numBytes, args.AddAccel, verbose, args.dispatchGlobalsPtr);
 
     if (args.bounds) *(BBox3f*)args.bounds = bounds;
     

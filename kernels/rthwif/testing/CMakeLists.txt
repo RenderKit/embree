@@ -6,34 +6,43 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
 SET(CMAKE_CXX_STANDARD 17)
 
+IF (NOT DEFINED EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  OPTION(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS "Using L0 allocated Dispatch Globals" OFF)
+ENDIF()
+
+IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  ADD_DEFINITIONS("-DEMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS")
+ENDIF()
+
 ADD_EXECUTABLE(rthwif_cornell_box rthwif_cornell_box.cpp ../rthwif_production.cpp)
-SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_DPCPP_SUPPORT -DEMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS")
+SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_DPCPP_SUPPORT")
 SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl")
 
 ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ../rthwif_production.cpp)
 TARGET_LINK_LIBRARIES(rthwif_test embree embree_rthwif)  # FIXME: remove
-SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_DPCPP_SUPPORT -DEMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS")
+SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_DPCPP_SUPPORT")
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl")
 
-IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS OR NOT DEFINED EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+SET(OPTION BUILD_TESTING ON)
+INCLUDE(CTest)
 
-  SET(OPTION BUILD_TESTING ON)
-  INCLUDE(CTest)
+IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS OR NOT DEFINED EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
   
   ADD_TEST(NAME rthwif_cornell_box
            COMMAND rthwif_cornell_box
            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
-         
-  ADD_TEST(NAME rthwif_test_triangles_committed_hit        COMMAND rthwif_test --no-instancing --triangles-committed-hit)
-  ADD_TEST(NAME rthwif_test_triangles_potential_hit        COMMAND rthwif_test --no-instancing --triangles-potential-hit)
-  ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_commit COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-commit)
-  ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_reject COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-reject)
-#  ADD_TEST(NAME rthwif_test_procedurals_committed_hit      COMMAND rthwif_test --no-instancing --procedurals-committed-hit)
-
-  ADD_TEST(NAME rthwif_test_hwinstancing_triangles_committed_hit        COMMAND rthwif_test --hw-instancing --triangles-committed-hit)
-  ADD_TEST(NAME rthwif_test_hwinstancing_triangles_potential_hit        COMMAND rthwif_test --hw-instancing --triangles-potential-hit)
-  ADD_TEST(NAME rthwif_test_hwinstancing_triangles_anyhit_shader_commit COMMAND rthwif_test --hw-instancing --triangles-anyhit-shader-commit)
-  ADD_TEST(NAME rthwif_test_hwinstancing_triangles_anyhit_shader_reject COMMAND rthwif_test --hw-instancing --triangles-anyhit-shader-reject)
-#  ADD_TEST(NAME rthwif_test_hwinstancing_procedurals_committed_hit      COMMAND rthwif_test --hw-instancing --procedurals-committed-hit)
 
 ENDIF()
+         
+ADD_TEST(NAME rthwif_test_triangles_committed_hit        COMMAND rthwif_test --no-instancing --triangles-committed-hit)
+ADD_TEST(NAME rthwif_test_triangles_potential_hit        COMMAND rthwif_test --no-instancing --triangles-potential-hit)
+ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_commit COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-commit)
+ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_reject COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-reject)
+#  ADD_TEST(NAME rthwif_test_procedurals_committed_hit      COMMAND rthwif_test --no-instancing --procedurals-committed-hit)
+
+ADD_TEST(NAME rthwif_test_hwinstancing_triangles_committed_hit        COMMAND rthwif_test --hw-instancing --triangles-committed-hit)
+ADD_TEST(NAME rthwif_test_hwinstancing_triangles_potential_hit        COMMAND rthwif_test --hw-instancing --triangles-potential-hit)
+ADD_TEST(NAME rthwif_test_hwinstancing_triangles_anyhit_shader_commit COMMAND rthwif_test --hw-instancing --triangles-anyhit-shader-commit)
+ADD_TEST(NAME rthwif_test_hwinstancing_triangles_anyhit_shader_reject COMMAND rthwif_test --hw-instancing --triangles-anyhit-shader-reject)
+#  ADD_TEST(NAME rthwif_test_hwinstancing_procedurals_committed_hit      COMMAND rthwif_test --hw-instancing --procedurals-committed-hit)
+
