@@ -70,6 +70,12 @@ float RandomSampler_getFloat(RandomSampler& self) {
 
 RandomSampler rng;
 
+enum class TestType
+{
+  TRIANGLES_COMMITTED_HIT,
+  TRIANGLES_POTENTIAL_HIT
+};
+
 // triangles_committed_hit: triangles
 // quads_committed_hit: quads
 // triangles_potential_hit: triangles + filter + check potential hit
@@ -86,6 +92,12 @@ struct TestInput
   float tfar;
   uint32_t mask;
   uint32_t flags;
+};
+
+enum TestHitType {
+  TEST_COMMITTED_HIT,
+  TEST_POTENTIAL_HIT,
+  TEST_MISS
 };
 
 struct TestOutput
@@ -105,6 +117,7 @@ struct TestOutput
   uint32_t rayN_flags;
   
   // Hit data
+  TestHitType hit_type;
   uint32_t bvh_level;
   uint32_t hit_candidate;
   float t;
@@ -156,6 +169,7 @@ uint32_t compareTestOutput(uint32_t tid, const TestOutput& test, const TestOutpu
   COMPARE1(rayN_tnear,0);
   COMPARE(rayN_mask);
   COMPARE(rayN_flags);
+  COMPARE(hit_type);
   COMPARE(bvh_level);
   COMPARE(hit_candidate);
   COMPARE1(t,eps);
@@ -201,10 +215,40 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
   out.rayN_tnear = 0.0f;
   out.rayN_mask = 0;
   out.rayN_flags = 0;
-  
-  if (intel_has_committed_hit(query))
+
+  /* potential hit */
+  if (!intel_is_traversal_done(query))
   {
-    /* return committed hit data */
+    out.hit_type = TEST_POTENTIAL_HIT;
+    out.bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+    out.hit_candidate = intel_get_hit_candidate( query, POTENTIAL_HIT );
+    out.t = intel_get_hit_distance(query, POTENTIAL_HIT);
+    out.u = intel_get_hit_barys(query, POTENTIAL_HIT).x();
+    out.v = intel_get_hit_barys(query, POTENTIAL_HIT).y();
+    out.front_face = intel_hit_is_front_face( query, POTENTIAL_HIT );
+    out.instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
+    out.geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
+    if (i%2) out.primID = intel_get_hit_primID_triangle( query, POTENTIAL_HIT );
+    else     out.primID = intel_get_hit_primID         ( query, POTENTIAL_HIT );
+    sycl::float3 vertex_out[3];
+    intel_get_hit_triangle_verts(query, vertex_out, POTENTIAL_HIT);
+    out.v0 = vertex_out[0];
+    out.v1 = vertex_out[1];
+    out.v2 = vertex_out[2];
+
+    /* return ray data at current level */
+    uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+    out.rayN_org = intel_get_ray_origin(query,bvh_level);
+    out.rayN_dir = intel_get_ray_direction(query,bvh_level);
+    out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
+    out.rayN_mask = intel_get_ray_mask(query,bvh_level);
+    out.rayN_flags = intel_get_ray_flags(query,bvh_level);
+  }
+
+  /* committed hit */
+  else if (intel_has_committed_hit(query))
+  {
+    out.hit_type = TEST_COMMITTED_HIT;
     out.bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
     out.hit_candidate = intel_get_hit_candidate( query, COMMITTED_HIT );
     out.t = intel_get_hit_distance(query, COMMITTED_HIT);
@@ -228,6 +272,11 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
     out.rayN_mask = intel_get_ray_mask(query,bvh_level);
     out.rayN_flags = intel_get_ray_flags(query,bvh_level);
+  }
+
+  /* miss */
+  else {
+    out.hit_type = TEST_MISS;
   }
 }
 
@@ -265,6 +314,7 @@ struct less_float3 {
 struct Hit
 {
   Triangle triangle;
+  TestHitType hit_type = TEST_MISS;
   uint32_t geomID = -1;
   uint32_t primID = -1;
 };
@@ -272,6 +322,9 @@ struct Hit
 struct TriangleMesh
 {
 public:
+
+  TriangleMesh (bool opaque = true)
+    : gflags(opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE) {}
 
   size_t size() const {
     return triangles.size();
@@ -282,7 +335,7 @@ public:
     RTHWIF_GEOMETRY_TRIANGLES_DESC out;
     memset(&out,0,sizeof(out));
     out.GeometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
-    out.GeometryFlags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
+    out.GeometryFlags = gflags;
     out.GeometryMask = 0xFF;
     out.IndexBuffer = (RTHWIF_UINT3*) triangles.data();
     out.TriangleCount = triangles.size();
@@ -334,6 +387,7 @@ public:
   }
   
 public:
+  RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
   std::vector<uint32_t> indices;
   std::vector<sycl::int3> triangles;
   std::vector<sycl::float3> vertices;
@@ -372,7 +426,7 @@ std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const
 
 struct Scene
 {
-  Scene(uint32_t width, uint32_t height, uint32_t numGeometries)
+  Scene(uint32_t width, uint32_t height, uint32_t numGeometries, bool opaque)
     : width(width), height(height)
   {
     std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
@@ -394,6 +448,11 @@ struct Scene
     }
     assert(geometries.size() == (size_t) numGeometries);
 
+    /* set opaque property */
+    for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
+      geometries[geomID]->gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
+    
+    /* create test acceleration structure */
     accel.resize(2*width*height);
 
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
@@ -403,6 +462,7 @@ struct Scene
       {
         const Triangle tri = geometry->getTriangle(primID);
         assert(accel[tri.index].geomID == -1);
+        accel[tri.index].hit_type = opaque ? TEST_COMMITTED_HIT : TEST_POTENTIAL_HIT;
         accel[tri.index].geomID = geomID;
         accel[tri.index].primID = primID;
         accel[tri.index].triangle = tri;
@@ -496,24 +556,17 @@ void exception_handler(sycl::exception_list exceptions)
   }
 };
 
-int main(int argc, char* argv[])
+static const int width = 16;
+static const int height = 16;
+static const size_t numTests = 2*width*height;
+
+uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
 {
-  RandomSampler_init(rng,0x56FE238A);
-  
-  static const int width = 16;
-  static const int height = 16;
-  
-  sycl::device device = sycl::device(sycl::gpu_selector());
-  sycl::queue queue = sycl::queue(device,exception_handler);
-  sycl::context context = queue.get_context();
+  const bool opaque = test != TestType::TRIANGLES_POTENTIAL_HIT;
+  Scene scene(width,height,8,opaque);
 
   RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
-
-  Scene scene(width,height,8);
-
   void* accel = buildAccel( rtcdevice, device, context, scene);
-
-  size_t numTests = 2*width*height;
 
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
   memset(in, 0, numTests*sizeof(TestInput));
@@ -558,6 +611,7 @@ int main(int argc, char* argv[])
         out_expected[tid].rayN_flags = in[tid].flags;
           
         // Hit data
+        out_expected[tid].hit_type = hit.hit_type;
         out_expected[tid].bvh_level = 0;
         out_expected[tid].hit_candidate = TRIANGLE;
         out_expected[tid].t = 1.0f;
@@ -588,6 +642,38 @@ int main(int argc, char* argv[])
   uint32_t numErrors = 0;
   for (size_t tid=0; tid<numTests; tid++)
     numErrors += compareTestOutput(tid,out_test[tid],out_expected[tid]);
-    
+
+  return numErrors;
+}
+
+int main(int argc, char* argv[])
+{
+  TestType test = TestType::TRIANGLES_COMMITTED_HIT;
+
+  /* command line parsing */
+  if (argc != 2) {
+    std::cout << "ERROR: no test specified" << std::endl;
+    return 1;
+  }
+  else if (strcmp(argv[1], "--triangles-committed-hit") == 0) {
+    test = TestType::TRIANGLES_COMMITTED_HIT;
+  }
+  else if (strcmp(argv[1], "--triangles-potential-hit") == 0) {
+    test = TestType::TRIANGLES_POTENTIAL_HIT;
+  }
+  else {
+    std::cout << "ERROR: invalid test " << argv[1] << " specified" << std::endl;
+    return 1;
+  }
+
+  /* initialize SYCL device */
+  sycl::device device = sycl::device(sycl::gpu_selector());
+  sycl::queue queue = sycl::queue(device,exception_handler);
+  sycl::context context = queue.get_context();
+
+  /* execute test */
+  RandomSampler_init(rng,0x56FE238A);
+  uint32_t numErrors = executeTest(device,queue,context,test);
+  
   return numErrors ? 1 : 0;
 }

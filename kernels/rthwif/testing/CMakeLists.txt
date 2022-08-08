@@ -24,8 +24,7 @@ IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS OR NOT DEFINED EMBREE_DPCPP_IMPLICIT_
            COMMAND rthwif_cornell_box
            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
          
-  ADD_TEST(NAME rthwif_test
-           COMMAND rthwif_test
-           WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
+  ADD_TEST(NAME rthwif_test_triangles_committed_hit COMMAND rthwif_test --triangles-committed-hit)
+  ADD_TEST(NAME rthwif_test_triangles_potential_hit COMMAND rthwif_test --triangles-potential-hit)
 
 ENDIF()

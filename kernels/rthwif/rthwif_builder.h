@@ -219,6 +219,7 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   void* userPtr;
   RTHWIF_ACCEL_REF AddAccel;   // add link to that acceleration structure
   // FIXME: return used bytes
+  // FIXME: add parallel_for callback for tasking
   
 } RTHWIF_BUILD_ACCEL_ARGS;
 
