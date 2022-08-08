@@ -612,10 +612,65 @@ struct Scene
     assert(geometries.size() == (size_t) numGeometries);
     }*/
 
-  void buildAccel()
+  void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context)
   {
+    /* fill geometry descriptor buffer */
+    std::vector<RTHWIF_GEOMETRY_DESC> desc(size());
+    std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
+    for (size_t geomID=0; geomID<size(); geomID++) {
+      desc[geomID] = geometries[geomID]->getDesc();
+      geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
+    }
+    
+    /* estimate accel size */
+    RTHWIF_AABB bounds;
+    RTHWIF_BUILD_ACCEL_ARGS args;
+    memset(&args,0,sizeof(args));
+    args.bytes = sizeof(args);
+    args.device = nullptr;
+    args.embree_device = (void*) rtcdevice;
+    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
+    args.numGeometries = geom.size();
+    args.accel = nullptr;
+    args.numBytes = 0;
+    args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
+    args.flags = RTHWIF_BUILD_FLAG_NONE;
+    args.bounds = &bounds;
+    args.userPtr = nullptr;
+    
+    RTHWIF_ACCEL_SIZE size;
+    memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
+    size.bytes = sizeof(RTHWIF_ACCEL_SIZE);
+    RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
+    if (err != RTHWIF_ERROR_NONE)
+      throw std::runtime_error("BVH size estimate failed");
+    
+    accel = nullptr;
+    for (size_t bytes = size.expectedBytes; bytes < size.worstCaseBytes; bytes*=1.2)
+    {
+      /* allocate BVH data */
+      if (accel) sycl::free(accel,context);
+      accel = sycl::aligned_alloc(RTHWIF_BVH_ALIGNMENT,bytes,device,context,sycl::usm::alloc::shared);
+      memset(accel,0,bytes); // FIXME: not required
+      
+      /* build accel */
+      args.numGeometries = geom.size();
+      args.accel = accel;
+      args.numBytes = bytes;
+      err = rthwifBuildAccel(args);
+      
+      if (err == RTHWIF_ERROR_OUT_OF_MEMORY)
+        continue;
+    }
+    
+    if (err != RTHWIF_ERROR_NONE)
+      throw std::runtime_error("build error");
+  }
+  
+  void buildTriMap()
+  {    
     /* create test acceleration structure */
-    accel.resize(2*width*height);
+    tri_map.resize(2*width*height);
 
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
     {
@@ -624,10 +679,10 @@ struct Scene
         for (uint32_t primID=0; primID<geometry->size(); primID++)
         {
           const Triangle tri = geometry->getTriangle(primID);
-          assert(accel[tri.index].geomID == -1);
-          accel[tri.index].geomID = geomID;
-          accel[tri.index].primID = primID;
-          accel[tri.index].triangle = tri;
+          assert(tri_map[tri.index].geomID == -1);
+          tri_map[tri.index].geomID = geomID;
+          tri_map[tri.index].primID = primID;
+          tri_map[tri.index].triangle = tri;
         }
       }
     }
@@ -637,76 +692,24 @@ struct Scene
     return geometries.size();
   }
 
+  void* getAccel() {
+    return accel;
+  }
+
   std::shared_ptr<Geometry> operator[] ( size_t i ) { return geometries[i]; }
 
   Hit getHit( uint32_t x, uint32_t y, uint32_t id)
   {
     uint32_t index = 2*(y*width+x)+id;
-    return accel[index];
+    return tri_map[index];
   }
 
   uint32_t width;
   uint32_t height;
   std::vector<std::shared_ptr<Geometry>> geometries;
-  std::vector<Hit> accel;
+  std::vector<Hit> tri_map;
+  void* accel;
 };
-
-void* buildAccel( RTCDevice rtcdevice, sycl::device& device, sycl::context& context, Scene& scene)
-{
-  /* fill geometry descriptor buffer */
-  std::vector<RTHWIF_GEOMETRY_DESC> desc(scene.size());
-  std::vector<const RTHWIF_GEOMETRY_DESC*> geom(scene.size());
-  for (size_t geomID=0; geomID<scene.size(); geomID++) {
-    desc[geomID] = scene[geomID]->getDesc();
-    geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
-  }
-
-  /* estimate accel size */
-  RTHWIF_AABB bounds;
-  RTHWIF_BUILD_ACCEL_ARGS args;
-  memset(&args,0,sizeof(args));
-  args.bytes = sizeof(args);
-  args.device = nullptr;
-  args.embree_device = (void*) rtcdevice;
-  args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
-  args.numGeometries = geom.size();
-  args.accel = nullptr;
-  args.numBytes = 0;
-  args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
-  args.flags = RTHWIF_BUILD_FLAG_NONE;
-  args.bounds = &bounds;
-  args.userPtr = nullptr;
-  
-  RTHWIF_ACCEL_SIZE size;
-  memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-  size.bytes = sizeof(RTHWIF_ACCEL_SIZE);
-  RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
-  if (err != RTHWIF_ERROR_NONE)
-    throw std::runtime_error("BVH size estimate failed");
-
-  void* accel = nullptr;
-  for (size_t bytes = size.expectedBytes; bytes < size.worstCaseBytes; bytes*=1.2)
-  {
-    /* allocate BVH data */
-    if (accel) sycl::free(accel,context);
-    accel = sycl::aligned_alloc(RTHWIF_BVH_ALIGNMENT,bytes,device,context,sycl::usm::alloc::shared);
-    memset(accel,0,bytes); // FIXME: not required
-
-    /* build accel */
-    args.numGeometries = geom.size();
-    args.accel = accel;
-    args.numBytes = bytes;
-    err = rthwifBuildAccel(args);
-
-    if (err == RTHWIF_ERROR_OUT_OF_MEMORY)
-      continue;
-  }
-  
-  if (err != RTHWIF_ERROR_NONE)
-    throw std::runtime_error("build error");
-
-  return accel;
-}
 
 void exception_handler(sycl::exception_list exceptions)
 {
@@ -733,14 +736,14 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; break;
   };
 
+  RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
+
   Scene scene(width,height,opaque);
   scene.splitIntoGeometries(16);
   //scene.createInstances(3);
-  scene.buildAccel();
-
-  RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
-  void* accel = buildAccel( rtcdevice, device, context, scene);
-
+  scene.buildAccel(rtcdevice,device,context);
+  scene.buildTriMap();
+ 
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
   memset(in, 0, numTests*sizeof(TestInput));
 
@@ -820,6 +823,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   }
 
   /* execute test */
+  void* accel = scene.getAccel();
+  
   switch (test) {
   case TestType::TRIANGLES_COMMITTED_HIT:
   case TestType::TRIANGLES_POTENTIAL_HIT:
