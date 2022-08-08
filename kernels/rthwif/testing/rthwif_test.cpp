@@ -72,14 +72,13 @@ RandomSampler rng;
 
 enum class TestType
 {
-  TRIANGLES_COMMITTED_HIT,
-  TRIANGLES_POTENTIAL_HIT
+  TRIANGLES_COMMITTED_HIT,           // triangles
+  TRIANGLES_POTENTIAL_HIT,           // triangles + filter + check potential hit
+  TRIANGLES_ANYHIT_SHADER_COMMIT,    // triangles + filter + commit
+  TRIANGLES_ANYHIT_SHADER_REJECT,    // triangles + filter + reject
 };
 
-// triangles_committed_hit: triangles
 // quads_committed_hit: quads
-// triangles_potential_hit: triangles + filter + check potential hit
-// triangles_anyhit_shader: triangles + filter + commit/reject 
 // triangles_hw_instancing: triangles + hw instancing
 // triangles_sw_instancing: triangles + sw instancing
 // procedural_triangles: procedural triangles + commit/reject
@@ -280,6 +279,86 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
   }
 }
 
+void render_loop(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel, TestType test)
+{
+  /* setup ray */
+  RayDescINTEL ray;
+  ray.O = in.org;
+  ray.D = in.dir;
+  ray.tmin = in.tnear;
+  ray.tmax = in.tfar;
+  ray.mask = in.mask;
+  ray.flags = in.flags;
+  
+  /* trace ray */
+  rayquery_t query = intel_ray_query_init(0,ray,accel,0);
+  intel_ray_query_start_traversal(query);
+  intel_sync_ray_query(query);
+  
+  /* return ray data of level 0 */
+  out.ray0_org = intel_get_ray_origin(query,0);
+  out.ray0_dir = intel_get_ray_direction(query,0);
+  out.ray0_tnear = intel_get_ray_tnear(query,0);
+  out.ray0_mask = intel_get_ray_mask(query,0);
+  out.ray0_flags = intel_get_ray_flags(query,0);
+  
+  /* clear ray data of level N */
+  out.rayN_org = sycl::float3(0,0,0);
+  out.rayN_dir = sycl::float3(0,0,0);
+  out.rayN_tnear = 0.0f;
+  out.rayN_mask = 0;
+  out.rayN_flags = 0;
+
+  /* traversal loop */
+  while (!intel_is_traversal_done(query))
+  {
+    const CandidateType candidate = intel_get_hit_candidate(query, POTENTIAL_HIT);
+
+    if (candidate == TRIANGLE)
+    {
+      if (test == TestType::TRIANGLES_ANYHIT_SHADER_COMMIT)
+        intel_ray_query_commit_potential_hit(query);
+    }
+
+    intel_ray_query_start_traversal(query);
+    intel_sync_ray_query(query);
+  }
+
+  /* committed hit */
+  if (intel_has_committed_hit(query))
+  {
+    out.hit_type = TEST_COMMITTED_HIT;
+    out.bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
+    out.hit_candidate = intel_get_hit_candidate( query, COMMITTED_HIT );
+    out.t = intel_get_hit_distance(query, COMMITTED_HIT);
+    out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
+    out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
+    out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
+    out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
+    out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
+    if (i%2) out.primID = intel_get_hit_primID_triangle( query, COMMITTED_HIT );
+    else     out.primID = intel_get_hit_primID         ( query, COMMITTED_HIT );
+    sycl::float3 vertex_out[3];
+    intel_get_hit_triangle_verts(query, vertex_out, COMMITTED_HIT);
+    out.v0 = vertex_out[0];
+    out.v1 = vertex_out[1];
+    out.v2 = vertex_out[2];
+
+    /* return ray data at current level */
+    uint32_t bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
+    out.rayN_org = intel_get_ray_origin(query,bvh_level);
+    out.rayN_dir = intel_get_ray_direction(query,bvh_level);
+    out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
+    out.rayN_mask = intel_get_ray_mask(query,bvh_level);
+    out.rayN_flags = intel_get_ray_flags(query,bvh_level);
+  }
+
+  /* miss */
+  else {
+    out.hit_type = TEST_MISS;
+  }
+}
+
 struct Triangle
 {
   Triangle()
@@ -314,7 +393,6 @@ struct less_float3 {
 struct Hit
 {
   Triangle triangle;
-  TestHitType hit_type = TEST_MISS;
   uint32_t geomID = -1;
   uint32_t primID = -1;
 };
@@ -462,7 +540,6 @@ struct Scene
       {
         const Triangle tri = geometry->getTriangle(primID);
         assert(accel[tri.index].geomID == -1);
-        accel[tri.index].hit_type = opaque ? TEST_COMMITTED_HIT : TEST_POTENTIAL_HIT;
         accel[tri.index].geomID = geomID;
         accel[tri.index].primID = primID;
         accel[tri.index].triangle = tri;
@@ -562,7 +639,14 @@ static const size_t numTests = 2*width*height;
 
 uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
 {
-  const bool opaque = test != TestType::TRIANGLES_POTENTIAL_HIT;
+  bool opaque = true;
+  switch (test) {
+  case TestType::TRIANGLES_COMMITTED_HIT: opaque = true; break;
+  case TestType::TRIANGLES_POTENTIAL_HIT: opaque = false; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; break;
+  };
+
   Scene scene(width,height,8,opaque);
 
   RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
@@ -576,6 +660,14 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 
   TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
   memset(out_expected, 0, numTests*sizeof(TestOutput));
+
+  TestHitType hit_type = TEST_MISS;
+  switch (test) {
+  case TestType::TRIANGLES_COMMITTED_HIT: hit_type = TEST_COMMITTED_HIT; break;
+  case TestType::TRIANGLES_POTENTIAL_HIT: hit_type = TEST_POTENTIAL_HIT; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: hit_type = TEST_COMMITTED_HIT; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: hit_type = TEST_MISS; break;
+  };
 
   for (size_t y=0; y<height; y++)
   {
@@ -604,40 +696,71 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         out_expected[tid].ray0_flags = in[tid].flags;
         
         // Ray data at hit bvh_level
-        out_expected[tid].rayN_org = in[tid].org;
-        out_expected[tid].rayN_dir = in[tid].dir;
-        out_expected[tid].rayN_tnear = in[tid].tnear;
-        out_expected[tid].rayN_mask = in[tid].mask;
-        out_expected[tid].rayN_flags = in[tid].flags;
+        if (test != TestType::TRIANGLES_ANYHIT_SHADER_REJECT)
+        {
+          out_expected[tid].rayN_org = in[tid].org;
+          out_expected[tid].rayN_dir = in[tid].dir;
+          out_expected[tid].rayN_tnear = in[tid].tnear;
+          out_expected[tid].rayN_mask = in[tid].mask;
+          out_expected[tid].rayN_flags = in[tid].flags;
+        }
           
         // Hit data
-        out_expected[tid].hit_type = hit.hit_type;
-        out_expected[tid].bvh_level = 0;
-        out_expected[tid].hit_candidate = TRIANGLE;
-        out_expected[tid].t = 1.0f;
-        out_expected[tid].u = 0.1f;
-        out_expected[tid].v = 0.6f;
-        out_expected[tid].front_face = 0;
-        out_expected[tid].geomID = hit.geomID;
-        out_expected[tid].primID = hit.primID;
-        out_expected[tid].instID = -1;
-        out_expected[tid].v0 = hit.triangle.v0;
-        out_expected[tid].v1 = hit.triangle.v1;
-        out_expected[tid].v2 = hit.triangle.v2;
+        out_expected[tid].hit_type = hit_type;
+        switch (test) {
+        default: break;
+        case TestType::TRIANGLES_COMMITTED_HIT:
+        case TestType::TRIANGLES_POTENTIAL_HIT:
+        case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
+          out_expected[tid].bvh_level = 0;
+          out_expected[tid].hit_candidate = TRIANGLE;
+          out_expected[tid].t = 1.0f;
+          out_expected[tid].u = 0.1f;
+          out_expected[tid].v = 0.6f;
+          out_expected[tid].front_face = 0;
+          out_expected[tid].geomID = hit.geomID;
+          out_expected[tid].primID = hit.primID;
+          out_expected[tid].instID = -1;
+          out_expected[tid].v0 = hit.triangle.v0;
+          out_expected[tid].v1 = hit.triangle.v1;
+          out_expected[tid].v2 = hit.triangle.v2;
+          break;
+        }
       }
     }
   }
 
   /* execute test */
-  queue.submit([&](sycl::handler& cgh) {
-                 const sycl::range<1> range(numTests);
-                 cgh.parallel_for(range, [=](sycl::item<1> item) {
-                                              const uint i = item.get_id(0);
-                                              render(i,in[i],out_test[i],(rtas_t*)accel);
-                                            });
-               });
-  queue.wait_and_throw();
+  switch (test) {
+  case TestType::TRIANGLES_COMMITTED_HIT:
+  case TestType::TRIANGLES_POTENTIAL_HIT:
+  {
+    queue.submit([&](sycl::handler& cgh) {
+                   const sycl::range<1> range(numTests);
+                   cgh.parallel_for(range, [=](sycl::item<1> item) {
+                                             const uint i = item.get_id(0);
+                                             render(i,in[i],out_test[i],(rtas_t*)accel);
+                                           });
+                 });
+    queue.wait_and_throw();
+    break;
+  }
   
+  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
+  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT:
+  {
+    queue.submit([&](sycl::handler& cgh) {
+                   const sycl::range<1> range(numTests);
+                   cgh.parallel_for(range, [=](sycl::item<1> item) {
+                                             const uint i = item.get_id(0);
+                                             render_loop(i,in[i],out_test[i],(rtas_t*)accel,test);
+                                           });
+                 });
+    queue.wait_and_throw();
+    break;
+  }
+  }
+    
   /* verify result */
   uint32_t numErrors = 0;
   for (size_t tid=0; tid<numTests; tid++)
@@ -660,6 +783,12 @@ int main(int argc, char* argv[])
   }
   else if (strcmp(argv[1], "--triangles-potential-hit") == 0) {
     test = TestType::TRIANGLES_POTENTIAL_HIT;
+  }
+  else if (strcmp(argv[1], "--triangles-anyhit-shader-commit") == 0) {
+    test = TestType::TRIANGLES_ANYHIT_SHADER_COMMIT;
+  }
+  else if (strcmp(argv[1], "--triangles-anyhit-shader-reject") == 0) {
+    test = TestType::TRIANGLES_ANYHIT_SHADER_REJECT;
   }
   else {
     std::cout << "ERROR: invalid test " << argv[1] << " specified" << std::endl;
