@@ -191,164 +191,6 @@ uint32_t compareTestOutput(uint32_t tid, const TestOutput& test, const TestOutpu
   return errors;
 }
 
-void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
-{
-  /* setup ray */
-  RayDescINTEL ray;
-  ray.O = in.org;
-  ray.D = in.dir;
-  ray.tmin = in.tnear;
-  ray.tmax = in.tfar;
-  ray.mask = in.mask;
-  ray.flags = in.flags;
-  
-  /* trace ray */
-  rayquery_t query = intel_ray_query_init(0,ray,accel,0);
-  intel_ray_query_start_traversal(query);
-  intel_sync_ray_query(query);
-  
-  /* return ray data of level 0 */
-  out.ray0_org = intel_get_ray_origin(query,0);
-  out.ray0_dir = intel_get_ray_direction(query,0);
-  out.ray0_tnear = intel_get_ray_tnear(query,0);
-  out.ray0_mask = intel_get_ray_mask(query,0);
-  out.ray0_flags = intel_get_ray_flags(query,0);
-  
-  /* clear ray data of level N */
-  out.rayN_org = sycl::float3(0,0,0);
-  out.rayN_dir = sycl::float3(0,0,0);
-  out.rayN_tnear = 0.0f;
-  out.rayN_mask = 0;
-  out.rayN_flags = 0;
-
-  /* potential hit */
-  if (!intel_is_traversal_done(query))
-  {
-    out.hit_type = TEST_POTENTIAL_HIT;
-    out.bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
-    out.hit_candidate = intel_get_hit_candidate( query, POTENTIAL_HIT );
-    out.t = intel_get_hit_distance(query, POTENTIAL_HIT);
-    out.u = intel_get_hit_barys(query, POTENTIAL_HIT).x();
-    out.v = intel_get_hit_barys(query, POTENTIAL_HIT).y();
-    out.front_face = intel_hit_is_front_face( query, POTENTIAL_HIT );
-    out.instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
-    out.geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
-    if (i%2) out.primID = intel_get_hit_primID_triangle( query, POTENTIAL_HIT );
-    else     out.primID = intel_get_hit_primID         ( query, POTENTIAL_HIT );
-    sycl::float3 vertex_out[3];
-    intel_get_hit_triangle_verts(query, vertex_out, POTENTIAL_HIT);
-    out.v0 = vertex_out[0];
-    out.v1 = vertex_out[1];
-    out.v2 = vertex_out[2];
-
-    /* return ray data at current level */
-    uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
-    out.rayN_org = intel_get_ray_origin(query,bvh_level);
-    out.rayN_dir = intel_get_ray_direction(query,bvh_level);
-    out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
-    out.rayN_mask = intel_get_ray_mask(query,bvh_level);
-    out.rayN_flags = intel_get_ray_flags(query,bvh_level);
-  }
-
-  /* committed hit */
-  else if (intel_has_committed_hit(query))
-  {
-    out.hit_type = TEST_COMMITTED_HIT;
-    out.bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
-    out.hit_candidate = intel_get_hit_candidate( query, COMMITTED_HIT );
-    out.t = intel_get_hit_distance(query, COMMITTED_HIT);
-    out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
-    out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
-    out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
-    out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
-    out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
-    if (i%2) out.primID = intel_get_hit_primID_triangle( query, COMMITTED_HIT );
-    else     out.primID = intel_get_hit_primID         ( query, COMMITTED_HIT );
-    sycl::float3 vertex_out[3];
-    intel_get_hit_triangle_verts(query, vertex_out, COMMITTED_HIT);
-    out.v0 = vertex_out[0];
-    out.v1 = vertex_out[1];
-    out.v2 = vertex_out[2];
-  }
-
-  /* miss */
-  else {
-    out.hit_type = TEST_MISS;
-  }
-}
-
-void render_loop(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel, TestType test)
-{
-  /* setup ray */
-  RayDescINTEL ray;
-  ray.O = in.org;
-  ray.D = in.dir;
-  ray.tmin = in.tnear;
-  ray.tmax = in.tfar;
-  ray.mask = in.mask;
-  ray.flags = in.flags;
-  
-  /* trace ray */
-  rayquery_t query = intel_ray_query_init(0,ray,accel,0);
-  intel_ray_query_start_traversal(query);
-  intel_sync_ray_query(query);
-  
-  /* return ray data of level 0 */
-  out.ray0_org = intel_get_ray_origin(query,0);
-  out.ray0_dir = intel_get_ray_direction(query,0);
-  out.ray0_tnear = intel_get_ray_tnear(query,0);
-  out.ray0_mask = intel_get_ray_mask(query,0);
-  out.ray0_flags = intel_get_ray_flags(query,0);
-  
-  /* clear ray data of level N */
-  out.rayN_org = sycl::float3(0,0,0);
-  out.rayN_dir = sycl::float3(0,0,0);
-  out.rayN_tnear = 0.0f;
-  out.rayN_mask = 0;
-  out.rayN_flags = 0;
-
-  /* traversal loop */
-  while (!intel_is_traversal_done(query))
-  {
-    const CandidateType candidate = intel_get_hit_candidate(query, POTENTIAL_HIT);
-
-    if (candidate == TRIANGLE)
-    {
-      if (test == TestType::TRIANGLES_ANYHIT_SHADER_COMMIT)
-        intel_ray_query_commit_potential_hit(query);
-    }
-
-    intel_ray_query_start_traversal(query);
-    intel_sync_ray_query(query);
-  }
-
-  /* committed hit */
-  if (intel_has_committed_hit(query))
-  {
-    out.hit_type = TEST_COMMITTED_HIT;
-    out.bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
-    out.hit_candidate = intel_get_hit_candidate( query, COMMITTED_HIT );
-    out.t = intel_get_hit_distance(query, COMMITTED_HIT);
-    out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
-    out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
-    out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
-    out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
-    out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
-    if (i%2) out.primID = intel_get_hit_primID_triangle( query, COMMITTED_HIT );
-    else     out.primID = intel_get_hit_primID         ( query, COMMITTED_HIT );
-    sycl::float3 vertex_out[3];
-    intel_get_hit_triangle_verts(query, vertex_out, COMMITTED_HIT);
-    out.v0 = vertex_out[0];
-    out.v1 = vertex_out[1];
-    out.v2 = vertex_out[2];
-  }
-
-  /* miss */
-  else {
-    out.hit_type = TEST_MISS;
-  }
-}
-
 struct Triangle
 {
   Triangle()
@@ -750,6 +592,223 @@ void exception_handler(sycl::exception_list exceptions)
   }
 };
 
+void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
+{
+  /* setup ray */
+  RayDescINTEL ray;
+  ray.O = in.org;
+  ray.D = in.dir;
+  ray.tmin = in.tnear;
+  ray.tmax = in.tfar;
+  ray.mask = in.mask;
+  ray.flags = in.flags;
+  
+  /* trace ray */
+  rayquery_t query = intel_ray_query_init(0,ray,accel,0);
+  intel_ray_query_start_traversal(query);
+  intel_sync_ray_query(query);
+  
+  /* return ray data of level 0 */
+  out.ray0_org = intel_get_ray_origin(query,0);
+  out.ray0_dir = intel_get_ray_direction(query,0);
+  out.ray0_tnear = intel_get_ray_tnear(query,0);
+  out.ray0_mask = intel_get_ray_mask(query,0);
+  out.ray0_flags = intel_get_ray_flags(query,0);
+  
+  /* clear ray data of level N */
+  out.rayN_org = sycl::float3(0,0,0);
+  out.rayN_dir = sycl::float3(0,0,0);
+  out.rayN_tnear = 0.0f;
+  out.rayN_mask = 0;
+  out.rayN_flags = 0;
+
+  /* potential hit */
+  if (!intel_is_traversal_done(query))
+  {
+    out.hit_type = TEST_POTENTIAL_HIT;
+    out.bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+    out.hit_candidate = intel_get_hit_candidate( query, POTENTIAL_HIT );
+    out.t = intel_get_hit_distance(query, POTENTIAL_HIT);
+    out.u = intel_get_hit_barys(query, POTENTIAL_HIT).x();
+    out.v = intel_get_hit_barys(query, POTENTIAL_HIT).y();
+    out.front_face = intel_hit_is_front_face( query, POTENTIAL_HIT );
+    out.instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
+    out.geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
+    if (i%2) out.primID = intel_get_hit_primID_triangle( query, POTENTIAL_HIT );
+    else     out.primID = intel_get_hit_primID         ( query, POTENTIAL_HIT );
+    sycl::float3 vertex_out[3];
+    intel_get_hit_triangle_verts(query, vertex_out, POTENTIAL_HIT);
+    out.v0 = vertex_out[0];
+    out.v1 = vertex_out[1];
+    out.v2 = vertex_out[2];
+
+    /* return ray data at current level */
+    uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+    out.rayN_org = intel_get_ray_origin(query,bvh_level);
+    out.rayN_dir = intel_get_ray_direction(query,bvh_level);
+    out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
+    out.rayN_mask = intel_get_ray_mask(query,bvh_level);
+    out.rayN_flags = intel_get_ray_flags(query,bvh_level);
+  }
+
+  /* committed hit */
+  else if (intel_has_committed_hit(query))
+  {
+    out.hit_type = TEST_COMMITTED_HIT;
+    out.bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
+    out.hit_candidate = intel_get_hit_candidate( query, COMMITTED_HIT );
+    out.t = intel_get_hit_distance(query, COMMITTED_HIT);
+    out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
+    out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
+    out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
+    out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
+    out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
+    if (i%2) out.primID = intel_get_hit_primID_triangle( query, COMMITTED_HIT );
+    else     out.primID = intel_get_hit_primID         ( query, COMMITTED_HIT );
+    sycl::float3 vertex_out[3];
+    intel_get_hit_triangle_verts(query, vertex_out, COMMITTED_HIT);
+    out.v0 = vertex_out[0];
+    out.v1 = vertex_out[1];
+    out.v2 = vertex_out[2];
+  }
+
+  /* miss */
+  else {
+    out.hit_type = TEST_MISS;
+  }
+}
+
+void render_loop(uint32_t i, const TestInput& in, TestOutput& out, Scene* scene, rtas_t* accel, TestType test)
+{
+  /* setup ray */
+  RayDescINTEL ray;
+  ray.O = in.org;
+  ray.D = in.dir;
+  ray.tmin = in.tnear;
+  ray.tmax = in.tfar;
+  ray.mask = in.mask;
+  ray.flags = in.flags;
+  
+  /* trace ray */
+  rayquery_t query = intel_ray_query_init(0,ray,accel,0);
+  intel_ray_query_start_traversal(query);
+  intel_sync_ray_query(query);
+  
+  /* return ray data of level 0 */
+  out.ray0_org = intel_get_ray_origin(query,0);
+  out.ray0_dir = intel_get_ray_direction(query,0);
+  out.ray0_tnear = intel_get_ray_tnear(query,0);
+  out.ray0_mask = intel_get_ray_mask(query,0);
+  out.ray0_flags = intel_get_ray_flags(query,0);
+  
+  /* clear ray data of level N */
+  out.rayN_org = sycl::float3(0,0,0);
+  out.rayN_dir = sycl::float3(0,0,0);
+  out.rayN_tnear = 0.0f;
+  out.rayN_mask = 0;
+  out.rayN_flags = 0;
+
+  /* traversal loop */
+  while (!intel_is_traversal_done(query))
+  {
+    const CandidateType candidate = intel_get_hit_candidate(query, POTENTIAL_HIT);
+
+    if (candidate == TRIANGLE)
+    {
+      if (test == TestType::TRIANGLES_ANYHIT_SHADER_COMMIT)
+        intel_ray_query_commit_potential_hit(query);
+    }
+#if 0
+    else if (candidate == PROCEDURAL)
+    {
+      const uint32_t instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
+      const uint32_t geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
+      const uint32_t primID = intel_get_hit_primID( query, POTENTIAL_HIT );
+
+      TriangleMesh* mesh = nullptr;
+      if (instID != -1) {
+        Scene::InstanceGeometry* instance = (Scene::InstanceGeometry*) scene->geometries[instID].get();
+        mesh = (TriangleMesh*) instance->scene->geometries[geomID].get();
+      } else {
+        mesh = (TriangleMesh*) scene->geometries[geomID].get();
+      }
+
+      const sycl::int3 tri = mesh->triangles[primID];
+      const sycl::float3 tri_v0 = mesh->vertices[tri.x()];
+      const sycl::float3 tri_v1 = mesh->vertices[tri.y()];
+      const sycl::float3 tri_v2 = mesh->vertices[tri.z()];
+
+      /* calculate vertices relative to ray origin */
+      const uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+      const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
+      const sycl::float3 D = intel_get_ray_direction(query,bvh_level);
+      const float tnear = intel_get_ray_tnear(query,bvh_level);
+      const float tfar = intel_get_hit_distance(query, COMMITTED_HIT);
+      const sycl::float3 v0 = tri_v0-O;
+      const sycl::float3 v1 = tri_v1-O;
+      const sycl::float3 v2 = tri_v2-O;
+
+      /* calculate triangle edges */
+      const sycl::float3 e0 = v2-v0;
+      const sycl::float3 e1 = v0-v1;
+      const sycl::float3 e2 = v1-v2;
+      
+      /* perform edge tests */
+      const float U = sycl::dot(cross(e0,v2+v0),D);
+      const float V = sycl::dot(cross(e1,v0+v1),D);
+      const float W = sycl::dot(cross(e2,v1+v2),D);
+      const float UVW = U+V+W;
+      bool valid = (std::min(U,std::min(V,W)) >= -0.0f) | (std::max(U,std::max(V,W)) <= 0.0f);
+
+      /* calculate geometry normal and denominator */
+      const sycl::float3 Ng = sycl::cross(e2,e1);
+      const float den = 2.0f*(dot(Ng,D));
+      
+      /* perform depth test */
+      const float T = 2.0f*dot(v0,Ng);
+      const float t = T/den;
+      const float u = U/UVW;
+      const float v = V/UVW;
+      valid &= tnear <= t & t <= tfar;
+      valid &= den != 0.0f;
+
+      /* commit hit */
+      if (valid)
+        intel_ray_query_commit_potential_hit(query,t,sycl::float2(u,v));
+    }
+#endif
+    
+    intel_ray_query_start_traversal(query);
+    intel_sync_ray_query(query);
+  }
+
+  /* committed hit */
+  if (intel_has_committed_hit(query))
+  {
+    out.hit_type = TEST_COMMITTED_HIT;
+    out.bvh_level = intel_get_hit_bvh_level( query, COMMITTED_HIT );
+    out.hit_candidate = intel_get_hit_candidate( query, COMMITTED_HIT );
+    out.t = intel_get_hit_distance(query, COMMITTED_HIT);
+    out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
+    out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
+    out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
+    out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
+    out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
+    if (i%2) out.primID = intel_get_hit_primID_triangle( query, COMMITTED_HIT );
+    else     out.primID = intel_get_hit_primID         ( query, COMMITTED_HIT );
+    sycl::float3 vertex_out[3];
+    intel_get_hit_triangle_verts(query, vertex_out, COMMITTED_HIT);
+    out.v0 = vertex_out[0];
+    out.v1 = vertex_out[1];
+    out.v2 = vertex_out[2];
+  }
+
+  /* miss */
+  else {
+    out.hit_type = TEST_MISS;
+  }
+}
+
 static const int width = 128;
 static const int height = 128;
 static const size_t numTests = 2*width*height;
@@ -769,16 +828,16 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 
   RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
 
-  Scene scene(width,height,opaque);
-  scene.splitIntoGeometries(16);
+  std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque);
+  scene->splitIntoGeometries(16);
   if (inst == InstancingType::HW_INSTANCING)
-    scene.createInstances(3);
-  scene.buildAccel(rtcdevice,device,context);
+    scene->createInstances(3);
+  scene->buildAccel(rtcdevice,device,context);
 
   std::vector<Hit> tri_map;
   tri_map.resize(2*width*height);
   std::vector<uint32_t> id_stack;
-  scene.buildTriMap(id_stack,tri_map);
+  scene->buildTriMap(id_stack,tri_map);
  
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
   memset(in, 0, numTests*sizeof(TestInput));
@@ -861,7 +920,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   }
 
   /* execute test */
-  void* accel = scene.getAccel();
+  void* accel = scene->getAccel();
+  Scene* scene_ptr = scene.get();
   
   switch (test) {
   case TestType::TRIANGLES_COMMITTED_HIT:
@@ -885,7 +945,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
                                              const uint i = item.get_id(0);
-                                             render_loop(i,in[i],out_test[i],(rtas_t*)accel,test);
+                                             render_loop(i,in[i],out_test[i],scene_ptr,(rtas_t*)accel,test);
                                            });
                  });
     queue.wait_and_throw();
