@@ -50,5 +50,5 @@ ADD_TEST(NAME rthwif_test_swinstancing_triangles_committed_hit        COMMAND rt
 ADD_TEST(NAME rthwif_test_swinstancing_triangles_potential_hit        COMMAND rthwif_test --sw-instancing --triangles-potential-hit)
 ADD_TEST(NAME rthwif_test_swinstancing_triangles_anyhit_shader_commit COMMAND rthwif_test --sw-instancing --triangles-anyhit-shader-commit)
 ADD_TEST(NAME rthwif_test_swinstancing_triangles_anyhit_shader_reject COMMAND rthwif_test --sw-instancing --triangles-anyhit-shader-reject)
-#ADD_TEST(NAME rthwif_test_swinstancing_procedurals_committed_hit      COMMAND rthwif_test --sw-instancing --procedurals-committed-hit)
+ADD_TEST(NAME rthwif_test_swinstancing_procedurals_committed_hit      COMMAND rthwif_test --sw-instancing --procedurals-committed-hit)
 

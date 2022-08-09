@@ -768,7 +768,7 @@ struct Scene
       desc[geomID] = geometries[geomID]->getDesc();
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
-    
+
     /* estimate accel size */
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
@@ -807,8 +807,8 @@ struct Scene
       args.numBytes = bytes;
       err = rthwifBuildAccel(args);
       
-      if (err == RTHWIF_ERROR_OUT_OF_MEMORY)
-        continue;
+      if (err != RTHWIF_ERROR_OUT_OF_MEMORY)
+        break;
     }
     
     if (err != RTHWIF_ERROR_NONE)
@@ -981,6 +981,10 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   out.rayN_mask = 0;
   out.rayN_flags = 0;
 
+  Scene* scenes[2];
+  scenes[0] = (Scene*) scene_in;
+  scenes[1] = nullptr;
+
   /* traversal loop */
   while (!intel_is_traversal_done(query))
   {
@@ -1023,18 +1027,18 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
 
     else if (candidate == PROCEDURAL)
     {
-      Scene* scene = (Scene*) scene_in; // FIXME: cannot pass in scene directly
-
+      const uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+      
       const uint32_t instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
       const uint32_t geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
       const uint32_t primID = intel_get_hit_primID( query, POTENTIAL_HIT );
 
       Geometry* geom = nullptr;
       if (instID != -1) {
-        Scene::InstanceGeometry* instance = (Scene::InstanceGeometry*) scene->geometries[instID].get();
+        Scene::InstanceGeometry* instance = (Scene::InstanceGeometry*) scenes[0]->geometries[instID].get();
         geom = instance->scene->geometries[geomID].get();
       } else {
-        geom = scene->geometries[geomID].get();
+        geom = scenes[bvh_level]->geometries[geomID].get();
       }
 
       if (geom->type == Geometry::TRIANGLE_MESH)
@@ -1045,9 +1049,8 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const sycl::float3 tri_v0 = mesh->vertices[tri.x()];
         const sycl::float3 tri_v1 = mesh->vertices[tri.y()];
         const sycl::float3 tri_v2 = mesh->vertices[tri.z()];
-        
+
         /* calculate vertices relative to ray origin */
-        const uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
         const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
         const sycl::float3 D = intel_get_ray_direction(query,bvh_level);
         const float tnear = intel_get_ray_tnear(query,bvh_level);
@@ -1079,7 +1082,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const float v = V/UVW;
         valid &= tnear <= t & t <= tfar;
         valid &= den != 0.0f;
-        
+
         /* commit hit */
         if (valid)
           intel_ray_query_commit_potential_hit(query,t,sycl::float2(u,v));
@@ -1099,6 +1102,9 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const sycl::float3 O1 = xfmPoint(world2local, O);
         const sycl::float3 D1 = xfmVector(world2local, D);
 
+        scenes[bvh_level+1] = inst->scene.get();
+        rtas_t* inst_accel = (rtas_t*) inst->scene->getAccel();
+
         /* continue traversal */
         RayDescINTEL ray;
         ray.O = O1;
@@ -1107,7 +1113,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         ray.tmax = 0.0f; // unused
         ray.mask = intel_get_ray_mask(query,bvh_level);
         ray.flags = intel_get_ray_flags(query,bvh_level);
-        intel_ray_query_forward_ray(query, bvh_level+1, ray, (rtas_t*) inst->scene->getAccel(), 0);
+        intel_ray_query_forward_ray(query, bvh_level+1, ray, inst_accel, 0);
       }
     }
     
