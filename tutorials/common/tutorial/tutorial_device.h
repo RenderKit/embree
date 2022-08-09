@@ -32,8 +32,8 @@ inline sycl::nd_range<2> make_nd_range(unsigned int size0, unsigned int size1)
   const sycl::range<2> wg_size = sycl::range<2>(4,4);
 
   /* align iteration space to work group size */
-  size0 = (size0/wg_size[0])*wg_size[0];
-  size1 = (size1/wg_size[1])*wg_size[1];
+  size0 = ((size0 + wg_size[0] - 1) / wg_size[0]) * wg_size[0];
+  size1 = ((size1 + wg_size[1] - 1) / wg_size[1]) * wg_size[1];
 
   return sycl::nd_range(sycl::range(size0,size1),wg_size);
 }
