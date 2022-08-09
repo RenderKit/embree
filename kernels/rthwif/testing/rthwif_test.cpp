@@ -240,11 +240,98 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
   COMPARE3(v2,eps);
 }
 
+struct LinearSpace3f
+{
+  /*! matrix construction from column vectors */
+  LinearSpace3f(const sycl::float3& vx, const sycl::float3& vy, const sycl::float3& vz)
+    : vx(vx), vy(vy), vz(vz) {}
+  
+  /*! matrix construction from row mayor data */
+  LinearSpace3f(const float m00, const float m01, const float m02,
+                const float m10, const float m11, const float m12,
+                const float m20, const float m21, const float m22)
+    : vx(m00,m10,m20), vy(m01,m11,m21), vz(m02,m12,m22) {}
+  
+  /*! compute the determinant of the matrix */
+  const float det() const { return sycl::dot(vx,sycl::cross(vy,vz)); }
+  
+  /*! compute adjoint matrix */
+  const LinearSpace3f adjoint() const { return LinearSpace3f(sycl::cross(vy,vz),sycl::cross(vz,vx),sycl::cross(vx,vy)).transposed(); }
+  
+  /*! compute inverse matrix */
+  const LinearSpace3f inverse() const
+  {
+    const float d = det();
+    const LinearSpace3f a = adjoint();
+    return { a.vx/d, a.vy/d, a.vz/d };
+  }
+
+  /*! compute transposed matrix */
+  const LinearSpace3f transposed() const { return LinearSpace3f(vx.x(),vx.y(),vx.z(),vy.x(),vy.y(),vy.z(),vz.x(),vz.y(),vz.z()); }
+  
+  sycl::float3 vx,vy,vz;
+};
+
+sycl::float3 xfmPoint (const LinearSpace3f& m, const sycl::float3& p) {
+  return p.x()*m.vx + p.y()*m.vy + p.z()*m.vz;
+}
+
+struct Transform
+{
+  sycl::float3 vx,vy,vz,p;
+};
+
+std::ostream& operator<<(std::ostream& out, const Transform& t) {
+  return out << " Transform {" << t.vx << ", " << t.vy << ", " << t.vz << ", " << t.p  << "}";
+}
+
+sycl::float3 xfmPoint (const Transform& m, const sycl::float3& p) {
+  return p.x()*m.vx + p.y()*m.vy + p.z()*m.vz + m.p;
+}
+
+sycl::float3 xfmVector (const Transform& m, const sycl::float3& v) {
+  return v.x()*m.vx + v.y()*m.vy + v.z()*m.vz;
+}
+
+Transform rcp( const Transform& a )
+{
+  const LinearSpace3f l = { a.vx, a.vy, a.vz };
+  const LinearSpace3f il = l.inverse();
+  return { il.vx, il.vy, il.vz, -xfmPoint(il,a.p) };
+}
+
 struct Bounds3f
 {
+  void extend( sycl::float3 p ) {
+    lower = sycl::min(lower,p);
+    upper = sycl::max(upper,p);
+  }
+
+  static Bounds3f empty() {
+    return { sycl::float3(INFINITY), sycl::float3(-INFINITY) };
+  }
+  
   sycl::float3 lower;
   sycl::float3 upper;
 };
+
+std::ostream& operator<<(std::ostream& out, const Bounds3f& b) {
+  return out << "Bounds3f {" << b.lower << "," << b.upper  << "}";
+}
+
+const Bounds3f xfmBounds(const Transform& m, const Bounds3f& b) 
+{ 
+  Bounds3f dst = Bounds3f::empty();
+  const sycl::float3 p0(b.lower.x(),b.lower.y(),b.lower.z()); dst.extend(xfmPoint(m,p0));
+  const sycl::float3 p1(b.lower.x(),b.lower.y(),b.upper.z()); dst.extend(xfmPoint(m,p1));
+  const sycl::float3 p2(b.lower.x(),b.upper.y(),b.lower.z()); dst.extend(xfmPoint(m,p2));
+  const sycl::float3 p3(b.lower.x(),b.upper.y(),b.upper.z()); dst.extend(xfmPoint(m,p3));
+  const sycl::float3 p4(b.upper.x(),b.lower.y(),b.lower.z()); dst.extend(xfmPoint(m,p4));
+  const sycl::float3 p5(b.upper.x(),b.lower.y(),b.upper.z()); dst.extend(xfmPoint(m,p5));
+  const sycl::float3 p6(b.upper.x(),b.upper.y(),b.lower.z()); dst.extend(xfmPoint(m,p6));
+  const sycl::float3 p7(b.upper.x(),b.upper.y(),b.upper.z()); dst.extend(xfmPoint(m,p7));
+  return dst;
+}
 
 struct Triangle
 {
@@ -482,12 +569,8 @@ public:
 template<typename Scene>
 struct InstanceGeometryT : public Geometry
 {
-  struct Transform {
-    sycl::float3 vx,vy,vz,p;
-  };
-  
-  InstanceGeometryT(Transform& local2world, std::shared_ptr<Scene> scene)
-    : Geometry(Type::INSTANCE), local2world(local2world), scene(scene) {}
+  InstanceGeometryT(Transform& local2world, std::shared_ptr<Scene> scene, bool procedural)
+    : Geometry(Type::INSTANCE), procedural(procedural), local2world(local2world), scene(scene) {}
 
   virtual ~InstanceGeometryT() {}
 
@@ -498,31 +581,65 @@ struct InstanceGeometryT : public Geometry
     sycl::free(ptr,context);
   }
 
+  static RTHWIF_AABB getBoundsCallback (const uint32_t primID, void* geomUserPtr, void* userPtr)
+  {
+    const InstanceGeometryT* inst = (InstanceGeometryT*) geomUserPtr;
+    const Bounds3f scene_bounds = inst->scene->getBounds();
+    const Bounds3f bounds = xfmBounds(inst->local2world, scene_bounds);
+    
+    RTHWIF_AABB r;
+    r.lower.x = bounds.lower.x();
+    r.lower.y = bounds.lower.y();
+    r.lower.z = bounds.lower.z();
+    r.upper.x = bounds.upper.x();
+    r.upper.y = bounds.upper.y();
+    r.upper.z = bounds.upper.z();
+    return r;
+  }
+
   virtual RTHWIF_GEOMETRY_DESC getDesc() override
   {
-    RTHWIF_GEOMETRY_INSTANCE_DESC out;
-    memset(&out,0,sizeof(out));
-    out.GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCES;
-    out.InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
-    out.GeometryMask = 0xFF;
-    out.InstanceID = 0;
-    out.Transform.vx.x = local2world.vx.x();
-    out.Transform.vx.y = local2world.vx.y();
-    out.Transform.vx.z = local2world.vx.z();
-    out.Transform.vy.x = local2world.vy.x();
-    out.Transform.vy.y = local2world.vy.y();
-    out.Transform.vy.z = local2world.vy.z();
-    out.Transform.vz.x = local2world.vz.x();
-    out.Transform.vz.y = local2world.vz.y();
-    out.Transform.vz.z = local2world.vz.z();
-    out.Transform.p.x  = local2world.p.x();
-    out.Transform.p.y  = local2world.p.y();
-    out.Transform.p.z  = local2world.p.z();
-    out.Accel = scene->getAccel();
+    if (procedural)
+    {
+      RTHWIF_GEOMETRY_AABBS_DESC out;
+      memset(&out,0,sizeof(out));
+      out.GeometryType = RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
+      out.GeometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
+      out.GeometryMask = 0xFF;
+      out.AABBCount = 1;
+      out.AABBs = InstanceGeometryT::getBoundsCallback;
+      out.userPtr = this;
 
-    RTHWIF_GEOMETRY_DESC desc;
-    desc.Instances = out;
-    return desc;
+      RTHWIF_GEOMETRY_DESC desc;
+      desc.AABBs = out;
+      return desc;
+    }
+    else
+    {
+      RTHWIF_GEOMETRY_INSTANCE_DESC out;
+      memset(&out,0,sizeof(out));
+      out.GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCES;
+      out.InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+      out.GeometryMask = 0xFF;
+      out.InstanceID = 0;
+      out.Transform.vx.x = local2world.vx.x();
+      out.Transform.vx.y = local2world.vx.y();
+      out.Transform.vx.z = local2world.vx.z();
+      out.Transform.vy.x = local2world.vy.x();
+      out.Transform.vy.y = local2world.vy.y();
+      out.Transform.vy.z = local2world.vy.z();
+      out.Transform.vz.x = local2world.vz.x();
+      out.Transform.vz.y = local2world.vz.y();
+      out.Transform.vz.z = local2world.vz.z();
+      out.Transform.p.x  = local2world.p.x();
+      out.Transform.p.y  = local2world.p.y();
+      out.Transform.p.z  = local2world.p.z();
+      out.Accel = scene->getAccel();
+      
+      RTHWIF_GEOMETRY_DESC desc;
+      desc.Instances = out;
+      return desc;
+    }
   }
 
   virtual void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context) override {
@@ -530,9 +647,11 @@ struct InstanceGeometryT : public Geometry
   }
 
   virtual void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override {
+    if (procedural) id_stack.back() = -1;
     scene->buildTriMap(id_stack, tri_map);
   }
 
+  bool procedural;
   Transform local2world;
   std::shared_ptr<Scene> scene;
 };
@@ -572,10 +691,10 @@ struct Scene
   typedef InstanceGeometryT<Scene> InstanceGeometry;
   
   Scene()
-    : geometries_alloc(context,device), geometries(0,geometries_alloc) {}
+    : geometries_alloc(context,device), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) {}
       
   Scene(uint32_t width, uint32_t height, bool opaque, bool procedural)
-    : geometries_alloc(context,device), geometries(0,geometries_alloc)
+    : geometries_alloc(context,device), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
   {
     std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
     plane->gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
@@ -611,7 +730,7 @@ struct Scene
     assert(geometries.size() == (size_t) numGeometries);
   }
 
-  void createInstances(uint32_t blockSize)
+  void createInstances(uint32_t blockSize, bool procedural)
   {
     std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> instances(0,geometries_alloc);
     
@@ -624,14 +743,14 @@ struct Scene
       for (size_t j=begin; j<end; j++)
         scene->geometries.push_back(geometries[j]);
 
-      InstanceGeometry::Transform local2world;
+      Transform local2world;
       local2world.vx = sycl::float3(1,0,0);
       local2world.vy = sycl::float3(0,1,0);
       local2world.vz = sycl::float3(0,0,1);
       local2world.p  = sycl::float3(0,0,0);
       
-      //std::shared_ptr<InstanceGeometry> instance = std::make_shared<InstanceGeometry>(local2world,scene);
-      std::shared_ptr<InstanceGeometry> instance(new InstanceGeometry(local2world,scene));
+      //std::shared_ptr<InstanceGeometry> instance = std::make_shared<InstanceGeometry>(local2world,scene,procedural);
+      std::shared_ptr<InstanceGeometry> instance(new InstanceGeometry(local2world,scene,procedural));
       instances.push_back(instance);
     }
 
@@ -694,6 +813,13 @@ struct Scene
     
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("build error");
+
+    this->bounds.lower.x() = bounds.lower.x;
+    this->bounds.lower.y() = bounds.lower.y;
+    this->bounds.lower.z() = bounds.lower.z;
+    this->bounds.upper.x() = bounds.upper.x;
+    this->bounds.upper.y() = bounds.upper.y;
+    this->bounds.upper.z() = bounds.upper.z;
   }
   
   void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map)
@@ -710,6 +836,10 @@ struct Scene
     return geometries.size();
   }
 
+  Bounds3f getBounds() {
+    return bounds;
+  }
+  
   void* getAccel() {
     return accel;
   }
@@ -719,7 +849,8 @@ struct Scene
   typedef sycl::usm_allocator<std::shared_ptr<Geometry>, sycl::usm::alloc::shared> geometries_alloc_ty;
   geometries_alloc_ty geometries_alloc;
   std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> geometries;
-  
+
+  Bounds3f bounds;
   void* accel;
 };
 
@@ -857,6 +988,35 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
 
     if (candidate == TRIANGLE)
     {
+      if (test == TestType::TRIANGLES_POTENTIAL_HIT)
+      {
+        out.hit_type = TEST_POTENTIAL_HIT;
+        out.bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+        out.hit_candidate = intel_get_hit_candidate( query, POTENTIAL_HIT );
+        out.t = intel_get_hit_distance(query, POTENTIAL_HIT);
+        out.u = intel_get_hit_barys(query, POTENTIAL_HIT).x();
+        out.v = intel_get_hit_barys(query, POTENTIAL_HIT).y();
+        out.front_face = intel_hit_is_front_face( query, POTENTIAL_HIT );
+        out.instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
+        out.geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
+        if (i%2) out.primID = intel_get_hit_primID_triangle( query, POTENTIAL_HIT );
+        else     out.primID = intel_get_hit_primID         ( query, POTENTIAL_HIT );
+        sycl::float3 vertex_out[3];
+        intel_get_hit_triangle_verts(query, vertex_out, POTENTIAL_HIT);
+        out.v0 = vertex_out[0];
+        out.v1 = vertex_out[1];
+        out.v2 = vertex_out[2];
+        
+        /* return ray data at current level */
+        uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+        out.rayN_org = intel_get_ray_origin(query,bvh_level);
+        out.rayN_dir = intel_get_ray_direction(query,bvh_level);
+        out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
+        out.rayN_mask = intel_get_ray_mask(query,bvh_level);
+        out.rayN_flags = intel_get_ray_flags(query,bvh_level);
+        return;
+      }
+    
       if (test == TestType::TRIANGLES_ANYHIT_SHADER_COMMIT)
         intel_ray_query_commit_potential_hit(query);
     }
@@ -869,56 +1029,86 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
       const uint32_t geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
       const uint32_t primID = intel_get_hit_primID( query, POTENTIAL_HIT );
 
-      TriangleMesh* mesh = nullptr;
+      Geometry* geom = nullptr;
       if (instID != -1) {
         Scene::InstanceGeometry* instance = (Scene::InstanceGeometry*) scene->geometries[instID].get();
-        mesh = (TriangleMesh*) instance->scene->geometries[geomID].get();
+        geom = instance->scene->geometries[geomID].get();
       } else {
-        mesh = (TriangleMesh*) scene->geometries[geomID].get();
+        geom = scene->geometries[geomID].get();
       }
 
-      const sycl::int3 tri = mesh->triangles[primID];
-      const sycl::float3 tri_v0 = mesh->vertices[tri.x()];
-      const sycl::float3 tri_v1 = mesh->vertices[tri.y()];
-      const sycl::float3 tri_v2 = mesh->vertices[tri.z()];
+      if (geom->type == Geometry::TRIANGLE_MESH)
+      {
+        const TriangleMesh* mesh = (TriangleMesh*) geom;
 
-      /* calculate vertices relative to ray origin */
-      const uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
-      const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
-      const sycl::float3 D = intel_get_ray_direction(query,bvh_level);
-      const float tnear = intel_get_ray_tnear(query,bvh_level);
-      const float tfar = intel_get_hit_distance(query, COMMITTED_HIT);
-      const sycl::float3 v0 = tri_v0-O;
-      const sycl::float3 v1 = tri_v1-O;
-      const sycl::float3 v2 = tri_v2-O;
+        const sycl::int3 tri = mesh->triangles[primID];
+        const sycl::float3 tri_v0 = mesh->vertices[tri.x()];
+        const sycl::float3 tri_v1 = mesh->vertices[tri.y()];
+        const sycl::float3 tri_v2 = mesh->vertices[tri.z()];
+        
+        /* calculate vertices relative to ray origin */
+        const uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+        const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
+        const sycl::float3 D = intel_get_ray_direction(query,bvh_level);
+        const float tnear = intel_get_ray_tnear(query,bvh_level);
+        const float tfar = intel_get_hit_distance(query, COMMITTED_HIT);
+        const sycl::float3 v0 = tri_v0-O;
+        const sycl::float3 v1 = tri_v1-O;
+        const sycl::float3 v2 = tri_v2-O;
+        
+        /* calculate triangle edges */
+        const sycl::float3 e0 = v2-v0;
+        const sycl::float3 e1 = v0-v1;
+        const sycl::float3 e2 = v1-v2;
+        
+        /* perform edge tests */
+        const float U = sycl::dot(cross(e0,v2+v0),D);
+        const float V = sycl::dot(cross(e1,v0+v1),D);
+        const float W = sycl::dot(cross(e2,v1+v2),D);
+        const float UVW = U+V+W;
+        bool valid = (std::min(U,std::min(V,W)) >= -0.0f) | (std::max(U,std::max(V,W)) <= 0.0f);
+        
+        /* calculate geometry normal and denominator */
+        const sycl::float3 Ng = sycl::cross(e2,e1);
+        const float den = 2.0f*(dot(Ng,D));
+        
+        /* perform depth test */
+        const float T = 2.0f*dot(v0,Ng);
+        const float t = T/den;
+        const float u = U/UVW;
+        const float v = V/UVW;
+        valid &= tnear <= t & t <= tfar;
+        valid &= den != 0.0f;
+        
+        /* commit hit */
+        if (valid)
+          intel_ray_query_commit_potential_hit(query,t,sycl::float2(u,v));
+      }
+      else if (geom->type == Geometry::INSTANCE)
+      {
+        const Scene::InstanceGeometry* inst = (Scene::InstanceGeometry*) geom;
+        const Transform local2world = inst->local2world;
+        const Transform world2local = rcp(local2world);
+        
+        /* load ray */
+        const uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+        const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
+        const sycl::float3 D = intel_get_ray_direction(query,bvh_level);
 
-      /* calculate triangle edges */
-      const sycl::float3 e0 = v2-v0;
-      const sycl::float3 e1 = v0-v1;
-      const sycl::float3 e2 = v1-v2;
-      
-      /* perform edge tests */
-      const float U = sycl::dot(cross(e0,v2+v0),D);
-      const float V = sycl::dot(cross(e1,v0+v1),D);
-      const float W = sycl::dot(cross(e2,v1+v2),D);
-      const float UVW = U+V+W;
-      bool valid = (std::min(U,std::min(V,W)) >= -0.0f) | (std::max(U,std::max(V,W)) <= 0.0f);
+        /* transform ray */
+        const sycl::float3 O1 = xfmPoint(world2local, O);
+        const sycl::float3 D1 = xfmVector(world2local, D);
 
-      /* calculate geometry normal and denominator */
-      const sycl::float3 Ng = sycl::cross(e2,e1);
-      const float den = 2.0f*(dot(Ng,D));
-      
-      /* perform depth test */
-      const float T = 2.0f*dot(v0,Ng);
-      const float t = T/den;
-      const float u = U/UVW;
-      const float v = V/UVW;
-      valid &= tnear <= t & t <= tfar;
-      valid &= den != 0.0f;
-
-      /* commit hit */
-      if (valid)
-        intel_ray_query_commit_potential_hit(query,t,sycl::float2(u,v));
+        /* continue traversal */
+        RayDescINTEL ray;
+        ray.O = O1;
+        ray.D = D1;
+        ray.tmin = intel_get_ray_tnear(query,bvh_level);
+        ray.tmax = 0.0f; // unused
+        ray.mask = intel_get_ray_mask(query,bvh_level);
+        ray.flags = intel_get_ray_flags(query,bvh_level);
+        intel_ray_query_forward_ray(query, bvh_level+1, ray, (rtas_t*) inst->scene->getAccel(), 0);
+      }
     }
     
     intel_ray_query_start_traversal(query);
@@ -982,8 +1172,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   //std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
   std::shared_ptr<Scene> scene(new Scene(width,height,opaque,procedural));
   scene->splitIntoGeometries(16);
-  if (inst == InstancingType::HW_INSTANCING)
-    scene->createInstances(3);
+  if (inst != InstancingType::NONE)
+    scene->createInstances(3, inst == InstancingType::SW_INSTANCING);
   scene->buildAccel(rtcdevice,device,context);
 
   std::vector<Hit> tri_map;
@@ -1090,9 +1280,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   void* accel = scene->getAccel();
   size_t scene_ptr = (size_t) scene.get();
 
-  switch (test) {
-  case TestType::TRIANGLES_COMMITTED_HIT:
-  case TestType::TRIANGLES_POTENTIAL_HIT:
+  if (inst != InstancingType::SW_INSTANCING &&
+      (test == TestType::TRIANGLES_COMMITTED_HIT || test == TestType::TRIANGLES_POTENTIAL_HIT))
   {
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numTests);
@@ -1102,12 +1291,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                                            });
                  });
     queue.wait_and_throw();
-    break;
   }
-  
-  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
-  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT:
-  case TestType::PROCEDURALS_COMMITTED_HIT:
+  else
   {
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numTests);
@@ -1117,8 +1302,6 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                                            });
                  });
     queue.wait_and_throw();
-    break;
-  }
   }
     
   /* verify result */
