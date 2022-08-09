@@ -13,6 +13,8 @@
 #define SINGLE_R_PATH        1
 #define FATLEAF_THRESHOLD    6
 #define BVH_BRANCHING_FACTOR 6
+#define TEST_COALESCING      1
+
 
 namespace embree
 {
@@ -142,7 +144,6 @@ namespace embree
     float bounds_lower[3];
     int offset;
 
-    union {
       struct {
         uint8_t type;
         uint8_t pad;
@@ -150,10 +151,7 @@ namespace embree
         uint8_t instMask;
         uint8_t childData[6];
       };
-      uint node_data0[3];
-    };
 
-    union {
       struct {
         uint8_t lower_x[BVH_BRANCHING_FACTOR];
         uint8_t upper_x[BVH_BRANCHING_FACTOR];
@@ -162,22 +160,20 @@ namespace embree
         uint8_t lower_z[BVH_BRANCHING_FACTOR];
         uint8_t upper_z[BVH_BRANCHING_FACTOR];
       };
-      uint node_data1[9];
-    };      
 
 
     __forceinline float3 start() const { return float3(bounds_lower[0],bounds_lower[1],bounds_lower[2]); }
     
-    __forceinline const gpu::AABB3f quantize_bounds(const gpu::AABB3f &fbounds) 
+    static __forceinline const gpu::AABB3f quantize_bounds(const float3 &start, const char exp_x, const char exp_y, const char exp_z, const gpu::AABB3f &fbounds) 
     {
-      const float3 lower = fbounds.lower()-start();
-      const float3 upper = fbounds.upper()-start();
-      float qlower_x = ldexpf(lower.x(), -exp[0] + 8); 
-      float qlower_y = ldexpf(lower.y(), -exp[1] + 8); 
-      float qlower_z = ldexpf(lower.z(), -exp[2] + 8); 
-      float qupper_x = ldexpf(upper.x(), -exp[0] + 8); 
-      float qupper_y = ldexpf(upper.y(), -exp[1] + 8); 
-      float qupper_z = ldexpf(upper.z(), -exp[2] + 8); 
+      const float3 lower = fbounds.lower()-start;
+      const float3 upper = fbounds.upper()-start;
+      float qlower_x = ldexpf(lower.x(), -exp_x + 8); 
+      float qlower_y = ldexpf(lower.y(), -exp_y + 8); 
+      float qlower_z = ldexpf(lower.z(), -exp_z + 8); 
+      float qupper_x = ldexpf(upper.x(), -exp_x + 8); 
+      float qupper_y = ldexpf(upper.y(), -exp_y + 8); 
+      float qupper_z = ldexpf(upper.z(), -exp_z + 8); 
       assert(qlower_x >= 0.0f && qlower_x <= 255.0f);
       assert(qlower_y >= 0.0f && qlower_y <= 255.0f);
       assert(qlower_z >= 0.0f && qlower_z <= 255.0f);
@@ -1652,71 +1648,76 @@ namespace embree
     }
   }
 
-  struct __aligned(64) WriteQBVHNodeN
+  __forceinline void writeNode(void *curDataPtr, const gpu::AABB3f &parent_bounds, void *childDataPtr, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
   {
-    QBVHNodeN qnode;
-    //uint16 u16;
+    uint *dest = (uint*)curDataPtr;
+    //dest = (uint*) __builtin_assume_aligned(dest,16);
+    
+    const float _ulp = std::numeric_limits<float>::epsilon();
+    const float up = 1.0f + float(_ulp);  
+    const gpu::AABB3f conservative_bounds = parent_bounds.conservativeBounds();
+    const float3 len = conservative_bounds.size() * up;
+      
+    int _exp_x; float mant_x = frexp(len.x(), &_exp_x); _exp_x += (mant_x > 255.0f / 256.0f);
+    int _exp_y; float mant_y = frexp(len.y(), &_exp_y); _exp_y += (mant_y > 255.0f / 256.0f);
+    int _exp_z; float mant_z = frexp(len.z(), &_exp_z); _exp_z += (mant_z > 255.0f / 256.0f);
+    _exp_x = max(-128,_exp_x); // enlarge too tight bounds
+    _exp_y = max(-128,_exp_y);
+    _exp_z = max(-128,_exp_z);
 
-    __forceinline void write(void *_dest)
+    const float3 lower(conservative_bounds.lower_x,conservative_bounds.lower_y,conservative_bounds.lower_z);
+    
+    dest[0]  = gpu::as_uint(lower.x());
+    dest[1]  = gpu::as_uint(lower.y());
+    dest[2]  = gpu::as_uint(lower.z());
+    dest[3]  = (int64_t)((char*)childDataPtr - (char*)curDataPtr) / 64;
+
+    uint8_t tmp[48];
+    
+    tmp[0]         = type; // type
+    tmp[1]         = 0; // pad 
+    tmp[2]         = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127); 
+    tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
+    tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
+    tmp[5]         = 0xff;
+
+#pragma nounroll
+    for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
     {
-#if 1      
-      uint *dest = (GLOBAL uint*)_dest;
+      uint8_t lower_x = 0x80;
+      uint8_t lower_y = 0x80;
+      uint8_t lower_z = 0x80;    
+      uint8_t upper_x = 0x00;
+      uint8_t upper_y = 0x00;
+      uint8_t upper_z = 0x00;
+      uint8_t data    = 0x00;
       
-      dest[0] = gpu::as_uint(qnode.bounds_lower[0]);
-      dest[1] = gpu::as_uint(qnode.bounds_lower[1]);
-      dest[2] = gpu::as_uint(qnode.bounds_lower[2]);
-      dest[3] = qnode.offset;
-      
-// #ifdef __SYCL_DEVICE_ONLY__
-//       const uint4 part0(gpu::as_uint(qnode.bounds_lower[0]),gpu::as_uint(qnode.bounds_lower[1]),gpu::as_uint(qnode.bounds_lower[2]),qnode.offset);
-//       __builtin_IB_lsc_store_global_uint4( (GLOBAL uint4*)dest,0,part0,LSC_STCC_DEFAULT);
-// #endif
-      
-      dest[4] = qnode.node_data0[0];
-      dest[5] = qnode.node_data0[1];
-      dest[6] = qnode.node_data0[2];
-      
-      dest[7] = qnode.node_data1[0];
-      dest[8] = qnode.node_data1[1];
-      dest[9] = qnode.node_data1[2];
-      dest[10] = qnode.node_data1[3];
-      dest[11] = qnode.node_data1[4];
-      dest[12] = qnode.node_data1[5];
-      dest[13] = qnode.node_data1[6];
-      dest[14] = qnode.node_data1[7];
-      dest[15] = qnode.node_data1[8];      
-#else
-      uint8 *dest = (uint8*)_dest;
-
-#ifdef __SYCL_DEVICE_ONLY__                                                                                
-      sycl::uint8 part;
-      part.s0() = u16.s0();
-      part.s1() = u16.s1();
-      part.s2() = u16.s2();
-      part.s3() = u16.s3();
-      part.s4() = u16.s4();
-      part.s5() = u16.s5();
-      part.s6() = u16.s6();
-      part.s7() = u16.s7();                                                                                
-      __builtin_IB_lsc_store_global_uint8( (GLOBAL uint8 *)dest, 0, part, LSC_STCC_L1UC_L3WB);
-
-      part.s0() = u16.s8();
-      part.s1() = u16.s9();
-      part.s2() = u16.sA();
-      part.s3() = u16.sB();
-      part.s4() = u16.sC();
-      part.s5() = u16.sD();
-      part.s6() = u16.sE();
-      part.s7() = u16.sF();                                                                                
-      __builtin_IB_lsc_store_global_uint8( ((GLOBAL uint8 *)dest) + 1, 0, part, LSC_STCC_L1UC_L3WB);
-      
-#endif
-
-#endif
-                                                                                
+      if (i<numChildren)
+      {
+        const bool isLeaf = BVH2Ploc::getIndex(indices[i]) < numPrimitives; 
+        data |= 1;
+        if (type == NODE_TYPE_INTERNAL) data |= (isLeaf ? ((NODE_TYPE_QUAD << 2)) : 0);
+        const gpu::AABB3f childBounds = bvh2[BVH2Ploc::getIndex(indices[i])].bounds; //.conservativeBounds();      
+        const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
+        lower_x = (uint8_t)qbounds.lower_x;
+        lower_y = (uint8_t)qbounds.lower_y;
+        lower_z = (uint8_t)qbounds.lower_z;
+        upper_x = (uint8_t)qbounds.upper_x;
+        upper_y = (uint8_t)qbounds.upper_y;
+        upper_z = (uint8_t)qbounds.upper_z;
+      }
+      tmp[ 6+i] = data;
+      tmp[12+i] = lower_x;
+      tmp[18+i] = upper_x;      
+      tmp[24+i] = lower_y;
+      tmp[30+i] = upper_y;      
+      tmp[36+i] = lower_z;
+      tmp[42+i] = upper_z;      
     }
-  };
 
+    for (uint i=0;i<12;i++)
+      dest[4+i] = (uint)tmp[i*4+0] | (uint)(tmp[i*4+1]<<8) | (uint)(tmp[i*4+2]<<16) | (uint)(tmp[i*4+3]<<24);    
+  }
   
 
   
@@ -1745,7 +1746,7 @@ namespace embree
     qnode.exp[2]           = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
     qnode.instMask         = 0xff;
 
-    for (uint i=0;i<BVH_BRANCHING_FACTOR;i++) qnode.childData[i] = (i<numChildren) ? 1 : 0;
+    //for (uint i=0;i<BVH_BRANCHING_FACTOR;i++) qnode.childData[i] = (i<numChildren) ? 1 : 0;
 
     for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
     {
@@ -1763,7 +1764,7 @@ namespace embree
         data |= 1;
         if (type == NODE_TYPE_INTERNAL) data |= (isLeaf ? ((NODE_TYPE_QUAD << 2)) : 0);
         const gpu::AABB3f childBounds = bvh2[BVH2Ploc::getIndex(indices[i])].bounds; //.conservativeBounds();      
-        const gpu::AABB3f  qbounds    = qnode.quantize_bounds(childBounds);
+        const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(qnode.start(),_exp_x,_exp_y,_exp_z,childBounds);
         lower_x = (uint8_t)qbounds.lower_x;
         lower_y = (uint8_t)qbounds.lower_y;
         lower_z = (uint8_t)qbounds.lower_z;
@@ -1925,12 +1926,10 @@ namespace embree
                                                                                 const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numChildren);
                                                                                 char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
 
-                                                                                WriteQBVHNodeN write_qnode;
-#if 1
-                                                                                initNode(write_qnode.qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                                                                write_qnode.write(curAddr);
-                                                                                
-#else                                       
+#if TEST_COALESCING == 1
+                                                                                writeNode(curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+#else
+                                                                                QBVHNodeN qnode;
                                                                                 initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
                                                                                 *(QBVHNodeN *)curAddr = qnode;
 #endif                                       
@@ -2009,11 +2008,10 @@ namespace embree
                                                                               const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
                                                                               char* childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
 
-#if 1
-                                                                              WriteQBVHNodeN write_qnode;                                                                              
-                                                                              initNode(write_qnode.qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                                                              write_qnode.write(curAddr);                                       
-#else                                                                              
+#if TEST_COALESCING == 1
+                                                                              writeNode(curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+#else
+                                                                              QBVHNodeN qnode;
                                                                               initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
                                                                               *(QBVHNodeN *)curAddr = qnode;
 #endif                                                                              
@@ -2098,11 +2096,10 @@ namespace embree
                                                                             numChildren = 0;
                                                                             getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
                                                                             childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
-#if 1
-                                                                            WriteQBVHNodeN write_qnode;                                                                              
-                                                                            initNode(write_qnode.qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                                                            write_qnode.write(curAddr);                                       
-#else                                                                                                                                                          
+#if TEST_COALESCING == 1
+                                                                            writeNode(curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+#else
+                                                                            QBVHNodeN qnode;                                                                            
                                                                             initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_QUAD);
                                                                             *(QBVHNodeN *)curAddr = qnode;
 #endif                                                                            
