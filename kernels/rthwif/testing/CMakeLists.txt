@@ -38,11 +38,11 @@ ADD_TEST(NAME rthwif_test_triangles_committed_hit        COMMAND rthwif_test --n
 ADD_TEST(NAME rthwif_test_triangles_potential_hit        COMMAND rthwif_test --no-instancing --triangles-potential-hit)
 ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_commit COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-commit)
 ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_reject COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-reject)
-#  ADD_TEST(NAME rthwif_test_procedurals_committed_hit      COMMAND rthwif_test --no-instancing --procedurals-committed-hit)
+ADD_TEST(NAME rthwif_test_procedurals_committed_hit      COMMAND rthwif_test --no-instancing --procedurals-committed-hit)
 
 ADD_TEST(NAME rthwif_test_hwinstancing_triangles_committed_hit        COMMAND rthwif_test --hw-instancing --triangles-committed-hit)
 ADD_TEST(NAME rthwif_test_hwinstancing_triangles_potential_hit        COMMAND rthwif_test --hw-instancing --triangles-potential-hit)
 ADD_TEST(NAME rthwif_test_hwinstancing_triangles_anyhit_shader_commit COMMAND rthwif_test --hw-instancing --triangles-anyhit-shader-commit)
 ADD_TEST(NAME rthwif_test_hwinstancing_triangles_anyhit_shader_reject COMMAND rthwif_test --hw-instancing --triangles-anyhit-shader-reject)
-#  ADD_TEST(NAME rthwif_test_hwinstancing_procedurals_committed_hit      COMMAND rthwif_test --hw-instancing --procedurals-committed-hit)
+ADD_TEST(NAME rthwif_test_hwinstancing_procedurals_committed_hit      COMMAND rthwif_test --hw-instancing --procedurals-committed-hit)
 
