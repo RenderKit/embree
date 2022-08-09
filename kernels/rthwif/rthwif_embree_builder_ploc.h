@@ -1633,7 +1633,6 @@ namespace embree
   // ===================================================================================================================================================================================
 
 
-
   __forceinline void getLeafIndices(const uint first_index, const BVH2Ploc *const bvh_nodes, uint *const dest, uint &indexID, const uint numPrimitives)
   {
     dest[0] = first_index;
@@ -1661,14 +1660,18 @@ namespace embree
     __forceinline void write(void *_dest)
     {
 #if 1      
-      //uint16 *dest = (uint16*)_dest;
-      //*dest = u16;
       uint *dest = (GLOBAL uint*)_dest;
+      
       dest[0] = gpu::as_uint(qnode.bounds_lower[0]);
       dest[1] = gpu::as_uint(qnode.bounds_lower[1]);
       dest[2] = gpu::as_uint(qnode.bounds_lower[2]);
       dest[3] = qnode.offset;
-
+      
+// #ifdef __SYCL_DEVICE_ONLY__
+//       const uint4 part0(gpu::as_uint(qnode.bounds_lower[0]),gpu::as_uint(qnode.bounds_lower[1]),gpu::as_uint(qnode.bounds_lower[2]),qnode.offset);
+//       __builtin_IB_lsc_store_global_uint4( (GLOBAL uint4*)dest,0,part0,LSC_STCC_DEFAULT);
+// #endif
+      
       dest[4] = qnode.node_data0[0];
       dest[5] = qnode.node_data0[1];
       dest[6] = qnode.node_data0[2];
