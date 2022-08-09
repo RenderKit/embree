@@ -495,6 +495,8 @@ def runConfig(config):
     conf.append("-D EMBREE_DPCPP_SUPPORT=ON")
   else:
     conf.append("-D EMBREE_DPCPP_SUPPORT=OFF")
+  if "gfx" in config:
+      conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
 
   if "EMBREE_USE_GOOGLE_BENCHMARK" in config:
     conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK="+config["EMBREE_USE_GOOGLE_BENCHMARK"])

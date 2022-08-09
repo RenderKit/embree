@@ -162,18 +162,24 @@ uint32_t compareTestOutput(uint32_t tid, const TestOutput& test, const TestOutpu
 {
 #define COMPARE(member)                 \
   if (test.member != expected.member) { \
-    errors++; std::cout << "test" << tid << " " #member " mismatch " << test.member << " != " << expected.member << std::endl; \
+    if (errors < 16)                                                    \
+      std::cout << "test" << tid << " " #member " mismatch: output " << test.member << " != expected " << expected.member << std::endl; \
+    errors++;                                                           \
   }
 #define COMPARE1(member,eps)               \
   if (fabs(test.member-expected.member) > eps) {                              \
-    errors++; std::cout << "test" << tid << " " #member " mismatch " << test.member << " != " << expected.member << std::endl; \
+    if (errors < 16)                                                    \
+      std::cout << "test" << tid << " " #member " mismatch: output " << test.member << " != expected " << expected.member << std::endl; \
+    errors++;                                                           \
   }
 #define COMPARE3(member,eps) {                                          \
     const bool x = fabs(test.member.x()-expected.member.x()) > eps;     \
     const bool y = fabs(test.member.y()-expected.member.y()) > eps;     \
     const bool z = fabs(test.member.z()-expected.member.z()) > eps;     \
     if (x || y || z) {                                                  \
-      errors++; std::cout << "test" << tid << " " #member " mismatch " << test.member << " != " << expected.member << std::endl; \
+      if (errors < 16)                                                  \
+        std::cout << "test" << tid << " " #member " mismatch: output " << test.member << " != expected " << expected.member << std::endl; \
+      errors++;                                                         \
     }                                                                   \
   }
 
