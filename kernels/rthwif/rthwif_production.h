@@ -42,9 +42,8 @@ enum TraceRayCtrl
 
 // opaque types
 struct rayquery_t {
-  void* opaque0; void* opaque1; void* opaque2; TraceRayCtrl ctrl; uint32_t bvh_level; //MemHit committedHit; MemHit potentialHit;
+  void* opaque0; void* opaque1; void* opaque2; TraceRayCtrl ctrl; uint32_t bvh_level;
   MemHit& hit(HitType ty) {
-    //return ty == 0 ? committedHit : potentialHit;
     struct RTStack* rtStack = (struct RTStack*) opaque2;
     return rtStack->hit[ty];
   }
