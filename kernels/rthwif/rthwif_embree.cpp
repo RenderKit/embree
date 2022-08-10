@@ -102,7 +102,7 @@ bool intersect_user_geometry(rayquery_t& query, RayHit& ray, UserGeometry* geom,
 #endif
 
   rtas_t* hwaccel_ptr = (rtas_t*) scene->hwaccel.data();
-  intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, 0);
+  intel_ray_query_forward_ray(&query, bvh_level, raydesc, hwaccel_ptr, 0);
   return false;
 }
 
@@ -137,7 +137,7 @@ bool intersect_user_geometry(rayquery_t& query, Ray& ray, UserGeometry* geom, Sc
 #endif
 
   rtas_t* hwaccel_ptr = (rtas_t*) scene->hwaccel.data();
-  intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, 0);
+  intel_ray_query_forward_ray(&query, bvh_level, raydesc, hwaccel_ptr, 0);
   return false;
 }
 
@@ -194,7 +194,7 @@ bool intersect_instance(rayquery_t& query, RayHit& ray, Instance* instance, Scen
   }
 #endif
   
-  intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, bvh_id);
+  intel_ray_query_forward_ray(&query, bvh_level, raydesc, hwaccel_ptr, bvh_id);
 
   return false;
 }
@@ -249,7 +249,7 @@ bool intersect_instance(rayquery_t& query, Ray& ray, Instance* instance, Scene* 
   }
 #endif
 
-  intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, bvh_id);
+  intel_ray_query_forward_ray(&query, bvh_level, raydesc, hwaccel_ptr, bvh_id);
 
   return false;
 }
@@ -467,7 +467,7 @@ bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_
   if (!(feature_mask & RTC_FEATURE_FILTER_FUNCTION) || runIntersectionFilter1SYCL(geom, ray, context, hit))
 #endif
   {
-    intel_ray_query_commit_potential_hit (query, ray.tfar, float2(hit.u, hit.v));
+    intel_ray_query_commit_potential_hit (&query, ray.tfar, float2(hit.u, hit.v));
     
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
       ray.instID[l] = hit.instID[l];
@@ -483,18 +483,18 @@ bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_
   if (ishit)
 #endif
   {
-    intel_ray_query_commit_potential_hit (query, ray.tfar, float2(hit.u, hit.v));
+    intel_ray_query_commit_potential_hit (&query, ray.tfar, float2(hit.u, hit.v));
   }
   return ishit;
 }
 
 bool commit_potential_hit(rayquery_t& query, RayHit& ray) {
-  intel_ray_query_commit_potential_hit (query, ray.tfar, float2(ray.u, ray.v));
+  intel_ray_query_commit_potential_hit (&query, ray.tfar, float2(ray.u, ray.v));
   return false;
 }
 
 bool commit_potential_hit(rayquery_t& query, Ray& ray) {
-  intel_ray_query_commit_potential_hit (query, ray.tfar, float2(0.0f, 0.0f));
+  intel_ray_query_commit_potential_hit (&query, ray.tfar, float2(0.0f, 0.0f));
   return true;
 }
 
@@ -560,8 +560,8 @@ void trav_loop(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL
       }
     }
 
-    intel_ray_query_start_traversal(query);
-    intel_sync_ray_query(query);
+    intel_ray_query_start_traversal(&query);
+    intel_ray_query_sync(&query);
   }
 }
 #endif
@@ -632,8 +632,8 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   
   rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
   
-  intel_ray_query_start_traversal(query);
-  intel_sync_ray_query(query);
+  intel_ray_query_start_traversal(&query);
+  intel_ray_query_sync(&query);
   
 #if defined(TRAV_LOOP)
   if (args->feature_mask & TRAV_LOOP_FEATURES) {
@@ -736,8 +736,8 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
 #endif
   
   rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
-  intel_ray_query_start_traversal(query);
-  intel_sync_ray_query(query);
+  intel_ray_query_start_traversal(&query);
+  intel_ray_query_sync(&query);
 
 #if defined(TRAV_LOOP)
   if (args->feature_mask & TRAV_LOOP_FEATURES) {

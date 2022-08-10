@@ -263,8 +263,8 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   
   /* trace ray */
   rayquery_t query = intel_ray_query_init(0,ray,(rtas_t*)bvh,0);
-  intel_ray_query_start_traversal(query);
-  intel_sync_ray_query(query);
+  intel_ray_query_start_traversal(&query);
+  intel_ray_query_sync(&query);
   
   /* get UVs of hit point */
   float u = 0, v = 0;

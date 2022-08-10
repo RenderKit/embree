@@ -19,10 +19,6 @@ enum RayFlagsIntel
   CULL_NON_OPAQUE = 0x80,                   // non-opaque geometry does not produce a hit
   SKIP_TRIANGLES = 0x100,                   // treat all triangle intersections as misses.
   SKIP_PROCEDURAL_PRIMITIVES = 0x200,       // skip execution of intersection shaders
-  
-  // Flags below are "internal use" flags
-  TRIANGLE_FRONT_COUNTERCLOCKWISE = 0x4000, // switched front and backface of triangles
-  LEVEL_ASCEND_DISABLED = 0x8000            // disables the automatic level ascend for this level, thus traversal will terminate when BVH at this level is done
 };
 
 enum HitType
@@ -58,7 +54,7 @@ struct RayDescINTEL
 {
   sycl::float3 O;
   sycl::float3 D;
-  float tmin; // FIXME: tmin or tnear?
+  float tmin;
   float tmax;
   uint32_t mask;
   uint32_t flags;
@@ -74,37 +70,37 @@ SYCL_EXTERNAL rayquery_t intel_ray_query_init(
 
 // setup for instance traversal using a transformed ray and bottom-level AS
 SYCL_EXTERNAL void intel_ray_query_forward_ray(
-  rayquery_t& query,
+  rayquery_t* query,
   unsigned int new_bvh_level,
   RayDescINTEL Ray,
   rtas_t* accel,
-  unsigned int bvh_id); // FIXME: remove bvh_id
+  unsigned int bvh_id // FIXME: remove bvh_id
+);
 
 // commit the potential hit
 SYCL_EXTERNAL void intel_ray_query_commit_potential_hit(
-    rayquery_t& query
+    rayquery_t* query
 );
 
 // commit the potential hit and override hit distance and UVs
 SYCL_EXTERNAL void intel_ray_query_commit_potential_hit(
-    rayquery_t& query,
+    rayquery_t* query,
     float override_hit_distance,
     sycl::float2 override_uv
 );
 
 // start traversal of a ray query
-SYCL_EXTERNAL void intel_ray_query_start_traversal( rayquery_t& query );
+SYCL_EXTERNAL void intel_ray_query_start_traversal( rayquery_t* query );
 
 // synchronize rayquery execution.  If a ray was dispatched, 
 //  This must be called prior to calling any of the accessors below.
-SYCL_EXTERNAL void intel_sync_ray_query( rayquery_t& query );
+SYCL_EXTERNAL void intel_ray_query_sync( rayquery_t* query );
 
 // signal that a ray query will not be used further.  This is the moral equaivalent of a delete
 // this function does an implicit sync
-SYCL_EXTERNAL void intel_ray_query_abandon( rayquery_t& query );
+SYCL_EXTERNAL void intel_ray_query_abandon( rayquery_t* query );
 
 // read hit information during shader execution
-
 SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL float intel_get_hit_distance( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL sycl::float2 intel_get_hit_barys( rayquery_t query, HitType hit_type );
@@ -118,7 +114,6 @@ SYCL_EXTERNAL uint32_t intel_get_hit_instID( rayquery_t query, HitType hit_type 
 SYCL_EXTERNAL uint32_t intel_get_hit_instUserID( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL float4x3_INTEL intel_get_hit_world_to_object( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL float4x3_INTEL intel_get_hit_object_to_world( rayquery_t query, HitType hit_type );
-//SYCL_EXTERNAL rtas_t* intel_get_hit_instanced_accel( rayquery_t query, HitType hit_type );
 
 // fetch triangle vertices for a hit
 SYCL_EXTERNAL void intel_get_hit_triangle_verts( rayquery_t query, sycl::float3 verts_out[3], HitType hit_type );
@@ -130,7 +125,7 @@ SYCL_EXTERNAL void intel_get_hit_triangle_verts( rayquery_t query, sycl::float3 
 //
 SYCL_EXTERNAL sycl::float3 intel_get_ray_origin( rayquery_t query, unsigned int bvh_level );
 SYCL_EXTERNAL sycl::float3 intel_get_ray_direction( rayquery_t query, unsigned int bvh_level );
-SYCL_EXTERNAL float intel_get_ray_tnear( rayquery_t query, unsigned int bvh_level );
+SYCL_EXTERNAL float intel_get_ray_tmin( rayquery_t query, unsigned int bvh_level );
 SYCL_EXTERNAL int intel_get_ray_flags( rayquery_t query, unsigned int bvh_level ); // FIXME: uint32_t?
 SYCL_EXTERNAL int intel_get_ray_mask( rayquery_t query, unsigned int bvh_level ); // FIXME: uint32_t?
 

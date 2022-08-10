@@ -908,13 +908,13 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
   
   /* trace ray */
   rayquery_t query = intel_ray_query_init(0,ray,accel,0);
-  intel_ray_query_start_traversal(query);
-  intel_sync_ray_query(query);
+  intel_ray_query_start_traversal(&query);
+  intel_ray_query_sync(&query);
   
   /* return ray data of level 0 */
   out.ray0_org = intel_get_ray_origin(query,0);
   out.ray0_dir = intel_get_ray_direction(query,0);
-  out.ray0_tnear = intel_get_ray_tnear(query,0);
+  out.ray0_tnear = intel_get_ray_tmin(query,0);
   out.ray0_mask = intel_get_ray_mask(query,0);
   out.ray0_flags = intel_get_ray_flags(query,0);
   
@@ -950,7 +950,7 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
     out.rayN_org = intel_get_ray_origin(query,bvh_level);
     out.rayN_dir = intel_get_ray_direction(query,bvh_level);
-    out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
+    out.rayN_tnear = intel_get_ray_tmin(query,bvh_level);
     out.rayN_mask = intel_get_ray_mask(query,bvh_level);
     out.rayN_flags = intel_get_ray_flags(query,bvh_level);
 
@@ -989,6 +989,9 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
   else {
     out.hit_type = TEST_MISS;
   }
+
+  /* abandon ray query */
+  intel_ray_query_abandon(&query);
 }
 
 void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_in, rtas_t* accel, TestType test)
@@ -1004,13 +1007,13 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   
   /* trace ray */
   rayquery_t query = intel_ray_query_init(0,ray,accel,0);
-  intel_ray_query_start_traversal(query);
-  intel_sync_ray_query(query);
+  intel_ray_query_start_traversal(&query);
+  intel_ray_query_sync(&query);
   
   /* return ray data of level 0 */
   out.ray0_org = intel_get_ray_origin(query,0);
   out.ray0_dir = intel_get_ray_direction(query,0);
-  out.ray0_tnear = intel_get_ray_tnear(query,0);
+  out.ray0_tnear = intel_get_ray_tmin(query,0);
   out.ray0_mask = intel_get_ray_mask(query,0);
   out.ray0_flags = intel_get_ray_flags(query,0);
   
@@ -1056,14 +1059,14 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
         out.rayN_org = intel_get_ray_origin(query,bvh_level);
         out.rayN_dir = intel_get_ray_direction(query,bvh_level);
-        out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
+        out.rayN_tnear = intel_get_ray_tmin(query,bvh_level);
         out.rayN_mask = intel_get_ray_mask(query,bvh_level);
         out.rayN_flags = intel_get_ray_flags(query,bvh_level);
         return;
       }
     
       if (test == TestType::TRIANGLES_ANYHIT_SHADER_COMMIT)
-        intel_ray_query_commit_potential_hit(query);
+        intel_ray_query_commit_potential_hit(&query);
     }
 
     else if (candidate == PROCEDURAL)
@@ -1094,7 +1097,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         /* calculate vertices relative to ray origin */
         const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
         const sycl::float3 D = intel_get_ray_direction(query,bvh_level);
-        const float tnear = intel_get_ray_tnear(query,bvh_level);
+        const float tnear = intel_get_ray_tmin(query,bvh_level);
         const float tfar = intel_get_hit_distance(query, COMMITTED_HIT);
         const sycl::float3 v0 = tri_v0-O;
         const sycl::float3 v1 = tri_v1-O;
@@ -1126,7 +1129,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
 
         /* commit hit */
         if (valid)
-          intel_ray_query_commit_potential_hit(query,t,sycl::float2(u,v));
+          intel_ray_query_commit_potential_hit(&query,t,sycl::float2(u,v));
       }
       else if (geom->type == Geometry::INSTANCE)
       {
@@ -1150,16 +1153,16 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         RayDescINTEL ray;
         ray.O = O1;
         ray.D = D1;
-        ray.tmin = intel_get_ray_tnear(query,bvh_level);
+        ray.tmin = intel_get_ray_tmin(query,bvh_level);
         ray.tmax = 0.0f; // unused
         ray.mask = intel_get_ray_mask(query,bvh_level);
         ray.flags = intel_get_ray_flags(query,bvh_level);
-        intel_ray_query_forward_ray(query, bvh_level+1, ray, inst_accel, 0);
+        intel_ray_query_forward_ray(&query, bvh_level+1, ray, inst_accel, 0);
       }
     }
     
-    intel_ray_query_start_traversal(query);
-    intel_sync_ray_query(query);
+    intel_ray_query_start_traversal(&query);
+    intel_ray_query_sync(&query);
   }
 
   /* committed hit */
@@ -1194,6 +1197,9 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   else {
     out.hit_type = TEST_MISS;
   }
+
+  /* abandon ray query */
+  intel_ray_query_abandon(&query);
 }
 
 static const int width = 128;

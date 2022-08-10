@@ -20,8 +20,6 @@ using namespace embree;
     struct RTStack* rtStack;
     TraceRayCtrl ctrl;
     uint32_t bvh_level;
-    MemHit committedHit;
-    MemHit potentialHit;
  };*/
 
 void use_rthwif_production()
@@ -74,10 +72,10 @@ SYCL_EXTERNAL rayquery_t intel_ray_query_init( unsigned int bvh_level, RayDescIN
   return { nullptr, (void*) dispatchGlobalsPtr, rtStack, TRACE_RAY_INITIAL, bvh_level };
 }
 
-SYCL_EXTERNAL void intel_ray_query_forward_ray( rayquery_t& query, unsigned int bvh_level, RayDescINTEL ray, rtas_t* accel_i, uint32_t bvh_id )
+SYCL_EXTERNAL void intel_ray_query_forward_ray( rayquery_t* query, unsigned int bvh_level, RayDescINTEL ray, rtas_t* accel_i, uint32_t bvh_id )
 {
   HWAccel* accel = (HWAccel*)accel_i;
-  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query.opaque2).get();
+  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   
   /* init ray */
   rtStack->ray[bvh_level].org[0] = ray.O.x();
@@ -98,29 +96,29 @@ SYCL_EXTERNAL void intel_ray_query_forward_ray( rayquery_t& query, unsigned int 
   rtStack->ray[bvh_level].instLeafPtr = 0;
   rtStack->ray[bvh_level].rayMask = ray.mask;
   rtStack->ray[bvh_level].pad1 = 0;
-  query = { nullptr, query.opaque1, query.opaque2, TRACE_RAY_INSTANCE, bvh_level /*, query.committedHit, query.potentialHit */ };
+  *query = { nullptr, query->opaque1, query->opaque2, TRACE_RAY_INSTANCE, bvh_level };
 }
 
-SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( rayquery_t& query )
+SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( rayquery_t* query )
 {
-  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query.opaque2).get();
+  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   
-  uint32_t bvh_level = query.bvh_level;
+  uint32_t bvh_level = query->bvh_level;
   uint32_t rflags = rtStack->ray[bvh_level].rayFlags;
   if (rflags & ACCEPT_FIRST_HIT_AND_END_SEARCH) {
     rtStack->committedHit = rtStack->potentialHit;
     rtStack->committedHit.valid = 1;
-    query = { nullptr, query.opaque1, query.opaque2, TRACE_RAY_DONE, bvh_level };
+    *query = { nullptr, query->opaque1, query->opaque2, TRACE_RAY_DONE, bvh_level };
   } else {
     rtStack->potentialHit.valid = 1; // FIXME: is this required?
-    query = { nullptr, query.opaque1, query.opaque2, TRACE_RAY_COMMIT, bvh_level };
+    *query = { nullptr, query->opaque1, query->opaque2, TRACE_RAY_COMMIT, bvh_level };
   }
 }
 
-SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( rayquery_t& query, float override_hit_distance, float2 override_uv )
+SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( rayquery_t* query, float override_hit_distance, float2 override_uv )
 {
   //struct RTStack* rtStack = (struct RTStack*) query.opaque2;  
-  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query.opaque2).get();
+  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   
   rtStack->potentialHit.t = override_hit_distance;
   rtStack->potentialHit.u = override_uv.x();
@@ -128,34 +126,34 @@ SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( rayquery_t& query, floa
   intel_ray_query_commit_potential_hit(query);
 }
 
-SYCL_EXTERNAL void intel_ray_query_start_traversal( rayquery_t& query )
+SYCL_EXTERNAL void intel_ray_query_start_traversal( rayquery_t* query )
 {
-  rtglobals_t dispatchGlobalsPtr = (rtglobals_t) query.opaque1;
-  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query.opaque2).get();
+  rtglobals_t dispatchGlobalsPtr = (rtglobals_t) query->opaque1;
+  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
 
   rtStack->potentialHit.done = 1;
   rtStack->potentialHit.valid = 1;
   
-  if (query.ctrl == TRACE_RAY_DONE) return;
-  rtfence_t fence = intel_dispatch_trace_ray_query(dispatchGlobalsPtr,query.bvh_level,query.ctrl);
-  query = { (void*) fence, query.opaque1, query.opaque2, TRACE_RAY_INITIAL, 0 }; 
+  if (query->ctrl == TRACE_RAY_DONE) return;
+  rtfence_t fence = intel_dispatch_trace_ray_query(dispatchGlobalsPtr,query->bvh_level,query->ctrl);
+  *query = { (void*) fence, query->opaque1, query->opaque2, TRACE_RAY_INITIAL, 0 }; 
 }
 
-SYCL_EXTERNAL void intel_sync_ray_query( rayquery_t& query )
+SYCL_EXTERNAL void intel_ray_query_sync( rayquery_t* query )
 {
-  intel_rt_sync((rtfence_t)query.opaque0);
+  intel_rt_sync((rtfence_t)query->opaque0);
   
   /* continue is default behaviour */
-  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query.opaque2).get();
+  struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   
   uint32_t bvh_level = rtStack->potentialHit.bvhLevel;
-  query = { query.opaque0, query.opaque1, query.opaque2, TRACE_RAY_CONTINUE, bvh_level };
+  *query = { query->opaque0, query->opaque1, query->opaque2, TRACE_RAY_CONTINUE, bvh_level };
 }
 
-SYCL_EXTERNAL void intel_ray_query_abandon( rayquery_t& query )
+SYCL_EXTERNAL void intel_ray_query_abandon( rayquery_t* query )
 {
-  intel_sync_ray_query(query);
-  query = { nullptr, nullptr, nullptr, TRACE_RAY_INITIAL, 0 };
+  intel_ray_query_sync(query);
+  *query = { nullptr, nullptr, nullptr, TRACE_RAY_INITIAL, 0 };
 }
 
 SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( rayquery_t query, HitType hit_type ) {
@@ -280,7 +278,7 @@ SYCL_EXTERNAL float3 intel_get_ray_direction( rayquery_t query, unsigned int bvh
   return float3(ray.dir[0], ray.dir[1], ray.dir[2]);
 }
 
-SYCL_EXTERNAL float intel_get_ray_tnear( rayquery_t query, unsigned int bvh_level)
+SYCL_EXTERNAL float intel_get_ray_tmin( rayquery_t query, unsigned int bvh_level)
 {
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query.opaque2).get();
   return rtStack->ray[bvh_level].tnear;
