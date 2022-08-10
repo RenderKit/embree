@@ -214,6 +214,40 @@ SYCL_EXTERNAL uint32_t intel_get_hit_instanceID( rayquery_t query, HitType hit_t
   return leaf->part1.instanceIndex;
 }
 
+SYCL_EXTERNAL uint32_t intel_get_hit_instanceUserID( rayquery_t query, HitType hit_type )
+{
+  MemHit& hit = query.hit(hit_type);
+  InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();
+  if (leaf == nullptr) return -1;
+  return leaf->part1.instanceID;
+}
+
+SYCL_EXTERNAL float4x3_INTEL intel_get_hit_world_to_object( rayquery_t query, HitType hit_type )
+{
+  MemHit& hit = query.hit(hit_type);
+  InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();
+  if (leaf == nullptr) return { { 1,0,0 }, { 0,1,0 }, { 0,0,1 }, { 0,0,0 } };
+  return {
+    { leaf->part0.world2obj_vx[0], leaf->part0.world2obj_vx[1], leaf->part0.world2obj_vx[2] },
+    { leaf->part0.world2obj_vy[0], leaf->part0.world2obj_vy[1], leaf->part0.world2obj_vy[2] },
+    { leaf->part0.world2obj_vz[0], leaf->part0.world2obj_vz[1], leaf->part0.world2obj_vz[2] },
+    { leaf->part1.world2obj_p [0], leaf->part1.world2obj_p [1], leaf->part1.world2obj_p [2] }
+  };
+}
+
+SYCL_EXTERNAL float4x3_INTEL intel_get_hit_object_to_world( rayquery_t query, HitType hit_type )
+{
+  MemHit& hit = query.hit(hit_type);
+  InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();
+  if (leaf == nullptr) return { { 1,0,0 }, { 0,1,0 }, { 0,0,1 }, { 0,0,0 } };
+  return {
+    { leaf->part1.obj2world_vx[0], leaf->part1.obj2world_vx[1], leaf->part1.obj2world_vx[2] },
+    { leaf->part1.obj2world_vy[0], leaf->part1.obj2world_vy[1], leaf->part1.obj2world_vy[2] },
+    { leaf->part1.obj2world_vz[0], leaf->part1.obj2world_vz[1], leaf->part1.obj2world_vz[2] },
+    { leaf->part0.obj2world_p [0], leaf->part0.obj2world_p [1], leaf->part0.obj2world_p [2] }
+  };
+}
+
 SYCL_EXTERNAL void intel_get_hit_triangle_verts( rayquery_t query, float3 verts_out[3], HitType hit_type )
 {
   const QuadLeaf* __restrict leaf = (const QuadLeaf*) query.hit(hit_type).getPrimLeafPtr();

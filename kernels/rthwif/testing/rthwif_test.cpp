@@ -182,6 +182,9 @@ struct TestOutput
   sycl::float3 v0;
   sycl::float3 v1;
   sycl::float3 v2;
+
+  float4x3_INTEL world_to_object;
+  float4x3_INTEL object_to_world;
 };
 
 std::ostream& operator<<(std::ostream& out, const sycl::float3& v) {
@@ -278,6 +281,19 @@ sycl::float3 xfmPoint (const LinearSpace3f& m, const sycl::float3& p) {
 
 struct Transform
 {
+  Transform ()
+    : vx(1,0,0), vy(0,1,0), vz(0,0,1), p(0,0,0) {}
+
+  Transform ( sycl::float3 vx, sycl::float3 vy, sycl::float3 vz, sycl::float3 p )
+    : vx(vx), vy(vy), vz(vz), p(p) {}
+
+  Transform ( float4x3_INTEL xfm )
+    : vx(xfm.vx), vy(xfm.vy), vz(xfm.vz), p(xfm.p) {}
+
+  operator float4x3_INTEL () {
+    return { vx, vy, vz, p };
+  }
+  
   sycl::float3 vx,vy,vz,p;
 };
 
@@ -293,11 +309,15 @@ sycl::float3 xfmVector (const Transform& m, const sycl::float3& v) {
   return v.x()*m.vx + v.y()*m.vy + v.z()*m.vz;
 }
 
+Transform operator* (const Transform& a, const Transform& b) {
+  return Transform(xfmVector(a,b.vx),xfmVector(a,b.vy),xfmVector(a,b.vz),xfmPoint(a,b.p));
+}
+
 Transform rcp( const Transform& a )
 {
   const LinearSpace3f l = { a.vx, a.vy, a.vz };
   const LinearSpace3f il = l.inverse();
-  return { il.vx, il.vy, il.vz, -xfmPoint(il,a.p) };
+  return Transform(il.vx, il.vy, il.vz, -xfmPoint(il,a.p));
 }
 
 struct Bounds3f
@@ -356,6 +376,10 @@ struct Triangle
     return { lower, upper };
   }
 
+  const Triangle transform( Transform xfm ) const {
+    return Triangle(xfmPoint(xfm,v0), xfmPoint(xfm,v1), xfmPoint(xfm,v2), index);
+  }
+
   sycl::float3 v0;
   sycl::float3 v1;
   sycl::float3 v2;
@@ -377,6 +401,7 @@ std::ostream& operator<<(std::ostream& out, const Triangle& tri) {
 
 struct Hit
 {
+  Transform local_to_world;
   Triangle triangle;
   uint32_t instID = -1;
   uint32_t geomID = -1;
@@ -398,7 +423,7 @@ struct Geometry
   virtual void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context) {
   };
 
-  virtual void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) = 0;
+  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) = 0;
 
   Type type;
 };
@@ -522,7 +547,7 @@ public:
     }
   }
 
-  virtual void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override
+  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override
   {
     uint32_t instID = -1;
     uint32_t geomID = -1;
@@ -541,11 +566,13 @@ public:
     for (uint32_t primID=0; primID<triangles.size(); primID++)
     {
       const Triangle tri = getTriangle(primID);
+      const Triangle tri1 = tri.transform(local_to_world);
       assert(tri_map[tri.index].geomID == -1);
       tri_map[tri.index].primID = primID;
       tri_map[tri.index].geomID = geomID;
       tri_map[tri.index].instID = instID;
-      tri_map[tri.index].triangle = tri;
+      tri_map[tri.index].triangle = tri1;
+      tri_map[tri.index].local_to_world = local_to_world;
     }
   }
   
@@ -646,9 +673,9 @@ struct InstanceGeometryT : public Geometry
     scene->buildAccel(rtcdevice,device,context);
   }
 
-  virtual void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override {
+  virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override {
     if (procedural) id_stack.back() = -1;
-    scene->buildTriMap(id_stack, tri_map);
+    scene->buildTriMap(local_to_world_in * local2world, id_stack, tri_map);
   }
 
   bool procedural;
@@ -822,12 +849,12 @@ struct Scene
     this->bounds.upper.z() = bounds.upper.z;
   }
   
-  void buildTriMap(std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map)
+  void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map)
   {    
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
     {
       id_stack.push_back(geomID);
-      geometries[geomID]->buildTriMap(id_stack,tri_map);
+      geometries[geomID]->buildTriMap(local_to_world,id_stack,tri_map);
       id_stack.pop_back();
     }
   }
@@ -922,6 +949,10 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     out.rayN_tnear = intel_get_ray_tnear(query,bvh_level);
     out.rayN_mask = intel_get_ray_mask(query,bvh_level);
     out.rayN_flags = intel_get_ray_flags(query,bvh_level);
+
+    /* return instance transformations */
+    out.world_to_object = intel_get_hit_world_to_object(query,POTENTIAL_HIT);
+    out.object_to_world = intel_get_hit_object_to_world(query,POTENTIAL_HIT);
   }
 
   /* committed hit */
@@ -943,6 +974,10 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     out.v0 = vertex_out[0];
     out.v1 = vertex_out[1];
     out.v2 = vertex_out[2];
+
+    /* return instance transformations */
+    out.world_to_object = intel_get_hit_world_to_object(query,COMMITTED_HIT);
+    out.object_to_world = intel_get_hit_object_to_world(query,COMMITTED_HIT);
   }
 
   /* miss */
@@ -1185,7 +1220,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   std::vector<Hit> tri_map;
   tri_map.resize(2*width*height);
   std::vector<uint32_t> id_stack;
-  scene->buildTriMap(id_stack,tri_map);
+  Transform local_to_world;
+  scene->buildTriMap(local_to_world,id_stack,tri_map);
  
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
   memset(in, 0, numTests*sizeof(TestInput));
@@ -1262,6 +1298,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           out_expected[tid].v0 = hit.triangle.v0;
           out_expected[tid].v1 = hit.triangle.v1;
           out_expected[tid].v2 = hit.triangle.v2;
+          out_expected[tid].world_to_object = rcp(Transform(hit.local_to_world));
+          out_expected[tid].object_to_world = hit.local_to_world;
           break;
         case TestType::PROCEDURALS_COMMITTED_HIT:
           out_expected[tid].bvh_level = levels-1;
