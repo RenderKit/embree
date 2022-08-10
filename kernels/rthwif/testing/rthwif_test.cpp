@@ -178,6 +178,7 @@ struct TestOutput
   uint32_t geomID;
   uint32_t primID;
   uint32_t instID;
+  uint32_t instUserID;
   // FIXME: what about instanceID?
   sycl::float3 v0;
   sycl::float3 v1;
@@ -238,6 +239,7 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
   COMPARE(geomID);
   COMPARE(primID);
   COMPARE(instID);
+  COMPARE(instUserID);
   COMPARE3(v0,eps);
   COMPARE3(v1,eps);
   COMPARE3(v2,eps);
@@ -403,6 +405,7 @@ struct Hit
 {
   Transform local_to_world;
   Triangle triangle;
+  uint32_t instUserID = -1;
   uint32_t instID = -1;
   uint32_t geomID = -1;
   uint32_t primID = -1;
@@ -423,7 +426,7 @@ struct Geometry
   virtual void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context) {
   };
 
-  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) = 0;
+  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) = 0;
 
   Type type;
 };
@@ -547,7 +550,7 @@ public:
     }
   }
 
-  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override
+  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override
   {
     uint32_t instID = -1;
     uint32_t geomID = -1;
@@ -568,6 +571,7 @@ public:
       const Triangle tri = getTriangle(primID);
       const Triangle tri1 = tri.transform(local_to_world);
       assert(tri_map[tri.index].geomID == -1);
+      tri_map[tri.index].instUserID = instUserID;
       tri_map[tri.index].primID = primID;
       tri_map[tri.index].geomID = geomID;
       tri_map[tri.index].instID = instID;
@@ -596,8 +600,8 @@ public:
 template<typename Scene>
 struct InstanceGeometryT : public Geometry
 {
-  InstanceGeometryT(Transform& local2world, std::shared_ptr<Scene> scene, bool procedural)
-    : Geometry(Type::INSTANCE), procedural(procedural), local2world(local2world), scene(scene) {}
+  InstanceGeometryT(Transform& local2world, std::shared_ptr<Scene> scene, bool procedural, uint32_t instUserID)
+    : Geometry(Type::INSTANCE), procedural(procedural), instUserID(instUserID), local2world(local2world), scene(scene) {}
 
   virtual ~InstanceGeometryT() {}
 
@@ -648,7 +652,7 @@ struct InstanceGeometryT : public Geometry
       out.GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCES;
       out.InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
       out.GeometryMask = 0xFF;
-      out.InstanceID = 0;
+      out.InstanceID = instUserID;
       out.Transform.vx.x = local2world.vx.x();
       out.Transform.vx.y = local2world.vx.y();
       out.Transform.vx.z = local2world.vx.z();
@@ -673,12 +677,14 @@ struct InstanceGeometryT : public Geometry
     scene->buildAccel(rtcdevice,device,context);
   }
 
-  virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map) override {
+  virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override {
     if (procedural) id_stack.back() = -1;
-    scene->buildTriMap(local_to_world_in * local2world, id_stack, tri_map);
+    else            instUserID = this->instUserID;
+    scene->buildTriMap(local_to_world_in * local2world, id_stack, instUserID, tri_map);
   }
 
   bool procedural;
+  uint32_t instUserID = -1;
   Transform local2world;
   std::shared_ptr<Scene> scene;
 };
@@ -777,7 +783,8 @@ struct Scene
       local2world.p  = sycl::float3(0,0,0);
       
       //std::shared_ptr<InstanceGeometry> instance = std::make_shared<InstanceGeometry>(local2world,scene,procedural);
-      std::shared_ptr<InstanceGeometry> instance(new InstanceGeometry(local2world,scene,procedural));
+      uint32_t instUserID = RandomSampler_getUInt(rng);
+      std::shared_ptr<InstanceGeometry> instance(new InstanceGeometry(local2world,scene,procedural,instUserID));
       instances.push_back(instance);
     }
 
@@ -849,12 +856,12 @@ struct Scene
     this->bounds.upper.z() = bounds.upper.z;
   }
   
-  void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, std::vector<Hit>& tri_map)
+  void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map)
   {    
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
     {
       id_stack.push_back(geomID);
-      geometries[geomID]->buildTriMap(local_to_world,id_stack,tri_map);
+      geometries[geomID]->buildTriMap(local_to_world,id_stack,instUserID,tri_map);
       id_stack.pop_back();
     }
   }
@@ -932,6 +939,7 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     out.u = intel_get_hit_barys(query, POTENTIAL_HIT).x();
     out.v = intel_get_hit_barys(query, POTENTIAL_HIT).y();
     out.front_face = intel_hit_is_front_face( query, POTENTIAL_HIT );
+    out.instUserID = intel_get_hit_instanceUserID( query, POTENTIAL_HIT );
     out.instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
     out.geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
     if (i%2) out.primID = intel_get_hit_primID_triangle( query, POTENTIAL_HIT );
@@ -965,6 +973,7 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
     out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
     out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
+    out.instUserID = intel_get_hit_instanceUserID( query, COMMITTED_HIT );
     out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
     out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
     if (i%2) out.primID = intel_get_hit_primID_triangle( query, COMMITTED_HIT );
@@ -1036,6 +1045,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         out.u = intel_get_hit_barys(query, POTENTIAL_HIT).x();
         out.v = intel_get_hit_barys(query, POTENTIAL_HIT).y();
         out.front_face = intel_hit_is_front_face( query, POTENTIAL_HIT );
+        out.instUserID = intel_get_hit_instanceUserID( query, POTENTIAL_HIT );
         out.instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
         out.geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
         if (i%2) out.primID = intel_get_hit_primID_triangle( query, POTENTIAL_HIT );
@@ -1166,6 +1176,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
     out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
     out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
     out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
+    out.instUserID = intel_get_hit_instanceUserID( query, COMMITTED_HIT );
     out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
     out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
     out.primID = intel_get_hit_primID( query, COMMITTED_HIT );
@@ -1221,7 +1232,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   tri_map.resize(2*width*height);
   std::vector<uint32_t> id_stack;
   Transform local_to_world;
-  scene->buildTriMap(local_to_world,id_stack,tri_map);
+  scene->buildTriMap(local_to_world,id_stack,-1,tri_map);
  
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
   memset(in, 0, numTests*sizeof(TestInput));
@@ -1295,6 +1306,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           out_expected[tid].geomID = hit.geomID;
           out_expected[tid].primID = hit.primID;
           out_expected[tid].instID = hit.instID;
+          out_expected[tid].instUserID = hit.instUserID;
           out_expected[tid].v0 = hit.triangle.v0;
           out_expected[tid].v1 = hit.triangle.v1;
           out_expected[tid].v2 = hit.triangle.v2;
@@ -1311,6 +1323,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           out_expected[tid].geomID = hit.geomID;
           out_expected[tid].primID = hit.primID;
           out_expected[tid].instID = hit.instID;
+          out_expected[tid].instUserID = hit.instUserID;
           out_expected[tid].v0 = sycl::float3(0,0,0);
           out_expected[tid].v1 = sycl::float3(0,0,0);
           out_expected[tid].v2 = sycl::float3(0,0,0);

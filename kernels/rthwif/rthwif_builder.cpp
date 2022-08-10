@@ -404,12 +404,12 @@ namespace embree
         const RTHWIF_GEOMETRY_INSTANCE_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCE_DESC*) geometries[geomID];
         void* accel = geom->Accel;
         RTHWIF_TRANSFORM4X4 local2world = geom->Transform;
-        return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->GeometryMask); // FIXME: pass instance flags
+        return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->GeometryMask,geom->InstanceID); // FIXME: pass instance flags
       } else {
         const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCEREF_DESC*) geometries[geomID];
         void* accel = geom->Accel;
         RTHWIF_TRANSFORM4X4 local2world = *geom->Transform;
-        return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->GeometryMask); // FIXME: pass instance flags
+        return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->GeometryMask,geom->InstanceID); // FIXME: pass instance flags
       }
     };
 

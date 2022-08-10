@@ -75,12 +75,13 @@ namespace embree
       /* instance data for leaf creation */
       struct Instance
       {
-        Instance (AffineSpace3f local2world, void* accel, uint8_t imask)
-          : local2world(local2world), accel(accel), imask(imask) {}
+        Instance (AffineSpace3f local2world, void* accel, uint8_t imask, uint32_t instanceUserID)
+          : local2world(local2world), accel(accel), imask(imask), instanceUserID(instanceUserID) {}
         
         AffineSpace3f local2world;
         void* accel;
         uint8_t imask;
+        uint32_t instanceUserID;
       };
       
       /*! settings for SAH builder */
@@ -412,7 +413,7 @@ namespace embree
             
             uint64_t root = static_cast<QBVH6*>(instance.accel)->root();
             root += 64*rootOfs; // goto sub-BVH
-            new (&childData[c]) InstanceLeaf(instance.local2world,root,geomID,instance.imask);
+            new (&childData[c]) InstanceLeaf(instance.local2world,root,geomID,instance.instanceUserID,instance.imask);
             
             qnode->setChild(c,prims[i].bounds(),NODE_TYPE_INSTANCE,sizeof(InstanceLeaf)/64,0);
             nodeMask |= instance.imask;

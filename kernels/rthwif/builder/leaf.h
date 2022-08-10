@@ -381,7 +381,7 @@ namespace embree
   {
     InstanceLeaf() {}
     
-    InstanceLeaf (AffineSpace3f obj2world, uint64_t startNodePtr, uint32_t instID, uint8_t instMask)
+    InstanceLeaf (AffineSpace3f obj2world, uint64_t startNodePtr, uint32_t instID, uint32_t instUserID, uint8_t instMask)
     {
       part0.shaderIndex = 0; //InstShaderRecordID;
       part0.geomMask = instMask;
@@ -396,7 +396,7 @@ namespace embree
       part0.instFlags = (InstanceFlags) 0;
       part0.pad1 = 0;
       
-      part1.instanceID = instID;
+      part1.instanceID = instUserID;
       part1.instanceIndex = instID;
       part1.bvhPtr = (uint64_t) 0;
       part1.pad = 0;
