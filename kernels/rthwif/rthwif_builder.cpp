@@ -155,10 +155,12 @@ namespace embree
   
   RTHWIF_API void rthwifInit()
   {
+    TaskScheduler::create(-1,false,false);
   }
   
   RTHWIF_API void rthwifExit()
   {
+    TaskScheduler::destroy();
   }
   
   RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device)

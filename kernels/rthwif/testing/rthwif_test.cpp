@@ -1416,6 +1416,8 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
 
 int main(int argc, char* argv[])
 {
+  rthwifInit();
+  
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
 
@@ -1470,6 +1472,8 @@ int main(int argc, char* argv[])
   uint32_t numErrors = executeTest(device,queue,context,inst,test);
 
   sycl::free(dispatchGlobalsPtr, context);
+
+  rthwifExit();
   
   return numErrors ? 1 : 0;
 }
