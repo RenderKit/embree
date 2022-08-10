@@ -1684,28 +1684,27 @@ namespace embree
 #pragma nounroll
     for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
     {
+      const uint index = indices[sycl::min(i,numChildren-1)];
       uint8_t lower_x = 0x80;
       uint8_t lower_y = 0x80;
       uint8_t lower_z = 0x80;    
       uint8_t upper_x = 0x00;
       uint8_t upper_y = 0x00;
       uint8_t upper_z = 0x00;
-      uint8_t data    = 0x00;
-      
-      if (i<numChildren)
-      {
-        const bool isLeaf = BVH2Ploc::getIndex(indices[i]) < numPrimitives; 
-        data |= 1;
-        if (type == NODE_TYPE_INTERNAL) data |= (isLeaf ? ((NODE_TYPE_QUAD << 2)) : 0);
-        const gpu::AABB3f childBounds = bvh2[BVH2Ploc::getIndex(indices[i])].bounds; //.conservativeBounds();      
-        const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
-        lower_x = (uint8_t)qbounds.lower_x;
-        lower_y = (uint8_t)qbounds.lower_y;
-        lower_z = (uint8_t)qbounds.lower_z;
-        upper_x = (uint8_t)qbounds.upper_x;
-        upper_y = (uint8_t)qbounds.upper_y;
-        upper_z = (uint8_t)qbounds.upper_z;
-      }
+      uint8_t data    = 0x00;      
+
+      const bool isLeaf = BVH2Ploc::getIndex(index) < numPrimitives; 
+      data = (i<numChildren) ? 1 : 0;
+      if (type == NODE_TYPE_INTERNAL) data |= (isLeaf ? ((NODE_TYPE_QUAD << 2)) : 0);
+      const gpu::AABB3f childBounds = bvh2[BVH2Ploc::getIndex(index)].bounds; //.conservativeBounds();      
+      const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
+      lower_x = (i<numChildren) ? (uint8_t)qbounds.lower_x : lower_x;
+      lower_y = (i<numChildren) ? (uint8_t)qbounds.lower_y : lower_y;
+      lower_z = (i<numChildren) ? (uint8_t)qbounds.lower_z : lower_z;
+      upper_x = (i<numChildren) ? (uint8_t)qbounds.upper_x : upper_x;
+      upper_y = (i<numChildren) ? (uint8_t)qbounds.upper_y : upper_y;
+      upper_z = (i<numChildren) ? (uint8_t)qbounds.upper_z : upper_z;
+
       tmp[ 6+i] = data;
       tmp[12+i] = lower_x;
       tmp[18+i] = upper_x;      
@@ -1716,7 +1715,7 @@ namespace embree
     }
 
     for (uint i=0;i<12;i++)
-      dest[4+i] = (uint)tmp[i*4+0] | (uint)(tmp[i*4+1]<<8) | (uint)(tmp[i*4+2]<<16) | (uint)(tmp[i*4+3]<<24);    
+      dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);    
   }
   
 
