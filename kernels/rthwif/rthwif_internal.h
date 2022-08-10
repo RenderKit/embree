@@ -6,6 +6,15 @@
 #include <cstdint>
 #include <sycl/sycl.hpp>
 
+enum TraceRayCtrl
+{
+  TRACE_RAY_INITIAL = 0,              // Initializes hit and initializes traversal state
+  TRACE_RAY_INSTANCE = 1,             // Loads committed hit and initializes traversal state
+  TRACE_RAY_COMMIT = 2,               // Loads potential hit and loads traversal state 
+  TRACE_RAY_CONTINUE = 3,             // Loads committed hit and loads traversal state
+  TRACE_RAY_DONE = 256,               // for internal use only 
+};
+
 typedef __attribute__((opencl_global)) struct rtglobals_t_* rtglobals_t;
 typedef __attribute__((opencl_private)) struct rtfence_t_* rtfence_t;
 

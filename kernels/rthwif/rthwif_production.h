@@ -27,18 +27,9 @@ enum HitType
   POTENTIAL_HIT = 1,
 };
 
-enum TraceRayCtrl
-{
-  TRACE_RAY_INITIAL = 0,              // Initializes hit and initializes traversal state
-  TRACE_RAY_INSTANCE = 1,             // Loads committed hit and initializes traversal state
-  TRACE_RAY_COMMIT = 2,               // Loads potential hit and loads traversal state 
-  TRACE_RAY_CONTINUE = 3,             // Loads committed hit and loads traversal state
-  TRACE_RAY_DONE = -1,                // for internal use only 
-};
-
 // opaque types
 struct rayquery_t {
-  void* opaque0; void* opaque1; void* opaque2; TraceRayCtrl ctrl; uint32_t bvh_level;
+  void* opaque0; void* opaque1; void* opaque2; uint32_t ctrl; uint32_t bvh_level;
   MemHit& hit(HitType ty) {
     struct RTStack* rtStack = (struct RTStack*) opaque2;
     return rtStack->hit[ty];
