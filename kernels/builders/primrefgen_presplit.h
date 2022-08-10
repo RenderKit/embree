@@ -246,9 +246,9 @@ namespace embree
       return pinfo;	
     }
     
-    template<typename SplitPrimitiveFunc, typename ProjectedPrimitiveAreaFunc>
+    template<typename SplitPrimitiveFunc, typename ProjectedPrimitiveAreaFunc, typename PrimVector>
     PrimInfo createPrimRefArray_presplit(size_t numPrimRefs,
-                                         mvector<PrimRef>& prims,
+                                         PrimVector& prims,
                                          const PrimInfo& pinfo,
                                          const SplitPrimitiveFunc& splitPrimitive,
                                          const ProjectedPrimitiveAreaFunc& primitiveArea)

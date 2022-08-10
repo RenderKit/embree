@@ -2,8 +2,6 @@
 #include "../rthwif_production.h"
 #include "../rthwif_builder.h"
 
-#include "../../../include/embree4/rtcore.h"
-
 #include <vector>
 #include <map>
 #include <iostream>
@@ -422,7 +420,7 @@ struct Geometry
 
   virtual RTHWIF_GEOMETRY_DESC getDesc() = 0;
 
-  virtual void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context) {
+  virtual void buildAccel(sycl::device& device, sycl::context& context) {
   };
 
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) = 0;
@@ -672,8 +670,8 @@ struct InstanceGeometryT : public Geometry
     }
   }
 
-  virtual void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context) override {
-    scene->buildAccel(rtcdevice,device,context);
+  virtual void buildAccel(sycl::device& device, sycl::context& context) override {
+    scene->buildAccel(device,context);
   }
 
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override {
@@ -790,14 +788,14 @@ struct Scene
     geometries = instances;
   }
 
-  void buildAccel(RTCDevice rtcdevice, sycl::device& device, sycl::context& context)
+  void buildAccel(sycl::device& device, sycl::context& context)
   {
     /* fill geometry descriptor buffer */
     std::vector<RTHWIF_GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
     for (size_t geomID=0; geomID<size(); geomID++)
     {
-      geometries[geomID]->buildAccel(rtcdevice,device,context);
+      geometries[geomID]->buildAccel(device,context);
       desc[geomID] = geometries[geomID]->getDesc();
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
@@ -808,7 +806,6 @@ struct Scene
     memset(&args,0,sizeof(args));
     args.bytes = sizeof(args);
     args.device = nullptr;
-    args.embree_device = (void*) rtcdevice;
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
     args.numGeometries = geom.size();
@@ -1218,14 +1215,12 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   uint32_t levels = 1;
   if (inst != InstancingType::NONE) levels = 2;
 
-  RTCDevice rtcdevice = rtcNewSYCLDevice(&context, &queue, nullptr); // FIXME: remove
-
   //std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
   std::shared_ptr<Scene> scene(new Scene(width,height,opaque,procedural));
   scene->splitIntoGeometries(16);
   if (inst != InstancingType::NONE)
     scene->createInstances(3, inst == InstancingType::SW_INSTANCING);
-  scene->buildAccel(rtcdevice,device,context);
+  scene->buildAccel(device,context);
 
   std::vector<Hit> tri_map;
   tri_map.resize(2*width*height);
@@ -1387,7 +1382,7 @@ struct DispatchGlobals
 
 void* allocDispatchGlobals(sycl::device device, sycl::context context)
 {
-  size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
+  size_t maxBVHLevels = 2; //RTC_MAX_INSTANCE_LEVEL_COUNT+1;
   
   size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
   size_t num_rtstacks = 1<<17; // this is sufficiently large also for PVC

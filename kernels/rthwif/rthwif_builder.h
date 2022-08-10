@@ -207,7 +207,6 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
 {
   size_t bytes;
   sycl::device* device;
-  void* embree_device; // FIXME: remove
   void* dispatchGlobalsPtr; // FIXME: remove
   const RTHWIF_GEOMETRY_DESC** geometries;
   size_t numGeometries;

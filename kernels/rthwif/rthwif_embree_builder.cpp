@@ -172,7 +172,7 @@ namespace embree
       return geom->numTimeSegments();
     };
     
-    auto createPrimRefArray = [&] (mvector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID)
+    auto createPrimRefArray = [&] (avector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID)
     {
       const Geometry* geom = scene->get(geomID);
       PrimInfo primInfo = geom->numTimeSegments() > 0
@@ -326,17 +326,17 @@ namespace embree
   {
     BBox1f time_range = * (BBox1f*) userPtr;
     Geometry* geom = (Geometry*) geomUserPtr;
-    mvector<PrimRef> prim(geom->device,1); // FIXME: not efficient!
+    PrimRef prim;
     range<size_t> r(primID);
     size_t k = 0;
     uint32_t geomID = 0;
     if (geom->numTimeSegments() > 0)
-      geom->createPrimRefArrayMB(prim,time_range,r,k,geomID);
+      geom->createPrimRefArrayMB(&prim,time_range,r,k,geomID);
     else
-      geom->createPrimRefArray  (prim,r,k,geomID);
+      geom->createPrimRefArray(&prim,r,k,geomID);
     
     RTHWIF_AABB obounds;
-    BBox3fa bounds = prim[0].bounds();
+    BBox3fa bounds = prim.bounds();
     obounds.lower.x = bounds.lower.x;
     obounds.lower.y = bounds.lower.y;
     obounds.lower.z = bounds.lower.z;
@@ -511,7 +511,6 @@ namespace embree
     memset(&args,0,sizeof(args));
     args.bytes = sizeof(args);
     args.device = nullptr;
-    args.embree_device = scene->device;
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomStatic.data();
     args.numGeometries = geomStatic.size();

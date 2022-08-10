@@ -233,7 +233,7 @@ namespace embree
         return linearBounds(primID,time_range);
       }
 
-      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const
+      PrimInfo createPrimRefArray(PrimRef* prims, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);
@@ -266,7 +266,7 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, const BBox1f& time_range, const range<size_t>& r, size_t k, unsigned int geomID) const
+      PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& time_range, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         assert(r.begin() == 0);
         assert(r.end()   == 1);

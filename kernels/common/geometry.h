@@ -515,8 +515,16 @@ namespace embree
 
   public:
 
-    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const {
+    virtual PrimInfo createPrimRefArray(PrimRef* prims, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
+    }
+
+    PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const {
+      return createPrimRefArray(prims.data(),r,k,geomID);
+    }
+
+    PrimInfo createPrimRefArray(avector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const {
+      return createPrimRefArray(prims.data(),r,k,geomID);
     }
 
     virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, mvector<SubGridBuildData>& sgrids, const range<size_t>& r, size_t k, unsigned int geomID) const {
@@ -528,10 +536,18 @@ namespace embree
     }
 
     /*! Calculates the PrimRef over the complete time interval */
-    virtual PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
+    virtual PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry");
     }
 
+    PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
+      return createPrimRefArrayMB(prims.data(),t0t1,r,k,geomID);
+    }
+
+    PrimInfo createPrimRefArrayMB(avector<PrimRef>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
+      return createPrimRefArrayMB(prims.data(),t0t1,r,k,geomID);
+    }
+    
     virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
     }

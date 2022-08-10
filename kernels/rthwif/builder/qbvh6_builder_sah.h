@@ -242,7 +242,7 @@ namespace embree
             getQuad(getQuad),
             getProcedural(getProcedural),
             getInstance(getInstance),
-            prims(device),
+            prims((size_t)0),
             allocator(device, false, true, false),
             verbose(verbose) {} 
         
@@ -1395,7 +1395,7 @@ namespace embree
         const getProceduralFunc getProcedural;
         const getInstanceFunc getInstance;
         Settings cfg;
-        mvector<PrimRef> prims;
+        avector<PrimRef> prims;
         FastAllocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
         bool verbose;

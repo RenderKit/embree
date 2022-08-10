@@ -139,7 +139,7 @@ namespace embree
   }
 
   template<typename GeometryType>
-  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* userPtr, mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
+  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* userPtr, avector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
   {
     PrimInfo pinfo(empty);
     for (uint32_t primID=r.begin(); primID<r.end(); primID++)
@@ -333,7 +333,7 @@ namespace embree
       return 0;
     };
     
-    auto createPrimRefArray = [&] (mvector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
+    auto createPrimRefArray = [&] (avector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
       if (geom == nullptr) return PrimInfo(empty);
@@ -414,7 +414,7 @@ namespace embree
     };
 
     bool verbose = false;
-    BBox3f bounds = QBVH6BuilderSAH::build2(numGeometries, (Device*) args.embree_device, 
+    BBox3f bounds = QBVH6BuilderSAH::build2(numGeometries, nullptr, 
                                             getSize, getType, getNumTimeSegments,
                                             createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
                                             (char*)args.accel, args.numBytes, args.AddAccel, verbose, args.dispatchGlobalsPtr);
