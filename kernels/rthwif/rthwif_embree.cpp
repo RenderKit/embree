@@ -522,7 +522,7 @@ void trav_loop(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL
     context->user->instStackSize = bvh_level;
     Scene* scene = scenes[bvh_level];
 #else
-    const unsigned int instID = intel_get_hit_instanceID(query, POTENTIAL_HIT);
+    const unsigned int instID = intel_get_hit_instID(query, POTENTIAL_HIT);
     
     /* assume software instancing mode by default (required for rtcForwardRay) */
     Scene* scene = scenes[bvh_level]; 
@@ -649,7 +649,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
     float t = intel_get_hit_distance(query, COMMITTED_HIT);
     float2 uv = intel_get_hit_barys (query, COMMITTED_HIT);
     unsigned int geomID = intel_get_hit_geomID(query, COMMITTED_HIT);
-    unsigned int instID = intel_get_hit_instanceID(query, COMMITTED_HIT);
+    unsigned int instID = intel_get_hit_instID(query, COMMITTED_HIT);
 
     unsigned int primID = ray.primID;
     if (intel_get_hit_candidate(query, COMMITTED_HIT) == TRIANGLE)

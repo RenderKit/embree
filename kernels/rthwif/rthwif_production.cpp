@@ -206,7 +206,7 @@ SYCL_EXTERNAL uint32_t intel_get_hit_primID_procedural( rayquery_t query, HitTyp
   return leaf->_primIndex[hit.primLeafIndex];
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instanceID( rayquery_t query, HitType hit_type )
+SYCL_EXTERNAL uint32_t intel_get_hit_instID( rayquery_t query, HitType hit_type )
 {
   MemHit& hit = query.hit(hit_type);
   InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();
@@ -214,7 +214,7 @@ SYCL_EXTERNAL uint32_t intel_get_hit_instanceID( rayquery_t query, HitType hit_t
   return leaf->part1.instanceIndex;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instanceUserID( rayquery_t query, HitType hit_type )
+SYCL_EXTERNAL uint32_t intel_get_hit_instUserID( rayquery_t query, HitType hit_type )
 {
   MemHit& hit = query.hit(hit_type);
   InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();

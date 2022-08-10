@@ -179,7 +179,6 @@ struct TestOutput
   uint32_t primID;
   uint32_t instID;
   uint32_t instUserID;
-  // FIXME: what about instanceID?
   sycl::float3 v0;
   sycl::float3 v1;
   sycl::float3 v2;
@@ -939,8 +938,8 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     out.u = intel_get_hit_barys(query, POTENTIAL_HIT).x();
     out.v = intel_get_hit_barys(query, POTENTIAL_HIT).y();
     out.front_face = intel_hit_is_front_face( query, POTENTIAL_HIT );
-    out.instUserID = intel_get_hit_instanceUserID( query, POTENTIAL_HIT );
-    out.instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
+    out.instUserID = intel_get_hit_instUserID( query, POTENTIAL_HIT );
+    out.instID = intel_get_hit_instID( query, POTENTIAL_HIT );
     out.geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
     if (i%2) out.primID = intel_get_hit_primID_triangle( query, POTENTIAL_HIT );
     else     out.primID = intel_get_hit_primID         ( query, POTENTIAL_HIT );
@@ -973,8 +972,8 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
     out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
     out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
     out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
-    out.instUserID = intel_get_hit_instanceUserID( query, COMMITTED_HIT );
-    out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
+    out.instUserID = intel_get_hit_instUserID( query, COMMITTED_HIT );
+    out.instID = intel_get_hit_instID( query, COMMITTED_HIT );
     out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
     if (i%2) out.primID = intel_get_hit_primID_triangle( query, COMMITTED_HIT );
     else     out.primID = intel_get_hit_primID         ( query, COMMITTED_HIT );
@@ -1045,8 +1044,8 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         out.u = intel_get_hit_barys(query, POTENTIAL_HIT).x();
         out.v = intel_get_hit_barys(query, POTENTIAL_HIT).y();
         out.front_face = intel_hit_is_front_face( query, POTENTIAL_HIT );
-        out.instUserID = intel_get_hit_instanceUserID( query, POTENTIAL_HIT );
-        out.instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
+        out.instUserID = intel_get_hit_instUserID( query, POTENTIAL_HIT );
+        out.instID = intel_get_hit_instID( query, POTENTIAL_HIT );
         out.geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
         if (i%2) out.primID = intel_get_hit_primID_triangle( query, POTENTIAL_HIT );
         else     out.primID = intel_get_hit_primID         ( query, POTENTIAL_HIT );
@@ -1074,7 +1073,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
     {
       const uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
       
-      const uint32_t instID = intel_get_hit_instanceID( query, POTENTIAL_HIT );
+      const uint32_t instID = intel_get_hit_instID( query, POTENTIAL_HIT );
       const uint32_t geomID = intel_get_hit_geomID( query, POTENTIAL_HIT );
       const uint32_t primID = intel_get_hit_primID( query, POTENTIAL_HIT );
 
@@ -1176,8 +1175,8 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
     out.u = intel_get_hit_barys(query, COMMITTED_HIT).x();
     out.v = intel_get_hit_barys(query, COMMITTED_HIT).y();
     out.front_face = intel_hit_is_front_face( query, COMMITTED_HIT );
-    out.instUserID = intel_get_hit_instanceUserID( query, COMMITTED_HIT );
-    out.instID = intel_get_hit_instanceID( query, COMMITTED_HIT );
+    out.instUserID = intel_get_hit_instUserID( query, COMMITTED_HIT );
+    out.instID = intel_get_hit_instID( query, COMMITTED_HIT );
     out.geomID = intel_get_hit_geomID( query, COMMITTED_HIT );
     out.primID = intel_get_hit_primID( query, COMMITTED_HIT );
 

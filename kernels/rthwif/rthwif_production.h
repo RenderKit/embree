@@ -114,8 +114,8 @@ SYCL_EXTERNAL uint32_t intel_get_hit_primID( rayquery_t query, HitType hit_type 
 SYCL_EXTERNAL uint32_t intel_get_hit_primID_triangle( rayquery_t query, HitType hit_type );  // fast path for quad leaves
 SYCL_EXTERNAL uint32_t intel_get_hit_primID_procedural( rayquery_t query, HitType hit_type ); // fast path for procedural leaves
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instanceID( rayquery_t query, HitType hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_instanceUserID( rayquery_t query, HitType hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_instID( rayquery_t query, HitType hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_instUserID( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL float4x3_INTEL intel_get_hit_world_to_object( rayquery_t query, HitType hit_type );
 SYCL_EXTERNAL float4x3_INTEL intel_get_hit_object_to_world( rayquery_t query, HitType hit_type );
 //SYCL_EXTERNAL rtas_t* intel_get_hit_instanced_accel( rayquery_t query, HitType hit_type );
