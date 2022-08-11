@@ -62,7 +62,7 @@ const constexpr uint32_t TRAV_LOOP_FEATURES =
 void use_rthwif_embree() {
 }
 
-Vec3f intel_get_hit_triangle_normal(ray_query_t query, HitType hit_type)
+Vec3f intel_get_hit_triangle_normal(ray_query_t query, HitTypeINTEL hit_type)
 {
   float3 v[3]; intel_get_hit_triangle_verts(query, v, hit_type);
   const Vec3f v0(v[0].x(), v[0].y(), v[0].z());
@@ -84,7 +84,7 @@ bool intersect_user_geometry(ray_query_t& query, RayHit& ray, UserGeometry* geom
   if (!forward_scene) return ishit;
 
   /* forward ray to instanced scene */
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT ) + 1;
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT ) + 1;
   Scene* scene = (Scene*) forward_scene;
   scenes[bvh_level] = scene;
   
@@ -119,7 +119,7 @@ bool intersect_user_geometry(ray_query_t& query, Ray& ray, UserGeometry* geom, S
   if (!forward_scene) return ishit;
 
   /* forward ray to instanced scene */
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT ) + 1;
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT ) + 1;
   Scene* scene = (Scene*) forward_scene;
   scenes[bvh_level] = scene;
   
@@ -156,7 +156,7 @@ bool intersect_instance(ray_query_t& query, RayHit& ray, Instance* instance, Sce
   if (!instance_id_stack::push(context->user, geomID))
     return false;
 
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT ) + 1;
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT ) + 1;
 
   Scene* object = (Scene*) instance->object;
   const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
@@ -211,7 +211,7 @@ bool intersect_instance(ray_query_t& query, Ray& ray, Instance* instance, Scene*
   if (!instance_id_stack::push(context->user, geomID))
     return false;
 
-  unsigned int bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT ) + 1;
+  unsigned int bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT ) + 1;
 
   Scene* object = (Scene*) instance->object;
   const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
@@ -504,25 +504,25 @@ void trav_loop(ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVE
 {
   while (!intel_is_traversal_done(query))
   {
-    CandidateType candidate = intel_get_hit_candidate(query, POTENTIAL_HIT);
+    CandidateType candidate = intel_get_hit_candidate(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
 
-    const unsigned int bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
+    const unsigned int bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
     const float3 org = intel_get_ray_origin   ( query, bvh_level );
     const float3 dir = intel_get_ray_direction( query, bvh_level );
-    const float t = intel_get_hit_distance(query, POTENTIAL_HIT);
-    const float2 uv = intel_get_hit_barys (query, POTENTIAL_HIT);
-    const unsigned int geomID = intel_get_hit_geomID(query, POTENTIAL_HIT);
-    const unsigned int primID = intel_get_hit_primID(query, POTENTIAL_HIT);
+    const float t = intel_get_hit_distance(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
+    const float2 uv = intel_get_hit_barys (query, HIT_TYPE_INTEL_POTENTIAL_HIT);
+    const unsigned int geomID = intel_get_hit_geomID(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
+    const unsigned int primID = intel_get_hit_primID(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
 
     ray.org = Vec3ff(org.x(), org.y(), org.z(), ray.tnear());
     ray.dir = Vec3ff(dir.x(), dir.y(), dir.z(), ray.time ());
-    ray.tfar = intel_get_hit_distance(query, COMMITTED_HIT);
+    ray.tfar = intel_get_hit_distance(query, HIT_TYPE_INTEL_COMMITTED_HIT);
    
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
     context->user->instStackSize = bvh_level;
     Scene* scene = scenes[bvh_level];
 #else
-    const unsigned int instID = intel_get_hit_instID(query, POTENTIAL_HIT);
+    const unsigned int instID = intel_get_hit_instID(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
     
     /* assume software instancing mode by default (required for rtcForwardRay) */
     Scene* scene = scenes[bvh_level]; 
@@ -553,7 +553,7 @@ void trav_loop(ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVE
       else // if (candidate == TRIANGLE)
       {
         ray.tfar = t;
-        Vec3f Ng = intel_get_hit_triangle_normal(query, POTENTIAL_HIT);
+        Vec3f Ng = intel_get_hit_triangle_normal(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
         Hit hit(context->user,geomID,primID,Vec2f(uv.x(),uv.y()),Ng);
         if (invokeTriangleIntersectionFilter(query, geom, bvh_level, ray, hit, context, feature_mask))
           break; // shadow rays break at first hit
@@ -645,15 +645,15 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
 
   if (valid)
   {
-    unsigned int bvh_level = intel_get_hit_bvh_level(query, COMMITTED_HIT);
-    float t = intel_get_hit_distance(query, COMMITTED_HIT);
-    float2 uv = intel_get_hit_barys (query, COMMITTED_HIT);
-    unsigned int geomID = intel_get_hit_geomID(query, COMMITTED_HIT);
-    unsigned int instID = intel_get_hit_instID(query, COMMITTED_HIT);
+    unsigned int bvh_level = intel_get_hit_bvh_level(query, HIT_TYPE_INTEL_COMMITTED_HIT);
+    float t = intel_get_hit_distance(query, HIT_TYPE_INTEL_COMMITTED_HIT);
+    float2 uv = intel_get_hit_barys (query, HIT_TYPE_INTEL_COMMITTED_HIT);
+    unsigned int geomID = intel_get_hit_geomID(query, HIT_TYPE_INTEL_COMMITTED_HIT);
+    unsigned int instID = intel_get_hit_instID(query, HIT_TYPE_INTEL_COMMITTED_HIT);
 
     unsigned int primID = ray.primID;
-    if (intel_get_hit_candidate(query, COMMITTED_HIT) == TRIANGLE)
-      primID = intel_get_hit_primID_triangle(query, COMMITTED_HIT);
+    if (intel_get_hit_candidate(query, HIT_TYPE_INTEL_COMMITTED_HIT) == TRIANGLE)
+      primID = intel_get_hit_primID_triangle(query, HIT_TYPE_INTEL_COMMITTED_HIT);
       
     rayhit_i->ray.tfar = t;
     rayhit_i->hit.geomID = geomID;
@@ -673,8 +673,8 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
 #endif
 
     /* calculate geometry normal for hardware accelerated triangles */
-    if (intel_get_hit_candidate(query, COMMITTED_HIT) == TRIANGLE)
-      ray.Ng = intel_get_hit_triangle_normal(query, COMMITTED_HIT);
+    if (intel_get_hit_candidate(query, HIT_TYPE_INTEL_COMMITTED_HIT) == TRIANGLE)
+      ray.Ng = intel_get_hit_triangle_normal(query, HIT_TYPE_INTEL_COMMITTED_HIT);
 
     rayhit_i->hit.Ng_x = ray.Ng.x;
     rayhit_i->hit.Ng_y = ray.Ng.y;

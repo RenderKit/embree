@@ -270,7 +270,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   float u = 0, v = 0;
   if (intel_has_committed_hit(query))
   {
-    sycl::float2 uv = intel_get_hit_barys( query, COMMITTED_HIT );
+    sycl::float2 uv = intel_get_hit_barys( query, HIT_TYPE_INTEL_COMMITTED_HIT );
     u = uv.x();
     v = uv.y();
   }

@@ -21,16 +21,16 @@ enum RayFlagsINTEL
   RAY_FLAGS_INTEL_SKIP_PROCEDURAL_PRIMITIVES = 0x200,       // skip execution of intersection shaders
 };
 
-enum HitType
+enum HitTypeINTEL
 {
-  COMMITTED_HIT = 0,
-  POTENTIAL_HIT = 1,
+  HIT_TYPE_INTEL_COMMITTED_HIT = 0,
+  HIT_TYPE_INTEL_POTENTIAL_HIT = 1,
 };
 
 // opaque types
 struct ray_query_t {
   void* opaque0; void* opaque1; void* opaque2; uint32_t ctrl; uint32_t bvh_level;
-  MemHit& hit(HitType ty) {
+  MemHit& hit(HitTypeINTEL ty) {
     struct RTStack* rtStack = (struct RTStack*) opaque2;
     return rtStack->hit[ty];
   }
@@ -92,22 +92,22 @@ SYCL_EXTERNAL void intel_ray_query_sync( ray_query_t* query );
 SYCL_EXTERNAL void intel_ray_query_abandon( ray_query_t* query );
 
 // read hit information during shader execution
-SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL float intel_get_hit_distance( ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL sycl::float2 intel_get_hit_barys( ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL bool intel_hit_is_front_face( ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_geomID(ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_primID( ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_primID_triangle( ray_query_t query, HitType hit_type );  // fast path for quad leaves
-SYCL_EXTERNAL uint32_t intel_get_hit_primID_procedural( ray_query_t query, HitType hit_type ); // fast path for procedural leaves
+SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL float intel_get_hit_distance( ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL sycl::float2 intel_get_hit_barys( ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL bool intel_hit_is_front_face( ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_geomID(ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_primID( ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_primID_triangle( ray_query_t query, HitTypeINTEL hit_type );  // fast path for quad leaves
+SYCL_EXTERNAL uint32_t intel_get_hit_primID_procedural( ray_query_t query, HitTypeINTEL hit_type ); // fast path for procedural leaves
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instID( ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_instUserID( ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL float4x3_INTEL intel_get_hit_world_to_object( ray_query_t query, HitType hit_type );
-SYCL_EXTERNAL float4x3_INTEL intel_get_hit_object_to_world( ray_query_t query, HitType hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_instID( ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_instUserID( ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL float4x3_INTEL intel_get_hit_world_to_object( ray_query_t query, HitTypeINTEL hit_type );
+SYCL_EXTERNAL float4x3_INTEL intel_get_hit_object_to_world( ray_query_t query, HitTypeINTEL hit_type );
 
 // fetch triangle vertices for a hit
-SYCL_EXTERNAL void intel_get_hit_triangle_verts( ray_query_t query, sycl::float3 verts_out[3], HitType hit_type );
+SYCL_EXTERNAL void intel_get_hit_triangle_verts( ray_query_t query, sycl::float3 verts_out[3], HitTypeINTEL hit_type );
 
 //
 // read ray-data
@@ -129,7 +129,7 @@ SYCL_EXTERNAL bool intel_is_traversal_done( ray_query_t query );
 // should get invoked)
 
 enum CandidateType { TRIANGLE, PROCEDURAL };
-SYCL_EXTERNAL CandidateType intel_get_hit_candidate( ray_query_t query, HitType hit_type );
+SYCL_EXTERNAL CandidateType intel_get_hit_candidate( ray_query_t query, HitTypeINTEL hit_type );
 
 // if traversal is done one can test for the presence of a committed hit to either invoke miss or closest hit shader
 SYCL_EXTERNAL bool intel_has_committed_hit( ray_query_t query );
