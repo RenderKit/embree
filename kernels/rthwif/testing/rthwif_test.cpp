@@ -111,6 +111,14 @@ float RandomSampler_getFloat(RandomSampler& self) {
   return (float)RandomSampler_getInt(self) * 4.656612873077392578125e-10f;
 }
 
+sycl::float3 RandomSampler_getFloat3(RandomSampler& self)
+{
+  const float x = RandomSampler_getFloat(self);
+  const float y = RandomSampler_getFloat(self);
+  const float z = RandomSampler_getFloat(self);
+  return sycl::float3(x,y,z);
+}
+
 RandomSampler rng;
 
 enum class InstancingType
@@ -128,10 +136,6 @@ enum class TestType
   TRIANGLES_ANYHIT_SHADER_REJECT,    // triangles + filter + reject
   PROCEDURALS_COMMITTED_HIT,         // procedural triangles
 };
-
-// triangles_hw_instancing: triangles + hw instancing
-// triangles_sw_instancing: triangles + sw instancing
-// procedural_triangles: procedural triangles + commit/reject
 
 struct TestInput
 {
@@ -240,6 +244,14 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
   COMPARE3(v0,eps);
   COMPARE3(v1,eps);
   COMPARE3(v2,eps);
+  COMPARE3(world_to_object.vx,eps);
+  COMPARE3(world_to_object.vy,eps);
+  COMPARE3(world_to_object.vz,eps);
+  COMPARE3(world_to_object.p ,eps);
+  COMPARE3(object_to_world.vx,eps);
+  COMPARE3(object_to_world.vy,eps);
+  COMPARE3(object_to_world.vz,eps);
+  COMPARE3(object_to_world.p ,eps);
 }
 
 struct LinearSpace3f
@@ -270,7 +282,17 @@ struct LinearSpace3f
 
   /*! compute transposed matrix */
   const LinearSpace3f transposed() const { return LinearSpace3f(vx.x(),vx.y(),vx.z(),vy.x(),vy.y(),vy.z(),vz.x(),vz.y(),vz.z()); }
-  
+
+  /*! return matrix for rotation around arbitrary axis */
+  static LinearSpace3f rotate(const sycl::float3 _u, const float r) {
+    sycl::float3 u = normalize(_u);
+    float s = sinf(r), c = cosf(r);
+    return LinearSpace3f(u.x()*u.x()+(1-u.x()*u.x())*c,  u.x()*u.y()*(1-c)-u.z()*s,    u.x()*u.z()*(1-c)+u.y()*s,
+                         u.x()*u.y()*(1-c)+u.z()*s,    u.y()*u.y()+(1-u.y()*u.y())*c,  u.y()*u.z()*(1-c)-u.x()*s,
+                         u.x()*u.z()*(1-c)-u.y()*s,    u.y()*u.z()*(1-c)+u.x()*s,    u.z()*u.z()+(1-u.z()*u.z())*c);
+  }
+
+public:
   sycl::float3 vx,vy,vz;
 };
 
@@ -292,7 +314,7 @@ struct Transform
   operator float4x3_INTEL () {
     return { vx, vy, vz, p };
   }
-  
+
   sycl::float3 vx,vy,vz,p;
 };
 
@@ -317,6 +339,15 @@ Transform rcp( const Transform& a )
   const LinearSpace3f l = { a.vx, a.vy, a.vz };
   const LinearSpace3f il = l.inverse();
   return Transform(il.vx, il.vy, il.vz, -xfmPoint(il,a.p));
+}
+
+Transform RandomSampler_getTransform(RandomSampler& self)
+{
+  const sycl::float3 u = RandomSampler_getFloat3(self) + sycl::float3(0.01f);
+  const float r = 2.0f*M_PI*RandomSampler_getFloat(self);
+  const sycl::float3 p = 10.0f*RandomSampler_getFloat3(self);
+  const LinearSpace3f xfm = LinearSpace3f::rotate(u,r);
+  return Transform(xfm.vx,xfm.vy,xfm.vz,p);
 }
 
 struct Bounds3f
@@ -420,6 +451,10 @@ struct Geometry
 
   virtual RTHWIF_GEOMETRY_DESC getDesc() = 0;
 
+  virtual void transform( const Transform xfm) {
+    throw std::runtime_error("Geometry::transform not implemented");
+  }
+
   virtual void buildAccel(sycl::device& device, sycl::context& context) {
   };
 
@@ -449,6 +484,12 @@ public:
 
   size_t size() const {
     return triangles.size();
+  }
+
+  virtual void transform( const Transform xfm) override
+  {
+    for (size_t i=0; i<vertices.size(); i++)
+      vertices[i] = xfmPoint(xfm,vertices[i]);
   }
 
   static RTHWIF_AABB getBoundsCallback (const uint32_t primID, void* geomUserPtr, void* userPtr)
@@ -597,7 +638,7 @@ public:
 template<typename Scene>
 struct InstanceGeometryT : public Geometry
 {
-  InstanceGeometryT(Transform& local2world, std::shared_ptr<Scene> scene, bool procedural, uint32_t instUserID)
+  InstanceGeometryT(const Transform& local2world, std::shared_ptr<Scene> scene, bool procedural, uint32_t instUserID)
     : Geometry(Type::INSTANCE), procedural(procedural), instUserID(instUserID), local2world(local2world), scene(scene) {}
 
   virtual ~InstanceGeometryT() {}
@@ -769,16 +810,23 @@ struct Scene
       const uint32_t begin = i;
       const uint32_t end   = std::min((uint32_t)geometries.size(),i+blockSize);
 
-      std::shared_ptr<Scene> scene(new Scene);
-      for (size_t j=begin; j<end; j++)
-        scene->geometries.push_back(geometries[j]);
-
+#if 0
+      const Transform local2world = RandomSampler_getTransform(rng);
+      const Transform world2local = rcp(local2world);
+#else
       Transform local2world;
       local2world.vx = sycl::float3(1,0,0);
       local2world.vy = sycl::float3(0,1,0);
       local2world.vz = sycl::float3(0,0,1);
       local2world.p  = sycl::float3(0,0,0);
-      
+#endif
+
+      std::shared_ptr<Scene> scene(new Scene);
+      for (size_t j=begin; j<end; j++) {
+        //geometries[j]->transform(world2local);
+        scene->geometries.push_back(geometries[j]);
+      }
+
       //std::shared_ptr<InstanceGeometry> instance = std::make_shared<InstanceGeometry>(local2world,scene,procedural);
       uint32_t instUserID = RandomSampler_getUInt(rng);
       std::shared_ptr<InstanceGeometry> instance(new InstanceGeometry(local2world,scene,procedural,instUserID));
@@ -1054,6 +1102,10 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         out.v0 = vertex_out[0];
         out.v1 = vertex_out[1];
         out.v2 = vertex_out[2];
+
+        /* return instance transformations */
+        out.world_to_object = intel_get_hit_world_to_object(query,COMMITTED_HIT);
+        out.object_to_world = intel_get_hit_object_to_world(query,COMMITTED_HIT);
         
         /* return ray data at current level */
         uint32_t bvh_level = intel_get_hit_bvh_level( query, POTENTIAL_HIT );
@@ -1191,6 +1243,10 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
       out.v1 = vertex_out[1];
       out.v2 = vertex_out[2];
     }
+
+    /* return instance transformations */
+    out.world_to_object = intel_get_hit_world_to_object(query,COMMITTED_HIT);
+    out.object_to_world = intel_get_hit_object_to_world(query,COMMITTED_HIT);
   }
 
   /* miss */
@@ -1327,6 +1383,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           out_expected[tid].v0 = sycl::float3(0,0,0);
           out_expected[tid].v1 = sycl::float3(0,0,0);
           out_expected[tid].v2 = sycl::float3(0,0,0);
+          out_expected[tid].world_to_object = rcp(Transform(hit.local_to_world));
+          out_expected[tid].object_to_world = hit.local_to_world;
           break;
         }
       }
