@@ -128,8 +128,13 @@ SYCL_EXTERNAL bool intel_is_traversal_done( ray_query_t query );
 // shader needs to get invoked) or a procedural (intersection shader
 // should get invoked)
 
-enum CandidateType { TRIANGLE, PROCEDURAL };
-SYCL_EXTERNAL CandidateType intel_get_hit_candidate( ray_query_t query, HitTypeINTEL hit_type );
+enum CandidateTypeINTEL
+{
+  CANDIDATE_TYPE_INTEL_TRIANGLE,
+  CANDIDATE_TYPE_INTEL_PROCEDURAL
+};
+
+SYCL_EXTERNAL CandidateTypeINTEL intel_get_hit_candidate( ray_query_t query, HitTypeINTEL hit_type );
 
 // if traversal is done one can test for the presence of a committed hit to either invoke miss or closest hit shader
 SYCL_EXTERNAL bool intel_has_committed_hit( ray_query_t query );

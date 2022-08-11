@@ -300,8 +300,8 @@ SYCL_EXTERNAL bool intel_is_traversal_done( ray_query_t query ) {
   return query.hit(HIT_TYPE_INTEL_POTENTIAL_HIT).done;
 }
 
-SYCL_EXTERNAL CandidateType intel_get_hit_candidate( ray_query_t query, HitTypeINTEL hit_type) {
-  return query.hit(hit_type).leafType == NODE_TYPE_QUAD ? TRIANGLE : PROCEDURAL;
+SYCL_EXTERNAL CandidateTypeINTEL intel_get_hit_candidate( ray_query_t query, HitTypeINTEL hit_type) {
+  return query.hit(hit_type).leafType == NODE_TYPE_QUAD ? CANDIDATE_TYPE_INTEL_TRIANGLE : CANDIDATE_TYPE_INTEL_PROCEDURAL;
 }
 
 SYCL_EXTERNAL bool intel_has_committed_hit( ray_query_t query ) {

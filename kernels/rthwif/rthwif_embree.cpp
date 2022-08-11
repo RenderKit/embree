@@ -504,7 +504,7 @@ void trav_loop(ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVE
 {
   while (!intel_is_traversal_done(query))
   {
-    CandidateType candidate = intel_get_hit_candidate(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
+    CandidateTypeINTEL candidate = intel_get_hit_candidate(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
 
     const unsigned int bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
     const float3 org = intel_get_ray_origin   ( query, bvh_level );
@@ -543,7 +543,7 @@ void trav_loop(ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVE
     /* perform ray masking */
     if (ray.mask & geom->mask)
     {
-      if (candidate == PROCEDURAL)
+      if (candidate == CANDIDATE_TYPE_INTEL_PROCEDURAL)
       {
         if (intersect_primitive(query,ray,scenes,geom,context,geomID,primID,feature_mask))
           if (commit_potential_hit (query, ray))
@@ -652,7 +652,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
     unsigned int instID = intel_get_hit_instID(query, HIT_TYPE_INTEL_COMMITTED_HIT);
 
     unsigned int primID = ray.primID;
-    if (intel_get_hit_candidate(query, HIT_TYPE_INTEL_COMMITTED_HIT) == TRIANGLE)
+    if (intel_get_hit_candidate(query, HIT_TYPE_INTEL_COMMITTED_HIT) == CANDIDATE_TYPE_INTEL_TRIANGLE)
       primID = intel_get_hit_primID_triangle(query, HIT_TYPE_INTEL_COMMITTED_HIT);
       
     rayhit_i->ray.tfar = t;
@@ -673,7 +673,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
 #endif
 
     /* calculate geometry normal for hardware accelerated triangles */
-    if (intel_get_hit_candidate(query, HIT_TYPE_INTEL_COMMITTED_HIT) == TRIANGLE)
+    if (intel_get_hit_candidate(query, HIT_TYPE_INTEL_COMMITTED_HIT) == CANDIDATE_TYPE_INTEL_TRIANGLE)
       ray.Ng = intel_get_hit_triangle_normal(query, HIT_TYPE_INTEL_COMMITTED_HIT);
 
     rayhit_i->hit.Ng_x = ray.Ng.x;

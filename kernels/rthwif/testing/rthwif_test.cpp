@@ -1070,9 +1070,9 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   /* traversal loop */
   while (!intel_is_traversal_done(query))
   {
-    const CandidateType candidate = intel_get_hit_candidate(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
+    const CandidateTypeINTEL candidate = intel_get_hit_candidate(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
 
-    if (candidate == TRIANGLE)
+    if (candidate == CANDIDATE_TYPE_INTEL_TRIANGLE)
     {
       if (test == TestType::TRIANGLES_POTENTIAL_HIT)
       {
@@ -1112,7 +1112,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         intel_ray_query_commit_potential_hit(&query);
     }
 
-    else if (candidate == PROCEDURAL)
+    else if (candidate == CANDIDATE_TYPE_INTEL_PROCEDURAL)
     {
       const uint32_t bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
       
@@ -1226,7 +1226,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
     out.v0 = sycl::float3(0,0,0);
     out.v1 = sycl::float3(0,0,0);
     out.v2 = sycl::float3(0,0,0);
-    if (intel_get_hit_candidate( query, HIT_TYPE_INTEL_COMMITTED_HIT ) == TRIANGLE)
+    if (intel_get_hit_candidate( query, HIT_TYPE_INTEL_COMMITTED_HIT ) == CANDIDATE_TYPE_INTEL_TRIANGLE)
     {
       sycl::float3 vertex_out[3];
       intel_get_hit_triangle_verts(query, vertex_out, HIT_TYPE_INTEL_COMMITTED_HIT);
@@ -1347,7 +1347,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         case TestType::TRIANGLES_POTENTIAL_HIT:
         case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
           out_expected[tid].bvh_level = levels-1;
-          out_expected[tid].hit_candidate = TRIANGLE;
+          out_expected[tid].hit_candidate = CANDIDATE_TYPE_INTEL_TRIANGLE;
           out_expected[tid].t = 1.0f;
           out_expected[tid].u = 0.1f;
           out_expected[tid].v = 0.6f;
@@ -1369,7 +1369,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           break;
         case TestType::PROCEDURALS_COMMITTED_HIT:
           out_expected[tid].bvh_level = levels-1;
-          out_expected[tid].hit_candidate = PROCEDURAL;
+          out_expected[tid].hit_candidate = CANDIDATE_TYPE_INTEL_PROCEDURAL;
           out_expected[tid].t = 1.0f;
           out_expected[tid].u = 0.1f;
           out_expected[tid].v = 0.6f;
