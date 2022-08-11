@@ -5,7 +5,7 @@
 
 #include "rthwif_internal.h"
 
-enum RayFlagsIntel 
+enum RayFlagsINTEL
 {
   // Flags directly exposed in API
   NONE = 0x00,
