@@ -1877,7 +1877,7 @@ namespace embree
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    //sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);
                                                    sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _node_mem_allocator_cur(cgh);                                                   
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                                                                     {
                                                                       const uint localID     = item.get_local_id(0);
                                                                       const uint localSize   = item.get_local_range().size();
@@ -1970,10 +1970,11 @@ namespace embree
     }
     /* ---- Phase II: full breadth-first phase until only fatleaves remain--- */
     //exit(0);
+    
 #if 1
     while(1)
     {      
-      const uint blocks = host_device_tasks[0]; // = endBlockID-startBlockID;     
+      const uint blocks = host_device_tasks[0]; // = endBlockID-startBlockID;      
       if (blocks == 0) break;
       
       iteration++;
@@ -2057,7 +2058,7 @@ namespace embree
       double dt = gpu::getDeviceExecutionTiming(queue_event);
       total_time += dt;
       if (unlikely(verbose))      
-        PRINT4("flattening iteration ",iteration,(float)dt,(float)total_time);
+        PRINT5("flattening iteration ",iteration,blocks,(float)dt,(float)total_time);
 
     }
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID,geomID pairs for final phase --- */
