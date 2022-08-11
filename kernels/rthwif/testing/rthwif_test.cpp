@@ -218,16 +218,16 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
     }                                                                   \
   }
 
-  float eps = 1E-5;
+  float eps = 1E-4;
 
   COMPARE3(ray0_org,0);
   COMPARE3(ray0_dir,0);
   COMPARE1(ray0_tnear,0);
   COMPARE(ray0_mask);
   COMPARE(ray0_flags);
-  COMPARE3(rayN_org,0);
-  COMPARE3(rayN_dir,0);
-  COMPARE1(rayN_tnear,0);
+  COMPARE3(rayN_org,eps);
+  COMPARE3(rayN_dir,eps);
+  COMPARE1(rayN_tnear,eps);
   COMPARE(rayN_mask);
   COMPARE(rayN_flags);
   COMPARE(hit_type);
@@ -311,7 +311,7 @@ struct Transform
   Transform ( float4x3_INTEL xfm )
     : vx(xfm.vx), vy(xfm.vy), vz(xfm.vz), p(xfm.p) {}
 
-  operator float4x3_INTEL () {
+  operator float4x3_INTEL () const {
     return { vx, vy, vz, p };
   }
 
@@ -607,13 +607,12 @@ public:
     for (uint32_t primID=0; primID<triangles.size(); primID++)
     {
       const Triangle tri = getTriangle(primID);
-      const Triangle tri1 = tri.transform(local_to_world);
       assert(tri_map[tri.index].geomID == -1);
       tri_map[tri.index].instUserID = instUserID;
       tri_map[tri.index].primID = primID;
       tri_map[tri.index].geomID = geomID;
       tri_map[tri.index].instID = instID;
-      tri_map[tri.index].triangle = tri1;
+      tri_map[tri.index].triangle = tri;
       tri_map[tri.index].local_to_world = local_to_world;
     }
   }
@@ -810,20 +809,12 @@ struct Scene
       const uint32_t begin = i;
       const uint32_t end   = std::min((uint32_t)geometries.size(),i+blockSize);
 
-#if 0
       const Transform local2world = RandomSampler_getTransform(rng);
       const Transform world2local = rcp(local2world);
-#else
-      Transform local2world;
-      local2world.vx = sycl::float3(1,0,0);
-      local2world.vy = sycl::float3(0,1,0);
-      local2world.vz = sycl::float3(0,0,1);
-      local2world.p  = sycl::float3(0,0,0);
-#endif
 
       std::shared_ptr<Scene> scene(new Scene);
       for (size_t j=begin; j<end; j++) {
-        //geometries[j]->transform(world2local);
+        geometries[j]->transform(world2local);
         scene->geometries.push_back(geometries[j]);
       }
 
@@ -1318,7 +1309,9 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         assert(tid < numTests);
 
         Hit hit = tri_map[tid];
-        sycl::float3 p = hit.triangle.sample(0.1f,0.6f);
+        const Triangle tri = hit.triangle.transform(hit.local_to_world);
+        const sycl::float3 p = tri.sample(0.1f,0.6f);
+        const Transform world_to_local = rcp(hit.local_to_world);
         
         in[tid].org = p + sycl::float3(0,0,-1);
         in[tid].dir = sycl::float3(0,0,1);
@@ -1338,8 +1331,8 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         switch (test) {
         default: break;
         case TestType::TRIANGLES_POTENTIAL_HIT:
-          out_expected[tid].rayN_org = in[tid].org;
-          out_expected[tid].rayN_dir = in[tid].dir;
+          out_expected[tid].rayN_org = xfmPoint (world_to_local,in[tid].org);
+          out_expected[tid].rayN_dir = xfmVector(world_to_local,in[tid].dir);
           out_expected[tid].rayN_tnear = in[tid].tnear;
           out_expected[tid].rayN_mask = in[tid].mask;
           out_expected[tid].rayN_flags = in[tid].flags;
@@ -1366,8 +1359,13 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           out_expected[tid].v0 = hit.triangle.v0;
           out_expected[tid].v1 = hit.triangle.v1;
           out_expected[tid].v2 = hit.triangle.v2;
-          out_expected[tid].world_to_object = rcp(Transform(hit.local_to_world));
-          out_expected[tid].object_to_world = hit.local_to_world;
+          if (inst == InstancingType::SW_INSTANCING) {
+            out_expected[tid].world_to_object = Transform();
+            out_expected[tid].object_to_world = Transform();
+          } else {
+            out_expected[tid].world_to_object = world_to_local;
+            out_expected[tid].object_to_world = hit.local_to_world;
+          }
           break;
         case TestType::PROCEDURALS_COMMITTED_HIT:
           out_expected[tid].bvh_level = levels-1;
@@ -1383,8 +1381,13 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           out_expected[tid].v0 = sycl::float3(0,0,0);
           out_expected[tid].v1 = sycl::float3(0,0,0);
           out_expected[tid].v2 = sycl::float3(0,0,0);
-          out_expected[tid].world_to_object = rcp(Transform(hit.local_to_world));
-          out_expected[tid].object_to_world = hit.local_to_world;
+          if (inst == InstancingType::SW_INSTANCING) {
+            out_expected[tid].world_to_object = Transform();
+            out_expected[tid].object_to_world = Transform();
+          } else {
+            out_expected[tid].world_to_object = world_to_local;
+            out_expected[tid].object_to_world = hit.local_to_world;
+          }
           break;
         }
       }
