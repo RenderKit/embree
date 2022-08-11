@@ -26,6 +26,8 @@
 #include "rthwif_production.h"
 using namespace embree;
 
+#define DRIVER_BUILDER_MODE 1
+
 RTC_NAMESPACE_BEGIN;
 
 //#if defined(EMBREE_DPCPP_ROBUST)
@@ -104,12 +106,12 @@ bool intersect_user_geometry(ray_query_INTEL* query, RayHit& ray, UserGeometry* 
 
   raytracing_acceleration_structure_INTEL* hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) scene->hwaccel.data();
 
-#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+#if DRIVER_BUILDER_MODE // defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
   QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
-  if (qbvh6->reserved1 == 1) { // AccelTable mode
+  //if (qbvh6->reserved1 == 1) { // AccelTable mode
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) AccelTable[0];
-  }
+    //}
 #endif
     
   intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, 0);
@@ -149,14 +151,14 @@ bool intersect_user_geometry(ray_query_INTEL* query, Ray& ray, UserGeometry* geo
 
   raytracing_acceleration_structure_INTEL* hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) scene->hwaccel.data();
 
-#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+#if DRIVER_BUILDER_MODE // defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
   QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
-  if (qbvh6->reserved1 == 1) { // AccelTable mode
+  //if (qbvh6->reserved1 == 1) { // AccelTable mode
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) AccelTable[0];
-  }
+  //}
 #endif
-  
+
   intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, 0);
   return false;
 }
@@ -206,8 +208,8 @@ bool intersect_instance(ray_query_INTEL* query, RayHit& ray, Instance* instance,
   bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
 #endif
 
-#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
-  if (qbvh6->reserved1 == 1) // AccelTable mode
+#if DRIVER_BUILDER_MODE // defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  // if (qbvh6->reserved1 == 1) // AccelTable mode
   {
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) AccelTable[bvh_id];
@@ -262,8 +264,8 @@ bool intersect_instance(ray_query_INTEL* query, Ray& ray, Instance* instance, Sc
   bvh_id = (uint32_t) clamp(uint32_t(qbvh6->numTimeSegments*time), 0u, qbvh6->numTimeSegments-1);
 #endif
 
-#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
-  if (qbvh6->reserved1 == 1) // AccelTable mode
+#if DRIVER_BUILDER_MODE // defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  // if (qbvh6->reserved1 == 1) // AccelTable mode
   {
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) AccelTable[bvh_id];
@@ -644,8 +646,8 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   }
 #endif
 
-#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
-  if (qbvh6->reserved1 == 1) // AccelTable mode
+#if DRIVER_BUILDER_MODE // defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  // if (qbvh6->reserved1 == 1) // AccelTable mode
   {
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) AccelTable[bvh_id];
@@ -751,8 +753,8 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   }
 #endif
 
-#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
-  if (qbvh6->reserved1 == 1) // AccelTable mode
+#if DRIVER_BUILDER_MODE // defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  // if (qbvh6->reserved1 == 1) // AccelTable mode
   {
     void** AccelTable = (void**) (qbvh6+1);
     hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) AccelTable[bvh_id];

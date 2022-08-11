@@ -104,7 +104,7 @@ namespace embree
     const Vec3fa lower(accel->bounds[0][0],accel->bounds[0][1],accel->bounds[0][2]);
     const Vec3fa upper(accel->bounds[1][0],accel->bounds[1][1],accel->bounds[1][2]);
     const BBox3fa bounds = xfmBounds(local2world,BBox3fa(lower,upper));
-     
+         
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
     if (unlikely(bounds.empty())) return false;
@@ -339,7 +339,7 @@ namespace embree
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
       if (geom == nullptr) return PrimInfo(empty);
-      
+
       switch (geom->GeometryType) {
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args.userPtr,prims,r,k,geomID);
       case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,args.userPtr,prims,r,k,geomID);

@@ -1178,13 +1178,13 @@ namespace embree
           stats.print_raw(std::cout);
           qbvh->print();
 
-          std::cout << "#define bvh_bytes " << bytes << std::endl;
+          /*std::cout << "#define bvh_bytes " << bytes << std::endl;
           std::cout << "const unsigned char bvh_data[bvh_bytes] = {";
           for (size_t i=0; i<bytes; i++) {
             if (i % 32 == 0) std::cout << std::endl << "  ";
             std::cout << "0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned)((unsigned char*)accel)[i] << ", ";
           }
-          std::cout << std::endl << "};" << std::endl;
+          std::cout << std::endl << "};" << std::endl;*/
 #endif
                   
           return bounds;
@@ -1431,6 +1431,81 @@ namespace embree
         
         return builder.build(numGeometries, device, accel, dispatchGlobalsPtr);
       }
+
+      template<typename getSizeFunc,
+               typename getTypeFunc>
+       
+      static void estimateSize(size_t numGeometries,
+                               const getSizeFunc& getSize,
+                               const getTypeFunc& getType,
+                               size_t & expectedBytes,
+                               size_t& worstCaseBytes)
+      {
+        struct Stats
+        {
+          size_t numTriangles = 0;
+          size_t numQuads = 0;
+          size_t numProcedurals = 0;
+          size_t numInstances = 0;
+          
+          /* assume some reasonable quadification rate */
+          void estimate_quadification()
+          {
+            numQuads += (numTriangles+1)/2 + numTriangles/8;
+            numTriangles = 0;
+          }
+          
+          void estimate_presplits( double factor )
+          {
+            numTriangles = max(numTriangles, size_t(numTriangles*factor));
+            numQuads     = max(numQuads    , size_t(numQuads*factor));
+            numInstances = max(numInstances, size_t(numInstances*factor));
+          }
+          
+          size_t size() {
+            return numTriangles+numQuads+numProcedurals+numInstances;
+          }
+          
+          size_t expected_bvh_bytes()
+          {
+            const size_t blocks = (size()+5)/6;
+            const size_t expected_bytes   = 128 + 64*size_t(1+1.5*blocks) + numTriangles*64 + numQuads*64 + numProcedurals*8 + numInstances*128;
+            const size_t bytes = 2*4096 + size_t(1.1*expected_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
+            return (bytes+127)&-128;
+          }
+          
+          size_t worst_case_bvh_bytes()
+          {
+            const size_t numPrimitives = size();
+            const size_t blocks = (numPrimitives+5)/6;
+            const size_t worst_case_bytes = 128 + 64*(1+blocks + numPrimitives) + numTriangles*64 + numQuads*64 + numProcedurals*64 + numInstances*128;
+            const size_t bytes = 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
+            return (bytes+127)&-128;
+          }
+          
+        } stats;
+        
+        for (size_t geomID=0; geomID<numGeometries; geomID++)
+        {
+          uint32_t numPrimitives = getSize(geomID);
+          if (numPrimitives == 0) continue;
+          
+          switch (getType(geomID)) {
+          default: assert(false); break;
+          case QBVH6BuilderSAH::TRIANGLE  : stats.numTriangles += numPrimitives; break;
+          case QBVH6BuilderSAH::QUAD      : stats.numQuads += numPrimitives; break;
+          case QBVH6BuilderSAH::PROCEDURAL: stats.numProcedurals += numPrimitives; break;
+          case QBVH6BuilderSAH::INSTANCE  : stats.numInstances += numPrimitives; break;
+          };
+        }
+        
+        stats.estimate_quadification();
+        stats.estimate_presplits(1.2);
+        
+        /* return size to user */
+        expectedBytes = stats.expected_bvh_bytes();
+        worstCaseBytes = stats.worst_case_bvh_bytes();
+      }      
 
        template<typename getSizeFunc,
                typename getTypeFunc,
