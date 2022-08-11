@@ -19,8 +19,8 @@
 #include "../bvh/bvh4_factory.h"
 #include "../bvh/bvh8_factory.h"
 
-#include "../../common/tasking/taskscheduler.h"
-#include "../../common/sys/alloc.h"
+#include "common/tasking/taskscheduler.h"
+#include "common/sys/alloc.h"
 
 namespace embree
 {

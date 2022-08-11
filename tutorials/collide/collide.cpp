@@ -5,7 +5,7 @@
 #include "../common/tutorial/benchmark_render.h"
 #include "../common/tutorial/statistics.h"
 #include <set>
-#include "../../common/sys/mutex.h"
+#include "common/sys/mutex.h"
 #include "../common/core/ray.h"
 #include "../../kernels/geometry/triangle_triangle_intersector.h"
 #include "clothModel.h"

@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "../../../common/sys/platform.h"
-#include "../../../common/sys/ref.h"
-#include "../../../common/sys/filename.h"
-#include "../../../common/math/color.h"
+#include "../common/sys/platform.h"
+#include "../common/sys/ref.h"
+#include "../common/sys/filename.h"
+#include "../common/math/color.h"
 
 #include <vector>
 #include <string>

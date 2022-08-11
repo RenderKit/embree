@@ -5,7 +5,7 @@
 
 #include "../common/default.h"
 #include "../common/scene.h"
-#include "../../common/simd/simd.h"
+#include "common/simd/simd.h"
 #include "../common/primref.h"
 #include "../common/primref_mb.h"
 

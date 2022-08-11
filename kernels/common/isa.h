@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../../common/sys/platform.h"
-#include "../../common/sys/sysinfo.h"
+#include "common/sys/platform.h"
+#include "common/sys/sysinfo.h"
 
 namespace embree
 {

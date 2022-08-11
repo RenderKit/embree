@@ -26,7 +26,7 @@ RTC_NAMESPACE_USE
 #include "scene_device.h"
 #include "noise.isph"
 #if !defined(ISPC)
-#include "../../../common/algorithms/parallel_for.h"
+#include "../common/algorithms/parallel_for.h"
 #endif
 
 enum Mode {

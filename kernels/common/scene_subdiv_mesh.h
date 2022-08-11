@@ -9,8 +9,8 @@
 #include "../subdiv/tessellation_cache.h"
 #include "../subdiv/catmullclark_coefficients.h"
 #include "../subdiv/patch.h"
-#include "../../common/algorithms/parallel_map.h"
-#include "../../common/algorithms/parallel_set.h"
+#include "common/algorithms/parallel_map.h"
+#include "common/algorithms/parallel_set.h"
 
 namespace embree
 {

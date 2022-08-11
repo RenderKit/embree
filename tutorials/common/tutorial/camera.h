@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "../../../common/sys/platform.h"
-#include "../../../common/sys/ref.h"
-#include "../../../common/math/math.h"
-#include "../../../common/math/vec3.h"
-#include "../../../common/math/affinespace.h"
+#include "../common/sys/platform.h"
+#include "../common/sys/ref.h"
+#include "../common/math/math.h"
+#include "../common/math/vec3.h"
+#include "../common/math/affinespace.h"
 #include "../scenegraph/scenegraph.h"
 #include <sstream>
 

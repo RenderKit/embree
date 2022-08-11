@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "image.h"
-#include "../../../common/sys/string.h"
+#include "../common/sys/string.h"
 
 #include <map>
 #include <iostream>

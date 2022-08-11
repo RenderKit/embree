@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../../../common/math/affinespace.h"
+#include "../common/math/affinespace.h"
 
 namespace embree 
 {

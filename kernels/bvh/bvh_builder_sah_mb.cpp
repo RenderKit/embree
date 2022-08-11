@@ -22,8 +22,8 @@
 #include "../common/state.h"
 
 // FIXME: remove after removing BVHNBuilderMBlurRootTimeSplitsSAH
-#include "../../common/algorithms/parallel_for_for.h"
-#include "../../common/algorithms/parallel_for_for_prefix_sum.h"
+#include "common/algorithms/parallel_for_for.h"
+#include "common/algorithms/parallel_for_for_prefix_sum.h"
 
 
 namespace embree

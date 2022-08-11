@@ -26,7 +26,7 @@ RTC_NAMESPACE_USE
 #include "scene_device.h"
 #include "noise.h"
 #if !defined(ISPC)
-#include "../../../common/algorithms/parallel_for.h"
+#include "../common/algorithms/parallel_for.h"
 
 namespace embree {
 #endif

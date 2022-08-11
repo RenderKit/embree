@@ -18,8 +18,8 @@
 #include "../geometry/subgrid.h"
 
 #include "../common/state.h"
-#include "../../common/algorithms/parallel_for_for.h"
-#include "../../common/algorithms/parallel_for_for_prefix_sum.h"
+#include "common/algorithms/parallel_for_for.h"
+#include "common/algorithms/parallel_for_for_prefix_sum.h"
 
 #define PROFILE 0
 #define PROFILE_RUNS 20
