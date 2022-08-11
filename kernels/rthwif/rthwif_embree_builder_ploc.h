@@ -27,9 +27,9 @@ namespace embree
     gpu::AABB3f geometryBounds;
     gpu::AABB3f centroidBounds; 
     char *qbvh_base_pointer;
-    uint64_t wgState;    
     uint node_mem_allocator_start;
     uint node_mem_allocator_cur;
+    uint64_t wgState;        
     // 64 bytes
     uint bvh2_index_allocator;    
     uint leaf_mem_allocator_start;
@@ -86,6 +86,9 @@ namespace embree
       return ptr;
     }
       
+    __forceinline char* basePtr() {
+      return qbvh_base_pointer;
+    }
 
     __forceinline char* nodeBlockPtr(const uint blockID) {
       return qbvh_base_pointer + 64 * size_t(blockID);
@@ -191,9 +194,10 @@ namespace embree
     }    
   };
 
-  struct __aligned(8) LeafGenerationData {
+  struct __aligned(4) LeafGenerationData {
+    uint blockID;
     uint primID;
-    uint geomID;
+    uint geomID;    
   };
 
   struct __aligned(16) TmpNodeState { //TODO: additional store left/right or primID/geomID
@@ -382,13 +386,12 @@ namespace embree
   
   __forceinline void countQuadsPerGeometry (sycl::queue &gpu_queue, const TriMesh *const triMesh, const uint numGeoms, uint *quads_per_geom_prefix_sum, double &iteration_time, const bool verbose)    
   {
-    static const uint COUNT_QUADS_PER_GEOMETRY_SUB_GROUP_WIDTH = 16;
     static const uint COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE  = 1024;
     
     const sycl::nd_range<1> nd_range1(numGeoms*COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE,sycl::range<1>(COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);                                                   
-        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(COUNT_QUADS_PER_GEOMETRY_SUB_GROUP_WIDTH)      
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                          {
                            const uint localID         = item.get_local_id(0);                                                                      
                            const uint subgroupLocalID = get_sub_group_local_id();
@@ -467,9 +470,8 @@ namespace embree
 
   __forceinline void mergeTriangleToQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, const TriMesh *const triMesh, const uint numGeoms, const uint *const quads_per_geom_prefix_sum, BVH2Ploc *const bvh2, double &iteration_time, const bool verbose)    
   {
-    static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
     static const uint MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE  = 1024;
-    
+    static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
     const sycl::nd_range<1> nd_range1(numGeoms*MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE,sycl::range<1>(MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);
@@ -783,10 +785,9 @@ namespace embree
     __forceinline void initClusters(sycl::queue &gpu_queue, type *const mc0, const BVH2Ploc *const bvh2, uint *const cluster_index, uint *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)    
   {
     static const uint INIT_CLUSTERS_WG_SIZE = 256;    
-    static const uint INIT_CLUSTERS_SUB_GROUP_WIDTH = 16;
     const sycl::nd_range<1> nd_range1(sycl::range<1>(gpu::alignTo(numPrimitives,INIT_CLUSTERS_WG_SIZE)),sycl::range<1>(INIT_CLUSTERS_WG_SIZE)); 
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(INIT_CLUSTERS_SUB_GROUP_WIDTH)
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
                            const uint globalID     = item.get_global_id(0);
                            if (globalID < numPrimitives)
@@ -1564,7 +1565,6 @@ namespace embree
   template<typename type>
     __forceinline void extractRanges(sycl::queue &gpu_queue, uint *const numBuildRecords, const type *const mc0, gpu::Range *const global_ranges, const uint numPrimitives, const uint RANGE_THRESHOLD, double &iteration_time, const bool verbose)
   {
-    static const uint EXTRACT_WG_SUB_GROUP_WIDTH = 16; 
     static const uint EXTRACT_WG_SIZE = 256;
     static const uint MAX_RANGES = 1024;
     
@@ -1575,7 +1575,7 @@ namespace embree
         sycl::accessor< gpu::Range, 1, sycl_read_write, sycl_local> ranges  (sycl::range<1>(MAX_RANGES),cgh);
         sycl::accessor< uint     ,  0, sycl_read_write, sycl_local> _numRanges(cgh);
                                              
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(EXTRACT_WG_SUB_GROUP_WIDTH) {
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
             uint &num_ranges      = *_numRanges.get_pointer();
 
             const uint localID        = item.get_local_id(0);
@@ -1651,6 +1651,7 @@ namespace embree
   __forceinline void writeNode(void *curDataPtr, const gpu::AABB3f &parent_bounds, void *childDataPtr, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
   {
     uint *dest = (uint*)curDataPtr;
+    
     //dest = (uint*) __builtin_assume_aligned(dest,16);
     
     const float _ulp = std::numeric_limits<float>::epsilon();
@@ -1715,7 +1716,7 @@ namespace embree
     }
 
     for (uint i=0;i<12;i++)
-      dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);    
+      dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
   
 
@@ -1836,6 +1837,7 @@ namespace embree
 
     return numChildren;
   }
+  
 
   __forceinline void write(const QuadLeaf &q, float16 *out) 
   {
@@ -1866,6 +1868,7 @@ namespace embree
 
     host_device_tasks[0] = 0;
     host_device_tasks[1] = 0;
+
     
     /* ---- Phase I: single WG generates enough work for the breadth-first phase --- */
     {
@@ -1974,12 +1977,12 @@ namespace embree
       if (blocks == 0) break;
       
       iteration++;
-      const uint wgSize = 512;
+      const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    //sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);                                                 
                                                    
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                                                                     {
                                                                       const uint localID   = item.get_local_id(0);                                                                      
                                                                       const uint globalID  = item.get_global_id(0);
@@ -2065,7 +2068,7 @@ namespace embree
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    //sycl::accessor< QBVHNodeN, 1, sycl_read_write, sycl_local> _local_qnode(sycl::range<1>(wgSize),cgh);                                                 
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                                                                     {
                                                                       const uint localID   = item.get_local_id(0);                             
                                                                       const uint globalID  = item.get_global_id(0);
@@ -2073,7 +2076,7 @@ namespace embree
 
                                                                       const uint startBlockID = globals->node_mem_allocator_start;
                                                                       const uint endBlockID   = globals->node_mem_allocator_cur;                             
-                                                                      const uint innerID   = startBlockID + globalID;
+                                                                      const uint innerID      = startBlockID + globalID;
                                                                       //QBVHNodeN &qnode     = _local_qnode.get_pointer()[localID];
                                                                       //QuadLeaf &qleaf      = *(QuadLeaf*)&qnode;
 
@@ -2094,7 +2097,8 @@ namespace embree
                                                                           {
                                                                             numChildren = 0;
                                                                             getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
-                                                                            childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
+                                                                            //childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
+                                                                            childAddr = globals->atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
 #if TEST_COALESCING == 1
                                                                             writeNode(curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
 #else
@@ -2102,20 +2106,28 @@ namespace embree
                                                                             initNode(qnode,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_QUAD);
                                                                             *(QBVHNodeN *)curAddr = qnode;
 #endif                                                                            
-
-                                                                            //const uint leafDataID = gpu::atomic_add_global(&globals->numBuildRecords,numChildren);
-                                                                            const uint leafDataID = (uint)(childAddr - globals->leafLocalPtr())/64;
-
+                                                                            
+                                                                            const uint leafDataID = (uint64_t)(childAddr - globals->leafLocalPtr())/64;
                                                                             for (uint j=0;j<numChildren;j++)
                                                                             {                                                                                          
                                                                               const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
                                                                               const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
+                                                                              leafGenData[leafDataID+j].blockID = (uint64_t)(childAddr - globals->basePtr())/64 + j;
                                                                               leafGenData[leafDataID+j].primID = primID;
                                                                               leafGenData[leafDataID+j].geomID = geomID;
                                                                             }                                                                            
                                                                           }
                                                                           else // mixed node, generate data for single leaf
                                                                           {
+                                                                            childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf));
+                                                                            const uint leafDataID = (uint64_t)(childAddr - globals->leafLocalPtr())/64;
+                                                                            const uint geomID = bvh2[BVH2Ploc::getIndex(index)].left;
+                                                                            const uint primID = bvh2[BVH2Ploc::getIndex(index)].right;
+                                                                                                     
+                                                                            leafGenData[leafDataID].blockID = (uint64_t)(curAddr - globals->basePtr())/64;
+                                                                            leafGenData[leafDataID].primID = primID;
+                                                                            leafGenData[leafDataID].geomID = geomID;                                                                            
+#if 0                                                                            
                                                                             uint geomID  = bvh2[BVH2Ploc::getIndex(index)].geomID();
                                                                             uint primID0 = bvh2[BVH2Ploc::getIndex(index)].primID();                                                                            
                                                                             uint primID1 = bvh2[BVH2Ploc::getIndex(index)].primID1();
@@ -2145,8 +2157,9 @@ namespace embree
                                                                               
                                                                               qleaf = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
                                                                               *(QuadLeaf*)curAddr = qleaf;
-#endif                                                                              
+#endif
                                                                             }
+#endif                                                                              
                                                                             
                                                                           }                                                                            
                                                                             
@@ -2184,13 +2197,14 @@ namespace embree
                                                    sycl::accessor< QuadLeaf, 1, sycl_read_write, sycl_local> _local_qleaf(sycl::range<1>(wgSize),cgh);                                                 
                                                    cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                                                                     {
-                                                                      const uint localID    = item.get_local_id(0);                                                                      
+                                                                      //const uint localID    = item.get_local_id(0);                                                                      
                                                                       const uint globalID   = item.get_global_id(0);
                                                                       //QuadLeaf &local_qleaf = _local_qleaf.get_pointer()[localID];
 
                                                                       if (globalID < leaves)                                                                        
                                                                       {
-                                                                        QuadLeaf *qleaf = (QuadLeaf *)globals->leafLocalPtr(globalID);                                                                            
+                                                                        //QuadLeaf *qleaf = (QuadLeaf *)globals->leafLocalPtr(globalID);
+                                                                        QuadLeaf *qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
                                                                         uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
                                                                         uint primID0 = leafGenData[globalID].primID & 0x7fffffff;
                                                                         uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
