@@ -8,17 +8,17 @@
 enum RayFlagsINTEL
 {
   // Flags directly exposed in API
-  NONE = 0x00,
-  FORCE_OPAQUE = 0x01,                      // forces geometry to be opaque (no anyhit shader invokation)
-  FORCE_NON_OPAQUE = 0x02,                  // forces geometry to be non-opqaue (invoke anyhit shader)
-  ACCEPT_FIRST_HIT_AND_END_SEARCH = 0x04,   // terminates traversal on the first hit found (shadow rays)
-  SKIP_CLOSEST_HIT_SHADER = 0x08,           // skip execution of the closest hit shader
-  CULL_BACK_FACING_TRIANGLES = 0x10,        // back facing triangles to not produce a hit
-  CULL_FRONT_FACING_TRIANGLES = 0x20,       // front facing triangles do not produce a hit
-  CULL_OPAQUE = 0x40,                       // opaque geometry does not produce a hit
-  CULL_NON_OPAQUE = 0x80,                   // non-opaque geometry does not produce a hit
-  SKIP_TRIANGLES = 0x100,                   // treat all triangle intersections as misses.
-  SKIP_PROCEDURAL_PRIMITIVES = 0x200,       // skip execution of intersection shaders
+  RAY_FLAGS_INTEL_NONE = 0x00,
+  RAY_FLAGS_INTEL_FORCE_OPAQUE = 0x01,                      // forces geometry to be opaque (no anyhit shader invokation)
+  RAY_FLAGS_INTEL_FORCE_NON_OPAQUE = 0x02,                  // forces geometry to be non-opqaue (invoke anyhit shader)
+  RAY_FLAGS_INTEL_ACCEPT_FIRST_HIT_AND_END_SEARCH = 0x04,   // terminates traversal on the first hit found (shadow rays)
+  RAY_FLAGS_INTEL_SKIP_CLOSEST_HIT_SHADER = 0x08,           // skip execution of the closest hit shader
+  RAY_FLAGS_INTEL_CULL_BACK_FACING_TRIANGLES = 0x10,        // back facing triangles to not produce a hit
+  RAY_FLAGS_INTEL_CULL_FRONT_FACING_TRIANGLES = 0x20,       // front facing triangles do not produce a hit
+  RAY_FLAGS_INTEL_CULL_OPAQUE = 0x40,                       // opaque geometry does not produce a hit
+  RAY_FLAGS_INTEL_CULL_NON_OPAQUE = 0x80,                   // non-opaque geometry does not produce a hit
+  RAY_FLAGS_INTEL_SKIP_TRIANGLES = 0x100,                   // treat all triangle intersections as misses.
+  RAY_FLAGS_INTEL_SKIP_PROCEDURAL_PRIMITIVES = 0x200,       // skip execution of intersection shaders
 };
 
 enum HitType

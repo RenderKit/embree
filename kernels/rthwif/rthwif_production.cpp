@@ -105,7 +105,7 @@ SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( ray_query_t* query )
   
   uint32_t bvh_level = query->bvh_level;
   uint32_t rflags = rtStack->ray[bvh_level].rayFlags;
-  if (rflags & ACCEPT_FIRST_HIT_AND_END_SEARCH) {
+  if (rflags & RAY_FLAGS_INTEL_ACCEPT_FIRST_HIT_AND_END_SEARCH) {
     rtStack->committedHit = rtStack->potentialHit;
     rtStack->committedHit.valid = 1;
     *query = { nullptr, query->opaque1, query->opaque2, TRACE_RAY_DONE, bvh_level };

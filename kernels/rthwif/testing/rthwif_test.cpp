@@ -1318,7 +1318,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         in[tid].tnear = 0.0f;
         in[tid].tfar = 10000.0f;
         in[tid].mask = 0xFF;
-        in[tid].flags = NONE;
+        in[tid].flags = RAY_FLAGS_INTEL_NONE;
 
         // Ray data at level 0
         out_expected[tid].ray0_org = in[tid].org;

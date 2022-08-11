@@ -94,11 +94,11 @@ bool intersect_user_geometry(ray_query_t& query, RayHit& ray, UserGeometry* geom
   raydesc.tmin = ray.tnear();
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
-  raydesc.flags = FORCE_NON_OPAQUE;
+  raydesc.flags = RAY_FLAGS_INTEL_FORCE_NON_OPAQUE;
   // FIXME: how to forward ray time here
 
 #if defined(EMBREE_BACKFACE_CULLING)
-  raydesc.flags |= CULL_BACK_FACING_TRIANGLES;
+  raydesc.flags |= RAY_FLAGS_INTEL_CULL_BACK_FACING_TRIANGLES;
 #endif
 
   rtas_t* hwaccel_ptr = (rtas_t*) scene->hwaccel.data();
@@ -129,11 +129,11 @@ bool intersect_user_geometry(ray_query_t& query, Ray& ray, UserGeometry* geom, S
   raydesc.tmin = ray.tnear();
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
-  raydesc.flags = FORCE_NON_OPAQUE | ACCEPT_FIRST_HIT_AND_END_SEARCH;
+  raydesc.flags = RAY_FLAGS_INTEL_FORCE_NON_OPAQUE | RAY_FLAGS_INTEL_ACCEPT_FIRST_HIT_AND_END_SEARCH;
   // FIXME: how to forward ray time here
 
 #if defined(EMBREE_BACKFACE_CULLING)
-  raydesc.flags |= CULL_BACK_FACING_TRIANGLES;
+  raydesc.flags |= RAY_FLAGS_INTEL_CULL_BACK_FACING_TRIANGLES;
 #endif
 
   rtas_t* hwaccel_ptr = (rtas_t*) scene->hwaccel.data();
@@ -170,10 +170,10 @@ bool intersect_instance(ray_query_t& query, RayHit& ray, Instance* instance, Sce
   raydesc.tmin = ray.tnear();
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
-  raydesc.flags = FORCE_NON_OPAQUE;
+  raydesc.flags = RAY_FLAGS_INTEL_FORCE_NON_OPAQUE;
 
 #if defined(EMBREE_BACKFACE_CULLING)
-  raydesc.flags |= CULL_BACK_FACING_TRIANGLES;
+  raydesc.flags |= RAY_FLAGS_INTEL_CULL_BACK_FACING_TRIANGLES;
 #endif
 
   rtas_t* hwaccel_ptr = (rtas_t*) object->hwaccel.data();
@@ -225,10 +225,10 @@ bool intersect_instance(ray_query_t& query, Ray& ray, Instance* instance, Scene*
   raydesc.tmin = ray.tnear();
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
-  raydesc.flags = ACCEPT_FIRST_HIT_AND_END_SEARCH;
+  raydesc.flags = RAY_FLAGS_INTEL_ACCEPT_FIRST_HIT_AND_END_SEARCH;
 
 #if defined(EMBREE_BACKFACE_CULLING)
-  raydesc.flags |= CULL_BACK_FACING_TRIANGLES;
+  raydesc.flags |= RAY_FLAGS_INTEL_CULL_BACK_FACING_TRIANGLES;
 #endif
 
   rtas_t* hwaccel_ptr = (rtas_t*) object->hwaccel.data();
@@ -602,14 +602,14 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   raydesc.tmin = ray.tnear();
   raydesc.tmax = ray.tfar;
   raydesc.mask = mask32_to_mask8(ray.mask);
-  raydesc.flags = NONE;
+  raydesc.flags = RAY_FLAGS_INTEL_NONE;
 
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
-  raydesc.flags |= FORCE_NON_OPAQUE;
+  raydesc.flags |= RAY_FLAGS_INTEL_FORCE_NON_OPAQUE;
 #endif
 
 #if defined(EMBREE_BACKFACE_CULLING)
-  raydesc.flags |= CULL_BACK_FACING_TRIANGLES;
+  raydesc.flags |= RAY_FLAGS_INTEL_CULL_BACK_FACING_TRIANGLES;
 #endif
 
   uint32_t bvh_id = 0;
@@ -711,10 +711,10 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   raydesc.tmin = ray.tnear();
   raydesc.tmax = ray.tfar;
   raydesc.mask = mask32_to_mask8(ray.mask);
-  raydesc.flags = ACCEPT_FIRST_HIT_AND_END_SEARCH;
+  raydesc.flags = RAY_FLAGS_INTEL_ACCEPT_FIRST_HIT_AND_END_SEARCH;
 
 #if defined(EMBREE_BACKFACE_CULLING)
-  raydesc.flags |= CULL_BACK_FACING_TRIANGLES;
+  raydesc.flags |= RAY_FLAGS_INTEL_CULL_BACK_FACING_TRIANGLES;
 #endif
 
   uint32_t bvh_id = 0;
