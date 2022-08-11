@@ -62,7 +62,7 @@ const constexpr uint32_t TRAV_LOOP_FEATURES =
 void use_rthwif_embree() {
 }
 
-Vec3f intel_get_hit_triangle_normal(rayquery_t query, HitType hit_type)
+Vec3f intel_get_hit_triangle_normal(ray_query_t query, HitType hit_type)
 {
   float3 v[3]; intel_get_hit_triangle_verts(query, v, hit_type);
   const Vec3f v0(v[0].x(), v[0].y(), v[0].z());
@@ -71,7 +71,7 @@ Vec3f intel_get_hit_triangle_normal(rayquery_t query, HitType hit_type)
   return cross(v1-v0, v2-v0);
 }
 
-bool intersect_user_geometry(rayquery_t& query, RayHit& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
+bool intersect_user_geometry(ray_query_t& query, RayHit& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -106,7 +106,7 @@ bool intersect_user_geometry(rayquery_t& query, RayHit& ray, UserGeometry* geom,
   return false;
 }
 
-bool intersect_user_geometry(rayquery_t& query, Ray& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
+bool intersect_user_geometry(ray_query_t& query, Ray& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -142,10 +142,10 @@ bool intersect_user_geometry(rayquery_t& query, Ray& ray, UserGeometry* geom, Sc
 }
 
 template<typename Ray>
-bool intersect_instance(rayquery_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID);
+bool intersect_instance(ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID);
 
 template<>
-bool intersect_instance(rayquery_t& query, RayHit& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
+bool intersect_instance(ray_query_t& query, RayHit& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -200,7 +200,7 @@ bool intersect_instance(rayquery_t& query, RayHit& ray, Instance* instance, Scen
 }
 
 template<>
-bool intersect_instance(rayquery_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
+bool intersect_instance(ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -255,7 +255,7 @@ bool intersect_instance(rayquery_t& query, Ray& ray, Instance* instance, Scene* 
 }
 
 template<typename Ray>
-bool intersect_primitive(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], Geometry* geom, sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID, const RTCFeatureFlags feature_mask)
+bool intersect_primitive(ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], Geometry* geom, sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID, const RTCFeatureFlags feature_mask)
 {
 #if defined(__SYCL_DEVICE_ONLY__)
   bool filter = feature_mask & (RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT | RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY);
@@ -461,7 +461,7 @@ bool intersect_primitive(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INST
   return false;
 }
 
-bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_t bvh_level, RayHit& ray, Hit& hit, sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
+bool invokeTriangleIntersectionFilter(ray_query_t& query, Geometry* geom, uint32_t bvh_level, RayHit& ray, Hit& hit, sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
 {
 #if defined(EMBREE_FILTER_FUNCTION)
   if (!(feature_mask & RTC_FEATURE_FILTER_FUNCTION) || runIntersectionFilter1SYCL(geom, ray, context, hit))
@@ -475,7 +475,7 @@ bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_
   return false;
 }
 
-bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_t bvh_level, Ray& ray, Hit& hit, sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
+bool invokeTriangleIntersectionFilter(ray_query_t& query, Geometry* geom, uint32_t bvh_level, Ray& ray, Hit& hit, sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
 {
   bool ishit = true;
 #if defined(EMBREE_FILTER_FUNCTION)
@@ -488,19 +488,19 @@ bool invokeTriangleIntersectionFilter(rayquery_t& query, Geometry* geom, uint32_
   return ishit;
 }
 
-bool commit_potential_hit(rayquery_t& query, RayHit& ray) {
+bool commit_potential_hit(ray_query_t& query, RayHit& ray) {
   intel_ray_query_commit_potential_hit (&query, ray.tfar, float2(ray.u, ray.v));
   return false;
 }
 
-bool commit_potential_hit(rayquery_t& query, Ray& ray) {
+bool commit_potential_hit(ray_query_t& query, Ray& ray) {
   intel_ray_query_commit_potential_hit (&query, ray.tfar, float2(0.0f, 0.0f));
   return true;
 }
 
 #if defined(TRAV_LOOP)
 template<typename Ray>
-void trav_loop(rayquery_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
+void trav_loop(ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
 {
   while (!intel_is_traversal_done(query))
   {
@@ -630,7 +630,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   }
 #endif
   
-  rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
+  ray_query_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
   
   intel_ray_query_start_traversal(&query);
   intel_ray_query_sync(&query);
@@ -735,7 +735,7 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   }
 #endif
   
-  rayquery_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
+  ray_query_t query = intel_ray_query_init(0, raydesc, hwaccel_ptr, bvh_id);
   intel_ray_query_start_traversal(&query);
   intel_ray_query_sync(&query);
 
