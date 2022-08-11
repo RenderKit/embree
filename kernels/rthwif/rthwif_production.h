@@ -49,6 +49,7 @@ struct RayDescINTEL
   float tmax;
   uint32_t mask;
   uint32_t flags;
+  float time;
 };
 
 // initializes a ray query

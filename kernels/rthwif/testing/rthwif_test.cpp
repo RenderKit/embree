@@ -942,6 +942,7 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, rtas_t* accel)
   ray.D = in.dir;
   ray.tmin = in.tnear;
   ray.tmax = in.tfar;
+  ray.time = 0.0f;
   ray.mask = in.mask;
   ray.flags = in.flags;
   
@@ -1041,6 +1042,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   ray.D = in.dir;
   ray.tmin = in.tnear;
   ray.tmax = in.tfar;
+  ray.time = 0.0f;
   ray.mask = in.mask;
   ray.flags = in.flags;
   
@@ -1198,6 +1200,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         ray.D = D1;
         ray.tmin = intel_get_ray_tmin(query,bvh_level);
         ray.tmax = 0.0f; // unused
+        ray.time = 0.0f;
         ray.mask = intel_get_ray_mask(query,bvh_level);
         ray.flags = intel_get_ray_flags(query,bvh_level);
         intel_ray_query_forward_ray(&query, bvh_level+1, ray, inst_accel, 0);

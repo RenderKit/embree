@@ -258,6 +258,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   ray.D = float(x)*vx/8.0f + float(y)*vy/8.0f + vz;;
   ray.tmin = 0.0f;
   ray.tmax = INFINITY;
+  ray.time = 0.0f;
   ray.mask = 0xFF;
   ray.flags = 0;
   
