@@ -103,6 +103,15 @@ bool intersect_user_geometry(ray_query_INTEL* query, RayHit& ray, UserGeometry* 
 #endif
 
   raytracing_acceleration_structure_INTEL* hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) scene->hwaccel.data();
+
+#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
+  if (qbvh6->reserved1 == 1) { // AccelTable mode
+    void** AccelTable = (void**) (qbvh6+1);
+    hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) AccelTable[0];
+  }
+#endif
+    
   intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, 0);
   return false;
 }
@@ -139,6 +148,15 @@ bool intersect_user_geometry(ray_query_INTEL* query, Ray& ray, UserGeometry* geo
 #endif
 
   raytracing_acceleration_structure_INTEL* hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) scene->hwaccel.data();
+
+#if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+  QBVH6* qbvh6 = (QBVH6*) hwaccel_ptr;
+  if (qbvh6->reserved1 == 1) { // AccelTable mode
+    void** AccelTable = (void**) (qbvh6+1);
+    hwaccel_ptr = (raytracing_acceleration_structure_INTEL*) AccelTable[0];
+  }
+#endif
+  
   intel_ray_query_forward_ray(query, bvh_level, raydesc, hwaccel_ptr, 0);
   return false;
 }
