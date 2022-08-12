@@ -947,9 +947,10 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, raytracing_acceler
   ray.flags = in.flags;
   
   /* trace ray */
-  ray_query_INTEL query = intel_ray_query_init(0,ray,accel,0);
-  intel_ray_query_start_traversal(&query);
-  intel_ray_query_sync(&query);
+  ray_query_INTEL query_ = intel_ray_query_init(0,ray,accel,0);
+  ray_query_INTEL* query = &query_;
+  intel_ray_query_start_traversal(query);
+  intel_ray_query_sync(query);
   
   /* return ray data of level 0 */
   out.ray0_org = intel_get_ray_origin(query,0);
@@ -1031,7 +1032,7 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, raytracing_acceler
   }
 
   /* abandon ray query */
-  intel_ray_query_abandon(&query);
+  intel_ray_query_abandon(query);
 }
 
 void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_in, raytracing_acceleration_structure_INTEL* accel, TestType test)
@@ -1047,9 +1048,10 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   ray.flags = in.flags;
   
   /* trace ray */
-  ray_query_INTEL query = intel_ray_query_init(0,ray,accel,0);
-  intel_ray_query_start_traversal(&query);
-  intel_ray_query_sync(&query);
+  ray_query_INTEL query_ = intel_ray_query_init(0,ray,accel,0);
+  ray_query_INTEL* query = &query_;
+  intel_ray_query_start_traversal(query);
+  intel_ray_query_sync(query);
   
   /* return ray data of level 0 */
   out.ray0_org = intel_get_ray_origin(query,0);
@@ -1111,7 +1113,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
       }
     
       if (test == TestType::TRIANGLES_ANYHIT_SHADER_COMMIT)
-        intel_ray_query_commit_potential_hit(&query);
+        intel_ray_query_commit_potential_hit(query);
     }
 
     else if (candidate == CANDIDATE_TYPE_INTEL_PROCEDURAL)
@@ -1174,7 +1176,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
 
         /* commit hit */
         if (valid)
-          intel_ray_query_commit_potential_hit(&query,t,sycl::float2(u,v));
+          intel_ray_query_commit_potential_hit(query,t,sycl::float2(u,v));
       }
       else if (geom->type == Geometry::INSTANCE)
       {
@@ -1203,12 +1205,12 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         ray.time = 0.0f;
         ray.mask = intel_get_ray_mask(query,bvh_level);
         ray.flags = intel_get_ray_flags(query,bvh_level);
-        intel_ray_query_forward_ray(&query, bvh_level+1, ray, inst_accel, 0);
+        intel_ray_query_forward_ray(query, bvh_level+1, ray, inst_accel, 0);
       }
     }
     
-    intel_ray_query_start_traversal(&query);
-    intel_ray_query_sync(&query);
+    intel_ray_query_start_traversal(query);
+    intel_ray_query_sync(query);
   }
 
   /* committed hit */
@@ -1249,7 +1251,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   }
 
   /* abandon ray query */
-  intel_ray_query_abandon(&query);
+  intel_ray_query_abandon(query);
 }
 
 static const int width = 128;
