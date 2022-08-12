@@ -280,11 +280,11 @@ namespace embree
       if (geom == nullptr) continue;
       
       switch (geom->GeometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : stats.numTriangles += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->TriangleCount;
-      case RTHWIF_GEOMETRY_TYPE_QUADS      : stats.numQuads += ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->QuadCount;
-      case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: stats.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_DESC*) geom)->AABBCount;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCES  : stats.numInstances += 1;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: stats.numInstances += 1;
+      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : stats.numTriangles += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->TriangleCount; break;
+      case RTHWIF_GEOMETRY_TYPE_QUADS      : stats.numQuads += ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->QuadCount; break;
+      case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: stats.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_DESC*) geom)->AABBCount; break;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCES  : stats.numInstances += 1; break;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: stats.numInstances += 1; break;
       };
     }
     
