@@ -614,11 +614,11 @@ namespace embree
     HWAccel* hwaccel = (HWAccel*) accel.data(); // FIXME: do not use HWAccel struct here!
     hwaccel->reserved = 1; // switch to AccelTable mode
     hwaccel->bounds[0][0] = fullBounds.lower.x;
-    hwaccel->bounds[0][0] = fullBounds.lower.y;
-    hwaccel->bounds[0][0] = fullBounds.lower.z;
+    hwaccel->bounds[0][1] = fullBounds.lower.y;
+    hwaccel->bounds[0][2] = fullBounds.lower.z;
     hwaccel->bounds[1][0] = fullBounds.upper.x;
-    hwaccel->bounds[1][0] = fullBounds.upper.y;
-    hwaccel->bounds[1][0] = fullBounds.upper.z;
+    hwaccel->bounds[1][1] = fullBounds.upper.y;
+    hwaccel->bounds[1][2] = fullBounds.upper.z;
     hwaccel->numTimeSegments = maxTimeSegments;
 
     void** AccelTable = (void**) (hwaccel+1);
