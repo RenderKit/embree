@@ -1875,7 +1875,7 @@ namespace embree
       const sycl::nd_range<1> nd_range1(wgSize,sycl::range<1>(wgSize));                    
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _node_mem_allocator_cur(cgh);                                                   
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(RTC_SYCL_SIMD_WIDTH*2)      
                                                                     {
                                                                       const uint localID     = item.get_local_id(0);
                                                                       const uint localSize   = item.get_local_range().size();                                                                      
@@ -1975,7 +1975,7 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {                                                   
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(RTC_SYCL_SIMD_WIDTH*2)      
                                                                     {
                                                                       const uint localID   = item.get_local_id(0);                                                                      
                                                                       const uint globalID  = item.get_global_id(0);
@@ -2059,7 +2059,7 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(RTC_SYCL_SIMD_WIDTH*2)      
                                                                     {
                                                                       const uint localID   = item.get_local_id(0);                             
                                                                       const uint globalID  = item.get_global_id(0);
@@ -2151,12 +2151,11 @@ namespace embree
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    sycl::accessor< QuadLeaf, 1, sycl_read_write, sycl_local> _local_qleaf(sycl::range<1>(wgSize),cgh);                                                 
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(RTC_SYCL_SIMD_WIDTH*2)      
                                                                     {
                                                                       const uint globalID   = item.get_global_id(0);
                                                                       if (globalID < leaves)                                                                        
                                                                       {
-                                                                        //QuadLeaf *qleaf = (QuadLeaf *)globals->leafLocalPtr(globalID);
                                                                         QuadLeaf *qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
                                                                         const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
                                                                         const uint primID0 = leafGenData[globalID].primID & 0x7fffffff;
