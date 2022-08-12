@@ -323,6 +323,29 @@ namespace embree
       sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);
       return sub_group_shared_varying_global_atomic(counter,count);
     }
+
+    template<typename T>        
+    __forceinline uint sub_group_shared_varying_local_atomic(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::local_space> &counter, const T add)
+    {
+      const uint subgroupLocalID = get_sub_group_local_id();    
+      const uint ballot = sub_group_ballot(true);
+      const uint first  = sycl::ctz(ballot);
+      const T total  = sub_group_reduce(add, SYCL_EXT_ONEAPI::plus<T>());
+      const T prefix = sub_group_exclusive_scan(add, SYCL_EXT_ONEAPI::plus<T>());
+      uint index = 0;
+      if (subgroupLocalID == first)
+        index = counter.fetch_add(total);
+      index = sub_group_broadcast(index,first);
+      return index + prefix;
+    }
+
+    template<typename T>    
+    static __forceinline T sub_group_shared_varying_atomic_add_local(T *dest, const T count=1)
+    {
+      sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::local_space> counter(*dest);
+      return sub_group_shared_varying_local_atomic(counter,count);
+    }
+
     
 
     __forceinline void waitOnQueueAndCatchException(sycl::queue &gpu_queue)
