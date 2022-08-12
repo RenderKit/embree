@@ -370,7 +370,9 @@ namespace embree
     out->InstanceID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
     out->Transform = *(RTHWIF_TRANSFORM4X4*) &local2world;
-    out->Accel = dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+    HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+    void** AccelTable = (void**) (hwaccel+1);
+    out->Accel = AccelTable[0];
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCEREF_DESC* out, Scene* scene, Instance* geom)
@@ -382,7 +384,9 @@ namespace embree
     out->GeometryMask = mask32_to_mask8(geom->mask);
     out->InstanceID = 0;
     out->Transform = (RTHWIF_TRANSFORM4X4*) &geom->local2world[0];
-    out->Accel = dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+    HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+    void** AccelTable = (void**) (hwaccel+1);
+    out->Accel = AccelTable[0];
   }
 
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, RTHWIF_GEOMETRY_TYPE type)
