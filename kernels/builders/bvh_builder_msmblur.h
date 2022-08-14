@@ -6,8 +6,8 @@
 #define MBLUR_NUM_TEMPORAL_BINS 2
 #define MBLUR_NUM_OBJECT_BINS   32
 
-#include "../bvh/bvh.h"
-#include "../common/primref_mb.h"
+#include "kernels/bvh/bvh.h"
+#include "kernels/common/primref_mb.h"
 #include "heuristic_binning_array_aligned.h"
 #include "heuristic_timesplit_array.h"
 

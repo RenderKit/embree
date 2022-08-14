@@ -4,10 +4,10 @@
 #include "curve_intersector_virtual.h"
 #include "intersector_epilog.h"
 
-#include "../subdiv/bezier_curve.h"
-#include "../subdiv/bspline_curve.h"
-#include "../subdiv/hermite_curve.h"
-#include "../subdiv/catmullrom_curve.h"
+#include "kernels/subdiv/bezier_curve.h"
+#include "kernels/subdiv/bspline_curve.h"
+#include "kernels/subdiv/hermite_curve.h"
+#include "kernels/subdiv/catmullrom_curve.h"
 
 #include "spherei_intersector.h"
 #include "disci_intersector.h"

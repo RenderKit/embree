@@ -3,10 +3,10 @@
 
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/tutorial_device.h"
-#include "../../include/embree3/rtcore.h"
+#include "include/embree3/rtcore.h"
 RTC_NAMESPACE_USE
-#include "../../kernels/bvh/bvh.h"
-#include "../../kernels/geometry/trianglev.h"
+#include "kernels/bvh/bvh.h"
+#include "kernels/geometry/trianglev.h"
 
 namespace embree
 {

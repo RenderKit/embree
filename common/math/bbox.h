@@ -229,15 +229,15 @@ namespace embree
 ////////////////////////////////////////////////////////////////////////////////
 
 #if defined (__SSE__) || defined(__ARM_NEON)
-#include "../simd/sse.h"
+#include "common/simd/sse.h"
 #endif
 
 #if defined (__AVX__)
-#include "../simd/avx.h"
+#include "common/simd/avx.h"
 #endif
 
 #if defined(__AVX512F__)
-#include "../simd/avx512.h"
+#include "common/simd/avx512.h"
 #endif
 
 namespace embree

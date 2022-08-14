@@ -4,8 +4,8 @@
 #pragma once
 
 #include "bvh.h"
-#include "../geometry/trianglev.h"
-#include "../geometry/object.h"
+#include "kernels/geometry/trianglev.h"
+#include "kernels/geometry/object.h"
 
 namespace embree
 {

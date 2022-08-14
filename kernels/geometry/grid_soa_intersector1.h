@@ -4,7 +4,7 @@
 #pragma once
 
 #include "grid_soa.h"
-#include "../common/ray.h"
+#include "kernels/common/ray.h"
 #include "triangle_intersector_pluecker.h"
 
 namespace embree

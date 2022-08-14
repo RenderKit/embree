@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../simd/simd.h"
+#include "common/simd/simd.h"
 #include "parallel_for.h"
 #include <algorithm>
 

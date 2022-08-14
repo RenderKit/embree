@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include "../builders/primrefgen.h"
-#include "../builders/heuristic_spatial.h"
-#include "../builders/splitter.h"
+#include "kernels/builders/primrefgen.h"
+#include "kernels/builders/heuristic_spatial.h"
+#include "kernels/builders/splitter.h"
 
-#include "../../common/algorithms/parallel_for_for.h"
-#include "../../common/algorithms/parallel_for_for_prefix_sum.h"
+#include "common/algorithms/parallel_for_for.h"
+#include "common/algorithms/parallel_for_for_prefix_sum.h"
 
 #define DBG_PRESPLIT(x)   
 #define CHECK_PRESPLIT(x) 

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "light.isph"
-#include "../math/sampling.isph"
-#include "../math/linearspace.isph"
+#include "common/math/sampling.isph"
+#include "common/math/linearspace.isph"
 
 struct DirectionalLight
 {

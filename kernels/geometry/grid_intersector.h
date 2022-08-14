@@ -6,7 +6,7 @@
 #include "grid_soa.h"
 #include "grid_soa_intersector1.h"
 #include "grid_soa_intersector_packet.h"
-#include "../common/ray.h"
+#include "kernels/common/ray.h"
 
 namespace embree
 {

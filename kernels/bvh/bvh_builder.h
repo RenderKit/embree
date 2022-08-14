@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "bvh.h"
-#include "../builders/bvh_builder_sah.h"
-#include "../builders/bvh_builder_msmblur.h"
+#include "kernels/builders/bvh_builder_sah.h"
+#include "kernels/builders/bvh_builder_msmblur.h"
 
 namespace embree
 {

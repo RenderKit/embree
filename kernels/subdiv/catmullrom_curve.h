@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../common/default.h"
-#include "../common/scene_curves.h"
+#include "kernels/common/default.h"
+#include "kernels/common/scene_curves.h"
 
 /*
 

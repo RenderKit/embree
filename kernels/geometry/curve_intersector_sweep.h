@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../common/ray.h"
+#include "kernels/common/ray.h"
 #include "cylinder.h"
 #include "plane.h"
 #include "line_intersector.h"

@@ -4,8 +4,8 @@
 #pragma once
 
 #include "bvh.h"
-#include "../common/ray.h"
-#include "../common/point_query.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/point_query.h"
 
 namespace embree
 {

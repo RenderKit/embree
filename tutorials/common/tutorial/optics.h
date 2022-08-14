@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../math/sampling.h"
+#include "../common/math/sampling.h"
 
 namespace embree {
 

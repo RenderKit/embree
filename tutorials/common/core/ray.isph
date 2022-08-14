@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../math/vec.isph"
+#include "common/math/vec.isph"
 
 struct Ray1
 {

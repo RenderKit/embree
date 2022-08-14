@@ -6,7 +6,7 @@
 #include "default.h"
 #include "device.h"
 #include "builder.h"
-#include "../../common/algorithms/parallel_any_of.h"
+#include "common/algorithms/parallel_any_of.h"
 #include "scene_triangle_mesh.h"
 #include "scene_quad_mesh.h"
 #include "scene_user_geometry.h"
@@ -16,7 +16,7 @@
 #include "scene_subdiv_mesh.h"
 #include "scene_grid_mesh.h"
 #include "scene_points.h"
-#include "../subdiv/tessellation_cache.h"
+#include "kernels/subdiv/tessellation_cache.h"
 
 #include "acceln.h"
 #include "geometry.h"

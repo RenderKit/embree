@@ -4,7 +4,7 @@
 #pragma once
 
 #include "curveNi_mb.h"
-#include "../subdiv/linear_bezier_patch.h"
+#include "kernels/subdiv/linear_bezier_patch.h"
 
 namespace embree
 {

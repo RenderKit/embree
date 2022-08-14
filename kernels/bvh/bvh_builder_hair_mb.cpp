@@ -1,12 +1,12 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../builders/bvh_builder_msmblur_hair.h"
-#include "../builders/primrefgen.h"
+#include "kernels/builders/bvh_builder_msmblur_hair.h"
+#include "kernels/builders/primrefgen.h"
 
-#include "../geometry/pointi.h"
-#include "../geometry/linei.h"
-#include "../geometry/curveNi_mb.h"
+#include "kernels/geometry/pointi.h"
+#include "kernels/geometry/linei.h"
+#include "kernels/geometry/curveNi_mb.h"
 
 #if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
 

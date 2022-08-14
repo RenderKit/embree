@@ -9,8 +9,8 @@
 // sampling functions often come in pairs: sample and pdf (needed later for MIS)
 // good reference is "Total Compendium" by Philip Dutre http://people.cs.kuleuven.be/~philip.dutre/GI/
 
-#include "../math/vec.isph"
-#include "../math/linearspace.isph"
+#include "common/math/vec.isph"
+#include "common/math/linearspace.isph"
 
 struct Sample3f
 {

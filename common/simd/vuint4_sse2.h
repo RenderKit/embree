@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../math/math.h"
+#include "common/math/math.h"
 
 #define vboolf vboolf_impl
 #define vboold vboold_impl

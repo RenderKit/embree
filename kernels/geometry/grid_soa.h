@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "../common/ray.h"
-#include "../common/scene_subdiv_mesh.h"
-#include "../bvh/bvh.h"
-#include "../subdiv/tessellation.h"
-#include "../subdiv/tessellation_cache.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/scene_subdiv_mesh.h"
+#include "kernels/bvh/bvh.h"
+#include "kernels/subdiv/tessellation.h"
+#include "kernels/subdiv/tessellation_cache.h"
 #include "subdivpatch1.h"
 
 namespace embree

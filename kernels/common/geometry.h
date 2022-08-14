@@ -6,8 +6,8 @@
 #include "default.h"
 #include "device.h"
 #include "buffer.h"
-#include "../common/point_query.h"
-#include "../builders/priminfo.h"
+#include "kernels/common/point_query.h"
+#include "kernels/builders/priminfo.h"
 
 namespace embree
 {

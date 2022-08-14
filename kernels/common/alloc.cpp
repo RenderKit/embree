@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "alloc.h"
-#include "../../common/sys/thread.h"
+#include "common/sys/thread.h"
 #if defined(APPLE) && defined(__aarch64__)
-#include "../../common/sys/barrier.h"
+#include "common/sys/barrier.h"
 #endif
 
 namespace embree

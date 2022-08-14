@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../common/scene.h"
-#include "../common/primref.h"
+#include "kernels/common/scene.h"
+#include "kernels/common/primref.h"
 
 namespace embree
 {

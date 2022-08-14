@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "../sys/alloc.h"
+#include "common/sys/alloc.h"
 #include "math.h"
-#include "../simd/sse.h"
+#include "common/simd/sse.h"
 
 namespace embree
 {

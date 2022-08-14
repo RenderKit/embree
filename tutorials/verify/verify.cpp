@@ -7,11 +7,11 @@
 #include "../common/scenegraph/scenegraph.h"
 #include "../common/scenegraph/geometry_creation.h"
 #include "../common/math/closest_point.h"
-#include "../../common/algorithms/parallel_for.h"
-#include "../../common/simd/simd.h"
-#include "../../kernels/common/context.h"
-#include "../../kernels/common/geometry.h"
-#include "../../kernels/common/scene.h"
+#include "common/algorithms/parallel_for.h"
+#include "common/simd/simd.h"
+#include "kernels/common/context.h"
+#include "kernels/common/geometry.h"
+#include "kernels/common/scene.h"
 #include <regex>
 #include <stack>
 

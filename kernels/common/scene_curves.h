@@ -7,11 +7,11 @@
 #include "geometry.h"
 #include "buffer.h"
 
-#include "../subdiv/bezier_curve.h"
-#include "../subdiv/hermite_curve.h"
-#include "../subdiv/bspline_curve.h"
-#include "../subdiv/catmullrom_curve.h"
-#include "../subdiv/linear_bezier_patch.h"
+#include "kernels/subdiv/bezier_curve.h"
+#include "kernels/subdiv/hermite_curve.h"
+#include "kernels/subdiv/bspline_curve.h"
+#include "kernels/subdiv/catmullrom_curve.h"
+#include "kernels/subdiv/linear_bezier_patch.h"
 
 namespace embree
 {

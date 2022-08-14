@@ -1,8 +1,8 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/math/random_sampler.isph"
-#include "../common/math/sampling.isph"
+#include "common/math/random_sampler.isph"
+#include "common/math/sampling.isph"
 #include "../common/tutorial/tutorial_device.isph"
 #include "../common/tutorial/scene_device.h"
 

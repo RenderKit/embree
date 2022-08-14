@@ -4,13 +4,13 @@
 #pragma once
 
 #include "bvh.h"
-#include "../geometry/triangle.h"
-#include "../geometry/trianglev.h"
-#include "../geometry/trianglei.h"
-#include "../geometry/quadv.h"
-#include "../geometry/quadi.h"
-#include "../geometry/object.h"
-#include "../geometry/instance.h"
+#include "kernels/geometry/triangle.h"
+#include "kernels/geometry/trianglev.h"
+#include "kernels/geometry/trianglei.h"
+#include "kernels/geometry/quadv.h"
+#include "kernels/geometry/quadi.h"
+#include "kernels/geometry/object.h"
+#include "kernels/geometry/instance.h"
 
 namespace embree
 {

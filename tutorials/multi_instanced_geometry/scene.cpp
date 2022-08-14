@@ -1,8 +1,8 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/math/affinespace.h"
-#include "../common/math/linearspace.h"
+#include "common/math/affinespace.h"
+#include "../math/linearspace.h"
 #include "../common/math/random_sampler.h"
 #include "../common/tutorial/scene.h"
 #include "scene.h"

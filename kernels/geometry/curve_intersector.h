@@ -4,13 +4,13 @@
 #pragma once
 
 #include "primitive.h"
-#include "../subdiv/bezier_curve.h"
-#include "../common/primref.h"
+#include "kernels/subdiv/bezier_curve.h"
+#include "kernels/common/primref.h"
 #include "bezier_hair_intersector.h"
 #include "bezier_ribbon_intersector.h"
 #include "bezier_curve_intersector.h"
 #include "oriented_curve_intersector.h"
-#include "../bvh/node_intersector1.h"
+#include "kernels/bvh/node_intersector1.h"
 
 // FIXME: this file seems replicate of curve_intersector_virtual.h
 

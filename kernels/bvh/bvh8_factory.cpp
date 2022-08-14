@@ -1,28 +1,28 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/isa.h" // to define EMBREE_TARGET_SIMD8
+#include "kernels/common/isa.h" // to define EMBREE_TARGET_SIMD8
 
 #if defined (EMBREE_TARGET_SIMD8)
 
 #include "bvh8_factory.h"
-#include "../bvh/bvh.h"
+#include "kernels/bvh/bvh.h"
 
-#include "../geometry/curveNv.h"
-#include "../geometry/curveNi.h"
-#include "../geometry/curveNi_mb.h"
-#include "../geometry/linei.h"
-#include "../geometry/triangle.h"
-#include "../geometry/trianglev.h"
-#include "../geometry/trianglev_mb.h"
-#include "../geometry/trianglei.h"
-#include "../geometry/quadv.h"
-#include "../geometry/quadi.h"
-#include "../geometry/subdivpatch1.h"
-#include "../geometry/object.h"
-#include "../geometry/instance.h"
-#include "../geometry/subgrid.h"
-#include "../common/accelinstance.h"
+#include "kernels/geometry/curveNv.h"
+#include "kernels/geometry/curveNi.h"
+#include "kernels/geometry/curveNi_mb.h"
+#include "kernels/geometry/linei.h"
+#include "kernels/geometry/triangle.h"
+#include "kernels/geometry/trianglev.h"
+#include "kernels/geometry/trianglev_mb.h"
+#include "kernels/geometry/trianglei.h"
+#include "kernels/geometry/quadv.h"
+#include "kernels/geometry/quadi.h"
+#include "kernels/geometry/subdivpatch1.h"
+#include "kernels/geometry/object.h"
+#include "kernels/geometry/instance.h"
+#include "kernels/geometry/subgrid.h"
+#include "kernels/common/accelinstance.h"
 
 namespace embree
 {

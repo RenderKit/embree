@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../geometry/primitive.h"
+#include "kernels/geometry/primitive.h"
 #include "bspline_patch.h"
 #include "bezier_patch.h"
 #include "gregory_patch.h"
@@ -13,7 +13,7 @@
 #include "gridrange.h"
 #include "patch_eval_grid.h"
 #include "feature_adaptive_eval_grid.h"
-#include "../common/scene_subdiv_mesh.h"
+#include "kernels/common/scene_subdiv_mesh.h"
 
 namespace embree
 {

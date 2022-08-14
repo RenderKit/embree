@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "../common/geometry.h"
-#include "../common/ray.h"
-#include "../common/hit.h"
-#include "../common/context.h"
+#include "kernels/common/geometry.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/hit.h"
+#include "kernels/common/context.h"
 
 namespace embree
 {

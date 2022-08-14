@@ -1,9 +1,9 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../../../external/catch.hpp"
-#include "../../../../kernels/geometry/sphere_intersector.h"
-#include "../../../../common/simd/sse.cpp"
+#include "../external/catch.hpp"
+#include "../../kernels/geometry/sphere_intersector.h"
+#include "../../common/simd/sse.cpp"
 
 using namespace embree;
 

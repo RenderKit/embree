@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
-#include "../geometry/primitive.h"
-#include "../builders/bvh_builder_sah.h"
-#include "../builders/heuristic_binning_array_aligned.h"
-#include "../builders/heuristic_binning_array_unaligned.h"
-#include "../builders/heuristic_strand_array.h"
+#include "kernels/bvh/bvh.h"
+#include "kernels/geometry/primitive.h"
+#include "kernels/builders/bvh_builder_sah.h"
+#include "kernels/builders/heuristic_binning_array_aligned.h"
+#include "kernels/builders/heuristic_binning_array_unaligned.h"
+#include "kernels/builders/heuristic_strand_array.h"
 
 #define NUM_HAIR_OBJECT_BINS 32
 

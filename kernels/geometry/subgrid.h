@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "../common/ray.h"
-#include "../common/scene_grid_mesh.h"
-#include "../bvh/bvh.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/scene_grid_mesh.h"
+#include "kernels/bvh/bvh.h"
 
 namespace embree
 {

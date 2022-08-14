@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
-#include "../geometry/primitive.h"
-#include "../builders/bvh_builder_msmblur.h"
-#include "../builders/heuristic_binning_array_aligned.h"
-#include "../builders/heuristic_binning_array_unaligned.h"
-#include "../builders/heuristic_timesplit_array.h"
+#include "kernels/bvh/bvh.h"
+#include "kernels/geometry/primitive.h"
+#include "kernels/builders/bvh_builder_msmblur.h"
+#include "kernels/builders/heuristic_binning_array_aligned.h"
+#include "kernels/builders/heuristic_binning_array_unaligned.h"
+#include "kernels/builders/heuristic_timesplit_array.h"
 
 namespace embree
 {

@@ -14,6 +14,8 @@ PROJECT(embree${EMBREE_VERSION_MAJOR})
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 # We use our own strip tool on macOS to sign during install. This is required as CMake modifies RPATH of the binary during install.
 IF (APPLE AND EMBREE_SIGN_FILE)
   SET(EMBREE_STRIP ${CMAKE_STRIP})

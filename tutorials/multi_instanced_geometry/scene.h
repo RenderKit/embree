@@ -4,8 +4,8 @@
 #pragma once
 
 #include "../common/tutorial/tutorial_device.h"
-#include "../common/math/linearspace.h"
-#include "../../include/embree3/rtcore.h"
+#include "../math/linearspace.h"
+#include "include/embree3/rtcore.h"
 
 extern "C" struct InstanceLevels
 {

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "primitive.h"
-#include "../common/scene_instance.h"
+#include "kernels/common/scene_instance.h"
 
 namespace embree
 {

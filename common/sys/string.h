@@ -4,9 +4,9 @@
 #pragma once
 
 #include "platform.h"
-#include "../math/vec2.h"
-#include "../math/vec3.h"
-#include "../math/vec4.h"
+#include "common/math/vec2.h"
+#include "common/math/vec3.h"
+#include "common/math/vec4.h"
 
 namespace embree
 {

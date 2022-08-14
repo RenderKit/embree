@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../common/ray.h"
+#include "kernels/common/ray.h"
 #include "curve_intersector_precalculations.h"
 
 

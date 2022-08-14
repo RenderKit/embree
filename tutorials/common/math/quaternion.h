@@ -3,5 +3,5 @@
 
 #pragma once
 
-#include "../../../common/math/quaternion.h"
+#include "common/math/quaternion.h"
 

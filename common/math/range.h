@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../sys/platform.h"
-#include "../math/math.h"
+#include "common/sys/platform.h"
+#include "common/math/math.h"
 
 namespace embree
 {

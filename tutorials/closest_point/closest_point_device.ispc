@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../common/tutorial/tutorial_device.isph"
-#include "../common/math/closest_point.isph"
+#include "common/math/closest_point.isph"
 
 struct TriangleMesh
 {

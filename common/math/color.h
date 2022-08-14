@@ -7,7 +7,7 @@
 #include "col3.h"
 #include "col4.h"
 
-#include "../simd/sse.h"
+#include "common/simd/sse.h"
 
 namespace embree
 {

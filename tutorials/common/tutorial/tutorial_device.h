@@ -14,19 +14,19 @@ struct Vertex   { float x,y,z,r;  }; // FIXME: rename to Vertex4f
 struct Triangle { int v0, v1, v2; };
 
 /* include embree API */
-#include "../../../include/embree3/rtcore.h"
+#include "include/embree3/rtcore.h"
 RTC_NAMESPACE_USE
 
 /* include optional vector library */
-#include "../math/math.h"
+#include "common/math/math.h"
 #include "../math/vec.h"
-#include "../math/affinespace.h"
+#include "common/math/affinespace.h"
 #include "../core/ray.h"
 #include "camera.h"
 #include "scene_device.h"
 #include "noise.h"
 #if !defined(ISPC)
-#include "../../../common/algorithms/parallel_for.h"
+#include "common/algorithms/parallel_for.h"
 
 namespace embree {
 #endif

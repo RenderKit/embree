@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../common/default.h"
+#include "kernels/common/default.h"
 
 /* force a complete cache invalidation when running out of allocation space */
 #define FORCE_SIMPLE_FLUSH 0

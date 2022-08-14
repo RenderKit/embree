@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../common/geometry.h"
+#include "kernels/common/geometry.h"
 
 namespace embree
 {

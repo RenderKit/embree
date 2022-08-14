@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "../common/default.h"
-#include "../common/ray.h"
-#include "../common/scene.h"
+#include "kernels/common/default.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/scene.h"
 
 namespace embree
 {

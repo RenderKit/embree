@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../common/scene.h"
+#include "kernels/common/scene.h"
 #include "priminfo.h"
 
 namespace embree

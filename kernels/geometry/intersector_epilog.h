@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../common/ray.h"
-#include "../common/context.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/context.h"
 #include "filter.h"
 
 namespace embree

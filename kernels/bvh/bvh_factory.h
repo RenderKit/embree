@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
-#include "../common/isa.h"
-#include "../common/accel.h"
-#include "../common/scene.h"
-#include "../geometry/curve_intersector_virtual.h"
+#include "kernels/bvh/bvh.h"
+#include "kernels/common/isa.h"
+#include "kernels/common/accel.h"
+#include "kernels/common/scene.h"
+#include "kernels/geometry/curve_intersector_virtual.h"
 
 namespace embree
 {

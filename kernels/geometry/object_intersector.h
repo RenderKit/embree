@@ -4,7 +4,7 @@
 #pragma once
 
 #include "object.h"
-#include "../common/ray.h"
+#include "kernels/common/ray.h"
 
 namespace embree
 {

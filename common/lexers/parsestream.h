@@ -4,11 +4,11 @@
 #pragma once
 
 #include "stringstream.h"
-#include "../sys/filename.h"
-#include "../math/vec2.h"
-#include "../math/vec3.h"
-#include "../math/col3.h"
-#include "../math/color.h"
+#include "common/sys/filename.h"
+#include "common/math/vec2.h"
+#include "common/math/vec3.h"
+#include "common/math/col3.h"
+#include "common/math/color.h"
 
 namespace embree
 {

@@ -3,19 +3,19 @@
 
 #include "bvh_intersector_stream.h"
 
-#include "../geometry/intersector_iterators.h"
-#include "../geometry/triangle_intersector.h"
-#include "../geometry/trianglev_intersector.h"
-#include "../geometry/trianglev_mb_intersector.h"
-#include "../geometry/trianglei_intersector.h"
-#include "../geometry/quadv_intersector.h"
-#include "../geometry/quadi_intersector.h"
-#include "../geometry/linei_intersector.h"
-#include "../geometry/subdivpatch1_intersector.h"
-#include "../geometry/object_intersector.h"
-#include "../geometry/instance_intersector.h"
+#include "kernels/geometry/intersector_iterators.h"
+#include "kernels/geometry/triangle_intersector.h"
+#include "kernels/geometry/trianglev_intersector.h"
+#include "kernels/geometry/trianglev_mb_intersector.h"
+#include "kernels/geometry/trianglei_intersector.h"
+#include "kernels/geometry/quadv_intersector.h"
+#include "kernels/geometry/quadi_intersector.h"
+#include "kernels/geometry/linei_intersector.h"
+#include "kernels/geometry/subdivpatch1_intersector.h"
+#include "kernels/geometry/object_intersector.h"
+#include "kernels/geometry/instance_intersector.h"
 
-#include "../common/scene.h"
+#include "kernels/common/scene.h"
 #include <bitset>
 
 namespace embree

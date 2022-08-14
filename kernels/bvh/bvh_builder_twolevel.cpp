@@ -3,10 +3,10 @@
 
 #include "bvh_builder_twolevel.h"
 #include "bvh_statistics.h"
-#include "../builders/bvh_builder_sah.h"
-#include "../common/scene_line_segments.h"
-#include "../common/scene_triangle_mesh.h"
-#include "../common/scene_quad_mesh.h"
+#include "kernels/builders/bvh_builder_sah.h"
+#include "kernels/common/scene_line_segments.h"
+#include "kernels/common/scene_triangle_mesh.h"
+#include "kernels/common/scene_quad_mesh.h"
 
 #define PROFILE 0
 

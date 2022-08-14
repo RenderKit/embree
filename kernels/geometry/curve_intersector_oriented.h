@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "../common/ray.h"
+#include "kernels/common/ray.h"
 #include "curve_intersector_precalculations.h"
 #include "curve_intersector_sweep.h"
-#include "../subdiv/linear_bezier_patch.h"
+#include "kernels/subdiv/linear_bezier_patch.h"
 
 #define DBG(x)
 

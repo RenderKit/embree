@@ -3,22 +3,22 @@
 
 #pragma once
 
-#include "../../../common/sys/platform.h"
-#include "../../../common/sys/ref.h"
-#include "../../../common/sys/intrinsics.h"
-#include "../../../common/sys/sysinfo.h"
-#include "../../../common/sys/atomic.h"
-#include "../../../common/sys/vector.h"
-#include "../../../common/sys/string.h"
+#include "common/sys/platform.h"
+#include "common/sys/ref.h"
+#include "common/sys/intrinsics.h"
+#include "common/sys/sysinfo.h"
+#include "common/sys/atomic.h"
+#include "common/sys/vector.h"
+#include "common/sys/string.h"
 
-#include "../../../common/math/math.h"
-#include "../../../common/math/vec2.h"
-#include "../../../common/math/vec3.h"
-#include "../../../common/math/vec4.h"
-#include "../../../common/math/bbox.h"
-#include "../../../common/math/affinespace.h"
+#include "common/math/math.h"
+#include "common/math/vec2.h"
+#include "common/math/vec3.h"
+#include "common/math/vec4.h"
+#include "common/math/bbox.h"
+#include "common/math/affinespace.h"
 
-#include "../../../common/simd/simd.h"
+#include "common/simd/simd.h"
 
   /*! Ray structure. */
   struct __aligned(16) Ray

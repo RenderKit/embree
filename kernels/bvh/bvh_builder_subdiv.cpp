@@ -8,18 +8,18 @@
 #include "bvh_refit.h"
 #include "bvh_builder.h"
 
-#include "../builders/primrefgen.h"
-#include "../builders/bvh_builder_sah.h"
-#include "../builders/bvh_builder_msmblur.h"
+#include "kernels/builders/primrefgen.h"
+#include "kernels/builders/bvh_builder_sah.h"
+#include "kernels/builders/bvh_builder_msmblur.h"
 
-#include "../../common/algorithms/parallel_for_for.h"
-#include "../../common/algorithms/parallel_for_for_prefix_sum.h"
+#include "common/algorithms/parallel_for_for.h"
+#include "common/algorithms/parallel_for_for_prefix_sum.h"
 
-#include "../subdiv/bezier_curve.h"
-#include "../subdiv/bspline_curve.h"
+#include "kernels/subdiv/bezier_curve.h"
+#include "kernels/subdiv/bspline_curve.h"
 
-#include "../geometry/subdivpatch1.h"
-#include "../geometry/grid_soa.h"
+#include "kernels/geometry/subdivpatch1.h"
+#include "kernels/geometry/grid_soa.h"
 
 namespace embree
 {

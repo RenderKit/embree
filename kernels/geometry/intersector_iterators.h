@@ -3,11 +3,11 @@
 
 #pragma once
 
-#include "../common/scene.h"
-#include "../common/ray.h"
-#include "../common/point_query.h"
-#include "../bvh/node_intersector1.h"
-#include "../bvh/node_intersector_packet.h"
+#include "kernels/common/scene.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/point_query.h"
+#include "kernels/bvh/node_intersector1.h"
+#include "kernels/bvh/node_intersector_packet.h"
 
 namespace embree
 {

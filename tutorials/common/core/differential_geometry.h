@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../../../include/embree3/rtcore.h"
+#include "include/embree3/rtcore.h"
 #include "../math/vec.h"
 
 namespace embree {

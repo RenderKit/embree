@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "tutorial_device.isph"
-#include "../math/random_sampler.isph"
-#include "../math/sampling.isph"
+#include "common/math/random_sampler.isph"
+#include "common/math/sampling.isph"
 #include "scene_device.h"
 
 /* the scene to render */

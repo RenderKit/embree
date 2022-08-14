@@ -7,7 +7,7 @@
 // Most of the transcendental implementations in ispc code come from
 // Solomon Boulos's "syrah": https://github.com/boulos/syrah/
 
-#include "../simd/simd.h"
+#include "common/simd/simd.h"
 
 namespace embree
 {

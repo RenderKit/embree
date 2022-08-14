@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include "../common/scene.h"
-#include "../common/primref.h"
-#include "../common/primref_mb.h"
+#include "kernels/common/scene.h"
+#include "kernels/common/primref.h"
+#include "kernels/common/primref_mb.h"
 #include "priminfo.h"
 #include "bvh_builder_morton.h"
 

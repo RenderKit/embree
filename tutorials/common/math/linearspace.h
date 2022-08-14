@@ -3,5 +3,5 @@
 
 #pragma once
 
-#include "../../../common/math/linearspace3.h"
+#include "common/math/linearspace3.h"
 

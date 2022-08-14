@@ -5,7 +5,7 @@
 
 #include "clothModel.h"
 #include "constraints.h"
-#include "../../common/algorithms/parallel_for.h"
+#include "common/algorithms/parallel_for.h"
 
 namespace embree { namespace collide2 {
 

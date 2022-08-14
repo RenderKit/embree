@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "../tasking/taskscheduler.h"
-#include "../sys/array.h"
-#include "../math/math.h"
-#include "../math/range.h"
+#include "common/tasking/taskscheduler.h"
+#include "common/sys/array.h"
+#include "common/math/math.h"
+#include "common/math/range.h"
 
 namespace embree
 {

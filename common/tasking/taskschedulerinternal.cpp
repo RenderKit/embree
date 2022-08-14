@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "taskschedulerinternal.h"
-#include "../math/math.h"
-#include "../sys/sysinfo.h"
+#include "common/math/math.h"
+#include "common/sys/sysinfo.h"
 #include <algorithm>
 
 namespace embree

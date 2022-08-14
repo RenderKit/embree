@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../common/geometry.h"
-#include "../common/buffer.h"
+#include "kernels/common/geometry.h"
+#include "kernels/common/buffer.h"
 #include "half_edge.h"
 #include "catmullclark_coefficients.h"
 

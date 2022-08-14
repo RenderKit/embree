@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../common/default.h"
+#include "kernels/common/default.h"
 #include "bezier_curve.h"
 
 namespace embree

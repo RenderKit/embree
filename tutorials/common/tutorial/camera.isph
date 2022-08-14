@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../math/affinespace.isph"
+#include "common/math/affinespace.isph"
 
 struct ISPCCamera
 {

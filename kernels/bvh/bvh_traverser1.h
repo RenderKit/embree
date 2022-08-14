@@ -5,7 +5,7 @@
 
 #include "bvh.h"
 #include "node_intersector1.h"
-#include "../common/stack_item.h"
+#include "kernels/common/stack_item.h"
 
 #define NEW_SORTING_CODE 1
 

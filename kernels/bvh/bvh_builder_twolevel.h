@@ -7,9 +7,9 @@
 
 #include "bvh_builder_twolevel_internal.h"
 #include "bvh.h"
-#include "../common/primref.h"
-#include "../builders/priminfo.h"
-#include "../builders/primrefgen.h"
+#include "kernels/common/primref.h"
+#include "kernels/builders/priminfo.h"
+#include "kernels/builders/primrefgen.h"
 
 /* new open/merge builder */
 #define ENABLE_DIRECT_SAH_MERGE_BUILDER 1

@@ -9,18 +9,18 @@
 #include "scene_curves.h"
 #include "scene_subdiv_mesh.h"
 
-#include "../subdiv/tessellation_cache.h"
+#include "kernels/subdiv/tessellation_cache.h"
 
 #include "acceln.h"
 #include "geometry.h"
 
-#include "../geometry/cylinder.h"
+#include "kernels/geometry/cylinder.h"
 
-#include "../bvh/bvh4_factory.h"
-#include "../bvh/bvh8_factory.h"
+#include "kernels/bvh/bvh4_factory.h"
+#include "kernels/bvh/bvh8_factory.h"
 
-#include "../../common/tasking/taskscheduler.h"
-#include "../../common/sys/alloc.h"
+#include "common/tasking/taskscheduler.h"
+#include "common/sys/alloc.h"
 
 namespace embree
 {

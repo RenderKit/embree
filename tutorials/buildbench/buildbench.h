@@ -5,7 +5,7 @@
 
 #include "../common/tutorial/benchmark.h"
 
-#include "../../include/embree3/rtcore_common.h"
+#include "include/embree3/rtcore_common.h"
 
 namespace embree {
   struct ISPCScene;

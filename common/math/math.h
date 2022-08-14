@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include "../sys/platform.h"
-#include "../sys/intrinsics.h"
+#include "common/sys/platform.h"
+#include "common/sys/intrinsics.h"
 #include "constants.h"
 #include <cmath>
 
 #if defined(__ARM_NEON)
-#include "../simd/arm/emulation.h"
+#include "common/simd/arm/emulation.h"
 #else
 #include <emmintrin.h>
 #include <xmmintrin.h>

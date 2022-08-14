@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../sys/platform.h"
+#include "common/sys/platform.h"
 
 namespace embree
 {

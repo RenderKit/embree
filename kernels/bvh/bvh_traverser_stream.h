@@ -4,8 +4,8 @@
 #pragma once
 
 #include "bvh.h"
-#include "../common/ray.h"
-#include "../common/stack_item.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/stack_item.h"
 
 namespace embree
 {

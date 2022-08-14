@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../common/ray.h"
-#include "../common/scene_points.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/scene_points.h"
 #include "curve_intersector_precalculations.h"
 
 namespace embree

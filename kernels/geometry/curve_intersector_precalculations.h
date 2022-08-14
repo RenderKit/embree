@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../common/ray.h"
-#include "../common/geometry.h"
+#include "kernels/common/ray.h"
+#include "kernels/common/geometry.h"
 
 namespace embree
 {

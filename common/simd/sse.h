@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include "../sys/platform.h"
-#include "../sys/intrinsics.h"
-#include "../sys/alloc.h"
-#include "../math/constants.h"
+#include "common/sys/platform.h"
+#include "common/sys/intrinsics.h"
+#include "common/sys/alloc.h"
+#include "common/math/constants.h"
 #include "varying.h"
 
 namespace embree 

@@ -4,7 +4,7 @@
 #pragma once
 
 #include "texture.h"
-#include "../math/vec.isph"
+#include "common/math/vec.isph"
 
 struct Texture2D;
 

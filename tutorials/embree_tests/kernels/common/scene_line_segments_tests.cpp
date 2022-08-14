@@ -1,8 +1,8 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-// #include "../../../external/catch.hpp"
-// #include "../../../../kernels/common/scene_line_segments.h"
+// #include "../external/catch.hpp"
+// #include "../../kernels/common/scene_line_segments.h"
 
 // using namespace embree;
 

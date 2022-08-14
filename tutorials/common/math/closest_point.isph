@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../math/vec.isph"
+#include "common/math/vec.isph"
 
 Vec3f closestPointTriangle(Vec3f const& p, Vec3f const& a, Vec3f const& b, Vec3f const& c)
 {

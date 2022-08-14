@@ -10,11 +10,11 @@
 #endif
 
 #if defined(__ARM_NEON)
-#include "../simd/arm/emulation.h"
+#include "common/simd/arm/emulation.h"
 #else
 #include <immintrin.h>
 #if defined(__EMSCRIPTEN__)
-#include "../simd/wasm/emulation.h"
+#include "common/simd/wasm/emulation.h"
 #endif
 #endif
 

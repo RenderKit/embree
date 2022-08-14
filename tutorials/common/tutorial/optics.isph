@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../math/sampling.isph"
+#include "common/math/sampling.isph"
 
 /*! \addtogroup rivl_render_embree_ivl */
 /*! @{ */

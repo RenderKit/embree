@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include "../sys/platform.h"
-#include "../sys/alloc.h"
-#include "../sys/barrier.h"
-#include "../sys/thread.h"
-#include "../sys/mutex.h"
-#include "../sys/condition.h"
-#include "../sys/ref.h"
+#include "common/sys/platform.h"
+#include "common/sys/alloc.h"
+#include "common/sys/barrier.h"
+#include "common/sys/thread.h"
+#include "common/sys/mutex.h"
+#include "common/sys/condition.h"
+#include "common/sys/ref.h"
 
 #if defined(__WIN32__) && !defined(NOMINMAX)
 #  define NOMINMAX

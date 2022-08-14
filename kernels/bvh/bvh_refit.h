@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "../bvh/bvh.h"
+#include "kernels/bvh/bvh.h"
 
 namespace embree
 {

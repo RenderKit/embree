@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../geometry/primitive.h"
-#include "../subdiv/subdivpatch1base.h"
+#include "kernels/geometry/primitive.h"
+#include "kernels/subdiv/subdivpatch1base.h"
 
 namespace embree
 {

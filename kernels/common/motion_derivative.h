@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include "../../common/math/affinespace.h"
-#include "../../common/math/interval.h"
+#include "common/math/affinespace.h"
+#include "common/math/interval.h"
 
 #include <functional>
 
