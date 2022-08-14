@@ -551,6 +551,7 @@ namespace embree
     
     /* --- convert BVH2 to QBVH6 --- */    
     const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triMesh,qbvh,bvh2,leafGenData,numPrimitives,node_size/64,verbose);
+    //const float conversion_device_time = convertBVH2toQBVH6_new(gpu_queue,globals,host_device_tasks,triMesh,qbvh,bvh2,leafGenData,numPrimitives,node_size/64,verbose);
 
     /* --- init final QBVH6 header --- */        
     {     
