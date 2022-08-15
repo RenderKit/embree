@@ -4,6 +4,7 @@
 #include "builder/gpu/AABB3f.h"
 #include "builder/gpu/sort.h"
 #include "builder/gpu/morton.h"
+#include <memory>
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 
@@ -252,18 +253,51 @@ namespace embree
     
     __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
     {
-      bounds  = _bounds;
       left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD) ? FATLEAF_BIT : 0) | ((subtree_size_left   <= SMALL_SUBTREE_THRESHOLD) ? SMALL_SUBTREE_BIT : 0);
       right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD) ? FATLEAF_BIT : 0) | ((subtree_size_right  <= SMALL_SUBTREE_THRESHOLD) ? SMALL_SUBTREE_BIT : 0);
+
+#if 1
+      bounds.lower_x = _bounds.lower_x;
+      bounds.lower_y = _bounds.lower_y;
+      bounds.lower_z = _bounds.lower_z;
+      bounds.upper_x = _bounds.upper_x;
+      bounds.upper_y = _bounds.upper_y;
+      bounds.upper_z = _bounds.upper_z;                  
+#else
+      bounds  = _bounds;      
+#endif      
     }
     
     __forceinline void initLeaf(const uint _geomID, const uint _primID, const gpu::AABB3f &_bounds)
     {
-      bounds  = _bounds;
       left    = _geomID;      
       right   = _primID;
+#if 1
+      bounds.lower_x = _bounds.lower_x;
+      bounds.lower_y = _bounds.lower_y;
+      bounds.lower_z = _bounds.lower_z;
+      bounds.upper_x = _bounds.upper_x;
+      bounds.upper_y = _bounds.upper_y;
+      bounds.upper_z = _bounds.upper_z;                  
+#else
+      bounds  = _bounds;      
+#endif      
+      
     }
-     
+
+
+    __forceinline void store(BVH2Ploc *dest)
+    {
+      //dest = (BVH2Ploc *)__builtin_assume_aligned(dest,32);
+      dest->left  = left;
+      dest->right = right;
+      dest->bounds.lower_x = bounds.lower_x;
+      dest->bounds.lower_y = bounds.lower_y;
+      dest->bounds.lower_z = bounds.lower_z;
+      dest->bounds.upper_x = bounds.upper_x;
+      dest->bounds.upper_y = bounds.upper_y;
+      dest->bounds.upper_z = bounds.upper_z;            
+    }
 
     static  __forceinline bool isFatLeaf(const uint index) { return index & FATLEAF_BIT;  }
     static  __forceinline bool isSmallSubTree(const uint index) { return index & SMALL_SUBTREE_BIT;  }
@@ -597,7 +631,10 @@ namespace embree
                                    {
                                      const uint pair_offset = paired_ID - ID;
                                      const uint pair_geomID = (pair_offset << 24) | geomID;
-                                     bvh2[dest_offset].initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
+                                     //bvh2[dest_offset].initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
+                                     BVH2Ploc node;
+                                     node.initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
+                                     node.store(&bvh2[dest_offset]);
                                    }                                                                          
                                }
                              }                                                                        
