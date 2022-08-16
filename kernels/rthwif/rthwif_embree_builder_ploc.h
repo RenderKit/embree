@@ -669,7 +669,7 @@ namespace embree
   // ====================================================================================================================================================================================
   
 
-  __forceinline void computeCentroidGeometryBounds(sycl::queue &gpu_queue, gpu::AABB3f *geometryBounds, gpu::AABB3f *centroidBounds, const BVH2Ploc *const bvh2, const uint numPrimitives, const bool verbose)
+  __forceinline void computeCentroidGeometryBounds(sycl::queue &gpu_queue, gpu::AABB3f *geometryBounds, gpu::AABB3f *centroidBounds, const BVH2Ploc *const bvh2, const uint numPrimitives, double &iteration_time, const bool verbose)
   {
     const uint wgSize = 1024;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));          
@@ -725,7 +725,8 @@ namespace embree
 		  
       });
     gpu::waitOnQueueAndCatchException(gpu_queue);
-    double dt = gpu::getDeviceExecutionTiming(queue_event);      
+    double dt = gpu::getDeviceExecutionTiming(queue_event);
+    iteration_time += dt;
     if (unlikely(verbose)) PRINT2("computeCentroidGeometryBounds", (float)dt);
   }
   

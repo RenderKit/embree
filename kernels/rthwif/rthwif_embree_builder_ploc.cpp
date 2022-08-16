@@ -50,12 +50,72 @@ namespace embree
       checkBVH2PlocHW(bvh2,bvh2[index].rightIndex(),nodes,leaves,nodeSAH,leafSAH,numPrimitives,bvh2_max_allocations);
     }
   }
-  
+
+  struct BuildTimer {
+    enum Type {
+      PRE_PROCESS  = 0,
+      BUILD        = 1,
+      POST_PROCESS = 2,
+      ALLOCATION   = 3,            
+      TOTAL        = 4
+    };
+
+    double host_timers[TOTAL];
+    double device_timers[TOTAL];
+    
+    double t0,t1;
+
+    inline void reset()
+    {
+      for (uint i=0;i<TOTAL;i++)
+      {
+        host_timers[i] = 0.0;
+        device_timers[i] = 0.0;        
+      }        
+    }
+    
+    inline void start(const Type type)
+    {
+      t0 = getSeconds();
+    }
+
+    inline void stop(const Type type)
+    {
+      t1 = getSeconds();
+      host_timers[(int)type] += 1000.0*(t1-t0);
+    }
+
+    inline void add_to_device_timer(const Type type, double t)
+    {
+      device_timers[(int)type] += t;
+    }
+    
+    inline float get_accum_device_timer(const Type type) { return device_timers[(int)type]; }
+    inline float get_accum_host_timer  (const Type type) { return host_timers[(int)type]; }    
+    inline float get_host_timer() { return 1000.0*(t1-t0); }
+
+    inline float get_total_device_time()
+    {
+      double sum = 0.0;
+      for (uint i=0;i<ALLOCATION;i++) sum += device_timers[i];
+      return sum;
+    }
+
+    inline float get_total_host_time()
+    {
+      double sum = 0.0;
+      for (uint i=0;i<ALLOCATION;i++) sum += host_timers[i];
+      return sum;
+    }
+    
+    
+  };
   
   BBox3fa rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel, const bool two_level=false)
   {
-    double t1,t2,preprocess_time = 0.0f;
-
+    BuildTimer timer;
+    timer.reset();
+      
     DeviceGPU* deviceGPU = dynamic_cast<DeviceGPU*>(scene->device);
     assert(deviceGPU);
     const bool verbose = deviceGPU->verbosity(2);
@@ -83,7 +143,7 @@ namespace embree
     // ===============================================================================================================
     
 
-    double alloc_time0 = getSeconds(); //FIXME free
+    timer.start(BuildTimer::ALLOCATION);
 
     uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,sizeof(uint)*4,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::host); // FIXME
     assert(host_device_tasks);
@@ -102,10 +162,10 @@ namespace embree
     uint *const quads_per_geom_prefix_sum  = (uint*)tmpMem0;
     TriMesh *const triMesh                 = (TriMesh*)(tmpMem0 + alloc_GeomPrefixSums);
     
-    double alloc_time1 = getSeconds();
+    timer.stop(BuildTimer::ALLOCATION);
 	
-    if (unlikely(deviceGPU->verbosity(1)))
-      std::cout << "USM allocation time for globals, tri meshes and prefix sums " << 1000 * (alloc_time1 - alloc_time0) << " ms for " << (double)(alloc_TriMeshes+alloc_GeomPrefixSums) / (1024*1024) << " MBs " << std::endl;     	
+    if (unlikely(deviceGPU->verbosity(2)))
+      std::cout << "USM allocation time for globals, tri meshes and prefix sums " << timer.get_host_timer() << " ms for " << (double)(alloc_TriMeshes+alloc_GeomPrefixSums) / (1024*1024) << " MBs " << std::endl;     	
 
     // ==============================================
     // === compute prefix sum over geometry sizes === 
@@ -142,27 +202,28 @@ namespace embree
     }
     double first_kernel_time1 = getSeconds();
 
-    if (unlikely(deviceGPU->verbosity(1))) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
+    if (unlikely(deviceGPU->verbosity(2))) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
     
-    const double host_time0 = getSeconds(); 
     
     // =============================
     // === count quads per block === 
     // =============================
+
+    timer.start(BuildTimer::PRE_PROCESS);
+
     double device_quadification_time = 0.0f;
+    countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose);
 
-    //for (uint i=0;i<10;i++)
-    {
-      device_quadification_time = 0.0f;
-      double count_quads_time0 = getSeconds();
-      countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose);
-      double count_quads_time1 = getSeconds();
-      if (unlikely(deviceGPU->verbosity(1))) std::cout << "Count quads: " << (count_quads_time1-count_quads_time0)*1000.0f << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
-    }
+    timer.stop(BuildTimer::PRE_PROCESS);
+    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
+                              
+    if (unlikely(deviceGPU->verbosity(2))) std::cout << "Count quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
 
-    //exit(0);
-    
+    /* ----------------------------- */    
     /* --- prefix sum over quads --- */
+    /* ----------------------------- */
+    
+    timer.start(BuildTimer::PRE_PROCESS);    
     {	  
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
@@ -170,7 +231,6 @@ namespace embree
                                                                       for (uint ID=0;ID<numGeoms;ID++) //FIXME: WG based prefix sum
                                                                       {    
                                                                         const uint current = quads_per_geom_prefix_sum[ID];
-                                                                        //PRINT2(ID,current);
                                                                         quads_per_geom_prefix_sum[ID] = numQuadsPerGeom;
                                                                         numQuadsPerGeom += current;
                                                                       }
@@ -180,10 +240,14 @@ namespace embree
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
       double dt = gpu::getDeviceExecutionTiming(queue_event);
+      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
+      
       if (unlikely(deviceGPU->verbosity(2)))
         std::cout << "Prefix sum over quad counts over geometries " << dt << " ms" << std::endl;
     }
 
+    timer.stop(BuildTimer::PRE_PROCESS);
+    
     const uint numPrimitives = *host_device_tasks;
     
     if (unlikely(deviceGPU->verbosity(2)))    
@@ -218,7 +282,8 @@ namespace embree
     // === allocate and set buffers ===
     // ================================
     
-    alloc_time0 = getSeconds(); 
+    timer.start(BuildTimer::ALLOCATION);    
+
     
     if (accel.size() < totalSize) accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
     gpu_queue.prefetch((char*)accel.data(),totalSize);
@@ -266,17 +331,17 @@ namespace embree
     uint *const cluster_index_source = cluster_i[0];
     uint *const   cluster_index_dest = cluster_i[1];
 
+
+    timer.stop(BuildTimer::ALLOCATION);    
+          
+    if (unlikely(deviceGPU->verbosity(2)))
+      std::cout << "USM allocation time for BVH and additional data " << timer.get_host_timer() << " ms for " << (double)totalUSMAllocations / (1024*1024) << " MBs " << std::endl;     	
+
+
     
-    alloc_time1 = getSeconds();
-	
-    if (unlikely(deviceGPU->verbosity(1)))
-      std::cout << "USM allocation time for BVH and additional data " << 1000 * (alloc_time1 - alloc_time0) << " ms for " << (double)totalUSMAllocations / (1024*1024) << " MBs " << std::endl;     	
-      
     // ======================          
     // ==== init globals ====
     // ======================
-
-          
     {	  
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
@@ -293,24 +358,27 @@ namespace embree
                                                                     });
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
-      double dt = gpu::getDeviceExecutionTiming(queue_event);      
+      double dt = gpu::getDeviceExecutionTiming(queue_event);
+      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
+      
       if (unlikely(deviceGPU->verbosity(2)))
         std::cout << "Init globals " << dt << " ms" << std::endl;
-
     }	    
 
     // ===========================================================          
     // ==== merge triangles to quads, write out PLOC primrefs ====
     // ===========================================================
 
+    timer.start(BuildTimer::PRE_PROCESS);        
+    
     device_quadification_time = 0.0f;
-    double write_quads_time0 = getSeconds();
 
     mergeTriangleToQuads_initPLOCPrimRefs(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,device_quadification_time,verbose);
 
-    double write_quads_time1 = getSeconds();
-
-    if (unlikely(deviceGPU->verbosity(1))) std::cout << "Merge triangles to quads, write out quads: " << (write_quads_time1-write_quads_time0)*1000.0f << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;
+    timer.stop(BuildTimer::PRE_PROCESS);
+    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
+    
+    if (unlikely(deviceGPU->verbosity(2))) std::cout << "Merge triangles to quads, write out quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;
     
 
 #if 0    
@@ -321,47 +389,47 @@ namespace embree
          FATAL("Numerical Bounds in BVH2");
        }
 #endif
-      
-    double total_diff = 0;
-    double total0 = getSeconds();	
-      
+            
         
     // ==========================================          
     // ==== get centroid and geometry bounds ====
     // ==========================================
         
-    t1 = getSeconds();
-
-    computeCentroidGeometryBounds(gpu_queue, &globals->geometryBounds, &globals->centroidBounds, bvh2, numPrimitives, verbose);
+     timer.start(BuildTimer::PRE_PROCESS);        
+     double device_compute_centroid_bounds_time = 0.0f;
+     
+     computeCentroidGeometryBounds(gpu_queue, &globals->geometryBounds, &globals->centroidBounds, bvh2, numPrimitives, device_compute_centroid_bounds_time, verbose);
         
-    t2 = getSeconds();
+     timer.stop(BuildTimer::PRE_PROCESS);
+     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_compute_centroid_bounds_time);
         
     if (unlikely(deviceGPU->verbosity(2)))
-      std::cout << "Get Geometry and Centroid Bounds Phase " << 1000 * (t2 - t1) << " ms" << std::endl;		
-   
-    preprocess_time += 1000 * (t2 - t1);
-    
+      std::cout << "Get Geometry and Centroid Bounds Phase " << timer.get_host_timer() << " ms (host) " << device_compute_centroid_bounds_time << " ms (device) " << std::endl;		
+       
     // ==============================          
     // ==== compute morton codes ====
     // ==============================
 
-    t1 = getSeconds();
+    timer.start(BuildTimer::PRE_PROCESS);        
+    double device_compute_mc_time = 0.0f;
 
     if (!fastMCMode)
-      computeMortonCodes64Bit_SaveMSBBits(gpu_queue,&globals->centroidBounds,mc0,bvh2,bvh2_subtree_size,numPrimitives,preprocess_time,verbose);
+      computeMortonCodes64Bit_SaveMSBBits(gpu_queue,&globals->centroidBounds,mc0,bvh2,bvh2_subtree_size,numPrimitives,device_compute_mc_time,verbose);
     else
-      computeMortonCodes64Bit(gpu_queue,&globals->centroidBounds,(gpu::MortonCodePrimitive40x24Bits3D*)mc1,bvh2,numPrimitives,0,(uint64_t)-1,preprocess_time,verbose);
+      computeMortonCodes64Bit(gpu_queue,&globals->centroidBounds,(gpu::MortonCodePrimitive40x24Bits3D*)mc1,bvh2,numPrimitives,0,(uint64_t)-1,device_compute_mc_time,verbose);
     
-    t2 = getSeconds();
         
+    timer.stop(BuildTimer::PRE_PROCESS);
+     
     if (unlikely(deviceGPU->verbosity(2)))
-      std::cout << "Compute Morton Codes " << 1000 * (t2 - t1) << " ms" << std::endl;		
+      std::cout << "Compute Morton Codes " << timer.get_host_timer() << " ms (host) " << device_compute_mc_time << " ms (device) " << std::endl;		
     
     // ===========================          
     // ==== sort morton codes ====
     // ===========================
-        
-    t1 = getSeconds();
+
+
+    timer.start(BuildTimer::PRE_PROCESS);        
 
     double sort_time = 0.0;
         
@@ -377,11 +445,9 @@ namespace embree
 
       for (uint i=4;i<8;i++) 
         gpu::sort_iteration_type<false,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnQueueAndCatchException(gpu_queue);      
       
       restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,sort_time,verbose);      
-
-
 
       for (uint i=4;i<8;i++) 
         gpu::sort_iteration_type<false,MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs);
@@ -405,45 +471,44 @@ namespace embree
     }
       
     gpu::waitOnQueueAndCatchException(gpu_queue);
-                                
-    t2 = getSeconds();
 
-        
+    timer.stop(BuildTimer::PRE_PROCESS);        
+    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,timer.get_host_timer());
+            
     if (unlikely(deviceGPU->verbosity(2)))
-      std::cout << "Sort Morton Codes " << 1000 * (t2 - t1) << " ms" << std::endl;
+      std::cout << "Sort Morton Codes " << timer.get_host_timer() << " ms (host and device)" << std::endl;
         
-    preprocess_time += 1000 * (t2 - t1);
-
-
               
     // ===========================          
     // ====== init clusters ======
     // ===========================
 
-    t1 = getSeconds();
+    timer.start(BuildTimer::PRE_PROCESS);        
+    double device_init_clusters_time = 0.0f;
 
     if (!fastMCMode)
-      initClusters(gpu_queue,mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,preprocess_time,verbose);
+      initClusters(gpu_queue,mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,device_init_clusters_time,verbose);
     else
-      initClusters(gpu_queue,(gpu::MortonCodePrimitive40x24Bits3D*)mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,preprocess_time,verbose); 
+      initClusters(gpu_queue,(gpu::MortonCodePrimitive40x24Bits3D*)mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,device_init_clusters_time,verbose); 
     
-    t2 = getSeconds();
+    timer.stop(BuildTimer::PRE_PROCESS);        
+    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_init_clusters_time);
         
     if (unlikely(deviceGPU->verbosity(2)))
-      std::cout << "Init Clusters " << 1000 * (t2 - t1) << " ms" << std::endl;		
+      std::cout << "Init Clusters " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
 
     uint numPrims = numPrimitives;
 
-      
+    
     // ===================================================================================================================================================
     // ===================================================================================================================================================
     // ===================================================================================================================================================
         
-    double ploc_iteration_time = 0.0f;
+    double device_ploc_iteration_time = 0.0f;
         
     uint iteration = 0;
 
-    double ploc_host_time0 = getSeconds();
+    timer.start(BuildTimer::BUILD);        
 
     if (two_level)
     {
@@ -454,22 +519,20 @@ namespace embree
                     
       gpu::Range *ranges = (gpu::Range*)scratch_mem; //FIXME: need to store ranges somewhere else
         
-      extractRanges(gpu_queue, host_device_tasks, mc0, ranges, numPrims, RANGE_THRESHOLD , ploc_iteration_time, verbose);
+      extractRanges(gpu_queue, host_device_tasks, mc0, ranges, numPrims, RANGE_THRESHOLD , device_ploc_iteration_time, verbose);
 
       const uint numRanges = *host_device_tasks;
       
-      gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t*)ranges, (uint64_t*)ranges + numRanges, numRanges,0,8,ploc_iteration_time);
+      gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t*)ranges, (uint64_t*)ranges + numRanges, numRanges,0,8,device_ploc_iteration_time);
       
-      parallelWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, BOTTOM_UP_THRESHOLD, ploc_iteration_time, verbose);
+      parallelWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, BOTTOM_UP_THRESHOLD, device_ploc_iteration_time, verbose);
       
-      singleWGTopLevelBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, SEARCH_RADIUS_TOP_LEVEL, ploc_iteration_time, verbose);      
+      singleWGTopLevelBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, SEARCH_RADIUS_TOP_LEVEL, device_ploc_iteration_time, verbose);
+      timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
     }
     else
       for (;numPrims>1;iteration++)
-      {
-          
-        double iteration_time = 0.0f;
-
+      {          
         // ==================================================            
         // ==== single kernel path if #prims < threshold ====
         // ==================================================
@@ -478,7 +541,8 @@ namespace embree
         {
           double singleWG_time = 0.0f;
           singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, singleWG_time, verbose);
-          iteration_time += singleWG_time;
+          timer.add_to_device_timer(BuildTimer::BUILD,singleWG_time);
+
           numPrims = 1;
         }
         else  
@@ -488,9 +552,11 @@ namespace embree
           // ===================================================================================
 
           const uint MERGED_KERNEL_WG_NUM = min((numPrims+1024-1)/1024,(uint)MAX_WGS);
-          const uint radius = SEARCH_RADIUS;          
-
-          iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,iteration_time, false);
+          const uint radius = SEARCH_RADIUS;
+          
+          device_ploc_iteration_time = 0.0f;
+          iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,device_ploc_iteration_time, false);
+          timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
 
           const uint new_numPrims = *host_device_tasks;
           assert(new_numPrims < numPrims);          
@@ -498,27 +564,12 @@ namespace embree
             
           // ==========================            
         }        
-        ploc_iteration_time += iteration_time;
         if (unlikely(deviceGPU->verbosity(2)))
-          PRINT4(iteration,numPrims,(float)ploc_iteration_time,(float)iteration_time);
+          PRINT4(iteration,numPrims,(float)device_ploc_iteration_time,(float)timer.get_accum_device_timer(BuildTimer::BUILD));
       }
 
-    const double ploc_host_time1 = getSeconds();
-    const double ploc_host_time = (ploc_host_time1 - ploc_host_time0)*1000;
-
-    
-    if (unlikely(deviceGPU->verbosity(2)))    
-      PRINT6(iteration,(float)ploc_iteration_time,(float)preprocess_time,(float)(ploc_iteration_time + preprocess_time),(float)ploc_host_time,(float)(ploc_host_time+preprocess_time));          
-      
-    double total1 = getSeconds();
-    total_diff += (total1-total0);
-
-    const double device_time = ploc_iteration_time + preprocess_time;
+    timer.stop(BuildTimer::BUILD);        
             
-    if (unlikely(deviceGPU->verbosity(1)))
-    {
-      std::cout << "BVH2 GPU Ploc Builder DONE in " << 1000.*total_diff << " ms (host), " << (float)(ploc_iteration_time + preprocess_time) << " ms (device) => Quads Build : " << numPrimitives*0.000001f/total_diff << " MPrims/s (host) " << numPrimitives*0.001f/device_time << " MPrims/s (device) / Original Tris : " << org_numPrimitives*0.000001f/total_diff << " MPrims/s (host) " <<  org_numPrimitives*0.001f/device_time << " MPrims/s (device) " << std::endl << std::flush;      
-    }
     
                 
     /* --- check and convert BVH2 (host) --- */        
@@ -547,11 +598,10 @@ namespace embree
       gpu::waitOnQueueAndCatchException(gpu_queue);
     }
 
-    double time_convert0 = getSeconds();
-    
+    timer.start(BuildTimer::POST_PROCESS);        
+   
     /* --- convert BVH2 to QBVH6 --- */    
     const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triMesh,qbvh,bvh2,leafGenData,numPrimitives,node_size/64,verbose);
-    //const float conversion_device_time = convertBVH2toQBVH6_new(gpu_queue,globals,host_device_tasks,triMesh,qbvh,bvh2,leafGenData,numPrimitives,node_size/64,verbose);
 
     /* --- init final QBVH6 header --- */        
     {     
@@ -575,11 +625,12 @@ namespace embree
       gpu::waitOnQueueAndCatchException(gpu_queue);
     }	    
 
-    double time_convert1 = getSeconds();    
-    if (unlikely(deviceGPU->verbosity(1)))
+    timer.stop(BuildTimer::POST_PROCESS);
+    timer.add_to_device_timer(BuildTimer::POST_PROCESS,conversion_device_time);
+
+    if (unlikely(deviceGPU->verbosity(2)))
     {
-      const double host_bvh2_qbvh6_conversion_time = (time_convert1 - time_convert0)*1000.0f;
-      std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  host_bvh2_qbvh6_conversion_time << " ms (host) " << conversion_device_time << " ms (device) " << std::endl << std::flush;
+      std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  timer.get_host_timer() << " ms (host) " << conversion_device_time << " ms (device) " << std::endl << std::flush;
     }
     
     // ==========================================================
@@ -592,21 +643,35 @@ namespace embree
       HWAccel* hwaccel = (HWAccel*) accel.data();
       hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
     }
+    
+    timer.start(BuildTimer::ALLOCATION);        
 
-    double free_time0 = getSeconds();
     if (tmpMem0)           sycl::free(tmpMem0,deviceGPU->getGPUContext());    
     if (globals)           sycl::free(globals,deviceGPU->getGPUContext());
     if (leafGenData)       sycl::free(leafGenData,deviceGPU->getGPUContext());
     if (host_device_tasks) sycl::free(host_device_tasks,deviceGPU->getGPUContext());
+
+    timer.stop(BuildTimer::ALLOCATION);        
     
-    double free_time1 = getSeconds();
     if (unlikely(deviceGPU->verbosity(2)))
-      std::cout << "Time freeing temporary data " << (free_time1-free_time0)*1000.0f  << " ms " << std::endl << std::flush;
+      std::cout << "Time freeing temporary data " << timer.get_host_timer()  << " ms " << std::endl << std::flush;
 
-    const double host_time1 = getSeconds(); 
+
     if (unlikely(deviceGPU->verbosity(1)))
-      std::cout << "Total Build Time (incl. USM allocations/frees etc) " << (host_time1-host_time0)*1000  << " ms " << std::endl << std::flush;
-
+    {
+      const float total_host   = timer.get_total_host_time();
+      const float total_device = timer.get_total_device_time();
+      
+      std::cout << "BVH2 GPU Ploc Builder DONE in " << total_host << " ms (host), " << total_device << " ms (device) => Quads Build : " << numPrimitives*0.000001f/total_host << " MPrims/s (host) " << numPrimitives*0.001f/total_device << " MPrims/s (device) / Original Tris : " << org_numPrimitives*0.000001f/total_host << " MPrims/s (host) " <<  org_numPrimitives*0.001f/total_device << " MPrims/s (device) " << std::endl << std::flush;
+      std::cout << "Allocation    " << timer.get_accum_host_timer(BuildTimer::ALLOCATION) << " ms (host) " << std::endl;
+      std::cout << "Pre-process   " << timer.get_accum_host_timer(BuildTimer::PRE_PROCESS) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::PRE_PROCESS) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::PRE_PROCESS) / timer.get_accum_device_timer(BuildTimer::PRE_PROCESS) << std::endl;
+      std::cout << "Build         " << timer.get_accum_host_timer(BuildTimer::BUILD) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::BUILD) / timer.get_accum_device_timer(BuildTimer::BUILD) << std::endl;
+      std::cout << "Post-process  " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) / timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << std::endl;
+      
+      
+      
+    }
+    
     if (unlikely(deviceGPU->verbosity(2)))
     {
       //qbvh->print(std::cout,qbvh->root(),0,6);
