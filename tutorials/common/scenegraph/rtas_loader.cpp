@@ -129,7 +129,7 @@ namespace embree
 #else
     RTASFile::RTASDataSet flattened;
     RTASFile::RTAS* pTLAS = nullptr;
-    for (uint i = 0; i < rtas_data.nRTAS; ++i)
+    for (size_t i = 0; i < rtas_data.nRTAS; ++i)
     {
       if (rtas_data.pRTAS[i].NumInstances) {
         pTLAS = &rtas_data.pRTAS[i];
