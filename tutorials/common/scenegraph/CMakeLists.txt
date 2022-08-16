@@ -7,6 +7,9 @@ ADD_LIBRARY(scenegraph STATIC
     xml_writer.cpp
     obj_loader.cpp
     ply_loader.cpp
+    rtas_loader.cpp
+    RTASFile.cpp
+    RTASToEmbree.cpp    
     corona_loader.cpp
     texture.cpp
     scenegraph.cpp
