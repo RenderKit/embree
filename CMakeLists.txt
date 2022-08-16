@@ -141,6 +141,7 @@ OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protectio
 
 OPTION(EMBREE_DPCPP_SUPPORT "Enables DPC++ support." ON)
 OPTION(EMBREE_DPCPP_LARGEGRF "Enables DPC++ large GRF support." OFF)
+OPTION(EMBREE_DPCPP_DBG "Enables DPC++ debug info." OFF)
 
 IF (EMBREE_DPCPP_SUPPORT)
   ADD_DEFINITIONS("-DEMBREE_DPCPP_SUPPORT")  # FIXME: only use define from rtcore_config.h
