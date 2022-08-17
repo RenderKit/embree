@@ -24,7 +24,6 @@
 #include <intrin.h>
 #endif
 
-#include <immintrin.h>
 
 namespace RTASFile
 {
