@@ -39,7 +39,7 @@
 #include <intrin.h>
 #endif
 
-#include <immintrin.h>
+//#include <immintrin.h>
 
 
 namespace RTASFile
