@@ -669,7 +669,7 @@ namespace embree
       std::cout << "Post-process  " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) / timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << std::endl;
       
       
-      
+      //exit(0);
     }
     
     if (unlikely(deviceGPU->verbosity(2)))
