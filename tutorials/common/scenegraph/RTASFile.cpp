@@ -1959,6 +1959,7 @@ namespace RTASFile
 
     void GRL_CALL CreateProceduralDataSetFromTriangleDataSet(RTASDataSet* pResult, RTASDataSet* pSource)
     {
+#if __cplusplus >= 201402L
         _INTERNAL::AllocContainer allocs;
 
         pResult->nRTAS = pSource->nRTAS;
@@ -2076,6 +2077,7 @@ namespace RTASFile
             }
         }
         pResult->pOpaqueAllocation = allocs.ExportAllocs();
+#endif        
     }
 
     void GRL_CALL TransformPosition( float* pDst, const float* pSrc, const Matrix& m )
