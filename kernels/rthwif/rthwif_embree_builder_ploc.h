@@ -1698,9 +1698,9 @@ namespace embree
     }
   }
 
-  __forceinline void writeNode(void *curDataPtr, const gpu::AABB3f &parent_bounds, void *childDataPtr, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
+  __forceinline void writeNode(void *_dest, void *curDataPtr, const gpu::AABB3f &parent_bounds, void *childDataPtr, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
   {
-    uint *dest = (uint*)curDataPtr;
+    uint *dest = (uint*)_dest;
     
     //dest = (uint*) __builtin_assume_aligned(dest,16);
     
@@ -1975,7 +1975,7 @@ namespace embree
                                                                                 const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numChildren);
                                                                                 char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
 
-                                                                                writeNode(curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                                writeNode(curAddr,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
                                                                           
                                                                                 for (uint j=0;j<numChildren;j++)
                                                                                 {
@@ -2010,8 +2010,12 @@ namespace embree
       if (unlikely(verbose))
         PRINT4("initial iteration ",iteration,(float)dt,(float)total_time);
     }
+    
     /* ---- Phase II: full breadth-first phase until only fatleaves remain--- */
 
+    struct __aligned(64) LocalNodeData {
+      uint v[16];
+    };
     while(1)
     {      
       const uint blocks = host_device_tasks[0]; // = endBlockID-startBlockID;
@@ -2020,7 +2024,8 @@ namespace embree
       iteration++;
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
-      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {                                                   
+      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                   sycl::accessor< LocalNodeData, 1, sycl_read_write, sycl_local> _localNodeData(sycl::range<1>(wgSize),cgh);                        
                                                    cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(RTC_SYCL_SIMD_WIDTH*2)      
                                                                     {
                                                                       const uint localID   = item.get_local_id(0);                                                                      
@@ -2031,13 +2036,17 @@ namespace embree
                                                                       uint endBlockID   = globals->range_end; 
                              
                                                                       const uint innerID   = startBlockID + globalID;
+                                                                      char* curAddr = nullptr;
+                                                                      bool valid = false;
 
+                                                                      LocalNodeData *localNodeData = _localNodeData.get_pointer();
+                                                                      
                                                                       if (innerID < endBlockID)
                                                                       {
                                                                         TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
                                                                         const uint header = state->header;                                                                        
                                                                         const uint index  = state->bvh2_index;
-                                                                        char* curAddr = (char*)state;
+                                                                        curAddr = (char*)state;
                                                                         if (header == 0x7fffffff)
                                                                         {
                                                                           if (!BVH2Ploc::isLeaf(index,numPrimitives))
@@ -2047,8 +2056,8 @@ namespace embree
                                                                               uint indices[BVH_BRANCHING_FACTOR];
                                                                               const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
                                                                               char* childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
-
-                                                                              writeNode(curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                              valid = true;
+                                                                              writeNode(localNodeData[localID].v,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
                                                                           
                                                                               for (uint j=0;j<numChildren;j++)
                                                                               {
@@ -2061,7 +2070,23 @@ namespace embree
                                                                       }
 
                                                                       item.barrier(sycl::access::fence_space::local_space);
-                             
+
+                                                                      
+#if 1                                                                     
+                                                                      const uint subgroupLocalID = get_sub_group_local_id();
+                                                                      uint mask = sub_group_ballot(valid);
+                                                                      while(mask)
+                                                                      {
+                                                                        const uint index = sycl::ctz(mask);
+                                                                        mask &= mask-1;
+                                                                        uint ID = sub_group_broadcast(localID,index);
+                                                                        uint* dest = sub_group_broadcast((uint*)curAddr,index);
+                                                                        const uint v = localNodeData[ID].v[subgroupLocalID];                                                                        
+                                                                        sub_group_store(dest,v);
+                                                                      }
+#endif                                                                      
+
+                                                                      
                                                                       /* -------------------------------- */                                                       
                                                                       /* --- last WG does the cleanup --- */
                                                                       /* -------------------------------- */
@@ -2091,6 +2116,10 @@ namespace embree
       if (unlikely(verbose))      
         PRINT5("flattening iteration ",iteration,blocks,(float)dt,(float)total_time);
     }
+
+#if 1
+    // todo: block writes, reduced #instrs and spilling
+    
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID,geomID pairs for final phase --- */
     const uint blocks = host_device_tasks[1];    
     if (blocks)
@@ -2174,7 +2203,7 @@ namespace embree
                                                                         const uint leafDataID = offset;
                                                                         if (isFatLeaf)
                                                                         {
-                                                                          writeNode(curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                          writeNode(curAddr,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
                                                                           for (uint j=0;j<numChildren;j++)
                                                                           {                                                                                          
                                                                             const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
@@ -2198,9 +2227,19 @@ namespace embree
 
                                                                       const char* global_childAddr = globals->nodeBlockPtr(global_blockID);
                                                                       const uint leafDataID = (uint64_t)(global_childAddr - globals->leafLocalPtr())/64;
-                                                                      
+
+#if 0                                                                      
                                                                       for (uint i=localID;i<num_entries;i+=localSize)
                                                                         leafGenData[leafDataID+i] = local_leafGenData[i];
+#else
+                                                                      uint *source = (uint*)local_leafGenData;
+                                                                      uint *dest   = (uint*)&leafGenData[leafDataID];
+                                                                      uint items = num_entries*3;
+                                                                      for (uint i=localID;i<items;i+=localSize)
+                                                                        dest[i] = source[i];
+                                                                      
+#endif                                                                      
+                                                                      
 #else
                                                                       if (innerID < endBlockID)                                                                        
                                                                       {
@@ -2221,7 +2260,7 @@ namespace embree
                                                                             getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
                                                                             childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
                                                                             //childAddr = globals->atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
-                                                                            writeNode(curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                            writeNode(curAddr,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
                                                                             
                                                                             const uint leafDataID = (uint64_t)(childAddr - globals->leafLocalPtr())/64;
                                                                             for (uint j=0;j<numChildren;j++)
@@ -2282,12 +2321,18 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                   sycl::accessor< QuadLeaf, 1, sycl_read_write, sycl_local> _localLeaf(sycl::range<1>(wgSize),cgh);
                                                    cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(RTC_SYCL_SIMD_WIDTH*2)      
                                                                     {
-                                                                      const uint globalID   = item.get_global_id(0);                                                                      
+                                                                      const uint globalID = item.get_global_id(0);
+                                                                      const uint localID  = item.get_local_id(0);
+                                                                      QuadLeaf *localLeaf = _localLeaf.get_pointer();
+                                                                      bool valid = false;
+                                                                      QuadLeaf *qleaf = nullptr;
+                                                                      
                                                                       if (globalID < leaves)                                                                        
                                                                       {
-                                                                        QuadLeaf *qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
+                                                                        qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
                                                                         const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
                                                                         const uint primID0 = leafGenData[globalID].primID & 0x7fffffff;
                                                                         const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
@@ -2312,10 +2357,31 @@ namespace embree
                                                                             p3 = mesh.vertices[tri1.v[p3_index]];                                   
                                                                           }
 
-                                                                          const QuadLeaf leaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
-                                                                          write(leaf,(float16*)qleaf);
-                                                                        }                                                                        
-                                                                      }                                                                      
+                                                                          localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
+                                                                          valid = true;
+                                                                          //write(leaf,(float16*)qleaf);
+                                                                        }
+                                                                      }
+
+                                                                      /* ================================== */                                                                      
+                                                                      /* === write out to global memory === */
+                                                                      /* ================================== */
+                                                                      
+                                                                      const uint subgroupLocalID = get_sub_group_local_id();
+                                                                      uint mask = sub_group_ballot(valid);
+                                                                      while(mask)
+                                                                      {
+                                                                        const uint index = sycl::ctz(mask);
+                                                                        mask &= mask-1;
+                                                                        uint ID = sub_group_broadcast(localID,index);
+                                                                        uint* dest = sub_group_broadcast((uint*)qleaf,index);
+                                                                        uint* source = (uint*)&localLeaf[ID];
+                                                                        const uint v = source[subgroupLocalID];                                                                        
+                                                                        sub_group_store(dest,v);
+                                                                      }
+
+                                                                        
+                                                                                                                                            
                                                                     });
 		  
                                                  });
@@ -2325,6 +2391,8 @@ namespace embree
       if (unlikely(verbose))      
         PRINT3("final leaf generation ",(float)dt,(float)total_time);            
     }
+#endif
+     
     return (float)total_time;
   }  
   
