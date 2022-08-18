@@ -1,0 +1,30 @@
+name: CMake
+
+on:
+   pull_request: {}
+   push: {}
+
+jobs:
+  build_ubuntu:
+    name: Linux Ubuntu 20.04 CMake build <GCC 9.3.0>
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: | 
+        sudo apt-get install libglfw3
+        sudo apt-get install libglfw3-dev
+
+    - name: Run CMake generate
+      run: |
+        set -x
+        mkdir build
+        cd build
+        cmake -DEMBREE_ISPC_SUPPORT="false" -DEMBREE_TASKING_SYSTEM="INTERNAL" ..
+
+    - name: CMake Debug build
+      run: |
+        cd build
+        cmake --build . -j 8 --config Debug
