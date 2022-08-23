@@ -2072,7 +2072,6 @@ namespace embree
                                                                       item.barrier(sycl::access::fence_space::local_space);
 
                                                                       
-#if 1                                                                     
                                                                       const uint subgroupLocalID = get_sub_group_local_id();
                                                                       uint mask = sub_group_ballot(valid);
                                                                       while(mask)
@@ -2084,8 +2083,6 @@ namespace embree
                                                                         const uint v = localNodeData[ID].v[subgroupLocalID];                                                                        
                                                                         sub_group_store(dest,v);
                                                                       }
-#endif                                                                      
-
                                                                       
                                                                       /* -------------------------------- */                                                       
                                                                       /* --- last WG does the cleanup --- */
@@ -2228,7 +2225,7 @@ namespace embree
                                                                       const char* global_childAddr = globals->nodeBlockPtr(global_blockID);
                                                                       const uint leafDataID = (uint64_t)(global_childAddr - globals->leafLocalPtr())/64;
 
-#if 0                                                                      
+#if 1                                                                      
                                                                       for (uint i=localID;i<num_entries;i+=localSize)
                                                                         leafGenData[leafDataID+i] = local_leafGenData[i];
 #else
