@@ -142,7 +142,8 @@ namespace embree
         
     // ===============================================================================================================
     
-
+    size_t sizeTotalAllocations = 0;
+    
     timer.start(BuildTimer::ALLOCATION);
 
     uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,sizeof(uint)*4,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::host); // FIXME
@@ -150,6 +151,8 @@ namespace embree
 
     PLOCGlobals *globals  = (PLOCGlobals*)sycl::aligned_alloc(64,sizeof(PLOCGlobals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
     assert(globals);
+
+    sizeTotalAllocations += sizeof(PLOCGlobals);
     
     const size_t alloc_TriMeshes = sizeof(TriMesh)*(numGeoms+1);
     const size_t alloc_GeomPrefixSums = sizeof(uint)*(numGeoms+1);
@@ -157,6 +160,8 @@ namespace embree
     char *tmpMem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
     gpu_queue.prefetch(tmpMem0,alloc_GeomPrefixSums+alloc_TriMeshes);
 
+    sizeTotalAllocations += alloc_GeomPrefixSums+alloc_TriMeshes;
+    
     //PRINT(alloc_GeomPrefixSums+alloc_TriMeshes);
     
     uint *const quads_per_geom_prefix_sum  = (uint*)tmpMem0;
@@ -287,7 +292,9 @@ namespace embree
     
     if (accel.size() < totalSize) accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
     gpu_queue.prefetch((char*)accel.data(),totalSize);
-	
+
+    sizeTotalAllocations += totalSize;
+    
     QBVH6* qbvh   = (QBVH6*)accel.data();
     assert(qbvh);
     char *bvh_mem = (char*)accel.data() + header;
@@ -296,6 +303,8 @@ namespace embree
     
     LeafGenerationData *leafGenData = (LeafGenerationData*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME
     assert(conversionState);
+
+    sizeTotalAllocations += conv_mem_size;
     
 
     uint *scratch_mem = (uint*)leafGenData;
@@ -663,7 +672,7 @@ namespace embree
       const float total_device = timer.get_total_device_time();
       
       std::cout << "BVH2 GPU Ploc Builder DONE in " << total_host << " ms (host), " << total_device << " ms (device) => Quads Build : " << numPrimitives*0.001f/total_host << " MPrims/s (host) " << numPrimitives*0.001f/total_device << " MPrims/s (device) / Original Tris : " << org_numPrimitives*0.001f/total_host << " MPrims/s (host) " <<  org_numPrimitives*0.001f/total_device << " MPrims/s (device) " << std::endl << std::flush;
-      std::cout << "Allocation    " << timer.get_accum_host_timer(BuildTimer::ALLOCATION) << " ms (host) " << std::endl;
+      std::cout << "Allocation    " << timer.get_accum_host_timer(BuildTimer::ALLOCATION) << " ms (host) for " << (float)sizeTotalAllocations / (1024*1024) << " MB => " << (float)sizeTotalAllocations / (1024*1024) * 1000 / timer.get_accum_host_timer(BuildTimer::ALLOCATION) <<  " MB/s " << std::endl;
       std::cout << "Pre-process   " << timer.get_accum_host_timer(BuildTimer::PRE_PROCESS) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::PRE_PROCESS) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::PRE_PROCESS) / timer.get_accum_device_timer(BuildTimer::PRE_PROCESS) << std::endl;
       std::cout << "Build         " << timer.get_accum_host_timer(BuildTimer::BUILD) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::BUILD) / timer.get_accum_device_timer(BuildTimer::BUILD) << std::endl;
       std::cout << "Post-process  " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) / timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << std::endl;
