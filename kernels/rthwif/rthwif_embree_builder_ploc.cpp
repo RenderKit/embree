@@ -208,8 +208,7 @@ namespace embree
     double first_kernel_time1 = getSeconds();
 
     if (unlikely(deviceGPU->verbosity(2))) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
-    
-    
+        
     // =============================
     // === count quads per block === 
     // =============================
@@ -229,19 +228,63 @@ namespace embree
     /* ----------------------------- */
     
     timer.start(BuildTimer::PRE_PROCESS);    
-    {	  
+    {
+      static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
+      static const uint GEOM_PREFIX_WG_SIZE  = 1024;
+
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
-                                                    cgh.single_task([=]() {
-                                                                      uint numQuadsPerGeom = 0;
-                                                                      for (uint ID=0;ID<numGeoms;ID++) //FIXME: WG based prefix sum
-                                                                      {    
-                                                                        const uint current = quads_per_geom_prefix_sum[ID];
-                                                                        quads_per_geom_prefix_sum[ID] = numQuadsPerGeom;
-                                                                        numQuadsPerGeom += current;
-                                                                      }
-                                                                      quads_per_geom_prefix_sum[numGeoms] = numQuadsPerGeom;
-                                                                      *host_device_tasks = numQuadsPerGeom;
-                                                                    });
+                                                    sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+                                                    sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+                                                    const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));		  
+                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(GEOM_PREFIX_SUB_GROUP_WIDTH) {
+                                                        const uint subgroupID      = get_sub_group_id();
+                                                        const uint subgroupLocalID = get_sub_group_local_id();                                                        
+                                                        const uint localID        = item.get_local_id(0);
+                                                        const uint localSize       = item.get_local_range().size();            
+                                                        const uint aligned_numGeoms = gpu::alignTo(numGeoms,GEOM_PREFIX_WG_SIZE);
+
+                                                        uint total_offset = 0;
+                                                        for (uint t=localID;t<aligned_numGeoms;t+=localSize)
+                                                        {
+                                                          item.barrier(sycl::access::fence_space::local_space);
+                                                          
+                                                          uint count = 0;
+                                                          if (t < numGeoms)
+                                                            count = quads_per_geom_prefix_sum[t];
+
+                                                          const uint exclusive_scan = sub_group_exclusive_scan(count, std::plus<uint>());
+                                                          const uint reduction = sub_group_reduce(count, std::plus<uint>());                                                     
+                                                          counts[subgroupID] = reduction;                                                             
+
+                                                          item.barrier(sycl::access::fence_space::local_space);
+
+                                                          uint total_reduction = 0;
+                                                          for (uint j=subgroupLocalID;j<GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH;j+=GEOM_PREFIX_SUB_GROUP_WIDTH)
+                                                          {
+                                                            const uint subgroup_counts = counts[j];
+                                                            const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
+                                                            const uint reduction = sub_group_broadcast(subgroup_counts,GEOM_PREFIX_SUB_GROUP_WIDTH-1) + sub_group_broadcast(sums_exclusive_scan,GEOM_PREFIX_SUB_GROUP_WIDTH-1);
+                                                            counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
+                                                            total_reduction += reduction;
+                                                          }
+                                                          item.barrier(sycl::access::fence_space::local_space);
+
+                                                          const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
+                                                          const uint p_sum = total_offset + sums_prefix_sum + exclusive_scan;
+                                                          total_offset += total_reduction;
+                                                          
+                                                          if (t < numGeoms)
+                                                            quads_per_geom_prefix_sum[t] = p_sum;
+
+                                                        }
+                                                        
+                                                        if (localID == 0)
+                                                        {
+                                                          quads_per_geom_prefix_sum[numGeoms] = total_offset;                                                          
+                                                          *host_device_tasks = total_offset;
+                                                        }
+                                                        
+                                                      });
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
       double dt = gpu::getDeviceExecutionTiming(queue_event);
@@ -250,7 +293,7 @@ namespace embree
       if (unlikely(deviceGPU->verbosity(2)))
         std::cout << "Prefix sum over quad counts over geometries " << dt << " ms" << std::endl;
     }
-
+    
     timer.stop(BuildTimer::PRE_PROCESS);
     
     const uint numPrimitives = *host_device_tasks;
@@ -280,7 +323,6 @@ namespace embree
       PRINT2( totalSize , totalSize/64);
       PRINT( numPrimitives );
       PRINT(fastMCMode);
-      PRINT( sizeof(PLOCGlobals) );
     }
     
     // ================================    
