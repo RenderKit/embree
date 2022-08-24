@@ -98,13 +98,19 @@ namespace embree
       return qbvh_base_pointer + 64 * size_t(leaf_mem_allocator_start + localID);
     }
       
-    __forceinline char* sub_group_shared_varying_atomic_allocNode(const uint bytes)
+
+    __forceinline uint sub_group_shared_varying_atomic_allocNodeID(const uint bytes)
     {
       uint32_t blocks = (uint32_t)bytes / 64;
-      const uint current = gpu::sub_group_shared_varying_atomic_add_global(&node_mem_allocator_cur,blocks);      
+      return gpu::sub_group_shared_varying_atomic_add_global(&node_mem_allocator_cur,blocks);      
+    }
+
+    __forceinline char* sub_group_shared_varying_atomic_allocNode(const uint bytes)
+    {
+      const uint current = sub_group_shared_varying_atomic_allocNodeID(bytes);
       char* ptr = qbvh_base_pointer + 64 * (size_t)current;
       return ptr;
-    }
+    }    
     
     __forceinline char* sub_group_shared_varying_atomic_allocLeaf(const uint bytes)
     {
@@ -1698,7 +1704,7 @@ namespace embree
     }
   }
 
-  __forceinline void writeNode(void *_dest, void *curDataPtr, const gpu::AABB3f &parent_bounds, void *childDataPtr, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
+  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
   {
     uint *dest = (uint*)_dest;
     
@@ -1721,7 +1727,7 @@ namespace embree
     dest[0]  = gpu::as_uint(lower.x());
     dest[1]  = gpu::as_uint(lower.y());
     dest[2]  = gpu::as_uint(lower.z());
-    dest[3]  = (int64_t)((char*)childDataPtr - (char*)curDataPtr) / 64;
+    dest[3]  = relative_block_offset; //(int64_t)((char*)childDataPtr - (char*)curDataPtr) / 64;
 
     uint8_t tmp[48];
     
@@ -1975,7 +1981,7 @@ namespace embree
                                                                                 const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numChildren);
                                                                                 char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
 
-                                                                                writeNode(curAddr,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                                writeNode(curAddr,allocID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
                                                                           
                                                                                 for (uint j=0;j<numChildren;j++)
                                                                                 {
@@ -2055,10 +2061,9 @@ namespace embree
                                                                             {
                                                                               uint indices[BVH_BRANCHING_FACTOR];
                                                                               const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
-                                                                              char* childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
+                                                                              char *const childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
                                                                               valid = true;
-                                                                              writeNode(localNodeData[localID].v,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                                                          
+                                                                              writeNode(localNodeData[localID].v,(childAddr-curAddr)/64,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);                                                                          
                                                                               for (uint j=0;j<numChildren;j++)
                                                                               {
                                                                                 TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
@@ -2114,7 +2119,6 @@ namespace embree
         PRINT5("flattening iteration ",iteration,blocks,(float)dt,(float)total_time);
     }
 
-#if 1
     // todo: block writes, reduced #instrs and spilling
     
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID,geomID pairs for final phase --- */
@@ -2139,7 +2143,6 @@ namespace embree
                                                                       const uint endBlockID   = globals->node_mem_allocator_cur;                             
                                                                       const uint innerID      = startBlockID + globalID;
 
-#if 1
                                                                       uint &num_entries = *_num_entries.get_pointer();
                                                                       uint &global_blockID = *_global_blockID.get_pointer();
                                                                       LeafGenerationData* local_leafGenData = _local_leafGenData.get_pointer();
@@ -2149,9 +2152,7 @@ namespace embree
                                                                       item.barrier(sycl::access::fence_space::local_space);
                                                                       
                                                                       uint indices[BVH_BRANCHING_FACTOR];                                                                      
-                                                                      bool valid       = false;
                                                                       char* curAddr    = nullptr;
-                                                                      char* childAddr  = nullptr;
                                                                       uint numChildren = 0;
                                                                       bool isFatLeaf   = false;
                                                                       uint offset      = 0;
@@ -2165,7 +2166,6 @@ namespace embree
                                                                         
                                                                         if (state->header == 0x7fffffff) // not processed yet
                                                                         {
-                                                                          valid = true;
                                                                           isFatLeaf = !BVH2Ploc::isLeaf(index,numPrimitives);
                                                                           
                                                                           if (isFatLeaf) // fatleaf, generate internal node and numChildren x LeafGenData 
@@ -2176,6 +2176,7 @@ namespace embree
                                                                           else
                                                                           {
                                                                             numChildren = 1;
+                                                                            indices[0] = index;
                                                                           }
                                                                           offset = gpu::atomic_add_local(&num_entries,numChildren);                                                                          
                                                                         }
@@ -2191,104 +2192,29 @@ namespace embree
                                                                       
                                                                       item.barrier(sycl::access::fence_space::local_space);
 
-                                                                      if (valid)
+                                                                      const uint blockID = global_blockID + offset;
+
+                                                                      if (isFatLeaf)
+                                                                        writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+
                                                                       {
-                                                                        const uint blockID = global_blockID + offset;
-                                                                        childAddr = globals->nodeBlockPtr(blockID);
-                                                                        
-                                                                        //const uint leafDataID = (uint64_t)(childAddr - globals->leafLocalPtr())/64;
                                                                         const uint leafDataID = offset;
-                                                                        if (isFatLeaf)
-                                                                        {
-                                                                          writeNode(curAddr,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                                                          for (uint j=0;j<numChildren;j++)
-                                                                          {                                                                                          
-                                                                            const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
-                                                                            const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
-                                                                            local_leafGenData[leafDataID+j].blockID = (uint64_t)(childAddr - globals->basePtr())/64 + j;
-                                                                            local_leafGenData[leafDataID+j].primID = primID;
-                                                                            local_leafGenData[leafDataID+j].geomID = geomID;
-                                                                          }
+                                                                        for (uint j=0;j<numChildren;j++)
+                                                                        {                                                                                          
+                                                                          const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
+                                                                          const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
+                                                                          local_leafGenData[leafDataID+j].blockID = isFatLeaf ? blockID + j : innerID; 
+                                                                          local_leafGenData[leafDataID+j].primID = primID;
+                                                                          local_leafGenData[leafDataID+j].geomID = geomID;
                                                                         }
-                                                                        else
-                                                                        {
-                                                                          const uint geomID = bvh2[BVH2Ploc::getIndex(index)].left;
-                                                                          const uint primID = bvh2[BVH2Ploc::getIndex(index)].right;
-                                                                          local_leafGenData[leafDataID].blockID = (uint64_t)(curAddr - globals->basePtr())/64;
-                                                                          local_leafGenData[leafDataID].primID = primID;
-                                                                          local_leafGenData[leafDataID].geomID = geomID;                                                                          
-                                                                        }                                                                      
                                                                       }
-                                                                      
+                                                                  
+                                                                      const uint leafStartID = globals->leaf_mem_allocator_start;
                                                                       item.barrier(sycl::access::fence_space::local_space);
 
-                                                                      const char* global_childAddr = globals->nodeBlockPtr(global_blockID);
-                                                                      const uint leafDataID = (uint64_t)(global_childAddr - globals->leafLocalPtr())/64;
-
-#if 1                                                                      
+                                                                      const uint leafDataID = global_blockID - leafStartID; 
                                                                       for (uint i=localID;i<num_entries;i+=localSize)
                                                                         leafGenData[leafDataID+i] = local_leafGenData[i];
-#else
-                                                                      uint *source = (uint*)local_leafGenData;
-                                                                      uint *dest   = (uint*)&leafGenData[leafDataID];
-                                                                      uint items = num_entries*3;
-                                                                      for (uint i=localID;i<items;i+=localSize)
-                                                                        dest[i] = source[i];
-                                                                      
-#endif                                                                      
-                                                                      
-#else
-                                                                      if (innerID < endBlockID)                                                                        
-                                                                      {
-                                                                        TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
-                                                                        const uint header = state->header;                                                                        
-                                                                        const uint index  = state->bvh2_index;
-                                                                        char* curAddr = (char*)state;
-                                                                        
-                                                                        if (header == 0x7fffffff) // not processed yet
-                                                                        {
-                                                                          uint indices[BVH_BRANCHING_FACTOR];                                                                          
-                                                                          char* childAddr = nullptr;
-                                                                          uint numChildren = 0;
-                                                                          const bool isFatLeaf = !BVH2Ploc::isLeaf(index,numPrimitives);
-                                                                          if (isFatLeaf) // fatleaf, generate internal node and numChildren x LeafGenData 
-                                                                          {
-                                                                            numChildren = 0;
-                                                                            getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
-                                                                            childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
-                                                                            //childAddr = globals->atomic_allocLeaf(sizeof(QuadLeaf)*numChildren);
-                                                                            writeNode(curAddr,curAddr,bvh2[BVH2Ploc::getIndex(index)].bounds,childAddr,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                                                            
-                                                                            const uint leafDataID = (uint64_t)(childAddr - globals->leafLocalPtr())/64;
-                                                                            for (uint j=0;j<numChildren;j++)
-                                                                            {                                                                                          
-                                                                              const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
-                                                                              const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
-                                                                              leafGenData[leafDataID+j].blockID = (uint64_t)(childAddr - globals->basePtr())/64 + j;
-                                                                              leafGenData[leafDataID+j].primID = primID;
-                                                                              leafGenData[leafDataID+j].geomID = geomID;
-                                                                            }                                                                            
-                                                                          }
-                                                                          else // mixed node, generate data for single leaf
-                                                                          {
-                                                                            childAddr = globals->sub_group_shared_varying_atomic_allocLeaf(sizeof(QuadLeaf));
-                                                                            //childAddr = globals->atomic_allocLeaf(sizeof(QuadLeaf));                                                                            
-                                                                            const uint leafDataID = (uint64_t)(childAddr - globals->leafLocalPtr())/64;
-                                                                            const uint geomID = bvh2[BVH2Ploc::getIndex(index)].left;
-                                                                            const uint primID = bvh2[BVH2Ploc::getIndex(index)].right;
-                                                                                                     
-                                                                            leafGenData[leafDataID].blockID = (uint64_t)(curAddr - globals->basePtr())/64;
-                                                                            leafGenData[leafDataID].primID = primID;
-                                                                            leafGenData[leafDataID].geomID = geomID;
-                                                                          }                                                                            
-                                                                            
-                                                                        }                                                                     
-                                                                      }
-                                                                      item.barrier(sycl::access::fence_space::local_space);
-                                                                      
-#endif                                                                      
-                                                                      
-
                                                                       
                                                                       if (localID == 0)
                                                                       {
@@ -2388,7 +2314,6 @@ namespace embree
       if (unlikely(verbose))      
         PRINT3("final leaf generation ",(float)dt,(float)total_time);            
     }
-#endif
      
     return (float)total_time;
   }  
