@@ -1918,7 +1918,7 @@ namespace embree
 
   __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriMesh* triMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
   {
-    static const uint STOP_THRESHOLD = 4*1024; //1296;    
+    static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
     uint iteration = 0;
 
@@ -2016,9 +2016,8 @@ namespace embree
       if (unlikely(verbose))
         PRINT4("initial iteration ",iteration,(float)dt,(float)total_time);
     }
-    
     /* ---- Phase II: full breadth-first phase until only fatleaves remain--- */
-
+    
     struct __aligned(64) LocalNodeData {
       uint v[16];
     };
@@ -2118,8 +2117,6 @@ namespace embree
       if (unlikely(verbose))      
         PRINT5("flattening iteration ",iteration,blocks,(float)dt,(float)total_time);
     }
-
-    // todo: block writes, reduced #instrs and spilling
     
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID,geomID pairs for final phase --- */
     const uint blocks = host_device_tasks[1];    
@@ -2130,7 +2127,9 @@ namespace embree
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    sycl::accessor< uint  ,  0, sycl_read_write, sycl_local> _num_entries(cgh);
                                                    sycl::accessor< uint  ,  0, sycl_read_write, sycl_local> _global_blockID(cgh);
-                                                   sycl::accessor< LeafGenerationData, 1, sycl_read_write, sycl_local> _local_leafGenData(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);                                                 
+                                                   sycl::accessor< LeafGenerationData, 1, sycl_read_write, sycl_local> _local_leafGenData(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
+
+                                                   sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_indices(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);                                                                           
                                                    cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                                                                     {
                                                                       const uint localID   = item.get_local_id(0);                             
@@ -2146,12 +2145,14 @@ namespace embree
                                                                       uint &num_entries = *_num_entries.get_pointer();
                                                                       uint &global_blockID = *_global_blockID.get_pointer();
                                                                       LeafGenerationData* local_leafGenData = _local_leafGenData.get_pointer();
+
+                                                                      uint *indices = _local_indices.get_pointer() + BVH_BRANCHING_FACTOR * localID;
                                                                       
                                                                       if (localID == 0) num_entries = 0;
                                                                       
                                                                       item.barrier(sycl::access::fence_space::local_space);
                                                                       
-                                                                      uint indices[BVH_BRANCHING_FACTOR];                                                                      
+                                                                      //uint indices[BVH_BRANCHING_FACTOR];                                                                      
                                                                       char* curAddr    = nullptr;
                                                                       uint numChildren = 0;
                                                                       bool isFatLeaf   = false;
@@ -2236,7 +2237,7 @@ namespace embree
       if (unlikely(verbose))      
         PRINT3("final flattening iteration ",(float)dt,(float)total_time);      
     }
-    
+
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
     const uint leaves = host_device_tasks[0]; // = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;   
     if (leaves)
@@ -2314,7 +2315,6 @@ namespace embree
       if (unlikely(verbose))      
         PRINT3("final leaf generation ",(float)dt,(float)total_time);            
     }
-     
     return (float)total_time;
   }  
   
