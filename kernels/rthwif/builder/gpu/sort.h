@@ -276,19 +276,16 @@ namespace embree
       // ==== scatter key/value pairs according to global historgram =====
       {
         
-        struct __aligned(RADIX_SORT_WG_SIZE/32 * sizeof(uint)) BinFlags
+        struct __aligned(64) BinFlags
         {
           uint flags[RADIX_SORT_WG_SIZE/32];
         };
       
         const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> local_offset(sycl::range<1>(RADIX_SORT_WG_SIZE),cgh);
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> sums(sycl::range<1>(RADIX_SORT_WG_SIZE),cgh);                                                     
+                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> local_offset(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> sums(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                     
                                                      sycl::accessor< BinFlags, 1, sycl_read_write, sycl_local> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
-
-                                                     //sycl::accessor< sort_type, 1, sycl_read_write, sycl_local> local_key_values(sycl::range<1>(RADIX_SORT_WG_SIZE),cgh);
-                                                       
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
                                                                         const uint groupID     = item.get_group(0);
@@ -304,30 +301,35 @@ namespace embree
                                                                         
                                                                         /* --- reduce global histogram --- */
                                                                         uint local_hist = 0;
-                                                                        uint t = 0;
-                                                                        for (uint j = 0; j < RADIX_SORT_NUM_DSS; j++)
-                                                                        {
-                                                                          const uint count = global_histogram[RADIX_SORT_BINS*j + localID];
-                                                                          local_hist = (j == groupID) ? t : local_hist;
-                                                                          t += count;
-                                                                        }
+                                                                        uint prefix_sum = 0;
                                                                         
-                                                                        SYCL_EXT_ONEAPI::sub_group sub_group = this_sub_group();
-                                                                        sub_group.barrier();
+                                                                        if (localID < RADIX_SORT_BINS)
+                                                                        {
+                                                                          uint t = 0;
+                                                                          for (uint j = 0; j < RADIX_SORT_NUM_DSS; j++)
+                                                                          {
+                                                                            const uint count = global_histogram[RADIX_SORT_BINS*j + localID];
+                                                                            local_hist = (j == groupID) ? t : local_hist;
+                                                                            t += count;
+                                                                          }
+                                                                        
+                                                                          const uint count = t;
+                                                                          const uint sum = sub_group_reduce(count, std::plus<uint>());
+                                                                          prefix_sum = sub_group_exclusive_scan(count, std::plus<uint>());
 
-                                                                        const uint count = t;
-                                                                        const uint sum = sub_group_reduce(count, std::plus<uint>());
-                                                                        const uint prefix_sum = sub_group_exclusive_scan(count, std::plus<uint>());
-
-                                                                        sums[subgroupID] = sum;
+                                                                          sums[subgroupID] = sum;
+                                                                        }
                                                                       
                                                                         item.barrier(sycl::access::fence_space::local_space);
-                                                                        
-                                                                        const uint sums_prefix_sum = sub_group_broadcast(sub_group_exclusive_scan(sums[subgroupLocalID], std::plus<uint>()),subgroupID);
-                                                                        
-                                                                        const uint global_hist = sums_prefix_sum + prefix_sum;
-                                                                                                                                                
-                                                                        local_offset[localID] = global_hist + local_hist;
+
+                                                                        if (localID < RADIX_SORT_BINS)
+                                                                        {                                                                        
+                                                                          const uint sums_prefix_sum = sub_group_broadcast(sub_group_exclusive_scan(sums[subgroupLocalID], std::plus<uint>()),subgroupID);
+                                                                          const uint global_hist = sums_prefix_sum + prefix_sum;
+                                                                          local_offset[localID] = global_hist + local_hist;
+                                                                        }
+
+                                                                        // === barrier comes later ===
                                                                         
                                                                         const uint flags_bin = localID / 32;
                                                                         const uint flags_bit = 1 << (localID % 32);                                                                      
