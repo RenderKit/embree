@@ -301,7 +301,7 @@ namespace embree
                                                                         const uint startID = (groupID + 0)*primitives / RADIX_SORT_NUM_DSS;
                                                                         const uint endID   = (groupID + 1)*primitives / RADIX_SORT_NUM_DSS;
 
-
+                                                                        
                                                                         /* --- reduce global histogram --- */
                                                                         uint local_hist = 0;
                                                                         uint t = 0;
@@ -340,9 +340,15 @@ namespace embree
                                                                           uint binID = 0;
                                                                           uint binOffset = 0;
 
+#if 0                                                                          
                                                                           if (localID < RADIX_SORT_BINS)
                                                                             for (int i=0;i<RADIX_SORT_WG_SIZE/32;i++)
                                                                               bin_flags[localID].flags[i] = 0;
+#else
+                                                                          uint *const bflags = (uint*)&bin_flags.get_pointer()[0];                                                                          
+                                                                          for (uint i=localID;i<RADIX_SORT_BINS*RADIX_SORT_WG_SIZE/32;i+=step_local)
+                                                                            bflags[i] = 0;
+#endif                                                                          
 
                                                                           item.barrier(sycl::access::fence_space::local_space);
 
