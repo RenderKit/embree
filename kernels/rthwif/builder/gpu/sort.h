@@ -213,8 +213,8 @@ namespace embree
     }
 
     
-    template<bool sync, typename sort_type>
-    void sort_iteration_type(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint primitives,  uint *global_histogram, const uint iter, double &time, const uint RADIX_SORT_NUM_DSS=256)
+    template<typename sort_type>
+    void sort_iteration_type(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint primitives,  uint *global_histogram, const uint iter, double &time, const uint RADIX_SORT_NUM_DSS=256, const bool sync=false)
     {
       const uint shift = iter*8;
 
@@ -286,7 +286,9 @@ namespace embree
                                                      sycl::accessor< uint, 1, sycl_read_write, sycl_local> local_offset(sycl::range<1>(RADIX_SORT_WG_SIZE),cgh);
                                                      sycl::accessor< uint, 1, sycl_read_write, sycl_local> sums(sycl::range<1>(RADIX_SORT_WG_SIZE),cgh);                                                     
                                                      sycl::accessor< BinFlags, 1, sycl_read_write, sycl_local> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
-                                                     
+
+                                                     //sycl::accessor< sort_type, 1, sycl_read_write, sycl_local> local_key_values(sycl::range<1>(RADIX_SORT_WG_SIZE),cgh);
+                                                       
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
                                                                         const uint groupID     = item.get_group(0);

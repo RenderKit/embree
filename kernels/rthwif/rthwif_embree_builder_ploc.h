@@ -904,7 +904,7 @@ namespace embree
             const uint localSize       = item.get_local_range().size();            
             const uint subgroupID      = get_sub_group_id();                                                                                                                          
             const uint subgroupLocalID = get_sub_group_local_id();
-            const uint subgroupSize    = get_sub_group_size();                                                                                                                          
+            const uint subgroupSize    = NN_SEARCH_SUB_GROUP_WIDTH;                                                                                                                       
             const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*RADIUS; /* reducing working group set size to 1024 - 4 * radius to avoid loops */
             
 
