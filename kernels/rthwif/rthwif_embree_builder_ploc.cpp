@@ -140,7 +140,17 @@ namespace embree
     }
 
     const uint numGeoms = scene->size();
-        
+    const bool activeTriQuadMeshes = scene->getNumPrimitives(TriangleMesh::geom_type,false) || scene->getNumPrimitives(QuadMesh::geom_type,false);
+    
+    PRINT(numGeoms);
+    PRINT(scene->getNumPrimitives(TriangleMesh::geom_type,false));
+    PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
+    
+    for (uint geomID=0;geomID<numGeoms;geomID++)
+    {
+      //PRINT((int)scene->get(geomID)->getType());
+    }
+    
     // ===============================================================================================================
     
     size_t sizeTotalAllocations = 0;
@@ -155,48 +165,56 @@ namespace embree
 
     sizeTotalAllocations += sizeof(PLOCGlobals);
     
-    const size_t alloc_TriMeshes = sizeof(TriMesh)*(numGeoms+1);
+    const size_t alloc_TriQuadMeshes = sizeof(TriQuadMesh)*(numGeoms+1);
     const size_t alloc_GeomPrefixSums = sizeof(uint)*(numGeoms+1);
 
-    char *tmpMem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
-    gpu_queue.prefetch(tmpMem0,alloc_GeomPrefixSums+alloc_TriMeshes);
+    char *tmpMem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriQuadMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
+    gpu_queue.prefetch(tmpMem0,alloc_GeomPrefixSums+alloc_TriQuadMeshes);
 
-    sizeTotalAllocations += alloc_GeomPrefixSums+alloc_TriMeshes;
+    sizeTotalAllocations += alloc_GeomPrefixSums+alloc_TriQuadMeshes;
     
-    //PRINT(alloc_GeomPrefixSums+alloc_TriMeshes);
+    //PRINT(alloc_GeomPrefixSums+alloc_TriQuadMeshes);
     
     uint *const quads_per_geom_prefix_sum  = (uint*)tmpMem0;
-    TriMesh *const triMesh                 = (TriMesh*)(tmpMem0 + alloc_GeomPrefixSums);
+    TriQuadMesh *const triQuadMesh         = (TriQuadMesh*)(tmpMem0 + alloc_GeomPrefixSums);
     
     timer.stop(BuildTimer::ALLOCATION);
 	
     if (unlikely(verbose2))
-      std::cout << "USM allocation time for globals, tri meshes and prefix sums " << timer.get_host_timer() << " ms for " << (double)(alloc_TriMeshes+alloc_GeomPrefixSums) / (1024*1024) << " MBs " << std::endl;     	
+      std::cout << "USM allocation time for globals, tri meshes and prefix sums " << timer.get_host_timer() << " ms for " << (double)(alloc_TriQuadMeshes+alloc_GeomPrefixSums) / (1024*1024) << " MBs " << std::endl;     	
 
     // ==============================================
     // === compute prefix sum over geometry sizes === 
     // ==============================================
     
     uint org_numPrimitives = 0;
-    for (uint  geomID = 0; geomID < numGeoms; geomID++)
-    {
-      const uint current = scene->get(geomID)->size();
-      org_numPrimitives += current;
+    if (activeTriQuadMeshes)
+      for (uint  geomID = 0; geomID < numGeoms; geomID++)
+      {
+        const uint current = scene->get(geomID)->size();
+        org_numPrimitives += current;
 
-      // TODO: use BufferView
-      TriangleMesh* mesh = scene->get<TriangleMesh>(geomID);
-      triMesh[geomID].numTriangles = mesh->size();
-      triMesh[geomID].numVertices  = mesh->numVertices();
-      triMesh[geomID].triangles    =  (TriangleMesh::Triangle*)mesh->triangles.getPtr(); 
-      triMesh[geomID].vertices     =  (Vec3fa*)mesh->vertices0.getPtr();
-
-      gpu_queue.prefetch(triMesh[geomID].triangles, triMesh[geomID].numTriangles * sizeof(TriangleMesh::Triangle));
-      gpu_queue.prefetch(triMesh[geomID].vertices , triMesh[geomID].numVertices * sizeof(Vec3fa));      
-    }
+        // TODO: use BufferView
+        TriangleMesh* tri_mesh = scene->getSafe<TriangleMesh>(geomID);
+        if (tri_mesh)
+        {
+          triQuadMesh[geomID] = TriQuadMesh(tri_mesh->size(),tri_mesh->numVertices(),(TriangleMesh::Triangle*)tri_mesh->triangles.getPtr(),(Vec3fa*)tri_mesh->vertices0.getPtr());
+          gpu_queue.prefetch((TriangleMesh::Triangle*)tri_mesh->triangles.getPtr(), tri_mesh->size() * sizeof(TriangleMesh::Triangle));
+          gpu_queue.prefetch((Vec3fa*)tri_mesh->vertices0.getPtr()                , tri_mesh->numVertices() * sizeof(Vec3fa));
+        }
+        QuadMesh* quad_mesh = scene->getSafe<QuadMesh>(geomID);
+        if (quad_mesh)
+        {
+          triQuadMesh[geomID] = TriQuadMesh(quad_mesh->size(),quad_mesh->numVertices(),(QuadMesh::Quad*)quad_mesh->quads.getPtr(),(Vec3fa*)quad_mesh->vertices0.getPtr(),true);
+          gpu_queue.prefetch((QuadMesh::Quad*)quad_mesh->quads.getPtr(), quad_mesh->size() * sizeof(QuadMesh::Quad));
+          gpu_queue.prefetch((Vec3fa*)quad_mesh->vertices0.getPtr()    , quad_mesh->numVertices() * sizeof(Vec3fa));        
+        }      
+      }
     
     if (unlikely(verbose2)) PRINT(numGeoms);
     
-
+    //exit(0);
+    
     double first_kernel_time0 = getSeconds();
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
     {	  
@@ -217,7 +235,9 @@ namespace embree
     timer.start(BuildTimer::PRE_PROCESS);
 
     double device_quadification_time = 0.0f;
-    countQuadsPerGeometry(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose2);
+    
+    if (activeTriQuadMeshes)    
+      countQuadsPerGeometry(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose2);
 
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
@@ -228,75 +248,15 @@ namespace embree
     /* --- prefix sum over quads --- */
     /* ----------------------------- */
     
-    timer.start(BuildTimer::PRE_PROCESS);    
-    {
-      static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
-      static const uint GEOM_PREFIX_WG_SIZE  = 1024;
-
-      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
-                                                    sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
-                                                    sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
-                                                    const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));		  
-                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(GEOM_PREFIX_SUB_GROUP_WIDTH) {
-                                                        const uint subgroupID      = get_sub_group_id();
-                                                        const uint subgroupLocalID = get_sub_group_local_id();                                                        
-                                                        const uint localID        = item.get_local_id(0);
-                                                        const uint localSize       = item.get_local_range().size();            
-                                                        const uint aligned_numGeoms = gpu::alignTo(numGeoms,GEOM_PREFIX_WG_SIZE);
-
-                                                        uint total_offset = 0;
-                                                        for (uint t=localID;t<aligned_numGeoms;t+=localSize)
-                                                        {
-                                                          item.barrier(sycl::access::fence_space::local_space);
-                                                          
-                                                          uint count = 0;
-                                                          if (t < numGeoms)
-                                                            count = quads_per_geom_prefix_sum[t];
-
-                                                          const uint exclusive_scan = sub_group_exclusive_scan(count, std::plus<uint>());
-                                                          const uint reduction = sub_group_reduce(count, std::plus<uint>());                                                     
-                                                          counts[subgroupID] = reduction;                                                             
-
-                                                          item.barrier(sycl::access::fence_space::local_space);
-
-                                                          uint total_reduction = 0;
-                                                          for (uint j=subgroupLocalID;j<GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH;j+=GEOM_PREFIX_SUB_GROUP_WIDTH)
-                                                          {
-                                                            const uint subgroup_counts = counts[j];
-                                                            const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
-                                                            const uint reduction = sub_group_broadcast(subgroup_counts,GEOM_PREFIX_SUB_GROUP_WIDTH-1) + sub_group_broadcast(sums_exclusive_scan,GEOM_PREFIX_SUB_GROUP_WIDTH-1);
-                                                            counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
-                                                            total_reduction += reduction;
-                                                          }
-                                                          item.barrier(sycl::access::fence_space::local_space);
-
-                                                          const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
-                                                          const uint p_sum = total_offset + sums_prefix_sum + exclusive_scan;
-                                                          total_offset += total_reduction;
-                                                          
-                                                          if (t < numGeoms)
-                                                            quads_per_geom_prefix_sum[t] = p_sum;
-
-                                                        }
-                                                        
-                                                        if (localID == 0)
-                                                        {
-                                                          quads_per_geom_prefix_sum[numGeoms] = total_offset;                                                          
-                                                          *host_device_tasks = total_offset;
-                                                        }
-                                                        
-                                                      });
-                                                  });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
-      double dt = gpu::getDeviceExecutionTiming(queue_event);
-      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
-      
-      if (unlikely(verbose2))
-        std::cout << "Prefix sum over quad counts over geometries " << dt << " ms" << std::endl;
-    }
+    timer.start(BuildTimer::PRE_PROCESS);
+    double geom_prefix_sum_time = 0.0f;
+     
+    if (activeTriQuadMeshes)
+      prefixsumOverGeometryCounts(gpu_queue,numGeoms,quads_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
     
     timer.stop(BuildTimer::PRE_PROCESS);
-    
+    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
+
     const uint numPrimitives = *host_device_tasks;
     
     if (unlikely(verbose1))    
@@ -425,14 +385,14 @@ namespace embree
     
     device_quadification_time = 0.0f;
 
-    mergeTriangleToQuads_initPLOCPrimRefs(gpu_queue,triMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,device_quadification_time,verbose2);
+    if (activeTriQuadMeshes)        
+      createQuads_initPLOCPrimRefs(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,device_quadification_time,verbose2);
 
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
     
-    if (unlikely(verbose2)) std::cout << "Merge triangles to quads, write out quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;
+    if (unlikely(verbose2)) std::cout << "create quads, init primrefs: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;
     
-
 #if 0    
      for (uint i=0;i<numPrimitives;i++)
        if (!bvh2[i].bounds.isValid() || !bvh2[i].bounds.checkNumericalBounds() )
@@ -485,7 +445,7 @@ namespace embree
 
     double sort_time = 0.0;
 
-    const bool sync_sort = false; //true;
+    const bool sync_sort = false;
     
     if (!fastMCMode)
     {
@@ -653,7 +613,7 @@ namespace embree
     timer.start(BuildTimer::POST_PROCESS);        
    
     /* --- convert BVH2 to QBVH6 --- */    
-    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triMesh,qbvh,bvh2,leafGenData,numPrimitives,node_size/64,verbose2);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,qbvh,bvh2,leafGenData,numPrimitives,node_size/64,verbose2);
 
     /* --- init final QBVH6 header --- */        
     {     

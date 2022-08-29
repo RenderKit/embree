@@ -141,11 +141,35 @@ namespace embree
       
   };
       
-  struct __aligned(8) TriMesh {
-    uint numTriangles;
+  class __aligned(8) TriQuadMesh {
+    
+  private:
+    static const uint QUAD_TYPE      = (uint)1 << 31;
+    static const uint QUAD_TYPE_MASK = ~QUAD_TYPE;
+    
+    uint numPrimitives;
     uint numVertices;
-    TriangleMesh::Triangle* triangles;
-    Vec3fa* vertices;      
+    union {
+      TriangleMesh::Triangle* triangles;
+      QuadMesh::Quad* quads;
+      void *ptr;
+    };
+    Vec3fa* vertices;
+
+  public:
+    __forceinline TriQuadMesh(const uint numPrimitives, const uint numVertices, void *ptr, Vec3fa *vertices, bool isQuad = false) : numPrimitives(numPrimitives|(isQuad?QUAD_TYPE:0)), numVertices(numVertices), ptr(ptr), vertices(vertices)
+    {
+    }
+
+    __forceinline uint getNumPrimitives() const { return numPrimitives & QUAD_TYPE_MASK; }   
+    __forceinline uint getNumVertices()   const { return numVertices; }
+    __forceinline TriangleMesh::Triangle *getTrianglesPtr() const  { return triangles; }
+    __forceinline QuadMesh::Quad         *getQuadsPtr()     const  { return quads; }
+    __forceinline Vec3fa                 *getVerticesPtr()  const  { return vertices; }
+
+    __forceinline bool isTriangleMesh() const { return (numPrimitives & QUAD_TYPE) == 0; } 
+    __forceinline bool isQuadMesh()     const { return (numPrimitives & QUAD_TYPE) != 0 ; } 
+        
   };
   
   struct __aligned(64) QBVHNodeN
@@ -327,17 +351,17 @@ namespace embree
   // ============================================================================== Quadifier ==========================================================================================
   // ===================================================================================================================================================================================
 
-  __forceinline bool isValidTriangle(const TriMesh& mesh, const uint i, uint3 &indices)
+  __forceinline bool isValidTriangle(const TriQuadMesh& mesh, const uint i, uint3 &indices)
   {
-    const TriangleMesh::Triangle &tri = mesh.triangles[i];
-    const uint numVertices = mesh.numVertices;
+    const TriangleMesh::Triangle &tri = mesh.getTrianglesPtr()[i];
+    const uint numVertices = mesh.getNumVertices();
     indices.x() = tri.v[0];
     indices.y() = tri.v[1];
     indices.z() = tri.v[2];    
     if (max(tri.v[0],max(tri.v[1],tri.v[2])) >= numVertices) return false;
-    const Vec3fa v0 = mesh.vertices[tri.v[0]];
-    const Vec3fa v1 = mesh.vertices[tri.v[1]];
-    const Vec3fa v2 = mesh.vertices[tri.v[2]];
+    const Vec3fa v0 = mesh.getVerticesPtr()[tri.v[0]];
+    const Vec3fa v1 = mesh.getVerticesPtr()[tri.v[1]];
+    const Vec3fa v2 = mesh.getVerticesPtr()[tri.v[2]];
     const float max_v0 = max(fabsf(v0.x),fabsf(v0.y),fabsf(v0.z));
     const float max_v1 = max(fabsf(v1.x),fabsf(v1.y),fabsf(v1.z));
     const float max_v2 = max(fabsf(v2.x),fabsf(v2.y),fabsf(v2.z));    
@@ -346,17 +370,40 @@ namespace embree
     return max_value < FLT_LARGE && sycl::isfinite(max_value);
   }
 
-  __forceinline bool isValidTriangle(const TriMesh& mesh, const uint i, uint3 &indices, gpu::AABB3f &bounds)
+  __forceinline bool isValidQuad(const TriQuadMesh& mesh, const uint i, uint4 &indices)
   {
-    const TriangleMesh::Triangle &tri = mesh.triangles[i];
-    const uint numVertices = mesh.numVertices;
+    const QuadMesh::Quad &quad = mesh.getQuadsPtr()[i];
+    const uint numVertices = mesh.getNumVertices();
+    indices.x() = quad.v[0];
+    indices.y() = quad.v[1];
+    indices.z() = quad.v[2];
+    indices.w() = quad.v[3];    
+    if (max(max(quad.v[0],quad.v[1]),max(quad.v[2],quad.v[3])) >= numVertices) return false;
+    const Vec3fa v0 = mesh.getVerticesPtr()[quad.v[0]];
+    const Vec3fa v1 = mesh.getVerticesPtr()[quad.v[1]];
+    const Vec3fa v2 = mesh.getVerticesPtr()[quad.v[2]];
+    const Vec3fa v3 = mesh.getVerticesPtr()[quad.v[3]];    
+    const float max_v0 = max(fabsf(v0.x),fabsf(v0.y),fabsf(v0.z));
+    const float max_v1 = max(fabsf(v1.x),fabsf(v1.y),fabsf(v1.z));
+    const float max_v2 = max(fabsf(v2.x),fabsf(v2.y),fabsf(v2.z));
+    const float max_v3 = max(fabsf(v3.x),fabsf(v3.y),fabsf(v3.z));        
+    const static float FLT_LARGE = 1.844E18f;
+    const float max_value = max(max(max_v0,max_v1),max(max_v2,max_v3));
+    return max_value < FLT_LARGE && sycl::isfinite(max_value);
+  }
+  
+
+  __forceinline bool isValidTriangle(const TriQuadMesh& mesh, const uint i, uint3 &indices, gpu::AABB3f &bounds)
+  {
+    const TriangleMesh::Triangle &tri = mesh.getTrianglesPtr()[i];
+    const uint numVertices = mesh.getNumVertices();
     indices.x() = tri.v[0];
     indices.y() = tri.v[1];
     indices.z() = tri.v[2];    
     if (max(tri.v[0],max(tri.v[1],tri.v[2])) >= numVertices) return false;
-    const Vec3fa v0 = mesh.vertices[tri.v[0]];
-    const Vec3fa v1 = mesh.vertices[tri.v[1]];
-    const Vec3fa v2 = mesh.vertices[tri.v[2]];
+    const Vec3fa v0 = mesh.getVerticesPtr()[tri.v[0]];
+    const Vec3fa v1 = mesh.getVerticesPtr()[tri.v[1]];
+    const Vec3fa v2 = mesh.getVerticesPtr()[tri.v[2]];
     const float max_v0 = max(fabsf(v0.x),fabsf(v0.y),fabsf(v0.z));
     const float max_v1 = max(fabsf(v1.x),fabsf(v1.y),fabsf(v1.z));
     const float max_v2 = max(fabsf(v2.x),fabsf(v2.y),fabsf(v2.z));    
@@ -371,6 +418,38 @@ namespace embree
     bounds.extend(vtx2);    
     return true;
   }
+
+  __forceinline bool isValidQuad(const TriQuadMesh& mesh, const uint i, uint4 &indices, gpu::AABB3f &bounds)
+  {
+    const QuadMesh::Quad &quad = mesh.getQuadsPtr()[i];
+    const uint numVertices = mesh.getNumVertices();
+    indices.x() = quad.v[0];
+    indices.y() = quad.v[1];
+    indices.z() = quad.v[2];
+    indices.w() = quad.v[3];    
+    if (max(max(quad.v[0],quad.v[1]),max(quad.v[2],quad.v[3])) >= numVertices) return false;
+    const Vec3fa v0 = mesh.getVerticesPtr()[quad.v[0]];
+    const Vec3fa v1 = mesh.getVerticesPtr()[quad.v[1]];
+    const Vec3fa v2 = mesh.getVerticesPtr()[quad.v[2]];
+    const Vec3fa v3 = mesh.getVerticesPtr()[quad.v[3]];    
+    const float max_v0 = max(fabsf(v0.x),fabsf(v0.y),fabsf(v0.z));
+    const float max_v1 = max(fabsf(v1.x),fabsf(v1.y),fabsf(v1.z));
+    const float max_v2 = max(fabsf(v2.x),fabsf(v2.y),fabsf(v2.z));
+    const float max_v3 = max(fabsf(v3.x),fabsf(v3.y),fabsf(v3.z));        
+    const static float FLT_LARGE = 1.844E18f;
+    const float max_value = max(max(max_v0,max_v1),max(max_v2,max_v3));
+    if (max_value >= FLT_LARGE && !sycl::isfinite(max_value)) return false;
+    float3 vtx0(v0.x,v0.y,v0.z);
+    float3 vtx1(v1.x,v1.y,v1.z);
+    float3 vtx2(v2.x,v2.y,v2.z);
+    float3 vtx3(v3.x,v3.y,v3.z);    
+    bounds.extend(vtx0);
+    bounds.extend(vtx1);
+    bounds.extend(vtx2);    
+    bounds.extend(vtx3);
+    return true;
+  }
+  
 
   __forceinline uint try_pair_triangles(const uint3 &a, const uint3 &b, uint& lb0, uint& lb1, uint &lb2)    
   {
@@ -439,8 +518,74 @@ namespace embree
     return l;
   }  
 
+  __forceinline void prefixsumOverGeometryCounts (sycl::queue &gpu_queue, const uint numGeoms, uint *const quads_per_geom_prefix_sum, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  {
+    static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
+    static const uint GEOM_PREFIX_WG_SIZE  = 1024;
+
+    sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+                                                  sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+                                                  sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+                                                  const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));		  
+                                                  cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(GEOM_PREFIX_SUB_GROUP_WIDTH) {
+                                                      const uint subgroupID      = get_sub_group_id();
+                                                      const uint subgroupLocalID = get_sub_group_local_id();                                                        
+                                                      const uint localID        = item.get_local_id(0);
+                                                      const uint localSize       = item.get_local_range().size();            
+                                                      const uint aligned_numGeoms = gpu::alignTo(numGeoms,GEOM_PREFIX_WG_SIZE);
+
+                                                      uint total_offset = 0;
+                                                      for (uint t=localID;t<aligned_numGeoms;t+=localSize)
+                                                      {
+                                                        item.barrier(sycl::access::fence_space::local_space);
+                                                          
+                                                        uint count = 0;
+                                                        if (t < numGeoms)
+                                                          count = quads_per_geom_prefix_sum[t];
+
+                                                        const uint exclusive_scan = sub_group_exclusive_scan(count, std::plus<uint>());
+                                                        const uint reduction = sub_group_reduce(count, std::plus<uint>());                                                     
+                                                        counts[subgroupID] = reduction;                                                             
+
+                                                        item.barrier(sycl::access::fence_space::local_space);
+
+                                                        uint total_reduction = 0;
+                                                        for (uint j=subgroupLocalID;j<GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH;j+=GEOM_PREFIX_SUB_GROUP_WIDTH)
+                                                        {
+                                                          const uint subgroup_counts = counts[j];
+                                                          const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
+                                                          const uint reduction = sub_group_broadcast(subgroup_counts,GEOM_PREFIX_SUB_GROUP_WIDTH-1) + sub_group_broadcast(sums_exclusive_scan,GEOM_PREFIX_SUB_GROUP_WIDTH-1);
+                                                          counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
+                                                          total_reduction += reduction;
+                                                        }
+                                                        item.barrier(sycl::access::fence_space::local_space);
+
+                                                        const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
+                                                        const uint p_sum = total_offset + sums_prefix_sum + exclusive_scan;
+                                                        total_offset += total_reduction;
+                                                          
+                                                        if (t < numGeoms)
+                                                          quads_per_geom_prefix_sum[t] = p_sum;
+
+                                                      }
+                                                        
+                                                      if (localID == 0)
+                                                      {
+                                                        quads_per_geom_prefix_sum[numGeoms] = total_offset;                                                          
+                                                        *host_device_tasks = total_offset;
+                                                      }
+                                                        
+                                                    });
+                                                });
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+    double dt = gpu::getDeviceExecutionTiming(queue_event);
+    iteration_time += dt;
+    if (unlikely(verbose))
+      std::cout << "Prefix sum over quad counts over geometries " << dt << " ms" << std::endl;    
+  }
   
-  __forceinline void countQuadsPerGeometry (sycl::queue &gpu_queue, const TriMesh *const triMesh, const uint numGeoms, uint *quads_per_geom_prefix_sum, double &iteration_time, const bool verbose)    
+  
+  __forceinline void countQuadsPerGeometry (sycl::queue &gpu_queue, const TriQuadMesh *const triQuadMesh, const uint numGeoms, uint *quads_per_geom_prefix_sum, double &iteration_time, const bool verbose)    
   {
     static const uint COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE  = 1024;
     
@@ -458,9 +603,15 @@ namespace embree
                            active_counter = 0;
                            item.barrier(sycl::access::fence_space::local_space);
 
-                           const TriMesh &mesh = triMesh[geomID];
+                           const TriQuadMesh &mesh = triQuadMesh[geomID];
+                           
+                           // ====================                           
+                           // === TriangleMesh ===
+                           // ====================
+                           
+                           if (mesh.isTriangleMesh())
                            {
-                             const uint numTriangles = mesh.numTriangles;
+                             const uint numTriangles = mesh.getNumPrimitives();
                              const uint numBlocks    = (numTriangles + COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE - 1) / COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE;
                                                                         
                              for (uint blockID = 0; blockID < numBlocks; blockID++)
@@ -468,53 +619,76 @@ namespace embree
                                const uint startPrimID  = blockID*COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE;
                                const uint endPrimID    = min(startPrimID+COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE,numTriangles);
                                const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               uint3 tri_indices;
+                               bool valid = ID < endPrimID ? isValidTriangle(mesh,ID,tri_indices) : false;
+                               bool paired = false;
+                               uint numQuads = 0;
+                               uint active_mask = sub_group_ballot(valid);
+
+                               while(active_mask)
                                {
-                                 uint3 tri_indices;
-                                 bool valid = ID < endPrimID ? isValidTriangle(mesh,ID,tri_indices) : false;
-                                 bool paired = false;
-                                 uint numQuads = 0;
-                                 uint active_mask = sub_group_ballot(valid);
+                                 active_mask = sub_group_broadcast(active_mask,0);
+                                                                              
+                                 const uint broadcast_lane = sycl::ctz(active_mask);
+                                 if (subgroupLocalID == broadcast_lane) valid = false;
 
-                                 while(active_mask)
+                                 active_mask &= active_mask-1;
+                                                                              
+                                 const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
+                                 const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
+
+                                 if (!broadcast_paired)
                                  {
-                                   active_mask = sub_group_broadcast(active_mask,0);
-                                                                              
-                                   const uint broadcast_lane = sycl::ctz(active_mask);
-                                   if (subgroupLocalID == broadcast_lane) valid = false;
-
-                                   active_mask &= active_mask-1;
-                                                                              
-                                   const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
-                                   const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
-
-                                   if (!broadcast_paired)
-                                   {
-                                     const uint3 tri_indices_broadcast(sub_group_broadcast(tri_indices.x(),broadcast_lane),
-                                                                       sub_group_broadcast(tri_indices.y(),broadcast_lane),
-                                                                       sub_group_broadcast(tri_indices.z(),broadcast_lane));
-                                     bool pairable = false;
-                                     if (ID != broadcast_ID && !paired && valid)
-                                       pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
+                                   const uint3 tri_indices_broadcast(sub_group_broadcast(tri_indices.x(),broadcast_lane),
+                                                                     sub_group_broadcast(tri_indices.y(),broadcast_lane),
+                                                                     sub_group_broadcast(tri_indices.z(),broadcast_lane));
+                                   bool pairable = false;
+                                   if (ID != broadcast_ID && !paired && valid)
+                                     pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
                                                                             
-                                     const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
-                                     if (first_paired_lane < subgroupSize)
-                                     {
-                                       active_mask &= ~((uint)1 << first_paired_lane);
-                                       if (subgroupLocalID == first_paired_lane) { valid = false; }
-                                     }
+                                   const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
+                                   if (first_paired_lane < subgroupSize)
+                                   {
+                                     active_mask &= ~((uint)1 << first_paired_lane);
+                                     if (subgroupLocalID == first_paired_lane) { valid = false; }
                                    }
-                                   numQuads++;
-                                 }                                                                          
-                                 sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(active_counter);
-                                 if (subgroupLocalID == 0)
-                                   counter.fetch_add(numQuads);
-                               }
+                                 }
+                                 numQuads++;
+                               }                                                                          
+                               sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(active_counter);
+                               if (subgroupLocalID == 0)
+                                 counter.fetch_add(numQuads);
                              }
-                             item.barrier(sycl::access::fence_space::local_space);
+                           }
+                           // ================                           
+                           // === QuadMesh ===
+                           // ================
+                           else
+                           {
+                             const uint numQuads  = mesh.getNumPrimitives();
+                             const uint numBlocks = (numQuads + COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE - 1) / COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE;
                                                                         
-                             if (localID == 0)                                                                          
-                               quads_per_geom_prefix_sum[geomID] = active_counter;
-                           }                                                                                                                                            
+                             for (uint blockID = 0; blockID < numBlocks; blockID++)
+                             {                                                                          
+                               const uint startPrimID  = blockID*COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE;
+                               const uint endPrimID    = min(startPrimID+COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE,numQuads);
+                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               uint4 quad_indices;
+                               bool valid = ID < endPrimID ? isValidQuad(mesh,ID,quad_indices) : false;
+                               uint active_mask = sub_group_ballot(valid);
+                               uint numQuads = sycl::popcount(active_mask);
+
+                               sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(active_counter);
+                               if (subgroupLocalID == 0)
+                                 counter.fetch_add(numQuads);                             
+                             }
+                           }
+                             
+                           item.barrier(sycl::access::fence_space::local_space);
+                                                                        
+                           if (localID == 0)                                                                          
+                             quads_per_geom_prefix_sum[geomID] = active_counter;
+                           
                          });
 		  
       });
@@ -524,7 +698,7 @@ namespace embree
     if (unlikely(verbose)) PRINT2("count quads per geometry", (float)dt);
   }
 
-  __forceinline void mergeTriangleToQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, const TriMesh *const triMesh, const uint numGeoms, const uint *const quads_per_geom_prefix_sum, BVH2Ploc *const bvh2, double &iteration_time, const bool verbose)    
+  __forceinline void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, const TriQuadMesh *const triQuadMesh, const uint numGeoms, const uint *const quads_per_geom_prefix_sum, BVH2Ploc *const bvh2, double &iteration_time, const bool verbose)    
   {
     static const uint MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE  = 1024;
     static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
@@ -548,9 +722,14 @@ namespace embree
                                                                     
                            item.barrier(sycl::access::fence_space::local_space);
 
-                           const TriMesh &mesh = triMesh[geomID];
+                           const TriQuadMesh &mesh = triQuadMesh[geomID];
+                           
+                           // ====================                           
+                           // === TriangleMesh ===
+                           // ====================                           
+                           if (mesh.isTriangleMesh())
                            {
-                             const uint numTriangles = mesh.numTriangles;
+                             const uint numTriangles = mesh.getNumPrimitives();
                              const uint numBlocks    = (numTriangles + MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE - 1) / MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE;
                                                                         
                              for (uint blockID = 0; blockID < numBlocks; blockID++)
@@ -644,7 +823,58 @@ namespace embree
                                    }                                                                          
                                }
                              }                                                                        
-                           }                                                                                                                                            
+                           }
+                           // ================                           
+                           // === QuadMesh ===
+                           // ================                           
+                           else
+                           {
+                             const uint numQuads = mesh.getNumPrimitives();
+                             const uint numBlocks    = (numQuads + MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE - 1) / MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE;
+                             for (uint blockID = 0; blockID < numBlocks; blockID++)
+                             {                                                                          
+                               const uint startPrimID  = blockID*MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE;
+                               const uint endPrimID    = min(startPrimID+MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE,numQuads);
+                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               {
+                                 uint4 quad_indices;
+                                 gpu::AABB3f bounds;
+                                 bounds.init();
+                                 const bool valid = ID < endPrimID ? isValidQuad(mesh,ID,quad_indices,bounds) : false;                                                                          
+                                 const uint ps = valid ? 1 : 0;
+                                 const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
+                                 const uint reduction = sub_group_reduce(ps, std::plus<uint>());
+                                 counts[subgroupID] = reduction;
+                                                                          
+                                 item.barrier(sycl::access::fence_space::local_space);
+
+                                 /* -- prefix sum over reduced sub group counts -- */
+        
+                                 uint total_reduction = 0;
+                                 uint p_sum = 0;
+                                 for (uint j=0;j<MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE/subgroupSize;j++)
+                                 {
+                                   if (j<subgroupID) p_sum += counts[j];
+                                   total_reduction += counts[j];
+                                 }
+                                                                          
+                                 item.barrier(sycl::access::fence_space::local_space);
+
+                                 const uint dest_offset = startQuadOffset + total_offset + p_sum + exclusive_scan;
+                                 total_offset += total_reduction;
+
+                                 /* --- store cluster representative into destination array --- */
+                                 if (ID < endPrimID)
+                                   if (valid)
+                                   {
+                                     BVH2Ploc node;
+                                     node.initLeaf(geomID,ID,bounds); // need to consider pair_offset
+                                     node.store(&bvh2[dest_offset]);
+                                   }                                                                          
+                               }
+                             }                                                                                                     
+                           }
+                             
                                                                                                                                                                      
                          });
 		  
@@ -1916,7 +2146,7 @@ namespace embree
   }
 
 
-  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriMesh* triMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
+  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriQuadMesh* triQuadMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -2261,30 +2491,46 @@ namespace embree
                                                                         const uint primID0 = leafGenData[globalID].primID & 0x7fffffff;
                                                                         const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
 
-                                                                        TriMesh &mesh = triMesh[geomID];
-                                                                        
-                                                                        //if (TriangleMesh* mesh = scene->get<TriangleMesh>(geomID))
+                                                                        TriQuadMesh &mesh = triQuadMesh[geomID];
+
+                                                                        valid = true;
+                                                                        // ====================                           
+                                                                        // === TriangleMesh ===
+                                                                        // ====================                                                                        
+                                                                        if (mesh.isTriangleMesh())
                                                                         {
-                                                                          const TriangleMesh::Triangle tri = mesh.triangles[primID0];
-                                                                          const Vec3f p0 = mesh.vertices[tri.v[0]];
-                                                                          const Vec3f p1 = mesh.vertices[tri.v[1]];
-                                                                          const Vec3f p2 = mesh.vertices[tri.v[2]];
+                                                                          const TriangleMesh::Triangle tri = mesh.getTrianglesPtr()[primID0];
+                                                                          const Vec3f p0 = mesh.getVerticesPtr()[tri.v[0]];
+                                                                          const Vec3f p1 = mesh.getVerticesPtr()[tri.v[1]];
+                                                                          const Vec3f p2 = mesh.getVerticesPtr()[tri.v[2]];
                                                                           Vec3f p3 = p2;
                                                                           uint lb0 = 0,lb1 = 0, lb2 = 0;
                 
                                                                           /* handle paired triangle */
                                                                           if (primID0 != primID1)
                                                                           {
-                                                                            const TriangleMesh::Triangle tri1 = mesh.triangles[primID1];
+                                                                            const TriangleMesh::Triangle tri1 = mesh.getTrianglesPtr()[primID1];
           
                                                                             const uint p3_index = try_pair_triangles(uint3(tri.v[0],tri.v[1],tri.v[2]),uint3(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);
-                                                                            p3 = mesh.vertices[tri1.v[p3_index]];                                   
+                                                                            p3 = mesh.getVerticesPtr()[tri1.v[p3_index]];                                   
                                                                           }
 
                                                                           localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
-                                                                          valid = true;
                                                                           //write(leaf,(float16*)qleaf);
                                                                         }
+                                                                        // ================                           
+                                                                        // === QuadMesh ===
+                                                                        // ================
+                                                                        else
+                                                                        {
+                                                                          const QuadMesh::Quad quad = mesh.getQuadsPtr()[primID0];
+                                                                          const Vec3f p0 = mesh.getVerticesPtr()[quad.v[0]];
+                                                                          const Vec3f p1 = mesh.getVerticesPtr()[quad.v[1]];
+                                                                          const Vec3f p2 = mesh.getVerticesPtr()[quad.v[2]];
+                                                                          const Vec3f p3 = mesh.getVerticesPtr()[quad.v[3]];
+                                                                          localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );                                                                          
+                                                                        }
+
                                                                       }
 
                                                                       /* ================================== */                                                                      

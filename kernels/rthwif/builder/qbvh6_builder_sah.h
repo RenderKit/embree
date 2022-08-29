@@ -934,6 +934,9 @@ namespace embree
 
         ReductionTy build(uint32_t numGeometries, Device::avector<char,64>& accel, PrimInfo& pinfo_o, char* root)
         {
+          PING;
+          PRINT(numGeometries);
+          
           double t1 = verbose ? getSeconds() : 0.0;
 
           auto getSizeStatic = [&]( unsigned int geomID ) {
