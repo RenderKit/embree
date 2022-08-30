@@ -141,10 +141,13 @@ namespace embree
 
     const uint numGeoms = scene->size();
     const bool activeTriQuadMeshes = scene->getNumPrimitives(TriangleMesh::geom_type,false) || scene->getNumPrimitives(QuadMesh::geom_type,false);
+    const bool activeInstances = scene->getNumPrimitives(Instance::geom_type,false);
     
     PRINT(numGeoms);
     PRINT(scene->getNumPrimitives(TriangleMesh::geom_type,false));
     PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
+    PRINT(activeTriQuadMeshes);
+    PRINT(activeInstances);
     
     for (uint geomID=0;geomID<numGeoms;geomID++)
     {
@@ -168,15 +171,15 @@ namespace embree
     const size_t alloc_TriQuadMeshes = sizeof(TriQuadMesh)*(numGeoms+1);
     const size_t alloc_GeomPrefixSums = sizeof(uint)*(numGeoms+1);
 
-    char *tmpMem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriQuadMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
-    gpu_queue.prefetch(tmpMem0,alloc_GeomPrefixSums+alloc_TriQuadMeshes);
+    char *scratch_mem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriQuadMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
+    gpu_queue.prefetch(scratch_mem0,alloc_GeomPrefixSums+alloc_TriQuadMeshes);
 
     sizeTotalAllocations += alloc_GeomPrefixSums+alloc_TriQuadMeshes;
     
     //PRINT(alloc_GeomPrefixSums+alloc_TriQuadMeshes);
     
-    uint *const quads_per_geom_prefix_sum  = (uint*)tmpMem0;
-    TriQuadMesh *const triQuadMesh         = (TriQuadMesh*)(tmpMem0 + alloc_GeomPrefixSums);
+    TriQuadMesh *const triQuadMesh         = (TriQuadMesh*)(scratch_mem0 + 0);
+    uint *const quads_per_geom_prefix_sum  =        (uint*)(scratch_mem0 + alloc_TriQuadMeshes);
     
     timer.stop(BuildTimer::ALLOCATION);
 	
@@ -303,17 +306,13 @@ namespace embree
     char *bvh_mem = (char*)accel.data() + header;
     assert(bvh_mem);
     const size_t conv_mem_size = sizeof(LeafGenerationData)*numPrimitives;
-    
-    LeafGenerationData *leafGenData = (LeafGenerationData*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME
+
+    uint *scratch_mem1 = (uint*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME
+    LeafGenerationData *leafGenData = (LeafGenerationData*)scratch_mem1;
     assert(conversionState);
 
     sizeTotalAllocations += conv_mem_size;
-    
-
-    uint *scratch_mem = (uint*)leafGenData;
-
-
-    
+        
     char *const leaf_mem = (char*)accel.data() + leaf_data_start;
     BVH2Ploc *const bvh2          = (BVH2Ploc*)(leaf_mem);
 
@@ -456,13 +455,13 @@ namespace embree
         PRINT2(scratchMemWGs,sortWGs);
      
       for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs, sync_sort);
+        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem1, i, sort_time, sortWGs, sync_sort);
       gpu::waitOnQueueAndCatchException(gpu_queue);      
       
       restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,sort_time,verbose2);      
 
       for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs, sync_sort);
+        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, scratch_mem1, i, sort_time, sortWGs, sync_sort);
     }
     else
     {
@@ -478,7 +477,7 @@ namespace embree
         if (unlikely(verbose2))        
           PRINT3(conv_mem_size,scratchMemWGs,sortWGs);
         for (uint i=3;i<8;i++) 
-          gpu::sort_iteration_type<gpu::MortonCodePrimitive40x24Bits3D>(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[i%2], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[(i+1)%2], numPrimitives, scratch_mem, i, sort_time, sortWGs, sync_sort);        
+          gpu::sort_iteration_type<gpu::MortonCodePrimitive40x24Bits3D>(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[i%2], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[(i+1)%2], numPrimitives, scratch_mem1, i, sort_time, sortWGs, sync_sort);        
       }      
     }
       
@@ -529,7 +528,7 @@ namespace embree
       static const uint BOTTOM_UP_THRESHOLD = 16;
       static const uint SEARCH_RADIUS_TOP_LEVEL = 32;
                     
-      gpu::Range *ranges = (gpu::Range*)scratch_mem; //FIXME: need to store ranges somewhere else
+      gpu::Range *ranges = (gpu::Range*)scratch_mem1; //FIXME: need to store ranges somewhere else
         
       extractRanges(gpu_queue, host_device_tasks, mc0, ranges, numPrims, RANGE_THRESHOLD , device_ploc_iteration_time, verbose2);
 
@@ -567,7 +566,7 @@ namespace embree
           const uint radius = SEARCH_RADIUS;
           
           device_ploc_iteration_time = 0.0f;
-          iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,device_ploc_iteration_time, false);
+          iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem1,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,device_ploc_iteration_time, false);
           timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
 
           const uint new_numPrims = *host_device_tasks;
@@ -658,9 +657,9 @@ namespace embree
     
     timer.start(BuildTimer::ALLOCATION);        
 
-    if (tmpMem0)           sycl::free(tmpMem0,deviceGPU->getGPUContext());    
+    if (scratch_mem0)       sycl::free(scratch_mem0,deviceGPU->getGPUContext());    
     if (globals)           sycl::free(globals,deviceGPU->getGPUContext());
-    if (leafGenData)       sycl::free(leafGenData,deviceGPU->getGPUContext());
+    if (scratch_mem1)       sycl::free(scratch_mem1,deviceGPU->getGPUContext());
     if (host_device_tasks) sycl::free(host_device_tasks,deviceGPU->getGPUContext());
 
     timer.stop(BuildTimer::ALLOCATION);        
