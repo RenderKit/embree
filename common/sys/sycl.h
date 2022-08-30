@@ -226,7 +226,7 @@ namespace embree
     return SYCL_ONEAPI::none_of_group(this_sub_group(),pred);
   }
 
-  template <typename T> __forceinline T sub_group_broadcast(T x, cl::sycl::id<1> local_id) {
+  template <typename T> __forceinline T sub_group_broadcast(T x, sycl::id<1> local_id) {
     return SYCL_SUBGROUP::group_broadcast<SYCL_EXT_ONEAPI::sub_group>(this_sub_group(),x,local_id);
   }
   
@@ -284,7 +284,7 @@ namespace embree
     return SYCL_SUBGROUP::inclusive_scan_over_group(this_sub_group(),x,binary_op,init);
   }
 
-  template <typename T> __forceinline T sub_group_shuffle(T x, cl::sycl::id<1> local_id) {
+  template <typename T> __forceinline T sub_group_shuffle(T x, sycl::id<1> local_id) {
     return this_sub_group().shuffle(x, local_id);
   }
 
@@ -297,11 +297,11 @@ namespace embree
   }
 
   template <typename T> __forceinline T sub_group_load(const void* src) {
-    return this_sub_group().load(cl::sycl::multi_ptr<T,cl::sycl::access::address_space::global_space>((T*)src));
+    return this_sub_group().load(sycl::multi_ptr<T,sycl::access::address_space::global_space>((T*)src));
   }
 
   template <typename T> __forceinline void sub_group_store(void* dst, const T& x) {
-    this_sub_group().store(cl::sycl::multi_ptr<T,cl::sycl::access::address_space::global_space>((T*)dst),x);
+    this_sub_group().store(sycl::multi_ptr<T,sycl::access::address_space::global_space>((T*)dst),x);
   }
 }
 

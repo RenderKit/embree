@@ -18,12 +18,12 @@ void* dispatchGlobalsPtr = nullptr;
 
 #define sycl_printf0(format, ...) {               \
     static const CONSTANT char fmt[] = format;               \
-    cl::sycl::ext::oneapi::experimental::printf(fmt, __VA_ARGS__ );   \
+    sycl::ext::oneapi::experimental::printf(fmt, __VA_ARGS__ );   \
   }
 
 #define sycl_print_str(format) {               \
     static const CONSTANT char fmt[] = format;               \
-    cl::sycl::ext::oneapi::experimental::printf(fmt);   \
+    sycl::ext::oneapi::experimental::printf(fmt);   \
   }
 
 void sycl_print_float(float x)

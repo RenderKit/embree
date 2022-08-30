@@ -30,21 +30,12 @@
 #define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
 #include <sycl/sycl.hpp>
 
-#if __SYCL_COMPILER_VERSION >= 20220207
-#define SYCL_ONEAPI cl::sycl
-#define SYCL_EXT_ONEAPI cl::sycl::ext::oneapi
-#define SYCL_SUBGROUP cl::sycl
-#define SYCL_EXPERIMENTAL cl::sycl::ext::oneapi::experimental
-#define SYCL_INTEL cl::sycl::ext::intel
-#define SYCL_CTZ cl::sycl
-#else
-#define SYCL_ONEAPI cl::sycl
-#define SYCL_EXT_ONEAPI cl::sycl::ext::oneapi
-#define SYCL_SUBGROUP cl::sycl
-#define SYCL_EXPERIMENTAL cl::sycl::ext::oneapi::experimental
-#define SYCL_INTEL cl::sycl::ext::intel
-#define SYCL_CTZ cl::sycl::ext::intel
-#endif
+#define SYCL_ONEAPI sycl
+#define SYCL_EXT_ONEAPI sycl::ext::oneapi
+#define SYCL_SUBGROUP sycl
+#define SYCL_EXPERIMENTAL sycl::ext::oneapi::experimental
+#define SYCL_INTEL sycl::ext::intel
+#define SYCL_CTZ sycl
 
 #include "sycl.h"
 
