@@ -7,7 +7,6 @@
 
 enum intel_ray_flags_t
 {
-  // Flags directly exposed in API
   intel_ray_flags_none = 0x00,
   intel_ray_flags_force_opaque = 0x01,                      // forces geometry to be opaque (no anyhit shader invokation)
   intel_ray_flags_force_non_opaque = 0x02,                  // forces geometry to be non-opqaue (invoke anyhit shader)
@@ -48,8 +47,8 @@ struct intel_ray_desc_t
   float tmin;
   float tmax;
   uint32_t mask;
-  uint32_t flags;
-  float time;
+  intel_ray_flags_t flags;
+  float time;       // ignored when motion blur is not supported
 };
 
 // initializes a ray query
@@ -63,7 +62,7 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(
 SYCL_EXTERNAL void intel_ray_query_forward_ray(
   intel_ray_query_t* query,
   unsigned int new_bvh_level,
-  intel_ray_desc_t Ray,
+  intel_ray_desc_t ray,
   intel_raytracing_acceleration_structure_t* accel,
   unsigned int bvh_id // FIXME: remove bvh_id
 );
@@ -100,7 +99,6 @@ SYCL_EXTERNAL uint32_t intel_get_hit_geometry_id(intel_ray_query_t* query, intel
 SYCL_EXTERNAL uint32_t intel_get_hit_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL uint32_t intel_get_hit_triangle_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type );  // fast path for quad leaves
 SYCL_EXTERNAL uint32_t intel_get_hit_procedural_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type ); // fast path for procedural leaves
-
 SYCL_EXTERNAL uint32_t intel_get_hit_instance_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL uint32_t intel_get_hit_instance_user_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL intel_float4x3 intel_get_hit_world_to_object( intel_ray_query_t* query, intel_hit_type_t hit_type );
@@ -117,7 +115,7 @@ SYCL_EXTERNAL void intel_get_hit_triangle_vertices( intel_ray_query_t* query, sy
 SYCL_EXTERNAL sycl::float3 intel_get_ray_origin( intel_ray_query_t* query, unsigned int bvh_level );
 SYCL_EXTERNAL sycl::float3 intel_get_ray_direction( intel_ray_query_t* query, unsigned int bvh_level );
 SYCL_EXTERNAL float intel_get_ray_tmin( intel_ray_query_t* query, unsigned int bvh_level );
-SYCL_EXTERNAL int intel_get_ray_flags( intel_ray_query_t* query, unsigned int bvh_level ); // FIXME: uint32_t?
+SYCL_EXTERNAL intel_ray_flags_t intel_get_ray_flags( intel_ray_query_t* query, unsigned int bvh_level ); // FIXME: uint32_t?
 SYCL_EXTERNAL int intel_get_ray_mask( intel_ray_query_t* query, unsigned int bvh_level ); // FIXME: uint32_t?
 
 // test whether traversal has terminated.  If false, the ray has reached

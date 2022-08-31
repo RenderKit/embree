@@ -286,10 +286,10 @@ SYCL_EXTERNAL float intel_get_ray_tmin( intel_ray_query_t* query, unsigned int b
   return rtStack->ray[bvh_level].tnear;
 }
 
-SYCL_EXTERNAL int intel_get_ray_flags( intel_ray_query_t* query, unsigned int bvh_level)
+SYCL_EXTERNAL intel_ray_flags_t intel_get_ray_flags( intel_ray_query_t* query, unsigned int bvh_level)
 {
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
-  return rtStack->ray[bvh_level].rayFlags;
+  return (intel_ray_flags_t) rtStack->ray[bvh_level].rayFlags;
 }
 
 SYCL_EXTERNAL int intel_get_ray_mask( intel_ray_query_t* query, unsigned int bvh_level)

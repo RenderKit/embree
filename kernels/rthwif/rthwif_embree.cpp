@@ -26,6 +26,14 @@
 #include "rthwif_production.h"
 using namespace embree;
 
+intel_ray_flags_t operator |(intel_ray_flags_t a, intel_ray_flags_t b) {
+  return (intel_ray_flags_t) ((uint32_t)a | (uint32_t)b);
+}
+
+intel_ray_flags_t operator |= (intel_ray_flags_t& a, intel_ray_flags_t b) {
+  return a = a | b;
+}
+
 RTC_NAMESPACE_BEGIN;
 
 //#if defined(EMBREE_DPCPP_ROBUST)

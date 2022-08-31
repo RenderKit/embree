@@ -944,7 +944,7 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
   ray.tmax = in.tfar;
   ray.time = 0.0f;
   ray.mask = in.mask;
-  ray.flags = in.flags;
+  ray.flags = (intel_ray_flags_t) in.flags;
   
   /* trace ray */
   intel_ray_query_t query_ = intel_ray_query_init(ray,accel,0);
@@ -1045,7 +1045,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   ray.tmax = in.tfar;
   ray.time = 0.0f;
   ray.mask = in.mask;
-  ray.flags = in.flags;
+  ray.flags = (intel_ray_flags_t) in.flags;
   
   /* trace ray */
   intel_ray_query_t query_ = intel_ray_query_init(ray,accel,0);

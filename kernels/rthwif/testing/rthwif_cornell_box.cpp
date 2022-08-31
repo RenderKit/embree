@@ -260,7 +260,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   ray.tmax = INFINITY;
   ray.time = 0.0f;
   ray.mask = 0xFF;
-  ray.flags = 0;
+  ray.flags = intel_ray_flags_none;
   
   /* trace ray */
   intel_ray_query_t query_ = intel_ray_query_init(ray,(intel_raytracing_acceleration_structure_t*)bvh,0);
