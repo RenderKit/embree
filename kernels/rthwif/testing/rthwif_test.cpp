@@ -938,8 +938,8 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
 {
   /* setup ray */
   intel_ray_desc_t ray;
-  ray.O = in.org;
-  ray.D = in.dir;
+  ray.origin = in.org;
+  ray.direction = in.dir;
   ray.tmin = in.tnear;
   ray.tmax = in.tfar;
   ray.time = 0.0f;
@@ -1039,8 +1039,8 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
 {
   /* setup ray */
   intel_ray_desc_t ray;
-  ray.O = in.org;
-  ray.D = in.dir;
+  ray.origin = in.org;
+  ray.direction = in.dir;
   ray.tmin = in.tnear;
   ray.tmax = in.tfar;
   ray.time = 0.0f;
@@ -1198,8 +1198,8 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
 
         /* continue traversal */
         intel_ray_desc_t ray;
-        ray.O = O1;
-        ray.D = D1;
+        ray.origin = O1;
+        ray.direction = D1;
         ray.tmin = intel_get_ray_tmin(query,bvh_level);
         ray.tmax = 0.0f; // unused
         ray.time = 0.0f;

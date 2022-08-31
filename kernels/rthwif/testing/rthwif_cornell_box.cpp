@@ -254,8 +254,8 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   
   /* compute primary ray */
   intel_ray_desc_t ray;
-  ray.O = p;
-  ray.D = float(x)*vx/8.0f + float(y)*vy/8.0f + vz;;
+  ray.origin = p;
+  ray.direction = float(x)*vx/8.0f + float(y)*vy/8.0f + vz;;
   ray.tmin = 0.0f;
   ray.tmax = INFINITY;
   ray.time = 0.0f;

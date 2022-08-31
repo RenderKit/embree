@@ -89,8 +89,8 @@ bool intersect_user_geometry(intel_ray_query_t* query, RayHit& ray, UserGeometry
   scenes[bvh_level] = scene;
   
   intel_ray_desc_t raydesc;
-  raydesc.O = float3(ray.org.x, ray.org.y, ray.org.z);
-  raydesc.D = float3(ray.dir.x, ray.dir.y, ray.dir.z);
+  raydesc.origin = float3(ray.org.x, ray.org.y, ray.org.z);
+  raydesc.direction = float3(ray.dir.x, ray.dir.y, ray.dir.z);
   raydesc.tmin = ray.tnear();
   raydesc.tmax = inf; // unused
   raydesc.time = 0.0f;
@@ -130,8 +130,8 @@ bool intersect_user_geometry(intel_ray_query_t* query, Ray& ray, UserGeometry* g
   scenes[bvh_level] = scene;
   
   intel_ray_desc_t raydesc;
-  raydesc.O = float3(ray.org.x, ray.org.y, ray.org.z);
-  raydesc.D = float3(ray.dir.x, ray.dir.y, ray.dir.z);
+  raydesc.origin = float3(ray.org.x, ray.org.y, ray.org.z);
+  raydesc.direction = float3(ray.dir.x, ray.dir.y, ray.dir.z);
   raydesc.tmin = ray.tnear();
   raydesc.tmax = inf; // unused
   raydesc.time = 0.0f;
@@ -177,8 +177,8 @@ bool intersect_instance(intel_ray_query_t* query, RayHit& ray, Instance* instanc
   scenes[bvh_level] = object;
   
   intel_ray_desc_t raydesc;
-  raydesc.O = float3(ray_org.x, ray_org.y, ray_org.z);
-  raydesc.D = float3(ray_dir.x, ray_dir.y, ray_dir.z);
+  raydesc.origin = float3(ray_org.x, ray_org.y, ray_org.z);
+  raydesc.direction = float3(ray_dir.x, ray_dir.y, ray_dir.z);
   raydesc.tmin = ray.tnear();
   raydesc.tmax = inf; // unused
   raydesc.time = 0.0f;
@@ -228,8 +228,8 @@ bool intersect_instance(intel_ray_query_t* query, Ray& ray, Instance* instance, 
   scenes[bvh_level] = object;
   
   intel_ray_desc_t raydesc;
-  raydesc.O = float3(ray_org.x, ray_org.y, ray_org.z);
-  raydesc.D = float3(ray_dir.x, ray_dir.y, ray_dir.z);
+  raydesc.origin = float3(ray_org.x, ray_org.y, ray_org.z);
+  raydesc.direction = float3(ray_dir.x, ray_dir.y, ray_dir.z);
   raydesc.tmin = ray.tnear();
   raydesc.tmax = inf; // unused
   raydesc.time = 0.0f;
@@ -601,8 +601,8 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
 #endif
   
   intel_ray_desc_t raydesc;
-  raydesc.O = float3(ray.org.x, ray.org.y, ray.org.z);
-  raydesc.D = float3(ray.dir.x, ray.dir.y, ray.dir.z);
+  raydesc.origin = float3(ray.org.x, ray.org.y, ray.org.z);
+  raydesc.direction = float3(ray.dir.x, ray.dir.y, ray.dir.z);
   raydesc.tmin = ray.tnear();
   raydesc.tmax = ray.tfar;
   raydesc.time = 0.0f;
@@ -707,8 +707,8 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   ray.flags = ray_i->flags;
   
   intel_ray_desc_t raydesc;
-  raydesc.O = float3(ray.org.x, ray.org.y, ray.org.z);
-  raydesc.D = float3(ray.dir.x, ray.dir.y, ray.dir.z);
+  raydesc.origin = float3(ray.org.x, ray.org.y, ray.org.z);
+  raydesc.direction = float3(ray.dir.x, ray.dir.y, ray.dir.z);
   raydesc.tmin = ray.tnear();
   raydesc.tmax = ray.tfar;
   raydesc.time = 0.0f;

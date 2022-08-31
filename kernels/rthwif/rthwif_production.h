@@ -43,8 +43,8 @@ struct intel_float4x3 {
 
 struct intel_ray_desc_t
 {
-  sycl::float3 O;
-  sycl::float3 D;
+  sycl::float3 origin;
+  sycl::float3 direction;
   float tmin;
   float tmax;
   uint32_t mask;

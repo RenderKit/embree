@@ -40,12 +40,12 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)intel_get_rt_stack( (rtglobals_t)dispatchGlobalsPtr )).get();
     
   /* init ray */
-  rtStack->ray[bvh_level].org[0] = ray.O.x();
-  rtStack->ray[bvh_level].org[1] = ray.O.y();
-  rtStack->ray[bvh_level].org[2] = ray.O.z();
-  rtStack->ray[bvh_level].dir[0] = ray.D.x();
-  rtStack->ray[bvh_level].dir[1] = ray.D.y();
-  rtStack->ray[bvh_level].dir[2] = ray.D.z();
+  rtStack->ray[bvh_level].org[0] = ray.origin.x();
+  rtStack->ray[bvh_level].org[1] = ray.origin.y();
+  rtStack->ray[bvh_level].org[2] = ray.origin.z();
+  rtStack->ray[bvh_level].dir[0] = ray.direction.x();
+  rtStack->ray[bvh_level].dir[1] = ray.direction.y();
+  rtStack->ray[bvh_level].dir[2] = ray.direction.z();
   rtStack->ray[bvh_level].tnear  = ray.tmin;
   rtStack->ray[bvh_level].tfar   = ray.tmax;
   rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset + sizeof_QBVH6_InternalNode6*bvh_id;
@@ -80,12 +80,12 @@ SYCL_EXTERNAL void intel_ray_query_forward_ray( intel_ray_query_t* query, unsign
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   
   /* init ray */
-  rtStack->ray[bvh_level].org[0] = ray.O.x();
-  rtStack->ray[bvh_level].org[1] = ray.O.y();
-  rtStack->ray[bvh_level].org[2] = ray.O.z();
-  rtStack->ray[bvh_level].dir[0] = ray.D.x();
-  rtStack->ray[bvh_level].dir[1] = ray.D.y();
-  rtStack->ray[bvh_level].dir[2] = ray.D.z();
+  rtStack->ray[bvh_level].org[0] = ray.origin.x();
+  rtStack->ray[bvh_level].org[1] = ray.origin.y();
+  rtStack->ray[bvh_level].org[2] = ray.origin.z();
+  rtStack->ray[bvh_level].dir[0] = ray.direction.x();
+  rtStack->ray[bvh_level].dir[1] = ray.direction.y();
+  rtStack->ray[bvh_level].dir[2] = ray.direction.z();
   rtStack->ray[bvh_level].tnear  = ray.tmin;
   rtStack->ray[bvh_level].tfar   = ray.tmax;
   rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset + sizeof_QBVH6_InternalNode6*bvh_id;
