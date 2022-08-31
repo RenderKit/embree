@@ -105,7 +105,7 @@ SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( intel_ray_query_t* quer
   
   uint32_t bvh_level = query->bvh_level;
   uint32_t rflags = rtStack->ray[bvh_level].rayFlags;
-  if (rflags & RAY_FLAGS_INTEL_ACCEPT_FIRST_HIT_AND_END_SEARCH) {
+  if (rflags & intel_ray_flags_accept_first_hit_and_end_search) {
     rtStack->committedHit = rtStack->potentialHit;
     rtStack->committedHit.valid = 1;
     *query = { nullptr, query->opaque1, query->opaque2, TRACE_RAY_DONE, bvh_level };
@@ -297,13 +297,13 @@ SYCL_EXTERNAL int intel_get_ray_mask( intel_ray_query_t* query, unsigned int bvh
 }
 
 SYCL_EXTERNAL bool intel_is_traversal_done( intel_ray_query_t* query ) {
-  return query->hit(HIT_TYPE_INTEL_POTENTIAL_HIT).done;
+  return query->hit(intel_hit_type_potential_hit).done;
 }
 
 SYCL_EXTERNAL intel_candidate_type_t intel_get_hit_candidate( intel_ray_query_t* query, intel_hit_type_t hit_type) {
-  return query->hit(hit_type).leafType == NODE_TYPE_QUAD ? CANDIDATE_TYPE_INTEL_TRIANGLE : CANDIDATE_TYPE_INTEL_PROCEDURAL;
+  return query->hit(hit_type).leafType == NODE_TYPE_QUAD ? intel_candidate_type_triangle : intel_candidate_type_procedural;
 }
 
 SYCL_EXTERNAL bool intel_has_committed_hit( intel_ray_query_t* query ) {
-  return query->hit(HIT_TYPE_INTEL_COMMITTED_HIT).valid;
+  return query->hit(intel_hit_type_committed_hit).valid;
 }

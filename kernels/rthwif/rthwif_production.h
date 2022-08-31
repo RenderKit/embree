@@ -8,23 +8,23 @@
 enum intel_ray_flags_t
 {
   // Flags directly exposed in API
-  RAY_FLAGS_INTEL_NONE = 0x00,
-  RAY_FLAGS_INTEL_FORCE_OPAQUE = 0x01,                      // forces geometry to be opaque (no anyhit shader invokation)
-  RAY_FLAGS_INTEL_FORCE_NON_OPAQUE = 0x02,                  // forces geometry to be non-opqaue (invoke anyhit shader)
-  RAY_FLAGS_INTEL_ACCEPT_FIRST_HIT_AND_END_SEARCH = 0x04,   // terminates traversal on the first hit found (shadow rays)
-  RAY_FLAGS_INTEL_SKIP_CLOSEST_HIT_SHADER = 0x08,           // skip execution of the closest hit shader
-  RAY_FLAGS_INTEL_CULL_BACK_FACING_TRIANGLES = 0x10,        // back facing triangles to not produce a hit
-  RAY_FLAGS_INTEL_CULL_FRONT_FACING_TRIANGLES = 0x20,       // front facing triangles do not produce a hit
-  RAY_FLAGS_INTEL_CULL_OPAQUE = 0x40,                       // opaque geometry does not produce a hit
-  RAY_FLAGS_INTEL_CULL_NON_OPAQUE = 0x80,                   // non-opaque geometry does not produce a hit
-  RAY_FLAGS_INTEL_SKIP_TRIANGLES = 0x100,                   // treat all triangle intersections as misses.
-  RAY_FLAGS_INTEL_SKIP_PROCEDURAL_PRIMITIVES = 0x200,       // skip execution of intersection shaders
+  intel_ray_flags_none = 0x00,
+  intel_ray_flags_force_opaque = 0x01,                      // forces geometry to be opaque (no anyhit shader invokation)
+  intel_ray_flags_force_non_opaque = 0x02,                  // forces geometry to be non-opqaue (invoke anyhit shader)
+  intel_ray_flags_accept_first_hit_and_end_search = 0x04,   // terminates traversal on the first hit found (shadow rays)
+  intel_ray_flags_skip_closest_hit_shader = 0x08,           // skip execution of the closest hit shader
+  intel_ray_flags_cull_back_facing_triangles = 0x10,        // back facing triangles to not produce a hit
+  intel_ray_flags_cull_front_facing_triangles = 0x20,       // front facing triangles do not produce a hit
+  intel_ray_flags_cull_opaque = 0x40,                       // opaque geometry does not produce a hit
+  intel_ray_flags_cull_non_opaque = 0x80,                   // non-opaque geometry does not produce a hit
+  intel_ray_flags_skip_triangles = 0x100,                   // treat all triangle intersections as misses.
+  intel_ray_flags_skip_procedural_primitives = 0x200,       // skip execution of intersection shaders
 };
 
 enum intel_hit_type_t
 {
-  HIT_TYPE_INTEL_COMMITTED_HIT = 0,
-  HIT_TYPE_INTEL_POTENTIAL_HIT = 1,
+  intel_hit_type_committed_hit = 0,
+  intel_hit_type_potential_hit = 1,
 };
 
 // opaque types
@@ -131,8 +131,8 @@ SYCL_EXTERNAL bool intel_is_traversal_done( intel_ray_query_t* query );
 
 enum intel_candidate_type_t
 {
-  CANDIDATE_TYPE_INTEL_TRIANGLE,
-  CANDIDATE_TYPE_INTEL_PROCEDURAL
+  intel_candidate_type_triangle,
+  intel_candidate_type_procedural
 };
 
 SYCL_EXTERNAL intel_candidate_type_t intel_get_hit_candidate( intel_ray_query_t* query, intel_hit_type_t hit_type );

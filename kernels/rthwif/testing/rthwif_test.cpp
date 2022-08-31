@@ -970,25 +970,25 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
   if (!intel_is_traversal_done(query))
   {
     out.hit_type = TEST_POTENTIAL_HIT;
-    out.bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-    out.hit_candidate = intel_get_hit_candidate( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-    out.t = intel_get_hit_distance(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
-    out.u = intel_get_hit_barys(query, HIT_TYPE_INTEL_POTENTIAL_HIT).x();
-    out.v = intel_get_hit_barys(query, HIT_TYPE_INTEL_POTENTIAL_HIT).y();
-    out.front_face = intel_hit_is_front_face( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-    out.instUserID = intel_get_hit_instUserID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-    out.instID = intel_get_hit_instID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-    out.geomID = intel_get_hit_geomID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-    if (i%2) out.primID = intel_get_hit_primID_triangle( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-    else     out.primID = intel_get_hit_primID         ( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
+    out.bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
+    out.hit_candidate = intel_get_hit_candidate( query, intel_hit_type_potential_hit );
+    out.t = intel_get_hit_distance(query, intel_hit_type_potential_hit);
+    out.u = intel_get_hit_barys(query, intel_hit_type_potential_hit).x();
+    out.v = intel_get_hit_barys(query, intel_hit_type_potential_hit).y();
+    out.front_face = intel_hit_is_front_face( query, intel_hit_type_potential_hit );
+    out.instUserID = intel_get_hit_instUserID( query, intel_hit_type_potential_hit );
+    out.instID = intel_get_hit_instID( query, intel_hit_type_potential_hit );
+    out.geomID = intel_get_hit_geomID( query, intel_hit_type_potential_hit );
+    if (i%2) out.primID = intel_get_hit_primID_triangle( query, intel_hit_type_potential_hit );
+    else     out.primID = intel_get_hit_primID         ( query, intel_hit_type_potential_hit );
     sycl::float3 vertex_out[3];
-    intel_get_hit_triangle_verts(query, vertex_out, HIT_TYPE_INTEL_POTENTIAL_HIT);
+    intel_get_hit_triangle_verts(query, vertex_out, intel_hit_type_potential_hit);
     out.v0 = vertex_out[0];
     out.v1 = vertex_out[1];
     out.v2 = vertex_out[2];
 
     /* return ray data at current level */
-    uint32_t bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
+    uint32_t bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
     out.rayN_org = intel_get_ray_origin(query,bvh_level);
     out.rayN_dir = intel_get_ray_direction(query,bvh_level);
     out.rayN_tnear = intel_get_ray_tmin(query,bvh_level);
@@ -996,34 +996,34 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
     out.rayN_flags = intel_get_ray_flags(query,bvh_level);
 
     /* return instance transformations */
-    out.world_to_object = intel_get_hit_world_to_object(query,HIT_TYPE_INTEL_POTENTIAL_HIT);
-    out.object_to_world = intel_get_hit_object_to_world(query,HIT_TYPE_INTEL_POTENTIAL_HIT);
+    out.world_to_object = intel_get_hit_world_to_object(query,intel_hit_type_potential_hit);
+    out.object_to_world = intel_get_hit_object_to_world(query,intel_hit_type_potential_hit);
   }
 
   /* committed hit */
   else if (intel_has_committed_hit(query))
   {
     out.hit_type = TEST_COMMITTED_HIT;
-    out.bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.hit_candidate = intel_get_hit_candidate( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.t = intel_get_hit_distance(query, HIT_TYPE_INTEL_COMMITTED_HIT);
-    out.u = intel_get_hit_barys(query, HIT_TYPE_INTEL_COMMITTED_HIT).x();
-    out.v = intel_get_hit_barys(query, HIT_TYPE_INTEL_COMMITTED_HIT).y();
-    out.front_face = intel_hit_is_front_face( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.instUserID = intel_get_hit_instUserID( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.instID = intel_get_hit_instID( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.geomID = intel_get_hit_geomID( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    if (i%2) out.primID = intel_get_hit_primID_triangle( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    else     out.primID = intel_get_hit_primID         ( query, HIT_TYPE_INTEL_COMMITTED_HIT );
+    out.bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_committed_hit );
+    out.hit_candidate = intel_get_hit_candidate( query, intel_hit_type_committed_hit );
+    out.t = intel_get_hit_distance(query, intel_hit_type_committed_hit);
+    out.u = intel_get_hit_barys(query, intel_hit_type_committed_hit).x();
+    out.v = intel_get_hit_barys(query, intel_hit_type_committed_hit).y();
+    out.front_face = intel_hit_is_front_face( query, intel_hit_type_committed_hit );
+    out.instUserID = intel_get_hit_instUserID( query, intel_hit_type_committed_hit );
+    out.instID = intel_get_hit_instID( query, intel_hit_type_committed_hit );
+    out.geomID = intel_get_hit_geomID( query, intel_hit_type_committed_hit );
+    if (i%2) out.primID = intel_get_hit_primID_triangle( query, intel_hit_type_committed_hit );
+    else     out.primID = intel_get_hit_primID         ( query, intel_hit_type_committed_hit );
     sycl::float3 vertex_out[3];
-    intel_get_hit_triangle_verts(query, vertex_out, HIT_TYPE_INTEL_COMMITTED_HIT);
+    intel_get_hit_triangle_verts(query, vertex_out, intel_hit_type_committed_hit);
     out.v0 = vertex_out[0];
     out.v1 = vertex_out[1];
     out.v2 = vertex_out[2];
 
     /* return instance transformations */
-    out.world_to_object = intel_get_hit_world_to_object(query,HIT_TYPE_INTEL_COMMITTED_HIT);
-    out.object_to_world = intel_get_hit_object_to_world(query,HIT_TYPE_INTEL_COMMITTED_HIT);
+    out.world_to_object = intel_get_hit_world_to_object(query,intel_hit_type_committed_hit);
+    out.object_to_world = intel_get_hit_object_to_world(query,intel_hit_type_committed_hit);
   }
 
   /* miss */
@@ -1074,36 +1074,36 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   /* traversal loop */
   while (!intel_is_traversal_done(query))
   {
-    const intel_candidate_type_t candidate = intel_get_hit_candidate(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
+    const intel_candidate_type_t candidate = intel_get_hit_candidate(query, intel_hit_type_potential_hit);
 
-    if (candidate == CANDIDATE_TYPE_INTEL_TRIANGLE)
+    if (candidate == intel_candidate_type_triangle)
     {
       if (test == TestType::TRIANGLES_POTENTIAL_HIT)
       {
         out.hit_type = TEST_POTENTIAL_HIT;
-        out.bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-        out.hit_candidate = intel_get_hit_candidate( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-        out.t = intel_get_hit_distance(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
-        out.u = intel_get_hit_barys(query, HIT_TYPE_INTEL_POTENTIAL_HIT).x();
-        out.v = intel_get_hit_barys(query, HIT_TYPE_INTEL_POTENTIAL_HIT).y();
-        out.front_face = intel_hit_is_front_face( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-        out.instUserID = intel_get_hit_instUserID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-        out.instID = intel_get_hit_instID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-        out.geomID = intel_get_hit_geomID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-        if (i%2) out.primID = intel_get_hit_primID_triangle( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-        else     out.primID = intel_get_hit_primID         ( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
+        out.bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
+        out.hit_candidate = intel_get_hit_candidate( query, intel_hit_type_potential_hit );
+        out.t = intel_get_hit_distance(query, intel_hit_type_potential_hit);
+        out.u = intel_get_hit_barys(query, intel_hit_type_potential_hit).x();
+        out.v = intel_get_hit_barys(query, intel_hit_type_potential_hit).y();
+        out.front_face = intel_hit_is_front_face( query, intel_hit_type_potential_hit );
+        out.instUserID = intel_get_hit_instUserID( query, intel_hit_type_potential_hit );
+        out.instID = intel_get_hit_instID( query, intel_hit_type_potential_hit );
+        out.geomID = intel_get_hit_geomID( query, intel_hit_type_potential_hit );
+        if (i%2) out.primID = intel_get_hit_primID_triangle( query, intel_hit_type_potential_hit );
+        else     out.primID = intel_get_hit_primID         ( query, intel_hit_type_potential_hit );
         sycl::float3 vertex_out[3];
-        intel_get_hit_triangle_verts(query, vertex_out, HIT_TYPE_INTEL_POTENTIAL_HIT);
+        intel_get_hit_triangle_verts(query, vertex_out, intel_hit_type_potential_hit);
         out.v0 = vertex_out[0];
         out.v1 = vertex_out[1];
         out.v2 = vertex_out[2];
 
         /* return instance transformations */
-        out.world_to_object = intel_get_hit_world_to_object(query,HIT_TYPE_INTEL_COMMITTED_HIT);
-        out.object_to_world = intel_get_hit_object_to_world(query,HIT_TYPE_INTEL_COMMITTED_HIT);
+        out.world_to_object = intel_get_hit_world_to_object(query,intel_hit_type_committed_hit);
+        out.object_to_world = intel_get_hit_object_to_world(query,intel_hit_type_committed_hit);
         
         /* return ray data at current level */
-        uint32_t bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
+        uint32_t bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
         out.rayN_org = intel_get_ray_origin(query,bvh_level);
         out.rayN_dir = intel_get_ray_direction(query,bvh_level);
         out.rayN_tnear = intel_get_ray_tmin(query,bvh_level);
@@ -1116,13 +1116,13 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         intel_ray_query_commit_potential_hit(query);
     }
 
-    else if (candidate == CANDIDATE_TYPE_INTEL_PROCEDURAL)
+    else if (candidate == intel_candidate_type_procedural)
     {
-      const uint32_t bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
+      const uint32_t bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
       
-      const uint32_t instID = intel_get_hit_instID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-      const uint32_t geomID = intel_get_hit_geomID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
-      const uint32_t primID = intel_get_hit_primID( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
+      const uint32_t instID = intel_get_hit_instID( query, intel_hit_type_potential_hit );
+      const uint32_t geomID = intel_get_hit_geomID( query, intel_hit_type_potential_hit );
+      const uint32_t primID = intel_get_hit_primID( query, intel_hit_type_potential_hit );
 
       Geometry* geom = nullptr;
       if (instID != -1) {
@@ -1145,7 +1145,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
         const sycl::float3 D = intel_get_ray_direction(query,bvh_level);
         const float tnear = intel_get_ray_tmin(query,bvh_level);
-        const float tfar = intel_get_hit_distance(query, HIT_TYPE_INTEL_COMMITTED_HIT);
+        const float tfar = intel_get_hit_distance(query, intel_hit_type_committed_hit);
         const sycl::float3 v0 = tri_v0-O;
         const sycl::float3 v1 = tri_v1-O;
         const sycl::float3 v2 = tri_v2-O;
@@ -1185,7 +1185,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const Transform world2local = rcp(local2world);
         
         /* load ray */
-        const uint32_t bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_POTENTIAL_HIT );
+        const uint32_t bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
         const sycl::float3 O = intel_get_ray_origin(query,bvh_level);
         const sycl::float3 D = intel_get_ray_direction(query,bvh_level);
 
@@ -1217,32 +1217,32 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   if (intel_has_committed_hit(query))
   {
     out.hit_type = TEST_COMMITTED_HIT;
-    out.bvh_level = intel_get_hit_bvh_level( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.hit_candidate = intel_get_hit_candidate( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.t = intel_get_hit_distance(query, HIT_TYPE_INTEL_COMMITTED_HIT);
-    out.u = intel_get_hit_barys(query, HIT_TYPE_INTEL_COMMITTED_HIT).x();
-    out.v = intel_get_hit_barys(query, HIT_TYPE_INTEL_COMMITTED_HIT).y();
-    out.front_face = intel_hit_is_front_face( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.instUserID = intel_get_hit_instUserID( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.instID = intel_get_hit_instID( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.geomID = intel_get_hit_geomID( query, HIT_TYPE_INTEL_COMMITTED_HIT );
-    out.primID = intel_get_hit_primID( query, HIT_TYPE_INTEL_COMMITTED_HIT );
+    out.bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_committed_hit );
+    out.hit_candidate = intel_get_hit_candidate( query, intel_hit_type_committed_hit );
+    out.t = intel_get_hit_distance(query, intel_hit_type_committed_hit);
+    out.u = intel_get_hit_barys(query, intel_hit_type_committed_hit).x();
+    out.v = intel_get_hit_barys(query, intel_hit_type_committed_hit).y();
+    out.front_face = intel_hit_is_front_face( query, intel_hit_type_committed_hit );
+    out.instUserID = intel_get_hit_instUserID( query, intel_hit_type_committed_hit );
+    out.instID = intel_get_hit_instID( query, intel_hit_type_committed_hit );
+    out.geomID = intel_get_hit_geomID( query, intel_hit_type_committed_hit );
+    out.primID = intel_get_hit_primID( query, intel_hit_type_committed_hit );
 
     out.v0 = sycl::float3(0,0,0);
     out.v1 = sycl::float3(0,0,0);
     out.v2 = sycl::float3(0,0,0);
-    if (intel_get_hit_candidate( query, HIT_TYPE_INTEL_COMMITTED_HIT ) == CANDIDATE_TYPE_INTEL_TRIANGLE)
+    if (intel_get_hit_candidate( query, intel_hit_type_committed_hit ) == intel_candidate_type_triangle)
     {
       sycl::float3 vertex_out[3];
-      intel_get_hit_triangle_verts(query, vertex_out, HIT_TYPE_INTEL_COMMITTED_HIT);
+      intel_get_hit_triangle_verts(query, vertex_out, intel_hit_type_committed_hit);
       out.v0 = vertex_out[0];
       out.v1 = vertex_out[1];
       out.v2 = vertex_out[2];
     }
 
     /* return instance transformations */
-    out.world_to_object = intel_get_hit_world_to_object(query,HIT_TYPE_INTEL_COMMITTED_HIT);
-    out.object_to_world = intel_get_hit_object_to_world(query,HIT_TYPE_INTEL_COMMITTED_HIT);
+    out.world_to_object = intel_get_hit_world_to_object(query,intel_hit_type_committed_hit);
+    out.object_to_world = intel_get_hit_object_to_world(query,intel_hit_type_committed_hit);
   }
 
   /* miss */
@@ -1323,7 +1323,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         in[tid].tnear = 0.0f;
         in[tid].tfar = 10000.0f;
         in[tid].mask = 0xFF;
-        in[tid].flags = RAY_FLAGS_INTEL_NONE;
+        in[tid].flags = intel_ray_flags_none;
 
         // Ray data at level 0
         out_expected[tid].ray0_org = in[tid].org;
@@ -1352,7 +1352,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         case TestType::TRIANGLES_POTENTIAL_HIT:
         case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
           out_expected[tid].bvh_level = levels-1;
-          out_expected[tid].hit_candidate = CANDIDATE_TYPE_INTEL_TRIANGLE;
+          out_expected[tid].hit_candidate = intel_candidate_type_triangle;
           out_expected[tid].t = 1.0f;
           out_expected[tid].u = 0.1f;
           out_expected[tid].v = 0.6f;
@@ -1374,7 +1374,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
           break;
         case TestType::PROCEDURALS_COMMITTED_HIT:
           out_expected[tid].bvh_level = levels-1;
-          out_expected[tid].hit_candidate = CANDIDATE_TYPE_INTEL_PROCEDURAL;
+          out_expected[tid].hit_candidate = intel_candidate_type_procedural;
           out_expected[tid].t = 1.0f;
           out_expected[tid].u = 0.1f;
           out_expected[tid].v = 0.6f;
