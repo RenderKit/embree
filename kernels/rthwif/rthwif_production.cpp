@@ -166,7 +166,7 @@ SYCL_EXTERNAL float intel_get_hit_distance( intel_ray_query_t* query, intel_hit_
   return query->hit(hit_type).t;
 }
 
-SYCL_EXTERNAL float2 intel_get_hit_barys( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
+SYCL_EXTERNAL float2 intel_get_hit_barycentrics( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
   return float2(query->hit(hit_type).u, query->hit(hit_type).v);
 }
 
@@ -174,13 +174,13 @@ SYCL_EXTERNAL bool intel_hit_is_front_face( intel_ray_query_t* query, intel_hit_
   return query->hit(hit_type).frontFace;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_geomID(intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL uint32_t intel_get_hit_geometry_id(intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   struct PrimLeafDesc* __restrict leaf = (struct PrimLeafDesc*)query->hit(hit_type).getPrimLeafPtr();
   return leaf->geomIndex;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_primID( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL uint32_t intel_get_hit_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   void* __restrict leaf = hit.getPrimLeafPtr();
@@ -191,7 +191,7 @@ SYCL_EXTERNAL uint32_t intel_get_hit_primID( intel_ray_query_t* query, intel_hit
      return ((ProceduralLeaf*)leaf)->_primIndex[hit.primLeafIndex];
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_primID_triangle( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL uint32_t intel_get_hit_triangle_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   QuadLeaf* __restrict leaf = (QuadLeaf*) hit.getPrimLeafPtr();
@@ -199,14 +199,14 @@ SYCL_EXTERNAL uint32_t intel_get_hit_primID_triangle( intel_ray_query_t* query, 
   return leaf->primIndex0 + hit.primIndexDelta;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_primID_procedural( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL uint32_t intel_get_hit_procedural_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   ProceduralLeaf* __restrict leaf = (ProceduralLeaf*) hit.getPrimLeafPtr();
   return leaf->_primIndex[hit.primLeafIndex];
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instID( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL uint32_t intel_get_hit_instance_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();
@@ -214,7 +214,7 @@ SYCL_EXTERNAL uint32_t intel_get_hit_instID( intel_ray_query_t* query, intel_hit
   return leaf->part1.instanceIndex;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instUserID( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL uint32_t intel_get_hit_instance_user_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();
@@ -248,7 +248,7 @@ SYCL_EXTERNAL intel_float4x3 intel_get_hit_object_to_world( intel_ray_query_t* q
   };
 }
 
-SYCL_EXTERNAL void intel_get_hit_triangle_verts( intel_ray_query_t* query, float3 verts_out[3], intel_hit_type_t hit_type )
+SYCL_EXTERNAL void intel_get_hit_triangle_vertices( intel_ray_query_t* query, float3 verts_out[3], intel_hit_type_t hit_type )
 {
   const QuadLeaf* __restrict leaf = (const QuadLeaf*) query->hit(hit_type).getPrimLeafPtr();
   

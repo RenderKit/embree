@@ -94,20 +94,20 @@ SYCL_EXTERNAL void intel_ray_query_abandon( intel_ray_query_t* query );
 // read hit information during shader execution
 SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL float intel_get_hit_distance( intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL sycl::float2 intel_get_hit_barys( intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL sycl::float2 intel_get_hit_barycentrics( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL bool intel_hit_is_front_face( intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_geomID(intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_primID( intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_primID_triangle( intel_ray_query_t* query, intel_hit_type_t hit_type );  // fast path for quad leaves
-SYCL_EXTERNAL uint32_t intel_get_hit_primID_procedural( intel_ray_query_t* query, intel_hit_type_t hit_type ); // fast path for procedural leaves
+SYCL_EXTERNAL uint32_t intel_get_hit_geometry_id(intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_triangle_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type );  // fast path for quad leaves
+SYCL_EXTERNAL uint32_t intel_get_hit_procedural_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type ); // fast path for procedural leaves
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instID( intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_instUserID( intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_instance_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL uint32_t intel_get_hit_instance_user_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL intel_float4x3 intel_get_hit_world_to_object( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL intel_float4x3 intel_get_hit_object_to_world( intel_ray_query_t* query, intel_hit_type_t hit_type );
 
 // fetch triangle vertices for a hit
-SYCL_EXTERNAL void intel_get_hit_triangle_verts( intel_ray_query_t* query, sycl::float3 verts_out[3], intel_hit_type_t hit_type );
+SYCL_EXTERNAL void intel_get_hit_triangle_vertices( intel_ray_query_t* query, sycl::float3 verts_out[3], intel_hit_type_t hit_type );
 
 //
 // read ray-data

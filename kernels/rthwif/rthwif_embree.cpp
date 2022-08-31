@@ -64,7 +64,7 @@ void use_rthwif_embree() {
 
 Vec3f intel_get_hit_triangle_normal(intel_ray_query_t* query, intel_hit_type_t hit_type)
 {
-  float3 v[3]; intel_get_hit_triangle_verts(query, v, hit_type);
+  float3 v[3]; intel_get_hit_triangle_vertices(query, v, hit_type);
   const Vec3f v0(v[0].x(), v[0].y(), v[0].z());
   const Vec3f v1(v[1].x(), v[1].y(), v[1].z());
   const Vec3f v2(v[2].x(), v[2].y(), v[2].z());
@@ -514,9 +514,9 @@ void trav_loop(intel_ray_query_t* query, Ray& ray, Scene* scenes[RTC_MAX_INSTANC
     const float3 org = intel_get_ray_origin   ( query, bvh_level );
     const float3 dir = intel_get_ray_direction( query, bvh_level );
     const float t = intel_get_hit_distance(query, intel_hit_type_potential_hit);
-    const float2 uv = intel_get_hit_barys (query, intel_hit_type_potential_hit);
-    const unsigned int geomID = intel_get_hit_geomID(query, intel_hit_type_potential_hit);
-    const unsigned int primID = intel_get_hit_primID(query, intel_hit_type_potential_hit);
+    const float2 uv = intel_get_hit_barycentrics (query, intel_hit_type_potential_hit);
+    const unsigned int geomID = intel_get_hit_geometry_id(query, intel_hit_type_potential_hit);
+    const unsigned int primID = intel_get_hit_primitive_id(query, intel_hit_type_potential_hit);
 
     ray.org = Vec3ff(org.x(), org.y(), org.z(), ray.tnear());
     ray.dir = Vec3ff(dir.x(), dir.y(), dir.z(), ray.time ());
@@ -526,7 +526,7 @@ void trav_loop(intel_ray_query_t* query, Ray& ray, Scene* scenes[RTC_MAX_INSTANC
     context->user->instStackSize = bvh_level;
     Scene* scene = scenes[bvh_level];
 #else
-    const unsigned int instID = intel_get_hit_instID(query, intel_hit_type_potential_hit);
+    const unsigned int instID = intel_get_hit_instance_id(query, intel_hit_type_potential_hit);
     
     /* assume software instancing mode by default (required for rtcForwardRay) */
     Scene* scene = scenes[bvh_level]; 
@@ -648,13 +648,13 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   {
     unsigned int bvh_level = intel_get_hit_bvh_level(query, intel_hit_type_committed_hit);
     float t = intel_get_hit_distance(query, intel_hit_type_committed_hit);
-    float2 uv = intel_get_hit_barys (query, intel_hit_type_committed_hit);
-    unsigned int geomID = intel_get_hit_geomID(query, intel_hit_type_committed_hit);
-    unsigned int instID = intel_get_hit_instID(query, intel_hit_type_committed_hit);
+    float2 uv = intel_get_hit_barycentrics (query, intel_hit_type_committed_hit);
+    unsigned int geomID = intel_get_hit_geometry_id(query, intel_hit_type_committed_hit);
+    unsigned int instID = intel_get_hit_instance_id(query, intel_hit_type_committed_hit);
 
     unsigned int primID = ray.primID;
     if (intel_get_hit_candidate(query, intel_hit_type_committed_hit) == intel_candidate_type_triangle)
-      primID = intel_get_hit_primID_triangle(query, intel_hit_type_committed_hit);
+      primID = intel_get_hit_triangle_primitive_id(query, intel_hit_type_committed_hit);
       
     rayhit_i->ray.tfar = t;
     rayhit_i->hit.geomID = geomID;
