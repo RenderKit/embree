@@ -185,8 +185,8 @@ struct TestOutput
   sycl::float3 v1;
   sycl::float3 v2;
 
-  float4x3_INTEL world_to_object;
-  float4x3_INTEL object_to_world;
+  intel_float4x3 world_to_object;
+  intel_float4x3 object_to_world;
 };
 
 std::ostream& operator<<(std::ostream& out, const sycl::float3& v) {
@@ -308,10 +308,10 @@ struct Transform
   Transform ( sycl::float3 vx, sycl::float3 vy, sycl::float3 vz, sycl::float3 p )
     : vx(vx), vy(vy), vz(vz), p(p) {}
 
-  Transform ( float4x3_INTEL xfm )
+  Transform ( intel_float4x3 xfm )
     : vx(xfm.vx), vy(xfm.vy), vz(xfm.vz), p(xfm.p) {}
 
-  operator float4x3_INTEL () const {
+  operator intel_float4x3 () const {
     return { vx, vy, vz, p };
   }
 
@@ -934,10 +934,10 @@ void exception_handler(sycl::exception_list exceptions)
   }
 };
 
-void render(uint32_t i, const TestInput& in, TestOutput& out, raytracing_acceleration_structure_INTEL* accel)
+void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_acceleration_structure_t* accel)
 {
   /* setup ray */
-  RayDescINTEL ray;
+  intel_ray_desc_t ray;
   ray.O = in.org;
   ray.D = in.dir;
   ray.tmin = in.tnear;
@@ -947,8 +947,8 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, raytracing_acceler
   ray.flags = in.flags;
   
   /* trace ray */
-  ray_query_INTEL query_ = intel_ray_query_init(0,ray,accel,0);
-  ray_query_INTEL* query = &query_;
+  intel_ray_query_t query_ = intel_ray_query_init(0,ray,accel,0);
+  intel_ray_query_t* query = &query_;
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
   
@@ -1035,10 +1035,10 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, raytracing_acceler
   intel_ray_query_abandon(query);
 }
 
-void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_in, raytracing_acceleration_structure_INTEL* accel, TestType test)
+void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_in, intel_raytracing_acceleration_structure_t* accel, TestType test)
 {
   /* setup ray */
-  RayDescINTEL ray;
+  intel_ray_desc_t ray;
   ray.O = in.org;
   ray.D = in.dir;
   ray.tmin = in.tnear;
@@ -1048,8 +1048,8 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   ray.flags = in.flags;
   
   /* trace ray */
-  ray_query_INTEL query_ = intel_ray_query_init(0,ray,accel,0);
-  ray_query_INTEL* query = &query_;
+  intel_ray_query_t query_ = intel_ray_query_init(0,ray,accel,0);
+  intel_ray_query_t* query = &query_;
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
   
@@ -1074,7 +1074,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   /* traversal loop */
   while (!intel_is_traversal_done(query))
   {
-    const CandidateTypeINTEL candidate = intel_get_hit_candidate(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
+    const intel_candidate_type_t candidate = intel_get_hit_candidate(query, HIT_TYPE_INTEL_POTENTIAL_HIT);
 
     if (candidate == CANDIDATE_TYPE_INTEL_TRIANGLE)
     {
@@ -1194,10 +1194,10 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const sycl::float3 D1 = xfmVector(world2local, D);
 
         scenes[bvh_level+1] = inst->scene.get();
-        raytracing_acceleration_structure_INTEL* inst_accel = (raytracing_acceleration_structure_INTEL*) inst->scene->getAccel();
+        intel_raytracing_acceleration_structure_t* inst_accel = (intel_raytracing_acceleration_structure_t*) inst->scene->getAccel();
 
         /* continue traversal */
-        RayDescINTEL ray;
+        intel_ray_desc_t ray;
         ray.O = O1;
         ray.D = D1;
         ray.tmin = intel_get_ray_tmin(query,bvh_level);
@@ -1410,7 +1410,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
                                              const uint i = item.get_id(0);
-                                             render(i,in[i],out_test[i],(raytracing_acceleration_structure_INTEL*)accel);
+                                             render(i,in[i],out_test[i],(intel_raytracing_acceleration_structure_t*)accel);
                                            });
                  });
     queue.wait_and_throw();
@@ -1421,7 +1421,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
                                              const uint i = item.get_id(0);
-                                             render_loop(i,in[i],out_test[i],scene_ptr,(raytracing_acceleration_structure_INTEL*)accel,test);
+                                             render_loop(i,in[i],out_test[i],scene_ptr,(intel_raytracing_acceleration_structure_t*)accel,test);
                                            });
                  });
     queue.wait_and_throw();
