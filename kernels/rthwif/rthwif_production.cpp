@@ -26,8 +26,10 @@ void use_rthwif_production()
 {
 }
 
-SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init( unsigned int bvh_level, intel_ray_desc_t ray, intel_raytracing_acceleration_structure_t* _accel_i, uint32_t bvh_id )
+SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel_raytracing_acceleration_structure_t* _accel_i, uint32_t bvh_id )
 {
+  unsigned int bvh_level = 0;
+  
   intel_raytracing_acceleration_structure_t* accel_i = sycl::global_ptr<intel_raytracing_acceleration_structure_t>(_accel_i).get();
   HWAccel* accel = (HWAccel*)accel_i;
 #if defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)

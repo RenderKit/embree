@@ -263,7 +263,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   ray.flags = 0;
   
   /* trace ray */
-  intel_ray_query_t query_ = intel_ray_query_init(0,ray,(intel_raytracing_acceleration_structure_t*)bvh,0);
+  intel_ray_query_t query_ = intel_ray_query_init(ray,(intel_raytracing_acceleration_structure_t*)bvh,0);
   intel_ray_query_t* query = &query_;
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);

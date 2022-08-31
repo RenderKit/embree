@@ -54,7 +54,6 @@ struct intel_ray_desc_t
 
 // initializes a ray query
 SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(
-  unsigned int bvh_level,
   intel_ray_desc_t ray,
   intel_raytracing_acceleration_structure_t* accel,
   unsigned int bvh_id // FIXME: remove bvh_id
