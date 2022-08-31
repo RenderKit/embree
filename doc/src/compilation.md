@@ -370,6 +370,11 @@ parameters that can be configured in CMake:
   the ray origin are ignored. A value of 0.0f disables self
   intersection avoidance while 2.0f is the default value.
 
++ `EMBREE_DISC_POINT_SELF_INTERSECTION_AVOIDANCE`: Enables self
+   intersection avoidance for RTC_GEOMETRY_TYPE_DISC_POINT geometry
+   type (ON by default). When enabled intersections are skipped if the ray
+   origin lies inside the sphere defined by the point primitive.
+
 + `EMBREE_MIN_WIDTH`: Enabled the min-width feature, which allows
   increasing the radius of curves and points to match some amount of
   pixels. See [rtcSetGeometryMaxRadiusScale] for more details.

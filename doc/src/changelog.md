@@ -3,6 +3,11 @@ Version History
 
 ### Embree 3.13.5
 -   Fixed bug in bounding flat Catmull Rom curves of subdivision level 4.
+-   Improved self intersection avoidance for
+    RTC_GEOMETRY_TYPE_DISC_POINT geometry type. Intersections are
+    skipped if the ray origin lies inside the sphere defined by the
+    point primitive. Self intersection avoidance can get disabled at compile time
+    using the EMBREE_DISC_POINT_SELF_INTERSECTION_AVOIDANCE cmake option.
 
 ### Embree 3.13.4
 -   Using 8-wide BVH and double pumped NEON instructions on Apple M1 gives 8% performance boost.

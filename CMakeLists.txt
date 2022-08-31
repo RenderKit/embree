@@ -154,6 +154,7 @@ OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)
 
 SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 1 CACHE STRING "Maximum number of instance levels.")
 SET(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR 2.0 CACHE STRING "Self intersection avoidance factor for flat curves. Specify floating point value in range 0 to inf.")
+OPTION(EMBREE_DISC_POINT_SELF_INTERSECTION_AVOIDANCE "Enables self intersection avoidance for ray oriented discs." ON)
 OPTION(EMBREE_MIN_WIDTH "Enables min-width feature to enlarge curve and point thickness to pixel width." OFF)
 
 ##############################################################
