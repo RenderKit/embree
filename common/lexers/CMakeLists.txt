@@ -5,7 +5,7 @@ ADD_LIBRARY(lexers STATIC
  stringstream.cpp
  tokenstream.cpp
 )
-TARGET_LINK_LIBRARIES(lexers sys math)
+TARGET_LINK_LIBRARIES(lexers sys math embree::config)
 SET_PROPERTY(TARGET lexers PROPERTY FOLDER common)
 SET_PROPERTY(TARGET lexers APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
