@@ -14,7 +14,8 @@ ELSEIF (TASKING_TBB)
   endif()
 
   ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
-  
+  TARGET_LINK_LIBRARIES(tasking PUBLIC embree::config)
+
   if (TARGET TBB::${EMBREE_TBB_COMPONENT})
     message("-- TBB: reuse existing TBB::${TBB_COMPONENT} target")
     TARGET_LINK_LIBRARIES(tasking PUBLIC TBB::${EMBREE_TBB_COMPONENT})
