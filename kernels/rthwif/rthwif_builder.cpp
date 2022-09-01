@@ -416,10 +416,10 @@ namespace embree
     };
 
     bool verbose = false;
-    BBox3f bounds = QBVH6BuilderSAH::build2(numGeometries, nullptr, 
-                                            getSize, getType, getNumTimeSegments,
-                                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                            (char*)args.accel, args.numBytes, args.AddAccel, verbose, args.dispatchGlobalsPtr);
+    BBox3f bounds = QBVH6BuilderSAH::build(numGeometries, nullptr, 
+                                           getSize, getType, getNumTimeSegments,
+                                           createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
+                                           (char*)args.accel, args.numBytes, args.AddAccel, verbose, args.dispatchGlobalsPtr);
 
     if (args.bounds) *(BBox3f*)args.bounds = bounds;
     

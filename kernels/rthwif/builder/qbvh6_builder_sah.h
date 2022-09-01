@@ -938,15 +938,10 @@ namespace embree
         {
           double t1 = verbose ? getSeconds() : 0.0;
 
-          auto getSizeStatic = [&]( unsigned int geomID ) {
-            if (getNumTimeSegments(geomID) == 0) return getSize(geomID);
-            else                                 return size_t(0);
-          };
-          
           /* quadify all triangles */
           ParallelForForPrefixSumState<PrimInfo> pstate;
-          pstate.init(numGeometries,getSizeStatic,size_t(1024));
-          PrimInfo pinfo = parallel_for_for_prefix_sum0_( pstate, size_t(1), getSizeStatic, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k) -> PrimInfo {
+          pstate.init(numGeometries,getSize,size_t(1024));
+          PrimInfo pinfo = parallel_for_for_prefix_sum0_( pstate, size_t(1), getSize, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k) -> PrimInfo {
             if (getType(geomID) == QBVH6BuilderSAH::TRIANGLE)
               return PrimInfo(pair_triangles(geomID,(QuadifierType*) quadification[geomID].data(), r.begin(), r.end(), getTriangleIndices));
             else
@@ -959,8 +954,8 @@ namespace embree
           size_t numPrimitives = pinfo.size();
           
           /* first try */
-          //pstate.init(numGeometries,getSizeStatic,size_t(1024));
-          pinfo = parallel_for_for_prefix_sum1_( pstate, size_t(1), getSizeStatic, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
+          //pstate.init(numGeometries,getSize,size_t(1024));
+          pinfo = parallel_for_for_prefix_sum1_( pstate, size_t(1), getSize, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
             if (getType(geomID) == QBVH6BuilderSAH::TRIANGLE)
               return createTrianglePairPrimRefArray(prims.data(),r,base.size(),(unsigned)geomID);
             else
@@ -975,7 +970,7 @@ namespace embree
           {
             numPrimitives = pinfo.size();
             
-            pinfo = parallel_for_for_prefix_sum1_( pstate, size_t(1), getSizeStatic, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
+            pinfo = parallel_for_for_prefix_sum1_( pstate, size_t(1), getSize, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
               if (getType(geomID) == QBVH6BuilderSAH::TRIANGLE) {
                 return createTrianglePairPrimRefArray(prims.data(),r,base.size(),(unsigned)geomID);
               }
@@ -1039,68 +1034,7 @@ namespace embree
           return r;
         }
 
-        ReductionTy build_mblur(uint32_t numGeometries, PrimInfo& pinfo_o, char* root, BBox1f time_range)
-        {
-          auto getSizeMBlur = [&]( unsigned int geomID ) {
-            if (getNumTimeSegments(geomID) == 0) return size_t(0);
-            else                                 return getSize(geomID);
-          };
-
-          size_t numPrimitives = 0;
-          for (size_t geomID=0; geomID<numGeometries; geomID++)
-            numPrimitives += getSizeMBlur(geomID);
-
-          double t2 = verbose ? getSeconds() : 0.0;
-          
-          /* first try */
-          ParallelForForPrefixSumState<PrimInfo> pstate;
-          pstate.init(numGeometries,getSizeMBlur,size_t(1024));
-          PrimInfo pinfo = parallel_for_for_prefix_sum0_( pstate, size_t(1), getSizeMBlur, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k) -> PrimInfo {
-             return createPrimRefArray(prims,time_range,r,k,(unsigned)geomID);
-          }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-          
-          double t3 = verbose ? getSeconds() : 0.0;
-          if (verbose) std::cout << "primrefgen   : " << std::setw(10) << (t3-t2)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t3-t2) << " Mprims/s" << std::endl;
-          
-          /* if we need to filter out geometry, run again */
-          if (pinfo.size() != numPrimitives)
-          {
-            numPrimitives = pinfo.size();
-            
-            pinfo = parallel_for_for_prefix_sum1_( pstate, size_t(1), getSizeMBlur, PrimInfo(empty), [&](size_t geomID, const range<size_t>& r, size_t k, const PrimInfo& base) -> PrimInfo {
-              return createPrimRefArray(prims,time_range,r,base.size(),(unsigned)geomID);
-            }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
-          }
-          assert(pinfo.size() == numPrimitives);
-          
-          double t4 = verbose ? getSeconds() : 0.0;
-          if (verbose) std::cout << "primrefgen2  : " << std::setw(10) << (t4-t3)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t4-t3) << " Mprims/s" << std::endl;
-          
-          /* exit early if scene is empty */
-          if (pinfo.size() == 0) {
-            pinfo_o = pinfo;
-            return createEmptyNode(root);
-          }
-          
-          /* build hierarchy */
-          BuildRecord record(1,pinfo,UNKNOWN);
-          FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
-          ReductionTy r = createInternalNode(thread_alloc,record,root,sizeof(QBVH6::InternalNode6));
-          
-          if (verbose) {
-            allocator.cleanup();
-            FastAllocator::AllStatistics stats1(&allocator);
-            stats1.print(numPrimitives);
-          }
-
-          double t5 = verbose ? getSeconds() : 0.0;
-          if (verbose) std::cout << "bvh_build    : " << std::setw(10) << (t5-t4)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t5-t4) << " Mprims/s" << std::endl;
-
-          pinfo_o = pinfo;
-          return r;
-        }
-
-        BBox3f build2(size_t numGeometries, char* accel, size_t bytes, RTHWIF_ACCEL_REF AddAccel, void* dispatchGlobalsPtr)
+        BBox3f build(size_t numGeometries, char* accel, size_t bytes, RTHWIF_ACCEL_REF AddAccel, void* dispatchGlobalsPtr)
         {
           double t0 = verbose ? getSeconds() : 0.0;
 
@@ -1190,200 +1124,6 @@ namespace embree
           return bounds;
         }
         
-        BBox3f build(size_t numGeometries, Device* device, Device::avector<char,64>& accel, void* dispatchGlobalsPtr)
-        {
-          double t0 = verbose ? getSeconds() : 0.0;
-          
-          /* calculate scene size and allocate quadification data */
-          struct Stats
-          {
-            size_t numTriangles = 0;
-            size_t numQuads = 0;
-            size_t numProcedurals = 0;
-            size_t numInstances = 0;
-
-            /* assume some reasonable quadification rate */
-            void estimate_quadification()
-            {
-              numQuads += (numTriangles+1)/2 + numTriangles/8;
-              numTriangles = 0;
-            }
-
-            void estimate_presplits( double factor )
-            {
-              numTriangles = max(numTriangles, size_t(numTriangles*factor));
-              numQuads     = max(numQuads    , size_t(numQuads*factor));
-              numInstances = max(numInstances, size_t(numInstances*factor));
-            }
-
-            size_t size() {
-              return numTriangles+numQuads+numProcedurals+numInstances;
-            }
-
-            size_t expected_bvh_bytes()
-            {
-              const size_t blocks = (size()+5)/6;
-              const size_t expected_bytes   = 128 + 64*size_t(1+1.5*blocks) + numTriangles*64 + numQuads*64 + numProcedurals*8 + numInstances*128;
-              return 2*4096 + size_t(1.1*expected_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
-            }
-
-            size_t worst_case_bvh_bytes()
-            {
-              const size_t numPrimitives = size();
-              const size_t blocks = (numPrimitives+5)/6;
-              const size_t worst_case_bytes = 128 + 64*(1+blocks + numPrimitives) + numTriangles*64 + numQuads*64 + numProcedurals*64 + numInstances*128;
-              return 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
-            }
-            
-          } static_geom, mblur_geom;
-          
-          uint32_t maxTimeSegments = 0;
-          
-          quadification.resize(numGeometries);
-          for (size_t geomID=0; geomID<numGeometries; geomID++)
-          {
-            const uint32_t N = getSize(geomID);
-            if (N == 0) continue;
-
-            const uint32_t segments = getNumTimeSegments(geomID);
-            maxTimeSegments = max(maxTimeSegments, segments);
-
-            Stats& geom = getNumTimeSegments(geomID) ? mblur_geom : static_geom;
-            switch (getType(geomID)) {
-            case QBVH6BuilderSAH::TRIANGLE  : geom.numTriangles += N; quadification[geomID].resize(N); break;
-            case QBVH6BuilderSAH::QUAD      : geom.numQuads += N; break;
-            case QBVH6BuilderSAH::PROCEDURAL: geom.numProcedurals += N; break;
-            case QBVH6BuilderSAH::INSTANCE  : geom.numInstances += N; break;
-            default: assert(false); break;
-            }
-          }
-          
-          double t1 = verbose ? getSeconds() : 0.0;
-          if (verbose) std::cout << "scene_size   : " << std::setw(10) << (t1-t0)*1000.0 << "ms" << std::endl;
-
-          size_t numPrimitivesStatic = static_geom.size();
-          size_t numPrimitivesStaticExt = size_t(numPrimitivesStatic * 1.2); // 20% extra space for pre-splits of static geometry
-          size_t numPrimitivesMB = mblur_geom.size();
-          size_t numPrimitives = numPrimitivesStatic + numPrimitivesMB;
-          
-          size_t numPrimitivesAlloc = max(numPrimitivesStaticExt, numPrimitivesMB); 
-          prims.resize(numPrimitivesAlloc);
-
-          static_geom.estimate_quadification();
-          static_geom.estimate_presplits(1.2);
-          
-          /* estimate required bytes for BVH */
-          size_t expected_bytes   = static_geom.expected_bvh_bytes()   + maxTimeSegments*mblur_geom.expected_bvh_bytes();
-          size_t worst_case_bytes = static_geom.worst_case_bvh_bytes() + maxTimeSegments*mblur_geom.worst_case_bvh_bytes();
-          assert(expected_bytes <= worst_case_bytes);
-
-          PrimInfo pinfo;
-          BBox3f bounds = empty;
-
-          /* we need potentially multiple tries in case or expected size estimate was too small */
-          for (size_t bytes = expected_bytes;; bytes *= 1.2)
-          {
-            if (verbose) std::cout << "trying BVH build with " << bytes << " bytes" << std::endl;
-            
-            /* allocate BVH memory */
-            allocator.clear();
-            if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(device,bytes));
-            memset(accel.data(),0,accel.size()); // FIXME: not required
-            
-            allocator.addBlock(accel.data(),accel.size());
-            FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
-            thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
-
-            try
-            {
-              /* allocate a separate root entry node, one for each time segment */
-              QBVH6::InternalNode6* entry = nullptr;
-              if (maxTimeSegments) {
-                entry = (QBVH6::InternalNode6*) thread_alloc.malloc0(maxTimeSegments*sizeof(QBVH6::InternalNode6),64);
-                assert(entry);
-              }
-                
-              uint32_t numBVHs = 1+maxTimeSegments;
-              ReductionTy r [numBVHs];
-              BuildRecord br[numBVHs];
-
-              uint32_t numRoots = maxTimeSegments ? 2*maxTimeSegments : 1;
-              QBVH6::InternalNode6* roots = (QBVH6::InternalNode6*) thread_alloc.malloc0(numRoots*sizeof(QBVH6::InternalNode6),64);
-              assert(roots);
-              
-              /* build BVH static BVH */
-              r [0] = build(numGeometries,pinfo,(char*)(roots+0));
-              bounds.extend(pinfo.geomBounds);
-              
-              /* build separate BVH for each time segment */
-              for (uint32_t t=0; t<maxTimeSegments; t++)
-              {
-                const float t0 = (t+0)/float(maxTimeSegments);
-                const float t1 = (t+1)/float(maxTimeSegments);
-                r [t+1] = build_mblur(numGeometries,pinfo,(char*)(roots+2*t+1),BBox1f(t0,t1));
-                bounds.extend(pinfo.geomBounds);
-                roots->copy_to(roots+2*t+0); // copy static root node to t'th BVH
-              }
-
-              for (uint32_t i=0; i<numBVHs; i++) // FIXME: not optimal
-                br[i].prims.geomBounds = bounds;
-
-              ReductionTy r0 = r[0];
-              if (maxTimeSegments)
-              {
-                for (uint32_t t=0; t<maxTimeSegments; t++)
-                {
-                  ReductionTy values[BVH_WIDTH];
-                  values[0] = r[0];
-                  values[1] = r[1+t];
-                  BuildRecord children[BVH_WIDTH];
-                  children[0] = br[0];
-                  children[1] = br[1+t];
-                  ReductionTy r = setNode((char*)(entry+t),sizeof(QBVH6::InternalNode6),NODE_TYPE_INTERNAL,(char*)(roots+2*t),children,values,2);
-                  if (t == 0) r0 = r;
-                }
-              }
-
-              /* fill QBVH6 header */
-              allocator.clear();
-              QBVH6* qbvh = new (accel.data()) QBVH6(QBVH6::SizeEstimate());
-              qbvh->reserved1 = 0;
-              qbvh->numPrims = numPrimitives;
-              uint64_t rootNodeOffset = QBVH6::Node((char*)(r0.node - (char*)qbvh), r0.type, r0.primRange.cur_prim);
-              assert(rootNodeOffset == QBVH6::rootNodeOffset);
-              qbvh->bounds = bounds;
-              qbvh->numTimeSegments = max(1u,maxTimeSegments);
-              qbvh->dispatchGlobalsPtr = (uint64_t) dispatchGlobalsPtr;
-              break;
-            }
-            catch (std::bad_alloc&)
-            {
-              if (verbose) {
-                allocator.cleanup();
-                FastAllocator::AllStatistics stats1(&allocator);
-                stats1.print(numPrimitives);
-              }
-              
-              if (bytes >= worst_case_bytes) {
-                throw std::runtime_error("BVH build failed");
-                return empty;
-              }
-            }
-          }
-          
-          /* print BVH statistics in verbose mode */
-          if (verbose)
-          {
-            QBVH6* qbvh = (QBVH6*) accel.data();
-            BVHStatistics stats = qbvh->computeStatistics();
-            stats.print(std::cout);
-            stats.print_raw(std::cout);
-            //qbvh->print();
-          }
-          
-          return bounds;
-        }
-        
       private:
         const getSizeFunc getSize;
         const getTypeFunc getType;
@@ -1401,37 +1141,6 @@ namespace embree
         bool verbose;
       };
       
-      template<typename getSizeFunc,
-               typename getTypeFunc,
-               typename getNumTimeSegmentsFunc,
-               typename createPrimRefArrayFunc,
-               typename getTriangleFunc,
-               typename getTriangleIndicesFunc,
-               typename getQuadFunc,
-               typename getProceduralFunc,
-               typename getInstanceFunc>
-      
-      static BBox3f build(size_t numGeometries,
-                          Device* device,
-                          const getSizeFunc& getSize,
-                          const getTypeFunc& getType,
-                          const getNumTimeSegmentsFunc& getNumTimeSegments,
-                          const createPrimRefArrayFunc& createPrimRefArray,
-                          const getTriangleFunc& getTriangle,
-                          const getTriangleIndicesFunc& getTriangleIndices,
-                          const getQuadFunc& getQuad,
-                          const getProceduralFunc& getProcedural,
-                          const getInstanceFunc& getInstance,
-                          Device::avector<char,64>& accel,
-                          bool verbose,
-                          void* dispatchGlobalsPtr)
-      {
-        BuilderT<getSizeFunc, getTypeFunc, getNumTimeSegmentsFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
-          (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
-        
-        return builder.build(numGeometries, device, accel, dispatchGlobalsPtr);
-      }
-
       template<typename getSizeFunc,
                typename getTypeFunc>
        
@@ -1517,7 +1226,7 @@ namespace embree
                typename getProceduralFunc,
                typename getInstanceFunc>
        
-      static BBox3f build2(size_t numGeometries,
+      static BBox3f build(size_t numGeometries,
                            Device* device,
                           const getSizeFunc& getSize,
                           const getTypeFunc& getType,
@@ -1536,7 +1245,7 @@ namespace embree
         BuilderT<getSizeFunc, getTypeFunc, getNumTimeSegmentsFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
           (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
         
-        return builder.build2(numGeometries, accel_ptr, accel_bytes, AddAccel, dispatchGlobalsPtr);
+        return builder.build(numGeometries, accel_ptr, accel_bytes, AddAccel, dispatchGlobalsPtr);
       }      
     };
   }

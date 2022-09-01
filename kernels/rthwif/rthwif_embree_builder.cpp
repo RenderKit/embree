@@ -100,163 +100,6 @@ namespace embree
     return false;
   }
 
-  BBox3fa rthwifBuildDirect(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
-  {
-    auto getSize = [&](uint32_t geomID) -> size_t {
-      Geometry* geom = scene->geometries[geomID].ptr;
-      if (geom == nullptr) return 0;
-      if (!geom->isEnabled()) return 0;
-      if (!(geom->getTypeMask() & Geometry::MTY_ALL)) return 0;
-      if (GridMesh* mesh = scene->getSafe<GridMesh>(geomID))
-        return mesh->getNumTotalQuads(); // FIXME: slow
-      else
-        return geom->size();
-    };
-
-    auto getType = [&](unsigned int geomID)
-    {
-      /* no HW support for MB yet */
-      if (scene->get(geomID)->numTimeSegments() > 0)
-        return QBVH6BuilderSAH::PROCEDURAL;
-
-      switch (scene->get(geomID)->getType()) {
-      case Geometry::GTY_FLAT_LINEAR_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_LINEAR_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_LINEAR_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_CONE_LINEAR_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_FLAT_BEZIER_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_BEZIER_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_FLAT_BSPLINE_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_BSPLINE_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_FLAT_HERMITE_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_HERMITE_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_HERMITE_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_TRIANGLE_MESH: return QBVH6BuilderSAH::TRIANGLE; break;
-      case Geometry::GTY_QUAD_MESH    : return QBVH6BuilderSAH::QUAD; break;
-      case Geometry::GTY_GRID_MESH    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_SUBDIV_MESH  : assert(false); return QBVH6BuilderSAH::UNKNOWN; break;
-      
-      case Geometry::GTY_SPHERE_POINT       : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_DISC_POINT         : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_DISC_POINT: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_USER_GEOMETRY     : return QBVH6BuilderSAH::PROCEDURAL; break;
-
-#if RTC_MAX_INSTANCE_LEVEL_COUNT < 2
-      case Geometry::GTY_INSTANCE_CHEAP    :
-      case Geometry::GTY_INSTANCE_EXPENSIVE: {
-        Instance* instance = scene->get<Instance>(geomID);
-        QBVH6* object = (QBVH6*)((Scene*)instance->object)->hwaccel.data();
-        if (object->numTimeSegments > 1) return QBVH6BuilderSAH::PROCEDURAL; // we need to handle instances in procedural mode if instanced scene has motion blur
-        if (instance->mask & 0xFFFFFF80) return QBVH6BuilderSAH::PROCEDURAL; // we need to handle instances in procedural mode if high mask bits are set
-        else                             return QBVH6BuilderSAH::INSTANCE;
-      }
-#else
-      case Geometry::GTY_INSTANCE_CHEAP    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_INSTANCE_EXPENSIVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-#endif
-
-      default: assert(false); return QBVH6BuilderSAH::UNKNOWN;
-      }
-    };
-
-    auto getNumTimeSegments = [&] (unsigned int geomID) {
-      Geometry* geom = scene->geometries[geomID].ptr;
-      if (geom == nullptr) return 0u;
-      return geom->numTimeSegments();
-    };
-    
-    auto createPrimRefArray = [&] (avector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID)
-    {
-      const Geometry* geom = scene->get(geomID);
-      PrimInfo primInfo = geom->numTimeSegments() > 0
-        ? geom->createPrimRefArrayMB(prims,time_range,r,k,geomID)
-        : geom->createPrimRefArray  (prims,r,k,geomID);
-      return primInfo;
-    };
-
-    auto getTriangle = [&](unsigned int geomID, unsigned int primID)
-    {
-      /* invoke any hit callback when Embree filter functions are present */
-      GeometryFlags gflags = GeometryFlags::OPAQUE;
-      if (scene->hasContextFilterFunction() || scene->get(geomID)->hasFilterFunctions())
-        gflags = GeometryFlags::NONE;
-
-      /* invoke any hit callback when high mask bits are enabled */
-      if (scene->get(geomID)->mask & 0xFFFFFF80)
-        gflags = GeometryFlags::NONE;
-      
-      TriangleMesh* mesh = scene->get<TriangleMesh>(geomID);
-      const TriangleMesh::Triangle tri = mesh->triangle(primID);
-      if (unlikely(tri.v[0] >= mesh->numVertices())) return QBVH6BuilderSAH::Triangle();
-      if (unlikely(tri.v[1] >= mesh->numVertices())) return QBVH6BuilderSAH::Triangle();
-      if (unlikely(tri.v[2] >= mesh->numVertices())) return QBVH6BuilderSAH::Triangle();
-
-      const Vec3f p0 = mesh->vertices[0][tri.v[0]];
-      const Vec3f p1 = mesh->vertices[0][tri.v[1]];
-      const Vec3f p2 = mesh->vertices[0][tri.v[2]];
-      if (unlikely(!isvalid(p0))) return QBVH6BuilderSAH::Triangle();
-      if (unlikely(!isvalid(p1))) return QBVH6BuilderSAH::Triangle();
-      if (unlikely(!isvalid(p2))) return QBVH6BuilderSAH::Triangle();
-
-      return QBVH6BuilderSAH::Triangle(tri.v[0],tri.v[1],tri.v[2],p0,p1,p2,gflags,mask32_to_mask8(mesh->mask));
-    };
-
-    auto getTriangleIndices = [&] (uint32_t geomID, uint32_t primID) {
-       const TriangleMesh::Triangle tri = scene->get<TriangleMesh>(geomID)->triangles[primID];
-       return Vec3<uint32_t>(tri.v[0],tri.v[1],tri.v[2]);
-    };
-
-    auto getQuad = [&](unsigned int geomID, unsigned int primID)
-    {
-      /* invoke any hit callback when Embree filter functions are present */
-      GeometryFlags gflags = GeometryFlags::OPAQUE;
-      if (scene->hasContextFilterFunction() || scene->get(geomID)->hasFilterFunctions())
-        gflags = GeometryFlags::NONE;
-
-      /* invoke any hit callback when high mask bits are enabled */
-      if (scene->get(geomID)->mask & 0xFFFFFF80)
-        gflags = GeometryFlags::NONE;
-          
-      QuadMesh* mesh = scene->get<QuadMesh>(geomID);
-      const QuadMesh::Quad quad = mesh->quad(primID);
-      const Vec3f p0 = mesh->vertices[0][quad.v[0]];
-      const Vec3f p1 = mesh->vertices[0][quad.v[1]];
-      const Vec3f p2 = mesh->vertices[0][quad.v[2]];
-      const Vec3f p3 = mesh->vertices[0][quad.v[3]];
-      return QBVH6BuilderSAH::Quad(p0,p1,p2,p3,gflags,mask32_to_mask8(mesh->mask));
-    };
-
-    auto getProcedural = [&](unsigned int geomID, unsigned int primID) {
-      return QBVH6BuilderSAH::Procedural(mask32_to_mask8(scene->get(geomID)->mask));
-    };
-
-    auto getInstance = [&](unsigned int geomID, unsigned int primID)
-    {
-      Instance* instance = scene->get<Instance>(geomID);
-      void* accel = dynamic_cast<Scene*>(instance->object)->hwaccel.data();
-      const AffineSpace3fa local2world = instance->getLocal2World();
-      return QBVH6BuilderSAH::Instance(local2world,accel,mask32_to_mask8(instance->mask),0);
-    };
-
-    void* dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
-    return QBVH6BuilderSAH::build(scene->size(), scene->device,
-                                  getSize, getType, getNumTimeSegments,
-                                  createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                  accel, scene->device->verbosity(1), dispatchGlobalsPtr);
-  }
-
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -421,10 +264,10 @@ namespace embree
       try
       {
         bounds = empty;
-        bounds = QBVH6BuilderSAH::build2(scene->size(), scene->device,
-                                         getSize, getType, getNumTimeSegments,
-                                         createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                         accel_ptr, accel_bytes, AddAccel, false, dispatchGlobalsPtr);
+        bounds = QBVH6BuilderSAH::build(scene->size(), scene->device,
+                                        getSize, getType, getNumTimeSegments,
+                                        createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
+                                        accel_ptr, accel_bytes, AddAccel, false, dispatchGlobalsPtr);
         
         return RTHWIF_ERROR_NONE;
       }
