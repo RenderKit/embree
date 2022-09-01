@@ -51,6 +51,14 @@ namespace embree
                                                   upper_z(aabb.upper.z)
       {}
 
+      __forceinline AABB3f(const float lower_x, const float lower_y, const float lower_z, const float upper_x, const float upper_y, const float upper_z) : lower_x(lower_x),
+                                                                                                                                                           lower_y(lower_y),
+                                                                                                                                                           lower_z(lower_z),
+                                                                                                                                                           upper_x(upper_x),
+                                                                                                                                                           upper_y(upper_y),
+                                                                                                                                                           upper_z(upper_z)
+      {}
+      
 
       //__forceinline AABB3f(const Vec3fa &l, const Vec3fa &u) : lower(l.x, l.y, l.z), upper(u.x, u.y, u.z) {}
 

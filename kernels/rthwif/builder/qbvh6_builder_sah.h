@@ -1288,7 +1288,7 @@ namespace embree
             BVHStatistics stats = qbvh->computeStatistics();
             stats.print(std::cout);
             stats.print_raw(std::cout);
-            //qbvh->print();
+            qbvh->print();
           }
           
           return bounds;

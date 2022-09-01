@@ -346,7 +346,62 @@ namespace embree
     }    
       
   };
+
+
+  struct __aligned(64) InstancePrimitive
+  {
+    uint32_t shaderIndex_geomMask; // : 24 shader index used to calculate instancing shader in case of software instancing
+                                   // : 8; geometry mask used for ray masking
+      
+    uint32_t instanceContributionToHitGroupIndex; // : 24;
+
+    // uint32_t type : 1; // enables/disables opaque culling
+    // uint32_t geomFlags : 2; // unused for instances
+      
+    uint64_t startNodePtr_instFlags; // : 48;  start node where to continue traversal of the instanced object
+      
+    Vec3f world2obj_vx;   // 1st column of Worl2Obj transform
+    Vec3f world2obj_vy;   // 2nd column of Worl2Obj transform
+    Vec3f world2obj_vz;   // 3rd column of Worl2Obj transform
+    Vec3f obj2world_p;    // translation of Obj2World transform (on purpose in first 64 bytes)
+
+    uint64_t bvhPtr;   // pointer to BVH where start node belongs too
+      
+    uint32_t instanceID;    // user defined value per DXR spec
+    uint32_t instanceIndex; // geometry index of the instance (n'th geometry in scene)
+      
+    Vec3f obj2world_vx;   // 1st column of Obj2World transform
+    Vec3f obj2world_vy;   // 2nd column of Obj2World transform
+    Vec3f obj2world_vz;   // 3rd column of Obj2World transform
+    Vec3f world2obj_p;    // translation of World2Obj transform
+
+    __forceinline InstancePrimitive() {}
+    __forceinline InstancePrimitive(AffineSpace3f obj2world, uint64_t startNodePtr, uint32_t instID, uint8_t instMask)
+    {
+      shaderIndex_geomMask = instMask << 24; 
+      instanceContributionToHitGroupIndex = ((uint)PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED << 29) | ((uint)GeometryFlags::NONE << 30);
+    
+      startNodePtr_instFlags = startNodePtr;
+      
+      instanceID = instID;
+      instanceIndex = instID;
+      bvhPtr = (uint64_t) 0;
+
+      obj2world_vx = obj2world.l.vx;
+      obj2world_vy = obj2world.l.vy;
+      obj2world_vz = obj2world.l.vz;
+      obj2world_p = obj2world.p;
+      
+      const AffineSpace3f world2obj = rcp(obj2world);
+      world2obj_vx = world2obj.l.vx;
+      world2obj_vy = world2obj.l.vy;
+      world2obj_vz = world2obj.l.vz;
+      world2obj_p = world2obj.p;      
+    }
+  };
   
+  static_assert(sizeof(InstancePrimitive) == 128, "InstanceLeaf must be 128 bytes large");
+ 
   // ===================================================================================================================================================================================
   // ============================================================================== Quadifier ==========================================================================================
   // ===================================================================================================================================================================================
@@ -885,6 +940,34 @@ namespace embree
     if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads", (float)dt);
   }
   
+
+
+  __forceinline void createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, Scene *const scene, const uint numGeoms, BVH2Ploc *const bvh2, double &iteration_time, const bool verbose)    
+  {
+    static const uint CREATE_INSTANCES_SEARCH_WG_SIZE  = 256;
+    const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,CREATE_INSTANCES_SEARCH_WG_SIZE),sycl::range<1>(CREATE_INSTANCES_SEARCH_WG_SIZE));
+    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
+                         {
+                           const uint instID = item.get_global_id(0);
+                           if (instID < numGeoms)
+                           {
+                             Instance* instance = scene->get<Instance>(instID);
+                             BVH2Ploc node;
+                             BBox3fa instance_bounds(instance->bounds(0));
+                             gpu::AABB3f bounds(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
+                                                instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
+                             node.initLeaf(0,instID,bounds);
+                             node.store(&bvh2[instID]);
+                           }
+                         });
+		  
+      });
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+    double dt = gpu::getDeviceExecutionTiming(queue_event);      
+    iteration_time += dt;
+    if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads", (float)dt);
+  }
   
 
  
@@ -941,10 +1024,10 @@ namespace embree
                            }
                            item.barrier(sycl::access::fence_space::local_space);
 
-                           geometry_aabb.sub_group_reduce();
-                           centroid_aabb.sub_group_reduce();
+                           geometry_aabb = geometry_aabb.sub_group_reduce(); 
+                           centroid_aabb = centroid_aabb.sub_group_reduce(); 
 
-                           if (subgroupLocalID == 0)
+                            if (subgroupLocalID == 0) 
                            {
                              geometry_aabb.atomic_merge_local(*local_geometry_aabb);
                              centroid_aabb.atomic_merge_local(*local_centroid_aabb);
@@ -1934,7 +2017,7 @@ namespace embree
     }
   }
 
-  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
+  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const bool instanceMode=false)
   {
     uint *dest = (uint*)_dest;
     
@@ -1966,7 +2049,7 @@ namespace embree
     tmp[2]         = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127); 
     tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
     tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
-    tmp[5]         = 0xff;
+    tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
 
 #pragma nounroll
     for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
@@ -1980,9 +2063,11 @@ namespace embree
       uint8_t upper_z = 0x00;
       uint8_t data    = 0x00;      
 
-      const bool isLeaf = BVH2Ploc::getIndex(index) < numPrimitives; 
-      data = (i<numChildren) ? 1 : 0;
-      if (type == NODE_TYPE_INTERNAL) data |= (isLeaf ? ((NODE_TYPE_QUAD << 2)) : 0);
+      const NodeType leaf_type = instanceMode ? NODE_TYPE_INSTANCE : NODE_TYPE_QUAD;
+      const bool isLeaf = BVH2Ploc::getIndex(index) < numPrimitives;
+      const uint numBlocks = instanceMode ? 2 : 1;
+      data = (i<numChildren) ? numBlocks : 0;
+      if (type == NODE_TYPE_INTERNAL) data |= (isLeaf ? ((leaf_type << 2)) : 0);
       const gpu::AABB3f childBounds = bvh2[BVH2Ploc::getIndex(index)].bounds; //.conservativeBounds();      
       const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
       lower_x = (i<numChildren) ? (uint8_t)qbounds.lower_x : lower_x;
@@ -2146,7 +2231,7 @@ namespace embree
   }
 
 
-  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriQuadMesh* triQuadMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const uint maxNodeBlocks, const bool verbose)
+  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriQuadMesh* triQuadMesh, Scene *const scene, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -2198,7 +2283,7 @@ namespace embree
                                                                           const uint header = state->header;                                                                        
                                                                           const uint index  = state->bvh2_index;
                                                                           char* curAddr = (char*)state;
-
+                                                                          //PRINT2(localID,(uint64_t)curAddr);
                                                                           if (header == 0x7fffffff)
                                                                           {
                                                                             if (!BVH2Ploc::isLeaf(index,numPrimitives))
@@ -2212,7 +2297,8 @@ namespace embree
                                                                                 char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
 
                                                                                 writeNode(curAddr,allocID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
-                                                                          
+
+                                                                                //PRINT3((uint64_t)curAddr,allocID,numChildren);
                                                                                 for (uint j=0;j<numChildren;j++)
                                                                                 {
                                                                                   TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
@@ -2234,7 +2320,7 @@ namespace embree
                                                                         globals->range_start = startBlockID;
                                                                         globals->range_end   = endBlockID;                                                                        
                                                                         globals->node_mem_allocator_cur = node_mem_allocator_cur;
-                                                                        host_device_tasks[0] = endBlockID-startBlockID;
+                                                                        host_device_tasks[0] = endBlockID - startBlockID;
                                                                         host_device_tasks[1] = endBlockID - globals->node_mem_allocator_start;                           
                                                                       }
                                                                       
@@ -2246,6 +2332,9 @@ namespace embree
       if (unlikely(verbose))
         PRINT4("initial iteration ",iteration,(float)dt,(float)total_time);
     }
+
+    //PRINT("END PHASE I");
+    
     /* ---- Phase II: full breadth-first phase until only fatleaves remain--- */
     
     struct __aligned(64) LocalNodeData {
@@ -2349,7 +2438,8 @@ namespace embree
     }
     
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID,geomID pairs for final phase --- */
-    const uint blocks = host_device_tasks[1];    
+    const uint blocks = host_device_tasks[1];
+    //PRINT(blocks);
     if (blocks)
     {
       const uint wgSize = 256;
@@ -2378,7 +2468,11 @@ namespace embree
 
                                                                       uint *indices = _local_indices.get_pointer() + BVH_BRANCHING_FACTOR * localID;
                                                                       
-                                                                      if (localID == 0) num_entries = 0;
+                                                                      if (localID == 0)
+                                                                      {
+                                                                        //PRINT(endBlockID-startBlockID);
+                                                                        num_entries = 0;
+                                                                      }
                                                                       
                                                                       item.barrier(sycl::access::fence_space::local_space);
                                                                       
@@ -2388,7 +2482,7 @@ namespace embree
                                                                       bool isFatLeaf   = false;
                                                                       uint offset      = 0;
                                                                       uint index       = 0;
-                                                                      
+                                                                      const uint blocksPerLeafPrim = instanceMode ? 2 : 1;
                                                                       if (innerID < endBlockID)                                                                        
                                                                       {
                                                                         TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
@@ -2397,7 +2491,7 @@ namespace embree
                                                                         
                                                                         if (state->header == 0x7fffffff) // not processed yet
                                                                         {
-                                                                          isFatLeaf = !BVH2Ploc::isLeaf(index,numPrimitives);
+                                                                          isFatLeaf = !BVH2Ploc::isLeaf(index,numPrimitives) || instanceMode;
                                                                           
                                                                           if (isFatLeaf) // fatleaf, generate internal node and numChildren x LeafGenData 
                                                                           {
@@ -2409,7 +2503,7 @@ namespace embree
                                                                             numChildren = 1;
                                                                             indices[0] = index;
                                                                           }
-                                                                          offset = gpu::atomic_add_local(&num_entries,numChildren);                                                                          
+                                                                          offset = gpu::atomic_add_local(&num_entries,numChildren*blocksPerLeafPrim);
                                                                         }
                                                                       }
 
@@ -2417,8 +2511,8 @@ namespace embree
                                                                       
                                                                       if (localID == 0)
                                                                       {
-                                                                        const uint numEntries = num_entries;
-                                                                        global_blockID = gpu::atomic_add_global(&globals->leaf_mem_allocator_cur,numEntries);
+                                                                        const uint numBlocks = num_entries;
+                                                                        global_blockID = gpu::atomic_add_global(&globals->leaf_mem_allocator_cur,numBlocks);
                                                                       }
                                                                       
                                                                       item.barrier(sycl::access::fence_space::local_space);
@@ -2426,19 +2520,25 @@ namespace embree
                                                                       const uint blockID = global_blockID + offset;
 
                                                                       if (isFatLeaf)
-                                                                        writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
+                                                                      {
+                                                                        //PRINT4(localID,instanceMode,curAddr,numChildren);
+                                                                        writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,instanceMode ? NODE_TYPE_INSTANCE : NODE_TYPE_MIXED,instanceMode);
+                                                                      }
 
                                                                       {
-                                                                        const uint leafDataID = offset;
+                                                                        const uint leafDataID = offset>>(blocksPerLeafPrim-1);
                                                                         for (uint j=0;j<numChildren;j++)
-                                                                        {                                                                                          
+                                                                        {                                                                          
                                                                           const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
                                                                           const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
-                                                                          local_leafGenData[leafDataID+j].blockID = isFatLeaf ? blockID + j : innerID; 
+                                                                          const uint bID = isFatLeaf ? blockID + j*blocksPerLeafPrim : innerID; 
+                                                                          //PRINT4(leafDataID,j,geomID,bID);
+                                                                          local_leafGenData[leafDataID+j].blockID = bID;
                                                                           local_leafGenData[leafDataID+j].primID = primID;
                                                                           local_leafGenData[leafDataID+j].geomID = geomID;
                                                                         }
                                                                       }
+                                                                         
                                                                   
                                                                       const uint leafStartID = globals->leaf_mem_allocator_start;
                                                                       item.barrier(sycl::access::fence_space::local_space);
@@ -2454,7 +2554,8 @@ namespace embree
                                                                         {
                                                                           /* --- reset atomics --- */
                                                                           globals->sync = 0;
-                                                                          host_device_tasks[0] = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
+                                                                          uint leaves = (globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start) >> (instanceMode ? 1 : 0);
+                                                                          host_device_tasks[0] = leaves;
                                                                         }
                                                                       }
                              
@@ -2472,94 +2573,138 @@ namespace embree
     const uint leaves = host_device_tasks[0]; // = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;   
     if (leaves)
     {
-      const uint wgSize = 256;
-      const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
-      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                   sycl::accessor< QuadLeaf, 1, sycl_read_write, sycl_local> _localLeaf(sycl::range<1>(wgSize),cgh);
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
-                                                                    {
-                                                                      const uint globalID = item.get_global_id(0);
-                                                                      const uint localID  = item.get_local_id(0);
-                                                                      QuadLeaf *localLeaf = _localLeaf.get_pointer();
-                                                                      bool valid = false;
-                                                                      QuadLeaf *qleaf = nullptr;
+      if (!instanceMode)
+      {
+        const uint wgSize = 256;
+        const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
+        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+            sycl::accessor< QuadLeaf, 1, sycl_read_write, sycl_local> _localLeaf(sycl::range<1>(wgSize),cgh);
+            cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
+                             {
+                               const uint globalID = item.get_global_id(0);
+                               const uint localID  = item.get_local_id(0);
+                               QuadLeaf *localLeaf = _localLeaf.get_pointer();
+                               bool valid = false;
+                               QuadLeaf *qleaf = nullptr;
                                                                       
-                                                                      if (globalID < leaves)                                                                        
-                                                                      {
-                                                                        qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
-                                                                        const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
-                                                                        const uint primID0 = leafGenData[globalID].primID & 0x7fffffff;
-                                                                        const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
+                               if (globalID < leaves)                                                                        
+                               {
+                                 qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
+                                 const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
+                                 const uint primID0 = leafGenData[globalID].primID & 0x7fffffff;
+                                 const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
 
-                                                                        TriQuadMesh &mesh = triQuadMesh[geomID];
+                                 TriQuadMesh &mesh = triQuadMesh[geomID];
 
-                                                                        valid = true;
-                                                                        // ====================                           
-                                                                        // === TriangleMesh ===
-                                                                        // ====================                                                                        
-                                                                        if (mesh.isTriangleMesh())
-                                                                        {
-                                                                          const TriangleMesh::Triangle tri = mesh.getTrianglesPtr()[primID0];
-                                                                          const Vec3f p0 = mesh.getVerticesPtr()[tri.v[0]];
-                                                                          const Vec3f p1 = mesh.getVerticesPtr()[tri.v[1]];
-                                                                          const Vec3f p2 = mesh.getVerticesPtr()[tri.v[2]];
-                                                                          Vec3f p3 = p2;
-                                                                          uint lb0 = 0,lb1 = 0, lb2 = 0;
+                                 valid = true;
+                                 // ====================                           
+                                 // === TriangleMesh ===
+                                 // ====================                                                                        
+                                 if (mesh.isTriangleMesh())
+                                 {
+                                   const TriangleMesh::Triangle tri = mesh.getTrianglesPtr()[primID0];
+                                   const Vec3f p0 = mesh.getVerticesPtr()[tri.v[0]];
+                                   const Vec3f p1 = mesh.getVerticesPtr()[tri.v[1]];
+                                   const Vec3f p2 = mesh.getVerticesPtr()[tri.v[2]];
+                                   Vec3f p3 = p2;
+                                   uint lb0 = 0,lb1 = 0, lb2 = 0;
                 
-                                                                          /* handle paired triangle */
-                                                                          if (primID0 != primID1)
-                                                                          {
-                                                                            const TriangleMesh::Triangle tri1 = mesh.getTrianglesPtr()[primID1];
+                                   /* handle paired triangle */
+                                   if (primID0 != primID1)
+                                   {
+                                     const TriangleMesh::Triangle tri1 = mesh.getTrianglesPtr()[primID1];
           
-                                                                            const uint p3_index = try_pair_triangles(uint3(tri.v[0],tri.v[1],tri.v[2]),uint3(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);
-                                                                            p3 = mesh.getVerticesPtr()[tri1.v[p3_index]];                                   
-                                                                          }
+                                     const uint p3_index = try_pair_triangles(uint3(tri.v[0],tri.v[1],tri.v[2]),uint3(tri1.v[0],tri1.v[1],tri1.v[2]),lb0,lb1,lb2);
+                                     p3 = mesh.getVerticesPtr()[tri1.v[p3_index]];                                   
+                                   }
 
-                                                                          localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
-                                                                          //write(leaf,(float16*)qleaf);
-                                                                        }
-                                                                        // ================                           
-                                                                        // === QuadMesh ===
-                                                                        // ================
-                                                                        else
-                                                                        {
-                                                                          const QuadMesh::Quad quad = mesh.getQuadsPtr()[primID0];
-                                                                          const Vec3f p0 = mesh.getVerticesPtr()[quad.v[0]];
-                                                                          const Vec3f p1 = mesh.getVerticesPtr()[quad.v[1]];
-                                                                          const Vec3f p2 = mesh.getVerticesPtr()[quad.v[2]];
-                                                                          const Vec3f p3 = mesh.getVerticesPtr()[quad.v[3]];
-                                                                          localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );                                                                          
-                                                                        }
+                                   localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
+                                   //write(leaf,(float16*)qleaf);
+                                 }
+                                 // ================                           
+                                 // === QuadMesh ===
+                                 // ================
+                                 else
+                                 {
+                                   const QuadMesh::Quad quad = mesh.getQuadsPtr()[primID0];
+                                   const Vec3f p0 = mesh.getVerticesPtr()[quad.v[0]];
+                                   const Vec3f p1 = mesh.getVerticesPtr()[quad.v[1]];
+                                   const Vec3f p2 = mesh.getVerticesPtr()[quad.v[2]];
+                                   const Vec3f p3 = mesh.getVerticesPtr()[quad.v[3]];
+                                   localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );                                                                          
+                                 }
 
-                                                                      }
+                               }
 
-                                                                      /* ================================== */                                                                      
-                                                                      /* === write out to global memory === */
-                                                                      /* ================================== */
+                               /* ================================== */                                                                      
+                               /* === write out to global memory === */
+                               /* ================================== */
                                                                       
-                                                                      const uint subgroupLocalID = get_sub_group_local_id();
-                                                                      uint mask = sub_group_ballot(valid);
-                                                                      while(mask)
-                                                                      {
-                                                                        const uint index = sycl::ctz(mask);
-                                                                        mask &= mask-1;
-                                                                        uint ID = sub_group_broadcast(localID,index);
-                                                                        uint* dest = sub_group_broadcast((uint*)qleaf,index);
-                                                                        uint* source = (uint*)&localLeaf[ID];
-                                                                        const uint v = source[subgroupLocalID];                                                                        
-                                                                        sub_group_store(dest,v);
-                                                                      }
-
-                                                                        
-                                                                                                                                            
-                                                                    });
+                               const uint subgroupLocalID = get_sub_group_local_id();
+                               uint mask = sub_group_ballot(valid);
+                               while(mask)
+                               {
+                                 const uint index = sycl::ctz(mask);
+                                 mask &= mask-1;
+                                 uint ID = sub_group_broadcast(localID,index);
+                                 uint* dest = sub_group_broadcast((uint*)qleaf,index);
+                                 uint* source = (uint*)&localLeaf[ID];
+                                 const uint v = source[subgroupLocalID];                                                                        
+                                 sub_group_store(dest,v);
+                               }                                                                                                            
+                             });
 		  
-                                                 });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
-      double dt = gpu::getDeviceExecutionTiming(queue_event);      
-      total_time += dt;
-      if (unlikely(verbose))      
-        PRINT3("final leaf generation ",(float)dt,(float)total_time);            
+          });
+        gpu::waitOnQueueAndCatchException(gpu_queue);
+        double dt = gpu::getDeviceExecutionTiming(queue_event);      
+        total_time += dt;
+        if (unlikely(verbose))      
+          PRINT3("final leaf generation ",(float)dt,(float)total_time);
+      }
+
+      if (instanceMode)
+      {
+#if 1                                                                                                         
+        const uint wgSize = 256;
+        const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
+        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+            cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
+                             {
+                               const uint globalID = item.get_global_id(0);
+                               if (globalID < leaves)                                                                        
+                               {
+                                 InstancePrimitive *dest = (InstancePrimitive *)globals->nodeBlockPtr(leafGenData[globalID].blockID);          
+                                 const uint instID = leafGenData[globalID].primID;
+                                 Instance* instance = scene->get<Instance>(instID);
+                                 void* accel = static_cast<Scene*>(instance->object)->hwaccel.data();
+                                 const AffineSpace3fa local2world = instance->getLocal2World();
+                                 const uint64_t root = (uint64_t)accel + 128; //static_cast<QBVH6*>(accel)->root();
+                                 *dest = InstancePrimitive(local2world,root,instID,mask32_to_mask8(instance->mask));          
+                               }
+
+                             });
+		  
+          });
+        gpu::waitOnQueueAndCatchException(gpu_queue);
+        double dt = gpu::getDeviceExecutionTiming(queue_event);      
+        total_time += dt;
+        
+        if (unlikely(verbose))      
+          PRINT3("final leaf generation ",(float)dt,(float)total_time);
+#else
+        for (uint globalID=0;globalID<leaves;globalID++)
+        {
+          InstancePrimitive *dest = (InstancePrimitive *)globals->nodeBlockPtr(leafGenData[globalID].blockID);          
+          const uint instID = leafGenData[globalID].primID;
+          Instance* instance = scene->get<Instance>(instID);
+          void* accel = static_cast<Scene*>(instance->object)->hwaccel.data();
+          const AffineSpace3fa local2world = instance->getLocal2World();
+          const uint64_t root = (uint64_t)accel + 128; //static_cast<QBVH6*>(accel)->root();
+          *dest = InstancePrimitive(local2world,root,instID,mask32_to_mask8(instance->mask));          
+        }        
+#endif                                 
+        
+      }
     }
     return (float)total_time;
   }  

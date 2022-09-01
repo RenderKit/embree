@@ -260,6 +260,7 @@ namespace embree
       Instance* instance = scene->get<Instance>(geomID);
       void* accel = dynamic_cast<Scene*>(instance->object)->hwaccel.data();
       const AffineSpace3fa local2world = instance->getLocal2World();
+      PRINT3(geomID,instance->bounds(0),instance->object->bounds.bounds());
       return QBVH6BuilderSAH::Instance(local2world,accel,mask32_to_mask8(instance->mask));
     };
 

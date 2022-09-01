@@ -141,18 +141,15 @@ namespace embree
 
     const uint numGeoms = scene->size();
     const bool activeTriQuadMeshes = scene->getNumPrimitives(TriangleMesh::geom_type,false) || scene->getNumPrimitives(QuadMesh::geom_type,false);
-    const bool activeInstances = scene->getNumPrimitives(Instance::geom_type,false);
+    const uint numInstances = scene->getNumPrimitives(Instance::geom_type,false);
     
     PRINT(numGeoms);
     PRINT(scene->getNumPrimitives(TriangleMesh::geom_type,false));
     PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
     PRINT(activeTriQuadMeshes);
-    PRINT(activeInstances);
+    PRINT(numInstances);
     
-    for (uint geomID=0;geomID<numGeoms;geomID++)
-    {
-      //PRINT((int)scene->get(geomID)->getType());
-    }
+    if (activeTriQuadMeshes && numInstances) FATAL("GPU buildes does not support tri/quad meshes and instances in the same scene");
     
     // ===============================================================================================================
     
@@ -167,30 +164,38 @@ namespace embree
     assert(globals);
 
     sizeTotalAllocations += sizeof(PLOCGlobals);
-    
-    const size_t alloc_TriQuadMeshes = sizeof(TriQuadMesh)*(numGeoms+1);
-    const size_t alloc_GeomPrefixSums = sizeof(uint)*(numGeoms+1);
 
-    char *scratch_mem0 = (char*)sycl::aligned_alloc(64,alloc_GeomPrefixSums+alloc_TriQuadMeshes,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
-    gpu_queue.prefetch(scratch_mem0,alloc_GeomPrefixSums+alloc_TriQuadMeshes);
+    char* scratch_mem0               = nullptr;
+    TriQuadMesh *triQuadMesh         = nullptr;
+    uint *quads_per_geom_prefix_sum  = nullptr;
+    size_t size_scratch_mem0         = 0;
 
-    sizeTotalAllocations += alloc_GeomPrefixSums+alloc_TriQuadMeshes;
-    
-    //PRINT(alloc_GeomPrefixSums+alloc_TriQuadMeshes);
-    
-    TriQuadMesh *const triQuadMesh         = (TriQuadMesh*)(scratch_mem0 + 0);
-    uint *const quads_per_geom_prefix_sum  =        (uint*)(scratch_mem0 + alloc_TriQuadMeshes);
-    
+    if (activeTriQuadMeshes)
+    {
+      const size_t alloc_TriQuadMeshes = sizeof(TriQuadMesh)*(numGeoms+1);
+      const size_t alloc_GeomPrefixSums = sizeof(uint)*(numGeoms+1);
+      size_scratch_mem0 = alloc_GeomPrefixSums+alloc_TriQuadMeshes;
+        
+      scratch_mem0 = (char*)sycl::aligned_alloc(64,size_scratch_mem0,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
+      gpu_queue.prefetch(scratch_mem0,size_scratch_mem0);
+        
+      triQuadMesh                = (TriQuadMesh*)(scratch_mem0 + 0);
+      quads_per_geom_prefix_sum  =        (uint*)(scratch_mem0 + alloc_TriQuadMeshes);
+    }
+
+
+    sizeTotalAllocations += size_scratch_mem0;    
     timer.stop(BuildTimer::ALLOCATION);
 	
     if (unlikely(verbose2))
-      std::cout << "USM allocation time for globals, tri meshes and prefix sums " << timer.get_host_timer() << " ms for " << (double)(alloc_TriQuadMeshes+alloc_GeomPrefixSums) / (1024*1024) << " MBs " << std::endl;     	
+      std::cout << "USM allocation time for globals, tri meshes/prefix sums or instances " << timer.get_host_timer() << " ms for " << (double)(size_scratch_mem0) / (1024*1024) << " MBs " << std::endl;     	
 
     // ==============================================
     // === compute prefix sum over geometry sizes === 
     // ==============================================
     
     uint org_numPrimitives = 0;
+    
     if (activeTriQuadMeshes)
       for (uint  geomID = 0; geomID < numGeoms; geomID++)
       {
@@ -213,11 +218,12 @@ namespace embree
           gpu_queue.prefetch((Vec3fa*)quad_mesh->vertices0.getPtr()    , quad_mesh->numVertices() * sizeof(Vec3fa));        
         }      
       }
+
+    if (numInstances)
+      org_numPrimitives = numInstances;
     
     if (unlikely(verbose2)) PRINT(numGeoms);
-    
-    //exit(0);
-    
+        
     double first_kernel_time0 = getSeconds();
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
     {	  
@@ -230,37 +236,38 @@ namespace embree
     double first_kernel_time1 = getSeconds();
 
     if (unlikely(verbose2)) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
-        
-    // =============================
-    // === count quads per block === 
-    // =============================
 
-    timer.start(BuildTimer::PRE_PROCESS);
-
-    double device_quadification_time = 0.0f;
-    
     if (activeTriQuadMeshes)    
+    {    
+      // =============================
+      // === count quads per block === 
+      // =============================
+
+      timer.start(BuildTimer::PRE_PROCESS);
+
+      double device_quadification_time = 0.0f;
+    
       countQuadsPerGeometry(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose2);
 
-    timer.stop(BuildTimer::PRE_PROCESS);
-    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
+      timer.stop(BuildTimer::PRE_PROCESS);
+      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
                               
-    if (unlikely(verbose2)) std::cout << "Count quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
+      if (unlikely(verbose2)) std::cout << "Count quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
 
-    /* ----------------------------- */    
-    /* --- prefix sum over quads --- */
-    /* ----------------------------- */
+      // =============================      
+      // === prefix sum over quads ===
+      // =============================      
     
-    timer.start(BuildTimer::PRE_PROCESS);
-    double geom_prefix_sum_time = 0.0f;
+      timer.start(BuildTimer::PRE_PROCESS);
+      double geom_prefix_sum_time = 0.0f;
      
-    if (activeTriQuadMeshes)
       prefixsumOverGeometryCounts(gpu_queue,numGeoms,quads_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
     
-    timer.stop(BuildTimer::PRE_PROCESS);
-    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
-
-    const uint numPrimitives = *host_device_tasks;
+      timer.stop(BuildTimer::PRE_PROCESS);
+      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
+    }
+    
+    const uint numPrimitives = activeTriQuadMeshes ? *host_device_tasks : org_numPrimitives; // === TODO: prefix sum compaction for instances ===
     
     if (unlikely(verbose1))    
       PRINT2(org_numPrimitives,numPrimitives);
@@ -271,9 +278,10 @@ namespace embree
     const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
             
     /* --- estimate size of the BVH --- */
+    const uint leaf_primitive_size = numInstances ? 128 : 64;
     const uint header              = 128;
     const uint node_size           = numPrimitives * 64; 
-    const uint leaf_size           = numPrimitives * 64; 
+    const uint leaf_size           = numPrimitives * leaf_primitive_size; 
     const uint totalSize           = header + node_size + leaf_size; 
     const uint node_data_start     = header;
     const uint leaf_data_start     = header + node_size;
@@ -307,7 +315,7 @@ namespace embree
     assert(bvh_mem);
     const size_t conv_mem_size = sizeof(LeafGenerationData)*numPrimitives;
 
-    uint *scratch_mem1 = (uint*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME
+    uint *scratch_mem1 = (uint*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME device
     LeafGenerationData *leafGenData = (LeafGenerationData*)scratch_mem1;
     assert(conversionState);
 
@@ -382,15 +390,18 @@ namespace embree
 
     timer.start(BuildTimer::PRE_PROCESS);        
     
-    device_quadification_time = 0.0f;
+    double create_primref_time = 0.0f;
 
-    if (activeTriQuadMeshes)        
-      createQuads_initPLOCPrimRefs(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,device_quadification_time,verbose2);
+    if (activeTriQuadMeshes)
+      createQuads_initPLOCPrimRefs(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,create_primref_time,verbose2);
 
-    timer.stop(BuildTimer::PRE_PROCESS);
-    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
+    if (numInstances)
+      createInstances_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,create_primref_time,verbose2);
     
-    if (unlikely(verbose2)) std::cout << "create quads, init primrefs: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;
+    timer.stop(BuildTimer::PRE_PROCESS);
+    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);
+    
+    if (unlikely(verbose2)) std::cout << "create quads, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
     
 #if 0    
      for (uint i=0;i<numPrimitives;i++)
@@ -413,7 +424,8 @@ namespace embree
         
      timer.stop(BuildTimer::PRE_PROCESS);
      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_compute_centroid_bounds_time);
-        
+
+
     if (unlikely(verbose2))
       std::cout << "Get Geometry and Centroid Bounds Phase " << timer.get_host_timer() << " ms (host) " << device_compute_centroid_bounds_time << " ms (device) " << std::endl;		
        
@@ -494,6 +506,7 @@ namespace embree
     // ====== init clusters ======
     // ===========================
 
+    
     timer.start(BuildTimer::PRE_PROCESS);        
     double device_init_clusters_time = 0.0f;
 
@@ -612,7 +625,7 @@ namespace embree
     timer.start(BuildTimer::POST_PROCESS);        
    
     /* --- convert BVH2 to QBVH6 --- */    
-    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,qbvh,bvh2,leafGenData,numPrimitives,node_size/64,verbose2);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,verbose2);
 
     /* --- init final QBVH6 header --- */        
     {     
@@ -636,6 +649,8 @@ namespace embree
       gpu::waitOnQueueAndCatchException(gpu_queue);
     }	    
 
+    PRINT( qbvh->bounds );
+    
     timer.stop(BuildTimer::POST_PROCESS);
     timer.add_to_device_timer(BuildTimer::POST_PROCESS,conversion_device_time);
 
@@ -685,7 +700,7 @@ namespace embree
     
     if (unlikely(verbose2))
     {
-      //qbvh->print(std::cout,qbvh->root(),0,6);
+      qbvh->print(std::cout,qbvh->root(),0,6);
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);
