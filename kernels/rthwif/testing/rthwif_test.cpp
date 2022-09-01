@@ -1486,6 +1486,7 @@ int main(int argc, char* argv[])
   
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
+  bool jit_cache = true;
 
   /* command line parsing */
   if (argc == 1) {
@@ -1520,12 +1521,19 @@ int main(int argc, char* argv[])
     else if (strcmp(argv[i], "--sw-instancing") == 0) {
       inst = InstancingType::SW_INSTANCING;
     }
+    else if (strcmp(argv[i], "--jit-cache") == 0) {
+      if (++i >= argc) throw std::runtime_error("Error: --jit-cache syntax error");
+      jit_cache = atoi(argv[i]);
+    }
     else {
       std::cout << "ERROR: invalid command line option " << argv[i] << std::endl;
       return 1;
     }
   }
 
+  if (jit_cache)
+    std::cout << "WARNING: JIT caching is not supported!" << std::endl;
+    
   /* initialize SYCL device */
   device = sycl::device(sycl::gpu_selector());
   sycl::queue queue = sycl::queue(device,exception_handler);
