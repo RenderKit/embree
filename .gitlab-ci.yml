@@ -144,7 +144,7 @@ continuous-linux-DG2-AOT-INT-test:
 
 continuous-linux-DG2-JIT:
   extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none tasking:TBB intensity:4"]
+  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON rthwif_internal_builder:OFF sycl:none tasking:TBB intensity:4"]
   image: $DOCKER_REGISTRY/embree/ubuntu:20.04
   tags:   [embree, docker]
 

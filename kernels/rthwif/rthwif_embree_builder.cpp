@@ -789,13 +789,14 @@ namespace embree
       
       return rthwifBuildDriver(scene,quality_flags,accel);
     }
-    else
+    else if (scene->device->rthw_builder == "internal")
     {
       if (scene->device->verbosity(1))
         std::cout << "Using internal HW BVH builder" << std::endl;
       
-      //return rthwifBuildDirect(scene,quality_flags,accel);
       return rthwifBuildInternal(scene,quality_flags,accel);
     }
+    else
+      throw std::runtime_error("invalid rthw_builder specified: " + scene->device->rthw_builder);
   }
 }

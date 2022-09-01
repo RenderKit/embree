@@ -94,6 +94,12 @@ namespace embree
     grid_accel_mb = "default";
     grid_builder_mb = "default";
 
+#if defined(EMBREE_RTHWIF_INTERNAL_BUILDER)
+    rthw_builder = "internal";
+#else
+    rthw_builder = "driver";
+#endif
+
     instancing_open_min = 0;
     instancing_block_size = 0;
     instancing_open_factor = 8.0f; 
