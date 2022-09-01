@@ -700,7 +700,7 @@ namespace embree
     
     if (unlikely(verbose2))
     {
-      qbvh->print(std::cout,qbvh->root(),0,6);
+      //qbvh->print(std::cout,qbvh->root(),0,6);
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);

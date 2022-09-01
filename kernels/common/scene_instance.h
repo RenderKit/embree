@@ -247,7 +247,6 @@ namespace embree
         const PrimRef prim(b,geomID,unsigned(0));
         pinfo.add_center2(prim);
         prims[k++] = prim;
-        PRINT2(geomID,prim);
         return pinfo;
       }
 
