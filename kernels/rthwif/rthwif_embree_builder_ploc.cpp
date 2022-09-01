@@ -280,7 +280,7 @@ namespace embree
     /* --- estimate size of the BVH --- */
     const uint leaf_primitive_size = numInstances ? 128 : 64;
     const uint header              = 128;
-    const uint node_size           = numPrimitives * 64; 
+    const uint node_size           = numPrimitives * 64 + 64 /* single node for fat leaf */ ; 
     const uint leaf_size           = numPrimitives * leaf_primitive_size; 
     const uint totalSize           = header + node_size + leaf_size; 
     const uint node_data_start     = header;
@@ -700,13 +700,14 @@ namespace embree
     
     if (unlikely(verbose2))
     {
-      //qbvh->print(std::cout,qbvh->root(),0,6);
+      qbvh->print(std::cout,qbvh->root(),0,6);
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);
     }
       
-    
+    //if (numInstances)       exit(0);
+
     return geomBounds;
   }
  

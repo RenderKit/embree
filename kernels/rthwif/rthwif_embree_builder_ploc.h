@@ -2287,14 +2287,12 @@ namespace embree
                                                                           {
                                                                             if (!BVH2Ploc::isLeaf(index,numPrimitives))
                                                                             {
-                                                                              if (!BVH2Ploc::isFatLeaf(index))
-                                                                              //if (!BVH2Ploc::isSmallSubTree(index))                                                                                
+                                                                              if (!BVH2Ploc::isFatLeaf(index) && numPrimitives > BVH_BRANCHING_FACTOR)
                                                                               {
                                                                                 uint indices[BVH_BRANCHING_FACTOR];                                                                                
                                                                                 const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
                                                                                 const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numChildren);
                                                                                 char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
-
                                                                                 writeNode(curAddr,allocID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED);
                                                                                 for (uint j=0;j<numChildren;j++)
                                                                                 {
@@ -2370,7 +2368,7 @@ namespace embree
                                                                         {
                                                                           if (!BVH2Ploc::isLeaf(index,numPrimitives))
                                                                           {
-                                                                            if (!BVH2Ploc::isFatLeaf(index))
+                                                                            if (!BVH2Ploc::isFatLeaf(index) && numPrimitives > BVH_BRANCHING_FACTOR)
                                                                             {
                                                                               uint indices[BVH_BRANCHING_FACTOR];
                                                                               const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
