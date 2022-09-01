@@ -148,6 +148,22 @@ namespace embree
     PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
     PRINT(activeTriQuadMeshes);
     PRINT(numInstances);
+
+    if (numInstances)
+    {
+#if 0      
+      for (uint i=0;i<numInstances;i++)
+      {
+        Instance* instance = scene->get<Instance>(i);
+        BBox3fa instance_bounds;
+        if (!instance->buildBounds(0,&instance_bounds))
+        {
+          PRINT2(i,instance_bounds);
+          FATAL("INSTANCE BOUNDS");
+        }
+      }
+#endif      
+    }
     
     if (activeTriQuadMeshes && numInstances) FATAL("GPU buildes does not support tri/quad meshes and instances in the same scene");
     
@@ -669,6 +685,26 @@ namespace embree
       HWAccel* hwaccel = (HWAccel*) accel.data();
       hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
     }
+
+    if (unlikely(verbose2))
+    {
+      // CHECKS
+      if (globals->node_mem_allocator_cur > globals->leaf_mem_allocator_start) FATAL("NOT ENOUGH MEMORY FOR INTERNAL NODES ALLOCATED");
+
+      PRINT(globals->node_mem_allocator_start);      
+      PRINT(globals->node_mem_allocator_cur);
+      PRINT(globals->node_mem_allocator_cur-globals->node_mem_allocator_start);
+      
+      PRINT(globals->leaf_mem_allocator_start);      
+      PRINT(globals->leaf_mem_allocator_cur);
+      PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);      
+      
+      qbvh->print(std::cout,qbvh->root(),0,6);
+      BVHStatistics stats = qbvh->computeStatistics();      
+      stats.print(std::cout);
+      stats.print_raw(std::cout);
+      PRINT("VERBOSE STATS DONE");      
+    }
     
     timer.start(BuildTimer::ALLOCATION);        
 
@@ -693,21 +729,9 @@ namespace embree
       std::cout << "Pre-process   " << timer.get_accum_host_timer(BuildTimer::PRE_PROCESS) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::PRE_PROCESS) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::PRE_PROCESS) / timer.get_accum_device_timer(BuildTimer::PRE_PROCESS) << std::endl;
       std::cout << "Build         " << timer.get_accum_host_timer(BuildTimer::BUILD) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::BUILD) / timer.get_accum_device_timer(BuildTimer::BUILD) << std::endl;
       std::cout << "Post-process  " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) / timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << std::endl;
-      
-      
-      //exit(0);
     }
     
-    if (unlikely(verbose2))
-    {
-      qbvh->print(std::cout,qbvh->root(),0,6);
-      BVHStatistics stats = qbvh->computeStatistics();      
-      stats.print(std::cout);
-      stats.print_raw(std::cout);
-    }
       
-    //if (numInstances)       exit(0);
-
     return geomBounds;
   }
  

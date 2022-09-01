@@ -481,7 +481,6 @@ namespace embree
       cout << tab(depth) << "  childOffset = " << 64 * int64_t(this->childOffset) << std::endl;
       cout << tab(depth) << "  nodeType = " << NodeType(this->nodeType) << std::endl;
       cout << tab(depth) << "  nodeMask = " << std::bitset<8>(this->nodeMask) << std::endl;
-      
       for (uint32_t i = 0; i < NUM_CHILDREN; i++)
       {
         cout << tab(depth) << "  child" << i << " = { ";
