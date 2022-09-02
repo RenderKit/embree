@@ -51,6 +51,7 @@ RTC_NAMESPACE_BEGIN;
     defined(EMBREE_GEOMETRY_GRID)     ||\
     defined(EMBREE_GEOMETRY_POINT)    ||\
     defined(EMBREE_GEOMETRY_USER)     ||\
+    defined(EMBREE_GEOMETRY_INSTANCE)   ||\
     defined(EMBREE_FILTER_FUNCTION)
 #define TRAV_LOOP
 #endif
@@ -65,6 +66,7 @@ const constexpr uint32_t TRAV_LOOP_FEATURES =
   RTC_FEATURE_GRID |
   RTC_FEATURE_POINT |
   RTC_FEATURE_USER_GEOMETRY |
+  RTC_FEATURE_INSTANCE |
   RTC_FEATURE_FILTER_FUNCTION;
 
 void use_rthwif_embree() {
