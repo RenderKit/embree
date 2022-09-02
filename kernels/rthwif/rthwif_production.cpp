@@ -19,7 +19,7 @@ using namespace embree;
     rtglobals_t dispatchGlobalsPtr;
     struct RTStack* rtStack;
     TraceRayCtrl ctrl;
-    uint32_t bvh_level;
+    unsigned int bvh_level;
  };*/
 
 void use_rthwif_production()
@@ -80,7 +80,7 @@ SYCL_EXTERNAL void intel_ray_query_forward_ray( intel_ray_query_t* query, intel_
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
 
   /* init ray */
-  uint32_t bvh_level = query->bvh_level+1;
+  unsigned int bvh_level = query->bvh_level+1;
   rtStack->ray[bvh_level].org[0] = ray.origin.x();
   rtStack->ray[bvh_level].org[1] = ray.origin.y();
   rtStack->ray[bvh_level].org[2] = ray.origin.z();
@@ -106,8 +106,8 @@ SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( intel_ray_query_t* quer
 {
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   
-  uint32_t bvh_level = query->bvh_level;
-  uint32_t rflags = rtStack->ray[bvh_level].rayFlags;
+  unsigned int bvh_level = query->bvh_level;
+  unsigned int rflags = rtStack->ray[bvh_level].rayFlags;
   if (rflags & intel_ray_flags_accept_first_hit_and_end_search) {
     rtStack->committedHit = rtStack->potentialHit;
     rtStack->committedHit.valid = 1;
@@ -149,7 +149,7 @@ SYCL_EXTERNAL void intel_ray_query_sync( intel_ray_query_t* query )
   /* continue is default behaviour */
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   
-  uint32_t bvh_level = rtStack->potentialHit.bvhLevel;
+  unsigned int bvh_level = rtStack->potentialHit.bvhLevel;
   *query = { query->opaque0, query->opaque1, query->opaque2, TRACE_RAY_CONTINUE, bvh_level };
 }
 
@@ -159,7 +159,7 @@ SYCL_EXTERNAL void intel_ray_query_abandon( intel_ray_query_t* query )
   *query = { nullptr, nullptr, nullptr, TRACE_RAY_INITIAL, 0 };
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_bvh_level( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
+SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
   return query->hit(hit_type).bvhLevel;
 }
 
@@ -175,13 +175,13 @@ SYCL_EXTERNAL bool intel_hit_is_front_face( intel_ray_query_t* query, intel_hit_
   return query->hit(hit_type).frontFace;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_geometry_id(intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL unsigned int intel_get_hit_geometry_id(intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   struct PrimLeafDesc* __restrict leaf = (struct PrimLeafDesc*)query->hit(hit_type).getPrimLeafPtr();
   return leaf->geomIndex;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL unsigned int intel_get_hit_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   void* __restrict leaf = hit.getPrimLeafPtr();
@@ -192,7 +192,7 @@ SYCL_EXTERNAL uint32_t intel_get_hit_primitive_id( intel_ray_query_t* query, int
      return ((ProceduralLeaf*)leaf)->_primIndex[hit.primLeafIndex];
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_triangle_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL unsigned int intel_get_hit_triangle_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   QuadLeaf* __restrict leaf = (QuadLeaf*) hit.getPrimLeafPtr();
@@ -200,14 +200,14 @@ SYCL_EXTERNAL uint32_t intel_get_hit_triangle_primitive_id( intel_ray_query_t* q
   return leaf->primIndex0 + hit.primIndexDelta;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_procedural_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL unsigned int intel_get_hit_procedural_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   ProceduralLeaf* __restrict leaf = (ProceduralLeaf*) hit.getPrimLeafPtr();
   return leaf->_primIndex[hit.primLeafIndex];
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instance_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL unsigned int intel_get_hit_instance_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();
@@ -215,7 +215,7 @@ SYCL_EXTERNAL uint32_t intel_get_hit_instance_id( intel_ray_query_t* query, inte
   return leaf->part1.instanceIndex;
 }
 
-SYCL_EXTERNAL uint32_t intel_get_hit_instance_user_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
+SYCL_EXTERNAL unsigned int intel_get_hit_instance_user_id( intel_ray_query_t* query, intel_hit_type_t hit_type )
 {
   MemHit& hit = query->hit(hit_type);
   InstanceLeaf* __restrict leaf = (InstanceLeaf*) hit.getInstanceLeafPtr();
@@ -293,7 +293,7 @@ SYCL_EXTERNAL intel_ray_flags_t intel_get_ray_flags( intel_ray_query_t* query, u
   return (intel_ray_flags_t) rtStack->ray[bvh_level].rayFlags;
 }
 
-SYCL_EXTERNAL int intel_get_ray_mask( intel_ray_query_t* query, unsigned int bvh_level)
+SYCL_EXTERNAL unsigned int intel_get_ray_mask( intel_ray_query_t* query, unsigned int bvh_level)
 {
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   return rtStack->ray[bvh_level].rayMask;

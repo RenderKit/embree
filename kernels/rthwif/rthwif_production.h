@@ -46,7 +46,7 @@ struct intel_ray_desc_t
   sycl::float3 direction;
   float tmin;
   float tmax;
-  uint32_t mask;
+  unsigned int mask;
   intel_ray_flags_t flags;
   float time;       // ignored when motion blur is not supported
 };
@@ -66,14 +66,14 @@ SYCL_EXTERNAL void intel_ray_query_forward_ray(
 
 // commit the potential hit
 SYCL_EXTERNAL void intel_ray_query_commit_potential_hit(
-    intel_ray_query_t* query
+  intel_ray_query_t* query
 );
 
 // commit the potential hit and override hit distance and UVs
 SYCL_EXTERNAL void intel_ray_query_commit_potential_hit(
-    intel_ray_query_t* query,
-    float override_hit_distance,
-    sycl::float2 override_uv
+  intel_ray_query_t* query,
+  float override_hit_distance,
+  sycl::float2 override_uv
 );
 
 // start traversal of a ray query
@@ -92,37 +92,27 @@ SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( intel_ray_query_t* query, in
 SYCL_EXTERNAL float intel_get_hit_distance( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL sycl::float2 intel_get_hit_barycentrics( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL bool intel_hit_is_front_face( intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_geometry_id(intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_triangle_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type );  // fast path for quad leaves
-SYCL_EXTERNAL uint32_t intel_get_hit_procedural_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type ); // fast path for procedural leaves
-SYCL_EXTERNAL uint32_t intel_get_hit_instance_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
-SYCL_EXTERNAL uint32_t intel_get_hit_instance_user_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL unsigned int intel_get_hit_geometry_id(intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL unsigned int intel_get_hit_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL unsigned int intel_get_hit_triangle_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type );  // fast path for quad leaves
+SYCL_EXTERNAL unsigned int intel_get_hit_procedural_primitive_id( intel_ray_query_t* query, intel_hit_type_t hit_type ); // fast path for procedural leaves
+SYCL_EXTERNAL unsigned int intel_get_hit_instance_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
+SYCL_EXTERNAL unsigned int intel_get_hit_instance_user_id( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL intel_float4x3 intel_get_hit_world_to_object( intel_ray_query_t* query, intel_hit_type_t hit_type );
 SYCL_EXTERNAL intel_float4x3 intel_get_hit_object_to_world( intel_ray_query_t* query, intel_hit_type_t hit_type );
 
 // fetch triangle vertices for a hit
-SYCL_EXTERNAL void intel_get_hit_triangle_vertices( intel_ray_query_t* query, sycl::float3 verts_out[3], intel_hit_type_t hit_type );
+SYCL_EXTERNAL void intel_get_hit_triangle_vertices( intel_ray_query_t* query, sycl::float3 vertices_out[3], intel_hit_type_t hit_type );
 
-//
-// read ray-data
-//  This is used to read transformed rays produced by HW instancing pipeline
-//  during any-hit or intersection shader execution
-//
+// Read ray-data. This is used to read transformed rays produced by HW instancing pipeline
+// during any-hit or intersection shader execution.
 SYCL_EXTERNAL sycl::float3 intel_get_ray_origin( intel_ray_query_t* query, unsigned int bvh_level );
 SYCL_EXTERNAL sycl::float3 intel_get_ray_direction( intel_ray_query_t* query, unsigned int bvh_level );
 SYCL_EXTERNAL float intel_get_ray_tmin( intel_ray_query_t* query, unsigned int bvh_level );
-SYCL_EXTERNAL intel_ray_flags_t intel_get_ray_flags( intel_ray_query_t* query, unsigned int bvh_level ); // FIXME: uint32_t?
-SYCL_EXTERNAL int intel_get_ray_mask( intel_ray_query_t* query, unsigned int bvh_level ); // FIXME: uint32_t?
+SYCL_EXTERNAL intel_ray_flags_t intel_get_ray_flags( intel_ray_query_t* query, unsigned int bvh_level );
+SYCL_EXTERNAL unsigned int intel_get_ray_mask( intel_ray_query_t* query, unsigned int bvh_level );
 
-// test whether traversal has terminated.  If false, the ray has reached
-//  a procedural leaf or a non-opaque triangle leaf, and requires shader processing
-SYCL_EXTERNAL bool intel_is_traversal_done( intel_ray_query_t* query );
-
-// if traversal is not done one can test if a triangle is hit (anyhit
-// shader needs to get invoked) or a procedural (intersection shader
-// should get invoked)
-
+// if traversal returns one can test if a triangle or procedural is hit
 enum intel_candidate_type_t
 {
   intel_candidate_type_triangle,
@@ -130,6 +120,10 @@ enum intel_candidate_type_t
 };
 
 SYCL_EXTERNAL intel_candidate_type_t intel_get_hit_candidate( intel_ray_query_t* query, intel_hit_type_t hit_type );
+
+// test whether traversal has terminated.  If false, the ray has reached
+//  a procedural leaf or a non-opaque triangle leaf, and requires shader processing
+SYCL_EXTERNAL bool intel_is_traversal_done( intel_ray_query_t* query );
 
 // if traversal is done one can test for the presence of a committed hit to either invoke miss or closest hit shader
 SYCL_EXTERNAL bool intel_has_committed_hit( intel_ray_query_t* query );
