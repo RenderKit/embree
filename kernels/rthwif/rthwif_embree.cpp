@@ -116,7 +116,7 @@ bool intersect_user_geometry(intel_ray_query_t* query, RayHit& ray, UserGeometry
   void** AccelTable = (void**) (qbvh6+1);
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t*) AccelTable[0];
     
-  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr, 0);
+  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
   return false;
 }
 
@@ -157,7 +157,7 @@ bool intersect_user_geometry(intel_ray_query_t* query, Ray& ray, UserGeometry* g
   void** AccelTable = (void**) (qbvh6+1);
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t*) AccelTable[0];
 
-  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr, 0);
+  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
   return false;
 }
 
@@ -210,7 +210,7 @@ bool intersect_instance(intel_ray_query_t* query, RayHit& ray, Instance* instanc
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t*) AccelTable[bvh_id];
   bvh_id = 0;
   
-  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr, bvh_id);
+  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
 
   return false;
 }
@@ -261,7 +261,7 @@ bool intersect_instance(intel_ray_query_t* query, Ray& ray, Instance* instance, 
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t*) AccelTable[bvh_id];
   bvh_id = 0;
 
-  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr, bvh_id);
+  intel_ray_query_forward_ray(query, raydesc, hwaccel_ptr);
 
   return false;
 }
@@ -638,7 +638,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t*) AccelTable[bvh_id];
   bvh_id = 0;
   
-  intel_ray_query_t query_ = intel_ray_query_init(raydesc, hwaccel_ptr, bvh_id);
+  intel_ray_query_t query_ = intel_ray_query_init(raydesc, hwaccel_ptr);
   intel_ray_query_t* query = &query_;
   
   intel_ray_query_start_traversal(query);
@@ -740,7 +740,7 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t*) AccelTable[bvh_id];
   bvh_id = 0;
   
-  intel_ray_query_t query_ = intel_ray_query_init(raydesc, hwaccel_ptr, bvh_id);
+  intel_ray_query_t query_ = intel_ray_query_init(raydesc, hwaccel_ptr);
   intel_ray_query_t* query = &query_;
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);

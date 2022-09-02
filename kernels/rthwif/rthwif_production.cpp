@@ -26,7 +26,7 @@ void use_rthwif_production()
 {
 }
 
-SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel_raytracing_acceleration_structure_t* _accel_i, uint32_t bvh_id )
+SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel_raytracing_acceleration_structure_t* _accel_i )
 {
   unsigned int bvh_level = 0;
   
@@ -48,7 +48,7 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel
   rtStack->ray[bvh_level].dir[2] = ray.direction.z();
   rtStack->ray[bvh_level].tnear  = ray.tmin;
   rtStack->ray[bvh_level].tfar   = ray.tmax;
-  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset + sizeof_QBVH6_InternalNode6*bvh_id;
+  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset;
   rtStack->ray[bvh_level].rayFlags = ray.flags;
   rtStack->ray[bvh_level].hitGroupSRBasePtr = 0;
   rtStack->ray[bvh_level].hitGroupSRStride = 0;
@@ -74,7 +74,7 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel
   return { nullptr, (void*) dispatchGlobalsPtr, rtStack, TRACE_RAY_INITIAL, bvh_level };
 }
 
-SYCL_EXTERNAL void intel_ray_query_forward_ray( intel_ray_query_t* query, intel_ray_desc_t ray, intel_raytracing_acceleration_structure_t* accel_i, uint32_t bvh_id )
+SYCL_EXTERNAL void intel_ray_query_forward_ray( intel_ray_query_t* query, intel_ray_desc_t ray, intel_raytracing_acceleration_structure_t* accel_i)
 {
   HWAccel* accel = (HWAccel*)accel_i;
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
@@ -89,7 +89,7 @@ SYCL_EXTERNAL void intel_ray_query_forward_ray( intel_ray_query_t* query, intel_
   rtStack->ray[bvh_level].dir[2] = ray.direction.z();
   rtStack->ray[bvh_level].tnear  = ray.tmin;
   rtStack->ray[bvh_level].tfar   = ray.tmax;
-  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset + sizeof_QBVH6_InternalNode6*bvh_id;
+  rtStack->ray[bvh_level].rootNodePtr = (uint64_t)accel + QBVH6_rootNodeOffset;
   rtStack->ray[bvh_level].rayFlags = ray.flags;
   rtStack->ray[bvh_level].hitGroupSRBasePtr = 0;
   rtStack->ray[bvh_level].hitGroupSRStride = 0;
@@ -159,7 +159,7 @@ SYCL_EXTERNAL void intel_ray_query_abandon( intel_ray_query_t* query )
   *query = { nullptr, nullptr, nullptr, TRACE_RAY_INITIAL, 0 };
 }
 
-SYCL_EXTERNAL unsigned int intel_get_hit_bvh_level( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
+SYCL_EXTERNAL uint32_t intel_get_hit_bvh_level( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
   return query->hit(hit_type).bvhLevel;
 }
 

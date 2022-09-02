@@ -947,7 +947,7 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
   ray.flags = (intel_ray_flags_t) in.flags;
   
   /* trace ray */
-  intel_ray_query_t query_ = intel_ray_query_init(ray,accel,0);
+  intel_ray_query_t query_ = intel_ray_query_init(ray,accel);
   intel_ray_query_t* query = &query_;
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
@@ -1048,7 +1048,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   ray.flags = (intel_ray_flags_t) in.flags;
   
   /* trace ray */
-  intel_ray_query_t query_ = intel_ray_query_init(ray,accel,0);
+  intel_ray_query_t query_ = intel_ray_query_init(ray,accel);
   intel_ray_query_t* query = &query_;
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
@@ -1205,7 +1205,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         ray.time = 0.0f;
         ray.mask = intel_get_ray_mask(query,bvh_level);
         ray.flags = intel_get_ray_flags(query,bvh_level);
-        intel_ray_query_forward_ray(query, ray, inst_accel, 0);
+        intel_ray_query_forward_ray(query, ray, inst_accel);
       }
     }
     
