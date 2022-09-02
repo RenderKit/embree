@@ -61,7 +61,6 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(
 // setup for instance traversal using a transformed ray and bottom-level AS
 SYCL_EXTERNAL void intel_ray_query_forward_ray(
   intel_ray_query_t* query,
-  unsigned int new_bvh_level,
   intel_ray_desc_t ray,
   intel_raytracing_acceleration_structure_t* accel,
   unsigned int bvh_id // FIXME: remove bvh_id

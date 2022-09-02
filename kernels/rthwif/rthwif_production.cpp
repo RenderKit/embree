@@ -74,12 +74,13 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel
   return { nullptr, (void*) dispatchGlobalsPtr, rtStack, TRACE_RAY_INITIAL, bvh_level };
 }
 
-SYCL_EXTERNAL void intel_ray_query_forward_ray( intel_ray_query_t* query, unsigned int bvh_level, intel_ray_desc_t ray, intel_raytracing_acceleration_structure_t* accel_i, uint32_t bvh_id )
+SYCL_EXTERNAL void intel_ray_query_forward_ray( intel_ray_query_t* query, intel_ray_desc_t ray, intel_raytracing_acceleration_structure_t* accel_i, uint32_t bvh_id )
 {
   HWAccel* accel = (HWAccel*)accel_i;
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
-  
+
   /* init ray */
+  uint32_t bvh_level = query->bvh_level+1;
   rtStack->ray[bvh_level].org[0] = ray.origin.x();
   rtStack->ray[bvh_level].org[1] = ray.origin.y();
   rtStack->ray[bvh_level].org[2] = ray.origin.z();

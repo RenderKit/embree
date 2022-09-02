@@ -1205,7 +1205,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         ray.time = 0.0f;
         ray.mask = intel_get_ray_mask(query,bvh_level);
         ray.flags = intel_get_ray_flags(query,bvh_level);
-        intel_ray_query_forward_ray(query, bvh_level+1, ray, inst_accel, 0);
+        intel_ray_query_forward_ray(query, ray, inst_accel, 0);
       }
     }
     
