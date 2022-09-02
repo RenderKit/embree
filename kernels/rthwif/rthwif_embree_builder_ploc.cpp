@@ -150,7 +150,26 @@ namespace embree
       PRINT(scene->getNumPrimitives(TriangleMesh::geom_type,false));
       PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
       PRINT(scene->getNumPrimitives(Instance::geom_type,false));
+      //PRINT(scene->world);
     }
+
+    if (unlikely(!activeTriQuadMeshes && !numInstances))
+      {
+        PRINT("WARNING: EMPTY SCENE");
+        const size_t totalSize = 3*64; // just for the header
+        if (accel.size() < totalSize) accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
+        QBVH6* qbvh   = (QBVH6*)accel.data();        
+        BBox3fa geometryBounds (Vec3fa(0.0f),Vec3fa(0.0f));
+        qbvh->bounds = geometryBounds;
+        //qbvh->rootNodeOffset = 128;
+        qbvh->numPrims       = 0;                                                                        
+        qbvh->nodeDataStart  = 0;
+        qbvh->nodeDataCur    = 0;
+        qbvh->leafDataStart  = 0;
+        qbvh->leafDataCur    = 0;        
+        new (qbvh->nodePtr(2)) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
+        return geometryBounds;
+      }
 
 #if 0 // FIXME         
     if (numInstances)
