@@ -1,0 +1,223 @@
+## Copyright 2022 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
+name: continuous
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+
+  ################################################################################
+  ################################################################################
+  # CPU tests
+  ################################################################################
+  ################################################################################
+
+  ########################################
+  # Linux
+  ########################################
+
+  continuous-linux-x64-Debug-ICC2019_4-ISPC1_12_0-AVX512-TBB2021_2_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/fedora:27
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
+        python scripts/test.py build
+        python scripts/test.py test
+
+  continuous-linux-avx512vl-x64-Debug-ICC2019_4-ISPC1_12_0-AVX512-TBB2021_2_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/fedora:27
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
+        python scripts/test.py build
+        python scripts/test.py test
+
+  continuous-linux-avx512vl-x64-Debug-CLANG4_0_0-ISPC1_17_0-AVX512-TBB2021_2_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/fedora:26
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug compiler:CLANG4.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd128 tasking:TBB2021.2.0 GLFW:OFF intensity:2
+        python scripts/test.py build
+        python scripts/test.py test
+
+  continuous-linux-x64-Debug-CLANG5_0_0-ISPC1_17_0-AVX2-INT-ADDRSANITIZER:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/fedora:26
+      runs-on: '[ "Linux", "docker", "build" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug compiler:CLANG5.0.0 ispc:ispc1.17.0 isa:AVX tasking:INT intensity:1 addrsanitizer:ON
+        python scripts/test.py build
+        python scripts/test.py test
+
+  continuous-ubuntu20_04-x64-Debug-GCC-ISPC1_12_0-AVX2-TBB-NAMESPACE:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/ubuntu:20.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 frequency_level:simd256 tasking:TBB intensity:1 api_namespace:myembree
+        python scripts/test.py build
+        python scripts/test.py test
+
+  continuous-linux-avx512vl-x64-Debug-ICX2022_1_2-ISPC1_17_0-AVX512-INT:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/ubuntu:20.04
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug threads:4 compiler:ICX2022.1.2 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:INT intensity:2
+        python scripts/test.py build
+        python scripts/test.py test
+
+  #continuous-ubuntu17_10-x64-Debug-GCC-ISPC1_12_0-AVX2-TBB-NAMESPACE:
+  #  secrets: inherit
+  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+  #  with:
+  #    image: embree/ubuntu:17.10
+  #    runs-on: '[ "Linux", "docker" ]'
+  #    cmd: |
+  #      python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree
+  #      python scripts/test.py build
+  #      python scripts/test.py test
+
+  continuous-centos7_4-x64-Debug-GCC-ISPC1_17_0-AVX2-TBB:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/centos:7.4
+      runs-on: '[ "Linux", "docker", "build" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.17.0 isa:AVX2 frequency_level:simd128 tasking:TBB intensity:1
+        python scripts/test.py build
+        python scripts/test.py test
+
+  continuous-fedora32-x64-Debug-GCC-ISPC-AVX512-TBB:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/fedora:32
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc isa:AVX512 tasking:TBB COMPACT_POLYS:ON MIN_WIDTH:ON intensity:2
+        python scripts/test.py build
+        python scripts/test.py test
+
+
+  ########################################
+  # Windows
+  ########################################
+  continuous-windows-x64-RelWithDebInfo-V140-ISPC1_9_2-SSE2-TBB2020_2:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 threads:4 build:RelWithDebInfo compiler:V140 ispc:ispc1.9.2 isa:SSE2 tasking:TBB2020.2 intensity:2
+        python scripts/test.py build
+        python scripts/test.py test
+
+#  continuous-windows-Win32-RelWithDebInfoDebug-V140-ISPC1_12_0-SSE2-TBB2020_2:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+#    with:
+#      runs-on: '[ "Windows", "NAS", "build" ]'
+#      cmd: |
+#        python scripts/test.py configure platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:2
+#        python scripts/test.py build
+#        python scripts/test.py test
+
+  continuous-windows-x64-RelWithDebInfo-V141-ISPC1_17_0-SSE2-TBB2020_2:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8
+        python scripts/test.py build
+        python scripts/test.py test
+
+  continuous-windows-x64-RelWithDebInfo-ICX2022_0_0-ISPC1_16_1-AVX512-INT:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2022.0.0 ispc:ispc1.16.1 isa:AVX512 tasking:INT threads:16 intensity:2
+        python scripts/test.py build
+        python scripts/test.py test
+
+
+  ########################################
+  # MacOS
+  ########################################
+
+  continuous-macosx-ARM-Debug-CLANG-ISPC1_17_0-NEON-TBB_HOMEBREW:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
+    with:
+      runs-on: '[ "macOS", "arm" ]'
+      cmd: |
+        scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:NEON tasking:TBB_HOMEBREW intensity:2
+        scripts/test.py build
+        scripts/test.py test
+
+  continuous-macosx-ARM-Debug-CLANG-ISPC1_17_0-NEON-AVX2-TBB_HOMEBREW:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
+    with:
+      runs-on: '[ "macOS", "arm" ]'
+      cmd: |
+        scripts/test.py configure platform:arm64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:NEON2X tasking:TBB_HOMEBREW intensity:2
+        scripts/test.py build
+        scripts/test.py test
+
+#  continuous-macosx-x64-Debug-ICC2020_1-ISPC1_14_1-SSE2-TBB2021_1_1:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
+#    with:
+#      runs-on: '[ "macOS", "embree" ]'
+#      cmd: |
+#        scripts/test.py configure platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.14.1 isa:SSE2 tasking:TBB2021.1.1 intensity:2
+#        scripts/test.py build
+#        scripts/test.py test
+
+  continuous-macosx-x64-Debug-CLANG-ISPC1_17_0-SSE2-TBB2020_2:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
+    with:
+      runs-on: '[ "macOS", "embree" ]'
+      cmd: |
+        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2
+        scripts/test.py build
+        scripts/test.py test
+
+
+  continuous-linux-x64-Debug-GCC-ISPC1_17_0-SSE2-TBB-KLOCWORK:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_static_analysis.yml@main
+    with:
+      image: embree/centos:7.4
+      runs-on: '[ "Linux", "docker", "build" ]'
+      cmd: |
+        export CI_PROJECT_DIR=$GITHUB_WORKSPACE
+        export CI_JOB_ID=$GITHUB_RUN_ID
+        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.17.0 isa:SSE2 tasking:TBB klocwork:ON intensity:0
+        python scripts/test.py build
+        python scripts/test.py test
+        scripts/klocwork_gen_report.sh
+        scripts/store_files.sh $GITHUB_REPOSITORY $GITHUB_RUN_ID klocwork "klocwork/report.log"
+

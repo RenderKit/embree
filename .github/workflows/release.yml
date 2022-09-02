@@ -1,0 +1,87 @@
+## Copyright 2022 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
+name: release
+
+on:
+  push:
+    {}
+  schedule:
+    - cron:  '30 04 * * *'
+  workflow_dispatch:
+
+jobs:
+
+#####################################################################
+# Release Builds
+####################################################################
+
+  release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+      artifact-out: release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-path: ./build/*.zip
+      cmd: |
+        python scripts/test.py configure platform:x64 build:Release compiler:ICC19-VC141 ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.2.0 intensity:4 package:ZIP
+        python scripts/test.py build
+        python scripts/test.py test
+
+  release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
+    with:
+      runs-on: '[ "macOS", "embree", "sign", "avx2" ]'
+      artifact-out: release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-path: ./build/*.zip
+      cmd: |
+        scripts/test.py configure platform:x64 build:Release compiler:ICC2021.1.1 ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2 tasking:TBB2021.2.0 intensity:4 package:ZIP
+        scripts/test.py build
+        scripts/test.py test
+
+  release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/centos:7.4
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      artifact-out: release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-path: ./build/*.tar.gz
+      cmd: |
+        scripts/test.py configure platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.2.0 intensity:4 package:ZIP
+        scripts/test.py build
+        scripts/test.py test
+
+
+#####################################################################
+# Release binaries scans
+#####################################################################
+  binary-analysis:
+    needs:
+      - release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      - release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      - release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/binary_analysis.yml@main
+    with:
+      project: embree
+      artifact-in-linux: release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-in-macos: release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-in-windows: release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      path: "build/*.zip build/*.gz"
+
+  antivirus-scan:
+    needs:
+      - release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      - release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      - release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/antivirus_scan.yml@main
+    with:
+      project: embree
+      artifact-in-linux: release-windows-x64-Release-ICC19-VC141-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-in-macos: release-macosx-x64-Release-ICC2021_1_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      artifact-in-windows: release-linux-x64-Release-ICC2020_1-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
+      path: "build/*.zip build/*.gz"
+
