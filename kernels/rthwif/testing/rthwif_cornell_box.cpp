@@ -253,18 +253,18 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   sycl::float3 p(278, 273, -800);
   
   /* compute primary ray */
-  RayDescINTEL ray;
-  ray.O = p;
-  ray.D = float(x)*vx/8.0f + float(y)*vy/8.0f + vz;;
+  intel_ray_desc_t ray;
+  ray.origin = p;
+  ray.direction = float(x)*vx/8.0f + float(y)*vy/8.0f + vz;;
   ray.tmin = 0.0f;
   ray.tmax = INFINITY;
   ray.time = 0.0f;
   ray.mask = 0xFF;
-  ray.flags = 0;
+  ray.flags = intel_ray_flags_none;
   
   /* trace ray */
-  ray_query_INTEL query_ = intel_ray_query_init(0,ray,(raytracing_acceleration_structure_INTEL*)bvh,0);
-  ray_query_INTEL* query = &query_;
+  intel_ray_query_t query_ = intel_ray_query_init(ray,(intel_raytracing_acceleration_structure_t*)bvh);
+  intel_ray_query_t* query = &query_;
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
   
@@ -272,7 +272,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   float u = 0, v = 0;
   if (intel_has_committed_hit(query))
   {
-    sycl::float2 uv = intel_get_hit_barys( query, HIT_TYPE_INTEL_COMMITTED_HIT );
+    sycl::float2 uv = intel_get_hit_barycentrics( query, intel_hit_type_committed_hit );
     u = uv.x();
     v = uv.y();
   }
