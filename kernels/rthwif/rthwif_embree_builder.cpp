@@ -100,7 +100,7 @@ namespace embree
 
   BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel, int gpu_build)
   {
-    PING;
+    //PING;
     
     // ======================
     // === PLOC++ Builder ===

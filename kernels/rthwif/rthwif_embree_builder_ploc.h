@@ -2251,7 +2251,7 @@ namespace embree
       const sycl::nd_range<1> nd_range1(wgSize,sycl::range<1>(wgSize));                    
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _node_mem_allocator_cur(cgh);                                                   
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(RTC_SYCL_SIMD_WIDTH*2)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                                                                     {
                                                                       const uint localID     = item.get_local_id(0);
                                                                       const uint localSize   = item.get_local_range().size();                                                                      
@@ -2269,7 +2269,7 @@ namespace embree
                                                                         TmpNodeState *root_state = (TmpNodeState*)((char*)qbvh + 64 * node_start);
                                                                         uint rootIndex = globals->rootIndex;
 
-                                                                        if (numPrimitives <= BVH_BRANCHING_FACTOR)
+                                                                        if (numPrimitives <= FATLEAF_THRESHOLD)
                                                                           rootIndex = BVH2Ploc::makeFatLeaf(rootIndex);
                                                                         
                                                                         root_state->init( rootIndex );
@@ -2338,7 +2338,7 @@ namespace embree
         PRINT4("initial iteration ",iteration,(float)dt,(float)total_time);
     }
     
-    /* ---- Phase II: full breadth-first phase until only fatleaves remain--- */
+    /* ---- Phase II: full breadth-first phase until only fat leaves or single leaves remain--- */
     
     struct __aligned(64) LocalNodeData {
       uint v[16];
@@ -2353,7 +2353,7 @@ namespace embree
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
                                                    sycl::accessor< LocalNodeData, 1, sycl_read_write, sycl_local> _localNodeData(sycl::range<1>(wgSize),cgh);                        
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16 /*RTC_SYCL_SIMD_WIDTH*2 */)      
+                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                                                                     {
                                                                       const uint localID   = item.get_local_id(0);                                                                      
                                                                       const uint globalID  = item.get_global_id(0);
@@ -2512,41 +2512,40 @@ namespace embree
                                                                       }
 
                                                                       item.barrier(sycl::access::fence_space::local_space);
+
+                                                                      const uint numBlocks = num_entries;
                                                                       
                                                                       if (localID == 0)
-                                                                      {
-                                                                        const uint numBlocks = num_entries;
                                                                         global_blockID = gpu::atomic_add_global(&globals->leaf_mem_allocator_cur,numBlocks);
-                                                                      }
                                                                       
                                                                       item.barrier(sycl::access::fence_space::local_space);
 
                                                                       const uint blockID = global_blockID + offset;
 
                                                                       if (isFatLeaf)
-                                                                      {
                                                                         writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,instanceMode ? NODE_TYPE_INSTANCE : NODE_TYPE_MIXED);
-                                                                      }
 
-                                                                      {
-                                                                        const uint leafDataID = offset>>(blocksPerLeafPrim-1);
-                                                                        for (uint j=0;j<numChildren;j++)
-                                                                        {                                                                          
-                                                                          const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
-                                                                          const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
-                                                                          const uint bID = isFatLeaf ? (blockID + j*blocksPerLeafPrim) : innerID;
-                                                                          local_leafGenData[leafDataID+j].blockID = bID;
-                                                                          local_leafGenData[leafDataID+j].primID = primID;
-                                                                          local_leafGenData[leafDataID+j].geomID = geomID;
-                                                                        }
+                                                                      /* --- write to SLM frist --- */
+                                                                      
+                                                                      const uint local_leafDataID = offset>>(blocksPerLeafPrim-1);
+                                                                      for (uint j=0;j<numChildren;j++)
+                                                                      {                                                                          
+                                                                        const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
+                                                                        const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
+                                                                        const uint bID = isFatLeaf ? (blockID + j*blocksPerLeafPrim) : innerID;
+                                                                        local_leafGenData[local_leafDataID+j].blockID = bID;
+                                                                        local_leafGenData[local_leafDataID+j].primID = primID;
+                                                                        local_leafGenData[local_leafDataID+j].geomID = geomID;
                                                                       }
                                                                          
                                                                   
                                                                       const uint leafStartID = globals->leaf_mem_allocator_start;
                                                                       item.barrier(sycl::access::fence_space::local_space);
 
+                                                                      /* --- write out all local entries to global memory --- */
+
                                                                       const uint leafDataID = (global_blockID - leafStartID)>>(blocksPerLeafPrim-1);
-                                                                      const uint numEntries = num_entries>>(blocksPerLeafPrim-1);
+                                                                      const uint numEntries = numBlocks>>(blocksPerLeafPrim-1);
                                                                       for (uint i=localID;i<numEntries;i+=localSize)
                                                                         leafGenData[leafDataID+i] = local_leafGenData[i];
                                                                       
@@ -2667,7 +2666,6 @@ namespace embree
 
       if (instanceMode)
       {
-#if 1                                                                                                         
         const uint wgSize = 256;
         const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -2693,30 +2691,7 @@ namespace embree
         total_time += dt;
         
         if (unlikely(verbose))      
-          PRINT3("final leaf generation ",(float)dt,(float)total_time);
-#else
-        PRINT(globals->node_mem_allocator_start);
-        PRINT(globals->leaf_mem_allocator_start);
-        
-        for (uint globalID=0;globalID<leaves;globalID++)
-        {          
-          if (leafGenData[globalID].blockID < globals->leaf_mem_allocator_start)
-          {
-            PRINT(globalID);
-            PRINT(leafGenData[globalID].blockID);
-            PRINT(leafGenData[globalID].primID);            
-            FATAL("BLOCKID");
-          }
-          InstancePrimitive *dest = (InstancePrimitive *)globals->nodeBlockPtr(leafGenData[globalID].blockID);          
-          const uint instID = leafGenData[globalID].primID;
-          Instance* instance = scene->get<Instance>(instID);
-          void* accel = static_cast<Scene*>(instance->object)->hwaccel.data();
-          const AffineSpace3fa local2world = instance->getLocal2World();
-          const uint64_t root = (uint64_t)accel + 128; //static_cast<QBVH6*>(accel)->root();
-          *dest = InstancePrimitive(local2world,root,instID,mask32_to_mask8(instance->mask));          
-        }        
-#endif                                 
-        
+          PRINT3("final leaf generation ",(float)dt,(float)total_time);        
       }
     }
     

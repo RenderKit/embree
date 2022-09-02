@@ -142,16 +142,19 @@ namespace embree
     const uint numGeoms = scene->size();
     const bool activeTriQuadMeshes = scene->getNumPrimitives(TriangleMesh::geom_type,false) || scene->getNumPrimitives(QuadMesh::geom_type,false);
     const uint numInstances = scene->getNumPrimitives(Instance::geom_type,false);
-    
-    PRINT(numGeoms);
-    PRINT(scene->getNumPrimitives(TriangleMesh::geom_type,false));
-    PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
-    PRINT(activeTriQuadMeshes);
-    PRINT(numInstances);
 
+
+    if (unlikely(verbose2))
+    {        
+      PRINT(numGeoms);
+      PRINT(scene->getNumPrimitives(TriangleMesh::geom_type,false));
+      PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
+      PRINT(scene->getNumPrimitives(Instance::geom_type,false));
+    }
+
+#if 0 // FIXME         
     if (numInstances)
     {
-#if 0      
       for (uint i=0;i<numInstances;i++)
       {
         Instance* instance = scene->get<Instance>(i);
@@ -162,10 +165,10 @@ namespace embree
           FATAL("INSTANCE BOUNDS");
         }
       }
-#endif      
     }
+#endif      
     
-    if (activeTriQuadMeshes && numInstances) FATAL("GPU buildes does not support tri/quad meshes and instances in the same scene");
+    if (activeTriQuadMeshes && numInstances) FATAL("GPU builder does currently not support tri/quad meshes and instances in the same scene");
     
     // ===============================================================================================================
     
@@ -664,8 +667,6 @@ namespace embree
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
     }	    
-
-    PRINT( qbvh->bounds );
     
     timer.stop(BuildTimer::POST_PROCESS);
     timer.add_to_device_timer(BuildTimer::POST_PROCESS,conversion_device_time);
@@ -678,17 +679,8 @@ namespace embree
     // ==========================================================
     // ==========================================================
 
-    BBox3fa geomBounds(Vec3fa(globals->geometryBounds.lower_x,globals->geometryBounds.lower_y,globals->geometryBounds.lower_z),
-                       Vec3fa(globals->geometryBounds.upper_x,globals->geometryBounds.upper_y,globals->geometryBounds.upper_z));
-    
-    if (deviceGPU) {
-      HWAccel* hwaccel = (HWAccel*) accel.data();
-      hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
-    }
-
     if (unlikely(verbose2))
     {
-      // CHECKS
       if (globals->node_mem_allocator_cur > globals->leaf_mem_allocator_start) FATAL("NOT ENOUGH MEMORY FOR INTERNAL NODES ALLOCATED");
 
       PRINT(globals->node_mem_allocator_start);      
@@ -697,27 +689,28 @@ namespace embree
       
       PRINT(globals->leaf_mem_allocator_start);      
       PRINT(globals->leaf_mem_allocator_cur);
-      PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);      
-      
-      qbvh->print(std::cout,qbvh->root(),0,6);
-      BVHStatistics stats = qbvh->computeStatistics();      
-      stats.print(std::cout);
-      stats.print_raw(std::cout);
-      PRINT("VERBOSE STATS DONE");      
+      PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);            
+    }
+    
+    BBox3fa geomBounds(Vec3fa(globals->geometryBounds.lower_x,globals->geometryBounds.lower_y,globals->geometryBounds.lower_z),
+                       Vec3fa(globals->geometryBounds.upper_x,globals->geometryBounds.upper_y,globals->geometryBounds.upper_z));
+    
+    if (deviceGPU) {
+      HWAccel* hwaccel = (HWAccel*) accel.data();
+      hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
     }
     
     timer.start(BuildTimer::ALLOCATION);        
 
-    if (scratch_mem0)       sycl::free(scratch_mem0,deviceGPU->getGPUContext());    
+    if (scratch_mem0)      sycl::free(scratch_mem0,deviceGPU->getGPUContext());    
     if (globals)           sycl::free(globals,deviceGPU->getGPUContext());
-    if (scratch_mem1)       sycl::free(scratch_mem1,deviceGPU->getGPUContext());
+    if (scratch_mem1)      sycl::free(scratch_mem1,deviceGPU->getGPUContext());
     if (host_device_tasks) sycl::free(host_device_tasks,deviceGPU->getGPUContext());
 
     timer.stop(BuildTimer::ALLOCATION);        
     
     if (unlikely(verbose2))
       std::cout << "Time freeing temporary data " << timer.get_host_timer()  << " ms " << std::endl << std::flush;
-
 
     if (unlikely(verbose1))
     {
@@ -730,8 +723,21 @@ namespace embree
       std::cout << "Build         " << timer.get_accum_host_timer(BuildTimer::BUILD) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::BUILD) / timer.get_accum_device_timer(BuildTimer::BUILD) << std::endl;
       std::cout << "Post-process  " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) << " ms (host) " << timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << " ms (device) , ratio " << timer.get_accum_host_timer(BuildTimer::POST_PROCESS) / timer.get_accum_device_timer(BuildTimer::POST_PROCESS) << std::endl;
     }
+
+    // ========================    
+    // === Additional Stats ===
+    // ========================
     
-      
+    if (unlikely(verbose2))
+    {
+      qbvh->print(std::cout,qbvh->root(),0,6);
+      BVHStatistics stats = qbvh->computeStatistics();      
+      stats.print(std::cout);
+      stats.print_raw(std::cout);
+      PRINT("VERBOSE STATS DONE");      
+    }
+
+    
     return geomBounds;
   }
  
