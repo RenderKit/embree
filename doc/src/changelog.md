@@ -8,6 +8,7 @@ Version History
     skipped if the ray origin lies inside the sphere defined by the
     point primitive. Self intersection avoidance can get disabled at compile time
     using the EMBREE_DISC_POINT_SELF_INTERSECTION_AVOIDANCE cmake option.
+-   Fixed spatial splitting for non-planar quads.
 
 ### Embree 3.13.4
 -   Using 8-wide BVH and double pumped NEON instructions on Apple M1 gives 8% performance boost.
