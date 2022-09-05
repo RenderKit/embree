@@ -426,7 +426,7 @@ parameters that can be configured in CMake:
   is used as a tasking system, search the library in this directory
   tree.
 
-+ `EMBREE_TBB_COMPONENT`: The component/libary name of Intel® Threading 
++ `EMBREE_TBB_COMPONENT`: The component/library name of Intel® Threading 
   Building Blocks (TBB). Embree searches for this library name (default: tbb)
   when TBB is used as tasking system.
 

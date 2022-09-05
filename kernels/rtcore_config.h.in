@@ -24,6 +24,9 @@
 #cmakedefine01 EMBREE_MIN_WIDTH
 #define RTC_MIN_WIDTH EMBREE_MIN_WIDTH
 
+#if !defined(EMBREE_STATIC_LIB)
+#cmakedefine EMBREE_STATIC_LIB
+#endif
 #cmakedefine EMBREE_API_NAMESPACE
 
 #if defined(EMBREE_API_NAMESPACE)

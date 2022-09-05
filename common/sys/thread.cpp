@@ -244,7 +244,8 @@ namespace embree
   {
     cpu_set_t cset;
     CPU_ZERO(&cset);
-    size_t threadID = mapThreadID(affinity);
+    //size_t threadID = mapThreadID(affinity); // this is not working properly in LXC containers when some processors are disabled
+    size_t threadID = affinity;
     CPU_SET(threadID, &cset);
 
     pthread_setaffinity_np(pthread_self(), sizeof(cset), &cset);

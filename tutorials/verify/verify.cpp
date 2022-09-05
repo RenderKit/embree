@@ -5031,7 +5031,7 @@ namespace embree
       if (!ParallelIntersectBenchmark::setup(state))
         return false;
 
-      std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
       rtcSetDeviceErrorFunction(device,errorHandler,nullptr);
@@ -5209,7 +5209,7 @@ namespace embree
       if (!ParallelIntersectBenchmark::setup(state))
         return false;
 
-      std::string cfg = state->rtcore + ",start_threads=1,set_affinity=1,isa="+stringOfISA(isa);
+      std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
       rtcSetDeviceErrorFunction(device,errorHandler,nullptr);
@@ -5398,7 +5398,7 @@ namespace embree
 
     bool setup(VerifyApplication* state) 
     {
-      std::string cfg = "start_threads=1,set_affinity=1,isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads)+","+state->rtcore;
+      std::string cfg = ",isa="+stringOfISA(isa) + ",threads=" + std::to_string((long long)numThreads)+","+state->rtcore;
       device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
       rtcSetDeviceErrorFunction(device,errorHandler,nullptr);

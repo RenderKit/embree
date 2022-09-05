@@ -92,7 +92,7 @@ namespace embree
         : v0(v0), v1(v1), v2(v2), v3(v3) {}
 
       __forceinline Vertex begin() const {
-        return v0;
+        return v1;
       }
 
       __forceinline Vertex end() const {
