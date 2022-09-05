@@ -35,7 +35,7 @@ namespace embree
   }
   
   Application::Application(int features)
-    : rtcore("start_threads=1,set_affinity=1"), verbosity(0),
+    : rtcore(""), verbosity(0),
       log_delta(false),
       start_time(getSeconds()),
       last_time(start_time),
