@@ -45,8 +45,7 @@ RTC_NAMESPACE_BEGIN;
 //#endif
 
 #undef TRAV_LOOP
-#if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1) ||\
-    defined(EMBREE_DPCPP_MBLUR)       ||\
+#if defined(EMBREE_DPCPP_MBLUR)       ||\
     defined(EMBREE_GEOMETRY_CURVE)    ||\
     defined(EMBREE_GEOMETRY_GRID)     ||\
     defined(EMBREE_GEOMETRY_POINT)    ||\
@@ -287,7 +286,7 @@ bool intersect_primitive(intel_ray_query_t* query, Ray& ray, Scene* scenes[RTC_M
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-#if (RTC_MAX_INSTANCE_LEVEL_COUNT >= 2) || defined(EMBREE_DPCPP_MBLUR)
+#if defined(EMBREE_GEOMETRY_INSTANCE) || defined(EMBREE_DPCPP_MBLUR)
   if (geom->getTypeMask() & Geometry::MTY_INSTANCE) {
     return intersect_instance(query,ray,(Instance*)geom, scenes, context, geomID, primID);
   }
