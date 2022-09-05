@@ -116,6 +116,7 @@ extern "C" void device_init (char* cfg)
 
   /* instantiate geometry */
   data.g_instance0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryMask(data.g_instance0, 0x80); // test high instance mask bits
   rtcSetGeometryInstancedScene(data.g_instance0,data.g_scene1);
   rtcSetGeometryTimeStepCount(data.g_instance0,1);
   data.g_instance1 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
