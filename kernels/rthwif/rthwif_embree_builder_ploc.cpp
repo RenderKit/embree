@@ -353,7 +353,7 @@ namespace embree
     assert(bvh_mem);
     const size_t conv_mem_size = sizeof(LeafGenerationData)*numPrimitives;
 
-    uint *scratch_mem1 = (uint*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::device); // FIXME device
+    uint *scratch_mem1 = (uint*)sycl::aligned_alloc(64,conv_mem_size,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared); // FIXME device
     LeafGenerationData *leafGenData = (LeafGenerationData*)scratch_mem1;
     assert(conversionState);
 

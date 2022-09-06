@@ -11,10 +11,17 @@
 #define SEARCH_RADIUS_SHIFT       4
 #define SEARCH_RADIUS             (1<<SEARCH_RADIUS_SHIFT)
 #define SINGLE_R_PATH             1
-#define FATLEAF_THRESHOLD         6
-#define SMALL_SUBTREE_THRESHOLD 512
+
+#define SMALL_SUBTREE_THRESHOLD 2
 #define BVH_BRANCHING_FACTOR      6
 
+#define LARGER_FAT_LEAVES 0 
+
+#if LARGER_FAT_LEAVES == 1
+# define FATLEAF_THRESHOLD         6*6
+#else
+# define FATLEAF_THRESHOLD         6
+#endif
 
 namespace embree
 {
@@ -97,7 +104,11 @@ namespace embree
     __forceinline char* leafLocalPtr(const uint localID=0) {
       return qbvh_base_pointer + 64 * size_t(leaf_mem_allocator_start + localID);
     }
-      
+
+    __forceinline uint getBlockIDFromPtr(const char *addr) {
+      return (addr - qbvh_base_pointer)/64;
+    }
+    
 
     __forceinline uint sub_group_shared_varying_atomic_allocNodeID(const uint bytes)
     {
@@ -2019,6 +2030,30 @@ namespace embree
     }
   }
 
+  __forceinline void getLeafIndicesOrder(const uint first_index, const BVH2Ploc *const bvh_nodes, uint *const dest, uint &indexID, const uint numPrimitives)
+  {
+    dest[0] = first_index;
+    uint old_indexID = 0;
+    indexID = 1;
+    while(old_indexID != indexID)
+    {
+      old_indexID = indexID;
+      for (uint i=0;i<old_indexID;i++)
+        if (!BVH2Ploc::isLeaf(dest[i],numPrimitives))
+        {
+          for (int j = old_indexID-1; j>i; j--)
+            dest[j+1] = dest[j];
+          const uint left = bvh_nodes[BVH2Ploc::getIndex(dest[i])].left;
+          const uint right = bvh_nodes[BVH2Ploc::getIndex(dest[i])].right;
+          dest[i+0] = left;
+          dest[i+1] = right;
+          indexID++;
+          break;
+        }
+    }
+  }
+  
+
   __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const bool forceInnerNodesOnly=false)
   {
     uint *dest = (uint*)_dest;
@@ -2052,7 +2087,7 @@ namespace embree
     tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
     tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
     tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
-
+    
 #pragma nounroll
     for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
     {
@@ -2091,6 +2126,77 @@ namespace embree
     for (uint i=0;i<12;i++)
       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
+
+
+  __forceinline void writeInnerNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, const gpu::AABB3f *const child_bounds, const NodeType type=NODE_TYPE_MIXED)
+  {
+    uint *dest = (uint*)_dest;
+    
+    //dest = (uint*) __builtin_assume_aligned(dest,16);
+    
+    const float _ulp = std::numeric_limits<float>::epsilon();
+    const float up = 1.0f + float(_ulp);  
+    const gpu::AABB3f conservative_bounds = parent_bounds.conservativeBounds();
+    const float3 len = conservative_bounds.size() * up;
+      
+    int _exp_x; float mant_x = frexp(len.x(), &_exp_x); _exp_x += (mant_x > 255.0f / 256.0f);
+    int _exp_y; float mant_y = frexp(len.y(), &_exp_y); _exp_y += (mant_y > 255.0f / 256.0f);
+    int _exp_z; float mant_z = frexp(len.z(), &_exp_z); _exp_z += (mant_z > 255.0f / 256.0f);
+    _exp_x = max(-128,_exp_x); // enlarge too tight bounds
+    _exp_y = max(-128,_exp_y);
+    _exp_z = max(-128,_exp_z);
+
+    const float3 lower(conservative_bounds.lower_x,conservative_bounds.lower_y,conservative_bounds.lower_z);
+    
+    dest[0]  = gpu::as_uint(lower.x());
+    dest[1]  = gpu::as_uint(lower.y());
+    dest[2]  = gpu::as_uint(lower.z());
+    dest[3]  = relative_block_offset; //(int64_t)((char*)childDataPtr - (char*)curDataPtr) / 64;
+
+    uint8_t tmp[48];
+    
+    tmp[0]         = type; // type
+    tmp[1]         = 0; // pad 
+    tmp[2]         = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127); 
+    tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
+    tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
+    tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
+
+#pragma nounroll
+    for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
+    {
+      uint8_t lower_x = 0x80;
+      uint8_t lower_y = 0x80;
+      uint8_t lower_z = 0x80;    
+      uint8_t upper_x = 0x00;
+      uint8_t upper_y = 0x00;
+      uint8_t upper_z = 0x00;
+      uint8_t data    = 0x00;      
+
+      const uint numBlocks = 1;
+      data = (i<numChildren) ? numBlocks : 0;
+      const gpu::AABB3f childBounds = child_bounds[i]; //.conservativeBounds();      
+      const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
+      lower_x = (i<numChildren) ? (uint8_t)qbounds.lower_x : lower_x;
+      lower_y = (i<numChildren) ? (uint8_t)qbounds.lower_y : lower_y;
+      lower_z = (i<numChildren) ? (uint8_t)qbounds.lower_z : lower_z;
+      upper_x = (i<numChildren) ? (uint8_t)qbounds.upper_x : upper_x;
+      upper_y = (i<numChildren) ? (uint8_t)qbounds.upper_y : upper_y;
+      upper_z = (i<numChildren) ? (uint8_t)qbounds.upper_z : upper_z;
+
+      tmp[ 6+i] = data;
+      tmp[12+i] = lower_x;
+      tmp[18+i] = upper_x;      
+      tmp[24+i] = lower_y;
+      tmp[30+i] = upper_y;      
+      tmp[36+i] = lower_z;
+      tmp[42+i] = upper_z;      
+    }
+
+    for (uint i=0;i<12;i++)
+      dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
+  }
+  
   
 
  #if 0 
@@ -2167,8 +2273,8 @@ namespace embree
     indices[0] = _left;
     indices[1] = _right;
                                                                           
-    areas[0]  = !BVH2Ploc::isFatLeaf( _left) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
-    areas[1]  = !BVH2Ploc::isFatLeaf(_right) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
+    areas[0]  = (!BVH2Ploc::isFatLeaf( _left) /* || BVH2Ploc::isSmallSubTree( _left ) */)? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
+    areas[1]  = (!BVH2Ploc::isFatLeaf(_right) /* || BVH2Ploc::isSmallSubTree( _right) */)? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
 
     
     uint numChildren = 2;
@@ -2191,9 +2297,9 @@ namespace embree
       const uint left  = bvh2[BVH2Ploc::getIndex(bestNodeID)].left;
       const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
             
-      areas[bestChild]     = !BVH2Ploc::isFatLeaf(left)  ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
+      areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left) /*|| BVH2Ploc::isSmallSubTree( left )*/) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
       indices[bestChild]   = left;
-      areas[numChildren]   = !BVH2Ploc::isFatLeaf(right) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
+      areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right) /*|| BVH2Ploc::isSmallSubTree( right )*/) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
       indices[numChildren] = right;                                                                            
       numChildren++;
     }            
@@ -2444,6 +2550,139 @@ namespace embree
     const uint blocks = host_device_tasks[1];
     if (blocks)
     {
+
+#if LARGER_FAT_LEAVES == 1
+      PRINT(blocks);
+      PRINT(globals->leaf_mem_allocator_start);      
+      PRINT(globals->leaf_mem_allocator_cur);
+      uint innerNodes = 0;
+      uint innerNodes_numChildren = 0;
+      for (uint globalID = 0;globalID<blocks;globalID++)
+      {
+        uint indices[FATLEAF_THRESHOLD];
+        const uint startBlockID = globals->node_mem_allocator_start;
+        //const uint endBlockID   = globals->node_mem_allocator_cur;                             
+        const uint innerID      = startBlockID + globalID;
+        TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
+        uint index   = state->bvh2_index;
+        char* curAddr = (char*)state;
+        uint numChildren = 0;
+        bool isFatLeaf   = false;
+
+        if (state->header == 0x7fffffff) // not processed yet
+        {
+          // =============================================                                                                          
+          // === forcing fatleaf mode in instance mode ===
+          // =============================================
+                                                                          
+          isFatLeaf = !BVH2Ploc::isLeaf(index,numPrimitives);
+
+          if (isFatLeaf) 
+          {
+            numChildren = 0;
+            getLeafIndicesOrder(index,bvh2,indices,numChildren,numPrimitives);
+          }
+          else
+          {
+            numChildren = 1;
+            indices[0] = index;
+          }
+          const uint blockID = gpu::atomic_add_global(&globals->leaf_mem_allocator_cur,numChildren);
+          
+#if 1
+          const uint leafDataID = blockID - globals->leaf_mem_allocator_start;
+
+          //PRINT(numChildren);
+          for (uint j=0;j<numChildren;j++)
+          {
+            const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
+            const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
+            const uint bID = isFatLeaf ? (blockID + j) : innerID;
+            leafGenData[leafDataID+j].blockID = bID;
+            leafGenData[leafDataID+j].primID = primID;
+            leafGenData[leafDataID+j].geomID = geomID;
+            //PRINT2(BVH2Ploc::getIndex(indices[j]),bID);            
+          }
+          
+          if (numChildren > 1)
+          {
+            if (numChildren <= BVH_BRANCHING_FACTOR)
+            {
+              writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,instanceMode ? NODE_TYPE_INSTANCE : NODE_TYPE_MIXED);
+              innerNodes++;
+              innerNodes_numChildren+=numChildren;
+            }
+            else
+            {
+              const uint numNewBlocks = (numChildren+BVH_BRANCHING_FACTOR-1)/BVH_BRANCHING_FACTOR;
+              //PRINT(numNewBlocks);
+              char *const childAddr = globals->atomic_allocNode(sizeof(QBVH6::InternalNode6)*numNewBlocks); 
+              //PRINT((void*)childAddr);
+              gpu::AABB3f blockBounds[BVH_BRANCHING_FACTOR];
+              uint newBlockID = 0;
+              for (uint i=0;i<numChildren;i+=BVH_BRANCHING_FACTOR,newBlockID++)
+              {
+                const uint start = i;
+                const uint end   = min(i+BVH_BRANCHING_FACTOR,numChildren);
+                gpu::AABB3f bounds;
+                bounds.init();
+                for (uint k=start;k<end;k++)
+                  bounds.extend(bvh2[BVH2Ploc::getIndex(indices[k])].bounds);
+                blockBounds[newBlockID] = bounds;
+                //PRINT(bounds);
+                
+                const uint childBlockID = globals->getBlockIDFromPtr(&childAddr[64*newBlockID]);
+                //PRINT4(i,(void*)&childAddr[newBlockID],blockID+i-childBlockID,(globals->nodeBlockPtr(blockID+i)-&childAddr[newBlockID])/64);
+                writeNode(&childAddr[newBlockID*64],blockID+i-childBlockID,bounds,end-start,&indices[start],bvh2,numPrimitives,NODE_TYPE_INTERNAL,false);                
+              }
+              //PRINT2(numNewBlocks,newBlockID);
+              
+              writeInnerNode(curAddr,(childAddr-curAddr)/64,bvh2[BVH2Ploc::getIndex(index)].bounds,numNewBlocks,blockBounds);                
+              
+                {
+                  uint numNewInnerNodes = numChildren/BVH_BRANCHING_FACTOR;
+                  if (numChildren % BVH_BRANCHING_FACTOR > 1) numNewInnerNodes++;
+                  innerNodes += 1 + numNewInnerNodes;
+                  innerNodes_numChildren+=numNewInnerNodes;
+                  innerNodes_numChildren+= (numChildren/BVH_BRANCHING_FACTOR)*BVH_BRANCHING_FACTOR + ((numChildren % BVH_BRANCHING_FACTOR) > 1 ? (numChildren % BVH_BRANCHING_FACTOR) : 0);
+                }
+            }
+          }
+
+          
+          
+#else          
+          
+          if (isFatLeaf)
+            writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,instanceMode ? NODE_TYPE_INSTANCE : NODE_TYPE_MIXED);
+                                                                      
+          const uint leafDataID = blockID - globals->leaf_mem_allocator_start;
+
+          if (numChildren > 1)
+          {
+            innerNodes++;
+            innerNodes_numChildren+=numChildren;
+          }
+          
+          for (uint j=0;j<numChildren;j++)
+          {
+            const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
+            const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
+            const uint bID = isFatLeaf ? (blockID + j) : innerID;
+            leafGenData[leafDataID+j].blockID = bID;
+            leafGenData[leafDataID+j].primID = primID;
+            leafGenData[leafDataID+j].geomID = geomID;
+          }
+#endif        
+          
+        }
+      }
+      PRINT(100.0f *  innerNodes_numChildren/innerNodes / BVH_BRANCHING_FACTOR);
+      
+      uint leaves = (globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start);
+      host_device_tasks[0] = leaves;
+      //exit(0);
+#else      
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -2568,7 +2807,8 @@ namespace embree
       double dt = gpu::getDeviceExecutionTiming(queue_event);      
       total_time += dt;
       if (unlikely(verbose))      
-        PRINT3("final flattening iteration ",(float)dt,(float)total_time);      
+        PRINT3("final flattening iteration ",(float)dt,(float)total_time);
+#endif      
     }
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
