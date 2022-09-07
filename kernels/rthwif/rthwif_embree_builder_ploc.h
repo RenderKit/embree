@@ -12,7 +12,7 @@
 #define SEARCH_RADIUS             (1<<SEARCH_RADIUS_SHIFT)
 #define SINGLE_R_PATH             1
 
-#define SMALL_SUBTREE_THRESHOLD   -1
+#define SMALL_SUBTREE_THRESHOLD   2
 #define BVH_BRANCHING_FACTOR      6
 
 #define LARGER_FAT_LEAVES 0
@@ -22,6 +22,9 @@
 #else
 # define FATLEAF_THRESHOLD         6
 #endif
+
+#define USE_NEW_OPENING 1
+
 
 namespace embree
 {
@@ -266,9 +269,9 @@ namespace embree
   
   class __aligned(32) BVH2Ploc
   {
-    static const uint FATLEAF_BIT        =  (uint)1<<31;
-    static const uint SMALL_SUBTREE_BIT  =  (uint)1<<30;
-    static const uint BIT_MASK           = ~(FATLEAF_BIT|SMALL_SUBTREE_BIT);
+    static const uint FATLEAF_SHIFT      =  29;    
+    static const uint FATLEAF_BITS       =  (uint)7<<FATLEAF_SHIFT;
+    static const uint BIT_MASK           = ~(FATLEAF_BITS);
     
   public:
     
@@ -290,8 +293,8 @@ namespace embree
     
     __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
     {
-      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD) ? FATLEAF_BIT : 0) | ((subtree_size_left   == SMALL_SUBTREE_THRESHOLD) ? SMALL_SUBTREE_BIT : 0);
-      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD) ? FATLEAF_BIT : 0) | ((subtree_size_right  == SMALL_SUBTREE_THRESHOLD) ? SMALL_SUBTREE_BIT : 0);
+      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD) ? subtree_size_left  : 0)<<FATLEAF_SHIFT;
+      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD) ? subtree_size_right : 0)<<FATLEAF_SHIFT ;
 
       // better coalescing
 #if 1
@@ -340,13 +343,13 @@ namespace embree
       dest->bounds.upper_z = bounds.upper_z;            
     }
 
-    static  __forceinline bool isFatLeaf(const uint index) { return index & FATLEAF_BIT;  }
-    static  __forceinline bool isSmallSubTree(const uint index) { return index & SMALL_SUBTREE_BIT;  }
+    static  __forceinline bool isFatLeaf(const uint index) { return index & FATLEAF_BITS;  }
+    static  __forceinline uint numFatChildren(const uint index) { return index >> FATLEAF_SHIFT;  }
     
     static  __forceinline uint getIndex(const uint index)  { return index & BIT_MASK;  }
     static  __forceinline bool isLeaf(const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
 
-    static  __forceinline uint makeFatLeaf(const uint index) { return index | FATLEAF_BIT;  }
+    static  __forceinline uint makeFatLeaf(const uint index, const uint numChildren) { return index | (numChildren<<FATLEAF_SHIFT);  }
 
     __forceinline operator const gpu::AABB3f &() const { return bounds; }
 
@@ -2272,10 +2275,13 @@ namespace embree
                                                                           
     indices[0] = _left;
     indices[1] = _right;
-                                                                          
-    areas[0]  = (!BVH2Ploc::isFatLeaf( _left)  || BVH2Ploc::isSmallSubTree( _left ) )? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
-    areas[1]  = (!BVH2Ploc::isFatLeaf(_right)  || BVH2Ploc::isSmallSubTree( _right) )? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
-
+#if USE_NEW_OPENING == 1
+    areas[0]  = (BVH2Ploc::numFatChildren( _left) == 0 || BVH2Ploc::numFatChildren( _left) == SMALL_SUBTREE_THRESHOLD) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
+    areas[1]  = (BVH2Ploc::numFatChildren(_right) == 0 || BVH2Ploc::numFatChildren(_right) == SMALL_SUBTREE_THRESHOLD) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
+#else    
+    areas[0]  = (!BVH2Ploc::isFatLeaf( _left)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
+    areas[1]  = (!BVH2Ploc::isFatLeaf(_right)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
+#endif
     
     uint numChildren = 2;
     while (numChildren < BVH_BRANCHING_FACTOR)
@@ -2290,16 +2296,36 @@ namespace embree
           bestChild = i;
         }
             
-      if (areas[bestChild] < 0.0f) break; // nothing left to open
+      if (areas[bestChild] < 0.0f)
+      {
+#if USE_NEW_OPENING == 1        
+        const uint free_space = BVH_BRANCHING_FACTOR - numChildren;
+        bestChild = -1;
+        for (uint i=0;i<numChildren;i++)
+          if (BVH2Ploc::numFatChildren(indices[i]) > 2 && BVH2Ploc::numFatChildren(indices[i]) <= free_space)
+          {
+            //PRINT2(free_space,BVH2Ploc::numFatChildren(indices[i]));
+            bestChild = i;
+            break;
+          }
+        if (bestChild == -1)
+#endif          
+          break; // nothing left to open
+      }
       
       const uint bestNodeID = indices[bestChild];
                                                                             
       const uint left  = bvh2[BVH2Ploc::getIndex(bestNodeID)].left;
       const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
-            
-      areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left) || BVH2Ploc::isSmallSubTree( left )) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
-      indices[bestChild]   = left;
-      areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right) || BVH2Ploc::isSmallSubTree( right )) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
+
+#if USE_NEW_OPENING == 1
+      areas[bestChild]     = (BVH2Ploc::numFatChildren( left) == 0 || BVH2Ploc::numFatChildren( left) == SMALL_SUBTREE_THRESHOLD) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
+      areas[numChildren]   = (BVH2Ploc::numFatChildren(right) == 0 || BVH2Ploc::numFatChildren(right) == SMALL_SUBTREE_THRESHOLD) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;      
+#else      
+      areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left)) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
+      areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
+#endif      
+      indices[bestChild]   = left;      
       indices[numChildren] = right;                                                                            
       numChildren++;
     }            
@@ -2376,7 +2402,7 @@ namespace embree
                                                                         uint rootIndex = globals->rootIndex;
 
                                                                         if (numPrimitives <= FATLEAF_THRESHOLD)
-                                                                          rootIndex = BVH2Ploc::makeFatLeaf(rootIndex);
+                                                                          rootIndex = BVH2Ploc::makeFatLeaf(rootIndex,numPrimitives);
                                                                         
                                                                         root_state->init( rootIndex );
                                                                         node_mem_allocator_cur = node_end;
@@ -2488,7 +2514,7 @@ namespace embree
                                                                             {                                                                              
                                                                               uint indices[BVH_BRANCHING_FACTOR];
                                                                               const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
-                                                                              if (numChildren < BVH_BRANCHING_FACTOR) PRINT(numChildren);
+                                                                              //if (numChildren < BVH_BRANCHING_FACTOR) PRINT(numChildren);
                                                                               
                                                                               char *const childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
                                                                               valid = true;
