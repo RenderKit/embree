@@ -12,10 +12,10 @@
 #define SEARCH_RADIUS             (1<<SEARCH_RADIUS_SHIFT)
 #define SINGLE_R_PATH             1
 
-#define SMALL_SUBTREE_THRESHOLD 2
+#define SMALL_SUBTREE_THRESHOLD   -1
 #define BVH_BRANCHING_FACTOR      6
 
-#define LARGER_FAT_LEAVES 0 
+#define LARGER_FAT_LEAVES 0
 
 #if LARGER_FAT_LEAVES == 1
 # define FATLEAF_THRESHOLD         6*6
@@ -290,8 +290,8 @@ namespace embree
     
     __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
     {
-      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD) ? FATLEAF_BIT : 0) | ((subtree_size_left   <= SMALL_SUBTREE_THRESHOLD) ? SMALL_SUBTREE_BIT : 0);
-      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD) ? FATLEAF_BIT : 0) | ((subtree_size_right  <= SMALL_SUBTREE_THRESHOLD) ? SMALL_SUBTREE_BIT : 0);
+      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD) ? FATLEAF_BIT : 0) | ((subtree_size_left   == SMALL_SUBTREE_THRESHOLD) ? SMALL_SUBTREE_BIT : 0);
+      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD) ? FATLEAF_BIT : 0) | ((subtree_size_right  == SMALL_SUBTREE_THRESHOLD) ? SMALL_SUBTREE_BIT : 0);
 
       // better coalescing
 #if 1
@@ -2273,8 +2273,8 @@ namespace embree
     indices[0] = _left;
     indices[1] = _right;
                                                                           
-    areas[0]  = (!BVH2Ploc::isFatLeaf( _left) /* || BVH2Ploc::isSmallSubTree( _left ) */)? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
-    areas[1]  = (!BVH2Ploc::isFatLeaf(_right) /* || BVH2Ploc::isSmallSubTree( _right) */)? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
+    areas[0]  = (!BVH2Ploc::isFatLeaf( _left)  || BVH2Ploc::isSmallSubTree( _left ) )? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
+    areas[1]  = (!BVH2Ploc::isFatLeaf(_right)  || BVH2Ploc::isSmallSubTree( _right) )? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
 
     
     uint numChildren = 2;
@@ -2297,9 +2297,9 @@ namespace embree
       const uint left  = bvh2[BVH2Ploc::getIndex(bestNodeID)].left;
       const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
             
-      areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left) /*|| BVH2Ploc::isSmallSubTree( left )*/) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
+      areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left) || BVH2Ploc::isSmallSubTree( left )) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
       indices[bestChild]   = left;
-      areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right) /*|| BVH2Ploc::isSmallSubTree( right )*/) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
+      areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right) || BVH2Ploc::isSmallSubTree( right )) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
       indices[numChildren] = right;                                                                            
       numChildren++;
     }            
@@ -2488,6 +2488,8 @@ namespace embree
                                                                             {                                                                              
                                                                               uint indices[BVH_BRANCHING_FACTOR];
                                                                               const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2);
+                                                                              if (numChildren < BVH_BRANCHING_FACTOR) PRINT(numChildren);
+                                                                              
                                                                               char *const childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
                                                                               valid = true;
                                                                               writeNode(localNodeData[localID].v,(childAddr-curAddr)/64,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED, forceFatLeaves);                                                                          
@@ -2551,7 +2553,10 @@ namespace embree
     if (blocks)
     {
 
-#if LARGER_FAT_LEAVES == 1
+#if 1
+      uint distribution[7];
+      uint distribution_nodes = 0;
+      for (int i=0;i<7;i++) distribution[i] = 0;
       PRINT(blocks);
       PRINT(globals->leaf_mem_allocator_start);      
       PRINT(globals->leaf_mem_allocator_cur);
@@ -2589,7 +2594,7 @@ namespace embree
           }
           const uint blockID = gpu::atomic_add_global(&globals->leaf_mem_allocator_cur,numChildren);
           
-#if 1
+#if LARGER_FAT_LEAVES == 1
           const uint leafDataID = blockID - globals->leaf_mem_allocator_start;
 
           //PRINT(numChildren);
@@ -2633,11 +2638,18 @@ namespace embree
                 
                 const uint childBlockID = globals->getBlockIDFromPtr(&childAddr[64*newBlockID]);
                 //PRINT4(i,(void*)&childAddr[newBlockID],blockID+i-childBlockID,(globals->nodeBlockPtr(blockID+i)-&childAddr[newBlockID])/64);
-                writeNode(&childAddr[newBlockID*64],blockID+i-childBlockID,bounds,end-start,&indices[start],bvh2,numPrimitives,NODE_TYPE_INTERNAL,false);                
+                writeNode(&childAddr[newBlockID*64],blockID+i-childBlockID,bounds,end-start,&indices[start],bvh2,numPrimitives,NODE_TYPE_INTERNAL,false);
+
+                distribution[end-start]++;
+                distribution_nodes++;
+
               }
               //PRINT2(numNewBlocks,newBlockID);
               
               writeInnerNode(curAddr,(childAddr-curAddr)/64,bvh2[BVH2Ploc::getIndex(index)].bounds,numNewBlocks,blockBounds);                
+
+              distribution[numNewBlocks]++;
+              distribution_nodes++;
               
                 {
                   uint numNewInnerNodes = numChildren/BVH_BRANCHING_FACTOR;
@@ -2652,6 +2664,8 @@ namespace embree
           
           
 #else          
+          distribution[numChildren]++;
+          distribution_nodes++;
           
           if (isFatLeaf)
             writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,instanceMode ? NODE_TYPE_INSTANCE : NODE_TYPE_MIXED);
@@ -2682,6 +2696,11 @@ namespace embree
       uint leaves = (globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start);
       host_device_tasks[0] = leaves;
       //exit(0);
+
+      for (uint i=0;i<7;i++)
+        PRINT2(i,distribution[i]*100.0f / distribution_nodes);
+
+      
 #else      
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
