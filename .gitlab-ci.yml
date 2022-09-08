@@ -193,25 +193,23 @@ continuous-windows-DG2-AOT-INT:
 # Continuous GPU Tests with public drivers
 ####################################################################
 
-continuous-linux-DG2-AOT-PUBLIC:
-  extends: .build
-  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2 gfx:PUBLIC tasking:TBB intensity:4"]
-  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
-  tags:   [embree, docker]
-
-continuous-linux-DG2-AOT-PUBLIC-test:
-  extends: .test_dg2
-  before_script: ["set CFEFusedEUDispatch=1"]  # FIXME: remove later
-  needs: ["continuous-linux-DG2-AOT-PUBLIC"]
-
-continuous-windows-DG2-JIT-PUBLIC:
-  stage: build
-  script:
-    - set CFEFusedEUDispatch=1  # FIXME: remove later
-    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:none gfx:PUBLIC CURVE:OFF intensity:1
-    - python scripts/test.py build
-    - python scripts/test.py test
-  tags:   [vis-sdp-dg2-05]
+#continuous-linux-DG2-AOT-PUBLIC:
+#  extends: .build
+#  before_script: ["scripts/test.py configure ${COMMON} build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2 gfx:PUBLIC tasking:TBB intensity:4"]
+#  image: $DOCKER_REGISTRY/embree/ubuntu:20.04
+#  tags:   [embree, docker]
+#
+#continuous-linux-DG2-AOT-PUBLIC-test:
+#  extends: .test_dg2
+#  needs: ["continuous-linux-DG2-AOT-PUBLIC"]
+#
+#continuous-windows-DG2-JIT-PUBLIC:
+#  stage: build
+#  script:
+#    - python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:none gfx:PUBLIC CURVE:OFF intensity:1
+#    - python scripts/test.py build
+#    - python scripts/test.py test
+#  tags:   [vis-sdp-dg2-05]
 
 ####################################################################
 # Continuous CPU Tests
