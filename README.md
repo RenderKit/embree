@@ -1,4 +1,4 @@
-% Embree: High Performance Ray Tracing Kernels 3.13.4
+% Embree: High Performance Ray Tracing Kernels 3.13.5
 % Intel Corporation
 
 Embree Overview
@@ -79,7 +79,7 @@ Windows ZIP File
 -----------------
 
 Embree linked against Visual Studio 2015 are provided as a ZIP file
-[embree-3.13.4.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.4.x64.vc14.windows.zip). After
+[embree-3.13.5.x64.vc14.windows.zip](https://github.com/embree/embree/releases/download/v3.13.5/embree-3.13.5.x64.vc14.windows.zip). After
 unpacking this ZIP file, you should set the path to the `lib` folder
 manually to your `PATH` environment variable for applications to find
 Embree.
@@ -88,13 +88,13 @@ Linux tar.gz Files
 ------------------
 
 The Linux version of Embree is also delivered as a `tar.gz` file:
-[embree-3.13.4.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.4.x86_64.linux.tar.gz). Unpack
+[embree-3.13.5.x86_64.linux.tar.gz](https://github.com/embree/embree/releases/download/v3.13.5/embree-3.13.5.x86_64.linux.tar.gz). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    tar xzf embree-3.13.4.x86_64.linux.tar.gz
-    source embree-3.13.4.x86_64.linux/embree-vars.sh
+    tar xzf embree-3.13.5.x86_64.linux.tar.gz
+    source embree-3.13.5.x86_64.linux/embree-vars.sh
 
 We recommend adding a relative `RPATH` to your application that points
 to the location where Embree (and TBB) can be found, e.g. `$ORIGIN/../lib`.
@@ -103,13 +103,13 @@ macOS ZIP file
 -----------------
 
 The macOS version of Embree is also delivered as a ZIP file:
-[embree-3.13.4.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.4/embree-3.13.4.x86_64.macosx.zip). Unpack
+[embree-3.13.5.x86_64.macosx.zip](https://github.com/embree/embree/releases/download/v3.13.5/embree-3.13.5.x86_64.macosx.zip). Unpack
 this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-3.13.4.x64.macosx.zip
-    source embree-3.13.4.x64.macosx/embree-vars.sh
+    unzip embree-3.13.5.x64.macosx.zip
+    source embree-3.13.5.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -489,6 +489,11 @@ parameters that can be configured in CMake:
   curve_radius*`EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR` to
   the ray origin are ignored. A value of 0.0f disables self
   intersection avoidance while 2.0f is the default value.
+
++ `EMBREE_DISC_POINT_SELF_INTERSECTION_AVOIDANCE`: Enables self
+   intersection avoidance for RTC_GEOMETRY_TYPE_DISC_POINT geometry
+   type (ON by default). When enabled intersections are skipped if the ray
+   origin lies inside the sphere defined by the point primitive.
 
 + `EMBREE_MIN_WIDTH`: Enabled the min-width feature, which allows
   increasing the radius of curves and points to match some amount of
