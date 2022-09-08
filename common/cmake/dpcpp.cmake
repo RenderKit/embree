@@ -83,14 +83,11 @@ IF (EMBREE_DPCPP_SUPPORT)
   
   IF (EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
     SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64")
-    SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
   ELSE()
-    #SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64,spir64_gen")
-    SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64_gen")
-    SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT}")
+    SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64,spir64_gen")
   ENDIF()
   
-  #SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
+  SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
   
   IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
     SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} ${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
