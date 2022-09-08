@@ -55,7 +55,7 @@ MACRO (ADD_EMBREE_NORMAL_SYCL_TEST name reference executable args)
     ADD_TEST(NAME ${name}_sycl
              WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
              COMMAND ${executable}_sycl --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
-    SET_TESTS_PROPERTIES(${name}_sycl PROPERTIES TIMEOUT 30)
+    SET_TESTS_PROPERTIES(${name}_sycl PROPERTIES TIMEOUT 50)
   ENDIF()
 ENDMACRO()
 
@@ -93,7 +93,7 @@ MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
       ADD_TEST(NAME ${name}_sycl
                  WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
                  COMMAND COMMAND ${executable}_sycl -c ${EMBREE_MODEL_DIR}/${model} --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
-      SET_TESTS_PROPERTIES(${name}_sycl PROPERTIES TIMEOUT 30)
+      SET_TESTS_PROPERTIES(${name}_sycl PROPERTIES TIMEOUT 50)
     ENDIF()
   ENDIF()
 ENDMACRO()
