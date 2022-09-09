@@ -35,7 +35,7 @@ namespace embree
     else
     {
       uint indices[BVH_BRANCHING_FACTOR];
-      const uint numChildren = openBVH2MaxAreaSortChildren(BVH2Ploc::getIndex(index),indices,bvh2);
+      const uint numChildren = openBVH2MaxAreaSortChildren(BVH2Ploc::getIndex(index),indices,bvh2,numPrimitives);
       for (uint i=0;i<numChildren;i++)
         if (BVH2Ploc::getIndex(indices[i]) > bvh2_max_allocations)
           FATAL("OPENING ERROR");
@@ -276,7 +276,7 @@ namespace embree
     if (unlikely(verbose2)) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
 
     if (activeTriQuadMeshes)    
-    {    
+    {      
       // =============================
       // === count quads per block === 
       // =============================
