@@ -2573,83 +2573,6 @@ namespace embree
     if (blocks)
     {
 
-#if 0
-      uint distribution[7];
-      uint distribution_nodes = 0;
-      for (int i=0;i<7;i++) distribution[i] = 0;
-      PRINT(blocks);
-      PRINT(globals->leaf_mem_allocator_start);      
-      PRINT(globals->leaf_mem_allocator_cur);
-      uint innerNodes = 0;
-      uint innerNodes_numChildren = 0;
-      for (uint globalID = 0;globalID<blocks;globalID++)
-      {
-        uint indices[FATLEAF_THRESHOLD];
-        const uint startBlockID = globals->node_mem_allocator_start;
-        //const uint endBlockID   = globals->node_mem_allocator_cur;                             
-        const uint innerID      = startBlockID + globalID;
-        TmpNodeState *state = (TmpNodeState *)globals->nodeBlockPtr(innerID);
-        uint index   = state->bvh2_index;
-        char* curAddr = (char*)state;
-        uint numChildren = 0;
-        bool isFatLeaf   = false;
-
-        if (state->header == 0x7fffffff) // not processed yet
-        {
-          // =============================================                                                                          
-          // === forcing fatleaf mode in instance mode ===
-          // =============================================
-                                                                          
-          isFatLeaf = !BVH2Ploc::isLeaf(index,numPrimitives);
-
-          if (isFatLeaf) 
-          {
-            numChildren = 0;
-            getLeafIndicesOrder(index,bvh2,indices,numChildren,numPrimitives);
-          }
-          else
-          {
-            numChildren = 1;
-            indices[0] = index;
-          }
-          const uint blockID = gpu::atomic_add_global(&globals->leaf_mem_allocator_cur,numChildren);
-          
-          distribution[numChildren]++;
-          distribution_nodes++;
-          
-          if (isFatLeaf)
-            writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,instanceMode ? NODE_TYPE_INSTANCE : NODE_TYPE_MIXED);
-                                                                      
-          const uint leafDataID = blockID - globals->leaf_mem_allocator_start;
-
-          if (numChildren > 1)
-          {
-            innerNodes++;
-            innerNodes_numChildren+=numChildren;
-          }
-          
-          for (uint j=0;j<numChildren;j++)
-          {
-            const uint geomID = bvh2[BVH2Ploc::getIndex(indices[j])].left;
-            const uint primID = bvh2[BVH2Ploc::getIndex(indices[j])].right;
-            const uint bID = isFatLeaf ? (blockID + j) : innerID;
-            leafGenData[leafDataID+j].blockID = bID;
-            leafGenData[leafDataID+j].primID = primID;
-            leafGenData[leafDataID+j].geomID = geomID;
-          }          
-        }
-      }
-      PRINT(100.0f *  innerNodes_numChildren/innerNodes / BVH_BRANCHING_FACTOR);
-      
-      uint leaves = (globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start);
-      host_device_tasks[0] = leaves;
-      //exit(0);
-
-      for (uint i=0;i<7;i++)
-        PRINT2(i,distribution[i]*100.0f / distribution_nodes);
-
-      
-#else      
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -2775,7 +2698,6 @@ namespace embree
       total_time += dt;
       if (unlikely(verbose))      
         PRINT3("final flattening iteration ",(float)dt,(float)total_time);
-#endif      
     }
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
