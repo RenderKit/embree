@@ -1,7 +1,7 @@
 variables:
   GFX_VERSION_LINUX_DEFAULT: master_release/12117
-  GFX_VERSION_LINUX_PUBLIC: intel-gpgpu-prerelease-ubuntu-focal-eng382-20220321.1
+  GFX_VERSION_LINUX_PUBLIC: master_release/12117
   GFX_VERSION_WIN_DEFAULT: ci/master/12117
-  GFX_VERSION_WIN_PUBLIC: ci/sdp/1011433
+  GFX_VERSION_WIN_PUBLIC: ci/master/12117
   DPCPP_VERSION_LINUX: sycl-nightly/20220802
   DPCPP_VERSION_WIN: sycl-nightly/20220802
