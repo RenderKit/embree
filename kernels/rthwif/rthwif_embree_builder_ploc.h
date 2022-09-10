@@ -1214,11 +1214,11 @@ namespace embree
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_neighbor(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_clusterID(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);        
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
-
-        
-        sycl::accessor< uint   , 1, sycl_read_write, sycl_local> global_wg_prefix_sum(sycl::range<1>(NN_SEARCH_WG_NUM),cgh);
+        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);        
+        //sycl::accessor< uint   , 1, sycl_read_write, sycl_local> global_wg_prefix_sum(sycl::range<1>(NN_SEARCH_WG_NUM),cgh);
         sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _wgID(cgh);
+        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _global_count_prefix_sum(cgh);
+        
         
         const sycl::nd_range<1> nd_range(sycl::range<1>(NN_SEARCH_WG_NUM*NN_SEARCH_WG_SIZE),sycl::range<1>(NN_SEARCH_WG_SIZE));		  
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(NN_SEARCH_SUB_GROUP_WIDTH) {
@@ -1231,6 +1231,7 @@ namespace embree
             
 
             uint &wgID = *_wgID.get_pointer();
+            uint &global_count_prefix_sum = *_global_count_prefix_sum.get_pointer();
 
             if (localID == 0)
               wgID = gpu::atomic_add_global(&globals->wgID,(uint)1);
@@ -1435,6 +1436,8 @@ namespace embree
               sycl::atomic_ref<uint,sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> scratch_mem_counter(scratch_mem[groupID]);
               scratch_mem_counter.store(total_offset | flag);              
             }
+
+            global_count_prefix_sum = 0;            
             
             item.barrier(sycl::access::fence_space::global_and_local);
 
@@ -1445,7 +1448,10 @@ namespace embree
             if (localID < groupID /*NN_SEARCH_WG_NUM */)
             {
               sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_state(scratch_mem[localID]);
-              while( (global_state.load() & flag) == 0 );
+              uint c = 0;
+              while( ((c = global_state.load()) & flag) == 0 );
+              if (c)
+                gpu::atomic_add_local(&global_count_prefix_sum,(uint)c & mask);
             }
             
             item.barrier(sycl::access::fence_space::local_space);
@@ -1453,23 +1459,8 @@ namespace embree
             /* ---------------------------------------------------- */                                                       
             /* --- prefix sum over per WG counts in scratch mem --- */
             /* ---------------------------------------------------- */
-
-            uint global_total = 0;
-            for (uint i=0;i<=/*NN_SEARCH_WG_NUM*/groupID;i+=subgroupSize)
-            {
-              const uint subgroup_counts     = i+subgroupLocalID <= groupID /*NN_SEARCH_WG_NUM*/ ? (mask & scratch_mem[i+subgroupLocalID]) : 0;
-              const uint total               = sub_group_reduce(subgroup_counts, std::plus<uint>());
-              const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
-
-              global_wg_prefix_sum[i+subgroupLocalID] = sums_exclusive_scan + global_total;
-              global_total += total;                                           
-            }            
-            
             const uint active_count = total_offset;
-            
-            item.barrier(sycl::access::fence_space::local_space);
-
-            const uint global_offset = global_wg_prefix_sum[groupID];
+            const uint global_offset = global_count_prefix_sum;            
               
             for (uint t=localID;t<active_count;t+=localSize)
               cluster_index_source[global_offset + t] = cluster_index_dest[startID + t];                                                               
@@ -1478,8 +1469,8 @@ namespace embree
             /* --- update number of clusters after compaction --- */
             /* -------------------------------------------------- */
                                          
-            if (localID == 0 && groupID == NN_SEARCH_WG_NUM-1) // need to be the last group as only this one waits until all previous are done
-              *host_device_tasks = global_total;
+            if (localID == 0 && groupID == NN_SEARCH_WG_NUM-1) // need to be the last group as only this one waits until all previous are done              
+              *host_device_tasks = global_offset + active_count;
             
             /* -------------------------------- */                                                       
             /* --- last WG does the cleanup --- */
