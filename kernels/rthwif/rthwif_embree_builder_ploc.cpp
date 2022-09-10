@@ -593,6 +593,22 @@ namespace embree
       timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
     }
     else
+    {
+      // ===========================            
+      // ==== clear scratch mem ====
+      // ===========================      
+      {
+        const sycl::nd_range<1> nd_range1(MAX_WGS,sycl::range<1>(MAX_WGS)); 
+        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                                                                      {
+                                                                        const uint globalID     = item.get_global_id(0);
+                                                                        scratch_mem1[globalID] = 0;
+                                                                      });
+                                                         
+                                                   });
+      }
+      
       for (;numPrims>1;iteration++)
       {          
         // ==================================================            
@@ -614,10 +630,11 @@ namespace embree
           // ===================================================================================
 
           const uint MERGED_KERNEL_WG_NUM = min((numPrims+1024-1)/1024,(uint)MAX_WGS);
-          const uint radius = SEARCH_RADIUS;
+          const uint radius = SEARCH_RADIUS;          
           
           device_ploc_iteration_time = 0.0f;
           iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch_mem1,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,device_ploc_iteration_time, false);
+          //computePrefixSum_compactClusterReferences(gpu_queue,host_device_tasks,cluster_index_dest,cluster_index_source,scratch_mem1,numPrims,MERGED_KERNEL_WG_NUM,device_ploc_iteration_time, false);
           timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
 
           const uint new_numPrims = *host_device_tasks;
@@ -629,7 +646,7 @@ namespace embree
         if (unlikely(verbose2))
           PRINT4(iteration,numPrims,(float)device_ploc_iteration_time,(float)timer.get_accum_device_timer(BuildTimer::BUILD));
       }
-
+    }
     timer.stop(BuildTimer::BUILD);        
             
     
@@ -708,7 +725,10 @@ namespace embree
       
       PRINT(globals->leaf_mem_allocator_start);      
       PRINT(globals->leaf_mem_allocator_cur);
-      PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);            
+      PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);
+
+      if (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start != numPrimitives)
+        FATAL("globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start != numPrimitives");
     }
     
     BBox3fa geomBounds(Vec3fa(globals->geometryBounds.lower_x,globals->geometryBounds.lower_y,globals->geometryBounds.lower_z),
