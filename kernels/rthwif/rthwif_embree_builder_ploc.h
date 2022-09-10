@@ -1432,7 +1432,7 @@ namespace embree
             
             if (localID == 0)
             {
-              sycl::atomic_ref<uint, /*sycl::memory_order::acq_rel*/sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> scratch_mem_counter(scratch_mem[groupID]); //FIXME: relaxed?
+              sycl::atomic_ref<uint,sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> scratch_mem_counter(scratch_mem[groupID]);
               scratch_mem_counter.store(total_offset | flag);              
             }
             
@@ -1442,7 +1442,7 @@ namespace embree
             // wait until earlier WGs finished as well
             // =======================================
 
-            if (localID < NN_SEARCH_WG_NUM)
+            if (localID < groupID /*NN_SEARCH_WG_NUM */)
             {
               sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_state(scratch_mem[localID]);
               while( (global_state.load() & flag) == 0 );
@@ -1455,9 +1455,9 @@ namespace embree
             /* ---------------------------------------------------- */
 
             uint global_total = 0;
-            for (uint i=0;i<NN_SEARCH_WG_NUM;i+=subgroupSize)
+            for (uint i=0;i<=/*NN_SEARCH_WG_NUM*/groupID;i+=subgroupSize)
             {
-              const uint subgroup_counts     = i+subgroupLocalID < NN_SEARCH_WG_NUM ? (mask & scratch_mem[i+subgroupLocalID]) : 0;
+              const uint subgroup_counts     = i+subgroupLocalID <= groupID /*NN_SEARCH_WG_NUM*/ ? (mask & scratch_mem[i+subgroupLocalID]) : 0;
               const uint total               = sub_group_reduce(subgroup_counts, std::plus<uint>());
               const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
 
@@ -1465,7 +1465,7 @@ namespace embree
               global_total += total;                                           
             }            
             
-            const uint active_count = mask & scratch_mem[groupID]; //total_offset;
+            const uint active_count = total_offset;
             
             item.barrier(sycl::access::fence_space::local_space);
 
@@ -1479,10 +1479,8 @@ namespace embree
             /* -------------------------------------------------- */
                                          
             if (localID == 0 && groupID == NN_SEARCH_WG_NUM-1) // need to be the last group as only this one waits until all previous are done
-            {
-              globals->numBuildRecords = global_total;
               *host_device_tasks = global_total;
-            }
+            
             /* -------------------------------- */                                                       
             /* --- last WG does the cleanup --- */
             /* -------------------------------- */
@@ -1496,10 +1494,10 @@ namespace embree
                 globals->wgID = 0;
                 globals->sync = 0;
                 /* --- reset scratch_mem --- */
-                for (uint i=0;i<64/*NN_SEARCH_WG_NUM*/;i++)
+                for (uint i=0;i<NN_SEARCH_WG_NUM;i++) 
                   scratch_mem[i] = 0;                
               }
-            }
+            }            
                                                      
           });		  
       });
