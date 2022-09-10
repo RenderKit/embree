@@ -1432,7 +1432,7 @@ namespace embree
             
             if (localID == 0)
             {
-              sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> scratch_mem_counter(scratch_mem[groupID]); //FIXME: relaxed?
+              sycl::atomic_ref<uint, /*sycl::memory_order::acq_rel*/sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> scratch_mem_counter(scratch_mem[groupID]); //FIXME: relaxed?
               scratch_mem_counter.store(total_offset | flag);              
             }
             
@@ -1496,7 +1496,7 @@ namespace embree
                 globals->wgID = 0;
                 globals->sync = 0;
                 /* --- reset scratch_mem --- */
-                for (uint i=0;i<NN_SEARCH_WG_NUM;i++)
+                for (uint i=0;i<64/*NN_SEARCH_WG_NUM*/;i++)
                   scratch_mem[i] = 0;                
               }
             }
