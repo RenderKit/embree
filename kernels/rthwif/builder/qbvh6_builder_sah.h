@@ -990,8 +990,10 @@ namespace embree
           if (verbose) std::cout << "primrefgen2  : " << std::setw(10) << (t4-t3)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t4-t3) << " Mprims/s" << std::endl;
           
           /* perform pre-splitting */
-          if (numPrimitives && 0)
+          if (numPrimitives && false)
           {
+            PRINT("PRE-SPLITTING DISABLED");
+            
             auto splitter = [this] (const PrimRef& prim, const size_t dim, const float pos, PrimRef& left_o, PrimRef& right_o) {
               splitTriangleOrQuad(prim,dim,pos,left_o,right_o);
             };
