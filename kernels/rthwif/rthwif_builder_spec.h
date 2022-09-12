@@ -1,10 +1,9 @@
-// Copyright 2009-2021 Intel Corporation
+// Copyright 2009-2022 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include <cstdint>
-#include <sycl/sycl.hpp>
 
 #if defined(__cplusplus)
 #  define RTHWIF_API_EXTERN_C extern "C"
@@ -27,7 +26,7 @@
 #endif
 
 /* Required alignment of acceleration structure buffers. */
-#define RTHWIF_BVH_ALIGNMENT 128
+#define RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT 128
 
 /* Geometry flags supported (identical to DXR spec). */
 typedef enum RTHWIF_GEOMETRY_FLAGS : uint8_t
@@ -42,10 +41,12 @@ typedef struct RTHWIF_FLOAT3 {
   float x, y, z;
 } RTHWIF_FLOAT3;
 
+
 /* A 4-component short vector type. */
 typedef struct RTHWIF_FLOAT4 {
   float x, y, z, w;
 } RTHWIF_FLOAT4;
+
 
 /* A 4x4 affine transformation with column vectors vx, vy, vz, and p
  * transforming a point (x,y,z) to x*vx + y*vy + z*vz + p. The 4th
@@ -53,6 +54,7 @@ typedef struct RTHWIF_FLOAT4 {
 typedef struct RTHWIF_TRANSFORM4X4 {
   RTHWIF_FLOAT4 vx, vy, vz, p;
 } RTHWIF_TRANSFORM4X4;
+
 
 /* An axis aligned bounding box with lower and upper bounds in each
  * dimension. */
@@ -62,24 +64,28 @@ typedef struct RTHWIF_AABB
   RTHWIF_FLOAT3 upper;
 } RTHWIF_AABB;
 
-/* A 3-component unsigned integer vector. */
-typedef struct RTHWIF_UINT3 {
-  uint32_t v0, v1, v2;
-} RTHWIF_UINT3;
 
-/* A 4-component unsigned integer vector. */
-typedef struct RTHWIF_UINT4 { 
+/* A triangle represented using 3 vertex indices. */
+typedef struct RTHWIF_TRIANGLE_INDICES {
+  uint32_t v0, v1, v2;
+} RTHWIF_TRIANGLE_INDICES;
+
+
+/* A quad (triangle pair) represented using 4 vertex indices. */
+typedef struct RTHWIF_QUAD_INDICES { 
   uint32_t v0, v1, v2, v3;
-} RTHWIF_UINT4;
+} RTHWIF_QUAD_INDICES;
+
 
 /* The types of geometries supported. */
 typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
 {
-  RTHWIF_GEOMETRY_TYPE_TRIANGLES = 0,
-  RTHWIF_GEOMETRY_TYPE_QUADS = 1,
-  RTHWIF_GEOMETRY_TYPE_AABBS_FPTR = 2,
-  RTHWIF_GEOMETRY_TYPE_INSTANCE = 3,
+  RTHWIF_GEOMETRY_TYPE_TRIANGLES = 0,   // triangle mesh geometry type
+  RTHWIF_GEOMETRY_TYPE_QUADS = 1,       // quad mesh geometry type
+  RTHWIF_GEOMETRY_TYPE_AABBS_FPTR = 2,  // procedural geometry with AABB bounds per primitive
+  RTHWIF_GEOMETRY_TYPE_INSTANCE = 3,    // instance geometry
 } RTHWIF_GEOMETRY_TYPE;
+
 
 /* Instance flags supported (identical to DXR spec) */
 typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
@@ -91,102 +97,110 @@ typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
   RTHWIF_INSTANCE_FLAG_FORCE_NON_OPAQUE = 0x8
 } RTHWIF_INSTANCE_FLAGS;
 
-/* Triangle geometry descriptor. */
+
+/* Triangle mesh geometry descriptor. */
 typedef struct RTHWIF_GEOMETRY_TRIANGLES_DESC  // 40 bytes
 {
-  RTHWIF_GEOMETRY_TYPE GeometryType;       // must be RTHWIF_GEOMETRY_TYPE_TRIANGLES
-  RTHWIF_GEOMETRY_FLAGS GeometryFlags;     // geometry flags for all primitives of this geometry
-  uint8_t GeometryMask;                    // 8-bit geometry mask for ray masking
+  RTHWIF_GEOMETRY_TYPE geometryType;       // must be RTHWIF_GEOMETRY_TYPE_TRIANGLES
+  RTHWIF_GEOMETRY_FLAGS geometryFlags;     // geometry flags for all primitives of this geometry
+  uint8_t geometryMask;                    // 8-bit geometry mask for ray masking
   uint8_t reserved0;                       // must be zero
   uint32_t reserved1;                      // must be zero
-  unsigned int TriangleCount;              // number of triangles in IndexBuffer
-  unsigned int TriangleStride;             // stride in bytes of triangles in IndexBuffer
-  unsigned int VertexCount;                // number of vertices in VertexBuffer
-  unsigned int VertexStride;               // stride in bytes of vertices in VertexBuffer
-  RTHWIF_UINT3* IndexBuffer;               // pointer to array of triangle indices
-  RTHWIF_FLOAT3* VertexBuffer;             // pointer to array of triangle vertices
+  unsigned int triangleCount;              // number of triangles in triangleBuffer
+  unsigned int triangleStride;             // stride in bytes of triangles in triangleBuffer
+  unsigned int vertexCount;                // number of vertices in vertexBuffer
+  unsigned int vertexStride;               // stride in bytes of vertices in vertexBuffer
+  RTHWIF_TRIANGLE_INDICES* triangleBuffer; // pointer to array of triangle indices
+  RTHWIF_FLOAT3* vertexBuffer;             // pointer to array of triangle vertices
   
 } RTHWIF_RAYTRACING_GEOMETRY_TRIANGLES_DESC;
 
-/* Quad geometry descriptor. A quad with vertices v0,v1,v2,v3 is
+
+/* Quad mesh geometry descriptor. A quad with vertices v0,v1,v2,v3 is
  * rendered as a pair of triangles (v0,v1,v3) and (v2,v3,v1), with
  * barycentric coordinates u/v of the second triangle corrected by
  * u=1-u, and v=1-v to make a u/v parametrization of the entire
  * [0,1]x[0,1] uv space. */
 typedef struct RTHWIF_GEOMETRY_QUADS_DESC // 40 bytes
 {
-  RTHWIF_GEOMETRY_TYPE GeometryType;     // must be RTHWIF_GEOMETRY_TYPE_QUADS
-  RTHWIF_GEOMETRY_FLAGS GeometryFlags;   // geometry flags for all primitives of this geometry
-  uint8_t GeometryMask;                  // 8-bit geometry mask for ray masking
+  RTHWIF_GEOMETRY_TYPE geometryType;     // must be RTHWIF_GEOMETRY_TYPE_QUADS
+  RTHWIF_GEOMETRY_FLAGS geometryFlags;   // geometry flags for all primitives of this geometry
+  uint8_t geometryMask;                  // 8-bit geometry mask for ray masking
   uint8_t reserved0;                     // must be zero
   uint32_t reserved1;                    // must be zero
-  unsigned int QuadCount;                // number of quads in IndexBuffer
-  unsigned int QuadStride;               // stride in bytes of quads in IndexBuffer
-  unsigned int VertexCount;              // number of vertices in VertexBuffer
-  unsigned int VertexStride;             // stride in bytes of vertices in VertexBuffer
-  RTHWIF_UINT4* IndexBuffer;             // pointer to array of quad indices
-  RTHWIF_FLOAT3* VertexBuffer;           // pointer to array of quad vertices
+  unsigned int quadCount;                // number of quads in quadBuffer
+  unsigned int quadStride;               // stride in bytes of quads in quadBuffer
+  unsigned int vertexCount;              // number of vertices in vertexBuffer
+  unsigned int vertexStride;             // stride in bytes of vertices in vertexBuffer
+  RTHWIF_QUAD_INDICES* quadBuffer;       // pointer to array of quad indices
+  RTHWIF_FLOAT3* vertexBuffer;           // pointer to array of quad vertices
   
 } RTHWIF_RAYTRACING_GEOMETRY_QUADS_DESC;
 
-/* Function pointer type to return AABBs for a range of primitives. */
+
+/* Function pointer type to return AABBs for a range of procedural primitives. */
 typedef void (*RTHWIF_GEOMETRY_AABBS_FPTR)(const uint32_t primID,        // first primitive to return bounds for
                                            const uint32_t primIDCount,   // number of primitives to return bounds for
                                            void* geomUserPtr,            // pointer provided through geometry descriptor
                                            void* buildUserPtr,           // pointer provided through rthwifBuildAccel function
-                                           RTHWIF_AABB* AABBs            // destination buffer to write AABBs into
+                                           RTHWIF_AABB* bounds           // destination buffer to write AABB bounds to
   );
 
 /* Geometry with procedural primitives bound by AABBs. */
 typedef struct RTHWIF_GEOMETRY_AABBS_FPTR_DESC // 24 bytes
 {
-  RTHWIF_GEOMETRY_TYPE GeometryType;          // must be RTHWIF_GEOMETRY_TYPE_AABBS_FPTR
-  RTHWIF_GEOMETRY_FLAGS GeometryFlags;        // geometry flags for all primitives of this geometry
-  uint8_t GeometryMask;                       // 8-bit geometry mask for ray masking
+  RTHWIF_GEOMETRY_TYPE geometryType;          // must be RTHWIF_GEOMETRY_TYPE_AABBS_FPTR
+  RTHWIF_GEOMETRY_FLAGS geometryFlags;        // geometry flags for all primitives of this geometry
+  uint8_t geometryMask;                       // 8-bit geometry mask for ray masking
   uint8_t reserved;                           // must be zero
-  unsigned int AABBCount;                     // number of primitives in geometry
-  RTHWIF_GEOMETRY_AABBS_FPTR GetAABBs;        // function pointer to return bounds for a range of primitives
+  unsigned int primCount;                     // number of primitives in geometry
+  RTHWIF_GEOMETRY_AABBS_FPTR getBounds;       // function pointer to return bounds for a range of primitives
   void* geomUserPtr;                          // geometry user pointer passed to callback
+  
 } RTHWIF_GEOMETRY_AABBS_DESC;
+
 
 /* Instance geometry descriptor. */
 typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
 {
-  RTHWIF_GEOMETRY_TYPE GeometryType;          // must be RTHWIF_GEOMETRY_TYPE_INSTANCE
-  RTHWIF_INSTANCE_FLAGS InstanceFlags;        // flags for the instance (see RTHWIF_INSTANCE_FLAGS)
-  uint8_t GeometryMask;                       // 8-bit geometry mask for ray masking
+  RTHWIF_GEOMETRY_TYPE geometryType;          // must be RTHWIF_GEOMETRY_TYPE_INSTANCE
+  RTHWIF_INSTANCE_FLAGS instanceFlags;        // flags for the instance (see RTHWIF_INSTANCE_FLAGS)
+  uint8_t geometryMask;                       // 8-bit geometry mask for ray masking
   uint8_t reserved0;                          // must be zero
-  unsigned int InstanceUserID;                // a user specified identifier for the instance
-  RTHWIF_TRANSFORM4X4* Transform;             // local to world instance transformation
-  RTHWIF_AABB* AABB;                          // AABB of the instanced acceleration structure
-  void* Accel;                                // pointer to acceleration structure to instantiate
+  unsigned int instanceUserID;                // a user specified identifier for the instance
+  RTHWIF_TRANSFORM4X4* transform;             // local to world instance transformation
+  RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
+  void* accel;                                // pointer to acceleration structure to instantiate
     
 } RTHWIF_GEOMETRY_INSTANCEREF_DESC;
 
 
 /* A geometry descriptor. */
-typedef struct RTHWIF_GEOMETRY_DESC
-{
-  RTHWIF_GEOMETRY_TYPE GeometryType;           // the first byte of a geometry descriptor is always its type and user can case to geometry descriptor structs above
+typedef struct RTHWIF_GEOMETRY_DESC {
+  RTHWIF_GEOMETRY_TYPE geometryType;           // the first byte of a geometry descriptor is always its type and user can case to geometry descriptor structs above
 } RTHWIF_GEOMETRY_DESC;
 
 
 /* Bitmask with features supported. */
 typedef enum RTHWIF_FEATURES {
   RTHWIF_FEATURES_NONE = 0,
-  RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES = 1 << 0,
-  RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS = 1 << 1,
-  RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR = 1 << 2,
-  RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE = 1 << 3,
+  RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES  = 1 << 0,    // support for RTHWIF_GEOMETRY_TYPE_TRIANGLES geometries 
+  RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS      = 1 << 1,    // support for RTHWIF_GEOMETRY_TYPE_QUADS geometries
+  RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR = 1 << 2,    // support for RTHWIF_GEOMETRY_TYPE_AABBS_FPTR geometries
+  RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE   = 1 << 3,    // support for RTHWIF_GEOMETRY_TYPE_INSTANCE geometries
+  
 } RTHWIF_FEATURES;
 
-/* Error returns from API functions. */
+
+/* Return errors from API functions. */
 typedef enum RTHWIF_ERROR
 {
-  RTHWIF_ERROR_NONE = 0,             // no error occured
-  RTHWIF_ERROR_OUT_OF_MEMORY = 0x1,  // build ran out of memory, app can re-try with more memory
-  RTHWIF_ERROR_OTHER = 0x2           // some unspecified error occured
+  RTHWIF_ERROR_NONE  = 0x0,  // no error occured
+  RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app can re-try with more memory
+  RTHWIF_ERROR_OTHER = 0x2   // some unspecified error occured
+  
 } RTHWIF_ERROR;
+
 
 /* Build quality hint for acceleration structure build. */
 typedef enum RTHWIF_BUILD_QUALITY
@@ -194,7 +208,9 @@ typedef enum RTHWIF_BUILD_QUALITY
   RTHWIF_BUILD_QUALITY_LOW    = 0,   // build low quality acceleration structure (fast)
   RTHWIF_BUILD_QUALITY_MEDIUM = 1,   // build medium quality acceleration structure (slower)
   RTHWIF_BUILD_QUALITY_HIGH   = 2,   // build high quality acceleration structure (slow)
+  
 } RTHWIF_BUILD_QUALITY;
+
 
 /* Some additional hints for acceleration structure build. */
 typedef enum RTHWIF_BUILD_FLAGS
@@ -202,7 +218,9 @@ typedef enum RTHWIF_BUILD_FLAGS
   RTHWIF_BUILD_FLAG_NONE                    = 0,
   RTHWIF_BUILD_FLAG_DYNAMIC                 = (1 << 0),  // optimize for dynamic content
   RTHWIF_BUILD_FLAG_COMPACT                 = (1 << 1),  // build more compact acceleration structure
+  
 } RTHWIF_BUILD_FLAGS;
+
 
 /* Loop body callback that is invoked in parallel. */
 typedef void (*RTHWIF_PARALLEL_FOR_BODY_FPTR)(
@@ -213,42 +231,44 @@ typedef void (*RTHWIF_PARALLEL_FOR_BODY_FPTR)(
 
 /* Parallel for abstraction using a function pointer. */
 typedef void (*RTHWIF_PARALLEL_FOR_LOOP_FPTR)(
-  const size_t begin,        // begin of range to iterate in parallel
-  const size_t end,          // end of range to iterate in parallel
-  const size_t minStepSize,  // minimal step size for iteration
-  RTHWIF_PARALLEL_FOR_BODY_FPTR body, // function pointer to execute body of for loop
-  void* data                 // data passed to function pointer to execute body of for loop
+  const size_t begin,                  // begin of range to iterate in parallel
+  const size_t end,                    // end of range to iterate in parallel
+  const size_t minStepSize,            // minimal step size for iteration
+  RTHWIF_PARALLEL_FOR_BODY_FPTR body,  // function pointer to execute body of for loop
+  void* data                           // data passed to function pointer to execute body of for loop
 );
+
 
 /* Structure returned by rthwifGetAccelSize that contains acceleration
  * structure size estimates. */
 typedef struct RTHWIF_ACCEL_SIZE
 {
   /* The size of this structure in bytes. */
-  size_t StructBytes;
+  size_t structBytes;
 
   /* The expected number of bytes required for the acceleration
    * structure. When using an acceleration structure buffer of that
    * size, the build is expected to succeed mostly, but it may fail
-   * with RTHWIF_ERROR_OUT_OF_MEMORY. */
-  size_t AccelBufferExpectedBytes;
+   * with RTHWIF_ERROR_RETRY. */
+  size_t accelBufferExpectedBytes;
 
   /* The worst number of bytes required for the acceleration
    * structure. When using an acceleration structure buffer of that
    * size, the build is guaranteed to not run out of memory. */
-  size_t AccelBufferWostCaseBytes;
+  size_t accelBufferWostCaseBytes;
 
   /* The scratch buffer bytes required for the acceleration structure
    * build. */
-  size_t ScratchBufferBytes;
+  size_t scratchBufferBytes;
   
 } RTHWIF_ACCEL_SIZE;
+
 
 /* Argument structure passed to rthwifBuildAccel function. */
 typedef struct RTHWIF_BUILD_ACCEL_ARGS
 {
   /* The size of this structure in bytes */
-  size_t StructBytes;
+  size_t structBytes;
 
   /* Array of pointers to geometry descriptors. This array and the
    * geometry descriptors themselves can be standard host memory
@@ -261,10 +281,10 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   /* An acceleration structure to link to (can be NULL). This pointer
    * must point into the same USM memory allocation used to build the
    * acceleration structure into (to avoid too large offsets). */
-  void* LinkAccelBuffer;
+  void* linkAccelBuffer;
 
   /* Bounds of acceleration structure to link to. */
-  RTHWIF_AABB* LinkAccelBounds;
+  RTHWIF_AABB* linkAccelBounds;
 
   /* Destination buffer for acceleration structure. Has to be a USM
    * allocation aligned to 128 bytes. */
@@ -289,19 +309,19 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   /* Some hints for acceleration structure build (see RTHWIF_BUILD_FLAGS) */
   RTHWIF_BUILD_FLAGS flags;
 
-  /* Returns improved number of bytes expected to be required for acceleration stucture (can be NULL) */
-  size_t* AccelBufferBytesExpected;
-  
-  /* Destination address to write acceleration structure bounds to (can be NULL). */
-  RTHWIF_AABB* boundsOut;
-
-  /* A pointer passed to callbacks. */
-  void* buildUserPtr;
-
   /* Parallel for abstraction for parallelization, can be NULL for
    * single threaded build. See RTHWIF_PARALLEL_FOR_LOOP_FPTR for
    * details. */
   RTHWIF_PARALLEL_FOR_LOOP_FPTR parallelFor;
+
+  /* A pointer passed to callbacks. */
+  void* buildUserPtr;
+  
+  /* Returns improved number of bytes expected to be required for acceleration stucture (can be NULL) */
+  size_t* accelBufferBytesExpectedOut;
+  
+  /* Destination address to write acceleration structure bounds to (can be NULL). */
+  RTHWIF_AABB* boundsOut;
   
 } RTHWIF_BUILD_ACCEL_ARGS;
 
@@ -327,7 +347,7 @@ RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(uint32_t deviceID);
          see RTHWIF_ACCEL_SIZE for more details.
 
 */
-RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, RTHWIF_ACCEL_SIZE& size_o);
+RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, RTHWIF_ACCEL_SIZE& sizeOut);
 
 
 /*
@@ -353,7 +373,7 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
  * size to allocate the acceleration structure buffer, then the
  * rthwifGetAccelSize function will never fail with an out of memory
  * error. When using the expected size for the acceleration structure
- * buffer, then the build may fail with RTHWIF_ERROR_OUT_OF_MEMORY and
+ * buffer, then the build may fail with RTHWIF_ERROR_RETRY and
  * should then get re-tried with a larger amount of data. Using the
  * AccelBufferBytesExpected pointer, the build itself returns an
  * improved size estimate which the user can use to re-try the build.
