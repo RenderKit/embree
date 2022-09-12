@@ -12,7 +12,14 @@
 namespace embree
 {
   using namespace embree::isa;
-  
+
+
+  __forceinline uint estimateSizeInternalNodes(const uint N)
+  {
+    const uint numFatLeaves = ceilf( (float)N/2 );
+    const uint numInnerNodes = ceilf( (float)numFatLeaves/5 );
+    return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);  
+  }
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
   {
@@ -318,7 +325,8 @@ namespace embree
     /* --- estimate size of the BVH --- */
     const uint leaf_primitive_size = numInstances ? 128 : 64;
     const uint header              = 128;
-    const uint node_size           = numPrimitives * 64 + 64 /* single node for fat leaf */ ; 
+    //const uint node_size           = numPrimitives * 64 + 64 /* single node for fat leaf */ ;
+    const uint node_size           = estimateSizeInternalNodes(numPrimitives);
     const uint leaf_size           = numPrimitives * leaf_primitive_size; 
     const uint totalSize           = header + node_size + leaf_size; 
     const uint node_data_start     = header;
@@ -726,7 +734,7 @@ namespace embree
       PRINT(globals->leaf_mem_allocator_cur);
       PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);
 
-      if (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start != numPrimitives)
+      if ((globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)>>(numInstances?1:0) != numPrimitives)
         FATAL("globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start != numPrimitives");
     }
     
