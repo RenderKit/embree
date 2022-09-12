@@ -317,8 +317,12 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   /* A pointer passed to callbacks. */
   void* buildUserPtr;
   
-  /* Returns improved number of bytes expected to be required for acceleration stucture (can be NULL) */
-  size_t* accelBufferBytesExpectedOut;
+  /* When the pointer is NULL no data is returned. When the build
+   * fails with RTHWIF_ERROR_RETRY, this returns new expected
+   * acceleration structure bytes to be used for re-build. When build
+   * succeeds this returns the number of bytes used in the
+   * acceleration structure buffer. */
+  size_t* accelBufferBytesOut;
   
   /* Destination address to write acceleration structure bounds to (can be NULL). */
   RTHWIF_AABB* boundsOut;
