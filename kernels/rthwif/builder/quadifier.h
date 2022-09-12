@@ -131,13 +131,11 @@ namespace embree
         merge_triangle_window(geomID, triangleWindow,quads_o,getTriangle);
         numTrianglePairs++;
       }
-    }
-    
+    }    
     while (triangleWindow.size()) {
       merge_triangle_window(geomID, triangleWindow,quads_o,getTriangle);
       numTrianglePairs++;
     }
-
     return numTrianglePairs;
   }
 }

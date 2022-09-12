@@ -138,7 +138,9 @@ namespace embree
     const uint gpu_maxSubgroups     = gpu_maxComputeUnits * 8;
 
     if (unlikely(verbose2))
-    {    
+    {
+      PRINT("");
+      PRINT("PLOC++ GPU BVH BUILDER");
       PRINT( deviceGPU->getGPUDevice().get_info<sycl::info::device::global_mem_size>() );
       PRINT(gpu_maxWorkGroupSize);
       PRINT(gpu_maxComputeUnits);
@@ -194,7 +196,7 @@ namespace embree
     }
 #endif      
     
-    if (activeTriQuadMeshes && numInstances) FATAL("GPU builder does currently not support tri/quad meshes and instances in the same scene");
+    //if (activeTriQuadMeshes && numInstances) FATAL("GPU builder does currently not support tri/quad meshes and instances in the same scene");
     
     // ===============================================================================================================
     
@@ -241,34 +243,40 @@ namespace embree
     
     uint org_numPrimitives = 0;
     
-    if (activeTriQuadMeshes)
-      for (uint  geomID = 0; geomID < numGeoms; geomID++)
-      {
-        const uint current = scene->get(geomID)->size();
-        org_numPrimitives += current;
+    for (uint  geomID = 0; geomID < numGeoms; geomID++)
+    {
+      const uint current = scene->get(geomID)->size();
+      //PRINT2(geomID,current);
+      org_numPrimitives += current;
 
+      if (activeTriQuadMeshes)
+      {
         // TODO: use BufferView
         TriangleMesh* tri_mesh = scene->getSafe<TriangleMesh>(geomID);
+        QuadMesh*    quad_mesh = scene->getSafe<QuadMesh>(geomID);
+        //PRINT3(geomID,tri_mesh,quad_mesh);
+      
         if (tri_mesh)
         {
           triQuadMesh[geomID] = TriQuadMesh(tri_mesh->size(),tri_mesh->numVertices(),(TriangleMesh::Triangle*)tri_mesh->triangles.getPtr(),(Vec3fa*)tri_mesh->vertices0.getPtr());
           gpu_queue.prefetch((TriangleMesh::Triangle*)tri_mesh->triangles.getPtr(), tri_mesh->size() * sizeof(TriangleMesh::Triangle));
           gpu_queue.prefetch((Vec3fa*)tri_mesh->vertices0.getPtr()                , tri_mesh->numVertices() * sizeof(Vec3fa));
         }
-        QuadMesh* quad_mesh = scene->getSafe<QuadMesh>(geomID);
-        if (quad_mesh)
+        else if (quad_mesh)
         {
           triQuadMesh[geomID] = TriQuadMesh(quad_mesh->size(),quad_mesh->numVertices(),(QuadMesh::Quad*)quad_mesh->quads.getPtr(),(Vec3fa*)quad_mesh->vertices0.getPtr(),true);
           gpu_queue.prefetch((QuadMesh::Quad*)quad_mesh->quads.getPtr(), quad_mesh->size() * sizeof(QuadMesh::Quad));
           gpu_queue.prefetch((Vec3fa*)quad_mesh->vertices0.getPtr()    , quad_mesh->numVertices() * sizeof(Vec3fa));        
-        }      
+        }
+        else
+        {
+          triQuadMesh[geomID] = TriQuadMesh(0,0,nullptr,nullptr);
+        }
       }
-
-    if (numInstances)
-      org_numPrimitives = numInstances;
+    }
     
-    if (unlikely(verbose2)) PRINT(numGeoms);
-        
+    if (unlikely(verbose2)) PRINT2(numGeoms,org_numPrimitives);
+    
     double first_kernel_time0 = getSeconds();
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
     {	  
@@ -282,6 +290,8 @@ namespace embree
 
     if (unlikely(verbose2)) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
 
+    uint numActiveQuads = 0;
+    
     if (activeTriQuadMeshes)    
     {      
       // =============================
@@ -310,12 +320,13 @@ namespace embree
     
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
+      numActiveQuads = *host_device_tasks;
     }
     
-    const uint numPrimitives = activeTriQuadMeshes ? *host_device_tasks : org_numPrimitives; // === TODO: prefix sum compaction for instances ===
+    const uint numPrimitives = numActiveQuads + numInstances; // === TODO: prefix sum compaction for instances ===
     
     if (unlikely(verbose1))    
-      PRINT2(org_numPrimitives,numPrimitives);
+      PRINT4(org_numPrimitives,numPrimitives,numActiveQuads,numInstances);
 
     // ==========================================================
     // ==========================================================
@@ -439,15 +450,19 @@ namespace embree
     double create_primref_time = 0.0f;
 
     if (activeTriQuadMeshes)
-      createQuads_initPLOCPrimRefs(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,create_primref_time,verbose2);
+      createQuads_initPLOCPrimRefs(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);
 
     if (numInstances)
-      createInstances_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,create_primref_time,verbose2);
+      createInstances_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,numActiveQuads,create_primref_time,verbose2);
+
+    const uint instance_startID = numActiveQuads;
+    const uint instance_endID   = numActiveQuads + numInstances;
+    
     
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);
     
-    if (unlikely(verbose2)) std::cout << "create quads, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
+    if (unlikely(verbose2)) std::cout << "create quads/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
     
 #if 0    
      for (uint i=0;i<numPrimitives;i++)
@@ -687,7 +702,7 @@ namespace embree
     timer.start(BuildTimer::POST_PROCESS);        
    
     /* --- convert BVH2 to QBVH6 --- */    
-    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,verbose2);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,instance_startID,instance_endID,verbose2);
 
     /* --- init final QBVH6 header --- */        
     {     
@@ -734,8 +749,7 @@ namespace embree
       PRINT(globals->leaf_mem_allocator_cur);
       PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);
 
-      if ((globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)>>(numInstances?1:0) != numPrimitives)
-        FATAL("globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start != numPrimitives");
+      PRINT(globals->numLeaves);      
     }
     
     BBox3fa geomBounds(Vec3fa(globals->geometryBounds.lower_x,globals->geometryBounds.lower_y,globals->geometryBounds.lower_z),
@@ -780,7 +794,8 @@ namespace embree
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);
-      PRINT("VERBOSE STATS DONE");      
+      PRINT("VERBOSE STATS DONE");
+      //if (numInstances) exit(0);
     }
 
     

@@ -969,7 +969,7 @@ namespace embree
           }, [](const PrimInfo& a, const PrimInfo& b) -> PrimInfo { return PrimInfo::merge(a,b); });
 
           double t3 = verbose ? getSeconds() : 0.0;
-          if (verbose) std::cout << "primrefgen   : " << std::setw(10) << (t3-t2)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t3-t2) << " Mprims/s" << std::endl;
+          if (verbose) std::cout << "primrefgen   : " << numPrimitives << " " << std::setw(10) << (t3-t2)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t3-t2) << " Mprims/s" << std::endl;
           
           /* if we need to filter out geometry, run again */
           if (pinfo.size() != numPrimitives)
