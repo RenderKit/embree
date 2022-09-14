@@ -39,7 +39,7 @@
 
 #define COMMA ,
 
-#include "../config.h"
+#include "kernels/config.h"
 #include "isa.h"
 #include "stat.h"
 #include "profile.h"

@@ -1,0 +1,8 @@
+# Copyright 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+
+workspace(name = "embree3")
+
+load("//bazel:embree_deps.bzl", "embree_deps")
+
+embree_deps()
