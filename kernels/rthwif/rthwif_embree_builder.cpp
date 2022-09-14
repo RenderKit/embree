@@ -283,8 +283,11 @@ namespace embree
 
     /* calculate maximal number of motion blur time segments in scene */
     uint32_t maxTimeSegments = 0;
-    for (size_t geomID=0; geomID<scene->size(); geomID++) {
-      maxTimeSegments = std::max(maxTimeSegments, scene->get(geomID)->numTimeSegments());
+    for (size_t geomID=0; geomID<scene->size(); geomID++)
+    {
+      Geometry* geom = scene->get(geomID);
+      if (!geom) continue;
+      maxTimeSegments = std::max(maxTimeSegments, geom->numTimeSegments());
     }
 
     /* estimate static accel size */
@@ -606,15 +609,22 @@ namespace embree
 
     /* calculate maximal number of motion blur time segments in scene */
     uint32_t maxTimeSegments = 0;
-    for (size_t geomID=0; geomID<scene->size(); geomID++) {
-      maxTimeSegments = std::max(maxTimeSegments, scene->get(geomID)->numTimeSegments());
+    for (size_t geomID=0; geomID<scene->size(); geomID++)
+    {
+      Geometry* geom = scene->get(geomID);
+      if (geom == nullptr) continue;
+      maxTimeSegments = std::max(maxTimeSegments, geom->numTimeSegments());
     }
 
     /* calculate size of geometry descriptor buffer */
     size_t bytesStatic = 0, bytesMBlur = 0;
-    for (size_t geomID=0; geomID<scene->size(); geomID++) {
+    for (size_t geomID=0; geomID<scene->size(); geomID++)
+    {
+      Geometry* geom = scene->get(geomID);
+      if (geom == nullptr) continue;
+      
       const RTHWIF_GEOMETRY_TYPE type = getType(geomID);
-      if (scene->get(geomID)->numTimeSegments() == 0) {
+      if (geom->numTimeSegments() == 0) {
         align(bytesStatic,alignof_RTHWIF_GEOMETRY(type));
         bytesStatic += sizeof_RTHWIF_GEOMETRY(type);
       } else {
@@ -632,11 +642,15 @@ namespace embree
     size_t offsetStatic = 0, offsetMBlur = 0;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
     {
-      const RTHWIF_GEOMETRY_TYPE type = getType(geomID);
       geomStatic[geomID] = nullptr;
       geomMBlur [geomID] = nullptr;
       
-      if (scene->get(geomID)->numTimeSegments() == 0) {
+      Geometry* geom = scene->get(geomID);
+      if (geom == nullptr) continue;
+      
+      const RTHWIF_GEOMETRY_TYPE type = getType(geomID);
+      
+      if (geom->numTimeSegments() == 0) {
         align(offsetStatic,alignof_RTHWIF_GEOMETRY(type));
         createGeometryDesc(&geomDescStatic[offsetStatic],scene,scene->get(geomID),type);
         geomStatic[geomID] = (RTHWIF_GEOMETRY_DESC*) &geomDescStatic[offsetStatic];
