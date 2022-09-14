@@ -360,6 +360,17 @@ example, to build the Embree library in parallel use
 
     cmake --build . --config Release --target embree -- /m
 
+### Building embree - Using vcpkg
+
+You can download and install embree using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install embree2
+
+The embree port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
 CMake Configuration
 -------------------
