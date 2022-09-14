@@ -81,11 +81,13 @@ namespace embree
     PrimLeafDesc(uint32_t shaderIndex, uint32_t geomIndex, GeometryFlags gflags, uint32_t geomMask, Type type = TYPE_NONE)
     : shaderIndex(shaderIndex), geomMask(geomMask), geomIndex(geomIndex), type(type), geomFlags((uint32_t)gflags)
     {
+#if !defined(__SYCL_DEVICE_ONLY__)      
       if (shaderIndex > MAX_SHADER_INDEX)
         throw std::runtime_error("too large shader ID");
       
       if (geomIndex > MAX_GEOM_INDEX)
         throw std::runtime_error("too large geometry ID");
+#endif      
     }
 
     /* compares two PrimLeafDesc's for equality */

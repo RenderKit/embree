@@ -804,7 +804,7 @@ namespace embree
       stats.print_raw(std::cout);
       PRINT("VERBOSE STATS DONE");
       //if (numInstances) exit(0);
-      if (numUserGeometries) exit(0);
+      //if (numUserGeometries) exit(0);
     }
 
     

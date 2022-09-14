@@ -998,6 +998,25 @@ namespace embree
   __forceinline void createUserGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, Scene *const scene, const uint numGeoms, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
   {
     static const uint CREATE_INSTANCES_SEARCH_WG_SIZE  = 256;
+    uint ID = 0;
+    for (uint userGeomID=0;userGeomID<numGeoms;userGeomID++)
+    {
+      UserGeometry* userGeometry = scene->getSafe<UserGeometry>(userGeomID);                             
+      if (userGeometry)
+      {
+        for (uint i=0;i<userGeometry->size();i++)
+        {
+          BBox3fa userGeometry_bounds(userGeometry->bounds(i));
+          gpu::AABB3f bounds = gpu::AABB3f(userGeometry_bounds.lower.x,userGeometry_bounds.lower.y,userGeometry_bounds.lower.z,
+                                           userGeometry_bounds.upper.x,userGeometry_bounds.upper.y,userGeometry_bounds.upper.z);
+          BVH2Ploc node;                             
+          node.initLeaf(userGeomID,ID,bounds);                               
+          node.store(&bvh2[prim_type_offset + ID]);
+          ID++;
+        }          
+      }
+    }
+#if 0    
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,CREATE_INSTANCES_SEARCH_WG_SIZE),sycl::range<1>(CREATE_INSTANCES_SEARCH_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
@@ -1025,6 +1044,7 @@ namespace embree
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("write out user geom/procedurals bounds", (float)dt);
+#endif    
   }
   
   
@@ -2861,9 +2881,13 @@ namespace embree
                                    const uint64_t root = (uint64_t)accel + 128; //static_cast<QBVH6*>(accel)->root();
                                    *dest = InstancePrimitive(local2world,root,instID,mask32_to_mask8(instance->mask));                                             
                                  }
-                                 else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_PROCEDURAL)
+                                 else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_PROCEDURAL) // FIXME use valid
                                  {
-                                   PRINT("HERE");
+                                   const uint userGeomID = geomID;
+                                   const uint mask32 = mask32_to_mask8(scene->get(userGeomID)->mask);
+                                   ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
+                                   PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
+                                   *dest = ProceduralLeaf(leafDesc,primID0,true);
                                  }
                                  /* else */
                                  /*   PRINT("PROBLEM"); */
