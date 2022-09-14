@@ -150,7 +150,8 @@ namespace embree
 
     const uint numGeoms = scene->size();
     const bool activeTriQuadMeshes = scene->getNumPrimitives(TriangleMesh::geom_type,false) || scene->getNumPrimitives(QuadMesh::geom_type,false);
-    const uint numInstances = scene->getNumPrimitives(Instance::geom_type,false);
+    const uint numInstances        = scene->getNumPrimitives(Instance::geom_type,false);
+    const uint numUserGeometries   = scene->getNumPrimitives(UserGeometry::geom_type,false);
 
 
     if (unlikely(verbose2))
@@ -158,11 +159,12 @@ namespace embree
       PRINT(numGeoms);
       PRINT(scene->getNumPrimitives(TriangleMesh::geom_type,false));
       PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
+      PRINT(scene->getNumPrimitives(UserGeometry::geom_type,false));      
       PRINT(scene->getNumPrimitives(Instance::geom_type,false));
       //PRINT(scene->world);
     }
 
-    if (unlikely(!activeTriQuadMeshes && !numInstances))
+    if (unlikely(!activeTriQuadMeshes && !numInstances && !numUserGeometries))
       {
         PRINT("WARNING: EMPTY SCENE");
         const size_t totalSize = 3*64; // just for the header
@@ -323,10 +325,10 @@ namespace embree
       numActiveQuads = *host_device_tasks;
     }
     
-    const uint numPrimitives = numActiveQuads + numInstances; // === TODO: prefix sum compaction for instances ===
+    const uint numPrimitives = numActiveQuads + numInstances + numUserGeometries; // === TODO: prefix sum compaction for instances ===
     
     if (unlikely(verbose1))    
-      PRINT4(org_numPrimitives,numPrimitives,numActiveQuads,numInstances);
+      PRINT5(org_numPrimitives,numPrimitives,numActiveQuads,numUserGeometries,numInstances);
 
     // ==========================================================
     // ==========================================================
@@ -452,17 +454,23 @@ namespace embree
     if (activeTriQuadMeshes)
       createQuads_initPLOCPrimRefs(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);
 
-    if (numInstances)
-      createInstances_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,numActiveQuads,create_primref_time,verbose2);
+    if (numUserGeometries)
+      createUserGeometries_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,numActiveQuads,create_primref_time,verbose2);
 
-    const uint instance_startID = numActiveQuads;
-    const uint instance_endID   = numActiveQuads + numInstances;
+    if (numInstances)
+      createInstances_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,numActiveQuads + numUserGeometries,create_primref_time,verbose2);
+    
+
+    const uint userGeometries_startID = numActiveQuads + 0;
+    const uint userGeometries_endID   = numActiveQuads + numUserGeometries;   
+    const uint instance_startID       = numActiveQuads + numUserGeometries;
+    const uint instance_endID         = numActiveQuads + numUserGeometries + numInstances;
     
     
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);
     
-    if (unlikely(verbose2)) std::cout << "create quads/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
+    if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
     
 #if 0    
      for (uint i=0;i<numPrimitives;i++)
@@ -702,7 +710,7 @@ namespace embree
     timer.start(BuildTimer::POST_PROCESS);        
    
     /* --- convert BVH2 to QBVH6 --- */    
-    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,instance_startID,instance_endID,verbose2);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,verbose2);
 
     /* --- init final QBVH6 header --- */        
     {     
@@ -796,6 +804,7 @@ namespace embree
       stats.print_raw(std::cout);
       PRINT("VERBOSE STATS DONE");
       //if (numInstances) exit(0);
+      if (numUserGeometries) exit(0);
     }
 
     
