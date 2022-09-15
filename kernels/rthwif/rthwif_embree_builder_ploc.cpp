@@ -161,7 +161,6 @@ namespace embree
       PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
       PRINT(scene->getNumPrimitives(UserGeometry::geom_type,false));      
       PRINT(scene->getNumPrimitives(Instance::geom_type,false));
-      //PRINT(scene->world);
     }
 
     if (unlikely(!activeTriQuadMeshes && !numInstances && !numUserGeometries))
@@ -181,25 +180,7 @@ namespace embree
         new (qbvh->nodePtr(2)) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
         return geometryBounds;
       }
-
-#if 0 // FIXME         
-    if (numInstances)
-    {
-      for (uint i=0;i<numInstances;i++)
-      {
-        Instance* instance = scene->get<Instance>(i);
-        BBox3fa instance_bounds;
-        if (!instance->buildBounds(0,&instance_bounds))
-        {
-          PRINT2(i,instance_bounds);
-          FATAL("INSTANCE BOUNDS");
-        }
-      }
-    }
-#endif      
-    
-    //if (activeTriQuadMeshes && numInstances) FATAL("GPU builder does currently not support tri/quad meshes and instances in the same scene");
-    
+        
     // ===============================================================================================================
     
     size_t sizeTotalAllocations = 0;
@@ -248,7 +229,6 @@ namespace embree
     for (uint  geomID = 0; geomID < numGeoms; geomID++)
     {
       const uint current = scene->get(geomID)->size();
-      //PRINT2(geomID,current);
       org_numPrimitives += current;
 
       if (activeTriQuadMeshes)
@@ -332,6 +312,8 @@ namespace embree
 
     // ==========================================================
     // ==========================================================
+    // ==========================================================
+    
 
     const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
             
@@ -461,13 +443,7 @@ namespace embree
       createInstances_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,numActiveQuads + numUserGeometries,create_primref_time,verbose2);
     
 
-    const GeometryTypeRanges geometryTypeRanges(numActiveQuads,numUserGeometries,numInstances);
-    
-    const uint userGeometries_startID = numActiveQuads + 0;
-    const uint userGeometries_endID   = numActiveQuads + numUserGeometries;   
-    const uint instance_startID       = numActiveQuads + numUserGeometries;
-    const uint instance_endID         = numActiveQuads + numUserGeometries + numInstances;
-    
+    const GeometryTypeRanges geometryTypeRanges(numActiveQuads,numUserGeometries,numInstances);        
     
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);
@@ -682,9 +658,10 @@ namespace embree
     timer.stop(BuildTimer::BUILD);        
             
     
-                
-    /* --- check and convert BVH2 (host) --- */        
-          
+    // =====================================                
+    // === check and convert BVH2 (host) ===
+    // =====================================
+
     if (unlikely(verbose2))
     {
       if (globals->bvh2_index_allocator >= 2*numPrimitives)
@@ -710,9 +687,12 @@ namespace embree
     }
 
     timer.start(BuildTimer::POST_PROCESS);        
-   
-    /* --- convert BVH2 to QBVH6 --- */    
-    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,geometryTypeRanges,verbose2);
+
+    // =============================    
+    // === convert BVH2 to QBVH6 ===
+    // =============================
+    
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,verbose2);
 
     /* --- init final QBVH6 header --- */        
     {     
@@ -740,10 +720,9 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::POST_PROCESS,conversion_device_time);
 
     if (unlikely(verbose2))
-    {
       std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  timer.get_host_timer() << " ms (host) " << conversion_device_time << " ms (device) " << std::endl << std::flush;
-    }
-    
+
+    // ==========================================================    
     // ==========================================================
     // ==========================================================
 
@@ -778,6 +757,10 @@ namespace embree
     if (host_device_tasks) sycl::free(host_device_tasks,deviceGPU->getGPUContext());
 
     timer.stop(BuildTimer::ALLOCATION);        
+
+    // ======================    
+    // === Verbose Output ===
+    // ======================
     
     if (unlikely(verbose2))
       std::cout << "Time freeing temporary data " << timer.get_host_timer()  << " ms " << std::endl << std::flush;

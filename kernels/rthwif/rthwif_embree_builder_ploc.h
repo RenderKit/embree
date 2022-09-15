@@ -2127,7 +2127,7 @@ namespace embree
   }
   
 
-  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const uint userGeometries_startID, const uint userGeometries_endID, const uint instance_startID, const uint instance_endID, const GeometryTypeRanges &geometryTypeRanges, const bool forceFatLeaves = false)
+  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const GeometryTypeRanges &geometryTypeRanges, const bool forceFatLeaves = false)
   {
     uint *dest = (uint*)_dest;
     
@@ -2174,8 +2174,8 @@ namespace embree
       uint8_t data    = 0x00;      
 
       const bool isLeaf = index < numPrimitives && !forceFatLeaves;
-      const bool isInstance   = isLeaf && geometryTypeRanges.isInstance(index);   //index >= instance_startID && index < instance_endID;
-      const bool isProcedural = isLeaf && geometryTypeRanges.isProcedural(index); //index >= userGeometries_startID && index < userGeometries_endID;      
+      const bool isInstance   = isLeaf && geometryTypeRanges.isInstance(index);  
+      const bool isProcedural = isLeaf && geometryTypeRanges.isProcedural(index);
       const uint numBlocks    = isInstance ? 2 : 1;
       NodeType leaf_type = NODE_TYPE_QUAD;
       leaf_type = isInstance ? NODE_TYPE_INSTANCE   : leaf_type;
@@ -2444,7 +2444,7 @@ namespace embree
   }
 
 
-  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriQuadMesh* triQuadMesh, Scene *const scene, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const uint userGeometries_startID, const uint userGeometries_endID, const uint instance_startID, const uint instance_endID, const GeometryTypeRanges &geometryTypeRanges, const bool verbose)
+  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriQuadMesh* triQuadMesh, Scene *const scene, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -2515,7 +2515,7 @@ namespace embree
                                                                                 const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2,numPrimitives);
                                                                                 const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numChildren);
                                                                                 char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
-                                                                                writeNode(curAddr,allocID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,geometryTypeRanges,instanceMode);                                                                                
+                                                                                writeNode(curAddr,allocID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,geometryTypeRanges,instanceMode);                                                                                
                                                                                 for (uint j=0;j<numChildren;j++)
                                                                                 {
                                                                                   TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
@@ -2598,7 +2598,7 @@ namespace embree
                                                                               
                                                                               char *const childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
                                                                               valid = true;
-                                                                              writeNode(localNodeData[localID].v,(childAddr-curAddr)/64,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,geometryTypeRanges,instanceMode);                                                                          
+                                                                              writeNode(localNodeData[localID].v,(childAddr-curAddr)/64,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,geometryTypeRanges,instanceMode);                                                                          
                                                                               for (uint j=0;j<numChildren;j++)
                                                                               {
                                                                                 TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
@@ -2735,9 +2735,7 @@ namespace embree
                                                                             numChildren = 0;
                                                                             getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
                                                                             for (uint i=0;i<numChildren;i++)
-                                                                            {
-                                                                              numBlocks += (instance_startID <= BVH2Ploc::getIndex(indices[i]) && BVH2Ploc::getIndex(indices[i]) < instance_endID) ? 2 : 1;
-                                                                            }
+                                                                              numBlocks += geometryTypeRanges.isInstance(BVH2Ploc::getIndex(indices[i])) ? 2 : 1; 
                                                                           }
                                                                           else
                                                                           {
@@ -2768,10 +2766,7 @@ namespace embree
                                                                       
                                                                       
                                                                       if (isFatLeaf)
-                                                                      {
-                                                                        //PRINT5(localID,isFatLeaf,blockID,leafID,blockID-innerID);                                                                        
-                                                                        writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,geometryTypeRanges);
-                                                                      }
+                                                                        writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,geometryTypeRanges);
 
                                                                       /* --- write to SLM frist --- */
                                                                       
@@ -2783,11 +2778,11 @@ namespace embree
                                                                         const uint geomID = bvh2[index_j].left;
                                                                         const uint primID = bvh2[index_j].right;
                                                                         const uint bID = isFatLeaf ? (blockID + node_blockID) : innerID;
-                                                                        const bool isInstance = (instance_startID <= index_j && index_j < instance_endID);
-                                                                        const bool isProcedural = (userGeometries_startID <= index_j && index_j < userGeometries_endID);
+                                                                        const bool isInstance   = geometryTypeRanges.isInstance(index_j);
+                                                                        const bool isProcedural = geometryTypeRanges.isProcedural(index_j);
                                                                         uint primID_type = (primID & LEAF_TYPE_MASK_LOW) | LEAF_TYPE_QUAD;
                                                                         primID_type |= isProcedural ? LEAF_TYPE_PROCEDURAL : 0;
-                                                                        primID_type |= isInstance   ? LEAF_TYPE_INSTANCE   : 0;                                                                        
+                                                                        primID_type |= isInstance   ? LEAF_TYPE_INSTANCE   : 0;
                                                                         local_leafGenData[local_leafDataID+j].blockID = bID;
                                                                         local_leafGenData[local_leafDataID+j].primID = primID_type;
                                                                         local_leafGenData[local_leafDataID+j].geomID = geomID;
