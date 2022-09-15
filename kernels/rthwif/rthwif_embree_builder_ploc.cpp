@@ -461,6 +461,8 @@ namespace embree
       createInstances_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,numActiveQuads + numUserGeometries,create_primref_time,verbose2);
     
 
+    const GeometryTypeRanges geometryTypeRanges(numActiveQuads,numUserGeometries,numInstances);
+    
     const uint userGeometries_startID = numActiveQuads + 0;
     const uint userGeometries_endID   = numActiveQuads + numUserGeometries;   
     const uint instance_startID       = numActiveQuads + numUserGeometries;
@@ -710,7 +712,7 @@ namespace embree
     timer.start(BuildTimer::POST_PROCESS);        
    
     /* --- convert BVH2 to QBVH6 --- */    
-    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,verbose2);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,geometryTypeRanges,verbose2);
 
     /* --- init final QBVH6 header --- */        
     {     

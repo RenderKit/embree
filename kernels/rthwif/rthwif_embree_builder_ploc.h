@@ -268,7 +268,27 @@ namespace embree
     __forceinline void init(const uint _bvh2_index) { header = 0x7fffffff; bvh2_index = _bvh2_index;  }
   };
 
-   // ===================================================================================================================================================================================
+
+  struct GeometryTypeRanges
+  {
+    uint triQuad_end;
+    uint procedural_end;    
+    uint instances_end;
+
+    __forceinline GeometryTypeRanges(const uint triQuads, const uint numProcedurals, const uint numInstances) 
+    {
+      triQuad_end    = triQuads;
+      procedural_end = triQuads + numProcedurals;      
+      instances_end  = triQuads + numProcedurals + numInstances;
+    }
+    
+    __forceinline bool isTriQuad(const uint index)    const { return index >= 0              && index < triQuad_end;    }
+    __forceinline bool isProcedural(const uint index) const { return index >= triQuad_end    && index < procedural_end; }    
+    __forceinline bool isInstance(const uint index)   const { return index >= procedural_end && index < instances_end;  }
+    
+  };
+  
+  // ===================================================================================================================================================================================
   // ================================================================================= BVH2 ============================================================================================
   // ===================================================================================================================================================================================
   
@@ -2107,7 +2127,7 @@ namespace embree
   }
   
 
-  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const uint userGeometries_startID, const uint userGeometries_endID, const uint instance_startID, const uint instance_endID, const bool forceFatLeaves = false)
+  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const uint userGeometries_startID, const uint userGeometries_endID, const uint instance_startID, const uint instance_endID, const GeometryTypeRanges &geometryTypeRanges, const bool forceFatLeaves = false)
   {
     uint *dest = (uint*)_dest;
     
@@ -2154,8 +2174,8 @@ namespace embree
       uint8_t data    = 0x00;      
 
       const bool isLeaf = index < numPrimitives && !forceFatLeaves;
-      const bool isInstance   = isLeaf && index >= instance_startID && index < instance_endID;
-      const bool isProcedural = isLeaf && index >= userGeometries_startID && index < userGeometries_endID;      
+      const bool isInstance   = isLeaf && geometryTypeRanges.isInstance(index);   //index >= instance_startID && index < instance_endID;
+      const bool isProcedural = isLeaf && geometryTypeRanges.isProcedural(index); //index >= userGeometries_startID && index < userGeometries_endID;      
       const uint numBlocks    = isInstance ? 2 : 1;
       NodeType leaf_type = NODE_TYPE_QUAD;
       leaf_type = isInstance ? NODE_TYPE_INSTANCE   : leaf_type;
@@ -2332,8 +2352,8 @@ namespace embree
 #if USE_NEW_OPENING == 1
     const uint _left_numChildren  = BVH2Ploc::numFatChildren(_left);
     const uint _right_numChildren = BVH2Ploc::numFatChildren(_right);    
-    areas[0]  = (_left_numChildren == 0  || _left_numChildren > 1  && _left_numChildren <= 3 ) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
-    areas[1]  = (_right_numChildren == 0 || _right_numChildren > 1 && _right_numChildren <= 3) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
+    areas[0]  = (_left_numChildren == 0  || _left_numChildren == 2 ) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
+    areas[1]  = (_right_numChildren == 0 || _right_numChildren == 2 ) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
 #else    
     areas[0]  = (!BVH2Ploc::isFatLeaf( _left)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;    
     areas[1]  = (!BVH2Ploc::isFatLeaf(_right)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf; 
@@ -2357,12 +2377,15 @@ namespace embree
 #if USE_NEW_OPENING == 1        
         const uint free_space = BVH_BRANCHING_FACTOR - numChildren + 1;
         bestChild = -1;
-        for (uint i=0;i<numChildren;i++)
-          if (BVH2Ploc::numFatChildren(indices[i]) > 2 && BVH2Ploc::numFatChildren(indices[i]) <= free_space)
-          {
-            bestChild = i;
-            break;
-          }
+        //if (free_space >= 3)
+        {
+          for (uint i=0;i<numChildren;i++)
+            if (BVH2Ploc::numFatChildren(indices[i]) > 2 && BVH2Ploc::numFatChildren(indices[i]) <= free_space)
+            {
+              bestChild = i;
+              break;
+            }
+        }
         if (bestChild == -1)
 #endif          
           break; // nothing left to open
@@ -2421,7 +2444,7 @@ namespace embree
   }
 
 
-  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriQuadMesh* triQuadMesh, Scene *const scene, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const uint userGeometries_startID, const uint userGeometries_endID, const uint instance_startID, const uint instance_endID, const bool verbose)
+  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, TriQuadMesh* triQuadMesh, Scene *const scene, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const uint userGeometries_startID, const uint userGeometries_endID, const uint instance_startID, const uint instance_endID, const GeometryTypeRanges &geometryTypeRanges, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -2492,7 +2515,7 @@ namespace embree
                                                                                 const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2,numPrimitives);
                                                                                 const uint allocID = gpu::atomic_add_local(&node_mem_allocator_cur,numChildren);
                                                                                 char* childAddr = (char*)globals->qbvh_base_pointer + 64 * allocID;
-                                                                                writeNode(curAddr,allocID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,instanceMode);                                                                                
+                                                                                writeNode(curAddr,allocID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,geometryTypeRanges,instanceMode);                                                                                
                                                                                 for (uint j=0;j<numChildren;j++)
                                                                                 {
                                                                                   TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
@@ -2575,7 +2598,7 @@ namespace embree
                                                                               
                                                                               char *const childAddr = globals->sub_group_shared_varying_atomic_allocNode(sizeof(QBVH6::InternalNode6)*numChildren); //FIXME: subgroup
                                                                               valid = true;
-                                                                              writeNode(localNodeData[localID].v,(childAddr-curAddr)/64,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,instanceMode);                                                                          
+                                                                              writeNode(localNodeData[localID].v,(childAddr-curAddr)/64,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,geometryTypeRanges,instanceMode);                                                                          
                                                                               for (uint j=0;j<numChildren;j++)
                                                                               {
                                                                                 TmpNodeState *childState = (TmpNodeState *)(childAddr + 64 * j);
@@ -2747,7 +2770,7 @@ namespace embree
                                                                       if (isFatLeaf)
                                                                       {
                                                                         //PRINT5(localID,isFatLeaf,blockID,leafID,blockID-innerID);                                                                        
-                                                                        writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID);
+                                                                        writeNode(curAddr,blockID-innerID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,userGeometries_startID,userGeometries_endID,instance_startID,instance_endID,geometryTypeRanges);
                                                                       }
 
                                                                       /* --- write to SLM frist --- */
