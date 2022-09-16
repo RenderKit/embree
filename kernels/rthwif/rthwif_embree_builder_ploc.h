@@ -11,8 +11,6 @@
 #define SEARCH_RADIUS_SHIFT       4
 #define SEARCH_RADIUS             (1<<SEARCH_RADIUS_SHIFT)
 #define SINGLE_R_PATH             1
-
-#define SMALL_SUBTREE_THRESHOLD   2
 #define BVH_BRANCHING_FACTOR      6
 
 #define FATLEAF_THRESHOLD         6
@@ -43,7 +41,7 @@ namespace embree
     uint node_mem_allocator_start;
     uint node_mem_allocator_cur;
     uint64_t wgState;        
-    // 64 bytes
+    // === 64 bytes ===
     uint bvh2_index_allocator;    
     uint leaf_mem_allocator_start;
     uint leaf_mem_allocator_cur;
@@ -58,7 +56,7 @@ namespace embree
     uint wgID;
     uint numLeaves;
     uint padd;
-    // 128 bytes
+    // === 128 bytes ===
 
     __forceinline void reset()
     {
@@ -1305,7 +1303,6 @@ namespace embree
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_clusterID(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);        
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);        
-        //sycl::accessor< uint   , 1, sycl_read_write, sycl_local> global_wg_prefix_sum(sycl::range<1>(NN_SEARCH_WG_NUM),cgh);
         sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _wgID(cgh);
         sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _global_count_prefix_sum(cgh);
         
@@ -2150,12 +2147,12 @@ namespace embree
     dest[0]  = gpu::as_uint(lower.x());
     dest[1]  = gpu::as_uint(lower.y());
     dest[2]  = gpu::as_uint(lower.z());
-    dest[3]  = relative_block_offset; //(int64_t)((char*)childDataPtr - (char*)curDataPtr) / 64;
+    dest[3]  = relative_block_offset; 
 
     uint8_t tmp[48];
     
     tmp[0]         = type; // type
-    tmp[1]         = 0; // pad 
+    tmp[1]         = 0;    // pad 
     tmp[2]         = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127); 
     tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
     tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
@@ -2165,6 +2162,7 @@ namespace embree
     for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
     {
       const uint index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
+      // === default is invalid ===
       uint8_t lower_x = 0x80;
       uint8_t lower_y = 0x80;
       uint8_t lower_z = 0x80;    
@@ -2172,25 +2170,32 @@ namespace embree
       uint8_t upper_y = 0x00;
       uint8_t upper_z = 0x00;
       uint8_t data    = 0x00;      
-
+      // === determine leaf type ===
       const bool isLeaf = index < numPrimitives && !forceFatLeaves;
-      const bool isInstance   = isLeaf && geometryTypeRanges.isInstance(index);  
-      const bool isProcedural = isLeaf && geometryTypeRanges.isProcedural(index);
+      const bool isInstance   = geometryTypeRanges.isInstance(index);  
+      const bool isProcedural = geometryTypeRanges.isProcedural(index);
       const uint numBlocks    = isInstance ? 2 : 1;
       NodeType leaf_type = NODE_TYPE_QUAD;
       leaf_type = isInstance ? NODE_TYPE_INSTANCE   : leaf_type;
       leaf_type = isProcedural ? NODE_TYPE_PROCEDURAL : leaf_type;      
       data = (i<numChildren) ? numBlocks : 0;
-      data |= (isLeaf ? ((leaf_type << 2)) : 0);
-      const gpu::AABB3f childBounds = bvh2[index].bounds; //.conservativeBounds();      
+      data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
+      const gpu::AABB3f childBounds = bvh2[index].bounds; //.conservativeBounds();
+      // === bounds valid ? ====
+      uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
+      equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
+      equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
+      const bool write = (i<numChildren) && equal_dims <= 1;
+      // === quantize bounds ===
       const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
-      lower_x = (i<numChildren) ? (uint8_t)qbounds.lower_x : lower_x;
-      lower_y = (i<numChildren) ? (uint8_t)qbounds.lower_y : lower_y;
-      lower_z = (i<numChildren) ? (uint8_t)qbounds.lower_z : lower_z;
-      upper_x = (i<numChildren) ? (uint8_t)qbounds.upper_x : upper_x;
-      upper_y = (i<numChildren) ? (uint8_t)qbounds.upper_y : upper_y;
-      upper_z = (i<numChildren) ? (uint8_t)qbounds.upper_z : upper_z;
-
+      // === updated discretized bounds ===
+      lower_x = write ? (uint8_t)qbounds.lower_x : lower_x;
+      lower_y = write ? (uint8_t)qbounds.lower_y : lower_y;
+      lower_z = write ? (uint8_t)qbounds.lower_z : lower_z;
+      upper_x = write ? (uint8_t)qbounds.upper_x : upper_x;
+      upper_y = write ? (uint8_t)qbounds.upper_y : upper_y;
+      upper_z = write ? (uint8_t)qbounds.upper_z : upper_z;
+      // === init child in node ===
       tmp[ 6+i] = data;
       tmp[12+i] = lower_x;
       tmp[18+i] = upper_x;      
@@ -2199,146 +2204,11 @@ namespace embree
       tmp[36+i] = lower_z;
       tmp[42+i] = upper_z;      
     }
-
+    // === write out second part of 64 bytes node ===
     for (uint i=0;i<12;i++)
       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
 
-
-  __forceinline void writeInnerNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, const gpu::AABB3f *const child_bounds, const NodeType type=NODE_TYPE_MIXED)
-  {
-    uint *dest = (uint*)_dest;
-    
-    //dest = (uint*) __builtin_assume_aligned(dest,16);
-    
-    const float _ulp = std::numeric_limits<float>::epsilon();
-    const float up = 1.0f + float(_ulp);  
-    const gpu::AABB3f conservative_bounds = parent_bounds.conservativeBounds();
-    const float3 len = conservative_bounds.size() * up;
-      
-    int _exp_x; float mant_x = frexp(len.x(), &_exp_x); _exp_x += (mant_x > 255.0f / 256.0f);
-    int _exp_y; float mant_y = frexp(len.y(), &_exp_y); _exp_y += (mant_y > 255.0f / 256.0f);
-    int _exp_z; float mant_z = frexp(len.z(), &_exp_z); _exp_z += (mant_z > 255.0f / 256.0f);
-    _exp_x = max(-128,_exp_x); // enlarge too tight bounds
-    _exp_y = max(-128,_exp_y);
-    _exp_z = max(-128,_exp_z);
-
-    const float3 lower(conservative_bounds.lower_x,conservative_bounds.lower_y,conservative_bounds.lower_z);
-    
-    dest[0]  = gpu::as_uint(lower.x());
-    dest[1]  = gpu::as_uint(lower.y());
-    dest[2]  = gpu::as_uint(lower.z());
-    dest[3]  = relative_block_offset; //(int64_t)((char*)childDataPtr - (char*)curDataPtr) / 64;
-
-    uint8_t tmp[48];
-    
-    tmp[0]         = type; // type
-    tmp[1]         = 0; // pad 
-    tmp[2]         = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127); 
-    tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
-    tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
-    tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
-
-#pragma nounroll
-    for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
-    {
-      uint8_t lower_x = 0x80;
-      uint8_t lower_y = 0x80;
-      uint8_t lower_z = 0x80;    
-      uint8_t upper_x = 0x00;
-      uint8_t upper_y = 0x00;
-      uint8_t upper_z = 0x00;
-      uint8_t data    = 0x00;      
-
-      const uint numBlocks = 1;
-      data = (i<numChildren) ? numBlocks : 0;
-      const gpu::AABB3f childBounds = child_bounds[i]; //.conservativeBounds();      
-      const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
-      lower_x = (i<numChildren) ? (uint8_t)qbounds.lower_x : lower_x;
-      lower_y = (i<numChildren) ? (uint8_t)qbounds.lower_y : lower_y;
-      lower_z = (i<numChildren) ? (uint8_t)qbounds.lower_z : lower_z;
-      upper_x = (i<numChildren) ? (uint8_t)qbounds.upper_x : upper_x;
-      upper_y = (i<numChildren) ? (uint8_t)qbounds.upper_y : upper_y;
-      upper_z = (i<numChildren) ? (uint8_t)qbounds.upper_z : upper_z;
-
-      tmp[ 6+i] = data;
-      tmp[12+i] = lower_x;
-      tmp[18+i] = upper_x;      
-      tmp[24+i] = lower_y;
-      tmp[30+i] = upper_y;      
-      tmp[36+i] = lower_z;
-      tmp[42+i] = upper_z;      
-    }
-
-    for (uint i=0;i<12;i++)
-      dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
-  }
-  
-  
-
- #if 0 
-  __forceinline void initNode(QBVHNodeN &qnode, void *curDataPtr, const gpu::AABB3f &parent_bounds, void *childDataPtr, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type)
-  {
-    const float _ulp = std::numeric_limits<float>::epsilon();
-    const float up = 1.0f + float(_ulp);  
-    const gpu::AABB3f conservative_bounds = parent_bounds.conservativeBounds();
-    const float3 len = conservative_bounds.size() * up;
-      
-    int _exp_x; float mant_x = frexp(len.x(), &_exp_x); _exp_x += (mant_x > 255.0f / 256.0f);
-    int _exp_y; float mant_y = frexp(len.y(), &_exp_y); _exp_y += (mant_y > 255.0f / 256.0f);
-    int _exp_z; float mant_z = frexp(len.z(), &_exp_z); _exp_z += (mant_z > 255.0f / 256.0f);
-    _exp_x = max(-128,_exp_x); // enlarge too tight bounds
-    _exp_y = max(-128,_exp_y);
-    _exp_z = max(-128,_exp_z);
-
-    qnode.bounds_lower[0]  = conservative_bounds.lower_x;
-    qnode.bounds_lower[1]  = conservative_bounds.lower_y;
-    qnode.bounds_lower[2]  = conservative_bounds.lower_z;
-    qnode.offset           = (int64_t)((char*)childDataPtr - (char*)curDataPtr) / 64;
-    qnode.type             = type;
-    qnode.pad              = 0;  
-    qnode.exp[0]           = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127);
-    qnode.exp[1]           = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
-    qnode.exp[2]           = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
-    qnode.instMask         = 0xff;
-
-    //for (uint i=0;i<BVH_BRANCHING_FACTOR;i++) qnode.childData[i] = (i<numChildren) ? 1 : 0;
-
-    for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
-    {
-      uint8_t lower_x = 0x80;
-      uint8_t lower_y = 0x80;
-      uint8_t lower_z = 0x80;    
-      uint8_t upper_x = 0x00;
-      uint8_t upper_y = 0x00;
-      uint8_t upper_z = 0x00;
-      uint8_t data    = 0x00;
-
-      if (i<numChildren)
-      {
-        const bool isLeaf = BVH2Ploc::getIndex(indices[i]) < numPrimitives; 
-        data |= 1;
-        if (type == NODE_TYPE_INTERNAL) data |= (isLeaf ? ((NODE_TYPE_QUAD << 2)) : 0);
-        const gpu::AABB3f childBounds = bvh2[BVH2Ploc::getIndex(indices[i])].bounds; //.conservativeBounds();      
-        const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(qnode.start(),_exp_x,_exp_y,_exp_z,childBounds);
-        lower_x = (uint8_t)qbounds.lower_x;
-        lower_y = (uint8_t)qbounds.lower_y;
-        lower_z = (uint8_t)qbounds.lower_z;
-        upper_x = (uint8_t)qbounds.upper_x;
-        upper_y = (uint8_t)qbounds.upper_y;
-        upper_z = (uint8_t)qbounds.upper_z;      
-      }
-    
-      qnode.childData[i] = data;
-      qnode.lower_x[i] = lower_x;
-      qnode.lower_y[i] = lower_y;
-      qnode.lower_z[i] = lower_z;
-      qnode.upper_x[i] = upper_x;
-      qnode.upper_y[i] = upper_y;
-      qnode.upper_z[i] = upper_z;    
-    }    
-  }
-#endif  
 
   __forceinline uint openBVH2MaxAreaSortChildren(const uint index, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives)
   {

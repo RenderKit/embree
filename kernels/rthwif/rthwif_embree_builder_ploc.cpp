@@ -197,7 +197,7 @@ namespace embree
 
     char* scratch_mem0               = nullptr;
     TriQuadMesh *triQuadMesh         = nullptr;
-    uint *quads_per_geom_prefix_sum  = nullptr;
+    uint *prims_per_geom_prefix_sum  = nullptr;
     size_t size_scratch_mem0         = 0;
 
     if (activeTriQuadMeshes)
@@ -210,7 +210,7 @@ namespace embree
       gpu_queue.prefetch(scratch_mem0,size_scratch_mem0);
         
       triQuadMesh                = (TriQuadMesh*)(scratch_mem0 + 0);
-      quads_per_geom_prefix_sum  =        (uint*)(scratch_mem0 + alloc_TriQuadMeshes);
+      prims_per_geom_prefix_sum  =        (uint*)(scratch_mem0 + alloc_TriQuadMeshes);
     }
 
 
@@ -284,7 +284,7 @@ namespace embree
 
       double device_quadification_time = 0.0f;
     
-      countQuadsPerGeometry(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,device_quadification_time,verbose2);
+      countQuadsPerGeometry(gpu_queue,triQuadMesh,numGeoms,prims_per_geom_prefix_sum,device_quadification_time,verbose2);
 
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
@@ -298,7 +298,7 @@ namespace embree
       timer.start(BuildTimer::PRE_PROCESS);
       double geom_prefix_sum_time = 0.0f;
      
-      prefixsumOverGeometryCounts(gpu_queue,numGeoms,quads_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
+      prefixsumOverGeometryCounts(gpu_queue,numGeoms,prims_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
     
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
@@ -434,7 +434,7 @@ namespace embree
     double create_primref_time = 0.0f;
 
     if (activeTriQuadMeshes)
-      createQuads_initPLOCPrimRefs(gpu_queue,triQuadMesh,numGeoms,quads_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);
+      createQuads_initPLOCPrimRefs(gpu_queue,triQuadMesh,numGeoms,prims_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);
 
     if (numUserGeometries)
       createUserGeometries_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,numActiveQuads,create_primref_time,verbose2);
