@@ -3036,7 +3036,7 @@ namespace embree
                                                                       const uint localID   = item.get_local_id(0);                             
                                                                       const uint globalID  = item.get_global_id(0);
                                                                       const uint numGroups   = item.get_group_range(0);
-                                                                      //const uint localSize   = item.get_local_range().size();                                                                      
+                                                                      const uint localSize   = item.get_local_range().size();                                                                      
                                                                       
 
                                                                       const uint innerID = globalID;
@@ -3046,7 +3046,7 @@ namespace embree
                                                                       uint &global_blockID    = *_global_blockID.get_pointer();
                                                                       uint &global_leafID     = *_global_numLeafID.get_pointer();
                                                                       
-                                                                      //LeafGenerationData* local_leafGenData = _local_leafGenData.get_pointer();
+                                                                      LeafGenerationData* local_leafGenData = _local_leafGenData.get_pointer();
 
                                                                       uint *indices = _local_indices.get_pointer() + BVH_BRANCHING_FACTOR * localID;
                                                                       
@@ -3108,7 +3108,7 @@ namespace embree
                                                                       item.barrier(sycl::access::fence_space::local_space);
 
                                                                       const uint leaf_blockID = global_blockID + local_blockID;
-                                                                      const uint leafID  = global_leafID + local_leafID;
+                                                                      const uint leafID  = global_leafID; // + local_leafID;
                                                                       
                                                                       
                                                                       if (isFatLeaf)
@@ -3133,10 +3133,23 @@ namespace embree
                                                                         //local_leafGenData[local_leafDataID+j].primID = primID_type;
                                                                         //local_leafGenData[local_leafDataID+j].geomID = geomID;
 
-                                                                        const uint destID = j == 0 ? innerID : leafID+j-1;
-                                                                        leafGenData[destID].blockID = bID;
-                                                                        leafGenData[destID].primID = primID_type;
-                                                                        leafGenData[destID].geomID = geomID;
+                                                                        /* const uint destID = j == 0 ? innerID : leafID+j-1;                                                                         */
+                                                                        /* leafGenData[destID].blockID = bID; */
+                                                                        /* leafGenData[destID].primID = primID_type; */
+                                                                        /* leafGenData[destID].geomID = geomID; */
+
+                                                                        if (j == 0)
+                                                                        {
+                                                                          leafGenData[innerID].blockID = bID; 
+                                                                          leafGenData[innerID].primID = primID_type; 
+                                                                          leafGenData[innerID].geomID = geomID;                                                                           
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                          local_leafGenData[local_leafID+j-1].blockID = bID; 
+                                                                          local_leafGenData[local_leafID+j-1].primID = primID_type; 
+                                                                          local_leafGenData[local_leafID+j-1].geomID = geomID;                                                                           
+                                                                        }
                                                                         
                                                                         node_blockID += isInstance  ? 2 : 1;
                                                                       }
@@ -3145,8 +3158,8 @@ namespace embree
 
                                                                       /* --- write out all local entries to global memory --- */
 
-                                                                       /* for (uint i=localID;i<numLeaves;i+=localSize)  */
-                                                                       /*   leafGenData[leafID+i] = local_leafGenData[i];  */
+                                                                      for (uint i=localID;i<numLeaves;i+=localSize)  
+                                                                        leafGenData[leafID+i] = local_leafGenData[i];  
                                                                       
                                                                       if (localID == 0)
                                                                       {

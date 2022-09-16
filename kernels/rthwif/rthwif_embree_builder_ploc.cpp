@@ -692,7 +692,7 @@ namespace embree
     // === convert BVH2 to QBVH6 ===
     // =============================
     
-    const float conversion_device_time = convertBVH2toQBVH6_2(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,verbose2);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,verbose2);
 
     /* --- init final QBVH6 header --- */        
     {     
