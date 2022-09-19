@@ -272,7 +272,7 @@ namespace embree
         return RTHWIF_ERROR_NONE;
       }
       catch (std::bad_alloc&) {
-        return RTHWIF_ERROR_OUT_OF_MEMORY;
+        return RTHWIF_ERROR_RETRY;
       }
       
       catch (...) {
@@ -293,12 +293,12 @@ namespace embree
     /* estimate static accel size */
     static_geometry = true;
     RTHWIF_ACCEL_SIZE sizeStatic;
-    QBVH6BuilderSAH::estimateSize(scene->size(), getSize, getType, sizeStatic.expectedBytes, sizeStatic.worstCaseBytes );
+    QBVH6BuilderSAH::estimateSize(scene->size(), getSize, getType, sizeStatic.accelBufferExpectedBytes, sizeStatic.accelBufferWorstCaseBytes );
     
     /* estimate MBlur accel size */
     static_geometry = false;
     RTHWIF_ACCEL_SIZE sizeMBlur;
-    QBVH6BuilderSAH::estimateSize(scene->size(), getSize, getType, sizeMBlur.expectedBytes, sizeMBlur.worstCaseBytes );
+    QBVH6BuilderSAH::estimateSize(scene->size(), getSize, getType, sizeMBlur.accelBufferExpectedBytes, sizeMBlur.accelBufferWorstCaseBytes );
 
     size_t headerBytes = sizeof(HWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
@@ -306,14 +306,14 @@ namespace embree
     /* build BVH */
     BBox3f fullBounds = empty;
     RTHWIF_ERROR err = RTHWIF_ERROR_NONE;
-    //for (size_t bytes = size.expectedBytes; bytes < size.worstCaseBytes; bytes*=1.2)
+    //for (size_t bytes = size.accelBufferExpectedBytes; bytes < size.accelBufferWorstCaseBytes; bytes*=1.2)
     while (true)
     {
       /* estimate size of static and mblur BVHs */
       RTHWIF_ACCEL_SIZE size;
-      size.expectedBytes  = sizeStatic.expectedBytes  + maxTimeSegments*sizeMBlur.expectedBytes;
-      size.worstCaseBytes = sizeStatic.worstCaseBytes + maxTimeSegments*sizeMBlur.worstCaseBytes;
-      size_t bytes = headerBytes+size.expectedBytes;
+      size.accelBufferExpectedBytes  = sizeStatic.accelBufferExpectedBytes  + maxTimeSegments*sizeMBlur.accelBufferExpectedBytes;
+      size.accelBufferWorstCaseBytes = sizeStatic.accelBufferWorstCaseBytes + maxTimeSegments*sizeMBlur.accelBufferWorstCaseBytes;
+      size_t bytes = headerBytes+size.accelBufferExpectedBytes;
         
       /* allocate BVH data */
       if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
@@ -321,7 +321,7 @@ namespace embree
 
       /* build static BVH */
       char* accel_ptr = accel.data() + headerBytes;
-      size_t accel_bytes = sizeStatic.expectedBytes;
+      size_t accel_bytes = sizeStatic.accelBufferExpectedBytes;
 
       RTHWIF_ACCEL_REF AddAccel;
       memset(&AddAccel,0,sizeof(AddAccel));
@@ -332,12 +332,12 @@ namespace embree
 
       fullBounds.extend(staticBounds);
       
-      if (err == RTHWIF_ERROR_OUT_OF_MEMORY)
+      if (err == RTHWIF_ERROR_RETRY)
       {
-        if (sizeStatic.expectedBytes == sizeStatic.worstCaseBytes)
+        if (sizeStatic.accelBufferExpectedBytes == sizeStatic.accelBufferWorstCaseBytes)
           throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
         
-        sizeStatic.expectedBytes = std::min(sizeStatic.worstCaseBytes,(size_t(1.2*sizeStatic.expectedBytes)+127)&-128);
+        sizeStatic.accelBufferExpectedBytes = std::min(sizeStatic.accelBufferWorstCaseBytes,(size_t(1.2*sizeStatic.accelBufferExpectedBytes)+127)&-128);
         continue;
       }
 
@@ -348,8 +348,8 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
 
-        char* accel_ptr = accel.data() + headerBytes + sizeStatic.expectedBytes + i*sizeMBlur.expectedBytes;
-        size_t accel_bytes = sizeMBlur.expectedBytes;
+        char* accel_ptr = accel.data() + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
+        size_t accel_bytes = sizeMBlur.accelBufferExpectedBytes;
 
         AddAccel.Accel = nullptr;
         if (!staticBounds.empty()) {
@@ -363,18 +363,18 @@ namespace embree
 
         fullBounds.extend(mblurBounds);
 
-        if (err == RTHWIF_ERROR_OUT_OF_MEMORY)
+        if (err == RTHWIF_ERROR_RETRY)
         {
-          if (sizeMBlur.expectedBytes == sizeMBlur.worstCaseBytes)
+          if (sizeMBlur.accelBufferExpectedBytes == sizeMBlur.accelBufferWorstCaseBytes)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
-          sizeMBlur.expectedBytes = std::min(sizeMBlur.worstCaseBytes,(size_t(1.2*sizeMBlur.expectedBytes)+127)&-128);
+          sizeMBlur.accelBufferExpectedBytes = std::min(sizeMBlur.accelBufferWorstCaseBytes,(size_t(1.2*sizeMBlur.accelBufferExpectedBytes)+127)&-128);
           break;
         }
         
         if (err != RTHWIF_ERROR_NONE) break;
       }
-      if (err != RTHWIF_ERROR_OUT_OF_MEMORY) break;
+      if (err != RTHWIF_ERROR_RETRY) break;
     }
 
     if (err != RTHWIF_ERROR_NONE)
@@ -392,7 +392,7 @@ namespace embree
 
     void** AccelTable = (void**) (hwaccel+1);
     for (size_t i=0; i<maxTimeSegments; i++)
-      AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.expectedBytes + i*sizeMBlur.expectedBytes;
+      AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
     
     if (maxTimeSegments == 0)
       AccelTable[0] = (char*)hwaccel + headerBytes;
@@ -407,8 +407,8 @@ namespace embree
     switch (type) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return sizeof(RTHWIF_GEOMETRY_QUADS_DESC);
-    case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return sizeof(RTHWIF_GEOMETRY_AABBS_DESC);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC);
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return sizeof(RTHWIF_GEOMETRY_AABBS_DESC);
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC);
     case RTHWIF_GEOMETRY_TYPE_INSTANCEREF  : return sizeof(RTHWIF_GEOMETRY_INSTANCEREF_DESC);
     default: assert(false); return 0;
     }
@@ -419,14 +419,14 @@ namespace embree
     switch (type) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return alignof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return alignof(RTHWIF_GEOMETRY_QUADS_DESC);
-    case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return alignof(RTHWIF_GEOMETRY_AABBS_DESC);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return alignof(RTHWIF_GEOMETRY_INSTANCE_DESC);
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return alignof(RTHWIF_GEOMETRY_AABBS_DESC);
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return alignof(RTHWIF_GEOMETRY_INSTANCE_DESC);
     case RTHWIF_GEOMETRY_TYPE_INSTANCEREF  : return alignof(RTHWIF_GEOMETRY_INSTANCEREF_DESC);
     default: assert(false); return 0;
     }
   }
 
-  RTHWIF_GEOMETRY_FLAGS getGeometryFlags(Scene* scene, Geometry* geom)
+  RTHWIF_GEOMETRY_FLAGS getgeometryFlags(Scene* scene, Geometry* geom)
   {
     /* invoke any hit callback when Embree filter functions are present */
     RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
@@ -443,29 +443,29 @@ namespace embree
   void createGeometryDesc(RTHWIF_GEOMETRY_TRIANGLES_DESC* out, Scene* scene, TriangleMesh* geom)
   {
     memset(out,0,sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC));
-    out->GeometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
-    out->GeometryFlags = getGeometryFlags(scene,geom);
-    out->GeometryMask = mask32_to_mask8(geom->mask);
-    out->IndexBuffer = (RTHWIF_UINT3*) geom->triangles.getPtr();
-    out->TriangleCount = geom->triangles.size();
-    out->TriangleStride = geom->triangles.getStride();
-    out->VertexBuffer = (RTHWIF_FLOAT3*) geom->vertices0.getPtr();
-    out->VertexCount = geom->vertices0.size();
-    out->VertexStride = geom->vertices0.getStride();
+    out->geometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
+    out->geometryFlags = getgeometryFlags(scene,geom);
+    out->geometryMask = mask32_to_mask8(geom->mask);
+    out->triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) geom->triangles.getPtr();
+    out->triangleCount = geom->triangles.size();
+    out->triangleStride = geom->triangles.getStride();
+    out->vertexBuffer = (RTHWIF_FLOAT3*) geom->vertices0.getPtr();
+    out->vertexCount = geom->vertices0.size();
+    out->vertexStride = geom->vertices0.getStride();
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_QUADS_DESC* out, Scene* scene, QuadMesh* geom)
   {
     memset(out,0,sizeof(RTHWIF_GEOMETRY_QUADS_DESC));
-    out->GeometryType = RTHWIF_GEOMETRY_TYPE_QUADS;
-    out->GeometryFlags = getGeometryFlags(scene,geom);
-    out->GeometryMask = mask32_to_mask8(geom->mask);
-    out->IndexBuffer = (RTHWIF_UINT4*) geom->quads.getPtr();
-    out->QuadCount = geom->quads.size();
-    out->QuadStride = geom->quads.getStride();
-    out->VertexBuffer = (RTHWIF_FLOAT3*) geom->vertices0.getPtr();
-    out->VertexCount = geom->vertices0.size();
-    out->VertexStride = geom->vertices0.getStride();
+    out->geometryType = RTHWIF_GEOMETRY_TYPE_QUADS;
+    out->geometryFlags = getgeometryFlags(scene,geom);
+    out->geometryMask = mask32_to_mask8(geom->mask);
+    out->quadBuffer = (RTHWIF_QUAD_INDICES*) geom->quads.getPtr();
+    out->quadCount = geom->quads.size();
+    out->quadStride = geom->quads.getStride();
+    out->vertexBuffer = (RTHWIF_FLOAT3*) geom->vertices0.getPtr();
+    out->vertexCount = geom->vertices0.size();
+    out->vertexStride = geom->vertices0.getStride();
   }
 
   RTHWIF_AABB getProceduralAABB(const uint32_t primID, void* geomUserPtr, void* userPtr)
@@ -499,40 +499,40 @@ namespace embree
       numPrimitives = mesh->getNumTotalQuads(); // FIXME: slow
     
     memset(out,0,sizeof(RTHWIF_GEOMETRY_AABBS_DESC));
-    out->GeometryType = RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
-    out->GeometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
-    out->GeometryMask = mask32_to_mask8(geom->mask);
-    out->AABBCount = numPrimitives;
-    out->AABBs = getProceduralAABB;
-    out->userPtr = geom;
+    out->geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
+    out->geometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
+    out->geometryMask = mask32_to_mask8(geom->mask);
+    out->primCount = numPrimitives;
+    out->getBounds = getProceduralAABB;
+    out->geomUserPtr = geom;
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
   {
     memset(out,0,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
-    out->GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCES;
-    out->InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
-    out->GeometryMask = mask32_to_mask8(geom->mask);
-    out->InstanceID = 0;
+    out->geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
+    out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+    out->geometryMask = mask32_to_mask8(geom->mask);
+    out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
-    out->Transform = *(RTHWIF_TRANSFORM4X4*) &local2world;
+    out->transform = *(RTHWIF_TRANSFORM4X4*) &local2world;
     HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     void** AccelTable = (void**) (hwaccel+1);
-    out->Accel = AccelTable[0];
+    out->accel = AccelTable[0];
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCEREF_DESC* out, Scene* scene, Instance* geom)
   {
     assert(geom->gsubtype == AccelSet::GTY_SUBTYPE_DEFAULT);
     memset(out,0,sizeof(RTHWIF_GEOMETRY_INSTANCEREF_DESC));
-    out->GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCEREF;
-    out->InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
-    out->GeometryMask = mask32_to_mask8(geom->mask);
-    out->InstanceID = 0;
-    out->Transform = (RTHWIF_TRANSFORM4X4*) &geom->local2world[0];
+    out->geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCEREF;
+    out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+    out->geometryMask = mask32_to_mask8(geom->mask);
+    out->instanceUserID = 0;
+    out->transform = (RTHWIF_TRANSFORM4X4*) &geom->local2world[0];
     HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     void** AccelTable = (void**) (hwaccel+1);
-    out->Accel = AccelTable[0];
+    out->accel = AccelTable[0];
   }
 
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, RTHWIF_GEOMETRY_TYPE type)
@@ -540,8 +540,8 @@ namespace embree
     switch (type) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)out,scene,dynamic_cast<TriangleMesh*>(geom));
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*)out,scene,dynamic_cast<QuadMesh*>(geom));
-    case RTHWIF_GEOMETRY_TYPE_PROCEDURALS: return createGeometryDescProcedural((RTHWIF_GEOMETRY_AABBS_DESC*)out,scene,geom);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCES  : return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryDescProcedural((RTHWIF_GEOMETRY_AABBS_DESC*)out,scene,geom);
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
     case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCEREF_DESC*)out,scene,dynamic_cast<Instance*>(geom));
     default: assert(false);
     }
@@ -553,57 +553,57 @@ namespace embree
     {
       /* no HW support for MB yet */
       if (scene->get(geomID)->numTimeSegments() > 0)
-        return RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
+        return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
 
       switch (scene->get(geomID)->getType()) {
-      case Geometry::GTY_FLAT_LINEAR_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ROUND_LINEAR_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ORIENTED_LINEAR_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_CONE_LINEAR_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_FLAT_LINEAR_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_LINEAR_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_LINEAR_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_CONE_LINEAR_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
       
-      case Geometry::GTY_FLAT_BEZIER_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ROUND_BEZIER_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_FLAT_BEZIER_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_BEZIER_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_BEZIER_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
       
-      case Geometry::GTY_FLAT_BSPLINE_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ROUND_BSPLINE_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_FLAT_BSPLINE_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_BSPLINE_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_BSPLINE_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
       
-      case Geometry::GTY_FLAT_HERMITE_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ROUND_HERMITE_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ORIENTED_HERMITE_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_FLAT_HERMITE_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_HERMITE_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_HERMITE_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
       
-      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE   : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE   : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
       
       case Geometry::GTY_TRIANGLE_MESH: return RTHWIF_GEOMETRY_TYPE_TRIANGLES; break;
       case Geometry::GTY_QUAD_MESH    : return RTHWIF_GEOMETRY_TYPE_QUADS; break;
-      case Geometry::GTY_GRID_MESH    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_SUBDIV_MESH  : assert(false); return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_GRID_MESH    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_SUBDIV_MESH  : assert(false); return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
       
-      case Geometry::GTY_SPHERE_POINT       : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_DISC_POINT         : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_ORIENTED_DISC_POINT: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_SPHERE_POINT       : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_DISC_POINT         : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_ORIENTED_DISC_POINT: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
       
-      case Geometry::GTY_USER_GEOMETRY     : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_USER_GEOMETRY     : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
 
 #if RTC_MAX_INSTANCE_LEVEL_COUNT < 2
       case Geometry::GTY_INSTANCE_CHEAP    :
       case Geometry::GTY_INSTANCE_EXPENSIVE: {
         Instance* instance = scene->get<Instance>(geomID);
         QBVH6* object = (QBVH6*)((Scene*)instance->object)->hwaccel.data();
-        if (object->numTimeSegments > 1) return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; // we need to handle instances in procedural mode if instanced scene has motion blur
-        if (instance->mask & 0xFFFFFF80) return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; // we need to handle instances in procedural mode if high mask bits are set
-        else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION) return RTHWIF_GEOMETRY_TYPE_INSTANCES;
+        if (object->numTimeSegments > 1) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if instanced scene has motion blur
+        if (instance->mask & 0xFFFFFF80) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if high mask bits are set
+        else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION) return RTHWIF_GEOMETRY_TYPE_INSTANCE;
         else return RTHWIF_GEOMETRY_TYPE_INSTANCEREF;
       }
 #else
-      case Geometry::GTY_INSTANCE_CHEAP    : return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
-      case Geometry::GTY_INSTANCE_EXPENSIVE: return RTHWIF_GEOMETRY_TYPE_PROCEDURALS; break;
+      case Geometry::GTY_INSTANCE_CHEAP    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+      case Geometry::GTY_INSTANCE_EXPENSIVE: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
 #endif
 
-      default: assert(false); return RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
+      default: assert(false); return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
       }
     };
 
@@ -670,21 +670,20 @@ namespace embree
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
-    args.bytes = sizeof(args);
-    args.device = nullptr;
+    args.structBytes = sizeof(args);
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomStatic.data();
     args.numGeometries = geomStatic.size();
-    args.accel = nullptr;
-    args.numBytes = 0;
+    args.accelBuffer = nullptr;
+    args.accelBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
-    args.bounds = &bounds;
-    args.userPtr = &time_range;
+    args.boundsOut = &bounds;
+    args.buildUserPtr = &time_range;
     
     RTHWIF_ACCEL_SIZE sizeStatic;
     memset(&sizeStatic,0,sizeof(RTHWIF_ACCEL_SIZE));
-    sizeStatic.bytes = sizeof(RTHWIF_ACCEL_SIZE);
+    sizeStatic.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
     RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeStatic);
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
@@ -695,7 +694,7 @@ namespace embree
     
     RTHWIF_ACCEL_SIZE sizeMBlur;
     memset(&sizeMBlur,0,sizeof(RTHWIF_ACCEL_SIZE));
-    sizeMBlur.bytes = sizeof(RTHWIF_ACCEL_SIZE);
+    sizeMBlur.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
     err = rthwifGetAccelSize(args,sizeMBlur);
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
@@ -705,14 +704,14 @@ namespace embree
 
     /* build BVH */
     BBox3f fullBounds = empty;
-    //for (size_t bytes = size.expectedBytes; bytes < size.worstCaseBytes; bytes*=1.2)
+    //for (size_t bytes = size.accelBufferExpectedBytes; bytes < size.accelBufferWorstCaseBytes; bytes*=1.2)
     while (true)
     {
       /* estimate size of static and mblur BVHs */
       RTHWIF_ACCEL_SIZE size;
-      size.expectedBytes  = sizeStatic.expectedBytes  + maxTimeSegments*sizeMBlur.expectedBytes;
-      size.worstCaseBytes = sizeStatic.worstCaseBytes + maxTimeSegments*sizeMBlur.worstCaseBytes;
-      size_t bytes = headerBytes+size.expectedBytes;
+      size.accelBufferExpectedBytes  = sizeStatic.accelBufferExpectedBytes  + maxTimeSegments*sizeMBlur.accelBufferExpectedBytes;
+      size.accelBufferWorstCaseBytes = sizeStatic.accelBufferWorstCaseBytes + maxTimeSegments*sizeMBlur.accelBufferWorstCaseBytes;
+      size_t bytes = headerBytes+size.accelBufferExpectedBytes;
         
       /* allocate BVH data */
       if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
@@ -721,19 +720,19 @@ namespace embree
       /* build static BVH */
       args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomStatic.data();
       args.numGeometries = geomStatic.size();
-      args.accel = accel.data() + headerBytes;
-      args.numBytes = sizeStatic.expectedBytes;
+      args.accelBuffer = accel.data() + headerBytes;
+      args.accelBufferBytes = sizeStatic.accelBufferExpectedBytes;
       bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
       err = rthwifBuildAccel(args);
-      const BBox3f staticBounds = *(BBox3f*) args.bounds;
+      const BBox3f staticBounds = *(BBox3f*) args.boundsOut;
       fullBounds.extend(staticBounds);
       
-      if (err == RTHWIF_ERROR_OUT_OF_MEMORY)
+      if (err == RTHWIF_ERROR_RETRY)
       {
-        if (sizeStatic.expectedBytes == sizeStatic.worstCaseBytes)
+        if (sizeStatic.accelBufferExpectedBytes == sizeStatic.accelBufferWorstCaseBytes)
           throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
         
-        sizeStatic.expectedBytes = std::min(sizeStatic.worstCaseBytes,(size_t(1.2*sizeStatic.expectedBytes)+127)&-128);
+        sizeStatic.accelBufferExpectedBytes = std::min(sizeStatic.accelBufferWorstCaseBytes,(size_t(1.2*sizeStatic.accelBufferExpectedBytes)+127)&-128);
         continue;
       }
 
@@ -746,29 +745,29 @@ namespace embree
         
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomMBlur.data();
         args.numGeometries = geomMBlur.size();
-        args.accel = accel.data() + headerBytes + sizeStatic.expectedBytes + i*sizeMBlur.expectedBytes;
-        args.numBytes = sizeMBlur.expectedBytes;
-        args.AddAccel.Accel = nullptr;
+        args.accelBuffer = accel.data() + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
+        args.accelBufferBytes = sizeMBlur.accelBufferExpectedBytes;
+        args.linkAccel.Accel = nullptr;
         if (!staticBounds.empty()) {
-          args.AddAccel.Accel = accel.data() + headerBytes;
-          args.AddAccel.bounds = (RTHWIF_AABB&) staticBounds;
+          args.linkAccel.Accel = accel.data() + headerBytes;
+          args.linkAccel.bounds = (RTHWIF_AABB&) staticBounds;
         }
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
         err = rthwifBuildAccel(args);
-        fullBounds.extend(*(BBox3f*) args.bounds);
+        fullBounds.extend(*(BBox3f*) args.boundsOut);
 
-        if (err == RTHWIF_ERROR_OUT_OF_MEMORY)
+        if (err == RTHWIF_ERROR_RETRY)
         {
-          if (sizeMBlur.expectedBytes == sizeMBlur.worstCaseBytes)
+          if (sizeMBlur.accelBufferExpectedBytes == sizeMBlur.accelBufferWorstCaseBytes)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
-          sizeMBlur.expectedBytes = std::min(sizeMBlur.worstCaseBytes,(size_t(1.2*sizeMBlur.expectedBytes)+127)&-128);
+          sizeMBlur.accelBufferExpectedBytes = std::min(sizeMBlur.accelBufferWorstCaseBytes,(size_t(1.2*sizeMBlur.accelBufferExpectedBytes)+127)&-128);
           break;
         }
         
         if (err != RTHWIF_ERROR_NONE) break;
       }
-      if (err != RTHWIF_ERROR_OUT_OF_MEMORY) break;
+      if (err != RTHWIF_ERROR_RETRY) break;
     }
 
     if (err != RTHWIF_ERROR_NONE)
@@ -786,7 +785,7 @@ namespace embree
 
     void** AccelTable = (void**) (hwaccel+1);
     for (size_t i=0; i<maxTimeSegments; i++)
-      AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.expectedBytes + i*sizeMBlur.expectedBytes;
+      AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
     
     if (maxTimeSegments == 0)
       AccelTable[0] = (char*)hwaccel + headerBytes;

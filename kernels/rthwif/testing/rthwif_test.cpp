@@ -439,6 +439,17 @@ struct Hit
   uint32_t primID = -1;
 };
 
+typedef union GEOMETRY_DESC
+{
+  RTHWIF_GEOMETRY_TYPE geometryType;
+  RTHWIF_GEOMETRY_TRIANGLES_DESC Triangles;
+  RTHWIF_GEOMETRY_QUADS_DESC Quads;
+  RTHWIF_GEOMETRY_AABBS_DESC AABBs;
+  RTHWIF_GEOMETRY_INSTANCE_DESC Instances;
+  RTHWIF_GEOMETRY_INSTANCEREF_DESC InstanceRef;
+
+} GEOMETRY_DESC;
+
 struct Geometry
 {
   enum Type {
@@ -449,7 +460,7 @@ struct Geometry
   Geometry (Type type)
     : type(type) {}
 
-  virtual RTHWIF_GEOMETRY_DESC getDesc() = 0;
+  virtual GEOMETRY_DESC getDesc() = 0;
 
   virtual void transform( const Transform xfm) {
     throw std::runtime_error("Geometry::transform not implemented");
@@ -507,20 +518,20 @@ public:
     return r;
   }
   
-  virtual RTHWIF_GEOMETRY_DESC getDesc() override
+  virtual GEOMETRY_DESC getDesc() override
   {
     if (procedural)
     {
       RTHWIF_GEOMETRY_AABBS_DESC out;
       memset(&out,0,sizeof(out));
-      out.GeometryType = RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
-      out.GeometryFlags = gflags;
-      out.GeometryMask = 0xFF;
-      out.AABBCount = triangles.size();
-      out.AABBs = TriangleMesh::getBoundsCallback;
-      out.userPtr = this;
+      out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
+      out.geometryFlags = gflags;
+      out.geometryMask = 0xFF;
+      out.primCount = triangles.size();
+      out.getBounds = TriangleMesh::getBoundsCallback;
+      out.geomUserPtr = this;
 
-      RTHWIF_GEOMETRY_DESC desc;
+      GEOMETRY_DESC desc;
       desc.AABBs = out;
       return desc;
     }
@@ -528,17 +539,17 @@ public:
     {
       RTHWIF_GEOMETRY_TRIANGLES_DESC out;
       memset(&out,0,sizeof(out));
-      out.GeometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
-      out.GeometryFlags = gflags;
-      out.GeometryMask = 0xFF;
-      out.IndexBuffer = (RTHWIF_UINT3*) triangles.data();
-      out.TriangleCount = triangles.size();
-      out.TriangleStride = sizeof(sycl::int3);
-      out.VertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
-      out.VertexCount = vertices.size();
-      out.VertexStride = sizeof(sycl::float3);
+      out.geometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
+      out.geometryFlags = gflags;
+      out.geometryMask = 0xFF;
+      out.triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) triangles.data();
+      out.triangleCount = triangles.size();
+      out.triangleStride = sizeof(sycl::int3);
+      out.vertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
+      out.vertexCount = vertices.size();
+      out.vertexStride = sizeof(sycl::float3);
       
-      RTHWIF_GEOMETRY_DESC desc;
+      GEOMETRY_DESC desc;
       desc.Triangles = out;
       return desc;
     }
@@ -665,20 +676,20 @@ struct InstanceGeometryT : public Geometry
     return r;
   }
 
-  virtual RTHWIF_GEOMETRY_DESC getDesc() override
+  virtual GEOMETRY_DESC getDesc() override
   {
     if (procedural)
     {
       RTHWIF_GEOMETRY_AABBS_DESC out;
       memset(&out,0,sizeof(out));
-      out.GeometryType = RTHWIF_GEOMETRY_TYPE_PROCEDURALS;
-      out.GeometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
-      out.GeometryMask = 0xFF;
-      out.AABBCount = 1;
-      out.AABBs = InstanceGeometryT::getBoundsCallback;
-      out.userPtr = this;
+      out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
+      out.geometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
+      out.geometryMask = 0xFF;
+      out.primCount = 1;
+      out.getBounds = InstanceGeometryT::getBoundsCallback;
+      out.geomUserPtr = this;
 
-      RTHWIF_GEOMETRY_DESC desc;
+      GEOMETRY_DESC desc;
       desc.AABBs = out;
       return desc;
     }
@@ -686,25 +697,25 @@ struct InstanceGeometryT : public Geometry
     {
       RTHWIF_GEOMETRY_INSTANCE_DESC out;
       memset(&out,0,sizeof(out));
-      out.GeometryType = RTHWIF_GEOMETRY_TYPE_INSTANCES;
-      out.InstanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
-      out.GeometryMask = 0xFF;
-      out.InstanceID = instUserID;
-      out.Transform.vx.x = local2world.vx.x();
-      out.Transform.vx.y = local2world.vx.y();
-      out.Transform.vx.z = local2world.vx.z();
-      out.Transform.vy.x = local2world.vy.x();
-      out.Transform.vy.y = local2world.vy.y();
-      out.Transform.vy.z = local2world.vy.z();
-      out.Transform.vz.x = local2world.vz.x();
-      out.Transform.vz.y = local2world.vz.y();
-      out.Transform.vz.z = local2world.vz.z();
-      out.Transform.p.x  = local2world.p.x();
-      out.Transform.p.y  = local2world.p.y();
-      out.Transform.p.z  = local2world.p.z();
-      out.Accel = scene->getAccel();
+      out.geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
+      out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
+      out.geometryMask = 0xFF;
+      out.instanceUserID = instUserID;
+      out.transform.vx.x = local2world.vx.x();
+      out.transform.vx.y = local2world.vx.y();
+      out.transform.vx.z = local2world.vx.z();
+      out.transform.vy.x = local2world.vy.x();
+      out.transform.vy.y = local2world.vy.y();
+      out.transform.vy.z = local2world.vy.z();
+      out.transform.vz.x = local2world.vz.x();
+      out.transform.vz.y = local2world.vz.y();
+      out.transform.vz.z = local2world.vz.z();
+      out.transform.p.x  = local2world.p.x();
+      out.transform.p.y  = local2world.p.y();
+      out.transform.p.z  = local2world.p.z();
+      out.accel = scene->getAccel();
       
-      RTHWIF_GEOMETRY_DESC desc;
+      GEOMETRY_DESC desc;
       desc.Instances = out;
       return desc;
     }
@@ -830,7 +841,7 @@ struct Scene
   void buildAccel(sycl::device& device, sycl::context& context)
   {
     /* fill geometry descriptor buffer */
-    std::vector<RTHWIF_GEOMETRY_DESC> desc(size());
+    std::vector<GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
     for (size_t geomID=0; geomID<size(); geomID++)
     {
@@ -843,40 +854,39 @@ struct Scene
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
-    args.bytes = sizeof(args);
-    args.device = nullptr;
+    args.structBytes = sizeof(args);
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
     args.numGeometries = geom.size();
-    args.accel = nullptr;
-    args.numBytes = 0;
+    args.accelBuffer = nullptr;
+    args.accelBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
-    args.bounds = &bounds;
-    args.userPtr = nullptr;
+    args.boundsOut = &bounds;
+    args.buildUserPtr = nullptr;
     
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-    size.bytes = sizeof(RTHWIF_ACCEL_SIZE);
+    size.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
     
     accel = nullptr;
-    for (size_t bytes = size.expectedBytes; bytes < size.worstCaseBytes; bytes*=1.2)
+    for (size_t bytes = size.accelBufferExpectedBytes; bytes < size.accelBufferWorstCaseBytes; bytes*=1.2)
     {
       /* allocate BVH data */
       if (accel) sycl::free(accel,context);
-      accel = sycl::aligned_alloc(RTHWIF_BVH_ALIGNMENT,bytes,device,context,sycl::usm::alloc::shared);
+      accel = sycl::aligned_alloc(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,bytes,device,context,sycl::usm::alloc::shared);
       memset(accel,0,bytes); // FIXME: not required
       
       /* build accel */
       args.numGeometries = geom.size();
-      args.accel = accel;
-      args.numBytes = bytes;
+      args.accelBuffer = accel;
+      args.accelBufferBytes = bytes;
       err = rthwifBuildAccel(args);
       
-      if (err != RTHWIF_ERROR_OUT_OF_MEMORY)
+      if (err != RTHWIF_ERROR_RETRY)
         break;
     }
     

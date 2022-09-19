@@ -196,7 +196,7 @@ typedef enum RTHWIF_FEATURES {
 typedef enum RTHWIF_ERROR
 {
   RTHWIF_ERROR_NONE  = 0x0,  // no error occured
-  RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app can re-try with more memory
+  RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app should re-try with more memory
   RTHWIF_ERROR_OTHER = 0x2   // some unspecified error occured
   
 } RTHWIF_ERROR;
@@ -255,7 +255,7 @@ typedef struct RTHWIF_ACCEL_SIZE
   /* The worst number of bytes required for the acceleration
    * structure. When using an acceleration structure buffer of that
    * size, the build is guaranteed to not run out of memory. */
-  size_t accelBufferWostCaseBytes;
+  size_t accelBufferWorstCaseBytes;
 
   /* The scratch buffer bytes required for the acceleration structure
    * build. */
@@ -347,7 +347,7 @@ RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(uint32_t deviceID);
          data), the existence of an acceleration structure to link,
          the build quality, and build flags.
 
-   size_o: A structure that contains the size information returned,
+   sizeOut: A structure that contains the size information returned,
          see RTHWIF_ACCEL_SIZE for more details.
 
 */
