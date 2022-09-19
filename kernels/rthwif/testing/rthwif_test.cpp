@@ -439,6 +439,7 @@ struct Hit
   uint32_t primID = -1;
 };
 
+
 typedef union GEOMETRY_DESC
 {
   RTHWIF_GEOMETRY_TYPE geometryType;
@@ -460,7 +461,7 @@ struct Geometry
   Geometry (Type type)
     : type(type) {}
 
-  virtual GEOMETRY_DESC getDesc() = 0;
+  virtual void getDesc(GEOMETRY_DESC* desc) = 0;
 
   virtual void transform( const Transform xfm) {
     throw std::runtime_error("Geometry::transform not implemented");
@@ -520,11 +521,11 @@ public:
     }
   }
   
-  virtual GEOMETRY_DESC getDesc() override
+  virtual void getDesc(GEOMETRY_DESC* desc) override
   {
     if (procedural)
     {
-      RTHWIF_GEOMETRY_AABBS_FPTR_DESC out;
+      RTHWIF_GEOMETRY_AABBS_FPTR_DESC& out =  desc->AABBs;
       memset(&out,0,sizeof(out));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
       out.geometryFlags = gflags;
@@ -532,14 +533,10 @@ public:
       out.primCount = triangles.size();
       out.getBounds = TriangleMesh::getBoundsCallback;
       out.geomUserPtr = this;
-
-      GEOMETRY_DESC desc;
-      desc.AABBs = out;
-      return desc;
     }
     else
     {
-      RTHWIF_GEOMETRY_TRIANGLES_DESC out;
+      RTHWIF_GEOMETRY_TRIANGLES_DESC& out = desc->Triangles;
       memset(&out,0,sizeof(out));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
       out.geometryFlags = gflags;
@@ -550,10 +547,6 @@ public:
       out.vertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
       out.vertexCount = vertices.size();
       out.vertexStride = sizeof(sycl::float3);
-      
-      GEOMETRY_DESC desc;
-      desc.Triangles = out;
-      return desc;
     }
   }
 
@@ -678,11 +671,11 @@ struct InstanceGeometryT : public Geometry
     boundsOut->upper.z = bounds.upper.z();
   }
 
-  virtual GEOMETRY_DESC getDesc() override
+  virtual void getDesc(GEOMETRY_DESC* desc) override
   {
     if (procedural)
     {
-      RTHWIF_GEOMETRY_AABBS_FPTR_DESC out;
+      RTHWIF_GEOMETRY_AABBS_FPTR_DESC& out = desc->AABBs;
       memset(&out,0,sizeof(out));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
       out.geometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
@@ -690,15 +683,11 @@ struct InstanceGeometryT : public Geometry
       out.primCount = 1;
       out.getBounds = InstanceGeometryT::getBoundsCallback;
       out.geomUserPtr = this;
-
-      GEOMETRY_DESC desc;
-      desc.AABBs = out;
-      return desc;
     }
     else
     {
-      RTHWIF_GEOMETRY_INSTANCE_DESC out;
-      memset(&out,0,sizeof(out));
+      RTHWIF_GEOMETRY_INSTANCE_DESC& out = desc->Instances;
+      memset(&out,0,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
       out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
       out.geometryMask = 0xFF;
@@ -706,20 +695,20 @@ struct InstanceGeometryT : public Geometry
       out.transform.vx.x = local2world.vx.x();
       out.transform.vx.y = local2world.vx.y();
       out.transform.vx.z = local2world.vx.z();
+      out.transform.vx.w = 0.0f;
       out.transform.vy.x = local2world.vy.x();
       out.transform.vy.y = local2world.vy.y();
       out.transform.vy.z = local2world.vy.z();
+      out.transform.vy.w = 0.0f;
       out.transform.vz.x = local2world.vz.x();
       out.transform.vz.y = local2world.vz.y();
       out.transform.vz.z = local2world.vz.z();
+      out.transform.vz.w = 0.0f;
       out.transform.p.x  = local2world.p.x();
       out.transform.p.y  = local2world.p.y();
       out.transform.p.z  = local2world.p.z();
+      out.transform.p.w  = 0.0f;
       out.accel = scene->getAccel();
-      
-      GEOMETRY_DESC desc;
-      desc.Instances = out;
-      return desc;
     }
   }
 
@@ -848,7 +837,7 @@ struct Scene
     for (size_t geomID=0; geomID<size(); geomID++)
     {
       geometries[geomID]->buildAccel(device,context);
-      desc[geomID] = geometries[geomID]->getDesc();
+      geometries[geomID]->getDesc(&desc[geomID]);
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
 
