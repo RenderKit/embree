@@ -440,14 +440,18 @@ struct Hit
 };
 
 
+struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
+{
+  RTHWIF_TRANSFORM4X4 xfmdata;
+};
+
 typedef union GEOMETRY_DESC
 {
   RTHWIF_GEOMETRY_TYPE geometryType;
   RTHWIF_GEOMETRY_TRIANGLES_DESC Triangles;
   RTHWIF_GEOMETRY_QUADS_DESC Quads;
   RTHWIF_GEOMETRY_AABBS_FPTR_DESC AABBs;
-  RTHWIF_GEOMETRY_INSTANCE_DESC Instances;
-  RTHWIF_GEOMETRY_INSTANCEREF_DESC InstanceRef;
+  GEOMETRY_INSTANCE_DESC Instance;
 
 } GEOMETRY_DESC;
 
@@ -686,28 +690,29 @@ struct InstanceGeometryT : public Geometry
     }
     else
     {
-      RTHWIF_GEOMETRY_INSTANCE_DESC& out = desc->Instances;
-      memset(&out,0,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
+      GEOMETRY_INSTANCE_DESC& out = desc->Instance;
+      memset(&out,0,sizeof(GEOMETRY_INSTANCE_DESC));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
       out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
       out.geometryMask = 0xFF;
       out.instanceUserID = instUserID;
-      out.transform.vx.x = local2world.vx.x();
-      out.transform.vx.y = local2world.vx.y();
-      out.transform.vx.z = local2world.vx.z();
-      out.transform.vx.w = 0.0f;
-      out.transform.vy.x = local2world.vy.x();
-      out.transform.vy.y = local2world.vy.y();
-      out.transform.vy.z = local2world.vy.z();
-      out.transform.vy.w = 0.0f;
-      out.transform.vz.x = local2world.vz.x();
-      out.transform.vz.y = local2world.vz.y();
-      out.transform.vz.z = local2world.vz.z();
-      out.transform.vz.w = 0.0f;
-      out.transform.p.x  = local2world.p.x();
-      out.transform.p.y  = local2world.p.y();
-      out.transform.p.z  = local2world.p.z();
-      out.transform.p.w  = 0.0f;
+      out.transform = &out.xfmdata;
+      out.xfmdata.vx.x = local2world.vx.x();
+      out.xfmdata.vx.y = local2world.vx.y();
+      out.xfmdata.vx.z = local2world.vx.z();
+      out.xfmdata.vx.w = 0.0f;
+      out.xfmdata.vy.x = local2world.vy.x();
+      out.xfmdata.vy.y = local2world.vy.y();
+      out.xfmdata.vy.z = local2world.vy.z();
+      out.xfmdata.vy.w = 0.0f;
+      out.xfmdata.vz.x = local2world.vz.x();
+      out.xfmdata.vz.y = local2world.vz.y();
+      out.xfmdata.vz.z = local2world.vz.z();
+      out.xfmdata.vz.w = 0.0f;
+      out.xfmdata.p.x  = local2world.p.x();
+      out.xfmdata.p.y  = local2world.p.y();
+      out.xfmdata.p.z  = local2world.p.z();
+      out.xfmdata.p.w  = 0.0f;
       out.accel = scene->getAccel();
     }
   }

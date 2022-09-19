@@ -402,31 +402,43 @@ namespace embree
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  size_t sizeof_RTHWIF_GEOMETRY(RTHWIF_GEOMETRY_TYPE type)
+  struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
   {
-    switch (type) {
-    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
-    case RTHWIF_GEOMETRY_TYPE_QUADS      : return sizeof(RTHWIF_GEOMETRY_QUADS_DESC);
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCEREF  : return sizeof(RTHWIF_GEOMETRY_INSTANCEREF_DESC);
+    RTHWIF_TRANSFORM4X4 xfmdata;
+  };
+
+  struct GEOMETRY_TYPE
+  {
+    GEOMETRY_TYPE(RTHWIF_GEOMETRY_TYPE type, size_t extraBytes = 0)
+      : type(type), extraBytes(extraBytes) {}
+    
+    RTHWIF_GEOMETRY_TYPE type;
+    size_t extraBytes;
+  };
+
+  size_t sizeof_RTHWIF_GEOMETRY(GEOMETRY_TYPE type)
+  {
+    switch (type.type) {
+    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC)+type.extraBytes;
+    case RTHWIF_GEOMETRY_TYPE_QUADS      : return sizeof(RTHWIF_GEOMETRY_QUADS_DESC)+type.extraBytes;
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC)+type.extraBytes;
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC)+type.extraBytes;
     default: assert(false); return 0;
     }
   }
 
-  size_t alignof_RTHWIF_GEOMETRY(RTHWIF_GEOMETRY_TYPE type)
+  size_t alignof_RTHWIF_GEOMETRY(GEOMETRY_TYPE type)
   {
-    switch (type) {
+    switch (type.type) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return alignof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return alignof(RTHWIF_GEOMETRY_QUADS_DESC);
     case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return alignof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC);
     case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return alignof(RTHWIF_GEOMETRY_INSTANCE_DESC);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCEREF  : return alignof(RTHWIF_GEOMETRY_INSTANCEREF_DESC);
     default: assert(false); return 0;
     }
   }
 
-  RTHWIF_GEOMETRY_FLAGS getgeometryFlags(Scene* scene, Geometry* geom)
+  RTHWIF_GEOMETRY_FLAGS getGeometryFlags(Scene* scene, Geometry* geom)
   {
     /* invoke any hit callback when Embree filter functions are present */
     RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
@@ -444,7 +456,7 @@ namespace embree
   {
     memset(out,0,sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC));
     out->geometryType = RTHWIF_GEOMETRY_TYPE_TRIANGLES;
-    out->geometryFlags = getgeometryFlags(scene,geom);
+    out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) geom->triangles.getPtr();
     out->triangleCount = geom->triangles.size();
@@ -458,7 +470,7 @@ namespace embree
   {
     memset(out,0,sizeof(RTHWIF_GEOMETRY_QUADS_DESC));
     out->geometryType = RTHWIF_GEOMETRY_TYPE_QUADS;
-    out->geometryFlags = getgeometryFlags(scene,geom);
+    out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->quadBuffer = (RTHWIF_QUAD_INDICES*) geom->quads.getPtr();
     out->quadCount = geom->quads.size();
@@ -509,26 +521,28 @@ namespace embree
     out->getBounds = getProceduralAABB;
     out->geomUserPtr = geom;
   }
-
-  void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
+  
+  void createGeometryDesc(GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
   {
-    memset(out,0,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
+    assert(geom->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION);
+    memset(out,0,sizeof(GEOMETRY_INSTANCE_DESC));
     out->geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
     out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
-    out->transform = *(RTHWIF_TRANSFORM4X4*) &local2world;
+    out->transform = &out->xfmdata;
+    out->xfmdata = *(RTHWIF_TRANSFORM4X4*) &local2world;
     HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     void** AccelTable = (void**) (hwaccel+1);
     out->accel = AccelTable[0];
   }
 
-  void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCEREF_DESC* out, Scene* scene, Instance* geom)
+  void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
   {
     assert(geom->gsubtype == AccelSet::GTY_SUBTYPE_DEFAULT);
-    memset(out,0,sizeof(RTHWIF_GEOMETRY_INSTANCEREF_DESC));
-    out->geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCEREF;
+    memset(out,0,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
+    out->geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
     out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
@@ -538,21 +552,22 @@ namespace embree
     out->accel = AccelTable[0];
   }
 
-  void createGeometryDesc(char* out, Scene* scene, Geometry* geom, RTHWIF_GEOMETRY_TYPE type)
+  void createGeometryDesc(char* out, Scene* scene, Geometry* geom, GEOMETRY_TYPE type)
   {
-    switch (type) {
+    switch (type.type) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)out,scene,dynamic_cast<TriangleMesh*>(geom));
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*)out,scene,dynamic_cast<QuadMesh*>(geom));
     case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryDescProcedural((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)out,scene,geom);
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
-    case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCEREF_DESC*)out,scene,dynamic_cast<Instance*>(geom));
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE:
+      if (type.extraBytes) return createGeometryDesc((GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
+      else                 return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
     default: assert(false);
     }
   }
 
   BBox3fa rthwifBuildDriver(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
   {
-    auto getType = [&](unsigned int geomID)
+    auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
       /* no HW support for MB yet */
       if (scene->get(geomID)->numTimeSegments() > 0)
@@ -598,8 +613,9 @@ namespace embree
         QBVH6* object = (QBVH6*)((Scene*)instance->object)->hwaccel.data();
         if (object->numTimeSegments > 1) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if instanced scene has motion blur
         if (instance->mask & 0xFFFFFF80) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if high mask bits are set
-        else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION) return RTHWIF_GEOMETRY_TYPE_INSTANCE;
-        else return RTHWIF_GEOMETRY_TYPE_INSTANCEREF;
+        else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION)
+          return GEOMETRY_TYPE(RTHWIF_GEOMETRY_TYPE_INSTANCE,sizeof(GEOMETRY_INSTANCE_DESC)-sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
+        else return RTHWIF_GEOMETRY_TYPE_INSTANCE;
       }
 #else
       case Geometry::GTY_INSTANCE_CHEAP    : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
@@ -626,7 +642,7 @@ namespace embree
       Geometry* geom = scene->get(geomID);
       if (geom == nullptr) continue;
       
-      const RTHWIF_GEOMETRY_TYPE type = getType(geomID);
+      const GEOMETRY_TYPE type = getType(geomID);
       if (geom->numTimeSegments() == 0) {
         align(bytesStatic,alignof_RTHWIF_GEOMETRY(type));
         bytesStatic += sizeof_RTHWIF_GEOMETRY(type);
@@ -651,7 +667,7 @@ namespace embree
       Geometry* geom = scene->get(geomID);
       if (geom == nullptr) continue;
       
-      const RTHWIF_GEOMETRY_TYPE type = getType(geomID);
+      const GEOMETRY_TYPE type = getType(geomID);
       
       if (geom->numTimeSegments() == 0) {
         align(offsetStatic,alignof_RTHWIF_GEOMETRY(type));

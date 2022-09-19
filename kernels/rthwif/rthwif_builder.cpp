@@ -93,30 +93,6 @@ namespace embree
   {
     if (primID >= 1) return false;
     if (geom->accel == nullptr) return false;
-
-    const Vec3fa vx = *(Vec3f*) &geom->transform.vx;
-    const Vec3fa vy = *(Vec3f*) &geom->transform.vy;
-    const Vec3fa vz = *(Vec3f*) &geom->transform.vz;
-    const Vec3fa p  = *(Vec3f*) &geom->transform.p;
-    const AffineSpace3fa local2world(vx,vy,vz,p);
-
-    HWAccel* accel = (HWAccel*) geom->accel;
-    const Vec3fa lower(accel->bounds[0][0],accel->bounds[0][1],accel->bounds[0][2]);
-    const Vec3fa upper(accel->bounds[1][0],accel->bounds[1][1],accel->bounds[1][2]);
-    const BBox3fa bounds = xfmBounds(local2world,BBox3fa(lower,upper));
-         
-    if (unlikely(!isvalid(bounds.lower))) return false;
-    if (unlikely(!isvalid(bounds.upper))) return false;
-    if (unlikely(bounds.empty())) return false;
-    
-    bbox = bounds;
-    return true;
-  }
-
-  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
-  {
-    if (primID >= 1) return false;
-    if (geom->accel == nullptr) return false;
     if (geom->transform == nullptr) return false;
     
     const Vec3fa vx = *(Vec3f*) &geom->transform->vx;
@@ -208,8 +184,7 @@ namespace embree
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount;
     case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount;
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return 1;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return 1;
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE: return 1;
     default                            : return 0;
     };
   }
@@ -283,8 +258,7 @@ namespace embree
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : stats.numTriangles += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount; break;
       case RTHWIF_GEOMETRY_TYPE_QUADS      : stats.numQuads += ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount; break;
       case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: stats.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE  : stats.numInstances += 1; break;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: stats.numInstances += 1; break;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCE: stats.numInstances += 1; break;
       };
     }
     
@@ -327,7 +301,6 @@ namespace embree
       case RTHWIF_GEOMETRY_TYPE_QUADS: return QBVH6BuilderSAH::QUAD;
       case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return QBVH6BuilderSAH::PROCEDURAL;
       case RTHWIF_GEOMETRY_TYPE_INSTANCE: return QBVH6BuilderSAH::INSTANCE;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return QBVH6BuilderSAH::INSTANCE;
       default: throw std::runtime_error("invalid geometry type");
       };
     };
@@ -345,8 +318,7 @@ namespace embree
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
       case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,args.buildUserPtr,prims,r,k,geomID);
       case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCEREF_DESC* )geom,args.buildUserPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_INSTANCE: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,args.buildUserPtr,prims,r,k,geomID);
       default: throw std::runtime_error("invalid geometry type");
       };
     };
@@ -403,17 +375,11 @@ namespace embree
     auto getInstance = [&](unsigned int geomID, unsigned int primID)
     {
       assert(geometries[geomID]);
-      if (geometries[geomID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE) {
-        const RTHWIF_GEOMETRY_INSTANCE_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCE_DESC*) geometries[geomID];
-        void* accel = geom->accel;
-        RTHWIF_TRANSFORM4X4 local2world = geom->transform;
-        return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
-      } else {
-        const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCEREF_DESC*) geometries[geomID];
-        void* accel = geom->accel;
-        RTHWIF_TRANSFORM4X4 local2world = *geom->transform;
-        return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
-      }
+      assert(geometries[geomID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE);
+      const RTHWIF_GEOMETRY_INSTANCE_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCE_DESC*) geometries[geomID];
+      void* accel = geom->accel;
+      RTHWIF_TRANSFORM4X4 local2world = *geom->transform;
+      return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
     };
 
     bool verbose = false;

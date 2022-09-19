@@ -81,8 +81,7 @@ typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
   RTHWIF_GEOMETRY_TYPE_TRIANGLES = 0,   // triangle mesh geometry type
   RTHWIF_GEOMETRY_TYPE_QUADS = 1,       // quad mesh geometry type
   RTHWIF_GEOMETRY_TYPE_AABBS_FPTR = 2,  // procedural geometry with AABB bounds per primitive
-  RTHWIF_GEOMETRY_TYPE_INSTANCE = 3,    // instance geometry
-  RTHWIF_GEOMETRY_TYPE_INSTANCEREF = 4,  // instance geometry
+  RTHWIF_GEOMETRY_TYPE_INSTANCE = 3, // instance geometry
 } RTHWIF_GEOMETRY_TYPE;
 
 /* Instance flags supported (identical to DXR spec) */
@@ -156,21 +155,8 @@ typedef struct RTHWIF_GEOMETRY_AABBS_FPTR_DESC // 24 bytes
   
 } RTHWIF_GEOMETRY_AABBS_FPTR_DESC;
 
-typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 80 bytes
-{
-  RTHWIF_GEOMETRY_TYPE geometryType;
-  RTHWIF_INSTANCE_FLAGS instanceFlags;
-  uint8_t geometryMask;
-  uint8_t reserved0;
-  unsigned int instanceUserID;
-  RTHWIF_TRANSFORM4X4 transform;
-  //RTHWIF_AABB bounds;                        // AABB of the instanced acceleration structure
-  void* accel;
-  
-} RTHWIF_GEOMETRY_INSTANCE_DESC;
-
 /* Instance geometry descriptor. */
-typedef struct RTHWIF_GEOMETRY_INSTANCEREF_DESC // 32 bytes
+typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
 {
   RTHWIF_GEOMETRY_TYPE geometryType;          // must be RTHWIF_GEOMETRY_TYPE_INSTANCE
   RTHWIF_INSTANCE_FLAGS instanceFlags;        // flags for the instance (see RTHWIF_INSTANCE_FLAGS)
@@ -181,7 +167,7 @@ typedef struct RTHWIF_GEOMETRY_INSTANCEREF_DESC // 32 bytes
   //RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
   void* accel;                                // pointer to acceleration structure to instantiate
     
-} RTHWIF_GEOMETRY_INSTANCEREF_DESC;
+} RTHWIF_GEOMETRY_INSTANCE_DESC;
 
 /* A geometry descriptor. */
 typedef struct RTHWIF_GEOMETRY_DESC {
