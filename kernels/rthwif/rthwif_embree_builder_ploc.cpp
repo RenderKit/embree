@@ -692,8 +692,8 @@ namespace embree
     // === convert BVH2 to QBVH6 ===
     // =============================
     
-    //const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,verbose2);
-    const float conversion_device_time = convertBVH2toQBVH6_2(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,verbose2);
+    const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,verbose2);
+    //const float conversion_device_time = convertBVH2toQBVH6_2(gpu_queue,globals,host_device_tasks,triQuadMesh,scene,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,verbose2);
 
     /* --- init final QBVH6 header --- */        
     {     
@@ -784,7 +784,7 @@ namespace embree
     
     if (unlikely(verbose2))
     {
-      qbvh->print(std::cout,qbvh->root(),0,6);
+      if (numInstances != 0) qbvh->print(std::cout,qbvh->root(),0,6);
       BVHStatistics stats = qbvh->computeStatistics();      
       stats.print(std::cout);
       stats.print_raw(std::cout);

@@ -362,6 +362,7 @@ namespace embree
     int64_t getChildOffset(uint32_t childID) const
     {
       int64_t ofs = this->childOffset;
+      if (ofs == 0) FATAL("OFFSET == 0");
       for (uint32_t j = 0; j < childID; j++)
         ofs += this->childData[j].blockIncr;
       return 64 * ofs;
