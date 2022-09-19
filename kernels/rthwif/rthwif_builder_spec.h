@@ -143,7 +143,7 @@ typedef void (*RTHWIF_GEOMETRY_AABBS_FPTR)(const uint32_t primID,        // firs
                                            const uint32_t primIDCount,   // number of primitives to return bounds for
                                            void* geomUserPtr,            // pointer provided through geometry descriptor
                                            void* buildUserPtr,           // pointer provided through rthwifBuildAccel function
-                                           RTHWIF_AABB* bounds           // destination buffer to write AABB bounds to
+                                           RTHWIF_AABB* boundsOut        // destination buffer to write AABB bounds to
   );
 
 /* Geometry with procedural primitives bound by AABBs. */

@@ -407,7 +407,7 @@ namespace embree
     switch (type) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return sizeof(RTHWIF_GEOMETRY_QUADS_DESC);
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return sizeof(RTHWIF_GEOMETRY_AABBS_DESC);
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC);
     case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC);
     case RTHWIF_GEOMETRY_TYPE_INSTANCEREF  : return sizeof(RTHWIF_GEOMETRY_INSTANCEREF_DESC);
     default: assert(false); return 0;
@@ -419,7 +419,7 @@ namespace embree
     switch (type) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return alignof(RTHWIF_GEOMETRY_TRIANGLES_DESC);
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return alignof(RTHWIF_GEOMETRY_QUADS_DESC);
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return alignof(RTHWIF_GEOMETRY_AABBS_DESC);
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return alignof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC);
     case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return alignof(RTHWIF_GEOMETRY_INSTANCE_DESC);
     case RTHWIF_GEOMETRY_TYPE_INSTANCEREF  : return alignof(RTHWIF_GEOMETRY_INSTANCEREF_DESC);
     default: assert(false); return 0;
@@ -468,37 +468,40 @@ namespace embree
     out->vertexStride = geom->vertices0.getStride();
   }
 
-  RTHWIF_AABB getProceduralAABB(const uint32_t primID, void* geomUserPtr, void* userPtr)
+  void getProceduralAABB(const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, RTHWIF_AABB* boundsOut)
   {
-    BBox1f time_range = * (BBox1f*) userPtr;
+    BBox1f time_range = * (BBox1f*) buildUserPtr;
     Geometry* geom = (Geometry*) geomUserPtr;
-    PrimRef prim;
-    range<size_t> r(primID);
-    size_t k = 0;
-    uint32_t geomID = 0;
-    if (geom->numTimeSegments() > 0)
-      geom->createPrimRefArrayMB(&prim,time_range,r,k,geomID);
-    else
-      geom->createPrimRefArray(&prim,r,k,geomID);
-    
-    RTHWIF_AABB obounds;
-    BBox3fa bounds = prim.bounds();
-    obounds.lower.x = bounds.lower.x;
-    obounds.lower.y = bounds.lower.y;
-    obounds.lower.z = bounds.lower.z;
-    obounds.upper.x = bounds.upper.x;
-    obounds.upper.y = bounds.upper.y;
-    obounds.upper.z = bounds.upper.z;
-    return obounds;
+      
+    for (uint32_t i=0; i<primIDCount; i++)
+    {
+      const uint32_t primID = primIDStart+i;
+      PrimRef prim;
+      range<size_t> r(primID);
+      size_t k = 0;
+      uint32_t geomID = 0;
+      if (geom->numTimeSegments() > 0)
+        geom->createPrimRefArrayMB(&prim,time_range,r,k,geomID);
+      else
+        geom->createPrimRefArray(&prim,r,k,geomID);
+      
+      BBox3fa bounds = prim.bounds();
+      boundsOut[i].lower.x = bounds.lower.x;
+      boundsOut[i].lower.y = bounds.lower.y;
+      boundsOut[i].lower.z = bounds.lower.z;
+      boundsOut[i].upper.x = bounds.upper.x;
+      boundsOut[i].upper.y = bounds.upper.y;
+      boundsOut[i].upper.z = bounds.upper.z;
+    }
   };
 
-  void createGeometryDescProcedural(RTHWIF_GEOMETRY_AABBS_DESC* out, Scene* scene, Geometry* geom)
+  void createGeometryDescProcedural(RTHWIF_GEOMETRY_AABBS_FPTR_DESC* out, Scene* scene, Geometry* geom)
   {
     uint32_t numPrimitives = geom->size();
     if (GridMesh* mesh = dynamic_cast<GridMesh*>(geom))
       numPrimitives = mesh->getNumTotalQuads(); // FIXME: slow
     
-    memset(out,0,sizeof(RTHWIF_GEOMETRY_AABBS_DESC));
+    memset(out,0,sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC));
     out->geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
     out->geometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
@@ -540,7 +543,7 @@ namespace embree
     switch (type) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)out,scene,dynamic_cast<TriangleMesh*>(geom));
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*)out,scene,dynamic_cast<QuadMesh*>(geom));
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryDescProcedural((RTHWIF_GEOMETRY_AABBS_DESC*)out,scene,geom);
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryDescProcedural((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)out,scene,geom);
     case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
     case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCEREF_DESC*)out,scene,dynamic_cast<Instance*>(geom));
     default: assert(false);

@@ -444,7 +444,7 @@ typedef union GEOMETRY_DESC
   RTHWIF_GEOMETRY_TYPE geometryType;
   RTHWIF_GEOMETRY_TRIANGLES_DESC Triangles;
   RTHWIF_GEOMETRY_QUADS_DESC Quads;
-  RTHWIF_GEOMETRY_AABBS_DESC AABBs;
+  RTHWIF_GEOMETRY_AABBS_FPTR_DESC AABBs;
   RTHWIF_GEOMETRY_INSTANCE_DESC Instances;
   RTHWIF_GEOMETRY_INSTANCEREF_DESC InstanceRef;
 
@@ -503,26 +503,28 @@ public:
       vertices[i] = xfmPoint(xfm,vertices[i]);
   }
 
-  static RTHWIF_AABB getBoundsCallback (const uint32_t primID, void* geomUserPtr, void* userPtr)
+  static void getBoundsCallback (const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, RTHWIF_AABB* boundsOut)
   {
     const TriangleMesh* mesh = (TriangleMesh*) geomUserPtr;
-    const Bounds3f bounds = mesh->getBounds(primID);
-    
-    RTHWIF_AABB r;
-    r.lower.x = bounds.lower.x();
-    r.lower.y = bounds.lower.y();
-    r.lower.z = bounds.lower.z();
-    r.upper.x = bounds.upper.x();
-    r.upper.y = bounds.upper.y();
-    r.upper.z = bounds.upper.z();
-    return r;
+
+    for (uint32_t i=0; i<primIDCount; i++)
+    {
+      const uint32_t primID = primIDStart+i;
+      const Bounds3f bounds = mesh->getBounds(primID);
+      boundsOut[i].lower.x = bounds.lower.x();
+      boundsOut[i].lower.y = bounds.lower.y();
+      boundsOut[i].lower.z = bounds.lower.z();
+      boundsOut[i].upper.x = bounds.upper.x();
+      boundsOut[i].upper.y = bounds.upper.y();
+      boundsOut[i].upper.z = bounds.upper.z();
+    }
   }
   
   virtual GEOMETRY_DESC getDesc() override
   {
     if (procedural)
     {
-      RTHWIF_GEOMETRY_AABBS_DESC out;
+      RTHWIF_GEOMETRY_AABBS_FPTR_DESC out;
       memset(&out,0,sizeof(out));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
       out.geometryFlags = gflags;
@@ -660,27 +662,27 @@ struct InstanceGeometryT : public Geometry
     sycl::free(ptr,context);
   }
 
-  static RTHWIF_AABB getBoundsCallback (const uint32_t primID, void* geomUserPtr, void* userPtr)
+  static void getBoundsCallback (const uint32_t primIDStart, const uint32_t primIDCount, void* geomUserPtr, void* buildUserPtr, RTHWIF_AABB* boundsOut)
   {
+    assert(primIDStart == 0);
+    assert(primIDCount == 1);
     const InstanceGeometryT* inst = (InstanceGeometryT*) geomUserPtr;
     const Bounds3f scene_bounds = inst->scene->getBounds();
     const Bounds3f bounds = xfmBounds(inst->local2world, scene_bounds);
     
-    RTHWIF_AABB r;
-    r.lower.x = bounds.lower.x();
-    r.lower.y = bounds.lower.y();
-    r.lower.z = bounds.lower.z();
-    r.upper.x = bounds.upper.x();
-    r.upper.y = bounds.upper.y();
-    r.upper.z = bounds.upper.z();
-    return r;
+    boundsOut->lower.x = bounds.lower.x();
+    boundsOut->lower.y = bounds.lower.y();
+    boundsOut->lower.z = bounds.lower.z();
+    boundsOut->upper.x = bounds.upper.x();
+    boundsOut->upper.y = bounds.upper.y();
+    boundsOut->upper.z = bounds.upper.z();
   }
 
   virtual GEOMETRY_DESC getDesc() override
   {
     if (procedural)
     {
-      RTHWIF_GEOMETRY_AABBS_DESC out;
+      RTHWIF_GEOMETRY_AABBS_FPTR_DESC out;
       memset(&out,0,sizeof(out));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
       out.geometryFlags = RTHWIF_GEOMETRY_FLAG_NONE;

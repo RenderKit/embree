@@ -135,7 +135,13 @@ typedef struct RTHWIF_GEOMETRY_QUADS_DESC // 40 bytes
 } RTHWIF_RAYTRACING_GEOMETRY_QUADS_DESC;
 
 
-typedef RTHWIF_AABB (*RTHWIF_GEOMETRY_AABBS_FPTR)(const uint32_t primID, void* geomUserPtr, void* userPtr);
+/* Function pointer type to return AABBs for a range of procedural primitives. */
+typedef void (*RTHWIF_GEOMETRY_AABBS_FPTR)(const uint32_t primID,        // first primitive to return bounds for
+                                           const uint32_t primIDCount,   // number of primitives to return bounds for
+                                           void* geomUserPtr,            // pointer provided through geometry descriptor
+                                           void* buildUserPtr,           // pointer provided through rthwifBuildAccel function
+                                           RTHWIF_AABB* boundsOut        // destination buffer to write AABB bounds to
+  );
 
 /* Geometry with procedural primitives bound by AABBs. */
 typedef struct RTHWIF_GEOMETRY_AABBS_FPTR_DESC // 24 bytes
@@ -148,7 +154,7 @@ typedef struct RTHWIF_GEOMETRY_AABBS_FPTR_DESC // 24 bytes
   RTHWIF_GEOMETRY_AABBS_FPTR getBounds;       // function pointer to return bounds for a range of primitives
   void* geomUserPtr;                          // geometry user pointer passed to callback
   
-} RTHWIF_GEOMETRY_AABBS_DESC;
+} RTHWIF_GEOMETRY_AABBS_FPTR_DESC;
 
 typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 80 bytes
 {

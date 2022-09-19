@@ -33,7 +33,7 @@ namespace embree
     return *(Vec3f*)((char*)geom->vertexBuffer + vertexID*geom->vertexStride);
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->triangleCount) return false;
     const RTHWIF_TRIANGLE_INDICES tri = getPrimitive(geom,primID);
@@ -52,7 +52,7 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->quadCount) return false;
     const RTHWIF_QUAD_INDICES tri = getPrimitive(geom,primID);
@@ -74,13 +74,13 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->primCount) return false;
     if (geom->getBounds == nullptr) return false;
-    
-    const RTHWIF_AABB rthwif_bounds = (geom->getBounds)(primID,geom->geomUserPtr,userPtr);
-    const BBox3f bounds = (BBox3f&) rthwif_bounds;
+
+    BBox3f bounds;
+    (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(RTHWIF_AABB*)&bounds);
     if (unlikely(!isvalid(bounds.lower))) return false;
     if (unlikely(!isvalid(bounds.upper))) return false;
     if (unlikely(bounds.empty())) return false;
@@ -89,7 +89,7 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= 1) return false;
     if (geom->accel == nullptr) return false;
@@ -113,7 +113,7 @@ namespace embree
     return true;
   }
 
-  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom, uint32_t primID, BBox3fa& bbox, void* userPtr)
+  inline bool buildBounds(const RTHWIF_GEOMETRY_INSTANCEREF_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= 1) return false;
     if (geom->accel == nullptr) return false;
@@ -139,13 +139,13 @@ namespace embree
   }
 
   template<typename GeometryType>
-  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* userPtr, avector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
+  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* buildUserPtr, avector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
   {
     PrimInfo pinfo(empty);
     for (uint32_t primID=r.begin(); primID<r.end(); primID++)
     {
       BBox3fa bounds = empty;
-      if (!buildBounds(geom,primID,bounds,userPtr)) continue;
+      if (!buildBounds(geom,primID,bounds,buildUserPtr)) continue;
       const PrimRef prim(bounds,geomID,primID);
       pinfo.add_center2(prim);
       prims[k++] = prim;
@@ -206,7 +206,7 @@ namespace embree
   {
     switch (geom->geometryType) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount;
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return ((RTHWIF_GEOMETRY_AABBS_DESC*) geom)->primCount;
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount;
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount;
     case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return 1;
     case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return 1;
@@ -282,7 +282,7 @@ namespace embree
       switch (geom->geometryType) {
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : stats.numTriangles += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount; break;
       case RTHWIF_GEOMETRY_TYPE_QUADS      : stats.numQuads += ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount; break;
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: stats.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_DESC*) geom)->primCount; break;
+      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: stats.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
       case RTHWIF_GEOMETRY_TYPE_INSTANCE  : stats.numInstances += 1; break;
       case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: stats.numInstances += 1; break;
       };
@@ -344,7 +344,7 @@ namespace embree
       switch (geom->geometryType) {
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
       case RTHWIF_GEOMETRY_TYPE_QUADS      : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_QUADS_DESC*    )geom,args.buildUserPtr,prims,r,k,geomID);
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_DESC*    )geom,args.buildUserPtr,prims,r,k,geomID);
+      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
       case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom,args.buildUserPtr,prims,r,k,geomID);
       case RTHWIF_GEOMETRY_TYPE_INSTANCEREF: return createGeometryPrimRefArray((RTHWIF_GEOMETRY_INSTANCEREF_DESC* )geom,args.buildUserPtr,prims,r,k,geomID);
       default: throw std::runtime_error("invalid geometry type");
@@ -395,7 +395,7 @@ namespace embree
     };
     
     auto getProcedural = [&](unsigned int geomID, unsigned int primID) {
-      const RTHWIF_GEOMETRY_AABBS_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_DESC*) geometries[geomID];
+      const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geometries[geomID];
       assert(geom);
       return QBVH6BuilderSAH::Procedural(geom->geometryMask); // FIXME: pass gflags
     };
