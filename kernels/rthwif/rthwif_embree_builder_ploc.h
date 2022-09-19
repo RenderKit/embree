@@ -3028,17 +3028,17 @@ namespace embree
                                                    sycl::accessor< uint  ,  0, sycl_read_write, sycl_local> _global_blockID(cgh);
                                                    sycl::accessor< uint  ,  0, sycl_read_write, sycl_local> _global_numLeafID(cgh);
                                                    
-                                                   sycl::accessor< LeafGenerationData, 1, sycl_read_write, sycl_local> _local_leafGenData(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
+                                                   //sycl::accessor< LeafGenerationData, 1, sycl_read_write, sycl_local> _local_leafGenData(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
 
-                                                   sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_indices(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);                                                                           
+                                                   sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_indices(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);                                                                                             sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_blockIDs(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);                                                                           
                                                    cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                                                                     {
                                                                       const uint localID   = item.get_local_id(0);                             
                                                                       const uint globalID  = item.get_global_id(0);
+                                                                      const uint groupID   = item.get_group(0);
                                                                       const uint numGroups   = item.get_group_range(0);
-                                                                      const uint localSize   = item.get_local_range().size();                                                                      
-                                                                      
-
+                                                                      const uint localSize   = item.get_local_range().size();                                                                                                                                            
+                                                                      const uint group_startID = groupID*wgSize;
                                                                       const uint innerID = globalID;
                                                                         
                                                                       uint &local_numBlocks   = *_local_numBlocks.get_pointer();
@@ -3046,9 +3046,13 @@ namespace embree
                                                                       uint &global_blockID    = *_global_blockID.get_pointer();
                                                                       uint &global_leafID     = *_global_numLeafID.get_pointer();
                                                                       
-                                                                      LeafGenerationData* local_leafGenData = _local_leafGenData.get_pointer();
+                                                                      //LeafGenerationData* local_leafGenData = _local_leafGenData.get_pointer();
 
-                                                                      uint *indices = _local_indices.get_pointer() + BVH_BRANCHING_FACTOR * localID;
+                                                                      //uint *indices = _local_indices.get_pointer() + BVH_BRANCHING_FACTOR * localID;
+
+                                                                      uint *local_indices  = _local_indices.get_pointer();
+                                                                      uint *local_blockIDs = _local_blockIDs.get_pointer();
+                                                                      
                                                                       
                                                                       if (localID == 0)
                                                                       {
@@ -3065,6 +3069,7 @@ namespace embree
                                                                       uint local_leafID  = 0;
                                                                       uint index         = 0;
                                                                       uint blockID       = 0;
+                                                                      uint indices[BVH_BRANCHING_FACTOR];
                                                                       
                                                                       if (innerID < blocks)                                                                        
                                                                       {
@@ -3083,36 +3088,69 @@ namespace embree
                                                                           numChildren = 0;
                                                                           getLeafIndices(index,bvh2,indices,numChildren,numPrimitives);
                                                                           for (uint i=0;i<numChildren;i++)
-                                                                            numBlocks += geometryTypeRanges.isInstance(BVH2Ploc::getIndex(indices[i])) ? 2 : 1; 
+                                                                            numBlocks += geometryTypeRanges.isInstance(BVH2Ploc::getIndex(indices[i])) ? 2 : 1;
                                                                         }
                                                                         else
                                                                         {
                                                                           numChildren = 1;
-                                                                          numBlocks = geometryTypeRanges.isInstance(BVH2Ploc::getIndex(indices[0])) ? 2 : 1; 
+                                                                          numBlocks = geometryTypeRanges.isInstance(BVH2Ploc::getIndex(index)) ? 2 : 1; 
                                                                           indices[0] = index;
                                                                         }
                                                                         local_blockID = gpu::atomic_add_local(&local_numBlocks,numBlocks);
-                                                                        local_leafID  = gpu::atomic_add_local(&local_numLeaves,numChildren-1);
+                                                                        local_leafID  = gpu::atomic_add_local(&local_numLeaves,numChildren);  // full numChildren
                                                                       }
 
                                                                       item.barrier(sycl::access::fence_space::local_space);
                                                                       
-                                                                      const uint numBlocks = local_numBlocks;
-                                                                      const uint numLeaves = local_numLeaves;                                                                                                                                              
+                                                                      const uint already_processed_leaves = sycl::min(blocks-group_startID,localSize);
+                                                                      
                                                                       if (localID == 0)
                                                                       {
+                                                                        const uint numBlocks = local_numBlocks;
+                                                                        const uint allocate_numLeaves = local_numLeaves-already_processed_leaves;
+                                                                        
                                                                         global_blockID = gpu::atomic_add_global(&globals->leaf_mem_allocator_cur,numBlocks);
-                                                                        global_leafID  = gpu::atomic_add_global(&globals->numBuildRecords,numLeaves);
+                                                                        global_leafID  = gpu::atomic_add_global(&globals->numBuildRecords,allocate_numLeaves);
                                                                       }
                                                                       
                                                                       item.barrier(sycl::access::fence_space::local_space);
 
                                                                       const uint leaf_blockID = global_blockID + local_blockID;
-                                                                      const uint leafID  = global_leafID; // + local_leafID;
-                                                                      
+                                                                      //const uint leafID  = global_leafID; // + local_leafID;
+
+                                                                      uint node_blockID = 0;                                                                        
+                                                                      for (uint j=0;j<numChildren;j++)
+                                                                      {
+                                                                        const uint index_j = BVH2Ploc::getIndex(indices[j]);
+                                                                        const uint bID = isFatLeaf ? (leaf_blockID + node_blockID) : blockID;
+                                                                        local_indices[local_leafID+j] = indices[j];
+                                                                        local_blockIDs[local_blockID+j] = bID;
+                                                                        const bool isInstance   = geometryTypeRanges.isInstance(index_j);
+                                                                        node_blockID += isInstance  ? 2 : 1;
+                                                                      }
+                                                                                                                                            
                                                                       
                                                                       if (isFatLeaf)
                                                                         writeNode(curAddr,leaf_blockID-blockID,bvh2[BVH2Ploc::getIndex(index)].bounds,numChildren,indices,bvh2,numPrimitives,NODE_TYPE_MIXED,geometryTypeRanges);
+
+                                                                      item.barrier(sycl::access::fence_space::local_space);
+                                                                      
+                                                                      for (uint j=localID;j<local_numLeaves;j+=localSize)
+                                                                      {
+                                                                        const uint index_j = BVH2Ploc::getIndex(local_indices[j]);
+                                                                        const uint geomID = bvh2[index_j].left;
+                                                                        const uint primID = bvh2[index_j].right;
+                                                                        const uint bID = local_blockIDs[j];
+                                                                        const bool isInstance   = geometryTypeRanges.isInstance(index_j);
+                                                                        const bool isProcedural = geometryTypeRanges.isProcedural(index_j);
+                                                                        uint primID_type = (primID & LEAF_TYPE_MASK_LOW) | LEAF_TYPE_QUAD;
+                                                                        primID_type |= isProcedural ? LEAF_TYPE_PROCEDURAL : 0;
+                                                                        primID_type |= isInstance   ? LEAF_TYPE_INSTANCE   : 0;
+                                                                        const uint destID = j < already_processed_leaves ? group_startID+localID : global_leafID + j - already_processed_leaves;                                                                                           leafGenData[destID].blockID = bID; 
+                                                                        leafGenData[destID].primID = primID_type; 
+                                                                        leafGenData[destID].geomID = geomID; 
+                                                                      }
+#if 0                                                                      
 
                                                                       /* --- write to SLM frist --- */
 
@@ -3133,33 +3171,35 @@ namespace embree
                                                                         //local_leafGenData[local_leafDataID+j].primID = primID_type;
                                                                         //local_leafGenData[local_leafDataID+j].geomID = geomID;
 
-                                                                        /* const uint destID = j == 0 ? innerID : leafID+j-1;                                                                         */
-                                                                        /* leafGenData[destID].blockID = bID; */
-                                                                        /* leafGenData[destID].primID = primID_type; */
-                                                                        /* leafGenData[destID].geomID = geomID; */
+                                                                        const uint destID = j == 0 ? innerID : leafID+j-1;                                                                         
+                                                                        leafGenData[destID].blockID = bID; 
+                                                                        leafGenData[destID].primID = primID_type; 
+                                                                        leafGenData[destID].geomID = geomID; 
 
-                                                                        if (j == 0)
-                                                                        {
-                                                                          leafGenData[innerID].blockID = bID; 
-                                                                          leafGenData[innerID].primID = primID_type; 
-                                                                          leafGenData[innerID].geomID = geomID;                                                                           
-                                                                        }
-                                                                        else
-                                                                        {
-                                                                          local_leafGenData[local_leafID+j-1].blockID = bID; 
-                                                                          local_leafGenData[local_leafID+j-1].primID = primID_type; 
-                                                                          local_leafGenData[local_leafID+j-1].geomID = geomID;                                                                           
-                                                                        }
+                                                                        /* if (j == 0) */
+                                                                        /* { */
+                                                                        /*   leafGenData[innerID].blockID = bID;  */
+                                                                        /*   leafGenData[innerID].primID = primID_type;  */
+                                                                        /*   leafGenData[innerID].geomID = geomID;                                                                            */
+                                                                        /* } */
+                                                                        /* else */
+                                                                        /* { */
+                                                                        /*   local_leafGenData[local_leafID+j-1].blockID = bID;  */
+                                                                        /*   local_leafGenData[local_leafID+j-1].primID = primID_type;  */
+                                                                        /*   local_leafGenData[local_leafID+j-1].geomID = geomID;                                                                            */
+                                                                        /* } */
                                                                         
                                                                         node_blockID += isInstance  ? 2 : 1;
                                                                       }
+
+#endif                                                                      
                                                                                                                                            
                                                                       item.barrier(sycl::access::fence_space::local_space);
 
                                                                       /* --- write out all local entries to global memory --- */
 
-                                                                      for (uint i=localID;i<numLeaves;i+=localSize)  
-                                                                        leafGenData[leafID+i] = local_leafGenData[i];  
+                                                                      /* for (uint i=localID;i<numLeaves;i+=localSize)   */
+                                                                      /*   leafGenData[leafID+i] = local_leafGenData[i];   */
                                                                       
                                                                       if (localID == 0)
                                                                       {
@@ -3181,7 +3221,7 @@ namespace embree
       if (unlikely(verbose))      
         PRINT3("final flattening iteration ",(float)dt,(float)total_time);
     }
-    
+
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
     const uint leaves = host_device_tasks[0]; // = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
    
