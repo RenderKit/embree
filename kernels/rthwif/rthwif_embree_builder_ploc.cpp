@@ -14,12 +14,19 @@ namespace embree
   using namespace embree::isa;
 
 
-  __forceinline uint estimateSizeInternalNodes(const uint N)
+  __forceinline uint estimateSizeInternalNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
   {
+    const uint N = numActiveQuads + numInstances + numUserGeometries;
     const uint numFatLeaves = ceilf( (float)N/2 );
     const uint numInnerNodes = ceilf( (float)numFatLeaves/5 );
     return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);  
   }
+
+  __forceinline uint estimateSizeLeafNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
+  {
+    return (numActiveQuads + numUserGeometries + 2 * numInstances) * 64;  
+  }
+  
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
   {
@@ -139,7 +146,6 @@ namespace embree
 
     if (unlikely(verbose2))
     {
-      PRINT("");
       PRINT("PLOC++ GPU BVH BUILDER");
       PRINT( deviceGPU->getGPUDevice().get_info<sycl::info::device::global_mem_size>() );
       PRINT(gpu_maxWorkGroupSize);
@@ -149,33 +155,28 @@ namespace embree
     }
 
     const uint numGeoms = scene->size();
-    const bool activeTriQuadMeshes = scene->getNumPrimitives(TriangleMesh::geom_type,false) || scene->getNumPrimitives(QuadMesh::geom_type,false);
+    const uint numTriangles        = scene->getNumPrimitives(TriangleMesh::geom_type,false);
+    const uint numQuads            = scene->getNumPrimitives(QuadMesh::geom_type,false);
     const uint numInstances        = scene->getNumPrimitives(Instance::geom_type,false);
     const uint numUserGeometries   = scene->getNumPrimitives(UserGeometry::geom_type,false);
-
+    const bool activeTriQuadMeshes = numTriangles || numQuads;
 
     if (unlikely(verbose2))
-    {        
-      PRINT(numGeoms);
-      PRINT(scene->getNumPrimitives(TriangleMesh::geom_type,false));
-      PRINT(scene->getNumPrimitives(QuadMesh::geom_type,false));
-      PRINT(scene->getNumPrimitives(UserGeometry::geom_type,false));      
-      PRINT(scene->getNumPrimitives(Instance::geom_type,false));
-    }
+      PRINT5(numGeoms,numTriangles,numQuads,numInstances,numUserGeometries);
 
     if (unlikely(!activeTriQuadMeshes && !numInstances && !numUserGeometries))
       {
         PRINT("WARNING: EMPTY SCENE");
-        const size_t totalSize = 3*64; // just for the header
+        const size_t totalSize = 3*64; // just for the header and a single node
         if (accel.size() < totalSize) accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
         QBVH6* qbvh   = (QBVH6*)accel.data();        
         BBox3fa geometryBounds (Vec3fa(0.0f),Vec3fa(0.0f));
         qbvh->bounds = geometryBounds;
         qbvh->numPrims       = 0;                                                                        
-        qbvh->nodeDataStart  = 0;
-        qbvh->nodeDataCur    = 0;
-        qbvh->leafDataStart  = 0;
-        qbvh->leafDataCur    = 0;        
+        qbvh->nodeDataStart  = 2;
+        qbvh->nodeDataCur    = 3;
+        qbvh->leafDataStart  = 3;
+        qbvh->leafDataCur    = 3;        
         new (qbvh->nodePtr(2)) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
         return geometryBounds;
       }
@@ -235,7 +236,6 @@ namespace embree
         // TODO: use BufferView
         TriangleMesh* tri_mesh = scene->getSafe<TriangleMesh>(geomID);
         QuadMesh*    quad_mesh = scene->getSafe<QuadMesh>(geomID);
-        //PRINT3(geomID,tri_mesh,quad_mesh);
       
         if (tri_mesh)
         {
@@ -305,7 +305,7 @@ namespace embree
       numActiveQuads = *host_device_tasks;
     }
     
-    const uint numPrimitives = numActiveQuads + numInstances + numUserGeometries; // === TODO: prefix sum compaction for instances ===
+    const uint numPrimitives = numActiveQuads + numInstances + numUserGeometries; 
     
     if (unlikely(verbose1))    
       PRINT5(org_numPrimitives,numPrimitives,numActiveQuads,numUserGeometries,numInstances);
@@ -318,10 +318,9 @@ namespace embree
     const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
             
     /* --- estimate size of the BVH --- */
-    const uint leaf_primitive_size = numInstances ? 128 : 64;
     const uint header              = 128;
-    const uint node_size           = estimateSizeInternalNodes(numPrimitives);
-    const uint leaf_size           = numPrimitives * leaf_primitive_size; 
+    const uint node_size           = estimateSizeInternalNodes(numActiveQuads,numInstances,numUserGeometries);
+    const uint leaf_size           = estimateSizeLeafNodes(numActiveQuads,numInstances,numUserGeometries); 
     const uint totalSize           = header + node_size + leaf_size; 
     const uint node_data_start     = header;
     const uint leaf_data_start     = header + node_size;
@@ -395,8 +394,6 @@ namespace embree
           
     if (unlikely(verbose2))
       std::cout << "USM allocation time for BVH and additional data " << timer.get_host_timer() << " ms for " << (double)totalUSMAllocations / (1024*1024) << " MBs " << std::endl;     	
-
-
     
     // ======================          
     // ==== init globals ====
@@ -424,9 +421,9 @@ namespace embree
         std::cout << "Init globals " << dt << " ms" << std::endl;
     }	    
 
-    // ===========================================================          
-    // ==== merge triangles to quads, write out PLOC primrefs ====
-    // ===========================================================
+    // ===================================================          
+    // ==== merge triangles to quads, create primrefs ====
+    // ===================================================
 
     timer.start(BuildTimer::PRE_PROCESS);        
     
@@ -441,7 +438,6 @@ namespace embree
     if (numInstances)
       createInstances_initPLOCPrimRefs(gpu_queue,scene,numGeoms,bvh2,numActiveQuads + numUserGeometries,create_primref_time,verbose2);
     
-
     const GeometryTypeRanges geometryTypeRanges(numActiveQuads,numUserGeometries,numInstances);        
     
     timer.stop(BuildTimer::PRE_PROCESS);
@@ -488,7 +484,6 @@ namespace embree
     // ==== sort morton codes ====
     // ===========================
 
-
     timer.start(BuildTimer::PRE_PROCESS);        
 
     double sort_time = 0.0;
@@ -515,9 +510,7 @@ namespace embree
     else
     {
       if (numPrimitives < SMALL_SORT_THRESHOLD)
-      {
         gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t *)mc0, (uint64_t *)mc1, numPrimitives, 3,8, sort_time);
-      }
       else
       {
         const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);        
@@ -578,16 +571,11 @@ namespace embree
       static const uint BOTTOM_UP_THRESHOLD = 16;
       static const uint SEARCH_RADIUS_TOP_LEVEL = 32;
                     
-      gpu::Range *ranges = (gpu::Range*)scratch_mem1; 
-        
+      gpu::Range *ranges = (gpu::Range*)scratch_mem1;         
       extractRanges(gpu_queue, host_device_tasks, mc0, ranges, numPrims, RANGE_THRESHOLD , device_ploc_iteration_time, verbose2);
-
-      const uint numRanges = *host_device_tasks;
-      
-      gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t*)ranges, (uint64_t*)ranges + numRanges, numRanges,0,8,device_ploc_iteration_time);
-      
-      parallelWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, BOTTOM_UP_THRESHOLD, device_ploc_iteration_time, verbose2);
-      
+      const uint numRanges = *host_device_tasks;      
+      gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t*)ranges, (uint64_t*)ranges + numRanges, numRanges,0,8,device_ploc_iteration_time);      
+      parallelWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, BOTTOM_UP_THRESHOLD, device_ploc_iteration_time, verbose2);      
       singleWGTopLevelBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, ranges, numRanges, SEARCH_RADIUS_TOP_LEVEL, device_ploc_iteration_time, verbose2);
       timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
     }
@@ -603,8 +591,7 @@ namespace embree
                                                                       {
                                                                         const uint globalID     = item.get_global_id(0);
                                                                         scratch_mem1[globalID] = 0;
-                                                                      });
-                                                         
+                                                                      });                                                         
                                                    });
       }
       
@@ -619,7 +606,6 @@ namespace embree
           double singleWG_time = 0.0f;
           singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, singleWG_time, verbose2);
           timer.add_to_device_timer(BuildTimer::BUILD,singleWG_time);
-
           numPrims = 1;
         }
         else  
@@ -718,7 +704,8 @@ namespace embree
 
     if (unlikely(verbose2))
     {
-      if (globals->node_mem_allocator_cur > globals->leaf_mem_allocator_start) FATAL("NOT ENOUGH MEMORY FOR INTERNAL NODES ALLOCATED");
+      if ((globals->node_mem_allocator_cur-globals->node_mem_allocator_start)*64 > node_size ||
+          (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)*64 > leaf_size) FATAL("NOT ENOUGH MEMORY FOR INTERNAL NODES ALLOCATED");
 
       PRINT(globals->node_mem_allocator_start);      
       PRINT(globals->node_mem_allocator_cur);
@@ -726,7 +713,6 @@ namespace embree
       PRINT(globals->leaf_mem_allocator_start);      
       PRINT(globals->leaf_mem_allocator_cur);
       PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);
-
       PRINT(globals->numLeaves);      
     }
     
