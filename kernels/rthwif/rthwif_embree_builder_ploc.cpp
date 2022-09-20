@@ -171,7 +171,6 @@ namespace embree
         QBVH6* qbvh   = (QBVH6*)accel.data();        
         BBox3fa geometryBounds (Vec3fa(0.0f),Vec3fa(0.0f));
         qbvh->bounds = geometryBounds;
-        //qbvh->rootNodeOffset = 128;
         qbvh->numPrims       = 0;                                                                        
         qbvh->nodeDataStart  = 0;
         qbvh->nodeDataCur    = 0;
@@ -260,6 +259,7 @@ namespace embree
     if (unlikely(verbose2)) PRINT2(numGeoms,org_numPrimitives);
     
     double first_kernel_time0 = getSeconds();
+    
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
     {	  
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
@@ -320,7 +320,6 @@ namespace embree
     /* --- estimate size of the BVH --- */
     const uint leaf_primitive_size = numInstances ? 128 : 64;
     const uint header              = 128;
-    //const uint node_size           = numPrimitives * 64 + 64 /* single node for fat leaf */ ;
     const uint node_size           = estimateSizeInternalNodes(numPrimitives);
     const uint leaf_size           = numPrimitives * leaf_primitive_size; 
     const uint totalSize           = header + node_size + leaf_size; 
@@ -449,16 +448,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);
     
     if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
-    
-#if 0    
-     for (uint i=0;i<numPrimitives;i++)
-       if (!bvh2[i].bounds.isValid() || !bvh2[i].bounds.checkNumericalBounds() )
-       {
-         PRINT2(i,bvh2[i]);      
-         FATAL("Numerical Bounds in BVH2");
-       }
-#endif
-            
+                
         
     // ==========================================          
     // ==== get centroid and geometry bounds ====
@@ -588,7 +578,7 @@ namespace embree
       static const uint BOTTOM_UP_THRESHOLD = 16;
       static const uint SEARCH_RADIUS_TOP_LEVEL = 32;
                     
-      gpu::Range *ranges = (gpu::Range*)scratch_mem1; //FIXME: need to store ranges somewhere else
+      gpu::Range *ranges = (gpu::Range*)scratch_mem1; 
         
       extractRanges(gpu_queue, host_device_tasks, mc0, ranges, numPrims, RANGE_THRESHOLD , device_ploc_iteration_time, verbose2);
 
@@ -732,8 +722,7 @@ namespace embree
 
       PRINT(globals->node_mem_allocator_start);      
       PRINT(globals->node_mem_allocator_cur);
-      PRINT(globals->node_mem_allocator_cur-globals->node_mem_allocator_start);
-      
+      PRINT(globals->node_mem_allocator_cur-globals->node_mem_allocator_start);      
       PRINT(globals->leaf_mem_allocator_start);      
       PRINT(globals->leaf_mem_allocator_cur);
       PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);
@@ -788,8 +777,6 @@ namespace embree
       stats.print(std::cout);
       stats.print_raw(std::cout);
       PRINT("VERBOSE STATS DONE");
-      //if (numInstances) exit(0);
-      //if (numUserGeometries) exit(0);
     }
 
     

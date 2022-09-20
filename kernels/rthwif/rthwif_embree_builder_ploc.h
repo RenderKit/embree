@@ -161,38 +161,7 @@ namespace embree
     }
       
   };
-      
-  class __aligned(8) TriQuadMesh {
-    
-  private:
-    static const uint QUAD_TYPE      = (uint)1 << 31;
-    static const uint QUAD_TYPE_MASK = ~QUAD_TYPE;
-    
-    uint numPrimitives;
-    uint numVertices;
-    union {
-      TriangleMesh::Triangle* triangles;
-      QuadMesh::Quad* quads;
-      void *ptr;
-    };
-    Vec3fa* vertices;
-
-  public:
-    __forceinline TriQuadMesh(const uint numPrimitives, const uint numVertices, void *ptr, Vec3fa *vertices, bool isQuad = false) : numPrimitives(numPrimitives|(isQuad?QUAD_TYPE:0)), numVertices(numVertices), ptr(ptr), vertices(vertices)
-    {
-    }
-
-    __forceinline uint getNumPrimitives() const { return numPrimitives & QUAD_TYPE_MASK; }   
-    __forceinline uint getNumVertices()   const { return numVertices; }
-    __forceinline TriangleMesh::Triangle *getTrianglesPtr() const  { return triangles; }
-    __forceinline QuadMesh::Quad         *getQuadsPtr()     const  { return quads; }
-    __forceinline Vec3fa                 *getVerticesPtr()  const  { return vertices; }
-
-    __forceinline bool isTriangleMesh() const { return (numPrimitives & QUAD_TYPE) == 0; } 
-    __forceinline bool isQuadMesh()     const { return (numPrimitives & QUAD_TYPE) != 0 ; } 
         
-  };
-  
   struct __aligned(64) QBVHNodeN
   {
     float bounds_lower[3];
@@ -450,6 +419,37 @@ namespace embree
   // ============================================================================== Quadifier ==========================================================================================
   // ===================================================================================================================================================================================
 
+  class __aligned(8) TriQuadMesh {
+    
+  private:
+    static const uint QUAD_TYPE      = (uint)1 << 31;
+    static const uint QUAD_TYPE_MASK = ~QUAD_TYPE;
+    
+    uint numPrimitives;
+    uint numVertices;
+    union {
+      TriangleMesh::Triangle* triangles;
+      QuadMesh::Quad* quads;
+      void *ptr;
+    };
+    Vec3fa* vertices;
+
+  public:
+    __forceinline TriQuadMesh(const uint numPrimitives, const uint numVertices, void *ptr, Vec3fa *vertices, bool isQuad = false) : numPrimitives(numPrimitives|(isQuad?QUAD_TYPE:0)), numVertices(numVertices), ptr(ptr), vertices(vertices)
+    {
+    }
+
+    __forceinline uint getNumPrimitives() const { return numPrimitives & QUAD_TYPE_MASK; }   
+    __forceinline uint getNumVertices()   const { return numVertices; }
+    __forceinline TriangleMesh::Triangle *getTrianglesPtr() const  { return triangles; }
+    __forceinline QuadMesh::Quad         *getQuadsPtr()     const  { return quads; }
+    __forceinline Vec3fa                 *getVerticesPtr()  const  { return vertices; }
+
+    __forceinline bool isTriangleMesh() const { return (numPrimitives & QUAD_TYPE) == 0; } 
+    __forceinline bool isQuadMesh()     const { return (numPrimitives & QUAD_TYPE) != 0 ; } 
+        
+  };
+  
   __forceinline bool isValidTriangle(const TriQuadMesh& mesh, const uint i, uint3 &indices)
   {
     const TriangleMesh::Triangle &tri = mesh.getTrianglesPtr()[i];
@@ -2101,31 +2101,7 @@ namespace embree
           dest[indexID++] = right;
         }
     }
-  }
-
-  __forceinline void getLeafIndicesOrder(const uint first_index, const BVH2Ploc *const bvh_nodes, uint *const dest, uint &indexID, const uint numPrimitives)
-  {
-    dest[0] = first_index;
-    uint old_indexID = 0;
-    indexID = 1;
-    while(old_indexID != indexID)
-    {
-      old_indexID = indexID;
-      for (uint i=0;i<old_indexID;i++)
-        if (!BVH2Ploc::isLeaf(dest[i],numPrimitives))
-        {
-          for (int j = old_indexID-1; j>i; j--)
-            dest[j+1] = dest[j];
-          const uint left = bvh_nodes[BVH2Ploc::getIndex(dest[i])].left;
-          const uint right = bvh_nodes[BVH2Ploc::getIndex(dest[i])].right;
-          dest[i+0] = left;
-          dest[i+1] = right;
-          indexID++;
-          break;
-        }
-    }
-  }
-  
+  }  
 
   __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives, const NodeType type, const GeometryTypeRanges &geometryTypeRanges)
   {
