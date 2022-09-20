@@ -14,7 +14,7 @@
 #define BVH_BRANCHING_FACTOR      6
 
 #define FATLEAF_THRESHOLD         6
-#define USE_NEW_OPENING           1
+#define USE_NEW_OPENING           0
 
 namespace embree
 {  
