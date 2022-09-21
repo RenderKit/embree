@@ -96,6 +96,7 @@ IF (EMBREE_DPCPP_SUPPORT)
   rthwif/builder/qbvh6.cpp
   rthwif/builder/statistics.cpp
   )
+
 ENDIF()
 
 IF (EMBREE_GEOMETRY_SUBDIVISION)
@@ -253,6 +254,7 @@ IF (EMBREE_DPCPP_SUPPORT)
 
   ADD_LIBRARY(embree_sycl STATIC
     common/rtcore_sycl.cpp
+    rthwif/rthwif_embree_builder_ploc.cpp    
     rthwif/rthwif_embree.cpp
     rthwif/rthwif_production.cpp)
 

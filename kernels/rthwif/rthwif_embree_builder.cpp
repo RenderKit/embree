@@ -12,6 +12,9 @@
 
 namespace embree
 {
+
+  BBox3fa rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& buffer_o, const bool two_level=false);
+
   using namespace embree::isa;
 
   enum Flags : uint32_t {
@@ -26,7 +29,7 @@ namespace embree
   struct DispatchGlobals
   {
     uint64_t rtMemBasePtr;               // base address of the allocated stack memory
-    uint64_t callStackHandlerKSP;             // this is the KSP of the continuation handler that is invoked by BTD when the read KSP is 0
+    uint64_t callStackHandlerKSP;        // this is the KSP of the continuation handler that is invoked by BTD when the read KSP is 0
     uint32_t asyncStackSize;             // async-RT stack size in 64 byte blocks
     uint32_t numDSSRTStacks : 16;        // number of stacks per DSS
     uint32_t syncRayQueryCount : 4;      // number of ray queries in the sync-RT stack: 0-15 mapped to: 1-16
@@ -102,12 +105,27 @@ namespace embree
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-  BBox3fa rthwifBuildInternal(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+      
+  BBox3fa rthwifBuildInternal(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel, int gpu_build)
   {
     bool static_geometry = true;
     BBox1f time_range(0,1);
     void* dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
+    
+    //PING;
+    
+    // ======================
+    // === PLOC++ Builder ===
+    // ======================
+    
+    if (gpu_build == 1)
+      return rthwifBuildPloc(scene,quality_flags,accel);
+    if (gpu_build == 2)
+      return rthwifBuildPloc(scene,quality_flags,accel,true);    
+ 
+    // ==========================
+    // === Binned SAH Builder ===
+    // ==========================
     
     auto getSize = [&](uint32_t geomID) -> size_t {
       Geometry* geom = scene->geometries[geomID].ptr;
@@ -826,7 +844,7 @@ namespace embree
       if (scene->device->verbosity(1))
         std::cout << "Using internal HW BVH builder" << std::endl;
       
-      return rthwifBuildInternal(scene,quality_flags,accel);
+      return rthwifBuildInternal(scene,quality_flags,accel,scene->device->gpu_build);
     }
     else
       throw std::runtime_error("invalid rthw_builder specified: " + scene->device->rthw_builder);

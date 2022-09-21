@@ -81,11 +81,13 @@ namespace embree
     PrimLeafDesc(uint32_t shaderIndex, uint32_t geomIndex, GeometryFlags gflags, uint32_t geomMask, Type type = TYPE_NONE)
     : shaderIndex(shaderIndex), geomMask(geomMask), geomIndex(geomIndex), type(type), geomFlags((uint32_t)gflags)
     {
+#if !defined(__SYCL_DEVICE_ONLY__)      
       if (shaderIndex > MAX_SHADER_INDEX)
         throw std::runtime_error("too large shader ID");
       
       if (geomIndex > MAX_GEOM_INDEX)
         throw std::runtime_error("too large geometry ID");
+#endif      
     }
 
     /* compares two PrimLeafDesc's for equality */
@@ -137,6 +139,7 @@ namespace embree
   public:
     uint32_t shaderIndex : 24;    // shader index used for shader record calculations
     uint32_t geomMask    : 8;     // geometry mask used for ray masking
+      
  
     uint32_t geomIndex      : 29; // the geometry index specifies the n'th geometry of the scene
     /*Type*/ uint32_t type  : 1;  // enable/disable culling for procedurals and instances
@@ -277,22 +280,26 @@ namespace embree
     }
 
   public:
-    PrimLeafDesc leafDesc;  // the leaf header
-
-    uint32_t primIndex0;    // primitive index of first triangle
-    struct {
-      uint32_t primIndex1Delta : 16;  // delta encoded primitive index of second triangle
-      uint32_t j0              : 2;   // specifies first vertex of second triangle
-      uint32_t j1              : 2;   // specified second vertex of second triangle
-      uint32_t j2              : 2;   // specified third vertex of second triangle    
-      uint32_t last            : 1;   // true if the second triangle is the last triangle in a leaf list
-      uint32_t pad             : 9;   // unused bits
+    union {
+      struct {
+        PrimLeafDesc leafDesc;  // the leaf header
+        uint32_t primIndex0;    // primitive index of first triangle
+        struct {
+          uint32_t primIndex1Delta : 16;  // delta encoded primitive index of second triangle
+          uint32_t j0              : 2;   // specifies first vertex of second triangle
+          uint32_t j1              : 2;   // specified second vertex of second triangle
+          uint32_t j2              : 2;   // specified third vertex of second triangle    
+          uint32_t last            : 1;   // true if the second triangle is the last triangle in a leaf list
+          uint32_t pad             : 9;   // unused bits
+        };
+      };
+      uint header[4];
     };
     
     Vec3f v0;  // first vertex of first triangle
     Vec3f v1;  // second vertex of first triangle
     Vec3f v2;  // third vertex of first triangle
-    Vec3f v3;  // forth vertex used for second triangle
+    Vec3f v3;  // forth vertex used for second triangle    
   };
 
   static_assert(sizeof(QuadLeaf) == 64, "QuadLeaf must be 64 bytes large");

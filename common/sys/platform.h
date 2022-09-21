@@ -205,11 +205,15 @@
 #define PRINT2(x,y) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << embree_endl
 #define PRINT3(x,y,z) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << embree_endl
 #define PRINT4(x,y,z,w) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << embree_endl
+#define PRINT5(x,y,z,w,a) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << ", " << STRING(a) << " = " << (a) << embree_endl
+#define PRINT6(x,y,z,w,a,b) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << ", " << STRING(a) << " = " << (a) << ", " << STRING(b) << " = " << (b) << embree_endl
 
 #define UPRINT(x) embree_cout_uniform << STRING(x) << " = " << (x) << embree_endl
 #define UPRINT2(x,y) embree_cout_uniform << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << embree_endl
 #define UPRINT3(x,y,z) embree_cout_uniform << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << embree_endl
 #define UPRINT4(x,y,z,w) embree_cout_uniform << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << embree_endl
+#define UPRINT5(x,y,z,w,a) embree_cout_uniform << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << ", " << STRING(a) << " = " << (a) << embree_endl
+#define UPRINT6(x,y,z,w,a,b) embree_cout_uniform << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << ", " << STRING(a) << " = " << (a) << ", " << STRING(b) << " = " << (b) << embree_endl
 
 #if defined(DEBUG) // only report file and line in debug mode
   #define THROW_RUNTIME_ERROR(str) \
@@ -354,9 +358,15 @@ __forceinline std::string toString(long long value) {
 /// SYCL specific
 ////////////////////////////////////////////////////////////////////////////////
 
+#if defined(__SYCL_DEVICE_ONLY__)
+#  define EMBREE_SYCL_SIMD(N) [[intel::reqd_sub_group_size(N)]]  
+#else
+#  define EMBREE_SYCL_SIMD(N)
+#endif
 
 #if defined(__SYCL_DEVICE_ONLY__)
 
+  
 #define sycl_printf0(format, ...) {               \
     static const CONSTANT char fmt[] = format;               \
     if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))       \

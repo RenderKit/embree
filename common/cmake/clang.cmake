@@ -109,7 +109,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fexceptions")              # enable exceptions
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")                  # enable threads
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msimd128")                 # enable SIMD intrinsics
-  ENDIF()
+  ENDIF()  
 
   SET(CMAKE_CXX_FLAGS_DEBUG "")
   SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")              # generate debug information
