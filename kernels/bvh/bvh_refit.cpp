@@ -12,7 +12,7 @@
 #include "../geometry/object.h"
 #include "../geometry/instance.h"
 
-#include "../common/algorithms/parallel_for.h"
+#include "../../common/algorithms/parallel_for.h"
 
 namespace embree
 {
@@ -84,7 +84,7 @@ namespace embree
     template<int N>
     BBox3fa BVHNRefitter<N>::refit_toplevel(NodeRef& ref,
                                             size_t &subtrees,
-											const BBox3fa *const subTreeBounds,
+                                            const BBox3fa *const subTreeBounds,
                                             const size_t depth)
     {
       if (depth >= MAX_SUB_TREE_EXTRACTION_DEPTH) 

@@ -4,7 +4,7 @@
 #include "bvh_collider.h"
 
 #include "../geometry/triangle_triangle_intersector.h"
-#include "../common/algorithms/parallel_for.h"
+#include "../../common/algorithms/parallel_for.h"
 
 namespace embree
 { 
