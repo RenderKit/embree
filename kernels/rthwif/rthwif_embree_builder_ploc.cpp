@@ -17,9 +17,19 @@ namespace embree
   __forceinline uint estimateSizeInternalNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
   {
     const uint N = numActiveQuads + numInstances + numUserGeometries;
+#if 1
+    // === conservative estimate ===
     const uint numFatLeaves = ceilf( (float)N/2 );
     const uint numInnerNodes = ceilf( (float)numFatLeaves/5 );
-    return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);  
+    return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);
+#else    
+    // === estimate with 4/6 = 66% node util ===
+    const uint numFatLeaves = ceilf( (float)(N+3)/3.5f );
+    const uint numInnerNodes = ceilf( (float)numFatLeaves/5 );        
+    PRINT( numFatLeaves );
+    PRINT( numInnerNodes );    
+    return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);    
+#endif    
   }
 
   __forceinline uint estimateSizeLeafNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
@@ -704,16 +714,18 @@ namespace embree
 
     if (unlikely(verbose2))
     {
-      if ((globals->node_mem_allocator_cur-globals->node_mem_allocator_start)*64 > node_size ||
-          (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)*64 > leaf_size) FATAL("NOT ENOUGH MEMORY FOR INTERNAL NODES ALLOCATED");
-
       PRINT(globals->node_mem_allocator_start);      
       PRINT(globals->node_mem_allocator_cur);
-      PRINT(globals->node_mem_allocator_cur-globals->node_mem_allocator_start);      
+      PRINT(globals->node_mem_allocator_cur-globals->node_mem_allocator_start);
+      PRINT(100.0f * (float)(globals->node_mem_allocator_cur-globals->node_mem_allocator_start) / (node_size/64));
       PRINT(globals->leaf_mem_allocator_start);      
       PRINT(globals->leaf_mem_allocator_cur);
       PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);
-      PRINT(globals->numLeaves);      
+      PRINT(100.0f * (float)(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start) / (leaf_size/64));      
+      PRINT(globals->numLeaves);
+
+      if ((globals->node_mem_allocator_cur-globals->node_mem_allocator_start)*64 > node_size ||
+          (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)*64 > leaf_size) FATAL("NOT ENOUGH MEMORY FOR INTERNAL NODES ALLOCATED");      
     }
     
     BBox3fa geomBounds(Vec3fa(globals->geometryBounds.lower_x,globals->geometryBounds.lower_y,globals->geometryBounds.lower_z),
