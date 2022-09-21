@@ -164,7 +164,7 @@ namespace embree
       case Geometry::GTY_INSTANCE_CHEAP    :
       case Geometry::GTY_INSTANCE_EXPENSIVE: {
         Instance* instance = scene->get<Instance>(geomID);
-        QBVH6* object = (QBVH6*)((Scene*)instance->object)->hwaccel.data();
+        EmbreeHWAccel* object = (EmbreeHWAccel*)((Scene*)instance->object)->hwaccel.data();
         if (object->numTimeSegments > 1) return QBVH6BuilderSAH::PROCEDURAL; // we need to handle instances in procedural mode if instanced scene has motion blur
         if (instance->mask & 0xFFFFFF80) return QBVH6BuilderSAH::PROCEDURAL; // we need to handle instances in procedural mode if high mask bits are set
         else                             return QBVH6BuilderSAH::INSTANCE;
@@ -251,9 +251,8 @@ namespace embree
     {
       Instance* instance = scene->get<Instance>(geomID);
       
-      HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(instance->object)->hwaccel.data();
-      void** AccelTable = (void**) (hwaccel+1);
-      void* accel = AccelTable[0];
+      EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(instance->object)->hwaccel.data();
+      void* accel = hwaccel->AccelTable[0];
       
       const AffineSpace3fa local2world = instance->getLocal2World();
       return QBVH6BuilderSAH::Instance(local2world,accel,mask32_to_mask8(instance->mask),0);
@@ -300,7 +299,7 @@ namespace embree
     RTHWIF_ACCEL_SIZE sizeMBlur;
     QBVH6BuilderSAH::estimateSize(scene->size(), getSize, getType, sizeMBlur.accelBufferExpectedBytes, sizeMBlur.accelBufferWorstCaseBytes );
 
-    size_t headerBytes = sizeof(HWAccel) + std::max(1u,maxTimeSegments)*8;
+    size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
 
     /* build BVH */
@@ -380,8 +379,7 @@ namespace embree
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
-    HWAccel* hwaccel = (HWAccel*) accel.data(); // FIXME: do not use HWAccel struct here!
-    hwaccel->reserved = 1; // switch to AccelTable mode
+    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->bounds[0][0] = fullBounds.lower.x;
     hwaccel->bounds[0][1] = fullBounds.lower.y;
     hwaccel->bounds[0][2] = fullBounds.lower.z;
@@ -390,12 +388,11 @@ namespace embree
     hwaccel->bounds[1][2] = fullBounds.upper.z;
     hwaccel->numTimeSegments = maxTimeSegments;
 
-    void** AccelTable = (void**) (hwaccel+1);
     for (size_t i=0; i<maxTimeSegments; i++)
-      AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
+      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
     
     if (maxTimeSegments == 0)
-      AccelTable[0] = (char*)hwaccel + headerBytes;
+      hwaccel->AccelTable[0] = (char*)hwaccel + headerBytes;
 
     return fullBounds;
   }
@@ -533,9 +530,8 @@ namespace embree
     const AffineSpace3fa local2world = geom->getLocal2World();
     out->transform = &out->xfmdata;
     out->xfmdata = *(RTHWIF_TRANSFORM4X4*) &local2world;
-    HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
-    void** AccelTable = (void**) (hwaccel+1);
-    out->accel = AccelTable[0];
+    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+    out->accel = hwaccel->AccelTable[0];
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
@@ -547,9 +543,8 @@ namespace embree
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     out->transform = (RTHWIF_TRANSFORM4X4*) &geom->local2world[0];
-    HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
-    void** AccelTable = (void**) (hwaccel+1);
-    out->accel = AccelTable[0];
+    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+    out->accel = hwaccel->AccelTable[0];
   }
 
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, GEOMETRY_TYPE type)
@@ -610,7 +605,7 @@ namespace embree
       case Geometry::GTY_INSTANCE_CHEAP    :
       case Geometry::GTY_INSTANCE_EXPENSIVE: {
         Instance* instance = scene->get<Instance>(geomID);
-        QBVH6* object = (QBVH6*)((Scene*)instance->object)->hwaccel.data();
+        EmbreeHWAccel* object = (EmbreeHWAccel*)((Scene*)instance->object)->hwaccel.data();
         if (object->numTimeSegments > 1) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if instanced scene has motion blur
         if (instance->mask & 0xFFFFFF80) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if high mask bits are set
         else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION)
@@ -718,7 +713,7 @@ namespace embree
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
-    size_t headerBytes = sizeof(HWAccel) + std::max(1u,maxTimeSegments)*8;
+    size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
 
     /* build BVH */
@@ -792,8 +787,7 @@ namespace embree
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
-    HWAccel* hwaccel = (HWAccel*) accel.data(); // FIXME: do not use HWAccel struct here!
-    hwaccel->reserved = 1; // switch to AccelTable mode
+    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->bounds[0][0] = fullBounds.lower.x;
     hwaccel->bounds[0][1] = fullBounds.lower.y;
     hwaccel->bounds[0][2] = fullBounds.lower.z;
@@ -802,12 +796,11 @@ namespace embree
     hwaccel->bounds[1][2] = fullBounds.upper.z;
     hwaccel->numTimeSegments = maxTimeSegments;
 
-    void** AccelTable = (void**) (hwaccel+1);
     for (size_t i=0; i<maxTimeSegments; i++)
-      AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
+      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
     
     if (maxTimeSegments == 0)
-      AccelTable[0] = (char*)hwaccel + headerBytes;
+      hwaccel->AccelTable[0] = (char*)hwaccel + headerBytes;
 
     return fullBounds;
   }
