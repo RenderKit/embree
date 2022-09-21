@@ -17,19 +17,10 @@ namespace embree
   __forceinline uint estimateSizeInternalNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
   {
     const uint N = numActiveQuads + numInstances + numUserGeometries;
-#if 1
     // === conservative estimate ===
     const uint numFatLeaves = ceilf( (float)N/2 );
     const uint numInnerNodes = ceilf( (float)numFatLeaves/5 );
     return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);
-#else    
-    // === estimate with 4/6 = 66% node util ===
-    const uint numFatLeaves = ceilf( (float)(N+3)/3.5f );
-    const uint numInnerNodes = ceilf( (float)numFatLeaves/5 );        
-    PRINT( numFatLeaves );
-    PRINT( numInnerNodes );    
-    return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);    
-#endif    
   }
 
   __forceinline uint estimateSizeLeafNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
@@ -174,9 +165,12 @@ namespace embree
     if (unlikely(verbose2))
       PRINT5(numGeoms,numTriangles,numQuads,numInstances,numUserGeometries);
 
+    // ===================    
+    // === empty scene ===
+    // ===================
+    
     if (unlikely(!activeTriQuadMeshes && !numInstances && !numUserGeometries))
       {
-        PRINT("WARNING: EMPTY SCENE");
         const size_t totalSize = 3*64; // just for the header and a single node
         if (accel.size() < totalSize) accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
         QBVH6* qbvh   = (QBVH6*)accel.data();        
@@ -197,9 +191,11 @@ namespace embree
     
     timer.start(BuildTimer::ALLOCATION);
 
+    // === host-device communication buffer ===
     uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,sizeof(uint)*4,deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::host); // FIXME
     assert(host_device_tasks);
 
+    // === globals ===    
     PLOCGlobals *globals  = (PLOCGlobals*)sycl::aligned_alloc(64,sizeof(PLOCGlobals),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
     assert(globals);
 
@@ -210,6 +206,7 @@ namespace embree
     uint *prims_per_geom_prefix_sum  = nullptr;
     size_t size_scratch_mem0         = 0;
 
+    // === triangles/quads? ===
     if (activeTriQuadMeshes)
     {
       const size_t alloc_TriQuadMeshes = sizeof(TriQuadMesh)*(numGeoms+1);
@@ -714,6 +711,7 @@ namespace embree
 
     if (unlikely(verbose2))
     {
+      // === memory allocation and usage stats ===
       PRINT(globals->node_mem_allocator_start);      
       PRINT(globals->node_mem_allocator_cur);
       PRINT(globals->node_mem_allocator_cur-globals->node_mem_allocator_start);
