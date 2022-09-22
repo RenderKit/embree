@@ -60,3 +60,4 @@ benchmark_gpu_manual:
   extends: .benchmark_gpu
   except:   [schedules]
   when: manual
+
