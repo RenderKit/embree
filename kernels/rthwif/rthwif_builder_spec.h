@@ -426,7 +426,7 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
 RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(RTHWIF_BUILD_ACCEL_ARGS& args);
 
 /*
- * Creates a new parallel operation       .
+ * Creates a new parallel operation.
  */
 
 RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation();
@@ -435,7 +435,7 @@ RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation();
  * Destroys a parallel operation.
  */
 
-RTHWIF_API uint32_t rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
 
 /*
  * Returns the maximal number of threads that can join the parallel operation.

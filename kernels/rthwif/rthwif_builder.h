@@ -191,7 +191,8 @@ typedef enum RTHWIF_ERROR
 {
   RTHWIF_ERROR_NONE  = 0x0,  // no error occured
   RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app should re-try with more memory
-  RTHWIF_ERROR_OTHER = 0x2   // some unspecified error occured
+  RTHWIF_ERROR_OTHER = 0x2,   // some unspecified error occured
+  RTHWIF_ERROR_PARALLEL_OPERATION = 0x3,  // task executing in parallel operation
   
 } RTHWIF_ERROR;
 
@@ -219,6 +220,10 @@ typedef struct RTHWIF_ACCEL_REF
   void* Accel;
   RTHWIF_AABB bounds;
 } RTHWIF_ACCEL_REF;
+
+
+/* A handle of a parallel operation that can get joined with worker threads. */
+typedef void* RTHWIF_PARALLEL_OPERATION;
 
 
 /* Structure returned by rthwifGetAccelSize that contains acceleration
@@ -291,6 +296,13 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   /* Some hints for acceleration structure build (see RTHWIF_BUILD_FLAGS) */
   RTHWIF_BUILD_FLAGS flags;
 
+  /* When parallelOperation is NULL, the build is executed
+   * sequentially on the current thread. If a parallelOperation is
+   * specified, then the parallel operation gets attached to the
+   * parallel build handle. This handle can then get joined with
+   * worker threads to perform the parallel build operation. */
+  RTHWIF_PARALLEL_OPERATION parallelOperation;
+
   /* Parallel for abstraction for parallelization, can be NULL for
    * single threaded build. See RTHWIF_PARALLEL_FOR_LOOP_FPTR for
    * details. */
@@ -313,8 +325,16 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   
 } RTHWIF_BUILD_ACCEL_ARGS;
 
+/*
+ * Initializes the library.
+ */
 
 RTHWIF_API void rthwifInit();
+
+/*
+ * Cleans up the library.
+ */
+
 RTHWIF_API void rthwifExit();
 
 /*
@@ -382,3 +402,29 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
  */
 
 RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args);
+
+/*
+ * Creates a new parallel operation.
+ */
+
+RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation();
+
+/*
+ * Destroys a parallel operation.
+ */
+
+RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+
+/*
+ * Returns the maximal number of threads that can join the parallel operation.
+ */
+
+RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+
+
+/* 
+ * Called by worker threads to join a parallel build operation. Each
+ * worker thread returns with a proper error code for the build. 
+ */
+
+RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation );

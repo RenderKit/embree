@@ -12,6 +12,8 @@
 namespace embree
 {
   using namespace embree::isa;
+
+  static std::unique_ptr<tbb::task_arena> g_arena;
   
   inline RTHWIF_TRIANGLE_INDICES getPrimitive(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID) {
     assert(primID < geom->triangleCount);
@@ -131,12 +133,21 @@ namespace embree
   
   RTHWIF_API void rthwifInit()
   {
+#if defined(TASKING_INTERNAL)
     TaskScheduler::create(-1,false,false);
+#endif
+
+    uint32_t numThreads = tbb::this_task_arena::max_concurrency();
+    g_arena.reset(new tbb::task_arena(numThreads,numThreads));
   }
   
   RTHWIF_API void rthwifExit()
   {
+    g_arena.reset();
+
+#if defined(TASKING_INTERNAL)
     TaskScheduler::destroy();
+#endif
   }
   
   RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device)
@@ -278,7 +289,7 @@ namespace embree
     return RTHWIF_ERROR_NONE;
   }
   
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i) try
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelInternal(const RTHWIF_BUILD_ACCEL_ARGS& args_i) try
   {
     /* prepare input arguments */
     const RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
@@ -399,5 +410,51 @@ namespace embree
   
   catch (...) {
     return RTHWIF_ERROR_OTHER;
+  }
+
+  struct RTHWIF_PARALLEL_OPERATION_IMPL
+  {
+    RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;
+    tbb::task_group group;
+  };
+
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  {
+    /* if parallel operation is provided then execute using thread arena inside task group ... */
+    if (args_i.parallelOperation)
+    {
+      RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) args_i.parallelOperation;
+      g_arena->execute([&](){ op->group.run([=](){ op->errorCode = rthwifBuildAccelInternal(args_i); }); });
+      return RTHWIF_ERROR_PARALLEL_OPERATION;
+    }
+    /* ... otherwise we just execute inside task arena to avoid spawning of TBB worker threads */
+    else
+    {
+      RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;
+      g_arena->execute([&](){ errorCode = rthwifBuildAccelInternal(args_i); });
+      return errorCode;
+    }
+  }
+
+  RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation()
+  {
+    return (RTHWIF_PARALLEL_OPERATION) new RTHWIF_PARALLEL_OPERATION_IMPL;
+  }
+  
+  RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation )
+  {
+    delete (RTHWIF_PARALLEL_OPERATION_IMPL*) parallelOperation;
+  }
+  
+  RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation )
+  {
+    return tbb::this_task_arena::max_concurrency();
+  }
+  
+  RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation)
+  {
+    RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) parallelOperation;
+    g_arena->execute([&](){ op->group.wait(); });
+    return op->errorCode;
   }
 }

@@ -37,6 +37,8 @@ namespace embree
 
   void* rthwifInit(sycl::device device, sycl::context context)
   {
+    ::rthwifInit();
+    
     size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
 
     size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
@@ -66,6 +68,8 @@ namespace embree
   void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context)
   {
     sycl::free(dispatchGlobalsPtr, context);
+
+    rthwifExit();
   }
 
   bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
@@ -645,11 +649,13 @@ namespace embree
     }
 
     /* calculate size of geometry descriptor buffer */
+    size_t totalPrimitives = 0;
     size_t bytesStatic = 0, bytesMBlur = 0;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
     {
       Geometry* geom = scene->get(geomID);
       if (geom == nullptr) continue;
+      totalPrimitives += geom->size();
       
       const GEOMETRY_TYPE type = getType(geomID);
       if (geom->numTimeSegments() == 0) {
@@ -693,6 +699,8 @@ namespace embree
       }
     }
 
+    RTHWIF_PARALLEL_OPERATION parallelOperation = rthwifNewParallelOperation();
+
     /* estimate static accel size */
     BBox1f time_range(0,1);
     RTHWIF_AABB bounds;
@@ -706,6 +714,7 @@ namespace embree
     args.accelBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
+    args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.buildUserPtr = &time_range;
     
@@ -745,13 +754,32 @@ namespace embree
       if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
       memset(accel.data(),0,accel.size()); // FIXME: not required
 
+      /*uint32_t N = 10;
+      double dt_avg = 0.0f;
+      for (size_t i=0; i<N; i++)
+      {
+      double time0 = getSeconds();*/
+        
       /* build static BVH */
       args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomStatic.data();
       args.numGeometries = geomStatic.size();
       args.accelBuffer = accel.data() + headerBytes;
       args.accelBufferBytes = sizeStatic.accelBufferExpectedBytes;
       bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
+      
       err = rthwifBuildAccel(args);
+      if (args.parallelOperation) {
+        assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
+        uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+        parallel_for(maxThreads, [&](uint32_t) { err = rthwifJoinParallelOperation(parallelOperation); });
+      }
+
+      /*double time1 = getSeconds();
+      dt_avg += time1-time0;
+      }
+      dt_avg /= (double) N;
+      std::cout << "build performance " << double(totalPrimitives)/dt_avg*1E-6 << " Mprims/s, " << dt_avg*1000.0 << " ms" << std::endl;*/
+      
       const BBox3f staticBounds = *(BBox3f*) args.boundsOut;
       fullBounds.extend(staticBounds);
       
@@ -781,7 +809,14 @@ namespace embree
           args.linkAccel.bounds = (RTHWIF_AABB&) staticBounds;
         }
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
+        
         err = rthwifBuildAccel(args);
+        if (args.parallelOperation) {
+          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
+          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          parallel_for(maxThreads, [&](uint32_t) { err = rthwifJoinParallelOperation(parallelOperation); });
+        }
+        
         fullBounds.extend(*(BBox3f*) args.boundsOut);
 
         if (err == RTHWIF_ERROR_RETRY)
