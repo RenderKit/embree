@@ -1,12 +1,12 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-ADD_LIBRARY(rthwif STATIC rthwif_embree_builder.cpp builder/qbvh6.cpp builder/statistics.cpp rthwif_embree_builder_ploc.cpp)
-#TARGET_LINK_LIBRARIES(rthwif PRIVATE tasking)
+ADD_LIBRARY(embree_rthwif_gpu STATIC rthwif_embree_builder.cpp builder/qbvh6.cpp builder/statistics.cpp rthwif_embree_builder_ploc.cpp)
+TARGET_LINK_LIBRARIES(embree_rthwif_gpu PRIVATE tasking)
+SET_TARGET_PROPERTIES(embree_rthwif_gpu PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 
 ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp ../common/alloc.cpp)
 TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE tasking simd sys -lze_loader)
-#SET_TARGET_PROPERTIES(embree_rthwif PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 
 INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 INSTALL(EXPORT embree_rthwif-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)

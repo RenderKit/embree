@@ -127,6 +127,7 @@ namespace embree
   template<typename QInternalNode>
   void QBVH6::printInternalNodeStatistics(std::ostream& cout, QBVH6::Node node, uint32_t depth, uint32_t numChildren)
   {
+#if  !defined(__SYCL_DEVICE_ONLY__)    
     QInternalNode* inner = node.innerNode<QInternalNode>();
     inner->print(cout, depth, false);
     std::cout << std::endl;
@@ -138,10 +139,12 @@ namespace embree
     }
 
     cout << tab(depth) << "}" << std::endl;
+#endif    
   }
 
   void QBVH6::print( std::ostream& cout, QBVH6::Node node, uint32_t depth, uint32_t numChildren)
   {
+#if !defined(__SYCL_DEVICE_ONLY__)    
     if (depth == 1) return;
     
     switch (node.type)
@@ -216,6 +219,7 @@ namespace embree
       std::cout << "{ INVALID_NODE }" << std::endl;
       //assert(false);
     }
+#endif    
   }
 
   unsigned* getBackPointersData(const QBVH6* base) { // FIXME: should be member function
@@ -236,7 +240,7 @@ namespace embree
 
   void QBVH6::print ( std::ostream& cout ) const
   {
-    
+#if  !defined(__SYCL_DEVICE_ONLY__)    
     cout << "QBVH @ "<< this <<" header: {\n";
     cout << "  rootNodeOffset = " << rootNodeOffset << std::endl;
     cout << "  bounds = " << bounds << std::endl;
@@ -263,6 +267,7 @@ namespace embree
       }
       cout << "}\n";
     }
+#endif    
   }
   
   template<typename QInternalNode>

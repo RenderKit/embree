@@ -112,10 +112,12 @@ namespace embree
         __forceinline size_t end  () const { return prims.end(); }
         __forceinline size_t size () const { return prims.size(); }
         __forceinline bool   equalType() const { return type != UNKNOWN; }
-        
+
+#if !defined(__SYCL_DEVICE_ONLY__)        
         friend inline std::ostream& operator<<(std::ostream& cout, const BuildRecord& r) {
           return cout << "BuildRecord { depth = " << r.depth << ", pinfo = " << r.prims << ", type = " << r.type << " }";
         }
+#endif        
         
       public:
         size_t depth;        //!< Depth of the root of this subtree.

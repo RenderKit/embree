@@ -472,7 +472,7 @@ namespace embree
       dst->setChildOffset((char*)this + getChildOffset(0));
     }
     
-#if !defined(__RTRT_GSIM)
+#if !defined(__RTRT_GSIM) &&  !defined(__SYCL_DEVICE_ONLY__)
     
     /* output of internal node */
     void print(std::ostream& cout, uint32_t depth, bool close) const

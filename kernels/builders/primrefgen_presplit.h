@@ -37,6 +37,7 @@ namespace embree
 
       __forceinline bool split_pos(const PrimRef& prim, unsigned int& dim_o, float& fsplit_o) const
       {
+#if !defined(__SYCL_DEVICE_ONLY__)        
         /* compute morton code */
         const Vec3fa lower = prim.lower;
         const Vec3fa upper = prim.upper;
@@ -71,6 +72,7 @@ namespace embree
 
         dim_o = dim;
         fsplit_o = fsplit;
+#endif        
         return true;
       }
 
@@ -82,10 +84,11 @@ namespace embree
         const Vec3fa gupper = (upper-base)*Vec3fa(scale)-Vec3fa(0.2f);
         Vec3ia ilower(floor(glower));
         Vec3ia iupper(floor(gupper));
-        
+
+#if !defined(__SYCL_DEVICE_ONLY__)                
         /* this ignores dimensions that are empty */
         iupper = (Vec3ia)select(vint4(glower) >= vint4(gupper),vint4(ilower),vint4(iupper));
-        
+#endif        
         /* compute a morton code for the lower and upper grid coordinates. */
         const unsigned int lower_code = bitInterleave(ilower.x,ilower.y,ilower.z);
         const unsigned int upper_code = bitInterleave(iupper.x,iupper.y,iupper.z);
