@@ -489,18 +489,32 @@ namespace embree
       range<size_t> r(primID);
       size_t k = 0;
       uint32_t geomID = 0;
+
+      PrimInfo pinfo = empty;
       if (geom->numTimeSegments() > 0)
-        geom->createPrimRefArrayMB(&prim,time_range,r,k,geomID);
+        pinfo = geom->createPrimRefArrayMB(&prim,time_range,r,k,geomID);
       else
-        geom->createPrimRefArray(&prim,r,k,geomID);
-      
-      BBox3fa bounds = prim.bounds();
-      boundsOut[i].lower.x = bounds.lower.x;
-      boundsOut[i].lower.y = bounds.lower.y;
-      boundsOut[i].lower.z = bounds.lower.z;
-      boundsOut[i].upper.x = bounds.upper.x;
-      boundsOut[i].upper.y = bounds.upper.y;
-      boundsOut[i].upper.z = bounds.upper.z;
+        pinfo = geom->createPrimRefArray(&prim,r,k,geomID);
+
+      /* invalid primitive */
+      if (pinfo.size() == 0) {
+        boundsOut[i].lower.x = pos_inf;
+        boundsOut[i].lower.y = pos_inf;
+        boundsOut[i].lower.z = pos_inf;
+        boundsOut[i].upper.x = neg_inf;
+        boundsOut[i].upper.y = neg_inf;
+        boundsOut[i].upper.z = neg_inf;
+      }
+      else
+      {
+        BBox3fa bounds = prim.bounds();
+        boundsOut[i].lower.x = bounds.lower.x;
+        boundsOut[i].lower.y = bounds.lower.y;
+        boundsOut[i].lower.z = bounds.lower.z;
+        boundsOut[i].upper.x = bounds.upper.x;
+        boundsOut[i].upper.y = bounds.upper.y;
+        boundsOut[i].upper.z = bounds.upper.z;
+      }
     }
   };
 
