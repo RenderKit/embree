@@ -9,7 +9,7 @@ IF (EMBREE_CONFIG)
   ADD_DEFINITIONS(-DEMBREE_CONFIG="${EMBREE_CONFIG}")
 ENDIF()
 
-OPTION(EMBREE_RTHWIF_INTERNAL_BUILDER "Use the internal Embree BVH builder for ray tracing hardware by default." ON)
+OPTION(EMBREE_RTHWIF_INTERNAL_BUILDER "Use the internal Embree BVH builder for ray tracing hardware by default." OFF)
 
 IF (EMBREE_RTHWIF_INTERNAL_BUILDER)
   ADD_DEFINITIONS("-DEMBREE_RTHWIF_INTERNAL_BUILDER")
