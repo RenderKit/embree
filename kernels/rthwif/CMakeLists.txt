@@ -4,8 +4,35 @@
 #ADD_LIBRARY(rthwif STATIC rthwif_embree_builder.cpp builder/qbvh6.cpp builder/statistics.cpp)
 #TARGET_LINK_LIBRARIES(rthwif PRIVATE tasking)
 
+####################################################################
+# fetch TBB and build static version of it
+
+option(TBB_STRICT "Treat compiler warnings as errors" OFF)
+option(TBB_TEST "Enable testing" OFF)
+option(TBBMALLOC_BUILD "Enable tbbmalloc build" OFF)
+SET(TBB_DIR OFF)
+SET(BUILD_SHARED_LIBS OFF)
+
+INCLUDE(FetchContent)
+
+FetchContent_Declare(
+  tbb_static
+  URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0.zip
+)
+
+FetchContent_GetProperties(tbb_static)
+
+IF (NOT tbb_static_POPULATED)
+  FetchContent_Populate(tbb_static)
+  add_subdirectory(${tbb_static_SOURCE_DIR} ${tbb_static_BINARY_DIR})
+ENDIF()
+
+ADD_DEFINITIONS(-DTASKING_TBB)
+
+####################################################################
+
 ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp ../common/alloc.cpp)
-TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE tasking simd sys -lze_loader)
+TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE tbb simd sys -lze_loader)
 #SET_TARGET_PROPERTIES(embree_rthwif PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 
 INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)

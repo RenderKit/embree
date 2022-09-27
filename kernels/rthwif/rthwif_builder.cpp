@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #define RTHWIF_EXPORT_API
+#include "../../common/tasking/taskscheduler.h"
 
 #include "rthwif_builder.h"
 #include "builder/qbvh6_builder_sah.h"
@@ -133,10 +134,6 @@ namespace embree
   
   RTHWIF_API void rthwifInit()
   {
-#if defined(TASKING_INTERNAL)
-    TaskScheduler::create(-1,false,false);
-#endif
-
     uint32_t numThreads = tbb::this_task_arena::max_concurrency();
     g_arena.reset(new tbb::task_arena(numThreads,numThreads));
   }
@@ -144,10 +141,6 @@ namespace embree
   RTHWIF_API void rthwifExit()
   {
     g_arena.reset();
-
-#if defined(TASKING_INTERNAL)
-    TaskScheduler::destroy();
-#endif
   }
   
   RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device)
