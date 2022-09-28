@@ -223,15 +223,15 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-  continuous-windows-DG2-AOT-INT:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "dg2" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:3 implicit_dispatch_globals:OFF
-        python scripts/test.py build
-        python scripts/test.py test
+#  continuous-windows-DG2-AOT-INT:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+#    with:
+#      runs-on: '[ "Windows", "NAS", "dg2" ]'
+#      cmd: |
+#        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:3 implicit_dispatch_globals:OFF
+#        python scripts/test.py build
+#        python scripts/test.py test
 
 
   ################################################################################
