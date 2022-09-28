@@ -495,8 +495,6 @@ def runConfig(config):
     conf.append("-D EMBREE_DPCPP_SUPPORT=OFF")
   if "gfx" in config:
       conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
-  if "rthwif_internal_builder" in config:
-      conf.append("-D EMBREE_RTHWIF_INTERNAL_BUILDER="+config["rthwif_internal_builder"])
 
   if "EMBREE_USE_GOOGLE_BENCHMARK" in config:
     conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK="+config["EMBREE_USE_GOOGLE_BENCHMARK"])

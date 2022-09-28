@@ -135,7 +135,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON rthwif_internal_builder:OFF sycl:none CURVE:OFF tasking:TBB intensity:1
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none CURVE:OFF tasking:TBB intensity:1
         scripts/test.py build --debug
         scripts/test.py build
 
