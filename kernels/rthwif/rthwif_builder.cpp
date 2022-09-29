@@ -390,7 +390,7 @@ namespace embree
     BBox3f bounds = QBVH6BuilderSAH::build(numGeometries, nullptr, 
                                            getSize, getType, getNumTimeSegments,
                                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                           (char*)args.accelBuffer, args.accelBufferBytes, args.linkAccel, verbose, args.dispatchGlobalsPtr);
+                                           (char*)args.accelBuffer, args.accelBufferBytes, verbose, args.dispatchGlobalsPtr);
 
     if (args.boundsOut) *(BBox3f*)args.boundsOut = bounds;
     

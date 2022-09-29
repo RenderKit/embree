@@ -1034,7 +1034,7 @@ namespace embree
           return r;
         }
 
-        BBox3f build(size_t numGeometries, char* accel, size_t bytes, RTHWIF_ACCEL_REF AddAccel, void* dispatchGlobalsPtr)
+        BBox3f build(size_t numGeometries, char* accel, size_t bytes, void* dispatchGlobalsPtr)
         {
           double t0 = verbose ? getSeconds() : 0.0;
 
@@ -1074,15 +1074,18 @@ namespace embree
           FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
           thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
 
-          uint32_t numRoots = AddAccel.Accel ? 3 : 1;
+          //uint32_t numRoots = AddAccel.Accel ? 3 : 1;
+          uint32_t numRoots = 1;
           QBVH6::InternalNode6* roots = (QBVH6::InternalNode6*) thread_alloc.malloc0(numRoots*sizeof(QBVH6::InternalNode6),64);
           assert(roots);
 
           /* build BVH static BVH */
-          QBVH6::InternalNode6* root = AddAccel.Accel ? roots+2 : roots+0;
+          //QBVH6::InternalNode6* root = AddAccel.Accel ? roots+2 : roots+0;
+          QBVH6::InternalNode6* root = roots+0;
           ReductionTy r = build(numGeometries,pinfo,(char*)root);
           bounds.extend(pinfo.geomBounds);
 
+#if 0
           if (AddAccel.Accel)
           {
             ((QBVH6::InternalNode6*) ((char*)AddAccel.Accel + QBVH6::rootNodeOffset))->copy_to(roots+1);
@@ -1094,7 +1097,8 @@ namespace embree
             children[0].prims.geomBounds = (BBox3f&) AddAccel.bounds;
             children[1].prims.geomBounds = bounds;
             r = setNode((char*)roots,sizeof(QBVH6::InternalNode6),NODE_TYPE_INTERNAL,(char*)(roots+1),children,values,2);
-          }      
+          }
+#endif
           
           /* fill QBVH6 header */
           allocator.clear();
@@ -1238,14 +1242,13 @@ namespace embree
                           const getProceduralFunc& getProcedural,
                           const getInstanceFunc& getInstance,
                           char* accel_ptr, size_t accel_bytes,
-                          RTHWIF_ACCEL_REF AddAccel,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
         BuilderT<getSizeFunc, getTypeFunc, getNumTimeSegmentsFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
           (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
         
-        return builder.build(numGeometries, accel_ptr, accel_bytes, AddAccel, dispatchGlobalsPtr);
+        return builder.build(numGeometries, accel_ptr, accel_bytes, dispatchGlobalsPtr);
       }      
     };
   }

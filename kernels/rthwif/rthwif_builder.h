@@ -264,15 +264,6 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   /* Number of geometries in geometry descriptor array. */
   size_t numGeometries;
 
-  /* An acceleration structure to link to (can be NULL). This pointer
-   * must point into the same USM memory allocation used to build the
-   * acceleration structure into (to avoid too large offsets). */
-  RTHWIF_ACCEL_REF linkAccel; 
-  //void* linkAccelBuffer;
-
-  /* Bounds of acceleration structure to link to. */
-  //RTHWIF_AABB* linkAccelBounds;
-
   /* Destination buffer for acceleration structure. Has to be a USM
    * allocation aligned to 128 bytes. */
   void* accelBuffer;
