@@ -287,7 +287,11 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
 
 int main(int argc, char* argv[])
 {
+#if __SYCL_COMPILER_VERSION < 20220914
   sycl::device device = sycl::device(sycl::gpu_selector());
+#else
+  sycl::device device = sycl::device(sycl::gpu_selector_v);
+#endif
   sycl::queue queue = sycl::queue(device,exception_handler);
   sycl::context context = queue.get_context();
   
