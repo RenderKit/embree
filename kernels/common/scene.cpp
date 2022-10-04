@@ -759,8 +759,11 @@ namespace embree
     /* build acceleration structure for rthw */
 #if defined(EMBREE_DPCPP_SUPPORT)
     if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
-      if (gpu_device->rthw_support())
-        bounds = LBBox<embree::Vec3fa>(rthwifBuild(this,quality_flags,hwaccel));
+      if (gpu_device->rthw_support()) {
+        const BBox3f aabb = rthwifBuild(this,quality_flags,hwaccel);
+        bounds = LBBox<embree::Vec3fa>(aabb);
+        hwaccel_bounds = aabb;
+      }
 #endif
     
     /* make static geometry immutable */

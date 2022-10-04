@@ -62,7 +62,7 @@ namespace embree
   {
     if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->transform == nullptr) throw std::runtime_error("no instance transformation specified");
-    //if (geom->bounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
+    if (geom->bounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
     if (geom->accel == nullptr) throw std::runtime_error("no acceleration structure to instanciate specified");
   }
 
@@ -134,9 +134,8 @@ namespace embree
     const Vec3fa p  = *(Vec3f*) &geom->transform->p;
     const AffineSpace3fa local2world(vx,vy,vz,p);
 
-    HWAccel* accel = (HWAccel*) geom->accel;
-    const Vec3fa lower(accel->bounds[0][0],accel->bounds[0][1],accel->bounds[0][2]);
-    const Vec3fa upper(accel->bounds[1][0],accel->bounds[1][1],accel->bounds[1][2]);
+    const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
+    const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
     const BBox3fa bounds = xfmBounds(local2world,BBox3fa(lower,upper));
      
     if (unlikely(!isvalid(bounds.lower))) return false;

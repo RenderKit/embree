@@ -288,6 +288,7 @@ namespace embree
     bool is_build;
 
   public:
+    BBox3f hwaccel_bounds = empty;
     Device::avector<char,64> hwaccel;
 
   private:

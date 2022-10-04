@@ -15,7 +15,6 @@ namespace embree
 
   struct EmbreeHWAccel
   {
-    float bounds[2][3];             // bounding box of the BVH
     uint32_t numTimeSegments;
     void* AccelTable[1];
   };

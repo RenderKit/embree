@@ -228,6 +228,7 @@ namespace embree
     out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
     out->transform = &out->xfmdata;
+    out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     out->xfmdata = *(RTHWIF_TRANSFORM4X4*) &local2world;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     out->accel = hwaccel->AccelTable[0];
@@ -242,6 +243,7 @@ namespace embree
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     out->transform = (RTHWIF_TRANSFORM4X4*) &geom->local2world[0];
+    out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     out->accel = hwaccel->AccelTable[0];
   }
@@ -259,7 +261,7 @@ namespace embree
     }
   }
 
-  BBox3fa rthwifBuildDriver(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
   {
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
@@ -330,13 +332,11 @@ namespace embree
     }
 
     /* calculate size of geometry descriptor buffer */
-    size_t totalPrimitives = 0;
     size_t totalBytes = 0;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
     {
       Geometry* geom = scene->get(geomID);
       if (geom == nullptr) continue;
-      totalPrimitives += geom->size();
       
       const GEOMETRY_TYPE type = getType(geomID);
       align(totalBytes,alignof_RTHWIF_GEOMETRY(type));
@@ -445,22 +445,11 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
-    hwaccel->bounds[0][0] = fullBounds.lower.x;
-    hwaccel->bounds[0][1] = fullBounds.lower.y;
-    hwaccel->bounds[0][2] = fullBounds.lower.z;
-    hwaccel->bounds[1][0] = fullBounds.upper.x;
-    hwaccel->bounds[1][1] = fullBounds.upper.y;
-    hwaccel->bounds[1][2] = fullBounds.upper.z;
     hwaccel->numTimeSegments = maxTimeSegments;
 
     for (size_t i=0; i<maxTimeSegments; i++)
       hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
 
     return fullBounds;
-  }
-
-  BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
-  {
-    return rthwifBuildDriver(scene,quality_flags,accel);
   }
 }

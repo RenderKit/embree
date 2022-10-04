@@ -360,6 +360,10 @@ struct Bounds3f
   static Bounds3f empty() {
     return { sycl::float3(INFINITY), sycl::float3(-INFINITY) };
   }
+
+  operator RTHWIF_AABB () const {
+    return { { lower.x(), lower.y(), lower.z() }, { upper.x(), upper.y(), upper.z() } };
+  }
   
   sycl::float3 lower;
   sycl::float3 upper;
@@ -713,6 +717,7 @@ struct InstanceGeometryT : public Geometry
       out.xfmdata.p.y  = local2world.p.y();
       out.xfmdata.p.z  = local2world.p.z();
       out.xfmdata.p.w  = 0.0f;
+      out.bounds = &scene->bounds;
       out.accel = scene->getAccel();
     }
   }
@@ -889,12 +894,7 @@ struct Scene
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("build error");
 
-    this->bounds.lower.x() = bounds.lower.x;
-    this->bounds.lower.y() = bounds.lower.y;
-    this->bounds.lower.z() = bounds.lower.z;
-    this->bounds.upper.x() = bounds.upper.x;
-    this->bounds.upper.y() = bounds.upper.y;
-    this->bounds.upper.z() = bounds.upper.z;
+    this->bounds = bounds;
   }
   
   void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map)
@@ -912,7 +912,10 @@ struct Scene
   }
 
   Bounds3f getBounds() {
-    return bounds;
+    return {
+      { bounds.lower.x, bounds.lower.y, bounds.lower.z },
+      { bounds.upper.x, bounds.upper.y, bounds.upper.z }
+    };
   }
   
   void* getAccel() {
@@ -925,7 +928,7 @@ struct Scene
   geometries_alloc_ty geometries_alloc;
   std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> geometries;
 
-  Bounds3f bounds;
+  RTHWIF_AABB bounds;
   void* accel;
 };
 

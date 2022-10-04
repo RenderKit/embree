@@ -164,7 +164,7 @@ typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
   uint8_t reserved0;                          // must be zero
   unsigned int instanceUserID;                // a user specified identifier for the instance
   RTHWIF_TRANSFORM4X4* transform;             // local to world instance transformation
-  //RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
+  RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
   void* accel;                                // pointer to acceleration structure to instantiate
     
 } RTHWIF_GEOMETRY_INSTANCE_DESC;
