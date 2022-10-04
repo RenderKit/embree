@@ -86,7 +86,7 @@ namespace embree
 
   struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
   {
-    RTHWIF_TRANSFORM4X4 xfmdata;
+    RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR xfmdata;
   };
 
   struct GEOMETRY_TYPE
@@ -227,9 +227,10 @@ namespace embree
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
-    out->transform = &out->xfmdata;
+    out->transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+    out->transform = (float*) &out->xfmdata;
     out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
-    out->xfmdata = *(RTHWIF_TRANSFORM4X4*) &local2world;
+    out->xfmdata = *(RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) &local2world;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     out->accel = hwaccel->AccelTable[0];
   }
@@ -242,7 +243,8 @@ namespace embree
     out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
-    out->transform = (RTHWIF_TRANSFORM4X4*) &geom->local2world[0];
+    out->transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+    out->transform = (float*) &geom->local2world[0];
     out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
     out->accel = hwaccel->AccelTable[0];

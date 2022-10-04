@@ -48,12 +48,34 @@ typedef struct RTHWIF_FLOAT4 {
   float x, y, z, w;
 } RTHWIF_FLOAT4;
 
-/* A 4x4 affine transformation with column vectors vx, vy, vz, and p
- * transforming a point (x,y,z) to x*vx + y*vy + z*vz + p. The 4th
- * components of the column vectors are ignored. */
-typedef struct RTHWIF_TRANSFORM4X4 {
-  RTHWIF_FLOAT4 vx, vy, vz, p;
-} RTHWIF_TRANSFORM4X4;
+/* A 3x4 affine transformation with column vectors vx, vy, vz, and p
+ * transforming a point (x,y,z) to x*vx + y*vy + z*vz + p. */
+typedef struct RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR {
+  float vx_x, vx_y, vx_z; // column 0
+  float vy_x, vy_y, vy_z; // column 1
+  float vz_x, vz_y, vz_z; // column 2
+  float  p_x,  p_y,  p_z; // column 3
+} RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR;
+
+
+/* Same as RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR, with ignored 4th
+ * component of column vectors. */
+typedef struct RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR {
+  float vx_x, vx_y, vx_z, pad0; // column 0
+  float vy_x, vy_y, vy_z, pad1; // column 1
+  float vz_x, vz_y, vz_z, pad2; // column 2
+  float  p_x,  p_y,  p_z, pad3; // column 3
+} RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR;
+
+
+/* Same as RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR, but using row major
+ * layout. */
+typedef struct RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR {
+  float vx_x, vy_x, vz_x, p_x; // row 0
+  float vx_y, vy_y, vz_y, p_y; // row 1
+  float vx_z, vy_z, vz_z, p_z; // row 2
+} RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR;
+
 
 /* An axis aligned bounding box with lower and upper bounds in each
  * dimension. */
@@ -83,6 +105,15 @@ typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
   RTHWIF_GEOMETRY_TYPE_AABBS_FPTR = 2,  // procedural geometry with AABB bounds per primitive
   RTHWIF_GEOMETRY_TYPE_INSTANCE = 3, // instance geometry
 } RTHWIF_GEOMETRY_TYPE;
+
+/* The format of transformations supported. */
+typedef enum RTHWIF_TRANSFORM_FORMAT : uint8_t
+{
+  RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR = 0,          // 3x4 affine transformation in column major format (see RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR layout)
+  RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR = 1,          // 4x4 affine transformation in column major format (see RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR layout)
+  RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR = 2,             // 3x4 affine transformation in row    major format (see RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR    layout)
+
+} RTHWIF_TRANSFORM_FORMAT;
 
 /* Instance flags supported (identical to DXR spec) */
 typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
@@ -161,9 +192,9 @@ typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
   RTHWIF_GEOMETRY_TYPE geometryType;          // must be RTHWIF_GEOMETRY_TYPE_INSTANCE
   RTHWIF_INSTANCE_FLAGS instanceFlags;        // flags for the instance (see RTHWIF_INSTANCE_FLAGS)
   uint8_t geometryMask;                       // 8-bit geometry mask for ray masking
-  uint8_t reserved0;                          // must be zero
+  RTHWIF_TRANSFORM_FORMAT transformFormat;    // format of the specified transformation
   unsigned int instanceUserID;                // a user specified identifier for the instance
-  RTHWIF_TRANSFORM4X4* transform;             // local to world instance transformation
+  float* transform;                           // local to world instance transformation in specified format
   RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
   void* accel;                                // pointer to acceleration structure to instantiate
     

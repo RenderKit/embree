@@ -446,7 +446,7 @@ struct Hit
 
 struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
 {
-  RTHWIF_TRANSFORM4X4 xfmdata;
+  RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR xfmdata;
 };
 
 typedef union GEOMETRY_DESC
@@ -700,23 +700,24 @@ struct InstanceGeometryT : public Geometry
       out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
       out.geometryMask = 0xFF;
       out.instanceUserID = instUserID;
-      out.transform = &out.xfmdata;
-      out.xfmdata.vx.x = local2world.vx.x();
-      out.xfmdata.vx.y = local2world.vx.y();
-      out.xfmdata.vx.z = local2world.vx.z();
-      out.xfmdata.vx.w = 0.0f;
-      out.xfmdata.vy.x = local2world.vy.x();
-      out.xfmdata.vy.y = local2world.vy.y();
-      out.xfmdata.vy.z = local2world.vy.z();
-      out.xfmdata.vy.w = 0.0f;
-      out.xfmdata.vz.x = local2world.vz.x();
-      out.xfmdata.vz.y = local2world.vz.y();
-      out.xfmdata.vz.z = local2world.vz.z();
-      out.xfmdata.vz.w = 0.0f;
-      out.xfmdata.p.x  = local2world.p.x();
-      out.xfmdata.p.y  = local2world.p.y();
-      out.xfmdata.p.z  = local2world.p.z();
-      out.xfmdata.p.w  = 0.0f;
+      out.transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+      out.transform = (float*)&out.xfmdata;
+      out.xfmdata.vx_x = local2world.vx.x();
+      out.xfmdata.vx_y = local2world.vx.y();
+      out.xfmdata.vx_z = local2world.vx.z();
+      out.xfmdata.pad0 = 0.0f;
+      out.xfmdata.vy_x = local2world.vy.x();
+      out.xfmdata.vy_y = local2world.vy.y();
+      out.xfmdata.vy_z = local2world.vy.z();
+      out.xfmdata.pad1 = 0.0f;
+      out.xfmdata.vz_x = local2world.vz.x();
+      out.xfmdata.vz_y = local2world.vz.y();
+      out.xfmdata.vz_z = local2world.vz.z();
+      out.xfmdata.pad2 = 0.0f;
+      out.xfmdata.p_x  = local2world.p.x();
+      out.xfmdata.p_y  = local2world.p.y();
+      out.xfmdata.p_z  = local2world.p.z();
+      out.xfmdata.pad3  = 0.0f;
       out.bounds = &scene->bounds;
       out.accel = scene->getAccel();
     }

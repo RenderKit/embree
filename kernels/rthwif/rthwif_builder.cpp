@@ -36,6 +36,42 @@ namespace embree
     return *(Vec3f*)((char*)geom->vertexBuffer + vertexID*geom->vertexStride);
   }
 
+  inline AffineSpace3fa getTransform(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  {
+    switch (geom->transformFormat)
+    {
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    default:
+      throw std::runtime_error("invalid transform format");
+    }
+  }
+  
   inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom)
   {
     if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
@@ -60,7 +96,6 @@ namespace embree
 
   inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
   {
-    if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
     if (geom->transform == nullptr) throw std::runtime_error("no instance transformation specified");
     if (geom->bounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
     if (geom->accel == nullptr) throw std::runtime_error("no acceleration structure to instanciate specified");
@@ -128,12 +163,7 @@ namespace embree
     if (geom->accel == nullptr) return false;
     if (geom->transform == nullptr) return false;
     
-    const Vec3fa vx = *(Vec3f*) &geom->transform->vx;
-    const Vec3fa vy = *(Vec3f*) &geom->transform->vy;
-    const Vec3fa vz = *(Vec3f*) &geom->transform->vz;
-    const Vec3fa p  = *(Vec3f*) &geom->transform->p;
-    const AffineSpace3fa local2world(vx,vy,vz,p);
-
+    const AffineSpace3fa local2world = getTransform(geom);
     const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
     const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
     const BBox3fa bounds = xfmBounds(local2world,BBox3fa(lower,upper));
@@ -426,8 +456,8 @@ namespace embree
       assert(geometries[geomID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE);
       const RTHWIF_GEOMETRY_INSTANCE_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCE_DESC*) geometries[geomID];
       void* accel = geom->accel;
-      RTHWIF_TRANSFORM4X4 local2world = *geom->transform;
-      return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
+      const AffineSpace3fa local2world = getTransform(geom);
+      return QBVH6BuilderSAH::Instance(local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
     };
 
     bool verbose = false;
