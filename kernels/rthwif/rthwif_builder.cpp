@@ -36,6 +36,36 @@ namespace embree
     return *(Vec3f*)((char*)geom->vertexBuffer + vertexID*geom->vertexStride);
   }
 
+  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom)
+  {
+    if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->triangleCount && geom->triangleBuffer == nullptr) throw std::runtime_error("no triangle buffer specified");
+    if (geom->vertexCount   && geom->vertexBuffer   == nullptr) throw std::runtime_error("no vertex buffer specified");
+  }
+
+  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_QUADS_DESC* geom)
+  {
+    if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->quadCount   && geom->quadBuffer   == nullptr) throw std::runtime_error("no quad buffer specified");
+    if (geom->vertexCount && geom->vertexBuffer == nullptr) throw std::runtime_error("no vertex buffer specified");
+  }
+
+  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom)
+  {
+    if (geom->reserved != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->primCount   && geom->getBounds == nullptr) throw std::runtime_error("no bounds function specified");
+  }
+
+  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  {
+    if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->transform == nullptr) throw std::runtime_error("no instance transformation specified");
+    //if (geom->bounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
+    if (geom->accel == nullptr) throw std::runtime_error("no acceleration structure to instanciate specified");
+  }
+
   inline bool buildBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
     if (primID >= geom->triangleCount) return false;
@@ -290,9 +320,21 @@ namespace embree
     /* prepare input arguments */
     const RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const size_t numGeometries = args.numGeometries;
+    const uint32_t numGeometries = args.numGeometries;
 
     if (args.accelBuffer == nullptr) return RTHWIF_ERROR_OTHER;
+
+    /* verify input descriptors */
+    parallel_for(numGeometries,[&](uint32_t geomID) {
+      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      switch (geom->geometryType) {
+      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : verifyGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom); break;
+      case RTHWIF_GEOMETRY_TYPE_QUADS      : verifyGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*    )geom); break;
+      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : verifyGeometryDesc((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom); break;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCE   : verifyGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom); break;
+      default: throw std::runtime_error("invalid geometry type");
+      };
+    });
     
     auto getSize = [&](uint32_t geomID) -> size_t {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
