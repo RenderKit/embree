@@ -438,6 +438,8 @@ struct Hit
 {
   Transform local_to_world;
   Triangle triangle;
+  bool procedural_triangle = false;
+  bool procedural_instance = false;
   uint32_t instUserID = -1;
   uint32_t instID = -1;
   uint32_t geomID = -1;
@@ -479,7 +481,7 @@ struct Geometry
   virtual void buildAccel(sycl::device& device, sycl::context& context) {
   };
 
-  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) = 0;
+  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
 
   Type type;
 };
@@ -640,7 +642,7 @@ public:
     }
   }
 
-  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override
+  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override
   {
     uint32_t instID = -1;
     uint32_t geomID = -1;
@@ -664,6 +666,8 @@ public:
       tri_map[tri.index].primID = primID;
       tri_map[tri.index].geomID = geomID;
       tri_map[tri.index].instID = instID;
+      tri_map[tri.index].procedural_triangle = procedural;
+      tri_map[tri.index].procedural_instance = procedural_instance;
       tri_map[tri.index].triangle = tri;
       tri_map[tri.index].local_to_world = local_to_world;
     }
@@ -763,10 +767,10 @@ struct InstanceGeometryT : public Geometry
     scene->buildAccel(device,context);
   }
 
-  virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override {
+  virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
     if (procedural) id_stack.back() = -1;
     else            instUserID = this->instUserID;
-    scene->buildTriMap(local_to_world_in * local2world, id_stack, instUserID, tri_map);
+    scene->buildTriMap(local_to_world_in * local2world, id_stack, instUserID, procedural, tri_map);
   }
 
   bool procedural;
@@ -935,12 +939,12 @@ struct Scene
     this->bounds = bounds;
   }
   
-  void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map)
+  void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map)
   {    
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
     {
       id_stack.push_back(geomID);
-      geometries[geomID]->buildTriMap(local_to_world,id_stack,instUserID,tri_map);
+      geometries[geomID]->buildTriMap(local_to_world,id_stack,instUserID,procedural_instance,tri_map);
       id_stack.pop_back();
     }
   }
@@ -1310,7 +1314,7 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
   tri_map.resize(numTests);
   std::vector<uint32_t> id_stack;
   Transform local_to_world;
-  scene->buildTriMap(local_to_world,id_stack,-1,tri_map);
+  scene->buildTriMap(local_to_world,id_stack,-1,false,tri_map);
   
   TestHitType hit_type = TEST_MISS;
   switch (test) {
@@ -1370,30 +1374,14 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
         case TestType::TRIANGLES_COMMITTED_HIT:
         case TestType::TRIANGLES_POTENTIAL_HIT:
         case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
-          out_expected[tid].bvh_level = levels-1;
-          out_expected[tid].hit_candidate = intel_candidate_type_triangle;
-          out_expected[tid].t = 1.0f;
-          out_expected[tid].u = 0.1f;
-          out_expected[tid].v = 0.6f;
-          out_expected[tid].front_face = 0;
-          out_expected[tid].geomID = hit.geomID;
-          out_expected[tid].primID = hit.primID;
-          out_expected[tid].instID = hit.instID;
-          out_expected[tid].instUserID = hit.instUserID;
-          out_expected[tid].v0 = hit.triangle.v0;
-          out_expected[tid].v1 = hit.triangle.v1;
-          out_expected[tid].v2 = hit.triangle.v2;
-          if (inst == InstancingType::SW_INSTANCING) {
-            out_expected[tid].world_to_object = Transform();
-            out_expected[tid].object_to_world = Transform();
-          } else {
-            out_expected[tid].world_to_object = world_to_local;
-            out_expected[tid].object_to_world = hit.local_to_world;
-          }
-          break;
         case TestType::PROCEDURALS_COMMITTED_HIT:
           out_expected[tid].bvh_level = levels-1;
-          out_expected[tid].hit_candidate = intel_candidate_type_procedural;
+          
+          if (hit.procedural_triangle)
+            out_expected[tid].hit_candidate = intel_candidate_type_procedural;
+          else
+            out_expected[tid].hit_candidate = intel_candidate_type_triangle;
+          
           out_expected[tid].t = 1.0f;
           out_expected[tid].u = 0.1f;
           out_expected[tid].v = 0.6f;
@@ -1402,10 +1390,16 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
           out_expected[tid].primID = hit.primID;
           out_expected[tid].instID = hit.instID;
           out_expected[tid].instUserID = hit.instUserID;
-          out_expected[tid].v0 = sycl::float3(0,0,0);
-          out_expected[tid].v1 = sycl::float3(0,0,0);
-          out_expected[tid].v2 = sycl::float3(0,0,0);
-          if (inst == InstancingType::SW_INSTANCING) {
+          if (hit.procedural_triangle) {
+            out_expected[tid].v0 = sycl::float3(0,0,0);
+            out_expected[tid].v1 = sycl::float3(0,0,0);
+            out_expected[tid].v2 = sycl::float3(0,0,0);
+          } else {
+            out_expected[tid].v0 = hit.triangle.v0;
+            out_expected[tid].v1 = hit.triangle.v1;
+            out_expected[tid].v2 = hit.triangle.v2;
+          }
+          if (hit.procedural_instance) {
             out_expected[tid].world_to_object = Transform();
             out_expected[tid].object_to_world = Transform();
           } else {
