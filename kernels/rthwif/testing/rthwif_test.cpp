@@ -6,6 +6,8 @@
 #include <map>
 #include <iostream>
 
+#define PRINT(x) std::cout << #x << " = " << x << std::endl;
+
 sycl::device device;
 sycl::context context;
 void* dispatchGlobalsPtr = nullptr;
@@ -135,7 +137,10 @@ enum class TestType
   TRIANGLES_ANYHIT_SHADER_COMMIT,    // triangles + filter + commit
   TRIANGLES_ANYHIT_SHADER_REJECT,    // triangles + filter + reject
   PROCEDURALS_COMMITTED_HIT,         // procedural triangles
-  BUILD_TEST                         // test BVH builder
+  BUILD_TEST_TRIANGLES,              // test BVH builder with triangles
+  BUILD_TEST_PROCEDURALS,            // test BVH builder with procedurals
+  BUILD_TEST_INSTANCES,              // test BVH builder with instances
+  BUILD_TEST_MIXED                   // test BVH builder with mixed scene (triangles, procedurals, and instances)
 };
 
 struct TestInput
@@ -604,6 +609,24 @@ public:
     }
   }
 
+  void split(std::shared_ptr<TriangleMesh>& mesh0, std::shared_ptr<TriangleMesh>& mesh1)
+  {
+    uint32_t N = (uint32_t) size();
+    mesh0 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags,procedural));
+    mesh1 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags,procedural));
+    mesh0->triangles.reserve(triangles.size()/2+1);
+    mesh1->triangles.reserve(triangles.size()/2+1);
+    mesh0->vertices.reserve(vertices.size()/2+8);
+    mesh1->vertices.reserve(vertices.size()/2+8);
+    
+    for (uint32_t primID=0; primID<N; primID++)
+    {
+      const Triangle tri = getTriangle(primID);
+      if (primID<N/2) mesh0->addTriangle(tri);
+      else            mesh1->addTriangle(tri);
+    }
+  }
+
   /* selects random sub-set of triangles */
   void select(const uint32_t numTriangles)
   {
@@ -836,22 +859,74 @@ struct Scene
 
   void splitIntoGeometries(uint32_t numGeometries)
   {
-    for (uint32_t i=0; i<numGeometries-1; i++)
+    bool progress = true;
+    while (progress)
+    {
+      size_t N = geometries.size();
+      progress = false;
+      for (uint32_t i=0; i<N; i++)
+      {
+        if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i]))
+        {
+          if (mesh->size() <= 1) continue;
+          progress = true;
+          
+          /*const Triangle tri = mesh->getTriangle(RandomSampler_getUInt(rng)%mesh->size());
+            const float u = 2.0f*M_PI*RandomSampler_getFloat(rng);
+            const sycl::float3 P = tri.center();
+            const sycl::float3 N(cosf(u),sinf(u),0.0f);
+            
+            std::shared_ptr<TriangleMesh> mesh0, mesh1;
+            mesh->split(P,N,mesh0,mesh1);*/
+          
+          std::shared_ptr<TriangleMesh> mesh0, mesh1;
+          mesh->split(mesh0,mesh1);
+          geometries[i] = std::dynamic_pointer_cast<Geometry>(mesh0);
+          geometries.push_back(std::dynamic_pointer_cast<Geometry>(mesh1));
+
+          if (geometries.size() >= numGeometries)
+            return;
+        }
+      }
+    }
+    assert(geometries.size() == numGeometries);
+  }
+
+  /* splits each primitive into a geometry */
+  void splitIntoGeometries()
+  {
+    /* count number of triangles */
+    uint32_t numTriangles = 0;
+    for (uint32_t i=0; i<geometries.size(); i++)
+    {
+      if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i])) {
+        numTriangles++;
+      }
+    }
+        
+    std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> new_geometries(0,geometries_alloc);
+    new_geometries.reserve(numTriangles);
+    
+    for (uint32_t i=0; i<geometries.size(); i++)
     {
       if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i]))
       {
-        const Triangle tri = mesh->getTriangle(RandomSampler_getUInt(rng)%mesh->size());
-        const float u = 2.0f*M_PI*RandomSampler_getFloat(rng);
-        const sycl::float3 P = tri.center();
-        const sycl::float3 N(cosf(u),sinf(u),0.0f);
-        
-        std::shared_ptr<TriangleMesh> mesh0, mesh1;
-        mesh->split(P,N,mesh0,mesh1);
-        geometries[i] = std::dynamic_pointer_cast<Geometry>(mesh0);
-        geometries.push_back(std::dynamic_pointer_cast<Geometry>(mesh1));
+        if (mesh->size() <= 1) {
+          new_geometries.push_back(geometries[i]);
+          continue;
+        }
+
+        for (uint32_t j=0; j<mesh->size(); j++) {
+          std::shared_ptr<TriangleMesh> mesh0(new TriangleMesh(mesh->gflags,mesh->procedural));
+          mesh0->triangles.reserve(1);
+          mesh->vertices.reserve(3);
+          mesh0->addTriangle(mesh->getTriangle(j));
+          new_geometries.push_back(mesh0);
+        }
       }
     }
-    assert(geometries.size() == (size_t) numGeometries);
+
+    geometries = new_geometries;
   }
 
   void createInstances(uint32_t blockSize, bool procedural)
@@ -1323,7 +1398,7 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
   case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: hit_type = TEST_COMMITTED_HIT; break;
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: hit_type = TEST_MISS; break;
   case TestType::PROCEDURALS_COMMITTED_HIT: hit_type = TEST_COMMITTED_HIT; break;
-  case TestType::BUILD_TEST: assert(false); break;
+  default: assert(false); break;
   };
 
   //for (size_t y=0; y<height; y++)
@@ -1427,7 +1502,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; procedural=false; break;
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; procedural=false; break;
   case TestType::PROCEDURALS_COMMITTED_HIT     : opaque = false; procedural=true;  break;
-  case TestType::BUILD_TEST: assert(false); break;
+  default: assert(false); break;
   };
 
   //std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
@@ -1487,15 +1562,22 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   return numErrors;
 }
 
-uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, uint32_t numPrimitives, bool quadifiable)
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test, uint32_t numPrimitives, int testID)
 {
   const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
   std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
+  if (test == TestType::BUILD_TEST_PROCEDURALS) plane->procedural = true;
   plane->select(numPrimitives);
-  if (!quadifiable) plane->unshareVertices();
+  if (testID%2) plane->unshareVertices();
     
   std::shared_ptr<Scene> scene(new Scene);
   scene->add(plane);
+  
+  if (test == TestType::BUILD_TEST_PROCEDURALS && (testID%3==0) && numPrimitives < 512)
+    scene->splitIntoGeometries();
+  //else if (testID%5 == 0)
+  //scene->splitIntoGeometries(std::min(16u,numPrimitives));
+  
   scene->buildAccel(device,context);
 
   /* calculate test input and expected output */
@@ -1507,7 +1589,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   memset(out_expected, 0, numPrimitives*sizeof(TestOutput));
 
   buildTestExpectedInputAndOutput(scene,numPrimitives,InstancingType::NONE,TestType::TRIANGLES_COMMITTED_HIT,in,out_expected);
- 
+
   /* execute test */
   void* accel = scene->getAccel();
   size_t scene_ptr = (size_t) scene.get();
@@ -1536,13 +1618,13 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   return numErrors;
 }
 
-uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context)
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
 {
   uint32_t numErrors = 0;
   for (uint32_t i=0; i<128; i++) {
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
-    numErrors += executeBuildTest(device,queue,context,numPrimitives,i%2);
+    numErrors += executeBuildTest(device,queue,context,test,numPrimitives,i);
   }
   return numErrors;
 }
@@ -1625,8 +1707,17 @@ int main(int argc, char* argv[])
     else if (strcmp(argv[i], "--procedurals-committed-hit") == 0) {
       test = TestType::PROCEDURALS_COMMITTED_HIT;
     }
-    else if (strcmp(argv[i], "--build_test") == 0) {
-      test = TestType::BUILD_TEST;
+    else if (strcmp(argv[i], "--build_test_triangles") == 0) {
+      test = TestType::BUILD_TEST_TRIANGLES;
+    }
+    else if (strcmp(argv[i], "--build_test_procedurals") == 0) {
+      test = TestType::BUILD_TEST_PROCEDURALS;
+    }
+    else if (strcmp(argv[i], "--build_test_instances") == 0) {
+      test = TestType::BUILD_TEST_INSTANCES;
+    }
+    else if (strcmp(argv[i], "--build_test_mixed") == 0) {
+      test = TestType::BUILD_TEST_MIXED;
     }
     else if (strcmp(argv[i], "--no-instancing") == 0) {
       inst = InstancingType::NONE;
@@ -1663,10 +1754,10 @@ int main(int argc, char* argv[])
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
+  
   uint32_t numErrors = 0;
-
-  if (test == TestType::BUILD_TEST)
-    numErrors = executeBuildTest(device,queue,context);
+  if (test >= TestType::BUILD_TEST_TRIANGLES)
+    numErrors = executeBuildTest(device,queue,context,test);
   else
     numErrors = executeTest(device,queue,context,inst,test);
 
