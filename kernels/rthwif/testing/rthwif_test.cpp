@@ -929,7 +929,7 @@ struct Scene
     geometries = new_geometries;
   }
 
-  void createInstances(uint32_t blockSize = 1, bool procedural = false)
+  void createInstances(uint32_t maxInstances, uint32_t blockSize = 1, bool procedural = false)
   {
     std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> instances(0,geometries_alloc);
     
@@ -937,7 +937,15 @@ struct Scene
     {
       const uint32_t begin = i;
       const uint32_t end   = std::min((uint32_t)geometries.size(),i+blockSize);
-
+      
+      if (instances.size() >= maxInstances)
+      {
+        for (uint32_t j=begin; j<end; j++) {
+          instances.push_back(geometries[j]);
+        }
+        continue;
+      }
+      
       const Transform local2world = RandomSampler_getTransform(rng);
       const Transform world2local = rcp(local2world);
 
@@ -954,6 +962,13 @@ struct Scene
     }
 
     geometries = instances;
+  }
+
+  void mixTrianglesAndProcedurals()
+  {
+    for (uint32_t i=0; i<geometries.size(); i++)
+      if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i]))
+        mesh->procedural = i%2;
   }
 
   void buildAccel(sycl::device& device, sycl::context& context)
@@ -1518,7 +1533,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   std::shared_ptr<Scene> scene(new Scene(width,height,opaque,procedural));
   scene->splitIntoGeometries(16);
   if (inst != InstancingType::NONE)
-    scene->createInstances(3, inst == InstancingType::SW_INSTANCING);
+    scene->createInstances(scene->size(),3, inst == InstancingType::SW_INSTANCING);
   scene->buildAccel(device,context);
 
   /* calculate test input and expected output */
@@ -1582,14 +1597,18 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   std::shared_ptr<Scene> scene(new Scene);
   scene->add(plane);
   
-  if (test == TestType::BUILD_TEST_PROCEDURALS && (testID%3==0) && numPrimitives < 512)
-    scene->splitIntoGeometries();
-  //else if (testID%5 == 0)
-  //scene->splitIntoGeometries(std::min(16u,numPrimitives));
-
-  if (test == TestType::BUILD_TEST_INSTANCES) {
+  if (test == TestType::BUILD_TEST_PROCEDURALS) {
+    if ((testID%3==0) && numPrimitives < 256)
+      scene->splitIntoGeometries();
+  }
+  else if (test == TestType::BUILD_TEST_MIXED) {
+    scene->splitIntoGeometries(std::max(1u,std::min(16u,numPrimitives)));
+    scene->mixTrianglesAndProcedurals();
+    scene->createInstances(scene->size()/2);
+  }
+  else if (test == TestType::BUILD_TEST_INSTANCES) {
     scene->splitIntoGeometries(std::max(1u,std::min(256u,numPrimitives)));
-    scene->createInstances();
+    scene->createInstances(scene->size());
   }
   
   scene->buildAccel(device,context);
@@ -1635,8 +1654,8 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
 uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
 {
   uint32_t N = 128;
-  if (test == TestType::BUILD_TEST_INSTANCES)
-    N = 16;
+  if (test == TestType::BUILD_TEST_INSTANCES) N = 10;
+  else if (test == TestType::BUILD_TEST_MIXED) N = 32;
     
   uint32_t numErrors = 0;
   for (uint32_t i=0; i<N; i++) {
