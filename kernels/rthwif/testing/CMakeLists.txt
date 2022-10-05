@@ -34,6 +34,8 @@ IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS OR NOT DEFINED EMBREE_DPCPP_IMPLICIT_
 
 ENDIF()
 
+ADD_TEST(NAME rthwif_test_builder                       COMMAND rthwif_test --build_test)
+
 ADD_TEST(NAME rthwif_test_triangles_committed_hit        COMMAND rthwif_test --no-instancing --triangles-committed-hit)
 ADD_TEST(NAME rthwif_test_triangles_potential_hit        COMMAND rthwif_test --no-instancing --triangles-potential-hit)
 ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_commit COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-commit)

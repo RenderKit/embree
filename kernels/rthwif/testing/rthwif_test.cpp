@@ -135,6 +135,7 @@ enum class TestType
   TRIANGLES_ANYHIT_SHADER_COMMIT,    // triangles + filter + commit
   TRIANGLES_ANYHIT_SHADER_REJECT,    // triangles + filter + reject
   PROCEDURALS_COMMITTED_HIT,         // procedural triangles
+  BUILD_TEST                         // test BVH builder
 };
 
 struct TestInput
@@ -1290,15 +1291,17 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
   case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: hit_type = TEST_COMMITTED_HIT; break;
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: hit_type = TEST_MISS; break;
   case TestType::PROCEDURALS_COMMITTED_HIT: hit_type = TEST_COMMITTED_HIT; break;
+  case TestType::BUILD_TEST: assert(false); break;
   };
 
-  for (size_t y=0; y<height; y++)
+  //for (size_t y=0; y<height; y++)
   {
-    for (size_t x=0; x<width; x++)
+    //for (size_t x=0; x<width; x++)
     {
-      for (size_t i=0; i<2; i++)
+      //for (size_t i=0; i<2; i++)
+      for (size_t tid=0; tid<numTests; tid++)
       {
-        size_t tid = 2*(y*width+x)+i;
+        //size_t tid = 2*(y*width+x)+i;
         assert(tid < numTests);
 
         Hit hit = tri_map[tid];
@@ -1398,6 +1401,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; procedural=false; break;
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; procedural=false; break;
   case TestType::PROCEDURALS_COMMITTED_HIT     : opaque = false; procedural=true;  break;
+  case TestType::BUILD_TEST: assert(false); break;
   };
 
   //std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
@@ -1450,8 +1454,68 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   for (size_t tid=0; tid<numTests; tid++)
     compareTestOutput(tid,numErrors,out_test[tid],out_expected[tid]);
 
+  sycl::free(in,context);
+  sycl::free(out_test,context);
+  sycl::free(out_expected,context);
+
   return numErrors;
 }
+
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, int width, int height)
+{
+  size_t numTests = 2*width*height;
+    
+  std::shared_ptr<Scene> scene(new Scene(width,height,true,false));
+  scene->buildAccel(device,context);
+
+  /* calculate test input and expected output */
+  TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
+  memset(in, 0, numTests*sizeof(TestInput));
+  TestOutput* out_test = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_test, 0, numTests*sizeof(TestOutput));
+  TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_expected, 0, numTests*sizeof(TestOutput));
+
+  buildTestExpectedInputAndOutput(scene,numTests,InstancingType::NONE,TestType::TRIANGLES_COMMITTED_HIT,in,out_expected);
+ 
+  /* execute test */
+  void* accel = scene->getAccel();
+  size_t scene_ptr = (size_t) scene.get();
+
+  if (numTests)
+  {
+    queue.submit([&](sycl::handler& cgh) {
+                   const sycl::range<1> range(numTests);
+                   cgh.parallel_for(range, [=](sycl::item<1> item) {
+                                             const uint i = item.get_id(0);
+                                             render_loop(i,in[i],out_test[i],scene_ptr,(intel_raytracing_acceleration_structure_t*)accel,TestType::TRIANGLES_COMMITTED_HIT);
+                                           });
+                 });
+    queue.wait_and_throw();
+  }
+    
+  /* verify result */
+  uint32_t numErrors = 0;
+  for (size_t tid=0; tid<numTests; tid++)
+    compareTestOutput(tid,numErrors,out_test[tid],out_expected[tid]);
+
+  sycl::free(in,context);
+  sycl::free(out_test,context);
+  sycl::free(out_expected,context);
+
+  return numErrors;
+}
+
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context)
+{
+  uint32_t numErrors = 0;
+  for (size_t width=0; width<256; width++) {
+    std::cout << "testing " << width << std::endl;
+    numErrors += executeBuildTest(device,queue,context,width,16);
+  }
+  return numErrors;
+}
+
 
 enum Flags : uint32_t {
   FLAGS_NONE,
@@ -1504,7 +1568,7 @@ int main(int argc, char* argv[])
   
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
-  bool jit_cache = true;
+  bool jit_cache = false;
 
   /* command line parsing */
   if (argc == 1) {
@@ -1529,6 +1593,9 @@ int main(int argc, char* argv[])
     }
     else if (strcmp(argv[i], "--procedurals-committed-hit") == 0) {
       test = TestType::PROCEDURALS_COMMITTED_HIT;
+    }
+    else if (strcmp(argv[i], "--build_test") == 0) {
+      test = TestType::BUILD_TEST;
     }
     else if (strcmp(argv[i], "--no-instancing") == 0) {
       inst = InstancingType::NONE;
@@ -1565,7 +1632,12 @@ int main(int argc, char* argv[])
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
-  uint32_t numErrors = executeTest(device,queue,context,inst,test);
+  uint32_t numErrors = 0;
+
+  if (test == TestType::BUILD_TEST)
+    numErrors = executeBuildTest(device,queue,context);
+  else
+    numErrors = executeTest(device,queue,context,inst,test);
 
   sycl::free(dispatchGlobalsPtr, context);
 
