@@ -793,6 +793,10 @@ struct Scene
     sycl::free(ptr,context);
   }
 
+  void add(std::shared_ptr<TriangleMesh> mesh) {
+    geometries.push_back(mesh);
+  }
+
   void splitIntoGeometries(uint32_t numGeometries)
   {
     for (uint32_t i=0; i<numGeometries-1; i++)
@@ -1268,43 +1272,17 @@ static const int width = 128;
 static const int height = 128;
 static const size_t numTests = 2*width*height;
 
-uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, InstancingType inst, TestType test)
+void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTests, InstancingType inst, TestType test, TestInput* in, TestOutput* out_expected)
 {
-  bool opaque = true;
-  bool procedural = false;
-  switch (test) {
-  case TestType::TRIANGLES_COMMITTED_HIT       : opaque = true;  procedural=false; break;
-  case TestType::TRIANGLES_POTENTIAL_HIT       : opaque = false; procedural=false; break;
-  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; procedural=false; break;
-  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; procedural=false; break;
-  case TestType::PROCEDURALS_COMMITTED_HIT     : opaque = false; procedural=true;  break;
-  };
-
   uint32_t levels = 1;
   if (inst != InstancingType::NONE) levels = 2;
-
-  //std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
-  std::shared_ptr<Scene> scene(new Scene(width,height,opaque,procedural));
-  scene->splitIntoGeometries(16);
-  if (inst != InstancingType::NONE)
-    scene->createInstances(3, inst == InstancingType::SW_INSTANCING);
-  scene->buildAccel(device,context);
-
+  
   std::vector<Hit> tri_map;
   tri_map.resize(2*width*height);
   std::vector<uint32_t> id_stack;
   Transform local_to_world;
   scene->buildTriMap(local_to_world,id_stack,-1,tri_map);
- 
-  TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
-  memset(in, 0, numTests*sizeof(TestInput));
-
-  TestOutput* out_test = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
-  memset(out_test, 0, numTests*sizeof(TestOutput));
-
-  TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
-  memset(out_expected, 0, numTests*sizeof(TestOutput));
-
+  
   TestHitType hit_type = TEST_MISS;
   switch (test) {
   case TestType::TRIANGLES_COMMITTED_HIT: hit_type = TEST_COMMITTED_HIT; break;
@@ -1408,7 +1386,37 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
       }
     }
   }
+}
 
+uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, InstancingType inst, TestType test)
+{
+  bool opaque = true;
+  bool procedural = false;
+  switch (test) {
+  case TestType::TRIANGLES_COMMITTED_HIT       : opaque = true;  procedural=false; break;
+  case TestType::TRIANGLES_POTENTIAL_HIT       : opaque = false; procedural=false; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; procedural=false; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; procedural=false; break;
+  case TestType::PROCEDURALS_COMMITTED_HIT     : opaque = false; procedural=true;  break;
+  };
+
+  //std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
+  std::shared_ptr<Scene> scene(new Scene(width,height,opaque,procedural));
+  scene->splitIntoGeometries(16);
+  if (inst != InstancingType::NONE)
+    scene->createInstances(3, inst == InstancingType::SW_INSTANCING);
+  scene->buildAccel(device,context);
+
+  /* calculate test input and expected output */
+  TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
+  memset(in, 0, numTests*sizeof(TestInput));
+  TestOutput* out_test = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_test, 0, numTests*sizeof(TestOutput));
+  TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_expected, 0, numTests*sizeof(TestOutput));
+
+  buildTestExpectedInputAndOutput(scene,numTests,inst,test,in,out_expected);
+ 
   /* execute test */
   void* accel = scene->getAccel();
   size_t scene_ptr = (size_t) scene.get();
