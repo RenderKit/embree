@@ -624,6 +624,22 @@ public:
       triangles[i].w() = i;
   }
 
+  /* creates separate vertives for triangles */
+  void unshareVertices()
+  {
+    vertices.reserve(vertices.size()+3*triangles.size());
+    for (size_t i=0; i<triangles.size(); i++) {
+      const sycl::int4 tri = triangles[i];
+      const uint32_t v0 = (uint32_t) vertices.size();
+      vertices.push_back(vertices[tri.x()]);
+      const uint32_t v1 = (uint32_t) vertices.size();
+      vertices.push_back(vertices[tri.y()]);
+      const uint32_t v2 = (uint32_t) vertices.size();
+      vertices.push_back(vertices[tri.z()]);
+      triangles[i] = sycl::int4(v0,v1,v2,tri.w());
+    }
+  }
+
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override
   {
     uint32_t instID = -1;
@@ -657,7 +673,7 @@ public:
   RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
   bool procedural = false;
   
-  typedef sycl::usm_allocator<sycl::int3, sycl::usm::alloc::shared> triangles_alloc_ty;
+  typedef sycl::usm_allocator<sycl::int4, sycl::usm::alloc::shared> triangles_alloc_ty;
   triangles_alloc_ty triangles_alloc;
   std::vector<sycl::int4, triangles_alloc_ty> triangles;
 
@@ -1477,11 +1493,12 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   return numErrors;
 }
 
-uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, uint32_t numPrimitives)
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, uint32_t numPrimitives, bool quadifiable)
 {
   const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
   std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
   plane->select(numPrimitives);
+  if (!quadifiable) plane->unshareVertices();
     
   std::shared_ptr<Scene> scene(new Scene);
   scene->add(plane);
@@ -1531,7 +1548,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   for (uint32_t i=0; i<128; i++) {
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
-    numErrors += executeBuildTest(device,queue,context,numPrimitives);
+    numErrors += executeBuildTest(device,queue,context,numPrimitives,i%2);
   }
   return numErrors;
 }
