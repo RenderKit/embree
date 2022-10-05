@@ -36,7 +36,7 @@ ENDIF()
 
 ADD_TEST(NAME rthwif_test_builder_triangles               COMMAND rthwif_test --build_test_triangles)
 ADD_TEST(NAME rthwif_test_builder_procedurals             COMMAND rthwif_test --build_test_procedurals)
-#ADD_TEST(NAME rthwif_test_builder_instances               COMMAND rthwif_test --build_test_instances)
+ADD_TEST(NAME rthwif_test_builder_instances               COMMAND rthwif_test --build_test_instances)
 #ADD_TEST(NAME rthwif_test_builder_mixed                    COMMAND rthwif_test --build_test_mixed)
 
 ADD_TEST(NAME rthwif_test_triangles_committed_hit        COMMAND rthwif_test --no-instancing --triangles-committed-hit)

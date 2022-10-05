@@ -679,6 +679,7 @@ public:
       instID = id_stack.back();
       id_stack.pop_back();
     }
+
     assert(id_stack.size() == 0);
     
     for (uint32_t primID=0; primID<triangles.size(); primID++)
@@ -791,8 +792,7 @@ struct InstanceGeometryT : public Geometry
   }
 
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
-    if (procedural) id_stack.back() = -1;
-    else            instUserID = this->instUserID;
+    instUserID = this->instUserID;
     scene->buildTriMap(local_to_world_in * local2world, id_stack, instUserID, procedural, tri_map);
   }
 
@@ -929,7 +929,7 @@ struct Scene
     geometries = new_geometries;
   }
 
-  void createInstances(uint32_t blockSize, bool procedural)
+  void createInstances(uint32_t blockSize = 1, bool procedural = false)
   {
     std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> instances(0,geometries_alloc);
     
@@ -989,9 +989,9 @@ struct Scene
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
-    
+
     accel = nullptr;
-    for (size_t bytes = size.accelBufferExpectedBytes; bytes < size.accelBufferWorstCaseBytes; bytes*=1.2)
+    for (size_t bytes = size.accelBufferExpectedBytes; bytes <= size.accelBufferWorstCaseBytes; bytes*=1.2)
     {
       /* allocate BVH data */
       if (accel) sycl::free(accel,context);
@@ -1380,11 +1380,8 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   intel_ray_query_abandon(query);
 }
 
-void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTests, InstancingType inst, TestType test, TestInput* in, TestOutput* out_expected)
+void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTests, TestType test, TestInput* in, TestOutput* out_expected)
 {
-  uint32_t levels = 1;
-  if (inst != InstancingType::NONE) levels = 2;
-  
   std::vector<Hit> tri_map;
   tri_map.resize(numTests);
   std::vector<uint32_t> id_stack;
@@ -1450,7 +1447,11 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
         case TestType::TRIANGLES_POTENTIAL_HIT:
         case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
         case TestType::PROCEDURALS_COMMITTED_HIT:
-          out_expected[tid].bvh_level = levels-1;
+
+          if (hit.instID != -1)
+            out_expected[tid].bvh_level = 1;
+          else
+            out_expected[tid].bvh_level = 0;
           
           if (hit.procedural_triangle)
             out_expected[tid].hit_candidate = intel_candidate_type_procedural;
@@ -1463,8 +1464,16 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
           out_expected[tid].front_face = 0;
           out_expected[tid].geomID = hit.geomID;
           out_expected[tid].primID = hit.primID;
-          out_expected[tid].instID = hit.instID;
-          out_expected[tid].instUserID = hit.instUserID;
+
+          if (hit.procedural_instance) {
+            out_expected[tid].instID = -1;
+            out_expected[tid].instUserID = -1;
+          }
+          else {
+            out_expected[tid].instID = hit.instID;
+            out_expected[tid].instUserID = hit.instUserID;
+          }
+           
           if (hit.procedural_triangle) {
             out_expected[tid].v0 = sycl::float3(0,0,0);
             out_expected[tid].v1 = sycl::float3(0,0,0);
@@ -1520,7 +1529,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
   memset(out_expected, 0, numTests*sizeof(TestOutput));
 
-  buildTestExpectedInputAndOutput(scene,numTests,inst,test,in,out_expected);
+  buildTestExpectedInputAndOutput(scene,numTests,test,in,out_expected);
  
   /* execute test */
   void* accel = scene->getAccel();
@@ -1577,6 +1586,11 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
     scene->splitIntoGeometries();
   //else if (testID%5 == 0)
   //scene->splitIntoGeometries(std::min(16u,numPrimitives));
+
+  if (test == TestType::BUILD_TEST_INSTANCES) {
+    scene->splitIntoGeometries(std::max(1u,std::min(256u,numPrimitives)));
+    scene->createInstances();
+  }
   
   scene->buildAccel(device,context);
 
@@ -1588,7 +1602,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
   memset(out_expected, 0, numPrimitives*sizeof(TestOutput));
 
-  buildTestExpectedInputAndOutput(scene,numPrimitives,InstancingType::NONE,TestType::TRIANGLES_COMMITTED_HIT,in,out_expected);
+  buildTestExpectedInputAndOutput(scene,numPrimitives,TestType::TRIANGLES_COMMITTED_HIT,in,out_expected);
 
   /* execute test */
   void* accel = scene->getAccel();
@@ -1620,8 +1634,12 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
 
 uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
 {
+  uint32_t N = 128;
+  if (test == TestType::BUILD_TEST_INSTANCES)
+    N = 16;
+    
   uint32_t numErrors = 0;
-  for (uint32_t i=0; i<128; i++) {
+  for (uint32_t i=0; i<N; i++) {
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
     numErrors += executeBuildTest(device,queue,context,test,numPrimitives,i);
