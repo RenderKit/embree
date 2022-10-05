@@ -602,6 +602,28 @@ public:
     }
   }
 
+  /* selects random sub-set of triangles */
+  void select(const uint32_t numTriangles)
+  {
+    assert(numTriangles <= size());
+
+    /* first randomize triangles */
+    for (size_t i=0; i<size(); i++) {
+      uint32_t j = RandomSampler_getUInt(rng) % size();
+      std::swap(triangles[i],triangles[j]);
+    }
+
+    /* now we can easily select a random set of triangles */
+    triangles.resize(numTriangles);
+
+    /* now we sort the triangles again */
+    std::sort(triangles.begin(), triangles.end(), []( sycl::int4 a, sycl::int4 b ) { return a.w() < b.w(); });
+
+    /* and assign consecutive IDs */
+    for (uint32_t i=0; i<numTriangles; i++)
+      triangles[i].w() = i;
+  }
+
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override
   {
     uint32_t instID = -1;
@@ -1263,17 +1285,13 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   intel_ray_query_abandon(query);
 }
 
-static const int width = 128;
-static const int height = 128;
-static const size_t numTests = 2*width*height;
-
 void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTests, InstancingType inst, TestType test, TestInput* in, TestOutput* out_expected)
 {
   uint32_t levels = 1;
   if (inst != InstancingType::NONE) levels = 2;
   
   std::vector<Hit> tri_map;
-  tri_map.resize(2*width*height);
+  tri_map.resize(numTests);
   std::vector<uint32_t> id_stack;
   Transform local_to_world;
   scene->buildTriMap(local_to_world,id_stack,-1,tri_map);
@@ -1387,6 +1405,10 @@ void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTes
 
 uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, InstancingType inst, TestType test)
 {
+  const int width = 128;
+  const int height = 128;
+  const size_t numTests = 2*width*height;
+
   bool opaque = true;
   bool procedural = false;
   switch (test) {
@@ -1455,31 +1477,34 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   return numErrors;
 }
 
-uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, int width, int height)
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, uint32_t numPrimitives)
 {
-  size_t numTests = 2*width*height;
+  const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
+  std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
+  plane->select(numPrimitives);
     
-  std::shared_ptr<Scene> scene(new Scene(width,height,true,false));
+  std::shared_ptr<Scene> scene(new Scene);
+  scene->add(plane);
   scene->buildAccel(device,context);
 
   /* calculate test input and expected output */
-  TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
-  memset(in, 0, numTests*sizeof(TestInput));
-  TestOutput* out_test = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
-  memset(out_test, 0, numTests*sizeof(TestOutput));
-  TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
-  memset(out_expected, 0, numTests*sizeof(TestOutput));
+  TestInput* in = (TestInput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
+  memset(in, 0, numPrimitives*sizeof(TestInput));
+  TestOutput* out_test = (TestOutput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_test, 0, numPrimitives*sizeof(TestOutput));
+  TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_expected, 0, numPrimitives*sizeof(TestOutput));
 
-  buildTestExpectedInputAndOutput(scene,numTests,InstancingType::NONE,TestType::TRIANGLES_COMMITTED_HIT,in,out_expected);
+  buildTestExpectedInputAndOutput(scene,numPrimitives,InstancingType::NONE,TestType::TRIANGLES_COMMITTED_HIT,in,out_expected);
  
   /* execute test */
   void* accel = scene->getAccel();
   size_t scene_ptr = (size_t) scene.get();
 
-  if (numTests)
+  if (numPrimitives)
   {
     queue.submit([&](sycl::handler& cgh) {
-                   const sycl::range<1> range(numTests);
+                   const sycl::range<1> range(numPrimitives);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
                                              const uint i = item.get_id(0);
                                              render_loop(i,in[i],out_test[i],scene_ptr,(intel_raytracing_acceleration_structure_t*)accel,TestType::TRIANGLES_COMMITTED_HIT);
@@ -1490,7 +1515,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
     
   /* verify result */
   uint32_t numErrors = 0;
-  for (size_t tid=0; tid<numTests; tid++)
+  for (size_t tid=0; tid<numPrimitives; tid++)
     compareTestOutput(tid,numErrors,out_test[tid],out_expected[tid]);
 
   sycl::free(in,context);
@@ -1503,9 +1528,10 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
 uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context)
 {
   uint32_t numErrors = 0;
-  for (size_t width=0; width<256; width++) {
-    std::cout << "testing " << width << std::endl;
-    numErrors += executeBuildTest(device,queue,context,width,16);
+  for (uint32_t i=0; i<128; i++) {
+    const uint32_t numPrimitives = i>10 ? i*i : i;
+    std::cout << "testing " << numPrimitives << " primitives" << std::endl;
+    numErrors += executeBuildTest(device,queue,context,numPrimitives);
   }
   return numErrors;
 }
