@@ -552,7 +552,7 @@ public:
       out.geometryMask = 0xFF;
       out.triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) triangles.data();
       out.triangleCount = triangles.size();
-      out.triangleStride = sizeof(sycl::int3);
+      out.triangleStride = sizeof(sycl::int4);
       out.vertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
       out.vertexCount = vertices.size();
       out.vertexStride = sizeof(sycl::float3);
@@ -564,7 +564,7 @@ public:
     const sycl::float3 v0 = vertices[triangles[primID].x()];
     const sycl::float3 v1 = vertices[triangles[primID].y()];
     const sycl::float3 v2 = vertices[triangles[primID].z()];
-    const uint32_t index = indices[primID];
+    const uint32_t index = triangles[primID].w();
     return Triangle(v0,v1,v2,index);
   }
 
@@ -586,8 +586,7 @@ public:
     const uint32_t v0 = addVertex(tri.v0);
     const uint32_t v1 = addVertex(tri.v1);
     const uint32_t v2 = addVertex(tri.v2);
-    triangles.push_back(sycl::int3(v0,v1,v2));
-    indices.push_back(tri.index);
+    triangles.push_back(sycl::int4(v0,v1,v2,tri.index));
   }
 
   void split(const sycl::float3 P, const sycl::float3 N, std::shared_ptr<TriangleMesh>& mesh0, std::shared_ptr<TriangleMesh>& mesh1)
@@ -636,11 +635,9 @@ public:
   RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
   bool procedural = false;
   
-  std::vector<uint32_t> indices;
-
   typedef sycl::usm_allocator<sycl::int3, sycl::usm::alloc::shared> triangles_alloc_ty;
   triangles_alloc_ty triangles_alloc;
-  std::vector<sycl::int3, triangles_alloc_ty> triangles;
+  std::vector<sycl::int4, triangles_alloc_ty> triangles;
 
   typedef sycl::usm_allocator<sycl::float3, sycl::usm::alloc::shared> vertices_alloc_ty;
   vertices_alloc_ty vertices_alloc;
@@ -743,7 +740,6 @@ struct InstanceGeometryT : public Geometry
 std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx, const sycl::float3& dy, size_t width, size_t height)
 {
   std::shared_ptr<TriangleMesh> mesh(new TriangleMesh);
-  mesh->indices.resize(2*width*height);
   mesh->triangles.resize(2*width*height);
   mesh->vertices.resize((width+1)*(height+1));
   
@@ -761,10 +757,8 @@ std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const
       size_t p01 = (y+0)*(width+1)+(x+1);
       size_t p10 = (y+1)*(width+1)+(x+0);
       size_t p11 = (y+1)*(width+1)+(x+1);
-      mesh->triangles[i+0] = sycl::int3((int)p00,(int)p01,(int)p10);
-      mesh->triangles[i+1] = sycl::int3((int)p11,(int)p10,(int)p01);
-      mesh->indices[i+0] = i+0;
-      mesh->indices[i+1] = i+1;
+      mesh->triangles[i+0] = sycl::int4((int)p00,(int)p01,(int)p10,i+0);
+      mesh->triangles[i+1] = sycl::int4((int)p11,(int)p10,(int)p01,i+1);
     }
   }
   return mesh;
@@ -1151,7 +1145,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
       {
         const TriangleMesh* mesh = (TriangleMesh*) geom;
 
-        const sycl::int3 tri = mesh->triangles[primID];
+        const sycl::int4 tri = mesh->triangles[primID];
         const sycl::float3 tri_v0 = mesh->vertices[tri.x()];
         const sycl::float3 tri_v1 = mesh->vertices[tri.y()];
         const sycl::float3 tri_v2 = mesh->vertices[tri.z()];
