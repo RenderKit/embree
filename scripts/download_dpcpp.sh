@@ -47,7 +47,8 @@ echo "Unpacking archive"
 tar -xzf dpcpp-compiler.tar.gz
 rm -rf dpcpp-compiler.tar.gz
 mkdir -p ${DPCPP_VERSION}
-mv dpcpp_compiler ${DPCPP_VERSION}
+cp -r dpcpp_compiler ${DPCPP_VERSION}/
+rm -rf dpcpp_compiler
 
 cd ${DPCPP_VERSION}/dpcpp_compiler
 sed -i '/fpgavars/d' startup.sh \
