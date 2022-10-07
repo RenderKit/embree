@@ -74,34 +74,14 @@ namespace embree
 
   bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
   {
-    /* check for Intel vendor */
-    const uint32_t vendor_id = sycl_device.get_info<sycl::info::device::vendor_id>();
-    if (vendor_id != 0x8086) return false;
+    /* disabling of device check through env variable */
+    const char* disable_device_check = getenv("EMBREE_DISABLE_DEVICEID_CHECK");
+    if (disable_device_check && strcmp(disable_device_check,"1") == 0)
+      return true;
 
-    /* check for supported device ID */
-    auto native_device = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
-    ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
-    ze_result_t status = zeDeviceGetProperties(native_device, &device_props);
-    if (status != ZE_RESULT_SUCCESS)
-      return false;
-
-    const uint32_t device_id = device_props.deviceId;
-    
-    // DG2
-    if (0x4F80 <= device_id && device_id <= 0x4F88) return true;
-    if (0x5690 <= device_id && device_id <= 0x5698) return true;
-    if (0x56A0 <= device_id && device_id <= 0x56A6) return true;
-    if (0x56B0 <= device_id && device_id <= 0x56B3) return true;
-    if (0x56C0 <= device_id && device_id <= 0x56C1) return true;
-       
-    // ATS-M
-    if (0x0201 <= device_id && device_id <= 0x0210) return true;
-
-    // PVC
-    if (0x0BD0 <= device_id && device_id <= 0x0BDB) return true;
-    if (device_id == 0x0BE5) return true;
-
-    return false;
+    /* check if GPU device is supported */
+    const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(sycl_device);
+    return features != RTHWIF_FEATURES_NONE;
   }
 
   struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC

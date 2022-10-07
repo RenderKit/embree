@@ -145,6 +145,9 @@ namespace embree
   
   RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device)
   {
+    /* we only support GPUs */
+    if (!device.is_gpu()) return RTHWIF_FEATURES_NONE;
+    
     /* check for Intel vendor */
     const uint32_t vendor_id = device.get_info<sycl::info::device::vendor_id>();
     if (vendor_id != 0x8086) return RTHWIF_FEATURES_NONE;

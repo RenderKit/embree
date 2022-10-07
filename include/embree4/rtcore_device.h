@@ -31,10 +31,6 @@ class RTCDeviceSelector
 public:
   int operator()(const sycl::device& device) const
   {
-    /* we only support GPUs */
-    if (!device.is_gpu())
-      return -1;
-    
     /* the GPU has to support Embree */
     if (!rtcIsSYCLDeviceSupported(device))
       return -1;
