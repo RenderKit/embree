@@ -27,13 +27,13 @@ SET(OPTION BUILD_TESTING ON)
 INCLUDE(CTest)
 
 IF (EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS OR NOT DEFINED EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
-  
+
   ADD_TEST(NAME rthwif_cornell_box
-           COMMAND rthwif_cornell_box
+           COMMAND rthwif_cornell_box --compare "${EMBREE_MODEL_DIR}/reference/cornell_box_reference.tga"
            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 ENDIF()
-         
+
 ADD_TEST(NAME rthwif_test_triangles_committed_hit        COMMAND rthwif_test --no-instancing --triangles-committed-hit)
 ADD_TEST(NAME rthwif_test_triangles_potential_hit        COMMAND rthwif_test --no-instancing --triangles-potential-hit)
 ADD_TEST(NAME rthwif_test_triangles_anyhit_shader_commit COMMAND rthwif_test --no-instancing --triangles-anyhit-shader-commit)
