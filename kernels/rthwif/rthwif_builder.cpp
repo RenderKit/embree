@@ -177,7 +177,7 @@ namespace embree
   }
 
   template<typename GeometryType>
-  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* buildUserPtr, avector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
+  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* buildUserPtr, evector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
   {
     PrimInfo pinfo(empty);
     for (uint32_t primID=r.begin(); primID<r.end(); primID++)
@@ -312,6 +312,10 @@ namespace embree
         const size_t bytes = 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
         return (bytes+127)&-128;
       }
+
+      size_t scratch_space_bytes() {
+        return size()*sizeof(PrimRef)+64;  // 64 to align to 64 bytes
+      }
       
     } stats;
     
@@ -328,6 +332,8 @@ namespace embree
       };
     }
     
+    size_t scratch_bytes = stats.scratch_space_bytes();
+    
     stats.estimate_quadification();
     stats.estimate_presplits(1.2);
 
@@ -336,7 +342,7 @@ namespace embree
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
     size.accelBufferExpectedBytes = stats.expected_bvh_bytes();
     size.accelBufferWorstCaseBytes = stats.worst_case_bvh_bytes();
-    size.scratchBufferBytes = 0;
+    size.scratchBufferBytes = scratch_bytes;
     size_t bytes_o = size_o.structBytes;
     memset(&size_o,0,bytes_o);
     memcpy(&size_o,&size,bytes_o);
@@ -387,7 +393,7 @@ namespace embree
       return 0;
     };
     
-    auto createPrimRefArray = [&] (avector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
+    auto createPrimRefArray = [&] (evector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
       if (geom == nullptr) return PrimInfo(empty);
@@ -466,11 +472,20 @@ namespace embree
     dispatchGlobalsPtr = args.dispatchGlobalsPtr;
 #endif
 
+    /* align scratch buffer to 64 bytes */
+    void* scratchBuffer = args.scratchBuffer;
+    size_t scratchBufferBytes = args.scratchBufferBytes;
+    bool scratchAligned = std::align(64,0,scratchBuffer,scratchBufferBytes);
+    if (!scratchAligned)
+      return RTHWIF_ERROR_OTHER;
+
     bool verbose = false;
     BBox3f bounds = QBVH6BuilderSAH::build(numGeometries, nullptr, 
                                            getSize, getType, getNumTimeSegments,
                                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                           (char*)args.accelBuffer, args.accelBufferBytes, verbose, dispatchGlobalsPtr);
+                                           (char*)args.accelBuffer, args.accelBufferBytes,
+                                           scratchBuffer, scratchBufferBytes,
+                                           verbose, dispatchGlobalsPtr);
 
     if (args.boundsOut) *(BBox3f*)args.boundsOut = bounds;
     

@@ -232,6 +232,7 @@ namespace embree
                   const getQuadFunc& getQuad,
                   const getProceduralFunc& getProcedural,
                   const getInstanceFunc& getInstance,
+                  void* scratch_ptr, size_t scratch_bytes,
                   bool verbose)
           : getSize(getSize),
             getType(getType),
@@ -242,7 +243,7 @@ namespace embree
             getQuad(getQuad),
             getProcedural(getProcedural),
             getInstance(getInstance),
-            prims((size_t)0),
+            prims(scratch_ptr,scratch_bytes),
             allocator(device, false, true, false),
             verbose(verbose) {} 
         
@@ -1009,7 +1010,7 @@ namespace embree
             
             pinfo = createPrimRefArray_presplit(numPrimitives, prims, pinfo, splitter1, primitiveArea1);
           }
-            
+
           /* exit early if scene is empty */
           if (pinfo.size() == 0) {
             pinfo_o = pinfo;
@@ -1139,7 +1140,7 @@ namespace embree
         const getProceduralFunc getProcedural;
         const getInstanceFunc getInstance;
         Settings cfg;
-        avector<PrimRef> prims;
+        evector<PrimRef> prims;
         FastAllocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
         bool verbose;
@@ -1231,7 +1232,7 @@ namespace embree
                typename getInstanceFunc>
        
       static BBox3f build(size_t numGeometries,
-                           Device* device,
+                          Device* device,
                           const getSizeFunc& getSize,
                           const getTypeFunc& getType,
                           const getNumTimeSegmentsFunc& getNumTimeSegments,
@@ -1242,11 +1243,12 @@ namespace embree
                           const getProceduralFunc& getProcedural,
                           const getInstanceFunc& getInstance,
                           char* accel_ptr, size_t accel_bytes,
+                          void* scratch_ptr, size_t scratch_bytes,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
         BuilderT<getSizeFunc, getTypeFunc, getNumTimeSegmentsFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
-          (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, verbose);
+          (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, verbose);
         
         return builder.build(numGeometries, accel_ptr, accel_bytes, dispatchGlobalsPtr);
       }      

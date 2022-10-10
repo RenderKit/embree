@@ -992,6 +992,8 @@ struct Scene
     args.numGeometries = geom.size();
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
+    args.scratchBuffer = nullptr;
+    args.scratchBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.boundsOut = &bounds;
@@ -1006,6 +1008,11 @@ struct Scene
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
+
+    /* allocate scratch buffer */
+    std::vector<char> scratchBuffer(size.scratchBufferBytes);
+    args.scratchBuffer = scratchBuffer.data();
+    args.scratchBufferBytes = scratchBuffer.size();
 
     accel = nullptr;
     for (size_t bytes = size.accelBufferExpectedBytes; bytes <= size.accelBufferWorstCaseBytes; bytes*=1.2)

@@ -376,6 +376,8 @@ namespace embree
     args.numGeometries = geomDescr.size();
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
+    args.scratchBuffer = nullptr;
+    args.scratchBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.parallelOperation = parallelOperation;
@@ -391,6 +393,11 @@ namespace embree
     RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeTotal);
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
+
+    /* allocate scratch buffer */
+    std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
+    args.scratchBuffer = scratchBuffer.data();
+    args.scratchBufferBytes = scratchBuffer.size();
 
     size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
