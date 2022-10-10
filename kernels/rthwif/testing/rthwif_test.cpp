@@ -498,13 +498,13 @@ public:
   TriangleMesh (RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE, bool procedural = false)
     : Geometry(Type::TRIANGLE_MESH),
       gflags(gflags), procedural(procedural),
-      triangles_alloc(context,device), triangles(0,triangles_alloc),
-      vertices_alloc(context,device), vertices(0,vertices_alloc) {}
+      triangles_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), triangles(0,triangles_alloc),
+      vertices_alloc (context,device,sycl::ext::oneapi::property::usm::device_read_only()), vertices(0,vertices_alloc) {}
 
   virtual ~TriangleMesh() {}
 
   void* operator new(size_t size) {
-    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+    return sycl::aligned_alloc_shared(64,size,device,context,sycl::ext::oneapi::property::usm::device_read_only());
   }
   void operator delete(void* ptr) {
     sycl::free(ptr,context);
@@ -721,7 +721,7 @@ struct InstanceGeometryT : public Geometry
   virtual ~InstanceGeometryT() {}
 
   void* operator new(size_t size) {
-    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+    return sycl::aligned_alloc_shared(64,size,device,context,sycl::ext::oneapi::property::usm::device_read_only());
   }
   void operator delete(void* ptr) {
     sycl::free(ptr,context);
@@ -834,10 +834,10 @@ struct Scene
   typedef InstanceGeometryT<Scene> InstanceGeometry;
   
   Scene()
-    : geometries_alloc(context,device), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) {}
+    : geometries_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) {}
       
   Scene(uint32_t width, uint32_t height, bool opaque, bool procedural)
-    : geometries_alloc(context,device), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
+    : geometries_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
   {
     std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
     plane->gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
@@ -846,7 +846,7 @@ struct Scene
   }
 
   void* operator new(size_t size) {
-    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+    return sycl::aligned_alloc_shared(64,size,device,context,sycl::ext::oneapi::property::usm::device_read_only());
   }
 
   void operator delete(void* ptr) {
@@ -1010,7 +1010,7 @@ struct Scene
     {
       /* allocate BVH data */
       if (accel) sycl::free(accel,context);
-      accel = sycl::aligned_alloc(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,bytes,device,context,sycl::usm::alloc::shared);
+      accel = sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,bytes,device,context,sycl::ext::oneapi::property::usm::device_read_only());
       memset(accel,0,bytes); // FIXME: not required
       
       /* build accel */
@@ -1598,16 +1598,16 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   scene->add(plane);
   
   if (test == TestType::BUILD_TEST_PROCEDURALS) {
-    if ((testID%3==0) && numPrimitives < 256)
+    if (testID%3==0)
       scene->splitIntoGeometries();
   }
   else if (test == TestType::BUILD_TEST_MIXED) {
-    scene->splitIntoGeometries(std::max(1u,std::min(16u,numPrimitives)));
+    scene->splitIntoGeometries(std::max(1u,std::min(1024u,numPrimitives)));
     scene->mixTrianglesAndProcedurals();
     scene->createInstances(scene->size()/2);
   }
   else if (test == TestType::BUILD_TEST_INSTANCES) {
-    scene->splitIntoGeometries(std::max(1u,std::min(256u,numPrimitives)));
+    scene->splitIntoGeometries(std::max(1u,std::min(1024u,numPrimitives)));
     scene->createInstances(scene->size());
   }
   
@@ -1654,9 +1654,6 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
 uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
 {
   uint32_t N = 128;
-  if (test == TestType::BUILD_TEST_INSTANCES) N = 10;
-  else if (test == TestType::BUILD_TEST_MIXED) N = 32;
-    
   uint32_t numErrors = 0;
   for (uint32_t i=0; i<N; i++) {
     const uint32_t numPrimitives = i>10 ? i*i : i;
