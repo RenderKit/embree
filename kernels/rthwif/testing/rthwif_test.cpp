@@ -988,7 +988,6 @@ struct Scene
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
-    args.dispatchGlobalsPtr = dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
     args.numGeometries = geom.size();
     args.accelBuffer = nullptr;
@@ -997,6 +996,9 @@ struct Scene
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.boundsOut = &bounds;
     args.buildUserPtr = nullptr;
+#if !defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+    args.dispatchGlobalsPtr = dispatchGlobalsPtr;
+#endif
     
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));

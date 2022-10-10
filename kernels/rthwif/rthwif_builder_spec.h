@@ -197,7 +197,7 @@ typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
   RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
   void* accel;                                // pointer to acceleration structure to instantiate
     
-} RTHWIF_GEOMETRY_INSTANCEREF_DESC;
+} RTHWIF_GEOMETRY_INSTANCE_DESC;
 
 
 /* A geometry descriptor. */
@@ -222,7 +222,8 @@ typedef enum RTHWIF_ERROR
 {
   RTHWIF_ERROR_NONE  = 0x0,  // no error occured
   RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app should re-try with more memory
-  RTHWIF_ERROR_OTHER = 0x2   // some unspecified error occured
+  RTHWIF_ERROR_OTHER = 0x2,  // some unspecified error occured
+  RTHWIF_ERROR_PARALLEL_OPERATION = 0x3,  // task executing in parallel operation
   
 } RTHWIF_ERROR;
 

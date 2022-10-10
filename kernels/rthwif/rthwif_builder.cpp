@@ -460,11 +460,17 @@ namespace embree
       return QBVH6BuilderSAH::Instance(local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
     };
 
+    /* dispatch globals ptr for debugging purposes */
+    void* dispatchGlobalsPtr = nullptr;
+#if !defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+    dispatchGlobalsPtr = args.dispatchGlobalsPtr;
+#endif
+
     bool verbose = false;
     BBox3f bounds = QBVH6BuilderSAH::build(numGeometries, nullptr, 
                                            getSize, getType, getNumTimeSegments,
                                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                           (char*)args.accelBuffer, args.accelBufferBytes, verbose, args.dispatchGlobalsPtr);
+                                           (char*)args.accelBuffer, args.accelBufferBytes, verbose, dispatchGlobalsPtr);
 
     if (args.boundsOut) *(BBox3f*)args.boundsOut = bounds;
     
@@ -485,7 +491,7 @@ namespace embree
     tbb::task_group group;
   };
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(RTHWIF_BUILD_ACCEL_ARGS& args_i)
   {
     /* if parallel operation is provided then execute using thread arena inside task group ... */
     if (args_i.parallelOperation)

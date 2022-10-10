@@ -372,7 +372,6 @@ namespace embree
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
-    args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
     args.numGeometries = geomDescr.size();
     args.accelBuffer = nullptr;
@@ -382,6 +381,9 @@ namespace embree
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.buildUserPtr = &time_range;
+#if !defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+    args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
+#endif
     
     RTHWIF_ACCEL_SIZE sizeTotal;
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
