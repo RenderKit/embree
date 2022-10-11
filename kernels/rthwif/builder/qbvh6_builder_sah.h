@@ -205,7 +205,6 @@ namespace embree
       
       template<typename getSizeFunc,
                typename getTypeFunc,
-               typename getNumTimeSegmentsFunc,
                typename createPrimRefArrayFunc,
                typename getTriangleFunc,
                typename getTriangleIndicesFunc,
@@ -225,7 +224,6 @@ namespace embree
         BuilderT (Device* device,
                   const getSizeFunc& getSize,
                   const getTypeFunc& getType,
-                  const getNumTimeSegmentsFunc& getNumTimeSegments,
                   const createPrimRefArrayFunc& createPrimRefArray,
                   const getTriangleFunc& getTriangle,
                   const getTriangleIndicesFunc& getTriangleIndices,
@@ -236,7 +234,6 @@ namespace embree
                   bool verbose)
           : getSize(getSize),
             getType(getType),
-            getNumTimeSegments(getNumTimeSegments),
             createPrimRefArray(createPrimRefArray),
             getTriangle(getTriangle),
             getTriangleIndices(getTriangleIndices),
@@ -1132,7 +1129,6 @@ namespace embree
       private:
         const getSizeFunc getSize;
         const getTypeFunc getType;
-        const getNumTimeSegmentsFunc getNumTimeSegments;
         const createPrimRefArrayFunc createPrimRefArray;
         const getTriangleFunc getTriangle;
         const getTriangleIndicesFunc getTriangleIndices;
@@ -1153,7 +1149,8 @@ namespace embree
                                const getSizeFunc& getSize,
                                const getTypeFunc& getType,
                                size_t & expectedBytes,
-                               size_t& worstCaseBytes)
+                               size_t& worstCaseBytes,
+                               size_t& scratchBytes)
       {
         struct Stats
         {
@@ -1196,6 +1193,10 @@ namespace embree
             const size_t bytes = 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
             return (bytes+127)&-128;
           }
+
+          size_t scratch_space_bytes() {
+            return size()*sizeof(PrimRef)+64;  // 64 to align to 64 bytes
+          }
           
         } stats;
         
@@ -1212,6 +1213,8 @@ namespace embree
           case QBVH6BuilderSAH::INSTANCE  : stats.numInstances += numPrimitives; break;
           };
         }
+
+        scratchBytes = stats.scratch_space_bytes();
         
         stats.estimate_quadification();
         stats.estimate_presplits(1.2);
@@ -1223,7 +1226,6 @@ namespace embree
 
        template<typename getSizeFunc,
                typename getTypeFunc,
-               typename getNumTimeSegmentsFunc,
                typename createPrimRefArrayFunc,
                typename getTriangleFunc,
                typename getTriangleIndicesFunc,
@@ -1235,7 +1237,6 @@ namespace embree
                           Device* device,
                           const getSizeFunc& getSize,
                           const getTypeFunc& getType,
-                          const getNumTimeSegmentsFunc& getNumTimeSegments,
                           const createPrimRefArrayFunc& createPrimRefArray,
                           const getTriangleFunc& getTriangle,
                           const getTriangleIndicesFunc& getTriangleIndices,
@@ -1247,8 +1248,13 @@ namespace embree
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
-        BuilderT<getSizeFunc, getTypeFunc, getNumTimeSegmentsFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
-          (device, getSize, getType, getNumTimeSegments, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, verbose);
+        /* align scratch buffer to 64 bytes */
+        bool scratchAligned = std::align(64,0,scratch_ptr,scratch_bytes);
+        if (!scratchAligned)
+          throw std::runtime_error("scratch buffer cannot get aligned");
+    
+        BuilderT<getSizeFunc, getTypeFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
+          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, verbose);
         
         return builder.build(numGeometries, accel_ptr, accel_bytes, dispatchGlobalsPtr);
       }      

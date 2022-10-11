@@ -270,79 +270,38 @@ namespace embree
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const size_t numGeometries = args.numGeometries;
-    
-    struct Stats
-    {
-      size_t numTriangles = 0;
-      size_t numQuads = 0;
-      size_t numProcedurals = 0;
-      size_t numInstances = 0;
-      
-      /* assume some reasonable quadification rate */
-      void estimate_quadification()
-      {
-        numQuads += (numTriangles+1)/2 + numTriangles/8;
-        numTriangles = 0;
-      }
-      
-      void estimate_presplits( double factor )
-      {
-        numTriangles = max(numTriangles, size_t(numTriangles*factor));
-        numQuads     = max(numQuads    , size_t(numQuads*factor));
-        numInstances = max(numInstances, size_t(numInstances*factor));
-      }
-      
-      size_t size() {
-        return numTriangles+numQuads+numProcedurals+numInstances;
-      }
-      
-      size_t expected_bvh_bytes()
-      {
-        const size_t blocks = (size()+5)/6;
-        const size_t expected_bytes   = 128 + 64*size_t(1+1.5*blocks) + numTriangles*64 + numQuads*64 + numProcedurals*8 + numInstances*128;
-        const size_t bytes = 2*4096 + size_t(1.1*expected_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
-        return (bytes+127)&-128;
-      }
-      
-      size_t worst_case_bvh_bytes()
-      {
-        const size_t numPrimitives = size();
-        const size_t blocks = (numPrimitives+5)/6;
-        const size_t worst_case_bytes = 128 + 64*(1+blocks + numPrimitives) + numTriangles*64 + numQuads*64 + numProcedurals*64 + numInstances*128;
-        const size_t bytes = 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
-        return (bytes+127)&-128;
-      }
 
-      size_t scratch_space_bytes() {
-        return size()*sizeof(PrimRef)+64;  // 64 to align to 64 bytes
-      }
-      
-    } stats;
+    auto getSize = [&](uint32_t geomID) -> size_t {
+      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      if (geom == nullptr) return 0;
+      return getNumPrimitives(geom);
+    };
     
-    for (size_t geomID=0; geomID<numGeometries; geomID++)
+    auto getType = [&](unsigned int geomID)
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-      if (geom == nullptr) continue;
-      
+      assert(geom);
       switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : stats.numTriangles += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount; break;
-      case RTHWIF_GEOMETRY_TYPE_QUADS      : stats.numQuads += ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount; break;
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: stats.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE: stats.numInstances += 1; break;
+      case RTHWIF_GEOMETRY_TYPE_TRIANGLES : return QBVH6BuilderSAH::TRIANGLE;
+      case RTHWIF_GEOMETRY_TYPE_QUADS: return QBVH6BuilderSAH::QUAD;
+      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return QBVH6BuilderSAH::PROCEDURAL;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCE: return QBVH6BuilderSAH::INSTANCE;
+      default: throw std::runtime_error("invalid geometry type");
       };
-    }
-    
-    size_t scratch_bytes = stats.scratch_space_bytes();
-    
-    stats.estimate_quadification();
-    stats.estimate_presplits(1.2);
+    };
 
+    /* query memory requirements from builder */
+    size_t expectedBytes = 0;
+    size_t worstCaseBytes = 0;
+    size_t scratchBytes = 0;
+    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, expectedBytes, worstCaseBytes, scratchBytes);
+                            
     /* return size to user */
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-    size.accelBufferExpectedBytes = stats.expected_bvh_bytes();
-    size.accelBufferWorstCaseBytes = stats.worst_case_bvh_bytes();
-    size.scratchBufferBytes = scratch_bytes;
+    size.accelBufferExpectedBytes = expectedBytes;
+    size.accelBufferWorstCaseBytes = worstCaseBytes;
+    size.scratchBufferBytes = scratchBytes;
     size_t bytes_o = size_o.structBytes;
     memset(&size_o,0,bytes_o);
     memcpy(&size_o,&size,bytes_o);
@@ -390,10 +349,6 @@ namespace embree
       case RTHWIF_GEOMETRY_TYPE_INSTANCE: return QBVH6BuilderSAH::INSTANCE;
       default: throw std::runtime_error("invalid geometry type");
       };
-    };
-    
-    auto getNumTimeSegments = [&] (unsigned int geomID) {
-      return 0;
     };
     
     auto createPrimRefArray = [&] (evector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
@@ -475,22 +430,16 @@ namespace embree
     dispatchGlobalsPtr = args.dispatchGlobalsPtr;
 #endif
 
-    /* align scratch buffer to 64 bytes */
-    void* scratchBuffer = args.scratchBuffer;
-    size_t scratchBufferBytes = args.scratchBufferBytes;
-    bool scratchAligned = std::align(64,0,scratchBuffer,scratchBufferBytes);
-    if (!scratchAligned)
-      return RTHWIF_ERROR_OTHER;
-
     bool verbose = false;
     BBox3f bounds = QBVH6BuilderSAH::build(numGeometries, nullptr, 
-                                           getSize, getType, getNumTimeSegments,
+                                           getSize, getType, 
                                            createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
                                            (char*)args.accelBuffer, args.accelBufferBytes,
-                                           scratchBuffer, scratchBufferBytes,
+                                           args.scratchBuffer, args.scratchBufferBytes,
                                            verbose, dispatchGlobalsPtr);
 
     if (args.boundsOut) *(BBox3f*)args.boundsOut = bounds;
+    //if (args.accelBufferBytesOut) *args.accelBufferBytesOut = ;
     
     return RTHWIF_ERROR_NONE;
   }
@@ -509,7 +458,7 @@ namespace embree
     tbb::task_group group;
   };
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
   {
     /* if parallel operation is provided then execute using thread arena inside task group ... */
     if (args_i.parallelOperation)

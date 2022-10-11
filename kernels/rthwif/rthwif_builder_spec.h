@@ -419,7 +419,7 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
  * potentially catched by the user.
  */
 
-RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(RTHWIF_BUILD_ACCEL_ARGS& args);
+RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args);
 
 /*
  * Creates a new parallel operation that can get attached to a build
