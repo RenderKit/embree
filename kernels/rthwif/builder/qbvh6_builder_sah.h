@@ -83,6 +83,53 @@ namespace embree
         uint8_t imask;
         uint32_t instanceUserID;
       };
+
+      struct Stats
+      {
+        size_t numTriangles = 0;
+        size_t numQuads = 0;
+        size_t numProcedurals = 0;
+        size_t numInstances = 0;
+        
+        /* assume some reasonable quadification rate */
+        void estimate_quadification()
+        {
+          numQuads += (numTriangles+1)/2 + numTriangles/8;
+          numTriangles = 0;
+        }
+        
+        void estimate_presplits( double factor )
+        {
+          numTriangles = max(numTriangles, size_t(numTriangles*factor));
+          numQuads     = max(numQuads    , size_t(numQuads*factor));
+          numInstances = max(numInstances, size_t(numInstances*factor));
+        }
+        
+        size_t size() {
+          return numTriangles+numQuads+numProcedurals+numInstances;
+        }
+        
+        size_t expected_bvh_bytes()
+        {
+          const size_t blocks = (size()+5)/6;
+          const size_t expected_bytes   = 128 + 64*size_t(1+1.5*blocks) + numTriangles*64 + numQuads*64 + numProcedurals*8 + numInstances*128;
+          const size_t bytes = 2*4096 + size_t(1.1*expected_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
+          return (bytes+127)&-128;
+        }
+        
+        size_t worst_case_bvh_bytes()
+        {
+          const size_t numPrimitives = size();
+          const size_t blocks = (numPrimitives+5)/6;
+          const size_t worst_case_bytes = 128 + 64*(1+blocks + numPrimitives) + numTriangles*64 + numQuads*64 + numProcedurals*64 + numInstances*128;
+          const size_t bytes = 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
+          return (bytes+127)&-128;
+        }
+        
+        size_t scratch_space_bytes() {
+          return size()*sizeof(PrimRef)+64;  // 64 to align to 64 bytes
+        }
+      };
       
       /*! settings for SAH builder */
       struct Settings
@@ -1036,6 +1083,7 @@ namespace embree
         {
           double t0 = verbose ? getSeconds() : 0.0;
 
+          Stats stats;
           size_t numPrimitives = 0;
           quadification.resize(numGeometries);
           for (size_t geomID=0; geomID<numGeometries; geomID++)
@@ -1045,13 +1093,20 @@ namespace embree
             if (N == 0) continue;
 
             switch (getType(geomID)) {
-            case QBVH6BuilderSAH::TRIANGLE  : quadification[geomID].resize(N); break;
-            case QBVH6BuilderSAH::QUAD      : break;
-            case QBVH6BuilderSAH::PROCEDURAL: break;
-            case QBVH6BuilderSAH::INSTANCE  : break;
+            case QBVH6BuilderSAH::TRIANGLE  :
+              stats.numTriangles += numPrimitives;
+              quadification[geomID].resize(N);
+              break;
+            case QBVH6BuilderSAH::QUAD      : stats.numQuads += N; break;
+            case QBVH6BuilderSAH::PROCEDURAL: stats.numProcedurals += N; break;
+            case QBVH6BuilderSAH::INSTANCE  : stats.numInstances += N; break;
             default: assert(false); break;
             }
           }
+
+          stats.estimate_presplits(1.2);
+          size_t worstCaseBytes = stats.worst_case_bvh_bytes();
+          if (accelBufferBytesOut) *accelBufferBytesOut = std::min(std::max(bytes+64,size_t(1.2*bytes)), worstCaseBytes);
 
           prims.resize(numPrimitives);
           
@@ -1078,10 +1133,12 @@ namespace embree
           ReductionTy r = build(numGeometries,pinfo,(char*)root);
           bounds.extend(pinfo.geomBounds);
 
-          allocator.cleanup();
-          FastAllocator::Statistics stats = allocator.getStatistics(FastAllocator::SHARED);
           if (boundsOut) *boundsOut = bounds;
-          if (accelBufferBytesOut) *accelBufferBytesOut = FastAllocator::blockHeaderSize + stats.bytesUsed;
+          if (accelBufferBytesOut) {
+            allocator.cleanup();
+            FastAllocator::Statistics astats = allocator.getStatistics(FastAllocator::SHARED);
+            *accelBufferBytesOut = FastAllocator::blockHeaderSize + astats.bytesUsed;
+          }
 
           /* fill QBVH6 header */
           allocator.clear();
@@ -1090,7 +1147,7 @@ namespace embree
           uint64_t rootNodeOffset = QBVH6::Node((char*)(r.node - (char*)qbvh), r.type, r.primRange.cur_prim);
           assert(rootNodeOffset == QBVH6::rootNodeOffset);
           qbvh->bounds = bounds;
-          qbvh->numTimeSegments = 1;
+          qbvh->numTimeSegments = 1; 
           qbvh->dispatchGlobalsPtr = (uint64_t) dispatchGlobalsPtr;
 
 #if 0
@@ -1135,54 +1192,7 @@ namespace embree
                                size_t& worstCaseBytes,
                                size_t& scratchBytes)
       {
-        struct Stats
-        {
-          size_t numTriangles = 0;
-          size_t numQuads = 0;
-          size_t numProcedurals = 0;
-          size_t numInstances = 0;
-          
-          /* assume some reasonable quadification rate */
-          void estimate_quadification()
-          {
-            numQuads += (numTriangles+1)/2 + numTriangles/8;
-            numTriangles = 0;
-          }
-          
-          void estimate_presplits( double factor )
-          {
-            numTriangles = max(numTriangles, size_t(numTriangles*factor));
-            numQuads     = max(numQuads    , size_t(numQuads*factor));
-            numInstances = max(numInstances, size_t(numInstances*factor));
-          }
-          
-          size_t size() {
-            return numTriangles+numQuads+numProcedurals+numInstances;
-          }
-          
-          size_t expected_bvh_bytes()
-          {
-            const size_t blocks = (size()+5)/6;
-            const size_t expected_bytes   = 128 + 64*size_t(1+1.5*blocks) + numTriangles*64 + numQuads*64 + numProcedurals*8 + numInstances*128;
-            const size_t bytes = 2*4096 + size_t(1.1*expected_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
-            return (bytes+127)&-128;
-          }
-          
-          size_t worst_case_bvh_bytes()
-          {
-            const size_t numPrimitives = size();
-            const size_t blocks = (numPrimitives+5)/6;
-            const size_t worst_case_bytes = 128 + 64*(1+blocks + numPrimitives) + numTriangles*64 + numQuads*64 + numProcedurals*64 + numInstances*128;
-            const size_t bytes = 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
-            return (bytes+127)&-128;
-          }
-
-          size_t scratch_space_bytes() {
-            return size()*sizeof(PrimRef)+64;  // 64 to align to 64 bytes
-          }
-          
-        } stats;
-        
+        Stats stats;
         for (size_t geomID=0; geomID<numGeometries; geomID++)
         {
           uint32_t numPrimitives = getSize(geomID);
@@ -1196,15 +1206,11 @@ namespace embree
           case QBVH6BuilderSAH::INSTANCE  : stats.numInstances += numPrimitives; break;
           };
         }
-
-        scratchBytes = stats.scratch_space_bytes();
-        
-        stats.estimate_quadification();
         stats.estimate_presplits(1.2);
-        
-        /* return size to user */
-        expectedBytes = stats.expected_bvh_bytes();
         worstCaseBytes = stats.worst_case_bvh_bytes();
+        scratchBytes = stats.scratch_space_bytes();
+        stats.estimate_quadification();
+        expectedBytes = stats.expected_bvh_bytes();
       }      
 
        template<typename getSizeFunc,

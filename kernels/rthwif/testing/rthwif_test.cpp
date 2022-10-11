@@ -1122,8 +1122,12 @@ struct Scene
     }
     case BuildMode::BUILD_EXPECTED_SIZE: {
       
-      for (size_t bytes = size.accelBufferExpectedBytes; bytes <= size.accelBufferWorstCaseBytes; bytes*=1.2)
+      size_t bytes = size.accelBufferExpectedBytes;
+      for (size_t i=0; i<=8; i++) // FIXME: reduce worst cast iteration number
       {
+        if (i == 8)
+          throw std::runtime_error("build requires more than 8 iterations");
+        
         /* allocate BVH data */
         free_accel_buffer(accel,context);
         accelBytes = bytes;
@@ -1138,6 +1142,11 @@ struct Scene
         
         if (err != RTHWIF_ERROR_RETRY)
           break;
+
+        if (accelBufferBytesOut < bytes || size.accelBufferWorstCaseBytes < accelBufferBytesOut )
+          throw std::runtime_error("failed build returned wrong new estimate");
+
+        bytes = accelBufferBytesOut;
       }
       
       if (err != RTHWIF_ERROR_NONE)
