@@ -1052,7 +1052,7 @@ struct Scene
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.boundsOut = &bounds;
     args.buildUserPtr = nullptr;
-#if !defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
     

@@ -418,7 +418,7 @@ namespace embree
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.buildUserPtr = &time_range;
-#if !defined(EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS)
+#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
 #endif
     
