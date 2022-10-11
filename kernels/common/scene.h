@@ -20,6 +20,10 @@
 #include "acceln.h"
 #include "geometry.h"
 
+#if defined(EMBREE_DPCPP_SUPPORT)
+#include "../rthwif/rthwif_embree_builder.h"
+#endif
+
 namespace embree
 {
   struct TaskGroup;
@@ -287,10 +291,12 @@ namespace embree
     SpinLock geometriesMutex;
     bool is_build;
 
+#if defined(EMBREE_DPCPP_SUPPORT)
   public:
     BBox3f hwaccel_bounds = empty;
-    Device::avector<char,64> hwaccel;
-
+    AccelBuffer hwaccel;
+#endif
+    
   private:
     bool modified;                   //!< true if scene got modified
 

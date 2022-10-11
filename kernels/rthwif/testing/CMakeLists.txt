@@ -16,12 +16,12 @@ ENDIF()
 
 ADD_EXECUTABLE(rthwif_cornell_box rthwif_cornell_box.cpp ../rthwif_production.cpp)
 SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_DPCPP_SUPPORT")
-SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl")
+SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
 
 ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ../rthwif_production.cpp)
 TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif)
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_DPCPP_SUPPORT")
-SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl")
+SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
 
 SET(OPTION BUILD_TESTING ON)
 INCLUDE(CTest)

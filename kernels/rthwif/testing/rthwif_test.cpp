@@ -2,6 +2,11 @@
 #include "../rthwif_production.h"
 #include "../rthwif_builder.h"
 
+#include "../rthwif_production.h"
+#include "../rthwif_builder.h"
+
+#include <level_zero/ze_api.h>
+
 #include <vector>
 #include <map>
 #include <iostream>
@@ -829,6 +834,51 @@ std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const
   return mesh;
 }
 
+void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+{
+#if 1
+  return sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,bytes,device,context,sycl::ext::oneapi::property::usm::device_read_only());
+  
+#else // FIXME: enable this
+  
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+  
+  ze_raytracing_mem_alloc_ext_desc_t rt_desc;
+  rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+  rt_desc.flags = 0;
+    
+  ze_device_mem_alloc_desc_t device_desc;
+  device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
+  device_desc.pNext = &rt_desc;
+  device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
+  device_desc.ordinal = 0;
+
+  ze_host_mem_alloc_desc_t host_desc;
+  host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
+  host_desc.pNext = nullptr;
+  host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
+  
+  void* ptr = nullptr;
+  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
+  assert(result == ZE_RESULT_SUCCESS);
+  return ptr;
+#endif
+}
+
+void free_accel_buffer(void* ptr, sycl::context context)
+{
+#if 1
+  sycl::free(ptr,context);
+  
+#else // FIXME: enable this
+  if (ptr == nullptr) return;
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_result_t result = zeMemFree(hContext,ptr);
+  assert(result == ZE_RESULT_SUCCESS);
+#endif
+}
+
 struct Scene
 {
   typedef InstanceGeometryT<Scene> InstanceGeometry;
@@ -843,6 +893,10 @@ struct Scene
     plane->gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
     plane->procedural = procedural;
     geometries.push_back(plane);
+  }
+
+  ~Scene() {
+    free_accel_buffer(accel,context);
   }
 
   void* operator new(size_t size) {
@@ -1018,9 +1072,9 @@ struct Scene
     for (size_t bytes = size.accelBufferExpectedBytes; bytes <= size.accelBufferWorstCaseBytes; bytes*=1.2)
     {
       /* allocate BVH data */
-      if (accel) sycl::free(accel,context);
-      accel = sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,bytes,device,context,sycl::ext::oneapi::property::usm::device_read_only());
-      memset(accel,0,bytes); // FIXME: not required
+      free_accel_buffer(accel,context);
+      accel = alloc_accel_buffer(bytes,device,context);
+      memset(accel,0,bytes);
       
       /* build accel */
       args.numGeometries = geom.size();

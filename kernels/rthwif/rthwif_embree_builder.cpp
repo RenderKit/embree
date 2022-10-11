@@ -3,6 +3,7 @@
 
 #include "rthwif_embree.h"
 #include "rthwif_embree_builder.h"
+#include "../common/scene.h"
 #include "builder/qbvh6_builder_sah.h"
 #include "../builders/primrefgen.h"
 #include "rthwif_internal.h"
@@ -82,6 +83,40 @@ namespace embree
     /* check if GPU device is supported */
     const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(sycl_device);
     return features != RTHWIF_FEATURES_NONE;
+  }
+
+  void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
+  {
+    ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+    ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+    
+    ze_raytracing_mem_alloc_ext_desc_t rt_desc;
+    rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    rt_desc.flags = 0;
+    
+    ze_device_mem_alloc_desc_t device_desc;
+    device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
+    device_desc.pNext = &rt_desc;
+    device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
+    device_desc.ordinal = 0;
+  
+    ze_host_mem_alloc_desc_t host_desc;
+    host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
+    host_desc.pNext = nullptr;
+    host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
+    
+    void* ptr = nullptr;
+    ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
+    assert(result == ZE_RESULT_SUCCESS);
+    return ptr;
+  }
+  
+  void rthwifFreeAccelBuffer(void* ptr, sycl::context context)
+  {
+    if (ptr == nullptr) return;
+    ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+    ze_result_t result = zeMemFree(hContext,ptr);
+    assert(result == ZE_RESULT_SUCCESS);
   }
 
   struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
@@ -263,7 +298,7 @@ namespace embree
     }
   }
 
-  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
   {
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
@@ -413,7 +448,7 @@ namespace embree
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
         
       /* allocate BVH data */
-      if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
+      if (accel.size() < bytes) accel.resize(bytes);
       memset(accel.data(),0,accel.size()); // FIXME: not required
 
       /* build BVH for each time segment */

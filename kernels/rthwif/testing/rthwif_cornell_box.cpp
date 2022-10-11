@@ -6,7 +6,11 @@
 #include "sys/types.h"
 #include "sys/sysinfo.h"
 #include <thread>
-#include "../../../kernels/rthwif/rthwif_production.h"
+
+#include "../rthwif_production.h"
+#include "../rthwif_builder.h"
+
+#include <level_zero/ze_api.h>
 
 void exception_handler(sycl::exception_list exceptions)
 {
@@ -82,6 +86,38 @@ bool compareTga(const std::string& fileNameA, const std::string& fileNameB)
   return dataA == dataB;
 }
 
+void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+{
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+  
+  ze_raytracing_mem_alloc_ext_desc_t rt_desc;
+  rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+  rt_desc.flags = 0;
+    
+  ze_device_mem_alloc_desc_t device_desc;
+  device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
+  device_desc.pNext = &rt_desc;
+  device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
+  device_desc.ordinal = 0;
+
+  ze_host_mem_alloc_desc_t host_desc;
+  host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
+  host_desc.pNext = nullptr;
+  host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
+  
+  void* ptr = nullptr;
+  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
+  assert(result == ZE_RESULT_SUCCESS);
+  return ptr;
+}
+
+void free_accel_buffer(void* ptr, sycl::context context)
+{
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_result_t result = zeMemFree(hContext,ptr);
+  assert(result == ZE_RESULT_SUCCESS);
+}
 
 #define bvh_bytes 4992
 
@@ -305,7 +341,7 @@ int main(int argc, char* argv[])
   sycl::queue queue = sycl::queue(device,exception_handler);
   sycl::context context = queue.get_context();
 
-  void* bvh = sycl::aligned_alloc(64,bvh_bytes,device,context,sycl::usm::alloc::shared);
+  void* bvh = alloc_accel_buffer(bvh_bytes,device,context);
   memcpy(bvh, bvh_data, bvh_bytes);
 
   static const int width = 512;
@@ -323,6 +359,8 @@ int main(int argc, char* argv[])
                });
   queue.wait_and_throw();
 
+  free_accel_buffer(bvh,context);
+  
   storeTga(pixels,width,height,"cornell_box.tga");
   const bool ok = compareTga("cornell_box.tga", reference_img);
 
