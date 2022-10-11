@@ -87,7 +87,7 @@ RTC_API void rtcGetSceneLinearBounds(RTCScene scene, struct RTCLinearBounds* bou
 
 
 /* Perform a closest point query of the scene. */
-RTC_SYCL_API bool rtcPointQuery(RTCScene scene, struct RTCPointQuery* query, struct RTCPointQueryContext* context, RTCPointQueryFunction queryFunc, void* userPtr);
+RTC_API bool rtcPointQuery(RTCScene scene, struct RTCPointQuery* query, struct RTCPointQueryContext* context, RTCPointQueryFunction queryFunc, void* userPtr);
 
 /* Perform a closest point query with a packet of 4 points with the scene. */
 RTC_API bool rtcPointQuery4(const int* valid, RTCScene scene, struct RTCPointQuery4* query, struct RTCPointQueryContext* context, RTCPointQueryFunction queryFunc, void** userPtr);
