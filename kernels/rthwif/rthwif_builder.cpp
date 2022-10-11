@@ -362,6 +362,8 @@ namespace embree
     /* verify input descriptors */
     parallel_for(numGeometries,[&](uint32_t geomID) {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      if (geom == nullptr) return;
+      
       switch (geom->geometryType) {
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : verifyGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom); break;
       case RTHWIF_GEOMETRY_TYPE_QUADS      : verifyGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*    )geom); break;
@@ -380,6 +382,7 @@ namespace embree
     auto getType = [&](unsigned int geomID)
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      assert(geom);
       switch (geom->geometryType) {
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES : return QBVH6BuilderSAH::TRIANGLE;
       case RTHWIF_GEOMETRY_TYPE_QUADS: return QBVH6BuilderSAH::QUAD;
@@ -396,7 +399,7 @@ namespace embree
     auto createPrimRefArray = [&] (evector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-      if (geom == nullptr) return PrimInfo(empty);
+      assert(geom);
 
       switch (geom->geometryType) {
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);

@@ -285,7 +285,8 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
 
   /* Array of pointers to geometry descriptors. This array and the
    * geometry descriptors themselves can be standard host memory
-   * allocations. */
+   * allocations. A pointer to a geometry descriptor can be null, in
+   * which case the geometry is treated as empty. */
   const RTHWIF_GEOMETRY_DESC** geometries;
 
   /* Number of geometries in geometry descriptor array. */

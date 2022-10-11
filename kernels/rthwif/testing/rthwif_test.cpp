@@ -1031,6 +1031,18 @@ struct Scene
         mesh->procedural = i%2;
   }
 
+  void addNullGeometries(uint32_t D)
+  {
+    size_t N = geometries.size();
+    geometries.resize(N+D);
+    if (N == 0) return;
+
+    for (size_t g=N; g<N+D; g++) {
+      uint32_t k = RandomSampler_getUInt(rng) % N;
+      std::swap(geometries[g],geometries[k]);
+    }
+  }
+
   void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode)
   {
     /* fill geometry descriptor buffer */
@@ -1038,8 +1050,16 @@ struct Scene
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
     for (size_t geomID=0; geomID<size(); geomID++)
     {
-      geometries[geomID]->buildAccel(device,context,buildMode);
-      geometries[geomID]->getDesc(&desc[geomID]);
+      const std::shared_ptr<Geometry>& g = geometries[geomID];
+      
+      /* skip NULL geometries */
+      if (g == nullptr) {
+        geom[geomID] = nullptr;
+        continue;
+      }
+      
+      g->buildAccel(device,context,buildMode);
+      g->getDesc(&desc[geomID]);
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
 
@@ -1127,6 +1147,9 @@ struct Scene
   {    
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
     {
+      if (geometries[geomID] == nullptr)
+        continue;
+      
       id_stack.push_back(geomID);
       geometries[geomID]->buildTriMap(local_to_world,id_stack,instUserID,procedural_instance,tri_map);
       id_stack.pop_back();
@@ -1628,6 +1651,9 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   scene->splitIntoGeometries(16);
   if (inst != InstancingType::NONE)
     scene->createInstances(scene->size(),3, inst == InstancingType::SW_INSTANCING);
+
+  scene->addNullGeometries(16);
+    
   scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE);
 
   /* calculate test input and expected output */
@@ -1704,7 +1730,8 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
     scene->splitIntoGeometries(std::max(1u,std::min(1024u,numPrimitives)));
     scene->createInstances(scene->size());
   }
-  
+
+  scene->addNullGeometries(16);
   scene->buildAccel(device,context,buildMode);
 
   /* calculate test input and expected output */
