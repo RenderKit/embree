@@ -1032,7 +1032,7 @@ namespace embree
           return r;
         }
 
-        BBox3f build(size_t numGeometries, char* accel, size_t bytes, void* dispatchGlobalsPtr)
+        void build(size_t numGeometries, char* accel, size_t bytes, BBox3f* boundsOut, size_t* accelBufferBytesOut, void* dispatchGlobalsPtr)
         {
           double t0 = verbose ? getSeconds() : 0.0;
 
@@ -1065,39 +1065,24 @@ namespace embree
             
           /* allocate BVH memory */
           allocator.clear();
-          //if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(device,bytes));
-          memset(accel,0,bytes); // FIXME: not required
-          
           allocator.addBlock(accel,bytes);
           FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
           thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
 
-          //uint32_t numRoots = AddAccel.Accel ? 3 : 1;
           uint32_t numRoots = 1;
           QBVH6::InternalNode6* roots = (QBVH6::InternalNode6*) thread_alloc.malloc0(numRoots*sizeof(QBVH6::InternalNode6),64);
           assert(roots);
 
           /* build BVH static BVH */
-          //QBVH6::InternalNode6* root = AddAccel.Accel ? roots+2 : roots+0;
           QBVH6::InternalNode6* root = roots+0;
           ReductionTy r = build(numGeometries,pinfo,(char*)root);
           bounds.extend(pinfo.geomBounds);
 
-#if 0
-          if (AddAccel.Accel)
-          {
-            ((QBVH6::InternalNode6*) ((char*)AddAccel.Accel + QBVH6::rootNodeOffset))->copy_to(roots+1);
+          allocator.cleanup();
+          FastAllocator::Statistics stats = allocator.getStatistics(FastAllocator::SHARED);
+          if (boundsOut) *boundsOut = bounds;
+          if (accelBufferBytesOut) *accelBufferBytesOut = FastAllocator::blockHeaderSize + stats.bytesUsed;
 
-            ReductionTy values[BVH_WIDTH];
-            values[0] = ReductionTy((char*)(roots+1), NODE_TYPE_INTERNAL, 0xFF, PrimRange(1));
-            values[1] = r;
-            BuildRecord children[BVH_WIDTH];
-            children[0].prims.geomBounds = (BBox3f&) AddAccel.bounds;
-            children[1].prims.geomBounds = bounds;
-            r = setNode((char*)roots,sizeof(QBVH6::InternalNode6),NODE_TYPE_INTERNAL,(char*)(roots+1),children,values,2);
-          }
-#endif
-          
           /* fill QBVH6 header */
           allocator.clear();
           QBVH6* qbvh = new (accel) QBVH6(QBVH6::SizeEstimate());
@@ -1122,8 +1107,6 @@ namespace embree
           }
           std::cout << std::endl << "};" << std::endl;*/
 #endif
-                  
-          return bounds;
         }
         
       private:
@@ -1148,7 +1131,7 @@ namespace embree
       static void estimateSize(size_t numGeometries,
                                const getSizeFunc& getSize,
                                const getTypeFunc& getType,
-                               size_t & expectedBytes,
+                               size_t& expectedBytes,
                                size_t& worstCaseBytes,
                                size_t& scratchBytes)
       {
@@ -1233,7 +1216,7 @@ namespace embree
                typename getProceduralFunc,
                typename getInstanceFunc>
        
-      static BBox3f build(size_t numGeometries,
+      static void build(size_t numGeometries,
                           Device* device,
                           const getSizeFunc& getSize,
                           const getTypeFunc& getType,
@@ -1245,6 +1228,8 @@ namespace embree
                           const getInstanceFunc& getInstance,
                           char* accel_ptr, size_t accel_bytes,
                           void* scratch_ptr, size_t scratch_bytes,
+                          BBox3f* boundsOut,
+                          size_t* accelBufferBytesOut,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
@@ -1256,7 +1241,7 @@ namespace embree
         BuilderT<getSizeFunc, getTypeFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
           (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, verbose);
         
-        return builder.build(numGeometries, accel_ptr, accel_bytes, dispatchGlobalsPtr);
+        builder.build(numGeometries, accel_ptr, accel_bytes, boundsOut, accelBufferBytesOut, dispatchGlobalsPtr);
       }      
     };
   }

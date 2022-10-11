@@ -1064,6 +1064,7 @@ struct Scene
     }
 
     /* estimate accel size */
+    size_t accelBufferBytesOut = 0;
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
@@ -1077,6 +1078,7 @@ struct Scene
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.boundsOut = &bounds;
+    args.accelBufferBytesOut = &accelBufferBytesOut;
     args.buildUserPtr = nullptr;
 #if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
@@ -1098,14 +1100,16 @@ struct Scene
     args.scratchBufferBytes = scratchBuffer.size();
 
     accel = nullptr;
+    size_t accelBytes = 0;
 
     /* build with different modes */
     switch (buildMode)
     {
     case BuildMode::BUILD_WORST_CASE_SIZE: {
-      
-      accel = alloc_accel_buffer(size.accelBufferWorstCaseBytes,device,context);
-      memset(accel,0,size.accelBufferWorstCaseBytes);
+
+      accelBytes = size.accelBufferWorstCaseBytes;
+      accel = alloc_accel_buffer(accelBytes,device,context);
+      memset(accel,0,accelBytes);
 
       /* build accel */
       args.numGeometries = geom.size();
@@ -1122,13 +1126,14 @@ struct Scene
       {
         /* allocate BVH data */
         free_accel_buffer(accel,context);
-        accel = alloc_accel_buffer(bytes,device,context);
-        memset(accel,0,bytes);
+        accelBytes = bytes;
+        accel = alloc_accel_buffer(accelBytes,device,context);
+        memset(accel,0,accelBytes);
         
         /* build accel */
         args.numGeometries = geom.size();
         args.accelBuffer = accel;
-        args.accelBufferBytes = bytes;
+        args.accelBufferBytes = accelBytes;
         err = rthwifBuildAccel(args);
         
         if (err != RTHWIF_ERROR_RETRY)
@@ -1141,6 +1146,12 @@ struct Scene
     }
 
     this->bounds = bounds;
+
+    /* check if returned size of acceleration structure is correct */
+    bool is_zero = std::all_of( (char*)args.accelBuffer+accelBufferBytesOut, (char*)args.accelBuffer+accelBytes,
+                                [](char c) { return c == 0; } );
+    if (!is_zero)
+      throw std::runtime_error("build did return wrong acceleration structure size");
   }
   
   void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map)

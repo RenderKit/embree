@@ -431,16 +431,13 @@ namespace embree
 #endif
 
     bool verbose = false;
-    BBox3f bounds = QBVH6BuilderSAH::build(numGeometries, nullptr, 
-                                           getSize, getType, 
-                                           createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                           (char*)args.accelBuffer, args.accelBufferBytes,
-                                           args.scratchBuffer, args.scratchBufferBytes,
-                                           verbose, dispatchGlobalsPtr);
-
-    if (args.boundsOut) *(BBox3f*)args.boundsOut = bounds;
-    //if (args.accelBufferBytesOut) *args.accelBufferBytesOut = ;
-    
+    QBVH6BuilderSAH::build(numGeometries, nullptr, 
+                           getSize, getType, 
+                           createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
+                           (char*)args.accelBuffer, args.accelBufferBytes,
+                           args.scratchBuffer, args.scratchBufferBytes,
+                           (BBox3f*) args.boundsOut, args.accelBufferBytesOut,
+                           verbose, dispatchGlobalsPtr);
     return RTHWIF_ERROR_NONE;
   }
   
