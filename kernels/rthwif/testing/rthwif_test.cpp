@@ -148,6 +148,12 @@ enum class TestType
   BUILD_TEST_MIXED                   // test BVH builder with mixed scene (triangles, procedurals, and instances)
 };
 
+enum class BuildMode
+{
+  BUILD_EXPECTED_SIZE,
+  BUILD_WORST_CASE_SIZE
+};
+
 struct TestInput
 {
   sycl::float3 org;
@@ -488,7 +494,7 @@ struct Geometry
     throw std::runtime_error("Geometry::transform not implemented");
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context) {
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode) {
   };
 
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
@@ -792,8 +798,8 @@ struct InstanceGeometryT : public Geometry
     }
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context) override {
-    scene->buildAccel(device,context);
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode) override {
+    scene->buildAccel(device,context,buildMode);
   }
 
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
@@ -1025,14 +1031,14 @@ struct Scene
         mesh->procedural = i%2;
   }
 
-  void buildAccel(sycl::device& device, sycl::context& context)
+  void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode)
   {
     /* fill geometry descriptor buffer */
     std::vector<GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
     for (size_t geomID=0; geomID<size(); geomID++)
     {
-      geometries[geomID]->buildAccel(device,context);
+      geometries[geomID]->buildAccel(device,context,buildMode);
       geometries[geomID]->getDesc(&desc[geomID]);
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
@@ -1063,31 +1069,56 @@ struct Scene
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
 
+    if (size.accelBufferExpectedBytes > size.accelBufferWorstCaseBytes)
+      throw std::runtime_error("expected larger than worst case");
+
     /* allocate scratch buffer */
     std::vector<char> scratchBuffer(size.scratchBufferBytes);
     args.scratchBuffer = scratchBuffer.data();
     args.scratchBufferBytes = scratchBuffer.size();
 
     accel = nullptr;
-    for (size_t bytes = size.accelBufferExpectedBytes; bytes <= size.accelBufferWorstCaseBytes; bytes*=1.2)
+
+    /* build with different modes */
+    switch (buildMode)
     {
-      /* allocate BVH data */
-      free_accel_buffer(accel,context);
-      accel = alloc_accel_buffer(bytes,device,context);
-      memset(accel,0,bytes);
+    case BuildMode::BUILD_WORST_CASE_SIZE: {
       
+      accel = alloc_accel_buffer(size.accelBufferWorstCaseBytes,device,context);
+      memset(accel,0,size.accelBufferWorstCaseBytes);
+
       /* build accel */
       args.numGeometries = geom.size();
       args.accelBuffer = accel;
-      args.accelBufferBytes = bytes;
+      args.accelBufferBytes = size.accelBufferWorstCaseBytes;
       err = rthwifBuildAccel(args);
       
-      if (err != RTHWIF_ERROR_RETRY)
-        break;
+      if (err != RTHWIF_ERROR_NONE)
+        throw std::runtime_error("build error");
     }
-    
-    if (err != RTHWIF_ERROR_NONE)
-      throw std::runtime_error("build error");
+    case BuildMode::BUILD_EXPECTED_SIZE: {
+      
+      for (size_t bytes = size.accelBufferExpectedBytes; bytes <= size.accelBufferWorstCaseBytes; bytes*=1.2)
+      {
+        /* allocate BVH data */
+        free_accel_buffer(accel,context);
+        accel = alloc_accel_buffer(bytes,device,context);
+        memset(accel,0,bytes);
+        
+        /* build accel */
+        args.numGeometries = geom.size();
+        args.accelBuffer = accel;
+        args.accelBufferBytes = bytes;
+        err = rthwifBuildAccel(args);
+        
+        if (err != RTHWIF_ERROR_RETRY)
+          break;
+      }
+      
+      if (err != RTHWIF_ERROR_NONE)
+        throw std::runtime_error("build error");
+    }
+    }
 
     this->bounds = bounds;
   }
@@ -1597,7 +1628,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   scene->splitIntoGeometries(16);
   if (inst != InstancingType::NONE)
     scene->createInstances(scene->size(),3, inst == InstancingType::SW_INSTANCING);
-  scene->buildAccel(device,context);
+  scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1649,7 +1680,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   return numErrors;
 }
 
-uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test, uint32_t numPrimitives, int testID)
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test, BuildMode buildMode, uint32_t numPrimitives, int testID)
 {
   const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
   std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
@@ -1674,7 +1705,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
     scene->createInstances(scene->size());
   }
   
-  scene->buildAccel(device,context);
+  scene->buildAccel(device,context,buildMode);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1714,14 +1745,14 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   return numErrors;
 }
 
-uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test, BuildMode buildMode)
 {
   uint32_t N = 128;
   uint32_t numErrors = 0;
   for (uint32_t i=0; i<N; i++) {
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
-    numErrors += executeBuildTest(device,queue,context,test,numPrimitives,i);
+    numErrors += executeBuildTest(device,queue,context,test,buildMode,numPrimitives,i);
   }
   return numErrors;
 }
@@ -1775,9 +1806,11 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
 int main(int argc, char* argv[])
 {
   rthwifInit();
-  
+
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
+  BuildMode buildMode = BuildMode::BUILD_EXPECTED_SIZE;
+  
   bool jit_cache = false;
 
   /* command line parsing */
@@ -1825,6 +1858,12 @@ int main(int argc, char* argv[])
     else if (strcmp(argv[i], "--sw-instancing") == 0) {
       inst = InstancingType::SW_INSTANCING;
     }
+    else if (strcmp(argv[i], "--build_mode_worst_case") == 0) {
+      buildMode = BuildMode::BUILD_WORST_CASE_SIZE;
+    }
+    else if (strcmp(argv[i], "--build_mode_expected") == 0) {
+      buildMode = BuildMode::BUILD_EXPECTED_SIZE;
+    }
     else if (strcmp(argv[i], "--jit-cache") == 0) {
       if (++i >= argc) throw std::runtime_error("Error: --jit-cache syntax error");
       jit_cache = atoi(argv[i]);
@@ -1854,7 +1893,7 @@ int main(int argc, char* argv[])
   
   uint32_t numErrors = 0;
   if (test >= TestType::BUILD_TEST_TRIANGLES)
-    numErrors = executeBuildTest(device,queue,context,test);
+    numErrors = executeBuildTest(device,queue,context,test,buildMode);
   else
     numErrors = executeTest(device,queue,context,inst,test);
 
