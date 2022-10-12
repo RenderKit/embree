@@ -33,8 +33,7 @@ ADD_DEFINITIONS(-DTASKING_TBB)
 ####################################################################
 
 ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp ../common/alloc.cpp)
-TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE tbb simd sys -lze_loader)
-#SET_TARGET_PROPERTIES(embree_rthwif PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
+TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE embree_rthwif_gpu tbb simd sys -lze_loader)
 
 INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 INSTALL(EXPORT embree_rthwif-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
