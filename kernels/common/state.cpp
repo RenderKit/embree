@@ -95,12 +95,6 @@ namespace embree
     grid_accel_mb = "default";
     grid_builder_mb = "default";
 
-#if defined(EMBREE_RTHWIF_INTERNAL_BUILDER)
-    rthw_builder = "internal";
-#else
-    rthw_builder = "driver";
-#endif
-
     instancing_open_min = 0;
     instancing_block_size = 0;
     instancing_open_factor = 8.0f; 
@@ -401,9 +395,6 @@ namespace embree
       else if (tok == Token::Id("grid_accel_mb") && cin->trySymbol("="))
         grid_accel_mb = cin->get().Identifier();
 
-      else if (tok == Token::Id("rthw_builder") && cin->trySymbol("="))
-        rthw_builder = cin->get().Identifier();
-      
       else if (tok == Token::Id("verbose") && cin->trySymbol("="))
         verbose = cin->get().Int();
       else if (tok == Token::Id("benchmark") && cin->trySymbol("="))

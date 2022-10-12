@@ -14,7 +14,7 @@ namespace embree
   template<typename Index, typename Func>
     __forceinline void parallel_for( const Index N, const Func& func)
   {
-#if defined(TASKING_INTERNAL)
+#if defined(TASKING_INTERNAL) && !defined(TASKING_TBB)
     if (N) {
       TaskScheduler::TaskGroupContext context;
       TaskScheduler::spawn(Index(0),N,Index(1),[&] (const range<Index>& r) {
@@ -56,7 +56,7 @@ namespace embree
     __forceinline void parallel_for( const Index first, const Index last, const Index minStepSize, const Func& func)
   {
     assert(first <= last);
-#if defined(TASKING_INTERNAL)
+#if defined(TASKING_INTERNAL) && !defined(TASKING_TBB)
     TaskScheduler::TaskGroupContext context;
     TaskScheduler::spawn(first,last,minStepSize,func,&context);
     TaskScheduler::wait();

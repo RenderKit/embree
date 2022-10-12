@@ -105,11 +105,12 @@ namespace embree
     std::string grid_accel_mb;           //!< acceleration structure to use for motion blur grids
     std::string grid_builder_mb;         //!< builder for motion blur grids
 
-  public:
-    std::string rthw_builder = "internal"; //!< ray tracing hardware builder to use
+    //public:
+    //std::string rthw_builder = "internal"; //!< ray tracing hardware builder to use
 
   public:
     int gpu_build;                         //!< enabled if BVH build should happen on GPU    
+
     float max_spatial_split_replications;  //!< maximally replications*N many primitives in accel for spatial splits
     bool useSpatialPreSplits;              //!< use spatial pre-splits instead of the full spatial split builder
     size_t tessellation_cache_size;        //!< size of the shared tessellation cache 

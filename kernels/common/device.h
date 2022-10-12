@@ -62,7 +62,7 @@ namespace embree
 
     template<typename T, size_t alignment>
     using avector = vector_t<T,allocator<T,alignment>>;
-    
+
   public:
 
     /*! Device construction */

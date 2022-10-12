@@ -3,6 +3,7 @@
 
 #include "rthwif_embree.h"
 #include "rthwif_embree_builder.h"
+#include "../common/scene.h"
 #include "builder/qbvh6_builder_sah.h"
 #include "../builders/primrefgen.h"
 #include "rthwif_internal.h"
@@ -40,6 +41,8 @@ namespace embree
 
   void* rthwifInit(sycl::device device, sycl::context context)
   {
+    ::rthwifInit();
+    
     size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
 
     size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
@@ -69,43 +72,23 @@ namespace embree
   void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context)
   {
     sycl::free(dispatchGlobalsPtr, context);
+
+    rthwifExit();
   }
 
   bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
   {
-    /* check for Intel vendor */
-    const uint32_t vendor_id = sycl_device.get_info<sycl::info::device::vendor_id>();
-    if (vendor_id != 0x8086) return false;
+    /* disabling of device check through env variable */
+    const char* disable_device_check = getenv("EMBREE_DISABLE_DEVICEID_CHECK");
+    if (disable_device_check && strcmp(disable_device_check,"1") == 0)
+      return true;
 
-    /* check for supported device ID */
-    auto native_device = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
-    ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
-    ze_result_t status = zeDeviceGetProperties(native_device, &device_props);
-    if (status != ZE_RESULT_SUCCESS)
-      return false;
-
-    const uint32_t device_id = device_props.deviceId;
-    
-    // DG2
-    if (0x4F80 <= device_id && device_id <= 0x4F88) return true;
-    if (0x5690 <= device_id && device_id <= 0x5698) return true;
-    if (0x56A0 <= device_id && device_id <= 0x56A6) return true;
-    if (0x56B0 <= device_id && device_id <= 0x56B3) return true;
-    if (0x56C0 <= device_id && device_id <= 0x56C1) return true;
-       
-    // ATS-M
-    if (0x0201 <= device_id && device_id <= 0x0210) return true;
-
-    // PVC
-    if (0x0BD0 <= device_id && device_id <= 0x0BDB) return true;
-    if (device_id == 0x0BE5) return true;
-
-    return false;
+    /* check if GPU device is supported */
+    const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(sycl_device);
+    return features != RTHWIF_FEATURES_NONE;
   }
 
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-      
+#if 0      
   BBox3fa rthwifBuildInternal(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel, int gpu_build)
   {
     bool static_geometry = true;
@@ -199,230 +182,45 @@ namespace embree
     auto getNumTimeSegments = [&] (unsigned int geomID) {
       return 0;
     };
+#endif
     
-    auto createPrimRefArray = [&] (avector<PrimRef>& prims, BBox1f time_range_do_not_use, const range<size_t>& r, size_t k, unsigned int geomID)
-    {
-      const Geometry* geom = scene->get(geomID);
-      PrimInfo primInfo = geom->numTimeSegments() > 0
-        ? geom->createPrimRefArrayMB(prims,time_range,r,k,geomID)
-        : geom->createPrimRefArray  (prims,r,k,geomID);
-      return primInfo;
-    };
-
-    auto getTriangle = [&](unsigned int geomID, unsigned int primID)
-    {
-      /* invoke any hit callback when Embree filter functions are present */
-      GeometryFlags gflags = GeometryFlags::OPAQUE;
-      if (scene->hasContextFilterFunction() || scene->get(geomID)->hasFilterFunctions())
-        gflags = GeometryFlags::NONE;
-
-      /* invoke any hit callback when high mask bits are enabled */
-      if (scene->get(geomID)->mask & 0xFFFFFF80)
-        gflags = GeometryFlags::NONE;
-      
-      TriangleMesh* mesh = scene->get<TriangleMesh>(geomID);
-      const TriangleMesh::Triangle tri = mesh->triangle(primID);
-      if (unlikely(tri.v[0] >= mesh->numVertices())) return QBVH6BuilderSAH::Triangle();
-      if (unlikely(tri.v[1] >= mesh->numVertices())) return QBVH6BuilderSAH::Triangle();
-      if (unlikely(tri.v[2] >= mesh->numVertices())) return QBVH6BuilderSAH::Triangle();
-
-      const Vec3f p0 = mesh->vertices[0][tri.v[0]];
-      const Vec3f p1 = mesh->vertices[0][tri.v[1]];
-      const Vec3f p2 = mesh->vertices[0][tri.v[2]];
-      if (unlikely(!isvalid(p0))) return QBVH6BuilderSAH::Triangle();
-      if (unlikely(!isvalid(p1))) return QBVH6BuilderSAH::Triangle();
-      if (unlikely(!isvalid(p2))) return QBVH6BuilderSAH::Triangle();
-
-      return QBVH6BuilderSAH::Triangle(tri.v[0],tri.v[1],tri.v[2],p0,p1,p2,gflags,mask32_to_mask8(mesh->mask));
-    };
-
-    auto getTriangleIndices = [&] (uint32_t geomID, uint32_t primID) {
-       const TriangleMesh::Triangle tri = scene->get<TriangleMesh>(geomID)->triangles[primID];
-       return Vec3<uint32_t>(tri.v[0],tri.v[1],tri.v[2]);
-    };
-
-    auto getQuad = [&](unsigned int geomID, unsigned int primID)
-    {
-      /* invoke any hit callback when Embree filter functions are present */
-      GeometryFlags gflags = GeometryFlags::OPAQUE;
-      if (scene->hasContextFilterFunction() || scene->get(geomID)->hasFilterFunctions())
-        gflags = GeometryFlags::NONE;
-
-      /* invoke any hit callback when high mask bits are enabled */
-      if (scene->get(geomID)->mask & 0xFFFFFF80)
-        gflags = GeometryFlags::NONE;
-          
-      QuadMesh* mesh = scene->get<QuadMesh>(geomID);
-      const QuadMesh::Quad quad = mesh->quad(primID);
-      const Vec3f p0 = mesh->vertices[0][quad.v[0]];
-      const Vec3f p1 = mesh->vertices[0][quad.v[1]];
-      const Vec3f p2 = mesh->vertices[0][quad.v[2]];
-      const Vec3f p3 = mesh->vertices[0][quad.v[3]];
-      return QBVH6BuilderSAH::Quad(p0,p1,p2,p3,gflags,mask32_to_mask8(mesh->mask));
-    };
-
-    auto getProcedural = [&](unsigned int geomID, unsigned int primID) {
-      return QBVH6BuilderSAH::Procedural(mask32_to_mask8(scene->get(geomID)->mask));
-    };
-
-    auto getInstance = [&](unsigned int geomID, unsigned int primID)
-    {
-      Instance* instance = scene->get<Instance>(geomID);
-      
-      HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(instance->object)->hwaccel.data();
-      void** AccelTable = (void**) (hwaccel+1);
-      void* accel = AccelTable[0];
-      
-      const AffineSpace3fa local2world = instance->getLocal2World();
-      return QBVH6BuilderSAH::Instance(local2world,accel,mask32_to_mask8(instance->mask),0);
-    };
-
-    auto buildAccel = [&]( char* accel_ptr, size_t accel_bytes, RTHWIF_ACCEL_REF AddAccel, BBox3f& bounds )  
-    {
-      try
-      {
-        bounds = empty;
-        bounds = QBVH6BuilderSAH::build(scene->size(), scene->device,
-                                        getSize, getType, getNumTimeSegments,
-                                        createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                        accel_ptr, accel_bytes, AddAccel, false, dispatchGlobalsPtr);
-        
-        return RTHWIF_ERROR_NONE;
-      }
-      catch (std::bad_alloc&) {
-        return RTHWIF_ERROR_RETRY;
-      }
-      
-      catch (...) {
-        return RTHWIF_ERROR_OTHER;
-      }
-      
-    };
-
-    /* calculate maximal number of motion blur time segments in scene */
-    uint32_t maxTimeSegments = 0;
-    for (size_t geomID=0; geomID<scene->size(); geomID++)
-    {
-      Geometry* geom = scene->get(geomID);
-      if (!geom) continue;
-      maxTimeSegments = std::max(maxTimeSegments, geom->numTimeSegments());
-    }
-
-    /* estimate static accel size */
-    static_geometry = true;
-    RTHWIF_ACCEL_SIZE sizeStatic;
-    QBVH6BuilderSAH::estimateSize(scene->size(), getSize, getType, sizeStatic.accelBufferExpectedBytes, sizeStatic.accelBufferWorstCaseBytes );
+  void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
+  {
+    ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+    ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
     
-    /* estimate MBlur accel size */
-    static_geometry = false;
-    RTHWIF_ACCEL_SIZE sizeMBlur;
-    QBVH6BuilderSAH::estimateSize(scene->size(), getSize, getType, sizeMBlur.accelBufferExpectedBytes, sizeMBlur.accelBufferWorstCaseBytes );
-
-    size_t headerBytes = sizeof(HWAccel) + std::max(1u,maxTimeSegments)*8;
-    align(headerBytes,128);
-
-    /* build BVH */
-    BBox3f fullBounds = empty;
-    RTHWIF_ERROR err = RTHWIF_ERROR_NONE;
-    //for (size_t bytes = size.accelBufferExpectedBytes; bytes < size.accelBufferWorstCaseBytes; bytes*=1.2)
-    while (true)
-    {
-      /* estimate size of static and mblur BVHs */
-      RTHWIF_ACCEL_SIZE size;
-      size.accelBufferExpectedBytes  = sizeStatic.accelBufferExpectedBytes  + maxTimeSegments*sizeMBlur.accelBufferExpectedBytes;
-      size.accelBufferWorstCaseBytes = sizeStatic.accelBufferWorstCaseBytes + maxTimeSegments*sizeMBlur.accelBufferWorstCaseBytes;
-      size_t bytes = headerBytes+size.accelBufferExpectedBytes;
-        
-      /* allocate BVH data */
-      if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
-      memset(accel.data(),0,accel.size()); // FIXME: not required
-
-      /* build static BVH */
-      char* accel_ptr = accel.data() + headerBytes;
-      size_t accel_bytes = sizeStatic.accelBufferExpectedBytes;
-
-      RTHWIF_ACCEL_REF AddAccel;
-      memset(&AddAccel,0,sizeof(AddAccel));
-
-      BBox3f staticBounds = empty;
-      static_geometry = true;
-      err = buildAccel( accel_ptr, accel_bytes, AddAccel, staticBounds );
-
-      fullBounds.extend(staticBounds);
-      
-      if (err == RTHWIF_ERROR_RETRY)
-      {
-        if (sizeStatic.accelBufferExpectedBytes == sizeStatic.accelBufferWorstCaseBytes)
-          throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
-        
-        sizeStatic.accelBufferExpectedBytes = std::min(sizeStatic.accelBufferWorstCaseBytes,(size_t(1.2*sizeStatic.accelBufferExpectedBytes)+127)&-128);
-        continue;
-      }
-
-      /* build BVH for each time segment */
-      for (uint32_t i=0; i<maxTimeSegments; i++)
-      {
-        const float t0 = float(i+0)/float(maxTimeSegments);
-        const float t1 = float(i+1)/float(maxTimeSegments);
-        time_range = BBox1f(t0,t1);
-
-        char* accel_ptr = accel.data() + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
-        size_t accel_bytes = sizeMBlur.accelBufferExpectedBytes;
-
-        AddAccel.Accel = nullptr;
-        if (!staticBounds.empty()) {
-          AddAccel.Accel = accel.data() + headerBytes;
-          AddAccel.bounds = (RTHWIF_AABB&) staticBounds;
-        }
-
-        BBox3f mblurBounds = empty;
-        static_geometry = false;
-        err = buildAccel( accel_ptr, accel_bytes, AddAccel, mblurBounds );
-
-        fullBounds.extend(mblurBounds);
-
-        if (err == RTHWIF_ERROR_RETRY)
-        {
-          if (sizeMBlur.accelBufferExpectedBytes == sizeMBlur.accelBufferWorstCaseBytes)
-            throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
-          
-          sizeMBlur.accelBufferExpectedBytes = std::min(sizeMBlur.accelBufferWorstCaseBytes,(size_t(1.2*sizeMBlur.accelBufferExpectedBytes)+127)&-128);
-          break;
-        }
-        
-        if (err != RTHWIF_ERROR_NONE) break;
-      }
-      if (err != RTHWIF_ERROR_RETRY) break;
-    }
-
-    if (err != RTHWIF_ERROR_NONE)
-      throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
-
-    HWAccel* hwaccel = (HWAccel*) accel.data(); // FIXME: do not use HWAccel struct here!
-    hwaccel->reserved = 1; // switch to AccelTable mode
-    hwaccel->bounds[0][0] = fullBounds.lower.x;
-    hwaccel->bounds[0][1] = fullBounds.lower.y;
-    hwaccel->bounds[0][2] = fullBounds.lower.z;
-    hwaccel->bounds[1][0] = fullBounds.upper.x;
-    hwaccel->bounds[1][1] = fullBounds.upper.y;
-    hwaccel->bounds[1][2] = fullBounds.upper.z;
-    hwaccel->numTimeSegments = maxTimeSegments;
-
-    void** AccelTable = (void**) (hwaccel+1);
-    for (size_t i=0; i<maxTimeSegments; i++)
-      AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
+    ze_raytracing_mem_alloc_ext_desc_t rt_desc;
+    rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    rt_desc.flags = 0;
     
-    if (maxTimeSegments == 0)
-      AccelTable[0] = (char*)hwaccel + headerBytes;
-
-    return fullBounds;
+    ze_device_mem_alloc_desc_t device_desc;
+    device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
+    device_desc.pNext = &rt_desc;
+    device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
+    device_desc.ordinal = 0;
+  
+    ze_host_mem_alloc_desc_t host_desc;
+    host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
+    host_desc.pNext = nullptr;
+    host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
+    
+    void* ptr = nullptr;
+    ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
+    assert(result == ZE_RESULT_SUCCESS);
+    return ptr;
   }
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  void rthwifFreeAccelBuffer(void* ptr, sycl::context context)
+  {
+    if (ptr == nullptr) return;
+    ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+    ze_result_t result = zeMemFree(hContext,ptr);
+    assert(result == ZE_RESULT_SUCCESS);
+  }
 
   struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
   {
-    RTHWIF_TRANSFORM4X4 xfmdata;
+    RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR xfmdata;
   };
 
   struct GEOMETRY_TYPE
@@ -510,18 +308,32 @@ namespace embree
       range<size_t> r(primID);
       size_t k = 0;
       uint32_t geomID = 0;
+
+      PrimInfo pinfo = empty;
       if (geom->numTimeSegments() > 0)
-        geom->createPrimRefArrayMB(&prim,time_range,r,k,geomID);
+        pinfo = geom->createPrimRefArrayMB(&prim,time_range,r,k,geomID);
       else
-        geom->createPrimRefArray(&prim,r,k,geomID);
-      
-      BBox3fa bounds = prim.bounds();
-      boundsOut[i].lower.x = bounds.lower.x;
-      boundsOut[i].lower.y = bounds.lower.y;
-      boundsOut[i].lower.z = bounds.lower.z;
-      boundsOut[i].upper.x = bounds.upper.x;
-      boundsOut[i].upper.y = bounds.upper.y;
-      boundsOut[i].upper.z = bounds.upper.z;
+        pinfo = geom->createPrimRefArray(&prim,r,k,geomID);
+
+      /* invalid primitive */
+      if (pinfo.size() == 0) {
+        boundsOut[i].lower.x = pos_inf;
+        boundsOut[i].lower.y = pos_inf;
+        boundsOut[i].lower.z = pos_inf;
+        boundsOut[i].upper.x = neg_inf;
+        boundsOut[i].upper.y = neg_inf;
+        boundsOut[i].upper.z = neg_inf;
+      }
+      else
+      {
+        BBox3fa bounds = prim.bounds();
+        boundsOut[i].lower.x = bounds.lower.x;
+        boundsOut[i].lower.y = bounds.lower.y;
+        boundsOut[i].lower.z = bounds.lower.z;
+        boundsOut[i].upper.x = bounds.upper.x;
+        boundsOut[i].upper.y = bounds.upper.y;
+        boundsOut[i].upper.z = bounds.upper.z;
+      }
     }
   };
 
@@ -549,11 +361,12 @@ namespace embree
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
     const AffineSpace3fa local2world = geom->getLocal2World();
-    out->transform = &out->xfmdata;
-    out->xfmdata = *(RTHWIF_TRANSFORM4X4*) &local2world;
-    HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
-    void** AccelTable = (void**) (hwaccel+1);
-    out->accel = AccelTable[0];
+    out->transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+    out->transform = (float*) &out->xfmdata;
+    out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
+    out->xfmdata = *(RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) &local2world;
+    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+    out->accel = hwaccel->AccelTable[0];
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_INSTANCE_DESC* out, Scene* scene, Instance* geom)
@@ -564,10 +377,11 @@ namespace embree
     out->instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->instanceUserID = 0;
-    out->transform = (RTHWIF_TRANSFORM4X4*) &geom->local2world[0];
-    HWAccel* hwaccel = (HWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
-    void** AccelTable = (void**) (hwaccel+1);
-    out->accel = AccelTable[0];
+    out->transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+    out->transform = (float*) &geom->local2world[0];
+    out->bounds = (RTHWIF_AABB*) &dynamic_cast<Scene*>(geom->object)->hwaccel_bounds;
+    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) dynamic_cast<Scene*>(geom->object)->hwaccel.data();
+    out->accel = hwaccel->AccelTable[0];
   }
 
   void createGeometryDesc(char* out, Scene* scene, Geometry* geom, GEOMETRY_TYPE type)
@@ -583,7 +397,7 @@ namespace embree
     }
   }
 
-  BBox3fa rthwifBuildDriver(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
+  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
   {
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
@@ -628,7 +442,7 @@ namespace embree
       case Geometry::GTY_INSTANCE_CHEAP    :
       case Geometry::GTY_INSTANCE_EXPENSIVE: {
         Instance* instance = scene->get<Instance>(geomID);
-        QBVH6* object = (QBVH6*)((Scene*)instance->object)->hwaccel.data();
+        EmbreeHWAccel* object = (EmbreeHWAccel*)((Scene*)instance->object)->hwaccel.data();
         if (object->numTimeSegments > 1) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if instanced scene has motion blur
         if (instance->mask & 0xFFFFFF80) return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; // we need to handle instances in procedural mode if high mask bits are set
         else if (instance->gsubtype == AccelSet::GTY_SUBTYPE_INSTANCE_QUATERNION)
@@ -645,7 +459,7 @@ namespace embree
     };
 
     /* calculate maximal number of motion blur time segments in scene */
-    uint32_t maxTimeSegments = 0;
+    uint32_t maxTimeSegments = 1;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
     {
       Geometry* geom = scene->get(geomID);
@@ -654,53 +468,37 @@ namespace embree
     }
 
     /* calculate size of geometry descriptor buffer */
-    size_t bytesStatic = 0, bytesMBlur = 0;
+    size_t totalBytes = 0;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
     {
       Geometry* geom = scene->get(geomID);
       if (geom == nullptr) continue;
       
       const GEOMETRY_TYPE type = getType(geomID);
-      if (geom->numTimeSegments() == 0) {
-        align(bytesStatic,alignof_RTHWIF_GEOMETRY(type));
-        bytesStatic += sizeof_RTHWIF_GEOMETRY(type);
-      } else {
-        align(bytesMBlur,alignof_RTHWIF_GEOMETRY(type));
-        bytesMBlur += sizeof_RTHWIF_GEOMETRY(type);
-      }
+      align(totalBytes,alignof_RTHWIF_GEOMETRY(type));
+      totalBytes += sizeof_RTHWIF_GEOMETRY(type);
     }
 
     /* fill geomdesc buffers */
-    std::vector<RTHWIF_GEOMETRY_DESC*> geomStatic(scene->size());
-    std::vector<RTHWIF_GEOMETRY_DESC*> geomMBlur(scene->size());
-    std::vector<char> geomDescStatic(bytesStatic);
-    std::vector<char> geomDescMBlur(bytesMBlur);
+    std::vector<RTHWIF_GEOMETRY_DESC*> geomDescr(scene->size());
+    std::vector<char> geomDescrData(totalBytes);
 
-    size_t offsetStatic = 0, offsetMBlur = 0;
+    size_t offset = 0;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
     {
-      geomStatic[geomID] = nullptr;
-      geomMBlur [geomID] = nullptr;
-      
+      geomDescr[geomID] = nullptr;     
       Geometry* geom = scene->get(geomID);
       if (geom == nullptr) continue;
       
       const GEOMETRY_TYPE type = getType(geomID);
-      
-      if (geom->numTimeSegments() == 0) {
-        align(offsetStatic,alignof_RTHWIF_GEOMETRY(type));
-        createGeometryDesc(&geomDescStatic[offsetStatic],scene,scene->get(geomID),type);
-        geomStatic[geomID] = (RTHWIF_GEOMETRY_DESC*) &geomDescStatic[offsetStatic];
-        offsetStatic += sizeof_RTHWIF_GEOMETRY(type);
-        assert(offsetStatic <= geomDescStatic.size());
-      } else {
-        align(offsetMBlur,alignof_RTHWIF_GEOMETRY(type));
-        createGeometryDesc(&geomDescMBlur[offsetMBlur],scene,scene->get(geomID),type);
-        geomMBlur[geomID] = (RTHWIF_GEOMETRY_DESC*) &geomDescMBlur[offsetMBlur];
-        offsetMBlur += sizeof_RTHWIF_GEOMETRY(type);
-        assert(offsetMBlur <= geomDescMBlur.size());
-      }
+      align(offset,alignof_RTHWIF_GEOMETRY(type));
+      createGeometryDesc(&geomDescrData[offset],scene,scene->get(geomID),type);
+      geomDescr[geomID] = (RTHWIF_GEOMETRY_DESC*) &geomDescrData[offset];
+      offset += sizeof_RTHWIF_GEOMETRY(type);
+      assert(offset <= geomDescrData.size());
     }
+
+    RTHWIF_PARALLEL_OPERATION parallelOperation = rthwifNewParallelOperation();
 
     /* estimate static accel size */
     BBox1f time_range(0,1);
@@ -708,70 +506,49 @@ namespace embree
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
-    args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
-    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomStatic.data();
-    args.numGeometries = geomStatic.size();
+    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
+    args.numGeometries = geomDescr.size();
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
+    args.scratchBuffer = nullptr;
+    args.scratchBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
+    args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.buildUserPtr = &time_range;
+#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+    args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
+#endif
     
-    RTHWIF_ACCEL_SIZE sizeStatic;
-    memset(&sizeStatic,0,sizeof(RTHWIF_ACCEL_SIZE));
-    sizeStatic.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
-    RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeStatic);
+    RTHWIF_ACCEL_SIZE sizeTotal;
+    memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
+    sizeTotal.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
+    RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeTotal);
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
-    /* estimate MBlur accel size */
-    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomMBlur.data();
-    args.numGeometries = geomMBlur.size();
-    
-    RTHWIF_ACCEL_SIZE sizeMBlur;
-    memset(&sizeMBlur,0,sizeof(RTHWIF_ACCEL_SIZE));
-    sizeMBlur.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
-    err = rthwifGetAccelSize(args,sizeMBlur);
-    if (err != RTHWIF_ERROR_NONE)
-      throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
+    /* allocate scratch buffer */
+    std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
+    args.scratchBuffer = scratchBuffer.data();
+    args.scratchBufferBytes = scratchBuffer.size();
 
-    size_t headerBytes = sizeof(HWAccel) + std::max(1u,maxTimeSegments)*8;
+    size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
 
     /* build BVH */
     BBox3f fullBounds = empty;
-    //for (size_t bytes = size.accelBufferExpectedBytes; bytes < size.accelBufferWorstCaseBytes; bytes*=1.2)
     while (true)
     {
-      /* estimate size of static and mblur BVHs */
+      /* estimate size of all mblur BVHs */
       RTHWIF_ACCEL_SIZE size;
-      size.accelBufferExpectedBytes  = sizeStatic.accelBufferExpectedBytes  + maxTimeSegments*sizeMBlur.accelBufferExpectedBytes;
-      size.accelBufferWorstCaseBytes = sizeStatic.accelBufferWorstCaseBytes + maxTimeSegments*sizeMBlur.accelBufferWorstCaseBytes;
+      size.accelBufferExpectedBytes  = maxTimeSegments*sizeTotal.accelBufferExpectedBytes;
+      size.accelBufferWorstCaseBytes = maxTimeSegments*sizeTotal.accelBufferWorstCaseBytes;
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
         
       /* allocate BVH data */
-      if (accel.size() < bytes) accel = std::move(Device::avector<char,64>(scene->device,bytes));
+      if (accel.size() < bytes) accel.resize(bytes);
       memset(accel.data(),0,accel.size()); // FIXME: not required
-
-      /* build static BVH */
-      args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomStatic.data();
-      args.numGeometries = geomStatic.size();
-      args.accelBuffer = accel.data() + headerBytes;
-      args.accelBufferBytes = sizeStatic.accelBufferExpectedBytes;
-      bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
-      err = rthwifBuildAccel(args);
-      const BBox3f staticBounds = *(BBox3f*) args.boundsOut;
-      fullBounds.extend(staticBounds);
-      
-      if (err == RTHWIF_ERROR_RETRY)
-      {
-        if (sizeStatic.accelBufferExpectedBytes == sizeStatic.accelBufferWorstCaseBytes)
-          throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
-        
-        sizeStatic.accelBufferExpectedBytes = std::min(sizeStatic.accelBufferWorstCaseBytes,(size_t(1.2*sizeStatic.accelBufferExpectedBytes)+127)&-128);
-        continue;
-      }
 
       /* build BVH for each time segment */
       for (uint32_t i=0; i<maxTimeSegments; i++)
@@ -780,25 +557,27 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
         
-        args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomMBlur.data();
-        args.numGeometries = geomMBlur.size();
-        args.accelBuffer = accel.data() + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
-        args.accelBufferBytes = sizeMBlur.accelBufferExpectedBytes;
-        args.linkAccel.Accel = nullptr;
-        if (!staticBounds.empty()) {
-          args.linkAccel.Accel = accel.data() + headerBytes;
-          args.linkAccel.bounds = (RTHWIF_AABB&) staticBounds;
-        }
+        args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
+        args.numGeometries = geomDescr.size();
+        args.accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
+        args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
+        
         err = rthwifBuildAccel(args);
+        if (args.parallelOperation) {
+          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
+          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          parallel_for(maxThreads, [&](uint32_t) { err = rthwifJoinParallelOperation(parallelOperation); });
+        }
+        
         fullBounds.extend(*(BBox3f*) args.boundsOut);
 
         if (err == RTHWIF_ERROR_RETRY)
         {
-          if (sizeMBlur.accelBufferExpectedBytes == sizeMBlur.accelBufferWorstCaseBytes)
+          if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes)
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
-          sizeMBlur.accelBufferExpectedBytes = std::min(sizeMBlur.accelBufferWorstCaseBytes,(size_t(1.2*sizeMBlur.accelBufferExpectedBytes)+127)&-128);
+          sizeTotal.accelBufferExpectedBytes = std::min(sizeTotal.accelBufferWorstCaseBytes,(size_t(1.2*sizeTotal.accelBufferExpectedBytes)+127)&-128);
           break;
         }
         
@@ -810,26 +589,16 @@ namespace embree
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
-    HWAccel* hwaccel = (HWAccel*) accel.data(); // FIXME: do not use HWAccel struct here!
-    hwaccel->reserved = 1; // switch to AccelTable mode
-    hwaccel->bounds[0][0] = fullBounds.lower.x;
-    hwaccel->bounds[0][1] = fullBounds.lower.y;
-    hwaccel->bounds[0][2] = fullBounds.lower.z;
-    hwaccel->bounds[1][0] = fullBounds.upper.x;
-    hwaccel->bounds[1][1] = fullBounds.upper.y;
-    hwaccel->bounds[1][2] = fullBounds.upper.z;
+    EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->numTimeSegments = maxTimeSegments;
 
-    void** AccelTable = (void**) (hwaccel+1);
     for (size_t i=0; i<maxTimeSegments; i++)
-      AccelTable[i] = (char*)hwaccel + headerBytes + sizeStatic.accelBufferExpectedBytes + i*sizeMBlur.accelBufferExpectedBytes;
-    
-    if (maxTimeSegments == 0)
-      AccelTable[0] = (char*)hwaccel + headerBytes;
+      hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
 
     return fullBounds;
   }
 
+#if 0  
   BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
   {
     if (scene->device->rthw_builder == "driver")
@@ -849,4 +618,5 @@ namespace embree
     else
       throw std::runtime_error("invalid rthw_builder specified: " + scene->device->rthw_builder);
   }
+#endif  
 }

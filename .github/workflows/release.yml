@@ -4,8 +4,6 @@
 name: release
 
 on:
-  push:
-    {}
   schedule:
     - cron:  '00 00 * * *'
   workflow_dispatch:

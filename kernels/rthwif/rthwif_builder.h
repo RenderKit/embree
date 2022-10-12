@@ -1,4 +1,4 @@
-// Copyright 2009-2021 Intel Corporation
+// Copyright 2009-2022 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
 #pragma once
@@ -37,43 +37,62 @@ typedef enum RTHWIF_GEOMETRY_FLAGS : uint8_t
   RTHWIF_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION = 0x2    // Guarantees single anyhit shader invokation for primitives.
 } RTHWIF_GEOMETRY_FLAGS;
 
+
 /* A 3-component short vector type. */
 typedef struct RTHWIF_FLOAT3 {
   float x, y, z;
 } RTHWIF_FLOAT3;
 
 
-/* A 4-component short vector type. */
-typedef struct RTHWIF_FLOAT4 {
-  float x, y, z, w;
-} RTHWIF_FLOAT4;
+/* A 3x4 affine transformation with column vectors vx, vy, vz, and p
+ * transforming a point (x,y,z) to x*vx + y*vy + z*vz + p. */
+typedef struct RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR {
+  float vx_x, vx_y, vx_z; // column 0
+  float vy_x, vy_y, vy_z; // column 1
+  float vz_x, vz_y, vz_z; // column 2
+  float  p_x,  p_y,  p_z; // column 3
+} RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR;
 
-/* A 4x4 affine transformation with column vectors vx, vy, vz, and p
- * transforming a point (x,y,z) to x*vx + y*vy + z*vz + p. The 4th
- * components of the column vectors are ignored. */
-typedef struct RTHWIF_TRANSFORM4X4 {
-  RTHWIF_FLOAT4 vx, vy, vz, p;
-} RTHWIF_TRANSFORM4X4;
+
+/* Same as RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR, with ignored 4th
+ * component of column vectors. */
+typedef struct RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR {
+  float vx_x, vx_y, vx_z, pad0; // column 0
+  float vy_x, vy_y, vy_z, pad1; // column 1
+  float vz_x, vz_y, vz_z, pad2; // column 2
+  float  p_x,  p_y,  p_z, pad3; // column 3
+} RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR;
+
+
+/* Same as RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR, but using row major
+ * layout. */
+typedef struct RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR {
+  float vx_x, vy_x, vz_x, p_x; // row 0
+  float vx_y, vy_y, vz_y, p_y; // row 1
+  float vx_z, vy_z, vz_z, p_z; // row 2
+} RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR;
+
 
 /* An axis aligned bounding box with lower and upper bounds in each
  * dimension. */
 typedef struct RTHWIF_AABB
 {
-  RTHWIF_FLOAT3 lower;
-  RTHWIF_FLOAT3 upper;
+  RTHWIF_FLOAT3 lower; // lower bounds
+  RTHWIF_FLOAT3 upper; // upper bounds
 } RTHWIF_AABB;
 
 
 /* A triangle represented using 3 vertex indices. */
 typedef struct RTHWIF_TRIANGLE_INDICES {
-  uint32_t v0, v1, v2;
+  uint32_t v0, v1, v2;      // 3 triangle indices pointing into vertex array
 } RTHWIF_TRIANGLE_INDICES;
 
 
 /* A quad (triangle pair) represented using 4 vertex indices. */
 typedef struct RTHWIF_QUAD_INDICES { 
-  uint32_t v0, v1, v2, v3;
+  uint32_t v0, v1, v2, v3; // 4 quad indices pointing into vertex array
 } RTHWIF_QUAD_INDICES;
+
 
 /* The types of geometries supported. */
 typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
@@ -81,8 +100,18 @@ typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
   RTHWIF_GEOMETRY_TYPE_TRIANGLES = 0,   // triangle mesh geometry type
   RTHWIF_GEOMETRY_TYPE_QUADS = 1,       // quad mesh geometry type
   RTHWIF_GEOMETRY_TYPE_AABBS_FPTR = 2,  // procedural geometry with AABB bounds per primitive
-  RTHWIF_GEOMETRY_TYPE_INSTANCE = 3, // instance geometry
+  RTHWIF_GEOMETRY_TYPE_INSTANCE = 3,    // instance geometry
 } RTHWIF_GEOMETRY_TYPE;
+
+/* The format of transformations supported. */
+typedef enum RTHWIF_TRANSFORM_FORMAT : uint8_t
+{
+  RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR = 0,          // 3x4 affine transformation in column major format (see RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR layout)
+  RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR = 1,          // 4x4 affine transformation in column major format (see RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR layout)
+  RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR = 2,             // 3x4 affine transformation in row    major format (see RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR    layout)
+
+} RTHWIF_TRANSFORM_FORMAT;
+
 
 /* Instance flags supported (identical to DXR spec) */
 typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
@@ -93,6 +122,7 @@ typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
   RTHWIF_INSTANCE_FLAG_FORCE_OPAQUE = 0x4,
   RTHWIF_INSTANCE_FLAG_FORCE_NON_OPAQUE = 0x8
 } RTHWIF_INSTANCE_FLAGS;
+
 
 /* Triangle mesh geometry descriptor. */
 typedef struct RTHWIF_GEOMETRY_TRIANGLES_DESC  // 40 bytes
@@ -155,19 +185,21 @@ typedef struct RTHWIF_GEOMETRY_AABBS_FPTR_DESC // 24 bytes
   
 } RTHWIF_GEOMETRY_AABBS_FPTR_DESC;
 
+
 /* Instance geometry descriptor. */
 typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
 {
   RTHWIF_GEOMETRY_TYPE geometryType;          // must be RTHWIF_GEOMETRY_TYPE_INSTANCE
   RTHWIF_INSTANCE_FLAGS instanceFlags;        // flags for the instance (see RTHWIF_INSTANCE_FLAGS)
   uint8_t geometryMask;                       // 8-bit geometry mask for ray masking
-  uint8_t reserved0;                          // must be zero
+  RTHWIF_TRANSFORM_FORMAT transformFormat;    // format of the specified transformation
   unsigned int instanceUserID;                // a user specified identifier for the instance
-  RTHWIF_TRANSFORM4X4* transform;             // local to world instance transformation
-  //RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
+  float* transform;                           // local to world instance transformation in specified format
+  RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
   void* accel;                                // pointer to acceleration structure to instantiate
     
 } RTHWIF_GEOMETRY_INSTANCE_DESC;
+
 
 /* A geometry descriptor. */
 typedef struct RTHWIF_GEOMETRY_DESC {
@@ -191,9 +223,11 @@ typedef enum RTHWIF_ERROR
 {
   RTHWIF_ERROR_NONE  = 0x0,  // no error occured
   RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app should re-try with more memory
-  RTHWIF_ERROR_OTHER = 0x2   // some unspecified error occured
+  RTHWIF_ERROR_OTHER = 0x2,  // some unspecified error occured
+  RTHWIF_ERROR_PARALLEL_OPERATION = 0x3,  // task executing in parallel operation
   
 } RTHWIF_ERROR;
+
 
 /* Build quality hint for acceleration structure build. */
 typedef enum RTHWIF_BUILD_QUALITY
@@ -214,11 +248,9 @@ typedef enum RTHWIF_BUILD_FLAGS
   
 } RTHWIF_BUILD_FLAGS;
 
-typedef struct RTHWIF_ACCEL_REF
-{
-  void* Accel;
-  RTHWIF_AABB bounds;
-} RTHWIF_ACCEL_REF;
+
+/* A handle of a parallel operation that can get joined with worker threads. */
+typedef void* RTHWIF_PARALLEL_OPERATION;
 
 
 /* Structure returned by rthwifGetAccelSize that contains acceleration
@@ -245,6 +277,7 @@ typedef struct RTHWIF_ACCEL_SIZE
   
 } RTHWIF_ACCEL_SIZE;
 
+
 /* Argument structure passed to rthwifBuildAccel function. */
 typedef struct RTHWIF_BUILD_ACCEL_ARGS
 {
@@ -257,16 +290,7 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   const RTHWIF_GEOMETRY_DESC** geometries;
 
   /* Number of geometries in geometry descriptor array. */
-  size_t numGeometries;
-
-  /* An acceleration structure to link to (can be NULL). This pointer
-   * must point into the same USM memory allocation used to build the
-   * acceleration structure into (to avoid too large offsets). */
-  RTHWIF_ACCEL_REF linkAccel; 
-  //void* linkAccelBuffer;
-
-  /* Bounds of acceleration structure to link to. */
-  //RTHWIF_AABB* linkAccelBounds;
+  uint32_t numGeometries;
 
   /* Destination buffer for acceleration structure. Has to be a USM
    * allocation aligned to 128 bytes. */
@@ -291,10 +315,14 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   /* Some hints for acceleration structure build (see RTHWIF_BUILD_FLAGS) */
   RTHWIF_BUILD_FLAGS flags;
 
-  /* Parallel for abstraction for parallelization, can be NULL for
-   * single threaded build. See RTHWIF_PARALLEL_FOR_LOOP_FPTR for
-   * details. */
-  //RTHWIF_PARALLEL_FOR_LOOP_FPTR parallelFor;
+  /* When parallelOperation is NULL, the build is executed
+   * sequentially on the current thread. If a parallelOperation is
+   * specified, then the parallel operation gets attached to the
+   * parallel build handle. This handle can then get joined with
+   * worker threads to perform the parallel build operation. Only a
+   * single build operation can be attached to a parallel build
+   * operation at a given time. */
+  RTHWIF_PARALLEL_OPERATION parallelOperation;
 
   /* A pointer passed to callbacks. */
   void* buildUserPtr;
@@ -309,12 +337,23 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   /* Destination address to write acceleration structure bounds to (can be NULL). */
   RTHWIF_AABB* boundsOut;
 
-  void* dispatchGlobalsPtr; // FIXME: remove
+  /* for debugging purposes use only */
+#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+  void* dispatchGlobalsPtr;
+#endif
   
 } RTHWIF_BUILD_ACCEL_ARGS;
 
+/*
+ * Initializes the library.
+ */
 
 RTHWIF_API void rthwifInit();
+
+/*
+ * Cleans up the library.
+ */
+
 RTHWIF_API void rthwifExit();
 
 /*
@@ -322,7 +361,6 @@ RTHWIF_API void rthwifExit();
  */
 
 RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device);
-
 
 /*
  * The rthwifGetAccelSize function calculates the size of buffers
@@ -338,6 +376,7 @@ RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device);
          see RTHWIF_ACCEL_SIZE for more details.
 
 */
+
 RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, RTHWIF_ACCEL_SIZE& sizeOut);
 
 
@@ -382,3 +421,32 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
  */
 
 RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args);
+
+/*
+ * Creates a new parallel operation that can get attached to a build
+ * operation. Only a single build operation can be attached to a
+ * parallel operation at a given time.
+ */
+
+RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation();
+
+/*
+ * Destroys a parallel operation.
+ */
+
+RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+
+/*
+ * Returns the maximal number of threads that can join the parallel operation.
+ */
+
+RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+
+
+/* 
+ * Called by worker threads to join a parallel build operation. When
+ * the build finished, all worker threads return from this function
+ * with the same error code for the build.
+ */
+
+RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation );

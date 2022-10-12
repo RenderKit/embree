@@ -147,6 +147,34 @@ namespace embree
       bool hugepages;
     };
 
+  /*! allocator that newer performs allocations */
+  template<typename T>
+    struct no_allocator
+    {
+      typedef T value_type;
+      typedef T* pointer;
+      typedef const T* const_pointer;
+      typedef T& reference;
+      typedef const T& const_reference;
+      typedef std::size_t size_type;
+      typedef std::ptrdiff_t difference_type;
+
+      __forceinline pointer allocate( size_type n ) {
+        throw std::runtime_error("no allocation supported");
+      }
+
+      __forceinline void deallocate( pointer p, size_type n ) {
+      }
+
+      __forceinline void construct( pointer p, const_reference val ) {
+        new (p) T(val);
+      }
+
+      __forceinline void destroy( pointer p ) {
+        p->~T();
+      }
+    };
+
   /*! allocator for IDs */
   template<typename T, size_t max_id>
     struct IDPool

@@ -2,9 +2,16 @@
 #include "../rthwif_production.h"
 #include "../rthwif_builder.h"
 
+#include "../rthwif_production.h"
+#include "../rthwif_builder.h"
+
+#include <level_zero/ze_api.h>
+
 #include <vector>
 #include <map>
 #include <iostream>
+
+#define PRINT(x) std::cout << #x << " = " << x << std::endl;
 
 sycl::device device;
 sycl::context context;
@@ -135,6 +142,16 @@ enum class TestType
   TRIANGLES_ANYHIT_SHADER_COMMIT,    // triangles + filter + commit
   TRIANGLES_ANYHIT_SHADER_REJECT,    // triangles + filter + reject
   PROCEDURALS_COMMITTED_HIT,         // procedural triangles
+  BUILD_TEST_TRIANGLES,              // test BVH builder with triangles
+  BUILD_TEST_PROCEDURALS,            // test BVH builder with procedurals
+  BUILD_TEST_INSTANCES,              // test BVH builder with instances
+  BUILD_TEST_MIXED                   // test BVH builder with mixed scene (triangles, procedurals, and instances)
+};
+
+enum class BuildMode
+{
+  BUILD_EXPECTED_SIZE,
+  BUILD_WORST_CASE_SIZE
 };
 
 struct TestInput
@@ -360,6 +377,10 @@ struct Bounds3f
   static Bounds3f empty() {
     return { sycl::float3(INFINITY), sycl::float3(-INFINITY) };
   }
+
+  operator RTHWIF_AABB () const {
+    return { { lower.x(), lower.y(), lower.z() }, { upper.x(), upper.y(), upper.z() } };
+  }
   
   sycl::float3 lower;
   sycl::float3 upper;
@@ -433,6 +454,8 @@ struct Hit
 {
   Transform local_to_world;
   Triangle triangle;
+  bool procedural_triangle = false;
+  bool procedural_instance = false;
   uint32_t instUserID = -1;
   uint32_t instID = -1;
   uint32_t geomID = -1;
@@ -442,7 +465,7 @@ struct Hit
 
 struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
 {
-  RTHWIF_TRANSFORM4X4 xfmdata;
+  RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR xfmdata;
 };
 
 typedef union GEOMETRY_DESC
@@ -471,10 +494,10 @@ struct Geometry
     throw std::runtime_error("Geometry::transform not implemented");
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context) {
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode) {
   };
 
-  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) = 0;
+  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
 
   Type type;
 };
@@ -486,13 +509,13 @@ public:
   TriangleMesh (RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE, bool procedural = false)
     : Geometry(Type::TRIANGLE_MESH),
       gflags(gflags), procedural(procedural),
-      triangles_alloc(context,device), triangles(0,triangles_alloc),
-      vertices_alloc(context,device), vertices(0,vertices_alloc) {}
+      triangles_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), triangles(0,triangles_alloc),
+      vertices_alloc (context,device,sycl::ext::oneapi::property::usm::device_read_only()), vertices(0,vertices_alloc) {}
 
   virtual ~TriangleMesh() {}
 
   void* operator new(size_t size) {
-    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+    return sycl::aligned_alloc_shared(64,size,device,context,sycl::ext::oneapi::property::usm::device_read_only());
   }
   void operator delete(void* ptr) {
     sycl::free(ptr,context);
@@ -547,7 +570,7 @@ public:
       out.geometryMask = 0xFF;
       out.triangleBuffer = (RTHWIF_TRIANGLE_INDICES*) triangles.data();
       out.triangleCount = triangles.size();
-      out.triangleStride = sizeof(sycl::int3);
+      out.triangleStride = sizeof(sycl::int4);
       out.vertexBuffer = (RTHWIF_FLOAT3*) vertices.data();
       out.vertexCount = vertices.size();
       out.vertexStride = sizeof(sycl::float3);
@@ -559,7 +582,7 @@ public:
     const sycl::float3 v0 = vertices[triangles[primID].x()];
     const sycl::float3 v1 = vertices[triangles[primID].y()];
     const sycl::float3 v2 = vertices[triangles[primID].z()];
-    const uint32_t index = indices[primID];
+    const uint32_t index = triangles[primID].w();
     return Triangle(v0,v1,v2,index);
   }
 
@@ -581,8 +604,7 @@ public:
     const uint32_t v0 = addVertex(tri.v0);
     const uint32_t v1 = addVertex(tri.v1);
     const uint32_t v2 = addVertex(tri.v2);
-    triangles.push_back(sycl::int3(v0,v1,v2));
-    indices.push_back(tri.index);
+    triangles.push_back(sycl::int4(v0,v1,v2,tri.index));
   }
 
   void split(const sycl::float3 P, const sycl::float3 N, std::shared_ptr<TriangleMesh>& mesh0, std::shared_ptr<TriangleMesh>& mesh1)
@@ -598,7 +620,63 @@ public:
     }
   }
 
-  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override
+  void split(std::shared_ptr<TriangleMesh>& mesh0, std::shared_ptr<TriangleMesh>& mesh1)
+  {
+    uint32_t N = (uint32_t) size();
+    mesh0 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags,procedural));
+    mesh1 = std::shared_ptr<TriangleMesh>(new TriangleMesh(gflags,procedural));
+    mesh0->triangles.reserve(triangles.size()/2+1);
+    mesh1->triangles.reserve(triangles.size()/2+1);
+    mesh0->vertices.reserve(vertices.size()/2+8);
+    mesh1->vertices.reserve(vertices.size()/2+8);
+    
+    for (uint32_t primID=0; primID<N; primID++)
+    {
+      const Triangle tri = getTriangle(primID);
+      if (primID<N/2) mesh0->addTriangle(tri);
+      else            mesh1->addTriangle(tri);
+    }
+  }
+
+  /* selects random sub-set of triangles */
+  void select(const uint32_t numTriangles)
+  {
+    assert(numTriangles <= size());
+
+    /* first randomize triangles */
+    for (size_t i=0; i<size(); i++) {
+      uint32_t j = RandomSampler_getUInt(rng) % size();
+      std::swap(triangles[i],triangles[j]);
+    }
+
+    /* now we can easily select a random set of triangles */
+    triangles.resize(numTriangles);
+
+    /* now we sort the triangles again */
+    std::sort(triangles.begin(), triangles.end(), []( sycl::int4 a, sycl::int4 b ) { return a.w() < b.w(); });
+
+    /* and assign consecutive IDs */
+    for (uint32_t i=0; i<numTriangles; i++)
+      triangles[i].w() = i;
+  }
+
+  /* creates separate vertives for triangles */
+  void unshareVertices()
+  {
+    vertices.reserve(vertices.size()+3*triangles.size());
+    for (size_t i=0; i<triangles.size(); i++) {
+      const sycl::int4 tri = triangles[i];
+      const uint32_t v0 = (uint32_t) vertices.size();
+      vertices.push_back(vertices[tri.x()]);
+      const uint32_t v1 = (uint32_t) vertices.size();
+      vertices.push_back(vertices[tri.y()]);
+      const uint32_t v2 = (uint32_t) vertices.size();
+      vertices.push_back(vertices[tri.z()]);
+      triangles[i] = sycl::int4(v0,v1,v2,tri.w());
+    }
+  }
+
+  virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override
   {
     uint32_t instID = -1;
     uint32_t geomID = -1;
@@ -612,6 +690,7 @@ public:
       instID = id_stack.back();
       id_stack.pop_back();
     }
+
     assert(id_stack.size() == 0);
     
     for (uint32_t primID=0; primID<triangles.size(); primID++)
@@ -622,6 +701,8 @@ public:
       tri_map[tri.index].primID = primID;
       tri_map[tri.index].geomID = geomID;
       tri_map[tri.index].instID = instID;
+      tri_map[tri.index].procedural_triangle = procedural;
+      tri_map[tri.index].procedural_instance = procedural_instance;
       tri_map[tri.index].triangle = tri;
       tri_map[tri.index].local_to_world = local_to_world;
     }
@@ -631,11 +712,9 @@ public:
   RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
   bool procedural = false;
   
-  std::vector<uint32_t> indices;
-
-  typedef sycl::usm_allocator<sycl::int3, sycl::usm::alloc::shared> triangles_alloc_ty;
+  typedef sycl::usm_allocator<sycl::int4, sycl::usm::alloc::shared> triangles_alloc_ty;
   triangles_alloc_ty triangles_alloc;
-  std::vector<sycl::int3, triangles_alloc_ty> triangles;
+  std::vector<sycl::int4, triangles_alloc_ty> triangles;
 
   typedef sycl::usm_allocator<sycl::float3, sycl::usm::alloc::shared> vertices_alloc_ty;
   vertices_alloc_ty vertices_alloc;
@@ -653,7 +732,7 @@ struct InstanceGeometryT : public Geometry
   virtual ~InstanceGeometryT() {}
 
   void* operator new(size_t size) {
-    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+    return sycl::aligned_alloc_shared(64,size,device,context,sycl::ext::oneapi::property::usm::device_read_only());
   }
   void operator delete(void* ptr) {
     sycl::free(ptr,context);
@@ -696,35 +775,36 @@ struct InstanceGeometryT : public Geometry
       out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
       out.geometryMask = 0xFF;
       out.instanceUserID = instUserID;
-      out.transform = &out.xfmdata;
-      out.xfmdata.vx.x = local2world.vx.x();
-      out.xfmdata.vx.y = local2world.vx.y();
-      out.xfmdata.vx.z = local2world.vx.z();
-      out.xfmdata.vx.w = 0.0f;
-      out.xfmdata.vy.x = local2world.vy.x();
-      out.xfmdata.vy.y = local2world.vy.y();
-      out.xfmdata.vy.z = local2world.vy.z();
-      out.xfmdata.vy.w = 0.0f;
-      out.xfmdata.vz.x = local2world.vz.x();
-      out.xfmdata.vz.y = local2world.vz.y();
-      out.xfmdata.vz.z = local2world.vz.z();
-      out.xfmdata.vz.w = 0.0f;
-      out.xfmdata.p.x  = local2world.p.x();
-      out.xfmdata.p.y  = local2world.p.y();
-      out.xfmdata.p.z  = local2world.p.z();
-      out.xfmdata.p.w  = 0.0f;
+      out.transformFormat = RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR;
+      out.transform = (float*)&out.xfmdata;
+      out.xfmdata.vx_x = local2world.vx.x();
+      out.xfmdata.vx_y = local2world.vx.y();
+      out.xfmdata.vx_z = local2world.vx.z();
+      out.xfmdata.pad0 = 0.0f;
+      out.xfmdata.vy_x = local2world.vy.x();
+      out.xfmdata.vy_y = local2world.vy.y();
+      out.xfmdata.vy_z = local2world.vy.z();
+      out.xfmdata.pad1 = 0.0f;
+      out.xfmdata.vz_x = local2world.vz.x();
+      out.xfmdata.vz_y = local2world.vz.y();
+      out.xfmdata.vz_z = local2world.vz.z();
+      out.xfmdata.pad2 = 0.0f;
+      out.xfmdata.p_x  = local2world.p.x();
+      out.xfmdata.p_y  = local2world.p.y();
+      out.xfmdata.p_z  = local2world.p.z();
+      out.xfmdata.pad3  = 0.0f;
+      out.bounds = &scene->bounds;
       out.accel = scene->getAccel();
     }
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context) override {
-    scene->buildAccel(device,context);
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode) override {
+    scene->buildAccel(device,context,buildMode);
   }
 
-  virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map) override {
-    if (procedural) id_stack.back() = -1;
-    else            instUserID = this->instUserID;
-    scene->buildTriMap(local_to_world_in * local2world, id_stack, instUserID, tri_map);
+  virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
+    instUserID = this->instUserID;
+    scene->buildTriMap(local_to_world_in * local2world, id_stack, instUserID, procedural, tri_map);
   }
 
   bool procedural;
@@ -736,7 +816,6 @@ struct InstanceGeometryT : public Geometry
 std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const sycl::float3& dx, const sycl::float3& dy, size_t width, size_t height)
 {
   std::shared_ptr<TriangleMesh> mesh(new TriangleMesh);
-  mesh->indices.resize(2*width*height);
   mesh->triangles.resize(2*width*height);
   mesh->vertices.resize((width+1)*(height+1));
   
@@ -754,13 +833,56 @@ std::shared_ptr<TriangleMesh> createTrianglePlane (const sycl::float3& p0, const
       size_t p01 = (y+0)*(width+1)+(x+1);
       size_t p10 = (y+1)*(width+1)+(x+0);
       size_t p11 = (y+1)*(width+1)+(x+1);
-      mesh->triangles[i+0] = sycl::int3((int)p00,(int)p01,(int)p10);
-      mesh->triangles[i+1] = sycl::int3((int)p11,(int)p10,(int)p01);
-      mesh->indices[i+0] = i+0;
-      mesh->indices[i+1] = i+1;
+      mesh->triangles[i+0] = sycl::int4((int)p00,(int)p01,(int)p10,i+0);
+      mesh->triangles[i+1] = sycl::int4((int)p11,(int)p10,(int)p01,i+1);
     }
   }
   return mesh;
+}
+
+void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+{
+#if 1
+  return sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,bytes,device,context,sycl::ext::oneapi::property::usm::device_read_only());
+  
+#else // FIXME: enable this
+  
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+  
+  ze_raytracing_mem_alloc_ext_desc_t rt_desc;
+  rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+  rt_desc.flags = 0;
+    
+  ze_device_mem_alloc_desc_t device_desc;
+  device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
+  device_desc.pNext = &rt_desc;
+  device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
+  device_desc.ordinal = 0;
+
+  ze_host_mem_alloc_desc_t host_desc;
+  host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
+  host_desc.pNext = nullptr;
+  host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
+  
+  void* ptr = nullptr;
+  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
+  assert(result == ZE_RESULT_SUCCESS);
+  return ptr;
+#endif
+}
+
+void free_accel_buffer(void* ptr, sycl::context context)
+{
+#if 1
+  sycl::free(ptr,context);
+  
+#else // FIXME: enable this
+  if (ptr == nullptr) return;
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_result_t result = zeMemFree(hContext,ptr);
+  assert(result == ZE_RESULT_SUCCESS);
+#endif
 }
 
 struct Scene
@@ -768,10 +890,10 @@ struct Scene
   typedef InstanceGeometryT<Scene> InstanceGeometry;
   
   Scene()
-    : geometries_alloc(context,device), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) {}
+    : geometries_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) {}
       
   Scene(uint32_t width, uint32_t height, bool opaque, bool procedural)
-    : geometries_alloc(context,device), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
+    : geometries_alloc(context,device,sycl::ext::oneapi::property::usm::device_read_only()), geometries(0,geometries_alloc), bounds(Bounds3f::empty()), accel(nullptr) 
   {
     std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,height,0), width, height);
     plane->gflags = opaque ? RTHWIF_GEOMETRY_FLAG_OPAQUE : RTHWIF_GEOMETRY_FLAG_NONE;
@@ -779,35 +901,95 @@ struct Scene
     geometries.push_back(plane);
   }
 
+  ~Scene() {
+    free_accel_buffer(accel,context);
+  }
+
   void* operator new(size_t size) {
-    return sycl::aligned_alloc(64,size,device,context,sycl::usm::alloc::shared);
+    return sycl::aligned_alloc_shared(64,size,device,context,sycl::ext::oneapi::property::usm::device_read_only());
   }
 
   void operator delete(void* ptr) {
     sycl::free(ptr,context);
   }
 
+  void add(std::shared_ptr<TriangleMesh> mesh) {
+    geometries.push_back(mesh);
+  }
+
   void splitIntoGeometries(uint32_t numGeometries)
   {
-    for (uint32_t i=0; i<numGeometries-1; i++)
+    bool progress = true;
+    while (progress)
+    {
+      size_t N = geometries.size();
+      progress = false;
+      for (uint32_t i=0; i<N; i++)
+      {
+        if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i]))
+        {
+          if (mesh->size() <= 1) continue;
+          progress = true;
+          
+          /*const Triangle tri = mesh->getTriangle(RandomSampler_getUInt(rng)%mesh->size());
+            const float u = 2.0f*M_PI*RandomSampler_getFloat(rng);
+            const sycl::float3 P = tri.center();
+            const sycl::float3 N(cosf(u),sinf(u),0.0f);
+            
+            std::shared_ptr<TriangleMesh> mesh0, mesh1;
+            mesh->split(P,N,mesh0,mesh1);*/
+          
+          std::shared_ptr<TriangleMesh> mesh0, mesh1;
+          mesh->split(mesh0,mesh1);
+          geometries[i] = std::dynamic_pointer_cast<Geometry>(mesh0);
+          geometries.push_back(std::dynamic_pointer_cast<Geometry>(mesh1));
+
+          if (geometries.size() >= numGeometries)
+            return;
+        }
+      }
+    }
+    assert(geometries.size() == numGeometries);
+  }
+
+  /* splits each primitive into a geometry */
+  void splitIntoGeometries()
+  {
+    /* count number of triangles */
+    uint32_t numTriangles = 0;
+    for (uint32_t i=0; i<geometries.size(); i++)
+    {
+      if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i])) {
+        numTriangles++;
+      }
+    }
+        
+    std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> new_geometries(0,geometries_alloc);
+    new_geometries.reserve(numTriangles);
+    
+    for (uint32_t i=0; i<geometries.size(); i++)
     {
       if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i]))
       {
-        const Triangle tri = mesh->getTriangle(RandomSampler_getUInt(rng)%mesh->size());
-        const float u = 2.0f*M_PI*RandomSampler_getFloat(rng);
-        const sycl::float3 P = tri.center();
-        const sycl::float3 N(cosf(u),sinf(u),0.0f);
-        
-        std::shared_ptr<TriangleMesh> mesh0, mesh1;
-        mesh->split(P,N,mesh0,mesh1);
-        geometries[i] = std::dynamic_pointer_cast<Geometry>(mesh0);
-        geometries.push_back(std::dynamic_pointer_cast<Geometry>(mesh1));
+        if (mesh->size() <= 1) {
+          new_geometries.push_back(geometries[i]);
+          continue;
+        }
+
+        for (uint32_t j=0; j<mesh->size(); j++) {
+          std::shared_ptr<TriangleMesh> mesh0(new TriangleMesh(mesh->gflags,mesh->procedural));
+          mesh0->triangles.reserve(1);
+          mesh->vertices.reserve(3);
+          mesh0->addTriangle(mesh->getTriangle(j));
+          new_geometries.push_back(mesh0);
+        }
       }
     }
-    assert(geometries.size() == (size_t) numGeometries);
+
+    geometries = new_geometries;
   }
 
-  void createInstances(uint32_t blockSize, bool procedural)
+  void createInstances(uint32_t maxInstances, uint32_t blockSize = 1, bool procedural = false)
   {
     std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> instances(0,geometries_alloc);
     
@@ -815,7 +997,15 @@ struct Scene
     {
       const uint32_t begin = i;
       const uint32_t end   = std::min((uint32_t)geometries.size(),i+blockSize);
-
+      
+      if (instances.size() >= maxInstances)
+      {
+        for (uint32_t j=begin; j<end; j++) {
+          instances.push_back(geometries[j]);
+        }
+        continue;
+      }
+      
       const Transform local2world = RandomSampler_getTransform(rng);
       const Transform world2local = rcp(local2world);
 
@@ -834,32 +1024,65 @@ struct Scene
     geometries = instances;
   }
 
-  void buildAccel(sycl::device& device, sycl::context& context)
+  void mixTrianglesAndProcedurals()
+  {
+    for (uint32_t i=0; i<geometries.size(); i++)
+      if (std::shared_ptr<TriangleMesh> mesh = std::dynamic_pointer_cast<TriangleMesh>(geometries[i]))
+        mesh->procedural = i%2;
+  }
+
+  void addNullGeometries(uint32_t D)
+  {
+    size_t N = geometries.size();
+    geometries.resize(N+D);
+    if (N == 0) return;
+
+    for (size_t g=N; g<N+D; g++) {
+      uint32_t k = RandomSampler_getUInt(rng) % N;
+      std::swap(geometries[g],geometries[k]);
+    }
+  }
+
+  void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode)
   {
     /* fill geometry descriptor buffer */
     std::vector<GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
     for (size_t geomID=0; geomID<size(); geomID++)
     {
-      geometries[geomID]->buildAccel(device,context);
-      geometries[geomID]->getDesc(&desc[geomID]);
+      const std::shared_ptr<Geometry>& g = geometries[geomID];
+      
+      /* skip NULL geometries */
+      if (g == nullptr) {
+        geom[geomID] = nullptr;
+        continue;
+      }
+      
+      g->buildAccel(device,context,buildMode);
+      g->getDesc(&desc[geomID]);
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
 
     /* estimate accel size */
+    size_t accelBufferBytesOut = 0;
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
-    args.dispatchGlobalsPtr = dispatchGlobalsPtr;
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
     args.numGeometries = geom.size();
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
+    args.scratchBuffer = nullptr;
+    args.scratchBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.boundsOut = &bounds;
+    args.accelBufferBytesOut = &accelBufferBytesOut;
     args.buildUserPtr = nullptr;
+#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+    args.dispatchGlobalsPtr = dispatchGlobalsPtr;
+#endif
     
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
@@ -867,42 +1090,88 @@ struct Scene
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
-    
+
+    if (size.accelBufferExpectedBytes > size.accelBufferWorstCaseBytes)
+      throw std::runtime_error("expected larger than worst case");
+
+    /* allocate scratch buffer */
+    std::vector<char> scratchBuffer(size.scratchBufferBytes);
+    args.scratchBuffer = scratchBuffer.data();
+    args.scratchBufferBytes = scratchBuffer.size();
+
     accel = nullptr;
-    for (size_t bytes = size.accelBufferExpectedBytes; bytes < size.accelBufferWorstCaseBytes; bytes*=1.2)
+    size_t accelBytes = 0;
+
+    /* build with different modes */
+    switch (buildMode)
     {
-      /* allocate BVH data */
-      if (accel) sycl::free(accel,context);
-      accel = sycl::aligned_alloc(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,bytes,device,context,sycl::usm::alloc::shared);
-      memset(accel,0,bytes); // FIXME: not required
-      
+    case BuildMode::BUILD_WORST_CASE_SIZE: {
+
+      accelBytes = size.accelBufferWorstCaseBytes;
+      accel = alloc_accel_buffer(accelBytes,device,context);
+      memset(accel,0,accelBytes);
+
       /* build accel */
       args.numGeometries = geom.size();
       args.accelBuffer = accel;
-      args.accelBufferBytes = bytes;
+      args.accelBufferBytes = size.accelBufferWorstCaseBytes;
       err = rthwifBuildAccel(args);
       
-      if (err != RTHWIF_ERROR_RETRY)
-        break;
+      if (err != RTHWIF_ERROR_NONE)
+        throw std::runtime_error("build error");
     }
-    
-    if (err != RTHWIF_ERROR_NONE)
-      throw std::runtime_error("build error");
+    case BuildMode::BUILD_EXPECTED_SIZE: {
+      
+      size_t bytes = size.accelBufferExpectedBytes;
+      for (size_t i=0; i<=8; i++) // FIXME: reduce worst cast iteration number
+      {
+        if (i == 8)
+          throw std::runtime_error("build requires more than 8 iterations");
+        
+        /* allocate BVH data */
+        free_accel_buffer(accel,context);
+        accelBytes = bytes;
+        accel = alloc_accel_buffer(accelBytes,device,context);
+        memset(accel,0,accelBytes);
+        
+        /* build accel */
+        args.numGeometries = geom.size();
+        args.accelBuffer = accel;
+        args.accelBufferBytes = accelBytes;
+        err = rthwifBuildAccel(args);
+        
+        if (err != RTHWIF_ERROR_RETRY)
+          break;
 
-    this->bounds.lower.x() = bounds.lower.x;
-    this->bounds.lower.y() = bounds.lower.y;
-    this->bounds.lower.z() = bounds.lower.z;
-    this->bounds.upper.x() = bounds.upper.x;
-    this->bounds.upper.y() = bounds.upper.y;
-    this->bounds.upper.z() = bounds.upper.z;
+        if (accelBufferBytesOut < bytes || size.accelBufferWorstCaseBytes < accelBufferBytesOut )
+          throw std::runtime_error("failed build returned wrong new estimate");
+
+        bytes = accelBufferBytesOut;
+      }
+      
+      if (err != RTHWIF_ERROR_NONE)
+        throw std::runtime_error("build error");
+    }
+    }
+
+    this->bounds = bounds;
+
+    /* check if returned size of acceleration structure is correct */
+    bool is_zero = std::all_of( (char*)args.accelBuffer+accelBufferBytesOut, (char*)args.accelBuffer+accelBytes,
+                                [](char c) { return c == 0; } );
+    if (!is_zero)
+      throw std::runtime_error("build did return wrong acceleration structure size");
   }
   
-  void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, std::vector<Hit>& tri_map)
+  void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map)
   {    
     for (uint32_t geomID=0; geomID<geometries.size(); geomID++)
     {
+      if (geometries[geomID] == nullptr)
+        continue;
+      
       id_stack.push_back(geomID);
-      geometries[geomID]->buildTriMap(local_to_world,id_stack,instUserID,tri_map);
+      geometries[geomID]->buildTriMap(local_to_world,id_stack,instUserID,procedural_instance,tri_map);
       id_stack.pop_back();
     }
   }
@@ -912,7 +1181,10 @@ struct Scene
   }
 
   Bounds3f getBounds() {
-    return bounds;
+    return {
+      { bounds.lower.x, bounds.lower.y, bounds.lower.z },
+      { bounds.upper.x, bounds.upper.y, bounds.upper.z }
+    };
   }
   
   void* getAccel() {
@@ -925,7 +1197,7 @@ struct Scene
   geometries_alloc_ty geometries_alloc;
   std::vector<std::shared_ptr<Geometry>, geometries_alloc_ty> geometries;
 
-  Bounds3f bounds;
+  RTHWIF_AABB bounds;
   void* accel;
 };
 
@@ -1142,7 +1414,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
       {
         const TriangleMesh* mesh = (TriangleMesh*) geom;
 
-        const sycl::int3 tri = mesh->triangles[primID];
+        const sycl::int4 tri = mesh->triangles[primID];
         const sycl::float3 tri_v0 = mesh->vertices[tri.x()];
         const sycl::float3 tri_v1 = mesh->vertices[tri.y()];
         const sycl::float3 tri_v2 = mesh->vertices[tri.z()];
@@ -1260,47 +1532,14 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
   intel_ray_query_abandon(query);
 }
 
-static const int width = 128;
-static const int height = 128;
-static const size_t numTests = 2*width*height;
-
-uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, InstancingType inst, TestType test)
+void buildTestExpectedInputAndOutput(std::shared_ptr<Scene> scene, size_t numTests, TestType test, TestInput* in, TestOutput* out_expected)
 {
-  bool opaque = true;
-  bool procedural = false;
-  switch (test) {
-  case TestType::TRIANGLES_COMMITTED_HIT       : opaque = true;  procedural=false; break;
-  case TestType::TRIANGLES_POTENTIAL_HIT       : opaque = false; procedural=false; break;
-  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; procedural=false; break;
-  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; procedural=false; break;
-  case TestType::PROCEDURALS_COMMITTED_HIT     : opaque = false; procedural=true;  break;
-  };
-
-  uint32_t levels = 1;
-  if (inst != InstancingType::NONE) levels = 2;
-
-  //std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
-  std::shared_ptr<Scene> scene(new Scene(width,height,opaque,procedural));
-  scene->splitIntoGeometries(16);
-  if (inst != InstancingType::NONE)
-    scene->createInstances(3, inst == InstancingType::SW_INSTANCING);
-  scene->buildAccel(device,context);
-
   std::vector<Hit> tri_map;
-  tri_map.resize(2*width*height);
+  tri_map.resize(numTests);
   std::vector<uint32_t> id_stack;
   Transform local_to_world;
-  scene->buildTriMap(local_to_world,id_stack,-1,tri_map);
- 
-  TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
-  memset(in, 0, numTests*sizeof(TestInput));
-
-  TestOutput* out_test = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
-  memset(out_test, 0, numTests*sizeof(TestOutput));
-
-  TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
-  memset(out_expected, 0, numTests*sizeof(TestOutput));
-
+  scene->buildTriMap(local_to_world,id_stack,-1,false,tri_map);
+  
   TestHitType hit_type = TEST_MISS;
   switch (test) {
   case TestType::TRIANGLES_COMMITTED_HIT: hit_type = TEST_COMMITTED_HIT; break;
@@ -1308,15 +1547,17 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: hit_type = TEST_COMMITTED_HIT; break;
   case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: hit_type = TEST_MISS; break;
   case TestType::PROCEDURALS_COMMITTED_HIT: hit_type = TEST_COMMITTED_HIT; break;
+  default: assert(false); break;
   };
 
-  for (size_t y=0; y<height; y++)
+  //for (size_t y=0; y<height; y++)
   {
-    for (size_t x=0; x<width; x++)
+    //for (size_t x=0; x<width; x++)
     {
-      for (size_t i=0; i<2; i++)
+      //for (size_t i=0; i<2; i++)
+      for (size_t tid=0; tid<numTests; tid++)
       {
-        size_t tid = 2*(y*width+x)+i;
+        //size_t tid = 2*(y*width+x)+i;
         assert(tid < numTests);
 
         Hit hit = tri_map[tid];
@@ -1357,42 +1598,44 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
         case TestType::TRIANGLES_COMMITTED_HIT:
         case TestType::TRIANGLES_POTENTIAL_HIT:
         case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT:
-          out_expected[tid].bvh_level = levels-1;
-          out_expected[tid].hit_candidate = intel_candidate_type_triangle;
-          out_expected[tid].t = 1.0f;
-          out_expected[tid].u = 0.1f;
-          out_expected[tid].v = 0.6f;
-          out_expected[tid].front_face = 0;
-          out_expected[tid].geomID = hit.geomID;
-          out_expected[tid].primID = hit.primID;
-          out_expected[tid].instID = hit.instID;
-          out_expected[tid].instUserID = hit.instUserID;
-          out_expected[tid].v0 = hit.triangle.v0;
-          out_expected[tid].v1 = hit.triangle.v1;
-          out_expected[tid].v2 = hit.triangle.v2;
-          if (inst == InstancingType::SW_INSTANCING) {
-            out_expected[tid].world_to_object = Transform();
-            out_expected[tid].object_to_world = Transform();
-          } else {
-            out_expected[tid].world_to_object = world_to_local;
-            out_expected[tid].object_to_world = hit.local_to_world;
-          }
-          break;
         case TestType::PROCEDURALS_COMMITTED_HIT:
-          out_expected[tid].bvh_level = levels-1;
-          out_expected[tid].hit_candidate = intel_candidate_type_procedural;
+
+          if (hit.instID != -1)
+            out_expected[tid].bvh_level = 1;
+          else
+            out_expected[tid].bvh_level = 0;
+          
+          if (hit.procedural_triangle)
+            out_expected[tid].hit_candidate = intel_candidate_type_procedural;
+          else
+            out_expected[tid].hit_candidate = intel_candidate_type_triangle;
+          
           out_expected[tid].t = 1.0f;
           out_expected[tid].u = 0.1f;
           out_expected[tid].v = 0.6f;
           out_expected[tid].front_face = 0;
           out_expected[tid].geomID = hit.geomID;
           out_expected[tid].primID = hit.primID;
-          out_expected[tid].instID = hit.instID;
-          out_expected[tid].instUserID = hit.instUserID;
-          out_expected[tid].v0 = sycl::float3(0,0,0);
-          out_expected[tid].v1 = sycl::float3(0,0,0);
-          out_expected[tid].v2 = sycl::float3(0,0,0);
-          if (inst == InstancingType::SW_INSTANCING) {
+
+          if (hit.procedural_instance) {
+            out_expected[tid].instID = -1;
+            out_expected[tid].instUserID = -1;
+          }
+          else {
+            out_expected[tid].instID = hit.instID;
+            out_expected[tid].instUserID = hit.instUserID;
+          }
+           
+          if (hit.procedural_triangle) {
+            out_expected[tid].v0 = sycl::float3(0,0,0);
+            out_expected[tid].v1 = sycl::float3(0,0,0);
+            out_expected[tid].v2 = sycl::float3(0,0,0);
+          } else {
+            out_expected[tid].v0 = hit.triangle.v0;
+            out_expected[tid].v1 = hit.triangle.v1;
+            out_expected[tid].v2 = hit.triangle.v2;
+          }
+          if (hit.procedural_instance) {
             out_expected[tid].world_to_object = Transform();
             out_expected[tid].object_to_world = Transform();
           } else {
@@ -1404,7 +1647,45 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
       }
     }
   }
+}
 
+uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& context, InstancingType inst, TestType test)
+{
+  const int width = 128;
+  const int height = 128;
+  const size_t numTests = 2*width*height;
+
+  bool opaque = true;
+  bool procedural = false;
+  switch (test) {
+  case TestType::TRIANGLES_COMMITTED_HIT       : opaque = true;  procedural=false; break;
+  case TestType::TRIANGLES_POTENTIAL_HIT       : opaque = false; procedural=false; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_COMMIT: opaque = false; procedural=false; break;
+  case TestType::TRIANGLES_ANYHIT_SHADER_REJECT: opaque = false; procedural=false; break;
+  case TestType::PROCEDURALS_COMMITTED_HIT     : opaque = false; procedural=true;  break;
+  default: assert(false); break;
+  };
+
+  //std::shared_ptr<Scene> scene = std::make_shared<Scene>(width,height,opaque,procedural);
+  std::shared_ptr<Scene> scene(new Scene(width,height,opaque,procedural));
+  scene->splitIntoGeometries(16);
+  if (inst != InstancingType::NONE)
+    scene->createInstances(scene->size(),3, inst == InstancingType::SW_INSTANCING);
+
+  scene->addNullGeometries(16);
+    
+  scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE);
+
+  /* calculate test input and expected output */
+  TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
+  memset(in, 0, numTests*sizeof(TestInput));
+  TestOutput* out_test = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_test, 0, numTests*sizeof(TestOutput));
+  TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numTests*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_expected, 0, numTests*sizeof(TestOutput));
+
+  buildTestExpectedInputAndOutput(scene,numTests,test,in,out_expected);
+ 
   /* execute test */
   void* accel = scene->getAccel();
   size_t scene_ptr = (size_t) scene.get();
@@ -1438,8 +1719,91 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   for (size_t tid=0; tid<numTests; tid++)
     compareTestOutput(tid,numErrors,out_test[tid],out_expected[tid]);
 
+  sycl::free(in,context);
+  sycl::free(out_test,context);
+  sycl::free(out_expected,context);
+
   return numErrors;
 }
+
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test, BuildMode buildMode, uint32_t numPrimitives, int testID)
+{
+  const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
+  std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
+  if (test == TestType::BUILD_TEST_PROCEDURALS) plane->procedural = true;
+  plane->select(numPrimitives);
+  if (testID%2) plane->unshareVertices();
+    
+  std::shared_ptr<Scene> scene(new Scene);
+  scene->add(plane);
+  
+  if (test == TestType::BUILD_TEST_PROCEDURALS) {
+    if (testID%3==0)
+      scene->splitIntoGeometries();
+  }
+  else if (test == TestType::BUILD_TEST_MIXED) {
+    scene->splitIntoGeometries(std::max(1u,std::min(1024u,numPrimitives)));
+    scene->mixTrianglesAndProcedurals();
+    scene->createInstances(scene->size()/2);
+  }
+  else if (test == TestType::BUILD_TEST_INSTANCES) {
+    scene->splitIntoGeometries(std::max(1u,std::min(1024u,numPrimitives)));
+    scene->createInstances(scene->size());
+  }
+
+  scene->addNullGeometries(16);
+  scene->buildAccel(device,context,buildMode);
+
+  /* calculate test input and expected output */
+  TestInput* in = (TestInput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
+  memset(in, 0, numPrimitives*sizeof(TestInput));
+  TestOutput* out_test = (TestOutput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_test, 0, numPrimitives*sizeof(TestOutput));
+  TestOutput* out_expected = (TestOutput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestOutput),device,context,sycl::usm::alloc::shared);
+  memset(out_expected, 0, numPrimitives*sizeof(TestOutput));
+
+  buildTestExpectedInputAndOutput(scene,numPrimitives,TestType::TRIANGLES_COMMITTED_HIT,in,out_expected);
+
+  /* execute test */
+  void* accel = scene->getAccel();
+  size_t scene_ptr = (size_t) scene.get();
+
+  if (numPrimitives)
+  {
+    queue.submit([&](sycl::handler& cgh) {
+                   const sycl::range<1> range(numPrimitives);
+                   cgh.parallel_for(range, [=](sycl::item<1> item) {
+                                             const uint i = item.get_id(0);
+                                             render_loop(i,in[i],out_test[i],scene_ptr,(intel_raytracing_acceleration_structure_t*)accel,TestType::TRIANGLES_COMMITTED_HIT);
+                                           });
+                 });
+    queue.wait_and_throw();
+  }
+    
+  /* verify result */
+  uint32_t numErrors = 0;
+  for (size_t tid=0; tid<numPrimitives; tid++)
+    compareTestOutput(tid,numErrors,out_test[tid],out_expected[tid]);
+
+  sycl::free(in,context);
+  sycl::free(out_test,context);
+  sycl::free(out_expected,context);
+
+  return numErrors;
+}
+
+uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test, BuildMode buildMode)
+{
+  uint32_t N = 128;
+  uint32_t numErrors = 0;
+  for (uint32_t i=0; i<N; i++) {
+    const uint32_t numPrimitives = i>10 ? i*i : i;
+    std::cout << "testing " << numPrimitives << " primitives" << std::endl;
+    numErrors += executeBuildTest(device,queue,context,test,buildMode,numPrimitives,i);
+  }
+  return numErrors;
+}
+
 
 enum Flags : uint32_t {
   FLAGS_NONE,
@@ -1489,10 +1853,12 @@ void* allocDispatchGlobals(sycl::device device, sycl::context context)
 int main(int argc, char* argv[])
 {
   rthwifInit();
-  
+
   TestType test = TestType::TRIANGLES_COMMITTED_HIT;
   InstancingType inst = InstancingType::NONE;
-  bool jit_cache = true;
+  BuildMode buildMode = BuildMode::BUILD_EXPECTED_SIZE;
+  
+  bool jit_cache = false;
 
   /* command line parsing */
   if (argc == 1) {
@@ -1518,6 +1884,18 @@ int main(int argc, char* argv[])
     else if (strcmp(argv[i], "--procedurals-committed-hit") == 0) {
       test = TestType::PROCEDURALS_COMMITTED_HIT;
     }
+    else if (strcmp(argv[i], "--build_test_triangles") == 0) {
+      test = TestType::BUILD_TEST_TRIANGLES;
+    }
+    else if (strcmp(argv[i], "--build_test_procedurals") == 0) {
+      test = TestType::BUILD_TEST_PROCEDURALS;
+    }
+    else if (strcmp(argv[i], "--build_test_instances") == 0) {
+      test = TestType::BUILD_TEST_INSTANCES;
+    }
+    else if (strcmp(argv[i], "--build_test_mixed") == 0) {
+      test = TestType::BUILD_TEST_MIXED;
+    }
     else if (strcmp(argv[i], "--no-instancing") == 0) {
       inst = InstancingType::NONE;
     }
@@ -1526,6 +1904,12 @@ int main(int argc, char* argv[])
     }
     else if (strcmp(argv[i], "--sw-instancing") == 0) {
       inst = InstancingType::SW_INSTANCING;
+    }
+    else if (strcmp(argv[i], "--build_mode_worst_case") == 0) {
+      buildMode = BuildMode::BUILD_WORST_CASE_SIZE;
+    }
+    else if (strcmp(argv[i], "--build_mode_expected") == 0) {
+      buildMode = BuildMode::BUILD_EXPECTED_SIZE;
     }
     else if (strcmp(argv[i], "--jit-cache") == 0) {
       if (++i >= argc) throw std::runtime_error("Error: --jit-cache syntax error");
@@ -1541,7 +1925,11 @@ int main(int argc, char* argv[])
     std::cout << "WARNING: JIT caching is not supported!" << std::endl;
     
   /* initialize SYCL device */
+#if __SYCL_COMPILER_VERSION < 20220914
   device = sycl::device(sycl::gpu_selector());
+#else
+  device = sycl::device(sycl::gpu_selector_v);
+#endif
   sycl::queue queue = sycl::queue(device,exception_handler);
   context = queue.get_context();
 
@@ -1549,7 +1937,12 @@ int main(int argc, char* argv[])
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
-  uint32_t numErrors = executeTest(device,queue,context,inst,test);
+  
+  uint32_t numErrors = 0;
+  if (test >= TestType::BUILD_TEST_TRIANGLES)
+    numErrors = executeBuildTest(device,queue,context,test,buildMode);
+  else
+    numErrors = executeTest(device,queue,context,inst,test);
 
   sycl::free(dispatchGlobalsPtr, context);
 

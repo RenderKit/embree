@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #define RTHWIF_EXPORT_API
+#include "../../common/tasking/taskscheduler.h"
 
 #include "rthwif_builder.h"
 #include "builder/qbvh6_builder_sah.h"
@@ -12,6 +13,8 @@
 namespace embree
 {
   using namespace embree::isa;
+
+  static std::unique_ptr<tbb::task_arena> g_arena;
   
   inline RTHWIF_TRIANGLE_INDICES getPrimitive(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID) {
     assert(primID < geom->triangleCount);
@@ -31,6 +34,71 @@ namespace embree
   inline Vec3f getVertex(const RTHWIF_GEOMETRY_QUADS_DESC* geom, uint32_t vertexID) {
     assert(vertexID < geom->vertexCount);
     return *(Vec3f*)((char*)geom->vertexBuffer + vertexID*geom->vertexStride);
+  }
+
+  inline AffineSpace3fa getTransform(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  {
+    switch (geom->transformFormat)
+    {
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    default:
+      throw std::runtime_error("invalid transform format");
+    }
+  }
+  
+  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom)
+  {
+    if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->triangleCount && geom->triangleBuffer == nullptr) throw std::runtime_error("no triangle buffer specified");
+    if (geom->vertexCount   && geom->vertexBuffer   == nullptr) throw std::runtime_error("no vertex buffer specified");
+  }
+
+  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_QUADS_DESC* geom)
+  {
+    if (geom->reserved0 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->reserved1 != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->quadCount   && geom->quadBuffer   == nullptr) throw std::runtime_error("no quad buffer specified");
+    if (geom->vertexCount && geom->vertexBuffer == nullptr) throw std::runtime_error("no vertex buffer specified");
+  }
+
+  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom)
+  {
+    if (geom->reserved != 0) throw std::runtime_error("reserved member must be 0");
+    if (geom->primCount   && geom->getBounds == nullptr) throw std::runtime_error("no bounds function specified");
+  }
+
+  inline void verifyGeometryDesc(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  {
+    if (geom->transform == nullptr) throw std::runtime_error("no instance transformation specified");
+    if (geom->bounds == nullptr) throw std::runtime_error("no acceleration structure bounds specified");
+    if (geom->accel == nullptr) throw std::runtime_error("no acceleration structure to instanciate specified");
   }
 
   inline bool buildBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
@@ -95,15 +163,9 @@ namespace embree
     if (geom->accel == nullptr) return false;
     if (geom->transform == nullptr) return false;
     
-    const Vec3fa vx = *(Vec3f*) &geom->transform->vx;
-    const Vec3fa vy = *(Vec3f*) &geom->transform->vy;
-    const Vec3fa vz = *(Vec3f*) &geom->transform->vz;
-    const Vec3fa p  = *(Vec3f*) &geom->transform->p;
-    const AffineSpace3fa local2world(vx,vy,vz,p);
-
-    HWAccel* accel = (HWAccel*) geom->accel;
-    const Vec3fa lower(accel->bounds[0][0],accel->bounds[0][1],accel->bounds[0][2]);
-    const Vec3fa upper(accel->bounds[1][0],accel->bounds[1][1],accel->bounds[1][2]);
+    const AffineSpace3fa local2world = getTransform(geom);
+    const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
+    const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
     const BBox3fa bounds = xfmBounds(local2world,BBox3fa(lower,upper));
      
     if (unlikely(!isvalid(bounds.lower))) return false;
@@ -115,7 +177,7 @@ namespace embree
   }
 
   template<typename GeometryType>
-  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* buildUserPtr, avector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
+  PrimInfo createGeometryPrimRefArray(const GeometryType* geom, void* buildUserPtr, evector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID)
   {
     PrimInfo pinfo(empty);
     for (uint32_t primID=r.begin(); primID<r.end(); primID++)
@@ -131,16 +193,20 @@ namespace embree
   
   RTHWIF_API void rthwifInit()
   {
-    TaskScheduler::create(-1,false,false);
+    uint32_t numThreads = tbb::this_task_arena::max_concurrency();
+    g_arena.reset(new tbb::task_arena(numThreads,numThreads));
   }
   
   RTHWIF_API void rthwifExit()
   {
-    TaskScheduler::destroy();
+    g_arena.reset();
   }
   
   RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device)
   {
+    /* we only support GPUs */
+    if (!device.is_gpu()) return RTHWIF_FEATURES_NONE;
+    
     /* check for Intel vendor */
     const uint32_t vendor_id = device.get_info<sycl::info::device::vendor_id>();
     if (vendor_id != 0x8086) return RTHWIF_FEATURES_NONE;
@@ -204,73 +270,38 @@ namespace embree
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const size_t numGeometries = args.numGeometries;
+
+    auto getSize = [&](uint32_t geomID) -> size_t {
+      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      if (geom == nullptr) return 0;
+      return getNumPrimitives(geom);
+    };
     
-    struct Stats
-    {
-      size_t numTriangles = 0;
-      size_t numQuads = 0;
-      size_t numProcedurals = 0;
-      size_t numInstances = 0;
-      
-      /* assume some reasonable quadification rate */
-      void estimate_quadification()
-      {
-        numQuads += (numTriangles+1)/2 + numTriangles/8;
-        numTriangles = 0;
-      }
-      
-      void estimate_presplits( double factor )
-      {
-        numTriangles = max(numTriangles, size_t(numTriangles*factor));
-        numQuads     = max(numQuads    , size_t(numQuads*factor));
-        numInstances = max(numInstances, size_t(numInstances*factor));
-      }
-      
-      size_t size() {
-        return numTriangles+numQuads+numProcedurals+numInstances;
-      }
-      
-      size_t expected_bvh_bytes()
-      {
-        const size_t blocks = (size()+5)/6;
-        const size_t expected_bytes   = 128 + 64*size_t(1+1.5*blocks) + numTriangles*64 + numQuads*64 + numProcedurals*8 + numInstances*128;
-        const size_t bytes = 2*4096 + size_t(1.1*expected_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
-        return (bytes+127)&-128;
-      }
-      
-      size_t worst_case_bvh_bytes()
-      {
-        const size_t numPrimitives = size();
-        const size_t blocks = (numPrimitives+5)/6;
-        const size_t worst_case_bytes = 128 + 64*(1+blocks + numPrimitives) + numTriangles*64 + numQuads*64 + numProcedurals*64 + numInstances*128;
-        const size_t bytes = 2*4096 + size_t(1.1*worst_case_bytes); // FIXME: FastAllocator wastes memory and always allocates 4kB per thread
-        return (bytes+127)&-128;
-      }
-      
-    } stats;
-    
-    for (size_t geomID=0; geomID<numGeometries; geomID++)
+    auto getType = [&](unsigned int geomID)
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-      if (geom == nullptr) continue;
-      
+      assert(geom);
       switch (geom->geometryType) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : stats.numTriangles += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount; break;
-      case RTHWIF_GEOMETRY_TYPE_QUADS      : stats.numQuads += ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount; break;
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: stats.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE: stats.numInstances += 1; break;
+      case RTHWIF_GEOMETRY_TYPE_TRIANGLES : return QBVH6BuilderSAH::TRIANGLE;
+      case RTHWIF_GEOMETRY_TYPE_QUADS: return QBVH6BuilderSAH::QUAD;
+      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return QBVH6BuilderSAH::PROCEDURAL;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCE: return QBVH6BuilderSAH::INSTANCE;
+      default: throw std::runtime_error("invalid geometry type");
       };
-    }
-    
-    stats.estimate_quadification();
-    stats.estimate_presplits(1.2);
+    };
 
+    /* query memory requirements from builder */
+    size_t expectedBytes = 0;
+    size_t worstCaseBytes = 0;
+    size_t scratchBytes = 0;
+    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, expectedBytes, worstCaseBytes, scratchBytes);
+                            
     /* return size to user */
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
-    size.accelBufferExpectedBytes = stats.expected_bvh_bytes();
-    size.accelBufferWorstCaseBytes = stats.worst_case_bvh_bytes();
-    size.scratchBufferBytes = 0;
+    size.accelBufferExpectedBytes = expectedBytes;
+    size.accelBufferWorstCaseBytes = worstCaseBytes;
+    size.scratchBufferBytes = scratchBytes;
     size_t bytes_o = size_o.structBytes;
     memset(&size_o,0,bytes_o);
     memcpy(&size_o,&size,bytes_o);
@@ -278,14 +309,28 @@ namespace embree
     return RTHWIF_ERROR_NONE;
   }
   
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i) try
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelInternal(const RTHWIF_BUILD_ACCEL_ARGS& args_i) try
   {
     /* prepare input arguments */
     const RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-    const size_t numGeometries = args.numGeometries;
+    const uint32_t numGeometries = args.numGeometries;
 
     if (args.accelBuffer == nullptr) return RTHWIF_ERROR_OTHER;
+
+    /* verify input descriptors */
+    parallel_for(numGeometries,[&](uint32_t geomID) {
+      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      if (geom == nullptr) return;
+      
+      switch (geom->geometryType) {
+      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : verifyGeometryDesc((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom); break;
+      case RTHWIF_GEOMETRY_TYPE_QUADS      : verifyGeometryDesc((RTHWIF_GEOMETRY_QUADS_DESC*    )geom); break;
+      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : verifyGeometryDesc((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom); break;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCE   : verifyGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC* )geom); break;
+      default: throw std::runtime_error("invalid geometry type");
+      };
+    });
     
     auto getSize = [&](uint32_t geomID) -> size_t {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
@@ -296,6 +341,7 @@ namespace embree
     auto getType = [&](unsigned int geomID)
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+      assert(geom);
       switch (geom->geometryType) {
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES : return QBVH6BuilderSAH::TRIANGLE;
       case RTHWIF_GEOMETRY_TYPE_QUADS: return QBVH6BuilderSAH::QUAD;
@@ -305,14 +351,10 @@ namespace embree
       };
     };
     
-    auto getNumTimeSegments = [&] (unsigned int geomID) {
-      return 0;
-    };
-    
-    auto createPrimRefArray = [&] (avector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
+    auto createPrimRefArray = [&] (evector<PrimRef>& prims, BBox1f time_range, const range<size_t>& r, size_t k, unsigned int geomID) -> PrimInfo
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-      if (geom == nullptr) return PrimInfo(empty);
+      assert(geom);
 
       switch (geom->geometryType) {
       case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return createGeometryPrimRefArray((RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom,args.buildUserPtr,prims,r,k,geomID);
@@ -378,18 +420,24 @@ namespace embree
       assert(geometries[geomID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE);
       const RTHWIF_GEOMETRY_INSTANCE_DESC* geom = (const RTHWIF_GEOMETRY_INSTANCE_DESC*) geometries[geomID];
       void* accel = geom->accel;
-      RTHWIF_TRANSFORM4X4 local2world = *geom->transform;
-      return QBVH6BuilderSAH::Instance((AffineSpace3fa&)local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
+      const AffineSpace3fa local2world = getTransform(geom);
+      return QBVH6BuilderSAH::Instance(local2world,accel,geom->geometryMask,geom->instanceUserID); // FIXME: pass instance flags
     };
 
-    bool verbose = false;
-    BBox3f bounds = QBVH6BuilderSAH::build(numGeometries, nullptr, 
-                                           getSize, getType, getNumTimeSegments,
-                                           createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
-                                           (char*)args.accelBuffer, args.accelBufferBytes, args.linkAccel, verbose, args.dispatchGlobalsPtr);
+    /* dispatch globals ptr for debugging purposes */
+    void* dispatchGlobalsPtr = nullptr;
+#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+    dispatchGlobalsPtr = args.dispatchGlobalsPtr;
+#endif
 
-    if (args.boundsOut) *(BBox3f*)args.boundsOut = bounds;
-    
+    bool verbose = false;
+    QBVH6BuilderSAH::build(numGeometries, nullptr, 
+                           getSize, getType, 
+                           createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance,
+                           (char*)args.accelBuffer, args.accelBufferBytes,
+                           args.scratchBuffer, args.scratchBufferBytes,
+                           (BBox3f*) args.boundsOut, args.accelBufferBytesOut,
+                           verbose, dispatchGlobalsPtr);
     return RTHWIF_ERROR_NONE;
   }
   
@@ -399,5 +447,51 @@ namespace embree
   
   catch (...) {
     return RTHWIF_ERROR_OTHER;
+  }
+
+  struct RTHWIF_PARALLEL_OPERATION_IMPL
+  {
+    RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;
+    tbb::task_group group;
+  };
+
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  {
+    /* if parallel operation is provided then execute using thread arena inside task group ... */
+    if (args_i.parallelOperation)
+    {
+      RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) args_i.parallelOperation;
+      g_arena->execute([&](){ op->group.run([=](){ op->errorCode = rthwifBuildAccelInternal(args_i); }); });
+      return RTHWIF_ERROR_PARALLEL_OPERATION;
+    }
+    /* ... otherwise we just execute inside task arena to avoid spawning of TBB worker threads */
+    else
+    {
+      RTHWIF_ERROR errorCode = RTHWIF_ERROR_NONE;
+      g_arena->execute([&](){ errorCode = rthwifBuildAccelInternal(args_i); });
+      return errorCode;
+    }
+  }
+
+  RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation()
+  {
+    return (RTHWIF_PARALLEL_OPERATION) new RTHWIF_PARALLEL_OPERATION_IMPL;
+  }
+  
+  RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation )
+  {
+    delete (RTHWIF_PARALLEL_OPERATION_IMPL*) parallelOperation;
+  }
+  
+  RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation )
+  {
+    return tbb::this_task_arena::max_concurrency();
+  }
+  
+  RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation)
+  {
+    RTHWIF_PARALLEL_OPERATION_IMPL* op = (RTHWIF_PARALLEL_OPERATION_IMPL*) parallelOperation;
+    g_arena->execute([&](){ op->group.wait(); });
+    return op->errorCode;
   }
 }

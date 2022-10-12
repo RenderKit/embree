@@ -6,7 +6,11 @@
 #include "sys/types.h"
 #include "sys/sysinfo.h"
 #include <thread>
-#include "../../../kernels/rthwif/rthwif_production.h"
+
+#include "../rthwif_production.h"
+#include "../rthwif_builder.h"
+
+#include <level_zero/ze_api.h>
 
 void exception_handler(sycl::exception_list exceptions)
 {
@@ -27,7 +31,7 @@ void storeTga(uint32_t* pixels, uint32_t width, uint32_t height, const std::stri
   std::fstream file;
   file.exceptions (std::fstream::failbit | std::fstream::badbit);
   file.open (fileName.c_str(), std::fstream::out | std::fstream::binary);
-  
+
   fwrite_uchar(0x00, file);
   fwrite_uchar(0x00, file);
   fwrite_uchar(0x02, file);
@@ -40,7 +44,7 @@ void storeTga(uint32_t* pixels, uint32_t width, uint32_t height, const std::stri
   fwrite_ushort((unsigned short)height, file);
   fwrite_uchar(0x18, file);
   fwrite_uchar(0x20, file);
-  
+
   for (size_t y=0; y<height; y++) {
     for (size_t x=0; x<width; x++) {
       const uint32_t c = pixels[y*width+x];
@@ -68,7 +72,7 @@ std::vector<char> readFile(const std::string& fileName) try
   file.read (data.data(), size);
   file.close();
 
-  return data; 
+  return data;
 }
 catch (std::exception const& e) {
   std::cout << "Error: Cannot read file " << fileName << std::endl;
@@ -82,6 +86,38 @@ bool compareTga(const std::string& fileNameA, const std::string& fileNameB)
   return dataA == dataB;
 }
 
+void* alloc_accel_buffer(size_t bytes, sycl::device device, sycl::context context)
+{
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_device_handle_t  hDevice  = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
+  
+  ze_raytracing_mem_alloc_ext_desc_t rt_desc;
+  rt_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+  rt_desc.flags = 0;
+    
+  ze_device_mem_alloc_desc_t device_desc;
+  device_desc.stype = ZE_STRUCTURE_TYPE_DEVICE_MEM_ALLOC_DESC;
+  device_desc.pNext = &rt_desc;
+  device_desc.flags = ZE_DEVICE_MEM_ALLOC_FLAG_BIAS_CACHED;
+  device_desc.ordinal = 0;
+
+  ze_host_mem_alloc_desc_t host_desc;
+  host_desc.stype = ZE_STRUCTURE_TYPE_HOST_MEM_ALLOC_DESC;
+  host_desc.pNext = nullptr;
+  host_desc.flags = ZE_HOST_MEM_ALLOC_FLAG_BIAS_CACHED;
+  
+  void* ptr = nullptr;
+  ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
+  assert(result == ZE_RESULT_SUCCESS);
+  return ptr;
+}
+
+void free_accel_buffer(void* ptr, sycl::context context)
+{
+  ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
+  ze_result_t result = zeMemFree(hContext,ptr);
+  assert(result == ZE_RESULT_SUCCESS);
+}
 
 #define bvh_bytes 4992
 
@@ -251,7 +287,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   sycl::float3 vy(-0, -1, -0);
   sycl::float3 vz(32, 32, 95.6379f);
   sycl::float3 p(278, 273, -800);
-  
+
   /* compute primary ray */
   intel_ray_desc_t ray;
   ray.origin = p;
@@ -261,13 +297,13 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   ray.time = 0.0f;
   ray.mask = 0xFF;
   ray.flags = intel_ray_flags_none;
-  
+
   /* trace ray */
   intel_ray_query_t query_ = intel_ray_query_init(ray,(intel_raytracing_acceleration_structure_t*)bvh);
   intel_ray_query_t* query = &query_;
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
-  
+
   /* get UVs of hit point */
   float u = 0, v = 0;
   if (intel_has_committed_hit(query))
@@ -276,7 +312,7 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
     u = uv.x();
     v = uv.y();
   }
-  
+
   /* write color to framebuffer */
   sycl::float3 color(u,v,1.0f-u-v);
   unsigned int r = (unsigned int) (255.0f * color.x());
@@ -287,18 +323,32 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
 
 int main(int argc, char* argv[])
 {
+  char* reference_img = NULL;
+  if (argc > 2 && std::string(argv[1]) == std::string("--compare"))
+  {
+    reference_img = argv[2];
+  }
+  else
+  {
+    reference_img = (char*)"cornell_box_reference.tga";
+  }
+
+#if __SYCL_COMPILER_VERSION < 20220914
   sycl::device device = sycl::device(sycl::gpu_selector());
+#else
+  sycl::device device = sycl::device(sycl::gpu_selector_v);
+#endif
   sycl::queue queue = sycl::queue(device,exception_handler);
   sycl::context context = queue.get_context();
-  
-  void* bvh = sycl::aligned_alloc(64,bvh_bytes,device,context,sycl::usm::alloc::shared);
+
+  void* bvh = alloc_accel_buffer(bvh_bytes,device,context);
   memcpy(bvh, bvh_data, bvh_bytes);
 
   static const int width = 512;
   static const int height = 512;
   unsigned int* pixels = (unsigned int*) sycl::aligned_alloc(64,width*height*sizeof(unsigned int),device,context,sycl::usm::alloc::shared);
   memset(pixels, 0, width*height*sizeof(uint));
-  
+
   queue.submit([&](sycl::handler& cgh) {
                  const sycl::range<2> range(width,height);
                  cgh.parallel_for(range, [=](sycl::item<2> item) {
@@ -308,14 +358,15 @@ int main(int argc, char* argv[])
                                             });
                });
   queue.wait_and_throw();
+
+  free_accel_buffer(bvh,context);
   
   storeTga(pixels,width,height,"cornell_box.tga");
-  
-  const bool ok = compareTga("cornell_box.tga","cornell_box_reference.tga");
+  const bool ok = compareTga("cornell_box.tga", reference_img);
 
   std::cout << "cornell_box ";
   if (ok) std::cout << "[PASSED]" << std::endl;
   else    std::cout << "[FAILED]" << std::endl;
-  
+
   return ok ? 0 : 1;
 }

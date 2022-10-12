@@ -30,6 +30,9 @@ namespace embree
 
       __forceinline vector_t (Device* alloc)
         : vector_t(alloc,0) {}
+
+      __forceinline vector_t(void* data, size_t bytes)
+        : size_active(0), size_alloced(bytes/sizeof(T)), items((T*)data) {}
     
       __forceinline ~vector_t() {
         clear();
@@ -250,4 +253,8 @@ namespace embree
   /*! vector class that performs OS allocations */
   template<typename T>
     using ovector = vector_t<T,os_allocator<T> >;
+
+  /*! vector class with externally managed data buffer */
+  template<typename T>
+    using evector = vector_t<T,no_allocator<T>>;
 }
