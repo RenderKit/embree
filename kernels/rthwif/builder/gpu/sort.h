@@ -419,7 +419,7 @@ namespace embree
       uint counts[RADIX_ITERATIONS_64BIT][RADIX_SORT_BINS];
     };
 
-#define BLOCK_SIZE (8*1024)
+#define ONESWEEP_BLOCK_SIZE (8*1024)
   
     struct __aligned(64) BlockInfo
     {
@@ -435,7 +435,7 @@ namespace embree
       static const uint COUNTS_MASK          = ~(LOCAL_COUNT_BIT | INCLUSIVE_PREFIX_BIT);
       static const uint BITS_MASK            =  (LOCAL_COUNT_BIT | INCLUSIVE_PREFIX_BIT);
     
-      const uint numBlocks = (numPrimitives+BLOCK_SIZE-1)/BLOCK_SIZE;
+      const uint numBlocks = (numPrimitives+ONESWEEP_BLOCK_SIZE-1)/ONESWEEP_BLOCK_SIZE;
       PRINT2(numPrimitives,numBlocks);
     
       GlobalHistograms *global_histograms = (GlobalHistograms*)(scratch_mem + 0);    
@@ -651,8 +651,8 @@ namespace embree
                                                                         const uint blockID = wgID;
                                                                         
                                                                         const uint shift = iter*8;                                                                        
-                                                                        const uint startID = blockID * BLOCK_SIZE;
-                                                                        const uint endID   = min(startID + BLOCK_SIZE,numPrimitives);
+                                                                        const uint startID = blockID * ONESWEEP_BLOCK_SIZE;
+                                                                        const uint endID   = min(startID + ONESWEEP_BLOCK_SIZE,numPrimitives);
                                                                         for (uint ID = startID + localID; ID < endID; ID+=localSize)
                                                                         {
                                                                           const uint64_t key = iter_input[ID];

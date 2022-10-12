@@ -5,6 +5,12 @@
 #include "builder/gpu/sort.h"
 #include "builder/gpu/morton.h"
 #include <memory>
+#include "../common/scene.h"
+#include "../common/scene_triangle_mesh.h"
+#include "../common/scene_quad_mesh.h"
+#include "../common/scene_user_geometry.h"
+#include "../common/scene_instance.h"
+
 
 #if defined(EMBREE_DPCPP_SUPPORT)
 

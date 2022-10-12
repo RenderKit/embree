@@ -397,7 +397,7 @@ namespace embree
     }
   }
 
-  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
+  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {

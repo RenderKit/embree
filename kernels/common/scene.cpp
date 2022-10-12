@@ -761,7 +761,7 @@ namespace embree
       //if (gpu_device->rthw_support())
       //  bounds = LBBox<embree::Vec3fa>(rthwifBuild(this,quality_flags,hwaccel,device->gpu_build));
       if (gpu_device->rthw_support()) {
-        const BBox3f aabb = rthwifBuild(this,quality_flags,hwaccel);
+        const BBox3f aabb = rthwifBuild(this,quality_flags,hwaccel,device->gpu_build);
         bounds = LBBox<embree::Vec3fa>(aabb);
         hwaccel_bounds = aabb;
       }
