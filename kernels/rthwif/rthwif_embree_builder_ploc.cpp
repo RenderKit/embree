@@ -126,8 +126,9 @@ namespace embree
     
   };
   
-  BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, const bool two_level=false)
+  BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, void *dispatchGlobalsPtr)
   {
+    const bool two_level = false;
     PING;
     
     BuildTimer timer;
@@ -280,8 +281,6 @@ namespace embree
     double first_kernel_time1 = getSeconds();
 
     if (unlikely(verbose2)) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
-
-    exit(0);
     
     uint numActiveQuads = 0;
     
@@ -734,8 +733,15 @@ namespace embree
                       Vec3fa(globals->geometryBounds.upper_x,globals->geometryBounds.upper_y,globals->geometryBounds.upper_z));
     
     if (deviceGPU) {
+#if 1      
       HWAccel* hwaccel = (HWAccel*) accel.data();
-      hwaccel->dispatchGlobalsPtr = (uint64_t) deviceGPU->dispatchGlobalsPtr;
+      hwaccel->dispatchGlobalsPtr = (uint64_t)dispatchGlobalsPtr;
+      PRINT2(hwaccel,dispatchGlobalsPtr);
+#else
+      EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
+      hwaccel->numTimeSegments = 1;
+      hwaccel->AccelTable[0] = (char*)hwaccel + 128;
+#endif      
     }
     
     timer.start(BuildTimer::ALLOCATION);        
@@ -769,16 +775,17 @@ namespace embree
     // ========================    
     // === Additional Stats ===
     // ========================
-    
+
+#if 0
     if (unlikely(verbose2))
     {
       if (numInstances != 0) qbvh->print(std::cout,qbvh->root(),0,6);
-      BVHStatistics stats = qbvh->computeStatistics();      
-      stats.print(std::cout);
-      stats.print_raw(std::cout);
-      PRINT("VERBOSE STATS DONE");
+      //BVHStatistics stats = qbvh->computeStatistics();      
+      //stats.print(std::cout);
+      //stats.print_raw(std::cout);
+      //PRINT("VERBOSE STATS DONE");
     }
-
+#endif
     
     return geomBounds;
   }

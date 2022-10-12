@@ -301,13 +301,30 @@ namespace embree
     }
   }
 
-  BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, const bool two_level=false);
-  
+  BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, void *dispatchGlobalsPtr);
+
 
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
     if (gpu_build)
-      return rthwifBuildPloc(scene,quality_flags,accel,gpu_build);
+    {
+      DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
+      BBox3f bounds = rthwifBuildPloc(scene,quality_flags,accel,gpu_device->dispatchGlobalsPtr);
+      if (gpu_device->verbosity(2))
+      {
+        QBVH6* qbvh   = (QBVH6*)accel.data();
+        qbvh->print(std::cout,qbvh->root(),0,6);
+        BVHStatistics stats = qbvh->computeStatistics();      
+        stats.print(std::cout);
+        stats.print_raw(std::cout);
+        PRINT("VERBOSE STATS DONE");
+      }
+      EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
+      hwaccel->numTimeSegments = 1;
+      for (size_t i=0; i<1; i++)
+        hwaccel->AccelTable[0] = (char*)hwaccel;      
+      return bounds;
+    }
     
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
@@ -446,6 +463,8 @@ namespace embree
 
     size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
+
+    PRINT(headerBytes);
 
     /* build BVH */
     BBox3f fullBounds = empty;
