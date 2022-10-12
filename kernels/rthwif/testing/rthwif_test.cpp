@@ -1125,21 +1125,23 @@ struct Scene
       throw std::runtime_error("expected larger than worst case");
 
     /* allocate scratch buffer */
-    std::vector<char> scratchBuffer(size.scratchBufferBytes);
+    size_t sentinelBytes = 1024; // add that many zero bytes to catch buffer overruns
+    std::vector<char> scratchBuffer(size.scratchBufferBytes+sentinelBytes);
+    memset(scratchBuffer.data(),0,scratchBuffer.size());
     args.scratchBuffer = scratchBuffer.data();
-    args.scratchBufferBytes = scratchBuffer.size();
+    args.scratchBufferBytes = size.scratchBufferBytes;
 
     accel = nullptr;
     size_t accelBytes = 0;
-
+    
     /* build with different modes */
     switch (buildMode)
     {
     case BuildMode::BUILD_WORST_CASE_SIZE: {
 
       accelBytes = size.accelBufferWorstCaseBytes;
-      accel = alloc_accel_buffer(accelBytes,device,context);
-      memset(accel,0,accelBytes);
+      accel = alloc_accel_buffer(accelBytes+sentinelBytes,device,context);
+      memset(accel,0,accelBytes+sentinelBytes);
 
       /* build accel */
       double t0 = embree::getSeconds();
@@ -1182,8 +1184,8 @@ struct Scene
         /* allocate BVH data */
         free_accel_buffer(accel,context);
         accelBytes = bytes;
-        accel = alloc_accel_buffer(accelBytes,device,context);
-        memset(accel,0,accelBytes);
+        accel = alloc_accel_buffer(accelBytes+sentinelBytes,device,context);
+        memset(accel,0,accelBytes+sentinelBytes);
 
         /* build accel */
         args.numGeometries = geom.size();
@@ -1217,11 +1219,22 @@ struct Scene
 
     this->bounds = bounds;
 
-    /* check if returned size of acceleration structure is correct */
-    if (!benchmark) {
-      for (ssize_t i=accelBytes-1; i>=accelBufferBytesOut; i--) {
+    if (!benchmark)
+    {
+      /* scratch buffer bounds check */
+      for (size_t i=size.scratchBufferBytes; i<size.scratchBufferBytes+sentinelBytes; i++) {
+        if (((char*)args.scratchBuffer)[i] == 0x00) continue;
+        throw std::runtime_error("scratch buffer bounds check failed");
+      }
+      /* acceleration structure bounds check */
+      for (size_t i=accelBytes; i<accelBytes+sentinelBytes; i++) {
         if (((char*)args.accelBuffer)[i] == 0x00) continue;
-        throw std::runtime_error("wrong acceleration structure size "+std::to_string(accelBufferBytesOut)+" returned, should be "+std::to_string(i+1));
+        throw std::runtime_error("acceleration buffer bounds check failed");
+      }
+      /* check if returned size of acceleration structure is correct */
+      for (size_t i=accelBufferBytesOut; i<accelBytes; i++) {
+        if (((char*)args.accelBuffer)[i] == 0x00) continue;
+        throw std::runtime_error("wrong acceleration structure size returned");
       }
     }
   }
