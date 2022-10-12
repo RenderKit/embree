@@ -2,14 +2,15 @@
 #include "../rthwif_production.h"
 #include "../rthwif_builder.h"
 
-#include "../rthwif_production.h"
-#include "../rthwif_builder.h"
-
 #include <level_zero/ze_api.h>
 
 #include <vector>
 #include <map>
 #include <iostream>
+
+namespace embree {
+  double getSeconds();
+}
 
 #define PRINT(x) std::cout << #x << " = " << x << std::endl;
 
@@ -145,7 +146,9 @@ enum class TestType
   BUILD_TEST_TRIANGLES,              // test BVH builder with triangles
   BUILD_TEST_PROCEDURALS,            // test BVH builder with procedurals
   BUILD_TEST_INSTANCES,              // test BVH builder with instances
-  BUILD_TEST_MIXED                   // test BVH builder with mixed scene (triangles, procedurals, and instances)
+  BUILD_TEST_MIXED,                  // test BVH builder with mixed scene (triangles, procedurals, and instances)
+  BENCHMARK_TRIANGLES,               // benchmark BVH builder with triangles
+  BENCHMARK_PROCEDURALS,             // benchmark BVH builder with procedurals
 };
 
 enum class BuildMode
@@ -499,6 +502,8 @@ struct Geometry
 
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
 
+  virtual size_t getNumPrimitives() const = 0;
+
   Type type;
 };
 
@@ -639,7 +644,7 @@ public:
   }
 
   /* selects random sub-set of triangles */
-  void select(const uint32_t numTriangles)
+  void selectRandom(const uint32_t numTriangles)
   {
     assert(numTriangles <= size());
 
@@ -660,6 +665,15 @@ public:
       triangles[i].w() = i;
   }
 
+  /* selects sequential sub-set of triangles */
+  void selectSequential(const uint32_t numTriangles)
+  {
+    assert(numTriangles <= size());
+
+    /* now we can easily select a random set of triangles */
+    triangles.resize(numTriangles);
+  }
+  
   /* creates separate vertives for triangles */
   void unshareVertices()
   {
@@ -707,6 +721,11 @@ public:
       tri_map[tri.index].local_to_world = local_to_world;
     }
   }
+  
+  size_t getNumPrimitives() const override {
+    return triangles.size();
+  }
+
   
 public:
   RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
@@ -805,6 +824,10 @@ struct InstanceGeometryT : public Geometry
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
     instUserID = this->instUserID;
     scene->buildTriMap(local_to_world_in * local2world, id_stack, instUserID, procedural, tri_map);
+  }
+
+  size_t getNumPrimitives() const override {
+    return 1;
   }
 
   bool procedural;
@@ -1043,11 +1066,12 @@ struct Scene
     }
   }
 
-  void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode)
+  void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, bool benchmark = false)
   {
     /* fill geometry descriptor buffer */
     std::vector<GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
+    size_t numPrimitives = 0;
     for (size_t geomID=0; geomID<size(); geomID++)
     {
       const std::shared_ptr<Geometry>& g = geometries[geomID];
@@ -1057,7 +1081,8 @@ struct Scene
         geom[geomID] = nullptr;
         continue;
       }
-      
+
+      numPrimitives += g->getNumPrimitives();
       g->buildAccel(device,context,buildMode);
       g->getDesc(&desc[geomID]);
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
@@ -1112,13 +1137,25 @@ struct Scene
       memset(accel,0,accelBytes);
 
       /* build accel */
-      args.numGeometries = geom.size();
-      args.accelBuffer = accel;
-      args.accelBufferBytes = size.accelBufferWorstCaseBytes;
-      err = rthwifBuildAccel(args);
+      double t0 = embree::getSeconds();
+      size_t numIterations = benchmark ? 128 : 1;
+
+      for (size_t i=0; i<numIterations; i++)
+      {
+        args.numGeometries = geom.size();
+        args.accelBuffer = accel;
+        args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+        err = rthwifBuildAccel(args);
       
-      if (err != RTHWIF_ERROR_NONE)
-        throw std::runtime_error("build error");
+        if (err != RTHWIF_ERROR_NONE)
+          throw std::runtime_error("build error");
+      }
+      double t1 = embree::getSeconds();
+
+      if (benchmark) {
+        double dt = (t1-t0)/double(numIterations);
+        std::cout << double(numPrimitives)/dt*1E-6 << " Mprims/s" << std::endl;
+      }
     }
     case BuildMode::BUILD_EXPECTED_SIZE: {
       
@@ -1175,7 +1212,7 @@ struct Scene
       id_stack.pop_back();
     }
   }
-  
+
   size_t size() const {
     return geometries.size();
   }
@@ -1674,7 +1711,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 
   scene->addNullGeometries(16);
     
-  scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE);
+  scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE,false);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1731,7 +1768,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
   std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
   if (test == TestType::BUILD_TEST_PROCEDURALS) plane->procedural = true;
-  plane->select(numPrimitives);
+  plane->selectRandom(numPrimitives);
   if (testID%2) plane->unshareVertices();
     
   std::shared_ptr<Scene> scene(new Scene);
@@ -1752,7 +1789,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   }
 
   scene->addNullGeometries(16);
-  scene->buildAccel(device,context,buildMode);
+  scene->buildAccel(device,context,buildMode,false);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1794,9 +1831,8 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
 
 uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test, BuildMode buildMode)
 {
-  uint32_t N = 128;
   uint32_t numErrors = 0;
-  for (uint32_t i=0; i<N; i++) {
+  for (uint32_t i=0; i<128; i++) {
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
     numErrors += executeBuildTest(device,queue,context,test,buildMode,numPrimitives,i);
@@ -1804,6 +1840,30 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   return numErrors;
 }
 
+uint32_t executeBenchmark(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
+{
+  for (uint32_t i=0; i<16; i++)
+  {
+    const uint32_t numPrimitives = 1<<i;
+
+    switch (test) {
+    default: break;
+    case TestType::BENCHMARK_TRIANGLES  : std::cout << "benchmarking " << numPrimitives << " triangles: "; break;
+    case TestType::BENCHMARK_PROCEDURALS: std::cout << "benchmarking " << numPrimitives << " procedurals: "; break;
+    };
+
+    const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
+    std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
+    if (test == TestType::BENCHMARK_PROCEDURALS) plane->procedural = true;
+    plane->selectSequential(numPrimitives);
+    
+    std::shared_ptr<Scene> scene(new Scene);
+    scene->add(plane);
+    
+    scene->buildAccel(device,context,BuildMode::BUILD_WORST_CASE_SIZE,true);
+  }
+  return 0;
+}
 
 enum Flags : uint32_t {
   FLAGS_NONE,
@@ -1896,6 +1956,12 @@ int main(int argc, char* argv[])
     else if (strcmp(argv[i], "--build_test_mixed") == 0) {
       test = TestType::BUILD_TEST_MIXED;
     }
+    else if (strcmp(argv[i], "--benchmark_triangles") == 0) {
+      test = TestType::BENCHMARK_TRIANGLES;
+    }
+    else if (strcmp(argv[i], "--benchmark_procedurals") == 0) {
+      test = TestType::BENCHMARK_PROCEDURALS;
+    }
     else if (strcmp(argv[i], "--no-instancing") == 0) {
       inst = InstancingType::NONE;
     }
@@ -1939,7 +2005,9 @@ int main(int argc, char* argv[])
   RandomSampler_init(rng,0x56FE238A);
   
   uint32_t numErrors = 0;
-  if (test >= TestType::BUILD_TEST_TRIANGLES)
+  if (test >= TestType::BENCHMARK_TRIANGLES)
+    numErrors = executeBenchmark(device,queue,context,test);
+  else if (test >= TestType::BUILD_TEST_TRIANGLES)
     numErrors = executeBuildTest(device,queue,context,test,buildMode);
   else
     numErrors = executeTest(device,queue,context,inst,test);

@@ -19,7 +19,7 @@ SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fs
 SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
 
 ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ../rthwif_production.cpp)
-TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif)
+TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif sys)
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_DPCPP_SUPPORT")
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
 
@@ -38,6 +38,9 @@ ADD_TEST(NAME rthwif_test_builder_triangles_expected      COMMAND rthwif_test --
 ADD_TEST(NAME rthwif_test_builder_procedurals_expected    COMMAND rthwif_test --build_test_procedurals --build_mode_expected)
 ADD_TEST(NAME rthwif_test_builder_instances_expected      COMMAND rthwif_test --build_test_instances   --build_mode_expected)
 ADD_TEST(NAME rthwif_test_builder_mixed_expected          COMMAND rthwif_test --build_test_mixed       --build_mode_expected)
+
+ADD_TEST(NAME rthwif_test_benchmark_triangles             COMMAND rthwif_test --benchmark_triangles)
+ADD_TEST(NAME rthwif_test_benchmark_procedurals           COMMAND rthwif_test --benchmark_procedurals)
 
 ADD_TEST(NAME rthwif_test_builder_triangles_worst_case      COMMAND rthwif_test --build_test_triangles   --build_mode_worst_case)
 ADD_TEST(NAME rthwif_test_builder_procedurals_worst_case    COMMAND rthwif_test --build_test_procedurals --build_mode_worst_case)
