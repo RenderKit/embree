@@ -1,4 +1,6 @@
 
+#include "tbb/tbb.h"
+
 #include "../rthwif_production.h"
 #include "../rthwif_builder.h"
 
@@ -128,6 +130,8 @@ sycl::float3 RandomSampler_getFloat3(RandomSampler& self)
 }
 
 RandomSampler rng;
+
+volatile RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
 
 enum class InstancingType
 {
@@ -1102,6 +1106,7 @@ struct Scene
     args.scratchBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
+    args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.accelBufferBytesOut = &accelBufferBytesOut;
     args.buildUserPtr = nullptr;
@@ -1138,7 +1143,7 @@ struct Scene
 
       /* build accel */
       double t0 = embree::getSeconds();
-      size_t numIterations = benchmark ? 128 : 1;
+      size_t numIterations = benchmark ? 16 : 1;
 
       for (size_t i=0; i<numIterations; i++)
       {
@@ -1146,6 +1151,14 @@ struct Scene
         args.accelBuffer = accel;
         args.accelBufferBytes = size.accelBufferWorstCaseBytes;
         err = rthwifBuildAccel(args);
+
+        if (args.parallelOperation) {
+          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
+          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
+            err = rthwifJoinParallelOperation(parallelOperation);
+          });
+        }
       
         if (err != RTHWIF_ERROR_NONE)
           throw std::runtime_error("build error");
@@ -1156,26 +1169,35 @@ struct Scene
         double dt = (t1-t0)/double(numIterations);
         std::cout << double(numPrimitives)/dt*1E-6 << " Mprims/s" << std::endl;
       }
+      break;
     }
     case BuildMode::BUILD_EXPECTED_SIZE: {
       
       size_t bytes = size.accelBufferExpectedBytes;
-      for (size_t i=0; i<=8; i++) // FIXME: reduce worst cast iteration number
+      for (size_t i=0; i<=16; i++) // FIXME: reduce worst cast iteration number
       {
-        if (i == 8)
-          throw std::runtime_error("build requires more than 8 iterations");
+        if (i == 16)
+          throw std::runtime_error("build requires more than 16 iterations");
         
         /* allocate BVH data */
         free_accel_buffer(accel,context);
         accelBytes = bytes;
         accel = alloc_accel_buffer(accelBytes,device,context);
         memset(accel,0,accelBytes);
-        
+
         /* build accel */
         args.numGeometries = geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = accelBytes;
         err = rthwifBuildAccel(args);
+
+        if (args.parallelOperation) {
+          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
+          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
+            err = rthwifJoinParallelOperation(parallelOperation);
+          });
+        }
         
         if (err != RTHWIF_ERROR_RETRY)
           break;
@@ -1188,16 +1210,20 @@ struct Scene
       
       if (err != RTHWIF_ERROR_NONE)
         throw std::runtime_error("build error");
+
+      break;
     }
     }
 
     this->bounds = bounds;
 
     /* check if returned size of acceleration structure is correct */
-    bool is_zero = std::all_of( (char*)args.accelBuffer+accelBufferBytesOut, (char*)args.accelBuffer+accelBytes,
-                                [](char c) { return c == 0; } );
-    if (!is_zero)
-      throw std::runtime_error("build did return wrong acceleration structure size");
+    if (!benchmark) {
+      for (ssize_t i=accelBytes-1; i>=accelBufferBytesOut; i--) {
+        if (((char*)args.accelBuffer)[i] == 0x00) continue;
+        throw std::runtime_error("wrong acceleration structure size "+std::to_string(accelBufferBytesOut)+" returned, should be "+std::to_string(i+1));
+      }
+    }
   }
   
   void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map)
@@ -1842,7 +1868,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
 
 uint32_t executeBenchmark(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
 {
-  for (uint32_t i=0; i<16; i++)
+  for (uint32_t i=0; i<=20; i++)
   {
     const uint32_t numPrimitives = 1<<i;
 
@@ -1919,7 +1945,8 @@ int main(int argc, char* argv[])
   BuildMode buildMode = BuildMode::BUILD_EXPECTED_SIZE;
   
   bool jit_cache = false;
-
+  uint32_t numThreads = tbb::this_task_arena::max_concurrency();
+  
   /* command line parsing */
   if (argc == 1) {
     std::cout << "ERROR: no test specified" << std::endl;
@@ -1978,8 +2005,12 @@ int main(int argc, char* argv[])
       buildMode = BuildMode::BUILD_EXPECTED_SIZE;
     }
     else if (strcmp(argv[i], "--jit-cache") == 0) {
-      if (++i >= argc) throw std::runtime_error("Error: --jit-cache syntax error");
+      if (++i >= argc) throw std::runtime_error("Error: --jit-cache <int>: syntax error");
       jit_cache = atoi(argv[i]);
+    }
+    else if (strcmp(argv[i], "--threads") == 0) {
+      if (++i >= argc) throw std::runtime_error("Error: --threads <int>: syntax error");
+      numThreads = atoi(argv[i]);
     }
     else {
       std::cout << "ERROR: invalid command line option " << argv[i] << std::endl;
@@ -1989,6 +2020,8 @@ int main(int argc, char* argv[])
 
   if (jit_cache)
     std::cout << "WARNING: JIT caching is not supported!" << std::endl;
+
+  tbb::global_control tbb_threads(tbb::global_control::max_allowed_parallelism,numThreads);
     
   /* initialize SYCL device */
 #if __SYCL_COMPILER_VERSION < 20220914
@@ -2003,6 +2036,8 @@ int main(int argc, char* argv[])
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
+
+  parallelOperation = rthwifNewParallelOperation();
   
   uint32_t numErrors = 0;
   if (test >= TestType::BENCHMARK_TRIANGLES)
