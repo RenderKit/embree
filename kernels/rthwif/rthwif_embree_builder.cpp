@@ -306,6 +306,8 @@ namespace embree
 
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    PING;
     if (gpu_build)
     {
       DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
@@ -325,6 +327,7 @@ namespace embree
         hwaccel->AccelTable[0] = (char*)hwaccel;      
       return bounds;
     }
+#endif
     
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
