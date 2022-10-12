@@ -126,8 +126,10 @@ namespace embree
     
   };
   
-  BBox3fa rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel, const bool two_level=false)
+  BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, const bool two_level=false)
   {
+    PING;
+    
     BuildTimer timer;
     timer.reset();
       
@@ -172,7 +174,7 @@ namespace embree
     if (unlikely(!activeTriQuadMeshes && !numInstances && !numUserGeometries))
       {
         const size_t totalSize = 3*64; // just for the header and a single node
-        if (accel.size() < totalSize) accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
+        if (accel.size() < totalSize) accel.resize(totalSize); //accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
         QBVH6* qbvh   = (QBVH6*)accel.data();        
         BBox3fa geometryBounds (Vec3fa(0.0f),Vec3fa(0.0f));
         qbvh->bounds = geometryBounds;
@@ -279,6 +281,8 @@ namespace embree
 
     if (unlikely(verbose2)) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
 
+    exit(0);
+    
     uint numActiveQuads = 0;
     
     if (activeTriQuadMeshes)    
@@ -350,7 +354,7 @@ namespace embree
     timer.start(BuildTimer::ALLOCATION);    
 
     
-    if (accel.size() < totalSize) accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
+    if (accel.size() < totalSize) accel.resize(totalSize); //accel = std::move(Device::avector<char,64>(scene->device,totalSize));    
     gpu_queue.prefetch((char*)accel.data(),totalSize);
 
     sizeTotalAllocations += totalSize;
@@ -726,8 +730,8 @@ namespace embree
           (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)*64 > leaf_size) FATAL("NOT ENOUGH MEMORY FOR INTERNAL NODES ALLOCATED");      
     }
     
-    BBox3fa geomBounds(Vec3fa(globals->geometryBounds.lower_x,globals->geometryBounds.lower_y,globals->geometryBounds.lower_z),
-                       Vec3fa(globals->geometryBounds.upper_x,globals->geometryBounds.upper_y,globals->geometryBounds.upper_z));
+    BBox3f geomBounds(Vec3fa(globals->geometryBounds.lower_x,globals->geometryBounds.lower_y,globals->geometryBounds.lower_z),
+                      Vec3fa(globals->geometryBounds.upper_x,globals->geometryBounds.upper_y,globals->geometryBounds.upper_z));
     
     if (deviceGPU) {
       HWAccel* hwaccel = (HWAccel*) accel.data();

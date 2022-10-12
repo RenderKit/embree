@@ -87,102 +87,6 @@ namespace embree
     const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(sycl_device);
     return features != RTHWIF_FEATURES_NONE;
   }
-
-#if 0      
-  BBox3fa rthwifBuildInternal(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel, int gpu_build)
-  {
-    bool static_geometry = true;
-    BBox1f time_range(0,1);
-    void* dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
-    
-    //PING;
-    
-    // ======================
-    // === PLOC++ Builder ===
-    // ======================
-    
-    if (gpu_build == 1)
-      return rthwifBuildPloc(scene,quality_flags,accel);
-    if (gpu_build == 2)
-      return rthwifBuildPloc(scene,quality_flags,accel,true);    
- 
-    // ==========================
-    // === Binned SAH Builder ===
-    // ==========================
-    
-    auto getSize = [&](uint32_t geomID) -> size_t {
-      Geometry* geom = scene->geometries[geomID].ptr;
-      if (geom == nullptr) return 0;
-      if (!geom->isEnabled()) return 0;
-      if (!(geom->getTypeMask() & Geometry::MTY_ALL)) return 0;
-      if (static_geometry != !geom->hasMotionBlur()) return 0;
-      if (GridMesh* mesh = scene->getSafe<GridMesh>(geomID))
-        return mesh->getNumTotalQuads(); // FIXME: slow
-      else
-        return geom->size();
-    };
-
-    auto getType = [&](unsigned int geomID)
-    {
-      /* no HW support for MB yet */
-      if (scene->get(geomID)->numTimeSegments() > 0)
-        return QBVH6BuilderSAH::PROCEDURAL;
-
-      switch (scene->get(geomID)->getType()) {
-      case Geometry::GTY_FLAT_LINEAR_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_LINEAR_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_LINEAR_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_CONE_LINEAR_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_FLAT_BEZIER_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_BEZIER_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_BEZIER_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_FLAT_BSPLINE_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_BSPLINE_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_BSPLINE_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_FLAT_HERMITE_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_HERMITE_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_HERMITE_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_FLAT_CATMULL_ROM_CURVE    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ROUND_CATMULL_ROM_CURVE   : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_CATMULL_ROM_CURVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_TRIANGLE_MESH: return QBVH6BuilderSAH::TRIANGLE; break;
-      case Geometry::GTY_QUAD_MESH    : return QBVH6BuilderSAH::QUAD; break;
-      case Geometry::GTY_GRID_MESH    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_SUBDIV_MESH  : assert(false); return QBVH6BuilderSAH::UNKNOWN; break;
-      
-      case Geometry::GTY_SPHERE_POINT       : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_DISC_POINT         : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_ORIENTED_DISC_POINT: return QBVH6BuilderSAH::PROCEDURAL; break;
-      
-      case Geometry::GTY_USER_GEOMETRY     : return QBVH6BuilderSAH::PROCEDURAL; break;
-
-#if RTC_MAX_INSTANCE_LEVEL_COUNT < 2
-      case Geometry::GTY_INSTANCE_CHEAP    :
-      case Geometry::GTY_INSTANCE_EXPENSIVE: {
-        Instance* instance = scene->get<Instance>(geomID);
-        QBVH6* object = (QBVH6*)((Scene*)instance->object)->hwaccel.data();
-        if (object->numTimeSegments > 1) return QBVH6BuilderSAH::PROCEDURAL; // we need to handle instances in procedural mode if instanced scene has motion blur
-        if (instance->mask & 0xFFFFFF80) return QBVH6BuilderSAH::PROCEDURAL; // we need to handle instances in procedural mode if high mask bits are set
-        else                             return QBVH6BuilderSAH::INSTANCE;
-      }
-#else
-      case Geometry::GTY_INSTANCE_CHEAP    : return QBVH6BuilderSAH::PROCEDURAL; break;
-      case Geometry::GTY_INSTANCE_EXPENSIVE: return QBVH6BuilderSAH::PROCEDURAL; break;
-#endif
-
-      default: assert(false); return QBVH6BuilderSAH::UNKNOWN;
-      }
-    };
-
-    auto getNumTimeSegments = [&] (unsigned int geomID) {
-      return 0;
-    };
-#endif
     
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
@@ -397,8 +301,14 @@ namespace embree
     }
   }
 
+  BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, const bool two_level=false);
+  
+
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
+    if (gpu_build)
+      return rthwifBuildPloc(scene,quality_flags,accel,gpu_build);
+    
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
       /* no HW support for MB yet */
@@ -482,7 +392,7 @@ namespace embree
     /* fill geomdesc buffers */
     std::vector<RTHWIF_GEOMETRY_DESC*> geomDescr(scene->size());
     std::vector<char> geomDescrData(totalBytes);
-
+    
     size_t offset = 0;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
     {
@@ -520,6 +430,7 @@ namespace embree
 #if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
 #endif
+
     
     RTHWIF_ACCEL_SIZE sizeTotal;
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
@@ -598,25 +509,4 @@ namespace embree
     return fullBounds;
   }
 
-#if 0  
-  BBox3fa rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, Device::avector<char,64>& accel)
-  {
-    if (scene->device->rthw_builder == "driver")
-    {
-      if (scene->device->verbosity(1))
-        std::cout << "Using driver BVH builder" << std::endl;
-      
-      return rthwifBuildDriver(scene,quality_flags,accel);
-    }
-    else if (scene->device->rthw_builder == "internal")
-    {
-      if (scene->device->verbosity(1))
-        std::cout << "Using internal HW BVH builder" << std::endl;
-      
-      return rthwifBuildInternal(scene,quality_flags,accel,scene->device->gpu_build);
-    }
-    else
-      throw std::runtime_error("invalid rthw_builder specified: " + scene->device->rthw_builder);
-  }
-#endif  
 }
