@@ -43,9 +43,9 @@ bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
 
 #if defined(EMBREE_SYCL_TUTORIAL)
-const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_TRIANGLE);
+const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_ALL);
 #endif
-static RTCFeatureFlags g_used_features = RTC_FEATURE_TRIANGLE;
+static RTCFeatureFlags g_used_features = RTC_FEATURE_NONE;
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               Lights                                       //
@@ -1861,6 +1861,8 @@ extern "C" void renderFrameStandard (int* pixels,
   /* render image */
 #if defined(EMBREE_SYCL_TUTORIAL)
   TutorialData ldata = data;
+
+#if defined(USE_SPECIALIZATION_CONSTANTS)
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     cgh.set_specialization_constant<rtc_feature_mask>(g_used_features);
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
@@ -1873,6 +1875,19 @@ extern "C" void renderFrameStandard (int* pixels,
     });
   });
   global_gpu_queue->wait_and_throw();
+#else
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
+    const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+      const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+      const unsigned int y = item.get_global_id(0); if (y >= height) return;
+      RayStats stats;
+      const RTCFeatureFlags feature_mask = RTC_FEATURE_ALL;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+#endif
 
   const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
   const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();

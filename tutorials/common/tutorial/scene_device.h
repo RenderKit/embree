@@ -389,7 +389,7 @@ namespace embree
   extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags = RTC_SCENE_FLAG_NONE, RTCFeatureFlags *used_features_out=nullptr);
 #else
   unmasked extern "C" void UpdateScene(ISPCScene* uniform scene_in, uniform float time);
-  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCBuildQuality quality, uniform RTCSceneFlags flags = RTC_SCENE_FLAG_NONE);
+  unmasked extern "C" RTCScene ConvertScene (RTCDevice g_device, ISPCScene* uniform scene_in, uniform RTCBuildQuality quality, uniform RTCSceneFlags flags = RTC_SCENE_FLAG_NONE, RTCFeatureFlags * uniform used_features_out=NULL);
 #endif
 
 #if !defined(ISPC)                    

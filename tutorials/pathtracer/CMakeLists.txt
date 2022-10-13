@@ -1,6 +1,10 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+IF (EMBREE_SYCL_AOT_DEVICES STREQUAL "none")
+  ADD_DEFINITIONS("-DUSE_SPECIALIZATION_CONSTANTS")
+ENDIF()
+
 INCLUDE(tutorial)
 ADD_TUTORIAL(pathtracer)
 ADD_TUTORIAL_ISPC(pathtracer)
