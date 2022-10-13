@@ -190,7 +190,7 @@ namespace embree
 
   private:
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
   public:
     sycl::queue* queue = nullptr;
     sycl::device* device = nullptr;

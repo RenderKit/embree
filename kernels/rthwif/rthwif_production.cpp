@@ -32,7 +32,7 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel
   
   intel_raytracing_acceleration_structure_t* accel_i = sycl::global_ptr<intel_raytracing_acceleration_structure_t>(_accel_i).get();
   HWAccel* accel = (HWAccel*)accel_i;
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   rtglobals_t dispatchGlobalsPtr = (rtglobals_t) accel->dispatchGlobalsPtr;
 #else
   rtglobals_t dispatchGlobalsPtr = (rtglobals_t) intel_get_implicit_dispatch_globals();

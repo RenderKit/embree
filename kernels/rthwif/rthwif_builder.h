@@ -338,7 +338,7 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   RTHWIF_AABB* boundsOut;
 
   /* for debugging purposes use only */
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   void* dispatchGlobalsPtr;
 #endif
   

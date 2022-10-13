@@ -145,7 +145,7 @@ namespace embree
     RayStreamFilterFuncs rayStreamFilters;
   };
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
      
   class DeviceGPU : public Device
   {

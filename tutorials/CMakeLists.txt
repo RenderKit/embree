@@ -77,11 +77,11 @@ ADD_SUBDIRECTORY(bvh_builder)
 ADD_SUBDIRECTORY(lazy_geometry)
 ADD_SUBDIRECTORY(bvh_access)
 
-IF (EMBREE_DPCPP_MBLUR AND NOT WIN32)
+IF (EMBREE_SYCL_MBLUR AND NOT WIN32)
   ADD_SUBDIRECTORY(quaternion_motion_blur) # doesn't work on Windows with release driver
 ENDIF()
 
-IF (EMBREE_GEOMETRY_CURVE AND EMBREE_DPCPP_MBLUR)
+IF (EMBREE_GEOMETRY_CURVE AND EMBREE_SYCL_MBLUR)
   ADD_SUBDIRECTORY(motion_blur_geometry)
 ENDIF()
 
@@ -91,7 +91,7 @@ ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
 ADD_SUBDIRECTORY(convert)
 ADD_SUBDIRECTORY(collide)
-IF (NOT EMBREE_DPCPP_PVC) # started to hang on PVC
+IF (NOT EMBREE_SYCL_PVC) # started to hang on PVC
   ADD_SUBDIRECTORY(next_hit)
 ENDIF()
 ADD_SUBDIRECTORY(multiscene_geometry)

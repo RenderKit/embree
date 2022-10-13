@@ -1,7 +1,7 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-IF (EMBREE_DPCPP_SUPPORT)
+IF (EMBREE_SYCL_SUPPORT)
   ADD_SUBDIRECTORY(rthwif)
 ENDIF()
 
@@ -84,7 +84,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh_intersector1_bvh4.cpp
   )
 
-IF (EMBREE_DPCPP_SUPPORT)
+IF (EMBREE_SYCL_SUPPORT)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
   rthwif/rthwif_embree_builder.cpp
   rthwif/builder/qbvh6.cpp
@@ -243,7 +243,7 @@ ENDMACRO()
 DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})
 ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
 
-IF (EMBREE_DPCPP_SUPPORT)
+IF (EMBREE_SYCL_SUPPORT)
 
   ADD_LIBRARY(embree_sycl STATIC
     common/rtcore_sycl.cpp
@@ -331,7 +331,7 @@ IF (EMBREE_ISA_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
   ENDIF()
 ENDIF()
 
-IF (EMBREE_DPCPP_SUPPORT)
+IF (EMBREE_SYCL_SUPPORT)
   TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking embree_rthwif -lsycl -lze_loader PUBLIC embree_sycl)
 ELSE()
   TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)

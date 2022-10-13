@@ -426,7 +426,7 @@ namespace embree
 
     /* dispatch globals ptr for debugging purposes */
     void* dispatchGlobalsPtr = nullptr;
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     dispatchGlobalsPtr = args.dispatchGlobalsPtr;
 #endif
 

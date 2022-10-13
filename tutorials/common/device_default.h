@@ -3,7 +3,7 @@
 
 #pragma once
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 // If we use the internal clang frontend of the dpc++ compiler directly __INTEL_LLVM_COMPILER is not set.
 // I think doing this is fine because normal clang can not compile dpcpp/sycl code anyway.
 #if defined(__WIN32__) and defined(__clang__) and !defined(__INTEL_LLVM_COMPILER)
@@ -25,7 +25,7 @@ RTC_NAMESPACE_USE
 
 namespace embree
 {
-#if defined(EMBREE_SYCL_TUTORIAL) and defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_TUTORIAL) and defined(EMBREE_SYCL_SUPPORT)
   
   extern sycl::queue   *global_gpu_queue;
   extern sycl::context *global_gpu_context;

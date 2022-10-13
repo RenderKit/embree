@@ -1110,7 +1110,7 @@ struct Scene
     args.boundsOut = &bounds;
     args.accelBufferBytesOut = &accelBufferBytesOut;
     args.buildUserPtr = nullptr;
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
     

@@ -359,7 +359,7 @@ namespace embree
     Device::vector<BufferView<Vec3fa>> vertices = device; //!< vertex array for each timestep
     Device::vector<RawBufferView> vertexAttribs = device; //!< vertex attributes
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
     
   public:
     struct PrimID_XY { uint32_t primID; ushort x,y; };
@@ -382,7 +382,7 @@ namespace embree
         return linearBounds(grid(primID),x,y,time_range);
       }
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
       PrimInfo createPrimRefArray(PrimRef* prims, const range<size_t>& r, size_t k, unsigned int geomID) const override
       {
         PrimInfo pinfo(empty);
@@ -423,7 +423,7 @@ namespace embree
         return pinfo;
       }
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
       PrimInfo createPrimRefArrayMB(PrimRef* prims, const BBox1f& time_range, const range<size_t>& r, size_t k, unsigned int geomID) const override
       {
         const BBox1f t0t1 = BBox1f::intersect(getTimeRange(), time_range);

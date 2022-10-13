@@ -194,7 +194,7 @@ There are some known DPC++ and driver issues:
 
   a) Ahead of time compilation (AOT compilation) does currently only
      work for a single device, thus multiple devices cannot get
-     specified with the `EMBREE_DPCPP_AOT_DEVICES` CMake option.
+     specified with the `EMBREE_SYCL_AOT_DEVICES` CMake option.
 
   b) JIT compiled code does only run on DG2 and not PVC.
 

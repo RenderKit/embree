@@ -38,8 +38,6 @@ using sycl::ushort;
 using sycl::fmax;
 using sycl::fmin;
 
-#define DPCPP_PREFETCHING 0
-
 #ifdef __SYCL_DEVICE_ONLY__
 #define GLOBAL __attribute__((opencl_global))
 #define LOCAL  __attribute__((opencl_local))

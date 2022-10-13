@@ -24,7 +24,7 @@
 
 #include "../../common/sys/alloc.h"
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 #include "../rthwif/rthwif_embree_builder.h"
 #endif
 
@@ -593,7 +593,7 @@ namespace embree
   }
 
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 
   DeviceGPU::DeviceGPU(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* cfg)
     : Device(cfg),  gpu_queue(sycl_queue), gpu_context(sycl_context)

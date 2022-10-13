@@ -54,7 +54,7 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT-multilevel
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2 maxinstancelevelcount:2 tasking:TBB intensity:3
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 maxinstancelevelcount:2 tasking:TBB intensity:3
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -81,7 +81,7 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -108,7 +108,7 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT-INT
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -135,7 +135,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none CURVE:OFF tasking:TBB intensity:1
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none CURVE:OFF tasking:TBB intensity:1
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -162,7 +162,7 @@ jobs:
       artifact-out: continuous-linux-PVC-AOT
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:pvc tasking:TBB intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:pvc tasking:TBB intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -190,7 +190,7 @@ jobs:
       artifact-out: continuous-linux-PVC-JIT
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_DPCPP_SUPPORT:ON sycl:none tasking:TBB intensity:4 implicit_dispatch_globals:OFF
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 implicit_dispatch_globals:OFF
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -219,7 +219,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON sycl:dg2 intensity:3
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:dg2 intensity:3
         python scripts/test.py build
         python scripts/test.py test
 
@@ -229,7 +229,7 @@ jobs:
 #    with:
 #      runs-on: '[ "Windows", "NAS", "dg2" ]'
 #      cmd: |
-#        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_DPCPP_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:3 implicit_dispatch_globals:OFF
+#        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:3 implicit_dispatch_globals:OFF
 #        python scripts/test.py build
 #        python scripts/test.py test
 

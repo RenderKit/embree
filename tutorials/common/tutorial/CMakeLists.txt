@@ -10,7 +10,7 @@ TARGET_LINK_LIBRARIES(tutorial sys math lexers scenegraph lights embree ${IMGUI_
 SET_PROPERTY(TARGET tutorial PROPERTY FOLDER tutorials/common)
 SET_PROPERTY(TARGET tutorial APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
-IF (EMBREE_DPCPP_SUPPORT)
+IF (EMBREE_SYCL_SUPPORT)
   ADD_LIBRARY(tutorial_sycl STATIC tutorial.cpp application.cpp scene.cpp tutorial_device.cpp scene_device.cpp)
   TARGET_LINK_LIBRARIES(tutorial_sycl sys math lexers scenegraph lights_sycl embree ${IMGUI_LIBRARY} tasking ${OPENGL_LIBRARIES} ${GLFW_STATIC_LIBRARIES})
   SET_PROPERTY(TARGET tutorial_sycl PROPERTY FOLDER tutorials/common)
@@ -35,7 +35,7 @@ IF(EMBREE_USE_GOOGLE_BENCHMARK)
   TARGET_LINK_LIBRARIES(benchmark benchmark::benchmark benchmark::benchmark_main)
 ENDIF()
 TARGET_LINK_LIBRARIES(tutorial benchmark)
-IF (EMBREE_DPCPP_SUPPORT)
+IF (EMBREE_SYCL_SUPPORT)
   TARGET_LINK_LIBRARIES(tutorial_sycl benchmark)
 ENDIF()
 
