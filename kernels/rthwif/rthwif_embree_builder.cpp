@@ -306,11 +306,12 @@ namespace embree
 
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
+    DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
+    
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
     PING;
     if (gpu_build)
     {
-      DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
       BBox3f bounds = rthwifBuildPloc(scene,quality_flags,accel,gpu_device->dispatchGlobalsPtr);
       if (gpu_device->verbosity(2))
       {
@@ -409,12 +410,19 @@ namespace embree
       totalBytes += sizeof_RTHWIF_GEOMETRY(type);
     }
 
+    const size_t numGeometries = scene->size();
     /* fill geomdesc buffers */
-    std::vector<RTHWIF_GEOMETRY_DESC*> geomDescr(scene->size());
+    const size_t geomDescrBytes = sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries;
+#if 1    
+    RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+    char *geomDescrData             =                   (char*)sycl::aligned_alloc(64,    totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+#else    
+    std::vector<RTHWIF_GEOMETRY_DESC*> geomDescr(numGeometries);
     std::vector<char> geomDescrData(totalBytes);
+#endif
     
     size_t offset = 0;
-    for (size_t geomID=0; geomID<scene->size(); geomID++)
+    for (size_t geomID=0; geomID<numGeometries; geomID++)
     {
       geomDescr[geomID] = nullptr;     
       Geometry* geom = scene->get(geomID);
@@ -436,8 +444,12 @@ namespace embree
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
+#if 1
+    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;    
+#else    
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
-    args.numGeometries = geomDescr.size();
+#endif    
+    args.numGeometries = numGeometries;
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
@@ -460,14 +472,19 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
     /* allocate scratch buffer */
+
+#if 1 //defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+    args.scratchBuffer = scratchBuffer;
+    args.scratchBufferBytes = sizeTotal.scratchBufferBytes;
+#else        
     std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
     args.scratchBuffer = scratchBuffer.data();
     args.scratchBufferBytes = scratchBuffer.size();
-
+#endif
+    
     size_t headerBytes = sizeof(EmbreeHWAccel) + std::max(1u,maxTimeSegments)*8;
     align(headerBytes,128);
-
-    PRINT(headerBytes);
 
     /* build BVH */
     BBox3f fullBounds = empty;
@@ -489,9 +506,13 @@ namespace embree
         const float t0 = float(i+0)/float(maxTimeSegments);
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
-        
+
+#if 1 //defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+        args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;        
+#else        
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
-        args.numGeometries = geomDescr.size();
+#endif        
+        args.numGeometries = numGeometries; 
         args.accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
@@ -528,6 +549,11 @@ namespace embree
     for (size_t i=0; i<maxTimeSegments; i++)
       hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
 
+#if 1 //defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    sycl::free(geomDescr    ,gpu_device->getGPUContext());
+    sycl::free(geomDescrData,gpu_device->getGPUContext());    
+    sycl::free(scratchBuffer,gpu_device->getGPUContext());
+#endif    
     return fullBounds;
   }
 
