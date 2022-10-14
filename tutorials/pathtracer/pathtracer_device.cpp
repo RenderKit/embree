@@ -42,7 +42,7 @@ extern "C" int g_animation_mode;
 bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
 
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
 const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_ALL);
 #endif
 static RTCFeatureFlags g_used_features = RTC_FEATURE_NONE;

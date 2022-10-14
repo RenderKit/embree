@@ -9,7 +9,7 @@ RTCScene g_scene = nullptr;
 extern "C" bool g_changed;
 TutorialData data;
 
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
 static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
