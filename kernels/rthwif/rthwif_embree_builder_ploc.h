@@ -1451,6 +1451,79 @@ namespace embree
     if (unlikely(verbose)) PRINT2("write out instance bounds", (float)dt);
   }
 
+
+  __forceinline AffineSpace3fa getTransform(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  {
+    switch (geom->transformFormat)
+    {
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    }
+  }  
+  
+  // FIXME: COMPACTION
+  __forceinline void createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
+  {
+    static const uint CREATE_INSTANCES_SEARCH_WG_SIZE  = 256;
+    const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,CREATE_INSTANCES_SEARCH_WG_SIZE),sycl::range<1>(CREATE_INSTANCES_SEARCH_WG_SIZE));
+    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
+                         {
+                           const uint instID = item.get_global_id(0);
+                           if (instID < numGeoms)
+                           {
+                             BVH2Ploc node;                                                          
+                             gpu::AABB3f bounds(float3(0.0f));                             
+                             if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                             {
+                               RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
+
+                               const AffineSpace3fa local2world = getTransform(geom);
+                               const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
+                               const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
+                               const BBox3fa instance_bounds = xfmBounds(local2world,BBox3fa(lower,upper));                                                              
+                               bounds = gpu::AABB3f(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
+                                                    instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
+                               
+                             }
+                             node.initLeaf(0,instID,bounds);                               
+                             node.store(&bvh2[prim_type_offset + instID]);
+                           }
+                         });
+		  
+      });
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+    double dt = gpu::getDeviceExecutionTiming(queue_event);      
+    iteration_time += dt;
+    if (unlikely(verbose)) PRINT2("write out instance bounds", (float)dt);
+  }
+  
+
   __forceinline void createUserGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, Scene *const scene, const uint numGeoms, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
   {
     //static const uint CREATE_INSTANCES_SEARCH_WG_SIZE  = 256;
@@ -1502,6 +1575,86 @@ namespace embree
     if (unlikely(verbose)) PRINT2("write out user geom/procedurals bounds", (float)dt);
 #endif    
   }
+
+  __forceinline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
+  {
+    if (primID >= geom->primCount) return false;
+    if (geom->getBounds == nullptr) return false;
+
+    BBox3f bounds;
+    (geom->getBounds)(primID,1,geom->geomUserPtr,buildUserPtr,(RTHWIF_AABB*)&bounds);
+    if (unlikely(!isvalid(bounds.lower))) return false;
+    if (unlikely(!isvalid(bounds.upper))) return false;
+    if (unlikely(bounds.empty())) return false;
+    
+    bbox = (BBox3f&) bounds;
+    return true;
+  }
+  
+  __forceinline void createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
+  {
+    uint ID = 0;
+    for (uint userGeomID=0;userGeomID<numGeoms;userGeomID++)
+    {
+      if (geometry_desc[userGeomID]->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
+      {
+        RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[userGeomID];
+        if (geom->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
+        {
+          RTHWIF_GEOMETRY_AABBS_FPTR_DESC *procedural = (RTHWIF_GEOMETRY_AABBS_FPTR_DESC *)geom;
+          for (uint i=0;i<procedural->primCount;i++)
+          {
+            BBox3fa procedural_bounds;
+            
+            if (!buildBounds(procedural,i,procedural_bounds,procedural->geomUserPtr))
+              procedural_bounds = BBox3fa(Vec3fa(0.0f),Vec3fa(0.0f));
+
+            gpu::AABB3f bounds = gpu::AABB3f(procedural_bounds.lower.x,procedural_bounds.lower.y,procedural_bounds.lower.z,
+                                             procedural_bounds.upper.x,procedural_bounds.upper.y,procedural_bounds.upper.z);
+            
+            BVH2Ploc node;                             
+            node.initLeaf(userGeomID,ID,bounds);                               
+            node.store(&bvh2[prim_type_offset + ID]);
+            ID++;
+              
+          }
+          
+        }
+      }
+    }
+#if 0
+    //static const uint CREATE_INSTANCES_SEARCH_WG_SIZE  = 256;
+      
+    const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,CREATE_INSTANCES_SEARCH_WG_SIZE),sycl::range<1>(CREATE_INSTANCES_SEARCH_WG_SIZE));
+    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
+                         {
+                           const uint userGeomID = item.get_global_id(0);
+                           if (userGeomID < numGeoms)
+                           {
+                             const bool isUserGeometry = scene->geometries[userGeomID]->getTypeMask() & UserGeometry::geom_type;
+                             UserGeometry* userGeometry = scene->get<UserGeometry>(userGeomID);                             
+                             gpu::AABB3f bounds(float3(0.0f));
+                             BVH2Ploc node;                             
+                             if (isUserGeometry)
+                             {
+                               BBox3fa userGeometry_bounds(userGeometry->bounds(0));
+                               bounds = gpu::AABB3f(userGeometry_bounds.lower.x,userGeometry_bounds.lower.y,userGeometry_bounds.lower.z,
+                                                    userGeometry_bounds.upper.x,userGeometry_bounds.upper.y,userGeometry_bounds.upper.z);
+                             }
+                             node.initLeaf(0,userGeomID,bounds);                               
+                             node.store(&bvh2[prim_type_offset + userGeomID]);
+                           }
+                         });
+		  
+      });
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+    double dt = gpu::getDeviceExecutionTiming(queue_event);      
+    iteration_time += dt;
+    if (unlikely(verbose)) PRINT2("write out user geom/procedurals bounds", (float)dt);
+#endif    
+  }
+  
   
   
 
@@ -3628,13 +3781,12 @@ namespace embree
                                const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
                                const uint primID0 = leafGenData[globalID].primID & LEAF_TYPE_MASK_LOW;
                                const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
-                                 
+
+                               const RTHWIF_GEOMETRY_DESC *const geometryDesc = triQuadMesh[geomID];
+                               
                                if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_QUAD)
                                {
                                  //TriQuadMesh &mesh = triQuadMesh[geomID];
-
-                                 const RTHWIF_GEOMETRY_DESC *const geometryDesc = triQuadMesh[geomID];
-
                                  valid = true;
                                  // ====================                           
                                  // === TriangleMesh ===
@@ -3676,25 +3828,21 @@ namespace embree
                                }
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_INSTANCE)
                                {
-#if 0                                 
+                                 const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometryDesc;                                 
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
-                                 const uint instID = primID0;
-                                 Instance* instance = scene->get<Instance>(instID);
-                                 void* accel = static_cast<Scene*>(instance->object)->hwaccel.data();
-                                 const AffineSpace3fa local2world = instance->getLocal2World();
-                                 const uint64_t root = (uint64_t)accel + 128; //static_cast<QBVH6*>(accel)->root();
-                                 *dest = InstancePrimitive(local2world,root,instID,mask32_to_mask8(instance->mask));
-#endif                                 
+                                 //const uint instID = primID0;
+                                 const AffineSpace3fa local2world = getTransform(instance);
+                                 const uint64_t root = (uint64_t)instance->accel; // + 128; 
+                                 *dest = InstancePrimitive(local2world,root,instance->instanceUserID,mask32_to_mask8(instance->geometryMask));
                                }
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_PROCEDURAL) 
                                {
-#if 0                                 
+                                 const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometryDesc;                                 
                                  const uint userGeomID = geomID;
-                                 const uint mask32 = mask32_to_mask8(scene->get(userGeomID)->mask);
+                                 const uint mask32 = mask32_to_mask8(geom->geometryMask);
                                  ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
                                  *dest = ProceduralLeaf(leafDesc,primID0,true);
-#endif                                 
                                }
                              }
 

@@ -151,6 +151,8 @@ namespace embree
   RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
   {
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+
+    // TODO: empty scene case, procedurals, invalid checks, estimate    
     
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
@@ -233,7 +235,7 @@ namespace embree
     const uint header              = 128;
     const uint node_size           = estimateSizeInternalNodes(numActiveQuads,numInstances,numProcedurals);
     const uint leaf_size           = estimateSizeLeafNodes(numActiveQuads,numInstances,numProcedurals); 
-    const uint totalSize           = header + node_size + leaf_size; 
+    const uint totalSize           = std::max(header + node_size + leaf_size,3*64 /*empty scene*/); 
     
     /* query memory requirements from builder */
     size_t expectedBytes = totalSize;
@@ -285,9 +287,26 @@ namespace embree
     const uint node_data_start     = header;
     const uint leaf_data_start     = header + node_size;
     
-    const uint numGeometries = args.numGeometries;
-    const uint numPrimitives = sizeIn.numQuads + sizeIn.numInstances + sizeIn.numProcedurals;
-    const uint numInstances = sizeIn.numInstances;
+    const uint numGeometries  = args.numGeometries;
+    const uint numPrimitives  = sizeIn.numQuads + sizeIn.numInstances + sizeIn.numProcedurals;
+    const uint numInstances   = sizeIn.numInstances;
+    const uint numQuads       = sizeIn.numQuads;
+    const uint numProcedurals = sizeIn.numProcedurals;
+
+    if (unlikely(numPrimitives == 0))
+    {
+      QBVH6* qbvh  = (QBVH6*)args.accelBuffer;       
+      BBox3fa geometryBounds (empty);
+      qbvh->bounds = geometryBounds;
+      qbvh->numPrims       = 0;                                                                        
+      qbvh->nodeDataStart  = 2;
+      qbvh->nodeDataCur    = 3;
+      qbvh->leafDataStart  = 3;
+      qbvh->leafDataCur    = 3;        
+      new (qbvh->nodePtr(2)) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
+      return geometryBounds;
+    }    
+    
     const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
     const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
 
@@ -352,54 +371,70 @@ namespace embree
       if (unlikely(verbose2))
         std::cout << "Init globals " << dt << " ms" << std::endl;
     }	    
+
+    if (numQuads)
+    {
+      // =============================
+      // === count quads per block === 
+      // =============================
+
+      timer.start(BuildTimer::PRE_PROCESS);
+
+      double device_quadification_time = 0.0f;
     
-    // =============================
-    // === count quads per block === 
-    // =============================
+      countQuadsPerGeometry(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,device_quadification_time,verbose2);
 
-    timer.start(BuildTimer::PRE_PROCESS);
-
-    double device_quadification_time = 0.0f;
-    
-    countQuadsPerGeometry(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,device_quadification_time,verbose2);
-
-    timer.stop(BuildTimer::PRE_PROCESS);
-    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
+      timer.stop(BuildTimer::PRE_PROCESS);
+      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
                               
-    if (unlikely(verbose2)) std::cout << "Count quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
+      if (unlikely(verbose2)) std::cout << "Count quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
 
-    // =============================      
-    // === prefix sum over quads ===
-    // =============================      
+      // =============================      
+      // === prefix sum over quads ===
+      // =============================      
     
-    timer.start(BuildTimer::PRE_PROCESS);
-    double geom_prefix_sum_time = 0.0f;
+      timer.start(BuildTimer::PRE_PROCESS);
+      double geom_prefix_sum_time = 0.0f;
      
-    prefixsumOverGeometryCounts(gpu_queue,numGeometries,prims_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
+      prefixsumOverGeometryCounts(gpu_queue,numGeometries,prims_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
     
-    timer.stop(BuildTimer::PRE_PROCESS);
-    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
-    const uint numActiveQuads = *host_device_tasks;
+      timer.stop(BuildTimer::PRE_PROCESS);
+      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
+      const uint numActiveQuads = *host_device_tasks;
     
-    if (numActiveQuads != sizeIn.numQuads) FATAL("QUADS");
+      if (numActiveQuads != numQuads) return RTHWIF_ERROR_OTHER;
 
-    // ===================================================          
-    // ==== merge triangles to quads, create primrefs ====
-    // ===================================================
+      // ===================================================          
+      // ==== merge triangles to quads, create primrefs ====
+      // ===================================================
 
-    timer.start(BuildTimer::PRE_PROCESS);        
+      timer.start(BuildTimer::PRE_PROCESS);        
     
-    double create_primref_time = 0.0f;
+      double create_primref_time = 0.0f;
       
-    createQuads_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);
+      createQuads_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);
+      
+      timer.stop(BuildTimer::PRE_PROCESS);
+      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);
+    
+      if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
+    }
 
-    const GeometryTypeRanges geometryTypeRanges(sizeIn.numQuads,sizeIn.numProcedurals,sizeIn.numInstances);        
-      
-    timer.stop(BuildTimer::PRE_PROCESS);
-    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);
+    // ====================================          
+    // ==== create procedural primrefs ====
+    // ====================================
     
-    if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
-      
+    if (numProcedurals)
+      createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeoms,bvh2,numQuads,create_primref_time,verbose2);
+
+    // ==================================          
+    // ==== create instance primrefs ====
+    // ==================================
+    
+    if (numInstances)
+      createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeoms,bvh2,numQuads + numProcedurals,create_primref_time,verbose2);
+    
+    const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
 
     // ==========================================          
     // ==== get centroid and geometry bounds ====
