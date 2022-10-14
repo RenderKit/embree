@@ -302,13 +302,14 @@ namespace embree
   }
 
   BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, void *dispatchGlobalsPtr);
-
+  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o);
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, const RTHWIF_ACCEL_SIZE& size_i);
 
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
     
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if 0 //defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
     PING;
     if (gpu_build)
     {
@@ -389,6 +390,8 @@ namespace embree
       }
     };
 
+    // TODO: prefetch in GPU mode
+
     /* calculate maximal number of motion blur time segments in scene */
     uint32_t maxTimeSegments = 1;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
@@ -411,18 +414,21 @@ namespace embree
     }
 
     const size_t numGeometries = scene->size();
+    
     /* fill geomdesc buffers */
     const size_t geomDescrBytes = sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries;
-#if 1    
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
     RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
-    char *geomDescrData             =                   (char*)sycl::aligned_alloc(64,    totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+    assert(geomDescr);        
+    char *geomDescrData = (char*)sycl::aligned_alloc(64,    totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+    assert(geomDescrData);
 #else    
     std::vector<RTHWIF_GEOMETRY_DESC*> geomDescr(numGeometries);
     std::vector<char> geomDescrData(totalBytes);
 #endif
     
     size_t offset = 0;
-    for (size_t geomID=0; geomID<numGeometries; geomID++)
+    for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXMEL slow if numGeometries is large
     {
       geomDescr[geomID] = nullptr;     
       Geometry* geom = scene->get(geomID);
@@ -436,15 +442,18 @@ namespace embree
       assert(offset <= geomDescrData.size());
     }
 
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
     RTHWIF_PARALLEL_OPERATION parallelOperation = rthwifNewParallelOperation();
-
+#else
+    RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
+#endif    
     /* estimate static accel size */
     BBox1f time_range(0,1);
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
-#if 1
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;    
 #else    
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
@@ -463,20 +472,35 @@ namespace embree
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
 #endif
 
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    args.deviceGPU = dynamic_cast<DeviceGPU*>(scene->device);
+#endif
+
     
     RTHWIF_ACCEL_SIZE sizeTotal;
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
     sizeTotal.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,sizeTotal);    
+#else    
     RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeTotal);
+#endif    
     if (err != RTHWIF_ERROR_NONE)
       throw_RTCError(RTC_ERROR_UNKNOWN,"BVH size estimate failed");
 
     /* allocate scratch buffer */
 
-#if 1 //defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    // === scratch buffer === 
     char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+    assert(scratchBuffer);
     args.scratchBuffer = scratchBuffer;
     args.scratchBufferBytes = sizeTotal.scratchBufferBytes;
+    
+    // === host device communication buffer ===
+    char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,sizeof(uint)*4,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::host); // FIXME
+    assert(host_device_tasks);
+    args.hostDeviceCommPtr = hostDeviceCommPtr;
 #else        
     std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
     args.scratchBuffer = scratchBuffer.data();
@@ -507,17 +531,33 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
 
-#if 1 //defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;        
 #else        
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
 #endif        
         args.numGeometries = numGeometries; 
-        args.accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
+        args.accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes; // why + headerBytes?
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
-        bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };
+        bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
+
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+        err = rthwifBuildAccelGPU(args,sizeTotal);
+
+        if (gpu_device->verbosity(2))
+        {
+          QBVH6* qbvh   = (QBVH6*)args.accelBuffer;
+          qbvh->print(std::cout,qbvh->root(),0,6);
+          BVHStatistics stats = qbvh->computeStatistics();      
+          stats.print(std::cout);
+          stats.print_raw(std::cout);
+          PRINT("VERBOSE STATS DONE");
+        }        
         
-        err = rthwifBuildAccel(args);
+#else
+        err = rthwifBuildAccel(args);        
+#endif        
+        
         if (args.parallelOperation) {
           assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
           uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
@@ -549,10 +589,11 @@ namespace embree
     for (size_t i=0; i<maxTimeSegments; i++)
       hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
 
-#if 1 //defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
-    sycl::free(geomDescr    ,gpu_device->getGPUContext());
-    sycl::free(geomDescrData,gpu_device->getGPUContext());    
-    sycl::free(scratchBuffer,gpu_device->getGPUContext());
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    sycl::free(geomDescr        ,gpu_device->getGPUContext());
+    sycl::free(geomDescrData    ,gpu_device->getGPUContext());    
+    sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
+    sycl::free(hostDeviceCommPtr,gpu_device->getGPUContext());
 #endif    
     return fullBounds;
   }

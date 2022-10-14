@@ -248,10 +248,10 @@ namespace embree
   {
     switch (geom->geometryType) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount;
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount;
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : return ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount;
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE: return 1;
-    default                            : return 0;
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE   : return 1;
+    default                              : return 0;
     };
   }
   
