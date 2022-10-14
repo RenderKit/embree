@@ -182,7 +182,7 @@ typedef struct RTHWIF_GEOMETRY_AABBS_FPTR_DESC // 24 bytes
   RTHWIF_GEOMETRY_AABBS_FPTR getBounds;       // function pointer to return bounds for a range of primitives
   void* geomUserPtr;                          // geometry user pointer passed to callback
   
-} RTHWIF_GEOMETRY_AABBS_DESC;
+} RTHWIF_GEOMETRY_AABBS_FPTR_DESC;
 
 
 /* Instance geometry descriptor. */

@@ -8,8 +8,6 @@
 #include "builder/qbvh6_builder_sah.h"
 #include "rthwif_internal.h"
 
-#include <level_zero/ze_api.h>
-
 namespace embree
 {
   using namespace embree::isa;
@@ -202,24 +200,19 @@ namespace embree
     g_arena.reset();
   }
   
-  RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device)
+  RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
   {
-    /* we only support GPUs */
-    if (!device.is_gpu()) return RTHWIF_FEATURES_NONE;
-    
-    /* check for Intel vendor */
-    const uint32_t vendor_id = device.get_info<sycl::info::device::vendor_id>();
-    if (vendor_id != 0x8086) return RTHWIF_FEATURES_NONE;
-
     /* check for supported device ID */
-    auto native_device = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(device);
     ze_device_properties_t device_props{ ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES };
-    ze_result_t status = zeDeviceGetProperties(native_device, &device_props);
+    ze_result_t status = zeDeviceGetProperties(hDevice, &device_props);
     if (status != ZE_RESULT_SUCCESS)
       return RTHWIF_FEATURES_NONE;
 
+    /* check for Intel vendor */
+    const uint32_t vendor_id = device_props.vendorId;
     const uint32_t device_id = device_props.deviceId;
-
+    if (vendor_id != 0x8086) return RTHWIF_FEATURES_NONE;
+    
     /* return supported features */
     uint32_t features_xe = RTHWIF_FEATURES_NONE;
     features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES;

@@ -81,7 +81,9 @@ namespace embree
       return true;
 
     /* check if GPU device is supported */
-    const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(sycl_device);
+    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
+    
+    const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(hDevice);
     return features != RTHWIF_FEATURES_NONE;
   }
 
