@@ -3,142 +3,121 @@
 
 #pragma once
 
-#include <cstdint>
-
-#if defined(__cplusplus)
-#  define RTHWIF_API_EXTERN_C extern "C"
-#else
-#  define RTHWIF_API_EXTERN_C
-#endif
-
-#if defined(_WIN32)
-#  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C __declspec(dllimport)
-#  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C __declspec(dllexport)
-#else
-#  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C
-#  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C __attribute__ ((visibility ("default")))
-#endif
-
-#if defined(RTHWIF_EXPORT_API)
-#  define RTHWIF_API RTHWIF_API_EXPORT
-#else
-#  define RTHWIF_API RTHWIF_API_IMPORT
-#endif
+#include <level_zero/ze_api.h>
 
 /* Required alignment of acceleration structure buffers. */
-#define RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT 128
+#define ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT 128
 
 /* Geometry flags supported (identical to DXR spec). */
-typedef enum RTHWIF_GEOMETRY_FLAGS : uint8_t
+typedef enum ze_raytracing_geometry_flags_t : uint8_t
 {
-  RTHWIF_GEOMETRY_FLAG_NONE = 0,
-  RTHWIF_GEOMETRY_FLAG_OPAQUE = 0x1,                           // Opaque geometries do not invoke an anyhit shader
-  RTHWIF_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION = 0x2    // Guarantees single anyhit shader invokation for primitives.
-} RTHWIF_GEOMETRY_FLAGS;
+  ZE_RAYTRACING_GEOMETRY_FLAG_NONE = 0,
+  ZE_RAYTRACING_GEOMETRY_FLAG_OPAQUE = 0x1,                           // Opaque geometries do not invoke an anyhit shader
+  ZE_RAYTRACING_GEOMETRY_FLAG_NO_DUPLICATE_ANYHIT_INVOCATION = 0x2    // Guarantees single anyhit shader invokation for primitives.
+} ze_raytracing_geometry_flags_t;
 
 
 /* A 3-component short vector type. */
-typedef struct RTHWIF_FLOAT3 {
+typedef struct ze_raytracing_float3_t {
   float x, y, z;
-} RTHWIF_FLOAT3;
+} ze_raytracing_float3_t;
 
 
 /* A 3x4 affine transformation with column vectors vx, vy, vz, and p
  * transforming a point (x,y,z) to x*vx + y*vy + z*vz + p. */
-typedef struct RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR {
+typedef struct ze_raytracing_transform_float3x4_column_major_t {
   float vx_x, vx_y, vx_z; // column 0
   float vy_x, vy_y, vy_z; // column 1
   float vz_x, vz_y, vz_z; // column 2
   float  p_x,  p_y,  p_z; // column 3
-} RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR;
+} ze_raytracing_transform_float3x4_column_major_t;
 
 
-/* Same as RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR, with ignored 4th
+/* Same as ze_raytracing_transform_float3x4_column_major_t, with ignored 4th
  * component of column vectors. */
-typedef struct RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR {
+typedef struct ze_raytracing_transform_float4x4_column_major_t {
   float vx_x, vx_y, vx_z, pad0; // column 0
   float vy_x, vy_y, vy_z, pad1; // column 1
   float vz_x, vz_y, vz_z, pad2; // column 2
   float  p_x,  p_y,  p_z, pad3; // column 3
-} RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR;
+} ze_raytracing_transform_float4x4_column_major_t;
 
 
-/* Same as RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR, but using row major
+/* Same as ze_raytracing_transform_float3x4_column_major_t, but using row major
  * layout. */
-typedef struct RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR {
+typedef struct ze_raytracing_transform_float3x4_row_major_t {
   float vx_x, vy_x, vz_x, p_x; // row 0
   float vx_y, vy_y, vz_y, p_y; // row 1
   float vx_z, vy_z, vz_z, p_z; // row 2
-} RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR;
+} ze_raytracing_transform_float3x4_row_major_t;
 
 
 /* An axis aligned bounding box with lower and upper bounds in each
  * dimension. */
-typedef struct RTHWIF_AABB
+typedef struct ze_raytracing_aabb_t
 {
-  RTHWIF_FLOAT3 lower; // lower bounds
-  RTHWIF_FLOAT3 upper; // upper bounds
-} RTHWIF_AABB;
+  ze_raytracing_float3_t lower; // lower bounds
+  ze_raytracing_float3_t upper; // upper bounds
+} ze_raytracing_aabb_t;
 
 
 /* A triangle represented using 3 vertex indices. */
-typedef struct RTHWIF_TRIANGLE_INDICES {
+typedef struct ze_raytracing_triangle_indices_t {
   uint32_t v0, v1, v2;      // 3 triangle indices pointing into vertex array
-} RTHWIF_TRIANGLE_INDICES;
+} ze_raytracing_triangle_indices_t;
 
 
 /* A quad (triangle pair) represented using 4 vertex indices. */
-typedef struct RTHWIF_QUAD_INDICES { 
+typedef struct ze_raytracing_quad_indices_t { 
   uint32_t v0, v1, v2, v3; // 4 quad indices pointing into vertex array
-} RTHWIF_QUAD_INDICES;
+} ze_raytracing_quad_indices_t;
 
 
 /* The types of geometries supported. */
-typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
+typedef enum ze_raytracing_geometry_type_t : uint8_t
 {
-  RTHWIF_GEOMETRY_TYPE_TRIANGLES = 0,   // triangle mesh geometry type
-  RTHWIF_GEOMETRY_TYPE_QUADS = 1,       // quad mesh geometry type
-  RTHWIF_GEOMETRY_TYPE_AABBS_FPTR = 2,  // procedural geometry with AABB bounds per primitive
-  RTHWIF_GEOMETRY_TYPE_INSTANCE = 3,    // instance geometry
-} RTHWIF_GEOMETRY_TYPE;
+  ZE_RAYTRACING_GEOMETRY_TYPE_TRIANGLES = 0,   // triangle mesh geometry type
+  ZE_RAYTRACING_GEOMETRY_TYPE_QUADS = 1,       // quad mesh geometry type
+  ZE_RAYTRACING_GEOMETRY_TYPE_AABBS_FPTR = 2,  // procedural geometry with AABB bounds per primitive
+  ZE_RAYTRACING_GEOMETRY_TYPE_INSTANCE = 3,    // instance geometry
+} ze_raytracing_geometry_type_t;
 
 /* The format of transformations supported. */
-typedef enum RTHWIF_TRANSFORM_FORMAT : uint8_t
+typedef enum ze_raytracing_transform_format_t : uint8_t
 {
-  RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR = 0,          // 3x4 affine transformation in column major format (see RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR layout)
-  RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR = 1,          // 4x4 affine transformation in column major format (see RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR layout)
-  RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR = 2,             // 3x4 affine transformation in row    major format (see RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR    layout)
-
-} RTHWIF_TRANSFORM_FORMAT;
+  ZE_RAYTRACING_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR = 0,    // 3x4 affine transformation in column major format (see ZE_RAYTRACING_TRANSFORM_FLOAT3X4_COLUMN_MAJOR layout)
+  ZE_RAYTRACING_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR = 1,    // 4x4 affine transformation in column major format (see ZE_RAYTRACING_TRANSFORM_FLOAT4X4_COLUMN_MAJOR layout)
+  ZE_RAYTRACING_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR = 2,       // 3x4 affine transformation in row    major format (see ZE_RAYTRACING_TRANSFORM_FLOAT3X4_ROW_MAJOR    layout)
+} ze_raytracing_transform_format_t;
 
 
 /* Instance flags supported (identical to DXR spec) */
-typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
+typedef enum ze_raytracing_instance_flags_t : uint8_t
 {
-  RTHWIF_INSTANCE_FLAG_NONE = 0,
-  RTHWIF_INSTANCE_FLAG_TRIANGLE_CULL_DISABLE = 0x1,
-  RTHWIF_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE = 0x2,
-  RTHWIF_INSTANCE_FLAG_FORCE_OPAQUE = 0x4,
-  RTHWIF_INSTANCE_FLAG_FORCE_NON_OPAQUE = 0x8
-} RTHWIF_INSTANCE_FLAGS;
+  ZE_RAYTRACING_INSTANCE_FLAG_NONE = 0,
+  ZE_RAYTRACING_INSTANCE_FLAG_TRIANGLE_CULL_DISABLE = 0x1,
+  ZE_RAYTRACING_INSTANCE_FLAG_TRIANGLE_FRONT_COUNTERCLOCKWISE = 0x2,
+  ZE_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE = 0x4,
+  ZE_RAYTRACING_INSTANCE_FLAG_FORCE_NON_OPAQUE = 0x8
+} ze_raytracing_instance_flags_t;
 
 
 /* Triangle mesh geometry descriptor. */
-typedef struct RTHWIF_GEOMETRY_TRIANGLES_DESC  // 40 bytes
+typedef struct ze_raytracing_geometry_triangles_desc_t  // 40 bytes
 {
-  RTHWIF_GEOMETRY_TYPE geometryType;       // must be RTHWIF_GEOMETRY_TYPE_TRIANGLES
-  RTHWIF_GEOMETRY_FLAGS geometryFlags;     // geometry flags for all primitives of this geometry
-  uint8_t geometryMask;                    // 8-bit geometry mask for ray masking
-  uint8_t reserved0;                       // must be zero
-  uint32_t reserved1;                      // must be zero
-  unsigned int triangleCount;              // number of triangles in triangleBuffer
-  unsigned int triangleStride;             // stride in bytes of triangles in triangleBuffer
-  unsigned int vertexCount;                // number of vertices in vertexBuffer
-  unsigned int vertexStride;               // stride in bytes of vertices in vertexBuffer
-  RTHWIF_TRIANGLE_INDICES* triangleBuffer; // pointer to array of triangle indices
-  RTHWIF_FLOAT3* vertexBuffer;             // pointer to array of triangle vertices
+  ze_raytracing_geometry_type_t geometryType;           // must be ze_raytracing_geometry_type_triangles_t
+  ze_raytracing_geometry_flags_t geometryFlags;         // geometry flags for all primitives of this geometry
+  uint8_t geometryMask;                                 // 8-bit geometry mask for ray masking
+  uint8_t reserved0;                                    // must be zero
+  uint32_t reserved1;                                   // must be zero
+  unsigned int triangleCount;                           // number of triangles in triangleBuffer
+  unsigned int triangleStride;                          // stride in bytes of triangles in triangleBuffer
+  unsigned int vertexCount;                             // number of vertices in vertexBuffer
+  unsigned int vertexStride;                            // stride in bytes of vertices in vertexBuffer
+  ze_raytracing_triangle_indices_t* triangleBuffer;     // pointer to array of triangle indices
+  ze_raytracing_float3_t* vertexBuffer;                 // pointer to array of triangle vertices
   
-} RTHWIF_RAYTRACING_GEOMETRY_TRIANGLES_DESC;
+} ze_raytracing_raytracing_geometry_triangles_desc_t;
 
 
 /* Quad mesh geometry descriptor. A quad with vertices v0,v1,v2,v3 is
@@ -146,115 +125,114 @@ typedef struct RTHWIF_GEOMETRY_TRIANGLES_DESC  // 40 bytes
  * barycentric coordinates u/v of the second triangle corrected by
  * u=1-u, and v=1-v to make a u/v parametrization of the entire
  * [0,1]x[0,1] uv space. */
-typedef struct RTHWIF_GEOMETRY_QUADS_DESC // 40 bytes
+typedef struct ze_raytracing_geometry_quads_desc_t // 40 bytes
 {
-  RTHWIF_GEOMETRY_TYPE geometryType;     // must be RTHWIF_GEOMETRY_TYPE_QUADS
-  RTHWIF_GEOMETRY_FLAGS geometryFlags;   // geometry flags for all primitives of this geometry
-  uint8_t geometryMask;                  // 8-bit geometry mask for ray masking
-  uint8_t reserved0;                     // must be zero
-  uint32_t reserved1;                    // must be zero
-  unsigned int quadCount;                // number of quads in quadBuffer
-  unsigned int quadStride;               // stride in bytes of quads in quadBuffer
-  unsigned int vertexCount;              // number of vertices in vertexBuffer
-  unsigned int vertexStride;             // stride in bytes of vertices in vertexBuffer
-  RTHWIF_QUAD_INDICES* quadBuffer;       // pointer to array of quad indices
-  RTHWIF_FLOAT3* vertexBuffer;           // pointer to array of quad vertices
+  ze_raytracing_geometry_type_t geometryType;      // must be ze_raytracing_geometry_type_quads_t
+  ze_raytracing_geometry_flags_t geometryFlags;    // geometry flags for all primitives of this geometry
+  uint8_t geometryMask;                            // 8-bit geometry mask for ray masking
+  uint8_t reserved0;                               // must be zero
+  uint32_t reserved1;                              // must be zero
+  unsigned int quadCount;                          // number of quads in quadBuffer
+  unsigned int quadStride;                         // stride in bytes of quads in quadBuffer
+  unsigned int vertexCount;                        // number of vertices in vertexBuffer
+  unsigned int vertexStride;                       // stride in bytes of vertices in vertexBuffer
+  ze_raytracing_quad_indices_t* quadBuffer;        // pointer to array of quad indices
+  ze_raytracing_float3_t* vertexBuffer;            // pointer to array of quad vertices
   
-} RTHWIF_RAYTRACING_GEOMETRY_QUADS_DESC;
+} ze_raytracing_raytracing_geometry_quads_desc_t;
 
 
 /* Function pointer type to return AABBs for a range of procedural primitives. */
-typedef void (*RTHWIF_GEOMETRY_AABBS_FPTR)(const uint32_t primID,        // first primitive to return bounds for
-                                           const uint32_t primIDCount,   // number of primitives to return bounds for
-                                           void* geomUserPtr,            // pointer provided through geometry descriptor
-                                           void* buildUserPtr,           // pointer provided through rthwifBuildAccel function
-                                           RTHWIF_AABB* boundsOut        // destination buffer to write AABB bounds to
+typedef void (*ze_raytracing_geometry_aabbs_fptr_t)(const uint32_t primID,            // first primitive to return bounds for
+                                                    const uint32_t primIDCount,       // number of primitives to return bounds for
+                                                    void* geomUserPtr,                // pointer provided through geometry descriptor
+                                                    void* buildUserPtr,               // pointer provided through zeRaytracingBuildAccel function
+                                                    ze_raytracing_aabb_t* pBoundsOut  // destination buffer to write AABB bounds to
   );
 
 /* Geometry with procedural primitives bound by AABBs. */
-typedef struct RTHWIF_GEOMETRY_AABBS_FPTR_DESC // 24 bytes
+typedef struct ze_raytracing_geometry_aabbs_fptr_desc_t // 24 bytes
 {
-  RTHWIF_GEOMETRY_TYPE geometryType;          // must be RTHWIF_GEOMETRY_TYPE_AABBS_FPTR
-  RTHWIF_GEOMETRY_FLAGS geometryFlags;        // geometry flags for all primitives of this geometry
-  uint8_t geometryMask;                       // 8-bit geometry mask for ray masking
-  uint8_t reserved;                           // must be zero
-  unsigned int primCount;                     // number of primitives in geometry
-  RTHWIF_GEOMETRY_AABBS_FPTR getBounds;       // function pointer to return bounds for a range of primitives
-  void* geomUserPtr;                          // geometry user pointer passed to callback
+  ze_raytracing_geometry_type_t geometryType;          // must be ze_raytracing_geometry_type_aabbs_fptr_t
+  ze_raytracing_geometry_flags_t geometryFlags;        // geometry flags for all primitives of this geometry
+  uint8_t geometryMask;                                // 8-bit geometry mask for ray masking
+  uint8_t reserved;                                    // must be zero
+  unsigned int primCount;                              // number of primitives in geometry
+  ze_raytracing_geometry_aabbs_fptr_t getBounds;       // function pointer to return bounds for a range of primitives
+  void* geomUserPtr;                                   // geometry user pointer passed to callback
   
-} RTHWIF_GEOMETRY_AABBS_FPTR_DESC;
+} ze_raytracing_geometry_aabbs_fptr_desc_t;
 
 
 /* Instance geometry descriptor. */
-typedef struct RTHWIF_GEOMETRY_INSTANCE_DESC // 32 bytes
+typedef struct ze_raytracing_geometry_instance_desc_t  // 32 bytes
 {
-  RTHWIF_GEOMETRY_TYPE geometryType;          // must be RTHWIF_GEOMETRY_TYPE_INSTANCE
-  RTHWIF_INSTANCE_FLAGS instanceFlags;        // flags for the instance (see RTHWIF_INSTANCE_FLAGS)
-  uint8_t geometryMask;                       // 8-bit geometry mask for ray masking
-  RTHWIF_TRANSFORM_FORMAT transformFormat;    // format of the specified transformation
-  unsigned int instanceUserID;                // a user specified identifier for the instance
-  float* transform;                           // local to world instance transformation in specified format
-  RTHWIF_AABB* bounds;                        // AABB of the instanced acceleration structure
-  void* accel;                                // pointer to acceleration structure to instantiate
+  ze_raytracing_geometry_type_t geometryType;          // must be ze_raytracing_geometry_type_instance_t
+  ze_raytracing_instance_flags_t instanceFlags;        // flags for the instance (see ze_raytracing_instance_flags_t)
+  uint8_t geometryMask;                                // 8-bit geometry mask for ray masking
+  ze_raytracing_transform_format_t transformFormat;    // format of the specified transformation
+  unsigned int instanceUserID;                         // a user specified identifier for the instance
+  float* transform;                                    // local to world instance transformation in specified format
+  ze_raytracing_aabb_t* bounds;                        // AABB of the instanced acceleration structure
+  void* accel;                                         // pointer to acceleration structure to instantiate
     
-} RTHWIF_GEOMETRY_INSTANCE_DESC;
+} ze_raytracing_geometry_instance_desc_t;
 
 
 /* A geometry descriptor. */
-typedef struct RTHWIF_GEOMETRY_DESC {
-  RTHWIF_GEOMETRY_TYPE geometryType;           // the first byte of a geometry descriptor is always its type and user can case to geometry descriptor structs above
-} RTHWIF_GEOMETRY_DESC;
+typedef struct ze_raytracing_geometry_desc_t {
+  ze_raytracing_geometry_type_t geometryType;           // the first byte of a geometry descriptor is always its type and user can case to geometry descriptor structs above
+} ze_raytracing_geometry_desc_t;
 
 
 /* Bitmask with features supported. */
-typedef enum RTHWIF_FEATURES {
-  RTHWIF_FEATURES_NONE = 0,
-  RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES  = 1 << 0,    // support for RTHWIF_GEOMETRY_TYPE_TRIANGLES geometries 
-  RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS      = 1 << 1,    // support for RTHWIF_GEOMETRY_TYPE_QUADS geometries
-  RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR = 1 << 2,    // support for RTHWIF_GEOMETRY_TYPE_AABBS_FPTR geometries
-  RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE   = 1 << 3,    // support for RTHWIF_GEOMETRY_TYPE_INSTANCE geometries
+typedef enum ze_raytracing_features_t {
+  ZE_RAYTRACING_FEATURES_NONE = 0,
+  ZE_RAYTRACING_FEATURES_GEOMETRY_TYPE_TRIANGLES  = 1 << 0,    // support for ZE_RAYTRACING_GEOMETRY_TYPE_TRIANGLES geometries 
+  ZE_RAYTRACING_FEATURES_GEOMETRY_TYPE_QUADS      = 1 << 1,    // support for ZE_RAYTRACING_GEOMETRY_TYPE_QUADS geometries
+  ZE_RAYTRACING_FEATURES_GEOMETRY_TYPE_AABBS_FPTR = 1 << 2,    // support for ZE_RAYTRACING_GEOMETRY_TYPE_AABBS_FPTR geometries
+  ZE_RAYTRACING_FEATURES_GEOMETRY_TYPE_INSTANCE   = 1 << 3,    // support for ZE_RAYTRACING_GEOMETRY_TYPE_INSTANCE geometries
   
-} RTHWIF_FEATURES;
+} ze_raytracing_features_t;
 
 
-/* Return errors from API functions. */
-typedef enum RTHWIF_ERROR
+/* Additional ze_result_t enum fields. */
+typedef enum ze_result_t
 {
-  RTHWIF_ERROR_NONE  = 0x0,  // no error occured
-  RTHWIF_ERROR_RETRY = 0x1,  // build ran out of memory, app should re-try with more memory
-  RTHWIF_ERROR_OTHER = 0x2,  // some unspecified error occured
-  RTHWIF_ERROR_PARALLEL_OPERATION = 0x3,  // task executing in parallel operation
+  ZE_RESULT_SUCCESS,
+  ZE_RESULT_RAYTRACING_RETRY_BUILD_ACCEL,  // build ran out of memory, app should re-try with more memory
+  ZE_RESULT_ERROR_UNKNOWN,
   
-} RTHWIF_ERROR;
+} ze_raytracing_result_t;
 
 
 /* Build quality hint for acceleration structure build. */
-typedef enum RTHWIF_BUILD_QUALITY
+typedef enum ze_raytracing_build_quality_t
 {
-  RTHWIF_BUILD_QUALITY_LOW    = 0,   // build low quality acceleration structure (fast)
-  RTHWIF_BUILD_QUALITY_MEDIUM = 1,   // build medium quality acceleration structure (slower)
-  RTHWIF_BUILD_QUALITY_HIGH   = 2,   // build high quality acceleration structure (slow)
+  ZE_RAYTRACING_BUILD_QUALITY_LOW    = 0,   // build low quality acceleration structure (fast)
+  ZE_RAYTRACING_BUILD_QUALITY_MEDIUM = 1,   // build medium quality acceleration structure (slower)
+  ZE_RAYTRACING_BUILD_QUALITY_HIGH   = 2,   // build high quality acceleration structure (slow)
   
-} RTHWIF_BUILD_QUALITY;
+} ze_raytracing_build_quality_t;
 
 
 /* Some additional hints for acceleration structure build. */
-typedef enum RTHWIF_BUILD_FLAGS
+typedef enum ze_raytracing_build_flags_t
 {
-  RTHWIF_BUILD_FLAG_NONE                    = 0,
-  RTHWIF_BUILD_FLAG_DYNAMIC                 = (1 << 0),  // optimize for dynamic content
-  RTHWIF_BUILD_FLAG_COMPACT                 = (1 << 1),  // build more compact acceleration structure
+  ZE_RAYTRACING_BUILD_FLAG_NONE    = 0,
+  ZE_RAYTRACING_BUILD_FLAG_DYNAMIC = (1 << 0),  // optimize for dynamic content
+  ZE_RAYTRACING_BUILD_FLAG_COMPACT = (1 << 1),  // build more compact acceleration structure
   
-} RTHWIF_BUILD_FLAGS;
+} ze_raytracing_build_flags_t;
 
 
 /* A handle of a parallel operation that can get joined with worker threads. */
-typedef void* RTHWIF_PARALLEL_OPERATION;
+typedef ze_raytracing_parallel_operation_opaque_t* ze_raytracing_parallel_operation_t;
 
 
-/* Structure returned by rthwifGetAccelSize that contains acceleration
+/* Structure returned by zeRaytracingGetAccelSize that contains acceleration
  * structure size estimates. */
-typedef struct RTHWIF_ACCEL_SIZE
+typedef struct ze_raytracing_accel_size_t
 {
   /* The size of this structure in bytes. */
   size_t structBytes;
@@ -262,7 +240,7 @@ typedef struct RTHWIF_ACCEL_SIZE
   /* The expected number of bytes required for the acceleration
    * structure. When using an acceleration structure buffer of that
    * size, the build is expected to succeed mostly, but it may fail
-   * with RTHWIF_ERROR_RETRY. */
+   * with ZE_RESULT_RAYTRACING_RETRY_BUILD_ACCEL. */
   size_t accelBufferExpectedBytes;
 
   /* The worst number of bytes required for the acceleration
@@ -274,11 +252,11 @@ typedef struct RTHWIF_ACCEL_SIZE
    * build. */
   size_t scratchBufferBytes;
   
-} RTHWIF_ACCEL_SIZE;
+} ze_raytracing_accel_size_t;
 
 
-/* Argument structure passed to rthwifBuildAccel function. */
-typedef struct RTHWIF_BUILD_ACCEL_ARGS
+/* Argument structure passed to zeRaytracingBuildAccel function. */
+typedef struct ze_raytracing_build_accel_args_t
 {
   /* The size of this structure in bytes */
   size_t structBytes;
@@ -287,14 +265,14 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
    * geometry descriptors themselves can be standard host memory
    * allocations. A pointer to a geometry descriptor can be null, in
    * which case the geometry is treated as empty. */
-  const RTHWIF_GEOMETRY_DESC** geometries;
+  const ze_raytracing_geometry_desc_t** geometries;
 
   /* Number of geometries in geometry descriptor array. */
   uint32_t numGeometries;
 
   /* Destination buffer for acceleration structure. This has to be a
    * shared memory allocation aligned to
-   * RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT bytes and using the ray
+   * ZE_RAYTRACING_ACCELERATION_STRUCTURE_ALIGNMENT bytes and using the ray
    * tracing allocation descriptor
    * (ze_raytracing_mem_alloc_ext_desc_t) in the zeMemAllocShared
    * call. */
@@ -313,11 +291,11 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   /* Number of allocated bytes of the scratch space buffer. */
   size_t scratchBufferBytes;
 
-  /* Build quality to use (see RTHWIF_BUILD_QUALITY) */
-  RTHWIF_BUILD_QUALITY quality;
+  /* Build quality to use (see ZE_RAYTRACING_BUILD_QUALITY) */
+  ze_raytracing_build_quality_t quality;
 
-  /* Some hints for acceleration structure build (see RTHWIF_BUILD_FLAGS) */
-  RTHWIF_BUILD_FLAGS flags;
+  /* Some hints for acceleration structure build (see ze_raytracing_build_flags_t) */
+  ze_raytracing_build_flags_t flags;
 
   /* When parallelOperation is NULL, the build is executed
    * sequentially on the current thread. If a parallelOperation is
@@ -326,61 +304,50 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
    * worker threads to perform the parallel build operation. Only a
    * single build operation can be attached to a parallel build
    * operation at a given time. */
-  RTHWIF_PARALLEL_OPERATION parallelOperation;
+  ze_raytracing_parallel_operation_t parallelOperation;
 
   /* A pointer passed to callbacks. */
   void* buildUserPtr;
   
   /* When the pointer is NULL no data is returned. When the build
-   * fails with RTHWIF_ERROR_RETRY, this returns new expected
+   * fails with ZE_RESULT_RAYTRACING_RETRY_BUILD_ACCEL, this returns new expected
    * acceleration structure bytes to be used for re-build. When build
    * succeeds this returns the number of bytes used in the
    * acceleration structure buffer. */
   size_t* accelBufferBytesOut;
   
   /* Destination address to write acceleration structure bounds to (can be NULL). */
-  RTHWIF_AABB* boundsOut;
+  ze_raytracing_aabb_t* boundsOut;
   
-} RTHWIF_BUILD_ACCEL_ARGS;
+} ze_raytracing_build_accel_args_t;
 
-/*
- * Initializes the library.
- */
-
-RTHWIF_API void rthwifInit();
-
-/*
- * Cleans up the library.
- */
-
-RTHWIF_API void rthwifExit();
 
 /*
  * Returns features supported by the implementation.
  */
 
-RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(uint32_t deviceID);
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetSupportedFeatures( ze_device_handle_t deviceID, ze_raytracing_features_t* pRaytracingFeatures );
 
 /*
- * The rthwifGetAccelSize function calculates the size of buffers
+ * The zeRaytracingGetAccelSize function calculates the size of buffers
  * required for the acceleration structure build.
 
    args: Specifies the build operation to estimate the buffer sizes
-         for. The rthwifGetAccelSize function may look at the number
+         for. The zeRaytracingGetAccelSize function may look at the number
          of geometries, the geometry descriptors (but not referenced
          data), the existence of an acceleration structure to link,
          the build quality, and build flags.
 
    sizeOut: A structure that contains the size information returned,
-         see RTHWIF_ACCEL_SIZE for more details.
+         see ZE_RAYTRACING_ACCEL_SIZE for more details.
 
 */
 
-RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, RTHWIF_ACCEL_SIZE& sizeOut);
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingGetAccelSize( const ze_raytracing_build_accel_args_r* args, ze_raytracing_accel_size_t* pAccelSizeOut );
 
 
 /*
- * The rthwifBuildAccel function builds an acceleration structure of
+ * The zeRaytracingBuildAccel function builds an acceleration structure of
  * the scene consisting of the specified geometry descriptors and
  * writes the acceleration structure to the provided destination
  * buffer. The build happens on the CPU and is synchronous, thus after
@@ -389,7 +356,7 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
  * It is the users responsibility to manage the acceleration structure
  * buffer allocation, deallocation, and potential prefetching to the
  * device memory. The required size of the accleration structure
- * buffer can be queried with the rthwifGetAccelSize function. The
+ * buffer can be queried with the zeRaytracingGetAccelSize function. The
  * acceleration structure buffer must be a shared USM allocation and
  * should be present on the host at build time. The referenced scene
  * data (index and vertex buffers) can be standard host allocations,
@@ -398,11 +365,11 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
  *
  * Before an accleration structure is build, the user has to query the
  * size of the acceleration structure and scratch space buffer to
- * allocate using the rthwifGetAccelSize. When using the worst case
+ * allocate using the zeRaytracingGetAccelSize. When using the worst case
  * size to allocate the acceleration structure buffer, then the
- * rthwifGetAccelSize function will never fail with an out of memory
+ * zeRaytracingGetAccelSize function will never fail with an out of memory
  * error. When using the expected size for the acceleration structure
- * buffer, then the build may fail with RTHWIF_ERROR_RETRY and
+ * buffer, then the build may fail with ZE_RESULT_RAYTRACING_RETRY_BUILD_ACCEL and
  * should then get re-tried with a larger amount of data. Using the
  * AccelBufferBytesExpected pointer, the build itself returns an
  * improved size estimate which the user can use to re-try the build.
@@ -419,7 +386,7 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSize(const RTHWIF_BUILD_ACCEL_ARGS& args, 
  * potentially catched by the user.
  */
 
-RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args);
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingBuildAccel( const ze_raytracing_build_accel_args_t* args );
 
 /*
  * Creates a new parallel operation that can get attached to a build
@@ -427,19 +394,19 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccel(const RTHWIF_BUILD_ACCEL_ARGS& args);
  * parallel operation at a given time.
  */
 
-RTHWIF_API RTHWIF_PARALLEL_OPERATION rthwifNewParallelOperation();
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationCreate( ze_raytracing_parallel_operation_t* phParallelOperation );
 
 /*
  * Destroys a parallel operation.
  */
 
-RTHWIF_API void rthwifDeleteParallelOperation( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationDestroy( ze_raytracing_parallel_operation_t hParallelOperation );
 
 /*
  * Returns the maximal number of threads that can join the parallel operation.
  */
 
-RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OPERATION  parallelOperation );
+ZE_APIEXPORT ze_result ZE_APICALL zeRaytracingParallelOperationGetMaxConcurrency( ze_raytracing_parallel_operation_t hParallelOperation, uint32_t* pMaxConcurency );
 
 
 /* 
@@ -448,4 +415,4 @@ RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OP
  * with the same error code for the build.
  */
 
-RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation );
+ZE_APIEXPORT ze_result_t ZE_APICALL zeRaytracingParallelOperationJoin( ze_raytracing_parallel_operation_t hParallelOperation );
