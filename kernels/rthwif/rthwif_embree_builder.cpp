@@ -428,7 +428,7 @@ namespace embree
 #endif
     
     size_t offset = 0;
-    for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXMEL slow if numGeometries is large
+    for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXME: slow if numGeometries is large
     {
       geomDescr[geomID] = nullptr;     
       Geometry* geom = scene->get(geomID);
@@ -522,8 +522,10 @@ namespace embree
         
       /* allocate BVH data */
       if (accel.size() < bytes) accel.resize(bytes);
+#if !defined(EMBREE_DPCPP_GPU_BVH_BUILDER)      
       memset(accel.data(),0,accel.size()); // FIXME: not required
-
+#endif
+      
       /* build BVH for each time segment */
       for (uint32_t i=0; i<maxTimeSegments; i++)
       {
@@ -531,6 +533,7 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
 
+        // why again?
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;        
 #else        
