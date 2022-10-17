@@ -150,7 +150,7 @@ namespace embree
   
 
   
-  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
+  RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
   {
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
@@ -175,7 +175,7 @@ namespace embree
     size_t worstCaseBytes = 3*64;
     size_t scratchBytes = numPrimitives * sizeof(LeafGenerationData) + sizeof(PLOCGlobals);
 
-    PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
+    //PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     
     // ============================================================================================================================================================================
     // ============================================================================================================================================================================
@@ -196,7 +196,7 @@ namespace embree
   }
   
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
+  RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   {
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
     BuildTimer timer;
@@ -429,7 +429,7 @@ namespace embree
     
     if (numInstances)
       createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,bvh2,numQuads + numProcedurals,create_primref_time,verbose2);
-
+    
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);    
     if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
@@ -661,7 +661,7 @@ namespace embree
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
     }	    
-
+    
     if (args.boundsOut) *args.boundsOut = *(RTHWIF_AABB*)host_device_tasks;
   
     timer.stop(BuildTimer::POST_PROCESS);

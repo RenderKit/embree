@@ -1481,8 +1481,10 @@ namespace embree
         { xfm->vy_x, xfm->vy_y, xfm->vy_z },
         { xfm->vz_x, xfm->vz_y, xfm->vz_z },
         { xfm-> p_x, xfm-> p_y, xfm-> p_z }
-      };
+      };      
     }
+    default:
+      PING;
     }
   }  
   
@@ -3380,7 +3382,7 @@ namespace embree
   // =============================================================================================================================================
 
 
-  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const triQuadMesh, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, const bool verbose)
+  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -3611,7 +3613,7 @@ namespace embree
     }
     
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID, geomID pairs for final phase --- */
-    const uint blocks = host_device_tasks[1];    
+    const uint blocks = host_device_tasks[1];
     if (blocks)
     {
       const uint wgSize = 256;
@@ -3669,7 +3671,6 @@ namespace embree
                                if (state->header == 0x7fffffff) // not processed yet
                                {
                                  isFatLeaf = !BVH2Ploc::isLeaf(index,numPrimitives) || forceFatLeaves;
-                                                                          
                                  uint numBlocks = 0;
                                  if (isFatLeaf) 
                                  {
@@ -3782,11 +3783,10 @@ namespace embree
                                const uint primID0 = leafGenData[globalID].primID & LEAF_TYPE_MASK_LOW;
                                const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
 
-                               const RTHWIF_GEOMETRY_DESC *const geometryDesc = triQuadMesh[geomID];
                                
                                if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_QUAD)
                                {
-                                 //TriQuadMesh &mesh = triQuadMesh[geomID];
+                                 const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
                                  valid = true;
                                  // ====================                           
                                  // === TriangleMesh ===
@@ -3828,16 +3828,16 @@ namespace embree
                                }
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_INSTANCE)
                                {
-                                 const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometryDesc;                                 
+                                 const uint instID = primID0;                                 
+                                 const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometries[instID];                                 
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
-                                 //const uint instID = primID0;
                                  const AffineSpace3fa local2world = getTransform(instance);
-                                 const uint64_t root = (uint64_t)instance->accel; // + 128; 
+                                 const uint64_t root = (uint64_t)instance->accel + 128; 
                                  *dest = InstancePrimitive(local2world,root,instance->instanceUserID,mask32_to_mask8(instance->geometryMask));
                                }
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_PROCEDURAL) 
                                {
-                                 const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometryDesc;                                 
+                                 const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometries[geomID];                                 
                                  const uint mask32 = mask32_to_mask8(geom->geometryMask);
                                  ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
