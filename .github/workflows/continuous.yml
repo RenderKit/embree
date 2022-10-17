@@ -3,7 +3,7 @@
 
 name: continuous
 
-on: [push, pull_request, workflow_dispatch]
+on: [push, workflow_dispatch]
 
 jobs:
 
