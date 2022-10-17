@@ -200,7 +200,8 @@ typedef enum ze_raytracing_features_t {
 typedef enum ze_result_t
 {
   ZE_RESULT_SUCCESS,
-  ZE_RESULT_RAYTRACING_RETRY_BUILD_ACCEL,  // build ran out of memory, app should re-try with more memory
+  ZE_RESULT_RAYTRACING_RETRY_BUILD_ACCEL,    // build ran out of memory, app should re-try with more memory
+  ZE_RESULT_RAYTRACING_OPERATION_DEFERRED,   // operation is deferred into ray tracing parallel operation
   ZE_RESULT_ERROR_UNKNOWN,
   
 } ze_raytracing_result_t;
