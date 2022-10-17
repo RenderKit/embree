@@ -4,6 +4,8 @@
 #include "rthwif_embree_builder_ploc.h"
 #include "builder/qbvh6.h"
 
+// FIXME: compute MAX_WGS at run-time
+
 #define SINGLE_WG_SWITCH_THRESHOLD 8*1024
 #define FAST_MC_THRESHOLD          1024*1024
 #define MAX_WGS                    64
@@ -12,7 +14,6 @@
 namespace embree
 {
   using namespace embree::isa;
-
 
   __forceinline uint estimateSizeInternalNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
   {
@@ -148,99 +149,31 @@ namespace embree
   }
   
 
+  
   RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
   {
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
-
-    // TODO: empty scene case, procedurals, invalid checks, estimate    
-    
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries = args.numGeometries;
 
     auto getSize = [&](uint32_t geomID) -> size_t {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-      if (geom == nullptr) return 0;
-      return getNumPrimitives(geom);
-    };
+                     const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                     if (geom == nullptr) return 0;
+                     return getNumPrimitives(geom);
+                   };
     
-    auto getType = [&](unsigned int geomID)
-    {
-      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-      assert(geom);
-      return geom->geometryType;
-    };
-
-    uint numTriangles   = 0;
-    uint numQuads       = 0;
-    uint numProcedurals = 0;
-    uint numInstances   = 0;
-    
-    for (size_t geomID=0; geomID<numGeometries; geomID++)
-    {
-      uint32_t numPrimitives = getSize(geomID);
-      if (numPrimitives == 0) continue;          
-      switch (getType(geomID)) {
-      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : numTriangles   += numPrimitives; break;
-      case RTHWIF_GEOMETRY_TYPE_QUADS      : numQuads       += numPrimitives; break;
-      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : numProcedurals += numPrimitives; break;
-      case RTHWIF_GEOMETRY_TYPE_INSTANCE   : numInstances   += numPrimitives; break;
-      default: assert(false); break;        
-      };
-    }
+    uint32_t numPrimitives = 0;
+    for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXME parallel
+      numPrimitives += getSize(geomID);
 
     // ============================================================================================================================================================================
     // ============================================================================================================================================================================
     // ============================================================================================================================================================================
-    DeviceGPU* deviceGPU = (DeviceGPU*)args.deviceGPU;
-
-    sycl::queue &gpu_queue = deviceGPU->getGPUQueue();
-    
-    const bool verbose2 = deviceGPU->verbosity(2);
-
-    PRINT4(numTriangles,numQuads,numProcedurals,numInstances);
-
-    double first_kernel_time0 = getSeconds();
-    
-    // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
-    {	  
-      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
-                                                    cgh.single_task([=]() {
-                                                                    });
-                                                  });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
-    }
-    double first_kernel_time1 = getSeconds();
-
-    if (unlikely(verbose2)) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;
-
-    uint *quadsPerGeometry  = (uint*)sycl::aligned_alloc(64,numGeometries*sizeof(uint),deviceGPU->getGPUDevice(),deviceGPU->getGPUContext(),sycl::usm::alloc::shared);
-
-    double device_coundQuadsTime = 0.0f;
-    countQuadsPerGeometry(gpu_queue,args.geometries,numGeometries,quadsPerGeometry,device_coundQuadsTime,verbose2);
-    
-
-    uint numActiveQuads = 0;
-    for (uint i=0;i<numGeometries;i++)
-      numActiveQuads += quadsPerGeometry[i];
-
-    PRINT( numActiveQuads );
-
-    sycl::free(quadsPerGeometry,deviceGPU->getGPUContext());
-
-    const uint numPrimitives = numActiveQuads + numInstances + numProcedurals;
-    PRINT( numPrimitives );
-
-
-    const uint header              = 128;
-    const uint node_size           = estimateSizeInternalNodes(numActiveQuads,numInstances,numProcedurals);
-    const uint leaf_size           = estimateSizeLeafNodes(numActiveQuads,numInstances,numProcedurals); 
-    const uint totalSize           = std::max(header + node_size + leaf_size, (uint)3*64 /*empty scene*/); 
-    
-    /* query memory requirements from builder */
-    size_t expectedBytes = totalSize;
-    size_t worstCaseBytes = totalSize;
-    size_t scratchBytes = std::max(numPrimitives,(uint)MAX_WGS) * sizeof(LeafGenerationData) + sizeof(PLOCGlobals);
+        
+    size_t expectedBytes = 3*64; // empty scene is default
+    size_t worstCaseBytes = 3*64;
+    size_t scratchBytes = numPrimitives * sizeof(LeafGenerationData) + sizeof(PLOCGlobals);
 
     PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     
@@ -254,9 +187,6 @@ namespace embree
     size.accelBufferExpectedBytes = expectedBytes;
     size.accelBufferWorstCaseBytes = worstCaseBytes;
     size.scratchBufferBytes = scratchBytes;
-    size.numQuads = numActiveQuads;
-    size.numInstances = numInstances;
-    size.numProcedurals = numProcedurals;
     size_t bytes_o = size_o.structBytes;
     memset(&size_o,0,bytes_o);
     memcpy(&size_o,&size,bytes_o);
@@ -266,34 +196,75 @@ namespace embree
   }
   
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, const RTHWIF_ACCEL_SIZE& sizeIn)
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   {
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
     BuildTimer timer;
     timer.reset();
+
+    // ================================    
+    // === GPU device/queue/context ===
+    // ================================
     
     DeviceGPU* deviceGPU = (DeviceGPU*)args.deviceGPU;
     sycl::queue &gpu_queue = deviceGPU->getGPUQueue();    
     const bool verbose2 = deviceGPU->verbosity(2);
-
-    /* -------------------------------- */    
-    /* --- estimate size of the BVH --- */
-    /* -------------------------------- */
+    const uint gpu_maxWorkGroupSize = deviceGPU->getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
+    const uint gpu_maxComputeUnits  = deviceGPU->getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
+    const uint gpu_maxLocalMemory   = deviceGPU->getGPUDevice().get_info<sycl::info::device::local_mem_size>();
+    uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
     
-    const uint header              = 128;
-    const uint node_size           = estimateSizeInternalNodes(sizeIn.numQuads,sizeIn.numInstances,sizeIn.numProcedurals);
-    const uint leaf_size           = estimateSizeLeafNodes(sizeIn.numQuads,sizeIn.numInstances,sizeIn.numProcedurals); 
-    const uint totalSize           = header + node_size + leaf_size; 
-    const uint node_data_start     = header;
-    const uint leaf_data_start     = header + node_size;
-    
-    const uint numGeometries  = args.numGeometries;
-    const uint numPrimitives  = sizeIn.numQuads + sizeIn.numInstances + sizeIn.numProcedurals;
-    const uint numInstances   = sizeIn.numInstances;
-    const uint numQuads       = sizeIn.numQuads;
-    const uint numProcedurals = sizeIn.numProcedurals;
+    if (unlikely(verbose2))
+    {
+      PRINT("PLOC++ GPU BVH BUILDER");            
+      PRINT( deviceGPU->getGPUDevice().get_info<sycl::info::device::global_mem_size>() );
+      PRINT(gpu_maxWorkGroupSize);
+      PRINT(gpu_maxComputeUnits);
+      PRINT(gpu_maxLocalMemory);
+    }
 
-    if (unlikely(numPrimitives == 0))
+    // =================================    
+    // === get primitive type counts ===
+    // =================================
+    
+    uint numQuads       = 0;
+    uint numProcedurals = 0;
+    uint numInstances   = 0;
+
+    const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
+    const uint numGeometries = args.numGeometries;
+
+    auto getSize = [&](uint32_t geomID) -> size_t {
+                     const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                     if (geom == nullptr) return 0;
+                     return getNumPrimitives(geom);
+                   };
+
+    auto getType = [&](unsigned int geomID) {
+                     const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                     assert(geom);
+                     return geom->geometryType;
+                   };
+    
+    for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXME slow
+    {
+      uint32_t numPrimitives = getSize(geomID);
+      if (numPrimitives == 0) continue;          
+      switch (getType(geomID)) {
+      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : numQuads       += numPrimitives; break;
+      case RTHWIF_GEOMETRY_TYPE_QUADS      : numQuads       += numPrimitives; break;
+      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : numProcedurals += numPrimitives; break;
+      case RTHWIF_GEOMETRY_TYPE_INSTANCE   : numInstances   += numPrimitives; break;
+      default: assert(false); break;        
+      };
+    }
+    const uint expected_numPrimitives = numQuads + numProcedurals + numInstances;    
+
+    // ===================    
+    // === empty scene ===
+    // ===================
+    
+    if (unlikely(expected_numPrimitives == 0))
     {
       QBVH6* qbvh  = (QBVH6*)args.accelBuffer;       
       BBox3f geometryBounds (empty);
@@ -308,73 +279,26 @@ namespace embree
       return RTHWIF_ERROR_NONE;
     }    
     
-    const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
-    const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
-
-    /* --------------------------- */    
-    /* --- set up all pointers --- */
-    /* --------------------------- */
+    // ============================================    
+    // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
+    // ============================================
     
-    uint *scratch = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
-    PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
-    uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
-    uint *prims_per_geom_prefix_sum = (uint*)scratch;
-    QBVH6* qbvh   = (QBVH6*)args.accelBuffer;
-    char *bvh_mem = (char*)qbvh + header;
-    char *const leaf_mem = (char*)qbvh + leaf_data_start;
-    BVH2Ploc *const bvh2 = (BVH2Ploc*)(leaf_mem);
-    typedef gpu::MortonCodePrimitive64Bit_2x MCPrim;
-    MCPrim *const mc0 = (MCPrim*)(bvh2 + numPrimitives);
-    MCPrim *const mc1 = mc0 + numPrimitives;     
-    MCPrim *const morton_codes[2] = { mc0, mc1 }; 
-    uint *const cluster_index     = (uint*) (bvh_mem + 0 * numPrimitives * sizeof(uint)); // * 2
-    uint *const bvh2_subtree_size = (uint*) (bvh_mem + 2 * numPrimitives * sizeof(uint)); // * 2        
-    uint *cluster_i[2] = { cluster_index + 0, cluster_index + numPrimitives };        
-    uint *const cluster_index_source = cluster_i[0];
-    uint *const   cluster_index_dest = cluster_i[1];
-    LeafGenerationData *leafGenData = (LeafGenerationData*)scratch;
-
-    const uint gpu_maxWorkGroupSize = deviceGPU->getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
-    const uint gpu_maxComputeUnits  = deviceGPU->getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
-    const uint gpu_maxLocalMemory   = deviceGPU->getGPUDevice().get_info<sycl::info::device::local_mem_size>();
-    
-    if (unlikely(verbose2))
     {
-      PRINT("PLOC++ GPU BVH BUILDER");            
-      PRINT( deviceGPU->getGPUDevice().get_info<sycl::info::device::global_mem_size>() );
-      PRINT(gpu_maxWorkGroupSize);
-      PRINT(gpu_maxComputeUnits);
-      PRINT(gpu_maxLocalMemory);
+      double first_kernel_time0 = getSeconds();          
+      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) { cgh.single_task([=]() {}); });
+      gpu::waitOnQueueAndCatchException(gpu_queue);
+      double first_kernel_time1 = getSeconds();
+      if (unlikely(verbose2)) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;      
     }
 
-    // ======================          
-    // ==== init globals ====
-    // ======================
-    {	  
-      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
-                                                    cgh.single_task([=]() {
-                                                                      globals->reset();
-                                                                      globals->numPrimitives              = numPrimitives;
-                                                                      globals->totalAllocatedMem          = totalSize;
-                                                                      globals->numOrgPrimitives           = numPrimitives;                                                                      
-                                                                      globals->node_mem_allocator_cur     = node_data_start/64;
-                                                                      globals->node_mem_allocator_start   = node_data_start/64;
-                                                                      globals->leaf_mem_allocator_cur     = leaf_data_start/64;
-                                                                      globals->leaf_mem_allocator_start   = leaf_data_start/64;
-                                                                      globals->bvh2_index_allocator       = numPrimitives; 
-                                                                      globals->numBuildRecords             = 0;
-                                                                    });
-                                                  });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
-      double dt = gpu::getDeviceExecutionTiming(queue_event);
-      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
-      
-      if (unlikely(verbose2))
-        std::cout << "Init globals " << dt << " ms" << std::endl;
-    }	    
-
-    double create_primref_time = 0.0f;
-
+    // =============================    
+    // === setup scratch pointer ===
+    // =============================
+    
+    PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
+    uint *const scratch = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
+    uint *prims_per_geom_prefix_sum = (uint*)scratch;
+        
     if (numQuads)
     {
       // =============================
@@ -403,24 +327,94 @@ namespace embree
     
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
-      const uint numActiveQuads = *host_device_tasks;
-    
-      if (numActiveQuads != numQuads) return RTHWIF_ERROR_OTHER;
-
-      // ===================================================          
-      // ==== merge triangles to quads, create primrefs ====
-      // ===================================================
-
-      timer.start(BuildTimer::PRE_PROCESS);        
-         
-      
-      createQuads_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);
-      
-      timer.stop(BuildTimer::PRE_PROCESS);
-      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);
-    
-      if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
+      numQuads = *host_device_tasks; // update with actual quads count
     }
+
+    if (unlikely(verbose2))
+      PRINT4(numQuads,numProcedurals,numInstances,expected_numPrimitives);
+
+    // ================================
+    // === estimate size of the BVH ===
+    // ================================
+    const uint numPrimitives       = numQuads + numInstances + numProcedurals;    
+    const uint header              = 128;
+    const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals);
+    const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals); 
+    const uint totalSize           = header + node_size + leaf_size; 
+    const uint node_data_start     = header;
+    const uint leaf_data_start     = header + node_size;
+    
+
+    // =================================================================
+    // === if allocated accel buffer is too small, return with error ===
+    // =================================================================
+    
+    if (args.accelBufferBytes < totalSize)
+    {
+      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = totalSize;
+      return RTHWIF_ERROR_RETRY;
+    }
+        
+    const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
+    const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
+
+    // ===========================
+    // === set up all pointers ===
+    // ===========================
+    
+    QBVH6* qbvh   = (QBVH6*)args.accelBuffer;
+    char *bvh_mem = (char*)qbvh + header;
+    char *const leaf_mem = (char*)qbvh + leaf_data_start;
+    BVH2Ploc *const bvh2 = (BVH2Ploc*)(leaf_mem);
+    typedef gpu::MortonCodePrimitive64Bit_2x MCPrim;
+    MCPrim *const mc0 = (MCPrim*)(bvh2 + numPrimitives);
+    MCPrim *const mc1 = mc0 + numPrimitives;     
+    MCPrim *const morton_codes[2] = { mc0, mc1 }; 
+    uint *const cluster_index     = (uint*) (bvh_mem + 0 * numPrimitives * sizeof(uint)); // * 2
+    uint *const bvh2_subtree_size = (uint*) (bvh_mem + 2 * numPrimitives * sizeof(uint)); // * 2        
+    uint *cluster_i[2] = { cluster_index + 0, cluster_index + numPrimitives };        
+    uint *const cluster_index_source = cluster_i[0];
+    uint *const   cluster_index_dest = cluster_i[1];
+    LeafGenerationData *leafGenData = (LeafGenerationData*)scratch;
+
+
+    // ======================          
+    // ==== init globals ====
+    // ======================
+    {
+      timer.start(BuildTimer::PRE_PROCESS);      
+      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+                                                    cgh.single_task([=]() {
+                                                                      globals->reset();
+                                                                      globals->numPrimitives              = numPrimitives;
+                                                                      globals->totalAllocatedMem          = totalSize;
+                                                                      globals->numOrgPrimitives           = numPrimitives;                                                                      
+                                                                      globals->node_mem_allocator_cur     = node_data_start/64;
+                                                                      globals->node_mem_allocator_start   = node_data_start/64;
+                                                                      globals->leaf_mem_allocator_cur     = leaf_data_start/64;
+                                                                      globals->leaf_mem_allocator_start   = leaf_data_start/64;
+                                                                      globals->bvh2_index_allocator       = numPrimitives; 
+                                                                      globals->numBuildRecords             = 0;
+                                                                    });
+                                                  });
+      gpu::waitOnQueueAndCatchException(gpu_queue);
+      double dt = gpu::getDeviceExecutionTiming(queue_event);
+      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
+      
+      if (unlikely(verbose2))
+        std::cout << "Init globals " << dt << " ms" << std::endl;
+    }	    
+    
+    double create_primref_time = 0.0f;
+
+    timer.start(BuildTimer::PRE_PROCESS);        
+    
+    // ===================================================          
+    // ==== merge triangles to quads, create primrefs ====
+    // ===================================================
+         
+    if (numQuads)
+      createQuads_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);      
 
     // ====================================          
     // ==== create procedural primrefs ====
@@ -435,6 +429,10 @@ namespace embree
     
     if (numInstances)
       createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,bvh2,numQuads + numProcedurals,create_primref_time,verbose2);
+
+    timer.stop(BuildTimer::PRE_PROCESS);
+    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);    
+    if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
     
     const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
 
@@ -688,11 +686,14 @@ namespace embree
       PRINT(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start);
       PRINT(100.0f * (float)(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start) / (leaf_size/64));      
       PRINT(globals->numLeaves);
-
     }
 
     if ((globals->node_mem_allocator_cur-globals->node_mem_allocator_start)*64 > node_size ||
-        (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)*64 > leaf_size) return RTHWIF_ERROR_RETRY; 
+        (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)*64 > leaf_size)
+    {
+      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = gpu::alignTo((size_t)(1.2f*totalSize),64);
+      return RTHWIF_ERROR_RETRY;
+    }
     
     if (deviceGPU) {
       HWAccel* hwaccel = (HWAccel*)args.accelBuffer;
@@ -703,7 +704,15 @@ namespace embree
 #endif    
     return RTHWIF_ERROR_NONE;    
   }
-  
+
+
+
+
+
+
+
+
+  // old code
   BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, void *dispatchGlobalsPtr)
   {
     const bool two_level = false;

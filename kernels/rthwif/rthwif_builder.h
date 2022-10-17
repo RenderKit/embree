@@ -274,12 +274,6 @@ typedef struct RTHWIF_ACCEL_SIZE
   /* The scratch buffer bytes required for the acceleration structure
    * build. */
   size_t scratchBufferBytes;
-
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
-  uint32_t numQuads;
-  uint32_t numInstances;
-  uint32_t numProcedurals;
-#endif  
   
 } RTHWIF_ACCEL_SIZE;
 

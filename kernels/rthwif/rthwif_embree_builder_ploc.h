@@ -3838,7 +3838,6 @@ namespace embree
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_PROCEDURAL) 
                                {
                                  const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometryDesc;                                 
-                                 const uint userGeomID = geomID;
                                  const uint mask32 = mask32_to_mask8(geom->geometryMask);
                                  ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);

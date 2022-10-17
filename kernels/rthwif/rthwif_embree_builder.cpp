@@ -303,7 +303,7 @@ namespace embree
 
   BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, void *dispatchGlobalsPtr);
   RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o);
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, const RTHWIF_ACCEL_SIZE& size_i);
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args);
 
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
@@ -442,10 +442,10 @@ namespace embree
       assert(offset <= geomDescrData.size());
     }
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
-    RTHWIF_PARALLEL_OPERATION parallelOperation = rthwifNewParallelOperation();
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;    
 #else
-    RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
+    RTHWIF_PARALLEL_OPERATION parallelOperation = rthwifNewParallelOperation();    
 #endif    
     /* estimate static accel size */
     BBox1f time_range(0,1);
@@ -519,7 +519,7 @@ namespace embree
       size.accelBufferExpectedBytes  = maxTimeSegments*sizeTotal.accelBufferExpectedBytes;
       size.accelBufferWorstCaseBytes = maxTimeSegments*sizeTotal.accelBufferWorstCaseBytes;
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
-        
+      
       /* allocate BVH data */
       if (accel.size() < bytes) accel.resize(bytes);
 #if !defined(EMBREE_DPCPP_GPU_BVH_BUILDER)      
@@ -535,7 +535,9 @@ namespace embree
 
         // why again?
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
-        args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;        
+        args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;
+        size_t new_accelBufferBytes = 0;
+        args.accelBufferBytesOut = &new_accelBufferBytes;
 #else        
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
 #endif        
@@ -545,9 +547,8 @@ namespace embree
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
 
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
-        err = rthwifBuildAccelGPU(args,sizeTotal);
-
-        if (gpu_device->verbosity(2))
+        err = rthwifBuildAccelGPU(args);
+        if (err == RTHWIF_ERROR_NONE && gpu_device->verbosity(2))
         {
           QBVH6* qbvh   = (QBVH6*)args.accelBuffer;
           qbvh->print(std::cout,qbvh->root(),0,6);
@@ -566,15 +567,22 @@ namespace embree
           uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
           parallel_for(maxThreads, [&](uint32_t) { err = rthwifJoinParallelOperation(parallelOperation); });
         }
-        
-        fullBounds.extend(*(BBox3f*) args.boundsOut);
+
+        if (err == RTHWIF_ERROR_NONE) // added if
+          fullBounds.extend(*(BBox3f*) args.boundsOut);
 
         if (err == RTHWIF_ERROR_RETRY)
         {
-          if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes)
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+          sizeTotal.accelBufferExpectedBytes  = new_accelBufferBytes;
+          sizeTotal.accelBufferWorstCaseBytes = new_accelBufferBytes;
+#else          
+          if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes) // why?
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
           sizeTotal.accelBufferExpectedBytes = std::min(sizeTotal.accelBufferWorstCaseBytes,(size_t(1.2*sizeTotal.accelBufferExpectedBytes)+127)&-128);
+#endif          
+          
           break;
         }
         
