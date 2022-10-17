@@ -235,12 +235,12 @@ namespace embree
     const uint header              = 128;
     const uint node_size           = estimateSizeInternalNodes(numActiveQuads,numInstances,numProcedurals);
     const uint leaf_size           = estimateSizeLeafNodes(numActiveQuads,numInstances,numProcedurals); 
-    const uint totalSize           = std::max(header + node_size + leaf_size,3*64 /*empty scene*/); 
+    const uint totalSize           = std::max(header + node_size + leaf_size, (uint)3*64 /*empty scene*/); 
     
     /* query memory requirements from builder */
     size_t expectedBytes = totalSize;
     size_t worstCaseBytes = totalSize;
-    size_t scratchBytes = std::max(numPrimitives,MAX_WGS) * sizeof(LeafGenerationData) + sizeof(PLOCGlobals);
+    size_t scratchBytes = std::max(numPrimitives,(uint)MAX_WGS) * sizeof(LeafGenerationData) + sizeof(PLOCGlobals);
 
     PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     
@@ -296,7 +296,7 @@ namespace embree
     if (unlikely(numPrimitives == 0))
     {
       QBVH6* qbvh  = (QBVH6*)args.accelBuffer;       
-      BBox3fa geometryBounds (empty);
+      BBox3f geometryBounds (empty);
       qbvh->bounds = geometryBounds;
       qbvh->numPrims       = 0;                                                                        
       qbvh->nodeDataStart  = 2;
@@ -304,7 +304,8 @@ namespace embree
       qbvh->leafDataStart  = 3;
       qbvh->leafDataCur    = 3;        
       new (qbvh->nodePtr(2)) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
-      return geometryBounds;
+      if (args.boundsOut) *args.boundsOut = *(RTHWIF_AABB*)&geometryBounds;
+      return RTHWIF_ERROR_NONE;
     }    
     
     const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
@@ -372,6 +373,8 @@ namespace embree
         std::cout << "Init globals " << dt << " ms" << std::endl;
     }	    
 
+    double create_primref_time = 0.0f;
+
     if (numQuads)
     {
       // =============================
@@ -409,8 +412,7 @@ namespace embree
       // ===================================================
 
       timer.start(BuildTimer::PRE_PROCESS);        
-    
-      double create_primref_time = 0.0f;
+         
       
       createQuads_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);
       
@@ -425,14 +427,14 @@ namespace embree
     // ====================================
     
     if (numProcedurals)
-      createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeoms,bvh2,numQuads,create_primref_time,verbose2);
+      createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,bvh2,numQuads,create_primref_time,verbose2);
 
     // ==================================          
     // ==== create instance primrefs ====
     // ==================================
     
     if (numInstances)
-      createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeoms,bvh2,numQuads + numProcedurals,create_primref_time,verbose2);
+      createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,bvh2,numQuads + numProcedurals,create_primref_time,verbose2);
     
     const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
 
