@@ -24,8 +24,11 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
         DPCPP_VERSION=$(cat .ci-env.yaml | grep DPCPP_VERSION_LINUX | sed 's/.*:\ //')
-        echo "Setup DPCPP ${DPCPP_VERSION}"
-        ./scripts/download_dpcpp.sh ${PUBLIC_GITHUB_TOKEN} ${DPCPP_VERSION} ${NAS_LINUX}/dpcpp_compiler
+        echo "Setup DPCPP ${DPCPP_VERSION} for Linux"
+        ./scripts/download_dpcpp.sh ${DPCPP_VERSION} ${NAS_LINUX}/dpcpp-compiler-linux LINUX ${PUBLIC_GITHUB_TOKEN}
+        DPCPP_VERSION=$(cat .ci-env.yaml | grep DPCPP_VERSION_WIN | sed 's/.*:\ //')
+        echo "Setup DPCPP ${DPCPP_VERSION} for Windows"
+        ./scripts/download_dpcpp.sh ${DPCPP_VERSION} ${NAS_LINUX}/dpcpp-compiler-win WIN ${PUBLIC_GITHUB_TOKEN}
 
   setup_gfx:
     secrets: inherit
@@ -35,9 +38,13 @@ jobs:
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
         GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_DEFAULT | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION}"
-        echo "./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} ${NAS_LINUX}/gfx-driver/"
-        ./scripts/download_gfx.sh ${ARTIFACTORY_TOKEN} ${GFX_VERSION} ${NAS_LINUX}/gfx-driver/
+        echo "Setup GFX ${GFX_VERSION} for Linux"
+        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
+        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
+        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_DEFAULT | sed 's/.*:\ //')
+        echo "Setup GFX ${GFX_VERSION} for Windows"
+        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
+        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
 
 
   ########################################
@@ -216,6 +223,7 @@ jobs:
   continuous-windows-DG2-AOT:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    needs: [setup_gfx, setup_dpcpp]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       cmd: |
@@ -226,6 +234,7 @@ jobs:
 #  continuous-windows-DG2-AOT-INT:
 #    secrets: inherit
 #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+#    needs: [setup_gfx, setup_dpcpp]
 #    with:
 #      runs-on: '[ "Windows", "NAS", "dg2" ]'
 #      cmd: |

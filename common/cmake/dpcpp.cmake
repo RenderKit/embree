@@ -38,7 +38,19 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")              # FIXME: debug information generation takes forever in SYCL
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
   
-  SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
+  IF (WIN32)
+    SET(SYCL_COMPILER_LIB_DIR "${SYCL_COMPILER_DIR}/../lib")
+    file(GLOB SYCL_LIB
+         RELATIVE ${SYCL_COMPILER_LIB_DIR}
+         ${SYCL_COMPILER_LIB_DIR}/sycl.lib
+         ${SYCL_COMPILER_LIB_DIR}/sycl[0-9].lib
+         ${SYCL_COMPILER_LIB_DIR}/sycl[0-9][0-9].lib)
+    GET_FILENAME_COMPONENT(SYCL_LIB_NAME ${SYCL_LIB} NAME_WE)
+  ELSE()
+    SET(SYCL_LIB_NAME "sycl")
+  ENDIF()
+
+  SET(CMAKE_LINK_FLAGS_SYCL "-l${SYCL_LIB_NAME} -fsycl")
   
   #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
   #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")

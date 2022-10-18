@@ -332,7 +332,7 @@ IF (EMBREE_ISA_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
 ENDIF()
 
 IF (EMBREE_SYCL_SUPPORT)
-  TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking embree_rthwif -lsycl -lze_loader PUBLIC embree_sycl)
+  TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking embree_rthwif -l${SYCL_LIB_NAME} -lze_loader PUBLIC embree_sycl)
 ELSE()
   TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)
 ENDIF()

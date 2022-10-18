@@ -1,31 +1,45 @@
 #!/usr/bin/env bash
 
-if [ -z $2 ]; then
-  echo "ERROR: usage $0 <GITHUB_TOKEN> version target-directory (github token is optional but without the api request rate limit can be exceeded quickly)"
+if [ -z $3 ]; then
+  echo "ERROR: usage $0 version target-directory platform <GITHUB_TOKEN>"
+  echo "    platform: either WIN or LINUX"
+  echo "    <GITHUB_TOKEN>: optional github access token. without the token api request rate limit can be exceeded quickly"
   exit 1
 fi
 
-if [ -z $3 ]; then
-  TOKEN=""
+if [ -z $4 ]; then
   DPCPP_VERSION=$1
   DST_DIR=$2
+  PLATFORM=$3
+  TOKEN=""
 else
-  TOKEN=$1
-  DPCPP_VERSION=$2
-  DST_DIR=$3
+  DPCPP_VERSION=$1
+  DST_DIR=$2
+  PLATFORM=$3
+  TOKEN=$4
 fi
 
 CUR_DIR=$(pwd)
+mkdir -p ${DST_DIR}
 cd ${DST_DIR}
 
-[ -d "${DPCPP_VERSION}/dpcpp_compiler" ] && { echo "DPCPP compiler ${DPCPP_VERSION} already downloaded"; exit 0; }
+if [ -d "${DPCPP_VERSION}" ]; then
+  echo "DPCPP compiler ${DPCPP_VERSION} already downloaded"
+  exit 0
+fi
+
+echo "Downloading DPCPP compiler with"
+echo "  DPCPP_VERSION: ${DPCPP_VERSION}"
+echo "  DST_DIR: ${DST_DIR}"
+echo "  PLATFORM: ${PLATFORM}"
+echo "  TOKEN: ${TOKEN}"
 
 GH_REPO="https://api.github.com/repos/intel/llvm"
 GH_TAGS="${GH_REPO}/releases/tags/${DPCPP_VERSION}"
 AUTH="-u ${TOKEN}:x-oauth-basic"
 
 # get asset tags.
-response=$(curl -s ${AUTH} ${GH_TAGS})
+response=$(curl ${AUTH} ${GH_TAGS})
 
 # check for errors wrong URL or API request limit exceeded are the most common
 error=$(echo $response | grep message)
@@ -35,24 +49,26 @@ if [ ! -z "${error}" ]; then
   exit 1
 fi
 
+ARCHIVE_NAME="dpcpp-compiler.tar.gz"
+if [ "$PLATFORM" = "WIN" ]; then
+  ARCHIVE_NAME="dpcpp-compiler-win.tar.gz"
+fi
+
 # get id of compiler archive
-eval $(echo "${response}" | grep -C3 "name.:.\+dpcpp-compiler.tar.gz" | grep -w id | tr : = | tr -cd '[[:alnum:]]=')
+eval $(echo "${response}" | grep -C3 "name.:.\+${ARCHIVE_NAME}" | grep -w id | tr : = | tr -cd '[[:alnum:]]=')
 [ "$id" ] || { echo "Error: Failed to get asset id, response: ${response}" | awk 'length($0)<100' >&2; exit 1; }
 
 # Download asset file.
-echo "Downloading dpcpp compiler to ${DST_DIR}" >&2
+echo "Downloading dpcpp compiler archive ${ARCHIVE_NAME} to ${DST_DIR}" >&2
 curl -LJO# ${AUTH} -H 'Accept: application/octet-stream' "$GH_REPO/releases/assets/$id"
 
 echo "Unpacking archive"
-tar -xzf dpcpp-compiler.tar.gz
-rm -rf dpcpp-compiler.tar.gz
+tar -xzf ${ARCHIVE_NAME}
+rm -rf ${ARCHIVE_NAME}
 mkdir -p ${DPCPP_VERSION}
-cp -r dpcpp_compiler ${DPCPP_VERSION}/
+cp -r dpcpp_compiler/* ${DPCPP_VERSION}
 rm -rf dpcpp_compiler
 
-cd ${DPCPP_VERSION}/dpcpp_compiler
-sed -i '/fpgavars/d' startup.sh \
-
-echo "dpcpp compiler available here ${DST_DIR}/${DPCPP_VERSION}/dpcpp_compiler"
+echo "dpcpp compiler available here ${DST_DIR}/${DPCPP_VERSION}"
 
 cd ${CUR_DIR}
