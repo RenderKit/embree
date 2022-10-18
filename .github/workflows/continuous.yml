@@ -385,15 +385,15 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-  continuous-windows-x64-RelWithDebInfo-ICX2022_0_0-ISPC1_16_1-AVX512-INT:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
-    with:
-      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-      cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2022.0.0 ispc:ispc1.16.1 isa:AVX512 tasking:INT threads:16 intensity:2
-        python scripts/test.py build
-        python scripts/test.py test
+#  continuous-windows-x64-RelWithDebInfo-ICX2022_0_0-ISPC1_16_1-AVX512-INT:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+#    with:
+#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
+#      cmd: |
+#        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2022.0.0 ispc:ispc1.16.1 isa:AVX512 tasking:INT threads:16 intensity:2
+#        python scripts/test.py build
+#        python scripts/test.py test
 
 
   ########################################
