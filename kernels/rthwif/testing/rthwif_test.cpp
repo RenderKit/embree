@@ -1123,7 +1123,6 @@ struct Scene
     
     // === host device communication buffer ===
     char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,sizeof(uint)*4,device,context,sycl::usm::alloc::host); // FIXME
-    assert(host_device_tasks);
     args.hostDeviceCommPtr = hostDeviceCommPtr;
 #else    
     std::vector<char> scratchBuffer(size.scratchBufferBytes);

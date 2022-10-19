@@ -177,7 +177,7 @@ RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF
         
   size_t expectedBytes = 3*64; // empty scene is default
   size_t worstCaseBytes = 3*64;
-  size_t scratchBytes = numPrimitives * sizeof(LeafGenerationData) + sizeof(PLOCGlobals);
+  size_t scratchBytes = std::max(numPrimitives * sizeof(LeafGenerationData) + sizeof(PLOCGlobals),sizeof(uint)*MAX_WGS);
 
   //PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     
@@ -432,7 +432,7 @@ RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // ==================================
     
   if (numInstances)
-    createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,bvh2,numQuads + numProcedurals,create_primref_time,verbose2);
+    createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,MAX_WGS,bvh2,numQuads + numProcedurals,create_primref_time,verbose2);
     
   timer.stop(BuildTimer::PRE_PROCESS);
   timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);    

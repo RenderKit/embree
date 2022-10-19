@@ -1016,35 +1016,151 @@ namespace embree
     }
   }  
   
-  // FIXME: COMPACTION
-  __forceinline void createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
+  __forceinline void createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGs, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
   {
-#if 0    
-    static const uint CREATE_INSTANCES_SEARCH_WG_SIZE  = 256;
-    const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,CREATE_INSTANCES_SEARCH_WG_SIZE),sycl::range<1>(CREATE_INSTANCES_SEARCH_WG_SIZE));
+#if 1
+    const uint numWGs = min((numGeoms+1024-1)/1024,(uint)MAX_WGs);
+    {
+      const sycl::nd_range<1> nd_range1(MAX_WGs,sycl::range<1>(MAX_WGs)); 
+      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+          cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                           {
+                             const uint globalID     = item.get_global_id(0);
+                             scratch_mem[globalID] = 0;
+                           });                                                         
+        });
+    }
+    
+    static const uint CREATE_INSTANCES_SUB_GROUP_WIDTH = 16;
+    static const uint CREATE_INSTANCES_WG_SIZE  = 1024;
+    const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,numWGs*CREATE_INSTANCES_WG_SIZE),sycl::range<1>(CREATE_INSTANCES_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);
+        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);                
+        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);
+        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _global_count_prefix_sum(cgh);
+        
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
                          {
-                           const uint instID = item.get_global_id(0);
-                           if (instID < numGeoms)
-                           {
-                             BVH2Ploc node;                                                          
-                             gpu::AABB3f bounds(float3(0.0f));
-                             if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
-                             {
-                               RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
+                           const uint groupID         = item.get_group(0);
+                           const uint localID         = item.get_local_id(0);
+                           const uint step_local      = item.get_local_range().size();
+                           const uint subgroupID      = get_sub_group_id();
+                           const uint subgroupLocalID = get_sub_group_local_id();
+                           const uint subgroupSize    = CREATE_INSTANCES_SUB_GROUP_WIDTH;
+                           const uint startID         = (groupID + 0)*numGeoms / numWGs;
+                           const uint endID           = (groupID + 1)*numGeoms / numWGs;
+                           const uint sizeID          = endID-startID;
+                           const uint aligned_sizeID  = gpu::alignTo(sizeID,CREATE_INSTANCES_WG_SIZE);
+                           
+                           uint &active_counter          = *_active_counter.get_pointer();
+                           uint &global_count_prefix_sum = *_global_count_prefix_sum.get_pointer();
+                           
+                           active_counter = 0;
+                           global_count_prefix_sum = 0;            
 
-                               const AffineSpace3fa local2world = getTransform(geom);
-                               const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
-                               const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
-                               const BBox3fa instance_bounds = xfmBounds(local2world,BBox3fa(lower,upper));                                                              
-                               bounds = gpu::AABB3f(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
-                                                    instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
+                           sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(active_counter);
+                           
+                           item.barrier(sycl::access::fence_space::local_space);
+
+                           
+                           for (uint ID = localID; ID < aligned_sizeID; ID += step_local)
+                           {
+                             if (ID < sizeID)
+                             {
+                               const uint instID = startID + ID;
+                               const uint count = (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE) ? 1 : 0;
+                               gpu::atomic_add_local(&active_counter,count);
+                             }
+                           }                             
+
+                           item.barrier(sycl::access::fence_space::local_space);
+
+                           const uint flag = (uint)1<<31;            
+                           const uint mask = ~flag;
+            
+                           if (localID == 0)
+                           {
+                             sycl::atomic_ref<uint,sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> scratch_mem_counter(scratch_mem[groupID]);
+                             scratch_mem_counter.store(active_counter | flag);              
+                           }
+            
+                           item.barrier(sycl::access::fence_space::global_and_local);
+
+                           // =======================================            
+                           // wait until earlier WGs finished as well
+                           // =======================================
+
+                           if (localID < groupID)
+                           {
+                             sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_state(scratch_mem[localID]);
+                             uint c = 0;
+                             while( ((c = global_state.load()) & flag) == 0 );
+                             if (c)
+                               gpu::atomic_add_local(&global_count_prefix_sum,(uint)c & mask);
+                           }
+            
+                           item.barrier(sycl::access::fence_space::local_space);
+
+                           uint total_offset = 0;                                                                                
+                           for (uint ID = localID; ID < aligned_sizeID; ID += step_local)
+                           {
+                             item.barrier(sycl::access::fence_space::local_space);
+
+                             uint count = 0;
+                             if (ID < sizeID)
+                             {
+                               const uint instID = startID + ID;                               
+                               count += (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE) ? 1 : 0;                             
+                             }
+
+                                                          
+                             const uint exclusive_scan = sub_group_exclusive_scan(count, std::plus<uint>());
+                             const uint reduction = sub_group_reduce(count, std::plus<uint>());
+                             counts[subgroupID] = reduction;
+                             
+                             item.barrier(sycl::access::fence_space::local_space);
+
+                             /* -- prefix sum over reduced sub group counts -- */
+        
+                             uint total_reduction = 0;
+                             for (uint j=subgroupLocalID;j<CREATE_INSTANCES_WG_SIZE/subgroupSize;j+=subgroupSize)
+                             {
+                               const uint subgroup_counts = counts[j];
+                               const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
+                               const uint reduction = sub_group_broadcast(subgroup_counts,subgroupSize-1) + sub_group_broadcast(sums_exclusive_scan,subgroupSize-1);
+                               counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
+                               total_reduction += reduction;
+                             }
+
+                             item.barrier(sycl::access::fence_space::local_space);
+
+                             const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
+                             const uint p_sum = global_count_prefix_sum + total_offset + sums_prefix_sum + exclusive_scan;
+                             total_offset += total_reduction;
+                             
+                             if (ID < sizeID)
+                             {
+                               const uint instID = startID + ID;
+                               if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                               {
+                                 BVH2Ploc node;                                                                                           
+                                 RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
+
+                                 const AffineSpace3fa local2world = getTransform(geom);
+                                 const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
+                                 const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
+                                 const BBox3fa instance_bounds = xfmBounds(local2world,BBox3fa(lower,upper));                                                              
+                                 const gpu::AABB3f bounds = gpu::AABB3f(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
+                                                                        instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
+                                 
+                                 node.initLeaf(0,instID,bounds);                               
+                                 node.store(&bvh2[prim_type_offset + p_sum]);                                                                
+                               }
                                
                              }
-                             node.initLeaf(0,instID,bounds);                               
-                             node.store(&bvh2[prim_type_offset + instID]);
-                           }
+                             
+                           }                                                      
                          });
 		  
       });
@@ -1052,6 +1168,7 @@ namespace embree
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("write out instance bounds", (float)dt);
+
 #else
     uint ID = 0;
     for (uint instID=0;instID<numGeoms;instID++)
@@ -2055,119 +2172,6 @@ namespace embree
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("parallel WG build ",(float)dt);    
-  }
-
-  __forceinline void singleWGTopLevelBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, gpu::Range *const global_ranges, const uint numRanges, const uint SEARCH_RADIUS_TOP_LEVEL, double &iteration_time, const bool verbose)
-  {
-    static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16;
-    static const uint SINGLE_WG_SIZE = 1024;
-    uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
-    
-    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        const sycl::nd_range<1> nd_range(SINGLE_WG_SIZE,sycl::range<1>(SINGLE_WG_SIZE));
-
-        /* local variables */
-        sycl::accessor< gpu::AABB3f, 1, sycl_read_write, sycl_local> cached_bounds  (sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);        
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);
-                                             
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(SINGLE_WG_SUB_GROUP_WIDTH) {
-            const uint localID        = item.get_local_id(0);
-            const uint localSize      = item.get_local_range().size();                                                     
-            uint &active_counter = *_active_counter.get_pointer();
-
-            uint items = 0;
-            for (uint r=0;r<numRanges;r++)
-            {
-              const uint startID = global_ranges[r].start;
-              const uint size    = global_ranges[r].size();
-                                                       
-              /* copy from scratch mem */
-              for (uint t=localID;t<size;t+=localSize)
-                cluster_index_source[items + t] = cluster_index_dest[startID + t];
-              items += size;
-                                                       
-            }
-            
-            item.barrier(sycl::access::fence_space::local_space);
-              
-            wgBuild(item, bvh2_index_allocator, 0, items, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, cached_bounds.get_pointer(), cached_neighbor.get_pointer(), cached_clusterID.get_pointer(), counts.get_pointer(), counts_prefix_sum.get_pointer(), active_counter, 1, SEARCH_RADIUS_TOP_LEVEL, SINGLE_WG_SIZE);
-
-            if (localID == 0) globals->rootIndex = globals->bvh2_index_allocator-1;
-          });		  
-      });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-    double dt = gpu::getDeviceExecutionTiming(queue_event);      
-    iteration_time += dt;
-    if (unlikely(verbose)) PRINT2("single WG top level build ",(float)dt);    
-  }
-
-
-  
-  
-  template<typename type>
-    __forceinline void extractRanges(sycl::queue &gpu_queue, uint *const numBuildRecords, const type *const mc0, gpu::Range *const global_ranges, const uint numPrimitives, const uint RANGE_THRESHOLD, double &iteration_time, const bool verbose)
-  {
-    static const uint EXTRACT_WG_SIZE = 256;
-    static const uint MAX_RANGES = 1024;
-    
-    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        const sycl::nd_range<1> nd_range(EXTRACT_WG_SIZE,sycl::range<1>(EXTRACT_WG_SIZE));
-
-        /* local variables */
-        sycl::accessor< gpu::Range, 1, sycl_read_write, sycl_local> ranges  (sycl::range<1>(MAX_RANGES),cgh);
-        sycl::accessor< uint     ,  0, sycl_read_write, sycl_local> _numRanges(cgh);
-                                             
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16) {
-            uint &num_ranges      = *_numRanges.get_pointer();
-
-            const uint localID        = item.get_local_id(0);
-            const uint localSize      = item.get_local_range().size();
-                                                     
-            num_ranges = 1;
-            ranges[0] = gpu::Range(0,numPrimitives);
-
-            uint iteration = 0;
-            while(iteration < 32)
-            {
-              const uint current_num_ranges = num_ranges;
-                                                       
-              item.barrier(sycl::access::fence_space::local_space);
-                                                       
-              for (uint i=localID;i<current_num_ranges;i+=localSize)
-                if (ranges[i].size() > RANGE_THRESHOLD)
-                {
-                  gpu::Range left,right;
-                  splitRange(ranges[i],mc0,left,right);
-                  if (left.size() > SEARCH_RADIUS && right.size() > SEARCH_RADIUS)
-                  {
-                    sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(num_ranges);
-                    const uint new_index = counter.fetch_add(1);
-                    ranges[i] = left;
-                    ranges[new_index] = right;
-                  }
-                }
-                                                     
-              item.barrier(sycl::access::fence_space::local_space);
-              iteration++;
-              if (num_ranges == current_num_ranges) break;
-            }
-
-            for (uint i=localID;i<num_ranges;i+=localSize)
-              global_ranges[i] = ranges[i];
-
-            if (localID == 0)
-              *numBuildRecords = num_ranges;
-          });		  
-      });
-            
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-    double dt = gpu::getDeviceExecutionTiming(queue_event);      
-    iteration_time += dt;
-    if (unlikely(verbose)) PRINT2("extract ranges ",(float)dt);
   }
 
   // ===================================================================================================================================================================================
