@@ -1042,12 +1042,21 @@ struct Scene
       std::swap(geometries[g],geometries[k]);
     }
   }
-
+  
   void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode)
   {
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    const size_t geomDescrBytes = sizeof(GEOMETRY_DESC)*size();
+    GEOMETRY_DESC *desc = (GEOMETRY_DESC*)sycl::aligned_alloc(64,geomDescrBytes,device,context,sycl::usm::alloc::shared);
+    assert(desc);        
+    RTHWIF_GEOMETRY_DESC **geom = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,size()*sizeof(const RTHWIF_GEOMETRY_DESC*),device,context,sycl::usm::alloc::shared);
+    assert(geom);
+#else    
     /* fill geometry descriptor buffer */
     std::vector<GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
+#endif
+    
     for (size_t geomID=0; geomID<size(); geomID++)
     {
       const std::shared_ptr<Geometry>& g = geometries[geomID];
@@ -1060,17 +1069,23 @@ struct Scene
       
       g->buildAccel(device,context,buildMode);
       g->getDesc(&desc[geomID]);
-      geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
+      geom[geomID] = (RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
 
+    const uint geom_size = size();
+    
     /* estimate accel size */
     size_t accelBufferBytesOut = 0;
     RTHWIF_AABB bounds;
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom;    
+#else    
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
-    args.numGeometries = geom.size();
+#endif    
+    args.numGeometries = size();
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
@@ -1087,7 +1102,11 @@ struct Scene
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
     size.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
+//#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+//    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,size);
+//#else    
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
+//#endif    
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
 
@@ -1095,13 +1114,32 @@ struct Scene
       throw std::runtime_error("expected larger than worst case");
 
     /* allocate scratch buffer */
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+     // === scratch buffer === 
+    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,size.scratchBufferBytes,device,context,sycl::usm::alloc::shared);
+    assert(scratchBuffer);
+    args.scratchBuffer = scratchBuffer;
+    args.scratchBufferBytes = size.scratchBufferBytes;
+    
+    // === host device communication buffer ===
+    char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,sizeof(uint)*4,device,context,sycl::usm::alloc::host); // FIXME
+    assert(host_device_tasks);
+    args.hostDeviceCommPtr = hostDeviceCommPtr;
+#else    
     std::vector<char> scratchBuffer(size.scratchBufferBytes);
     args.scratchBuffer = scratchBuffer.data();
     args.scratchBufferBytes = scratchBuffer.size();
+#endif
 
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    size_t new_accelBufferBytes = 0;
+    args.accelBufferBytesOut = &new_accelBufferBytes;
+#endif    
+    
     accel = nullptr;
     size_t accelBytes = 0;
 
+    
     /* build with different modes */
     switch (buildMode)
     {
@@ -1112,9 +1150,10 @@ struct Scene
       memset(accel,0,accelBytes);
 
       /* build accel */
-      args.numGeometries = geom.size();
+      args.numGeometries = geom_size; 
       args.accelBuffer = accel;
       args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+      
       err = rthwifBuildAccel(args);
       
       if (err != RTHWIF_ERROR_NONE)
@@ -1135,7 +1174,7 @@ struct Scene
         memset(accel,0,accelBytes);
         
         /* build accel */
-        args.numGeometries = geom.size();
+        args.numGeometries = geom_size; // geom
         args.accelBuffer = accel;
         args.accelBufferBytes = accelBytes;
         err = rthwifBuildAccel(args);
@@ -1161,6 +1200,14 @@ struct Scene
                                 [](char c) { return c == 0; } );
     if (!is_zero)
       throw std::runtime_error("build did return wrong acceleration structure size");
+
+#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    sycl::free(geom    ,context);
+    sycl::free(desc   ,context);    
+    sycl::free(scratchBuffer,context);
+    sycl::free(hostDeviceCommPtr,context);
+#endif          
+    
   }
   
   void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map)

@@ -301,8 +301,6 @@ namespace embree
     }
   }
 
-  BBox3f rthwifBuildPloc(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, void *dispatchGlobalsPtr);
-
 #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)      
   RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o);
   RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args);
@@ -311,28 +309,6 @@ namespace embree
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
-    
-#if 0 //defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
-    PING;
-    if (gpu_build)
-    {
-      BBox3f bounds = rthwifBuildPloc(scene,quality_flags,accel,gpu_device->dispatchGlobalsPtr);
-      if (gpu_device->verbosity(2))
-      {
-        QBVH6* qbvh   = (QBVH6*)accel.data();
-        qbvh->print(std::cout,qbvh->root(),0,6);
-        BVHStatistics stats = qbvh->computeStatistics();      
-        stats.print(std::cout);
-        stats.print_raw(std::cout);
-        PRINT("VERBOSE STATS DONE");
-      }
-      EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
-      hwaccel->numTimeSegments = 1;
-      for (size_t i=0; i<1; i++)
-        hwaccel->AccelTable[0] = (char*)hwaccel;      
-      return bounds;
-    }
-#endif
     
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
