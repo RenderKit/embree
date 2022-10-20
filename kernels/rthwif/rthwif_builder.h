@@ -347,8 +347,10 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
 #endif
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-  void *deviceGPU;
+  void *sycl_queue;
+  void *sycl_device;
   void *hostDeviceCommPtr;
+  bool verbose;
 #endif
   
 } RTHWIF_BUILD_ACCEL_ARGS;

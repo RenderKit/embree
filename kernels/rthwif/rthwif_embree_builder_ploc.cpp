@@ -210,18 +210,18 @@ RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // === GPU device/queue/context ===
   // ================================
     
-  DeviceGPU* deviceGPU = (DeviceGPU*)args.deviceGPU;
-  sycl::queue &gpu_queue = deviceGPU->getGPUQueue();    
-  const bool verbose2 = deviceGPU->verbosity(2);
-  const uint gpu_maxWorkGroupSize = deviceGPU->getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
-  const uint gpu_maxComputeUnits  = deviceGPU->getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
-  const uint gpu_maxLocalMemory   = deviceGPU->getGPUDevice().get_info<sycl::info::device::local_mem_size>();
+  sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
+  sycl::device &gpu_device = *(sycl::device*)args.sycl_device;  
+  const bool verbose2 = args.verbose;
+  const uint gpu_maxWorkGroupSize = gpu_device.get_info<sycl::info::device::max_work_group_size>();
+  const uint gpu_maxComputeUnits  = gpu_device.get_info<sycl::info::device::max_compute_units>();    
+  const uint gpu_maxLocalMemory   = gpu_device.get_info<sycl::info::device::local_mem_size>();
   uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
     
   if (unlikely(verbose2))
   {
     PRINT("PLOC++ GPU BVH BUILDER");            
-    PRINT( deviceGPU->getGPUDevice().get_info<sycl::info::device::global_mem_size>() );
+    PRINT( gpu_device.get_info<sycl::info::device::global_mem_size>() );
     PRINT(gpu_maxWorkGroupSize);
     PRINT(gpu_maxComputeUnits);
     PRINT(gpu_maxLocalMemory);
@@ -699,12 +699,11 @@ RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     return RTHWIF_ERROR_RETRY;
   }
     
-  if (deviceGPU) {
-    HWAccel* hwaccel = (HWAccel*)args.accelBuffer;
-#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)      
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+    HWAccel* hwaccel = (HWAccel*)args.accelBuffer;  
     hwaccel->dispatchGlobalsPtr = (uint64_t)args.dispatchGlobalsPtr;
 #endif      
-  }
+
 #endif    
   return RTHWIF_ERROR_NONE;    
 }
