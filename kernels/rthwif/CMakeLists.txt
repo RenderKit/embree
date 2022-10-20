@@ -15,17 +15,13 @@ SET(BUILD_SHARED_LIBS OFF)
 
 INCLUDE(FetchContent)
 
+SET(FETCHCONTENT_QUIET OFF)
+
 FetchContent_Declare(
   tbb_static
   URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0.zip
 )
-
-FetchContent_GetProperties(tbb_static)
-
-IF (NOT tbb_static_POPULATED)
-  FetchContent_Populate(tbb_static)
-  add_subdirectory(${tbb_static_SOURCE_DIR} ${tbb_static_BINARY_DIR})
-ENDIF()
+FetchContent_MakeAvailable(tbb_static)
 
 ADD_DEFINITIONS(-DTASKING_TBB)
 

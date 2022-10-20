@@ -20,7 +20,7 @@
 #include "acceln.h"
 #include "geometry.h"
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 #include "../rthwif/rthwif_embree_builder.h"
 #endif
 
@@ -291,7 +291,7 @@ namespace embree
     SpinLock geometriesMutex;
     bool is_build;
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
   public:
     BBox3f hwaccel_bounds = empty;
     AccelBuffer hwaccel;

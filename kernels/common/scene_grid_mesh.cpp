@@ -141,7 +141,7 @@ namespace embree
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
     
     /* build quadID_to_primID_xy mapping when hardware ray tracing is supported */
     if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))

@@ -13,7 +13,7 @@
 #include "rthwif_builder.h"
 
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 
 #define SEARCH_RADIUS_SHIFT       4
 #define SEARCH_RADIUS             (1<<SEARCH_RADIUS_SHIFT)

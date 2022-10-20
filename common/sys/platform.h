@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <functional>
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 
 // If we use the internal clang frontend of the dpc++ compiler directly __INTEL_LLVM_COMPILER is not set.
 // I think doing this is fine because normal clang can not compile dpcpp/sycl code anyway.
@@ -523,7 +523,7 @@ namespace embree
 
 #endif
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 
   /* printing out sycle vector types */
   __forceinline embree_ostream operator<<(embree_ostream out, const sycl::float4& v) {

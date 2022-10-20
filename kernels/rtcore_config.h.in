@@ -3,8 +3,8 @@
 
 #pragma once
 
-#if !defined(EMBREE_DPCPP_SUPPORT)
-#cmakedefine EMBREE_DPCPP_SUPPORT
+#if !defined(EMBREE_SYCL_SUPPORT)
+#cmakedefine EMBREE_SYCL_SUPPORT
 #endif
 
 #define RTC_VERSION_MAJOR @EMBREE_VERSION_MAJOR@

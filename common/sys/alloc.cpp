@@ -14,7 +14,7 @@ namespace embree
 {
   size_t total_allocations = 0;
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
   
   __thread sycl::context* tls_context_tutorial = nullptr;
   __thread sycl::device* tls_device_tutorial = nullptr;
@@ -83,7 +83,7 @@ namespace embree
       _mm_free(ptr);
   }
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
   
   void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, sycl::queue* queue, size_t size, size_t align, EmbreeUSMMode mode)
   {
@@ -136,7 +136,7 @@ namespace embree
 
   void* alignedUSMMalloc(size_t size, size_t align, EmbreeUSMMode mode)
   {
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
     if (tls_context_embree || tls_context_tutorial)
       return alignedSYCLMalloc(size,align,mode);
     else
@@ -146,7 +146,7 @@ namespace embree
 
   void alignedUSMFree(void* ptr)
   {
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
     if (tls_context_embree || tls_context_tutorial)
       return alignedSYCLFree(ptr);
     else

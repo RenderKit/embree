@@ -1,15 +1,8 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include "../common/default.h"
-#include "../common/device.h"
-#include "../common/scene.h"
-#include "../common/context.h"
-#include "../../include/embree4/rtcore_ray.h"
-
 #include "rthwif_production.h"
 #include "rthwif_internal.h"
-using namespace embree;
 
 #define sizeof_QBVH6_InternalNode6 64
 #define QBVH6_rootNodeOffset 128
@@ -32,7 +25,7 @@ SYCL_EXTERNAL intel_ray_query_t intel_ray_query_init(intel_ray_desc_t ray, intel
   
   intel_raytracing_acceleration_structure_t* accel_i = sycl::global_ptr<intel_raytracing_acceleration_structure_t>(_accel_i).get();
   HWAccel* accel = (HWAccel*)accel_i;
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   rtglobals_t dispatchGlobalsPtr = (rtglobals_t) accel->dispatchGlobalsPtr;
 #else
   rtglobals_t dispatchGlobalsPtr = (rtglobals_t) intel_get_implicit_dispatch_globals();
@@ -118,7 +111,7 @@ SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( intel_ray_query_t* quer
   }
 }
 
-SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( intel_ray_query_t* query, float override_hit_distance, float2 override_uv )
+SYCL_EXTERNAL void intel_ray_query_commit_potential_hit( intel_ray_query_t* query, float override_hit_distance, sycl::float2 override_uv )
 {
   //struct RTStack* rtStack = (struct RTStack*) query->opaque2;  
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
@@ -167,8 +160,8 @@ SYCL_EXTERNAL float intel_get_hit_distance( intel_ray_query_t* query, intel_hit_
   return query->hit(hit_type).t;
 }
 
-SYCL_EXTERNAL float2 intel_get_hit_barycentrics( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
-  return float2(query->hit(hit_type).u, query->hit(hit_type).v);
+SYCL_EXTERNAL sycl::float2 intel_get_hit_barycentrics( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
+  return sycl::float2(query->hit(hit_type).u, query->hit(hit_type).v);
 }
 
 SYCL_EXTERNAL bool intel_hit_is_front_face( intel_ray_query_t* query, intel_hit_type_t hit_type ) {
@@ -249,7 +242,7 @@ SYCL_EXTERNAL intel_float4x3 intel_get_hit_object_to_world( intel_ray_query_t* q
   };
 }
 
-SYCL_EXTERNAL void intel_get_hit_triangle_vertices( intel_ray_query_t* query, float3 verts_out[3], intel_hit_type_t hit_type )
+SYCL_EXTERNAL void intel_get_hit_triangle_vertices( intel_ray_query_t* query, sycl::float3 verts_out[3], intel_hit_type_t hit_type )
 {
   const QuadLeaf* __restrict leaf = (const QuadLeaf*) query->hit(hit_type).getPrimLeafPtr();
   
@@ -261,24 +254,24 @@ SYCL_EXTERNAL void intel_get_hit_triangle_vertices( intel_ray_query_t* query, fl
     j2 = leaf->j2;
   }
 
-  verts_out[0] = float3(leaf->v[j0][0], leaf->v[j0][1], leaf->v[j0][2]);
-  verts_out[1] = float3(leaf->v[j1][0], leaf->v[j1][1], leaf->v[j1][2]);
-  verts_out[2] = float3(leaf->v[j2][0], leaf->v[j2][1], leaf->v[j2][2]);
+  verts_out[0] = sycl::float3(leaf->v[j0][0], leaf->v[j0][1], leaf->v[j0][2]);
+  verts_out[1] = sycl::float3(leaf->v[j1][0], leaf->v[j1][1], leaf->v[j1][2]);
+  verts_out[2] = sycl::float3(leaf->v[j2][0], leaf->v[j2][1], leaf->v[j2][2]);
 }
 
-SYCL_EXTERNAL float3 intel_get_ray_origin( intel_ray_query_t* query, unsigned int bvh_level)
+SYCL_EXTERNAL sycl::float3 intel_get_ray_origin( intel_ray_query_t* query, unsigned int bvh_level)
 {
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   
   MemRay& ray = rtStack->ray[bvh_level];
-  return float3(ray.org[0], ray.org[1], ray.org[2]);
+  return sycl::float3(ray.org[0], ray.org[1], ray.org[2]);
 }
 
-SYCL_EXTERNAL float3 intel_get_ray_direction( intel_ray_query_t* query, unsigned int bvh_level)
+SYCL_EXTERNAL sycl::float3 intel_get_ray_direction( intel_ray_query_t* query, unsigned int bvh_level)
 {
   struct RTStack* __restrict rtStack = sycl::global_ptr<RTStack>((struct RTStack*)query->opaque2).get();
   MemRay& ray = rtStack->ray[bvh_level];
-  return float3(ray.dir[0], ray.dir[1], ray.dir[2]);
+  return sycl::float3(ray.dir[0], ray.dir[1], ray.dir[2]);
 }
 
 SYCL_EXTERNAL float intel_get_ray_tmin( intel_ray_query_t* query, unsigned int bvh_level)

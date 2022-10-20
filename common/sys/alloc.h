@@ -9,7 +9,7 @@
 
 namespace embree
 {
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 
   /* enables SYCL USM allocation */
   void enableUSMAllocEmbree(sycl::context* context, sycl::device* device, sycl::queue* queue);
@@ -57,7 +57,7 @@ namespace embree
   void* alignedUSMMalloc(size_t size, size_t align = 16, EmbreeUSMMode mode = EMBREE_USM_SHARED_DEVICE_READ_ONLY);
   void alignedUSMFree(void* ptr);
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
   
   /*! aligned allocation using SYCL USM */
   void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, sycl::queue* queue, size_t size, size_t align, EmbreeUSMMode mode);

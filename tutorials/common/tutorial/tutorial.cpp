@@ -30,7 +30,7 @@
 
 namespace embree
 {
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
   sycl::context* global_gpu_context = nullptr;
   sycl::device* global_gpu_device = nullptr;
   sycl::queue* global_gpu_queue = nullptr;
@@ -287,7 +287,7 @@ namespace embree
     alignedUSMFree(pixels);
     pixels = nullptr;
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
     delete device; device = nullptr;
     delete queue; queue = nullptr;
     delete context; context = nullptr;
@@ -298,7 +298,7 @@ namespace embree
     alignedFree(g_stats);
     g_stats = nullptr;
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
     
     if (features & FEATURE_SYCL)
       disableUSMAllocTutorial();
@@ -1097,7 +1097,7 @@ namespace embree
 
   void TutorialApplication::create_device()
   {
-#if defined(EMBREE_DPCPP_SUPPORT) && defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(EMBREE_SYCL_TUTORIAL)
     
     /* create SYCL device */
     if (features & FEATURE_SYCL)

@@ -156,7 +156,7 @@ namespace embree
 
 RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
 {
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
   RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
   const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
   const uint numGeometries = args.numGeometries;
@@ -202,7 +202,7 @@ RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF
 
 RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
 {
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
   BuildTimer timer;
   timer.reset();
 
@@ -701,7 +701,7 @@ RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     
   if (deviceGPU) {
     HWAccel* hwaccel = (HWAccel*)args.accelBuffer;
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)      
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)      
     hwaccel->dispatchGlobalsPtr = (uint64_t)args.dispatchGlobalsPtr;
 #endif      
   }

@@ -51,7 +51,7 @@ MACRO (ADD_EMBREE_NORMAL_ISPC_TEST name reference executable args)
 ENDMACRO()
 
 MACRO (ADD_EMBREE_NORMAL_SYCL_TEST name reference executable args)  
-  IF (BUILD_TESTING AND EMBREE_DPCPP_SUPPORT)
+  IF (BUILD_TESTING AND EMBREE_SYCL_SUPPORT)
     ADD_TEST(NAME ${name}_sycl
              WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
              COMMAND ${executable}_sycl --compare ${EMBREE_MODEL_DIR}/reference/${reference}.tga ${args})
@@ -88,7 +88,7 @@ MACRO (ADD_EMBREE_MODEL_TEST name reference executable args model)
     ENDIF()
   ENDIF()
 
-  IF (BUILD_TESTING AND EMBREE_DPCPP_SUPPORT)
+  IF (BUILD_TESTING AND EMBREE_SYCL_SUPPORT)
     IF (NOT "${name}" MATCHES ".*subdiv.*")  # skip subdiv models for SYCL mode
       ADD_TEST(NAME ${name}_sycl
                  WORKING_DIRECTORY ${MY_PROJECT_BINARY_DIR}
@@ -115,7 +115,7 @@ MACRO (ADD_EMBREE_MODELS_TEST model_list_file name reference executable)
         CONTINUE()
       ENDIF()
       IF (model MATCHES ".*mblur.*" OR model MATCHES ".*motion_blur.*")  # skip mblur models if motion blur is not enabled
-        IF (NOT EMBREE_DPCPP_MBLUR)
+        IF (NOT EMBREE_SYCL_MBLUR)
           CONTINUE()
         ENDIF()
       ENDIF()

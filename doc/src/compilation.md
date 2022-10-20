@@ -152,8 +152,8 @@ build directory.
     cmake -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_C_COMPILER=clang \
           -DEMBREE_ISPC_SUPPORT=OFF \
-          -DEMBREE_DPCPP_SUPPORT=ON \
-          -DEMBREE_DPCPP_AOT_DEVICES=dg2 ..
+          -DEMBREE_SYCL_SUPPORT=ON \
+          -DEMBREE_SYCL_AOT_DEVICES=dg2 ..
            
 
 The `startup.sh` script above did put the DPC++ version of `clang++`
@@ -162,11 +162,11 @@ configures the Embree project to use the just installed DPC++
 compiler.
 
 We disable ISPC with `EMBREE_ISPC_SUPPORT=OFF` and turn on DPC++
-support through `EMBREE_DPCPP_SUPPORT=ON`.
+support through `EMBREE_SYCL_SUPPORT=ON`.
 
 Under Linux, code generated with JIT compilation is not functioning at
 the moment, thus AOT compilation for the DG2 device has to get enabled
-as a workaround using the `EMBREE_DPCPP_AOT_DEVICES=dg2` cmake
+as a workaround using the `EMBREE_SYCL_AOT_DEVICES=dg2` cmake
 setting. For AOT compilation to work you have to install the
 [Linux HPG/HPC Driver Installation] section.
 
@@ -350,8 +350,8 @@ build directory.
           -D CMAKE_C_FLAGS=-fuse-ld=link
           -D EMBREE_MAX_ISA=SSE2
           -D EMBREE_ISPC_SUPPORT=OFF
-          -D EMBREE_DPCPP_SUPPORT=ON
-          -D EMBREE_DPCPP_AOT_DEVICES=none
+          -D EMBREE_SYCL_SUPPORT=ON
+          -D EMBREE_SYCL_AOT_DEVICES=none
           -D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=OFF
           -D EMBREE_GEOMETRY_USER_IN_GEOMETRY=OFF 
           -D TBB_ROOT=path_to_tbb\lib\cmake\tbb ..
@@ -364,8 +364,8 @@ shipped with the DPC++ compiler. Thus linker has to get force to
 the Visual Studio Linker `link` using compilation flags.
 
 We also enable DPC++ support in Embree using the
-`EMBREE_DPCPP_SUPPORT` CMake option, and only enable just in time
-compilation (JIT compilation) by setting `EMBREE_DPCPP_AOT_DEVICES` to
+`EMBREE_SYCL_SUPPORT` CMake option, and only enable just in time
+compilation (JIT compilation) by setting `EMBREE_SYCL_AOT_DEVICES` to
 `none`. Ahead of time compilation (AOT compilation) is currently not
 working under Windows.
 
@@ -416,12 +416,12 @@ parameters that can be configured in CMake:
 + `EMBREE_ISPC_SUPPORT`: Enables Intel® ISPC support of Embree. This option
   is ON by default.
 
-+ `EMBREE_DPCPP_SUPPORT`: Enables GPU support using DPC++. When this
++ `EMBREE_SYCL_SUPPORT`: Enables GPU support using DPC++. When this
   option is enabled you have to use some DPC++ compiler. Please see
   section [Linux DPC++ Compilation] and [Windows DPC++ Compilation]
   on supported DPC++ compilers.
 
-+ `EMBREE_DPCPP_AOT_DEVICES`: Selects a list of Xe GPU devices for
++ `EMBREE_SYCL_AOT_DEVICES`: Selects a list of Xe GPU devices for
   ahead of time (AOT) compilation of GPU code. Possible values are
   either, "none" which enables only just in time (JIT) compilation, or
   specifying one of the Embree supported Xe GPUs for AOT compilation:

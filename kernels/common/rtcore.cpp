@@ -10,7 +10,7 @@
 #include "../geometry/filter.h"
 #include "../../include/embree4/rtcore_ray.h"
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 #include "../rthwif/rthwif_embree_builder.h"
 #endif
 using namespace embree;
@@ -34,7 +34,7 @@ RTC_NAMESPACE_BEGIN;
     return (RTCDevice) nullptr;
   }
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 
   RTC_API RTCDevice rtcNewSYCLDeviceInternal(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config)
   {

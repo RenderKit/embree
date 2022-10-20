@@ -283,14 +283,14 @@ def runConfig(config):
         env.append("export SYCL_DEVICE_FILTER=level_zero")
 
       dpcpp_dir = ""
-      gfx_dir = ""+NAS+"/gfx-driver/"+GFX_VERSION+"/install"
+      gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
       
       if (compiler.startswith("dpcpp/internal")):
-        dpcpp_dir = ""+NAS+"/dpcpp_compiler/"+DPCPP_VERSION
+        dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
         conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/dpcpp")
         #conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/dpcpp")
       else:
-        dpcpp_dir = ""+NAS+"/dpcpp_compiler/"+DPCPP_VERSION+"/dpcpp_compiler"
+        dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
         conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
         conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
 
@@ -434,9 +434,9 @@ def runConfig(config):
        conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
 
   if "LARGEGRF" in config:
-    conf.append("-D EMBREE_DPCPP_LARGEGRF="+config["LARGEGRF"])
-  if "DPCPP_MBLUR" in config:
-    conf.append("-D EMBREE_DPCPP_MBLUR="+config["DPCPP_MBLUR"])
+    conf.append("-D EMBREE_SYCL_LARGEGRF="+config["LARGEGRF"])
+  if "SYCL_MBLUR" in config:
+    conf.append("-D EMBREE_SYCL_MBLUR="+config["SYCL_MBLUR"])
   if "RAY_MASK" in config:
     conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
   if "RAY_PACKETS" in config:
@@ -480,19 +480,19 @@ def runConfig(config):
     rtcore.append("frequency_level="+config["frequency_level"])
 
   if "sycl" in config:
-      conf.append("-D EMBREE_DPCPP_AOT_DEVICES="+config["sycl"])
+      conf.append("-D EMBREE_SYCL_AOT_DEVICES="+config["sycl"])
   if "sycl_mblur" in config:
-    conf.append("-D EMBREE_DPCPP_MBLUR="+config["sycl_mblur"])
+    conf.append("-D EMBREE_SYCL_MBLUR="+config["sycl_mblur"])
   if "implicit_dispatch_globals" in config:
-    conf.append("-D EMBREE_DPCPP_IMPLICIT_DISPATCH_GLOBALS="+config["implicit_dispatch_globals"])
+    conf.append("-D EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS="+config["implicit_dispatch_globals"])
   if "sycl_test" in config:
     conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
-  if "EMBREE_DPCPP_SUPPORT" in config:
-    conf.append("-D EMBREE_DPCPP_SUPPORT="+config["EMBREE_DPCPP_SUPPORT"])
+  if "EMBREE_SYCL_SUPPORT" in config:
+    conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
   elif "sycl" in config:
-    conf.append("-D EMBREE_DPCPP_SUPPORT=ON")
+    conf.append("-D EMBREE_SYCL_SUPPORT=ON")
   else:
-    conf.append("-D EMBREE_DPCPP_SUPPORT=OFF")
+    conf.append("-D EMBREE_SYCL_SUPPORT=OFF")
   if "gfx" in config:
       conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
 
@@ -545,15 +545,15 @@ def runConfig(config):
     if (compiler.startswith("dpcpp/internal")):
       which_dpcpp = str(subprocess.check_output(escape(" && ".join(env)) + " && which dpcpp", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
       print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which dpcpp: ", which_dpcpp)
-      assert which_dpcpp == NAS+"/dpcpp_compiler/"+DPCPP_VERSION+"/bin/dpcpp"
+      assert which_dpcpp == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/dpcpp"
     else:
       which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
       print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which clang++: ", which_clang)
-      assert which_clang == NAS+"/dpcpp_compiler/"+DPCPP_VERSION+"/dpcpp_compiler/bin/clang++"
+      assert which_clang == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/clang++"
       
     which_ocloc = str(subprocess.check_output(escape(" && ".join(env)) + " && which ocloc", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
     print("DEBUG - GFX version:", GFX_VERSION, " - which ocloc: ", which_ocloc)
-    assert which_ocloc == NAS+"/gfx-driver/"+GFX_VERSION+"/install/usr/bin/ocloc" or which_ocloc == NAS+"/gfx-driver/"+GFX_VERSION+"/install/usr/local/bin/ocloc"
+    assert which_ocloc == NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install/usr/bin/ocloc" or which_ocloc == NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install/usr/local/bin/ocloc"
 
   if rtcore:
     conf.append("-D EMBREE_CONFIG="+(",".join(rtcore)))

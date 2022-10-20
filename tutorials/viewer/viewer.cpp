@@ -15,6 +15,7 @@ namespace embree
 {
   extern "C" float g_min_width = 0.0f;
   extern "C" float g_min_width_max_radius_scale;
+  extern "C" bool g_use_scene_features = true;
   extern "C" RTCFeatureFlags g_feature_mask = RTC_FEATURE_ALL;
   extern "C" float scale;
   extern "C" bool g_changed;
@@ -69,7 +70,7 @@ namespace embree
 
 #if defined(EMBREE_SYCL_TUTORIAL)
       registerOption("features", [] (Ref<ParseStream> cin, const FileName& path) {
-
+          g_use_scene_features = false;
           unsigned int feature_mask = RTC_FEATURE_NONE;
           while (cin->peek() != "" && cin->peek()[0] != '-') {
             std::string feature = cin->getString();

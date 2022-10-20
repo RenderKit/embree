@@ -20,7 +20,7 @@ IF (NOT WIN32)
   ENDIF()
 ENDIF()
   
-IF (EMBREE_DPCPP_SUPPORT)
+IF (EMBREE_SYCL_SUPPORT)
 
   GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
   GET_FILENAME_COMPONENT(SYCL_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
@@ -38,7 +38,19 @@ IF (EMBREE_DPCPP_SUPPORT)
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")              # FIXME: debug information generation takes forever in SYCL
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
   
-  SET(CMAKE_LINK_FLAGS_SYCL "-lsycl -fsycl")
+  IF (WIN32)
+    SET(SYCL_COMPILER_LIB_DIR "${SYCL_COMPILER_DIR}/../lib")
+    file(GLOB SYCL_LIB
+         RELATIVE ${SYCL_COMPILER_LIB_DIR}
+         ${SYCL_COMPILER_LIB_DIR}/sycl.lib
+         ${SYCL_COMPILER_LIB_DIR}/sycl[0-9].lib
+         ${SYCL_COMPILER_LIB_DIR}/sycl[0-9][0-9].lib)
+    GET_FILENAME_COMPONENT(SYCL_LIB_NAME ${SYCL_LIB} NAME_WE)
+  ELSE()
+    SET(SYCL_LIB_NAME "sycl")
+  ENDIF()
+
+  SET(CMAKE_LINK_FLAGS_SYCL "-l${SYCL_LIB_NAME} -fsycl")
   
   #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
   #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
@@ -70,18 +82,18 @@ IF (EMBREE_DPCPP_SUPPORT)
   
   STRING(REPLACE ";" "," CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS}")
   
-  IF (EMBREE_DPCPP_AOT_DEVICE_REVISION GREATER 0)
-    SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_DPCPP_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
+  IF (EMBREE_SYCL_AOT_DEVICE_REVISION GREATER 0)
+    SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_SYCL_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
   ENDIF()
   
   SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
-  IF (EMBREE_DPCPP_LARGEGRF)
+  IF (EMBREE_SYCL_LARGEGRF)
     SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -internal_options -cl-intel-256-GRF-per-thread")          # large GRF mode
   ENDIF()
   SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic")
   #SET(CMAKE_OCL_OTHER_OPTIONS "${CMAKE_OCL_OTHER_OPTIONS} -cl-intel-private-memory-minimal-size-per-thread 8192")
   
-  IF (EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
+  IF (EMBREE_SYCL_AOT_DEVICES STREQUAL "none")
     SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64")
   ELSE()
     SET(CMAKE_CXX_FLAGS_SYCL_AOT "-fsycl-targets=spir64,spir64_gen")
@@ -89,11 +101,11 @@ IF (EMBREE_DPCPP_SUPPORT)
   
   SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_CXX_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64 \"${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
   
-  IF (NOT EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
-    SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_DPCPP_AOT_DEVICES} ${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
+  IF (NOT EMBREE_SYCL_AOT_DEVICES STREQUAL "none")
+    SET(CMAKE_LINK_FLAGS_SYCL_AOT "${CMAKE_LINK_FLAGS_SYCL_AOT} -Xsycl-target-backend=spir64_gen \"-device ${EMBREE_SYCL_AOT_DEVICES} ${CMAKE_OCL_OPTIONS} -options \\\"${CMAKE_OCL_OTHER_OPTIONS} -igc_opts='${CMAKE_IGC_OPTIONS}'\\\"\"")
   ENDIF()
  
-  IF (EMBREE_DPCPP_DBG)
+  IF (EMBREE_SYCL_DBG)
     SET(CMAKE_CXX_FLAGS_SYCL_AOT "-g")
   ENDIF()
 
@@ -102,7 +114,7 @@ IF (EMBREE_DPCPP_SUPPORT)
 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
   
-ENDIF(EMBREE_DPCPP_SUPPORT)
+ENDIF(EMBREE_SYCL_SUPPORT)
 
 
 IF (WIN32)
@@ -155,7 +167,7 @@ IF (WIN32)
   GET_FILENAME_COMPONENT(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME_WE)
   message("compiler name: ${COMPILER_NAME}")
 
-  IF (EMBREE_DPCPP_SUPPORT)
+  IF (EMBREE_SYCL_SUPPORT)
     IF (NOT SYCL_COMPILER_NAME STREQUAL "dpcpp")
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
     ENDIF()
@@ -185,7 +197,7 @@ ELSE()
   ENDIF()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")                       # generate position independent code suitable for shared libraries
   SET(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -fPIC")                       # generate position independent code suitable for shared libraries
-  IF (EMBREE_DPCPP_SUPPORT)
+  IF (EMBREE_SYCL_SUPPORT)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")                  # enables C++17 features
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++11 features    
@@ -208,7 +220,7 @@ ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-optimize-sibling-calls")
   ENDIF()
 
-  IF (EMBREE_DPCPP_SUPPORT)
+  IF (EMBREE_SYCL_SUPPORT)
     IF (NOT SYCL_COMPILER_NAME STREQUAL "dpcpp")
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
     ENDIF()
@@ -234,11 +246,11 @@ ELSE()
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -DNDEBUG")        # disable assertions
   SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3")             # enable full optimizations
 
-  IF(EMBREE_DPCPP_SUPPORT)
+  IF(EMBREE_SYCL_SUPPORT)
     SET(CMAKE_CXX_FLAGS_RELWITHASSERT "")
     SET(CMAKE_CXX_FLAGS_RELWITHASSERT "${CMAKE_CXX_FLAGS_RELWITHASSERT} -DDEBUG")         # enable assertions
     SET(CMAKE_CXX_FLAGS_RELWITHASSERT "${CMAKE_CXX_FLAGS_RELWITHASSERT} -O3")             # enable full optimizations
-  ENDIF(EMBREE_DPCPP_SUPPORT)
+  ENDIF(EMBREE_SYCL_SUPPORT)
 
   IF (APPLE)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmacosx-version-min=10.7")   # makes sure code runs on older MacOSX versions

@@ -84,7 +84,9 @@ namespace embree
       return true;
 
     /* check if GPU device is supported */
-    const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(sycl_device);
+    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
+    
+    const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(hDevice);
     return features != RTHWIF_FEATURES_NONE;
   }
     
@@ -302,7 +304,7 @@ namespace embree
     }
   }
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)      
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
   RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o);
   RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args);
 #endif
@@ -397,7 +399,7 @@ namespace embree
     
     /* fill geomdesc buffers */
     const size_t geomDescrBytes = sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries;
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)    
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
     RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
     assert(geomDescr);        
     char *geomDescrData = (char*)sycl::aligned_alloc(64,    totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
@@ -422,7 +424,7 @@ namespace embree
       assert(offset <= geomDescrData.size());
     }
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;    
 #else
     RTHWIF_PARALLEL_OPERATION parallelOperation = rthwifNewParallelOperation();    
@@ -433,7 +435,7 @@ namespace embree
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;    
 #else    
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
@@ -448,11 +450,11 @@ namespace embree
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.buildUserPtr = &time_range;
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
 #endif
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     args.deviceGPU = dynamic_cast<DeviceGPU*>(scene->device);
 #endif
 
@@ -460,7 +462,7 @@ namespace embree
     RTHWIF_ACCEL_SIZE sizeTotal;
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
     sizeTotal.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,sizeTotal);    
 #else    
     RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeTotal);
@@ -470,7 +472,7 @@ namespace embree
 
     /* allocate scratch buffer */
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     // === scratch buffer === 
     char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
     assert(scratchBuffer);
@@ -502,7 +504,7 @@ namespace embree
       
       /* allocate BVH data */
       if (accel.size() < bytes) accel.resize(bytes);
-#if !defined(EMBREE_DPCPP_GPU_BVH_BUILDER)      
+#if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
       memset(accel.data(),0,accel.size()); // FIXME: not required
 #endif
       
@@ -514,7 +516,7 @@ namespace embree
         time_range = BBox1f(t0,t1);
 
         // why again?
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;
         size_t new_accelBufferBytes = 0;
         args.accelBufferBytesOut = &new_accelBufferBytes;
@@ -526,7 +528,7 @@ namespace embree
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         err = rthwifBuildAccelGPU(args);
         if (err == RTHWIF_ERROR_NONE && gpu_device->verbosity(2))
         {
@@ -553,7 +555,7 @@ namespace embree
 
         if (err == RTHWIF_ERROR_RETRY)
         {
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
           sizeTotal.accelBufferExpectedBytes  = new_accelBufferBytes;
           sizeTotal.accelBufferWorstCaseBytes = new_accelBufferBytes;
 #else          
@@ -580,7 +582,7 @@ namespace embree
     for (size_t i=0; i<maxTimeSegments; i++)
       hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     sycl::free(geomDescr        ,gpu_device->getGPUContext());
     sycl::free(geomDescrData    ,gpu_device->getGPUContext());    
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());

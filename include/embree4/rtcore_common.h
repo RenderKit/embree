@@ -484,7 +484,7 @@ struct RTC_ALIGN(16) RTCPointQueryFunctionArguments
 
 typedef bool (*RTCPointQueryFunction)(struct RTCPointQueryFunctionArguments* args);
 
-#if defined(EMBREE_DPCPP_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
 
 /* returns function pointer to be usable in SYCL kernel */
 template<auto F>

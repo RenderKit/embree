@@ -8,6 +8,45 @@
 
 namespace embree
 {
+  RTCFeatureFlags operator |= (RTCFeatureFlags& a, RTCFeatureFlags b) {
+    return a = (RTCFeatureFlags) (a | b);
+  }
+
+  std::string to_string(RTCFeatureFlags features)
+  {
+    std::string out = "";
+    if (features & RTC_FEATURE_MOTION_BLUR) out += "MOTION_BLUR";
+    if (features & RTC_FEATURE_TRIANGLE) out += "TRIANGLE ";
+    if (features & RTC_FEATURE_QUAD) out += "QUAD ";
+    if (features & RTC_FEATURE_GRID) out += "GRID ";
+    if (features & RTC_FEATURE_SUBDIVISION) out += "SUBDIVISION ";
+    if (features & RTC_FEATURE_CONE_LINEAR_CURVE) out += "CONE_LINEAR_CURVE ";
+    if (features & RTC_FEATURE_ROUND_LINEAR_CURVE ) out += "ROUND_LINEAR_CURVE ";
+    if (features & RTC_FEATURE_FLAT_LINEAR_CURVE) out += "FLAT_LINEAR_CURVE ";
+    if (features & RTC_FEATURE_ROUND_BEZIER_CURVE) out += "ROUND_BEZIER_CURVE ";
+    if (features & RTC_FEATURE_FLAT_BEZIER_CURVE) out += "FLAT_BEZIER_CURVE ";
+    if (features & RTC_FEATURE_NORMAL_ORIENTED_BEZIER_CURVE) out += "NORMAL_ORIENTED_BEZIER_CURVE ";
+    if (features & RTC_FEATURE_ROUND_BSPLINE_CURVE) out += "ROUND_BSPLINE_CURVE ";
+    if (features & RTC_FEATURE_FLAT_BSPLINE_CURVE) out += "FLAT_BSPLINE_CURVE ";
+    if (features & RTC_FEATURE_NORMAL_ORIENTED_BSPLINE_CURVE) out += "NORMAL_ORIENTED_BSPLINE_CURVE ";
+    if (features & RTC_FEATURE_ROUND_HERMITE_CURVE) out += "ROUND_HERMITE_CURVE ";
+    if (features & RTC_FEATURE_FLAT_HERMITE_CURVE) out += "FLAT_HERMITE_CURVE ";
+    if (features & RTC_FEATURE_NORMAL_ORIENTED_HERMITE_CURVE) out += "NORMAL_ORIENTED_HERMITE_CURVE ";
+    if (features & RTC_FEATURE_ROUND_CATMULL_ROM_CURVE) out += "ROUND_CATMULL_ROM_CURVE ";
+    if (features & RTC_FEATURE_FLAT_CATMULL_ROM_CURVE) out += "FLAT_CATMULL_ROM_CURVE ";
+    if (features & RTC_FEATURE_NORMAL_ORIENTED_CATMULL_ROM_CURVE) out += "NORMAL_ORIENTED_CATMULL_ROM_CURVE ";
+    if (features & RTC_FEATURE_SPHERE_POINT) out += "SPHERE_POINT ";
+    if (features & RTC_FEATURE_DISC_POINT) out += "DISC_POINT ";
+    if (features & RTC_FEATURE_ORIENTED_DISC_POINT) out += "ORIENTED_DISC_POINT ";
+    if (features & RTC_FEATURE_INSTANCE) out += "INSTANCE ";
+    if (features & RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT) out += "FILTER_FUNCTION_IN_CONTEXT ";
+    if (features & RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY) out += "FILTER_FUNCTION_IN_GEOMETRY ";
+    if (features & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_CONTEXT) out += "USER_GEOMETRY_CALLBACK_IN_CONTEXT ";
+    if (features & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_GEOMETRY) out += "USER_GEOMETRY_CALLBACK_IN_GEOMETRY ";
+    if (out == "") return "NONE";
+    return out;
+  }
+  
   extern "C" {
     int g_instancing_mode = SceneGraph::INSTANCING_NONE;
     float g_min_width_max_radius_scale = 1.0f;
@@ -771,61 +810,107 @@ namespace embree
     return geom;
   }
 
-  void ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
+  void ConvertTriangleMesh(RTCDevice device, ISPCTriangleMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags, RTCFeatureFlags& used_features)
   {
     if (mesh->geom.visited) return;
+    
+    used_features |= RTC_FEATURE_TRIANGLE;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_MOTION_BLUR;
+    
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
     mesh->commit();
   }
   
-  void ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
+  void ConvertQuadMesh(RTCDevice device, ISPCQuadMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags, RTCFeatureFlags& used_features)
   {
     if (mesh->geom.visited) return;
+    
+    used_features |= RTC_FEATURE_QUAD;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_MOTION_BLUR;
+    
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
     mesh->commit();
   }
 
-  void ConvertGridMesh(RTCDevice device, ISPCGridMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
+  void ConvertGridMesh(RTCDevice device, ISPCGridMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags, RTCFeatureFlags& used_features)
   {
     if (mesh->geom.visited) return;
+    
+    used_features |= RTC_FEATURE_GRID;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_MOTION_BLUR;
+    
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
     mesh->commit();
   }
   
-  void ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
+  void ConvertSubdivMesh(RTCDevice device, ISPCSubdivMesh* mesh, RTCBuildQuality quality, RTCSceneFlags flags, RTCFeatureFlags& used_features)
   {
     if (mesh->geom.visited) return;
+    
+    used_features |= RTC_FEATURE_SUBDIVISION;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_MOTION_BLUR;
+    
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
     mesh->commit();
   }
   
-  void ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
+  void ConvertCurveGeometry(RTCDevice device, ISPCHairSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags, RTCFeatureFlags& used_features)
   {
     if (mesh->geom.visited) return;
+    
+    switch (mesh->type) {
+    case RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE:                 used_features |= RTC_FEATURE_CONE_LINEAR_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE:                used_features |= RTC_FEATURE_ROUND_LINEAR_CURVE ; break;
+    case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:                 used_features |= RTC_FEATURE_FLAT_LINEAR_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:                used_features |= RTC_FEATURE_ROUND_BEZIER_CURVE; break;
+    case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:                 used_features |= RTC_FEATURE_FLAT_BEZIER_CURVE; break;
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE:      used_features |= RTC_FEATURE_NORMAL_ORIENTED_BEZIER_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:               used_features |= RTC_FEATURE_ROUND_BSPLINE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:                used_features |= RTC_FEATURE_FLAT_BSPLINE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE:     used_features |= RTC_FEATURE_NORMAL_ORIENTED_BSPLINE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE:               used_features |= RTC_FEATURE_ROUND_HERMITE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE:                used_features |= RTC_FEATURE_FLAT_HERMITE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE:     used_features |= RTC_FEATURE_NORMAL_ORIENTED_HERMITE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE:           used_features |= RTC_FEATURE_ROUND_CATMULL_ROM_CURVE; break;
+    case RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE:            used_features |= RTC_FEATURE_FLAT_CATMULL_ROM_CURVE; break;
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE: used_features |= RTC_FEATURE_NORMAL_ORIENTED_CATMULL_ROM_CURVE; break;
+    default: assert(false); break;
+    }
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_MOTION_BLUR;
+    
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
     mesh->commit();
   }
 
-  void ConvertPoints(RTCDevice device, ISPCPointSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags)
+  void ConvertPoints(RTCDevice device, ISPCPointSet* mesh, RTCBuildQuality quality, RTCSceneFlags flags, RTCFeatureFlags& used_features)
   {
     if (mesh->geom.visited) return;
+
+    switch (mesh->type) {
+    case RTC_GEOMETRY_TYPE_SPHERE_POINT:        used_features |= RTC_FEATURE_SPHERE_POINT; break;
+    case RTC_GEOMETRY_TYPE_DISC_POINT:          used_features |= RTC_FEATURE_DISC_POINT; break;
+    case RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT: used_features |= RTC_FEATURE_ORIENTED_DISC_POINT; break;
+    default: assert(false); break;
+    }
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_MOTION_BLUR;
+    
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
     mesh->commit();
   }
 
-  unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth);
+  unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth, RTCFeatureFlags& used_features);
 
-  unsigned int ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth)
+  unsigned int ConvertGroup(RTCDevice device, ISPCGroup* group, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth, RTCFeatureFlags& used_features)
   {
     if (group->geom.visited) return group->requiredInstancingDepth;
     group->geom.visited = true;
-    
+
     RTCScene scene = group->scene;
     rtcSetSceneFlags(scene, flags);
 
@@ -834,19 +919,19 @@ namespace embree
     {
       ISPCGeometry* geometry = group->geometries[geomID];
       if (geometry->type == SUBDIV_MESH)
-        ConvertSubdivMesh(device,(ISPCSubdivMesh*) geometry, quality, flags);
+        ConvertSubdivMesh(device,(ISPCSubdivMesh*) geometry, quality, flags, used_features);
       else if (geometry->type == TRIANGLE_MESH)
-        ConvertTriangleMesh(device,(ISPCTriangleMesh*) geometry, quality, flags);
+        ConvertTriangleMesh(device,(ISPCTriangleMesh*) geometry, quality, flags, used_features);
       else if (geometry->type == QUAD_MESH)
-        ConvertQuadMesh(device,(ISPCQuadMesh*) geometry, quality, flags);
+        ConvertQuadMesh(device,(ISPCQuadMesh*) geometry, quality, flags, used_features);
       else if (geometry->type == CURVES)
-        ConvertCurveGeometry(device,(ISPCHairSet*) geometry, quality, flags);
+        ConvertCurveGeometry(device,(ISPCHairSet*) geometry, quality, flags, used_features);
       else if (geometry->type == GRID_MESH)
-        ConvertGridMesh(device,(ISPCGridMesh*) geometry, quality, flags);
+        ConvertGridMesh(device,(ISPCGridMesh*) geometry, quality, flags, used_features);
       else if (geometry->type == POINTS)
-        ConvertPoints(device,(ISPCPointSet*) geometry, quality, flags);
+        ConvertPoints(device,(ISPCPointSet*) geometry, quality, flags, used_features);
       else if (geometry->type == INSTANCE) {
-        unsigned int reqDepth = ConvertInstance(device,(ISPCInstance*) geometry, quality, flags, depth);
+        unsigned int reqDepth = ConvertInstance(device,(ISPCInstance*) geometry, quality, flags, depth, used_features);
         requiredInstancingDepth = max(requiredInstancingDepth, reqDepth);
       }
       else
@@ -859,13 +944,16 @@ namespace embree
     return requiredInstancingDepth;
   }
 
-  unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth)
+  unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth, RTCFeatureFlags& used_features)
   {
+    used_features |= RTC_FEATURE_INSTANCE;
+    if (instance->numTimeSteps > 1) used_features |= RTC_FEATURE_MOTION_BLUR;
+    
     if (instance->child->type != GROUP)
       THROW_RUNTIME_ERROR("invalid scene structure");
 
     ISPCGroup* group = (ISPCGroup*) instance->child;
-    unsigned int requiredInstancingDepth = 1+ConvertGroup(device, group, quality, flags, depth+1);
+    unsigned int requiredInstancingDepth = 1+ConvertGroup(device, group, quality, flags, depth+1, used_features);
 
     if (depth + requiredInstancingDepth > RTC_MAX_INSTANCE_LEVEL_COUNT)
       THROW_RUNTIME_ERROR("scene instancing depth is too large");
@@ -877,11 +965,13 @@ namespace embree
     return requiredInstancingDepth;
   }
 
-  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags)
+  extern "C" RTCScene ConvertScene(RTCDevice g_device, ISPCScene* scene_in, RTCBuildQuality quality, RTCSceneFlags flags, RTCFeatureFlags *used_features_out)
   {
     TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
     if (!tutorial_scene) return scene_in->scene;
     
+    RTCFeatureFlags used_features = RTC_FEATURE_NONE;
+
     RTCScene scene = scene_in->scene;
     rtcSetSceneFlags(scene, flags);
     
@@ -889,28 +979,33 @@ namespace embree
     {
       ISPCGeometry* geometry = scene_in->geometries[geomID];
       if (geometry->type == SUBDIV_MESH)
-        ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry, quality, flags);
+        ConvertSubdivMesh(g_device,(ISPCSubdivMesh*) geometry, quality, flags, used_features);
       else if (geometry->type == TRIANGLE_MESH)
-        ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry, quality, flags);
+        ConvertTriangleMesh(g_device,(ISPCTriangleMesh*) geometry, quality, flags, used_features);
       else if (geometry->type == QUAD_MESH)
-        ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, flags);
+        ConvertQuadMesh(g_device,(ISPCQuadMesh*) geometry, quality, flags, used_features);
       else if (geometry->type == CURVES)
-        ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, flags);
+        ConvertCurveGeometry(g_device,(ISPCHairSet*) geometry, quality, flags, used_features);
       else if (geometry->type == GRID_MESH)
-        ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, flags);
+        ConvertGridMesh(g_device,(ISPCGridMesh*) geometry, quality, flags, used_features);
       else if (geometry->type == POINTS)
-        ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, flags);
+        ConvertPoints(g_device,(ISPCPointSet*) geometry, quality, flags, used_features);
       else if (geometry->type == INSTANCE)
-        ConvertInstance(g_device, (ISPCInstance*) geometry, quality, flags, 0);
+        ConvertInstance(g_device, (ISPCInstance*) geometry, quality, flags, 0, used_features);
       else
         assert(false);
 
       rtcAttachGeometryByID(scene,geometry->geometry,geomID);
     }
 
-    if (Application::instance)
+    if (Application::instance) {
+      Application::instance->log(1,"scene features = " + to_string(used_features));
       Application::instance->log(1,"creating Embree objects done");
+    }
     
+    if (used_features_out)
+      *used_features_out = used_features;
+
     return scene;
   }
 

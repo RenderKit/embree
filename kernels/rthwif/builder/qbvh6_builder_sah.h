@@ -1128,6 +1128,7 @@ namespace embree
           /* allocate BVH memory */
           allocator.clear();
           allocator.addBlock(accel,bytes);
+          //allocator.slotMask = 0;
           FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
           thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
 

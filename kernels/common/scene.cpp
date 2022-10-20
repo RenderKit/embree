@@ -10,7 +10,7 @@
 
 #include "../../common/algorithms/parallel_reduce.h"
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 #  include "../rthwif/rthwif_embree_builder.h"
 #endif
 
@@ -714,7 +714,7 @@ namespace embree
     
     /* select acceleration structures to build */
     unsigned int new_enabled_geometry_types = world.enabledGeometryTypesMask();
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
     if (!dynamic_cast<DeviceGPU*>(device)) // do not build software accel for GPU if not required
 #endif
       
@@ -756,7 +756,7 @@ namespace embree
     accels_build();
 
     /* build acceleration structure for rthw */
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
     if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
       //if (gpu_device->rthw_support())
       //  bounds = LBBox<embree::Vec3fa>(rthwifBuild(this,quality_flags,hwaccel,device->gpu_build));

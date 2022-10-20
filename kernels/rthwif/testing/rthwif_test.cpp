@@ -1,6 +1,5 @@
 
-#include "../rthwif_production.h"
-#include "../rthwif_builder.h"
+#include "tbb/tbb.h"
 
 #include "../rthwif_production.h"
 #include "../rthwif_builder.h"
@@ -10,6 +9,10 @@
 #include <vector>
 #include <map>
 #include <iostream>
+
+namespace embree {
+  double getSeconds();
+}
 
 #define PRINT(x) std::cout << #x << " = " << x << std::endl;
 
@@ -128,6 +131,8 @@ sycl::float3 RandomSampler_getFloat3(RandomSampler& self)
 
 RandomSampler rng;
 
+volatile RTHWIF_PARALLEL_OPERATION parallelOperation = nullptr;
+
 enum class InstancingType
 {
   NONE,
@@ -145,7 +150,9 @@ enum class TestType
   BUILD_TEST_TRIANGLES,              // test BVH builder with triangles
   BUILD_TEST_PROCEDURALS,            // test BVH builder with procedurals
   BUILD_TEST_INSTANCES,              // test BVH builder with instances
-  BUILD_TEST_MIXED                   // test BVH builder with mixed scene (triangles, procedurals, and instances)
+  BUILD_TEST_MIXED,                  // test BVH builder with mixed scene (triangles, procedurals, and instances)
+  BENCHMARK_TRIANGLES,               // benchmark BVH builder with triangles
+  BENCHMARK_PROCEDURALS,             // benchmark BVH builder with procedurals
 };
 
 enum class BuildMode
@@ -499,6 +506,8 @@ struct Geometry
 
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
 
+  virtual size_t getNumPrimitives() const = 0;
+
   Type type;
 };
 
@@ -639,7 +648,7 @@ public:
   }
 
   /* selects random sub-set of triangles */
-  void select(const uint32_t numTriangles)
+  void selectRandom(const uint32_t numTriangles)
   {
     assert(numTriangles <= size());
 
@@ -660,6 +669,15 @@ public:
       triangles[i].w() = i;
   }
 
+  /* selects sequential sub-set of triangles */
+  void selectSequential(const uint32_t numTriangles)
+  {
+    assert(numTriangles <= size());
+
+    /* now we can easily select a random set of triangles */
+    triangles.resize(numTriangles);
+  }
+  
   /* creates separate vertives for triangles */
   void unshareVertices()
   {
@@ -707,6 +725,11 @@ public:
       tri_map[tri.index].local_to_world = local_to_world;
     }
   }
+  
+  size_t getNumPrimitives() const override {
+    return triangles.size();
+  }
+
   
 public:
   RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
@@ -805,6 +828,10 @@ struct InstanceGeometryT : public Geometry
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
     instUserID = this->instUserID;
     scene->buildTriMap(local_to_world_in * local2world, id_stack, instUserID, procedural, tri_map);
+  }
+
+  size_t getNumPrimitives() const override {
+    return 1;
   }
 
   bool procedural;
@@ -1042,14 +1069,15 @@ struct Scene
       std::swap(geometries[g],geometries[k]);
     }
   }
-  
-  void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode)
+
+  void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, bool benchmark = false)
   {
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     const size_t geomDescrBytes = sizeof(GEOMETRY_DESC)*size();
     GEOMETRY_DESC *desc = (GEOMETRY_DESC*)sycl::aligned_alloc(64,geomDescrBytes,device,context,sycl::usm::alloc::shared);
-    assert(desc);        
-    RTHWIF_GEOMETRY_DESC **geom = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,size()*sizeof(const RTHWIF_GEOMETRY_DESC*),device,context,sycl::usm::alloc::shared);
+    assert(desc);
+    const size_t numGeometries = size();
+    RTHWIF_GEOMETRY_DESC **geom = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,numGeometries*sizeof(const RTHWIF_GEOMETRY_DESC*),device,context,sycl::usm::alloc::shared);
     assert(geom);
 #else    
     /* fill geometry descriptor buffer */
@@ -1057,6 +1085,7 @@ struct Scene
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
 #endif
     
+    size_t numPrimitives = 0;
     for (size_t geomID=0; geomID<size(); geomID++)
     {
       const std::shared_ptr<Geometry>& g = geometries[geomID];
@@ -1066,7 +1095,8 @@ struct Scene
         geom[geomID] = nullptr;
         continue;
       }
-      
+
+      numPrimitives += g->getNumPrimitives();
       g->buildAccel(device,context,buildMode);
       g->getDesc(&desc[geomID]);
       geom[geomID] = (RTHWIF_GEOMETRY_DESC*) &desc[geomID];
@@ -1080,7 +1110,7 @@ struct Scene
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom;    
 #else    
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
@@ -1092,17 +1122,18 @@ struct Scene
     args.scratchBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
+    args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.accelBufferBytesOut = &accelBufferBytesOut;
     args.buildUserPtr = nullptr;
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
     
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
     size.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
-//#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+//#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
 //    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,size);
 //#else    
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
@@ -1114,30 +1145,31 @@ struct Scene
       throw std::runtime_error("expected larger than worst case");
 
     /* allocate scratch buffer */
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    size_t sentinelBytes = 1024; // add that many zero bytes to catch buffer overruns    
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
      // === scratch buffer === 
-    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,size.scratchBufferBytes,device,context,sycl::usm::alloc::shared);
-    assert(scratchBuffer);
-    args.scratchBuffer = scratchBuffer;
-    args.scratchBufferBytes = size.scratchBufferBytes;
-    
+    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,size.scratchBufferBytes+sentinelBytes,device,context,sycl::usm::alloc::shared);
+    assert(scratchBuffer);    
     // === host device communication buffer ===
     char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,sizeof(uint)*4,device,context,sycl::usm::alloc::host); // FIXME
     args.hostDeviceCommPtr = hostDeviceCommPtr;
+    memset(scratchBuffer,0,size.scratchBufferBytes+sentinelBytes);
+    args.scratchBuffer = scratchBuffer;
+    args.scratchBufferBytes = size.scratchBufferBytes;        
 #else    
-    std::vector<char> scratchBuffer(size.scratchBufferBytes);
+    std::vector<char> scratchBuffer(size.scratchBufferBytes+sentinelBytes);
+    memset(scratchBuffer.data(),0,scratchBuffer.size());
     args.scratchBuffer = scratchBuffer.data();
-    args.scratchBufferBytes = scratchBuffer.size();
+    args.scratchBufferBytes = size.scratchBufferBytes;    
 #endif
-
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+    
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     size_t new_accelBufferBytes = 0;
     args.accelBufferBytesOut = &new_accelBufferBytes;
 #endif    
     
     accel = nullptr;
     size_t accelBytes = 0;
-
     
     /* build with different modes */
     switch (buildMode)
@@ -1145,38 +1177,70 @@ struct Scene
     case BuildMode::BUILD_WORST_CASE_SIZE: {
 
       accelBytes = size.accelBufferWorstCaseBytes;
-      accel = alloc_accel_buffer(accelBytes,device,context);
-      memset(accel,0,accelBytes);
+      accel = alloc_accel_buffer(accelBytes+sentinelBytes,device,context);
+      memset(accel,0,accelBytes+sentinelBytes);
 
       /* build accel */
-      args.numGeometries = geom_size; 
-      args.accelBuffer = accel;
-      args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+      double t0 = embree::getSeconds();
+      size_t numIterations = benchmark ? 16 : 1;
+
+      for (size_t i=0; i<numIterations; i++)
+      {
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+        args.numGeometries = numGeometries;
+#else        
+        args.numGeometries = geom.size();
+#endif        
+        args.accelBuffer = accel;
+        args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+        err = rthwifBuildAccel(args);
+
+        if (args.parallelOperation) {
+          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
+          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
+            err = rthwifJoinParallelOperation(parallelOperation);
+          });
+        }
       
-      err = rthwifBuildAccel(args);
-      
-      if (err != RTHWIF_ERROR_NONE)
-        throw std::runtime_error("build error");
+        if (err != RTHWIF_ERROR_NONE)
+          throw std::runtime_error("build error");
+      }
+      double t1 = embree::getSeconds();
+
+      if (benchmark) {
+        double dt = (t1-t0)/double(numIterations);
+        std::cout << double(numPrimitives)/dt*1E-6 << " Mprims/s" << std::endl;
+      }
+      break;
     }
     case BuildMode::BUILD_EXPECTED_SIZE: {
       
       size_t bytes = size.accelBufferExpectedBytes;
-      for (size_t i=0; i<=8; i++) // FIXME: reduce worst cast iteration number
+      for (size_t i=0; i<=16; i++) // FIXME: reduce worst cast iteration number
       {
-        if (i == 8)
-          throw std::runtime_error("build requires more than 8 iterations");
+        if (i == 16)
+          throw std::runtime_error("build requires more than 16 iterations");
         
         /* allocate BVH data */
         free_accel_buffer(accel,context);
         accelBytes = bytes;
-        accel = alloc_accel_buffer(accelBytes,device,context);
-        memset(accel,0,accelBytes);
-        
+        accel = alloc_accel_buffer(accelBytes+sentinelBytes,device,context);
+        memset(accel,0,accelBytes+sentinelBytes);
+
         /* build accel */
         args.numGeometries = geom_size; // geom
         args.accelBuffer = accel;
         args.accelBufferBytes = accelBytes;
         err = rthwifBuildAccel(args);
+
+        if (args.parallelOperation) {
+          assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
+          uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
+          tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
+            err = rthwifJoinParallelOperation(parallelOperation);
+          });
+        }
         
         if (err != RTHWIF_ERROR_RETRY)
           break;
@@ -1189,24 +1253,40 @@ struct Scene
       
       if (err != RTHWIF_ERROR_NONE)
         throw std::runtime_error("build error");
+
+      break;
     }
     }
 
     this->bounds = bounds;
 
-    /* check if returned size of acceleration structure is correct */
-    bool is_zero = std::all_of( (char*)args.accelBuffer+accelBufferBytesOut, (char*)args.accelBuffer+accelBytes,
-                                [](char c) { return c == 0; } );
-    if (!is_zero)
-      throw std::runtime_error("build did return wrong acceleration structure size");
+    
+    if (!benchmark)
+    {
+      /* scratch buffer bounds check */
+      for (size_t i=size.scratchBufferBytes; i<size.scratchBufferBytes+sentinelBytes; i++) {
+        if (((char*)args.scratchBuffer)[i] == 0x00) continue;
+        throw std::runtime_error("scratch buffer bounds check failed");
+      }
+      /* acceleration structure bounds check */
+      for (size_t i=accelBytes; i<accelBytes+sentinelBytes; i++) {
+        if (((char*)args.accelBuffer)[i] == 0x00) continue;
+        throw std::runtime_error("acceleration buffer bounds check failed");
+      }
+      /* check if returned size of acceleration structure is correct */
+      for (size_t i=accelBufferBytesOut; i<accelBytes; i++) {
+        if (((char*)args.accelBuffer)[i] == 0x00) continue;
+        throw std::runtime_error("wrong acceleration structure size returned");
+      }
+    }
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     sycl::free(geom    ,context);
     sycl::free(desc   ,context);    
     sycl::free(scratchBuffer,context);
     sycl::free(hostDeviceCommPtr,context);
-#endif          
-    
+#endif              
   }
   
   void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map)
@@ -1221,7 +1301,7 @@ struct Scene
       id_stack.pop_back();
     }
   }
-  
+
   size_t size() const {
     return geometries.size();
   }
@@ -1720,7 +1800,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 
   scene->addNullGeometries(16);
     
-  scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE);
+  scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE,false);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1777,7 +1857,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
   std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
   if (test == TestType::BUILD_TEST_PROCEDURALS) plane->procedural = true;
-  plane->select(numPrimitives);
+  plane->selectRandom(numPrimitives);
   if (testID%2) plane->unshareVertices();
     
   std::shared_ptr<Scene> scene(new Scene);
@@ -1798,7 +1878,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   }
 
   scene->addNullGeometries(16);
-  scene->buildAccel(device,context,buildMode);
+  scene->buildAccel(device,context,buildMode,false);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1840,9 +1920,8 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
 
 uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test, BuildMode buildMode)
 {
-  uint32_t N = 128;
   uint32_t numErrors = 0;
-  for (uint32_t i=0; i<N; i++) {
+  for (uint32_t i=0; i<128; i++) {
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
     numErrors += executeBuildTest(device,queue,context,test,buildMode,numPrimitives,i);
@@ -1850,6 +1929,30 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   return numErrors;
 }
 
+uint32_t executeBenchmark(sycl::device& device, sycl::queue& queue, sycl::context& context, TestType test)
+{
+  for (uint32_t i=0; i<=20; i++)
+  {
+    const uint32_t numPrimitives = 1<<i;
+
+    switch (test) {
+    default: break;
+    case TestType::BENCHMARK_TRIANGLES  : std::cout << "benchmarking " << numPrimitives << " triangles: "; break;
+    case TestType::BENCHMARK_PROCEDURALS: std::cout << "benchmarking " << numPrimitives << " procedurals: "; break;
+    };
+
+    const uint32_t width = 2*(uint32_t)ceilf(sqrtf(numPrimitives));
+    std::shared_ptr<TriangleMesh> plane = createTrianglePlane(sycl::float3(0,0,0), sycl::float3(width,0,0), sycl::float3(0,width,0), width, width);
+    if (test == TestType::BENCHMARK_PROCEDURALS) plane->procedural = true;
+    plane->selectSequential(numPrimitives);
+    
+    std::shared_ptr<Scene> scene(new Scene);
+    scene->add(plane);
+    
+    scene->buildAccel(device,context,BuildMode::BUILD_WORST_CASE_SIZE,true);
+  }
+  return 0;
+}
 
 enum Flags : uint32_t {
   FLAGS_NONE,
@@ -1905,7 +2008,8 @@ int main(int argc, char* argv[])
   BuildMode buildMode = BuildMode::BUILD_EXPECTED_SIZE;
   
   bool jit_cache = false;
-
+  uint32_t numThreads = tbb::this_task_arena::max_concurrency();
+  
   /* command line parsing */
   if (argc == 1) {
     std::cout << "ERROR: no test specified" << std::endl;
@@ -1942,6 +2046,12 @@ int main(int argc, char* argv[])
     else if (strcmp(argv[i], "--build_test_mixed") == 0) {
       test = TestType::BUILD_TEST_MIXED;
     }
+    else if (strcmp(argv[i], "--benchmark_triangles") == 0) {
+      test = TestType::BENCHMARK_TRIANGLES;
+    }
+    else if (strcmp(argv[i], "--benchmark_procedurals") == 0) {
+      test = TestType::BENCHMARK_PROCEDURALS;
+    }
     else if (strcmp(argv[i], "--no-instancing") == 0) {
       inst = InstancingType::NONE;
     }
@@ -1958,8 +2068,12 @@ int main(int argc, char* argv[])
       buildMode = BuildMode::BUILD_EXPECTED_SIZE;
     }
     else if (strcmp(argv[i], "--jit-cache") == 0) {
-      if (++i >= argc) throw std::runtime_error("Error: --jit-cache syntax error");
+      if (++i >= argc) throw std::runtime_error("Error: --jit-cache <int>: syntax error");
       jit_cache = atoi(argv[i]);
+    }
+    else if (strcmp(argv[i], "--threads") == 0) {
+      if (++i >= argc) throw std::runtime_error("Error: --threads <int>: syntax error");
+      numThreads = atoi(argv[i]);
     }
     else {
       std::cout << "ERROR: invalid command line option " << argv[i] << std::endl;
@@ -1969,6 +2083,8 @@ int main(int argc, char* argv[])
 
   if (jit_cache)
     std::cout << "WARNING: JIT caching is not supported!" << std::endl;
+
+  tbb::global_control tbb_threads(tbb::global_control::max_allowed_parallelism,numThreads);
     
   /* initialize SYCL device */
 #if __SYCL_COMPILER_VERSION < 20220914
@@ -1983,9 +2099,13 @@ int main(int argc, char* argv[])
 
   /* execute test */
   RandomSampler_init(rng,0x56FE238A);
+
+  parallelOperation = rthwifNewParallelOperation();
   
   uint32_t numErrors = 0;
-  if (test >= TestType::BUILD_TEST_TRIANGLES)
+  if (test >= TestType::BENCHMARK_TRIANGLES)
+    numErrors = executeBenchmark(device,queue,context,test);
+  else if (test >= TestType::BUILD_TEST_TRIANGLES)
     numErrors = executeBuildTest(device,queue,context,test,buildMode);
   else
     numErrors = executeTest(device,queue,context,inst,test);

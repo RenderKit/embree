@@ -1,7 +1,7 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-IF (EMBREE_DPCPP_AOT_DEVICES STREQUAL "none")
+IF (EMBREE_SYCL_AOT_DEVICES STREQUAL "none")
   ADD_DEFINITIONS("-DUSE_SPECIALIZATION_CONSTANTS")
 ENDIF()
 
@@ -50,7 +50,7 @@ ENDIF()
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3)
   ADD_EMBREE_MODELS_TEST(test-models-intensity4.txt viewer viewer viewer)
 
-  IF (EMBREE_DPCPP_SUPPORT AND EMBREE_DPCPP_MBLUR)
+  IF (EMBREE_SYCL_SUPPORT AND EMBREE_SYCL_MBLUR)
     set_tests_properties(viewer_sophie_mblur_sophie_mblur_sycl PROPERTIES DISABLED True)
   ENDIF()
 ENDIF()

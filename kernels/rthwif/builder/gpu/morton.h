@@ -3,7 +3,7 @@
 
 #pragma once
 
-#if defined(EMBREE_DPCPP_SUPPORT)
+#if defined(EMBREE_SYCL_SUPPORT)
 #include "../../builder/gpu/common.h"
 
 namespace embree

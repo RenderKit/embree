@@ -3,8 +3,7 @@
 
 #pragma once
 
-#include <cstdint>
-#include <sycl/sycl.hpp>
+#include <level_zero/ze_api.h>
 
 #if defined(__cplusplus)
 #  define RTHWIF_API_EXTERN_C extern "C"
@@ -183,7 +182,7 @@ typedef struct RTHWIF_GEOMETRY_AABBS_FPTR_DESC // 24 bytes
   RTHWIF_GEOMETRY_AABBS_FPTR getBounds;       // function pointer to return bounds for a range of primitives
   void* geomUserPtr;                          // geometry user pointer passed to callback
   
-} RTHWIF_GEOMETRY_AABBS_FPTR_DESC;
+} RTHWIF_GEOMETRY_AABBS_DESC;
 
 
 /* Instance geometry descriptor. */
@@ -286,14 +285,19 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
 
   /* Array of pointers to geometry descriptors. This array and the
    * geometry descriptors themselves can be standard host memory
-   * allocations. */
+   * allocations. A pointer to a geometry descriptor can be null, in
+   * which case the geometry is treated as empty. */
   const RTHWIF_GEOMETRY_DESC** geometries;
 
   /* Number of geometries in geometry descriptor array. */
   uint32_t numGeometries;
 
-  /* Destination buffer for acceleration structure. Has to be a USM
-   * allocation aligned to 128 bytes. */
+  /* Destination buffer for acceleration structure. This has to be a
+   * shared memory allocation aligned to
+   * RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT bytes and using the ray
+   * tracing allocation descriptor
+   * (ze_raytracing_mem_alloc_ext_desc_t) in the zeMemAllocShared
+   * call. */
   void* accelBuffer;
 
   /* Number of allocated bytes of the acceleration structure
@@ -338,11 +342,11 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   RTHWIF_AABB* boundsOut;
 
   /* for debugging purposes use only */
-#if defined(EMBREE_DPCPP_ALLOC_DISPATCH_GLOBALS)
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   void* dispatchGlobalsPtr;
 #endif
 
-#if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
   void *deviceGPU;
   void *hostDeviceCommPtr;
 #endif
@@ -365,7 +369,7 @@ RTHWIF_API void rthwifExit();
  * Returns features supported by the implementation.
  */
 
-RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(sycl::device device);
+RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice);
 
 /*
  * The rthwifGetAccelSize function calculates the size of buffers
@@ -457,7 +461,7 @@ RTHWIF_API uint32_t rthwifGetParallelOperationMaxConcurrency( RTHWIF_PARALLEL_OP
 RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION parallelOperation );
 
 
-/* #if defined(EMBREE_DPCPP_GPU_BVH_BUILDER)       */
+/* #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)       */
 /* RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o); */
 /* RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args); */
 /* #endif */
