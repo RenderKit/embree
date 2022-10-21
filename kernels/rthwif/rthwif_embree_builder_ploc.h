@@ -1029,7 +1029,7 @@ namespace embree
     }
   }  
   
-  __forceinline void createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGs, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
+  __forceinline uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGs, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
 #if 1
     const uint numWGs = min((numGeoms+1024-1)/1024,(uint)MAX_WGs);
@@ -1046,7 +1046,7 @@ namespace embree
     
     static const uint CREATE_INSTANCES_SUB_GROUP_WIDTH = 16;
     static const uint CREATE_INSTANCES_WG_SIZE  = 1024;
-    const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,numWGs*CREATE_INSTANCES_WG_SIZE),sycl::range<1>(CREATE_INSTANCES_WG_SIZE));
+    const sycl::nd_range<1> nd_range1(numWGs*CREATE_INSTANCES_WG_SIZE,sycl::range<1>(CREATE_INSTANCES_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);
         sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);                
@@ -1056,6 +1056,7 @@ namespace embree
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
                          {
                            const uint groupID         = item.get_group(0);
+                           const uint numGroups       = item.get_group_range(0);                                                        
                            const uint localID         = item.get_local_id(0);
                            const uint step_local      = item.get_local_range().size();
                            const uint subgroupID      = get_sub_group_id();
@@ -1172,7 +1173,11 @@ namespace embree
                                }
                                
                              }
-                             
+
+                             if (groupID == numGroups-1 && localID == 0)
+                             {
+                               *host_device_tasks = global_count_prefix_sum + (scratch_mem[groupID] & mask);
+                             }
                            }                                                      
                          });
 		  
@@ -1181,7 +1186,8 @@ namespace embree
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("write out instance bounds", (float)dt);
-
+    const uint numInstances = *host_device_tasks;
+    return numInstances;
 #else
     uint ID = 0;
     for (uint instID=0;instID<numGeoms;instID++)
@@ -1226,11 +1232,12 @@ namespace embree
     return true;
   }
   
-  __forceinline void createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
+  __forceinline uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     uint ID = 0;
     for (uint userGeomID=0;userGeomID<numGeoms;userGeomID++)
     {
+      if (unlikely(geometry_desc[userGeomID] == nullptr)) continue;
       if (geometry_desc[userGeomID]->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
       {
         RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[userGeomID];
@@ -1241,14 +1248,13 @@ namespace embree
           {
             BBox3fa procedural_bounds;
             
-            if (!buildBounds(procedural,i,procedural_bounds,procedural->geomUserPtr))
-              procedural_bounds = BBox3fa(Vec3fa(0.0f),Vec3fa(0.0f));
+            if (!buildBounds(procedural,i,procedural_bounds,procedural->geomUserPtr)) continue;
 
             gpu::AABB3f bounds = gpu::AABB3f(procedural_bounds.lower.x,procedural_bounds.lower.y,procedural_bounds.lower.z,
                                              procedural_bounds.upper.x,procedural_bounds.upper.y,procedural_bounds.upper.z);
             
             BVH2Ploc node;                             
-            node.initLeaf(userGeomID,ID,bounds);                               
+            node.initLeaf(userGeomID,i,bounds);                               
             node.store(&bvh2[prim_type_offset + ID]);
             ID++;
               
@@ -1257,6 +1263,7 @@ namespace embree
         }
       }
     }
+    return ID;
 #if 0
     //static const uint CREATE_INSTANCES_SEARCH_WG_SIZE  = 256;
       
@@ -2854,14 +2861,14 @@ namespace embree
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
                                  const AffineSpace3fa local2world = getTransform(instance);
                                  const uint64_t root = (uint64_t)instance->accel + 128; 
-                                 *dest = InstancePrimitive(local2world,root,instID /*instance->instanceUserID*/,mask32_to_mask8(instance->geometryMask));
+                                 *dest = InstancePrimitive(local2world,root,instance->instanceUserID,mask32_to_mask8(instance->geometryMask));
                                }
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_PROCEDURAL) 
                                {
                                  const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometries[geomID];                                 
                                  const uint mask32 = mask32_to_mask8(geom->geometryMask);
                                  ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
-                                 PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
+                                 PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE /*(GeometryFlags)geom->geometryFlags*/,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
                                  *dest = ProceduralLeaf(leafDesc,primID0,true);
                                }
                              }

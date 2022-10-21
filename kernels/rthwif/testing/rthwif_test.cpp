@@ -11,6 +11,7 @@
 #include <iostream>
 
 //#undef EMBREE_SYCL_GPU_BVH_BUILDER
+#define VERBOSE false
 
 namespace embree {
   double getSeconds();
@@ -1133,7 +1134,7 @@ struct Scene
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     args.sycl_device = &device;
     args.sycl_queue  = &queue;
-    //args.verbose = true;
+    args.verbose = VERBOSE;
 #endif
     
     RTHWIF_ACCEL_SIZE size;
@@ -1191,7 +1192,7 @@ struct Scene
         args.accelBuffer = accel;
         args.accelBufferBytes = size.accelBufferWorstCaseBytes;
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        args.verbose = false;
+        args.verbose = VERBOSE;
         err = rthwifBuildAccelGPU(args);        
 #else                
         err = rthwifBuildAccel(args);
@@ -1236,7 +1237,7 @@ struct Scene
         args.accelBufferBytes = accelBytes;
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        args.verbose = false;
+        args.verbose = VERBOSE;
         err = rthwifBuildAccelGPU(args);        
 #else        
         err = rthwifBuildAccel(args);
@@ -1931,8 +1932,8 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
     numErrors += executeBuildTest(device,queue,context,test,buildMode,numPrimitives,i);
-    // if (numPrimitives == 2)
-    //   exit(0);
+    // if (numErrors)
+    //   exit(1);
   }
   return numErrors;
 }

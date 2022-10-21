@@ -233,14 +233,14 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& arg
 
 RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
 {
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
   BuildTimer timer;
   timer.reset();
 
   // ================================    
   // === GPU device/queue/context ===
   // ================================
-    
+  
   sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
   sycl::device &gpu_device = *(sycl::device*)args.sycl_device;  
   const bool verbose2 = args.verbose;
@@ -248,7 +248,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   const uint gpu_maxComputeUnits  = gpu_device.get_info<sycl::info::device::max_compute_units>();    
   const uint gpu_maxLocalMemory   = gpu_device.get_info<sycl::info::device::local_mem_size>();
   uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
-    
+  
   if (unlikely(verbose2))
   {
     PRINT("PLOC++ GPU BVH BUILDER");            
@@ -373,7 +373,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // ================================
   // === estimate size of the BVH ===
   // ================================
-  const uint numPrimitives       = numQuads + numInstances + numProcedurals;    
+  uint numPrimitives             = numQuads + numInstances + numProcedurals;  // can be slower due to invalid geoms  
   const uint header              = 128;
   const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
   const uint node_size           = args.accelBufferBytes - leaf_size - header; //estimateSizeInternalNodes(numQuads,numInstances,numProcedurals);
@@ -465,17 +465,20 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // ====================================          
   // ==== create procedural primrefs ====
   // ====================================
-    
+
   if (numProcedurals)
-    createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,bvh2,numQuads,create_primref_time,verbose2);
+    numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,bvh2,numQuads,host_device_tasks,create_primref_time,verbose2);
 
   // ==================================          
   // ==== create instance primrefs ====
   // ==================================
     
   if (numInstances)
-    createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,MAX_WGS,bvh2,numQuads + numProcedurals,create_primref_time,verbose2);
-    
+    numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,MAX_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
+
+  // === recompute actual number of primitives ===
+  numPrimitives = numQuads + numInstances + numProcedurals;
+
   timer.stop(BuildTimer::PRE_PROCESS);
   timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);    
   if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
