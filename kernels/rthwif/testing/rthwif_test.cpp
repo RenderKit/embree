@@ -501,7 +501,7 @@ struct Geometry
     throw std::runtime_error("Geometry::transform not implemented");
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode) {
+  virtual void buildAccel(sycl::device& device, sycl::queue& queue, sycl::context& context, BuildMode buildMode) {
   };
 
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
@@ -821,8 +821,8 @@ struct InstanceGeometryT : public Geometry
     }
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode) override {
-    scene->buildAccel(device,context,buildMode);
+  virtual void buildAccel(sycl::device& device, sycl::queue &queue, sycl::context& context, BuildMode buildMode) override {
+    scene->buildAccel(device,queue,context,buildMode);
   }
 
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
@@ -1070,11 +1070,17 @@ struct Scene
     }
   }
 
-  void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, bool benchmark = false)
+  void buildAccel(sycl::device& device, sycl::queue& queue, sycl::context& context, BuildMode buildMode, bool benchmark = false)
   {
     /* fill geometry descriptor buffer */
+    const size_t numGeometries = size();        
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    GEOMETRY_DESC *desc = (GEOMETRY_DESC*)sycl::aligned_alloc(64,sizeof(GEOMETRY_DESC)*numGeometries,device,context,sycl::usm::alloc::shared);
+    RTHWIF_GEOMETRY_DESC **geom = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,numGeometries*sizeof(RTHWIF_GEOMETRY_DESC*),device,context,sycl::usm::alloc::shared);
+#else        
     std::vector<GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
+#endif    
     size_t numPrimitives = 0;
     for (size_t geomID=0; geomID<size(); geomID++)
     {
@@ -1087,9 +1093,9 @@ struct Scene
       }
 
       numPrimitives += g->getNumPrimitives();
-      g->buildAccel(device,context,buildMode);
+      g->buildAccel(device,queue,context,buildMode);
       g->getDesc(&desc[geomID]);
-      geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
+      geom[geomID] = (RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
 
     /* estimate accel size */
@@ -1098,8 +1104,12 @@ struct Scene
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(args));
     args.structBytes = sizeof(args);
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom;    
+#else    
     args.geometries = (const RTHWIF_GEOMETRY_DESC**) geom.data();
-    args.numGeometries = geom.size();
+#endif    
+    args.numGeometries = numGeometries; //geom.size();
     args.accelBuffer = nullptr;
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
@@ -1113,11 +1123,21 @@ struct Scene
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    args.sycl_device = &device;
+    args.sycl_queue  = &queue;
+    args.verbose = true;
+#endif
     
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
     size.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,size);    
+#else    
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
+#endif    
     if (err != RTHWIF_ERROR_NONE)
       throw std::runtime_error("BVH size estimate failed");
 
@@ -1126,11 +1146,23 @@ struct Scene
 
     /* allocate scratch buffer */
     size_t sentinelBytes = 1024; // add that many zero bytes to catch buffer overruns
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+      // === scratch buffer === 
+    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,size.scratchBufferBytes+sentinelBytes,device,context,sycl::usm::alloc::shared);
+    assert(scratchBuffer);    
+    // === host device communication buffer ===
+    char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,sizeof(uint)*4,device,context,sycl::usm::alloc::host); // FIXME
+    args.hostDeviceCommPtr = hostDeviceCommPtr;
+    memset(scratchBuffer,0,size.scratchBufferBytes+sentinelBytes);
+    args.scratchBuffer = scratchBuffer;
+    args.scratchBufferBytes = size.scratchBufferBytes;           
+#else    
     std::vector<char> scratchBuffer(size.scratchBufferBytes+sentinelBytes);
     memset(scratchBuffer.data(),0,scratchBuffer.size());
     args.scratchBuffer = scratchBuffer.data();
     args.scratchBufferBytes = size.scratchBufferBytes;
-
+#endif
+    
     accel = nullptr;
     size_t accelBytes = 0;
     
@@ -1149,7 +1181,7 @@ struct Scene
 
       for (size_t i=0; i<numIterations; i++)
       {
-        args.numGeometries = geom.size();
+        args.numGeometries = numGeometries; //geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = size.accelBufferWorstCaseBytes;
         err = rthwifBuildAccel(args);
@@ -1158,8 +1190,8 @@ struct Scene
           assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
           uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
           tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
-            err = rthwifJoinParallelOperation(parallelOperation);
-          });
+                                                  err = rthwifJoinParallelOperation(parallelOperation);
+                                                });
         }
       
         if (err != RTHWIF_ERROR_NONE)
@@ -1188,17 +1220,22 @@ struct Scene
         memset(accel,0,accelBytes+sentinelBytes);
 
         /* build accel */
-        args.numGeometries = geom.size();
+        args.numGeometries = numGeometries; //geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = accelBytes;
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+        err = rthwifBuildAccelGPU(args);        
+#else        
         err = rthwifBuildAccel(args);
+#endif        
 
         if (args.parallelOperation) {
           assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
           uint32_t maxThreads = rthwifGetParallelOperationMaxConcurrency(parallelOperation);
           tbb::parallel_for(0u, maxThreads, 1u, [&](uint32_t) {
-            err = rthwifJoinParallelOperation(parallelOperation);
-          });
+                                                  err = rthwifJoinParallelOperation(parallelOperation);
+                                                });
         }
         
         if (err != RTHWIF_ERROR_RETRY)
@@ -1237,6 +1274,13 @@ struct Scene
         throw std::runtime_error("wrong acceleration structure size returned");
       }
     }
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    sycl::free(hostDeviceCommPtr,context);    
+    sycl::free(scratchBuffer,context);    
+    sycl::free(geom    ,context);
+    sycl::free(desc   ,context);    
+#endif                      
   }
   
   void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map)
@@ -1750,7 +1794,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
 
   scene->addNullGeometries(16);
     
-  scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE,false);
+  scene->buildAccel(device,queue,context,BuildMode::BUILD_EXPECTED_SIZE,false);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1828,7 +1872,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   }
 
   scene->addNullGeometries(16);
-  scene->buildAccel(device,context,buildMode,false);
+  scene->buildAccel(device,queue,context,buildMode,false);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1899,7 +1943,7 @@ uint32_t executeBenchmark(sycl::device& device, sycl::queue& queue, sycl::contex
     std::shared_ptr<Scene> scene(new Scene);
     scene->add(plane);
     
-    scene->buildAccel(device,context,BuildMode::BUILD_WORST_CASE_SIZE,true);
+    scene->buildAccel(device,queue,context,BuildMode::BUILD_WORST_CASE_SIZE,true);
   }
   return 0;
 }
@@ -2042,7 +2086,7 @@ int main(int argc, char* argv[])
 #else
   device = sycl::device(sycl::gpu_selector_v);
 #endif
-  sycl::queue queue = sycl::queue(device,exception_handler);
+  sycl::queue queue = sycl::queue(device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() }); //sycl::queue(device,exception_handler);
   context = queue.get_context();
 
   dispatchGlobalsPtr = allocDispatchGlobals(device,context);
