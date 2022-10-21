@@ -179,6 +179,9 @@ namespace embree
        * distance between them can be at most 0xFFFF as we use 16 bits
        * to encode that difference. */
       assert(primIndex0 <= primIndex1 && primIndex1 - primIndex0 < 0xFFFF);
+// #if !defined(__SYCL_DEVICE_ONLY__)
+//       print(std::cout,0);
+// #endif      
     }
 
     /* returns the i'th vertex */

@@ -5,11 +5,11 @@
 #include "builder/gpu/sort.h"
 #include "builder/gpu/morton.h"
 #include <memory>
-#include "../common/scene.h"
-#include "../common/scene_triangle_mesh.h"
-#include "../common/scene_quad_mesh.h"
-#include "../common/scene_user_geometry.h"
-#include "../common/scene_instance.h"
+ #include "../common/scene.h" 
+/* #include "../common/scene_triangle_mesh.h" */
+/* #include "../common/scene_quad_mesh.h" */
+/* #include "../common/scene_user_geometry.h" */
+/* #include "../common/scene_instance.h" */
 #include "rthwif_builder.h"
 
 
@@ -426,6 +426,17 @@ namespace embree
   // ============================================================================== Quadifier ==========================================================================================
   // ===================================================================================================================================================================================
 
+
+  __forceinline const RTHWIF_TRIANGLE_INDICES &getTriangleDesc(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint triID)
+  {
+    return *(RTHWIF_TRIANGLE_INDICES*)((char*)mesh.triangleBuffer + mesh.triangleStride * triID);    
+  }
+
+  __forceinline const RTHWIF_QUAD_INDICES &getQuadDesc(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint triID)
+  {
+    return *(RTHWIF_QUAD_INDICES*)((char*)mesh.quadBuffer + mesh.quadStride * triID);    
+  }
+    
   __forceinline Vec3f getVec3f(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint vtxID)
   {
     return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * vtxID);
@@ -440,15 +451,16 @@ namespace embree
 
   __forceinline bool isValidTriangle(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint i, uint3 &indices)
   {
-    const RTHWIF_TRIANGLE_INDICES &tri = mesh.triangleBuffer[i];
+    const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(mesh,i);
     const uint numVertices = mesh.vertexCount;
     indices.x() = tri.v0;
     indices.y() = tri.v1;
-    indices.z() = tri.v2;    
+    indices.z() = tri.v2;
     if (max(tri.v0,max(tri.v1,tri.v2)) >= numVertices) return false;
     const Vec3fa v0 = getVec3f(mesh,tri.v0);
     const Vec3fa v1 = getVec3f(mesh,tri.v1);
     const Vec3fa v2 = getVec3f(mesh,tri.v2);
+    
     const float max_v0 = max(fabsf(v0.x),fabsf(v0.y),fabsf(v0.z));
     const float max_v1 = max(fabsf(v1.x),fabsf(v1.y),fabsf(v1.z));
     const float max_v2 = max(fabsf(v2.x),fabsf(v2.y),fabsf(v2.z));    
@@ -459,7 +471,7 @@ namespace embree
   
   __forceinline bool isValidQuad(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint i, uint4 &indices)
   {
-    const RTHWIF_QUAD_INDICES &quad = mesh.quadBuffer[i];
+    const RTHWIF_QUAD_INDICES &quad = getQuadDesc(mesh,i);
     const uint numVertices = mesh.vertexCount;
     indices.x() = quad.v0;
     indices.y() = quad.v1;
@@ -484,7 +496,7 @@ namespace embree
     
   __forceinline bool isValidTriangle(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint i, uint3 &indices, gpu::AABB3f &bounds)
   {
-    const RTHWIF_TRIANGLE_INDICES &tri = mesh.triangleBuffer[i];
+    const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(mesh,i);
     const uint numVertices = mesh.vertexCount;
     indices.x() = tri.v0;
     indices.y() = tri.v1;
@@ -502,6 +514,7 @@ namespace embree
     float3 vtx0(v0.x,v0.y,v0.z);
     float3 vtx1(v1.x,v1.y,v1.z);
     float3 vtx2(v2.x,v2.y,v2.z);
+
     bounds.extend(vtx0);
     bounds.extend(vtx1);
     bounds.extend(vtx2);    
@@ -510,7 +523,7 @@ namespace embree
   
   __forceinline bool isValidQuad(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint i, uint4 &indices, gpu::AABB3f &bounds)
   {
-    const RTHWIF_QUAD_INDICES &quad = mesh.quadBuffer[i];
+    const RTHWIF_QUAD_INDICES &quad = getQuadDesc(mesh,i);
     const uint numVertices = mesh.vertexCount;
     indices.x() = quad.v0;
     indices.y() = quad.v1;
@@ -2802,7 +2815,7 @@ namespace embree
                                  if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
                                  {
                                    RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
-                                   const RTHWIF_TRIANGLE_INDICES &tri = triMesh->triangleBuffer[primID0];
+                                   const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(*triMesh,primID0);
                                    const Vec3f p0 = getVec3f(*triMesh,tri.v0);
                                    const Vec3f p1 = getVec3f(*triMesh,tri.v1);
                                    const Vec3f p2 = getVec3f(*triMesh,tri.v2);                                       
@@ -2812,12 +2825,12 @@ namespace embree
                                    /* handle paired triangle */
                                    if (primID0 != primID1)
                                    {
-                                     const RTHWIF_TRIANGLE_INDICES &tri1 = triMesh->triangleBuffer[primID1];          
+                                     const RTHWIF_TRIANGLE_INDICES &tri1 = getTriangleDesc(*triMesh,primID1);          
                                      const uint p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
                                      p3 = getVec3f(*triMesh,((uint*)&tri1)[p3_index]); // FIXME
                                    }
 
-                                   localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
+                                   localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask, /*i == (numChildren-1)*/ true );
                                    //write(leaf,(float16*)qleaf);
                                  }
                                  // ================                           
@@ -2826,12 +2839,12 @@ namespace embree
                                  else
                                  {
                                    RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                             
-                                   const RTHWIF_QUAD_INDICES &quad = quadMesh->quadBuffer[primID0];
+                                   const RTHWIF_QUAD_INDICES &quad = getQuadDesc(*quadMesh,primID0);
                                    const Vec3f p0 = getVec3f(*quadMesh,quad.v0);
                                    const Vec3f p1 = getVec3f(*quadMesh,quad.v1);
                                    const Vec3f p2 = getVec3f(*quadMesh,quad.v2);                                       
                                    const Vec3f p3 = getVec3f(*quadMesh,quad.v3);                                                                          
-                                   localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, GeometryFlags::OPAQUE, 0xFF, /*i == (numChildren-1)*/ true );
+                                   localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask, /*i == (numChildren-1)*/ true );
                                  }
                                }
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_INSTANCE)

@@ -515,8 +515,8 @@ namespace embree
         // why again?
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;
-        size_t new_accelBufferBytes = 0;
-        args.accelBufferBytesOut = &new_accelBufferBytes;
+        // size_t new_accelBufferBytes = 0;
+        // args.accelBufferBytesOut = &new_accelBufferBytes;
 #else        
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
 #endif        
@@ -552,15 +552,15 @@ namespace embree
 
         if (err == RTHWIF_ERROR_RETRY)
         {
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-          sizeTotal.accelBufferExpectedBytes  = new_accelBufferBytes;
-          sizeTotal.accelBufferWorstCaseBytes = new_accelBufferBytes;
-#else          
+// #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+//           sizeTotal.accelBufferExpectedBytes  = new_accelBufferBytes;
+//           sizeTotal.accelBufferWorstCaseBytes = new_accelBufferBytes;
+// #else          
           if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes) // why?
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
           sizeTotal.accelBufferExpectedBytes = std::min(sizeTotal.accelBufferWorstCaseBytes,(size_t(1.2*sizeTotal.accelBufferExpectedBytes)+127)&-128);
-#endif          
+// #endif          
           
           break;
         }

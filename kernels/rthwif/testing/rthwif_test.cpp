@@ -10,6 +10,8 @@
 #include <map>
 #include <iostream>
 
+//#undef EMBREE_SYCL_GPU_BVH_BUILDER
+
 namespace embree {
   double getSeconds();
 }
@@ -1116,7 +1118,11 @@ struct Scene
     args.scratchBufferBytes = 0;
     args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    args.parallelOperation = nullptr;
+#else    
     args.parallelOperation = parallelOperation;
+#endif    
     args.boundsOut = &bounds;
     args.accelBufferBytesOut = &accelBufferBytesOut;
     args.buildUserPtr = nullptr;
@@ -1127,7 +1133,7 @@ struct Scene
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     args.sycl_device = &device;
     args.sycl_queue  = &queue;
-    args.verbose = true;
+    //args.verbose = true;
 #endif
     
     RTHWIF_ACCEL_SIZE size;
@@ -1184,7 +1190,12 @@ struct Scene
         args.numGeometries = numGeometries; //geom.size();
         args.accelBuffer = accel;
         args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+        args.verbose = false;
+        err = rthwifBuildAccelGPU(args);        
+#else                
         err = rthwifBuildAccel(args);
+#endif        
 
         if (args.parallelOperation) {
           assert(err == RTHWIF_ERROR_PARALLEL_OPERATION);
@@ -1225,6 +1236,7 @@ struct Scene
         args.accelBufferBytes = accelBytes;
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+        args.verbose = false;
         err = rthwifBuildAccelGPU(args);        
 #else        
         err = rthwifBuildAccel(args);
@@ -1919,6 +1931,8 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
     numErrors += executeBuildTest(device,queue,context,test,buildMode,numPrimitives,i);
+    // if (numPrimitives == 2)
+    //   exit(0);
   }
   return numErrors;
 }
@@ -2098,15 +2112,20 @@ int main(int argc, char* argv[])
   
   uint32_t numErrors = 0;
   if (test >= TestType::BENCHMARK_TRIANGLES)
+  {
     numErrors = executeBenchmark(device,queue,context,test);
+  }
   else if (test >= TestType::BUILD_TEST_TRIANGLES)
+  {
     numErrors = executeBuildTest(device,queue,context,test,buildMode);
+  }
   else
+  {
     numErrors = executeTest(device,queue,context,inst,test);
+  }
 
   sycl::free(dispatchGlobalsPtr, context);
 
   rthwifExit();
-  
   return numErrors ? 1 : 0;
 }

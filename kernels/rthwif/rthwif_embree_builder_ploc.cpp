@@ -11,26 +11,35 @@
 #define MAX_WGS                    64
 #define SMALL_SORT_THRESHOLD       1024*4
 
-//#define RTHWIF_EXPORT_API
+static const float ESTIMATED_QUADIFICATION_FACTOR = 0.58;
+static const float ESTIMATED_INTERNAL_NODE_FACTOR = 0.6;
 
 namespace embree
 {
   using namespace embree::isa;
 
-  __forceinline uint estimateSizeInternalNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
+  __forceinline uint estimateSizeInternalNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
   {
-    const uint N = numActiveQuads + numInstances + numUserGeometries;
+    const uint N = numQuads + numInstances + numProcedurals;
     // === conservative estimate ===
     const uint numFatLeaves = ceilf( (float)N/2 );
     const uint numInnerNodes = ceilf( (float)numFatLeaves/5 );
     return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);
   }
 
-  __forceinline uint estimateSizeLeafNodes(const uint numActiveQuads, const uint numInstances, const uint numUserGeometries)
+  __forceinline uint estimateSizeLeafNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
   {
-    return (numActiveQuads + numUserGeometries + 2 * numInstances) * 64;  
+    return (numQuads + numProcedurals + 2 * numInstances) * 64;  
   }
-  
+
+  __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const float internalNodeFactor = 1.0f)
+  {
+    const uint header              = 128;
+    const uint node_size           = gpu::alignTo(ceilf(internalNodeFactor*estimateSizeInternalNodes(numQuads,numInstances,numProcedurals)),64);
+    const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals); 
+    const uint totalSize           = header + node_size + leaf_size; 
+    return totalSize;
+  }
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
   {
@@ -161,25 +170,47 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& arg
   const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
   const uint numGeometries = args.numGeometries;
 
-  auto getSize = [&](uint32_t geomID) -> size_t {
-                   const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-                   if (geom == nullptr) return 0;
-                   return getNumPrimitives(geom);
-                 };
-    
-  uint32_t numPrimitives = 0;
-  for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXME parallel
-    numPrimitives += getSize(geomID);
+  uint numQuads       = 0;
+  uint numTriangles   = 0;
+  uint numProcedurals = 0;
+  uint numInstances   = 0;
 
+  for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXME slow
+  {
+    const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+    if (geom == nullptr) continue;    
+    switch (geom->geometryType) {
+    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : numTriangles   += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*)  geom)->triangleCount; break;
+    case RTHWIF_GEOMETRY_TYPE_QUADS      : numQuads       += ((RTHWIF_GEOMETRY_QUADS_DESC*)      geom)->quadCount; break;
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE   : numInstances   += 1; break;
+    default: assert(false); break;        
+    };
+  }
+
+  const uint numPrimitives = numQuads + numTriangles + numProcedurals + numInstances;
+
+  if (args_i.verbose)
+    PRINT4(numTriangles,numQuads,numProcedurals,numInstances);
   // ============================================================================================================================================================================
   // ============================================================================================================================================================================
   // ============================================================================================================================================================================
         
   size_t expectedBytes = 3*64; // empty scene is default
-  size_t worstCaseBytes = 3*64;
+  size_t worstCaseBytes = 2*expectedBytes;
+
+  if (numPrimitives)
+  {    
+    if (args_i.verbose)
+      PRINT2(numTriangles,ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR));
+    
+    expectedBytes  = estimateAccelBufferSize(numQuads + ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR), numInstances, numProcedurals, ESTIMATED_INTERNAL_NODE_FACTOR);
+    worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals);    
+  }
   size_t scratchBytes = std::max(numPrimitives * sizeof(LeafGenerationData) + sizeof(PLOCGlobals),sizeof(uint)*MAX_WGS);
 
-  //PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
+  if (args_i.verbose)  
+    PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     
   // ============================================================================================================================================================================
   // ============================================================================================================================================================================
@@ -279,6 +310,8 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     qbvh->leafDataStart  = 3;
     qbvh->leafDataCur    = 3;        
     new (qbvh->nodePtr(2)) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
+    if (args.accelBufferBytesOut)
+      *args.accelBufferBytesOut = 3*64;
     if (args.boundsOut) *args.boundsOut = *(RTHWIF_AABB*)&geometryBounds;
     return RTHWIF_ERROR_NONE;
   }    
@@ -331,34 +364,44 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
+    const float quadification_rate =  *host_device_tasks / (float)numQuads;
+    //PRINT(quadification_rate);
     numQuads = *host_device_tasks; // update with actual quads count
   }
 
-  if (unlikely(verbose2))
-    PRINT4(numQuads,numProcedurals,numInstances,expected_numPrimitives);
 
   // ================================
   // === estimate size of the BVH ===
   // ================================
   const uint numPrimitives       = numQuads + numInstances + numProcedurals;    
   const uint header              = 128;
-  const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals);
-  const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals); 
+  const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
+  const uint node_size           = args.accelBufferBytes - leaf_size - header; //estimateSizeInternalNodes(numQuads,numInstances,numProcedurals);
   const uint totalSize           = header + node_size + leaf_size; 
   const uint node_data_start     = header;
   const uint leaf_data_start     = header + node_size;
     
-
+  if (unlikely(verbose2))
+  {
+    PRINT4(numQuads,numProcedurals,numInstances,expected_numPrimitives);
+    PRINT4(node_size,leaf_size,totalSize,args.accelBufferBytes);
+  }
+  
   // =================================================================
   // === if allocated accel buffer is too small, return with error ===
   // =================================================================
     
-  if (args.accelBufferBytes < totalSize)
+  if (leaf_size+header > args.accelBufferBytes || node_size < numPrimitives*16)
   {
-    if (args.accelBufferBytesOut) *args.accelBufferBytesOut = totalSize;
+    const uint estimate = header + leaf_size + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals);    
+    if (unlikely(args.verbose))
+      PRINT3("RETRY!!!", args.accelBufferBytes,estimate);
+    if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimate;
     return RTHWIF_ERROR_RETRY;
   }
-        
+
+
+  
   const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
   const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
 
@@ -380,8 +423,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   uint *const cluster_index_source = cluster_i[0];
   uint *const   cluster_index_dest = cluster_i[1];
   LeafGenerationData *leafGenData = (LeafGenerationData*)scratch;
-
-
+  
   // ======================          
   // ==== init globals ====
   // ======================
@@ -439,6 +481,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
     
   const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
+
   
   // ==========================================          
   // ==== get centroid and geometry bounds ====
@@ -455,7 +498,8 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
 
   if (unlikely(verbose2))
     std::cout << "Get Geometry and Centroid Bounds Phase " << timer.get_host_timer() << " ms (host) " << device_compute_centroid_bounds_time << " ms (device) " << std::endl;		
-       
+
+  
   // ==============================          
   // ==== compute morton codes ====
   // ==============================
@@ -467,8 +511,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     computeMortonCodes64Bit_SaveMSBBits(gpu_queue,&globals->centroidBounds,mc0,bvh2,bvh2_subtree_size,numPrimitives,device_compute_mc_time,verbose2);
   else
     computeMortonCodes64Bit(gpu_queue,&globals->centroidBounds,(gpu::MortonCodePrimitive40x24Bits3D*)mc1,bvh2,numPrimitives,0,(uint64_t)-1,device_compute_mc_time,verbose2);
-    
-        
+            
   timer.stop(BuildTimer::PRE_PROCESS);
      
   if (unlikely(verbose2))
@@ -524,8 +567,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
             
   if (unlikely(verbose2))
     std::cout << "Sort Morton Codes " << timer.get_host_timer() << " ms (host and device)" << std::endl;
-        
-              
+                      
   // ===========================          
   // ====== init clusters ======
   // ===========================
@@ -554,7 +596,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   double device_ploc_iteration_time = 0.0f;
         
   uint iteration = 0;
-
+  
   timer.start(BuildTimer::BUILD);        
 
   // ===========================            
@@ -608,7 +650,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   }
   timer.stop(BuildTimer::BUILD);        
             
-    
+  
   // =====================================                
   // === check and convert BVH2 (host) ===
   // =====================================
@@ -704,6 +746,20 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     hwaccel->dispatchGlobalsPtr = (uint64_t)args.dispatchGlobalsPtr;
 #endif      
 
+    if (args.accelBufferBytesOut)
+      *args.accelBufferBytesOut = totalSize;
+
+#if 0    
+    if (verbose2)
+    {
+      qbvh->print(std::cout,qbvh->root(),0,6);
+      BVHStatistics stats = qbvh->computeStatistics();      
+      stats.print(std::cout);
+      stats.print_raw(std::cout);
+      PRINT("VERBOSE STATS DONE");
+    }        
+#endif    
+    
 #endif    
   return RTHWIF_ERROR_NONE;    
 }
