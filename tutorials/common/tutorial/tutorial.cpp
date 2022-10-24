@@ -172,6 +172,10 @@ namespace embree
         referenceImageThreshold = cin->getFloat();
       }, "--compare-threshold <float>: threshold in number of wrong pixels when image is considered wrong");
 
+    registerOption("frames", [this] (Ref<ParseStream> cin, const FileName& path) {
+        numFrames = cin->getInt();
+      }, "--frames <int>: number of frames to render in compare or output mode");
+
     /* camera settings */
     registerOption("vp", [this] (Ref<ParseStream> cin, const FileName& path) {
         camera.from = cin->getVec3fa();
@@ -650,7 +654,10 @@ namespace embree
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
     initRayStats();
-    render(pixels,width,height,render_time,ispccamera);    
+    
+    for (unsigned int i=0; i<numFrames; i++)
+      render(pixels,width,height,render_time,ispccamera);
+    
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
   }
@@ -660,8 +667,10 @@ namespace embree
     resize(width,height);
     ISPCCamera ispccamera = camera.getISPCCamera(width,height);
     initRayStats();
-    device_render(pixels,width,height,render_time,ispccamera);
-    renderFrame((int*)pixels,width,height,render_time,ispccamera);
+    
+    for (unsigned int i=0; i<numFrames; i++)
+      render(pixels,width,height,render_time,ispccamera);
+
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     Ref<Image> reference = loadImage(fileName);
     const double error = compareImages(image,reference);
