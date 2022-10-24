@@ -8,7 +8,6 @@
 #include "quadifier.h"
 #include "../rthwif_builder.h"
 
-#include "../../common/alloc.h"
 #include "../../builders/priminfo.h"
 #include "../../builders/primrefgen_presplit.h"
 #include "../../builders/heuristic_binning_array_aligned.h"
@@ -25,6 +24,39 @@ namespace embree
       
       /* the type of primitive that is referenced */
       enum Type { TRIANGLE=0, QUAD=1, PROCEDURAL=2, INSTANCE=3, UNKNOWN=4, NUM_TYPES=5 };
+
+      /* BVH allocator */
+      struct Allocator
+      {
+        Allocator() {}
+
+        void init(char* data_in, size_t bytes_in) {
+          ptr = data_in;
+          end = bytes_in;
+          cur.store(0);
+        }
+
+        size_t bytesAllocated() const {
+          return cur.load();
+        }
+
+        __forceinline void* malloc(size_t bytes, size_t align = 16)
+        {
+          assert(align <= RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT);
+          if (likely(cur.load() >= end)) throw std::bad_alloc();
+          const size_t extra = (align - cur) & (align-1);
+          const size_t bytes_align = bytes + extra;
+          const size_t cur_old = cur.fetch_add(bytes_align);
+          const size_t cur_new = cur_old + bytes_align;
+          if (likely(cur_new > end)) throw std::bad_alloc();
+          return &ptr[cur_old + extra];
+        }
+        
+      private:
+        char* ptr;                             // data buffer pointer
+        size_t end;                            // size of data buffer in bytes
+        __aligned(64) std::atomic<size_t> cur; // current pointer to allocate next data block from
+      };
       
       /* triangle data for leaf creation */
       struct Triangle
@@ -264,10 +296,6 @@ namespace embree
         static const size_t BINS = 32;
         typedef HeuristicArrayBinningSAH<PrimRef,BINS> CentroidBinner;
         
-        FastAllocator::CachedAllocator createAlloc() {
-          return allocator.getCachedAllocator();
-        };
-        
         BuilderT (Device* device,
                   const getSizeFunc& getSize,
                   const getTypeFunc& getType,
@@ -288,7 +316,6 @@ namespace embree
             getProcedural(getProcedural),
             getInstance(getInstance),
             prims(scratch_ptr,scratch_bytes),
-            allocator(device, false, true, false),
             verbose(verbose) {} 
         
         ReductionTy setInternalNode(char* curAddr, size_t curBytes, NodeType nodeTy, char* childAddr,
@@ -378,11 +405,11 @@ namespace embree
           return ReductionTy(curAddr, NODE_TYPE_QUAD, nodeMask, PrimRange(curRecord.size()*sizeof(QuadLeaf)/64));
         }
         
-        const ReductionTy createFatQuadLeaf(Type ty, FastAllocator::CachedAllocator alloc, const BuildRecord& curRecord, char* curAddr, size_t curBytes,
+        const ReductionTy createFatQuadLeaf(Type ty, const BuildRecord& curRecord, char* curAddr, size_t curBytes,
                                             BuildRecord children[BVH_WIDTH], size_t numChildren)
         {
           /*! allocate data for all children */
-          char* childData = (char*) alloc.malloc1(curRecord.prims.size()*sizeof(QuadLeaf), 64);
+          char* childData = (char*) allocator.malloc(curRecord.prims.size()*sizeof(QuadLeaf), 64);
           
           /* create each child */
           ReductionTy values[BVH_WIDTH];
@@ -394,7 +421,7 @@ namespace embree
           return setNode(curAddr,curBytes,NODE_TYPE_QUAD,childData,children,values,numChildren);
         }
         
-        const ReductionTy createProcedurals(FastAllocator::CachedAllocator alloc, const BuildRecord& curRecord, char* curAddr, size_t curBytes)
+        const ReductionTy createProcedurals(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           const uint32_t numPrims MAYBE_UNUSED = curRecord.size();
           assert(numPrims <= QBVH6::InternalNode6::NUM_CHILDREN);
@@ -412,7 +439,7 @@ namespace embree
             desc0 = desc1;
           }
           
-          char* childData = (char*) alloc.malloc1(numGeometries*sizeof(ProceduralLeaf), 64);
+          char* childData = (char*) allocator.malloc(numGeometries*sizeof(ProceduralLeaf), 64);
           
           ProceduralLeafBuilder procedural_leaf_builder(childData, numGeometries);
           ProceduralLeaf* first_procedural = procedural_leaf_builder.getCurProcedural();
@@ -438,13 +465,13 @@ namespace embree
           return ReductionTy(curAddr, NODE_TYPE_INTERNAL, nodeMask, PrimRange(curBytes/64));
         }
         
-        const ReductionTy createInstances(FastAllocator::CachedAllocator alloc, const BuildRecord& curRecord, char* curAddr, size_t curBytes)
+        const ReductionTy createInstances(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           uint32_t numPrimitives = curRecord.size();
           assert(numPrimitives <= QBVH6::InternalNode6::NUM_CHILDREN);
           
           /* allocate data for all children */
-          InstanceLeaf* childData = (InstanceLeaf*) alloc.malloc1(numPrimitives*sizeof(InstanceLeaf), 64);
+          InstanceLeaf* childData = (InstanceLeaf*) allocator.malloc(numPrimitives*sizeof(InstanceLeaf), 64);
           
           QBVH6::InternalNode6* qnode = new (curAddr) QBVH6::InternalNode6(curRecord.bounds(),NODE_TYPE_INSTANCE);
           qnode->setChildOffset(childData);
@@ -578,7 +605,7 @@ namespace embree
         }
         
         /* creates a fat leaf, which is an internal node that only points to real leaves */
-        const ReductionTy createFatLeaf(FastAllocator::CachedAllocator alloc, const BuildRecord& curRecord, char* curAddr, size_t curBytes)
+        const ReductionTy createFatLeaf(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           /* there should be at least one primitive and not too many */
           assert(curRecord.size() > 0);
@@ -641,18 +668,18 @@ namespace embree
           
           /* create leaf of proper type */
           if (ty == TRIANGLE || ty == QUAD)
-            return createFatQuadLeaf(ty, alloc, curRecord, curAddr, curBytes, children, numChildren);
+            return createFatQuadLeaf(ty, curRecord, curAddr, curBytes, children, numChildren);
           else if (ty == PROCEDURAL)
-            return createProcedurals(alloc, curRecord,curAddr,curBytes);
+            return createProcedurals(curRecord,curAddr,curBytes);
           else if (ty == INSTANCE)
-            return createInstances(alloc, curRecord,curAddr,curBytes);
+            return createInstances(curRecord,curAddr,curBytes);
           else
             assert(false);
           
           return ReductionTy();
         }
         
-        const ReductionTy createLargeLeaf(FastAllocator::CachedAllocator alloc, const BuildRecord& curRecord, char* curAddr, size_t curBytes)
+        const ReductionTy createLargeLeaf(const BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
           /* this should never occur but is a fatal error */
           assert(curRecord.depth <= cfg.maxDepth);
@@ -664,7 +691,7 @@ namespace embree
           
           /* create leaf for few primitives */
           if (curRecord.prims.size() <= cfg.leafSize[curRecord.type])
-            return createFatLeaf(alloc, curRecord,curAddr,curBytes);
+            return createFatLeaf(curRecord,curAddr,curBytes);
           
           /*! initialize child list with first child */
           ReductionTy values[BVH_WIDTH];
@@ -682,24 +709,20 @@ namespace embree
           
           /*! allocate data for all children */
           size_t childrenBytes = numChildren*sizeof(QBVH6::InternalNode6);
-          char* childBase = (char*) alloc.malloc0(childrenBytes, 64);
+          char* childBase = (char*) allocator.malloc(childrenBytes, 64);
           
           /* recurse into each child  and perform reduction */
           char* childPtr = childBase;
           for (size_t i=0; i<numChildren; i++) {
-            values[i] = createLargeLeaf(alloc,children[i],childPtr,sizeof(QBVH6::InternalNode6));
+            values[i] = createLargeLeaf(children[i],childPtr,sizeof(QBVH6::InternalNode6));
             childPtr += sizeof(QBVH6::InternalNode6);
           }
           
           return setNode(curAddr,curBytes,NODE_TYPE_INTERNAL,childBase,children,values,numChildren);
         }
         
-        const ReductionTy createInternalNode(FastAllocator::CachedAllocator alloc, BuildRecord& curRecord, char* curAddr, size_t curBytes)
+        const ReductionTy createInternalNode(BuildRecord& curRecord, char* curAddr, size_t curBytes)
         {
-          /* get thread local allocator */
-          if (!alloc)
-            alloc = createAlloc();
-          
           /* create leaf when threshold reached or we are too deep */
           bool createLeaf = curRecord.prims.size() <= cfg.leafSize[curRecord.type] || 
             curRecord.depth+MIN_LARGE_LEAF_LEVELS >= cfg.maxDepth;
@@ -721,7 +744,7 @@ namespace embree
           
           /* create leaf node */
           if (!performTypeSplit && createLeaf)
-            return createLargeLeaf(alloc,curRecord,curAddr,curBytes);
+            return createLargeLeaf(curRecord,curAddr,curBytes);
           
           /*! initialize child list with first child */
           ReductionTy values[BVH_WIDTH];
@@ -754,14 +777,14 @@ namespace embree
           
           /*! allocate data for all children */
           size_t childrenBytes = numChildren*sizeof(QBVH6::InternalNode6);
-          char* childBase = (char*) alloc.malloc0(childrenBytes, 64);
+          char* childBase = (char*) allocator.malloc(childrenBytes, 64);
           
           /* spawn tasks */
           if (curRecord.size() > 1024) // cfg.singleThreadThreshold
           {
             parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
               for (size_t i=r.begin(); i<r.end(); i++) {
-                values[i] = createInternalNode(nullptr,children[i],childBase+i*sizeof(QBVH6::InternalNode6),sizeof(QBVH6::InternalNode6));
+                values[i] = createInternalNode(/*nullptr,*/children[i],childBase+i*sizeof(QBVH6::InternalNode6),sizeof(QBVH6::InternalNode6));
               }
             });
             
@@ -774,7 +797,7 @@ namespace embree
           {
             /* recurse into each child */
             for (size_t i=0; i<numChildren; i++) {
-              values[i] = createInternalNode(alloc,children[i],childBase+i*sizeof(QBVH6::InternalNode6),sizeof(QBVH6::InternalNode6));
+              values[i] = createInternalNode(children[i],childBase+i*sizeof(QBVH6::InternalNode6),sizeof(QBVH6::InternalNode6));
             }
             
             /* create node */
@@ -1063,15 +1086,8 @@ namespace embree
           
           /* build hierarchy */
           BuildRecord record(1,pinfo,UNKNOWN);
-          FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
-          ReductionTy r = createInternalNode(thread_alloc,record,root,sizeof(QBVH6::InternalNode6));
+          ReductionTy r = createInternalNode(record,root,sizeof(QBVH6::InternalNode6));
           
-          if (verbose) {
-            allocator.cleanup();
-            FastAllocator::AllStatistics stats1(&allocator);
-            stats1.print(numPrimitives);
-          }
-
           double t5 = verbose ? getSeconds() : 0.0;
           if (verbose) std::cout << "bvh_build    : " << std::setw(10) << (t5-t4)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t5-t4) << " Mprims/s" << std::endl;
 
@@ -1119,14 +1135,11 @@ namespace embree
           if (verbose) std::cout << "trying BVH build with " << bytes << " bytes" << std::endl;
             
           /* allocate BVH memory */
-          allocator.clear();
-          allocator.addBlock(accel,bytes);
-          //allocator.slotMask = 0;
-          FastAllocator::CachedAllocator thread_alloc = allocator.getCachedAllocator();
-          thread_alloc.malloc0(128-FastAllocator::blockHeaderSize);
+          allocator.init(accel,bytes);
+          allocator.malloc(128); // header
 
           uint32_t numRoots = 1;
-          QBVH6::InternalNode6* roots = (QBVH6::InternalNode6*) thread_alloc.malloc0(numRoots*sizeof(QBVH6::InternalNode6),64);
+          QBVH6::InternalNode6* roots = (QBVH6::InternalNode6*) allocator.malloc(numRoots*sizeof(QBVH6::InternalNode6),64);
           assert(roots);
 
           /* build BVH static BVH */
@@ -1135,14 +1148,10 @@ namespace embree
           bounds.extend(pinfo.geomBounds);
 
           if (boundsOut) *boundsOut = bounds;
-          if (accelBufferBytesOut) {
-            allocator.cleanup();
-            FastAllocator::Statistics astats = allocator.getStatistics(FastAllocator::SHARED);
-            *accelBufferBytesOut = FastAllocator::blockHeaderSize + astats.bytesUsed;
-          }
+          if (accelBufferBytesOut)
+            *accelBufferBytesOut = allocator.bytesAllocated();
 
           /* fill QBVH6 header */
-          allocator.clear();
           QBVH6* qbvh = new (accel) QBVH6(QBVH6::SizeEstimate());
           qbvh->numPrims = 0; //numPrimitives;
           uint64_t rootNodeOffset = QBVH6::Node((char*)(r.node - (char*)qbvh), r.type, r.primRange.cur_prim);
@@ -1178,9 +1187,10 @@ namespace embree
         const getInstanceFunc getInstance;
         Settings cfg;
         evector<PrimRef> prims;
-        FastAllocator allocator;
+        Allocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
         bool verbose;
+        
       };
       
       template<typename getSizeFunc,
