@@ -54,6 +54,12 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(tbb_static)
 
+# We want to build tbb_static to link it into embree_rthwif, but don't want to
+# install it as part of the Embree install targets.
+if (IS_DIRECTORY "${tbb_static_SOURCE_DIR}")
+  set_property(DIRECTORY ${tbb_static_SOURCE_DIR} PROPERTY EXCLUDE_FROM_ALL YES)
+endif()
+
 ADD_DEFINITIONS(-DTASKING_TBB)
 
 ####################################################################
