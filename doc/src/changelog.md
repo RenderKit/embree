@@ -1,6 +1,9 @@
 Version History
 ---------------
 
+### Embree 3.13.6
+-  Fixed compilation issues for ARM AArch64 processor under Linux.
+
 ### Embree 3.13.5
 -   Fixed bug in bounding flat Catmull Rom curves of subdivision level 4.
 -   Improved self intersection avoidance for
