@@ -1,6 +1,8 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
+
 SET(EMBREE_VERSION_MAJOR 4)
 SET(EMBREE_VERSION_MINOR 0)
 SET(EMBREE_VERSION_PATCH 0)
@@ -12,8 +14,6 @@ SET(CPACK_RPM_PACKAGE_RELEASE 1)
 
 PROJECT(embree${EMBREE_VERSION_MAJOR})
 SET(EMBREE_PROJECT_COMPILATION ON)
-
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
 
 include(CMakeDependentOption)
 
@@ -239,11 +239,13 @@ OPTION(EMBREE_MIN_WIDTH "Enables min-width feature to enlarge curve and point th
 # Platform detection and defaults
 ##############################################################
 
-IF (APPLE)
-  IF (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR CMAKE_OSX_ARCHITECTURES MATCHES "arm64"))
-    MESSAGE(STATUS "Building for Apple silicon")
-    SET(EMBREE_ARM ON)
-  ENDIF()
+# detect ARM compilation
+IF (APPLE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND (CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" OR CMAKE_OSX_ARCHITECTURES MATCHES "arm64"))
+  MESSAGE(STATUS "Building for Apple silicon")
+  SET(EMBREE_ARM ON)
+ELSEIF(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+  MESSAGE(STATUS "Building for AArch64")
+  SET(EMBREE_ARM ON)
 ENDIF()
 
 SET(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
