@@ -494,7 +494,9 @@ def runConfig(config):
   else:
     conf.append("-D EMBREE_SYCL_SUPPORT=OFF")
   if "gfx" in config:
-      conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
+    conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
+  if "rt_validation_api" in config:
+    conf.append("-D EMBREE_SYCL_RT_VALIDATION_API="+config["rt_validation_api"])
 
   if "EMBREE_USE_GOOGLE_BENCHMARK" in config:
     conf.append("-D EMBREE_USE_GOOGLE_BENCHMARK="+config["EMBREE_USE_GOOGLE_BENCHMARK"])

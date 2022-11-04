@@ -24,7 +24,9 @@ void use_rthwif_production();
 RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config)
 {
   use_rthwif_embree();     // to avoid drop of rthwif_embree.o during linking of libembree_sycl.a file
+#if defined(EMBREE_SYCL_RT_VALIDATION_API)
   use_rthwif_production(); // to avoid drop of rthwif_production.o during linking of libembree_sycl.a file
+#endif
   return rtcNewSYCLDeviceInternal(sycl_context, sycl_queue, config);
 }
 

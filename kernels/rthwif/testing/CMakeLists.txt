@@ -1,11 +1,33 @@
 ## Copyright 2009-2022 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-ADD_EXECUTABLE(rthwif_cornell_box rthwif_cornell_box.cpp ../rthwif_production.cpp)
+PROJECT(rthwif_testing)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1.0)
+
+SET(CMAKE_CXX_STANDARD 17)
+
+IF (NOT DEFINED EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
+  OPTION(EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS "Using L0 allocated Dispatch Globals" ON)
+ENDIF()
+
+IF (NOT EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
+  ADD_DEFINITIONS("-DEMBREE_SYCL_ALLOC_DISPATCH_GLOBALS")
+ENDIF()
+
+IF (NOT DEFINED EMBREE_SYCL_RT_VALIDATION_API)
+  OPTION(EMBREE_SYCL_RT_VALIDATION_API "Use rt_validation API instead of IGC provided rt_production API" OFF)
+ENDIF()
+
+IF (EMBREE_SYCL_RT_VALIDATION_API)
+  ADD_DEFINITIONS("-DEMBREE_SYCL_RT_VALIDATION_API")
+  SET(VALIDATION_API_FILES ../rthwif_production.cpp)
+ENDIF()
+
+ADD_EXECUTABLE(rthwif_cornell_box rthwif_cornell_box.cpp ${VALIDATION_API_FILES})
 SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
 SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
 
-ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ../rthwif_production.cpp)
+ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ${VALIDATION_API_FILES})
 TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif sys simd tbb)
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")

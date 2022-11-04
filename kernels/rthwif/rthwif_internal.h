@@ -15,8 +15,8 @@ enum TraceRayCtrl
   TRACE_RAY_DONE = 256,               // for internal use only 
 };
 
-typedef __attribute__((opencl_global)) struct rtglobals_t_* rtglobals_t;
-typedef __attribute__((opencl_private)) struct rtfence_t_* rtfence_t;
+typedef __attribute__((opencl_global)) struct rtglobals_opaque_t* rtglobals_t;
+typedef __attribute__((opencl_private)) struct rtfence_opaque_t* rtfence_t;
 
 #ifdef __SYCL_DEVICE_ONLY__
 

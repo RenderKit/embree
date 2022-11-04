@@ -1,3 +1,5 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include <CL/sycl.hpp>
 #include <iostream>
@@ -7,7 +9,11 @@
 #include "sys/sysinfo.h"
 #include <thread>
 
-#include "../rthwif_production.h"
+#if defined(EMBREE_SYCL_RT_VALIDATION_API)
+#  include "../rthwif_production.h"
+#else
+#  include "../rthwif_production_igc.h"
+#endif
 #include "../rthwif_builder.h"
 
 #include <level_zero/ze_api.h>
@@ -282,6 +288,12 @@ const unsigned char bvh_data[bvh_bytes] = {
 
 void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, unsigned int width, unsigned int height)
 {
+  intel_raytracing_ext_flag_t flags = intel_get_raytracing_ext_flag();
+  if (!(flags & intel_raytracing_ext_flag_ray_query)) {
+    pixels[y*width+x] = 0;
+    return;
+  }
+  
   /* fixed camera */
   sycl::float3 vx(-1, -0, -0);
   sycl::float3 vy(-0, -1, -0);
@@ -294,13 +306,11 @@ void render(unsigned int x, unsigned int y, void* bvh, unsigned int* pixels, uns
   ray.direction = float(x)*vx/8.0f + float(y)*vy/8.0f + vz;;
   ray.tmin = 0.0f;
   ray.tmax = INFINITY;
-  ray.time = 0.0f;
   ray.mask = 0xFF;
   ray.flags = intel_ray_flags_none;
 
   /* trace ray */
-  intel_ray_query_t query_ = intel_ray_query_init(ray,(intel_raytracing_acceleration_structure_t*)bvh);
-  intel_ray_query_t* query = &query_;
+  intel_ray_query_t query = intel_ray_query_init(ray,(intel_raytracing_acceleration_structure_t)bvh);
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
 
@@ -349,6 +359,7 @@ int main(int argc, char* argv[])
   unsigned int* pixels = (unsigned int*) sycl::aligned_alloc(64,width*height*sizeof(unsigned int),device,context,sycl::usm::alloc::shared);
   memset(pixels, 0, width*height*sizeof(uint));
 
+  for (int i=0; i<10; i++) {
   queue.submit([&](sycl::handler& cgh) {
                  const sycl::range<2> range(width,height);
                  cgh.parallel_for(range, [=](sycl::item<2> item) {
@@ -358,6 +369,7 @@ int main(int argc, char* argv[])
                                             });
                });
   queue.wait_and_throw();
+  }
 
   free_accel_buffer(bvh,context);
   
