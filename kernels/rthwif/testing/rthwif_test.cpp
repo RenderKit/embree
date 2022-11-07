@@ -11,7 +11,7 @@
 #include <iostream>
 
 //#undef EMBREE_SYCL_GPU_BVH_BUILDER
-#define VERBOSE false
+#define VERBOSE true
 
 namespace embree {
   double getSeconds();
@@ -784,6 +784,7 @@ struct InstanceGeometryT : public Geometry
   {
     if (procedural)
     {
+      PRINT("HERE2");
       RTHWIF_GEOMETRY_AABBS_FPTR_DESC& out = desc->AABBs;
       memset(&out,0,sizeof(out));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
@@ -795,8 +796,11 @@ struct InstanceGeometryT : public Geometry
     }
     else
     {
+      PRINT("HERE");
+      PRINT(scene->bounds.lower.x);
       GEOMETRY_INSTANCE_DESC& out = desc->Instance;
       memset(&out,0,sizeof(GEOMETRY_INSTANCE_DESC));
+      PRINT(&out);
       out.geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
       out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
       out.geometryMask = 0xFF;
@@ -820,6 +824,7 @@ struct InstanceGeometryT : public Geometry
       out.xfmdata.p_z  = local2world.p.z();
       out.xfmdata.pad3  = 0.0f;
       out.bounds = &scene->bounds;
+      PRINT(scene->bounds.lower.x);
       out.accel = scene->getAccel();
     }
   }
@@ -1932,8 +1937,9 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
     const uint32_t numPrimitives = i>10 ? i*i : i;
     std::cout << "testing " << numPrimitives << " primitives" << std::endl;
     numErrors += executeBuildTest(device,queue,context,test,buildMode,numPrimitives,i);
-    // if (numErrors)
-    //   exit(1);
+    if (VERBOSE)
+      if (numErrors)
+        exit(1);
   }
   return numErrors;
 }

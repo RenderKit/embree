@@ -479,6 +479,27 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // === recompute actual number of primitives ===
   numPrimitives = numQuads + numInstances + numProcedurals;
 
+  // ===========================    
+  // === empty scene again ? ===
+  // ===========================
+
+  if (unlikely(numPrimitives == 0))
+  {
+    QBVH6* qbvh  = (QBVH6*)args.accelBuffer;       
+    BBox3f geometryBounds (empty);
+    qbvh->bounds = geometryBounds;
+    qbvh->numPrims       = 0;                                                                        
+    qbvh->nodeDataStart  = 2;
+    qbvh->nodeDataCur    = 3;
+    qbvh->leafDataStart  = 3;
+    qbvh->leafDataCur    = 3;        
+    new (qbvh->nodePtr(2)) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
+    if (args.accelBufferBytesOut)
+      *args.accelBufferBytesOut = 3*64;
+    if (args.boundsOut) *args.boundsOut = *(RTHWIF_AABB*)&geometryBounds;
+    return RTHWIF_ERROR_NONE;
+  }      
+
   timer.stop(BuildTimer::PRE_PROCESS);
   timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);    
   if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
