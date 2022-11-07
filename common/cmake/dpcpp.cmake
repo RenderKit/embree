@@ -73,7 +73,7 @@ IF (EMBREE_SYCL_SUPPORT)
   #LIST(APPEND CMAKE_IGC_OPTIONS "AllowSubroutineAndInirectdCalls=1")  # Allow subroutine in the presence of indirect calls
   #LIST(APPEND CMAKE_IGC_OPTIONS "AllocaRAPressureThreshold=0")        # The threshold for the register pressure potential (this reduces amount of spilling!)
   #LIST(APPEND CMAKE_IGC_OPTIONS "AssumeInt64Support=0")               # Architecture with partial int64 still promote uniform arrays to registers
-  LIST(APPEND CMAKE_IGC_OPTIONS "VISAOptions=-scratchAllocForStackInKB 128 -nospillcompression")  # this works around some IGC bug in spill compression
+  LIST(APPEND CMAKE_IGC_OPTIONS "VISAOptions=-scratchAllocForStackInKB 128 ")  # this works around some IGC bug in spill compression
   
   IF (CMAKE_BUILD_TYPE STREQUAL "Debug") # to allow printf inside indirectly callable function
     LIST(APPEND CMAKE_IGC_OPTIONS "ForceInlineStackCallWithImplArg=0")
