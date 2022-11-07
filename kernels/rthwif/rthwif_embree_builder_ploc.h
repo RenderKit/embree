@@ -396,7 +396,7 @@ namespace embree
     Vec3f world2obj_p;    // translation of World2Obj transform
 
     __forceinline InstancePrimitive() {}
-    __forceinline InstancePrimitive(AffineSpace3f obj2world, uint64_t startNodePtr, uint32_t instID, uint8_t instMask)
+    __forceinline InstancePrimitive(AffineSpace3f obj2world, uint64_t startNodePtr, uint32_t instID, uint32_t geometry_index, uint8_t instMask)
     {
       shaderIndex_geomMask = instMask << 24; 
       instanceContributionToHitGroupIndex = ((uint)PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED << 29) | ((uint)GeometryFlags::NONE << 30);
@@ -404,7 +404,7 @@ namespace embree
       startNodePtr_instFlags = startNodePtr;
       
       instanceID = instID;
-      instanceIndex = instID;
+      instanceIndex = geometry_index;
       bvhPtr = (uint64_t) 0;
 
       obj2world_vx = obj2world.l.vx;
@@ -1200,22 +1200,14 @@ namespace embree
         if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
         {
           RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
-          PRINT(geom);
-          PRINT(geom->instanceUserID);
-          PRINT(geom->bounds);
-          PRINT(geom->bounds->lower.x);
-          
           const AffineSpace3fa local2world = getTransform(geom);
           const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
           const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
-          PRINT2(lower,upper);
           const BBox3fa org_bounds(lower,upper);
           if (!isvalid_non_empty(org_bounds)) continue;
           const BBox3fa instance_bounds = xfmBounds(local2world,org_bounds);
-          PRINT2(local2world,instance_bounds);
           gpu::AABB3f bounds(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
                              instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
-          PRINT(bounds);
           node.initLeaf(0,instID,bounds);                               
           node.store(&bvh2[prim_type_offset + ID]);
           ID++;                                        
@@ -2419,12 +2411,13 @@ namespace embree
   // =============================================================================================================================================
 
 
-  __forceinline float convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, const bool verbose)
+  __forceinline bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, float& conversion_device_time, const bool verbose)
   {
     static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
     uint iteration = 0;
-
+    conversion_device_time = 0.0f;
+    
     const bool forceFatLeaves = numPrimitives <= BVH_BRANCHING_FACTOR;
     
     host_device_tasks[0] = 0;
@@ -2525,7 +2518,9 @@ namespace embree
                                globals->range_end   = endBlockID;                                                                        
                                globals->node_mem_allocator_cur = node_mem_allocator_cur;
                                host_device_tasks[0] = endBlockID - startBlockID;
-                               host_device_tasks[1] = endBlockID - globals->node_mem_allocator_start;                           
+                               host_device_tasks[1] = endBlockID - globals->node_mem_allocator_start;
+                               if (unlikely(globals->node_mem_allocator_cur > globals->leaf_mem_allocator_start))
+                                 host_device_tasks[0] = -1;                                 
                              }
                                                                       
                            });
@@ -2536,6 +2531,8 @@ namespace embree
       if (unlikely(verbose))
         PRINT4("initial iteration ",iteration,(float)dt,(float)total_time);
     }
+
+    if (host_device_tasks[0] == -1) return false;
 
     /* ---- Phase II: full breadth-first phase until only fat leaves or single leaves remain--- */
 
@@ -2636,6 +2633,8 @@ namespace embree
                                  globals->range_end   = new_endBlockID;
                                  host_device_tasks[0] = new_endBlockID - new_startBlockID;
                                  host_device_tasks[1] = new_endBlockID - globals->node_mem_allocator_start;
+                                 if (unlikely(globals->node_mem_allocator_cur > globals->leaf_mem_allocator_start))
+                                   host_device_tasks[0] = -1;                                                                  
                                }
                              }
                              
@@ -2648,6 +2647,8 @@ namespace embree
       if (unlikely(verbose))      
         PRINT5("flattening iteration ",iteration,blocks,(float)dt,(float)total_time);
     }
+
+    if (host_device_tasks[0] == -1) return false;
     
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID, geomID pairs for final phase --- */
     const uint blocks = host_device_tasks[1];
@@ -2783,6 +2784,8 @@ namespace embree
                                  /* --- reset atomics --- */
                                  globals->sync = 0;
                                  host_device_tasks[0] = globals->numLeaves;
+                                 if (unlikely(globals->numLeaves > numPrimitives))
+                                   host_device_tasks[0] = -1;
                                }
                              }
                              
@@ -2795,6 +2798,7 @@ namespace embree
       if (unlikely(verbose))      
         PRINT3("final flattening iteration ",(float)dt,(float)total_time);
     }    
+    if (host_device_tasks[0] == -1) return false;
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
     const uint leaves = host_device_tasks[0]; // = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
@@ -2816,7 +2820,6 @@ namespace embree
                              if (globalID < leaves)                                                                        
                              {
                                qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
-                               
                                if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_QUAD)
                                {
                                  const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
@@ -2864,13 +2867,15 @@ namespace embree
                                  }
                                }
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_INSTANCE)
-                               {
-                                 const uint instID = leafGenData[globalID].geomID & 0x3fffffff;
+                               {                                 
+                                 const uint instID = leafGenData[globalID].primID & 0x3fffffff;
+                                 //PRINT(instID);
                                  const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometries[instID];                                 
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
                                  const AffineSpace3fa local2world = getTransform(instance);
-                                 const uint64_t root = (uint64_t)instance->accel + 128; 
-                                 *dest = InstancePrimitive(local2world,root,instance->instanceUserID,mask32_to_mask8(instance->geometryMask));
+                                 const uint64_t root = (uint64_t)instance->accel + 128;
+                                 //PRINT2(instID,instance->instanceUserID);
+                                 *dest = InstancePrimitive(local2world,root,instance->instanceUserID,instID,mask32_to_mask8(instance->geometryMask));
                                }
                                else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_PROCEDURAL) 
                                {
@@ -2910,7 +2915,8 @@ namespace embree
         PRINT3("final leaf generation ",(float)dt,(float)total_time);
     }    
     
-    return (float)total_time;
+    conversion_device_time = (float)total_time;
+    return true;    
   }
   
     

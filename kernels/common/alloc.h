@@ -1017,7 +1017,7 @@ namespace embree
 #if defined(APPLE) && defined(__aarch64__)
     std::mutex slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
 #else
-    SpinLock slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
+    PaddedSpinLock slotMutex[MAX_THREAD_USED_BLOCK_SLOTS];
 #endif
     std::atomic<Block*> threadUsedBlocks[MAX_THREAD_USED_BLOCK_SLOTS];
     std::atomic<Block*> threadBlocks[MAX_THREAD_USED_BLOCK_SLOTS];

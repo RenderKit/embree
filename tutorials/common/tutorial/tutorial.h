@@ -149,6 +149,7 @@ namespace embree
     FileName outputImageFilename;
     FileName referenceImageFilename;
     float referenceImageThreshold; // threshold when we consider images to differ
+    unsigned int numFrames = 1; // render as many frames on output or compare mode
 
     /* window settings */
     bool interactive;

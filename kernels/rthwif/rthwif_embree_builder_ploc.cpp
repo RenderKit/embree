@@ -479,6 +479,9 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // === recompute actual number of primitives ===
   numPrimitives = numQuads + numInstances + numProcedurals;
 
+  if (unlikely(verbose2))
+    PRINT4(numPrimitives,numQuads,numInstances,numProcedurals);
+  
   // ===========================    
   // === empty scene again ? ===
   // ===========================
@@ -707,8 +710,8 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // =============================    
   // === convert BVH2 to QBVH6 ===
   // =============================
-    
-  const float conversion_device_time = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,args.geometries,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,verbose2);
+  float conversion_device_time = 0.0f;
+  const bool convert_success = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,args.geometries,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,conversion_device_time,verbose2);
 
   /* --- init final QBVH6 header --- */        
   {     
@@ -758,10 +761,9 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     PRINT(globals->numLeaves);
   }
 
-  if ((globals->node_mem_allocator_cur-globals->node_mem_allocator_start)*64 > node_size ||
-      (globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start)*64 > leaf_size)
+  if (convert_success == false)
   {
-    if (args.accelBufferBytesOut) *args.accelBufferBytesOut = gpu::alignTo((size_t)(1.2f*totalSize),64);
+    if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals);
     return RTHWIF_ERROR_RETRY;
   }
     
@@ -773,7 +775,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     if (args.accelBufferBytesOut)
       *args.accelBufferBytesOut = totalSize;
 
-#if 0    
+#if 1
     if (verbose2)
     {
       qbvh->print(std::cout,qbvh->root(),0,6);

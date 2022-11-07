@@ -246,11 +246,15 @@ ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
 
 IF (EMBREE_SYCL_SUPPORT)
 
+  IF (EMBREE_SYCL_RT_VALIDATION_API)
+    SET(VALIDATION_API_FILES rthwif/rthwif_production.cpp)
+  ENDIF()
+
   ADD_LIBRARY(embree_sycl STATIC
     common/rtcore_sycl.cpp
     rthwif/rthwif_embree_builder_ploc.cpp    
     rthwif/rthwif_embree.cpp
-    rthwif/rthwif_production.cpp)
+    ${VALIDATION_API_FILES})
 
   SET_TARGET_PROPERTIES(embree_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 

@@ -231,18 +231,23 @@ namespace embree
         IntersectFuncN intersectFunc = nullptr;
         
 #if EMBREE_GEOMETRY_USER_IN_GEOMETRY
-        intersectFunc = intersectorN.intersect;
+#if defined(__SYCL_DEVICE_ONLY__)
+        if (context->args->feature_mask & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
+#endif
+          intersectFunc = intersectorN.intersect;
 #endif
         
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
 #if defined(__SYCL_DEVICE_ONLY__)
-        if (context->args->intersect) intersectFunc = context->args->intersect;
+        if (context->args->feature_mask & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_CONTEXT) {
+          if (context->args->intersect) intersectFunc = context->args->intersect;
+        }
 #else
         if (context->user->intersect) intersectFunc = context->user->intersect;
 #endif
 #endif
-        assert(intersectFunc);
-        intersectFunc(&args);
+        if (intersectFunc)
+          intersectFunc(&args);
         
         forward_scene = args.forward_scene;
         return mask != 0;
@@ -268,18 +273,23 @@ namespace embree
         OccludedFuncN occludedFunc = nullptr;
 
 #if EMBREE_GEOMETRY_USER_IN_GEOMETRY
-        occludedFunc = intersectorN.occluded;
+#if defined(__SYCL_DEVICE_ONLY__)
+        if (context->args->feature_mask & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
+#endif
+          occludedFunc = intersectorN.occluded;
 #endif
         
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
 #if defined(__SYCL_DEVICE_ONLY__)
-        if (context->args->occluded) occludedFunc = context->args->occluded;
+        if (context->args->feature_mask & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_CONTEXT) {
+          if (context->args->occluded) occludedFunc = context->args->occluded;
+        }
 #else
         if (context->user->occluded) occludedFunc = context->user->occluded;
 #endif
 #endif
-        assert(occludedFunc);
-        occludedFunc(&args);
+        if (occludedFunc)
+          occludedFunc(&args);
         
         forward_scene = args.forward_scene;
         return mask != 0;

@@ -59,6 +59,7 @@ transparently transitioning to 2MB pages.
 Embree is optimized for Intel CPUs supporting SSE, AVX, AVX2, and
 AVX-512 instructions. Embree requires at least an x86 CPU with support for
 SSE2 or an Apple M1 CPU.
+
 Embree Support and Contact
 --------------------------
 
@@ -360,6 +361,17 @@ example, to build the Embree library in parallel use
 
     cmake --build . --config Release --target embree -- /m
 
+### Building embree - Using vcpkg
+
+You can download and install embree using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    ./vcpkg install embree3
+
+The embree port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
 
 CMake Configuration
 -------------------
@@ -489,6 +501,11 @@ parameters that can be configured in CMake:
   curve_radius*`EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR` to
   the ray origin are ignored. A value of 0.0f disables self
   intersection avoidance while 2.0f is the default value.
+
++ `EMBREE_DISC_POINT_SELF_INTERSECTION_AVOIDANCE`: Enables self
+   intersection avoidance for RTC_GEOMETRY_TYPE_DISC_POINT geometry
+   type (ON by default). When enabled intersections are skipped if the ray
+   origin lies inside the sphere defined by the point primitive.
 
 + `EMBREE_MIN_WIDTH`: Enabled the min-width feature, which allows
   increasing the radius of curves and points to match some amount of

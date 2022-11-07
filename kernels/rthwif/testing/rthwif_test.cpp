@@ -1,7 +1,14 @@
+// Copyright 2009-2021 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "tbb/tbb.h"
 
-#include "../rthwif_production.h"
+#if defined(EMBREE_SYCL_RT_VALIDATION_API)
+#  include "../rthwif_production.h"
+#else
+#  include "../rthwif_production_igc.h"
+#endif
+
 #include "../rthwif_builder.h"
 
 #include <level_zero/ze_api.h>
@@ -11,7 +18,8 @@
 #include <iostream>
 
 //#undef EMBREE_SYCL_GPU_BVH_BUILDER
-#define VERBOSE true
+//#define VERBOSE true
+#define VERBOSE false
 
 namespace embree {
   double getSeconds();
@@ -216,8 +224,12 @@ struct TestOutput
   intel_float4x3 object_to_world;
 };
 
+std::ostream& operator<<(std::ostream& out, const intel_float3& v) {
+  return out << "(" << v.x << "," << v.y << "," << v.z  << ")";
+}
+
 std::ostream& operator<<(std::ostream& out, const sycl::float3& v) {
-    return out << "(" << v.x() << "," << v.y() << "," << v.z()  << ")";
+  return out << "(" << v.x() << "," << v.y() << "," << v.z()  << ")";
 }
 
 void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, const TestOutput& expected)
@@ -238,6 +250,16 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
     const bool x = fabs(test.member.x()-expected.member.x()) > eps;     \
     const bool y = fabs(test.member.y()-expected.member.y()) > eps;     \
     const bool z = fabs(test.member.z()-expected.member.z()) > eps;     \
+    if (x || y || z) {                                                  \
+      if (errors < 16)                                                  \
+        std::cout << "test" << tid << " " #member " mismatch: output " << test.member << " != expected " << expected.member << std::endl; \
+      errors++;                                                         \
+    }                                                                   \
+  }
+#define COMPARE3I(member,eps) {                                          \
+    const bool x = fabs(test.member.x-expected.member.x) > eps;     \
+    const bool y = fabs(test.member.y-expected.member.y) > eps;     \
+    const bool z = fabs(test.member.z-expected.member.z) > eps;     \
     if (x || y || z) {                                                  \
       if (errors < 16)                                                  \
         std::cout << "test" << tid << " " #member " mismatch: output " << test.member << " != expected " << expected.member << std::endl; \
@@ -271,14 +293,14 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
   COMPARE3(v0,eps);
   COMPARE3(v1,eps);
   COMPARE3(v2,eps);
-  COMPARE3(world_to_object.vx,eps);
-  COMPARE3(world_to_object.vy,eps);
-  COMPARE3(world_to_object.vz,eps);
-  COMPARE3(world_to_object.p ,eps);
-  COMPARE3(object_to_world.vx,eps);
-  COMPARE3(object_to_world.vy,eps);
-  COMPARE3(object_to_world.vz,eps);
-  COMPARE3(object_to_world.p ,eps);
+  COMPARE3I(world_to_object.vx,eps);
+  COMPARE3I(world_to_object.vy,eps);
+  COMPARE3I(world_to_object.vz,eps);
+  COMPARE3I(world_to_object.p ,eps);
+  COMPARE3I(object_to_world.vx,eps);
+  COMPARE3I(object_to_world.vy,eps);
+  COMPARE3I(object_to_world.vz,eps);
+  COMPARE3I(object_to_world.p ,eps);
 }
 
 struct LinearSpace3f
@@ -784,7 +806,6 @@ struct InstanceGeometryT : public Geometry
   {
     if (procedural)
     {
-      PRINT("HERE2");
       RTHWIF_GEOMETRY_AABBS_FPTR_DESC& out = desc->AABBs;
       memset(&out,0,sizeof(out));
       out.geometryType = RTHWIF_GEOMETRY_TYPE_AABBS_FPTR;
@@ -796,11 +817,8 @@ struct InstanceGeometryT : public Geometry
     }
     else
     {
-      PRINT("HERE");
-      PRINT(scene->bounds.lower.x);
       GEOMETRY_INSTANCE_DESC& out = desc->Instance;
       memset(&out,0,sizeof(GEOMETRY_INSTANCE_DESC));
-      PRINT(&out);
       out.geometryType = RTHWIF_GEOMETRY_TYPE_INSTANCE;
       out.instanceFlags = RTHWIF_INSTANCE_FLAG_NONE;
       out.geometryMask = 0xFF;
@@ -824,7 +842,6 @@ struct InstanceGeometryT : public Geometry
       out.xfmdata.p_z  = local2world.p.z();
       out.xfmdata.pad3  = 0.0f;
       out.bounds = &scene->bounds;
-      PRINT(scene->bounds.lower.x);
       out.accel = scene->getAccel();
     }
   }
@@ -1049,7 +1066,7 @@ struct Scene
         geometries[j]->transform(world2local);
         scene->geometries.push_back(geometries[j]);
       }
-
+      
       //std::shared_ptr<InstanceGeometry> instance = std::make_shared<InstanceGeometry>(local2world,scene,procedural);
       uint32_t instUserID = RandomSampler_getUInt(rng);
       std::shared_ptr<InstanceGeometry> instance(new InstanceGeometry(local2world,scene,procedural,instUserID));
@@ -1350,24 +1367,26 @@ void exception_handler(sycl::exception_list exceptions)
   }
 };
 
-void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_acceleration_structure_t* accel)
+void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_acceleration_structure_t accel)
 {
+  intel_raytracing_ext_flag_t flags = intel_get_raytracing_ext_flag();
+  if (!(flags & intel_raytracing_ext_flag_ray_query))
+    return;
+  
   /* setup ray */
   intel_ray_desc_t ray;
   ray.origin = in.org;
   ray.direction = in.dir;
   ray.tmin = in.tnear;
   ray.tmax = in.tfar;
-  ray.time = 0.0f;
   ray.mask = in.mask;
   ray.flags = (intel_ray_flags_t) in.flags;
-  
+
   /* trace ray */
-  intel_ray_query_t query_ = intel_ray_query_init(ray,accel);
-  intel_ray_query_t* query = &query_;
+  intel_ray_query_t query = intel_ray_query_init(ray,accel);
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
-  
+
   /* return ray data of level 0 */
   out.ray0_org = intel_get_ray_origin(query,0);
   out.ray0_dir = intel_get_ray_direction(query,0);
@@ -1389,15 +1408,15 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
     out.bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
     out.hit_candidate = intel_get_hit_candidate( query, intel_hit_type_potential_hit );
     out.t = intel_get_hit_distance(query, intel_hit_type_potential_hit);
-    out.u = intel_get_hit_barycentrics(query, intel_hit_type_potential_hit).x();
-    out.v = intel_get_hit_barycentrics(query, intel_hit_type_potential_hit).y();
-    out.front_face = intel_hit_is_front_face( query, intel_hit_type_potential_hit );
+    out.u = intel_get_hit_barycentrics(query, intel_hit_type_potential_hit).x;
+    out.v = intel_get_hit_barycentrics(query, intel_hit_type_potential_hit).y;
+    out.front_face = intel_get_hit_front_face( query, intel_hit_type_potential_hit );
     out.instUserID = intel_get_hit_instance_user_id( query, intel_hit_type_potential_hit );
     out.instID = intel_get_hit_instance_id( query, intel_hit_type_potential_hit );
     out.geomID = intel_get_hit_geometry_id( query, intel_hit_type_potential_hit );
     if (i%2) out.primID = intel_get_hit_triangle_primitive_id( query, intel_hit_type_potential_hit );
     else     out.primID = intel_get_hit_primitive_id         ( query, intel_hit_type_potential_hit );
-    sycl::float3 vertex_out[3];
+    intel_float3 vertex_out[3];
     intel_get_hit_triangle_vertices(query, vertex_out, intel_hit_type_potential_hit);
     out.v0 = vertex_out[0];
     out.v1 = vertex_out[1];
@@ -1423,15 +1442,15 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
     out.bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_committed_hit );
     out.hit_candidate = intel_get_hit_candidate( query, intel_hit_type_committed_hit );
     out.t = intel_get_hit_distance(query, intel_hit_type_committed_hit);
-    out.u = intel_get_hit_barycentrics(query, intel_hit_type_committed_hit).x();
-    out.v = intel_get_hit_barycentrics(query, intel_hit_type_committed_hit).y();
-    out.front_face = intel_hit_is_front_face( query, intel_hit_type_committed_hit );
+    out.u = intel_get_hit_barycentrics(query, intel_hit_type_committed_hit).x;
+    out.v = intel_get_hit_barycentrics(query, intel_hit_type_committed_hit).y;
+    out.front_face = intel_get_hit_front_face( query, intel_hit_type_committed_hit );
     out.instUserID = intel_get_hit_instance_user_id( query, intel_hit_type_committed_hit );
     out.instID = intel_get_hit_instance_id( query, intel_hit_type_committed_hit );
     out.geomID = intel_get_hit_geometry_id( query, intel_hit_type_committed_hit );
     if (i%2) out.primID = intel_get_hit_triangle_primitive_id( query, intel_hit_type_committed_hit );
     else     out.primID = intel_get_hit_primitive_id         ( query, intel_hit_type_committed_hit );
-    sycl::float3 vertex_out[3];
+    intel_float3 vertex_out[3];
     intel_get_hit_triangle_vertices(query, vertex_out, intel_hit_type_committed_hit);
     out.v0 = vertex_out[0];
     out.v1 = vertex_out[1];
@@ -1451,21 +1470,23 @@ void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_a
   intel_ray_query_abandon(query);
 }
 
-void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_in, intel_raytracing_acceleration_structure_t* accel, TestType test)
+void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_in, intel_raytracing_acceleration_structure_t accel, TestType test)
 {
+  intel_raytracing_ext_flag_t flags = intel_get_raytracing_ext_flag();
+  if (!(flags & intel_raytracing_ext_flag_ray_query))
+    return;
+  
   /* setup ray */
   intel_ray_desc_t ray;
   ray.origin = in.org;
   ray.direction = in.dir;
   ray.tmin = in.tnear;
   ray.tmax = in.tfar;
-  ray.time = 0.0f;
   ray.mask = in.mask;
   ray.flags = (intel_ray_flags_t) in.flags;
   
   /* trace ray */
-  intel_ray_query_t query_ = intel_ray_query_init(ray,accel);
-  intel_ray_query_t* query = &query_;
+  intel_ray_query_t query = intel_ray_query_init(ray,accel);
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
   
@@ -1500,15 +1521,15 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         out.bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit );
         out.hit_candidate = intel_get_hit_candidate( query, intel_hit_type_potential_hit );
         out.t = intel_get_hit_distance(query, intel_hit_type_potential_hit);
-        out.u = intel_get_hit_barycentrics(query, intel_hit_type_potential_hit).x();
-        out.v = intel_get_hit_barycentrics(query, intel_hit_type_potential_hit).y();
-        out.front_face = intel_hit_is_front_face( query, intel_hit_type_potential_hit );
+        out.u = intel_get_hit_barycentrics(query, intel_hit_type_potential_hit).x;
+        out.v = intel_get_hit_barycentrics(query, intel_hit_type_potential_hit).y;
+        out.front_face = intel_get_hit_front_face( query, intel_hit_type_potential_hit );
         out.instUserID = intel_get_hit_instance_user_id( query, intel_hit_type_potential_hit );
         out.instID = intel_get_hit_instance_id( query, intel_hit_type_potential_hit );
         out.geomID = intel_get_hit_geometry_id( query, intel_hit_type_potential_hit );
         if (i%2) out.primID = intel_get_hit_triangle_primitive_id( query, intel_hit_type_potential_hit );
         else     out.primID = intel_get_hit_primitive_id         ( query, intel_hit_type_potential_hit );
-        sycl::float3 vertex_out[3];
+        intel_float3 vertex_out[3];
         intel_get_hit_triangle_vertices(query, vertex_out, intel_hit_type_potential_hit);
         out.v0 = vertex_out[0];
         out.v1 = vertex_out[1];
@@ -1592,7 +1613,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
 
         /* commit hit */
         if (valid)
-          intel_ray_query_commit_potential_hit(query,t,sycl::float2(u,v));
+          intel_ray_query_commit_potential_hit_override(query,t,sycl::float2(u,v));
       }
       else if (geom->type == Geometry::INSTANCE)
       {
@@ -1610,7 +1631,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         const sycl::float3 D1 = xfmVector(world2local, D);
 
         scenes[bvh_level+1] = inst->scene.get();
-        intel_raytracing_acceleration_structure_t* inst_accel = (intel_raytracing_acceleration_structure_t*) inst->scene->getAccel();
+        intel_raytracing_acceleration_structure_t inst_accel = (intel_raytracing_acceleration_structure_t) inst->scene->getAccel();
 
         /* continue traversal */
         intel_ray_desc_t ray;
@@ -1618,7 +1639,6 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
         ray.direction = D1;
         ray.tmin = intel_get_ray_tmin(query,bvh_level);
         ray.tmax = 0.0f; // unused
-        ray.time = 0.0f;
         ray.mask = intel_get_ray_mask(query,bvh_level);
         ray.flags = intel_get_ray_flags(query,bvh_level);
         intel_ray_query_forward_ray(query, ray, inst_accel);
@@ -1636,9 +1656,9 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
     out.bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_committed_hit );
     out.hit_candidate = intel_get_hit_candidate( query, intel_hit_type_committed_hit );
     out.t = intel_get_hit_distance(query, intel_hit_type_committed_hit);
-    out.u = intel_get_hit_barycentrics(query, intel_hit_type_committed_hit).x();
-    out.v = intel_get_hit_barycentrics(query, intel_hit_type_committed_hit).y();
-    out.front_face = intel_hit_is_front_face( query, intel_hit_type_committed_hit );
+    out.u = intel_get_hit_barycentrics(query, intel_hit_type_committed_hit).x;
+    out.v = intel_get_hit_barycentrics(query, intel_hit_type_committed_hit).y;
+    out.front_face = intel_get_hit_front_face( query, intel_hit_type_committed_hit );
     out.instUserID = intel_get_hit_instance_user_id( query, intel_hit_type_committed_hit );
     out.instID = intel_get_hit_instance_id( query, intel_hit_type_committed_hit );
     out.geomID = intel_get_hit_geometry_id( query, intel_hit_type_committed_hit );
@@ -1649,7 +1669,7 @@ void render_loop(uint32_t i, const TestInput& in, TestOutput& out, size_t scene_
     out.v2 = sycl::float3(0,0,0);
     if (intel_get_hit_candidate( query, intel_hit_type_committed_hit ) == intel_candidate_type_triangle)
     {
-      sycl::float3 vertex_out[3];
+      intel_float3 vertex_out[3];
       intel_get_hit_triangle_vertices(query, vertex_out, intel_hit_type_committed_hit);
       out.v0 = vertex_out[0];
       out.v1 = vertex_out[1];
@@ -1825,7 +1845,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
   buildTestExpectedInputAndOutput(scene,numTests,test,in,out_expected);
  
   /* execute test */
-  void* accel = scene->getAccel();
+  intel_raytracing_acceleration_structure_t accel = (intel_raytracing_acceleration_structure_t) scene->getAccel();
   size_t scene_ptr = (size_t) scene.get();
 
   if (inst != InstancingType::SW_INSTANCING &&
@@ -1835,7 +1855,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
                                              const uint i = item.get_id(0);
-                                             render(i,in[i],out_test[i],(intel_raytracing_acceleration_structure_t*)accel);
+                                             render(i,in[i],out_test[i],accel);
                                            });
                  });
     queue.wait_and_throw();
@@ -1846,7 +1866,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
                                              const uint i = item.get_id(0);
-                                             render_loop(i,in[i],out_test[i],scene_ptr,(intel_raytracing_acceleration_structure_t*)accel,test);
+                                             render_loop(i,in[i],out_test[i],scene_ptr,accel,test);
                                            });
                  });
     queue.wait_and_throw();
@@ -1903,7 +1923,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   buildTestExpectedInputAndOutput(scene,numPrimitives,TestType::TRIANGLES_COMMITTED_HIT,in,out_expected);
 
   /* execute test */
-  void* accel = scene->getAccel();
+  intel_raytracing_acceleration_structure_t accel = (intel_raytracing_acceleration_structure_t) scene->getAccel();
   size_t scene_ptr = (size_t) scene.get();
 
   if (numPrimitives)
@@ -1912,7 +1932,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
                    const sycl::range<1> range(numPrimitives);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
                                              const uint i = item.get_id(0);
-                                             render_loop(i,in[i],out_test[i],scene_ptr,(intel_raytracing_acceleration_structure_t*)accel,TestType::TRIANGLES_COMMITTED_HIT);
+                                             render_loop(i,in[i],out_test[i],scene_ptr,accel,TestType::TRIANGLES_COMMITTED_HIT);
                                            });
                  });
     queue.wait_and_throw();

@@ -18,24 +18,44 @@ IF (NOT EMBREE_SYCL_GPU_BVH_BUILDER)
   ADD_DEFINITIONS("-DEMBREE_SYCL_GPU_BVH_BUILDER")
 ENDIF()
 
-ADD_EXECUTABLE(rthwif_cornell_box rthwif_cornell_box.cpp ../rthwif_production.cpp)
+#ADD_EXECUTABLE(rthwif_cornell_box rthwif_cornell_box.cpp ../rthwif_production.cpp)
+#SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
+#SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
+
+#ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ../rthwif_production.cpp)
+#TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif sys tbb)
+#TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif_gpu sys tbb)
+
+IF (NOT DEFINED EMBREE_SYCL_RT_VALIDATION_API)
+  OPTION(EMBREE_SYCL_RT_VALIDATION_API "Use rt_validation API instead of IGC provided rt_production API" OFF)
+ENDIF()
+
+IF (EMBREE_SYCL_RT_VALIDATION_API)
+  ADD_DEFINITIONS("-DEMBREE_SYCL_RT_VALIDATION_API")
+  SET(VALIDATION_API_FILES ../rthwif_production.cpp)
+ENDIF()
+
+ADD_EXECUTABLE(rthwif_cornell_box rthwif_cornell_box.cpp ${VALIDATION_API_FILES})
 SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
 SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
 
-ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ../rthwif_production.cpp)
-TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif sys tbb)
+ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ${VALIDATION_API_FILES})
+TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif sys simd tbb)
 TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif_gpu sys tbb)
 
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
 
-SET(OPTION BUILD_TESTING ON)
-INCLUDE(CTest)
+IF (EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
 
-IF (EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS OR NOT DEFINED EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
-
+  IF (DEFINED EMBREE_MODEL_DIR)
+    SET(CORNELL_BOX_REFERENCE "${EMBREE_MODEL_DIR}/reference/cornell_box_reference.tga")
+  ELSE()
+    SET(CORNELL_BOX_REFERENCE "${CMAKE_CURRENT_SOURCE_DIR}/cornell_box_reference.tga")
+  ENDIF()
+  
   ADD_TEST(NAME rthwif_cornell_box
-           COMMAND rthwif_cornell_box --compare "${EMBREE_MODEL_DIR}/reference/cornell_box_reference.tga"
+           COMMAND rthwif_cornell_box --compare "${CORNELL_BOX_REFERENCE}"
            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 ENDIF()

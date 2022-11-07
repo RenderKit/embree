@@ -13,6 +13,7 @@
 #include "../../../common/math/affinespace.h"
 
 #include <map>
+#include <bitset>
 
 namespace embree
 {
