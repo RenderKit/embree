@@ -12,27 +12,35 @@ namespace embree
 {
   __forceinline bool runIntersectionFilter1Helper(RTCFilterFunctionNArguments* args, int& mask, const Geometry* const geometry, IntersectContext* context)
   {
+    const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
+    
 #if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
-    RTCFilterFunctionN gfilter = geometry->intersectionFilterN;
-    if (gfilter)
+    if (feature_mask & RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY)
     {
-      assert(context->scene->hasGeometryFilterFunction());
-      gfilter(args);
-      
-      if (mask == 0)
-        return false;
+      RTCFilterFunctionN gfilter = geometry->intersectionFilterN;
+      if (gfilter)
+      {
+        assert(context->scene->hasGeometryFilterFunction());
+        gfilter(args);
+        
+        if (mask == 0)
+          return false;
+      }
     }
 #endif
 
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    RTCFilterFunctionN cfilter = context->args->filter;
-    if (cfilter)
+    if (feature_mask & RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT)
     {
-      assert(context->scene->hasContextFilterFunction());
-      cfilter(args);
-      
-      if (mask == 0)
-        return false;
+      RTCFilterFunctionN cfilter = context->args->filter;
+      if (cfilter)
+      {
+        assert(context->scene->hasContextFilterFunction());
+        cfilter(args);
+        
+        if (mask == 0)
+          return false;
+      }
     }
 #endif
     
@@ -41,27 +49,35 @@ namespace embree
 
   __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, int& mask, const Geometry* const geometry, IntersectContext* context)
   {
+    const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
+    
 #if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
-    RTCFilterFunctionN gfilter = geometry->occlusionFilterN;
-    if (gfilter)
+    if (feature_mask & RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY)
     {
-      assert(context->scene->hasGeometryFilterFunction());
-      gfilter(args);
-      
-      if (mask == 0)
-        return false;
+      RTCFilterFunctionN gfilter = geometry->occlusionFilterN;
+      if (gfilter)
+      {
+        assert(context->scene->hasGeometryFilterFunction());
+        gfilter(args);
+        
+        if (mask == 0)
+          return false;
+      }
     }
 #endif
 
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    RTCFilterFunctionN cfilter = context->args->filter;
-    if (cfilter)
+    if (feature_mask & RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT)
     {
-      assert(context->scene->hasContextFilterFunction());
-      cfilter(args);
-      
-      if (mask == 0)
-        return false;
+      RTCFilterFunctionN cfilter = context->args->filter;
+      if (cfilter)
+      {
+        assert(context->scene->hasContextFilterFunction());
+        cfilter(args);
+        
+        if (mask == 0)
+          return false;
+      }
     }
 #endif
     return true;

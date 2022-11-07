@@ -9,12 +9,12 @@ namespace embree {
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
 #define FEATURE_MASK \
   RTC_FEATURE_TRIANGLE | \
-  RTC_FEATURE_USER_GEOMETRY | \
+  RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_CONTEXT | \
   RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT
 #else
 #define FEATURE_MASK     \
   RTC_FEATURE_TRIANGLE | \
-  RTC_FEATURE_USER_GEOMETRY | \
+  RTC_FEATURE_USER_GEOMETRY_IN_GEOMETRY | \
   RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY
 #endif
 
@@ -445,9 +445,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-    rtcFilterIntersection(args,&fargs);
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
     contextFilterFunction(&fargs);
+#else
+    rtcFilterIntersection(args,&fargs);
 #endif
 
     if (imask == -1) {
@@ -481,9 +482,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-    rtcFilterIntersection(args,&fargs);
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
     contextFilterFunction(&fargs);
+#else
+    rtcFilterIntersection(args,&fargs);
 #endif
 
     if (imask == -1) {
@@ -549,9 +551,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-    rtcFilterOcclusion(args,&fargs);
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
     contextFilterFunction(&fargs);
+#else
+    rtcFilterOcclusion(args,&fargs);
 #endif
     
     if (imask == -1) {
@@ -585,9 +588,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-    rtcFilterOcclusion(args,&fargs);
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
     contextFilterFunction(&fargs);
+#else
+    rtcFilterOcclusion(args,&fargs);
 #endif
 
     if (imask == -1) {
