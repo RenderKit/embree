@@ -3510,8 +3510,8 @@ namespace embree
           bounds_o->upper_y = sphere.y+sphere.w;
           bounds_o->upper_z = sphere.z+sphere.w;
         };
-        auto intersectFunc = [](const void* /*RTCIntersectFunctionNArguments*/ args) {};
-        auto occludedFunc  = [](const void* /*RTCOccludedFunctionNArguments*/ args)  {};
+        auto intersectFunc = [](const RTCIntersectFunctionNArguments* args) {};
+        auto occludedFunc  = [](const RTCOccludedFunctionNArguments* args)  {};
         
         RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
         rtcSetGeometryBuildQuality(geom, sflags.qflags);

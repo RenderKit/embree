@@ -228,13 +228,14 @@ namespace embree
         args.forward_scene = nullptr;
         args.args = nullptr;
 
-        IntersectFuncN intersectFunc = nullptr;
+        typedef void (*RTCIntersectFunctionSYCL)(const void* args);
+        RTCIntersectFunctionSYCL intersectFunc = nullptr;
         
 #if EMBREE_GEOMETRY_USER_IN_GEOMETRY
 #if defined(__SYCL_DEVICE_ONLY__)
         if (context->args->feature_mask & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
 #endif
-          intersectFunc = intersectorN.intersect;
+          intersectFunc = (RTCIntersectFunctionSYCL) intersectorN.intersect;
 #endif
         
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
@@ -242,7 +243,7 @@ namespace embree
         if (context->args->feature_mask & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_CONTEXT)
 #endif
           if (context->getIntersectFunction())
-            intersectFunc = context->getIntersectFunction();
+            intersectFunc = (RTCIntersectFunctionSYCL) context->getIntersectFunction();
 #endif
         if (intersectFunc)
           intersectFunc(&args);
@@ -269,13 +270,14 @@ namespace embree
         args.forward_scene = nullptr;
         args.args = nullptr;
 
-        OccludedFuncN occludedFunc = nullptr;
+        typedef void (*RTCOccludedFunctionSYCL)(const void* args);
+        RTCOccludedFunctionSYCL occludedFunc = nullptr;
 
 #if EMBREE_GEOMETRY_USER_IN_GEOMETRY
 #if defined(__SYCL_DEVICE_ONLY__)
         if (context->args->feature_mask & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
 #endif
-          occludedFunc = intersectorN.occluded;
+          occludedFunc = (RTCOccludedFunctionSYCL) intersectorN.occluded;
 #endif
         
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
@@ -283,7 +285,7 @@ namespace embree
         if (context->args->feature_mask & RTC_FEATURE_USER_GEOMETRY_CALLBACK_IN_CONTEXT)
 #endif
           if (context->getOccludedFunction())
-            occludedFunc = context->getOccludedFunction();
+            occludedFunc = (RTCOccludedFunctionSYCL) context->getOccludedFunction();
 #endif
         if (occludedFunc)
           occludedFunc(&args);

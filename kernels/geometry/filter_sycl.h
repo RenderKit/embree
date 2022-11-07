@@ -12,12 +12,13 @@ namespace embree
 {
   __forceinline bool runIntersectionFilter1Helper(RTCFilterFunctionNArguments* args, int& mask, const Geometry* const geometry, IntersectContext* context)
   {
+    typedef void (*RTCFilterFunctionSYCL)(const void* args);
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
     
 #if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
     if (feature_mask & RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY)
     {
-      RTCFilterFunctionN gfilter = geometry->intersectionFilterN;
+      RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->intersectionFilterN;
       if (gfilter)
       {
         assert(context->scene->hasGeometryFilterFunction());
@@ -32,7 +33,7 @@ namespace embree
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
     if (feature_mask & RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT)
     {
-      RTCFilterFunctionN cfilter = context->args->filter;
+      RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)
       {
         assert(context->scene->hasContextFilterFunction());
@@ -49,12 +50,13 @@ namespace embree
 
   __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, int& mask, const Geometry* const geometry, IntersectContext* context)
   {
+    typedef void (*RTCFilterFunctionSYCL)(const void* args);
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
     
 #if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
     if (feature_mask & RTC_FEATURE_FILTER_FUNCTION_IN_GEOMETRY)
     {
-      RTCFilterFunctionN gfilter = geometry->occlusionFilterN;
+      RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->occlusionFilterN;
       if (gfilter)
       {
         assert(context->scene->hasGeometryFilterFunction());
@@ -69,7 +71,7 @@ namespace embree
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
     if (feature_mask & RTC_FEATURE_FILTER_FUNCTION_IN_CONTEXT)
     {
-      RTCFilterFunctionN cfilter = context->args->filter;
+      RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)
       {
         assert(context->scene->hasContextFilterFunction());

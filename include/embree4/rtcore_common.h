@@ -311,13 +311,15 @@ struct RTCFilterFunctionNArguments
 };
 
 /* Filter callback function */
-typedef void (*RTCFilterFunctionN)(const /*struct RTCFilterFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* args);
 
 /* Intersection callback function */
-typedef void (*RTCIntersectFunctionN)(const /*struct RTCIntersectFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+struct RTCIntersectFunctionNArguments;
+typedef void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArguments* args);
 
 /* Occlusion callback function */
-typedef void (*RTCOccludedFunctionN)(const /*struct RTCOccludedFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+struct RTCOccludedFunctionNArguments;
+typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* args);
 
 /* Intersection arguments passed to intersect/occluded calls */
 struct RTCIntersectArguments
