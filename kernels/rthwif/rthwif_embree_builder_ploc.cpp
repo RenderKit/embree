@@ -3,8 +3,10 @@
 #include "rthwif_internal.h"
 #include "rthwif_embree_builder_ploc.h"
 #include "builder/qbvh6.h"
+#include "../common/algorithms/parallel_reduce.h"
 
 // FIXME: compute MAX_WGS at run-time
+// FIXME: leaf data generation without flags
 
 #define SINGLE_WG_SWITCH_THRESHOLD 8*1024
 #define FAST_MC_THRESHOLD          1024*1024
@@ -159,6 +161,54 @@ namespace embree
     return args;
   } 
 
+  struct PrimitiveCounts {
+    uint numTriangles;
+    uint numQuads;
+    uint numProcedurals;
+    uint numInstances;
+
+    __forceinline PrimitiveCounts() : numTriangles(0), numQuads(0), numProcedurals(0), numInstances(0)
+    {
+    }
+  };
+
+  __forceinline PrimitiveCounts operator +(const PrimitiveCounts& a, const PrimitiveCounts& b) {
+    PrimitiveCounts c;
+    c.numTriangles   = a.numTriangles   + b.numTriangles;
+    c.numQuads       = a.numQuads       + b.numQuads;
+    c.numProcedurals = a.numProcedurals + b.numProcedurals;
+    c.numInstances   = a.numInstances   + b.numInstances;
+    return c;
+  }
+
+
+  __forceinline PrimitiveCounts countPrimitives(const RTHWIF_GEOMETRY_DESC** geometries, const uint numGeometries)
+  {
+    auto reduce = [&](const range<size_t>& r) -> PrimitiveCounts
+                  {
+                    PrimitiveCounts counts;
+                    for (size_t geomID = r.begin(); geomID < r.end(); geomID++)
+                    {
+                      const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                      if (geom == nullptr) continue;    
+                      switch (geom->geometryType) {
+                      case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : counts.numTriangles   += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*)  geom)->triangleCount; break;
+                      case RTHWIF_GEOMETRY_TYPE_QUADS      : counts.numQuads       += ((RTHWIF_GEOMETRY_QUADS_DESC*)      geom)->quadCount; break;
+                      case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : counts.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
+                      case RTHWIF_GEOMETRY_TYPE_INSTANCE   : counts.numInstances   += 1; break;
+                      default: assert(false); break;        
+                      };                    
+                    };
+                    return counts;
+                  };
+
+    const uint COUNT_BLOCK_SIZE = 256;
+    const uint COUNT_PARALLEL_THRESHOLD = 256;
+    
+    const PrimitiveCounts primCounts = parallel_reduce((uint)0, numGeometries, COUNT_BLOCK_SIZE, COUNT_PARALLEL_THRESHOLD, PrimitiveCounts(), reduce,
+                                                       [&](const PrimitiveCounts& b0, const PrimitiveCounts& b1) -> PrimitiveCounts { return b0 + b1; });
+    return primCounts;
+  }
 
 // ===============================================================================================================
 // ===============================================================================================================
@@ -169,25 +219,14 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& arg
   RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
   const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
   const uint numGeometries = args.numGeometries;
+    
+  const PrimitiveCounts primCounts = countPrimitives(geometries,numGeometries);
 
-  uint numQuads       = 0;
-  uint numTriangles   = 0;
-  uint numProcedurals = 0;
-  uint numInstances   = 0;
-
-  for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXME slow
-  {
-    const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-    if (geom == nullptr) continue;    
-    switch (geom->geometryType) {
-    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : numTriangles   += ((RTHWIF_GEOMETRY_TRIANGLES_DESC*)  geom)->triangleCount; break;
-    case RTHWIF_GEOMETRY_TYPE_QUADS      : numQuads       += ((RTHWIF_GEOMETRY_QUADS_DESC*)      geom)->quadCount; break;
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE   : numInstances   += 1; break;
-    default: assert(false); break;        
-    };
-  }
-
+  const uint numQuads       = primCounts.numQuads;
+  const uint numTriangles   = primCounts.numTriangles;
+  const uint numProcedurals = primCounts.numProcedurals;
+  const uint numInstances   = primCounts.numInstances;
+  
   const uint numPrimitives = numQuads + numTriangles + numProcedurals + numInstances;
 
   if (args_i.verbose)
@@ -261,38 +300,14 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // =================================    
   // === get primitive type counts ===
   // =================================
-    
-  uint numQuads       = 0;
-  uint numProcedurals = 0;
-  uint numInstances   = 0;
-
   const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-  const uint numGeometries = args.numGeometries;
+  const uint numGeometries                = args.numGeometries;  
+  const PrimitiveCounts primCounts        = countPrimitives(geometries,numGeometries); // FIXME by GPU version
+  
+  uint numQuads       = primCounts.numQuads + primCounts.numTriangles;
+  uint numProcedurals = primCounts.numProcedurals;
+  uint numInstances   = primCounts.numInstances;
 
-  auto getSize = [&](uint32_t geomID) -> size_t {
-                   const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-                   if (geom == nullptr) return 0;
-                   return getNumPrimitives(geom);
-                 };
-
-  auto getType = [&](unsigned int geomID) {
-                   const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-                   assert(geom);
-                   return geom->geometryType;
-                 };
-    
-  for (size_t geomID=0; geomID<numGeometries; geomID++) // FIXME slow
-  {
-    uint32_t numPrimitives = getSize(geomID);
-    if (numPrimitives == 0) continue;          
-    switch (getType(geomID)) {
-    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : numQuads       += numPrimitives; break;
-    case RTHWIF_GEOMETRY_TYPE_QUADS      : numQuads       += numPrimitives; break;
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : numProcedurals += numPrimitives; break;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE   : numInstances   += numPrimitives; break;
-    default: assert(false); break;        
-    };
-  }
   const uint expected_numPrimitives = numQuads + numProcedurals + numInstances;    
 
   // ===================    
@@ -364,8 +379,6 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
-    const float quadification_rate =  *host_device_tasks / (float)numQuads;
-    //PRINT(quadification_rate);
     numQuads = *host_device_tasks; // update with actual quads count
   }
 
@@ -373,10 +386,11 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // ================================
   // === estimate size of the BVH ===
   // ================================
-  uint numPrimitives             = numQuads + numInstances + numProcedurals;  // can be slower due to invalid geoms  
+  
+  uint numPrimitives             = numQuads + numInstances + numProcedurals;  // can be lower due to invalid instances or procedurals  
   const uint header              = 128;
   const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
-  const uint node_size           = args.accelBufferBytes - leaf_size - header; //estimateSizeInternalNodes(numQuads,numInstances,numProcedurals);
+  const uint node_size           = args.accelBufferBytes - leaf_size - header; 
   const uint totalSize           = header + node_size + leaf_size; 
   const uint node_data_start     = header;
   const uint leaf_data_start     = header + node_size;
@@ -399,7 +413,6 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimate;
     return RTHWIF_ERROR_RETRY;
   }
-
 
   
   const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
@@ -763,7 +776,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
 
   if (convert_success == false)
   {
-    if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals);
+    if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals); // re-compute with INTERNAL_NODE_FACTOR = 1.0f;
     return RTHWIF_ERROR_RETRY;
   }
     

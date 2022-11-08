@@ -17,7 +17,7 @@
 #include <map>
 #include <iostream>
 
-#undef EMBREE_SYCL_GPU_BVH_BUILDER
+//#undef EMBREE_SYCL_GPU_BVH_BUILDER
 //#define VERBOSE true
 #define VERBOSE false
 

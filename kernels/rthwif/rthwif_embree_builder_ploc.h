@@ -1146,8 +1146,7 @@ namespace embree
                              sycl::atomic_ref<uint, sycl::memory_order::acq_rel, sycl::memory_scope::device,sycl::access::address_space::global_space> global_state(scratch_mem[localID]);
                              uint c = 0;
                              while( ((c = global_state.load()) & flag) == 0 );
-                             if (c)
-                               gpu::atomic_add_local(&global_count_prefix_sum,(uint)c & mask);
+                             if (c) gpu::atomic_add_local(&global_count_prefix_sum,(uint)c & mask);
                            }
             
                            item.barrier(sycl::access::fence_space::local_space);
@@ -1202,14 +1201,11 @@ namespace embree
                                  BVH2Ploc node;                                                                                           
                                  node.initLeaf(0,instID,bounds);                               
                                  node.store(&bvh2[prim_type_offset + p_sum]);                                                                
-                               }
-                               
+                               }                               
                              }
 
                              if (groupID == numGroups-1 && localID == 0)
-                             {
                                *host_device_tasks = global_count_prefix_sum + (scratch_mem[groupID] & mask);
-                             }
                            }                                                      
                          });
 		  
