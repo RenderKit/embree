@@ -163,9 +163,9 @@ namespace embree
 // ===============================================================================================================
 // ===============================================================================================================
 
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
 RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
 {
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
   RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
   const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
   const uint numGeometries = args.numGeometries;
@@ -226,14 +226,14 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& arg
   memset(&size_o,0,bytes_o);
   memcpy(&size_o,&size,bytes_o);
   size_o.structBytes = bytes_o;
-#endif    
   return RTHWIF_ERROR_NONE;
 }
+#endif    
   
 
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
 RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
 {
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
   BuildTimer timer;
   timer.reset();
 
@@ -784,11 +784,11 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
       stats.print_raw(std::cout);
       PRINT("VERBOSE STATS DONE");
     }        
-#endif    
-    
-#endif    
+#endif        
   return RTHWIF_ERROR_NONE;    
 }
+
+#endif      
 
 
 }

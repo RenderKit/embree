@@ -5,11 +5,7 @@
 #include "builder/gpu/sort.h"
 #include "builder/gpu/morton.h"
 #include <memory>
- #include "../common/scene.h" 
-/* #include "../common/scene_triangle_mesh.h" */
-/* #include "../common/scene_quad_mesh.h" */
-/* #include "../common/scene_user_geometry.h" */
-/* #include "../common/scene_instance.h" */
+#include "../common/scene.h" 
 #include "rthwif_builder.h"
 
 
@@ -554,7 +550,7 @@ namespace embree
     bounds.extend(vtx3);
     return true;
   }
-  
+
   __forceinline uint try_pair_triangles(const uint3 &a, const uint3 &b, uint& lb0, uint& lb1, uint &lb2)    
   {
     lb0 = 3;
@@ -607,6 +603,71 @@ namespace embree
       return false;
   }
   
+  // ===================================================================================================================================================================================
+  // ============================================================================== Instances ==========================================================================================
+  // ===================================================================================================================================================================================
+
+  __forceinline AffineSpace3fa getTransform(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
+  {
+    switch (geom->transformFormat)
+    {
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };
+    }
+    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR: {
+      const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR*) geom->transform;
+      return {
+        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
+        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
+        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
+        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
+      };      
+    }
+    }
+  }  
+
+  __forceinline gpu::AABB3f getInstanceBounds(const RTHWIF_GEOMETRY_INSTANCE_DESC &instance)
+  {
+    const Vec3fa lower(instance.bounds->lower.x,instance.bounds->lower.y,instance.bounds->lower.z);
+    const Vec3fa upper(instance.bounds->upper.x,instance.bounds->upper.y,instance.bounds->upper.z);
+    const BBox3fa org_bounds(lower,upper);
+    const AffineSpace3fa local2world = getTransform(&instance);    
+    const BBox3fa instance_bounds = xfmBounds(local2world,org_bounds);
+    const gpu::AABB3f bounds(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
+                       instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);       
+    return bounds;
+  }
+  
+  __forceinline bool isValidInstance(const RTHWIF_GEOMETRY_INSTANCE_DESC& instance, gpu::AABB3f &bounds)
+  {
+    if (instance.bounds == nullptr) return false;    
+    bounds = getInstanceBounds(instance);
+    if (bounds.empty()) return false;
+    if (!bounds.checkNumericalBounds()) return false;    
+    return true;
+  }
+
+
+  // =====================================================================================================================================================================================
+  // ============================================================================== Prefix Sums ==========================================================================================
+  // =====================================================================================================================================================================================
+  
+    
   __forceinline uint find_geomID_from_blockID(const uint *const prefix_sum, const uint numBlocks, const uint blockID)
   {
     uint l = 0;
@@ -804,6 +865,9 @@ namespace embree
     if (unlikely(verbose)) PRINT2("count quads per geometry", (float)dt);
   }
 
+  // =========================================================================================================================================================================================
+  // ============================================================================== Create Primrefs ==========================================================================================
+  // =========================================================================================================================================================================================
   
    __forceinline void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint *const quads_per_geom_prefix_sum, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
   {
@@ -994,46 +1058,10 @@ namespace embree
     if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads", (float)dt);
   }
  
-
-  __forceinline AffineSpace3fa getTransform(const RTHWIF_GEOMETRY_INSTANCE_DESC* geom)
-  {
-    switch (geom->transformFormat)
-    {
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_COLUMN_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_COLUMN_MAJOR*) geom->transform;
-      return {
-        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
-        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
-        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
-        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
-      };
-    }
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT4X4_COLUMN_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT4X4_COLUMN_MAJOR*) geom->transform;
-      return {
-        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
-        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
-        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
-        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
-      };
-    }
-    case RTHWIF_TRANSFORM_FORMAT_FLOAT3X4_ROW_MAJOR: {
-      const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR* xfm = (const RTHWIF_TRANSFORM_FLOAT3X4_ROW_MAJOR*) geom->transform;
-      return {
-        { xfm->vx_x, xfm->vx_y, xfm->vx_z },
-        { xfm->vy_x, xfm->vy_y, xfm->vy_z },
-        { xfm->vz_x, xfm->vz_y, xfm->vz_z },
-        { xfm-> p_x, xfm-> p_y, xfm-> p_z }
-      };      
-    }
-    /* default: */
-    /*   PING; */
-    }
-  }  
   
   __forceinline uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGs, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
-#if 0
+#if 1
     const uint numWGs = min((numGeoms+1024-1)/1024,(uint)MAX_WGs);
     {
       const sycl::nd_range<1> nd_range1(MAX_WGs,sycl::range<1>(MAX_WGs)); 
@@ -1085,7 +1113,13 @@ namespace embree
                              if (ID < sizeID)
                              {
                                const uint instID = startID + ID;
-                               const uint count = (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE) ? 1 : 0;
+                               uint count = 0;
+                               if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                               {
+                                 RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
+                                 gpu::AABB3f bounds;
+                                 if (isValidInstance(*geom,bounds)) count = 1;
+                               }
                                gpu::atomic_add_local(&active_counter,count);
                              }
                            }                             
@@ -1118,7 +1152,8 @@ namespace embree
             
                            item.barrier(sycl::access::fence_space::local_space);
 
-                           uint total_offset = 0;                                                                                
+                           uint total_offset = 0;
+                           gpu::AABB3f bounds;
                            for (uint ID = localID; ID < aligned_sizeID; ID += step_local)
                            {
                              item.barrier(sycl::access::fence_space::local_space);
@@ -1126,8 +1161,12 @@ namespace embree
                              uint count = 0;
                              if (ID < sizeID)
                              {
-                               const uint instID = startID + ID;                               
-                               count += (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE) ? 1 : 0;                             
+                               const uint instID = startID + ID;
+                               if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                               {
+                                 RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];                                                                  
+                                 if (isValidInstance(*geom,bounds)) count = 1;
+                               }
                              }
 
                                                           
@@ -1158,19 +1197,10 @@ namespace embree
                              if (ID < sizeID)
                              {
                                const uint instID = startID + ID;
-                               if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                               if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE && count == 1)
                                {
                                  BVH2Ploc node;                                                                                           
-                                 RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
-
-                                 const AffineSpace3fa local2world = getTransform(geom);
-                                 const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
-                                 const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
-                                 const BBox3fa instance_bounds = xfmBounds(local2world,BBox3fa(lower,upper));                                                              
-                                 const gpu::AABB3f bounds = gpu::AABB3f(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
-                                                                        instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
-                                 
-                                 node.initLeaf(instID,0,bounds);                               
+                                 node.initLeaf(0,instID,bounds);                               
                                  node.store(&bvh2[prim_type_offset + p_sum]);                                                                
                                }
                                
@@ -1200,14 +1230,20 @@ namespace embree
         if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
         {
           RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
+          gpu::AABB3f bounds;
+          if (!isValidInstance(*geom, bounds)) continue;
+          
           const AffineSpace3fa local2world = getTransform(geom);
           const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
           const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
           const BBox3fa org_bounds(lower,upper);
-          if (!isvalid_non_empty(org_bounds)) continue;
+          //if (!isvalid_non_empty(org_bounds)) continue;
           const BBox3fa instance_bounds = xfmBounds(local2world,org_bounds);
-          gpu::AABB3f bounds(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
-                             instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
+          bounds = gpu::AABB3f(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
+                               instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
+          //if (bounds.empty()) continue;
+          //if (!bounds.checkNumericalBounds()) continue;    
+
           node.initLeaf(0,instID,bounds);                               
           node.store(&bvh2[prim_type_offset + ID]);
           ID++;                                        
