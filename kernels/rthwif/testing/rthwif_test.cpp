@@ -1260,7 +1260,9 @@ struct Scene
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         args.verbose = VERBOSE;
-        err = rthwifBuildAccelGPU(args);        
+        if (i >= 2) args.verbose = true;        
+        err = rthwifBuildAccelGPU(args);
+        if (i >= 2) exit(1);
 #else        
         err = rthwifBuildAccel(args);
 #endif        

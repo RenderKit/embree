@@ -23,7 +23,7 @@ namespace embree
     const uint N = numQuads + numInstances + numProcedurals;
     // === conservative estimate ===
     const uint numFatLeaves = ceilf( (float)N/2 );
-    const uint numInnerNodes = ceilf( (float)numFatLeaves/5 );
+    const uint numInnerNodes = ceilf( (float)numFatLeaves/4 ); // 4 instead of 5 due to mixed nodes: 2 leaf refs + 4 inner node refs per inner node
     return std::max( (numFatLeaves + numInnerNodes) * 64, N * 16);
   }
 
