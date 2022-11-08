@@ -166,7 +166,7 @@ void renderPixelStandard(const uniform TutorialData& data,
   rtcInitIntersectArguments(&args);
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -181,7 +181,7 @@ void renderPixelStandard(const uniform TutorialData& data,
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccludedExV(data.g_scene,&context,RTCRay_(shadow),&args);
+    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

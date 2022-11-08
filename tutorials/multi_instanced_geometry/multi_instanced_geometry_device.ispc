@@ -253,7 +253,9 @@ void renderTileStream(uniform int* uniform pixels,
 
   // Primary rays in this scene are coherent. This is not the case
   // for shadow rays, since there is a spherical environment light.
-  primaryContext.context.flags = g_iflags_coherent;
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.flags = g_iflags_coherent;
 
   RandomSampler sampler;
   Ray primary[STREAM_SIZE];
@@ -275,7 +277,8 @@ void renderTileStream(uniform int* uniform pixels,
                  &primaryContext.context,
                  (varying RTCRayHit* uniform)&primary,
                  numPackets,
-                 sizeof(Ray));
+                 sizeof(Ray),
+                 &args);
 
   numPackets = 0;
   foreach_tiled(y = y0 ... y1, x = x0 ... x1)
@@ -344,7 +347,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
   
   RandomSampler sampler;
   Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
-  rtcIntersectExV(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay),&args);
+  rtcIntersectV(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay),&args);
   
   Vec3f color = make_Vec3f(0.f);
   if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
@@ -353,7 +356,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
     Vec3f emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    rtcOccludedExV(data.g_scene, &shadowContext.context, RTCRay_(shadowRay), &args);
+    rtcOccludedV(data.g_scene, &shadowContext.context, RTCRay_(shadowRay), &args);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }
   

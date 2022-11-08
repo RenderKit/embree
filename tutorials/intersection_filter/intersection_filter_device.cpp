@@ -106,7 +106,7 @@ void renderPixelStandard(const TutorialData& data,
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
     args.filter = (RTCFilterFunctionN)intersectionFilter;
 #endif
-    rtcIntersectEx1(data.g_scene,&context.context,RTCRayHit_(primary),&args);
+    rtcIntersect1(data.g_scene,&context.context,RTCRayHit_(primary),&args);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -132,7 +132,7 @@ void renderPixelStandard(const TutorialData& data,
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
     args.filter = (RTCFilterFunctionN)occlusionFilter;
 #endif
-    rtcOccludedEx1(data.g_scene,&context.context,RTCRay_(shadow),&args);
+    rtcOccluded1(data.g_scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -470,9 +470,12 @@ void renderTileStandardStream(int taskIndex,
     /* trace rays */
     IntersectContext primary_context;
     InitIntersectionContext(&primary_context);
-    primary_context.context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
-    rtcIntersect1M(data.g_scene,&primary_context.context,(RTCRayHit*)&primary_stream,N,sizeof(Ray2));
+    RTCIntersectArguments primary_args;
+    rtcInitIntersectArguments(&primary_args);
+    primary_args.flags = g_iflags_coherent;
+    
+    rtcIntersect1M(data.g_scene,&primary_context.context,(RTCRayHit*)&primary_stream,N,sizeof(Ray2),&primary_args);
 
     /* terminate rays and update color */
     N = -1;
@@ -522,9 +525,13 @@ void renderTileStandardStream(int taskIndex,
     /* trace shadow rays */
     IntersectContext shadow_context;
     InitIntersectionContext(&shadow_context);
-    shadow_context.context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
-    rtcOccluded1M(data.g_scene,&shadow_context.context,(RTCRay*)&shadow_stream,N,sizeof(Ray2));
+    
+    RTCIntersectArguments shadow_args;
+    rtcInitIntersectArguments(&shadow_args);
+    shadow_args.flags = g_iflags_coherent;
+    
+    rtcOccluded1M(data.g_scene,&shadow_context.context,(RTCRay*)&shadow_stream,N,sizeof(Ray2),&shadow_args);
 
     /* add light contribution and generate transmission ray */
     N = -1;

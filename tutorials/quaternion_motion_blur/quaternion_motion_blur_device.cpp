@@ -305,7 +305,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray), &args);
+  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray), &args);
   RayStats_addRay(stats);
 
   /* shade pixels */

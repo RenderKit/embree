@@ -172,7 +172,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -196,7 +196,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccludedExV(data.g_scene,&context,RTCRay_(shadow),&args);
+    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -301,8 +301,10 @@ void renderTileStandardStream(uniform int taskIndex,
   /* trace rays */
   uniform RTCIntersectContext primary_context;
   rtcInitIntersectContext(&primary_context);
-  primary_context.flags = g_iflags_coherent;
-  rtcIntersectVM(data.g_scene,&primary_context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray));
+  uniform RTCIntersectArguments primary_arguments;
+  rtcInitIntersectArguments(&primary_arguments);
+  primary_arguments.flags = g_iflags_coherent;
+  rtcIntersectVM(data.g_scene,&primary_context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray),&primary_arguments);
 
   /* terminate rays and update color */
   N = -1;
@@ -355,8 +357,10 @@ void renderTileStandardStream(uniform int taskIndex,
   /* trace shadow rays */
   uniform RTCIntersectContext shadow_context;
   rtcInitIntersectContext(&shadow_context);
-  shadow_context.flags = g_iflags_coherent;
-  rtcOccludedVM(data.g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray));
+  uniform RTCIntersectArguments shadow_arguments;
+  rtcInitIntersectArguments(&shadow_arguments);
+  shadow_arguments.flags = g_iflags_coherent;
+  rtcOccludedVM(data.g_scene,&shadow_context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray),&shadow_arguments);
 
   /* add light contribution */
   N = -1;

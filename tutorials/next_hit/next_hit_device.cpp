@@ -143,8 +143,10 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
   Ray ray = ray_i;
   IntersectContext context(data,hits_o);
   rtcInitIntersectContext(&context.context);
-  context.context.filter = (RTCFilterFunctionN) data.gather_all_hits;
-  rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray));
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.filter = (RTCFilterFunctionN) data.gather_all_hits;
+  rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* sort hits by extended order */
@@ -239,7 +241,9 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
   IntersectContext context(data,hits_o);
   rtcInitIntersectContext(&context.context);
   context.max_next_hits = max_next_hits;
-  context.context.filter = (RTCFilterFunctionN) data.gather_next_hits;
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.filter = (RTCFilterFunctionN) data.gather_next_hits;
 
   /* in each pass we collect some hits */
   do {
@@ -259,7 +263,7 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
       if (context.hits.begin+i < data.max_total_hits)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
-    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray));
+    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* shade all hits */

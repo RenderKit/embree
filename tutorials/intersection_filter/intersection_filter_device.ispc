@@ -98,7 +98,7 @@ void renderPixelStandard(const uniform TutorialData& data,
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
     args.filter = (RTCFilterFunctionN)intersectionFilter;
 #endif    
-    rtcIntersectExV(data.g_scene,&context.context,RTCRayHit_(primary),&args);
+    rtcIntersectV(data.g_scene,&context.context,RTCRayHit_(primary),&args);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -124,7 +124,7 @@ void renderPixelStandard(const uniform TutorialData& data,
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
     args.filter = (RTCFilterFunctionN)occlusionFilter;
 #endif
-    rtcOccludedExV(data.g_scene,&context.context,RTCRay_(shadow),&args);
+    rtcOccludedV(data.g_scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -462,9 +462,13 @@ void renderTileStandardStream(uniform int taskIndex,
     /* trace rays */
     uniform IntersectContext primary_context;
     InitIntersectionContext(&primary_context);
-    primary_context.context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
-    rtcIntersectVM(data.g_scene,&primary_context.context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray2));
+    
+    uniform RTCIntersectArguments primary_args;
+    rtcInitIntersectArguments(&primary_args);
+    primary_args.flags = g_iflags_coherent;
+    
+    rtcIntersectVM(data.g_scene,&primary_context.context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray2),&primary_args);
 
     /* terminate rays and update color */
     N = -1;
@@ -514,9 +518,13 @@ void renderTileStandardStream(uniform int taskIndex,
     /* trace shadow rays */
     uniform IntersectContext shadow_context;
     InitIntersectionContext(&shadow_context);
-    shadow_context.context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
-    rtcOccludedVM(data.g_scene,&shadow_context.context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray2));
+
+    uniform RTCIntersectArguments shadow_args;
+    rtcInitIntersectArguments(&shadow_args);
+    shadow_args.flags = g_iflags_coherent;
+    
+    rtcOccludedVM(data.g_scene,&shadow_context.context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray2),&shadow_args);
 
     /* add light contribution and generate transmission ray */
     N = -1;

@@ -247,7 +247,7 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
   rtcInitIntersectArguments(&args);
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcOccludedExV(scene,&context->context,RTCRay_(ray),&args);
+  rtcOccludedV(scene,&context->context,RTCRay_(ray),&args);
 
   return transparency;
 }
@@ -283,7 +283,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersectExV(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */

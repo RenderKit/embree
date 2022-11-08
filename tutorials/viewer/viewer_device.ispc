@@ -184,16 +184,16 @@ void renderPixelStandard(const uniform TutorialData& data,
   /* intersect ray with scene */
   uniform RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  context.flags = data.iflags_coherent;
-#if RTC_MIN_WIDTH
-  context.minWidthDistanceFactor = 0.5f*data.min_width/width;
-#endif
-
+  
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.flags = data.iflags_coherent;
+#if RTC_MIN_WIDTH
+  args.minWidthDistanceFactor = 0.5f*data.min_width/width;
+#endif
   args.feature_mask = feature_mask;
   
-  rtcIntersectExV(data.scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade background black */

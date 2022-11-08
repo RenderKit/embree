@@ -1620,14 +1620,14 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     /* intersect ray with scene */
     IntersectContext context;
     InitIntersectionContext(&context);
-    context.context.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     context.tutorialData = (void*) &data;
 
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
+    args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     args.feature_mask = features;
   
-    rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1682,7 +1682,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
-    context.context.flags = data.iflags_incoherent;
+    args.flags = data.iflags_incoherent;
     for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
     {
       const Light* l = data.ispc_scene->lights[i];
@@ -1692,7 +1692,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       Vec3fa transparency = Vec3fa(1.0f);
       Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccludedEx1(data.scene,&context.context,RTCRay_(shadow),&args);
+      rtcOccluded1(data.scene,&context.context,RTCRay_(shadow),&args);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)

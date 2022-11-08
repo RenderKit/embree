@@ -244,7 +244,7 @@ void castRay(sycl::queue& queue, const RTCScene scene,
        * There are multiple variants of rtcIntersect. This one
        * intersects a single ray with the scene.
        */
-      rtcIntersectEx1(scene, &context, &rayhit, &args);
+      rtcIntersect1(scene, &context, &rayhit, &args);
 
       /*
        * write hit result to output buffer

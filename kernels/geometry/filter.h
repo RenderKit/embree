@@ -26,8 +26,8 @@ namespace embree
 #endif
 
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-      if (context->user->filter) {
-        context->user->filter(args);
+      if (context->getFilter()) {
+        context->getFilter()(args);
 
         if (args->valid[0] == 0)
           return false;
@@ -78,8 +78,8 @@ namespace embree
 #endif
 
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-      if (context->user->filter) {
-        context->user->filter(args);
+      if (context->getFilter()) {
+        context->getFilter()(args);
 
         if (args->valid[0] == 0)
           return false;
@@ -130,8 +130,8 @@ namespace embree
       if (none(valid_o)) return valid_o;
 
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-      if (context->user->filter) {
-        context->user->filter(args);
+      if (context->getFilter()) {
+        context->getFilter()(args);
       }
 #endif
 
@@ -172,8 +172,8 @@ namespace embree
       if (none(valid_o)) return valid_o;
 
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-      if (context->user->filter) {
-        context->user->filter(args);
+      if (context->getFilter()) {
+        context->getFilter()(args);
       }
 #endif
       valid_o = *mask != vint<K>(zero);
