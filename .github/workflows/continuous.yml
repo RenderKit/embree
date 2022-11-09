@@ -430,13 +430,13 @@ jobs:
 #        scripts/test.py build
 #        scripts/test.py test
 
-  continuous-macosx-x64-Debug-CLANG-ISPC1_17_0-SSE2-TBB2020_2:
+  continuous-macosx-x64-Debug-CLANG-ISPC1_17_0-SSE2-TBB2021_1_1:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
     with:
       runs-on: '[ "macOS", "embree", "build" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2
+        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.1.1 intensity:2
         scripts/test.py build
         scripts/test.py test
 
