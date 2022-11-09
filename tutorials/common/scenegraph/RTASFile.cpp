@@ -185,7 +185,7 @@ namespace RTASFile
                 for( void* p : m_Allocs )
                     free(p);
             }
-
+          
             template< class T >
             T*  New(size_t n = 1)
             {

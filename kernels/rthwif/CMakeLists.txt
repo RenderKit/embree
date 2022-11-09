@@ -65,6 +65,7 @@ ADD_DEFINITIONS(-DTASKING_TBB)
 ####################################################################
 
 ADD_LIBRARY(embree_rthwif_gpu STATIC rthwif_embree_builder_ploc.cpp builder/qbvh6.cpp builder/statistics.cpp)
+TARGET_LINK_LIBRARIES(embree_rthwif_gpu PRIVATE tbb simd sys -lze_loader)
 SET_TARGET_PROPERTIES(embree_rthwif_gpu PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
 
 #ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp ../common/alloc.cpp)

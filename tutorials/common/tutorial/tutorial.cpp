@@ -25,7 +25,7 @@
 #include "../scenegraph/geometry_creation.h"
 #include "../scenegraph/obj_loader.h"
 #include "../scenegraph/xml_loader.h"
-#include "../scenegraph/rtas_loader.h"
+//#include "../scenegraph/rtas_loader.h"
 #include "../image/image.h"
 
 namespace embree
@@ -1234,8 +1234,8 @@ namespace embree
       else if (keyFramesFilenames[i].ext() != "")
         scene->add(SceneGraph::load(keyFramesFilenames[i]));
 
-      if (toLowerCase(keyFramesFilenames[i].ext()) == std::string("rtas"))
-        scene->add(loadRTAS(keyFramesFilenames[i],true));
+      //if (toLowerCase(keyFramesFilenames[i].ext()) == std::string("rtas"))
+      //  scene->add(loadRTAS(keyFramesFilenames[i],true));
 
       
       if (verbosity >= 1) 

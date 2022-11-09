@@ -7,6 +7,7 @@
 
 // FIXME: compute MAX_WGS at run-time
 // FIXME: leaf data generation without flags
+// FIXME: add prefetch timings
 
 #define SINGLE_WG_SWITCH_THRESHOLD 8*1024
 #define FAST_MC_THRESHOLD          1024*1024
@@ -160,28 +161,7 @@ namespace embree
     args.structBytes = sizeof(RTHWIF_BUILD_ACCEL_ARGS);
     return args;
   } 
-
-  struct PrimitiveCounts {
-    uint numTriangles;
-    uint numQuads;
-    uint numProcedurals;
-    uint numInstances;
-
-    __forceinline PrimitiveCounts() : numTriangles(0), numQuads(0), numProcedurals(0), numInstances(0)
-    {
-    }
-  };
-
-  __forceinline PrimitiveCounts operator +(const PrimitiveCounts& a, const PrimitiveCounts& b) {
-    PrimitiveCounts c;
-    c.numTriangles   = a.numTriangles   + b.numTriangles;
-    c.numQuads       = a.numQuads       + b.numQuads;
-    c.numProcedurals = a.numProcedurals + b.numProcedurals;
-    c.numInstances   = a.numInstances   + b.numInstances;
-    return c;
-  }
-
-
+  
   __forceinline PrimitiveCounts countPrimitives(const RTHWIF_GEOMETRY_DESC** geometries, const uint numGeometries)
   {
     auto reduce = [&](const range<size_t>& r) -> PrimitiveCounts
@@ -268,14 +248,81 @@ RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& arg
   return RTHWIF_ERROR_NONE;
 }
 #endif    
+
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
+{
+  sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
+  const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
+  const uint numGeometries                = args.numGeometries;  
+
+  for (size_t geomID = 0; geomID < numGeometries; geomID++)
+  {
+    const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+    if (geom == nullptr) continue;    
+    switch (geom->geometryType) {
+    case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :
+    {
+      RTHWIF_GEOMETRY_TRIANGLES_DESC *t = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geom;
+      if (t->vertexBuffer)   gpu_queue.prefetch(t->vertexBuffer,t->vertexCount*t->vertexStride);
+      if (t->triangleBuffer) gpu_queue.prefetch(t->triangleBuffer,t->triangleCount*t->triangleStride);      
+      gpu_queue.prefetch(t,sizeof(RTHWIF_GEOMETRY_TRIANGLES_DESC));
+      break;
+    }
+    case RTHWIF_GEOMETRY_TYPE_QUADS      :
+    {
+      RTHWIF_GEOMETRY_QUADS_DESC *q = (RTHWIF_GEOMETRY_QUADS_DESC*)geom;
+      if (q->vertexBuffer) gpu_queue.prefetch(q->vertexBuffer,q->vertexCount*q->vertexStride);
+      if (q->quadBuffer) gpu_queue.prefetch(q->quadBuffer,q->quadCount*q->quadStride);      
+      gpu_queue.prefetch(q,sizeof(RTHWIF_GEOMETRY_QUADS_DESC));      
+      break;
+    }
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :
+    {
+      RTHWIF_GEOMETRY_AABBS_FPTR_DESC *a = (RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom;
+      gpu_queue.prefetch(a,sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC));
+      break;
+    }
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE   :
+    {
+      RTHWIF_GEOMETRY_INSTANCE_DESC *i = (RTHWIF_GEOMETRY_INSTANCE_DESC*)geom;
+      gpu_queue.prefetch(i->bounds,sizeof(RTHWIF_AABB));      
+      gpu_queue.prefetch(i,sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC));
+      break;
+    }
+    default: assert(false); break;        
+    };                    
+  };
+
+  if (geometries) gpu_queue.prefetch(geometries,sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries);
+  if (args.accelBuffer)   gpu_queue.prefetch(args.accelBuffer  ,args.accelBufferBytes);
+  if (args.scratchBuffer) gpu_queue.prefetch(args.scratchBuffer,args.scratchBufferBytes);  
   
+  // ============================================    
+  // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
+  // ============================================
+  const bool verbose2 = args.verbose;    
+  {
+    double first_kernel_time0 = getSeconds();          
+    sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) { cgh.single_task([=]() {}); });
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+    double first_kernel_time1 = getSeconds();
+    if (unlikely(verbose2)) std::cout << "Dummy prefetch kernel launch (should trigger all remaining USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;      
+  }
+  
+  return RTHWIF_ERROR_NONE;      
+}
+#endif  
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
 RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
 {
+  double total_build_time_host = getSeconds();
+
   BuildTimer timer;
   timer.reset();
-
+  
   // ================================    
   // === GPU device/queue/context ===
   // ================================
@@ -283,13 +330,13 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
   sycl::device &gpu_device = *(sycl::device*)args.sycl_device;  
   const bool verbose2 = args.verbose;
-  const uint gpu_maxWorkGroupSize = gpu_device.get_info<sycl::info::device::max_work_group_size>();
   const uint gpu_maxComputeUnits  = gpu_device.get_info<sycl::info::device::max_compute_units>();    
-  const uint gpu_maxLocalMemory   = gpu_device.get_info<sycl::info::device::local_mem_size>();
   uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
   
   if (unlikely(verbose2))
   {
+    const uint gpu_maxWorkGroupSize = gpu_device.get_info<sycl::info::device::max_work_group_size>();
+    const uint gpu_maxLocalMemory   = gpu_device.get_info<sycl::info::device::local_mem_size>();    
     PRINT("PLOC++ GPU BVH BUILDER");            
     PRINT( gpu_device.get_info<sycl::info::device::global_mem_size>() );
     PRINT(gpu_maxWorkGroupSize);
@@ -297,12 +344,48 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     PRINT(gpu_maxLocalMemory);
   }
 
-  // =================================    
-  // === get primitive type counts ===
-  // =================================
+  // =============================    
+  // === setup scratch pointer ===
+  // =============================
+    
+  PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
+  uint *const scratch = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
+  uint *prims_per_geom_prefix_sum = (uint*)scratch;    
+
+  
+  // ======================          
+  // ==== init globals ====
+  // ======================
+  {
+    timer.start(BuildTimer::PRE_PROCESS);      
+    sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+                                                  cgh.single_task([=]() {
+                                                                    globals->reset();
+                                                                  });
+                                                });
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+    double dt = gpu::getDeviceExecutionTiming(queue_event);
+    timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
+      
+    if (unlikely(verbose2))
+      std::cout << "Init Globals " << dt << " ms" << std::endl;
+  }  
+  
+  // ================================================    
+  // === get primitive type count from geometries ===
+  // ================================================
+  
   const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
-  const uint numGeometries                = args.numGeometries;  
-  const PrimitiveCounts primCounts        = countPrimitives(geometries,numGeometries); // FIXME by GPU version
+  const uint numGeometries                = args.numGeometries;
+ 
+  timer.start(BuildTimer::PRE_PROCESS);
+  double device_prim_counts_time = 0.0f;
+  
+  const PrimitiveCounts primCounts = countPrimitives(gpu_queue,geometries,numGeometries,globals,host_device_tasks,device_prim_counts_time,verbose2); 
+
+  timer.stop(BuildTimer::PRE_PROCESS);
+  timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_prim_counts_time);                              
+  if (unlikely(verbose2)) std::cout << "Count primitives from geometries: " << timer.get_host_timer() << " ms (host) " << device_prim_counts_time << " ms (device) " << std::endl;      
   
   uint numQuads       = primCounts.numQuads + primCounts.numTriangles;
   uint numProcedurals = primCounts.numProcedurals;
@@ -329,27 +412,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
       *args.accelBufferBytesOut = 3*64;
     if (args.boundsOut) *args.boundsOut = *(RTHWIF_AABB*)&geometryBounds;
     return RTHWIF_ERROR_NONE;
-  }    
-    
-  // ============================================    
-  // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
-  // ============================================
-    
-  {
-    double first_kernel_time0 = getSeconds();          
-    sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) { cgh.single_task([=]() {}); });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-    double first_kernel_time1 = getSeconds();
-    if (unlikely(verbose2)) std::cout << "Dummy first kernel launch (should trigger all USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;      
-  }
-
-  // =============================    
-  // === setup scratch pointer ===
-  // =============================
-    
-  PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
-  uint *const scratch = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
-  uint *prims_per_geom_prefix_sum = (uint*)scratch;
+  }        
         
   if (numQuads)
   {
@@ -387,7 +450,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // === estimate size of the BVH ===
   // ================================
   
-  uint numPrimitives             = numQuads + numInstances + numProcedurals;  // can be lower due to invalid instances or procedurals  
+  uint numPrimitives             = numQuads + numInstances + numProcedurals;  // #prims used can be lower due to invalid instances or procedurals but quads count is accurate at this point
   const uint header              = 128;
   const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
   const uint node_size           = args.accelBufferBytes - leaf_size - header; 
@@ -421,7 +484,6 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   // ===========================
   // === set up all pointers ===
   // ===========================
-    
   QBVH6* qbvh   = (QBVH6*)args.accelBuffer;
   char *bvh_mem = (char*)qbvh + header;
   char *const leaf_mem = (char*)qbvh + leaf_data_start;
@@ -444,16 +506,15 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     timer.start(BuildTimer::PRE_PROCESS);      
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                   cgh.single_task([=]() {
-                                                                    globals->reset();
+                                                                    //globals->reset();
                                                                     globals->numPrimitives              = numPrimitives;
-                                                                    globals->totalAllocatedMem          = totalSize;
                                                                     globals->numOrgPrimitives           = numPrimitives;                                                                      
                                                                     globals->node_mem_allocator_cur     = node_data_start/64;
                                                                     globals->node_mem_allocator_start   = node_data_start/64;
                                                                     globals->leaf_mem_allocator_cur     = leaf_data_start/64;
                                                                     globals->leaf_mem_allocator_start   = leaf_data_start/64;
                                                                     globals->bvh2_index_allocator       = numPrimitives; 
-                                                                    globals->numBuildRecords             = 0;
+                                                                    globals->numBuildRecords            = 0;
                                                                   });
                                                 });
     gpu::waitOnQueueAndCatchException(gpu_queue);
@@ -463,7 +524,8 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     if (unlikely(verbose2))
       std::cout << "Init globals " << dt << " ms" << std::endl;
   }	    
-    
+
+  
   double create_primref_time = 0.0f;
 
   timer.start(BuildTimer::PRE_PROCESS);        
@@ -538,7 +600,6 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
 
   if (unlikely(verbose2))
     std::cout << "Get Geometry and Centroid Bounds Phase " << timer.get_host_timer() << " ms (host) " << device_compute_centroid_bounds_time << " ms (device) " << std::endl;		
-
   
   // ==============================          
   // ==== compute morton codes ====
@@ -628,7 +689,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     std::cout << "Init Clusters " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
 
   uint numPrims = numPrimitives;
-
+  
   // ===================================================================================================================================================
   // ===================================================================================================================================================
   // ===================================================================================================================================================
@@ -652,7 +713,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
                                                                   });                                                         
                                                });
   }
-      
+  
   for (;numPrims>1;iteration++)
   {          
     // ==================================================            
@@ -674,11 +735,12 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
 
       const uint MERGED_KERNEL_WG_NUM = min((numPrims+1024-1)/1024,(uint)MAX_WGS);
       const uint radius = SEARCH_RADIUS;          
-          
+
+      
       device_ploc_iteration_time = 0.0f;
       iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,device_ploc_iteration_time, false);
       timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
-
+      
       const uint new_numPrims = *host_device_tasks;
       assert(new_numPrims < numPrims);          
       numPrims = new_numPrims;          
@@ -688,9 +750,9 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     if (unlikely(verbose2))
       PRINT4(iteration,numPrims,(float)device_ploc_iteration_time,(float)timer.get_accum_device_timer(BuildTimer::BUILD));
   }
-  timer.stop(BuildTimer::BUILD);        
-            
   
+  timer.stop(BuildTimer::BUILD);        
+              
   // =====================================                
   // === check and convert BVH2 (host) ===
   // =====================================
@@ -788,7 +850,7 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
     if (args.accelBufferBytesOut)
       *args.accelBufferBytesOut = totalSize;
 
-#if 1
+#if 0
     if (verbose2)
     {
       qbvh->print(std::cout,qbvh->root(),0,6);
@@ -797,7 +859,11 @@ RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
       stats.print_raw(std::cout);
       PRINT("VERBOSE STATS DONE");
     }        
-#endif        
+#endif
+
+  total_build_time_host = getSeconds() - total_build_time_host;
+  //std::cout << "Total build time host: " <<  1000.0*total_build_time_host << " ms" << std::endl;
+    
   return RTHWIF_ERROR_NONE;    
 }
 

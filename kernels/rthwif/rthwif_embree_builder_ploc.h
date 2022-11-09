@@ -44,41 +44,44 @@ namespace embree
     char *qbvh_base_pointer;
     uint node_mem_allocator_start;
     uint node_mem_allocator_cur;
-    uint64_t wgState;
-    // === second 64 bytes ===           
+    // === second 64 bytes ===    
+    uint numTriangles;
+    uint numQuads;
+    uint numProcedurals;
+    uint numInstances;
+    uint numPrimitives;
+    uint numOrgPrimitives;            
     uint bvh2_index_allocator;    
     uint leaf_mem_allocator_start;
     uint leaf_mem_allocator_cur;
     uint range_start;
     uint range_end;
-    uint numPrimitives;
-    uint numOrgPrimitives;
     uint numBuildRecords;   
     uint sync;
-    uint totalAllocatedMem;
     uint rootIndex;
     uint wgID;
     uint numLeaves;
-    uint padd;
 
     __forceinline void reset()
     {
       geometryBounds.init();
       centroidBounds.init();
       qbvh_base_pointer = nullptr;
-      wgState                    = 0;      
+      numTriangles               = 0;
+      numQuads                   = 0;
+      numProcedurals             = 0;
+      numInstances               = 0;
       node_mem_allocator_cur     = 0;
       node_mem_allocator_start   = 0;
+      numPrimitives              = 0;
+      numOrgPrimitives           = 0;            
       bvh2_index_allocator       = 0;
       leaf_mem_allocator_cur     = 0;
       leaf_mem_allocator_start   = 0;
       range_start                = 0;
       range_end                  = 0;
-      numPrimitives              = 0;
-      numOrgPrimitives           = 0;      
       numBuildRecords            = 0;
       sync                       = 0;      
-      totalAllocatedMem          = 0;
       rootIndex                  = 0;
       wgID                       = 0;
       numLeaves                  = 0;
@@ -164,6 +167,9 @@ namespace embree
     }
       
   };
+
+  static_assert(sizeof(PLOCGlobals) == 128, "PLOCGlobals must be 128 bytes large");
+
         
   struct __aligned(64) QBVHNodeN
   {
@@ -667,6 +673,38 @@ namespace embree
   // ============================================================================== Prefix Sums ==========================================================================================
   // =====================================================================================================================================================================================
   
+  struct PrimitiveCounts {
+    uint numTriangles;
+    uint numQuads;
+    uint numProcedurals;
+    uint numInstances;
+
+    __forceinline PrimitiveCounts() : numTriangles(0), numQuads(0), numProcedurals(0), numInstances(0)
+    {
+    }
+  };
+
+  __forceinline PrimitiveCounts operator +(const PrimitiveCounts& a, const PrimitiveCounts& b) {
+    PrimitiveCounts c;
+    c.numTriangles   = a.numTriangles   + b.numTriangles;
+    c.numQuads       = a.numQuads       + b.numQuads;
+    c.numProcedurals = a.numProcedurals + b.numProcedurals;
+    c.numInstances   = a.numInstances   + b.numInstances;
+    return c;
+  }
+
+  __forceinline bool operator ==(const PrimitiveCounts& a, const PrimitiveCounts& b) {
+    if (a.numTriangles   == b.numTriangles &&
+        a.numQuads       == b.numQuads &&
+        a.numProcedurals == b.numProcedurals &&
+        a.numInstances   == b.numInstances)
+      return true;
+    return false;
+  }
+    
+  __forceinline bool operator !=(const PrimitiveCounts& a, const PrimitiveCounts& b) {
+    return !(a==b);
+  }
     
   __forceinline uint find_geomID_from_blockID(const uint *const prefix_sum, const uint numBlocks, const uint blockID)
   {
@@ -681,6 +719,79 @@ namespace embree
       r = (blockID  < k) ? m : r;
     }
     return l;
+  }
+
+  __forceinline PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeometries, PLOCGlobals *const globals, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  {
+    PrimitiveCounts count;
+    const uint wgSize = 1024;
+    const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeometries,wgSize),sycl::range<1>(wgSize));          
+    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        sycl::accessor< uint, 0, sycl_read_write, sycl_local> _numTriangles(cgh);
+        sycl::accessor< uint, 0, sycl_read_write, sycl_local> _numQuads(cgh);
+        sycl::accessor< uint, 0, sycl_read_write, sycl_local> _numProcedurals(cgh);
+        sycl::accessor< uint, 0, sycl_read_write, sycl_local> _numInstances(cgh);
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                         {
+                           const uint geomID    = item.get_global_id(0);
+                           const uint localID   = item.get_local_id(0);
+                           
+                           uint &numTriangles   = *_numTriangles.get_pointer();
+                           uint &numQuads       = *_numQuads.get_pointer();
+                           uint &numProcedurals = *_numProcedurals.get_pointer();
+                           uint &numInstances   = *_numInstances.get_pointer();
+                           if (localID == 0)
+                           {
+                             numTriangles   = 0;
+                             numQuads       = 0;
+                             numProcedurals = 0;
+                             numInstances   = 0;
+                           }
+                           item.barrier(sycl::access::fence_space::local_space);
+
+                           const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                           if (geom != nullptr) {
+                             switch (geom->geometryType)
+                             {
+                             case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :  gpu::atomic_add_local(&numTriangles  ,((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount); break;
+                             case RTHWIF_GEOMETRY_TYPE_QUADS      :  gpu::atomic_add_local(&numQuads      ,((RTHWIF_GEOMETRY_QUADS_DESC     *)geom)->quadCount);     break;
+                             case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom)->primCount);     break;
+                             case RTHWIF_GEOMETRY_TYPE_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(uint)1); break;
+                             };
+                           }                           
+                           item.barrier(sycl::access::fence_space::local_space);
+                           if (localID == 0)
+                           {
+                             gpu::atomic_add_global(&globals->numTriangles,numTriangles);
+                             gpu::atomic_add_global(&globals->numQuads,numQuads);
+                             gpu::atomic_add_global(&globals->numProcedurals,numProcedurals);
+                             gpu::atomic_add_global(&globals->numInstances,numInstances);                             
+                           }
+                         });
+		  
+      });
+    
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+    const double d0 = gpu::getDeviceExecutionTiming(queue_event);
+
+    queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+        cgh.single_task([=]() {
+            host_device_tasks[0] = globals->numTriangles;
+            host_device_tasks[1] = globals->numQuads;
+            host_device_tasks[2] = globals->numProcedurals;
+            host_device_tasks[3] = globals->numInstances;            
+          });
+      });
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+    const double d1 = gpu::getDeviceExecutionTiming(queue_event);
+    
+    count.numTriangles   = host_device_tasks[0];
+    count.numQuads       = host_device_tasks[1];
+    count.numProcedurals = host_device_tasks[2];
+    count.numInstances   = host_device_tasks[3];
+
+    iteration_time += d0 + d1;
+    return count;
   }  
 
   __forceinline void prefixsumOverGeometryCounts (sycl::queue &gpu_queue, const uint numGeoms, uint *const quads_per_geom_prefix_sum, uint *host_device_tasks, double &iteration_time, const bool verbose)    

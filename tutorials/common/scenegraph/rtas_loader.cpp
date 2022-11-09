@@ -185,6 +185,7 @@ namespace embree
       blscenes.push_back(group);
     }
     PRINT("DONE");
+    
   }
 
    

@@ -367,8 +367,6 @@ namespace embree
       }
     };
 
-    // TODO: prefetch in GPU mode
-
     /* calculate maximal number of motion blur time segments in scene */
     uint32_t maxTimeSegments = 1;
     for (size_t geomID=0; geomID<scene->size(); geomID++)
@@ -480,6 +478,7 @@ namespace embree
     char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,sizeof(uint)*4,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::host); // FIXME
     assert(host_device_tasks);
     args.hostDeviceCommPtr = hostDeviceCommPtr;
+    
 #else        
     std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
     args.scratchBuffer = scratchBuffer.data();
@@ -501,6 +500,7 @@ namespace embree
       
       /* allocate BVH data */
       if (accel.size() < bytes) accel.resize(bytes);
+
 #if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
       memset(accel.data(),0,accel.size()); // FIXME: not required
 #endif
@@ -512,11 +512,8 @@ namespace embree
         const float t1 = float(i+1)/float(maxTimeSegments);
         time_range = BBox1f(t0,t1);
 
-        // why again?
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr;
-        // size_t new_accelBufferBytes = 0;
-        // args.accelBufferBytesOut = &new_accelBufferBytes;
 #else        
         args.geometries = (const RTHWIF_GEOMETRY_DESC**) geomDescr.data();
 #endif        
@@ -525,7 +522,12 @@ namespace embree
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
 
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
+        err = rthwifPrefetchAccelGPU(args);          
+#endif
+        
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+        
         err = rthwifBuildAccelGPU(args);
         if (err == RTHWIF_ERROR_NONE && gpu_device->verbosity(2))
         {
@@ -535,8 +537,7 @@ namespace embree
           stats.print(std::cout);
           stats.print_raw(std::cout);
           PRINT("VERBOSE STATS DONE");
-        }        
-        
+        }                
 #else
         err = rthwifBuildAccel(args);        
 #endif        
@@ -552,16 +553,10 @@ namespace embree
 
         if (err == RTHWIF_ERROR_RETRY)
         {
-// #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-//           sizeTotal.accelBufferExpectedBytes  = new_accelBufferBytes;
-//           sizeTotal.accelBufferWorstCaseBytes = new_accelBufferBytes;
-// #else          
-          if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes) // why?
+          if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes) 
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
-          sizeTotal.accelBufferExpectedBytes = std::min(sizeTotal.accelBufferWorstCaseBytes,(size_t(1.2*sizeTotal.accelBufferExpectedBytes)+127)&-128);
-// #endif          
-          
+          sizeTotal.accelBufferExpectedBytes = std::min(sizeTotal.accelBufferWorstCaseBytes,(size_t(1.2*sizeTotal.accelBufferExpectedBytes)+127)&-128);          
           break;
         }
         

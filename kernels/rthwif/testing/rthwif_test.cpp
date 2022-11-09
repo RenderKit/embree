@@ -17,7 +17,7 @@
 #include <map>
 #include <iostream>
 
-#undef EMBREE_SYCL_GPU_BVH_BUILDER
+//#undef EMBREE_SYCL_GPU_BVH_BUILDER
 //#define VERBOSE true
 #define VERBOSE false
 
@@ -1204,15 +1204,23 @@ struct Scene
       accel = alloc_accel_buffer(accelBytes+sentinelBytes,device,context);
       memset(accel,0,accelBytes+sentinelBytes);
 
+      
+      size_t numIterations = benchmark ? 16 : 1;
+
+      args.numGeometries = numGeometries; //geom.size();
+      args.accelBuffer = accel;
+      args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
+      rthwifPrefetchAccelGPU(args);      
+#endif
+      
       /* build accel */
       double t0 = embree::getSeconds();
-      size_t numIterations = benchmark ? 16 : 1;
 
       for (size_t i=0; i<numIterations; i++)
       {
-        args.numGeometries = numGeometries; //geom.size();
-        args.accelBuffer = accel;
-        args.accelBufferBytes = size.accelBufferWorstCaseBytes;
+        
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         args.verbose = VERBOSE;
         err = rthwifBuildAccelGPU(args);        
@@ -1260,9 +1268,7 @@ struct Scene
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         args.verbose = VERBOSE;
-        if (i >= 2) args.verbose = true;        
         err = rthwifBuildAccelGPU(args);
-        if (i >= 2) exit(1);
 #else        
         err = rthwifBuildAccel(args);
 #endif        
