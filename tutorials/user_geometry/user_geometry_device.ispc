@@ -118,9 +118,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceIntersectFunc(const RTCInters
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geometryUserPtr;
-  uniform RTCIntersectContext* uniform context = args->context;
   RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
-                                    
+  
   assert(args->N == programCount);
   if (!valid[programIndex])
     return;
@@ -133,7 +132,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceIntersectFunc(const RTCInters
   const float ray_tfar  = ray->tfar;
 
 #if 0
-  
+
+  uniform RTCIntersectContext* uniform context = args->context;
   ray->org = make_Vec3f_(xfmPoint (instance->world2local,ray_org));
   ray->dir = make_Vec3f_(xfmVector(instance->world2local,ray_dir));
   ray->tnear = ray_tnear;
@@ -160,7 +160,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceIntersectFunc(const RTCInters
   xray.id = 0;
   xray.flags = 0;
   
-  pushInstanceId(context, args->geomID);
   rtcForwardIntersectV(args,instance->object,&xray);
   
 #endif
@@ -170,7 +169,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
 {
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geometryUserPtr;
-  uniform RTCIntersectContext* uniform context = args->context;
   RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->ray;
   assert(args->N == programCount);
   if (!valid[programIndex])
@@ -184,7 +182,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
   const float ray_tfar  = ray->tfar;
 
 #if 0
-  
+
+  uniform RTCIntersectContext* uniform context = args->context;
   ray->org    = make_Vec3f_(xfmPoint (instance->world2local,ray_org));
   ray->dir    = make_Vec3f_(xfmVector(instance->world2local,ray_dir));
   ray->tnear  = ray_tnear;
@@ -212,7 +211,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
   xray.id = 0;
   xray.flags = 0;
   
-  pushInstanceId(context, args->geomID);
   rtcForwardOccludedV(args,instance->object,&xray);
   
 #endif

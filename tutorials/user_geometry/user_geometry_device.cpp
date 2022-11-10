@@ -120,7 +120,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
 {
   const int* valid = args->valid;
   void* ptr  = args->geometryUserPtr;
-  RTCIntersectContext* context = args->context;
   RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
                                     
   assert(args->N == 1);
@@ -136,6 +135,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
 
 #if 0
   
+  RTCIntersectContext* context = args->context;
   ray->org = Vec3ff(xfmPoint (instance->world2local,ray_org));
   ray->dir = Vec3ff(xfmVector(instance->world2local,ray_dir));
   ray->tnear() = ray_tnear;
@@ -162,7 +162,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   xray.id = 0;
   xray.flags = 0;
   
-  pushInstanceId(context, args->geomID);
   rtcForwardIntersect1(args,instance->object,&xray);
   
 #endif
@@ -172,7 +171,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
 {
   const int* valid = args->valid;
   void* ptr  = args->geometryUserPtr;
-  RTCIntersectContext* context = args->context;
   RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   assert(args->N == 1);
   if (!valid[0])
@@ -186,7 +184,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   const float ray_tfar  = ray->tfar;
 
 #if 0
-  
+
+  RTCIntersectContext* context = args->context;
   ray->org    = Vec3ff(xfmPoint (instance->world2local,ray_org));
   ray->dir    = Vec3ff(xfmVector(instance->world2local,ray_dir));
   ray->tnear()  = ray_tnear;
@@ -214,7 +213,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   xray.id = 0;
   xray.flags = 0;
   
-  pushInstanceId(context, args->geomID);
   rtcForwardOccluded1(args,instance->object,&xray);
   
 #endif

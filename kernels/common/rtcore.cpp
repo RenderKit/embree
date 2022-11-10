@@ -561,10 +561,11 @@ RTC_NAMESPACE_BEGIN;
       iargs = &defaultArgs;
     }
     IntersectContext context(scene,user_context,iargs);
-    
-    scene->intersectors.intersect(*(RTCRayHit*)oray,&context);
 
+    instance_id_stack::push(user_context, args->geomID);
+    scene->intersectors.intersect(*(RTCRayHit*)oray,&context);
     instance_id_stack::pop(user_context);
+    
     oray->org = ray_org_tnear;
     oray->dir = ray_dir_time;
     oray->mask = ray_mask;
@@ -650,9 +651,9 @@ RTC_NAMESPACE_BEGIN;
       iargs = &defaultArgs;
     }
     IntersectContext context(scene,user_context,iargs);
-    
-    scene->intersectors.intersect(valid,*oray,&context);
 
+    instance_id_stack::push(user_context, args->geomID);
+    scene->intersectors.intersect(valid,*oray,&context);
     instance_id_stack::pop(user_context);
 
     memcpy(oray->ray.org_x,ray_org_x,N*sizeof(float));
@@ -984,10 +985,11 @@ RTC_NAMESPACE_BEGIN;
       iargs = &defaultArgs;
     }
     IntersectContext context(scene,user_context,iargs);
-    
+
+    instance_id_stack::push(user_context, args->geomID);
     scene->intersectors.occluded(*(RTCRay*)oray,&context);
-    
     instance_id_stack::pop(user_context);
+    
     oray->org = ray_org_tnear;
     oray->dir = ray_dir_time;
     oray->mask = ray_mask;
@@ -1073,9 +1075,9 @@ RTC_NAMESPACE_BEGIN;
       iargs = &defaultArgs;
     }
     IntersectContext context(scene,user_context,iargs);
-    
-    scene->intersectors.occluded(valid,*oray,&context);
 
+    instance_id_stack::push(user_context, args->geomID);
+    scene->intersectors.occluded(valid,*oray,&context);
     instance_id_stack::pop(user_context);
 
     memcpy(oray->org_x,ray_org_x,N*sizeof(float));
