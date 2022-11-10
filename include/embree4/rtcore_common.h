@@ -486,7 +486,7 @@ typedef bool (*RTCPointQueryFunction)(struct RTCPointQueryFunctionArguments* arg
 
 /* returns function pointer to be usable in SYCL kernel */
 template<auto F>
-inline decltype(F) rtcGetSYCLFunctionPointer(sycl::queue& queue)
+inline decltype(F) rtcGetSYCLDeviceFunctionPointer(sycl::queue& queue)
 {
   sycl::buffer<cl_ulong> fptr_buf(1);
   {

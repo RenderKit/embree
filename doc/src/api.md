@@ -268,10 +268,10 @@ properly for the CPU and GPU.
   assigned to geometries are used, the traversal kernel must have the
   `RTC_SYCL_KERNEL` attribute attached, the indirectly called
   functions must be declared with `RTC_SYCL_INDIRECTLY_CALLABLE`, and
-  the `rtcGetSYCLFunctionPointer` API function helper should get used
+  the `rtcGetSYCLDeviceFunctionPointer` API function helper should get used
   to obtain the device side function pointer. However, we recommend to
-  pass the callback functions directly to the `rtcIntersect1Ex` and
-  `rtcOcclude1Ex` functions to allow inlining (see Section [Xe GPU
+  pass the callback functions directly to the `rtcIntersect1` and
+  `rtcOcclude1` functions to allow inlining (see Section [Xe GPU
   Performance Recommendations]).
 
 
@@ -446,7 +446,7 @@ low, to avoid spill code generation. To achieve this we recommend:
   your application, see Section [CMake Configuration].
 
 - Use SYCL specialization constants and the feature enable mask of the
-  `rtcIntersect1Ex` and `rtcOccluded1Ex` calls to JIT compile minimal
+  `rtcIntersect1` and `rtcOccluded1` calls to JIT compile minimal
   code. The passed feature mask should just contain features required
   to render the current scene. If JIT compile times are an issue,
   reduce the number of feature masks and use JIT caching.
@@ -457,8 +457,8 @@ Inline Indirect Calls
 Do not attach user geometry and intersection filter callbacks to the
 geometries of the scene, but directly pass some user geometry and
 intersection filter callback function pointers through the
-`RTCIntersectArguments` struct to `rtcIntersect1Ex` and
-`rtcOccluded1Ex`. If the function is directly passed that way, the
+`RTCIntersectArguments` struct to `rtcIntersect1` and
+`rtcOccluded1`. If the function is directly passed that way, the
 DPC++ compiler can inline the indirect call, which gives a huge
 performance benefit.
 
