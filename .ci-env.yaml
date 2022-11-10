@@ -4,9 +4,9 @@
 # neo:       neo-builds/ci/embargo/ci-neo-{VERSION}/artifacts/Linux/Ubuntu/20.04/Release/
 
 variables:
-  GFX_VERSION_LINUX_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12674/artifacts/Linux/Ubuntu/20.04/Release
-  GFX_VERSION_LINUX_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12674/artifacts/Linux/Ubuntu/20.04/Release
-  GFX_VERSION_WIN_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12674/artifacts/Windows
-  GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12674/artifacts/Windows
+  GFX_VERSION_LINUX_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12700/artifacts/Linux/Ubuntu/20.04/Release
+  GFX_VERSION_LINUX_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12700/artifacts/Linux/Ubuntu/20.04/Release
+  GFX_VERSION_WIN_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12700/artifacts/Windows
+  GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12700/artifacts/Windows
   DPCPP_VERSION_LINUX: sycl-nightly/20220914
   DPCPP_VERSION_WIN: sycl-nightly/20220914
