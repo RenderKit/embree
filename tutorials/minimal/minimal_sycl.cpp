@@ -203,7 +203,7 @@ void castRay(sycl::queue& queue, const RTCScene scene,
   {
     const sycl::range<1> range(1);
     
-    cgh.parallel_for(range,[=](sycl::item<1> item) RTC_SYCL_KERNEL
+    cgh.parallel_for(range,[=](sycl::item<1> item)
     {
       /*
        * The intersect context can be used to set intersection

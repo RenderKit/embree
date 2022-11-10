@@ -496,7 +496,7 @@ inline decltype(F) rtcGetSYCLDeviceFunctionPointer(sycl::queue& queue)
 
   queue.submit([&](sycl::handler& cgh) {
       auto fptr_acc = fptr_buf.get_access<sycl::access::mode::discard_write>(cgh);
-      cgh.single_task([=]() RTC_SYCL_KERNEL {
+      cgh.single_task([=]() {
 	  fptr_acc[0] = reinterpret_cast<cl_ulong>(F);
 	});
     });

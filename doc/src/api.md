@@ -64,7 +64,7 @@ Device side rendering can then get invoked by submitting a SYCL
 
     queue.submit([=](sycl::handler& cgh)
     {
-      cgh.parallel_for(sycl::range<1>(1),[=](sycl::id<1> item) RTC_SYCL_KERNEL
+      cgh.parallel_for(sycl::range<1>(1),[=](sycl::id<1> item)
       {
         struct RTCIntersectContext context;
         rtcInitIntersectContext(&context);
@@ -99,9 +99,6 @@ traversal from inside a user geometry callback,
 `rtcGetGeometryUserData` to get the user data pointer of some
 geometry. All functions that are allowed to be used during device side
 rendering are marked in the API reference.
-
-The `RTC_SYCL_KERNEL` kernel attribute is required for each kernel
-that invokes ray traversal.
 
 Have a look at the [Minimal] tutorial for a minimal SYCL example.
 
@@ -265,13 +262,12 @@ properly for the CPU and GPU.
   `rtcForwardIntersect1` and `rtcForwardOccluded1` functions.
 
 - When intersection filter callbacks and user geometry callbacks
-  assigned to geometries are used, the traversal kernel must have the
-  `RTC_SYCL_KERNEL` attribute attached, the indirectly called
+  assigned to geometries are used, the indirectly called
   functions must be declared with `RTC_SYCL_INDIRECTLY_CALLABLE`, and
   the `rtcGetSYCLDeviceFunctionPointer` API function helper should get used
   to obtain the device side function pointer. However, we recommend to
   pass the callback functions directly to the `rtcIntersect1` and
-  `rtcOcclude1` functions to allow inlining (see Section [Xe GPU
+  `rtcOccluded1` functions to allow inlining (see Section [Xe GPU
   Performance Recommendations]).
 
 
