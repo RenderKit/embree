@@ -24,7 +24,7 @@ namespace embree
     case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
     case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
     case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
-    case RTC_ERROR_UNSUPPORTED_DEVICE: printf("RTC_ERROR_UNSUPPORTED_DEVICE"); break;
+    case RTC_ERROR_UNSUPPORTED_GPU  : printf("RTC_ERROR_UNSUPPORTED_GPU"); break;
     default                         : printf("invalid error code"); break;
     }
     if (str) { 

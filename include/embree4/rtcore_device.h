@@ -96,7 +96,7 @@ enum RTCError
   RTC_ERROR_OUT_OF_MEMORY     = 4,
   RTC_ERROR_UNSUPPORTED_CPU   = 5,
   RTC_ERROR_CANCELLED         = 6,
-  RTC_ERROR_UNSUPPORTED_DEVICE = 7,
+  RTC_ERROR_UNSUPPORTED_GPU   = 7,
 };
 
 /* Returns the error code. */

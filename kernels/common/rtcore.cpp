@@ -46,7 +46,7 @@ RTC_NAMESPACE_BEGIN;
     auto devices = sycl_context->get_devices();
     for (auto device : devices) {
       if (!rthwifIsSYCLDeviceSupported(device))
-        throw_RTCError(RTC_ERROR_UNSUPPORTED_DEVICE,"unsupported SYCL device");
+        throw_RTCError(RTC_ERROR_UNSUPPORTED_GPU,"unsupported SYCL GPU device");
     }
         
     DeviceGPU* device = new DeviceGPU(sycl_context,sycl_queue,config);
