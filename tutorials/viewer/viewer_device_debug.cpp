@@ -179,7 +179,7 @@ extern "C" void renderFrame##Name (int* pixels,       \
   event = global_gpu_queue->submit([=](sycl::handler& cgh) {\
     cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);\
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);   \
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL { \
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) { \
       const unsigned int x = item.get_global_id(1); if (x >= width ) return; \
       const unsigned int y = item.get_global_id(0); if (y >= height) return; \
       RayStats stats;                                                 \
@@ -232,9 +232,9 @@ Vec3fa renderPixelDebugShader(const DebugShaderData& data, float x, float y, con
 
   int64_t c0 = get_tsc();
   if (data.shader == SHADER_OCCLUSION)
-    rtcOccludedEx1(data.scene,&context.context,RTCRay_(ray),&args);
+    rtcOccluded1(data.scene,&context.context,RTCRay_(ray),&args);
   else
-    rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
 
   int64_t c1 = get_tsc();
   RayStats_addRay(stats);
@@ -332,7 +332,7 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = feature_mask;
-  rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
+  rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -372,7 +372,7 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
     args.feature_mask = feature_mask;
-    rtcOccludedEx1(data.scene,&context.context,RTCRay_(shadow),&args);
+    rtcOccluded1(data.scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

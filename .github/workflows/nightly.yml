@@ -572,13 +572,13 @@ jobs:
 
   # CLANG compilation and testing of different ISAs
 
-  nightly-macosx-x64-Debug-CLANG-ISPC1_12_0-SSE2-TBB2020_2-NAMESPACE:
+  nightly-macosx-x64-Debug-CLANG-ISPC1_12_0-SSE2-TBB2021_1_1-NAMESPACE:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
     with:
-      runs-on: '[ "macOS", "embree" ]'
+      runs-on: '[ "macOS", "embree", "build" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:4 api_namespace:myembree maxinstancelevelcount:4
+        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.12.0 isa:SSE2 tasking:TBB2021.1.1 intensity:4 api_namespace:myembree maxinstancelevelcount:4
         scripts/test.py build
         scripts/test.py test
 
@@ -586,19 +586,19 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
     with:
-      runs-on: '[ "macOS", "embree" ]'
+      runs-on: '[ "macOS", "embree", "build" ]'
       cmd: |
         scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.13.0 isa:AVX tasking:INT intensity:4
         scripts/test.py build
         scripts/test.py test
 
-  nightly-macosx-x64-Debug-CLANG-ISPC1_13_0-SSE2-TBB2019_9-STATIC:
+  nightly-macosx-x64-Debug-CLANG-ISPC1_13_0-SSE2-TBB2021_1_1-STATIC:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
     with:
-      runs-on: '[ "macOS", "embree" ]'
+      runs-on: '[ "macOS", "embree", "build" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.13.0 isa:SSE2 tasking:TBB2019.9 intensity:4 STATIC_LIB:ON
+        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.13.0 isa:SSE2 tasking:TBB2021.1.1 intensity:4 STATIC_LIB:ON
         scripts/test.py build
         scripts/test.py test
 
@@ -608,29 +608,29 @@ jobs:
 #    secrets: inherit
 #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
 #    with:
-#      runs-on: '[ "macOS", "embree" ]'
+#      runs-on: '[ "macOS", "embree", "build" ]'
 #      cmd: |
 #        scripts/test.py configure platform:x64 build:Debug compiler:ICC15 ispc:ispc1.13.0 isa:AVX tasking:INT intensity:4
 #        scripts/test.py build
 #        scripts/test.py test
 
-#  nightly-macosx-x64-Debug-ICC2019_4-ISPC1_13_0-AVX2-TBB2020_2:
+#  nightly-macosx-x64-Debug-ICC2019_4-ISPC1_13_0-AVX2-TBB2021_1_1:
 #    secrets: inherit
 #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
 #    with:
-#      runs-on: '[ "macOS", "avx2", "embree" ]'
+#      runs-on: '[ "macOS", "avx2", "embree", "build" ]'
 #      cmd: |
-#        scripts/test.py configure platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd256 tasking:TBB2020.2 intensity:4
+#        scripts/test.py configure platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd256 tasking:TBB2021.1.1 intensity:4
 #        scripts/test.py build
 #        scripts/test.py test
 
-#  nightly-macosx-x64-Debug-ICC2020_1-ISPC1_13_0-AVX2-TBB2019_9:
+#  nightly-macosx-x64-Debug-ICC2020_1-ISPC1_13_0-AVX2-TBB2021_1_1:
 #    secrets: inherit
 #    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
 #    with:
-#      runs-on: '[ "macOS", "avx2", "embree" ]'
+#      runs-on: '[ "macOS", "avx2", "embree", "build" ]'
 #      cmd: |
-#        scripts/test.py configure platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2019.9 intensity:4
+#        scripts/test.py configure platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2021.1.1 intensity:4
 #        scripts/test.py build
 #        scripts/test.py test
 
@@ -638,7 +638,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
     with:
-      runs-on: '[ "macOS", "avx2", "embree" ]'
+      runs-on: '[ "macOS", "avx2", "embree", "build" ]'
       cmd: |
         scripts/test.py configure platform:x64 build:Debug compiler:ICC2021.1.1 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2021.1.1 intensity:4
         scripts/test.py build

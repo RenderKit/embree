@@ -27,7 +27,7 @@ namespace embree
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
         ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
-        IntersectContext newcontext((Scene*)instance->object, user_context);
+        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.intersect((RTCRayHit&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -54,7 +54,7 @@ namespace embree
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
         ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
-        IntersectContext newcontext((Scene*)instance->object, user_context);
+        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.occluded((RTCRay&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -116,7 +116,7 @@ namespace embree
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
         ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
-        IntersectContext newcontext((Scene*)instance->object, user_context);
+        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.intersect((RTCRayHit&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -143,7 +143,7 @@ namespace embree
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
         ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
-        IntersectContext newcontext((Scene*)instance->object, user_context);
+        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.occluded((RTCRay&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -207,7 +207,7 @@ namespace embree
         const Vec3vf<K> ray_dir = ray.dir;
         ray.org = xfmPoint(world2local, ray_org);
         ray.dir = xfmVector(world2local, ray_dir);
-        IntersectContext newcontext((Scene*)instance->object, user_context);
+        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.intersect(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -236,7 +236,7 @@ namespace embree
         const Vec3vf<K> ray_dir = ray.dir;
         ray.org = xfmPoint(world2local, ray_org);
         ray.dir = xfmVector(world2local, ray_dir);
-        IntersectContext newcontext((Scene*)instance->object, user_context);
+        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.occluded(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -266,7 +266,7 @@ namespace embree
         const Vec3vf<K> ray_dir = ray.dir;
         ray.org = xfmPoint(world2local, ray_org);
         ray.dir = xfmVector(world2local, ray_dir);
-        IntersectContext newcontext((Scene*)instance->object, user_context);
+        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.intersect(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -295,7 +295,7 @@ namespace embree
         const Vec3vf<K> ray_dir = ray.dir;
         ray.org = xfmPoint(world2local, ray_org);
         ray.dir = xfmVector(world2local, ray_dir);
-        IntersectContext newcontext((Scene*)instance->object, user_context);
+        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.occluded(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;

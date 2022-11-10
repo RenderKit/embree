@@ -177,7 +177,7 @@ void DebugShaderData_Constructor(uniform DebugShaderData* uniform This)
   event = global_gpu_queue->submit([=](sycl::handler& cgh) {\
     cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);\
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);   \
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL { \
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) { \
       const unsigned int x = item.get_global_id(1); if (x >= width ) return; \
       const unsigned int y = item.get_global_id(0); if (y >= height) return; \
       RayStats stats;                                                 \
@@ -230,9 +230,9 @@ Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float
 
   uniform int64 c0 = get_tsc();
   if (data.shader == SHADER_OCCLUSION)
-    rtcOccludedExV(data.scene,&context.context,RTCRay_(ray),&args);
+    rtcOccludedV(data.scene,&context.context,RTCRay_(ray),&args);
   else
-    rtcIntersectExV(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
 
   uniform int64 c1 = get_tsc();
   RayStats_addRay(stats);
@@ -327,7 +327,7 @@ Vec3f renderPixelAOShader(const uniform DebugShaderData& data, float x, float y,
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = feature_mask;
-  rtcIntersectExV(data.scene,&context.context,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -367,7 +367,7 @@ Vec3f renderPixelAOShader(const uniform DebugShaderData& data, float x, float y,
     uniform RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
     args.feature_mask = feature_mask;
-    rtcOccludedExV(data.scene,&context.context,RTCRay_(shadow),&args);
+    rtcOccludedV(data.scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

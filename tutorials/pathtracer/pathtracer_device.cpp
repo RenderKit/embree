@@ -930,14 +930,14 @@ void assignShaders(ISPCGeometry* geometry)
   if (geometry->type == SUBDIV_MESH)
   {
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
@@ -947,8 +947,8 @@ void assignShaders(ISPCGeometry* geometry)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,(RTCFilterFunctionN)data.occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
       }
     }
 #endif
@@ -957,7 +957,7 @@ void assignShaders(ISPCGeometry* geometry)
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
@@ -967,15 +967,15 @@ void assignShaders(ISPCGeometry* geometry)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,(RTCFilterFunctionN)data.occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
       }
     }
   }
   else if (geometry->type == GRID_MESH)
   {
     ISPCGridMesh* mesh = (ISPCGridMesh*) geometry;
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
@@ -985,15 +985,15 @@ void assignShaders(ISPCGeometry* geometry)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,(RTCFilterFunctionN)data.occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
       }
     }
   }
 
   else if (geometry->type == CURVES)
   {
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterHair);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterHair);
   }
 #endif
 }
@@ -1620,14 +1620,14 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     /* intersect ray with scene */
     IntersectContext context;
     InitIntersectionContext(&context);
-    context.context.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     context.tutorialData = (void*) &data;
 
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
+    args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     args.feature_mask = features;
   
-    rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1682,7 +1682,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
-    context.context.flags = data.iflags_incoherent;
+    args.flags = data.iflags_incoherent;
     for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
     {
       const Light* l = data.ispc_scene->lights[i];
@@ -1692,7 +1692,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       Vec3fa transparency = Vec3fa(1.0f);
       Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccludedEx1(data.scene,&context.context,RTCRay_(shadow),&args);
+      rtcOccluded1(data.scene,&context.context,RTCRay_(shadow),&args);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)
@@ -1844,11 +1844,11 @@ extern "C" void device_init (char* cfg)
 
   TutorialData_Constructor(&data);
 
-  data.intersectionFilterReject = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilterReject);
-  data.intersectionFilterOBJ = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilterOBJ);
-  data.occlusionFilterOpaque = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterOpaque);
-  data.occlusionFilterOBJ = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterOBJ);
-  data.occlusionFilterHair = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterHair);
+  data.intersectionFilterReject = GET_FUNCTION_POINTER(intersectionFilterReject);
+  data.intersectionFilterOBJ = GET_FUNCTION_POINTER(intersectionFilterOBJ);
+  data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
+  data.occlusionFilterOBJ = GET_FUNCTION_POINTER(occlusionFilterOBJ);
+  data.occlusionFilterHair = GET_FUNCTION_POINTER(occlusionFilterHair);
   
 } // device_init
 
@@ -1866,7 +1866,7 @@ extern "C" void renderFrameStandard (int* pixels,
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     cgh.set_specialization_constant<rtc_feature_mask>(g_used_features);
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) {
       const RTCFeatureFlags feature_mask = kh.get_specialization_constant<rtc_feature_mask>();
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
@@ -1878,7 +1878,7 @@ extern "C" void renderFrameStandard (int* pixels,
 #else
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

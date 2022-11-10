@@ -146,7 +146,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
     rtcSetGeometryUserPrimitiveCount(geom, sphere->tris_.size());
     rtcSetGeometryUserData(geom,(void*)(size_t)geomID);
     rtcSetGeometryBoundsFunction   (geom, triangle_bounds_func, nullptr);
-    rtcSetGeometryIntersectFunction(geom, (RTCIntersectFunctionN)triangle_intersect_func);
+    rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
     rtcCommitGeometry(geom);
     rtcReleaseGeometry(geom);
     meshes.push_back (std::move (sphere));
@@ -267,7 +267,7 @@ unsigned int createClothSheet (RTCScene scene)
     rtcSetGeometryUserPrimitiveCount(geom, cloth->tris_.size());
     rtcSetGeometryUserData(geom,(void*)(size_t)geomID);
     rtcSetGeometryBoundsFunction   (geom, triangle_bounds_func, nullptr);
-    rtcSetGeometryIntersectFunction(geom, (RTCIntersectFunctionN)triangle_intersect_func);
+    rtcSetGeometryIntersectFunction(geom, triangle_intersect_func);
     rtcCommitGeometry(geom);
     rtcReleaseGeometry(geom);
     meshes.push_back (std::move (cloth));

@@ -33,7 +33,7 @@ ENDIF()
 
 ADD_EXECUTABLE(rthwif_cornell_box rthwif_cornell_box.cpp ${VALIDATION_API_FILES})
 SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
-SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
+SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader -fsycl-targets=spir64 -Xsycl-target-backend=spir64 \" -cl-intel-greater-than-4GB-buffer-required \"")
 
 ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ${VALIDATION_API_FILES})
 TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif sys simd tbb)
@@ -42,7 +42,7 @@ TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif_gpu sys tbb)
 ENDIF()
 
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
-SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")
+SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader -fsycl-targets=spir64 -Xsycl-target-backend=spir64 \" -cl-intel-greater-than-4GB-buffer-required \"")
 
 IF (EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS)
 

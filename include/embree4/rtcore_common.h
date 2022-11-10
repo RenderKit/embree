@@ -41,6 +41,12 @@ typedef int ssize_t;
 #  define RTC_FORCEINLINE inline __attribute__((always_inline))
 #endif
 
+#if defined(__cplusplus)
+#  define RTC_OPTIONAL_ARGUMENT = nullptr
+#else
+#  define RTC_OPTIONAL_ARGUMENT
+#endif
+
 /* Invalid geometry ID */
 #define RTC_INVALID_GEOMETRY_ID ((unsigned int)-1)
 
@@ -305,17 +311,21 @@ struct RTCFilterFunctionNArguments
 };
 
 /* Filter callback function */
-typedef void (*RTCFilterFunctionN)(const /*struct RTCFilterFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+typedef void (*RTCFilterFunctionN)(const struct RTCFilterFunctionNArguments* args);
 
 /* Intersection callback function */
-typedef void (*RTCIntersectFunctionN)(const /*struct RTCIntersectFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+struct RTCIntersectFunctionNArguments;
+typedef void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArguments* args);
 
 /* Occlusion callback function */
-typedef void (*RTCOccludedFunctionN)(const /*struct RTCOccludedFunctionNArguments*/ void* args); // FIXME: workaround to allow inlining
+struct RTCOccludedFunctionNArguments;
+typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* args);
 
 /* Intersection arguments passed to intersect/occluded calls */
 struct RTCIntersectArguments
 {
+  enum RTCIntersectContextFlags flags;               // intersection flags
+
   RTCFilterFunctionN filter;                         // filter function to execute
   
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
@@ -326,62 +336,50 @@ struct RTCIntersectArguments
 #endif
   
   enum RTCFeatureFlags feature_mask;                 // selectively enable features for traversal
+
+#if RTC_MIN_WIDTH
+  float minWidthDistanceFactor;                      // curve radius is set to this factor times distance to ray origin
+#endif
 };
 
 /* Initializes an intersection arguments. */
 RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* args)
 {
+  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+  
   args->filter = NULL;
 
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
   args->intersect = NULL;
 #endif
+  
   args->feature_mask = RTC_FEATURE_ALL;
+
+#if RTC_MIN_WIDTH
+  args->minWidthDistanceFactor = 0.0f;
+#endif
 }
 
 /* Intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext
 {
-  enum RTCIntersectContextFlags flags;               // intersection flags
-  RTCFilterFunctionN filter;                         // filter function to execute
-
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  union {
-    RTCIntersectFunctionN intersect;                 // user geometry intersection callback to execute
-    RTCOccludedFunctionN occluded;                   // user geometry occlusion callback to execute
-  };
-#endif
-  
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   unsigned int instStackSize;                        // Number of instances currently on the stack.
 #endif
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // The current stack of instance ids.
-  
-#if RTC_MIN_WIDTH
-  float minWidthDistanceFactor;                      // curve radius is set to this factor times distance to ray origin
-#endif
 };
 
 /* Initializes an intersection context. */
 RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context)
 {
   unsigned l = 0;
-  context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  context->filter = NULL;
-
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  context->intersect = NULL;
-#endif
   
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   context->instStackSize = 0;
 #endif
+
   for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     context->instID[l] = RTC_INVALID_GEOMETRY_ID;
-  
-#if RTC_MIN_WIDTH
-  context->minWidthDistanceFactor = 0.0f;
-#endif
 }
 
 /* Point query structure for closest point query */
@@ -488,7 +486,7 @@ typedef bool (*RTCPointQueryFunction)(struct RTCPointQueryFunctionArguments* arg
 
 /* returns function pointer to be usable in SYCL kernel */
 template<auto F>
-inline decltype(F) rtcGetSYCLFunctionPointer(sycl::queue& queue)
+inline decltype(F) rtcGetSYCLDeviceFunctionPointer(sycl::queue& queue)
 {
   sycl::buffer<cl_ulong> fptr_buf(1);
   {
@@ -498,7 +496,7 @@ inline decltype(F) rtcGetSYCLFunctionPointer(sycl::queue& queue)
 
   queue.submit([&](sycl::handler& cgh) {
       auto fptr_acc = fptr_buf.get_access<sycl::access::mode::discard_write>(cgh);
-      cgh.single_task([=]() RTC_SYCL_KERNEL {
+      cgh.single_task([=]() {
 	  fptr_acc[0] = reinterpret_cast<cl_ulong>(F);
 	});
     });

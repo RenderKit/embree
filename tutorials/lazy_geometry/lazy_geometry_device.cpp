@@ -211,8 +211,8 @@ LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetGeometryIntersectFunction(instance->geometry,(RTCIntersectFunctionN)instanceIntersectFuncN);
-  rtcSetGeometryOccludedFunction (instance->geometry,(RTCOccludedFunctionN)instanceOccludedFuncN);
+  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
+  rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
   rtcReleaseGeometry(instance->geometry);

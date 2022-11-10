@@ -174,7 +174,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -198,7 +198,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccludedEx1(data.g_scene,&context,RTCRay_(shadow),&args);
+    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -303,8 +303,10 @@ void renderTileStandardStream(int taskIndex,
   /* trace rays */
   RTCIntersectContext primary_context;
   rtcInitIntersectContext(&primary_context);
-  primary_context.flags = g_iflags_coherent;
-  rtcIntersect1M(data.g_scene,&primary_context,(RTCRayHit*)&primary_stream,N,sizeof(Ray));
+  RTCIntersectArguments primary_args;
+  rtcInitIntersectArguments(&primary_args);
+  primary_args.flags = g_iflags_coherent;
+  rtcIntersect1M(data.g_scene,&primary_context,(RTCRayHit*)&primary_stream,N,sizeof(Ray),&primary_args);
 
   /* terminate rays and update color */
   N = -1;
@@ -357,8 +359,10 @@ void renderTileStandardStream(int taskIndex,
   /* trace shadow rays */
   RTCIntersectContext shadow_context;
   rtcInitIntersectContext(&shadow_context);
-  shadow_context.flags = g_iflags_coherent;
-  rtcOccluded1M(data.g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray));
+  RTCIntersectArguments shadow_args;
+  rtcInitIntersectArguments(&shadow_args);
+  shadow_args.flags = g_iflags_coherent;
+  rtcOccluded1M(data.g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray),&shadow_args);
 
   /* add light contribution */
   N = -1;
@@ -433,7 +437,7 @@ extern "C" void renderFrameStandard (int* pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

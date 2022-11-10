@@ -86,7 +86,7 @@ namespace embree
     case RTC_ERROR_OUT_OF_MEMORY    : printf("RTC_ERROR_OUT_OF_MEMORY"); break;
     case RTC_ERROR_UNSUPPORTED_CPU  : printf("RTC_ERROR_UNSUPPORTED_CPU"); break;
     case RTC_ERROR_CANCELLED        : printf("RTC_ERROR_CANCELLED"); break;
-    case RTC_ERROR_UNSUPPORTED_DEVICE: printf("RTC_ERROR_UNSUPPORTED_DEVICE"); break;
+    case RTC_ERROR_UNSUPPORTED_GPU  : printf("RTC_ERROR_UNSUPPORTED_GPU"); break;
     default                         : printf("invalid error code"); break;
     }
     if (str) {
@@ -1138,17 +1138,16 @@ namespace embree
       };
 
       /* select device supported by Embree */
-      //device = new sycl::device(sycl::gpu_selector());
-      device = new sycl::device(RTCDeviceSelector());
+      device = new sycl::device(rtcSYCLDeviceSelector);
       queue = new sycl::queue(*device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       context = new sycl::context(*device);
-      g_device = rtcNewSYCLDevice(context,queue,rtcore.c_str());
+      g_device = rtcNewSYCLDevice(context,device,rtcore.c_str());
       error_handler(nullptr,rtcGetDeviceError(g_device));
       global_gpu_device = device;
       global_gpu_context = context;
       global_gpu_queue = queue;
 
-      enableUSMAllocTutorial(global_gpu_context, global_gpu_device, global_gpu_queue);
+      enableUSMAllocTutorial(global_gpu_context, global_gpu_device);
     }
 
     /* create standard device */

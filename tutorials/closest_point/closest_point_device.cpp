@@ -201,7 +201,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   rtcSetGeometryUserPrimitiveCount(instance->geometry,1);
   rtcSetGeometryUserData(instance->geometry,instance);
   rtcSetGeometryBoundsFunction(instance->geometry,instanceBoundsFunc,nullptr);
-  rtcSetGeometryIntersectFunction(instance->geometry,(RTCIntersectFunctionN)instanceIntersectFunc);
+  rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFunc);
   rtcSetGeometryPointQueryFunction(instance->geometry,instanceClosestPointFunc);
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);

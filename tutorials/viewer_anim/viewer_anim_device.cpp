@@ -250,16 +250,18 @@ void renderTileStandard(int taskIndex,
       ray.tfar  = mask ? (float)(inf) : (float)(neg_inf);
     }
     init_Ray(ray, Vec3fa(camera.xfm.p), Vec3fa(normalize((float)x*camera.xfm.l.vx + (float)y*camera.xfm.l.vy + camera.xfm.l.vz)), ray.tnear(), ray.tfar);
-
+    
     RayStats_addRay(stats);
   }
 
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  context.flags = g_iflags_coherent;
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.flags = g_iflags_coherent;
 
   /* trace stream of rays */
-  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays,N,sizeof(Ray));
+  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays,N,sizeof(Ray),&args);
 
   /* shade stream of rays */
   Vec3fa colors[TILE_SIZE_X*TILE_SIZE_Y];
@@ -319,9 +321,9 @@ void renderTileStandard(int taskIndex,
         /* trace shadow rays */
 #if 0
         for (unsigned int n=0;n<N;n++)
-          rtcOccluded1(g_scene,&context,RTCRay_(rays[n]));
+          rtcOccluded1(g_scene,&context,RTCRay_(rays[n]),&args);
 #else
-        rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,N,sizeof(Ray));
+        rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,N,sizeof(Ray),&args);
 #endif
         /* modify pixel color based on occlusion */
         for (unsigned int n=0;n<N;n++)

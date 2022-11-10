@@ -14,27 +14,45 @@ namespace embree
   struct IntersectContext
   {
   public:
-    __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context)
-      : scene(scene), user(user_context) {}
 
     __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context, RTCIntersectArguments* args)
       : scene(scene), user(user_context), args(args) {}
 
     __forceinline bool hasContextFilter() const {
-      return user->filter != nullptr;
+      return args->filter != nullptr;
     }
 
+    RTCFilterFunctionN getFilter() const {
+      return args->filter;
+    }
+
+#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+    RTCIntersectFunctionN getIntersectFunction() const {
+      return args->intersect;
+    }
+    
+    RTCOccludedFunctionN getOccludedFunction() const {
+      return args->occluded;
+    }
+#endif
+
     __forceinline bool isCoherent() const {
-      return embree::isCoherent(user->flags);
+      return embree::isCoherent(args->flags);
     }
 
     __forceinline bool isIncoherent() const {
-      return embree::isIncoherent(user->flags);
+      return embree::isIncoherent(args->flags);
     }
 
+#if RTC_MIN_WIDTH
+    __forceinline float getMinWidthDistanceFactor() const {
+      return args->minWidthDistanceFactor;
+    }
+#endif
+
   public:
-    Scene* scene;
-    RTCIntersectContext* user;
+    Scene* scene = nullptr;
+    RTCIntersectContext* user = nullptr;
     RTCIntersectArguments* args = nullptr;
   };
 
@@ -43,7 +61,7 @@ namespace embree
     {
 #if RTC_MIN_WIDTH
       const vfloat<M> d = length(Vec3vf<M>(v) - ray_org);
-      const vfloat<M> r = clamp(context->user->minWidthDistanceFactor*d, v.w, geom->maxRadiusScale*v.w);
+      const vfloat<M> r = clamp(context->getMinWidthDistanceFactor()*d, v.w, geom->maxRadiusScale*v.w);
       return Vec4vf<M>(v.x,v.y,v.z,r);
 #else
       return v;
@@ -55,7 +73,7 @@ namespace embree
   {
 #if RTC_MIN_WIDTH
     const float d = length(Vec3fa(v) - ray_org);
-    const float r = clamp(context->user->minWidthDistanceFactor*d, v.w, geom->maxRadiusScale*v.w);
+    const float r = clamp(context->getMinWidthDistanceFactor()*d, v.w, geom->maxRadiusScale*v.w);
     return Vec3ff(v.x,v.y,v.z,r);
 #else
     return v;

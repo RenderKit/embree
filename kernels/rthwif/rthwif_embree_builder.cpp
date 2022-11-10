@@ -303,10 +303,26 @@ namespace embree
     default: assert(false);
     }
   }
+
+  void exception_handler(sycl::exception_list exceptions)
+  {
+    for (std::exception_ptr const& e : exceptions) {
+      try {
+        std::rethrow_exception(e);
+      } catch(sycl::exception const& e) {
+        std::cout << "Caught asynchronous SYCL exception: " << e.what() << std::endl;
+      }
+    }
+  };
   
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
   {
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)        
+    sycl::device &sycl_device = gpu_device->getGPUDevice();
+    sycl::queue sycl_queue(sycl_device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
+#endif
     
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
@@ -448,8 +464,8 @@ namespace embree
 #endif
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    args.sycl_device = &gpu_device->getGPUDevice();
-    args.sycl_queue = &gpu_device->getGPUQueue();
+    args.sycl_device = &sycl_device;
+    args.sycl_queue = &sycl_queue;
     args.verbose = gpu_device->verbose;
 #endif
 

@@ -235,7 +235,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFunc);
+  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
   
   /* create scene */
   TutorialData_Constructor(&data);
@@ -305,7 +305,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray), &args);
+  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray), &args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -415,7 +415,7 @@ extern "C" void renderFrameStandard (int* pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

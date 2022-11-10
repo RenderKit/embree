@@ -233,7 +233,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform unsigne
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFunc);
+  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
   
   /* create scene */
   TutorialData_Constructor(&data);
@@ -303,7 +303,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersectExV(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -413,7 +413,7 @@ export void renderFrameStandard (uniform int* uniform pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

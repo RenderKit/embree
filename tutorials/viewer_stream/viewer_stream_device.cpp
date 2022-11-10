@@ -153,17 +153,19 @@ Vec3fa ambientOcclusionShading(int x, int y, Ray& ray, RayStats& stats)
 
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  context.flags = g_iflags_incoherent;
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.flags = g_iflags_incoherent;
 
   /* trace occlusion rays */
 #if USE_INTERFACE == 0
-  rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray));
+  rtcOccluded1M(g_scene,&context,(RTCRay*)&rays,AMBIENT_OCCLUSION_SAMPLES,sizeof(Ray),&args);
 #elif USE_INTERFACE == 1
   for (unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccluded1(g_scene,RTCRay_(rays[i]));
+    rtcOccluded1(g_scene,RTCRay_(rays[i]),&args);
 #else
   for (unsigned int i=0; i<AMBIENT_OCCLUSION_SAMPLES; i++)
-    rtcOccluded1M(g_scene,&context,(RTCRay*)&rays[i],1,sizeof(Ray));
+    rtcOccluded1M(g_scene,&context,(RTCRay*)&rays[i],1,sizeof(Ray),&args);
 #endif
 
   /* accumulate illumination */
@@ -317,17 +319,20 @@ void renderTileStandard(int taskIndex,
 
   RTCIntersectContext context;
   rtcInitIntersectContext(&context);
-  context.flags = g_iflags_coherent;
+
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.flags = g_iflags_coherent;
 
   /* trace stream of rays */
 #if USE_INTERFACE == 0
-  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],N,sizeof(Ray));
+  rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[0],N,sizeof(Ray),&args);
 #elif USE_INTERFACE == 1
   for (unsigned int i=0; i<N; i++)
-    rtcIntersect1(g_scene,&context,RTCRayHit_(rays[i]));
+    rtcIntersect1(g_scene,&context,RTCRayHit_(rays[i]),&args);
 #else
   for (unsigned int i=0; i<N; i++)
-    rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[i],1,sizeof(Ray));
+    rtcIntersect1M(g_scene,&context,(RTCRayHit*)&rays[i],1,sizeof(Ray),&args);
 #endif
 
   /* shade stream of rays */

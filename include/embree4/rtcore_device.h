@@ -16,28 +16,13 @@ RTC_API RTCDevice rtcNewDevice(const char* config);
 #if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
 
 /* Creates a new Embree SYCL device. */
-RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config);
+RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context* context, sycl::device* device, const char* config);
 
 /* Checks if SYCL device is supported by Embree. */
-RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device& sycl_device);
+RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device sycl_device);
 
-/* Selects GPUs supported by Embree */
-#if __SYCL_COMPILER_VERSION < 20220914
-class RTCDeviceSelector : public sycl::device_selector
-#else
-class RTCDeviceSelector
-#endif
-{
-public:
-  int operator()(const sycl::device& device) const
-  {
-    /* the GPU has to support Embree */
-    if (!rtcIsSYCLDeviceSupported(device))
-      return -1;
-    
-    return 1;
-  }
-};
+/* SYCL selector for Embree supported devices */
+RTC_API int rtcSYCLDeviceSelector(const sycl::device sycl_device);
 
 #endif
 
@@ -96,7 +81,7 @@ enum RTCError
   RTC_ERROR_OUT_OF_MEMORY     = 4,
   RTC_ERROR_UNSUPPORTED_CPU   = 5,
   RTC_ERROR_CANCELLED         = 6,
-  RTC_ERROR_UNSUPPORTED_DEVICE = 7,
+  RTC_ERROR_UNSUPPORTED_GPU   = 7,
 };
 
 /* Returns the error code. */

@@ -34,7 +34,7 @@ namespace embree
   /* returns function pointer to be usable in SYCL kernel */
   template<auto F>
     inline decltype(F) getFunctionPointer() {
-    return rtcGetSYCLFunctionPointer<F>(*global_gpu_queue);
+    return rtcGetSYCLDeviceFunctionPointer<F>(*global_gpu_queue);
   }
 #define GET_FUNCTION_POINTER(f) getFunctionPointer<f>()
 

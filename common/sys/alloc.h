@@ -12,8 +12,8 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
 
   /* enables SYCL USM allocation */
-  void enableUSMAllocEmbree(sycl::context* context, sycl::device* device, sycl::queue* queue);
-  void enableUSMAllocTutorial(sycl::context* context, sycl::device* device, sycl::queue* queue);
+  void enableUSMAllocEmbree(sycl::context* context, sycl::device* device);
+  void enableUSMAllocTutorial(sycl::context* context, sycl::device* device);
 
   /* disables SYCL USM allocation */
   void disableUSMAllocEmbree();
@@ -60,7 +60,7 @@ namespace embree
 #if defined(EMBREE_SYCL_SUPPORT)
   
   /*! aligned allocation using SYCL USM */
-  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, sycl::queue* queue, size_t size, size_t align, EmbreeUSMMode mode);
+  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, size_t size, size_t align, EmbreeUSMMode mode);
   void alignedSYCLFree(sycl::context* context, void* ptr);
 
   // deleter functor to use as deleter in std unique or shared pointers that

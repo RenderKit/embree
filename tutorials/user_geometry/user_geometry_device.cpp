@@ -120,7 +120,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
 {
   const int* valid = args->valid;
   void* ptr  = args->geometryUserPtr;
-  RTCIntersectContext* context = args->context;
   RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
                                     
   assert(args->N == 1);
@@ -136,11 +135,12 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
 
 #if 0
   
+  RTCIntersectContext* context = args->context;
   ray->org = Vec3ff(xfmPoint (instance->world2local,ray_org));
   ray->dir = Vec3ff(xfmVector(instance->world2local,ray_dir));
   ray->tnear() = ray_tnear;
   ray->tfar  = ray_tfar;
-  pushInstanceId(context, instance->userID);
+  pushInstanceId(context, args->geomID);
   rtcIntersect1(instance->object,context,RTCRayHit_(*ray));
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
@@ -162,7 +162,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   xray.id = 0;
   xray.flags = 0;
   
-  pushInstanceId(context, instance->userID);
   rtcForwardIntersect1(args,instance->object,&xray);
   
 #endif
@@ -172,7 +171,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
 {
   const int* valid = args->valid;
   void* ptr  = args->geometryUserPtr;
-  RTCIntersectContext* context = args->context;
   RTCRayHitN* rays = (RTCRayHitN*)args->ray;
   assert(args->N == 1);
   if (!valid[0])
@@ -186,12 +184,13 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   const float ray_tfar  = ray->tfar;
 
 #if 0
-  
+
+  RTCIntersectContext* context = args->context;
   ray->org    = Vec3ff(xfmPoint (instance->world2local,ray_org));
   ray->dir    = Vec3ff(xfmVector(instance->world2local,ray_dir));
   ray->tnear()  = ray_tnear;
   ray->tfar   = ray_tfar;
-  pushInstanceId(context, instance->userID);
+  pushInstanceId(context, args->geomID);
   rtcOccluded1(instance->object,context,RTCRay_(*ray));
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
@@ -214,7 +213,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   xray.id = 0;
   xray.flags = 0;
   
-  pushInstanceId(context, instance->userID);
   rtcForwardOccluded1(args,instance->object,&xray);
   
 #endif
@@ -259,7 +257,7 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
-    pushInstanceId(context, instance->userID);
+    pushInstanceId(context, args->geomID);
     rtcIntersect1(instance->object,context,RTCRayHit_(ray));
     popInstanceId(context);
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
@@ -307,7 +305,7 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
-    pushInstanceId(context, instance->userID);
+    pushInstanceId(context, args->geomID);
     rtcOccluded1(instance->object,context,RTCRay_(ray));
     popInstanceId(context);
     if (ray.tfar >= 0.0f) continue;
@@ -317,13 +315,12 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
   }
 }
 
-Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec3fa& lower, const Vec3fa& upper)
+Instance* createInstance (RTCScene scene, RTCScene object, int geomID, const Vec3fa& lower, const Vec3fa& upper)
 {
 #if !ENABLE_NATIVE_INSTANCING
   Instance* instance = (Instance*) alignedUSMMalloc(sizeof(Instance),16);
   instance->type = USER_GEOMETRY_INSTANCE;
   instance->object = object;
-  instance->userID = userID;
   instance->lower = lower;
   instance->upper = upper;
   instance->local2world.l.vx = Vec3fa(1,0,0);
@@ -341,8 +338,8 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   }
   else
   {
-    rtcSetGeometryIntersectFunction(instance->geometry,(RTCIntersectFunctionN)instanceIntersectFuncN);
-    rtcSetGeometryOccludedFunction (instance->geometry,(RTCOccludedFunctionN)instanceOccludedFuncN);
+    rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
+    rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
   }
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
@@ -355,7 +352,7 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   rtcSetGeometryInstancedScene(instance->geometry,object);
   rtcSetGeometryTimeStepCount(instance->geometry,1);
   rtcCommitGeometry(instance->geometry);
-  rtcAttachGeometry(scene,instance->geometry);
+  rtcAttachGeometryByID(scene,instance->geometry,geomID);
   rtcReleaseGeometry(instance->geometry);
   return instance;
 #endif
@@ -925,8 +922,8 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
   }
   else
   {
-    rtcSetGeometryIntersectFunction(geom,(RTCIntersectFunctionN)sphereIntersectFuncN);
-    rtcSetGeometryOccludedFunction (geom,(RTCOccludedFunctionN)sphereOccludedFuncN);
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
   }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
@@ -959,10 +956,10 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
   }
   else
   {
-    rtcSetGeometryIntersectFunction(geom,(RTCIntersectFunctionN)sphereIntersectFuncN);
-    rtcSetGeometryOccludedFunction (geom,(RTCOccludedFunctionN)sphereOccludedFuncN);
-    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)sphereFilterFunctionN);
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)sphereFilterFunctionN);
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
+    rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFunctionN);
+    rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFunctionN);
   }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
@@ -1056,11 +1053,11 @@ unsigned int createGroundPlane (RTCScene scene)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  instanceIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(instanceIntersectFunc);
-  instanceOccludedFuncPtr  = (RTCOccludedFunctionN ) GET_FUNCTION_POINTER(instanceOccludedFunc );
-  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFunc);
-  sphereOccludedFuncPtr  = (RTCOccludedFunctionN ) GET_FUNCTION_POINTER(sphereOccludedFunc );
-  sphereFilterFuncPtr    = (RTCFilterFunctionN )   GET_FUNCTION_POINTER(sphereFilterFunction);
+  instanceIntersectFuncPtr = GET_FUNCTION_POINTER(instanceIntersectFunc);
+  instanceOccludedFuncPtr  = GET_FUNCTION_POINTER(instanceOccludedFunc );
+  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
+  sphereOccludedFuncPtr  = GET_FUNCTION_POINTER(sphereOccludedFunc );
+  sphereFilterFuncPtr    = GET_FUNCTION_POINTER(sphereFilterFunction);
   
   /* create scene */
   TutorialData_Constructor(&data);
@@ -1151,14 +1148,14 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 
   /* intersect ray with scene */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-  args.filter = (RTCFilterFunctionN) contextFilterFunction;
+  args.filter = contextFilterFunction;
 #endif
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  args.intersect = (RTCIntersectFunctionN) contextIntersectFunc;
+  args.intersect = contextIntersectFunc;
 #endif
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -1186,14 +1183,14 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 
     /* trace shadow ray */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    args.filter = (RTCFilterFunctionN) contextFilterFunction;
+    args.filter = contextFilterFunction;
 #endif
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-    args.occluded = (RTCOccludedFunctionN) contextOccludedFunc;
+    args.occluded = contextOccludedFunc;
 #endif
     args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcOccludedEx1(data.g_scene,&context,RTCRay_(shadow),&args);
+    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -1296,8 +1293,10 @@ void renderTileStandardStream(int taskIndex,
   /* trace rays */
   RTCIntersectContext primary_context;
   rtcInitIntersectContext(&primary_context);
-  primary_context.flags = g_iflags_coherent;
-  rtcIntersect1M(g_scene,&primary_context,(RTCRayHit*)&primary_stream,N,sizeof(Ray));
+  RTCIntersectArguments primary_args;
+  rtcInitIntersectArguments(&primary_args);
+  primary_args.flags = g_iflags_coherent;
+  rtcIntersect1M(g_scene,&primary_context,(RTCRayHit*)&primary_stream,N,sizeof(Ray),&primary_args);
 
   /* terminate rays and update color */
   N = -1;
@@ -1344,8 +1343,10 @@ void renderTileStandardStream(int taskIndex,
   /* trace shadow rays */
   RTCIntersectContext shadow_context;
   rtcInitIntersectContext(&shadow_context);
-  shadow_context.flags = g_iflags_coherent;
-  rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray));
+  RTCIntersectArguments shadow_args;
+  rtcInitIntersectArguments(&shadow_args);
+  shadow_args.flags = g_iflags_coherent;
+  rtcOccluded1M(g_scene,&shadow_context,(RTCRay*)&shadow_stream,N,sizeof(Ray),&shadow_args);
 
   /* add light contribution */
   N = -1;
@@ -1420,7 +1421,7 @@ extern "C" void renderFrameStandard (int* pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

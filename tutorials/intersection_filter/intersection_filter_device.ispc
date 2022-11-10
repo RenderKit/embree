@@ -96,9 +96,9 @@ void renderPixelStandard(const uniform TutorialData& data,
 
     /* intersect ray with scene */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    args.filter = (RTCFilterFunctionN)intersectionFilter;
+    args.filter = intersectionFilter;
 #endif    
-    rtcIntersectExV(data.g_scene,&context.context,RTCRayHit_(primary),&args);
+    rtcIntersectV(data.g_scene,&context.context,RTCRayHit_(primary),&args);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -122,9 +122,9 @@ void renderPixelStandard(const uniform TutorialData& data,
 
     /* trace shadow ray */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    args.filter = (RTCFilterFunctionN)occlusionFilter;
+    args.filter = occlusionFilter;
 #endif
-    rtcOccludedExV(data.g_scene,&context.context,RTCRay_(shadow),&args);
+    rtcOccludedV(data.g_scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -462,9 +462,13 @@ void renderTileStandardStream(uniform int taskIndex,
     /* trace rays */
     uniform IntersectContext primary_context;
     InitIntersectionContext(&primary_context);
-    primary_context.context.flags = g_iflags_coherent;
     primary_context.userRayExt = &primary_stream;
-    rtcIntersectVM(data.g_scene,&primary_context.context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray2));
+    
+    uniform RTCIntersectArguments primary_args;
+    rtcInitIntersectArguments(&primary_args);
+    primary_args.flags = g_iflags_coherent;
+    
+    rtcIntersectVM(data.g_scene,&primary_context.context,(varying RTCRayHit* uniform)&primary_stream,N,sizeof(Ray2),&primary_args);
 
     /* terminate rays and update color */
     N = -1;
@@ -514,9 +518,13 @@ void renderTileStandardStream(uniform int taskIndex,
     /* trace shadow rays */
     uniform IntersectContext shadow_context;
     InitIntersectionContext(&shadow_context);
-    shadow_context.context.flags = g_iflags_coherent;
     shadow_context.userRayExt = &shadow_stream;
-    rtcOccludedVM(data.g_scene,&shadow_context.context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray2));
+
+    uniform RTCIntersectArguments shadow_args;
+    rtcInitIntersectArguments(&shadow_args);
+    shadow_args.flags = g_iflags_coherent;
+    
+    rtcOccludedVM(data.g_scene,&shadow_context.context,(varying RTCRay* uniform)&shadow_stream,N,sizeof(Ray2),&shadow_args);
 
     /* add light contribution and generate transmission ray */
     N = -1;
@@ -743,8 +751,8 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 export void device_init (uniform int8* uniform cfg)
 {
 #if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
-  data.intersectionFilter = (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilter);
-  data.occlusionFilter    = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilter   );
+  data.intersectionFilter = GET_FUNCTION_POINTER(intersectionFilter);
+  data.occlusionFilter    = GET_FUNCTION_POINTER(occlusionFilter   );
 #endif
   
   /* create scene */
@@ -788,7 +796,7 @@ export void renderFrameStandard (uniform int* uniform pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

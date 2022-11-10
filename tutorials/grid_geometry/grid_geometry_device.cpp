@@ -573,7 +573,7 @@ void renderPixelStandard(const TutorialData& data,
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  rtcIntersectEx1(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
   
   /* shade pixels */
@@ -611,7 +611,7 @@ void renderPixelStandard(const TutorialData& data,
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, 0.0f);
 
     /* trace shadow ray */
-    rtcOccludedEx1(data.g_scene,&context,RTCRay_(shadow),&args);
+    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
@@ -673,7 +673,7 @@ extern "C" void renderFrameStandard (int* pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

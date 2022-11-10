@@ -1614,14 +1614,14 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     /* intersect ray with scene */
     uniform IntersectContext context;
     InitIntersectionContext(&context);
-    context.context.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     context.tutorialData = (void*) &data;
-
+    
     uniform RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
+    args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-    rtcIntersectExV(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1676,7 +1676,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
-    context.context.flags = data.iflags_incoherent;
+    args.flags = data.iflags_incoherent;
     for (uniform unsigned int i=0; i<data.ispc_scene->numLights; i++)
     {
       const uniform Light* uniform l = data.ispc_scene->lights[i];
@@ -1686,7 +1686,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-      rtcOccludedExV(data.scene,&context.context,RTCRay_(shadow),&args);
+      rtcOccludedV(data.scene,&context.context,RTCRay_(shadow),&args);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)
@@ -1832,11 +1832,11 @@ export void device_init (uniform int8* uniform cfg)
 
   TutorialData_Constructor(&data);
 
-  data.intersectionFilterReject = (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilterReject);
-  data.intersectionFilterOBJ = (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilterOBJ);
-  data.occlusionFilterOpaque = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterOpaque);
-  data.occlusionFilterOBJ = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterOBJ);
-  data.occlusionFilterHair = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterHair);
+  data.intersectionFilterReject = GET_FUNCTION_POINTER(intersectionFilterReject);
+  data.intersectionFilterOBJ = GET_FUNCTION_POINTER(intersectionFilterOBJ);
+  data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
+  data.occlusionFilterOBJ = GET_FUNCTION_POINTER(occlusionFilterOBJ);
+  data.occlusionFilterHair = GET_FUNCTION_POINTER(occlusionFilterHair);
   
 } // device_init
 
@@ -1851,7 +1851,7 @@ export void renderFrameStandard (uniform int* uniform pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

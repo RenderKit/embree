@@ -29,7 +29,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
-  rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilter);
+  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -44,7 +44,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
   if (hair->flags)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(char),hair->numHairs);
-  rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilter);
+  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
@@ -249,7 +249,7 @@ Vec3fa occluded(RTCScene scene, IntersectContext* context, Ray& ray)
   rtcInitIntersectArguments(&args);
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcOccludedEx1(scene,&context->context,RTCRay_(ray),&args);
+  rtcOccluded1(scene,&context->context,RTCRay_(ray),&args);
 
   return transparency;
 }
@@ -285,7 +285,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersectEx1(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -412,7 +412,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 extern "C" void device_init (char* cfg)
 {
   TutorialData_Constructor(&data);
-  data.occlusionFilter = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilter);
+  data.occlusionFilter = GET_FUNCTION_POINTER(occlusionFilter);
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);
@@ -429,7 +429,7 @@ extern "C" void renderFrameStandard (int* pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

@@ -27,7 +27,6 @@ struct Instance
   UserGeometryType type;
   RTCGeometry geometry;
   RTCScene object;
-  int userID;
   AffineSpace3fa local2world;
   AffineSpace3fa world2local;
   LinearSpace3fa normal2world;

@@ -255,7 +255,9 @@ void renderTileStream(int* pixels,
 
   // Primary rays in this scene are coherent. This is not the case
   // for shadow rays, since there is a spherical environment light.
-  primaryContext.context.flags = g_iflags_coherent;
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.flags = g_iflags_coherent;
 
   RandomSampler sampler;
   Ray primary[STREAM_SIZE];
@@ -277,7 +279,8 @@ void renderTileStream(int* pixels,
                  &primaryContext.context,
                  (RTCRayHit*)&primary,
                  numPackets,
-                 sizeof(Ray));
+                 sizeof(Ray),
+                 &args);
 
   numPackets = 0;
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
@@ -346,7 +349,7 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
   
   RandomSampler sampler;
   Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
-  rtcIntersectEx1(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay), &args);
+  rtcIntersect1(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay), &args);
   
   Vec3fa color = Vec3fa(0.f);
   if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
@@ -355,7 +358,7 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
     Vec3fa emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    rtcOccludedEx1(data.g_scene, &shadowContext.context, RTCRay_(shadowRay), &args);
+    rtcOccluded1(data.g_scene, &shadowContext.context, RTCRay_(shadowRay), &args);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }
   
@@ -437,7 +440,7 @@ extern "C" void renderFrameStandard(int* pixels,
   TutorialData ldata = g_data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

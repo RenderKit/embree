@@ -247,7 +247,7 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
   rtcInitIntersectArguments(&args);
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcOccludedExV(scene,&context->context,RTCRay_(ray),&args);
+  rtcOccludedV(scene,&context->context,RTCRay_(ray),&args);
 
   return transparency;
 }
@@ -283,7 +283,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
       return color;
 
     /* intersect ray with scene and gather all hits */
-    rtcIntersectExV(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* exit if we hit environment */
@@ -410,7 +410,7 @@ task void renderTileTask(uniform int* uniform pixels,
 export void device_init (uniform int8* uniform cfg)
 {
   TutorialData_Constructor(&data);
-  data.occlusionFilter = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilter);
+  data.occlusionFilter = GET_FUNCTION_POINTER(occlusionFilter);
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);
@@ -427,7 +427,7 @@ export void renderFrameStandard (uniform int* uniform pixels,
   TutorialData ldata = data;
   sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) RTC_SYCL_KERNEL {
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;

@@ -324,6 +324,24 @@ namespace embree
         assert(intersector16.intersect);
         intersector16.intersect(valid,this,ray,context);
       }
+
+      /*! Intersects a packet of 4 rays with the scene. */
+      __forceinline void intersect (const void* valid, RTCRayHit4& ray, IntersectContext* context) {
+        assert(intersector4.intersect);
+        intersector4.intersect(valid,this,ray,context);
+      }
+      
+      /*! Intersects a packet of 8 rays with the scene. */
+      __forceinline void intersect (const void* valid, RTCRayHit8& ray, IntersectContext* context) {
+        assert(intersector8.intersect);
+        intersector8.intersect(valid,this,ray,context);
+      }
+      
+      /*! Intersects a packet of 16 rays with the scene. */
+      __forceinline void intersect (const void* valid, RTCRayHit16& ray, IntersectContext* context) {
+        assert(intersector16.intersect);
+        intersector16.intersect(valid,this,ray,context);
+      }
       
       /*! Intersects a stream of N rays in SOA layout with the scene. */
       __forceinline void intersectN (RTCRayHitN** rayN, const size_t N, IntersectContext* context)
@@ -377,6 +395,24 @@ namespace embree
       
       /*! Tests if a packet of 16 rays is occluded by the scene. */
       __forceinline void occluded16 (const void* valid, RTCRay16& ray, IntersectContext* context) {
+        assert(intersector16.occluded);
+        intersector16.occluded(valid,this,ray,context);
+      }
+
+      /*! Tests if a packet of 4 rays is occluded by the scene. */
+      __forceinline void occluded (const void* valid, RTCRay4& ray, IntersectContext* context) {
+        assert(intersector4.occluded);
+        intersector4.occluded(valid,this,ray,context);
+      }
+      
+      /*! Tests if a packet of 8 rays is occluded by the scene. */
+      __forceinline void occluded (const void* valid, RTCRay8& ray, IntersectContext* context) {
+        assert(intersector8.occluded);
+        intersector8.occluded(valid,this,ray,context);
+      }
+      
+      /*! Tests if a packet of 16 rays is occluded by the scene. */
+      __forceinline void occluded (const void* valid, RTCRay16& ray, IntersectContext* context) {
         assert(intersector16.occluded);
         intersector16.occluded(valid,this,ray,context);
       }
