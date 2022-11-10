@@ -138,7 +138,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceIntersectFunc(const RTCInters
   ray->dir = make_Vec3f_(xfmVector(instance->world2local,ray_dir));
   ray->tnear = ray_tnear;
   ray->tfar  = ray_tfar;
-  pushInstanceId(context, instance->userID);
+  pushInstanceId(context, args->geomID);
   rtcIntersectV(instance->object,context,RTCRayHit_(*ray));
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
@@ -160,7 +160,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceIntersectFunc(const RTCInters
   xray.id = 0;
   xray.flags = 0;
   
-  pushInstanceId(context, instance->userID);
+  pushInstanceId(context, args->geomID);
   rtcForwardIntersectV(args,instance->object,&xray);
   
 #endif
@@ -189,7 +189,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
   ray->dir    = make_Vec3f_(xfmVector(instance->world2local,ray_dir));
   ray->tnear  = ray_tnear;
   ray->tfar   = ray_tfar;
-  pushInstanceId(context, instance->userID);
+  pushInstanceId(context, args->geomID);
   rtcOccludedV(instance->object,context,RTCRay_(*ray));
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
@@ -212,7 +212,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
   xray.id = 0;
   xray.flags = 0;
   
-  pushInstanceId(context, instance->userID);
+  pushInstanceId(context, args->geomID);
   rtcForwardOccludedV(args,instance->object,&xray);
   
 #endif
@@ -257,7 +257,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceIntersectFuncN(const RTCInter
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
-    pushInstanceId(context, instance->userID);
+    pushInstanceId(context, args->geomID);
     rtcIntersectV(instance->object,context,RTCRayHit_(ray));
     popInstanceId(context);
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) continue;
@@ -305,7 +305,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFuncN(const RTCOcclud
     ray.geomID = RTC_INVALID_GEOMETRY_ID;
 
     /* trace ray through object */
-    pushInstanceId(context, instance->userID);
+    pushInstanceId(context, args->geomID);
     rtcOccludedV(instance->object,context,RTCRay_(ray));
     popInstanceId(context);
     if (ray.tfar >= 0.0f) continue;
@@ -315,13 +315,12 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFuncN(const RTCOcclud
   }
 }
 
-uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, uniform int userID, const uniform Vec3f& lower, const uniform Vec3f& upper)
+uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, uniform int geomID, const uniform Vec3f& lower, const uniform Vec3f& upper)
 {
 #if !ENABLE_NATIVE_INSTANCING
   uniform Instance* uniform instance = uniform new uniform Instance;
   instance->type = USER_GEOMETRY_INSTANCE;
   instance->object = object;
-  instance->userID = userID;
   instance->lower = lower;
   instance->upper = upper;
   instance->local2world.l.vx = make_Vec3f(1,0,0);
@@ -353,7 +352,7 @@ uniform Instance* uniform createInstance (RTCScene scene, RTCScene object, unifo
   rtcSetGeometryInstancedScene(instance->geometry,object);
   rtcSetGeometryTimeStepCount(instance->geometry,1);
   rtcCommitGeometry(instance->geometry);
-  rtcAttachGeometry(scene,instance->geometry);
+  rtcAttachGeometryByID(scene,instance->geometry,geomID);
   rtcReleaseGeometry(instance->geometry);
   return instance;
 #endif
