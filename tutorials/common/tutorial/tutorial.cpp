@@ -1140,13 +1140,13 @@ namespace embree
       device = new sycl::device(rtcSYCLDeviceSelector);
       queue = new sycl::queue(*device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       context = new sycl::context(*device);
-      g_device = rtcNewSYCLDevice(context,queue,rtcore.c_str());
+      g_device = rtcNewSYCLDevice(context,device,rtcore.c_str());
       error_handler(nullptr,rtcGetDeviceError(g_device));
       global_gpu_device = device;
       global_gpu_context = context;
       global_gpu_queue = queue;
 
-      enableUSMAllocTutorial(global_gpu_context, global_gpu_device, global_gpu_queue);
+      enableUSMAllocTutorial(global_gpu_context, global_gpu_device);
     }
 
     /* create standard device */

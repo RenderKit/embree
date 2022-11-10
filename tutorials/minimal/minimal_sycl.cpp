@@ -98,9 +98,9 @@ void errorFunction(void* userPtr, enum RTCError error, const char* str)
  *
  * Note that RTCDevice is reference-counted.
  */
-RTCDevice initializeDevice(sycl::context& context, sycl::queue& queue)
+RTCDevice initializeDevice(sycl::context& sycl_context, sycl::device& sycl_device)
 {
-  RTCDevice device = rtcNewSYCLDevice(&context, &queue, "");
+  RTCDevice device = rtcNewSYCLDevice(&sycl_context, &sycl_device, "");
 
   if (!device)
     printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
@@ -298,21 +298,22 @@ int main()
   enablePersistentJITCache();
 
   /* This will select the first GPU supported by Embree */
-  sycl::queue queue(rtcSYCLDeviceSelector); 
-  sycl::context context = queue.get_context();
+  sycl::device sycl_device(rtcSYCLDeviceSelector);
+  sycl::queue sycl_queue(sycl_device); 
+  sycl::context sycl_context(sycl_device);
   
-  RTCDevice device = initializeDevice(context,queue);
-  RTCScene scene = initializeScene(device, queue);
+  RTCDevice device = initializeDevice(sycl_context,sycl_device);
+  RTCScene scene = initializeScene(device, sycl_queue);
 
-  Result* result = alignedSYCLMallocDeviceReadWrite<Result>(queue, 1, 16);
+  Result* result = alignedSYCLMallocDeviceReadWrite<Result>(sycl_queue, 1, 16);
   
   /* This will hit the triangle at t=1. */
-  castRay(queue, scene, 0.33f, 0.33f, -1, 0, 0, 1, result);
+  castRay(sycl_queue, scene, 0.33f, 0.33f, -1, 0, 0, 1, result);
 
   /* This will not hit anything. */
-  castRay(queue, scene, 1.00f, 1.00f, -1, 0, 0, 1, result);
+  castRay(sycl_queue, scene, 1.00f, 1.00f, -1, 0, 0, 1, result);
   
-  alignedSYCLFree(queue, result);
+  alignedSYCLFree(sycl_queue, result);
 
   /* Though not strictly necessary in this example, you should
    * always make sure to release resources allocated through Embree. */

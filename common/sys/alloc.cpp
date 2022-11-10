@@ -18,20 +18,16 @@ namespace embree
   
   __thread sycl::context* tls_context_tutorial = nullptr;
   __thread sycl::device* tls_device_tutorial = nullptr;
-  __thread sycl::queue* tls_queue_tutorial = nullptr;
-  
   
   __thread sycl::context* tls_context_embree = nullptr;
   __thread sycl::device* tls_device_embree = nullptr;
-  __thread sycl::queue* tls_queue_embree = nullptr;
   
-  void enableUSMAllocEmbree(sycl::context* context, sycl::device* device, sycl::queue* queue)
+  void enableUSMAllocEmbree(sycl::context* context, sycl::device* device)
   {
     if (tls_context_embree != nullptr) throw std::runtime_error("USM allocation already enabled");
     if (tls_device_embree != nullptr) throw std::runtime_error("USM allocation already enabled");
     tls_context_embree = context;
     tls_device_embree = device;
-    tls_queue_embree = queue;
   }
 
   void disableUSMAllocEmbree()
@@ -40,27 +36,23 @@ namespace embree
     if (tls_device_embree  == nullptr) throw std::runtime_error("USM allocation not enabled");
     tls_context_embree = nullptr;
     tls_device_embree = nullptr;
-    tls_queue_embree = nullptr;    
   }
 
-  void enableUSMAllocTutorial(sycl::context* context, sycl::device* device, sycl::queue* queue)
+  void enableUSMAllocTutorial(sycl::context* context, sycl::device* device)
   {
     //if (tls_context_tutorial != nullptr) throw std::runtime_error("USM allocation already enabled");
     //if (tls_device_tutorial != nullptr) throw std::runtime_error("USM allocation already enabled");
     tls_context_tutorial = context;
     tls_device_tutorial = device;
-    tls_queue_tutorial = queue;    
   }
 
   void disableUSMAllocTutorial()
   {
     if (tls_context_tutorial  == nullptr) throw std::runtime_error("USM allocation not enabled");
     if (tls_device_tutorial  == nullptr) throw std::runtime_error("USM allocation not enabled");
-    if (tls_queue_tutorial  == nullptr) throw std::runtime_error("USM allocation not enabled");
     
     tls_context_tutorial = nullptr;
     tls_device_tutorial = nullptr;
-    tls_queue_tutorial = nullptr;        
   }
 
 #endif
@@ -85,11 +77,10 @@ namespace embree
 
 #if defined(EMBREE_SYCL_SUPPORT)
   
-  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, sycl::queue* queue, size_t size, size_t align, EmbreeUSMMode mode)
+  void* alignedSYCLMalloc(sycl::context* context, sycl::device* device, size_t size, size_t align, EmbreeUSMMode mode)
   {
     assert(context);
     assert(device);
-    assert(queue);
     
     if (size == 0)
       return nullptr;
@@ -113,8 +104,8 @@ namespace embree
   
   void* alignedSYCLMalloc(size_t size, size_t align, EmbreeUSMMode mode)
   {
-    if (tls_context_tutorial) return alignedSYCLMalloc(tls_context_tutorial, tls_device_tutorial, tls_queue_tutorial, size, align, mode);
-    if (tls_context_embree  ) return alignedSYCLMalloc(tls_context_embree,   tls_device_embree,   tls_queue_embree, size, align, mode);
+    if (tls_context_tutorial) return alignedSYCLMalloc(tls_context_tutorial, tls_device_tutorial, size, align, mode);
+    if (tls_context_embree  ) return alignedSYCLMalloc(tls_context_embree,   tls_device_embree,   size, align, mode);
     return nullptr;
   }
 

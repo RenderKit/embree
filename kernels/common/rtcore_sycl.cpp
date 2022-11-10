@@ -15,19 +15,19 @@ using namespace embree;
 
 RTC_NAMESPACE_BEGIN;
 
-RTC_API_EXTERN_C RTCDevice rtcNewSYCLDeviceInternal(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config);
+RTC_API_EXTERN_C RTCDevice rtcNewSYCLDeviceInternal(sycl::context* context, sycl::device* device, const char* config);
 
 void use_rthwif_embree();
 void use_rthwif_production();
 
 /* we define rtcNewSYCLDevice in libembree_sycl.a to avoid drop of rtcore_sycl.o during linking of libembree_sycl.a file */
-RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config)
+RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context* context, sycl::device* device, const char* config)
 {
   use_rthwif_embree();     // to avoid drop of rthwif_embree.o during linking of libembree_sycl.a file
 #if defined(EMBREE_SYCL_RT_VALIDATION_API)
   use_rthwif_production(); // to avoid drop of rthwif_production.o during linking of libembree_sycl.a file
 #endif
-  return rtcNewSYCLDeviceInternal(sycl_context, sycl_queue, config);
+  return rtcNewSYCLDeviceInternal(context, device, config);
 }
 
 #if defined(__SYCL_DEVICE_ONLY__)

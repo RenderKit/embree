@@ -36,7 +36,7 @@ RTC_NAMESPACE_BEGIN;
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-  RTC_API RTCDevice rtcNewSYCLDeviceInternal(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config)
+  RTC_API RTCDevice rtcNewSYCLDeviceInternal(sycl::context* sycl_context, sycl::device* sycl_device, const char* config)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewSYCLDevice);
@@ -49,26 +49,26 @@ RTC_NAMESPACE_BEGIN;
         throw_RTCError(RTC_ERROR_UNSUPPORTED_GPU,"unsupported SYCL GPU device");
     }
         
-    DeviceGPU* device = new DeviceGPU(sycl_context,sycl_queue,config);
+    DeviceGPU* device = new DeviceGPU(sycl_context,sycl_device,config);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
   }
 
-  RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device sycl_device)
+  RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device device)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcIsSYCLDeviceSupported);
-    return rthwifIsSYCLDeviceSupported(sycl_device);
+    return rthwifIsSYCLDeviceSupported(device);
     RTC_CATCH_END(nullptr);
     return false;
   }
 
-  RTC_API int rtcSYCLDeviceSelector(const sycl::device sycl_device)
+  RTC_API int rtcSYCLDeviceSelector(const sycl::device device)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcSYCLDeviceSelector);
-    return rthwifIsSYCLDeviceSupported(sycl_device) ? 1 : -1;
+    return rthwifIsSYCLDeviceSupported(device) ? 1 : -1;
     RTC_CATCH_END(nullptr);
     return false;
   }
