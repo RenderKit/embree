@@ -37,7 +37,9 @@ SET_PROPERTY(TARGET rthwif_cornell_box APPEND PROPERTY LINK_FLAGS "-fsycl -lze_l
 
 ADD_EXECUTABLE(rthwif_test rthwif_test.cpp ${VALIDATION_API_FILES})
 TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif sys simd tbb)
+IF (EMBREE_SYCL_GPU_BVH_BUILDER)
 TARGET_LINK_LIBRARIES(rthwif_test embree_rthwif_gpu sys tbb)
+ENDIF()
 
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY COMPILE_FLAGS "-fsycl -fsycl-targets=spir64 -DEMBREE_SYCL_SUPPORT")
 SET_PROPERTY(TARGET rthwif_test APPEND PROPERTY LINK_FLAGS "-fsycl -lze_loader")

@@ -64,19 +64,31 @@ ADD_DEFINITIONS(-DTASKING_TBB)
 
 ####################################################################
 
+IF (EMBREE_SYCL_GPU_BVH_BUILDER)
 ADD_LIBRARY(embree_rthwif_gpu STATIC rthwif_embree_builder_ploc.cpp builder/qbvh6.cpp builder/statistics.cpp)
 TARGET_LINK_LIBRARIES(embree_rthwif_gpu PUBLIC tasking simd sys -lze_loader)
 SET_TARGET_PROPERTIES(embree_rthwif_gpu PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
+ENDIF()
 
 #ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp ../common/alloc.cpp)
 #TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE embree_rthwif_gpu tbb simd sys -lze_loader)
 
 ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp)
-TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE embree_rthwif_gpu tbb simd sys -lze_loader)
+TARGET_LINK_LIBRARIES(embree_rthwif PRIVATE tbb simd sys -lze_loader)
+
+IF (EMBREE_SYCL_GPU_BVH_BUILDER)
+TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC embree_rthwif_gpu)
+ENDIF()
+
 SET_PROPERTY(TARGET embree_rthwif APPEND PROPERTY COMPILE_FLAGS "-DEMBREE_SYCL_SUPPORT")
 
 INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 INSTALL(EXPORT embree_rthwif-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
+
+IF (EMBREE_SYCL_GPU_BVH_BUILDER)
+INSTALL(TARGETS embree_rthwif_gpu EXPORT embree_rthwif_gpu-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+INSTALL(EXPORT embree_rthwif_gpu-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
+ENDIF()
 
 IF (NOT WIN32 AND NOT EMBREE_GFX_DRIVER STREQUAL "PUBLIC") # FIXME: see issue #1213
   ADD_SUBDIRECTORY(testing)

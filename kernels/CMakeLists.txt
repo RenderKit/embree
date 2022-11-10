@@ -252,7 +252,6 @@ IF (EMBREE_SYCL_SUPPORT)
 
   ADD_LIBRARY(embree_sycl STATIC
     common/rtcore_sycl.cpp
-    rthwif/rthwif_embree_builder_ploc.cpp    
     rthwif/rthwif_embree.cpp
     ${VALIDATION_API_FILES})
 
