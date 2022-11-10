@@ -5,11 +5,6 @@
 
 #include "../../../../common/sys/sycl.h"
 
-constexpr sycl::access::target sycl_local    = sycl::access::target::local;
-constexpr sycl::access::mode sycl_read_write = sycl::access::mode::read_write;
-constexpr sycl::access::mode sycl_read       = sycl::access::mode::read;
-constexpr sycl::access::mode sycl_write      = sycl::access::mode::write;
-
 using sycl::float16;
 using sycl::float8;
 using sycl::float4;
@@ -365,108 +360,6 @@ namespace embree
       const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
       return (t1-t0)*1E-6;      
     }
-
-    
-    struct TraversalStats
-    {
-      uint nrays;
-      uint tsteps;
-      uint isteps;
-      uint stack_pushs;
-      uint stack_pops;
-      uint stack_pushs_parent;
-      uint stack_pops_parent;
-      uint stack_max_depth;
-      uint numHitsPerNode[16];
-      uint dummy[4];
-      
-      inline void reset() {
-        nrays  = 0;
-        tsteps = 0;
-        isteps = 0;
-        stack_pushs = 0;
-        stack_pops = 0;
-        stack_pushs_parent = 0;
-        stack_pops_parent = 0;
-        stack_max_depth = 0;
-        for (int i=0;i<16;i++)
-          numHitsPerNode[i] = 0;
-        for (int i=0;i<4;i++)        
-          dummy[i] = 0;
-      }
-
-      inline void _nrays_inc(uint v=1)  {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&nrays,v);
-      }
-      inline void _tsteps_inc(uint v=1) {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&tsteps,v);
-      }
-      inline void _isteps_inc(uint v=1) {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&isteps,v);
-      }
-
-      inline void _stack_pushs_inc(uint v=1) {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&stack_pushs,v);
-      }      
-      inline void _stack_pops_inc(uint v=1) {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&stack_pops,v);
-      }      
-
-      inline void _stack_pushs_parent_inc(uint v=1) {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&stack_pushs_parent,v);
-      }      
-      inline void _stack_pops_parent_inc(uint v=1) {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&stack_pops_parent,v);
-      }      
-
-      inline void _numHitsPerNode_inc(uint index, uint v=1) {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&numHitsPerNode[index],v);
-      }      
-
-      inline void _stack_max_depth_set(uint sindex, uint v=1) {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_max_global<uint>(&stack_max_depth,sindex);
-      }      
-
-      inline void _dummy_inc(uint slot,uint v=1)  {
-        v = get_sub_group_local_id() == sycl::ctz(intel_sub_group_ballot(true)) ? v : 0;
-        gpu::atomic_add_global<uint>(&dummy[slot],v);
-      }
-    };
-
-    inline std::ostream &operator<<(std::ostream &cout, const TraversalStats& s)
-    {
-      uint numHitsTotal = 0;
-      for (uint i=0;i<16;i++) numHitsTotal += s.numHitsPerNode[i];      
-      uint numHits4plus = 0;
-      for (uint i=4;i<16;i++) numHits4plus += s.numHitsPerNode[i];
-      
-      return cout << "rays " << s.nrays << std::endl
-                  << " tsteps " << s.tsteps << std::endl
-                  << " isteps " << s.isteps << std::endl
-                  << " tsteps/ray " << (float)s.tsteps / s.nrays << std::endl
-                  << " isteps/ray " << (float)s.isteps / s.nrays << std::endl
-                  << " stack_pushs/ray " << (float)s.stack_pushs / s.nrays << std::endl
-                  << " stack_pops/ray " << (float)s.stack_pops / s.nrays << std::endl
-                  << " stack_pushs_parent/ray " << (float)s.stack_pushs_parent / s.nrays << std::endl
-                  << " stack_pops_parent/ray " << (float)s.stack_pops_parent / s.nrays << std::endl
-                  << " numHits [0] " << (float)s.numHitsPerNode[0] / numHitsTotal << std::endl
-                  << " numHits [1] " << (float)s.numHitsPerNode[1] / numHitsTotal << std::endl
-                  << " numHits [2] " << (float)s.numHitsPerNode[2] / numHitsTotal << std::endl
-                  << " numHits [3] " << (float)s.numHitsPerNode[3] / numHitsTotal << std::endl
-                  << " numHits [4]+ " << (float)numHits4plus / numHitsTotal << std::endl
-                  << " max stack depth " <<  s.stack_max_depth << std::endl
-                  << " dummy " << s.dummy[0] << " " << s.dummy[1] << " " << s.dummy[2] << " " << s.dummy[3] << std::endl; 
-      
-    };
     
   };
 };

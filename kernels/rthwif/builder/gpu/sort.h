@@ -66,11 +66,11 @@ namespace embree
       {
         const sycl::nd_range<1> nd_range1(RADIX_SORT_SINGLE_WG_SIZE,sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> histogram(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> sums(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> prefix_sums(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> local_offset(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
-                                                     sycl::accessor< BinFlags, 1, sycl_read_write, sycl_local> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     sycl::local_accessor< uint, 1> histogram(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
+                                                     sycl::local_accessor< uint, 1> sums(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
+                                                     sycl::local_accessor< uint, 1> prefix_sums(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
+                                                     sycl::local_accessor< uint, 1> local_offset(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
+                                                     sycl::local_accessor< BinFlags, 1> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
                                                    
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)                                                                    
                                                                       {                                                                                                                                            
@@ -223,7 +223,7 @@ namespace embree
       {
         const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                 
+                                                     sycl::local_accessor< uint, 1> histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                 
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
                                                                         const uint localID     = item.get_local_id(0);
@@ -283,9 +283,9 @@ namespace embree
       
         const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> local_offset(sycl::range<1>(RADIX_SORT_BINS),cgh);
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> sums(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                     
-                                                     sycl::accessor< BinFlags, 1, sycl_read_write, sycl_local> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     sycl::local_accessor< uint, 1> local_offset(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     sycl::local_accessor< uint, 1> sums(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                     
+                                                     sycl::local_accessor< BinFlags, 1> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
                                                                         const uint groupID     = item.get_group(0);
@@ -478,7 +478,7 @@ namespace embree
       {
         const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_histograms(sycl::range<1>(RADIX_SORT_BINS*RADIX_ITERATIONS_64BIT),cgh);                                                 
+                                                     sycl::local_accessor< uint, 1> _local_histograms(sycl::range<1>(RADIX_SORT_BINS*RADIX_ITERATIONS_64BIT),cgh);                                                 
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
                                                                         const uint localID     = item.get_local_id(0);
@@ -542,7 +542,7 @@ namespace embree
       {
         const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_ITERATIONS_64BIT*RADIX_SORT_BINS),sycl::range<1>(RADIX_SORT_BINS));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> sums(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     sycl::local_accessor< uint, 1> sums(sycl::range<1>(RADIX_SORT_BINS),cgh);
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
                                                                         const uint localID         = item.get_local_id(0);
@@ -616,10 +616,10 @@ namespace embree
         static const uint SCATTER_WG_SIZE = RADIX_SORT_WG_SIZE; // needs to be >= 256
         const sycl::nd_range<1> nd_range1(sycl::range<1>(numBlocks*SCATTER_WG_SIZE),sycl::range<1>(SCATTER_WG_SIZE));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);
-                                                     sycl::accessor< uint, 1, sycl_read_write, sycl_local> _global_prefix_sum(sycl::range<1>(RADIX_SORT_BINS),cgh);
-                                                     sycl::accessor< BinFlags, 1, sycl_read_write, sycl_local> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
-                                                     sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _wgID(cgh);
+                                                     sycl::local_accessor< uint, 1> _local_histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     sycl::local_accessor< uint, 1> _global_prefix_sum(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     sycl::local_accessor< BinFlags, 1> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
+                                                     sycl::local_accessor< uint      ,  0> _wgID(cgh);
 
                                                      cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {

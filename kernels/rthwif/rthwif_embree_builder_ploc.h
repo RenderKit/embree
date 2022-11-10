@@ -742,10 +742,10 @@ namespace embree
     const uint wgSize = 1024;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeometries,wgSize),sycl::range<1>(wgSize));          
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::accessor< uint, 0, sycl_read_write, sycl_local> _numTriangles(cgh);
-        sycl::accessor< uint, 0, sycl_read_write, sycl_local> _numQuads(cgh);
-        sycl::accessor< uint, 0, sycl_read_write, sycl_local> _numProcedurals(cgh);
-        sycl::accessor< uint, 0, sycl_read_write, sycl_local> _numInstances(cgh);
+        sycl::local_accessor< uint, 0> _numTriangles(cgh);
+        sycl::local_accessor< uint, 0> _numQuads(cgh);
+        sycl::local_accessor< uint, 0> _numProcedurals(cgh);
+        sycl::local_accessor< uint, 0> _numInstances(cgh);
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
                            const uint geomID    = item.get_global_id(0);
@@ -815,8 +815,8 @@ namespace embree
     static const uint GEOM_PREFIX_WG_SIZE  = 1024;
 
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
         const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));		  
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(GEOM_PREFIX_SUB_GROUP_WIDTH) {
             const uint subgroupID      = get_sub_group_id();
@@ -882,7 +882,7 @@ namespace embree
     
     const sycl::nd_range<1> nd_range1(numGeoms*COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE,sycl::range<1>(COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);                                                   
+        sycl::local_accessor< uint      ,  0> _active_counter(cgh);                                                   
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                          {
                            const uint localID         = item.get_local_id(0);                                                                      
@@ -1001,8 +1001,8 @@ namespace embree
     static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
     const sycl::nd_range<1> nd_range1(numGeoms*MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE,sycl::range<1>(MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE/MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)),cgh);       
+        sycl::local_accessor< uint      , 0> _active_counter(cgh);
+        sycl::local_accessor< uint      , 1> counts(sycl::range<1>((MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE/MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)),cgh);       
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)      
                          {
                            const uint localID         = item.get_local_id(0);
@@ -1194,10 +1194,10 @@ namespace embree
     static const uint CREATE_INSTANCES_WG_SIZE  = 1024;
     const sycl::nd_range<1> nd_range1(numWGs*CREATE_INSTANCES_WG_SIZE,sycl::range<1>(CREATE_INSTANCES_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);                
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _global_count_prefix_sum(cgh);
+        sycl::local_accessor< uint      , 1> counts(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint      , 1> counts_prefix_sum(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);                
+        sycl::local_accessor< uint      , 0> _active_counter(cgh);
+        sycl::local_accessor< uint      , 0> _global_count_prefix_sum(cgh);
         
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
                          {
@@ -1468,8 +1468,8 @@ namespace embree
     const uint wgSize = 1024;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));          
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::accessor< gpu::AABB3f, 0, sycl_read_write, sycl_local> _local_geometry_aabb(cgh);
-        sycl::accessor< gpu::AABB3f, 0, sycl_read_write, sycl_local> _local_centroid_aabb(cgh);
+        sycl::local_accessor< gpu::AABB3f, 0> _local_geometry_aabb(cgh);
+        sycl::local_accessor< gpu::AABB3f, 0> _local_centroid_aabb(cgh);
                                                        
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
@@ -1674,13 +1674,13 @@ namespace embree
     uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
     
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::accessor< gpu::AABB3f, 1, sycl_read_write, sycl_local> cached_bounds  (sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_neighbor(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_clusterID(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);        
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);        
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _wgID(cgh);
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _global_count_prefix_sum(cgh);
+        sycl::local_accessor< gpu::AABB3f, 1> cached_bounds  (sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
+        sycl::local_accessor< uint       , 1> cached_neighbor(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
+        sycl::local_accessor< uint       , 1> cached_clusterID(sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);        
+        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);        
+        sycl::local_accessor< uint      ,  0> _wgID(cgh);
+        sycl::local_accessor< uint      ,  0> _global_count_prefix_sum(cgh);
         
         
         const sycl::nd_range<1> nd_range(sycl::range<1>(NN_SEARCH_WG_NUM*NN_SEARCH_WG_SIZE),sycl::range<1>(NN_SEARCH_WG_SIZE));		  
@@ -1971,7 +1971,7 @@ namespace embree
     queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         const sycl::nd_range<1> nd_range(PREFIX_SUM_WG_NUM*PREFIX_SUM_WG_SIZE,sycl::range<1>(PREFIX_SUM_WG_SIZE));
         /* local variables */
-        sycl::accessor< uint   , 1, sycl_read_write, sycl_local> global_wg_prefix_sum(sycl::range<1>(PREFIX_SUM_WG_NUM),cgh);
+        sycl::local_accessor< uint   , 1> global_wg_prefix_sum(sycl::range<1>(PREFIX_SUM_WG_NUM),cgh);
                                                          
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(PREFIX_SUM_SUB_GROUP_WIDTH) {
             const uint localID         = item.get_local_id(0);
@@ -2276,12 +2276,12 @@ namespace embree
         const sycl::nd_range<1> nd_range(SINGLE_WG_SIZE,sycl::range<1>(SINGLE_WG_SIZE));
 
         /* local variables */
-        sycl::accessor< gpu::AABB3f, 1, sycl_read_write, sycl_local> cached_bounds  (sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);        
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);
+        sycl::local_accessor< gpu::AABB3f, 1> cached_bounds  (sycl::range<1>(SINGLE_WG_SIZE),cgh);
+        sycl::local_accessor< uint       , 1> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
+        sycl::local_accessor< uint       , 1> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);        
+        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 0> _active_counter(cgh);
                                              
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(SINGLE_WG_SUB_GROUP_WIDTH) {
             uint &active_counter = *_active_counter.get_pointer();
@@ -2309,12 +2309,12 @@ namespace embree
         const sycl::nd_range<1> nd_range(sycl::range<1>(numRanges*SINGLE_WG_SIZE),sycl::range<1>(SINGLE_WG_SIZE));		  
 
         /* local variables */
-        sycl::accessor< gpu::AABB3f, 1, sycl_read_write, sycl_local> cached_bounds  (sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);        
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint       , 1, sycl_read_write, sycl_local> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _active_counter(cgh);
+        sycl::local_accessor< gpu::AABB3f, 1> cached_bounds  (sycl::range<1>(SINGLE_WG_SIZE),cgh);
+        sycl::local_accessor< uint       , 1> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
+        sycl::local_accessor< uint       , 1> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);        
+        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 0> _active_counter(cgh);
                                              
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(SINGLE_WG_SUB_GROUP_WIDTH) {
             uint &active_counter = *_active_counter.get_pointer();
@@ -2572,7 +2572,7 @@ namespace embree
       const uint wgSize = 1024;
       const sycl::nd_range<1> nd_range1(wgSize,sycl::range<1>(wgSize));                    
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::accessor< uint      ,  0, sycl_read_write, sycl_local> _node_mem_allocator_cur(cgh);                                                   
+          sycl::local_accessor< uint      ,  0> _node_mem_allocator_cur(cgh);                                                   
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
                              const uint localID     = item.get_local_id(0);
@@ -2692,7 +2692,7 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::accessor< LocalNodeData, 1, sycl_read_write, sycl_local> _localNodeData(sycl::range<1>(wgSize),cgh);                        
+          sycl::local_accessor< LocalNodeData, 1> _localNodeData(sycl::range<1>(wgSize),cgh);                        
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
                              const uint localID   = item.get_local_id(0);                                                                      
@@ -2801,12 +2801,12 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(blocks,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::accessor< uint  ,  0, sycl_read_write, sycl_local> _local_numBlocks(cgh);
-          sycl::accessor< uint  ,  0, sycl_read_write, sycl_local> _local_numLeaves(cgh);                                                   
-          sycl::accessor< uint  ,  0, sycl_read_write, sycl_local> _global_blockID(cgh);
-          sycl::accessor< uint  ,  0, sycl_read_write, sycl_local> _global_numLeafID(cgh);                                                   
-          sycl::accessor< LeafGenerationData, 1, sycl_read_write, sycl_local> _local_leafGenData(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
-          sycl::accessor< uint, 1, sycl_read_write, sycl_local> _local_indices(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
+          sycl::local_accessor< uint  ,  0> _local_numBlocks(cgh);
+          sycl::local_accessor< uint  ,  0> _local_numLeaves(cgh);                                                   
+          sycl::local_accessor< uint  ,  0> _global_blockID(cgh);
+          sycl::local_accessor< uint  ,  0> _global_numLeafID(cgh);                                                   
+          sycl::local_accessor< LeafGenerationData, 1> _local_leafGenData(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
+          sycl::local_accessor< uint, 1> _local_indices(sycl::range<1>(wgSize*BVH_BRANCHING_FACTOR),cgh);
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
                              const uint localID   = item.get_local_id(0);                             
@@ -2952,7 +2952,7 @@ namespace embree
       const uint wgSize = 256;
       const sycl::nd_range<1> nd_range1(gpu::alignTo(leaves,wgSize),sycl::range<1>(wgSize));              
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          sycl::accessor< QuadLeaf, 1, sycl_read_write, sycl_local> _localLeaf(sycl::range<1>(wgSize),cgh);
+          sycl::local_accessor< QuadLeaf, 1> _localLeaf(sycl::range<1>(wgSize),cgh);
           cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                            {
                              const uint globalID = item.get_global_id(0);
