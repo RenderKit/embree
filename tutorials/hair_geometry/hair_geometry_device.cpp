@@ -29,7 +29,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
-  rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilter);
+  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -44,7 +44,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
   if (hair->flags)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(char),hair->numHairs);
-  rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilter);
+  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
@@ -412,7 +412,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 extern "C" void device_init (char* cfg)
 {
   TutorialData_Constructor(&data);
-  data.occlusionFilter = (void*) GET_FUNCTION_POINTER(occlusionFilter);
+  data.occlusionFilter = GET_FUNCTION_POINTER(occlusionFilter);
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);

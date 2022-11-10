@@ -930,14 +930,14 @@ void assignShaders(ISPCGeometry* geometry)
   if (geometry->type == SUBDIV_MESH)
   {
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 #endif
   }
   else if (geometry->type == TRIANGLE_MESH)
   {
     ISPCTriangleMesh* mesh = (ISPCTriangleMesh* ) geometry;
 #if ENABLE_FILTER_FUNCTION == 1
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
@@ -947,8 +947,8 @@ void assignShaders(ISPCGeometry* geometry)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,(RTCFilterFunctionN)data.occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
       }
     }
 #endif
@@ -957,7 +957,7 @@ void assignShaders(ISPCGeometry* geometry)
   else if (geometry->type == QUAD_MESH)
   {
     ISPCQuadMesh* mesh = (ISPCQuadMesh*) geometry;
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
@@ -967,15 +967,15 @@ void assignShaders(ISPCGeometry* geometry)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,(RTCFilterFunctionN)data.occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
       }
     }
   }
   else if (geometry->type == GRID_MESH)
   {
     ISPCGridMesh* mesh = (ISPCGridMesh*) geometry;
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterOpaque);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
     //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
@@ -985,15 +985,15 @@ void assignShaders(ISPCGeometry* geometry)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
       if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,(RTCFilterFunctionN)data.occlusionFilterOBJ);
+        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
+        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
       }
     }
   }
 
   else if (geometry->type == CURVES)
   {
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilterHair);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterHair);
   }
 #endif
 }
@@ -1844,11 +1844,11 @@ extern "C" void device_init (char* cfg)
 
   TutorialData_Constructor(&data);
 
-  data.intersectionFilterReject = (void*) GET_FUNCTION_POINTER(intersectionFilterReject);
-  data.intersectionFilterOBJ = (void*) GET_FUNCTION_POINTER(intersectionFilterOBJ);
-  data.occlusionFilterOpaque = (void*) GET_FUNCTION_POINTER(occlusionFilterOpaque);
-  data.occlusionFilterOBJ = (void*) GET_FUNCTION_POINTER(occlusionFilterOBJ);
-  data.occlusionFilterHair = (void*) GET_FUNCTION_POINTER(occlusionFilterHair);
+  data.intersectionFilterReject = GET_FUNCTION_POINTER(intersectionFilterReject);
+  data.intersectionFilterOBJ = GET_FUNCTION_POINTER(intersectionFilterOBJ);
+  data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
+  data.occlusionFilterOBJ = GET_FUNCTION_POINTER(occlusionFilterOBJ);
+  data.occlusionFilterHair = GET_FUNCTION_POINTER(occlusionFilterHair);
   
 } // device_init
 

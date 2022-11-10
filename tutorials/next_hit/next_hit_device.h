@@ -38,8 +38,8 @@ struct TutorialData
   unsigned int num_prev_hits_width = 0;
   unsigned int num_prev_hits_height = 0;
 
-  uint64_t gather_all_hits;
-  uint64_t gather_next_hits;
+  RTCFilterFunctionN gather_all_hits;
+  RTCFilterFunctionN gather_next_hits;
 };
 
 void TutorialData_Constructor(TutorialData* This)

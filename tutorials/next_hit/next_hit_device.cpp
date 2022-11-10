@@ -145,7 +145,7 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
   rtcInitIntersectContext(&context.context);
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.filter = (RTCFilterFunctionN) data.gather_all_hits;
+  args.filter = data.gather_all_hits;
   rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
@@ -243,7 +243,7 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
   context.max_next_hits = max_next_hits;
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.filter = (RTCFilterFunctionN) data.gather_next_hits;
+  args.filter = data.gather_next_hits;
 
   /* in each pass we collect some hits */
   do {
@@ -453,8 +453,8 @@ extern "C" void device_init (const char* cfg)
 {
   TutorialData_Constructor(&data);
 
-  data.gather_all_hits = (uint64_t) GET_FUNCTION_POINTER(gather_all_hits);
-  data.gather_next_hits = (uint64_t) GET_FUNCTION_POINTER(gather_next_hits);
+  data.gather_all_hits = GET_FUNCTION_POINTER(gather_all_hits);
+  data.gather_next_hits = GET_FUNCTION_POINTER(gather_next_hits);
 }
 
 extern "C" void renderFrameStandard (int* pixels,

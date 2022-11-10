@@ -24,11 +24,11 @@ struct TutorialData
   RTCIntersectContextFlags iflags_coherent;
   RTCIntersectContextFlags iflags_incoherent;
 
-  void* /*RTCFilterFunctionN*/ intersectionFilterReject;
-  void* /*RTCFilterFunctionN*/ intersectionFilterOBJ;
-  void* /*RTCFilterFunctionN*/ occlusionFilterOpaque;
-  void* /*RTCFilterFunctionN*/ occlusionFilterOBJ;
-  void* /*RTCFilterFunctionN*/ occlusionFilterHair;
+  RTCFilterFunctionN intersectionFilterReject;
+  RTCFilterFunctionN intersectionFilterOBJ;
+  RTCFilterFunctionN occlusionFilterOpaque;
+  RTCFilterFunctionN occlusionFilterOBJ;
+  RTCFilterFunctionN occlusionFilterHair;
   
   int spp;
   int max_path_length;
