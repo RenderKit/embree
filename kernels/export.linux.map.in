@@ -14,7 +14,7 @@ global:
   _ZN???@EMBREE_API_NAMESPACE@??rtc*;
   _ZN???@EMBREE_API_NAMESPACE@???rtc*;
   _ZN6embree13TaskScheduler*;
-  _ZN6embree7@EMBREE_API_NAMESPACE@13TaskScheduler*;
+  _ZN6embree?@EMBREE_API_NAMESPACE@13TaskScheduler*;
 local: 
   *;
 };
