@@ -28,10 +28,10 @@ queue.
 
 Embree provides the `rtcIsSYCLDeviceSupported` API function to check
 if some SYCL device is supported by Embree. You can also use the
-`RTCDeviceSelector` to conveniently select the first SYCL device that
+`rtcSYCLDeviceSelector` to conveniently select the first SYCL device that
 is supported by Embree, e.g.:
 
-    sycl::device device(RTCDeviceSelector());
+    sycl::device device(rtcSYCLDeviceSelector);
     sycl::queue queue(device, exception_handler);
     sycl::context context(queue.get_context());
     RTCDevice device = rtcNewSYCLDevice(&context,&queue,"");

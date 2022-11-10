@@ -2061,11 +2061,7 @@ int main(int argc, char* argv[])
   tbb::global_control tbb_threads(tbb::global_control::max_allowed_parallelism,numThreads);
     
   /* initialize SYCL device */
-#if __SYCL_COMPILER_VERSION < 20220914
-  device = sycl::device(sycl::gpu_selector());
-#else
   device = sycl::device(sycl::gpu_selector_v);
-#endif
   sycl::queue queue = sycl::queue(device,exception_handler);
   context = queue.get_context();
 

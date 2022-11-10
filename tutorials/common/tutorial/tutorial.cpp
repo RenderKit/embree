@@ -1137,8 +1137,7 @@ namespace embree
       };
 
       /* select device supported by Embree */
-      //device = new sycl::device(sycl::gpu_selector());
-      device = new sycl::device(RTCDeviceSelector());
+      device = new sycl::device(rtcSYCLDeviceSelector);
       queue = new sycl::queue(*device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       context = new sycl::context(*device);
       g_device = rtcNewSYCLDevice(context,queue,rtcore.c_str());

@@ -19,25 +19,10 @@ RTC_API RTCDevice rtcNewDevice(const char* config);
 RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context* sycl_context, sycl::queue* sycl_queue, const char* config);
 
 /* Checks if SYCL device is supported by Embree. */
-RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device& sycl_device);
+RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device sycl_device);
 
-/* Selects GPUs supported by Embree */
-#if __SYCL_COMPILER_VERSION < 20220914
-class RTCDeviceSelector : public sycl::device_selector
-#else
-class RTCDeviceSelector
-#endif
-{
-public:
-  int operator()(const sycl::device& device) const
-  {
-    /* the GPU has to support Embree */
-    if (!rtcIsSYCLDeviceSupported(device))
-      return -1;
-    
-    return 1;
-  }
-};
+/* SYCL selector for Embree supported devices */
+RTC_API int rtcSYCLDeviceSelector(const sycl::device sycl_device);
 
 #endif
 

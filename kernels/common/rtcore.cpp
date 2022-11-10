@@ -55,11 +55,20 @@ RTC_NAMESPACE_BEGIN;
     return (RTCDevice) nullptr;
   }
 
-  RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device& sycl_device)
+  RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device sycl_device)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcIsSYCLDeviceSupported);
     return rthwifIsSYCLDeviceSupported(sycl_device);
+    RTC_CATCH_END(nullptr);
+    return false;
+  }
+
+  RTC_API int rtcSYCLDeviceSelector(const sycl::device sycl_device)
+  {
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSYCLDeviceSelector);
+    return rthwifIsSYCLDeviceSupported(sycl_device) ? 1 : -1;
     RTC_CATCH_END(nullptr);
     return false;
   }
