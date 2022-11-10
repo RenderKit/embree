@@ -350,7 +350,7 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
   void *sycl_queue;
   void *sycl_device;
   void *hostDeviceCommPtr;
-  bool verbose;
+  uint verbose;
 #endif
   
 } RTHWIF_BUILD_ACCEL_ARGS;

@@ -230,7 +230,7 @@ namespace embree
   
     const uint numPrimitives = numQuads + numTriangles + numProcedurals + numInstances;
 
-    if (args_i.verbose)
+    if (args_i.verbose == 2)
       PRINT4(numTriangles,numQuads,numProcedurals,numInstances);
     // ============================================================================================================================================================================
     // ============================================================================================================================================================================
@@ -241,14 +241,14 @@ namespace embree
 
     if (numPrimitives)
     {    
-      if (args_i.verbose)
+      if (args_i.verbose == 2)
         PRINT2(numTriangles,ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR));    
       expectedBytes  = estimateAccelBufferSize(numQuads + ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR), numInstances, numProcedurals);
       worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals);    
     }
     size_t scratchBytes = std::max(numPrimitives * sizeof(LeafGenerationData) + sizeof(PLOCGlobals),sizeof(uint)*MAX_WGS);
 
-    if (args_i.verbose)  
+    if (args_i.verbose == 2)  
       PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     
     // ============================================================================================================================================================================
@@ -270,6 +270,8 @@ namespace embree
 
   RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   {
+    double time0 = getSeconds();
+    
     sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries                = args.numGeometries;  
@@ -319,32 +321,31 @@ namespace embree
     // ============================================    
     // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
     // ============================================
-    const bool verbose2 = args.verbose;    
-    {
-      double first_kernel_time0 = getSeconds();          
-      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) { cgh.single_task([=]() {}); });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
-      double first_kernel_time1 = getSeconds();
-      if (unlikely(verbose2)) std::cout << "Dummy prefetch kernel launch (should trigger all remaining USM transfers) " << (first_kernel_time1-first_kernel_time0)*1000.0f << " ms " << std::endl;      
-    }
-  
+    sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) { cgh.single_task([=]() {}); });
+    gpu::waitOnQueueAndCatchException(gpu_queue);
+
+    double time1 = getSeconds();
+    if (args.verbose == 1)
+      std::cout << "Device Prefetch Time " << (float)(time1-time0)*1000.0f << " ms" << std::endl;
+    
     return RTHWIF_ERROR_NONE;      
   }
 
   RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
   {
-    double total_build_time_host = getSeconds();
-
     BuildTimer timer;
     timer.reset();
-  
+
+    timer.start(BuildTimer::PRE_PROCESS);      
+    
     // ================================    
     // === GPU device/queue/context ===
     // ================================
   
     sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
-    sycl::device &gpu_device = *(sycl::device*)args.sycl_device;  
-    const bool verbose2 = args.verbose;
+    sycl::device &gpu_device = *(sycl::device*)args.sycl_device;
+    const bool verbose1 = args.verbose >= 1;    
+    const bool verbose2 = args.verbose >= 2;
     const uint gpu_maxComputeUnits  = gpu_device.get_info<sycl::info::device::max_compute_units>();    
     uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
   
@@ -372,7 +373,6 @@ namespace embree
     // ==== init globals ====
     // ======================
     {
-      timer.start(BuildTimer::PRE_PROCESS);      
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
                                                                       globals->reset();
@@ -393,11 +393,12 @@ namespace embree
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries                = args.numGeometries;
  
-    timer.start(BuildTimer::PRE_PROCESS);
     double device_prim_counts_time = 0.0f;
   
     const PrimitiveCounts primCounts = countPrimitives(gpu_queue,geometries,numGeometries,globals,host_device_tasks,device_prim_counts_time,verbose2); 
 
+    // ================================================
+    
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_prim_counts_time);                              
     if (unlikely(verbose2)) std::cout << "Count primitives from geometries: " << timer.get_host_timer() << " ms (host) " << device_prim_counts_time << " ms (device) " << std::endl;      
@@ -480,13 +481,12 @@ namespace embree
       {
         PRINT2(totalSize,args.accelBufferBytes);
         PRINT2(node_size,numPrimitives*16);        
-        PRINT3("RETRY!!!", args.accelBufferBytes,estimate);
+        PRINT3("RETRY BVH BUILD DUE TO UNSUFFICIENT MEMORY !!!", args.accelBufferBytes,estimate);
       }
       if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimate;
       return RTHWIF_ERROR_RETRY;
     }
 
-  
     const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
     const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
 
@@ -512,7 +512,6 @@ namespace embree
     // ==== init globals phase 2 ====
     // ==============================
     {
-      timer.start(BuildTimer::PRE_PROCESS);      
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
                                                                       globals->numPrimitives              = numPrimitives;
@@ -761,11 +760,11 @@ namespace embree
                                                   });
       gpu::waitOnQueueAndCatchException(gpu_queue);
     }
-
-
+    
     // =============================    
     // === convert BVH2 to QBVH6 ===
     // =============================
+    timer.start(BuildTimer::PRE_PROCESS);    
     float conversion_device_time = 0.0f;
     const bool convert_success = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,args.geometries,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,conversion_device_time,verbose2);
 
@@ -836,8 +835,8 @@ namespace embree
     }        
 #endif
 
-    total_build_time_host = getSeconds() - total_build_time_host;
-    std::cout << "Total build time host: " <<  1000.0*total_build_time_host << " ms" << std::endl;
+    if (unlikely(verbose1))
+      std::cout << "BVH build time: host = " << timer.get_total_host_time() << " ms, device = " << timer.get_total_device_time() << " ms " << std::endl;
     
     return RTHWIF_ERROR_NONE;    
   }

@@ -17,7 +17,7 @@
 #include <map>
 #include <iostream>
 
-#define VERBOSE false
+#define VERBOSE 0
 
 namespace embree {
   double getSeconds();

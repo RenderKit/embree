@@ -450,7 +450,7 @@ namespace embree
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     args.sycl_device = &gpu_device->getGPUDevice();
     args.sycl_queue = &gpu_device->getGPUQueue();
-    args.verbose = gpu_device->verbosity(2);
+    args.verbose = gpu_device->verbose;
 #endif
 
     
