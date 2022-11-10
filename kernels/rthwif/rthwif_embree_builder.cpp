@@ -522,7 +522,7 @@ namespace embree
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
 
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         err = rthwifPrefetchAccelGPU(args);          
 #endif
         
@@ -556,7 +556,7 @@ namespace embree
           if (sizeTotal.accelBufferExpectedBytes == sizeTotal.accelBufferWorstCaseBytes) 
             throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
           
-          sizeTotal.accelBufferExpectedBytes = std::min(sizeTotal.accelBufferWorstCaseBytes,(size_t(1.2*sizeTotal.accelBufferExpectedBytes)+127)&-128);          
+          sizeTotal.accelBufferExpectedBytes = std::min(sizeTotal.accelBufferWorstCaseBytes,(size_t(1.2*sizeTotal.accelBufferExpectedBytes)+127)&-128);
           break;
         }
         

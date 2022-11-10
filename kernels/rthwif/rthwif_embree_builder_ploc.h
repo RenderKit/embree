@@ -50,7 +50,6 @@ namespace embree
     uint numProcedurals;
     uint numInstances;
     uint numPrimitives;
-    uint numOrgPrimitives;            
     uint bvh2_index_allocator;    
     uint leaf_mem_allocator_start;
     uint leaf_mem_allocator_cur;
@@ -61,6 +60,7 @@ namespace embree
     uint rootIndex;
     uint wgID;
     uint numLeaves;
+    uint tmp;            
 
     __forceinline void reset()
     {
@@ -74,7 +74,6 @@ namespace embree
       node_mem_allocator_cur     = 0;
       node_mem_allocator_start   = 0;
       numPrimitives              = 0;
-      numOrgPrimitives           = 0;            
       bvh2_index_allocator       = 0;
       leaf_mem_allocator_cur     = 0;
       leaf_mem_allocator_start   = 0;
@@ -85,6 +84,7 @@ namespace embree
       rootIndex                  = 0;
       wgID                       = 0;
       numLeaves                  = 0;
+      tmp                        = 0;
     }
       
     /* allocate data in the node memory section */
@@ -1650,7 +1650,7 @@ namespace embree
   // ====================================================================================================================================================================================
   // ====================================================================================================================================================================================
   // ====================================================================================================================================================================================
-
+  
 
   __forceinline  uint encodeRelativeOffset(const int localID, const int neighbor)
   {
@@ -2675,7 +2675,7 @@ namespace embree
         PRINT4("initial iteration ",iteration,(float)dt,(float)total_time);
     }
 
-    if (host_device_tasks[0] == -1) return false;
+    if (unlikely(host_device_tasks[0] == -1)) return false;
 
     /* ---- Phase II: full breadth-first phase until only fat leaves or single leaves remain--- */
 
@@ -2684,8 +2684,8 @@ namespace embree
     };
     while(1)
     {      
-      const uint blocks = host_device_tasks[0];      
-      if (blocks == 0) break;
+      const uint blocks = host_device_tasks[0];
+      if (blocks == 0 || blocks == -1) break;
       
       iteration++;
       const uint wgSize = 256;
@@ -2771,7 +2771,7 @@ namespace embree
                                  /* --- reset atomics --- */
                                  globals->sync = 0;
                                  const uint new_startBlockID = globals->range_end;
-                                 const uint new_endBlockID   = globals->node_mem_allocator_cur;
+                                 const uint new_endBlockID   = globals->node_mem_allocator_cur;                                 
                                  globals->range_start = new_startBlockID;
                                  globals->range_end   = new_endBlockID;
                                  host_device_tasks[0] = new_endBlockID - new_startBlockID;
@@ -2791,7 +2791,7 @@ namespace embree
         PRINT5("flattening iteration ",iteration,blocks,(float)dt,(float)total_time);
     }
 
-    if (host_device_tasks[0] == -1) return false;
+    if (unlikely(host_device_tasks[0] == -1)) return false;
     
     /* ---- Phase III: fill in mixed leafs and generate inner node for fatleaves plus storing primID, geomID pairs for final phase --- */
     const uint blocks = host_device_tasks[1];
@@ -2941,7 +2941,7 @@ namespace embree
       if (unlikely(verbose))      
         PRINT3("final flattening iteration ",(float)dt,(float)total_time);
     }    
-    if (host_device_tasks[0] == -1) return false;
+    if (unlikely(host_device_tasks[0] == -1)) return false;
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
     const uint leaves = host_device_tasks[0]; // = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
