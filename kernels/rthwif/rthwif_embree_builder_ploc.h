@@ -18,6 +18,7 @@
 
 #define FATLEAF_THRESHOLD         6
 #define USE_NEW_OPENING           0
+#define PAIR_OFFSET_SHIFT        24
 
 namespace embree
 {  
@@ -294,8 +295,8 @@ namespace embree
 
     __forceinline uint geomID() const { return left & BIT_MASK & 0x00ffffff; }    
     __forceinline uint primID() const { return right & BIT_MASK; }
-    __forceinline uint primID1() const { return ((left & BIT_MASK) >> 24) + primID(); }
-    __forceinline uint primID1_offset() const { return ((left & BIT_MASK) >> 24); }
+    __forceinline uint primID1() const { return ((left & BIT_MASK) >> PAIR_OFFSET_SHIFT) + primID(); }
+    __forceinline uint primID1_offset() const { return ((left & BIT_MASK) >> PAIR_OFFSET_SHIFT); }
     
     __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
     {
@@ -672,6 +673,20 @@ namespace embree
   // =====================================================================================================================================================================================
   // ============================================================================== Prefix Sums ==========================================================================================
   // =====================================================================================================================================================================================
+
+   __forceinline void clearFirstScratchMemEntries(sycl::queue &gpu_queue, uint *scratch_mem, const uint value, const uint numEntries)
+   {
+     const sycl::nd_range<1> nd_range1(128,sycl::range<1>(128)); 
+     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                          {
+                            const uint localID         = item.get_local_id(0);
+                            const uint step_local      = item.get_local_range().size();                             
+                            for (uint ID = localID; ID < numEntries; ID += step_local)
+                              scratch_mem[ID] = 0;
+                          });                                                         
+       });     
+   }
   
   struct PrimitiveCounts {
     uint numTriangles;
@@ -1098,7 +1113,7 @@ namespace embree
                                    if (paired_ID != -1)
                                    {
                                      const uint pair_offset = paired_ID - ID;
-                                     const uint pair_geomID = (pair_offset << 24) | geomID;
+                                     const uint pair_geomID = (pair_offset << PAIR_OFFSET_SHIFT) | geomID;
                                      //bvh2[dest_offset].initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
                                      BVH2Ploc node;
                                      node.initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
@@ -1168,23 +1183,13 @@ namespace embree
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads", (float)dt);
   }
- 
-  
+    
   __forceinline uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGs, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
 #if 1
     const uint numWGs = min((numGeoms+1024-1)/1024,(uint)MAX_WGs);
-    {
-      const sycl::nd_range<1> nd_range1(MAX_WGs,sycl::range<1>(MAX_WGs)); 
-      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-          cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
-                           {
-                             const uint globalID     = item.get_global_id(0);
-                             scratch_mem[globalID] = 0;
-                           });                                                         
-        });
-    }
-    
+    clearFirstScratchMemEntries(gpu_queue,scratch_mem,0,numWGs);
+   
     static const uint CREATE_INSTANCES_SUB_GROUP_WIDTH = 16;
     static const uint CREATE_INSTANCES_WG_SIZE  = 1024;
     const sycl::nd_range<1> nd_range1(numWGs*CREATE_INSTANCES_WG_SIZE,sycl::range<1>(CREATE_INSTANCES_WG_SIZE));
@@ -1344,13 +1349,9 @@ namespace embree
           const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
           const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
           const BBox3fa org_bounds(lower,upper);
-          //if (!isvalid_non_empty(org_bounds)) continue;
           const BBox3fa instance_bounds = xfmBounds(local2world,org_bounds);
           bounds = gpu::AABB3f(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
                                instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
-          //if (bounds.empty()) continue;
-          //if (!bounds.checkNumericalBounds()) continue;    
-
           node.initLeaf(0,instID,bounds);                               
           node.store(&bvh2[prim_type_offset + ID]);
           ID++;                                        
@@ -2967,7 +2968,7 @@ namespace embree
                                {
                                  const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
                                  const uint primID0 = leafGenData[globalID].primID & LEAF_TYPE_MASK_LOW;
-                                 const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> 24);
+                                 const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> PAIR_OFFSET_SHIFT);
                                  
                                  const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
                                  valid = true;

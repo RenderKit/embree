@@ -17,7 +17,6 @@
 #include <map>
 #include <iostream>
 
-//#define VERBOSE true
 #define VERBOSE false
 
 namespace embree {

@@ -5,13 +5,13 @@
 #include "builder/qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
 
-// FIXME: compute MAX_WGS at run-time
 // FIXME: leaf data generation without flags
 // FIXME: add prefetch timings
 
+#define MAX_WGS                    64
+
 #define SINGLE_WG_SWITCH_THRESHOLD 8*1024
 #define FAST_MC_THRESHOLD          1024*1024
-#define MAX_WGS                    64
 #define SMALL_SORT_THRESHOLD       1024*4
 
 static const float ESTIMATED_QUADIFICATION_FACTOR = 0.58;
@@ -24,10 +24,10 @@ namespace embree
 
   __forceinline uint estimateSizeInternalNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
   {
-    const uint N = numQuads + numInstances + numProcedurals;
+    const uint N = numQuads + numInstances + numProcedurals; 
     // === conservative estimate ===
-    const uint numFatLeaves = ceilf( (float)N/2 );
-    const uint numInnerNodes = ceilf( (float)numFatLeaves/4 ); // 4 instead of 5 due to mixed nodes: 2 leaf refs + 4 inner node refs per inner node
+    const uint numFatLeaves = ceilf( (float)N/2 ) + ceilf( (float)numInstances/2 ); // FIXME : better upper bound for instance case
+    const uint numInnerNodes = ceilf( (float)numFatLeaves/5 ); 
     return gpu::alignTo(std::max( ((numFatLeaves + numInnerNodes) * 64) , N * 16),64);
   }
 
@@ -692,16 +692,8 @@ namespace embree
     // ===========================            
     // ==== clear scratch mem ====
     // ===========================      
-    {
-      const sycl::nd_range<1> nd_range1(MAX_WGS,sycl::range<1>(MAX_WGS)); 
-      sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                   cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
-                                                                    {
-                                                                      const uint globalID     = item.get_global_id(0);
-                                                                      scratch[globalID] = 0;
-                                                                    });                                                         
-                                                 });
-    }
+
+    clearFirstScratchMemEntries(gpu_queue,scratch,0,MAX_WGS);
   
     for (;numPrims>1;iteration++)
     {          
@@ -845,7 +837,7 @@ namespace embree
 #endif
 
     total_build_time_host = getSeconds() - total_build_time_host;
-    //std::cout << "Total build time host: " <<  1000.0*total_build_time_host << " ms" << std::endl;
+    std::cout << "Total build time host: " <<  1000.0*total_build_time_host << " ms" << std::endl;
     
     return RTHWIF_ERROR_NONE;    
   }
