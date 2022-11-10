@@ -96,7 +96,7 @@ void renderPixelStandard(const uniform TutorialData& data,
 
     /* intersect ray with scene */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    args.filter = (RTCFilterFunctionN)intersectionFilter;
+    args.filter = intersectionFilter;
 #endif    
     rtcIntersectV(data.g_scene,&context.context,RTCRayHit_(primary),&args);
     RayStats_addRay(stats);
@@ -122,7 +122,7 @@ void renderPixelStandard(const uniform TutorialData& data,
 
     /* trace shadow ray */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    args.filter = (RTCFilterFunctionN)occlusionFilter;
+    args.filter = occlusionFilter;
 #endif
     rtcOccludedV(data.g_scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
@@ -751,8 +751,8 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 export void device_init (uniform int8* uniform cfg)
 {
 #if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
-  data.intersectionFilter = (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilter);
-  data.occlusionFilter    = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilter   );
+  data.intersectionFilter = GET_FUNCTION_POINTER(intersectionFilter);
+  data.occlusionFilter    = GET_FUNCTION_POINTER(occlusionFilter   );
 #endif
   
   /* create scene */

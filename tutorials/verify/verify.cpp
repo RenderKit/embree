@@ -370,8 +370,8 @@ namespace embree
       AssertNoError(device);
       rtcSetGeometryBoundsFunction(geom,BoundsFunc,nullptr);
       rtcSetGeometryUserData(geom,sphere);
-      rtcSetGeometryIntersectFunction(geom,(RTCIntersectFunctionN)IntersectFuncN);
-      rtcSetGeometryOccludedFunction(geom,(RTCOccludedFunctionN)OccludedFuncN);
+      rtcSetGeometryIntersectFunction(geom,IntersectFuncN);
+      rtcSetGeometryOccludedFunction(geom,OccludedFuncN);
       rtcCommitGeometry(geom);
       unsigned int geomID = rtcAttachGeometry(scene,geom);
       rtcReleaseGeometry(geom);
@@ -2750,8 +2750,8 @@ namespace embree
       else        geomID0 = scene.addPlane       (sampler,quality, 4, p0, dx, dy).first;
       RTCGeometry geom0 = rtcGetGeometry(scene,geomID0);
       rtcSetGeometryUserData(geom0,(void*)123);
-      rtcSetGeometryIntersectFilterFunction (geom0,(RTCFilterFunctionN)intersectionFilterN);
-      rtcSetGeometryOccludedFilterFunction (geom0,(RTCFilterFunctionN)intersectionFilterN);
+      rtcSetGeometryIntersectFilterFunction (geom0,intersectionFilterN);
+      rtcSetGeometryOccludedFilterFunction (geom0,intersectionFilterN);
       rtcCommitScene (scene);
       AssertNoError(device);
       
@@ -2852,7 +2852,7 @@ namespace embree
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
-      args.filter = (RTCFilterFunctionN) intersectFilter;
+      args.filter = intersectFilter;
 
       VerifyScene scene(device, sflags);
       scene.addGeometry(quality, parent);
@@ -4029,7 +4029,7 @@ namespace embree
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
-      args.filter = (RTCFilterFunctionN) &countHits;
+      args.filter = countHits;
       
       RTCRayHit rayHit;
       rayHit.ray.org_x = 0;

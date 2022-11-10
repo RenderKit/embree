@@ -1844,11 +1844,11 @@ extern "C" void device_init (char* cfg)
 
   TutorialData_Constructor(&data);
 
-  data.intersectionFilterReject = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilterReject);
-  data.intersectionFilterOBJ = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilterOBJ);
-  data.occlusionFilterOpaque = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterOpaque);
-  data.occlusionFilterOBJ = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterOBJ);
-  data.occlusionFilterHair = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterHair);
+  data.intersectionFilterReject = (void*) GET_FUNCTION_POINTER(intersectionFilterReject);
+  data.intersectionFilterOBJ = (void*) GET_FUNCTION_POINTER(intersectionFilterOBJ);
+  data.occlusionFilterOpaque = (void*) GET_FUNCTION_POINTER(occlusionFilterOpaque);
+  data.occlusionFilterOBJ = (void*) GET_FUNCTION_POINTER(occlusionFilterOBJ);
+  data.occlusionFilterHair = (void*) GET_FUNCTION_POINTER(occlusionFilterHair);
   
 } // device_init
 

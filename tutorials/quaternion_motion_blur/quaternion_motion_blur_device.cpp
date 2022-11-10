@@ -235,7 +235,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFunc);
+  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
   
   /* create scene */
   TutorialData_Constructor(&data);

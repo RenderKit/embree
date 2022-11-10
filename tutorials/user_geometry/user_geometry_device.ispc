@@ -1055,11 +1055,11 @@ uniform unsigned int createGroundPlane (RTCScene scene)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  instanceIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(instanceIntersectFunc);
-  instanceOccludedFuncPtr  = (RTCOccludedFunctionN ) GET_FUNCTION_POINTER(instanceOccludedFunc );
-  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFunc);
-  sphereOccludedFuncPtr  = (RTCOccludedFunctionN ) GET_FUNCTION_POINTER(sphereOccludedFunc );
-  sphereFilterFuncPtr    = (RTCFilterFunctionN )   GET_FUNCTION_POINTER(sphereFilterFunction);
+  instanceIntersectFuncPtr = GET_FUNCTION_POINTER(instanceIntersectFunc);
+  instanceOccludedFuncPtr  = GET_FUNCTION_POINTER(instanceOccludedFunc );
+  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
+  sphereOccludedFuncPtr  = GET_FUNCTION_POINTER(sphereOccludedFunc );
+  sphereFilterFuncPtr    = GET_FUNCTION_POINTER(sphereFilterFunction);
   
   /* create scene */
   TutorialData_Constructor(&data);

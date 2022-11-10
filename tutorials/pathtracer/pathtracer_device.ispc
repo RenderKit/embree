@@ -1832,11 +1832,11 @@ export void device_init (uniform int8* uniform cfg)
 
   TutorialData_Constructor(&data);
 
-  data.intersectionFilterReject = (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilterReject);
-  data.intersectionFilterOBJ = (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilterOBJ);
-  data.occlusionFilterOpaque = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterOpaque);
-  data.occlusionFilterOBJ = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterOBJ);
-  data.occlusionFilterHair = (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilterHair);
+  data.intersectionFilterReject = GET_FUNCTION_POINTER(intersectionFilterReject);
+  data.intersectionFilterOBJ = GET_FUNCTION_POINTER(intersectionFilterOBJ);
+  data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
+  data.occlusionFilterOBJ = GET_FUNCTION_POINTER(occlusionFilterOBJ);
+  data.occlusionFilterHair = GET_FUNCTION_POINTER(occlusionFilterHair);
   
 } // device_init
 

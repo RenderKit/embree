@@ -104,7 +104,7 @@ void renderPixelStandard(const TutorialData& data,
 
     /* intersect ray with scene */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    args.filter = (RTCFilterFunctionN)intersectionFilter;
+    args.filter = intersectionFilter;
 #endif
     rtcIntersect1(data.g_scene,&context.context,RTCRayHit_(primary),&args);
     RayStats_addRay(stats);
@@ -130,7 +130,7 @@ void renderPixelStandard(const TutorialData& data,
 
     /* trace shadow ray */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    args.filter = (RTCFilterFunctionN)occlusionFilter;
+    args.filter = occlusionFilter;
 #endif
     rtcOccluded1(data.g_scene,&context.context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
@@ -674,14 +674,14 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
   {
 #if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilter);
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilter);
+    rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
   }
   else
   {
-    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)intersectionFilterN);
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)occlusionFilterN);
+    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterN);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterN);
   }
 
   rtcCommitGeometry(geom);
@@ -714,14 +714,14 @@ unsigned int addSubdivCube (RTCScene scene_i)
   if (g_mode == MODE_NORMAL && nativePacketSupported(g_device))
   {
 #if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)data.intersectionFilter);
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)data.occlusionFilter);
+    rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
+    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
   }
   else
   {
-    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)intersectionFilterN);
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)occlusionFilterN);
+    rtcSetGeometryIntersectFilterFunction(geom,intersectionFilterN);
+    rtcSetGeometryOccludedFilterFunction(geom,occlusionFilterN);
   }
 
   rtcCommitGeometry(geom);
@@ -758,8 +758,8 @@ unsigned int addGroundPlane (RTCScene scene_i)
 extern "C" void device_init (char* cfg)
 {
 #if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
-  data.intersectionFilter = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(intersectionFilter);
-  data.occlusionFilter    = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilter   );
+  data.intersectionFilter = (void*) GET_FUNCTION_POINTER(intersectionFilter);
+  data.occlusionFilter    = (void*) GET_FUNCTION_POINTER(occlusionFilter   );
 #endif
   
   /* create scene */

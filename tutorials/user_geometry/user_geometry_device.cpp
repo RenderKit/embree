@@ -341,8 +341,8 @@ Instance* createInstance (RTCScene scene, RTCScene object, int userID, const Vec
   }
   else
   {
-    rtcSetGeometryIntersectFunction(instance->geometry,(RTCIntersectFunctionN)instanceIntersectFuncN);
-    rtcSetGeometryOccludedFunction (instance->geometry,(RTCOccludedFunctionN)instanceOccludedFuncN);
+    rtcSetGeometryIntersectFunction(instance->geometry,instanceIntersectFuncN);
+    rtcSetGeometryOccludedFunction (instance->geometry,instanceOccludedFuncN);
   }
   rtcCommitGeometry(instance->geometry);
   rtcAttachGeometry(scene,instance->geometry);
@@ -925,8 +925,8 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
   }
   else
   {
-    rtcSetGeometryIntersectFunction(geom,(RTCIntersectFunctionN)sphereIntersectFuncN);
-    rtcSetGeometryOccludedFunction (geom,(RTCOccludedFunctionN)sphereOccludedFuncN);
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
   }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
@@ -959,10 +959,10 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
   }
   else
   {
-    rtcSetGeometryIntersectFunction(geom,(RTCIntersectFunctionN)sphereIntersectFuncN);
-    rtcSetGeometryOccludedFunction (geom,(RTCOccludedFunctionN)sphereOccludedFuncN);
-    rtcSetGeometryIntersectFilterFunction(geom,(RTCFilterFunctionN)sphereFilterFunctionN);
-    rtcSetGeometryOccludedFilterFunction(geom,(RTCFilterFunctionN)sphereFilterFunctionN);
+    rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncN);
+    rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncN);
+    rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFunctionN);
+    rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFunctionN);
   }
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
@@ -1056,11 +1056,11 @@ unsigned int createGroundPlane (RTCScene scene)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  instanceIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(instanceIntersectFunc);
-  instanceOccludedFuncPtr  = (RTCOccludedFunctionN ) GET_FUNCTION_POINTER(instanceOccludedFunc );
-  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFunc);
-  sphereOccludedFuncPtr  = (RTCOccludedFunctionN ) GET_FUNCTION_POINTER(sphereOccludedFunc );
-  sphereFilterFuncPtr    = (RTCFilterFunctionN )   GET_FUNCTION_POINTER(sphereFilterFunction);
+  instanceIntersectFuncPtr = GET_FUNCTION_POINTER(instanceIntersectFunc);
+  instanceOccludedFuncPtr  = GET_FUNCTION_POINTER(instanceOccludedFunc );
+  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
+  sphereOccludedFuncPtr  = GET_FUNCTION_POINTER(sphereOccludedFunc );
+  sphereFilterFuncPtr    = GET_FUNCTION_POINTER(sphereFilterFunction);
   
   /* create scene */
   TutorialData_Constructor(&data);
@@ -1151,10 +1151,10 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 
   /* intersect ray with scene */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-  args.filter = (RTCFilterFunctionN) contextFilterFunction;
+  args.filter = contextFilterFunction;
 #endif
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-  args.intersect = (RTCIntersectFunctionN) contextIntersectFunc;
+  args.intersect = contextIntersectFunc;
 #endif
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
@@ -1186,10 +1186,10 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 
     /* trace shadow ray */
 #if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    args.filter = (RTCFilterFunctionN) contextFilterFunction;
+    args.filter = contextFilterFunction;
 #endif
 #if EMBREE_GEOMETRY_USER_IN_CONTEXT
-    args.occluded = (RTCOccludedFunctionN) contextOccludedFunc;
+    args.occluded = contextOccludedFunc;
 #endif
     args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
     

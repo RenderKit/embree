@@ -539,8 +539,8 @@ unsigned int addGroundPlane (RTCScene scene)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFuncN);
-  sphereOccludedFuncPtr  = (RTCOccludedFunctionN ) GET_FUNCTION_POINTER(sphereOccludedFuncN);
+  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFuncN);
+  sphereOccludedFuncPtr  = GET_FUNCTION_POINTER(sphereOccludedFuncN);
   
   /* create scene */
   TutorialData_Constructor(&data);

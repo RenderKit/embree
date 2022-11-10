@@ -412,7 +412,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 extern "C" void device_init (char* cfg)
 {
   TutorialData_Constructor(&data);
-  data.occlusionFilter = (void*) (RTCFilterFunctionN) GET_FUNCTION_POINTER(occlusionFilter);
+  data.occlusionFilter = (void*) GET_FUNCTION_POINTER(occlusionFilter);
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);

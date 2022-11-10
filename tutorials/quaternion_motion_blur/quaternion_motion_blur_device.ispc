@@ -233,7 +233,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform unsigne
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-  sphereIntersectFuncPtr = (RTCIntersectFunctionN) GET_FUNCTION_POINTER(sphereIntersectFunc);
+  sphereIntersectFuncPtr = GET_FUNCTION_POINTER(sphereIntersectFunc);
   
   /* create scene */
   TutorialData_Constructor(&data);
