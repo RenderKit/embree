@@ -824,7 +824,7 @@ namespace embree
     if (args.accelBufferBytesOut)
       *args.accelBufferBytesOut = args.accelBufferBytes;
 
-#if 0
+#if 1
     if (verbose2)
     {
       qbvh->print(std::cout,qbvh->root(),0,6);

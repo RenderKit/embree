@@ -19,25 +19,16 @@
 #define FATLEAF_THRESHOLD         6
 #define USE_NEW_OPENING           0
 #define PAIR_OFFSET_SHIFT         28
+#define GEOMID_MASK               (((uint)1<<PAIR_OFFSET_SHIFT)-1)
+
 #define LARGE_WG_SIZE             1024
-#define MAX_WGS                   128
+#define MAX_WGS                   64
 
 namespace embree
 {  
   // ===================================================================================================================================================================================
   // =============================================================================== General ===========================================================================================
   // ===================================================================================================================================================================================
-
-  const uint LEAF_TYPE_SHIFT = 30;
-  const uint LEAF_TYPE_MASK_LOW   = ~(3 << LEAF_TYPE_SHIFT);
-  const uint LEAF_TYPE_MASK_HIGH  =   3 << LEAF_TYPE_SHIFT;
-  
-  enum {
-    LEAF_TYPE_QUAD       = 0 << LEAF_TYPE_SHIFT,
-    LEAF_TYPE_PROCEDURAL = 1 << LEAF_TYPE_SHIFT,
-    LEAF_TYPE_INSTANCE   = 2 << LEAF_TYPE_SHIFT,
-    LEAF_TYPE_UNUSED     = 3 << LEAF_TYPE_SHIFT        
-  };
   
   struct __aligned(64) PLOCGlobals
   {
@@ -296,10 +287,6 @@ namespace embree
     __forceinline uint leftIndex()      const { return left & FATLEAF_MASK;  }
     __forceinline uint getLeafIndex()   const { return left & FATLEAF_MASK;  }
     __forceinline uint rightIndex()     const { return right & FATLEAF_MASK; }
-    __forceinline uint geomID()         const { return left & FATLEAF_MASK & 0x00ffffff; }    
-    __forceinline uint primID()         const { return right & FATLEAF_MASK; }
-    __forceinline uint primID1()        const { return ((left & FATLEAF_MASK) >> PAIR_OFFSET_SHIFT) + primID(); }
-    __forceinline uint primID1_offset() const { return ((left & FATLEAF_MASK) >> PAIR_OFFSET_SHIFT); }
     
     __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
     {
@@ -358,7 +345,7 @@ namespace embree
 
     friend __forceinline embree_ostream operator<<(embree_ostream cout, const BVH2Ploc &n)
     {
-      cout << "left " << n.leftIndex() << " right " << n.rightIndex() << " geomID " << n.geomID() << " primID0 " << n.primID() << " primID1 " << n.primID1() << " AABB3f { ";
+      cout << "left " << n.leftIndex() << " right " << n.rightIndex() << " left " << n.left << " right " << n.right << " AABB3f { ";
       cout << "  lower = (" << n.bounds.lower_x << ", " << n.bounds.lower_y << ", " << n.bounds.lower_z << ") ";
       cout << "  upper = (" << n.bounds.upper_x << ", " << n.bounds.upper_y << ", " << n.bounds.upper_z << ") ";
       return cout << "}";
@@ -1310,7 +1297,7 @@ namespace embree
                                if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE && count == 1)
                                {
                                  BVH2Ploc node;                                                                                           
-                                 node.initLeaf(0,instID,bounds);                               
+                                 node.initLeaf(instID,0,bounds);                               
                                  node.store(&bvh2[prim_type_offset + p_sum]);                                                                
                                }                               
                              }
@@ -1346,6 +1333,8 @@ namespace embree
   
   __forceinline uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
+    //FIXME: GPU version
+    
     uint ID = 0;
     for (uint userGeomID=0;userGeomID<numGeoms;userGeomID++)
     {
@@ -1368,51 +1357,13 @@ namespace embree
             BVH2Ploc node;                             
             node.initLeaf(userGeomID,i,bounds);                               
             node.store(&bvh2[prim_type_offset + ID]);
-            ID++;
-              
-          }
-          
+            ID++;              
+          }          
         }
       }
     }
     return ID;
-#if 0
-    //static const uint CREATE_INSTANCES_SEARCH_WG_SIZE  = 256;
-      
-    const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,CREATE_INSTANCES_SEARCH_WG_SIZE),sycl::range<1>(CREATE_INSTANCES_SEARCH_WG_SIZE));
-    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
-                         {
-                           const uint userGeomID = item.get_global_id(0);
-                           if (userGeomID < numGeoms)
-                           {
-                             const bool isUserGeometry = scene->geometries[userGeomID]->getTypeMask() & UserGeometry::geom_type;
-                             UserGeometry* userGeometry = scene->get<UserGeometry>(userGeomID);                             
-                             gpu::AABB3f bounds(float3(0.0f));
-                             BVH2Ploc node;                             
-                             if (isUserGeometry)
-                             {
-                               BBox3fa userGeometry_bounds(userGeometry->bounds(0));
-                               bounds = gpu::AABB3f(userGeometry_bounds.lower.x,userGeometry_bounds.lower.y,userGeometry_bounds.lower.z,
-                                                    userGeometry_bounds.upper.x,userGeometry_bounds.upper.y,userGeometry_bounds.upper.z);
-                             }
-                             node.initLeaf(0,userGeomID,bounds);                               
-                             node.store(&bvh2[prim_type_offset + userGeomID]);
-                           }
-                         });
-		  
-      });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-    double dt = gpu::getDeviceExecutionTiming(queue_event);      
-    iteration_time += dt;
-    if (unlikely(verbose)) PRINT2("write out user geom/procedurals bounds", (float)dt);
-#endif    
   }
-  
-  
-  
-
- 
 
   // ===================================================================================================================================================================================
   // =========================================================================== DISTANCE FUNCTION =====================================================================================
@@ -2869,12 +2820,8 @@ namespace embree
                                const uint primID = bvh2[index_j].right;
                                const uint bID = isFatLeaf ? (blockID + node_blockID) : innerID;
                                const bool isInstance   = geometryTypeRanges.isInstance(index_j);
-                               const bool isProcedural = geometryTypeRanges.isProcedural(index_j);
-                               uint primID_type = (primID & LEAF_TYPE_MASK_LOW) | LEAF_TYPE_QUAD;
-                               primID_type |= isProcedural ? LEAF_TYPE_PROCEDURAL : 0;
-                               primID_type |= isInstance   ? LEAF_TYPE_INSTANCE   : 0;
                                local_leafGenData[local_leafDataID+j].blockID = bID;
-                               local_leafGenData[local_leafDataID+j].primID = primID_type;
+                               local_leafGenData[local_leafDataID+j].primID = primID;
                                local_leafGenData[local_leafDataID+j].geomID = geomID;
                                node_blockID += isInstance  ? 2 : 1;
                              }
@@ -2930,68 +2877,71 @@ namespace embree
                              if (globalID < leaves)                                                                        
                              {
                                qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
-                               if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_QUAD)
+                               const uint geomID = leafGenData[globalID].geomID & GEOMID_MASK;
+                               const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
+
+                               if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
                                {
-                                 const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
-                                 const uint primID0 = leafGenData[globalID].primID & LEAF_TYPE_MASK_LOW;
-                                 const uint primID1 = primID0 + ((leafGenData[globalID].geomID /*& 0x7fffffff*/) >> PAIR_OFFSET_SHIFT);
                                  
-                                 const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
-                                 valid = true;
                                  // ====================                           
                                  // === TriangleMesh ===
                                  // ====================                                                                        
-                                 if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
+                                 valid = true;                                   
+                                 const uint primID0 = leafGenData[globalID].primID;
+                                 const uint primID1 = primID0 + (leafGenData[globalID].geomID >> PAIR_OFFSET_SHIFT);                                   
+                                 RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;
+                                 const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(*triMesh,primID0);
+                                 const Vec3f p0 = getVec3f(*triMesh,tri.v0);
+                                 const Vec3f p1 = getVec3f(*triMesh,tri.v1);
+                                 const Vec3f p2 = getVec3f(*triMesh,tri.v2);                                       
+                                 Vec3f p3 = p2;
+                                 uint lb0 = 0,lb1 = 0, lb2 = 0;
+                                 
+                                 /* handle paired triangle */
+                                 if (primID0 != primID1)
                                  {
-                                   RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
-                                   const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(*triMesh,primID0);
-                                   const Vec3f p0 = getVec3f(*triMesh,tri.v0);
-                                   const Vec3f p1 = getVec3f(*triMesh,tri.v1);
-                                   const Vec3f p2 = getVec3f(*triMesh,tri.v2);                                       
-                                   Vec3f p3 = p2;
-                                   uint lb0 = 0,lb1 = 0, lb2 = 0;
-                
-                                   /* handle paired triangle */
-                                   if (primID0 != primID1)
-                                   {
-                                     const RTHWIF_TRIANGLE_INDICES &tri1 = getTriangleDesc(*triMesh,primID1);          
-                                     const uint p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
-                                     p3 = getVec3f(*triMesh,((uint*)&tri1)[p3_index]); // FIXME
-                                   }
-
-                                   localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask, /*i == (numChildren-1)*/ true );
-                                   //write(leaf,(float16*)qleaf);
+                                   const RTHWIF_TRIANGLE_INDICES &tri1 = getTriangleDesc(*triMesh,primID1);          
+                                   const uint p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
+                                   p3 = getVec3f(*triMesh,((uint*)&tri1)[p3_index]); // FIXME
                                  }
+
+                                 localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask, /*i == (numChildren-1)*/ true );
+                               }
+                               else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
+                               {
                                  // ================                           
                                  // === QuadMesh ===
                                  // ================
-                                 else
-                                 {
-                                   RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                             
-                                   const RTHWIF_QUAD_INDICES &quad = getQuadDesc(*quadMesh,primID0);
-                                   const Vec3f p0 = getVec3f(*quadMesh,quad.v0);
-                                   const Vec3f p1 = getVec3f(*quadMesh,quad.v1);
-                                   const Vec3f p2 = getVec3f(*quadMesh,quad.v2);                                       
-                                   const Vec3f p3 = getVec3f(*quadMesh,quad.v3);                                                                          
-                                   localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask, /*i == (numChildren-1)*/ true );
-                                 }
+                                 valid = true;                                                                    
+                                 const uint primID0 = leafGenData[globalID].primID;                                   
+                                 RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                             
+                                 const RTHWIF_QUAD_INDICES &quad = getQuadDesc(*quadMesh,primID0);
+                                 const Vec3f p0 = getVec3f(*quadMesh,quad.v0);
+                                 const Vec3f p1 = getVec3f(*quadMesh,quad.v1);
+                                 const Vec3f p2 = getVec3f(*quadMesh,quad.v2);                                       
+                                 const Vec3f p3 = getVec3f(*quadMesh,quad.v3);                                                                          
+                                 localLeaf[localID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID0, primID0, (GeometryFlags)quadMesh->geometryFlags, quadMesh->geometryMask, /*i == (numChildren-1)*/ true );
                                }
-                               else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_INSTANCE)
-                               {                                 
-                                 const uint instID = leafGenData[globalID].primID & 0x3fffffff;
-                                 //PRINT(instID);
-                                 const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometries[instID];                                 
+                             
+                               else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
+                               {
+                                 // ================                           
+                                 // === Instance ===
+                                 // ================                                 
+                                 const uint instID = leafGenData[globalID].geomID;
+                                 const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometryDesc;                                 
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
                                  const AffineSpace3fa local2world = getTransform(instance);
                                  const uint64_t root = (uint64_t)instance->accel + 128;
-                                 //PRINT2(instID,instance->instanceUserID);
                                  *dest = InstancePrimitive(local2world,root,instance->instanceUserID,instID,mask32_to_mask8(instance->geometryMask));
                                }
-                               else if ((leafGenData[globalID].primID & LEAF_TYPE_MASK_HIGH) == LEAF_TYPE_PROCEDURAL) 
+                               else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
                                {
-                                 const uint geomID = leafGenData[globalID].geomID & 0x3fffffff;
-                                 const uint primID0 = leafGenData[globalID].primID & LEAF_TYPE_MASK_LOW;                                 
-                                 const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometries[geomID];                                 
+                                 // ==================                           
+                                 // === Procedural ===
+                                 // ==================                                
+                                 const uint primID0 = leafGenData[globalID].primID;                                 
+                                 const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom = (const RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geometryDesc;                                 
                                  const uint mask32 = mask32_to_mask8(geom->geometryMask);
                                  ProceduralLeaf *dest = (ProceduralLeaf *)qleaf;
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE /*(GeometryFlags)geom->geometryFlags*/,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
@@ -2999,22 +2949,22 @@ namespace embree
                                }
                              }
 
-                             /* ================================== */                                                                      
-                             /* === write out to global memory === */
-                             /* ================================== */
+                           /* ================================== */                                                                      
+                           /* === write out to global memory === */
+                           /* ================================== */
                                                                       
-                             const uint subgroupLocalID = get_sub_group_local_id();
-                             uint mask = sub_group_ballot(valid);
-                             while(mask)
-                             {
-                               const uint index = sycl::ctz(mask);
-                               mask &= mask-1;
-                               uint ID = sub_group_broadcast(localID,index);
-                               uint* dest = sub_group_broadcast((uint*)qleaf,index);
-                               uint* source = (uint*)&localLeaf[ID];
-                               const uint v = source[subgroupLocalID];                                                                        
-                               sub_group_store(dest,v);
-                             }                                                                                                            
+                           const uint subgroupLocalID = get_sub_group_local_id();
+                           uint mask = sub_group_ballot(valid);
+                           while(mask)
+                           {
+                             const uint index = sycl::ctz(mask);
+                             mask &= mask-1;
+                             uint ID = sub_group_broadcast(localID,index);
+                             uint* dest = sub_group_broadcast((uint*)qleaf,index);
+                             uint* source = (uint*)&localLeaf[ID];
+                             const uint v = source[subgroupLocalID];                                                                        
+                             sub_group_store(dest,v);
+                           }                                                                                                            
                            });
 		  
         });
