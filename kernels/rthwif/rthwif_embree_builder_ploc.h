@@ -18,7 +18,9 @@
 
 #define FATLEAF_THRESHOLD         6
 #define USE_NEW_OPENING           0
-#define PAIR_OFFSET_SHIFT        24
+#define PAIR_OFFSET_SHIFT         28
+#define LARGE_WG_SIZE             1024
+#define MAX_WGS                   128
 
 namespace embree
 {  
@@ -277,9 +279,11 @@ namespace embree
   {
   public:
     
-    static const uint FATLEAF_SHIFT      =  29;    
-    static const uint FATLEAF_BITS       =  (uint)7<<FATLEAF_SHIFT;
-    static const uint BIT_MASK           = ~(FATLEAF_BITS);
+    static const uint FATLEAF_SHIFT0     =  31;
+    static const uint FATLEAF_SHIFT1     =  30;    
+    static const uint FATLEAF_BIT0       =  (uint)1<<FATLEAF_SHIFT0;
+    static const uint FATLEAF_BIT1       =  (uint)1<<FATLEAF_SHIFT1;    
+    static const uint FATLEAF_MASK       = ~(FATLEAF_BIT0|FATLEAF_BIT1);
     
     
     uint left;   // 4 bytes
@@ -289,22 +293,20 @@ namespace embree
     
     __forceinline BVH2Ploc() {}
 
-    __forceinline uint leftIndex()  const { return left & BIT_MASK;  }
-    __forceinline uint getLeafIndex()  const { return left & BIT_MASK;  }
-    __forceinline uint rightIndex() const { return right & BIT_MASK; }
-
-    __forceinline uint geomID() const { return left & BIT_MASK & 0x00ffffff; }    
-    __forceinline uint primID() const { return right & BIT_MASK; }
-    __forceinline uint primID1() const { return ((left & BIT_MASK) >> PAIR_OFFSET_SHIFT) + primID(); }
-    __forceinline uint primID1_offset() const { return ((left & BIT_MASK) >> PAIR_OFFSET_SHIFT); }
+    __forceinline uint leftIndex()      const { return left & FATLEAF_MASK;  }
+    __forceinline uint getLeafIndex()   const { return left & FATLEAF_MASK;  }
+    __forceinline uint rightIndex()     const { return right & FATLEAF_MASK; }
+    __forceinline uint geomID()         const { return left & FATLEAF_MASK & 0x00ffffff; }    
+    __forceinline uint primID()         const { return right & FATLEAF_MASK; }
+    __forceinline uint primID1()        const { return ((left & FATLEAF_MASK) >> PAIR_OFFSET_SHIFT) + primID(); }
+    __forceinline uint primID1_offset() const { return ((left & FATLEAF_MASK) >> PAIR_OFFSET_SHIFT); }
     
     __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
     {
-      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD) ? subtree_size_left  : 0)<<FATLEAF_SHIFT;
-      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD) ? subtree_size_right : 0)<<FATLEAF_SHIFT ;
-
-      // better coalescing
+      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_left   <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);
+      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_right  <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);
 #if 1
+      // === better coalescing ===             
       bounds.lower_x = _bounds.lower_x;
       bounds.lower_y = _bounds.lower_y;
       bounds.lower_z = _bounds.lower_z;
@@ -320,9 +322,8 @@ namespace embree
     {
       left    = _geomID;      
       right   = _primID;
-
-      // better coalescing      
 #if 1
+      // === better coalescing ===       
       bounds.lower_x = _bounds.lower_x;
       bounds.lower_y = _bounds.lower_y;
       bounds.lower_z = _bounds.lower_z;
@@ -335,11 +336,8 @@ namespace embree
       
     }
 
-
     __forceinline void store(BVH2Ploc *dest)
     {
-      //dest = (BVH2Ploc *)__builtin_assume_aligned(dest,32);
-      //uint *dest2 = (uint *)__builtin_assume_aligned((uint*)dest,32);
       dest->left  = left;
       dest->right = right;
       dest->bounds.lower_x = bounds.lower_x;
@@ -350,13 +348,11 @@ namespace embree
       dest->bounds.upper_z = bounds.upper_z;            
     }
 
-    static  __forceinline bool isFatLeaf(const uint index) { return index & FATLEAF_BITS;  }
-    static  __forceinline uint numFatChildren(const uint index) { return index >> FATLEAF_SHIFT;  }
-    
-    static  __forceinline uint getIndex(const uint index)  { return index & BIT_MASK;  }
-    static  __forceinline bool isLeaf(const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
-
-    static  __forceinline uint makeFatLeaf(const uint index, const uint numChildren) { return index | (numChildren<<FATLEAF_SHIFT);  }
+    static  __forceinline bool isFatLeaf      (const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT0) || (index & FATLEAF_MASK) < numPrimitives;  }
+    static  __forceinline bool isBinaryFatLeaf(const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT1) || (index & FATLEAF_MASK) < numPrimitives;  }        
+    static  __forceinline uint getIndex       (const uint index)                           { return index & FATLEAF_MASK;  }
+    static  __forceinline bool isLeaf         (const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
+    static  __forceinline uint makeFatLeaf    (const uint index, const uint numChildren)   { return index | (1<<FATLEAF_SHIFT0) | ((numChildren <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);  }
 
     __forceinline operator const gpu::AABB3f &() const { return bounds; }
 
@@ -739,7 +735,7 @@ namespace embree
   __forceinline PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeometries, PLOCGlobals *const globals, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     PrimitiveCounts count;
-    const uint wgSize = 1024;
+    const uint wgSize = LARGE_WG_SIZE;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeometries,wgSize),sycl::range<1>(wgSize));          
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint, 0> _numTriangles(cgh);
@@ -812,7 +808,7 @@ namespace embree
   __forceinline void prefixSumOverGeometryCounts (sycl::queue &gpu_queue, const uint numGeoms, uint *const quads_per_geom_prefix_sum, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
-    static const uint GEOM_PREFIX_WG_SIZE  = 1024;
+    static const uint GEOM_PREFIX_WG_SIZE  = LARGE_WG_SIZE;
 
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint       , 1> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
@@ -878,7 +874,7 @@ namespace embree
  
   __forceinline void countQuadsPerGeometry (sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, uint *quads_per_geom_prefix_sum, double &iteration_time, const bool verbose)    
   {
-    static const uint COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE  = 1024;
+    static const uint COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE  = LARGE_WG_SIZE;
     
     const sycl::nd_range<1> nd_range1(numGeoms*COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE,sycl::range<1>(COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -997,7 +993,7 @@ namespace embree
   
    __forceinline void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint *const quads_per_geom_prefix_sum, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
   {
-    static const uint MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE  = 1024;
+    static const uint MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE  = LARGE_WG_SIZE;
     static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
     const sycl::nd_range<1> nd_range1(numGeoms*MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE,sycl::range<1>(MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -1184,14 +1180,13 @@ namespace embree
     if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads", (float)dt);
   }
     
-  __forceinline uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGs, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  __forceinline uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
-#if 1
-    const uint numWGs = min((numGeoms+1024-1)/1024,(uint)MAX_WGs);
+    const uint numWGs = min((numGeoms+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
     clearFirstScratchMemEntries(gpu_queue,scratch_mem,0,numWGs);
    
     static const uint CREATE_INSTANCES_SUB_GROUP_WIDTH = 16;
-    static const uint CREATE_INSTANCES_WG_SIZE  = 1024;
+    static const uint CREATE_INSTANCES_WG_SIZE  = LARGE_WG_SIZE;
     const sycl::nd_range<1> nd_range1(numWGs*CREATE_INSTANCES_WG_SIZE,sycl::range<1>(CREATE_INSTANCES_WG_SIZE));
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint      , 1> counts(sycl::range<1>((CREATE_INSTANCES_WG_SIZE/CREATE_INSTANCES_SUB_GROUP_WIDTH)),cgh);
@@ -1332,34 +1327,6 @@ namespace embree
     if (unlikely(verbose)) PRINT2("write out instance bounds", (float)dt);
     const uint numInstances = *host_device_tasks;
     return numInstances;
-#else
-    uint ID = 0;
-    for (uint instID=0;instID<numGeoms;instID++)
-    {
-      if (geometry_desc[instID] == NULL) continue;
-      {
-        BVH2Ploc node;                                                          
-        if (geometry_desc[instID]->geometryType == RTHWIF_GEOMETRY_TYPE_INSTANCE)
-        {
-          RTHWIF_GEOMETRY_INSTANCE_DESC *geom = (RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[instID];
-          gpu::AABB3f bounds;
-          if (!isValidInstance(*geom, bounds)) continue;
-          
-          const AffineSpace3fa local2world = getTransform(geom);
-          const Vec3fa lower(geom->bounds->lower.x,geom->bounds->lower.y,geom->bounds->lower.z);
-          const Vec3fa upper(geom->bounds->upper.x,geom->bounds->upper.y,geom->bounds->upper.z);
-          const BBox3fa org_bounds(lower,upper);
-          const BBox3fa instance_bounds = xfmBounds(local2world,org_bounds);
-          bounds = gpu::AABB3f(instance_bounds.lower.x,instance_bounds.lower.y,instance_bounds.lower.z,
-                               instance_bounds.upper.x,instance_bounds.upper.y,instance_bounds.upper.z);
-          node.initLeaf(0,instID,bounds);                               
-          node.store(&bvh2[prim_type_offset + ID]);
-          ID++;                                        
-        }
-      }      
-    }
-    return ID;
-#endif    
   }
   
   __forceinline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
@@ -1377,7 +1344,7 @@ namespace embree
     return true;
   }
   
-  __forceinline uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGs, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  __forceinline uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     uint ID = 0;
     for (uint userGeomID=0;userGeomID<numGeoms;userGeomID++)
@@ -1465,7 +1432,7 @@ namespace embree
 
   __forceinline void computeCentroidGeometryBounds(sycl::queue &gpu_queue, gpu::AABB3f *geometryBounds, gpu::AABB3f *centroidBounds, const BVH2Ploc *const bvh2, const uint numPrimitives, double &iteration_time, const bool verbose)
   {
-    const uint wgSize = 1024;
+    const uint wgSize = LARGE_WG_SIZE;
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));          
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< gpu::AABB3f, 0> _local_geometry_aabb(cgh);
@@ -1670,7 +1637,7 @@ namespace embree
   __forceinline void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const int RADIUS, const uint NN_SEARCH_WG_NUM, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     static const uint NN_SEARCH_SUB_GROUP_WIDTH = 16;
-    static const uint NN_SEARCH_WG_SIZE         = 1024;
+    static const uint NN_SEARCH_WG_SIZE         = LARGE_WG_SIZE;
     uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
     
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -1690,7 +1657,7 @@ namespace embree
             const uint subgroupID      = get_sub_group_id();                                                                                                                          
             const uint subgroupLocalID = get_sub_group_local_id();
             const uint subgroupSize    = NN_SEARCH_SUB_GROUP_WIDTH;                                                                                                                       
-            const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*RADIUS; /* reducing working group set size to 1024 - 4 * radius to avoid loops */
+            const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*RADIUS; /* reducing working group set size to LARGE_WG_SIZE - 4 * radius to avoid loops */
             
 
             uint &wgID = *_wgID.get_pointer();
@@ -2044,7 +2011,7 @@ namespace embree
                              uint &active_counter,
                              const uint BOTTOM_UP_THRESHOLD,
                              const int LOCAL_SEARCH_RADIUS = SEARCH_RADIUS,
-                             const uint SINGLE_WG_SIZE = 1024)
+                             const uint SINGLE_WG_SIZE = LARGE_WG_SIZE)
   {
     const uint localID         = item.get_local_id(0);
     const uint localSize       = item.get_local_range().size();
@@ -2269,7 +2236,7 @@ namespace embree
   __forceinline void singleWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)
   {
     static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16;
-    static const uint SINGLE_WG_SIZE = 1024;
+    static const uint SINGLE_WG_SIZE = LARGE_WG_SIZE;
     uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
     
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -2302,7 +2269,7 @@ namespace embree
   __forceinline void parallelWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, gpu::Range *const global_ranges, const uint numRanges, uint BOTTOM_UP_THRESHOLD, double &iteration_time, const bool verbose)
   {
     static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16; 
-    static const uint SINGLE_WG_SIZE = 1024;
+    static const uint SINGLE_WG_SIZE = LARGE_WG_SIZE;
     uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
 
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -2463,8 +2430,8 @@ namespace embree
     areas[0]  = (_left_numChildren == 0  || _left_numChildren == 2 ) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
     areas[1]  = (_right_numChildren == 0 || _right_numChildren == 2 ) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
 #else    
-    areas[0]  = (!BVH2Ploc::isFatLeaf( _left)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;    
-    areas[1]  = (!BVH2Ploc::isFatLeaf(_right)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf; 
+    areas[0]  = (!BVH2Ploc::isFatLeaf( _left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;    
+    areas[1]  = (!BVH2Ploc::isFatLeaf(_right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf; 
 #endif
     
     uint numChildren = 2;
@@ -2508,8 +2475,8 @@ namespace embree
       areas[bestChild]     = (left_numChildren == 0  || left_numChildren == 2 ) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
       areas[numChildren]   = (right_numChildren == 0 || right_numChildren == 2) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;      
 #else      
-      areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left)) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf; 
-      areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf; 
+      areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf; 
+      areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf; 
 #endif      
       indices[bestChild]   = left;      
       indices[numChildren] = right;                                                                            
@@ -2569,7 +2536,7 @@ namespace embree
 
     /* ---- Phase I: single WG generates enough work for the breadth-first phase --- */
     {
-      const uint wgSize = 1024;
+      const uint wgSize = LARGE_WG_SIZE;
       const sycl::nd_range<1> nd_range1(wgSize,sycl::range<1>(wgSize));                    
       sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
           sycl::local_accessor< uint      ,  0> _node_mem_allocator_cur(cgh);                                                   
@@ -2619,9 +2586,8 @@ namespace embree
                                  if (header == 0x7fffffff)
                                  {
                                    if (!BVH2Ploc::isLeaf(index,numPrimitives))
-                                   {
-                                                                              
-                                     if (!BVH2Ploc::isFatLeaf(index))
+                                   {                                                                              
+                                     if (!BVH2Ploc::isFatLeaf(index,numPrimitives))
                                      {
                                        uint indices[BVH_BRANCHING_FACTOR];                                                                                
                                        const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2,numPrimitives);
@@ -2716,7 +2682,7 @@ namespace embree
                                {
                                  if (!BVH2Ploc::isLeaf(index,numPrimitives))
                                  {                                                                            
-                                   if (!BVH2Ploc::isFatLeaf(index))
+                                   if (!BVH2Ploc::isFatLeaf(index,numPrimitives))
                                    {                                                                              
                                      uint indices[BVH_BRANCHING_FACTOR];
                                      const uint numChildren = openBVH2MaxAreaSortChildren(index,indices,bvh2,numPrimitives);
@@ -2968,7 +2934,7 @@ namespace embree
                                {
                                  const uint geomID = leafGenData[globalID].geomID & 0x00ffffff;
                                  const uint primID0 = leafGenData[globalID].primID & LEAF_TYPE_MASK_LOW;
-                                 const uint primID1 = primID0 + ((leafGenData[globalID].geomID & 0x7fffffff) >> PAIR_OFFSET_SHIFT);
+                                 const uint primID1 = primID0 + ((leafGenData[globalID].geomID /*& 0x7fffffff*/) >> PAIR_OFFSET_SHIFT);
                                  
                                  const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
                                  valid = true;

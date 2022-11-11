@@ -6,9 +6,6 @@
 #include "../common/algorithms/parallel_reduce.h"
 
 // FIXME: leaf data generation without flags
-// FIXME: add prefetch timings
-
-#define MAX_WGS                    64
 
 #define SINGLE_WG_SWITCH_THRESHOLD 8*1024
 #define FAST_MC_THRESHOLD          1024*1024
@@ -496,6 +493,7 @@ namespace embree
 
     const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
     const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
+    const uint NUM_ACTIVE_LARGE_WGS = min((numPrimitives+1024-1)/1024,(uint)MAX_WGS);
 
     // ===========================
     // === set up all pointers ===
@@ -553,14 +551,14 @@ namespace embree
     // ====================================
 
     if (numProcedurals)
-      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,MAX_WGS,bvh2,numQuads,host_device_tasks,create_primref_time,verbose2);
+      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,bvh2,numQuads,host_device_tasks,create_primref_time,verbose2);
 
     // ==================================          
     // ==== create instance primrefs ====
     // ==================================
     
     if (numInstances)
-      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,MAX_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
+      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
 
     // === recompute actual number of primitives ===
     numPrimitives = numQuads + numInstances + numProcedurals;
@@ -627,9 +625,7 @@ namespace embree
     {
       const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);
       const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);
-      const uint sortWGs = min(max(min((int)nextPowerOf2/8192,(int)gpu_maxComputeUnits/4 /*RADIX_SORT_MAX_NUM_DSS*/ ),1),(int)scratchMemWGs);
-      if (unlikely(verbose2))      
-        PRINT2(scratchMemWGs,sortWGs);
+      const uint sortWGs = min(max(min((int)nextPowerOf2/8192,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
      
       for (uint i=4;i<8;i++) 
         gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs, sync_sort);
@@ -649,8 +645,6 @@ namespace embree
         const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);        
         const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);          
         const uint sortWGs = min(max(min((int)nextPowerOf2/1024,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
-        if (unlikely(verbose2))        
-          PRINT3(conv_mem_size,scratchMemWGs,sortWGs);
         for (uint i=3;i<8;i++) 
           gpu::sort_iteration_type<gpu::MortonCodePrimitive40x24Bits3D>(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[i%2], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs, sync_sort);        
       }      
@@ -699,7 +693,7 @@ namespace embree
     // ==== clear sync mem ====
     // ========================      
 
-    clearFirstScratchMemEntries(gpu_queue,sync_mem,0,MAX_WGS);
+    clearFirstScratchMemEntries(gpu_queue,sync_mem,0,NUM_ACTIVE_LARGE_WGS);
   
     for (;numPrims>1;iteration++)
     {          
@@ -720,12 +714,11 @@ namespace embree
         // ==== nearest neighbor search, merge clusters and create bvh2 nodes (fast path) ====
         // ===================================================================================
 
-        const uint MERGED_KERNEL_WG_NUM = min((numPrims+1024-1)/1024,(uint)MAX_WGS);
         const uint radius = SEARCH_RADIUS;          
 
       
         device_ploc_iteration_time = 0.0f;
-        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,device_ploc_iteration_time, false);
+        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,radius,NUM_ACTIVE_LARGE_WGS,host_device_tasks,device_ploc_iteration_time, false);
         timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
       
         const uint new_numPrims = *host_device_tasks;
