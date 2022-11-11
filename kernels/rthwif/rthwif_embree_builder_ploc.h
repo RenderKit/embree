@@ -809,7 +809,7 @@ namespace embree
     return count;
   }  
 
-  __forceinline void prefixsumOverGeometryCounts (sycl::queue &gpu_queue, const uint numGeoms, uint *const quads_per_geom_prefix_sum, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  __forceinline void prefixSumOverGeometryCounts (sycl::queue &gpu_queue, const uint numGeoms, uint *const quads_per_geom_prefix_sum, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
     static const uint GEOM_PREFIX_WG_SIZE  = 1024;
@@ -1377,7 +1377,7 @@ namespace embree
     return true;
   }
   
-  __forceinline uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  __forceinline uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGs, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     uint ID = 0;
     for (uint userGeomID=0;userGeomID<numGeoms;userGeomID++)

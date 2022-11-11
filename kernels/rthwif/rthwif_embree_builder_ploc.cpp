@@ -44,6 +44,11 @@ namespace embree
     const uint totalSize           = header + node_size + leaf_size;
     return totalSize;
   }
+
+  __forceinline uint estimateScratchBufferSize(const uint numPrimitives)
+  {
+    return sizeof(PLOCGlobals) + sizeof(uint)*MAX_WGS + numPrimitives * sizeof(LeafGenerationData);
+  }
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
   {
@@ -230,29 +235,30 @@ namespace embree
   
     const uint numPrimitives = numQuads + numTriangles + numProcedurals + numInstances;
 
-    if (args_i.verbose == 2)
-      PRINT4(numTriangles,numQuads,numProcedurals,numInstances);
     // ============================================================================================================================================================================
-    // ============================================================================================================================================================================
-    // ============================================================================================================================================================================
-        
-    size_t expectedBytes = 3*64; // empty scene is default
-    size_t worstCaseBytes = 2*expectedBytes;
+
+    // =============================================    
+    // === allocation for empty scene is default ===
+    // =============================================
+    
+    size_t expectedBytes = 3*64; 
+    size_t worstCaseBytes = 4*64;
 
     if (numPrimitives)
     {    
-      if (args_i.verbose == 2)
-        PRINT2(numTriangles,ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR));    
       expectedBytes  = estimateAccelBufferSize(numQuads + ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR), numInstances, numProcedurals);
       worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals);    
     }
-    size_t scratchBytes = std::max(numPrimitives * sizeof(LeafGenerationData) + sizeof(PLOCGlobals),sizeof(uint)*MAX_WGS);
-
-    if (args_i.verbose == 2)  
-      PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     
-    // ============================================================================================================================================================================
-    // ============================================================================================================================================================================
+    const size_t scratchBytes = estimateScratchBufferSize(std::max(numPrimitives,numGeometries));
+
+    if (args_i.verbose == 2)
+    {
+      PRINT4(numTriangles,numQuads,numProcedurals,numInstances);      
+      PRINT2(numTriangles,ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR));          
+      PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
+    }
+    
     // ============================================================================================================================================================================
     
     /* return size to user */
@@ -365,9 +371,9 @@ namespace embree
     // =============================
     
     PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
-    uint *const scratch = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
-    uint *prims_per_geom_prefix_sum = (uint*)scratch;    
-
+    uint *const sync_mem = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
+    uint *const scratch  = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals) + sizeof(uint)*MAX_WGS);    
+    uint *const prims_per_geom_prefix_sum = (uint*)scratch;    
   
     // ======================          
     // ==== init globals ====
@@ -403,7 +409,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_prim_counts_time);                              
     if (unlikely(verbose2)) std::cout << "Count primitives from geometries: " << timer.get_host_timer() << " ms (host) " << device_prim_counts_time << " ms (device) " << std::endl;      
   
-    uint numQuads       = primCounts.numQuads + primCounts.numTriangles;
+    uint numQuads       = primCounts.numQuads + primCounts.numTriangles; // no quadification taken into account at this point
     uint numProcedurals = primCounts.numProcedurals;
     uint numInstances   = primCounts.numInstances;
 
@@ -443,47 +449,48 @@ namespace embree
       timer.start(BuildTimer::PRE_PROCESS);
       double geom_prefix_sum_time = 0.0f;
      
-      prefixsumOverGeometryCounts(gpu_queue,numGeometries,prims_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
+      prefixSumOverGeometryCounts(gpu_queue,numGeometries,prims_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
     
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
-      numQuads = *host_device_tasks; // update with actual quads count
+      // numQuads contains now the actual number of quads after quadification
+      numQuads = *host_device_tasks; 
     }
 
 
     // ================================
     // === estimate size of the BVH ===
     // ================================
-  
+
     uint numPrimitives             = numQuads + numInstances + numProcedurals;  // #prims used can be lower due to invalid instances or procedurals but quads count is accurate at this point
+    const uint allocated_size      = args.accelBufferBytes;
     const uint header              = 128;
     const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
-    const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals);
-    const uint totalSize           = header + node_size + leaf_size; 
+    const uint node_size           = (header + leaf_size) <= allocated_size ? allocated_size - leaf_size - header : 0; 
     const uint node_data_start     = header;
     const uint leaf_data_start     = header + node_size;
     
     if (unlikely(verbose2))
     {
       PRINT4(numQuads,numProcedurals,numInstances,expected_numPrimitives);
-      PRINT4(node_size,leaf_size,totalSize,args.accelBufferBytes);
+      PRINT3(node_size,leaf_size,args.accelBufferBytes);
       PRINT2(node_size/64,leaf_size/64);      
     }
   
     // =================================================================
     // === if allocated accel buffer is too small, return with error ===
     // =================================================================
-    
-    if (totalSize > args.accelBufferBytes || node_size < numPrimitives*16)
+
+    const uint required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals) + leaf_size;
+    if (allocated_size < required_size)
     {
-      const uint estimate = totalSize;
       if (unlikely(args.verbose))
       {
-        PRINT2(totalSize,args.accelBufferBytes);
-        PRINT2(node_size,numPrimitives*16);        
-        PRINT3("RETRY BVH BUILD DUE TO UNSUFFICIENT MEMORY !!!", args.accelBufferBytes,estimate);
+        PRINT2(required_size,allocated_size);
+        PRINT2(node_size,estimateSizeInternalNodes(numQuads,numInstances,numProcedurals));        
+        PRINT3("RETRY BVH BUILD DUE TO UNSUFFICIENT MEMORY !!!", args.accelBufferBytes,required_size );
       }
-      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimate;
+      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size;
       return RTHWIF_ERROR_RETRY;
     }
 
@@ -546,14 +553,14 @@ namespace embree
     // ====================================
 
     if (numProcedurals)
-      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,bvh2,numQuads,host_device_tasks,create_primref_time,verbose2);
+      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,MAX_WGS,bvh2,numQuads,host_device_tasks,create_primref_time,verbose2);
 
     // ==================================          
     // ==== create instance primrefs ====
     // ==================================
     
     if (numInstances)
-      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,MAX_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
+      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,MAX_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
 
     // === recompute actual number of primitives ===
     numPrimitives = numQuads + numInstances + numProcedurals;
@@ -688,11 +695,11 @@ namespace embree
   
     timer.start(BuildTimer::BUILD);        
 
-    // ===========================            
-    // ==== clear scratch mem ====
-    // ===========================      
+    // ========================            
+    // ==== clear sync mem ====
+    // ========================      
 
-    clearFirstScratchMemEntries(gpu_queue,scratch,0,MAX_WGS);
+    clearFirstScratchMemEntries(gpu_queue,sync_mem,0,MAX_WGS);
   
     for (;numPrims>1;iteration++)
     {          
@@ -718,7 +725,7 @@ namespace embree
 
       
         device_ploc_iteration_time = 0.0f;
-        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,scratch,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,device_ploc_iteration_time, false);
+        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,radius,MERGED_KERNEL_WG_NUM,host_device_tasks,device_ploc_iteration_time, false);
         timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
       
         const uint new_numPrims = *host_device_tasks;
@@ -812,7 +819,7 @@ namespace embree
 
     if (unlikely(convert_success == false))
     {
-      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals); // re-compute with INTERNAL_NODE_FACTOR = 1.0f;
+      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size*2; // should never happen
       return RTHWIF_ERROR_RETRY;
     }
     
@@ -822,7 +829,7 @@ namespace embree
 #endif      
 
     if (args.accelBufferBytesOut)
-      *args.accelBufferBytesOut = totalSize;
+      *args.accelBufferBytesOut = args.accelBufferBytes;
 
 #if 0
     if (verbose2)

@@ -88,7 +88,6 @@ namespace embree
     }    
 
 
-#if 1
     template<typename T>
       static __forceinline uint atomic_add_global(T *dest, const T count=1)
       {
@@ -137,36 +136,7 @@ namespace embree
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
         return counter.fetch_or(count);      
       }
-    
-
-
-#else    
-    template<typename T, sycl::access::address_space space>
-      static __forceinline uint atomic_add(T *dest, const T count=1)
-      {
-        sycl::multi_ptr<T,space> ptr(dest);
-        sycl::atomic<T,space> counter(ptr);
-        return atomic_fetch_add(counter,count);      
-      }
-
-
-    template<typename T, sycl::access::address_space space>
-      static __forceinline uint atomic_maximum(T *dest, const T count)
-      {
-        sycl::multi_ptr<T,space> ptr(dest);
-        sycl::atomic<T,space> counter(ptr);
-        return atomic_fetch_max(counter,count);      
-      }
-
-    template<typename T, sycl::access::address_space space>
-      static __forceinline uint atomic_minimum(T *dest, const T count)
-      {
-        sycl::multi_ptr<T,space> ptr(dest);
-        sycl::atomic<T,space> counter(ptr);
-        return atomic_fetch_min(counter,count);      
-      }
-#endif    
-    
+        
     template<typename T>
       static __forceinline uint as_uint(T t)
       {
@@ -340,9 +310,7 @@ namespace embree
       sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::local_space> counter(*dest);
       return sub_group_shared_varying_local_atomic(counter,count);
     }
-
     
-
     __forceinline void waitOnQueueAndCatchException(sycl::queue &gpu_queue)
     {
       try {
