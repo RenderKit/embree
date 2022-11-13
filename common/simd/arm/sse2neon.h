@@ -1729,12 +1729,14 @@ FORCE_INLINE __m128 _mm_div_ss(__m128 a, __m128 b)
 #define _mm_extract_pi16(a, imm) \
     (int32_t) vget_lane_u16(vreinterpret_u16_m64(a), (imm))
 
+#if !defined(_WIN32)
 // Free aligned memory that was allocated with _mm_malloc.
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_free
 FORCE_INLINE void _mm_free(void *addr)
 {
     free(addr);
 }
+#endif
 
 // Macro: Get the flush zero bits from the MXCSR control and status register.
 // The flush zero may contain any of the following flags: _MM_FLUSH_ZERO_ON or
@@ -1913,6 +1915,7 @@ FORCE_INLINE __m128i _mm_loadu_si64(const void *p)
         vcombine_s64(vld1_s64((const int64_t *) p), vdup_n_s64(0)));
 }
 
+#if !defined(_WIN32)
 // Allocate aligned blocks of memory.
 // https://software.intel.com/en-us/
 //         cpp-compiler-developer-guide-and-reference-allocating-and-freeing-aligned-memory-blocks
@@ -1927,6 +1930,7 @@ FORCE_INLINE void *_mm_malloc(size_t size, size_t align)
         return ptr;
     return NULL;
 }
+#endif
 
 // Conditionally store 8-bit integer elements from a into memory using mask
 // (elements are not stored when the highest bit is not set in the corresponding
