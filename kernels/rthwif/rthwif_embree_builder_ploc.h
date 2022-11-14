@@ -119,19 +119,6 @@ namespace embree
     {
       return gpu::atomic_add_global_sub_group_varying(&node_mem_allocator_cur,blocks);      
     }    
-
-    __forceinline uint atomic_add_sub_group_varying_allocNodeID(const uint bytes)
-    {
-      uint32_t blocks = (uint32_t)bytes / 64;
-      return atomic_add_sub_group_varying_allocNodeBlocks(blocks);      
-    }
-
-    __forceinline char* atomic_add_sub_group_varying_allocNode(const uint bytes)
-    {
-      const uint current = atomic_add_sub_group_varying_allocNodeID(bytes);
-      char* ptr = qbvh_base_pointer + 64 * (size_t)current;
-      return ptr;
-    }    
     
     __forceinline char* atomic_add_sub_group_varying_allocLeaf(const uint bytes)
     {
@@ -147,19 +134,7 @@ namespace embree
       leaf_mem_allocator_cur = leaf_mem_allocator_start;
       numBuildRecords = 0;	
     }
-      
-    __forceinline ulong alloc_node_mem(const uint size)
-    {
-      const uint aligned_size = ((size+63)/64)*64; /* allocate in 64 bytes blocks */
-      return gpu::atomic_add_global(&node_mem_allocator_cur,aligned_size);
-    }
-
-    __forceinline ulong alloc_leaf_mem(const uint size)
-    {
-      const uint aligned_size = ((size+15)/16)*16; /* allocate in 16 bytes blocks */
-      return gpu::atomic_add_global(&leaf_mem_allocator_cur,aligned_size);
-    }
-      
+            
   };
 
   static_assert(sizeof(PLOCGlobals) == 128, "PLOCGlobals must be 128 bytes large");
@@ -186,7 +161,6 @@ namespace embree
       uint8_t lower_z[BVH_BRANCHING_FACTOR];
       uint8_t upper_z[BVH_BRANCHING_FACTOR];
     };
-
 
     __forceinline float3 start() const { return float3(bounds_lower[0],bounds_lower[1],bounds_lower[2]); }
     
@@ -361,25 +335,25 @@ namespace embree
       
     uint32_t instanceContributionToHitGroupIndex; // : 24;
 
-    // uint32_t type : 1; // enables/disables opaque culling
-    // uint32_t geomFlags : 2; // unused for instances
+    // uint32_t type : 1;          // enables/disables opaque culling
+    // uint32_t geomFlags : 2;     // unused for instances
       
     uint64_t startNodePtr_instFlags; // : 48;  start node where to continue traversal of the instanced object
       
-    Vec3f world2obj_vx;   // 1st column of Worl2Obj transform
-    Vec3f world2obj_vy;   // 2nd column of Worl2Obj transform
-    Vec3f world2obj_vz;   // 3rd column of Worl2Obj transform
-    Vec3f obj2world_p;    // translation of Obj2World transform (on purpose in first 64 bytes)
+    Vec3f world2obj_vx;              // 1st column of Worl2Obj transform
+    Vec3f world2obj_vy;              // 2nd column of Worl2Obj transform
+    Vec3f world2obj_vz;              // 3rd column of Worl2Obj transform
+    Vec3f obj2world_p;               // translation of Obj2World transform (on purpose in first 64 bytes)
 
-    uint64_t bvhPtr;   // pointer to BVH where start node belongs too
+    uint64_t bvhPtr;                 // pointer to BVH where start node belongs too
       
-    uint32_t instanceID;    // user defined value per DXR spec
-    uint32_t instanceIndex; // geometry index of the instance (n'th geometry in scene)
+    uint32_t instanceID;             // user defined value per DXR spec
+    uint32_t instanceIndex;          // geometry index of the instance (n'th geometry in scene)
       
-    Vec3f obj2world_vx;   // 1st column of Obj2World transform
-    Vec3f obj2world_vy;   // 2nd column of Obj2World transform
-    Vec3f obj2world_vz;   // 3rd column of Obj2World transform
-    Vec3f world2obj_p;    // translation of World2Obj transform
+    Vec3f obj2world_vx;              // 1st column of Obj2World transform
+    Vec3f obj2world_vy;              // 2nd column of Obj2World transform
+    Vec3f obj2world_vz;              // 3rd column of Obj2World transform
+    Vec3f world2obj_p;               // translation of World2Obj transform
 
     __forceinline InstancePrimitive() {}
     __forceinline InstancePrimitive(AffineSpace3f obj2world, uint64_t startNodePtr, uint32_t instID, uint32_t geometry_index, uint8_t instMask)
