@@ -115,28 +115,28 @@ namespace embree
       return (addr - qbvh_base_pointer)/64;
     }
     
-    __forceinline uint sub_group_shared_varying_atomic_allocNodeBlocks(const uint blocks)
+    __forceinline uint atomic_add_sub_group_varying_allocNodeBlocks(const uint blocks)
     {
-      return gpu::sub_group_shared_varying_atomic_add_global(&node_mem_allocator_cur,blocks);      
+      return gpu::atomic_add_global_sub_group_varying(&node_mem_allocator_cur,blocks);      
     }    
 
-    __forceinline uint sub_group_shared_varying_atomic_allocNodeID(const uint bytes)
+    __forceinline uint atomic_add_sub_group_varying_allocNodeID(const uint bytes)
     {
       uint32_t blocks = (uint32_t)bytes / 64;
-      return sub_group_shared_varying_atomic_allocNodeBlocks(blocks);      
+      return atomic_add_sub_group_varying_allocNodeBlocks(blocks);      
     }
 
-    __forceinline char* sub_group_shared_varying_atomic_allocNode(const uint bytes)
+    __forceinline char* atomic_add_sub_group_varying_allocNode(const uint bytes)
     {
-      const uint current = sub_group_shared_varying_atomic_allocNodeID(bytes);
+      const uint current = atomic_add_sub_group_varying_allocNodeID(bytes);
       char* ptr = qbvh_base_pointer + 64 * (size_t)current;
       return ptr;
     }    
     
-    __forceinline char* sub_group_shared_varying_atomic_allocLeaf(const uint bytes)
+    __forceinline char* atomic_add_sub_group_varying_allocLeaf(const uint bytes)
     {
       uint32_t blocks = (uint32_t)bytes / 64;      
-      const uint current = gpu::sub_group_shared_varying_atomic_add_global(&leaf_mem_allocator_cur,blocks);            
+      const uint current = gpu::atomic_add_global_sub_group_varying(&leaf_mem_allocator_cur,blocks);            
       char* ptr = qbvh_base_pointer + 64 * (size_t)current;
       return ptr;
     }      
@@ -1757,7 +1757,7 @@ namespace embree
 
                     /* --- reduce per subgroup to lower pressure on global atomic counter --- */                                                         
                     sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> bvh2_counter(*bvh2_index_allocator);
-                    const uint bvh2_index = gpu::sub_group_shared_global_atomic(bvh2_counter,1);
+                    const uint bvh2_index = gpu::atomic_add_global_sub_group_shared(bvh2_counter,1);
 
                     /* --- store new BVH2 node --- */
                     const uint new_size = bvh2_subtree_size[leftIndex] + bvh2_subtree_size[rightIndex];
@@ -2119,7 +2119,7 @@ namespace embree
               
               /* --- reduce per subgroup to lower pressure on global atomic counter --- */                                                         
               sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> bvh2_counter(*bvh2_index_allocator);
-              const uint bvh2_index = gpu::sub_group_shared_global_atomic(bvh2_counter,1);
+              const uint bvh2_index = gpu::atomic_add_global_sub_group_shared(bvh2_counter,1);
 
               /* --- store new BVH2 node --- */
               const uint new_size = bvh2_subtree_size[leftIndex] + bvh2_subtree_size[rightIndex];              
@@ -2641,7 +2641,7 @@ namespace embree
                                      for (uint i=0;i<numChildren;i++)
                                        numBlocks += geometryTypeRanges.isInstance(BVH2Ploc::getIndex(indices[i])) ? 2 : 1; 
                                                                               
-                                     const uint childBlockID = globals->sub_group_shared_varying_atomic_allocNodeBlocks(numBlocks);
+                                     const uint childBlockID = globals->atomic_add_sub_group_varying_allocNodeBlocks(numBlocks);
                                      char *const childAddr = globals->nodeBlockPtr(childBlockID);
                                                                               
                                      valid = true;

@@ -58,12 +58,7 @@ namespace embree
       
     __forceinline float halfarea(const sycl::float3 &d)
     {
-#if 1      
-      return sycl::fma((float)d.x(),((float)d.y()+(float)d.z()),(float)d.y()*(float)d.z());
-#else
       return sycl::fma(d.x(),d.y(),sycl::fma(d.x(),d.z(),d.y()*d.z()));
-      
-#endif      
     }
 
     __forceinline float halfarea(const sycl::float4 &d)
@@ -110,6 +105,13 @@ namespace embree
       }
 
     template<typename T>
+      static __forceinline uint atomic_or_global(T *dest, const T count=1)
+      {
+        sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
+        return counter.fetch_or(count);      
+      }
+    
+    template<typename T>
       static __forceinline uint atomic_add_local(T *dest, const T count=1)
       {
         sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(*dest);        
@@ -131,11 +133,12 @@ namespace embree
       }
 
     template<typename T>
-      static __forceinline uint atomic_or_global(T *dest, const T count=1)
+      static __forceinline uint atomic_or_local(T *dest, const T count=1)
       {
-        sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
+        sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(*dest);        
         return counter.fetch_or(count);      
       }
+    
         
     template<typename T>
       static __forceinline uint as_uint(T t)
@@ -239,7 +242,7 @@ namespace embree
     }
     
     
-    __forceinline uint sub_group_shared_global_atomic(sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> &counter, const uint add)
+    __forceinline uint atomic_add_global_sub_group_shared(sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> &counter, const uint add)
     {
       const uint subgroupLocalID = get_sub_group_local_id();    
       const uint ballot = sub_group_ballot(true);
@@ -253,7 +256,7 @@ namespace embree
       return index + prefix;
     }
 
-    __forceinline uint sub_group_shared_local_atomic(sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> &counter, const uint add)
+    __forceinline uint atomic_add_local_sub_group_shared(sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> &counter, const uint add)
     {
       const uint subgroupLocalID = get_sub_group_local_id();    
       const uint ballot = sub_group_ballot(true);
@@ -268,7 +271,7 @@ namespace embree
     }
 
     template<typename T>        
-    __forceinline uint sub_group_shared_varying_global_atomic(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> &counter, const T add)
+    __forceinline uint atomic_add_global_sub_group_varying(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> &counter, const T add)
     {
       const uint subgroupLocalID = get_sub_group_local_id();    
       const uint ballot = sub_group_ballot(true);
@@ -283,14 +286,14 @@ namespace embree
     }
 
     template<typename T>    
-    static __forceinline T sub_group_shared_varying_atomic_add_global(T *dest, const T count=1)
+    static __forceinline T atomic_add_global_sub_group_varying(T *dest, const T count=1)
     {
       sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);
-      return sub_group_shared_varying_global_atomic(counter,count);
+      return atomic_add_global_sub_group_varying(counter,count);
     }
 
     template<typename T>        
-    __forceinline uint sub_group_shared_varying_local_atomic(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::local_space> &counter, const T add)
+    __forceinline uint atomic_add_local_sub_group_varying(sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::local_space> &counter, const T add)
     {
       const uint subgroupLocalID = get_sub_group_local_id();    
       const uint ballot = sub_group_ballot(true);
@@ -305,7 +308,7 @@ namespace embree
     }
 
     template<typename T>    
-    static __forceinline T sub_group_shared_varying_atomic_add_local(T *dest, const T count=1)
+    static __forceinline T atomic_add_local_sub_group_varying(T *dest, const T count=1)
     {
       sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::local_space> counter(*dest);
       return sub_group_shared_varying_local_atomic(counter,count);
