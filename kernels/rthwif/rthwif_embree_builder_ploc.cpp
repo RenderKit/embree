@@ -614,34 +614,31 @@ namespace embree
     // ===========================
 
     timer.start(BuildTimer::PRE_PROCESS);        
-
-    double sort_time = 0.0;
     
     if (!fastMCMode) // fastMCMode == 32bit key + 32bit value pairs, !fastMode == 64bit key + 32bit value pairs
     {
       const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);
       const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);
       const uint sortWGs = min(max(min((int)nextPowerOf2/8192,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
-     
-      for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs);
+           
+      gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, sortWGs);
       
-      restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,sort_time,verbose2);      
+      restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,verbose2);      
 
-      for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs);
+      gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, sortWGs);
+      
     }
     else
     {
       if (numPrimitives < SMALL_SORT_THRESHOLD)
-        gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t *)mc0, (uint64_t *)mc1, numPrimitives, 3,8, sort_time);
+        gpu::radix_sort_single_workgroup(gpu_queue, (uint64_t *)mc0, (uint64_t *)mc1, numPrimitives, 3,8);
       else
       {
         const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);        
         const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);          
         const uint sortWGs = min(max(min((int)nextPowerOf2/1024,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
-        for (uint i=3;i<8;i++) 
-          gpu::sort_iteration_type<gpu::MortonCodePrimitive40x24Bits3D>(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[i%2], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs);        
+
+        gpu::radix_sort_Nx8Bit(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[1], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[0], numPrimitives, (uint*)scratch, 3, 8, sortWGs);
       }      
     }
     

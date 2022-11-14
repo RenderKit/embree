@@ -1489,7 +1489,7 @@ namespace embree
   }
   
   template<typename type>
-    __forceinline void restoreMSBBits(sycl::queue &gpu_queue, type *const mc0, uint *const high, const uint numPrimitives, double &iteration_time, const bool verbose)    
+    __forceinline void restoreMSBBits(sycl::queue &gpu_queue, type *const mc0, uint *const high, const uint numPrimitives, const bool verbose)    
   {
     const uint wgSize = 16; 
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));              
@@ -1509,7 +1509,6 @@ namespace embree
     gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     if (unlikely(verbose)) PRINT2("restore Morton Code MSB Bits ",(float)dt);
-    iteration_time += dt;
   }
   
 

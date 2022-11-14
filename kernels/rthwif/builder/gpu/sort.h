@@ -29,16 +29,10 @@ namespace embree
         const uint first = sycl::ctz(mask);
         const uint index = sub_group_broadcast(ID,first);
         const bool cmp = ID == index;
-#if 0     
-        const uint count = cmp ? add : 0;
-        const uint reduced_count = sub_group_reduce(count, SYCL_ONEAPI::plus<uint>());
-        mask &= ~sub_group_ballot(cmp);
-#else
         const uint cmp_mask = sub_group_ballot(cmp);
         const uint reduced_count = sycl::popcount(cmp_mask) * add;
-        mask &= ~cmp_mask;        
-#endif
-
+        mask &= ~cmp_mask;
+        
         sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> hist(histogram[ID]);                                                                                    
         if (get_sub_group_local_id() == first)
           hist += reduced_count;
@@ -46,7 +40,7 @@ namespace embree
     }
     
 
-    __forceinline void radix_sort_single_workgroup(sycl::queue &gpu_queue, uint64_t *_input, uint64_t *_output, const uint numPrimitives,  const uint start_iteration, const uint stop_iteration, double &time)
+    __forceinline void radix_sort_single_workgroup(sycl::queue &gpu_queue, uint64_t *_input, uint64_t *_output, const uint numPrimitives,  const uint start_iteration, const uint stop_iteration)
     {
       static const uint RADIX_SORT_SINGLE_WG_SIZE = 256; 
 
@@ -195,12 +189,11 @@ namespace embree
                   << e.what() << std::endl;
         FATAL("SYCL Exception");     		
       }
-      time += getDeviceExecutionTiming(event);
     }
 
     
     template<typename sort_type>
-    void sort_iteration_type(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint primitives,  uint *global_histogram, const uint iter, double &time, const uint RADIX_SORT_NUM_DSS=256)
+    sycl::event radix_sort_iteration_type(sycl::queue &gpu_queue, sycl::event &input_event, sort_type *input, sort_type *output, const uint primitives,  uint *global_histogram, const uint iter, const uint RADIX_SORT_NUM_DSS=256)
     {
       const uint shift = iter*8;
 
@@ -209,6 +202,7 @@ namespace embree
       
       const sycl::nd_range<1> nd_range_binning(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
       sycl::event bin_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                 cgh.depends_on(input_event);
                                                  sycl::local_accessor< uint, 1> histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                 
                                                  cgh.parallel_for(nd_range_binning,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                   {
@@ -241,14 +235,6 @@ namespace embree
                                                                   });
                                                  
                                                });
-      // try {
-      //   bin_event.wait_and_throw();
-      // } catch (sycl::exception const& e) {
-      //   std::cout << "Caught synchronous SYCL exception:\n"
-      //             << e.what() << std::endl;
-      //   FATAL("SYCL Exception");     		
-      // }        
-      // time += getDeviceExecutionTiming(bin_event);
             
       // ==== scatter key/value pairs according to global historgram =====
         
@@ -370,16 +356,30 @@ namespace embree
                                                                       });
                                                  
                                                    });
+      return scatter_event;
+    }
 
+
+    template<typename sort_type>
+    void radix_sort_Nx8Bit(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint items,  uint *global_histogram, const uint start_iteration, const uint end_iteration, const uint RADIX_SORT_NUM_DSS=256)
+    {
+      sycl::event initial = sycl::event();
+      sycl::event events[8]; // 8x8=64bit maximum
+      for (uint i=start_iteration;i<end_iteration;i++)
+      {
+        events[i] = radix_sort_iteration_type<sort_type>(gpu_queue,i == start_iteration ? initial : events[i-1],input,output,items,global_histogram,i,RADIX_SORT_NUM_DSS);
+        std::swap(input,output);
+      }
+      
       try {
-        scatter_event.wait_and_throw();
+        events[end_iteration-1].wait_and_throw();
       } catch (sycl::exception const& e) {
         std::cout << "Caught synchronous SYCL exception:\n"
                   << e.what() << std::endl;
         FATAL("SYCL Exception");     		
       }
-      time += getDeviceExecutionTiming(scatter_event);    
-    }
+    }    
+    
   };
 };
 
