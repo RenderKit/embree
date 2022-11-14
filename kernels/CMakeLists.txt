@@ -105,9 +105,7 @@ ENDIF()
 
 IF (EMBREE_RAY_PACKETS)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
-  bvh/bvh_intersector_hybrid4_bvh4.cpp
-  bvh/bvh_intersector_stream_bvh4.cpp
-  bvh/bvh_intersector_stream_filters.cpp)
+  bvh/bvh_intersector_hybrid4_bvh4.cpp)
 ENDIF()
 
 MACRO(embree_files TARGET ISA)
@@ -179,16 +177,13 @@ MACRO(embree_files TARGET ISA)
     
   IF (EMBREE_RAY_PACKETS)
     LIST(APPEND ${TARGET}
-      bvh/bvh_intersector_hybrid4_bvh4.cpp
-      bvh/bvh_intersector_stream_bvh4.cpp
-      bvh/bvh_intersector_stream_filters.cpp)
+      bvh/bvh_intersector_hybrid4_bvh4.cpp)
 
     IF (${ISA} GREATER ${SSE42})
       LIST(APPEND ${TARGET}
         bvh/bvh_intersector_hybrid8_bvh4.cpp
         bvh/bvh_intersector_hybrid4_bvh8.cpp
-        bvh/bvh_intersector_hybrid8_bvh8.cpp
-        bvh/bvh_intersector_stream_bvh8.cpp)
+        bvh/bvh_intersector_hybrid8_bvh8.cpp)
     ENDIF()
 
     IF (${ISA} GREATER ${AVX2})

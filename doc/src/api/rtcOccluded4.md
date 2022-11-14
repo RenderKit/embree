@@ -47,10 +47,6 @@ is not changed.
 ``` {include=src/api/inc/raypointer.md}
 ```
 
-The implementation of these functions is guaranteed to invoke callback
-functions always with the same ray packet size and ordering of rays as
-specified initially.
-
 For `rtcOccluded4` the ray packet must be aligned to 16 bytes, for
 `rtcOccluded8` the alignment must be 32 bytes, and for `rtcOccluded16`
 the alignment must be 64 bytes.

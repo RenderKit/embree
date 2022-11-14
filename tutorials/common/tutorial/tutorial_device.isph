@@ -27,11 +27,6 @@ struct Triangle { int v0, v1, v2; };
 #include "../../../common/algorithms/parallel_for.h"
 #endif
 
-enum Mode {
-  MODE_NORMAL = 0,
-  MODE_STREAM = 1
-};
-
 enum Shader { 
   SHADER_DEFAULT, 
   SHADER_EYELIGHT,
@@ -47,7 +42,6 @@ enum Shader {
 };
 
 extern RTCDevice g_device;
-extern uniform Mode g_mode;
 extern uniform RTCIntersectContextFlags g_iflags_coherent;
 extern uniform RTCIntersectContextFlags g_iflags_incoherent;
 extern uniform Shader shader;

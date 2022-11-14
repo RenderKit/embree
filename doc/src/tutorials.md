@@ -171,19 +171,6 @@ work:
 
 [Source Code](https://github.com/embree/embree/blob/master/tutorials/viewer/viewer_device.cpp)
 
-Stream Viewer
--------------
-
-[![][imgViewerStream]](https://github.com/embree/embree/blob/master/tutorials/viewer_stream/viewer_stream_device.cpp)
-
-This tutorial is a simple OBJ viewer that demonstrates the use of ray
-streams. You need to specify an OBJ file at the command line for this
-tutorial to work:
-
-    ./viewer_stream -i model.obj
-
-[Source Code](https://github.com/embree/embree/blob/master/tutorials/viewer_stream/viewer_stream_device.cpp)
-
 Intersection Filter
 -------------------
 

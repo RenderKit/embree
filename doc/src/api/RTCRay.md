@@ -37,16 +37,15 @@ is considered valid.
 
 The ray segment must be in the range $[0, \infty]$, thus ranges that
 start behind the ray origin are not allowed, but ranges can reach to
-infinity. For rays inside a ray stream, `tfar` < `tnear` identifies
-an inactive ray.
+infinity.
 
 The ray further contains a motion blur time in the range $[0, 1]$
 (`time` member), a ray mask (`mask` member), a ray ID (`id` member),
 and ray flags (`flags` member). The ray mask can be used to mask out
 some geometries for some rays (see `rtcSetGeometryMask` for more
 details). The ray ID can be used to identify a ray inside a callback
-function, even if the order of rays inside a ray packet or stream has
-changed. The ray flags are reserved.
+function, even if the order of rays inside a ray packet has
+changed.
 
 The `embree4/rtcore_ray.h` header additionally defines the same ray
 structure in structure of array (SOA) layout for API functions

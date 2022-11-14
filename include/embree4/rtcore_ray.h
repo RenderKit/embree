@@ -171,47 +171,6 @@ struct RTCRayHit16
   struct RTCHit16 hit;
 };
 
-/* Ray structure for a packet/stream of N rays in pointer SOA layout */
-struct RTCRayNp
-{
-  float* org_x;
-  float* org_y;
-  float* org_z;
-  float* tnear;
-
-  float* dir_x;
-  float* dir_y;
-  float* dir_z;
-  float* time;
-
-  float* tfar;
-  unsigned int* mask;
-  unsigned int* id;
-  unsigned int* flags;
-};
-
-/* Hit structure for a packet/stream of N rays in pointer SOA layout */
-struct RTCHitNp
-{
-  float* Ng_x;
-  float* Ng_y;
-  float* Ng_z;
-
-  float* u;
-  float* v;
-
-  unsigned int* primID;
-  unsigned int* geomID;
-  unsigned int* instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
-};
-
-/* Combined ray/hit structure for a packet/stream of N rays in pointer SOA layout */
-struct RTCRayHitNp
-{
-  struct RTCRayNp ray;
-  struct RTCHitNp hit;
-};
-
 struct RTCRayN;
 struct RTCHitN;
 struct RTCRayHitN;

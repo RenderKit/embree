@@ -46,7 +46,6 @@ namespace embree
     RTCDevice g_device = nullptr;
 
     float g_debug = 0.0f;
-    Mode g_mode = MODE_NORMAL;
     ISPCScene* g_ispc_scene = nullptr;
 
     /* intensity scaling for traversal cost visualization */
@@ -249,20 +248,6 @@ namespace embree
          animate = false;
          render_time = cin->getFloat();
        }, "--time: sets time for motion blur");
-
-    if (features & FEATURE_STREAM)
-    {
-      /* register parsing of stream mode */
-      registerOption("mode", [] (Ref<ParseStream> cin, const FileName& path) {
-          std::string mode = cin->getString();
-          if      (mode == "normal") g_mode = MODE_NORMAL;
-          else if (mode == "stream") g_mode = MODE_STREAM;
-          else throw std::runtime_error("invalid mode:" +mode);
-        },
-        "--mode: sets rendering mode\n"
-        "  normal  : normal mode\n"
-        "  stream  : stream mode\n");
-    }
 
     registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
         g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;

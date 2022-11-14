@@ -157,19 +157,11 @@ as well as ray packet queries for ray packets of size 4
 (`rtcIntersect8` and `rtcOccluded8`), and ray packets of size 16
 (`rtcIntersect16` and `rtcOccluded16`).
 
-Ray streams in a variety of layouts are supported as well, such as
-streams of single rays (`rtcIntersect1M` and `rtcOccluded1M`), streams
-of pointers to single rays (`rtcIntersect1p` and `rtcOccluded1p`),
-streams of ray packets (`rtcIntersectNM` and `rtcOccludedNM`), and
-large packet-like streams in structure of pointer layout
-(`rtcIntersectNp` and `rtcOccludedNp`).
-
 See Sections [rtcIntersect1] and [rtcOccluded1] for a detailed
 description of how to set up and trace a ray.
 
 See tutorial [Triangle Geometry] for a complete example of how to
-trace single rays and ray packets. Also have a look at the tutorial
-[Stream Viewer] for an example of how to trace ray streams.
+trace single rays and ray packets.
 
 Point Queries
 -------------

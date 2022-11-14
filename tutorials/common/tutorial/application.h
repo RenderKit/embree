@@ -72,7 +72,7 @@ namespace embree
   class Application
   {
   public:
-    enum Features { FEATURE_RTCORE = 1, FEATURE_STREAM = 2, FEATURE_SYCL = 4 };
+    enum Features { FEATURE_RTCORE = 1, FEATURE_SYCL = 4 };
 
     Application (int features);
     virtual ~Application();

@@ -12,8 +12,6 @@ RTCScene g_scene = NULL;
 uniform TutorialData g_data;
 extern uniform bool g_changed;
 
-#define STREAM_SIZE (TILE_SIZE_X * TILE_SIZE_Y)
-
 /*
  * There is an issue in ISPC where foreach_tiled can generate
  * empty gangs. This is problematic when scalar operations
@@ -76,22 +74,6 @@ void sampleLightDirection(const Vec3fa& xi,
   }
 
   emission = emission * rcp(pdf);
-}
-
-/*
- * Safely invalidate a packet of rays.
- */
-inline void invalidateRay(Ray& ray)
-{
-  // Initialize the whole ray so that it is invalid. This is important because
-  // in streamed mode, active state of lanes is forgotten between ray
-  // generation and traversal.
-  unmasked {
-    ray.org = make_Vec3f_(0.f);
-    ray.dir = make_Vec3f_(0.f);
-    ray.tnear = pos_inf;
-    ray.tfar = neg_inf;
-  }
 }
 
 /*
@@ -232,98 +214,6 @@ void splat(const uniform TutorialData& data,
   }
 }
 
-/* 
- * Renders a single screen tile.
- */
-void renderTileStream(uniform int* uniform pixels,
-                      const uniform unsigned int width,
-                      const uniform unsigned int height,
-                      const uniform float time,
-                      const uniform ISPCCamera& camera,
-                      const uniform unsigned int x0,
-                      const uniform unsigned int x1,
-                      const uniform unsigned int y0,
-                      const uniform unsigned int y1,
-                      uniform RayStats& stats)
-{
-  uniform IntersectContext primaryContext;
-  InitIntersectionContext(&primaryContext);
-  uniform IntersectContext shadowContext;
-  InitIntersectionContext(&shadowContext);
-
-  // Primary rays in this scene are coherent. This is not the case
-  // for shadow rays, since there is a spherical environment light.
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  args.flags = g_iflags_coherent;
-
-  RandomSampler sampler;
-  Ray primary[STREAM_SIZE];
-  Ray shadow[STREAM_SIZE];
-  Vec3f lightDir[STREAM_SIZE];
-  Vec3f emission[STREAM_SIZE];
-
-  uniform unsigned int numPackets = 0;
-  foreach_tiled(y = y0 ... y1, x = x0 ... x1)
-  {
-    FOREACH_TILED_MITIGATION
-
-    primary[numPackets] = samplePrimaryRay(g_data, x, x0, y, y0, camera, sampler, stats);
-
-    ++numPackets;
-  }
-
-  rtcIntersectVM(g_data.g_scene, 
-                 &primaryContext.context,
-                 (varying RTCRayHit* uniform)&primary,
-                 numPackets,
-                 sizeof(Ray),
-                 &args);
-
-  numPackets = 0;
-  foreach_tiled(y = y0 ... y1, x = x0 ... x1)
-  {
-    FOREACH_TILED_MITIGATION
-
-    // This is only needed for streaming mode, as we keep invalid
-    // rays in flight. This call will invalidate instances that 
-    // are not currently active.
-    invalidateRay(shadow[numPackets]);
-
-    if (primary[numPackets].geomID != RTC_INVALID_GEOMETRY_ID)
-    {
-      sampleLightDirection(RandomSampler_get3D(sampler),
-                           lightDir[numPackets],
-                           emission[numPackets]);
-      shadow[numPackets] = makeShadowRay(primary[numPackets], lightDir[numPackets], stats);
-    }
-
-    ++numPackets;
-  }
-
-  rtcOccludedVM(g_data.g_scene, 
-                &shadowContext.context, 
-                (varying RTCRay* uniform)&shadow,
-                numPackets, 
-                sizeof(Ray));
-
-  numPackets = 0;
-  foreach_tiled(y = y0 ... y1, x = x0 ... x1)
-  {
-    FOREACH_TILED_MITIGATION
-
-    const Vec3f color = shade(g_data,
-                               primary[numPackets],
-                               shadow[numPackets],
-                               lightDir[numPackets],
-                               emission[numPackets]);
-
-    splat(g_data, pixels, width, x, y, color);
-
-    ++numPackets;
-  }
-}
-
 void renderPixelStandard(const uniform TutorialData& data, int x, int y,
                          uniform int* uniform pixels,
                          const uniform unsigned int width,
@@ -364,7 +254,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
 }
 
 /*
- * Render a single tile without streams.
+ * Render a single tile.
  */
 void renderTileNormal(uniform int* uniform pixels,
                       const uniform unsigned int width,
@@ -406,16 +296,10 @@ task void renderTileTask(uniform int* uniform pixels,
   const uniform unsigned int y0 = tileY * TILE_SIZE_Y;
   const uniform unsigned int y1 = min(y0 + TILE_SIZE_Y, height);
 
-  if (g_mode == MODE_NORMAL) 
-    renderTileNormal(pixels, width, height,
-                     time, camera,
-                     x0, x1, y0, y1,
-                     g_stats[threadIndex]);
-  else                       
-    renderTileStream(pixels, width, height,
-                     time, camera,
-                     x0, x1, y0, y1,
-                     g_stats[threadIndex]);
+  renderTileNormal(pixels, width, height,
+                   time, camera,
+                   x0, x1, y0, y1,
+                   g_stats[threadIndex]);
 }
 
 /* 

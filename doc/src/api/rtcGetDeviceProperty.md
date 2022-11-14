@@ -55,12 +55,6 @@ Possible properties to query are:
     `AVX512` enabled, and if the machine it is
     running on supports `AVX512`.
 
-+   `RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED`: Queries whether
-    `rtcIntersect1M`, `rtcIntersect1Mp`, `rtcIntersectNM`,
-    `rtcIntersectNp`, `rtcOccluded1M`, `rtcOccluded1Mp`,
-    `rtcOccludedNM`, and `rtcOccludedNp` are supported. This is only
-    the case if Embree is compiled with `EMBREE_RAY_PACKETS` enabled.
-
 +   `RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED`: Queries whether ray masks
     are supported. This is only the case if Embree is compiled with
     `EMBREE_RAY_MASK` enabled.

@@ -11,10 +11,6 @@ ADD_TUTORIAL_SYCL(instanced_geometry)
 IF (NOT EMBREE_SYCL_PVC) # fails on PVC
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
   ADD_EMBREE_TEST(instanced_geometry)
-#  IF(EMBREE_RAY_PACKETS)
-#    ADD_EMBREE_TEST2(instanced_geometry_stream_coherent   instanced_geometry "--mode stream --coherent")
-#    ADD_EMBREE_TEST2(instanced_geometry_stream_incoherent instanced_geometry "--mode stream --incoherent")
-#  ENDIF()
 ENDIF()
 ENDIF()
 

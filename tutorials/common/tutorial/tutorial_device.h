@@ -42,11 +42,6 @@ inline sycl::nd_range<2> make_nd_range(unsigned int size0, unsigned int size1)
 namespace embree {
 #endif
 
-enum Mode {
-  MODE_NORMAL = 0,
-  MODE_STREAM = 1
-};
-
 enum Shader { 
   SHADER_DEFAULT, 
   SHADER_EYELIGHT,
@@ -62,7 +57,6 @@ enum Shader {
 };
 
 extern "C" RTCDevice g_device;
-extern "C" Mode g_mode;
 extern "C" RTCIntersectContextFlags g_iflags_coherent;
 extern "C" RTCIntersectContextFlags g_iflags_incoherent;
 extern "C" Shader shader;

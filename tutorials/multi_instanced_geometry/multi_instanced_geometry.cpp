@@ -7,7 +7,7 @@
 #if defined(EMBREE_SYCL_TUTORIAL)
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
 #else
-#  define FEATURES FEATURE_RTCORE | FEATURE_STREAM
+#  define FEATURES FEATURE_RTCORE
 #endif
 
 namespace embree

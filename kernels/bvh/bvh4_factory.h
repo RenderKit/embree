@@ -245,26 +245,6 @@ namespace embree
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4GridMBIntersector16HybridMoeller);
     DEFINE_SYMBOL2(Accel::Intersector16,BVH4GridIntersector16HybridPluecker);
 
-    // ==============
-
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4IntersectorStreamPacketFallback);
-
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4IntersectorStreamMoeller);
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4IntersectorStreamMoellerNoFilter);
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4iIntersectorStreamMoeller);
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4vIntersectorStreamPluecker);
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Triangle4iIntersectorStreamPluecker);
-
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vIntersectorStreamMoeller);
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vIntersectorStreamMoellerNoFilter);
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4iIntersectorStreamMoeller);
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4vIntersectorStreamPluecker);
-    DEFINE_SYMBOL2(Accel::IntersectorN, BVH4Quad4iIntersectorStreamPluecker);
-
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4VirtualIntersectorStream);
-    
-    DEFINE_SYMBOL2(Accel::IntersectorN,BVH4InstanceIntersectorStream);
-       
     // SAH scene builders
   private:
     DEFINE_ISA_FUNCTION(Builder*,BVH4Curve4vBuilder_OBB_New,void* COMMA Scene* COMMA size_t);
