@@ -5,8 +5,6 @@
 #include "builder/qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
 
-// FIXME: leaf data generation without flags
-
 #define SINGLE_WG_SWITCH_THRESHOLD 8*1024
 #define FAST_MC_THRESHOLD          1024*1024
 #define SMALL_SORT_THRESHOLD       1024*4
@@ -232,8 +230,6 @@ namespace embree
   
     const uint numPrimitives = numQuads + numTriangles + numProcedurals + numInstances;
 
-    // ============================================================================================================================================================================
-
     // =============================================    
     // === allocation for empty scene is default ===
     // =============================================
@@ -246,6 +242,10 @@ namespace embree
       expectedBytes  = estimateAccelBufferSize(numQuads + ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR), numInstances, numProcedurals);
       worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals);    
     }
+
+    // ===============================================    
+    // === estimate accel and scratch buffer sizes ===
+    // ===============================================
     
     const size_t scratchBytes = estimateScratchBufferSize(std::max(numPrimitives,numGeometries));
 
@@ -255,9 +255,7 @@ namespace embree
       PRINT2(numTriangles,ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR));          
       PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     }
-    
-    // ============================================================================================================================================================================
-    
+        
     /* return size to user */
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
@@ -279,6 +277,10 @@ namespace embree
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries                = args.numGeometries;  
 
+    // ===================================    
+    // === prefetch builder scene data ===
+    // ===================================
+    
     for (size_t geomID = 0; geomID < numGeometries; geomID++)
     {
       const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
@@ -321,9 +323,10 @@ namespace embree
     if (args.accelBuffer)   gpu_queue.prefetch(args.accelBuffer  ,args.accelBufferBytes);
     if (args.scratchBuffer) gpu_queue.prefetch(args.scratchBuffer,args.scratchBufferBytes);  
   
-    // ============================================    
-    // === DUMMY KERNEL TO TRIGGER USM TRANSFER ===
-    // ============================================
+    // ======================================================    
+    // === DUMMY KERNEL TO TRIGGER REMAINING USM TRANSFER ===
+    // ======================================================
+    
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) { cgh.single_task([=]() {}); });
     gpu::waitOnQueueAndCatchException(gpu_queue);
 
@@ -417,16 +420,12 @@ namespace embree
     // =================================================
     
     if (unlikely(expected_numPrimitives == 0)) createEmptyBVH(args,gpu_queue);
-
-    // ===================    
-    // === empty scene ===
-    // ===================
         
     if (numQuads)
     {
-      // =============================
-      // === count quads per block === 
-      // =============================
+      // =====================================
+      // === compute correct quadification === 
+      // =====================================
 
       timer.start(BuildTimer::PRE_PROCESS);
 
@@ -439,9 +438,9 @@ namespace embree
                               
       if (unlikely(verbose2)) std::cout << "Count quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
 
-      // =============================      
-      // === prefix sum over quads ===
-      // =============================      
+      // ================================================      
+      // === prefix sum over quad counts per geometry ===
+      // ================================================      
     
       timer.start(BuildTimer::PRE_PROCESS);
       double geom_prefix_sum_time = 0.0f;
@@ -450,8 +449,8 @@ namespace embree
     
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
-      // numQuads contains now the actual number of quads after quadification
-      numQuads = *host_device_tasks; 
+      
+      numQuads = *host_device_tasks; // numQuads contains now the actual number of quads after quadification
     }
 
 
@@ -459,7 +458,7 @@ namespace embree
     // === estimate size of the BVH ===
     // ================================
 
-    uint numPrimitives             = numQuads + numInstances + numProcedurals;  // #prims used can be lower due to invalid instances or procedurals but quads count is accurate at this point
+    uint numPrimitives             = numQuads + numInstances + numProcedurals;  // actual #prims can be lower due to invalid instances or procedurals but quads count is accurate at this point
     const uint allocated_size      = args.accelBufferBytes;
     const uint header              = 128;
     const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
@@ -485,7 +484,7 @@ namespace embree
       {
         PRINT2(required_size,allocated_size);
         PRINT2(node_size,estimateSizeInternalNodes(numQuads,numInstances,numProcedurals));        
-        PRINT3("RETRY BVH BUILD DUE TO UNSUFFICIENT MEMORY !!!", args.accelBufferBytes,required_size );
+        PRINT3("RETRY BVH BUILD DUE BECAUSE OF SMALL ACCEL BUFFER ALLOCATION!!!", args.accelBufferBytes,required_size );
       }
       if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size;
       return RTHWIF_ERROR_RETRY;
@@ -568,9 +567,9 @@ namespace embree
     if (unlikely(verbose2))
       PRINT4(numPrimitives,numQuads,numInstances,numProcedurals);
   
-    // ========================================================================    
-    // === empty scene again after all final primitive counts are available ===
-    // ========================================================================
+    // =================================================================================    
+    // === test for empty scene again after all final primitive counts are available ===
+    // =================================================================================
 
     if (unlikely(numPrimitives == 0)) return createEmptyBVH(args,gpu_queue);
 
@@ -621,7 +620,7 @@ namespace embree
 
     const bool sync_sort = false;
     
-    if (!fastMCMode)
+    if (!fastMCMode) // fastMCMode == 32bit key + 32bit value pairs, !fastMode == 64bit key + 32bit value pairs
     {
       const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);
       const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);
@@ -715,7 +714,6 @@ namespace embree
         // ===================================================================================
 
         const uint radius = SEARCH_RADIUS;          
-
       
         device_ploc_iteration_time = 0.0f;
         iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,radius,NUM_ACTIVE_LARGE_WGS,host_device_tasks,device_ploc_iteration_time, false);
