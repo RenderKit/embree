@@ -1152,7 +1152,6 @@ struct Scene
 #endif
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    args.sycl_device = &device;
     args.sycl_queue  = &queue;
     args.verbose = VERBOSE;
 #endif

@@ -349,18 +349,17 @@ namespace embree
     // ================================
   
     sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
-    sycl::device &gpu_device = *(sycl::device*)args.sycl_device;
     const bool verbose1 = args.verbose >= 1;    
     const bool verbose2 = args.verbose >= 2;
-    const uint gpu_maxComputeUnits  = gpu_device.get_info<sycl::info::device::max_compute_units>();    
+    const uint gpu_maxComputeUnits  = gpu_queue.get_device().get_info<sycl::info::device::max_compute_units>();    
     uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
   
     if (unlikely(verbose2))
     {
-      const uint gpu_maxWorkGroupSize = gpu_device.get_info<sycl::info::device::max_work_group_size>();
-      const uint gpu_maxLocalMemory   = gpu_device.get_info<sycl::info::device::local_mem_size>();    
+      const uint gpu_maxWorkGroupSize = gpu_queue.get_device().get_info<sycl::info::device::max_work_group_size>();
+      const uint gpu_maxLocalMemory   = gpu_queue.get_device().get_info<sycl::info::device::local_mem_size>();    
       PRINT("PLOC++ GPU BVH BUILDER");            
-      PRINT( gpu_device.get_info<sycl::info::device::global_mem_size>() );
+      PRINT( gpu_queue.get_device().get_info<sycl::info::device::global_mem_size>() );
       PRINT(gpu_maxWorkGroupSize);
       PRINT(gpu_maxComputeUnits);
       PRINT(gpu_maxLocalMemory);

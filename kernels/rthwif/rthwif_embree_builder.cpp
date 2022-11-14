@@ -464,7 +464,6 @@ namespace embree
 #endif
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    args.sycl_device = &sycl_device;
     args.sycl_queue = &sycl_queue;
     args.verbose = gpu_device->verbose;
 #endif
@@ -491,7 +490,7 @@ namespace embree
     args.scratchBufferBytes = sizeTotal.scratchBufferBytes;
     
     // === host device communication buffer ===
-    char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,sizeof(uint)*4,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::host); // FIXME
+    char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,RTHWIF_GPU_BUILDER_HOST_DEVICE_COMMUNICATION_BUFFER_SIZE,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::host);
     assert(host_device_tasks);
     args.hostDeviceCommPtr = hostDeviceCommPtr;
     
