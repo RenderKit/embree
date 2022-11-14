@@ -321,7 +321,7 @@ namespace embree
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)        
     sycl::device &sycl_device = gpu_device->getGPUDevice();
-    sycl::queue sycl_queue(sycl_device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
+    sycl::queue sycl_queue(sycl_device, exception_handler, { /* sycl::property::queue::in_order(), */ sycl::property::queue::enable_profiling() });
 #endif
     
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
