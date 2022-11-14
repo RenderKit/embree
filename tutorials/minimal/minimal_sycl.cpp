@@ -100,7 +100,7 @@ void errorFunction(void* userPtr, enum RTCError error, const char* str)
  */
 RTCDevice initializeDevice(sycl::context& sycl_context, sycl::device& sycl_device)
 {
-  RTCDevice device = rtcNewSYCLDevice(&sycl_context, &sycl_device, "");
+  RTCDevice device = rtcNewSYCLDevice(sycl_context, sycl_device, "");
 
   if (!device)
     printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));

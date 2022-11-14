@@ -33,8 +33,8 @@ is supported by Embree, e.g.:
 
     sycl::device device(rtcSYCLDeviceSelector);
     sycl::queue queue(device, exception_handler);
-    sycl::context context(queue.get_context());
-    RTCDevice device = rtcNewSYCLDevice(&context,&queue,"");
+    sycl::context context(device);
+    RTCDevice device = rtcNewSYCLDevice(context,device,"");
 
 Files containing SYCL code, have to get compiled with the
 [Intel(R) oneAPI DPC++

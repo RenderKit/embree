@@ -36,14 +36,13 @@ RTC_NAMESPACE_BEGIN;
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-  RTC_API RTCDevice rtcNewSYCLDeviceInternal(sycl::context* sycl_context, sycl::device* sycl_device, const char* config)
+  RTC_API RTCDevice rtcNewSYCLDeviceInternal(sycl::context sycl_context, sycl::device sycl_device, const char* config)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewSYCLDevice);
-    RTC_VERIFY_HANDLE(sycl_context);
     Lock<MutexSys> lock(g_mutex);
 
-    auto devices = sycl_context->get_devices();
+    auto devices = sycl_context.get_devices();
     for (auto device : devices) {
       if (!rthwifIsSYCLDeviceSupported(device))
         throw_RTCError(RTC_ERROR_UNSUPPORTED_GPU,"unsupported SYCL GPU device");

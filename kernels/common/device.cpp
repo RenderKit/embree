@@ -595,24 +595,24 @@ namespace embree
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-  DeviceGPU::DeviceGPU(sycl::context* sycl_context, sycl::device* sycl_device, const char* cfg)
-    : Device(cfg),  gpu_context(sycl_context), gpu_device(sycl_device)
+  DeviceGPU::DeviceGPU(sycl::context sycl_context, sycl::device sycl_device, const char* cfg)
+    : Device(cfg), gpu_context(sycl_context), gpu_device(sycl_device)
   {
-    if (gpu_device == nullptr)
+    /*if (gpu_device == nullptr)
     {
       auto devices = gpu_context->get_devices();
       if (devices.size() == 0)
         throw_RTCError(RTC_ERROR_UNKNOWN, "SYCL context contains no device");
       
       gpu_device = new sycl::device(devices[0]);
-    }
+    }*/
 
     gpu_maxWorkGroupSize = getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
     gpu_maxComputeUnits  = getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
 
     if (State::verbosity(1))
     {
-      sycl::platform platform = gpu_context->get_platform();
+      sycl::platform platform = gpu_context.get_platform();
       std::cout << "  Platform              : " << platform.get_info<sycl::info::platform::name>() << std::endl;
       std::cout << "    Device              : " << getGPUDevice().get_info<sycl::info::device::name>() << std::endl;
       std::cout << "    Max Work Group Size : " << gpu_maxWorkGroupSize << std::endl;
@@ -620,16 +620,16 @@ namespace embree
       std::cout << std::endl;
     }
     
-    dispatchGlobalsPtr = rthwifInit(*gpu_device, *gpu_context);
+    dispatchGlobalsPtr = rthwifInit(gpu_device, gpu_context);
   }
 
   DeviceGPU::~DeviceGPU()
   {
-    rthwifCleanup(dispatchGlobalsPtr, *gpu_context);
+    rthwifCleanup(dispatchGlobalsPtr,gpu_context);
   }
 
   void DeviceGPU::enter() {
-    enableUSMAllocEmbree(gpu_context,gpu_device);
+    enableUSMAllocEmbree(&gpu_context,&gpu_device);
   }
 
   void DeviceGPU::leave() {
@@ -637,11 +637,11 @@ namespace embree
   }
 
   void* DeviceGPU::malloc(size_t size, size_t align) {
-    return alignedSYCLMalloc(gpu_context,gpu_device,size,align,EMBREE_USM_SHARED_DEVICE_READ_ONLY);
+    return alignedSYCLMalloc(&gpu_context,&gpu_device,size,align,EMBREE_USM_SHARED_DEVICE_READ_ONLY);
   }
 
   void DeviceGPU::free(void* ptr) {
-    alignedSYCLFree(gpu_context,ptr);
+    alignedSYCLFree(&gpu_context,ptr);
   }
   
 #endif
