@@ -112,7 +112,6 @@ bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_force_non_opaque;
-  // FIXME: how to forward ray time here
 
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
@@ -153,7 +152,6 @@ bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* g
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_force_non_opaque | intel_ray_flags_accept_first_hit_and_end_search;
-  // FIXME: how to forward ray time here
 
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;

@@ -547,10 +547,8 @@ RTC_NAMESPACE_BEGIN;
     RTCIntersectContext* user_context = args->context;
     const Vec3ff ray_org_tnear = oray->org;
     const Vec3ff ray_dir_time = oray->dir;
-    const int ray_mask = oray->mask;
     oray->org = iray->org;
     oray->dir = iray->dir;
-    oray->mask = iray->mask;
     STAT3(normal.travs,1,1,1);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
@@ -567,7 +565,6 @@ RTC_NAMESPACE_BEGIN;
     
     oray->org = ray_org_tnear;
     oray->dir = ray_dir_time;
-    oray->mask = ray_mask;
 
     RTC_CATCH_END2(scene);
   }
@@ -622,7 +619,6 @@ RTC_NAMESPACE_BEGIN;
     float ray_dir_x[N];
     float ray_dir_y[N];
     float ray_dir_z[N];
-    unsigned int ray_mask[N];
     
     memcpy(ray_org_x,oray->ray.org_x,N*sizeof(float));
     memcpy(ray_org_y,oray->ray.org_y,N*sizeof(float));
@@ -630,7 +626,6 @@ RTC_NAMESPACE_BEGIN;
     memcpy(ray_dir_x,oray->ray.dir_x,N*sizeof(float));
     memcpy(ray_dir_y,oray->ray.dir_y,N*sizeof(float));
     memcpy(ray_dir_z,oray->ray.dir_z,N*sizeof(float));
-    memcpy(ray_mask,oray->ray.mask,N*sizeof(unsigned int));
     
     memcpy(oray->ray.org_x,iray->org_x,N*sizeof(float));
     memcpy(oray->ray.org_y,iray->org_y,N*sizeof(float));
@@ -638,7 +633,6 @@ RTC_NAMESPACE_BEGIN;
     memcpy(oray->ray.dir_x,iray->dir_x,N*sizeof(float));
     memcpy(oray->ray.dir_y,iray->dir_y,N*sizeof(float));
     memcpy(oray->ray.dir_z,iray->dir_z,N*sizeof(float));
-    memcpy(oray->ray.mask,iray->mask,N*sizeof(unsigned int));
     
     STAT(size_t cnt=0; for (size_t i=0; i<N; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,cnt,cnt,cnt);
@@ -661,7 +655,6 @@ RTC_NAMESPACE_BEGIN;
     memcpy(oray->ray.dir_x,ray_dir_x,N*sizeof(float));
     memcpy(oray->ray.dir_y,ray_dir_y,N*sizeof(float));
     memcpy(oray->ray.dir_z,ray_dir_z,N*sizeof(float));
-    memcpy(oray->ray.mask,ray_mask,N*sizeof(unsigned int));
   }
 
   RTC_API void rtcForwardIntersect4 (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay4* iray) 
@@ -972,10 +965,8 @@ RTC_NAMESPACE_BEGIN;
     RTCIntersectContext* user_context = args->context;
     const Vec3ff ray_org_tnear = oray->org;
     const Vec3ff ray_dir_time = oray->dir;
-    const int ray_mask = oray->mask;
     oray->org = iray->org;
     oray->dir = iray->dir;
-    oray->mask = iray->mask;
 
     RTCIntersectArguments* iargs = ((OccludedFunctionNArguments*) args)->args;
     RTCIntersectArguments defaultArgs;
@@ -991,7 +982,6 @@ RTC_NAMESPACE_BEGIN;
     
     oray->org = ray_org_tnear;
     oray->dir = ray_dir_time;
-    oray->mask = ray_mask;
 
     RTC_CATCH_END2(scene);
   }
@@ -1046,7 +1036,6 @@ RTC_NAMESPACE_BEGIN;
     float ray_dir_x[N];
     float ray_dir_y[N];
     float ray_dir_z[N];
-    unsigned int ray_mask[N];
     
     memcpy(ray_org_x,oray->org_x,N*sizeof(float));
     memcpy(ray_org_y,oray->org_y,N*sizeof(float));
@@ -1054,7 +1043,6 @@ RTC_NAMESPACE_BEGIN;
     memcpy(ray_dir_x,oray->dir_x,N*sizeof(float));
     memcpy(ray_dir_y,oray->dir_y,N*sizeof(float));
     memcpy(ray_dir_z,oray->dir_z,N*sizeof(float));
-    memcpy(ray_mask,oray->mask,N*sizeof(unsigned int));
     
     memcpy(oray->org_x,iray->org_x,N*sizeof(float));
     memcpy(oray->org_y,iray->org_y,N*sizeof(float));
@@ -1062,7 +1050,6 @@ RTC_NAMESPACE_BEGIN;
     memcpy(oray->dir_x,iray->dir_x,N*sizeof(float));
     memcpy(oray->dir_y,iray->dir_y,N*sizeof(float));
     memcpy(oray->dir_z,iray->dir_z,N*sizeof(float));
-    memcpy(oray->mask,iray->mask,N*sizeof(unsigned int));
     
     STAT(size_t cnt=0; for (size_t i=0; i<N; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,cnt,cnt,cnt);
@@ -1085,7 +1072,6 @@ RTC_NAMESPACE_BEGIN;
     memcpy(oray->dir_x,ray_dir_x,N*sizeof(float));
     memcpy(oray->dir_y,ray_dir_y,N*sizeof(float));
     memcpy(oray->dir_z,ray_dir_z,N*sizeof(float));
-    memcpy(oray->mask,ray_mask,N*sizeof(unsigned int));
   }
 
   RTC_API void rtcForwardOccluded4 (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay4* iray) 

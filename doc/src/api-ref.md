@@ -476,6 +476,26 @@
 ```
 \pagebreak
 
+## rtcForwardIntersect1
+``` {include=src/api/rtcForwardIntersect1.md}
+```
+\pagebreak
+
+## rtcForwardOccluded1
+``` {include=src/api/rtcForwardOccluded1.md}
+```
+\pagebreak
+
+## rtcForwardIntersect4/8/16
+``` {include=src/api/rtcForwardIntersect4.md}
+```
+\pagebreak
+
+## rtcForwardOccluded4/8/16
+``` {include=src/api/rtcForwardOccluded4.md}
+```
+\pagebreak
+
 ## rtcIntersect1M
 ``` {include=src/api/rtcIntersect1M.md}
 ```

@@ -56,7 +56,6 @@ SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* ar
   oray->dir.x = iray->dir_x;
   oray->dir.y = iray->dir_y;
   oray->dir.z = iray->dir_z;
-  oray->tnear() = iray->tnear;
   args->forward_scene = scene;
 }
 
@@ -84,7 +83,6 @@ SYCL_EXTERNAL void rtcForwardOccluded1(const RTCOccludedFunctionNArguments* args
   oray->dir.x = iray->dir_x;
   oray->dir.y = iray->dir_y;
   oray->dir.z = iray->dir_z;
-  oray->tnear() = iray->tnear;
   args->forward_scene = scene;
 }
 
