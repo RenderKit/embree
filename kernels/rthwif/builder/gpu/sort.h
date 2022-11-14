@@ -55,230 +55,215 @@ namespace embree
         uint flags[RADIX_SORT_SINGLE_WG_SIZE/32];
       };
     
-      {
-        const sycl::nd_range<1> nd_range1(RADIX_SORT_SINGLE_WG_SIZE,sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE));          
-        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::local_accessor< uint, 1> histogram(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
-                                                     sycl::local_accessor< uint, 1> sums(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
-                                                     sycl::local_accessor< uint, 1> prefix_sums(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
-                                                     sycl::local_accessor< uint, 1> local_offset(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
-                                                     sycl::local_accessor< BinFlags, 1> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
+      const sycl::nd_range<1> nd_range1(RADIX_SORT_SINGLE_WG_SIZE,sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE));          
+      sycl::event event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                             sycl::local_accessor< uint, 1> histogram(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
+                                             sycl::local_accessor< uint, 1> sums(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
+                                             sycl::local_accessor< uint, 1> prefix_sums(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
+                                             sycl::local_accessor< uint, 1> local_offset(sycl::range<1>(RADIX_SORT_SINGLE_WG_SIZE),cgh);
+                                             sycl::local_accessor< BinFlags, 1> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
                                                    
-                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)                                                                    
-                                                                      {                                                                                                                                            
-                                                                        const uint localID     = item.get_local_id(0);
-                                                                        const uint step_local  = item.get_local_range().size();
-                                                                        const uint subgroupID      = get_sub_group_id();
-                                                                        const uint subgroupSize    = get_sub_group_size();
-                                                                        const uint subgroupLocalID = get_sub_group_local_id();
+                                             cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)                                                                    
+                                                              {                                                                                                                                            
+                                                                const uint localID     = item.get_local_id(0);
+                                                                const uint step_local  = item.get_local_range().size();
+                                                                const uint subgroupID      = get_sub_group_id();
+                                                                const uint subgroupSize    = get_sub_group_size();
+                                                                const uint subgroupLocalID = get_sub_group_local_id();
 
-                                                                        for (uint iter = start_iteration;iter<stop_iteration;iter++)
-                                                                        {
-                                                                          item.barrier(sycl::access::fence_space::local_space);
+                                                                for (uint iter = start_iteration;iter<stop_iteration;iter++)
+                                                                {
+                                                                  item.barrier(sycl::access::fence_space::local_space);
                                                                           
-                                                                          const uint shift = iter*8;
+                                                                  const uint shift = iter*8;
 
-                                                                          const uint64_t *const input  = (iter % 2) == 0 ? _input : _output;
-                                                                          uint64_t *const output = (iter % 2) == 1 ? _input : _output;
+                                                                  const uint64_t *const input  = (iter % 2) == 0 ? _input : _output;
+                                                                  uint64_t *const output = (iter % 2) == 1 ? _input : _output;
                                                                         
-                                                                          // ==== bin key into global histogram =====
+                                                                  // ==== bin key into global histogram =====
                                                                       
-                                                                          if (localID < RADIX_SORT_BINS)
-                                                                            histogram[localID] = 0;
+                                                                  if (localID < RADIX_SORT_BINS)
+                                                                    histogram[localID] = 0;
 
-                                                                          item.barrier(sycl::access::fence_space::local_space);
+                                                                  item.barrier(sycl::access::fence_space::local_space);
                                                                     
-                                                                          for (uint ID = localID; ID < numPrimitives; ID += step_local)
-                                                                          {
-                                                                            const uint bin = ((uint)(input[ID] >> shift)) & (RADIX_SORT_BINS - 1);
-                                                                            //localAtomicBallot(histogram.get_pointer(),bin,1);
-                                                                            gpu::atomic_add_local((uint*)histogram.get_pointer() + bin,(uint)1);
-                                                                          }
+                                                                  for (uint ID = localID; ID < numPrimitives; ID += step_local)
+                                                                  {
+                                                                    const uint bin = ((uint)(input[ID] >> shift)) & (RADIX_SORT_BINS - 1);
+                                                                    //localAtomicBallot(histogram.get_pointer(),bin,1);
+                                                                    gpu::atomic_add_local((uint*)histogram.get_pointer() + bin,(uint)1);
+                                                                  }
 
-                                                                          item.barrier(sycl::access::fence_space::local_space);
+                                                                  item.barrier(sycl::access::fence_space::local_space);
 
-                                                                          // ==== reduce global histogram =====    
+                                                                  // ==== reduce global histogram =====    
                                                                                                                                               
-                                                                          SYCL_EXT_ONEAPI::sub_group sub_group = this_sub_group();
-                                                                          sub_group.barrier();
+                                                                  SYCL_EXT_ONEAPI::sub_group sub_group = this_sub_group();
+                                                                  sub_group.barrier();
 
-                                                                          if (localID < RADIX_SORT_BINS)
-                                                                          {
-                                                                            const uint count = histogram[localID];
-                                                                            const uint sum = sub_group_reduce(count, std::plus<uint>());
-                                                                            const uint prefix_sum = sub_group_exclusive_scan(count, std::plus<uint>());
+                                                                  if (localID < RADIX_SORT_BINS)
+                                                                  {
+                                                                    const uint count = histogram[localID];
+                                                                    const uint sum = sub_group_reduce(count, std::plus<uint>());
+                                                                    const uint prefix_sum = sub_group_exclusive_scan(count, std::plus<uint>());
 
-                                                                            sums[localID] = sum;
-                                                                            prefix_sums[localID] = prefix_sum;
-                                                                          }
+                                                                    sums[localID] = sum;
+                                                                    prefix_sums[localID] = prefix_sum;
+                                                                  }
                                                                         
-                                                                          item.barrier(sycl::access::fence_space::local_space);
+                                                                  item.barrier(sycl::access::fence_space::local_space);
 
 
-                                                                          if (subgroupID == 0)
-                                                                          {
-                                                                            uint off = 0;
-                                                                            for (int i = subgroupLocalID; i < RADIX_SORT_BINS; i += subgroupSize)
-                                                                            {
-                                                                              local_offset[i] = off + prefix_sums[i];
-                                                                              off += sums[i];
-                                                                            }
-                                                                          }
+                                                                  if (subgroupID == 0)
+                                                                  {
+                                                                    uint off = 0;
+                                                                    for (int i = subgroupLocalID; i < RADIX_SORT_BINS; i += subgroupSize)
+                                                                    {
+                                                                      local_offset[i] = off + prefix_sums[i];
+                                                                      off += sums[i];
+                                                                    }
+                                                                  }
 
-                                                                          item.barrier(sycl::access::fence_space::local_space);                                                                          
+                                                                  item.barrier(sycl::access::fence_space::local_space);                                                                          
                                                                       
-                                                                          // ==== scatter key/value pairs according to global historgram =====      
+                                                                  // ==== scatter key/value pairs according to global historgram =====      
                                                                                                                          
-                                                                          const uint flags_bin = localID / 32;
-                                                                          const uint flags_bit = 1 << (localID % 32);                                                                      
+                                                                  const uint flags_bin = localID / 32;
+                                                                  const uint flags_bit = 1 << (localID % 32);                                                                      
                                                                       
-                                                                          for (uint blockID = 0; blockID < numPrimitives; blockID += step_local)
-                                                                          {
-                                                                            item.barrier(sycl::access::fence_space::local_space);
+                                                                  for (uint blockID = 0; blockID < numPrimitives; blockID += step_local)
+                                                                  {
+                                                                    item.barrier(sycl::access::fence_space::local_space);
                                                                         
-                                                                            const uint ID = blockID + localID;                                                                            
+                                                                    const uint ID = blockID + localID;                                                                            
                                                                         
-                                                                            uint binID = 0;
-                                                                            uint binOffset = 0;
+                                                                    uint binID = 0;
+                                                                    uint binOffset = 0;
 
-                                                                            if (localID < RADIX_SORT_BINS)                                                                            
-                                                                              for (int i=0;i<RADIX_SORT_SINGLE_WG_SIZE/32;i++)
-                                                                                bin_flags[localID].flags[i] = 0;
+                                                                    if (localID < RADIX_SORT_BINS)                                                                            
+                                                                      for (int i=0;i<RADIX_SORT_SINGLE_WG_SIZE/32;i++)
+                                                                        bin_flags[localID].flags[i] = 0;
 
-                                                                            item.barrier(sycl::access::fence_space::local_space);
+                                                                    item.barrier(sycl::access::fence_space::local_space);
                                                                                  
                                                                             
-                                                                            uint64_t in;
-                                                                            if (ID < numPrimitives)
-                                                                            {
-                                                                              in = input[ID];                                                                              
-                                                                              binID = (in >> shift) & (RADIX_SORT_BINS - 1);                                                                            
-                                                                              binOffset = local_offset[binID];
+                                                                    uint64_t in;
+                                                                    if (ID < numPrimitives)
+                                                                    {
+                                                                      in = input[ID];                                                                              
+                                                                      binID = (in >> shift) & (RADIX_SORT_BINS - 1);                                                                            
+                                                                      binOffset = local_offset[binID];
                                                                               
-                                                                              sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> bflags(bin_flags[binID].flags[flags_bin]);                                                                                    
-                                                                              bflags.fetch_add(flags_bit);
+                                                                      sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> bflags(bin_flags[binID].flags[flags_bin]);                                                                                    
+                                                                      bflags.fetch_add(flags_bit);
 
-                                                                            }
+                                                                    }
 
                                                                           
-                                                                            item.barrier(sycl::access::fence_space::local_space);
+                                                                    item.barrier(sycl::access::fence_space::local_space);
                                                                             
-                                                                            if (ID < numPrimitives)
-                                                                            {
-                                                                              uint prefix = 0;
-                                                                              uint count = 0;
-                                                                              for (uint i = 0; i < RADIX_SORT_SINGLE_WG_SIZE / 32; i++)
-                                                                              {
-                                                                                const uint bits = bin_flags[binID].flags[i];
-                                                                                const uint full_count    = sycl::popcount(bits);
-                                                                                const uint partial_count = sycl::popcount(bits & (flags_bit - 1));
-                                                                                prefix += (i  < flags_bin) ? full_count : 0;
-                                                                                prefix += (i == flags_bin) ? partial_count : 0;
-                                                                                count += full_count;
-                                                                              }
+                                                                    if (ID < numPrimitives)
+                                                                    {
+                                                                      uint prefix = 0;
+                                                                      uint count = 0;
+                                                                      for (uint i = 0; i < RADIX_SORT_SINGLE_WG_SIZE / 32; i++)
+                                                                      {
+                                                                        const uint bits = bin_flags[binID].flags[i];
+                                                                        const uint full_count    = sycl::popcount(bits);
+                                                                        const uint partial_count = sycl::popcount(bits & (flags_bit - 1));
+                                                                        prefix += (i  < flags_bin) ? full_count : 0;
+                                                                        prefix += (i == flags_bin) ? partial_count : 0;
+                                                                        count += full_count;
+                                                                      }
 
-                                                                              output[binOffset + prefix] = in;
-                                                                              if (prefix == count - 1)
-                                                                                local_offset[binID] += count;                                                                          
-                                                                            }
+                                                                      output[binOffset + prefix] = in;
+                                                                      if (prefix == count - 1)
+                                                                        local_offset[binID] += count;                                                                          
+                                                                    }
                                                                           
-                                                                          }                                                                       
-                                                                        }
-                                                                      });
+                                                                  }                                                                       
+                                                                }
+                                                              });
                                                    
-                                                   });
+                                           });
 
-        {            
-          try {
-            gpu_queue.wait_and_throw();
-          } catch (sycl::exception const& e) {
-            std::cout << "Caught synchronous SYCL exception:\n"
-                      << e.what() << std::endl;
-            FATAL("OpenCL Exception");     		
-          }
-          const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
-          const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
-          const double dt = (t1-t0)*1E-6;
-          time += dt;
-        }
-      }    
+                
+      try {
+        event.wait_and_throw();
+      } catch (sycl::exception const& e) {
+        std::cout << "Caught synchronous SYCL exception:\n"
+                  << e.what() << std::endl;
+        FATAL("SYCL Exception");     		
+      }
+      time += getDeviceExecutionTiming(event);
     }
 
     
     template<typename sort_type>
-    void sort_iteration_type(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint primitives,  uint *global_histogram, const uint iter, double &time, const uint RADIX_SORT_NUM_DSS=256, const bool sync=false)
+    void sort_iteration_type(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint primitives,  uint *global_histogram, const uint iter, double &time, const uint RADIX_SORT_NUM_DSS=256)
     {
       const uint shift = iter*8;
 
       
       // ==== bin key into global histogram =====
-      {
-        const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
-        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-                                                     sycl::local_accessor< uint, 1> histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                 
-                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
-                                                                      {
-                                                                        const uint localID     = item.get_local_id(0);
-                                                                        const uint step_local  = item.get_local_range().size();
-                                                                        const uint groupID     = item.get_group(0);
+      
+      const sycl::nd_range<1> nd_range_binning(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
+      sycl::event bin_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                 sycl::local_accessor< uint, 1> histogram(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                 
+                                                 cgh.parallel_for(nd_range_binning,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                                                                  {
+                                                                    const uint localID     = item.get_local_id(0);
+                                                                    const uint step_local  = item.get_local_range().size();
+                                                                    const uint groupID     = item.get_group(0);
 
-                                                                        const uint startID = (groupID + 0)*primitives / RADIX_SORT_NUM_DSS;
-                                                                        const uint endID   = (groupID + 1)*primitives / RADIX_SORT_NUM_DSS;
+                                                                    const uint startID = (groupID + 0)*primitives / RADIX_SORT_NUM_DSS;
+                                                                    const uint endID   = (groupID + 1)*primitives / RADIX_SORT_NUM_DSS;
                                                                                                                                                                                                             
-                                                                        if (localID < RADIX_SORT_BINS)
-                                                                          histogram[localID] = 0;
+                                                                    if (localID < RADIX_SORT_BINS)
+                                                                      histogram[localID] = 0;
 
-                                                                        item.barrier(sycl::access::fence_space::local_space);
+                                                                    item.barrier(sycl::access::fence_space::local_space);
                                                                     
-                                                                        for (uint ID = startID + localID; ID < endID; ID += step_local)
-                                                                        {
-                                                                          const uint64_t key = input[ID];
-                                                                          const uint bin = ((uint)(key >> shift)) & (RADIX_SORT_BINS - 1);
-                                                                          //gpu::localAtomicBallot(histogram.get_pointer(),bin,1);
-                                                                          gpu::atomic_add_local((uint*)histogram.get_pointer() + bin,(uint)1);
+                                                                    for (uint ID = startID + localID; ID < endID; ID += step_local)
+                                                                    {
+                                                                      const uint64_t key = input[ID];
+                                                                      const uint bin = ((uint)(key >> shift)) & (RADIX_SORT_BINS - 1);
+                                                                      //gpu::localAtomicBallot(histogram.get_pointer(),bin,1);
+                                                                      gpu::atomic_add_local((uint*)histogram.get_pointer() + bin,(uint)1);
                                                                           
-                                                                        }
+                                                                    }
 
-                                                                        item.barrier(sycl::access::fence_space::local_space);
+                                                                    item.barrier(sycl::access::fence_space::local_space);
     
-                                                                        if (localID < RADIX_SORT_BINS)
-                                                                          global_histogram[RADIX_SORT_BINS*groupID + localID] = histogram[localID];
+                                                                    if (localID < RADIX_SORT_BINS)
+                                                                      global_histogram[RADIX_SORT_BINS*groupID + localID] = histogram[localID];
                                                                     
-                                                                      });
+                                                                  });
                                                  
-                                                   });
-        if (sync)
-        {
-          try {
-            gpu_queue.wait_and_throw();
-          } catch (sycl::exception const& e) {
-            std::cout << "Caught synchronous SYCL exception:\n"
-                      << e.what() << std::endl;
-            FATAL("OpenCL Exception");     		
-          }        
-          const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
-          const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
-          const double dt = (t1-t0)*1E-6;
-          PRINT2("bin phase",(float)dt);
-          time += dt;
-        }
-      }
-
-      
+                                               });
+      // try {
+      //   bin_event.wait_and_throw();
+      // } catch (sycl::exception const& e) {
+      //   std::cout << "Caught synchronous SYCL exception:\n"
+      //             << e.what() << std::endl;
+      //   FATAL("SYCL Exception");     		
+      // }        
+      // time += getDeviceExecutionTiming(bin_event);
+            
       // ==== scatter key/value pairs according to global historgram =====
-      {
         
-        struct __aligned(64) BinFlags
-        {
-          uint flags[RADIX_SORT_WG_SIZE/32];
-        };
+      struct __aligned(64) BinFlags
+      {
+        uint flags[RADIX_SORT_WG_SIZE/32];
+      };
       
-        const sycl::nd_range<1> nd_range1(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
-        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+      const sycl::nd_range<1> nd_range_scatter(sycl::range<1>(RADIX_SORT_WG_SIZE*RADIX_SORT_NUM_DSS),sycl::range<1>(RADIX_SORT_WG_SIZE));          
+      sycl::event scatter_event = gpu_queue.submit([&](sycl::handler &cgh) {
+                                                     cgh.depends_on(bin_event);
                                                      sycl::local_accessor< uint, 1> local_offset(sycl::range<1>(RADIX_SORT_BINS),cgh);
                                                      sycl::local_accessor< uint, 1> sums(sycl::range<1>(RADIX_SORT_BINS),cgh);                                                     
                                                      sycl::local_accessor< BinFlags, 1> bin_flags(sycl::range<1>(RADIX_SORT_BINS),cgh);
-                                                     cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                                                     cgh.parallel_for(nd_range_scatter,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                                                                       {
                                                                         const uint groupID     = item.get_group(0);
                                                                         const uint localID     = item.get_local_id(0);
@@ -386,25 +371,16 @@ namespace embree
                                                  
                                                    });
 
-        if (sync)
-        {            
-          try {
-            gpu_queue.wait_and_throw();
-          } catch (sycl::exception const& e) {
-            std::cout << "Caught synchronous SYCL exception:\n"
-                      << e.what() << std::endl;
-            FATAL("OpenCL Exception");     		
-          }
-          const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
-          const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
-          const double dt = (t1-t0)*1E-6;
-          time += dt;
-          PRINT2("prefix + scatter phase",(float)dt);
-
-        }
+      try {
+        scatter_event.wait_and_throw();
+      } catch (sycl::exception const& e) {
+        std::cout << "Caught synchronous SYCL exception:\n"
+                  << e.what() << std::endl;
+        FATAL("SYCL Exception");     		
       }
+      time += getDeviceExecutionTiming(scatter_event);    
     }
-  }
+  };
 };
 
 #endif

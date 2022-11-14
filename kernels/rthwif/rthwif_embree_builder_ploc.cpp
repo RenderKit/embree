@@ -205,7 +205,7 @@ namespace embree
                                                                     new (qbvh->nodePtr(2)) QBVH6::InternalNode6(NODE_TYPE_INTERNAL);
                                                                   });
                                                 });
-    gpu::waitOnQueueAndCatchException(gpu_queue);    
+    gpu::waitOnEventAndCatchException(queue_event);    
     if (args.accelBufferBytesOut) *args.accelBufferBytesOut = 128+64;
     if (args.boundsOut)           { BBox3f geometryBounds (empty); *args.boundsOut = *(RTHWIF_AABB*)&geometryBounds; };
     return RTHWIF_ERROR_NONE;    
@@ -328,7 +328,7 @@ namespace embree
     // ======================================================
     
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) { cgh.single_task([=]() {}); });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
 
     double time1 = getSeconds();
     if (args.verbose == 1)
@@ -384,7 +384,7 @@ namespace embree
                                                                       globals->reset();
                                                                     });
                                                   });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnEventAndCatchException(queue_event);
       double dt = gpu::getDeviceExecutionTiming(queue_event);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
       
@@ -526,7 +526,7 @@ namespace embree
                                                                       globals->bvh2_index_allocator       = numPrimitives; 
                                                                     });
                                                   });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnEventAndCatchException(queue_event);
       double dt = gpu::getDeviceExecutionTiming(queue_event);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
       
@@ -617,8 +617,6 @@ namespace embree
     timer.start(BuildTimer::PRE_PROCESS);        
 
     double sort_time = 0.0;
-
-    const bool sync_sort = false;
     
     if (!fastMCMode) // fastMCMode == 32bit key + 32bit value pairs, !fastMode == 64bit key + 32bit value pairs
     {
@@ -627,13 +625,12 @@ namespace embree
       const uint sortWGs = min(max(min((int)nextPowerOf2/8192,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
      
       for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs, sync_sort);
-      gpu::waitOnQueueAndCatchException(gpu_queue);      
+        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs);
       
       restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,sort_time,verbose2);      
 
       for (uint i=4;i<8;i++) 
-        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs, sync_sort);
+        gpu::sort_iteration_type<MCPrim>(gpu_queue, morton_codes[i%2], morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs);
     }
     else
     {
@@ -645,12 +642,10 @@ namespace embree
         const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);          
         const uint sortWGs = min(max(min((int)nextPowerOf2/1024,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
         for (uint i=3;i<8;i++) 
-          gpu::sort_iteration_type<gpu::MortonCodePrimitive40x24Bits3D>(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[i%2], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs, sync_sort);        
+          gpu::sort_iteration_type<gpu::MortonCodePrimitive40x24Bits3D>(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[i%2], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[(i+1)%2], numPrimitives, (uint*)scratch, i, sort_time, sortWGs);        
       }      
     }
     
-    gpu::waitOnQueueAndCatchException(gpu_queue);
-
     timer.stop(BuildTimer::PRE_PROCESS);        
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,timer.get_host_timer());
             
@@ -756,7 +751,7 @@ namespace embree
                                                     cgh.single_task([=]() {
                                                                     });
                                                   });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnEventAndCatchException(queue_event);
     }
     
     // =============================    
@@ -785,7 +780,7 @@ namespace embree
                                                                       *(gpu::AABB3f*)host_device_tasks = globals->geometryBounds;
                                                                     });
                                                   });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnEventAndCatchException(queue_event);
     }	    
     
     if (args.boundsOut) *args.boundsOut = *(RTHWIF_AABB*)host_device_tasks;

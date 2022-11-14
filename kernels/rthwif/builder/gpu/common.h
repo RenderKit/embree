@@ -321,10 +321,21 @@ namespace embree
       } catch (sycl::exception const& e) {
         std::cout << "Caught synchronous SYCL exception:\n"
                   << e.what() << std::endl;
-        FATAL("OpenCL Exception");     
+        FATAL("SYCL Exception");     
       }      
     }
 
+    __forceinline void waitOnEventAndCatchException(sycl::event &event)
+    {
+      try {
+        event.wait_and_throw();
+      } catch (sycl::exception const& e) {
+        std::cout << "Caught synchronous SYCL exception:\n"
+                  << e.what() << std::endl;
+        FATAL("SYCL Exception");     
+      }      
+    }
+    
     __forceinline double getDeviceExecutionTiming(sycl::event &queue_event)
     {
       const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();

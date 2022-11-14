@@ -741,7 +741,7 @@ namespace embree
 		  
       });
     
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     const double d0 = gpu::getDeviceExecutionTiming(queue_event);
 
     queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
@@ -752,7 +752,7 @@ namespace embree
             host_device_tasks[3] = globals->numInstances;            
           });
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     const double d1 = gpu::getDeviceExecutionTiming(queue_event);
     
     count.numTriangles   = host_device_tasks[0];
@@ -823,7 +823,7 @@ namespace embree
                                                         
           });
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);
     iteration_time += dt;
     if (unlikely(verbose))
@@ -940,7 +940,7 @@ namespace embree
                          });
 		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("count quads per geometry", (float)dt);
@@ -1133,7 +1133,7 @@ namespace embree
                          });
 		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads", (float)dt);
@@ -1280,7 +1280,7 @@ namespace embree
                          });
 		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("write out instance bounds", (float)dt);
@@ -1408,7 +1408,7 @@ namespace embree
                          });
 		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("computeCentroidGeometryBounds", (float)dt);
@@ -1445,7 +1445,7 @@ namespace embree
                          });
 		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     if (unlikely(verbose)) PRINT2("compute 3D morton codes ",(float)dt);
     iteration_time += dt;
@@ -1482,7 +1482,7 @@ namespace embree
                          });
 		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     if (unlikely(verbose)) PRINT2("compute 3D morton codes ",(float)dt);
     iteration_time += dt;
@@ -1506,7 +1506,7 @@ namespace embree
                          });
 		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     if (unlikely(verbose)) PRINT2("restore Morton Code MSB Bits ",(float)dt);
     iteration_time += dt;
@@ -1531,7 +1531,7 @@ namespace embree
                          });
                                                        
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     if (unlikely(verbose)) PRINT2("init leaf clusters",(float)dt);
     iteration_time += dt; 
@@ -1845,7 +1845,7 @@ namespace embree
                                                      
           });		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     if (unlikely(verbose)) PRINT2("nearest neighbor search ",(float)dt);
     iteration_time += dt;
@@ -1906,7 +1906,7 @@ namespace embree
             }
           });		  
       });
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     if (unlikely(verbose)) PRINT2("prefix sum and cluster reference compaction",(float)dt);
     iteration_time += dt;
@@ -2181,7 +2181,7 @@ namespace embree
             if (localID == 0) globals->rootIndex = globals->bvh2_index_allocator-1;
           });		  
       });            
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("single WG build ",(float)dt);    
@@ -2223,7 +2223,7 @@ namespace embree
               cluster_index_dest[i] = cluster_index_source[i];
           });		  
       });            
-    gpu::waitOnQueueAndCatchException(gpu_queue);
+    gpu::waitOnEventAndCatchException(queue_event);
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("parallel WG build ",(float)dt);    
@@ -2554,7 +2554,7 @@ namespace embree
                                                                       
                            });
         });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnEventAndCatchException(queue_event);
       double dt = gpu::getDeviceExecutionTiming(queue_event);
       total_time += dt;
       if (unlikely(verbose))
@@ -2670,7 +2670,7 @@ namespace embree
                            });
 		  
         });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnEventAndCatchException(queue_event);
       double dt = gpu::getDeviceExecutionTiming(queue_event);
       total_time += dt;
       if (unlikely(verbose))      
@@ -2817,7 +2817,7 @@ namespace embree
                            });
 		  
         });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnEventAndCatchException(queue_event);
       double dt = gpu::getDeviceExecutionTiming(queue_event);      
       total_time += dt;
       if (unlikely(verbose))      
@@ -2936,7 +2936,7 @@ namespace embree
                            });
 		  
         });
-      gpu::waitOnQueueAndCatchException(gpu_queue);
+      gpu::waitOnEventAndCatchException(queue_event);
       double dt = gpu::getDeviceExecutionTiming(queue_event);      
       total_time += dt;
       if (unlikely(verbose))      
