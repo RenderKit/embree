@@ -11,7 +11,7 @@
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_ALL
+  RTC_FEATURE_FLAGS_ALL
 
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);

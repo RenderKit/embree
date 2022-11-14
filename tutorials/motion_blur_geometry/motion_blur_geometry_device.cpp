@@ -7,18 +7,18 @@ namespace embree {
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_TRIANGLE | \
-  RTC_FEATURE_QUAD |            \
-  RTC_FEATURE_SUBDIVISION |     \
-  RTC_FEATURE_FLAT_LINEAR_CURVE |               \
-  RTC_FEATURE_FLAT_BSPLINE_CURVE |              \
-  RTC_FEATURE_ROUND_BSPLINE_CURVE |             \
-  RTC_FEATURE_DISC_POINT |                      \
-  RTC_FEATURE_SPHERE_POINT |                    \
-  RTC_FEATURE_ORIENTED_DISC_POINT |             \
-  RTC_FEATURE_INSTANCE |                        \
-  RTC_FEATURE_USER_GEOMETRY |                   \
-  RTC_FEATURE_MOTION_BLUR
+  RTC_FEATURE_FLAGS_TRIANGLE | \
+  RTC_FEATURE_FLAGS_QUAD |            \
+  RTC_FEATURE_FLAGS_SUBDIVISION |     \
+  RTC_FEATURE_FLAGS_FLAT_LINEAR_CURVE |               \
+  RTC_FEATURE_FLAGS_FLAT_BSPLINE_CURVE |              \
+  RTC_FEATURE_FLAGS_ROUND_BSPLINE_CURVE |             \
+  RTC_FEATURE_FLAGS_DISC_POINT |                      \
+  RTC_FEATURE_FLAGS_SPHERE_POINT |                    \
+  RTC_FEATURE_FLAGS_ORIENTED_DISC_POINT |             \
+  RTC_FEATURE_FLAGS_INSTANCE |                        \
+  RTC_FEATURE_FLAGS_USER_GEOMETRY |                   \
+  RTC_FEATURE_FLAGS_MOTION_BLUR
   
 /* scene data */
 RTCScene g_scene = nullptr;

@@ -5,8 +5,8 @@
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_TRIANGLE | \
-  RTC_FEATURE_INSTANCE
+  RTC_FEATURE_FLAGS_TRIANGLE | \
+  RTC_FEATURE_FLAGS_INSTANCE
 
 const uniform int numPhi = 5;
 const uniform int numTheta = 2*numPhi;
