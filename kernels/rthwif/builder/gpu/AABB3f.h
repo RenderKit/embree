@@ -59,11 +59,6 @@ namespace embree
                                                                                                                                                            upper_z(upper_z)
       {}
       
-
-      //__forceinline AABB3f(const Vec3fa &l, const Vec3fa &u) : lower(l.x, l.y, l.z), upper(u.x, u.y, u.z) {}
-
-      //__forceinline AABB3f(const Vec3fa &v) : lower(v.x, v.y, v.z), upper(v.x, v.y, v.z) {}
-
       __forceinline bool empty()
       {
         if (lower_x > upper_x ||
@@ -92,15 +87,6 @@ namespace embree
         upper_x = 0.0f;
         upper_y = 0.0f;
         upper_z = 0.0f;
-      }
-      
-
-      __forceinline bool isValid()
-      {
-        if (lower_x > upper_x) return false;
-        if (lower_y > upper_y) return false;
-        if (lower_z > upper_z) return false;        
-        return true;
       }
       
       __forceinline bool encloses(const AABB3f &other)
@@ -178,8 +164,7 @@ namespace embree
         upper_x += v;
         upper_y += v;
         upper_z += v;        
-      }
-      
+      }      
 
       __forceinline void add(const class AABB3f &aabb)
       {
@@ -204,7 +189,6 @@ namespace embree
       __forceinline float3 lower() const { return float3(lower_x,lower_y,lower_z); }
       __forceinline float3 upper() const { return float3(upper_x,upper_y,upper_z); }
       
-
       __forceinline float3 size() const
       {
         return upper() - lower();
@@ -238,8 +222,7 @@ namespace embree
       {
         const float3 d = diag();
         return max(max(d.x(),d.y()),d.z());        
-      }
-      
+      }      
       
       __forceinline void atomic_merge_global(AABB3f &dest) const
       {
@@ -486,21 +469,11 @@ namespace embree
       {
         const float3 dist_lower = a.lower() - b.lower();
         const float3 dist_upper = a.upper() - b.upper();
-#if 0        
-        return dist_lower.x() * dist_lower.x() +
-          dist_lower.y() * dist_lower.y() +
-          dist_lower.z() * dist_lower.z() +
-          dist_upper.x() * dist_upper.x() +
-          dist_upper.y() * dist_upper.y() +
-          dist_upper.z() * dist_upper.z();
-#else
         return sycl::fma(dist_lower.x(),dist_lower.x(),
                          sycl::fma(dist_lower.y(),dist_lower.y(),
                                    sycl::fma(dist_lower.z(),dist_lower.z(),
                                              sycl::fma(dist_upper.x(),dist_upper.x(),
-                                                       sycl::fma(dist_upper.y(), dist_upper.y(), dist_upper.z() * dist_upper.z())))));
-        
-#endif        
+                                                       sycl::fma(dist_upper.y(), dist_upper.y(), dist_upper.z() * dist_upper.z())))));        
       }
     
     __forceinline bool operator ==(const AABB3f& a, const AABB3f& b) {

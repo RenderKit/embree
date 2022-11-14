@@ -47,7 +47,7 @@ namespace embree
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
   {
-    if (!bvh2[index].bounds.isValid()) {
+    if (bvh2[index].bounds.empty()) {
       PRINT2(index,bvh2[index]);
       FATAL("invalid bounds in BVH2");
     }
