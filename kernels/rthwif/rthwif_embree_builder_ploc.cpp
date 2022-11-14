@@ -74,10 +74,10 @@ namespace embree
       nodes++;              
       nodeSAH += bvh2[index].bounds.area();
       
-      assert(bvh2[index].bounds.encloses( bvh2[ bvh2[index].leftIndex() ].bounds ));        
+      if (!bvh2[index].bounds.encloses( bvh2[ bvh2[index].leftIndex() ].bounds )) PRINT2("ENCLOSING ERROR LEFT",index);
       checkBVH2PlocHW(bvh2,bvh2[index].leftIndex(),nodes,leaves,nodeSAH,leafSAH,numPrimitives,bvh2_max_allocations);
 
-      assert(bvh2[index].bounds.encloses( bvh2[ bvh2[index].rightIndex() ].bounds ));        
+      if (!bvh2[index].bounds.encloses( bvh2[ bvh2[index].rightIndex() ].bounds )) PRINT2("ENCLOSING ERROR RIGHT",index);
       checkBVH2PlocHW(bvh2,bvh2[index].rightIndex(),nodes,leaves,nodeSAH,leafSAH,numPrimitives,bvh2_max_allocations);
     }
   }

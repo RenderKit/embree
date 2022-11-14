@@ -15,14 +15,12 @@
 #define SEARCH_RADIUS             (1<<SEARCH_RADIUS_SHIFT)
 #define SINGLE_R_PATH             1
 #define BVH_BRANCHING_FACTOR      6
-
 #define FATLEAF_THRESHOLD         6
-#define USE_NEW_OPENING           0
 #define PAIR_OFFSET_SHIFT         28
 #define GEOMID_MASK               (((uint)1<<PAIR_OFFSET_SHIFT)-1)
-
 #define LARGE_WG_SIZE             1024
 #define MAX_WGS                   64
+#define USE_NEW_OPENING           0
 
 namespace embree
 {  
@@ -264,8 +262,8 @@ namespace embree
     
     __forceinline void init(const uint _left, const uint _right, const gpu::AABB3f &_bounds, const uint subtree_size_left, const uint subtree_size_right)
     {
-      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_left   <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);
-      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_right  <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);
+      left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_left   == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
+      right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_right  == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
 #if 1
       // === better coalescing ===             
       bounds.lower_x = _bounds.lower_x;
@@ -310,7 +308,7 @@ namespace embree
     }
 
     static  __forceinline bool isFatLeaf      (const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT0) || (index & FATLEAF_MASK) < numPrimitives;  }
-    static  __forceinline bool isBinaryFatLeaf(const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT1) || (index & FATLEAF_MASK) < numPrimitives;  }        
+    static  __forceinline bool isBinaryFatLeaf(const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT1) && (index & FATLEAF_MASK) >= numPrimitives;  }        
     static  __forceinline uint getIndex       (const uint index)                           { return index & FATLEAF_MASK;  }
     static  __forceinline bool isLeaf         (const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
     static  __forceinline uint makeFatLeaf    (const uint index, const uint numChildren)   { return index | (1<<FATLEAF_SHIFT0) | ((numChildren <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);  }
@@ -2350,10 +2348,8 @@ namespace embree
     indices[0] = _left;
     indices[1] = _right;
 #if USE_NEW_OPENING == 1
-    const uint _left_numChildren  = BVH2Ploc::numFatChildren(_left);
-    const uint _right_numChildren = BVH2Ploc::numFatChildren(_right);    
-    areas[0]  = (_left_numChildren == 0  || _left_numChildren == 2 ) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
-    areas[1]  = (_right_numChildren == 0 || _right_numChildren == 2 ) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
+    areas[0]  = (!BVH2Ploc::isFatLeaf( _left ,numPrimitives) || BVH2Ploc::isBinaryFatLeaf( _left ,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
+    areas[1]  = (!BVH2Ploc::isFatLeaf( _right,numPrimitives) || BVH2Ploc::isBinaryFatLeaf( _right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
 #else    
     areas[0]  = (!BVH2Ploc::isFatLeaf( _left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;    
     areas[1]  = (!BVH2Ploc::isFatLeaf(_right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf; 
@@ -2371,34 +2367,33 @@ namespace embree
           bestArea = areas[i];
           bestChild = i;
         }
-            
+      
       if (areas[bestChild] < 0.0f)
       {
-#if USE_NEW_OPENING == 1        
-        const uint free_space = BVH_BRANCHING_FACTOR - numChildren + 1;
-        bestChild = -1;
-        {
-          for (uint i=0;i<numChildren;i++)
-            if (BVH2Ploc::numFatChildren(indices[i]) > 2 && BVH2Ploc::numFatChildren(indices[i]) <= free_space)
-            {
-              bestChild = i;
-              break;
-            }
-        }
-        if (bestChild == -1)
-#endif          
+/* #if USE_NEW_OPENING == 1         */
+/*         const uint free_space = BVH_BRANCHING_FACTOR - numChildren + 1; */
+/*         bestChild = -1; */
+/*         { */
+/*           for (uint i=0;i<numChildren;i++) */
+/*             if (BVH2Ploc::numFatChildren(indices[i]) > 2 && BVH2Ploc::numFatChildren(indices[i]) <= free_space) */
+/*             { */
+/*               bestChild = i; */
+/*               break; */
+/*             } */
+/*         } */
+/*         if (bestChild == -1) */
+/* #endif           */
           break; // nothing left to open
       }
-
-      const uint bestNodeID = indices[bestChild];                                                                            
+      
+      const uint bestNodeID = indices[bestChild];
+      
       const uint left  = bvh2[BVH2Ploc::getIndex(bestNodeID)].left;
       const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
 
 #if USE_NEW_OPENING == 1
-      const uint left_numChildren  = BVH2Ploc::numFatChildren(left);
-      const uint right_numChildren = BVH2Ploc::numFatChildren(right);          
-      areas[bestChild]     = (left_numChildren == 0  || left_numChildren == 2 ) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf;
-      areas[numChildren]   = (right_numChildren == 0 || right_numChildren == 2) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;      
+      areas[bestChild  ]  = (!BVH2Ploc::isFatLeaf(left ,numPrimitives) || BVH2Ploc::isBinaryFatLeaf(left ,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( left)].bounds.area() : neg_inf;
+      areas[numChildren]  = (!BVH2Ploc::isFatLeaf(right,numPrimitives) || BVH2Ploc::isBinaryFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;      
 #else      
       areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf; 
       areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf; 
@@ -2407,7 +2402,6 @@ namespace embree
       indices[numChildren] = right;                                                                            
       numChildren++;
     }            
-    
     for (uint i=0;i<numChildren;i++)
       areas[i] = fabs(areas[i]);
 
