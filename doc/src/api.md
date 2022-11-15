@@ -458,6 +458,11 @@ intersection filter callback function pointers through the
 DPC++ compiler can inline the indirect call, which gives a huge
 performance benefit.
 
+Also to not use the `rtcFilterIntersection` nor `rtcFilterOcclusion`
+function from a user geometry callback, but invoke the filter function
+using a direct call.
+
+
 7 Bit Ray Mask
 --------------
 

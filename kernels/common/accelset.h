@@ -18,14 +18,22 @@ namespace embree
   {
     Geometry* geometry;
     RTCScene forward_scene;
-    RTCIntersectArguments* args;
+    RTCFeatureFlags feature_mask;
+    union {
+      RTCFilterFunctionN filter;
+      RTCIntersectArguments* args;
+    };
   };
 
   struct OccludedFunctionNArguments : public RTCOccludedFunctionNArguments
   {
     Geometry* geometry;
     RTCScene forward_scene;
-    RTCIntersectArguments* args;
+    RTCFeatureFlags feature_mask;
+    union {
+      RTCFilterFunctionN filter;
+      RTCIntersectArguments* args;
+    };
   };
 
   /*! Base class for set of acceleration structures. */
@@ -157,6 +165,7 @@ namespace embree
         args.primID = primID;
         args.geometry = this;
         args.forward_scene = nullptr;
+        args.feature_mask = RTC_FEATURE_FLAGS_ALL;
         args.args = context->args;
 
         IntersectFuncN intersectFunc = nullptr;
@@ -192,6 +201,7 @@ namespace embree
         args.primID = primID;
         args.geometry = this;
         args.forward_scene = nullptr;
+        args.feature_mask = RTC_FEATURE_FLAGS_ALL;
         args.args = context->args;
 
         OccludedFuncN occludedFunc = nullptr;
@@ -226,7 +236,8 @@ namespace embree
         args.primID = primID;
         args.geometry = this;
         args.forward_scene = nullptr;
-        args.args = nullptr;
+        args.feature_mask = context->args->feature_mask;
+        args.filter = context->args->filter;
 
         typedef void (*RTCIntersectFunctionSYCL)(const void* args);
         RTCIntersectFunctionSYCL intersectFunc = nullptr;
@@ -268,8 +279,9 @@ namespace embree
         args.primID = primID;
         args.geometry = this;
         args.forward_scene = nullptr;
-        args.args = nullptr;
-
+        args.feature_mask = context->args->feature_mask;
+        args.filter = context->args->filter;
+        
         typedef void (*RTCOccludedFunctionSYCL)(const void* args);
         RTCOccludedFunctionSYCL occludedFunc = nullptr;
 
@@ -311,6 +323,7 @@ namespace embree
         args.primID = primID;
         args.geometry = this;
         args.forward_scene = nullptr;
+        args.feature_mask = RTC_FEATURE_FLAGS_ALL;
         args.args = context->args;
 
         IntersectFuncN intersectFunc = nullptr;
@@ -344,6 +357,7 @@ namespace embree
         args.primID = primID;
         args.geometry = this;
         args.forward_scene = nullptr;
+        args.feature_mask = RTC_FEATURE_FLAGS_ALL;
         args.args = context->args;
 
         OccludedFuncN occludedFunc = nullptr;

@@ -54,14 +54,22 @@ namespace embree
     __forceinline void reportIntersection1(IntersectFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args)
     {
 #if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
-      if (args->geometry->intersectionFilterN)
-        args->geometry->intersectionFilterN(filter_args);
+#if defined(__SYCL_DEVICE_ONLY__)
+      if (args->feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY)
+#endif
+        if (args->geometry->intersectionFilterN)
+          args->geometry->intersectionFilterN(filter_args);
 #endif
 
-/*#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-      if (args->context->filter)
-        args->context->filter(filter_args);
-#endif*/
+#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if defined(__SYCL_DEVICE_ONLY__)
+      if (args->filter)
+        args->filter(filter_args);
+#else
+      if (args->args->filter)
+        args->args->filter(filter_args);
+#endif
+#endif
     }
     
     __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
@@ -104,14 +112,22 @@ namespace embree
     __forceinline void reportOcclusion1(OccludedFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args)
     {
 #if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
-      if (args->geometry->occlusionFilterN)
-        args->geometry->occlusionFilterN(filter_args);
+#if defined(__SYCL_DEVICE_ONLY__)
+      if (args->feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY)
+#endif
+        if (args->geometry->occlusionFilterN)
+          args->geometry->occlusionFilterN(filter_args);
 #endif
 
-/*#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-      if (args->context->filter)
-        args->context->filter(filter_args);
-#endif*/
+#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if defined(__SYCL_DEVICE_ONLY__)
+      if (args->filter)
+        args->filter(filter_args);
+#else
+      if (args->args->filter)
+        args->args->filter(filter_args);
+#endif
+#endif
     }
 
     template<int K>
