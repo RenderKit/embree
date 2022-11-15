@@ -100,7 +100,7 @@ void errorFunction(void* userPtr, enum RTCError error, const char* str)
  */
 RTCDevice initializeDevice(sycl::context& sycl_context, sycl::device& sycl_device)
 {
-  RTCDevice device = rtcNewSYCLDevice(&sycl_context, &sycl_device, "");
+  RTCDevice device = rtcNewSYCLDevice(sycl_context, sycl_device, "");
 
   if (!device)
     printf("error %d: cannot create device\n", rtcGetDeviceError(NULL));
@@ -219,7 +219,7 @@ void castRay(sycl::queue& queue, const RTCScene scene,
        */
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
-      args.feature_mask = RTC_FEATURE_TRIANGLE;
+      args.feature_mask = RTC_FEATURE_FLAGS_TRIANGLE;
 
       /*
        * The ray hit structure holds both the ray and the hit.

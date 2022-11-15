@@ -33,8 +33,8 @@ is supported by Embree, e.g.:
 
     sycl::device device(rtcSYCLDeviceSelector);
     sycl::queue queue(device, exception_handler);
-    sycl::context context(queue.get_context());
-    RTCDevice device = rtcNewSYCLDevice(&context,&queue,"");
+    sycl::context context(device);
+    RTCDevice device = rtcNewSYCLDevice(context,device,"");
 
 Files containing SYCL code, have to get compiled with the
 [Intel(R) oneAPI DPC++
@@ -457,6 +457,11 @@ intersection filter callback function pointers through the
 `rtcOccluded1`. If the function is directly passed that way, the
 DPC++ compiler can inline the indirect call, which gives a huge
 performance benefit.
+
+Also to not use the `rtcFilterIntersection` nor `rtcFilterOcclusion`
+function from a user geometry callback, but invoke the filter function
+using a direct call.
+
 
 7 Bit Ray Mask
 --------------

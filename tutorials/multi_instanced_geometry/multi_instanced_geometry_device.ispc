@@ -5,8 +5,8 @@
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_TRIANGLE | \
-  RTC_FEATURE_INSTANCE
+  RTC_FEATURE_FLAGS_TRIANGLE | \
+  RTC_FEATURE_FLAGS_INSTANCE
 
 RTCScene g_scene = NULL;
 uniform TutorialData g_data;

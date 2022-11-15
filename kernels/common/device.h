@@ -151,7 +151,7 @@ namespace embree
   {
   public:
 
-    DeviceGPU(sycl::context* sycl_context, sycl::device* sycl_device, const char* cfg);
+    DeviceGPU(sycl::context sycl_context, sycl::device sycl_device, const char* cfg);
     ~DeviceGPU();
 
     virtual void enter() override;
@@ -160,8 +160,8 @@ namespace embree
     virtual void free(void* ptr) override;
 
   private:
-    sycl::context *gpu_context = nullptr;
-    sycl::device  *gpu_device = nullptr;
+    sycl::context gpu_context;
+    sycl::device  gpu_device;
         
     unsigned int gpu_maxWorkGroupSize;
     unsigned int gpu_maxComputeUnits;
@@ -171,8 +171,8 @@ namespace embree
 
   public:
     inline bool rthw_support() { return dispatchGlobalsPtr != nullptr; }
-    inline sycl::device  &getGPUDevice()  { return *gpu_device; }        
-    inline sycl::context &getGPUContext() { return *gpu_context; }    
+    inline sycl::device  &getGPUDevice()  { return gpu_device; }        
+    inline sycl::context &getGPUContext() { return gpu_context; }    
 
     inline unsigned int getGPUMaxWorkGroupSize() { return gpu_maxWorkGroupSize; }
 

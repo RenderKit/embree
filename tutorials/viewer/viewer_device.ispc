@@ -289,7 +289,7 @@ export void renderFrameStandard (uniform int* uniform pixels,
   sycl::event event;
 
   /* FIXME: this is only required as JIT caching does not work with specialization constants at the moment */
-  if (g_feature_mask == RTC_FEATURE_ALL)
+  if (g_feature_mask == RTC_FEATURE_FLAGS_ALL)
   {
     event = global_gpu_queue->submit([=](sycl::handler& cgh) {
       const sycl::nd_range<2> nd_range = make_nd_range(height,width);
@@ -297,7 +297,7 @@ export void renderFrameStandard (uniform int* uniform pixels,
         const unsigned int x = item.get_global_id(1); if (x >= width ) return;
         const unsigned int y = item.get_global_id(0); if (y >= height) return;
         RayStats stats;
-        const RTCFeatureFlags feature_mask = RTC_FEATURE_ALL;
+        const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_ALL;
         renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
       });
     });

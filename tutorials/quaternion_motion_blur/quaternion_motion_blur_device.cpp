@@ -9,10 +9,10 @@ namespace embree {
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_TRIANGLE | \
-  RTC_FEATURE_INSTANCE | \
-  RTC_FEATURE_USER_GEOMETRY | \
-  RTC_FEATURE_MOTION_BLUR
+  RTC_FEATURE_FLAGS_TRIANGLE | \
+  RTC_FEATURE_FLAGS_INSTANCE | \
+  RTC_FEATURE_FLAGS_USER_GEOMETRY | \
+  RTC_FEATURE_FLAGS_MOTION_BLUR
   
 /* scene data */
 RTCScene g_scene = nullptr;

@@ -7,8 +7,8 @@ namespace embree {
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_TRIANGLE | \
-  RTC_FEATURE_GRID
+  RTC_FEATURE_FLAGS_TRIANGLE | \
+  RTC_FEATURE_FLAGS_GRID
   
 /* configuration */
 #define EDGE_LEVEL 257
