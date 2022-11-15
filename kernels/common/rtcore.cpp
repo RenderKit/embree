@@ -606,6 +606,27 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
+  template<int N> void copy(float* dst, float* src);
+
+  template<>
+  __forceinline void copy<4>(float* dst, float* src) {
+    vfloat4::storeu(&dst[0],vfloat4::loadu(&src[0]));
+  }
+
+  template<>
+  __forceinline void copy<8>(float* dst, float* src) {
+    vfloat4::storeu(&dst[0],vfloat4::loadu(&src[0]));
+    vfloat4::storeu(&dst[4],vfloat4::loadu(&src[4]));
+  }
+
+  template<>
+  __forceinline void copy<16>(float* dst, float* src) {
+    vfloat4::storeu(&dst[0],vfloat4::loadu(&src[0]));
+    vfloat4::storeu(&dst[4],vfloat4::loadu(&src[4]));
+    vfloat4::storeu(&dst[8],vfloat4::loadu(&src[8]));
+    vfloat4::storeu(&dst[12],vfloat4::loadu(&src[12]));
+  }
+
   template<typename RTCRay, typename RTCRayHit, int N>
   __forceinline void rtcForwardIntersectN (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay* iray)
   {
@@ -613,26 +634,26 @@ RTC_NAMESPACE_BEGIN;
     RTCRayHit* oray = (RTCRayHit*)args->rayhit;
     RTCIntersectContext* user_context = args->context;
 
-    float ray_org_x[N];
-    float ray_org_y[N];
-    float ray_org_z[N];
-    float ray_dir_x[N];
-    float ray_dir_y[N];
-    float ray_dir_z[N];
+    __aligned(16) float ray_org_x[N];
+    __aligned(16) float ray_org_y[N];
+    __aligned(16) float ray_org_z[N];
+    __aligned(16) float ray_dir_x[N];
+    __aligned(16) float ray_dir_y[N];
+    __aligned(16) float ray_dir_z[N];
     
-    memcpy(ray_org_x,oray->ray.org_x,N*sizeof(float));
-    memcpy(ray_org_y,oray->ray.org_y,N*sizeof(float));
-    memcpy(ray_org_z,oray->ray.org_z,N*sizeof(float));
-    memcpy(ray_dir_x,oray->ray.dir_x,N*sizeof(float));
-    memcpy(ray_dir_y,oray->ray.dir_y,N*sizeof(float));
-    memcpy(ray_dir_z,oray->ray.dir_z,N*sizeof(float));
+    copy<N>(ray_org_x,oray->ray.org_x);
+    copy<N>(ray_org_y,oray->ray.org_y);
+    copy<N>(ray_org_z,oray->ray.org_z);
+    copy<N>(ray_dir_x,oray->ray.dir_x);
+    copy<N>(ray_dir_y,oray->ray.dir_y);
+    copy<N>(ray_dir_z,oray->ray.dir_z);
     
-    memcpy(oray->ray.org_x,iray->org_x,N*sizeof(float));
-    memcpy(oray->ray.org_y,iray->org_y,N*sizeof(float));
-    memcpy(oray->ray.org_z,iray->org_z,N*sizeof(float));
-    memcpy(oray->ray.dir_x,iray->dir_x,N*sizeof(float));
-    memcpy(oray->ray.dir_y,iray->dir_y,N*sizeof(float));
-    memcpy(oray->ray.dir_z,iray->dir_z,N*sizeof(float));
+    copy<N>(oray->ray.org_x,iray->org_x);
+    copy<N>(oray->ray.org_y,iray->org_y);
+    copy<N>(oray->ray.org_z,iray->org_z);
+    copy<N>(oray->ray.dir_x,iray->dir_x);
+    copy<N>(oray->ray.dir_y,iray->dir_y);
+    copy<N>(oray->ray.dir_z,iray->dir_z);
     
     STAT(size_t cnt=0; for (size_t i=0; i<N; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,cnt,cnt,cnt);
@@ -649,12 +670,12 @@ RTC_NAMESPACE_BEGIN;
     scene->intersectors.intersect(valid,*oray,&context);
     instance_id_stack::pop(user_context);
 
-    memcpy(oray->ray.org_x,ray_org_x,N*sizeof(float));
-    memcpy(oray->ray.org_y,ray_org_y,N*sizeof(float));
-    memcpy(oray->ray.org_z,ray_org_z,N*sizeof(float));
-    memcpy(oray->ray.dir_x,ray_dir_x,N*sizeof(float));
-    memcpy(oray->ray.dir_y,ray_dir_y,N*sizeof(float));
-    memcpy(oray->ray.dir_z,ray_dir_z,N*sizeof(float));
+    copy<N>(oray->ray.org_x,ray_org_x);
+    copy<N>(oray->ray.org_y,ray_org_y);
+    copy<N>(oray->ray.org_z,ray_org_z);
+    copy<N>(oray->ray.dir_x,ray_dir_x);
+    copy<N>(oray->ray.dir_y,ray_dir_y);
+    copy<N>(oray->ray.dir_z,ray_dir_z);
   }
 
   RTC_API void rtcForwardIntersect4 (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay4* iray) 
@@ -1030,26 +1051,26 @@ RTC_NAMESPACE_BEGIN;
     RTCRay* oray = (RTCRay*)args->ray;
     RTCIntersectContext* user_context = args->context;
 
-    float ray_org_x[N];
-    float ray_org_y[N];
-    float ray_org_z[N];
-    float ray_dir_x[N];
-    float ray_dir_y[N];
-    float ray_dir_z[N];
+    __aligned(16) float ray_org_x[N];
+    __aligned(16) float ray_org_y[N];
+    __aligned(16) float ray_org_z[N];
+    __aligned(16) float ray_dir_x[N];
+    __aligned(16) float ray_dir_y[N];
+    __aligned(16) float ray_dir_z[N];
     
-    memcpy(ray_org_x,oray->org_x,N*sizeof(float));
-    memcpy(ray_org_y,oray->org_y,N*sizeof(float));
-    memcpy(ray_org_z,oray->org_z,N*sizeof(float));
-    memcpy(ray_dir_x,oray->dir_x,N*sizeof(float));
-    memcpy(ray_dir_y,oray->dir_y,N*sizeof(float));
-    memcpy(ray_dir_z,oray->dir_z,N*sizeof(float));
+    copy<N>(ray_org_x,oray->org_x);
+    copy<N>(ray_org_y,oray->org_y);
+    copy<N>(ray_org_z,oray->org_z);
+    copy<N>(ray_dir_x,oray->dir_x);
+    copy<N>(ray_dir_y,oray->dir_y);
+    copy<N>(ray_dir_z,oray->dir_z);
     
-    memcpy(oray->org_x,iray->org_x,N*sizeof(float));
-    memcpy(oray->org_y,iray->org_y,N*sizeof(float));
-    memcpy(oray->org_z,iray->org_z,N*sizeof(float));
-    memcpy(oray->dir_x,iray->dir_x,N*sizeof(float));
-    memcpy(oray->dir_y,iray->dir_y,N*sizeof(float));
-    memcpy(oray->dir_z,iray->dir_z,N*sizeof(float));
+    copy<N>(oray->org_x,iray->org_x);
+    copy<N>(oray->org_y,iray->org_y);
+    copy<N>(oray->org_z,iray->org_z);
+    copy<N>(oray->dir_x,iray->dir_x);
+    copy<N>(oray->dir_y,iray->dir_y);
+    copy<N>(oray->dir_z,iray->dir_z);
     
     STAT(size_t cnt=0; for (size_t i=0; i<N; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(normal.travs,cnt,cnt,cnt);
@@ -1066,12 +1087,12 @@ RTC_NAMESPACE_BEGIN;
     scene->intersectors.occluded(valid,*oray,&context);
     instance_id_stack::pop(user_context);
 
-    memcpy(oray->org_x,ray_org_x,N*sizeof(float));
-    memcpy(oray->org_y,ray_org_y,N*sizeof(float));
-    memcpy(oray->org_z,ray_org_z,N*sizeof(float));
-    memcpy(oray->dir_x,ray_dir_x,N*sizeof(float));
-    memcpy(oray->dir_y,ray_dir_y,N*sizeof(float));
-    memcpy(oray->dir_z,ray_dir_z,N*sizeof(float));
+    copy<N>(oray->org_x,ray_org_x);
+    copy<N>(oray->org_y,ray_org_y);
+    copy<N>(oray->org_z,ray_org_z);
+    copy<N>(oray->dir_x,ray_dir_x);
+    copy<N>(oray->dir_y,ray_dir_y);
+    copy<N>(oray->dir_z,ray_dir_z);
   }
 
   RTC_API void rtcForwardOccluded4 (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay4* iray) 
