@@ -484,7 +484,7 @@ namespace embree
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     // === scratch buffer === 
-    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+    char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),gpu_device->verbose ? sycl::usm::alloc::shared : sycl::usm::alloc::device);
     assert(scratchBuffer);
     args.scratchBuffer = scratchBuffer;
     args.scratchBufferBytes = sizeTotal.scratchBufferBytes;
