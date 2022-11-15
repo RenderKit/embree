@@ -8,6 +8,7 @@
 #define SINGLE_WG_SWITCH_THRESHOLD 8*1024
 #define FAST_MC_THRESHOLD          1024*1024
 #define SMALL_SORT_THRESHOLD       1024*4
+#define MAX_LARGE_WGS              256
 
 static const float ESTIMATED_QUADIFICATION_FACTOR = 0.58;
 
@@ -42,7 +43,8 @@ namespace embree
 
   __forceinline uint estimateScratchBufferSize(const uint numPrimitives)
   {
-    return sizeof(PLOCGlobals) + sizeof(uint)*MAX_WGS + numPrimitives * sizeof(LeafGenerationData);
+    // === sizeof(uint)*MAX_LARGE_WGS for prefix sums across large work groups ===
+    return sizeof(PLOCGlobals) + sizeof(uint)*MAX_LARGE_WGS + numPrimitives * sizeof(LeafGenerationData);
   }
   
   void checkBVH2PlocHW(BVH2Ploc *bvh2, uint index,uint &nodes,uint &leaves,float &nodeSAH, float &leafSAH, const uint numPrimitives, const uint bvh2_max_allocations)
@@ -351,7 +353,9 @@ namespace embree
     sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
     const bool verbose1 = args.verbose >= 1;    
     const bool verbose2 = args.verbose >= 2;
-    const uint gpu_maxComputeUnits  = gpu_queue.get_device().get_info<sycl::info::device::max_compute_units>();    
+    const uint gpu_maxComputeUnits  = gpu_queue.get_device().get_info<sycl::info::device::max_compute_units>();
+    const uint MAX_WGS = gpu_maxComputeUnits / 8;
+    
     uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
   
     if (unlikely(verbose2))
@@ -371,7 +375,7 @@ namespace embree
     
     PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
     uint *const sync_mem = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
-    uint *const scratch  = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals) + sizeof(uint)*MAX_WGS);    
+    uint *const scratch  = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals) + sizeof(uint)*MAX_LARGE_WGS);    
     uint *const prims_per_geom_prefix_sum = (uint*)scratch;    
   
     // ======================          
@@ -549,14 +553,14 @@ namespace embree
     // ====================================
 
     if (numProcedurals)
-      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,bvh2,numQuads,host_device_tasks,create_primref_time,verbose2);
+      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads,host_device_tasks,create_primref_time,verbose2);
 
     // ==================================          
     // ==== create instance primrefs ====
     // ==================================
     
     if (numInstances)
-      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
+      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
 
     // === recompute actual number of primitives ===
     numPrimitives = numQuads + numInstances + numProcedurals;

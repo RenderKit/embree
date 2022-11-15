@@ -19,7 +19,6 @@
 #define PAIR_OFFSET_SHIFT         28
 #define GEOMID_MASK               (((uint)1<<PAIR_OFFSET_SHIFT)-1)
 #define LARGE_WG_SIZE             1024
-#define MAX_WGS                   64
 #define USE_NEW_OPENING           0
 
 namespace embree
@@ -1139,7 +1138,7 @@ namespace embree
     if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads", (float)dt);
   }
     
-  __forceinline uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+   __forceinline uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     const uint numWGs = min((numGeoms+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
     clearFirstScratchMemEntries(gpu_queue,scratch_mem,0,numWGs);
@@ -1303,7 +1302,7 @@ namespace embree
     return true;
   }
   
-  __forceinline uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  __forceinline uint createProcedurals_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     //FIXME: GPU version
     
