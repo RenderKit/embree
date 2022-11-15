@@ -405,51 +405,6 @@ namespace embree
     return *(Vec3f*)((char*)mesh.vertexBuffer + mesh.vertexStride * vtxID);
     
   }
-
-  __forceinline bool isValidTriangle(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint i, uint3 &indices)
-  {
-    const RTHWIF_TRIANGLE_INDICES &tri = getTriangleDesc(mesh,i);
-    const uint numVertices = mesh.vertexCount;
-    indices.x() = tri.v0;
-    indices.y() = tri.v1;
-    indices.z() = tri.v2;
-    if (max(tri.v0,max(tri.v1,tri.v2)) >= numVertices) return false;
-    const Vec3fa v0 = getVec3f(mesh,tri.v0);
-    const Vec3fa v1 = getVec3f(mesh,tri.v1);
-    const Vec3fa v2 = getVec3f(mesh,tri.v2);
-    
-    const float max_v0 = max(fabsf(v0.x),fabsf(v0.y),fabsf(v0.z));
-    const float max_v1 = max(fabsf(v1.x),fabsf(v1.y),fabsf(v1.z));
-    const float max_v2 = max(fabsf(v2.x),fabsf(v2.y),fabsf(v2.z));    
-    const static float FLT_LARGE = 1.844E18f;
-    const float max_value = max(max_v0,max(max_v1,max_v2));
-    return max_value < FLT_LARGE && sycl::isfinite(max_value);
-  }
-  
-  __forceinline bool isValidQuad(const RTHWIF_GEOMETRY_QUADS_DESC& mesh, const uint i, uint4 &indices)
-  {
-    const RTHWIF_QUAD_INDICES &quad = getQuadDesc(mesh,i);
-    const uint numVertices = mesh.vertexCount;
-    indices.x() = quad.v0;
-    indices.y() = quad.v1;
-    indices.z() = quad.v2;
-    indices.w() = quad.v3;    
-    if (max(max(quad.v0,quad.v1),max(quad.v2,quad.v3)) >= numVertices) return false;
-    
-    const Vec3fa v0 = getVec3f(mesh,quad.v0);
-    const Vec3fa v1 = getVec3f(mesh,quad.v1);
-    const Vec3fa v2 = getVec3f(mesh,quad.v2);
-    const Vec3fa v3 = getVec3f(mesh,quad.v3);
-    
-    const float max_v0 = max(fabsf(v0.x),fabsf(v0.y),fabsf(v0.z));
-    const float max_v1 = max(fabsf(v1.x),fabsf(v1.y),fabsf(v1.z));
-    const float max_v2 = max(fabsf(v2.x),fabsf(v2.y),fabsf(v2.z));
-    const float max_v3 = max(fabsf(v3.x),fabsf(v3.y),fabsf(v3.z));    
-    
-    const static float FLT_LARGE = 1.844E18f;
-    const float max_value = max(max(max_v0,max_v1),max(max_v2,max_v3));
-    return max_value < FLT_LARGE && sycl::isfinite(max_value);    
-  }
     
   __forceinline bool isValidTriangle(const RTHWIF_GEOMETRY_TRIANGLES_DESC& mesh, const uint i, uint3 &indices, gpu::AABB3f &bounds)
   {
@@ -866,7 +821,8 @@ namespace embree
                                const uint endPrimID    = min(startPrimID+COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE,numTriangles);
                                const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
                                uint3 tri_indices;
-                               bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices) : false;
+                               gpu::AABB3f tmp_bounds;
+                               bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,tmp_bounds) : false;
                                bool paired = false;
                                uint numQuads = 0;
                                uint active_mask = sub_group_ballot(valid);
@@ -921,7 +877,8 @@ namespace embree
                                const uint endPrimID    = min(startPrimID+COUNT_QUADS_PER_GEOMETRY_SEARCH_WG_SIZE,numQuads);
                                const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
                                uint4 quad_indices;
-                               bool valid = ID < endPrimID ? isValidQuad(*quadMesh,ID,quad_indices) : false;
+                               gpu::AABB3f tmp_bounds;
+                               bool valid = ID < endPrimID ? isValidQuad(*quadMesh,ID,quad_indices,tmp_bounds) : false;
                                uint active_mask = sub_group_ballot(valid);
                                uint numQuads = sycl::popcount(active_mask);
 
