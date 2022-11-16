@@ -41,6 +41,12 @@ jobs:
         echo "Setup GFX ${GFX_VERSION} for Linux"
         echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
         ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
+
+        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_PUBLIC | sed 's/.*:\ //')
+        echo "Setup GFX ${GFX_VERSION} for Linux"
+        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
+        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
+        
         GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_DEFAULT | sed 's/.*:\ //')
         echo "Setup GFX ${GFX_VERSION} for Windows"
         echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
@@ -105,29 +111,29 @@ jobs:
         scripts/test.py test --debug
         scripts/test.py test
 
-  continuous-linux-DG2-AOT-INT:
+  continuous-linux-DG2-JIT-INT-PUBLIC:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "build" ]'
-      artifact-out: continuous-linux-DG2-AOT-INT
+      artifact-out: continuous-linux-DG2-JIT-INT-PUBLIC
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON USERGEOM:ARGUMENTS FILTER_FUNCTION:ARGUMENTS sycl:dg2 tasking:INT intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:INT intensity:4 rt_validation_api:OFF gfx:PUBLIC
         scripts/test.py build --debug
         scripts/test.py build
 
-  continuous-linux-DG2-AOT-INT-test:
+  continuous-linux-DG2-JIT-INT-PUBLIC-test:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    needs: ["continuous-linux-DG2-AOT-INT"]
+    needs: ["continuous-linux-DG2-JIT-INT-PUBLIC"]
     with:
       image: embree/ubuntu:20.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
-      artifact-in: continuous-linux-DG2-AOT-INT
+      artifact-in: continuous-linux-DG2-JIT-INT-PUBLIC
       cmd: |
         scripts/test.py test --debug
         scripts/test.py test

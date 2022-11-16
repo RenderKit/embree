@@ -30,7 +30,13 @@ if [[ $GFX_DRIVER == *"linux"* ]] || [[ $GFX_DRIVER == *"Linux"* ]] ; then
   echo "  GFX_DRIVER=${GFX_DRIVER}"
   echo "  DST_DIR=${DST_DIR}"
   echo "  TOKEN=${TOKEN}"
-  DEBS="level-zero|intel-level-zero-gpu|intel-opencl-icd|libigc1|libigc-tools|libigdfcl1|libigdgmm"
+  
+  if [[ $GFX_DRIVER == *"open-linux"* ]] ; then
+    DEBS="*"
+  else
+    DEBS="level-zero|intel-level-zero-gpu|intel-opencl-icd|libigc1|libigc-tools|libigdfcl1|libigdgmm"
+  fi
+      
   PACKAGES=$(curl -H "X-JFrog-Art-Api:$TOKEN" -s $URL |
      sed 's/<a href/\n<a href/g' | sed 's/.deb"/.deb"\n/g' |
      grep -o '".*"' | grep deb | tr -d '"' | grep -E $DEBS |

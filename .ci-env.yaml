@@ -5,7 +5,7 @@
 
 variables:
   GFX_VERSION_LINUX_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12767/artifacts/Linux/Ubuntu/20.04/Release
-  GFX_VERSION_LINUX_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12767/artifacts/Linux/Ubuntu/20.04/Release
+  GFX_VERSION_LINUX_PUBLIC: open-linux-driver-builds/ci/dev_igc/open-linux-driver-ci-dev_igc-12785/artifacts/linux/ubuntu/20.04
   GFX_VERSION_WIN_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12767/artifacts/Windows
   GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12767/artifacts/Windows
   DPCPP_VERSION_LINUX: sycl-nightly/20220914
