@@ -182,7 +182,9 @@ namespace embree
     
     void setSceneFlags(RTCSceneFlags scene_flags);
     RTCSceneFlags getSceneFlags() const;
-    
+
+    void build_cpu_accels();
+    void build_gpu_accels();
     void commit (bool join);
     void commit_task ();
     void build () {}

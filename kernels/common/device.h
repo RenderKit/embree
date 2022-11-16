@@ -167,7 +167,6 @@ namespace embree
     void* dispatchGlobalsPtr = nullptr;
 
   public:
-    inline bool rthw_support() { return dispatchGlobalsPtr != nullptr; }
     inline sycl::device  &getGPUDevice()  { return gpu_device; }        
     inline sycl::context &getGPUContext() { return gpu_context; }    
 

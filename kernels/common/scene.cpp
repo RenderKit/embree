@@ -675,45 +675,11 @@ namespace embree
     geometryModCounters_[geomID] = 0;
   }
 
-  void Scene::commit_task ()
+  void Scene::build_cpu_accels()
   {
-    checkIfModifiedAndSet ();
-    if (!isModified()) {
-      return;
-    }
-    
-    /* print scene statistics */
-    if (device->verbosity(2))
-      printStatistics();
-
-    progress_monitor_counter = 0;
-    
-    /* gather scene stats and call preCommit function of each geometry */
-    this->world = parallel_reduce (size_t(0), geometries.size(), GeometryCounts (), 
-      [this](const range<size_t>& r)->GeometryCounts
-      {
-        GeometryCounts c;
-        for (auto i=r.begin(); i<r.end(); ++i) 
-        {
-          if (geometries[i] && geometries[i]->isEnabled()) 
-          {
-            geometries[i]->preCommit();
-            geometries[i]->addElementsToCount (c);
-            c.numFilterFunctions += (int) geometries[i]->hasFilterFunctions();
-          }
-        }
-        return c;
-      },
-      std::plus<GeometryCounts>()
-    );
-    
     /* select acceleration structures to build */
     unsigned int new_enabled_geometry_types = world.enabledGeometryTypesMask();
 
-#if defined(EMBREE_SYCL_SUPPORT)
-    if (!dynamic_cast<DeviceGPU*>(device)) // do not build software accel for GPU if not required
-#endif
-      
     if (flags_modified || new_enabled_geometry_types != enabled_geometry_types)
     {
       accels_init();
@@ -751,21 +717,65 @@ namespace embree
     /* build all hierarchies of this scene */
     accels_build();
 
-    /* build acceleration structure for rthw */
-#if defined(EMBREE_SYCL_SUPPORT)
-    if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
-      if (gpu_device->rthw_support()) {
-        const BBox3f aabb = rthwifBuild(this,quality_flags,hwaccel);
-        bounds = LBBox<embree::Vec3fa>(aabb);
-        hwaccel_bounds = aabb;
-      }
-#endif
-    
     /* make static geometry immutable */
     if (!isDynamicAccel()) {
       accels_immutable();
       flags_modified = true; // in non-dynamic mode we have to re-create accels
     }
+
+    if (device->verbosity(2)) {
+      std::cout << "created scene intersector" << std::endl;
+      accels_print(2);
+      std::cout << "selected scene intersector" << std::endl;
+      intersectors.print(2);
+    }
+  }
+
+  void Scene::build_gpu_accels()
+  {
+#if defined(EMBREE_SYCL_SUPPORT)
+    const BBox3f aabb = rthwifBuild(this,quality_flags,hwaccel);
+    bounds = LBBox<embree::Vec3fa>(aabb);
+    hwaccel_bounds = aabb;
+#endif
+  }
+
+  void Scene::commit_task ()
+  {
+    checkIfModifiedAndSet();
+    if (!isModified()) return;
+    
+    /* print scene statistics */
+    if (device->verbosity(2))
+      printStatistics();
+
+    progress_monitor_counter = 0;
+    
+    /* gather scene stats and call preCommit function of each geometry */
+    this->world = parallel_reduce (size_t(0), geometries.size(), GeometryCounts (), 
+      [this](const range<size_t>& r)->GeometryCounts
+      {
+        GeometryCounts c;
+        for (auto i=r.begin(); i<r.end(); ++i) 
+        {
+          if (geometries[i] && geometries[i]->isEnabled()) 
+          {
+            geometries[i]->preCommit();
+            geometries[i]->addElementsToCount (c);
+            c.numFilterFunctions += (int) geometries[i]->hasFilterFunctions();
+          }
+        }
+        return c;
+      },
+      std::plus<GeometryCounts>()
+    );
+
+#if defined(EMBREE_SYCL_SUPPORT)
+    if (DeviceGPU* gpu_device = dynamic_cast<DeviceGPU*>(device))
+      build_gpu_accels();
+    else
+#endif
+      build_cpu_accels();
 
     /* call postCommit function of each geometry */
     parallel_for(geometries.size(), [&] ( const size_t i ) {
@@ -776,13 +786,6 @@ namespace embree
         }
       });
 
-    if (device->verbosity(2)) {
-      std::cout << "created scene intersector" << std::endl;
-      accels_print(2);
-      std::cout << "selected scene intersector" << std::endl;
-      intersectors.print(2);
-    }
-    
     setModified(false);
   }
 
