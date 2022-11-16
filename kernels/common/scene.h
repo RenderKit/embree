@@ -182,12 +182,12 @@ namespace embree
     
     void setSceneFlags(RTCSceneFlags scene_flags);
     RTCSceneFlags getSceneFlags() const;
-    
+
+    void build_cpu_accels();
+    void build_gpu_accels();
     void commit (bool join);
     void commit_task ();
     void build () {}
-
-    void updateInterface();
 
     /* return number of geometries */
     __forceinline size_t size() const { return geometries.size(); }
@@ -255,7 +255,7 @@ namespace embree
     __forceinline bool isDynamicAccel() const { return scene_flags & RTC_SCENE_FLAG_DYNAMIC; }
     
     __forceinline bool hasContextFilterFunction() const {
-      return scene_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
+      return scene_flags & RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
     }
     
     __forceinline bool hasGeometryFilterFunction() {
@@ -266,9 +266,6 @@ namespace embree
       return hasContextFilterFunction() || hasGeometryFilterFunction();
     }
     
-    /* test if scene got already build */
-    __forceinline bool isBuild() const { return is_build; }
-
     void* createQBVH6Accel();
 
   public:
@@ -289,7 +286,6 @@ namespace embree
     RTCBuildQuality quality_flags;
     MutexSys buildMutex;
     SpinLock geometriesMutex;
-    bool is_build;
 
 #if defined(EMBREE_SYCL_SUPPORT)
   public:

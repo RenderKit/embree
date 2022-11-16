@@ -2831,7 +2831,7 @@ namespace embree
         child = parent;
       }
 
-      sflags.sflags = sflags.sflags | RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
+      sflags.sflags = sflags.sflags | RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
       
       IntersectContext ctx;
       rtcInitIntersectContext(&ctx.context);
@@ -3989,7 +3989,7 @@ namespace embree
     {
       RTCDeviceRef device = rtcNewDevice(nullptr);
       RTCSceneRef scene = rtcNewScene(device);
-      rtcSetSceneFlags(scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION | RTC_SCENE_FLAG_ROBUST);
+      rtcSetSceneFlags(scene, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS | RTC_SCENE_FLAG_ROBUST);
       
       createSphere(device, scene, 0, 0, 0, 1);
       createSphere(device, scene, 0, 0, 3, 1);

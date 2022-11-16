@@ -62,5 +62,5 @@ namespace embree
 
   bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device);
   
-  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& buffer_o, int gpu_build);
+  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& buffer_o);
 }

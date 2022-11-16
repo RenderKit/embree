@@ -103,10 +103,10 @@ namespace embree
             else if (feature == "FLAT_CURVES") feature_mask |= RTC_FEATURE_FLAGS_FLAT_CURVES;
             else if (feature == "NORMAL_ORIENTED_CURVES") feature_mask |= RTC_FEATURE_FLAGS_NORMAL_ORIENTED_CURVES;
             else if (feature == "INSTANCE") feature_mask |= RTC_FEATURE_FLAGS_INSTANCE;
-            else if (feature == "FILTER_FUNCTION_IN_CONTEXT") feature_mask |= RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_CONTEXT;
+            else if (feature == "FILTER_FUNCTION_IN_ARGUMENTS") feature_mask |= RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS;
             else if (feature == "FILTER_FUNCTION_IN_GEOMETRY") feature_mask |= RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY;
             else if (feature == "FILTER_FUNCTION") feature_mask |= RTC_FEATURE_FLAGS_FILTER_FUNCTION;
-            else if (feature == "USER_GEOMETRY_CALLBACK_IN_CONTEXT") feature_mask |= RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_CONTEXT;
+            else if (feature == "USER_GEOMETRY_CALLBACK_IN_ARGUMENTS") feature_mask |= RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS;
             else if (feature == "USER_GEOMETRY_CALLBACK_IN_GEOMETRY") feature_mask |= RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY;
             else if (feature == "USER_GEOMETRY") feature_mask |= RTC_FEATURE_FLAGS_USER_GEOMETRY;
             else if (feature == "ALL") feature_mask |= RTC_FEATURE_FLAGS_ALL;

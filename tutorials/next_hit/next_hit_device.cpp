@@ -108,7 +108,7 @@ struct IntersectContext
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION | RTC_SCENE_FLAG_ROBUST);
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS | RTC_SCENE_FLAG_ROBUST);
   
   /* commit changes to scene */
   return scene_out;

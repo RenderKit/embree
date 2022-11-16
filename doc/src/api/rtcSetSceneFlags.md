@@ -29,7 +29,7 @@ flags are:
   accuracy. This mode is typically used for avoiding artifacts caused
   by rays shooting through edges of neighboring primitives.
 
-+ `RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION`: Enables support for a
++ `RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS`: Enables support for a
   filter function inside the intersection context for this scene.
   See Section [rtcInitIntersectContext] for more details.
 

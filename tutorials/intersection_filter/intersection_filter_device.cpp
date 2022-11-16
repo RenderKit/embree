@@ -6,10 +6,10 @@
 namespace embree {
 
 /* all features required by this tutorial */
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_CONTEXT
+  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
 #else
 #define FEATURE_MASK     \
   RTC_FEATURE_FLAGS_TRIANGLE | \
@@ -103,7 +103,7 @@ void renderPixelStandard(const TutorialData& data,
     context.userRayExt = &primary;
 
     /* intersect ray with scene */
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     args.filter = intersectionFilter;
 #endif
     rtcIntersect1(data.g_scene,&context.context,RTCRayHit_(primary),&args);
@@ -129,7 +129,7 @@ void renderPixelStandard(const TutorialData& data,
     context.userRayExt = &shadow;
 
     /* trace shadow ray */
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     args.filter = occlusionFilter;
 #endif
     rtcOccluded1(data.g_scene,&context.context,RTCRay_(shadow),&args);
@@ -331,7 +331,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   data.colors[11] = Vec3fa(1,1,0);
 
   /* set intersection filter for the cube */
-#if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -363,7 +363,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
   data.colors[5] = Vec3fa(1,1,0); // back side
 
   /* set intersection filter for the cube */
-#if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -401,14 +401,14 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-#if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
   data.intersectionFilter = (void*) GET_FUNCTION_POINTER(intersectionFilter);
   data.occlusionFilter    = (void*) GET_FUNCTION_POINTER(occlusionFilter   );
 #endif
   
   /* create scene */
   g_scene = data.g_scene = rtcNewScene(g_device);
-  rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
+  rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
   rtcSetSceneBuildQuality(data.g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
 
   /* add cube */

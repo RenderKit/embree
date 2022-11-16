@@ -70,7 +70,7 @@ stage. Having such a per ray-query filter function can be useful to
 implement modifications of the behavior of the query, such as
 collecting all hits or accumulating transparencies. The support for
 the context filter function must be enabled for a scene by using the
-`RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION` scene flag. In case of
+`RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS` scene flag. In case of
 instancing this feature has to get enabled also for each instantiated
 scene.
 

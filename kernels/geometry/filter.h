@@ -25,7 +25,7 @@ namespace embree
       }
 #endif
 
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
       if (context->getFilter()) {
         context->getFilter()(args);
 
@@ -61,7 +61,7 @@ namespace embree
           args->geometry->intersectionFilterN(filter_args);
 #endif
 
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
 #if defined(__SYCL_DEVICE_ONLY__)
       if (args->filter)
         args->filter(filter_args);
@@ -85,7 +85,7 @@ namespace embree
       }
 #endif
 
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
       if (context->getFilter()) {
         context->getFilter()(args);
 
@@ -119,7 +119,7 @@ namespace embree
           args->geometry->occlusionFilterN(filter_args);
 #endif
 
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
 #if defined(__SYCL_DEVICE_ONLY__)
       if (args->filter)
         args->filter(filter_args);
@@ -145,7 +145,7 @@ namespace embree
       vbool<K> valid_o = *mask != vint<K>(zero);
       if (none(valid_o)) return valid_o;
 
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
       if (context->getFilter()) {
         context->getFilter()(args);
       }
@@ -187,7 +187,7 @@ namespace embree
       vbool<K> valid_o = *mask != vint<K>(zero);
       if (none(valid_o)) return valid_o;
 
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
       if (context->getFilter()) {
         context->getFilter()(args);
       }

@@ -115,7 +115,7 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT-INT
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:4
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON USERGEOM:ARGUMENTS FILTER_FUNCTION:ARGUMENTS sycl:dg2 tasking:INT intensity:4
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -253,7 +253,7 @@ jobs:
 #    with:
 #      runs-on: '[ "Windows", "NAS", "dg2" ]'
 #      cmd: |
-#        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON USERGEOM:CONTEXT FILTER_FUNCTION:CONTEXT sycl:dg2 tasking:INT intensity:3 implicit_dispatch_globals:OFF
+#        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON USERGEOM:ARGUMENTS FILTER_FUNCTION:ARGUMENTS sycl:dg2 tasking:INT intensity:3 implicit_dispatch_globals:OFF
 #        python scripts/test.py build
 #        python scripts/test.py test
 

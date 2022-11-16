@@ -315,7 +315,7 @@ namespace embree
     }
   };
   
-  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel, int gpu_build)
+  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
   {
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
 

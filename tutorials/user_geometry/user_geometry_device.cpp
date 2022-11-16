@@ -6,11 +6,11 @@
 namespace embree {
 
 /* all features required by this tutorial */
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_CONTEXT | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_CONTEXT
+  RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS | \
+  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
 #else
 #define FEATURE_MASK     \
   RTC_FEATURE_FLAGS_TRIANGLE | \
@@ -311,7 +311,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
     rtcFilterIntersection(args,&fargs);
@@ -348,7 +348,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
     rtcFilterIntersection(args,&fargs);
@@ -417,7 +417,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
     rtcFilterOcclusion(args,&fargs);
@@ -454,7 +454,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
     rtcFilterOcclusion(args,&fargs);
@@ -531,7 +531,7 @@ Sphere* createAnalyticalSphere (RTCScene scene, const Vec3fa& p, float r)
   rtcSetGeometryUserPrimitiveCount(geom,1);
   rtcSetGeometryUserData(geom,sphere);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
-#if !EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if !EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
     rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncPtr);
 #endif
@@ -553,11 +553,11 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
   rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
-#if !EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if !EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
   rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncPtr);
 #endif
-#if !EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
   rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFuncPtr);
   rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFuncPtr);
 #endif
@@ -747,10 +747,10 @@ Vec3fa renderPixelStandard(const TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
   args.filter = contextFilterFunction;
 #endif
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   args.intersect = contextIntersectFunc;
 #endif
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
@@ -782,10 +782,10 @@ Vec3fa renderPixelStandard(const TutorialData& data,
     Ray shadow(ray.org + 0.999f*ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     args.filter = contextFilterFunction;
 #endif
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     args.occluded = contextOccludedFunc;
 #endif
     args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
