@@ -187,8 +187,6 @@ namespace embree
     void commit_task ();
     void build () {}
 
-    void updateInterface();
-
     /* return number of geometries */
     __forceinline size_t size() const { return geometries.size(); }
     
@@ -266,9 +264,6 @@ namespace embree
       return hasContextFilterFunction() || hasGeometryFilterFunction();
     }
     
-    /* test if scene got already build */
-    __forceinline bool isBuild() const { return is_build; }
-
     void* createQBVH6Accel();
 
   public:
@@ -289,7 +284,6 @@ namespace embree
     RTCBuildQuality quality_flags;
     MutexSys buildMutex;
     SpinLock geometriesMutex;
-    bool is_build;
 
 #if defined(EMBREE_SYCL_SUPPORT)
   public:

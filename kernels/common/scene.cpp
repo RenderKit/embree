@@ -45,7 +45,7 @@ namespace embree
       flags_modified(true), enabled_geometry_types(0),
       scene_flags(RTC_SCENE_FLAG_NONE),
       quality_flags(RTC_BUILD_QUALITY_MEDIUM),
-      is_build(false), modified(true),
+      modified(true),
       taskGroup(new TaskGroup()),
       progressInterface(this), progress_monitor_function(nullptr), progress_monitor_ptr(nullptr), progress_monitor_counter(0)
   {
@@ -675,11 +675,6 @@ namespace embree
     geometryModCounters_[geomID] = 0;
   }
 
-  void Scene::updateInterface()
-  {
-    is_build = true;
-  }
-
   void Scene::commit_task ()
   {
     checkIfModifiedAndSet ();
@@ -780,8 +775,6 @@ namespace embree
           geometryModCounters_[i] = geometries[i]->getModCounter();
         }
       });
-      
-    updateInterface();
 
     if (device->verbosity(2)) {
       std::cout << "created scene intersector" << std::endl;
@@ -849,7 +842,6 @@ namespace embree
     }
     catch (...) {
       accels_clear();
-      updateInterface();
       Lock<MutexSys> lock(taskGroup->schedulerMutex);
       taskGroup->scheduler = nullptr;
       throw;
@@ -917,7 +909,6 @@ namespace embree
       _mm_setcsr(mxcsr);
       
       accels_clear();
-      updateInterface();
       throw;
     }
   }
@@ -960,7 +951,6 @@ namespace embree
       _mm_setcsr(mxcsr);
       
       accels_clear();
-      updateInterface();
       throw;
     }
   }
