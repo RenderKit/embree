@@ -206,12 +206,12 @@ extern "C" RTCScene initializeScene(TutorialData& data, RTCDevice device)
   RandomSampler_init(sampler, 98248);
 
   RTCScene twig = rtcNewScene(device);
-  rtcSetSceneFlags(twig, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
+  rtcSetSceneFlags(twig, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
   addMesh(device, twig, Twig::mesh);
   rtcCommitScene(twig);
 
   RTCScene tree = rtcNewScene(device);
-  rtcSetSceneFlags(tree, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
+  rtcSetSceneFlags(tree, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
   addInstances(device, tree, twig, Twigs01::instances, data.g_normalTransforms[1]);
 
   addMesh(device, tree, Tree01::mesh);
@@ -219,7 +219,7 @@ extern "C" RTCScene initializeScene(TutorialData& data, RTCDevice device)
   rtcReleaseScene(twig);
 
   RTCScene scene = rtcNewScene(device);
-  rtcSetSceneFlags(scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
+  rtcSetSceneFlags(scene, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
   addInstances(device, scene, tree, Trees::instances, data.g_normalTransforms[0]);
   addMesh(device, scene, Ground::mesh);
 

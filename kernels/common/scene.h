@@ -255,7 +255,7 @@ namespace embree
     __forceinline bool isDynamicAccel() const { return scene_flags & RTC_SCENE_FLAG_DYNAMIC; }
     
     __forceinline bool hasContextFilterFunction() const {
-      return scene_flags & RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION;
+      return scene_flags & RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
     }
     
     __forceinline bool hasGeometryFilterFunction() {

@@ -30,8 +30,8 @@ namespace embree
     }
 #endif
 
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_CONTEXT)
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+    if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS)
     {
       RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)
@@ -68,8 +68,8 @@ namespace embree
     }
 #endif
 
-#if EMBREE_FILTER_FUNCTION_IN_CONTEXT
-    if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_CONTEXT)
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+    if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS)
     {
       RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)

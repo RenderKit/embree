@@ -174,7 +174,7 @@ namespace embree
         intersectFunc = intersectorN.intersect;
 #endif
         
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
         if (context->getIntersectFunction())
           intersectFunc = context->getIntersectFunction();
 #endif
@@ -210,7 +210,7 @@ namespace embree
         occludedFunc = intersectorN.occluded;
 #endif
 
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
         if (context->getOccludedFunction())
           occludedFunc = context->getOccludedFunction();
 #endif
@@ -249,9 +249,9 @@ namespace embree
           intersectFunc = (RTCIntersectFunctionSYCL) intersectorN.intersect;
 #endif
         
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
 #if defined(__SYCL_DEVICE_ONLY__)
-        if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_CONTEXT)
+        if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS)
 #endif
           if (context->getIntersectFunction())
             intersectFunc = (RTCIntersectFunctionSYCL) context->getIntersectFunction();
@@ -292,9 +292,9 @@ namespace embree
           occludedFunc = (RTCOccludedFunctionSYCL) intersectorN.occluded;
 #endif
         
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
 #if defined(__SYCL_DEVICE_ONLY__)
-        if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_CONTEXT)
+        if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS)
 #endif
           if (context->getOccludedFunction())
             occludedFunc = (RTCOccludedFunctionSYCL) context->getOccludedFunction();
@@ -332,7 +332,7 @@ namespace embree
         intersectFunc = intersectorN.intersect;
 #endif
         
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
         if (context->getIntersectFunction())
           intersectFunc = context->getIntersectFunction();
 #endif
@@ -366,7 +366,7 @@ namespace embree
         occludedFunc = intersectorN.occluded;
 #endif
         
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
         if (context->getOccludedFunction())
           occludedFunc = context->getOccludedFunction();
 #endif

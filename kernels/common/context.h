@@ -26,7 +26,7 @@ namespace embree
       return args->filter;
     }
 
-#if EMBREE_GEOMETRY_USER_IN_CONTEXT
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     RTCIntersectFunctionN getIntersectFunction() const {
       return args->intersect;
     }

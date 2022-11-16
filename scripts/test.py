@@ -422,13 +422,13 @@ def runConfig(config):
     conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
 
   if "FILTER_FUNCTION" in config:
-    if config["FILTER_FUNCTION"] == "CONTEXT":
+    if config["FILTER_FUNCTION"] == "ARGUMENTS":
       conf.append("-D EMBREE_FILTER_FUNCTION=ON")
-      conf.append("-D EMBREE_FILTER_FUNCTION_IN_CONTEXT=ON")
+      conf.append("-D EMBREE_FILTER_FUNCTION_IN_ARGUMENTS=ON")
       conf.append("-D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=OFF")
     elif config["FILTER_FUNCTION"] == "GEOMETRY":
       conf.append("-D EMBREE_FILTER_FUNCTION=ON")
-      conf.append("-D EMBREE_FILTER_FUNCTION_IN_CONTEXT=OFF")
+      conf.append("-D EMBREE_FILTER_FUNCTION_IN_ARGUMENTS=OFF")
       conf.append("-D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=ON")
     else:
        conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
@@ -455,13 +455,13 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
 
   if "USERGEOM" in config:
-    if config["USERGEOM"] == "CONTEXT":
+    if config["USERGEOM"] == "ARGUMENTS":
       conf.append("-D EMBREE_GEOMETRY_USER=ON")
-      conf.append("-D EMBREE_GEOMETRY_USER_IN_CONTEXT=ON")
+      conf.append("-D EMBREE_GEOMETRY_USER_IN_ARGUMENTS=ON")
       conf.append("-D EMBREE_GEOMETRY_USER_IN_GEOMETRY=OFF")
     elif config["USERGEOM"] == "GEOMETRY":
       conf.append("-D EMBREE_GEOMETRY_USER=ON")
-      conf.append("-D EMBREE_GEOMETRY_USER_IN_CONTEXT=OFF")
+      conf.append("-D EMBREE_GEOMETRY_USER_IN_ARGUMENTS=OFF")
       conf.append("-D EMBREE_GEOMETRY_USER_IN_GEOMETRY=ON")
     else:
       conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
