@@ -220,11 +220,27 @@ namespace embree
 
   RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, uint verbose_level=0)
   {
+    double time0 = getSeconds();
+    
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries = args.numGeometries;
+    sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
+
+    // =============================================================================    
+    // === GPU-based primitive count estimation including triangle quadification ===
+    // =============================================================================
     
-    const PrimitiveCounts primCounts = countPrimitives(geometries,numGeometries);
+    PrimitiveCounts *host_device_primitive_counts = (PrimitiveCounts*)sycl::aligned_alloc(64,sizeof(PrimitiveCounts),gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::shared);
+
+    double estimation_time;
+    getEstimatedPrimitiveCounts(gpu_queue,geometries,numGeometries,host_device_primitive_counts, args.flags & RTHWIF_BUILD_FLAG_DYNAMIC,estimation_time,verbose_level >= 2);
+
+    const PrimitiveCounts primCounts = *host_device_primitive_counts;
+
+    sycl::free(host_device_primitive_counts,gpu_queue.get_context());
+        
+    //const PrimitiveCounts primCounts = countPrimitives(geometries,numGeometries);
 
     const uint numQuads       = primCounts.numQuads;
     const uint numTriangles   = primCounts.numTriangles;
@@ -269,11 +285,16 @@ namespace embree
     memset(&size_o,0,bytes_o);
     memcpy(&size_o,&size,bytes_o);
     size_o.structBytes = bytes_o;
+
+    double time1 = getSeconds();
+    if (verbose_level >= 1)
+      std::cout << "rthwifGetAccelSizeGPU time = " << (float)(time1-time0)*1000.0f << " ms" << std::endl;
+    
     return RTHWIF_ERROR_NONE;
   }
 
   RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0)
-  {
+  {    
     double time0 = getSeconds();
     
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
@@ -335,7 +356,7 @@ namespace embree
 
     double time1 = getSeconds();
     if (verbose_level >= 1)
-      std::cout << "Device Prefetch Time " << (float)(time1-time0)*1000.0f << " ms" << std::endl;
+      std::cout << "rthwifPrefetchAccelGPU time = " << (float)(time1-time0)*1000.0f << " ms" << std::endl;
     
     return RTHWIF_ERROR_NONE;      
   }
@@ -498,7 +519,7 @@ namespace embree
 
     const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
     const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
-    const uint NUM_ACTIVE_LARGE_WGS = min((numPrimitives+1024-1)/1024,(uint)MAX_WGS);
+    const uint NUM_ACTIVE_LARGE_WGS = min((numPrimitives+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
 
     // ===========================
     // === set up all pointers ===
@@ -647,7 +668,7 @@ namespace embree
       {
         const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);        
         const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);          
-        const uint sortWGs = min(max(min((int)nextPowerOf2/1024,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
+        const uint sortWGs = min(max(min((int)nextPowerOf2/LARGE_WG_SIZE,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
 
         gpu::radix_sort_Nx8Bit(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[1], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[0], numPrimitives, (uint*)scratch, 3, 8, sortWGs);
       }      
