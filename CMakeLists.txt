@@ -196,7 +196,7 @@ ELSEIF (EMBREE_SYCL_AOT_DEVICES STREQUAL "pvc")
   SET(EMBREE_SYCL_AOT_DEVICE_REVISION 3)
 ENDIF()
 
-OPTION(EMBREE_RAY_MASK "Enables ray mask support.")
+OPTION(EMBREE_RAY_MASK "Enables ray mask support." ON)
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
 
 OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)

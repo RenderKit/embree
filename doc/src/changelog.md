@@ -5,6 +5,7 @@ Version History
 -   Added support for user geometry callback function pointer passed through intersection context
 -   rtcFilterIntersection now only invokes geometry filter function, not the context filter function.
 -   Removed stream API.
+-   Ray masking is enabled by default now as required by most users.
 
 ### Embree 3.13.6
 -  Fixed compilation issues for ARM AArch64 processor under Linux.
