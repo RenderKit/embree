@@ -24,7 +24,7 @@ Embree C99 API. To enable SYCL support you have to include the
 
 Next you need to initializes a DPC++ Embree device using the
 `rtcNewSYCLDevice` API function by providing a SYCL context and
-queue.
+device.
 
 Embree provides the `rtcIsSYCLDeviceSupported` API function to check
 if some SYCL device is supported by Embree. You can also use the
@@ -35,6 +35,12 @@ is supported by Embree, e.g.:
     sycl::queue queue(device, exception_handler);
     sycl::context context(device);
     RTCDevice device = rtcNewSYCLDevice(context,device,"");
+
+Scenes created with an Embree SYCL device can only get used to trace
+rays using SYCL on the GPU, it is not possible to trace rays on the
+CPU with such a device. To render on the CPU and GPU in parallel, the
+user has to create a second standard Embree device and create a second
+scene to be used on the CPU.
 
 Files containing SYCL code, have to get compiled with the
 [Intel(R) oneAPI DPC++
