@@ -462,18 +462,12 @@ namespace embree
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dynamic_cast<DeviceGPU*>(scene->device)->dispatchGlobalsPtr;
 #endif
-
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    args.sycl_queue = &sycl_queue;
-    args.verbose = gpu_device->verbose;
-#endif
-
     
     RTHWIF_ACCEL_SIZE sizeTotal;
     memset(&sizeTotal,0,sizeof(RTHWIF_ACCEL_SIZE));
     sizeTotal.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,sizeTotal);    
+    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,sizeTotal,&sycl_queue,gpu_device->verbose);    
 #else    
     RTHWIF_ERROR err = rthwifGetAccelSize(args,sizeTotal);
 #endif    
@@ -487,13 +481,7 @@ namespace embree
     char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),gpu_device->verbose > 1 ? sycl::usm::alloc::shared : sycl::usm::alloc::device);
     assert(scratchBuffer);
     args.scratchBuffer = scratchBuffer;
-    args.scratchBufferBytes = sizeTotal.scratchBufferBytes;
-    
-    // === host device communication buffer ===
-    char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,RTHWIF_GPU_BUILDER_HOST_DEVICE_COMMUNICATION_BUFFER_SIZE,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::host);
-    assert(host_device_tasks);
-    args.hostDeviceCommPtr = hostDeviceCommPtr;
-    
+    args.scratchBufferBytes = sizeTotal.scratchBufferBytes;    
 #else        
     std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
     args.scratchBuffer = scratchBuffer.data();
@@ -538,12 +526,12 @@ namespace embree
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        err = rthwifPrefetchAccelGPU(args);          
+        err = rthwifPrefetchAccelGPU(args,&sycl_queue,gpu_device->verbose);          
 #endif
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
         
-        err = rthwifBuildAccelGPU(args);
+        err = rthwifBuildAccelGPU(args,&sycl_queue,gpu_device->verbose);
         if (err == RTHWIF_ERROR_NONE && gpu_device->verbosity(2))
         {
           QBVH6* qbvh   = (QBVH6*)args.accelBuffer;
@@ -593,7 +581,6 @@ namespace embree
     sycl::free(geomDescr        ,gpu_device->getGPUContext());
     sycl::free(geomDescrData    ,gpu_device->getGPUContext());    
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
-    sycl::free(hostDeviceCommPtr,gpu_device->getGPUContext());
 #endif    
     return fullBounds;
   }

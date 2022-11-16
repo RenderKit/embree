@@ -5,10 +5,11 @@
 #include "builder/qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
 
-#define SINGLE_WG_SWITCH_THRESHOLD 8*1024
-#define FAST_MC_THRESHOLD          1024*1024
-#define SMALL_SORT_THRESHOLD       1024*4
-#define MAX_LARGE_WGS              256
+#define SINGLE_WG_SWITCH_THRESHOLD            8*1024
+#define FAST_MC_THRESHOLD                     1024*1024
+#define SMALL_SORT_THRESHOLD                  1024*4
+#define MAX_LARGE_WGS                         256
+#define HOST_DEVICE_COMMUNICATION_BUFFER_SIZE 16*sizeof(uint)
 
 static const float ESTIMATED_QUADIFICATION_FACTOR = 0.58;
 
@@ -217,7 +218,7 @@ namespace embree
 // =================================================================================================================================================================================
   
 
-  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o)
+  RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, uint verbose_level=0)
   {
     RTHWIF_BUILD_ACCEL_ARGS args = rthwifPrepareBuildAccelArgs(args_i);
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
@@ -251,7 +252,7 @@ namespace embree
     
     const size_t scratchBytes = estimateScratchBufferSize(std::max(numPrimitives,numGeometries));
 
-    if (args_i.verbose == 2)
+    if (verbose_level >= 2)
     {
       PRINT4(numTriangles,numQuads,numProcedurals,numInstances);      
       PRINT2(numTriangles,ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR));          
@@ -271,11 +272,11 @@ namespace embree
     return RTHWIF_ERROR_NONE;
   }
 
-  RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
+  RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0)
   {
     double time0 = getSeconds();
     
-    sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
+    sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries                = args.numGeometries;  
 
@@ -333,13 +334,13 @@ namespace embree
     gpu::waitOnEventAndCatchException(queue_event);
 
     double time1 = getSeconds();
-    if (args.verbose == 1)
+    if (verbose_level >= 1)
       std::cout << "Device Prefetch Time " << (float)(time1-time0)*1000.0f << " ms" << std::endl;
     
     return RTHWIF_ERROR_NONE;      
   }
 
-  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args)
+  RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0)
   {
     BuildTimer timer;
     timer.reset();
@@ -350,14 +351,15 @@ namespace embree
     // === GPU device/queue/context ===
     // ================================
   
-    sycl::queue  &gpu_queue  = *(sycl::queue*)args.sycl_queue;
-    const bool verbose1 = args.verbose >= 1;    
-    const bool verbose2 = args.verbose >= 2;
+    sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
+    const bool verbose1 = verbose_level >= 1;    
+    const bool verbose2 = verbose_level >= 2;
     const uint gpu_maxComputeUnits  = gpu_queue.get_device().get_info<sycl::info::device::max_compute_units>();
     const uint MAX_WGS = gpu_maxComputeUnits / 8;
     
-    uint *host_device_tasks = (uint*)args.hostDeviceCommPtr;
-  
+    uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,HOST_DEVICE_COMMUNICATION_BUFFER_SIZE,gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::host);
+
+    
     if (unlikely(verbose2))
     {
       const uint gpu_maxWorkGroupSize = gpu_queue.get_device().get_info<sycl::info::device::max_work_group_size>();
@@ -481,15 +483,16 @@ namespace embree
     // =================================================================
 
     const uint required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals) + leaf_size;
-    if (allocated_size < required_size)
+    if (unlikely(allocated_size < required_size))
     {
-      if (unlikely(args.verbose))
+      if (unlikely(verbose2))
       {
         PRINT2(required_size,allocated_size);
         PRINT2(node_size,estimateSizeInternalNodes(numQuads,numInstances,numProcedurals));        
         PRINT3("RETRY BVH BUILD DUE BECAUSE OF SMALL ACCEL BUFFER ALLOCATION!!!", args.accelBufferBytes,required_size );
       }
       if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size;
+      if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());
       return RTHWIF_ERROR_RETRY;
     }
 
@@ -574,7 +577,11 @@ namespace embree
     // === test for empty scene again after all final primitive counts are available ===
     // =================================================================================
 
-    if (unlikely(numPrimitives == 0)) return createEmptyBVH(args,gpu_queue);
+    if (unlikely(numPrimitives == 0))
+    {
+      if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
+      return createEmptyBVH(args,gpu_queue);
+    }
 
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);    
@@ -806,6 +813,7 @@ namespace embree
     if (unlikely(convert_success == false))
     {
       if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size*2; // should never happen
+      if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
       return RTHWIF_ERROR_RETRY;
     }
     
@@ -828,9 +836,11 @@ namespace embree
     }        
 #endif
 
+    if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
+    
     if (unlikely(verbose1))
       std::cout << "BVH build time: host = " << timer.get_total_host_time() << " ms, device = " << timer.get_total_device_time() << " ms " << std::endl;
-    
+
     return RTHWIF_ERROR_NONE;    
   }
 }

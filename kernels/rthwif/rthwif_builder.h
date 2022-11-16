@@ -345,12 +345,6 @@ typedef struct RTHWIF_BUILD_ACCEL_ARGS
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
   void* dispatchGlobalsPtr;
 #endif
-
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-  void *sycl_queue;
-  void *hostDeviceCommPtr;
-  uint verbose;
-#endif
   
 } RTHWIF_BUILD_ACCEL_ARGS;
 
@@ -463,8 +457,7 @@ RTHWIF_API RTHWIF_ERROR rthwifJoinParallelOperation( RTHWIF_PARALLEL_OPERATION p
 
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-#define RTHWIF_GPU_BUILDER_HOST_DEVICE_COMMUNICATION_BUFFER_SIZE (16*sizeof(uint))
-RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o); 
-RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args);
-RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args); 
+RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, uint verbose_level=0); 
+RTHWIF_API RTHWIF_ERROR rthwifBuildAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0);
+RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0); 
 #endif 

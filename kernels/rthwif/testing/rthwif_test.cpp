@@ -1150,17 +1150,12 @@ struct Scene
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
     args.dispatchGlobalsPtr = dispatchGlobalsPtr;
 #endif
-
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    args.sycl_queue  = &queue;
-    args.verbose = VERBOSE;
-#endif
     
     RTHWIF_ACCEL_SIZE size;
     memset(&size,0,sizeof(RTHWIF_ACCEL_SIZE));
     size.structBytes = sizeof(RTHWIF_ACCEL_SIZE);
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,size);    
+    RTHWIF_ERROR err = rthwifGetAccelSizeGPU(args,size,&queue,VERBOSE);    
 #else    
     RTHWIF_ERROR err = rthwifGetAccelSize(args,size);
 #endif    
@@ -1176,9 +1171,6 @@ struct Scene
       // === scratch buffer === 
     char *scratchBuffer  = (char*)sycl::aligned_alloc(64,size.scratchBufferBytes+sentinelBytes,device,context,sycl::usm::alloc::shared);
     assert(scratchBuffer);    
-    // === host device communication buffer ===
-    char *hostDeviceCommPtr = (char*)sycl::aligned_alloc(64,sizeof(uint)*4,device,context,sycl::usm::alloc::host); // FIXME
-    args.hostDeviceCommPtr = hostDeviceCommPtr;
     memset(scratchBuffer,0,size.scratchBufferBytes+sentinelBytes);
     args.scratchBuffer = scratchBuffer;
     args.scratchBufferBytes = size.scratchBufferBytes;           
@@ -1209,7 +1201,7 @@ struct Scene
       args.accelBufferBytes = size.accelBufferWorstCaseBytes;
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
-      rthwifPrefetchAccelGPU(args);      
+      rthwifPrefetchAccelGPU(args,&queue,VERBOSE);      
 #endif
       
       /* build accel */
@@ -1219,8 +1211,7 @@ struct Scene
       {
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        args.verbose = VERBOSE;
-        err = rthwifBuildAccelGPU(args);        
+        err = rthwifBuildAccelGPU(args,&queue,VERBOSE);        
 #else                
         err = rthwifBuildAccel(args);
 #endif        
@@ -1264,8 +1255,7 @@ struct Scene
         args.accelBufferBytes = accelBytes;
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        args.verbose = VERBOSE;
-        err = rthwifBuildAccelGPU(args);
+        err = rthwifBuildAccelGPU(args,&queue,VERBOSE);
 #else        
         err = rthwifBuildAccel(args);
 #endif        
@@ -1316,7 +1306,6 @@ struct Scene
     }
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    sycl::free(hostDeviceCommPtr,context);    
     sycl::free(scratchBuffer,context);    
     sycl::free(geom    ,context);
     sycl::free(desc   ,context);    
