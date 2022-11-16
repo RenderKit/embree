@@ -36,8 +36,6 @@ namespace embree
   ssize_t Device::debug_int2 = 0;
   ssize_t Device::debug_int3 = 0;
 
-  DECLARE_SYMBOL2(RayStreamFilterFuncs,rayStreamFilterFuncs);
-
   static MutexSys g_mutex;
   static std::map<Device*,size_t> g_cache_size_map;
   static std::map<Device*,size_t> g_num_threads_map;
@@ -139,13 +137,6 @@ namespace embree
 
     /* setup tasking system */
     initTaskingSystem(numThreads);
-
-    /* ray stream SOA to AOS conversion */
-#if defined(EMBREE_RAY_PACKETS)
-    RayStreamFilterFuncsType rayStreamFilterFuncs;
-    SELECT_SYMBOL_DEFAULT_SSE42_AVX_AVX2_AVX512(enabled_cpu_features,rayStreamFilterFuncs);
-    rayStreamFilters = rayStreamFilterFuncs();
-#endif
   }
 
   Device::~Device ()
@@ -476,12 +467,6 @@ namespace embree
     case RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED: return 0;
 #endif
 
-#if defined(EMBREE_RAY_PACKETS)
-    case RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED:  return 1;
-#else
-    case RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED:  return 0;
-#endif
-    
 #if defined(EMBREE_RAY_MASK)
     case RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED: return 1;
 #else

@@ -96,11 +96,6 @@ IF (NOT EMBREE_SYCL_PVC) # started to hang on PVC
 ENDIF()
 ADD_SUBDIRECTORY(multiscene_geometry)
 
-IF (EMBREE_RAY_PACKETS)
-  ADD_SUBDIRECTORY(viewer_stream)
-  ADD_SUBDIRECTORY(viewer_anim)
-ENDIF()
-
 ADD_SUBDIRECTORY(embree_tests)
 
 ADD_SUBDIRECTORY(minimal)

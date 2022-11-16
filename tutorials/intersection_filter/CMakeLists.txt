@@ -1,7 +1,7 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-IF(EMBREE_FILTER_FUNCTION)
+IF (EMBREE_FILTER_FUNCTION)
 
 INCLUDE(tutorial)
 ADD_TUTORIAL(intersection_filter)
@@ -10,10 +10,6 @@ ADD_TUTORIAL_SYCL(intersection_filter)
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
   ADD_EMBREE_TEST(intersection_filter)
-  IF (EMBREE_RAY_PACKETS AND EMBREE_GEOMETRY_USER_IN_GEOMETRY AND EMBREE_FILTER_FUNCTION_IN_GEOMETRY)
-    ADD_EMBREE_TEST2(intersection_filter_stream_coherent   intersection_filter "--mode stream --coherent")
-    ADD_EMBREE_TEST2(intersection_filter_stream_incoherent intersection_filter "--mode stream --incoherent")
-  ENDIF()
 ENDIF()
 
 ENDIF()

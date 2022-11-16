@@ -10,8 +10,6 @@
 
 namespace embree
 {
-  static const size_t MAX_INTERNAL_STREAM_SIZE = 32;
-
   /* Ray structure for K rays */
   template<int K>
   struct RayK

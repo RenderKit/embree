@@ -496,46 +496,6 @@
 ```
 \pagebreak
 
-## rtcIntersect1M
-``` {include=src/api/rtcIntersect1M.md}
-```
-\pagebreak
-
-## rtcOccluded1M
-``` {include=src/api/rtcOccluded1M.md}
-```
-\pagebreak
-
-## rtcIntersect1Mp
-``` {include=src/api/rtcIntersect1Mp.md}
-```
-\pagebreak
-
-## rtcOccluded1Mp
-``` {include=src/api/rtcOccluded1Mp.md}
-```
-\pagebreak
-
-## rtcIntersectNM
-``` {include=src/api/rtcIntersectNM.md}
-```
-\pagebreak
-
-## rtcOccludedNM
-``` {include=src/api/rtcOccludedNM.md}
-```
-\pagebreak
-
-## rtcIntersectNp
-``` {include=src/api/rtcIntersectNp.md}
-```
-\pagebreak
-
-## rtcOccludedNp
-``` {include=src/api/rtcOccludedNp.md}
-```
-\pagebreak
-
 ## rtcInitPointQueryContext
 ``` {include=src/api/rtcInitPointQueryContext.md}
 ```

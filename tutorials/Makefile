@@ -1,7 +1,7 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
-ispc2cpp: common triangle_geometry point_geometry dynamic_scene user_geometry viewer viewer_stream viewer_anim instanced_geometry intersection_filter pathtracer hair_geometry subdivision_geometry displacement_geometry lazy_geometry motion_blur_geometry interpolation_geometry curve_geometry grid_geometry quaternion_motion_blur
+ispc2cpp: common triangle_geometry point_geometry dynamic_scene user_geometry viewer instanced_geometry intersection_filter pathtracer hair_geometry subdivision_geometry displacement_geometry lazy_geometry motion_blur_geometry interpolation_geometry curve_geometry grid_geometry quaternion_motion_blur
 
 common: FORCE
 	@./ispc2cpp.sh common/tutorial/tutorial_device.isph common/tutorial/tutorial_device.h
@@ -36,10 +36,6 @@ user_geometry: FORCE
 viewer: FORCE
 	@./ispc2cpp.sh viewer/viewer_device.isph viewer/viewer_device.h
 	@./ispc2cpp.sh viewer/viewer_device.ispc viewer/viewer_device.cpp
-viewer_stream: FORCE
-	@./ispc2cpp.sh viewer_stream/viewer_stream_device.ispc viewer_stream/viewer_stream_device.cpp
-viewer_anim: FORCE
-	@./ispc2cpp.sh viewer_anim/viewer_anim_device.ispc viewer_anim/viewer_anim_device.cpp
 instanced_geometry: FORCE
 	@./ispc2cpp.sh instanced_geometry/instanced_geometry_device.isph instanced_geometry/instanced_geometry_device.h
 	@./ispc2cpp.sh instanced_geometry/instanced_geometry_device.ispc instanced_geometry/instanced_geometry_device.cpp

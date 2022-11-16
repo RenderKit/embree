@@ -157,10 +157,7 @@ Some features have not been ported to the Embree DPC++ API thus cannot
 get used on the device:
 
 - The packet tracing functions `rtcIntersect4/8/16` and
-  `rtcOccluded4/8/16`, as well as stream tracing functions
-  `rtcIntersect1M`, `rtcIntersect1Mp`, `rtcIntersectNM`,
-  `rtcIntersectNp`, `rtcOccluded1M`, `rtcOccluded1Mp`,
-  `rtcOccludedNM`, and `rtcOccludedNp` are not supported in DPC++
+  `rtcOccluded4/8/16` are not supported in DPC++
   device side code. Using these functions make no sense for SYCL, as
   the programming model is implicitely executed in SIMT mode on the
   GPU.
@@ -225,6 +222,12 @@ This section summarizes API changes between Embree 3 and Embree4. Most
 of these changes are motivated by having a consistent API that works
 properly for the CPU and GPU.
 
+- The stream tracing functions `rtcIntersect1M`, `rtcIntersect1Mp`,
+  `rtcIntersectNM`, `rtcIntersectNp`, `rtcOccluded1M`,
+  `rtcOccluded1Mp`, `rtcOccludedNM`, and `rtcOccludedNp` got removed
+  as they were rarely used and did not provide relevant performance
+  benefits.
+  
 - User geometries callbacks get an valid vector as input to identify
   valid and invalid rays. In Embree 3 the user geometry callback just
   had to update the ray hit members when an intersection was found and
@@ -329,14 +332,11 @@ Fast Coherent Rays
 ------------------
 
 For getting the highest performance for highly coherent rays, e.g.
-primary or hard shadow rays, it is recommended to use packets or
-streams of single rays/packets with setting the
-`RTC_INTERSECT_CONTEXT_FLAG_COHERENT` flag in the
-`RTCIntersectContext` passed to the `rtcIntersect`/`rtcOccluded`
-calls. The total number of rays in a coherent stream of ray packets
-should be around 64, e.g. 8 times 8-wide packets, or 4 times 16-wide
-packets. The rays inside each packet should be grouped as coherent as
-possible.
+primary or hard shadow rays, it is recommended to use packets with
+setting the `RTC_INTERSECT_CONTEXT_FLAG_COHERENT` flag in the
+`RTCIntersectArguments` struct passed to the
+`rtcIntersect`/`rtcOccluded` calls. The rays inside each packet should
+be grouped as coherent as possible.
 
 Huge Page Support
 -----------------

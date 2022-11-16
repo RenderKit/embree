@@ -48,10 +48,6 @@ is not changed.
 ``` {include=src/api/inc/raypointer.md}
 ```
 
-The implementation of these functions is guaranteed to invoke callback
-functions always with the same ray packet size and ordering of rays as
-specified initially.
-
 For `rtcIntersect4` the ray packet must be aligned to 16 bytes, for
 `rtcIntersect8` the alignment must be 32 bytes, and for
 `rtcIntersect16` the alignment must be 64 bytes.

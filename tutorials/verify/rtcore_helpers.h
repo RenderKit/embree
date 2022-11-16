@@ -490,15 +490,7 @@ namespace embree
     MODE_INTERSECT1,
     MODE_INTERSECT4,
     MODE_INTERSECT8,
-    MODE_INTERSECT16,
-    MODE_INTERSECT1M,
-    MODE_INTERSECT1Mp,
-    MODE_INTERSECTNM1,
-    MODE_INTERSECTNM3,
-    MODE_INTERSECTNM4,
-    MODE_INTERSECTNM8,
-    MODE_INTERSECTNM16,
-    MODE_INTERSECTNp
+    MODE_INTERSECT16
   };
 
   inline std::string to_string(IntersectMode imode)
@@ -509,14 +501,6 @@ namespace embree
     case MODE_INTERSECT4: return "4";
     case MODE_INTERSECT8: return "8";
     case MODE_INTERSECT16: return "16";
-    case MODE_INTERSECT1M: return "1M";
-    case MODE_INTERSECT1Mp: return "1Mp";
-    case MODE_INTERSECTNM1: return "NM1";
-    case MODE_INTERSECTNM3: return "NM3";
-    case MODE_INTERSECTNM4: return "NM4";
-    case MODE_INTERSECTNM8: return "NM8";
-    case MODE_INTERSECTNM16: return "NM16";
-    case MODE_INTERSECTNp: return "Np";
     default                : return "U";
     }
   }
@@ -529,14 +513,6 @@ namespace embree
     case MODE_INTERSECT4: return 16;
     case MODE_INTERSECT8: return 32;
     case MODE_INTERSECT16: return 64;
-    case MODE_INTERSECT1M: return 16;
-    case MODE_INTERSECT1Mp: return 16;
-    case MODE_INTERSECTNM1: return 16;
-    case MODE_INTERSECTNM3: return 16;
-    case MODE_INTERSECTNM4: return 16;
-    case MODE_INTERSECTNM8: return 16;
-    case MODE_INTERSECTNM16: return 16;
-    case MODE_INTERSECTNp: return 16;
     default              : return 0;
     }
   }
@@ -655,100 +631,6 @@ namespace embree
 
   static const size_t numSceneGeomFlags = 32;
 
-  inline bool supportsIntersectMode(RTCDevice device, IntersectMode imode)
-  { 
-    switch (imode) {
-    case MODE_INTERSECT_NONE: return true;
-    case MODE_INTERSECT1:   return true;
-    case MODE_INTERSECT4:   return true;
-    case MODE_INTERSECT8:   return true;
-    case MODE_INTERSECT16:  return true;
-    case MODE_INTERSECT1M:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
-    case MODE_INTERSECT1Mp: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM1: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM3: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM4: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM8: return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
-    case MODE_INTERSECTNM16:return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
-    case MODE_INTERSECTNp:  return rtcGetDeviceProperty(device,RTC_DEVICE_PROPERTY_RAY_STREAM_SUPPORTED);
-    }
-    assert(false);
-    return false;
-  }
-
-  template<int N>
-  __noinline void IntersectWithNMMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRayHit* rays, size_t Nrays, RTCIntersectArguments* args)
-  {
-    assert(Nrays<1024);
-    const size_t alignment = size_t(rays) % 64;
-    __aligned(64) char data[1024*sizeof(RTCRayHit)+64];
-    assert((size_t)data % 64 == 0);
-    for (size_t i=0; i<Nrays; i+=N) 
-    {
-      unsigned int L = (unsigned int)min(size_t(N),Nrays-i);
-      RTCRayHitN* ray = (RTCRayHitN*) &data[alignment+i*sizeof(RTCRayHit)];
-      for (unsigned int j=0; j<L; j++) setRay(ray,N,j,rays[i+j]);
-      for (unsigned int j=L; j<N; j++) setRay(ray,N,j,makeRay(zero,zero,pos_inf,neg_inf));
-    }
-    
-    unsigned int M = ((unsigned int)Nrays+N-1)/N;
-    switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-    case VARIANT_INTERSECT: rtcIntersectNM(scene,context,(RTCRayHitN*)&data[alignment],N,M,N*sizeof(RTCRayHit),args); break;
-    case VARIANT_OCCLUDED : rtcOccludedNM(scene,context,(RTCRayN*)&data[alignment],N,M,N*sizeof(RTCRayHit),args); break;
-    default: assert(false);
-    }
-    
-    for (size_t i=0; i<Nrays; i+=N) 
-    {
-      size_t L = min(size_t(N),Nrays-i);
-      RTCRayHitN* ray = (RTCRayHitN*) &data[alignment+i*sizeof(RTCRayHit)];
-      for (unsigned int j=0; j<L; j++) rays[i+j] = getRay(ray,N,j);
-    }
-  }
-	
-  __noinline void IntersectWithNpMode(IntersectVariant ivariant, RTCScene scene, RTCIntersectContext* context, RTCRayHit* rays, unsigned int N, RTCIntersectArguments* args)
-  {
-    assert(N < 1024);
-    const size_t alignment = size_t(rays) % 64;
-    __aligned(64) char data[1024 * sizeof(RTCRayHit) + 64];
-    RTCRayHitN* rayhit = (RTCRayHitN*)&data[alignment];
-    for (unsigned int j = 0; j < N; j++) setRay(rayhit, N, j, rays[j]);
-    
-    RTCRayHitNp rayp;
-    RTCRayN* ray = RTCRayHitN_RayN(rayhit,N);
-    RTCHitN* hit = RTCRayHitN_HitN(rayhit,N);
-    rayp.ray.org_x = &RTCRayN_org_x(ray, N, 0);
-    rayp.ray.org_y = &RTCRayN_org_y(ray, N, 0);
-    rayp.ray.org_z = &RTCRayN_org_z(ray, N, 0);
-    rayp.ray.dir_x = &RTCRayN_dir_x(ray, N, 0);
-    rayp.ray.dir_y = &RTCRayN_dir_y(ray, N, 0);
-    rayp.ray.dir_z = &RTCRayN_dir_z(ray, N, 0);
-    rayp.ray.tnear = &RTCRayN_tnear(ray, N, 0);
-    rayp.ray.tfar = &RTCRayN_tfar(ray, N, 0);
-    rayp.ray.time = &RTCRayN_time(ray, N, 0);
-    rayp.ray.mask = &RTCRayN_mask(ray, N, 0);
-    rayp.ray.id = &RTCRayN_id(ray, N, 0);
-    rayp.ray.flags = &RTCRayN_flags(ray, N, 0);
-    rayp.hit.geomID = &RTCHitN_geomID(hit, N, 0);
-    rayp.hit.primID = &RTCHitN_primID(hit, N, 0);
-    rayp.hit.u = &RTCHitN_u(hit, N, 0);
-    rayp.hit.v = &RTCHitN_v(hit, N, 0);
-    rayp.hit.Ng_x = &RTCHitN_Ng_x(hit, N, 0);
-    rayp.hit.Ng_y = &RTCHitN_Ng_y(hit, N, 0);
-    rayp.hit.Ng_z = &RTCHitN_Ng_z(hit, N, 0);
-
-    for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
-      rayp.hit.instID[l] = &RTCHitN_instID(hit, N, 0, l);
-    
-    switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-    case VARIANT_INTERSECT: rtcIntersectNp(scene, context, &rayp, N, args); break;
-    case VARIANT_OCCLUDED:  rtcOccludedNp(scene, context, (RTCRayNp*)&rayp, N, args); break;
-    default: assert(false);
-    }
-    
-    for (unsigned int j = 0; j < N; j++) rays[j] = getRay(rayhit, N, j);
-  }
-	
   __noinline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRayHit* rays, unsigned int N,
                                             RTCIntersectContext* context, RTCIntersectArguments* args)
   {
@@ -837,51 +719,6 @@ namespace embree
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray16,j);
       }
-      break;
-    }
-    case MODE_INTERSECT1M: 
-    {
-      switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-      case VARIANT_INTERSECT: rtcIntersect1M(scene,context,rays,N,sizeof(RTCRayHit),args); break;
-      case VARIANT_OCCLUDED : rtcOccluded1M (scene,context,(RTCRay*)rays,N,sizeof(RTCRayHit),args); break;
-      default: assert(false);
-      }
-      break;
-    }
-    case MODE_INTERSECT1Mp: 
-    {
-      assert(N<1024);
-      RTCRayHit* rptrs[1024];
-      for (size_t i=0; i<N; i++) rptrs[i] = &rays[i];
-      switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-      case VARIANT_INTERSECT: rtcIntersect1Mp(scene,context,rptrs,N,args); break;
-      case VARIANT_OCCLUDED : rtcOccluded1Mp (scene,context,(RTCRay**)rptrs,N,args); break;
-      default: assert(false);
-      }
-      break;
-    }
-    case MODE_INTERSECTNM1: {
-      IntersectWithNMMode<1>(ivariant,scene,context,rays,N,args);
-      break;
-    }
-    case MODE_INTERSECTNM3: {
-      IntersectWithNMMode<3>(ivariant,scene,context,rays,N,args);
-      break;
-    }
-    case MODE_INTERSECTNM4: {
-      IntersectWithNMMode<4>(ivariant,scene,context,rays,N,args);
-      break;
-    }
-    case MODE_INTERSECTNM8: {
-      IntersectWithNMMode<8>(ivariant,scene,context,rays,N,args);
-      break;
-    }
-    case MODE_INTERSECTNM16: {
-      IntersectWithNMMode<16>(ivariant,scene,context,rays,N,args);
-      break;
-    }
-    case MODE_INTERSECTNp: {
-      IntersectWithNpMode(ivariant, scene, context, rays, N,args);
       break;
     }
     }

@@ -140,9 +140,6 @@ namespace embree
 #if defined(EMBREE_TARGET_SIMD8)
     std::unique_ptr<BVH8Factory> bvh8_factory;
 #endif
-
-    /* ray streams filter */
-    RayStreamFilterFuncs rayStreamFilters;
   };
 
 #if defined(EMBREE_SYCL_SUPPORT)
