@@ -2607,6 +2607,10 @@ namespace embree
       rtcSetGeometryMask(hgeom1,2);
       rtcSetGeometryMask(hgeom2,4);
       rtcSetGeometryMask(hgeom3,8);
+      rtcCommitGeometry(hgeom0);
+      rtcCommitGeometry(hgeom1);
+      rtcCommitGeometry(hgeom2);
+      rtcCommitGeometry(hgeom3);
       rtcCommitScene (scene);
       AssertNoError(device);
       
@@ -2623,8 +2627,14 @@ namespace embree
         RTCRayHit ray3 = makeRay(pos3+Vec3fa(0,10,0),Vec3fa(0,-1,0)); ray3.ray.mask = mask3;
         RTCRayHit rays[4] = { ray0, ray1, ray2, ray3 };
         IntersectWithMode(imode,ivariant,scene,rays,4);
+
         for (size_t j=0; j<4; j++)
-          passed &= masks[j] & (1<<j) ? rays[j].hit.geomID != RTC_INVALID_GEOMETRY_ID : rays[j].hit.geomID == RTC_INVALID_GEOMETRY_ID;
+        {
+          if ((ivariant & VARIANT_INTERSECT) == VARIANT_INTERSECT)
+            passed &= (bool)(masks[j] & (1<<j)) == (rays[j].hit.geomID != RTC_INVALID_GEOMETRY_ID);
+          else
+            passed &= (bool)(masks[j] & (1<<j)) == (rays[j].ray.tfar == float(neg_inf));
+        }
       }
       AssertNoError(device);
 
@@ -4014,7 +4024,7 @@ namespace embree
       rayHit.ray.dir_z = 1;
       rayHit.ray.tnear = 0;
       rayHit.ray.tfar = 100000;
-      rayHit.ray.mask = 0u;
+      rayHit.ray.mask = 0xFF;
       rayHit.ray.flags = 0u;
       rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
       rayHit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
