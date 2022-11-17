@@ -698,12 +698,9 @@ namespace embree
                            }
                          });
 		  
-      });
-    
-    gpu::waitOnEventAndCatchException(queue_event);
-    const double d0 = gpu::getDeviceExecutionTiming(queue_event);
-
-    queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+      });    
+    sycl::event copy_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+        cgh.depends_on(queue_event);
         cgh.single_task([=]() {
             host_device_tasks[0] = globals->numTriangles;
             host_device_tasks[1] = globals->numQuads;
@@ -712,7 +709,8 @@ namespace embree
           });
       });
     gpu::waitOnEventAndCatchException(queue_event);
-    const double d1 = gpu::getDeviceExecutionTiming(queue_event);
+    const double d0 = gpu::getDeviceExecutionTiming(queue_event);    
+    const double d1 = gpu::getDeviceExecutionTiming(copy_event);
     
     count.numTriangles   = host_device_tasks[0];
     count.numQuads       = host_device_tasks[1];
@@ -1575,11 +1573,12 @@ namespace embree
   }
   
   template<typename type>
-    __forceinline void restoreMSBBits(sycl::queue &gpu_queue, type *const mc0, uint *const high, const uint numPrimitives, const bool verbose)    
+    __forceinline sycl::event restoreMSBBits(sycl::queue &gpu_queue, type *const mc0, uint *const high, const uint numPrimitives, sycl::event &input_event, const bool verbose)    
   {
     const uint wgSize = 16; 
     const sycl::nd_range<1> nd_range1(gpu::alignTo(numPrimitives,wgSize),sycl::range<1>(wgSize));              
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        cgh.depends_on(input_event);        
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(32)
                          {
                            const uint globalID     = item.get_global_id(0);                                                                    
@@ -1592,9 +1591,7 @@ namespace embree
                          });
 		  
       });
-    gpu::waitOnEventAndCatchException(queue_event);
-    double dt = gpu::getDeviceExecutionTiming(queue_event);      
-    if (unlikely(verbose)) PRINT2("restore Morton Code MSB Bits ",(float)dt);
+    return queue_event;
   }
   
 

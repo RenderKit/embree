@@ -361,9 +361,8 @@ namespace embree
 
 
     template<typename sort_type>
-    void radix_sort_Nx8Bit(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint items,  uint *global_histogram, const uint start_iteration, const uint end_iteration, const uint RADIX_SORT_NUM_DSS=256)
+    sycl::event radix_sort_Nx8Bit(sycl::queue &gpu_queue, sort_type *input, sort_type *output, const uint items,  uint *global_histogram, const uint start_iteration, const uint end_iteration, sycl::event &initial, const uint RADIX_SORT_NUM_DSS=256)
     {
-      sycl::event initial = sycl::event();
       sycl::event events[8]; // 8x8=64bit maximum
       for (uint i=start_iteration;i<end_iteration;i++)
       {
@@ -371,13 +370,7 @@ namespace embree
         std::swap(input,output);
       }
       
-      try {
-        events[end_iteration-1].wait_and_throw();
-      } catch (sycl::exception const& e) {
-        std::cout << "Caught synchronous SYCL exception:\n"
-                  << e.what() << std::endl;
-        FATAL("SYCL Exception");     		
-      }
+      return events[end_iteration-1];
     }    
     
   };

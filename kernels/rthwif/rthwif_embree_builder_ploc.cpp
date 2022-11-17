@@ -652,13 +652,12 @@ namespace embree
       const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);
       const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);
       const uint sortWGs = min(max(min((int)nextPowerOf2/8192,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
-           
-      gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, sortWGs);
-      
-      restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,verbose2);      
 
-      gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, sortWGs);
-      
+      sycl::event initial = sycl::event();
+      sycl::event block0  = gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, initial, sortWGs);      
+      sycl::event restore = restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,block0,verbose2);      
+      sycl::event block1  = gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, restore, sortWGs);
+      gpu::waitOnEventAndCatchException(block1);      
     }
     else
     {
@@ -669,8 +668,9 @@ namespace embree
         const uint scratchMemWGs = gpu::getNumWGsScratchSize(conv_mem_size);        
         const uint nextPowerOf2 =  1 << (32 - sycl::clz(numPrimitives) - 1);          
         const uint sortWGs = min(max(min((int)nextPowerOf2/LARGE_WG_SIZE,(int)gpu_maxComputeUnits/4),1),(int)scratchMemWGs);
-
-        gpu::radix_sort_Nx8Bit(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[1], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[0], numPrimitives, (uint*)scratch, 3, 8, sortWGs);
+        sycl::event initial = sycl::event();
+        sycl::event block0  = gpu::radix_sort_Nx8Bit(gpu_queue, (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[1], (gpu::MortonCodePrimitive40x24Bits3D*)morton_codes[0], numPrimitives, (uint*)scratch, 3, 8, initial, sortWGs);
+        gpu::waitOnEventAndCatchException(block0);              
       }      
     }
     
