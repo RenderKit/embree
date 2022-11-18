@@ -11,8 +11,6 @@
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-#define SEARCH_RADIUS_SHIFT       4
-#define SEARCH_RADIUS             (1<<SEARCH_RADIUS_SHIFT)
 #define SINGLE_R_PATH             1
 #define BVH_BRANCHING_FACTOR      6
 #define FATLEAF_THRESHOLD         6
@@ -1639,11 +1637,11 @@ namespace embree
   }
   
   
-   void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const int RADIUS, const uint NN_SEARCH_WG_NUM, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const uint NN_SEARCH_WG_NUM, uint *host_device_tasks, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool verbose)    
   {
     static const uint NN_SEARCH_SUB_GROUP_WIDTH = 16;
     static const uint NN_SEARCH_WG_SIZE         = LARGE_WG_SIZE;
-    uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
+    uint *const bvh2_index_allocator            = &globals->bvh2_index_allocator;
     
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< gpu::AABB3f, 1> cached_bounds  (sycl::range<1>(NN_SEARCH_WG_SIZE),cgh);
@@ -1653,16 +1651,16 @@ namespace embree
         sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((NN_SEARCH_WG_SIZE/NN_SEARCH_SUB_GROUP_WIDTH)),cgh);        
         sycl::local_accessor< uint      ,  0> _wgID(cgh);
         sycl::local_accessor< uint      ,  0> _global_count_prefix_sum(cgh);
-        
-        
+                
         const sycl::nd_range<1> nd_range(sycl::range<1>(NN_SEARCH_WG_NUM*NN_SEARCH_WG_SIZE),sycl::range<1>(NN_SEARCH_WG_SIZE));		  
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(NN_SEARCH_SUB_GROUP_WIDTH) {
             const uint localID        = item.get_local_id(0);
             const uint localSize       = item.get_local_range().size();            
             const uint subgroupID      = get_sub_group_id();                                                                                                                          
             const uint subgroupLocalID = get_sub_group_local_id();
-            const uint subgroupSize    = NN_SEARCH_SUB_GROUP_WIDTH;                                                                                                                       
-            const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*RADIUS; /* reducing working group set size to LARGE_WG_SIZE - 4 * radius to avoid loops */
+            const uint subgroupSize    = NN_SEARCH_SUB_GROUP_WIDTH;
+            const uint SEARCH_RADIUS   = (uint)1<<SEARCH_RADIUS_SHIFT;            
+            const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*SEARCH_RADIUS; /* reducing working group set size to LARGE_WG_SIZE - 4 * radius to avoid loops */
             
 
             uint &wgID = *_wgID.get_pointer();
@@ -1687,8 +1685,8 @@ namespace embree
               /* --- copy AABBs from cluster representatives into SLM --- */
               /* -------------------------------------------------------- */
                                                        
-              const int local_window_start = max((int)(startID+t                )-2*RADIUS  ,(int)0);
-              const int local_window_end   = min((int)(startID+t+WORKING_WG_SIZE)+2*RADIUS+1,(int)numPrims);
+              const int local_window_start = max((int)(startID+t                )-2*(int)SEARCH_RADIUS  ,(int)0);
+              const int local_window_end   = min((int)(startID+t+WORKING_WG_SIZE)+2*(int)SEARCH_RADIUS+1,(int)numPrims);
               const int local_window_size = local_window_end - local_window_start;
               const uint ID = startID + localID + t;
               const uint maxID = min(startID + t + WORKING_WG_SIZE,endID);
@@ -1710,8 +1708,8 @@ namespace embree
 
               if (localID < local_window_size)
               {                                                         
-                const int start = max((int)localID-RADIUS,(int)0);
-                const int end = min((int)localID+RADIUS+1,(int)local_window_size);
+                const int start = max((int)localID-(int)SEARCH_RADIUS,(int)0);
+                const int end = min((int)localID+(int)SEARCH_RADIUS+1,(int)local_window_size);
                 const gpu::AABB3f bounds = cached_bounds[localID];                  
                 uint area_min = -1; 
                 int area_min_index = -1; 
@@ -1758,7 +1756,7 @@ namespace embree
               
               uint min_area_index = -1;
               const gpu::AABB3f bounds0 = cached_bounds[localID];              
-              for (uint r=1;r<=RADIUS && (localID + r < local_window_size) ;r++)
+              for (uint r=1;r<=SEARCH_RADIUS && (localID + r < local_window_size) ;r++)
               {
                 const gpu::AABB3f bounds1 = cached_bounds[localID+r];
                 const float new_area = distanceFct(bounds0,bounds1);
@@ -1953,7 +1951,7 @@ namespace embree
                              uint *const counts_prefix_sum,                             
                              uint &active_counter,
                              const uint BOTTOM_UP_THRESHOLD,
-                             const int LOCAL_SEARCH_RADIUS = SEARCH_RADIUS,
+                             const uint SEARCH_RADIUS_SHIFT,
                              const uint SINGLE_WG_SIZE = LARGE_WG_SIZE)
   {
     const uint localID         = item.get_local_id(0);
@@ -1961,8 +1959,9 @@ namespace embree
     const uint subgroupLocalID = get_sub_group_local_id();
     const uint subgroupID      = get_sub_group_id();                                                                                                                          
     const uint subgroupSize    = get_sub_group_size();
-    const uint WORKING_WG_SIZE = SINGLE_WG_SIZE - 4*LOCAL_SEARCH_RADIUS; 
-
+    const uint SEARCH_RADIUS   = (uint)1<<SEARCH_RADIUS_SHIFT;
+    const uint WORKING_WG_SIZE = SINGLE_WG_SIZE - 4*SEARCH_RADIUS; 
+    
     uint *const cluster_index_source = &global_cluster_index_source[startID];
     uint *const cluster_index_dest   = &global_cluster_index_dest[startID];
     
@@ -1980,8 +1979,8 @@ namespace embree
         /* --- copy AABBs from cluster representatives into SLM --- */
         /* -------------------------------------------------------- */
                                                          
-        const int local_window_start = max((int)(t                )-2*LOCAL_SEARCH_RADIUS  ,(int)0);
-        const int local_window_end   = min((int)(t+WORKING_WG_SIZE)+2*LOCAL_SEARCH_RADIUS+1,(int)numPrims);
+        const int local_window_start = max((int)(t                )-2*(int)SEARCH_RADIUS  ,(int)0);
+        const int local_window_end   = min((int)(t+WORKING_WG_SIZE)+2*(int)SEARCH_RADIUS+1,(int)numPrims);
         const int local_window_size = local_window_end - local_window_start;
         const uint ID    = localID + t;                                                             
         const uint maxID = min(t + WORKING_WG_SIZE,numPrims);                                                         
@@ -2005,8 +2004,8 @@ namespace embree
 #if SINGLE_R_PATH == 0        
         if (localID < local_window_size)                                                           
         {
-          const int start = max((int)localID-SEARCH_RADIUS,(int)0);
-          const int end = min((int)localID+SEARCH_RADIUS+1,(int)local_window_size);
+          const int start = max((int)localID-(int)SEARCH_RADIUS,(int)0);
+          const int end = min((int)localID+(int)SEARCH_RADIUS+1,(int)local_window_size);
           const gpu::AABB3f bounds = cached_bounds[localID];                  
           uint area_min = -1; 
           int area_min_index = -1; 
@@ -2176,7 +2175,7 @@ namespace embree
   // ====================================================================================================================================================================================
   // ====================================================================================================================================================================================
   
-   void singleWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, const uint numPrimitives, double &iteration_time, const bool verbose)
+  void singleWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, const uint numPrimitives, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool verbose)
   {
     static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16;
     static const uint SINGLE_WG_SIZE = LARGE_WG_SIZE;
@@ -2195,7 +2194,7 @@ namespace embree
                                              
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(SINGLE_WG_SUB_GROUP_WIDTH) {
             uint &active_counter = *_active_counter.get_pointer();
-            wgBuild(item, bvh2_index_allocator, 0, numPrimitives, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, cached_bounds.get_pointer(), cached_neighbor.get_pointer(), cached_clusterID.get_pointer(), counts.get_pointer(),  counts_prefix_sum.get_pointer(), active_counter, 1, SEARCH_RADIUS, SINGLE_WG_SIZE);
+            wgBuild(item, bvh2_index_allocator, 0, numPrimitives, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, cached_bounds.get_pointer(), cached_neighbor.get_pointer(), cached_clusterID.get_pointer(), counts.get_pointer(),  counts_prefix_sum.get_pointer(), active_counter, 1, SEARCH_RADIUS_SHIFT, SINGLE_WG_SIZE);
 
             const uint localID        = item.get_local_id(0);                                                                 
             if (localID == 0) globals->rootIndex = globals->bvh2_index_allocator-1;
@@ -2205,48 +2204,6 @@ namespace embree
     double dt = gpu::getDeviceExecutionTiming(queue_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("single WG build ",(float)dt);    
-  }
-
-  
-
-   void parallelWGBuild(sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, gpu::Range *const global_ranges, const uint numRanges, uint BOTTOM_UP_THRESHOLD, double &iteration_time, const bool verbose)
-  {
-    static const uint SINGLE_WG_SUB_GROUP_WIDTH = 16; 
-    static const uint SINGLE_WG_SIZE = LARGE_WG_SIZE;
-    uint *const bvh2_index_allocator = &globals->bvh2_index_allocator;
-
-    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-        const sycl::nd_range<1> nd_range(sycl::range<1>(numRanges*SINGLE_WG_SIZE),sycl::range<1>(SINGLE_WG_SIZE));		  
-
-        /* local variables */
-        sycl::local_accessor< gpu::AABB3f, 1> cached_bounds  (sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::local_accessor< uint       , 1> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::local_accessor< uint       , 1> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);        
-        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
-        sycl::local_accessor< uint       , 0> _active_counter(cgh);
-                                             
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(SINGLE_WG_SUB_GROUP_WIDTH) {
-            uint &active_counter = *_active_counter.get_pointer();
-            const uint groupID        = item.get_group(0);
-            const uint localID        = item.get_local_id(0);                                                     
-            const uint localSize      = item.get_local_range().size();
-            const uint startID = global_ranges[groupID].start;
-            const uint endID   = global_ranges[groupID].end;
-
-            const uint newNumPrims = wgBuild(item, bvh2_index_allocator, startID, endID, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, cached_bounds.get_pointer(), cached_neighbor.get_pointer(), cached_clusterID.get_pointer(), counts.get_pointer(),  counts_prefix_sum.get_pointer(), active_counter,  BOTTOM_UP_THRESHOLD, SEARCH_RADIUS, SINGLE_WG_SIZE);
-            
-            /* --- copy current reps to dest array --- */
-            global_ranges[groupID].end = startID + newNumPrims;
-            item.barrier(sycl::access::fence_space::local_space);
-            for (uint i=startID+localID;i<startID+newNumPrims;i+=localSize)
-              cluster_index_dest[i] = cluster_index_source[i];
-          });		  
-      });            
-    gpu::waitOnEventAndCatchException(queue_event);
-    double dt = gpu::getDeviceExecutionTiming(queue_event);      
-    iteration_time += dt;
-    if (unlikely(verbose)) PRINT2("parallel WG build ",(float)dt);    
   }
 
   // ===================================================================================================================================================================================

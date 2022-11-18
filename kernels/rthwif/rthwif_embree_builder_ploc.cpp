@@ -713,7 +713,10 @@ namespace embree
     // ===================================================================================================================================================
     // ===================================================================================================================================================
     // ===================================================================================================================================================
-        
+
+    // === 8 or 16-wide search radius dependening on compiler flags ===
+    const uint SEARCH_RADIUS_SHIFT = args.quality == RTHWIF_BUILD_QUALITY_LOW ? 3 : 4;
+    
     double device_ploc_iteration_time = 0.0f;
         
     uint iteration = 0;
@@ -735,7 +738,7 @@ namespace embree
       if (numPrims < SINGLE_WG_SWITCH_THRESHOLD)
       {
         double singleWG_time = 0.0f;
-        singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, singleWG_time, verbose2);
+        singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, SEARCH_RADIUS_SHIFT, singleWG_time, verbose2);
         timer.add_to_device_timer(BuildTimer::BUILD,singleWG_time);
         numPrims = 1;
       }
@@ -745,10 +748,8 @@ namespace embree
         // ==== nearest neighbor search, merge clusters and create bvh2 nodes (fast path) ====
         // ===================================================================================
 
-        const uint radius = SEARCH_RADIUS;          
-      
         device_ploc_iteration_time = 0.0f;
-        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,radius,NUM_ACTIVE_LARGE_WGS,host_device_tasks,device_ploc_iteration_time, false);
+        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,false);
         timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
       
         const uint new_numPrims = *host_device_tasks;
