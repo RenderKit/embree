@@ -762,7 +762,10 @@ namespace embree
     }
   
     timer.stop(BuildTimer::BUILD);        
-              
+
+    if (unlikely(verbose2))
+      std::cout << "PLOC phase " <<  timer.get_host_timer() << " ms (host) " << (float)timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) " << std::endl;    
+  
     // =====================================                
     // === check and convert BVH2 (host) ===
     // =====================================
@@ -826,7 +829,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::POST_PROCESS,conversion_device_time);
 
     if (unlikely(verbose2))
-      std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  timer.get_host_timer() << " ms (host) " << conversion_device_time << " ms (device) " << std::endl << std::flush;
+      std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  timer.get_host_timer() << " ms (host) " << conversion_device_time << " ms (device) " << std::endl;
 
     // ==========================================================    
     // ==========================================================
