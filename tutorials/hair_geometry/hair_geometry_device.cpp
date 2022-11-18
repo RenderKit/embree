@@ -13,7 +13,7 @@ namespace embree {
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_ROUND_LINEAR_CURVE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION
+  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
 
 /* scene data */
 RTCScene g_scene = nullptr;
@@ -29,7 +29,6 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
-  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -44,7 +43,6 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,hair->hairs,0,sizeof(ISPCHair),hair->numHairs);
   if (hair->flags)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(char),hair->numHairs);
-  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
@@ -230,9 +228,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
   Vec3fa T = data->hair_Kt;
   T = T * *transparency;
   *transparency = T;
-  if (eq(T,Vec3fa(0.0f)))
-    ;
-  else
+  if (max(T.x,max(T.y,T.z)) > 0.02f)
     valid_i[0] = 0;
 }
 
@@ -248,6 +244,7 @@ Vec3fa occluded(RTCScene scene, IntersectContext* context, Ray& ray)
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+  args.filter = occlusionFilter;
   
   rtcOccluded1(scene,&context->context,RTCRay_(ray),&args);
 
@@ -270,7 +267,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-  
+    
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
@@ -412,7 +409,6 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 extern "C" void device_init (char* cfg)
 {
   TutorialData_Constructor(&data);
-  data.occlusionFilter = GET_FUNCTION_POINTER(occlusionFilter);
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);

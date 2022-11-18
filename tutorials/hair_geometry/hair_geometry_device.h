@@ -35,8 +35,6 @@ struct TutorialData
   Vec3f hair_dK;
   Vec3f hair_Kr;    //!< reflectivity of hair
   Vec3f hair_Kt;    //!< transparency of hair
-
-  RTCFilterFunctionN occlusionFilter;
 };
 
 #if __SYCL_COMPILER_VERSION >= 20210801
@@ -72,7 +70,6 @@ void TutorialData_Constructor(TutorialData* This)
   This->hair_dK = Vec3f(0.1f,0.12f,0.08f);
   This->hair_Kr = 0.2f*This->hair_K;    //!< reflectivity of hair
   This->hair_Kt = 0.8f*This->hair_K;    //!< transparency of hair
-  This->occlusionFilter = nullptr;
 }
 
 void TutorialData_Destructor(TutorialData* This)
