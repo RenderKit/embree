@@ -317,9 +317,9 @@ namespace embree
   
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
   {
-    DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);
 
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)        
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);    
     sycl::device &sycl_device = gpu_device->getGPUDevice();
     sycl::queue sycl_queue(sycl_device, exception_handler, { /* sycl::property::queue::in_order(), */ sycl::property::queue::enable_profiling() });
 #endif
@@ -454,7 +454,7 @@ namespace embree
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
     args.scratchBufferBytes = 0;
-    args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
+    args.quality = gpu_device->quality_flags == RTC_BUILD_QUALITY_LOW ? RTHWIF_BUILD_QUALITY_LOW : RTHWIF_BUILD_QUALITY_MEDIUM;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;

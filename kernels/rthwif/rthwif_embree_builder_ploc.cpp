@@ -8,8 +8,11 @@
 // === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
 #define SINGLE_WG_SWITCH_THRESHOLD            8*1024
 
-// === less than threshold, 40bit morton code + 24bit index are used, otherwise 64bit morton code + 32bit index ===
-#define FAST_MC_THRESHOLD                     1024*1024
+// === less than threshold, 40bits morton code + 24bits index are used, otherwise 64bit morton code + 32bit index ===
+#define FAST_MC_NUM_PRIMS_THRESHOLD                     1024*1024
+
+// === max number of primitives fitting in 24bits ===
+#define FAST_MC_MAX_NUM_PRIMS                     ((uint)1<<24)
 
 // === less than threshold, a single workgroup is used for all radix sort iterations ===
 #define SMALL_SORT_THRESHOLD                  1024*4
@@ -19,9 +22,6 @@
 
 // === size of USM-host allocated shared memory, used for fast host-device communications ===
 #define HOST_DEVICE_COMMUNICATION_BUFFER_SIZE 16*sizeof(uint)
-
-// === estimated quadification factor for triangles, not used if GPU scans the triangles meshes first ===
-static const float ESTIMATED_QUADIFICATION_FACTOR = 0.58;
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
 
@@ -245,15 +245,13 @@ namespace embree
 
     double estimation_time;
     getEstimatedPrimitiveCounts(gpu_queue,geometries,numGeometries,host_device_primitive_counts, args.flags & RTHWIF_BUILD_FLAG_DYNAMIC,estimation_time,verbose_level >= 2);
-
     const PrimitiveCounts primCounts = *host_device_primitive_counts;
-
+    
     sycl::free(host_device_primitive_counts,gpu_queue.get_context());
         
-    //const PrimitiveCounts primCounts = countPrimitives(geometries,numGeometries);
 
     const uint numQuads       = primCounts.numQuads;
-    const uint numTriangles   = primCounts.numTriangles;
+    const uint numTriangles   = primCounts.numTriangles; // === will be zero if quadification is enabled === 
     const uint numProcedurals = primCounts.numProcedurals;
     const uint numInstances   = primCounts.numInstances;
   
@@ -268,7 +266,7 @@ namespace embree
 
     if (numPrimitives)
     {    
-      expectedBytes  = estimateAccelBufferSize(numQuads + ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR), numInstances, numProcedurals);
+      expectedBytes  = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals);
       worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals);    
     }
 
@@ -281,7 +279,6 @@ namespace embree
     if (verbose_level >= 2)
     {
       PRINT4(numTriangles,numQuads,numProcedurals,numInstances);      
-      PRINT2(numTriangles,ceilf(numTriangles * ESTIMATED_QUADIFICATION_FACTOR));          
       PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     }
         
@@ -527,7 +524,6 @@ namespace embree
       return RTHWIF_ERROR_RETRY;
     }
 
-    const bool fastMCMode = numPrimitives < FAST_MC_THRESHOLD;
     const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
     const uint NUM_ACTIVE_LARGE_WGS = min((numPrimitives+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
 
@@ -638,6 +634,8 @@ namespace embree
     // ==== compute morton codes ====
     // ==============================
 
+    const bool fastMCMode = numPrimitives < FAST_MC_NUM_PRIMS_THRESHOLD || (args.quality == RTHWIF_BUILD_QUALITY_LOW && numPrimitives < FAST_MC_MAX_NUM_PRIMS);    
+    
     timer.start(BuildTimer::PRE_PROCESS);        
     double device_compute_mc_time = 0.0f;
 
