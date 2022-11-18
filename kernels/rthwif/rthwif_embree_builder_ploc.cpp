@@ -5,12 +5,21 @@
 #include "builder/qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
 
+// === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
 #define SINGLE_WG_SWITCH_THRESHOLD            8*1024
+
+// === less than threshold, 32bit morton code + 32bit index are used, otherwise 64bit morton code + 32bit index ===
 #define FAST_MC_THRESHOLD                     1024*1024
+// === less than thresholdm a single workgroup is used for all radix sort iterations ===
 #define SMALL_SORT_THRESHOLD                  1024*4
+
+// === maximum number of workgroups with 1024 elements, DG2/PVC perform best with 64 ===
 #define MAX_LARGE_WGS                         256
+
+// === size of USM-host allocated shared memory, used for fast host-device communications ===
 #define HOST_DEVICE_COMMUNICATION_BUFFER_SIZE 16*sizeof(uint)
 
+// === estimated quadification factor for triangles, not used if GPU scans the triangles meshes first ===
 static const float ESTIMATED_QUADIFICATION_FACTOR = 0.58;
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
