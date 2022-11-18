@@ -1,43 +1,59 @@
-Embree Overview
-===============
+Intel® Embree Overview
+======================
 
-Intel® Embree is a collection of high-performance ray tracing kernels,
-developed at Intel. The target users of Intel® Embree are graphics application
-engineers who want to improve the performance of their
-photo-realistic rendering application by leveraging Embree's
-performance-optimized ray tracing kernels. The kernels are optimized
-for the latest Intel® processors with support for SSE, AVX, AVX2, and
-AVX-512 instructions. Intel® Embree supports runtime code selection to choose
-the traversal and build algorithms that best matches the instruction
-set of your CPU. We recommend using Intel® Embree through its API to get the
-highest benefit from future improvements. Intel® Embree is released as Open
-Source under the
-[Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0).
+Intel® Embree is a high-performance ray tracing library developed at
+Intel, which is released as open source under the [Apache 2.0
+license](http://www.apache.org/licenses/LICENSE-2.0). Intel® Embree
+supports x86 CPUs under Linux, macOS, and Windows; ARM CPUs on macOS;
+as well as Intel® GPUs under Linux and Windows.
 
-Intel® Embree supports applications written with the Intel® Implicit SPMD
-Program Compiler (Intel® ISPC, <https://ispc.github.io/>) by also providing an Intel® ISPC
-interface to the core ray tracing algorithms. This makes it possible
-to write a renderer in Intel® ISPC that automatically vectorizes and
-leverages SSE, AVX, AVX2, and AVX-512 instructions. Intel® ISPC also supports
-runtime code selection, thus Intel® ISPC will select the best code path for
-your application.
+Intel® Embree targets graphics application developers to improve the
+performance of photo-realistic rendering applications. Embree is
+optimized towards production rendering, by putting focus on incoherent
+ray performance, high quality acceleration structure construction, a
+rich feature set, accurate primitive intersection, and low memory
+consumption.
 
-Intel® Embree contains algorithms optimized for incoherent workloads (e.g.
-Monte Carlo ray tracing algorithms) and coherent workloads
-(e.g. primary visibility and hard shadow rays).
+Embree's feature set includes various primitive types such as
+triangles (as well quad and grids for lower memory consumption);
+Catmull-Clark subdivision surfaces; various types of curve primitives,
+such as flat curves (for distant views), round curves (for closeup
+views), and normal oriented curves, all supported with different basis
+functions (linear, Bezier, B-spline, Hermite, and Catmull Rom);
+point-like primitives, such as ray oriented discs, normal oriented
+discs, and spheres; user defined geometries with a procedural
+intersection function; multi-level instancing; filter callbacks
+invoked for any hit encountered; motion blur including multi-segment
+motion blur, deformation blur, and quaternion motion blur; and ray
+masking.
 
-The single-ray traversal kernels of Intel® Embree provide high performance
-for incoherent workloads and are very easy to integrate into existing
-rendering applications. Using the stream kernels, even higher
-performance for incoherent rays is possible, but integration might
-require significant code changes to the application to use the stream
-paradigm. In general for coherent workloads, the stream mode with
-coherent flag set gives the best performance.
+Intel® Embree contains ray tracing kernels optimized for the latest
+x86 processors with support for SSE, AVX, AVX2, and AVX-512
+instructions, and uses runtime code selection to choose between these
+kernels. Intel® Embree contains algorithms optimized for incoherent
+workloads (e.g.  Monte Carlo ray tracing algorithms) and coherent
+workloads (e.g. primary visibility and hard shadow rays) as well as
+supports for dynamic scenes by implementing high-performance two-level
+spatial index structure construction algorithms. The ray tracing
+algorithms can also get compiled to the ARM NEON instruction set to
+efficiently run on ARM processors, such as Apple M1.
 
-Intel® Embree also supports dynamic scenes by implementing high-performance
-two-level spatial index structure construction algorithms.
+Intel® Embree supports applications written with the Intel® Implicit
+SPMD Program Compiler (Intel® ISPC, <https://ispc.github.io/>) by
+providing an Intel® ISPC interface to the core ray tracing
+algorithms. This makes it possible to write a renderer that
+automatically vectorizes and leverages SSE, AVX, AVX2, and AVX-512
+instructions.
 
-In addition to the ray tracing kernels, Intel® Embree provides some
-[Embree Tutorials] to demonstrate how to use the
-[Embree API].
+Intel® Embree supports Intel® GPUs through the
+[SYCL](https://www.khronos.org/sycl/) open standard programming
+language. SYCL allows to write C++ code that can be run on various
+devices, such as CPUs and GPUs. Using Intel® Embree application
+developers can write a single source renderer that executes
+efficiently on CPUs and Intel® GPUs. Maintaining just one code base
+this way can significantly improve productivity and eliminate
+inconsistencies between a CPU and GPU version of the renderer. Embree
+supports Intel® GPUs based on the Xe HPG and Xe HPC microarchitecture,
+which support hardware accelerated ray tracing do deliver excellent
+levels of ray tracing performance.
 

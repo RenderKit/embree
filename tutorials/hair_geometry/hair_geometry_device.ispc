@@ -11,7 +11,7 @@
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_ROUND_LINEAR_CURVE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION
+  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -27,7 +27,6 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(uniform Vertex),mesh->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
-  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -42,7 +41,6 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT,hair->hairs,0,sizeof(uniform ISPCHair),hair->numHairs);
   if (hair->flags)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(uniform int8),hair->numHairs);
-  rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
   rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
@@ -228,9 +226,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFuncti
   Vec3f T = data->hair_Kt;
   T = T * *transparency;
   *transparency = T;
-  if (eq(T,make_Vec3f(0.0f)))
-    ;
-  else
+  if (max(T.x,max(T.y,T.z)) > 0.02f)
     valid_i[programIndex] = 0;
 }
 
@@ -246,6 +242,7 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+  args.filter = occlusionFilter;
   
   rtcOccludedV(scene,&context->context,RTCRay_(ray),&args);
 
@@ -410,7 +407,6 @@ task void renderTileTask(uniform int* uniform pixels,
 export void device_init (uniform int8* uniform cfg)
 {
   TutorialData_Constructor(&data);
-  data.occlusionFilter = GET_FUNCTION_POINTER(occlusionFilter);
   
   /* create scene */
   g_scene = data.scene = convertScene(data.ispc_scene);

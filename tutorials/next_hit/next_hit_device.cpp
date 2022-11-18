@@ -13,11 +13,14 @@ namespace embree {
 
 #define MAX_TOTAL_HITS 1024 //16*1024
 
-  RTC_SYCL_INDIRECTLY_CALLABLE void gather_all_hits(const RTCFilterFunctionNArguments* args);
-  RTC_SYCL_INDIRECTLY_CALLABLE void gather_next_hits(const RTCFilterFunctionNArguments* args);
-
 RTCScene g_scene = nullptr;
 TutorialData data;
+
+#if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
+static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
+#endif
+
+RTCFeatureFlags g_feature_mask;
 
 /* extended ray structure that gathers all hits along the ray */
 struct HitList
@@ -108,8 +111,10 @@ struct IntersectContext
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS | RTC_SCENE_FLAG_ROBUST);
-  
+  RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_NONE;
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS | RTC_SCENE_FLAG_ROBUST, &feature_mask);
+  g_feature_mask = (RTCFeatureFlags) (feature_mask | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
+    
   /* commit changes to scene */
   return scene_out;
 }
@@ -137,7 +142,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void gather_all_hits(const RTCFilterFunctionNArgume
 }
 
 /* gathers hits in a single pass */
-void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayStats& stats)
+void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, RandomSampler& sampler, RayStats& stats, const RTCFeatureFlags feature_mask)
 {
   /* trace ray to gather all hits */
   Ray ray = ray_i;
@@ -145,7 +150,8 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
   rtcInitIntersectContext(&context.context);
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.filter = data.gather_all_hits;
+  args.filter = gather_all_hits;
+  args.feature_mask = feature_mask;
   rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
@@ -234,7 +240,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void gather_next_hits(const RTCFilterFunctionNArgum
 }
   
 /* gathers hits in multiple passes */
-void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats)
+void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats, const RTCFeatureFlags feature_mask)
 {
   /* configure intersect context */
   Ray ray = ray_i;
@@ -243,7 +249,8 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
   context.max_next_hits = max_next_hits;
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.filter = data.gather_next_hits;
+  args.filter = gather_next_hits;
+  args.feature_mask = feature_mask;
 
   /* in each pass we collect some hits */
   do {
@@ -292,9 +299,11 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
 
 /* task that renders a single screen tile */
 Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
-                            const unsigned int width,
-                            const unsigned int height,
-                            const ISPCCamera& camera, RayStats& stats)
+                           const unsigned int width,
+                           const unsigned int height,
+                           const ISPCCamera& camera,
+                           RayStats& stats,
+                           const RTCFeatureFlags feature_mask)
 {
   /* initialize sampler */
   const int ix = (int)x;
@@ -310,21 +319,21 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
   switch (data.next_hit_mode)
   {
   case SINGLE_PASS:
-    single_pass(data,ray,hits,mysampler,stats);
+    single_pass(data,ray,hits,mysampler,stats,feature_mask);
     break;
   
   case MULTI_PASS_FIXED_NEXT_HITS:
-    multi_pass (data,ray,hits,data.max_next_hits,mysampler,stats);
+    multi_pass (data,ray,hits,data.max_next_hits,mysampler,stats,feature_mask);
     break;
 #if !defined(EMBREE_SYCL_TUTORIAL)
   case MULTI_PASS_OPTIMAL_NEXT_HITS: {
     int num_prev_hits = max(1,data.num_prev_hits[iy*width+ix]);
-    multi_pass (data,ray,hits,num_prev_hits,mysampler,stats);
+    multi_pass (data,ray,hits,num_prev_hits,mysampler,stats,feature_mask);
     break;
   }
   case MULTI_PASS_ESTIMATED_NEXT_HITS: {
     int estimated_num_next_hits = (int) min((float)data.max_next_hits, max(1.0f, 0.5f/data.curve_opacity));
-    multi_pass (data,ray,hits,estimated_num_next_hits,mysampler,stats);
+    multi_pass (data,ray,hits,estimated_num_next_hits,mysampler,stats,feature_mask);
     break;
   }
 #endif
@@ -340,15 +349,8 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
     HitList verify_hits(data);
     RandomSampler verify_sampler;
     RandomSampler_init(verify_sampler, ix, iy, 0);
-    single_pass(data,ray,verify_hits,verify_sampler,stats);
+    single_pass(data,ray,verify_hits,verify_sampler,stats,feature_mask);
 
-    //std::cout << std::hexfloat;
-    //for (size_t i=0; i<hits.size(); i++)
-    //  PRINT2(i,hits.hits[i]);
-     
-    //for (size_t i=0; i<verify_hits.size(); i++)
-    //  PRINT2(i,verify_hits.hits[i]);
-    
     if (verify_hits.size() != hits.size())
       has_error = true;
     
@@ -399,9 +401,11 @@ void renderPixelStandard(const TutorialData& data,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
-                         const ISPCCamera& camera, RayStats& stats)
+                         const ISPCCamera& camera,
+                         RayStats& stats,
+                         const RTCFeatureFlags feature_mask)
 {
-  Vec3ff color = renderPixelStandard(data,x,y,width,height,camera,stats);
+  Vec3ff color = renderPixelStandard(data,x,y,width,height,camera,stats,feature_mask);
 
   /* write color to framebuffer */
   unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -432,7 +436,7 @@ void renderTileStandard(int taskIndex,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex],g_feature_mask);
   }
 }
 
@@ -452,9 +456,6 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 extern "C" void device_init (const char* cfg)
 {
   TutorialData_Constructor(&data);
-
-  data.gather_all_hits = GET_FUNCTION_POINTER(gather_all_hits);
-  data.gather_next_hits = GET_FUNCTION_POINTER(gather_next_hits);
 }
 
 extern "C" void renderFrameStandard (int* pixels,
@@ -465,22 +466,39 @@ extern "C" void renderFrameStandard (int* pixels,
 {
 #if defined(EMBREE_SYCL_TUTORIAL)
   TutorialData ldata = data;
-  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+
+#if defined(USE_SPECIALIZATION_CONSTANTS)
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
+    cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);
+    const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) {
+      const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+      const unsigned int y = item.get_global_id(0); if (y >= height) return;
+      RayStats stats;
+      const RTCFeatureFlags feature_mask = kh.get_specialization_constant<spec_feature_mask>();
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+#else
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     const sycl::nd_range<2> nd_range = make_nd_range(height,width);
     cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;
-      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats);
+      const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_ALL;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
     });
   });
   global_gpu_queue->wait_and_throw();
+#endif
 
   const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
   const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
   const double dt = (t1-t0)*1E-9;
   ((ISPCCamera*)&camera)->render_time = dt;
-  
+ 
 #else
   /* render image */
   const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
@@ -488,8 +506,8 @@ extern "C" void renderFrameStandard (int* pixels,
   parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
-      renderTileTask((int)i,threadIndex,(int*)pixels,width,height,time,camera,numTilesX,numTilesY);
-  });
+      renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
+  }); 
 #endif
 
   if (!data.visualize_errors)

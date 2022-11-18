@@ -37,9 +37,6 @@ struct TutorialData
   int* num_prev_hits;
   unsigned int num_prev_hits_width = 0;
   unsigned int num_prev_hits_height = 0;
-
-  RTCFilterFunctionN gather_all_hits;
-  RTCFilterFunctionN gather_next_hits;
 };
 
 void TutorialData_Constructor(TutorialData* This)
@@ -55,8 +52,6 @@ void TutorialData_Constructor(TutorialData* This)
   This->enable_opacity = g_enable_opacity;
   This->curve_opacity = g_curve_opacity;
   This->num_prev_hits = nullptr;
-  This->gather_all_hits = 0; 
-  This->gather_next_hits = 0;
 }
 
 void TutorialData_Destructor(TutorialData* This)

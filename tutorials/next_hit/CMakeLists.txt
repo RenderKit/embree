@@ -1,6 +1,10 @@
 ## Copyright 2009-2021 Intel Corporation
 ## SPDX-License-Identifier: Apache-2.0
 
+IF (EMBREE_SYCL_AOT_DEVICES STREQUAL "none")
+  ADD_DEFINITIONS("-DUSE_SPECIALIZATION_CONSTANTS")
+ENDIF()
+
 INCLUDE(tutorial)
 ADD_TUTORIAL(next_hit)
 ADD_TUTORIAL_SYCL(next_hit)
@@ -12,6 +16,8 @@ MACRO (ALL_HITS_TEST name model max_next_hits)
     ADD_TEST(NAME next_hit_sycl_${name}_${max_next_hits} COMMAND next_hit_sycl -c "${EMBREE_MODEL_DIR}/${model}" -c "${EMBREE_MODEL_DIR}/${model}" --verify --max_next_hits ${max_next_hits} --max_total_hits 1024 ${ARGN} --shader default -o test.tga)
   ENDIF()
 ENDMACRO ()
+
+IF (NOT EMBREE_SYCL_AOT_DEVICES STREQUAL "none")  # disabled as there are some issues on PVC
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8) # FIXME: these cause out of memory under Win32
@@ -29,3 +35,4 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   ALL_HITS_TEST(flat_linear_curve_robust curves/hair0.ecs 1 --convert-bezier-to-lines)
 ENDIF()
 
+ENDIF()
