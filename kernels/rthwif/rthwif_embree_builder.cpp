@@ -454,7 +454,11 @@ namespace embree
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
     args.scratchBufferBytes = 0;
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
     args.quality = gpu_device->quality_flags == RTC_BUILD_QUALITY_LOW ? RTHWIF_BUILD_QUALITY_LOW : RTHWIF_BUILD_QUALITY_MEDIUM;
+#else
+    args.quality = gpu_device->quality_flags == RTHWIF_BUILD_QUALITY_MEDIUM;
+#endif    
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
