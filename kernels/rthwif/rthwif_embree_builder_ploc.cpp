@@ -8,9 +8,10 @@
 // === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
 #define SINGLE_WG_SWITCH_THRESHOLD            8*1024
 
-// === less than threshold, 32bit morton code + 32bit index are used, otherwise 64bit morton code + 32bit index ===
+// === less than threshold, 40bit morton code + 24bit index are used, otherwise 64bit morton code + 32bit index ===
 #define FAST_MC_THRESHOLD                     1024*1024
-// === less than thresholdm a single workgroup is used for all radix sort iterations ===
+
+// === less than threshold, a single workgroup is used for all radix sort iterations ===
 #define SMALL_SORT_THRESHOLD                  1024*4
 
 // === maximum number of workgroups with 1024 elements, DG2/PVC perform best with 64 ===
