@@ -50,7 +50,7 @@ namespace embree
     uint rootIndex;
     uint wgID;
     uint numLeaves;
-    uint tmp;            
+    uint numQuadBlocks;            
 
     __forceinline void reset()
     {
@@ -74,7 +74,7 @@ namespace embree
       rootIndex                  = 0;
       wgID                       = 0;
       numLeaves                  = 0;
-      tmp                        = 0;
+      numQuadBlocks              = 0;
     }
       
     /* allocate data in the node memory section */
@@ -659,7 +659,7 @@ namespace embree
   }
   
 
-   PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeometries, PLOCGlobals *const globals, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+  PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeometries, PLOCGlobals *const globals, uint *blocksPerGeom, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     PrimitiveCounts count;
     const uint wgSize = LARGE_WG_SIZE;
@@ -690,26 +690,34 @@ namespace embree
                            }
                            item.barrier(sycl::access::fence_space::local_space);
 
-                           const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-                           if (geom != nullptr) {
-                             switch (geom->geometryType)
-                             {
-                             case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :
-                             {
-                               gpu::atomic_add_local(&numTriangles  , ((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount);
-                               gpu::atomic_add_local(&numQuadBlocks ,(((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
-                               break;
+                           if (geomID < numGeometries)
+                           {
+                             uint numBlocks = 0;                             
+                             const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                             if (geom != nullptr) {
+                               switch (geom->geometryType)
+                               {
+                               case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :
+                               {
+                                 gpu::atomic_add_local(&numTriangles  , ((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount);
+                                 gpu::atomic_add_local(&numQuadBlocks ,(((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
+                                 numBlocks += (((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
+                                 break;
+                               }
+                               case RTHWIF_GEOMETRY_TYPE_QUADS      :
+                               {
+                                 gpu::atomic_add_local(&numQuads      , ((RTHWIF_GEOMETRY_QUADS_DESC     *)geom)->quadCount);
+                                 gpu::atomic_add_local(&numQuadBlocks ,(((RTHWIF_GEOMETRY_QUADS_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
+                                 numBlocks += (((RTHWIF_GEOMETRY_QUADS_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
+                                 break;
+                               }
+                               case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom)->primCount);     break;
+                               case RTHWIF_GEOMETRY_TYPE_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(uint)1); break;
+                               };
                              }
-                             case RTHWIF_GEOMETRY_TYPE_QUADS      :
-                             {
-                               gpu::atomic_add_local(&numQuads      , ((RTHWIF_GEOMETRY_QUADS_DESC     *)geom)->quadCount);
-                               gpu::atomic_add_local(&numQuadBlocks ,(((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
-                               break;
-                             }
-                             case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom)->primCount);     break;
-                             case RTHWIF_GEOMETRY_TYPE_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(uint)1); break;
-                             };
-                           }                           
+                             blocksPerGeom[geomID] = numBlocks;
+                           }
+                           
                            item.barrier(sycl::access::fence_space::local_space);
                            if (localID == 0)
                            {
@@ -746,7 +754,7 @@ namespace embree
     return count;
   }  
 
-   void prefixSumOverCounts (sycl::queue &gpu_queue, const uint numGeoms, uint *const counts_per_geom_prefix_sum, uint *host_device_tasks, double &iteration_time, const bool verbose) //FIXME: general
+  sycl::event prefixSumOverCounts (sycl::queue &gpu_queue, sycl::event &input_event, const uint numGeoms, uint *const counts_per_geom_prefix_sum, uint *host_device_tasks, const bool verbose) // FIXME: general, host_device_tasks
   {
     static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
     static const uint GEOM_PREFIX_WG_SIZE  = LARGE_WG_SIZE;
@@ -754,7 +762,8 @@ namespace embree
     sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint       , 1> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
         sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
-        const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));		  
+        const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));
+        cgh.depends_on(input_event);
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(GEOM_PREFIX_SUB_GROUP_WIDTH) {
             const uint subgroupID      = get_sub_group_id();
             const uint subgroupLocalID = get_sub_group_local_id();                                                        
@@ -805,104 +814,28 @@ namespace embree
                                                         
           });
       });
-    gpu::waitOnEventAndCatchException(queue_event);
-    double dt = gpu::getDeviceExecutionTiming(queue_event);
-    iteration_time += dt;
-    if (unlikely(verbose))
-      std::cout << "Prefix sum over quad counts over geometries " << dt << " ms" << std::endl;    
+    return queue_event;
   }
 
 
-   uint countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, uint *const scratch, uint *const host_device_tasks, const uint numQuadBlocks, double &iteration_time, const bool verbose)    
-   {
-     double dt = 0.0;
-     uint *const blocksPerGeom = scratch;
-     uint *const quadsPerBlock = scratch + numGeoms;
-     
-     const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,LARGE_WG_SIZE),sycl::range<1>(LARGE_WG_SIZE));          
-     sycl::event count_blocks_event = gpu_queue.submit([&](sycl::handler &cgh) {
-         sycl::local_accessor< uint      ,  0> _blocks_counter(cgh);                                                            
-         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
-                          {
-                            const uint geomID    = item.get_global_id(0);
-                            const uint localID   = item.get_local_id(0);
+  uint countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint numQuadBlocks, uint *const scratch, uint *const host_device_tasks, double &iteration_time, const bool verbose)    
+  {
+    double dt = 0.0;
+    uint *const blocksPerGeom = scratch;
+    uint *const quadsPerBlock = scratch + numGeoms;
 
-                            uint &blocks_counter = *_blocks_counter.get_pointer();
-                            blocks_counter       = 0;
-                            item.barrier(sycl::access::fence_space::local_space);
-
-                            if (geomID < numGeoms)
-                            {
-                              const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
-                              uint blocks = 0;
-                              if (geom->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
-                                blocks = (((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
-                              else if (geom->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
-                                blocks = (((RTHWIF_GEOMETRY_QUADS_DESC     *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1    )/TRIANGLE_QUAD_BLOCK_SIZE;
-                              blocksPerGeom[geomID] = blocks;
-                              if (blocks)
-                                gpu::atomic_add_local(&blocks_counter,blocks);
-                            }
-                            
-                            item.barrier(sycl::access::fence_space::local_space);
-                           
-                            if (localID == 0 && blocks_counter > 0)
-                              gpu::atomic_add_global(&globals->numBlocks,blocks_counter);
-                          });
-		  
-       });
     // ================================================================================================================
      
-     sycl::event copy_event0 =  gpu_queue.submit([&](sycl::handler &cgh) {
-         cgh.depends_on(count_blocks_event);
-         cgh.single_task([=]() {
-             host_device_tasks[0] = globals->numBlocks;
-             globals->numQuads    = 0;
-           });
-         
-       });
-     gpu::waitOnEventAndCatchException(copy_event0);
-     dt += gpu::getDeviceExecutionTiming(count_blocks_event);        
-     dt += gpu::getDeviceExecutionTiming(copy_event0);
-     const uint numBlocks = host_device_tasks[0];
+    sycl::event initial;
+    sycl::event prefix_sum_blocks_event = prefixSumOverCounts(gpu_queue,initial,numGeoms,blocksPerGeom,host_device_tasks,verbose);     
 
-     //PRINT(numBlocks);
     // ================================================================================================================
 
-     /* for (uint i=0;i<numGeoms;i++)  */
-     /*   PRINT2(i,blocksPerGeom[i]);  */
-     
-     prefixSumOverCounts(gpu_queue,numGeoms,blocksPerGeom,host_device_tasks,iteration_time,verbose);     
-
-
-     /* for (uint i=0;i</\*numGeoms*\/10;i++)   */
-     /*    PRINT2(i,blocksPerGeom[i]);   */
-
-     
-     /* for (uint globalBlockID=0;globalBlockID<numBlocks;globalBlockID++) */
-     /* { */
-     /*   const uint geomID = find_geomID_from_blockID(blocksPerGeom,numGeoms,globalBlockID); */
-     /*   const uint blockID        = globalBlockID - blocksPerGeom[geomID]; */
-     /*   const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID]; */
-                           
-     /*   RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                              */
-     /*   const uint numTriangles   = triMesh->triangleCount; */
-     /*   const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE; */
-     /*   const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles); */
-     /*   // */
-     /*   if (blocksPerGeom[geomID] > globalBlockID) */
-     /*   { */
-     /*     PRINT6(geomID,globalBlockID,blockID,numTriangles,startPrimID,endPrimID); */
-     /*     FATAL("ERROR"); */
-     /*   } */
-     /* } */
-     
-    // ================================================================================================================
-
-     const sycl::nd_range<1> nd_range2(numBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
+    const sycl::nd_range<1> nd_range2(numQuadBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
     sycl::event count_quads_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint      ,  0> _active_counter(cgh);
-        sycl::local_accessor< uint      ,  0> _geomID(cgh);        
+        sycl::local_accessor< uint      ,  0> _geomID(cgh);
+        cgh.depends_on(prefix_sum_blocks_event);
         cgh.parallel_for(nd_range2,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                          {
                            const uint localID         = item.get_local_id(0);                                                                      
@@ -1002,34 +935,41 @@ namespace embree
                            {
                              gpu::atomic_add_global(&globals->numQuads,active_counter);
                              quadsPerBlock[globalBlockID] = active_counter;
-                             //quads_per_geom_prefix_sum[geomID] = active_counter;
                            }
                            
                          });
 		  
       });
 
-     sycl::event copy_event1 =  gpu_queue.submit([&](sycl::handler &cgh) {
-         cgh.depends_on(count_quads_event);
-         cgh.single_task([=]() {
-             host_device_tasks[0] = globals->numQuads;
-           });
+    // ================================================================================================================
+    
+    sycl::event copy_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+        cgh.depends_on(count_quads_event);
+        cgh.single_task([=]() {
+            host_device_tasks[0] = globals->numQuads;
+          });
          
-       });
-     gpu::waitOnEventAndCatchException(copy_event1);
-     
-     prefixSumOverCounts(gpu_queue,numBlocks,quadsPerBlock,host_device_tasks,iteration_time,verbose);     
-     
-     dt += gpu::getDeviceExecutionTiming(count_quads_event);        
-     dt += gpu::getDeviceExecutionTiming(copy_event1);     
-     if (unlikely(verbose)) PRINT2("count quads per block", (float)dt);
-     iteration_time += dt;
-     const uint numQuads = host_device_tasks[0];
+      });
 
-     //gpu::waitOnQueueAndCatchException(gpu_queue); // debug
+    // ================================================================================================================
+    
+    sycl::event prefix_sum_quads_per_block_event = prefixSumOverCounts(gpu_queue,copy_event,numQuadBlocks,quadsPerBlock,host_device_tasks,verbose);
 
-     return numQuads;
-   }
+    // ================================================================================================================
+    
+    gpu::waitOnEventAndCatchException(prefix_sum_quads_per_block_event);
+     
+    dt += gpu::getDeviceExecutionTiming(prefix_sum_blocks_event);             
+    dt += gpu::getDeviceExecutionTiming(count_quads_event);        
+    dt += gpu::getDeviceExecutionTiming(copy_event);
+    dt += gpu::getDeviceExecutionTiming(prefix_sum_quads_per_block_event);
+     
+    if (unlikely(verbose)) PRINT2("count quads per block", (float)dt);
+    iteration_time += dt;
+    const uint numQuads = host_device_tasks[0];
+
+    return numQuads;
+  }
    
  
    void countQuadsPerGeometry (sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, uint *quads_per_geom_prefix_sum, double &iteration_time, const bool verbose)    
@@ -1278,23 +1218,13 @@ namespace embree
   // ============================================================================== Create Primrefs ==========================================================================================
   // =========================================================================================================================================================================================
 
-   void createQuadsUsingBlocks_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint *const scratch, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *const host_device_tasks, double &iteration_time, const bool verbose)    
+   void createQuadsUsingBlocks_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint numQuadBlocks, const uint *const scratch, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
   {
     const uint *const blocksPerGeom          = scratch;
     const uint *const quadsPerBlockPrefixSum = scratch + numGeoms;
-
-    sycl::event copy_event =  gpu_queue.submit([&](sycl::handler &cgh) {
-        cgh.single_task([=]() {
-            host_device_tasks[0] = globals->numBlocks;
-            globals->numQuads    = 0;
-          });
-         
-      });
-    gpu::waitOnEventAndCatchException(copy_event);
-    const uint numBlocks = host_device_tasks[0];
     
     static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
-    const sycl::nd_range<1> nd_range1(numBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
+    const sycl::nd_range<1> nd_range1(numQuadBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
     sycl::event quadification_event = gpu_queue.submit([&](sycl::handler &cgh) {
         sycl::local_accessor< uint      , 0> _active_counter(cgh);
         sycl::local_accessor< uint      , 0> _geomID(cgh);                
@@ -1454,13 +1384,11 @@ namespace embree
                                }
                              }                                                                                                     
                            }
-                             
-                                                                                                                                                                     
                          });
 		  
       });
     gpu::waitOnEventAndCatchException(quadification_event);
-    double dt = gpu::getDeviceExecutionTiming(quadification_event) + gpu::getDeviceExecutionTiming(copy_event);      
+    double dt = gpu::getDeviceExecutionTiming(quadification_event);      
     iteration_time += dt;
     if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads using blocks", (float)dt);
   }

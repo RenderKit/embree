@@ -194,8 +194,8 @@ namespace embree
                       }
                       case RTHWIF_GEOMETRY_TYPE_QUADS      :
                       {
-                        counts.numQuads       += ((RTHWIF_GEOMETRY_QUADS_DESC*)      geom)->quadCount;
-                        counts.numQuadBlocks  += (((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;                        
+                        counts.numQuads       += ((RTHWIF_GEOMETRY_QUADS_DESC*)  geom)->quadCount;
+                        counts.numQuadBlocks  += (((RTHWIF_GEOMETRY_QUADS_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;                        
                         break;
                       }
                       case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : counts.numProcedurals += ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount; break;
@@ -416,7 +416,6 @@ namespace embree
     PLOCGlobals *globals = (PLOCGlobals *)args.scratchBuffer;
     uint *const sync_mem = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals));
     uint *const scratch  = (uint*)((char*)args.scratchBuffer + sizeof(PLOCGlobals) + sizeof(uint)*MAX_LARGE_WGS);    
-    uint *const prims_per_geom_prefix_sum = (uint*)scratch;    
   
     // ======================          
     // ==== init globals ====
@@ -435,16 +434,16 @@ namespace embree
         std::cout << "Init Globals " << dt << " ms" << std::endl;
     }  
   
-    // ================================================    
-    // === get primitive type count from geometries ===
-    // ================================================
+    // ==============================================================================    
+    // === get primitive type count from geometries, compute quad blocks per geom ===
+    // ==============================================================================
   
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     uint numGeometries                = args.numGeometries;
  
     double device_prim_counts_time = 0.0f;
   
-    const PrimitiveCounts primCounts = countPrimitives(gpu_queue,geometries,numGeometries,globals,host_device_tasks,device_prim_counts_time,verbose2); 
+    const PrimitiveCounts primCounts = countPrimitives(gpu_queue,geometries,numGeometries,globals,scratch,host_device_tasks,device_prim_counts_time,verbose2); 
 
     // ================================================
     
@@ -474,7 +473,7 @@ namespace embree
 
       timer.start(BuildTimer::PRE_PROCESS);      
       double device_quadification_time = 0.0;
-      numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,scratch,host_device_tasks,numQuadBlocks,device_quadification_time,verbose2);
+      numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,host_device_tasks,device_quadification_time,verbose2);
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
 
@@ -486,7 +485,8 @@ namespace embree
       timer.start(BuildTimer::PRE_PROCESS);
 
       double device_quadification_time = 0.0f;
-    
+
+      uint *const prims_per_geom_prefix_sum = (uint*)scratch;          
       countQuadsPerGeometry(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,device_quadification_time,verbose2);
 
       timer.stop(BuildTimer::PRE_PROCESS);
@@ -500,8 +500,9 @@ namespace embree
     
       timer.start(BuildTimer::PRE_PROCESS);
       double geom_prefix_sum_time = 0.0f;
-     
-      prefixSumOverCounts(gpu_queue,numGeometries,prims_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
+      sycl::event initial_event;
+      sycl::event prefix_event = prefixSumOverCounts(gpu_queue,initial_event,numGeometries,prims_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
+      gpu::waitOnEventAndCatchException(prefix_event);
     
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
@@ -601,7 +602,7 @@ namespace embree
          
     if (numQuads)
 #if 1
-      createQuadsUsingBlocks_initPLOCPrimRefs(gpu_queue,globals,args.geometries,numGeometries,scratch,bvh2,0,host_device_tasks,create_primref_time,verbose2);            
+      createQuadsUsingBlocks_initPLOCPrimRefs(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,bvh2,0,create_primref_time,verbose2);            
 #else      
       createQuads_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);      
 #endif
