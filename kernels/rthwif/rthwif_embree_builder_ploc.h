@@ -18,6 +18,7 @@
 #define GEOMID_MASK               (((uint)1<<PAIR_OFFSET_SHIFT)-1)
 #define LARGE_WG_SIZE             1024
 #define USE_NEW_OPENING           0
+#define TRIANGLE_QUAD_BLOCK_SIZE  1024
 
 namespace embree
 {  
@@ -600,10 +601,11 @@ namespace embree
     uint numQuads;
     uint numProcedurals;
     uint numInstances;
+    uint numQuadBlocks;
 
     __forceinline void reset()
     {
-      numTriangles = numQuads = numProcedurals = numInstances = 0;
+      numTriangles = numQuads = numProcedurals = numInstances = numQuadBlocks = 0;
     }
     __forceinline PrimitiveCounts() 
     {
@@ -617,6 +619,7 @@ namespace embree
     c.numQuads       = a.numQuads       + b.numQuads;
     c.numProcedurals = a.numProcedurals + b.numProcedurals;
     c.numInstances   = a.numInstances   + b.numInstances;
+    c.numQuadBlocks  = a.numQuadBlocks  + b.numQuadBlocks;
     return c;
   }
 
@@ -624,7 +627,8 @@ namespace embree
     if (a.numTriangles   == b.numTriangles &&
         a.numQuads       == b.numQuads &&
         a.numProcedurals == b.numProcedurals &&
-        a.numInstances   == b.numInstances)
+        a.numInstances   == b.numInstances &&
+        a.numQuadBlocks  == b.numQuadBlocks)
       return true;
     return false;
   }
@@ -633,20 +637,27 @@ namespace embree
     return !(a==b);
   }
     
-  __forceinline uint find_geomID_from_blockID(const uint *const prefix_sum, const uint numBlocks, const uint blockID)
+  __forceinline uint find_geomID_from_blockID(const uint *const prefix_sum, const int numItems, const int blockID)
   {
-    uint l = 0;
-    uint r = numBlocks;
-
-    while (r - l > 1)
+    int l = 0;
+    int r = numItems-1;
+    while (r-l>1)
     {
-      const uint m = (l + r) / 2;
-      const uint k = prefix_sum[m];
-      l = (blockID >= k) ? m : l;
-      r = (blockID  < k) ? m : r;
+      const int m = (l + r) / 2;
+      if ( prefix_sum[m] > blockID)
+        r = m;
+      else if (prefix_sum[m] < blockID)
+        l = m;
+      else
+      {
+        if (m == numItems-1 || prefix_sum[m] != prefix_sum[m+1]) return m;
+        l = m + 1;
+       }
     }
-    return l;
+    const int final = prefix_sum[r] <= blockID ? r : l;
+    return final;
   }
+  
 
    PrimitiveCounts countPrimitives(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeometries, PLOCGlobals *const globals, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
@@ -658,6 +669,7 @@ namespace embree
         sycl::local_accessor< uint, 0> _numQuads(cgh);
         sycl::local_accessor< uint, 0> _numProcedurals(cgh);
         sycl::local_accessor< uint, 0> _numInstances(cgh);
+        sycl::local_accessor< uint, 0> _numQuadBlocks(cgh);        
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
                            const uint geomID    = item.get_global_id(0);
@@ -667,12 +679,14 @@ namespace embree
                            uint &numQuads       = *_numQuads.get_pointer();
                            uint &numProcedurals = *_numProcedurals.get_pointer();
                            uint &numInstances   = *_numInstances.get_pointer();
+                           uint &numQuadBlocks  = *_numQuadBlocks.get_pointer();
                            if (localID == 0)
                            {
                              numTriangles   = 0;
                              numQuads       = 0;
                              numProcedurals = 0;
                              numInstances   = 0;
+                             numQuadBlocks  = 0;
                            }
                            item.barrier(sycl::access::fence_space::local_space);
 
@@ -680,8 +694,18 @@ namespace embree
                            if (geom != nullptr) {
                              switch (geom->geometryType)
                              {
-                             case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :  gpu::atomic_add_local(&numTriangles  ,((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount); break;
-                             case RTHWIF_GEOMETRY_TYPE_QUADS      :  gpu::atomic_add_local(&numQuads      ,((RTHWIF_GEOMETRY_QUADS_DESC     *)geom)->quadCount);     break;
+                             case RTHWIF_GEOMETRY_TYPE_TRIANGLES  :
+                             {
+                               gpu::atomic_add_local(&numTriangles  , ((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount);
+                               gpu::atomic_add_local(&numQuadBlocks ,(((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
+                               break;
+                             }
+                             case RTHWIF_GEOMETRY_TYPE_QUADS      :
+                             {
+                               gpu::atomic_add_local(&numQuads      , ((RTHWIF_GEOMETRY_QUADS_DESC     *)geom)->quadCount);
+                               gpu::atomic_add_local(&numQuadBlocks ,(((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE);
+                               break;
+                             }
                              case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom)->primCount);     break;
                              case RTHWIF_GEOMETRY_TYPE_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(uint)1); break;
                              };
@@ -692,7 +716,8 @@ namespace embree
                              gpu::atomic_add_global(&globals->numTriangles,numTriangles);
                              gpu::atomic_add_global(&globals->numQuads,numQuads);
                              gpu::atomic_add_global(&globals->numProcedurals,numProcedurals);
-                             gpu::atomic_add_global(&globals->numInstances,numInstances);                             
+                             gpu::atomic_add_global(&globals->numInstances,numInstances);
+                             gpu::atomic_add_global(&globals->numQuadBlocks,numQuadBlocks);                             
                            }
                          });
 		  
@@ -703,7 +728,8 @@ namespace embree
             host_device_tasks[0] = globals->numTriangles;
             host_device_tasks[1] = globals->numQuads;
             host_device_tasks[2] = globals->numProcedurals;
-            host_device_tasks[3] = globals->numInstances;            
+            host_device_tasks[3] = globals->numInstances;
+            host_device_tasks[4] = globals->numQuadBlocks;
           });
       });
     gpu::waitOnEventAndCatchException(queue_event);
@@ -714,12 +740,13 @@ namespace embree
     count.numQuads       = host_device_tasks[1];
     count.numProcedurals = host_device_tasks[2];
     count.numInstances   = host_device_tasks[3];
+    count.numQuadBlocks  = host_device_tasks[4];
 
     iteration_time += d0 + d1;
     return count;
   }  
 
-   void prefixSumOverGeometryCounts (sycl::queue &gpu_queue, const uint numGeoms, uint *const quads_per_geom_prefix_sum, uint *host_device_tasks, double &iteration_time, const bool verbose)    
+   void prefixSumOverCounts (sycl::queue &gpu_queue, const uint numGeoms, uint *const counts_per_geom_prefix_sum, uint *host_device_tasks, double &iteration_time, const bool verbose) //FIXME: general
   {
     static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
     static const uint GEOM_PREFIX_WG_SIZE  = LARGE_WG_SIZE;
@@ -742,7 +769,7 @@ namespace embree
                                                           
               uint count = 0;
               if (t < numGeoms)
-                count = quads_per_geom_prefix_sum[t];
+                count = counts_per_geom_prefix_sum[t];
 
               const uint exclusive_scan = sub_group_exclusive_scan(count, std::plus<uint>());
               const uint reduction = sub_group_reduce(count, std::plus<uint>());                                                     
@@ -766,13 +793,13 @@ namespace embree
               total_offset += total_reduction;
                                                           
               if (t < numGeoms)
-                quads_per_geom_prefix_sum[t] = p_sum;
+                counts_per_geom_prefix_sum[t] = p_sum;
 
             }
                                                         
             if (localID == 0)
             {
-              quads_per_geom_prefix_sum[numGeoms] = total_offset;                                                          
+              counts_per_geom_prefix_sum[numGeoms] = total_offset;                                                          
               *host_device_tasks = total_offset;
             }
                                                         
@@ -784,7 +811,226 @@ namespace embree
     if (unlikely(verbose))
       std::cout << "Prefix sum over quad counts over geometries " << dt << " ms" << std::endl;    
   }
-  
+
+
+   uint countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, uint *const scratch, uint *const host_device_tasks, const uint numQuadBlocks, double &iteration_time, const bool verbose)    
+   {
+     double dt = 0.0;
+     uint *const blocksPerGeom = scratch;
+     uint *const quadsPerBlock = scratch + numGeoms;
+     
+     const sycl::nd_range<1> nd_range1(gpu::alignTo(numGeoms,LARGE_WG_SIZE),sycl::range<1>(LARGE_WG_SIZE));          
+     sycl::event count_blocks_event = gpu_queue.submit([&](sycl::handler &cgh) {
+         sycl::local_accessor< uint      ,  0> _blocks_counter(cgh);                                                            
+         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                          {
+                            const uint geomID    = item.get_global_id(0);
+                            const uint localID   = item.get_local_id(0);
+
+                            uint &blocks_counter = *_blocks_counter.get_pointer();
+                            blocks_counter       = 0;
+                            item.barrier(sycl::access::fence_space::local_space);
+
+                            if (geomID < numGeoms)
+                            {
+                              const RTHWIF_GEOMETRY_DESC* geom = geometries[geomID];
+                              uint blocks = 0;
+                              if (geom->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
+                                blocks = (((RTHWIF_GEOMETRY_TRIANGLES_DESC *)geom)->triangleCount+TRIANGLE_QUAD_BLOCK_SIZE-1)/TRIANGLE_QUAD_BLOCK_SIZE;
+                              else if (geom->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
+                                blocks = (((RTHWIF_GEOMETRY_QUADS_DESC     *)geom)->quadCount+TRIANGLE_QUAD_BLOCK_SIZE-1    )/TRIANGLE_QUAD_BLOCK_SIZE;
+                              blocksPerGeom[geomID] = blocks;
+                              if (blocks)
+                                gpu::atomic_add_local(&blocks_counter,blocks);
+                            }
+                            
+                            item.barrier(sycl::access::fence_space::local_space);
+                           
+                            if (localID == 0 && blocks_counter > 0)
+                              gpu::atomic_add_global(&globals->numBlocks,blocks_counter);
+                          });
+		  
+       });
+    // ================================================================================================================
+     
+     sycl::event copy_event0 =  gpu_queue.submit([&](sycl::handler &cgh) {
+         cgh.depends_on(count_blocks_event);
+         cgh.single_task([=]() {
+             host_device_tasks[0] = globals->numBlocks;
+             globals->numQuads    = 0;
+           });
+         
+       });
+     gpu::waitOnEventAndCatchException(copy_event0);
+     dt += gpu::getDeviceExecutionTiming(count_blocks_event);        
+     dt += gpu::getDeviceExecutionTiming(copy_event0);
+     const uint numBlocks = host_device_tasks[0];
+
+     //PRINT(numBlocks);
+    // ================================================================================================================
+
+     /* for (uint i=0;i<numGeoms;i++)  */
+     /*   PRINT2(i,blocksPerGeom[i]);  */
+     
+     prefixSumOverCounts(gpu_queue,numGeoms,blocksPerGeom,host_device_tasks,iteration_time,verbose);     
+
+
+     /* for (uint i=0;i</\*numGeoms*\/10;i++)   */
+     /*    PRINT2(i,blocksPerGeom[i]);   */
+
+     
+     /* for (uint globalBlockID=0;globalBlockID<numBlocks;globalBlockID++) */
+     /* { */
+     /*   const uint geomID = find_geomID_from_blockID(blocksPerGeom,numGeoms,globalBlockID); */
+     /*   const uint blockID        = globalBlockID - blocksPerGeom[geomID]; */
+     /*   const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID]; */
+                           
+     /*   RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                              */
+     /*   const uint numTriangles   = triMesh->triangleCount; */
+     /*   const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE; */
+     /*   const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles); */
+     /*   // */
+     /*   if (blocksPerGeom[geomID] > globalBlockID) */
+     /*   { */
+     /*     PRINT6(geomID,globalBlockID,blockID,numTriangles,startPrimID,endPrimID); */
+     /*     FATAL("ERROR"); */
+     /*   } */
+     /* } */
+     
+    // ================================================================================================================
+
+     const sycl::nd_range<1> nd_range2(numBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
+    sycl::event count_quads_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        sycl::local_accessor< uint      ,  0> _active_counter(cgh);
+        sycl::local_accessor< uint      ,  0> _geomID(cgh);        
+        cgh.parallel_for(nd_range2,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
+                         {
+                           const uint localID         = item.get_local_id(0);                                                                      
+                           const uint subgroupLocalID = get_sub_group_local_id();
+                           const uint subgroupSize    = get_sub_group_size();        
+                           const uint globalBlockID   = item.get_group(0);
+                           uint &active_counter       = *_active_counter.get_pointer();
+                           uint &geomID               = *_geomID.get_pointer();
+                           active_counter = 0;
+                           if (localID == 0)
+                             geomID = find_geomID_from_blockID(blocksPerGeom,numGeoms,globalBlockID);
+                           
+                           item.barrier(sycl::access::fence_space::local_space);
+                           const uint blockID        = globalBlockID - blocksPerGeom[geomID];
+                           const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];
+                           
+                           // ====================                           
+                           // === TriangleMesh ===
+                           // ====================
+                           
+                           if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
+                           {
+                             RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
+                             const uint numTriangles   = triMesh->triangleCount;
+                             {                                                                          
+                               const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
+                               const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles);
+                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               uint3 tri_indices;
+                               gpu::AABB3f tmp_bounds;
+                               bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,tmp_bounds) : false;
+                               bool paired = false;
+                               uint numQuads = 0;
+                               uint active_mask = sub_group_ballot(valid);
+
+                               while(active_mask)
+                               {
+                                 active_mask = sub_group_broadcast(active_mask,0);
+                                                                              
+                                 const uint broadcast_lane = sycl::ctz(active_mask);
+                                 if (subgroupLocalID == broadcast_lane) valid = false;
+
+                                 active_mask &= active_mask-1;
+                                                                              
+                                 const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
+                                 const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
+
+                                 if (!broadcast_paired)
+                                 {
+                                   const uint3 tri_indices_broadcast(sub_group_broadcast(tri_indices.x(),broadcast_lane),
+                                                                     sub_group_broadcast(tri_indices.y(),broadcast_lane),
+                                                                     sub_group_broadcast(tri_indices.z(),broadcast_lane));
+                                   bool pairable = false;
+                                   if (ID != broadcast_ID && !paired && valid)
+                                     pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
+                                                                            
+                                   const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
+                                   if (first_paired_lane < subgroupSize)
+                                   {
+                                     active_mask &= ~((uint)1 << first_paired_lane);
+                                     if (subgroupLocalID == first_paired_lane) { valid = false; }
+                                   }
+                                 }
+                                 numQuads++;
+                               }                                                                          
+                               sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(active_counter);
+                               if (subgroupLocalID == 0)
+                                 counter.fetch_add(numQuads);
+                             }
+                           }
+                           // ================                           
+                           // === QuadMesh ===
+                           // ================
+                           else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
+                           {
+                             RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                                                          
+                             const uint numQuads  = quadMesh->quadCount;
+                             {                                                                          
+                               const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
+                               const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numQuads);
+                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               uint4 quad_indices;
+                               gpu::AABB3f tmp_bounds;
+                               bool valid = ID < endPrimID ? isValidQuad(*quadMesh,ID,quad_indices,tmp_bounds) : false;
+                               uint active_mask = sub_group_ballot(valid);
+                               uint numQuads = sycl::popcount(active_mask);
+
+                               sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(active_counter);
+                               if (subgroupLocalID == 0)
+                                 counter.fetch_add(numQuads);                             
+                             }
+                           }
+                             
+                           item.barrier(sycl::access::fence_space::local_space);
+                                                                        
+                           if (localID == 0)
+                           {
+                             gpu::atomic_add_global(&globals->numQuads,active_counter);
+                             quadsPerBlock[globalBlockID] = active_counter;
+                             //quads_per_geom_prefix_sum[geomID] = active_counter;
+                           }
+                           
+                         });
+		  
+      });
+
+     sycl::event copy_event1 =  gpu_queue.submit([&](sycl::handler &cgh) {
+         cgh.depends_on(count_quads_event);
+         cgh.single_task([=]() {
+             host_device_tasks[0] = globals->numQuads;
+           });
+         
+       });
+     gpu::waitOnEventAndCatchException(copy_event1);
+     
+     prefixSumOverCounts(gpu_queue,numBlocks,quadsPerBlock,host_device_tasks,iteration_time,verbose);     
+     
+     dt += gpu::getDeviceExecutionTiming(count_quads_event);        
+     dt += gpu::getDeviceExecutionTiming(copy_event1);     
+     if (unlikely(verbose)) PRINT2("count quads per block", (float)dt);
+     iteration_time += dt;
+     const uint numQuads = host_device_tasks[0];
+
+     //gpu::waitOnQueueAndCatchException(gpu_queue); // debug
+
+     return numQuads;
+   }
+   
  
    void countQuadsPerGeometry (sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, uint *quads_per_geom_prefix_sum, double &iteration_time, const bool verbose)    
   {
@@ -1031,7 +1277,194 @@ namespace embree
   // =========================================================================================================================================================================================
   // ============================================================================== Create Primrefs ==========================================================================================
   // =========================================================================================================================================================================================
-  
+
+   void createQuadsUsingBlocks_initPLOCPrimRefs(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint *const scratch, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *const host_device_tasks, double &iteration_time, const bool verbose)    
+  {
+    const uint *const blocksPerGeom          = scratch;
+    const uint *const quadsPerBlockPrefixSum = scratch + numGeoms;
+
+    sycl::event copy_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+        cgh.single_task([=]() {
+            host_device_tasks[0] = globals->numBlocks;
+            globals->numQuads    = 0;
+          });
+         
+      });
+    gpu::waitOnEventAndCatchException(copy_event);
+    const uint numBlocks = host_device_tasks[0];
+    
+    static const uint MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH = 16;
+    const sycl::nd_range<1> nd_range1(numBlocks*TRIANGLE_QUAD_BLOCK_SIZE,sycl::range<1>(TRIANGLE_QUAD_BLOCK_SIZE));
+    sycl::event quadification_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        sycl::local_accessor< uint      , 0> _active_counter(cgh);
+        sycl::local_accessor< uint      , 0> _geomID(cgh);                
+        sycl::local_accessor< uint      , 1> counts(sycl::range<1>((TRIANGLE_QUAD_BLOCK_SIZE/MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)),cgh);       
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)      
+                         {
+                           const uint localID         = item.get_local_id(0);
+                           const uint subgroupID      = get_sub_group_id();
+                           const uint subgroupLocalID = get_sub_group_local_id();
+                           const uint subgroupSize    = get_sub_group_size();        
+                           const uint globalBlockID   = item.get_group(0);
+                           uint &active_counter       = *_active_counter.get_pointer();
+                           uint &geomID               = *_geomID.get_pointer();
+                           active_counter = 0;
+                           if (localID == 0)
+                             geomID = find_geomID_from_blockID(blocksPerGeom,numGeoms,globalBlockID);
+                           
+                           item.barrier(sycl::access::fence_space::local_space);
+                           const uint blockID        = globalBlockID - blocksPerGeom[geomID];
+                           const uint startQuadOffset = quadsPerBlockPrefixSum[globalBlockID] + prim_type_offset;
+                           const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];
+                                                      
+                           // ====================                           
+                           // === TriangleMesh ===
+                           // ====================                           
+                           if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
+                           {
+                             RTHWIF_GEOMETRY_TRIANGLES_DESC* triMesh = (RTHWIF_GEOMETRY_TRIANGLES_DESC*)geometryDesc;                             
+                             const uint numTriangles = triMesh->triangleCount;                                                                                                     
+                             {                                                                          
+                               const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
+                               const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles);
+                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               {
+                                 uint3 tri_indices;
+                                 gpu::AABB3f bounds;
+                                 bounds.init();
+                                 bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,bounds) : false;
+                                 bool paired = false;
+                                 uint paired_ID = -1;
+                                 uint active_mask = sub_group_ballot(valid);
+
+                                 while(active_mask)
+                                 {
+                                   active_mask = sub_group_broadcast(active_mask,0);
+                                                                              
+                                   const uint broadcast_lane = sycl::ctz(active_mask);
+
+                                   if (subgroupLocalID == broadcast_lane) valid = false;
+                                                                            
+                                   active_mask &= active_mask-1;
+                                                                              
+                                   const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
+                                   const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
+
+                                   if (!broadcast_paired)
+                                   {
+                                     const uint3 tri_indices_broadcast(sub_group_broadcast(tri_indices.x(),broadcast_lane),
+                                                                       sub_group_broadcast(tri_indices.y(),broadcast_lane),
+                                                                       sub_group_broadcast(tri_indices.z(),broadcast_lane));
+                                     bool pairable = false;
+                                     if (ID != broadcast_ID && !paired && valid)
+                                       pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
+                                                                            
+                                     const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
+                                     if (first_paired_lane < subgroupSize)
+                                     {
+                                       active_mask &= ~((uint)1 << first_paired_lane);
+                                       if (subgroupLocalID == first_paired_lane) { valid = false; }
+                                       const uint secondID = sub_group_broadcast(ID,first_paired_lane);
+                                       gpu::AABB3f second_bounds = bounds.sub_group_broadcast(first_paired_lane);
+                                       if (subgroupLocalID == broadcast_lane)  {
+                                         paired_ID = secondID;
+                                         bounds.extend(second_bounds);
+                                       }
+                                     }
+                                     else
+                                       if (subgroupLocalID == broadcast_lane)
+                                         paired_ID = ID;
+                                                                                
+                                   }
+                                 }
+                                                                          
+                                 const uint flag = paired_ID != -1 ? 1 : 0;
+                                 const uint ps = ID < endPrimID ? flag : 0;
+                                 const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
+                                 const uint reduction = sub_group_reduce(ps, std::plus<uint>());
+                                 counts[subgroupID] = reduction;
+                                                                          
+                                 item.barrier(sycl::access::fence_space::local_space);
+
+                                 /* -- prefix sum over reduced sub group counts -- */
+        
+                                 uint p_sum = 0;
+                                 for (uint j=0;j<TRIANGLE_QUAD_BLOCK_SIZE/subgroupSize;j++)
+                                   if (j<subgroupID) p_sum += counts[j];
+                                                                          
+                                 item.barrier(sycl::access::fence_space::local_space);
+
+                                 const uint dest_offset = startQuadOffset + p_sum + exclusive_scan;
+
+                                 /* --- store cluster representative into destination array --- */
+                                 if (ID < endPrimID)
+                                   if (paired_ID != -1)
+                                   {
+                                     const uint pair_offset = paired_ID - ID;
+                                     const uint pair_geomID = (pair_offset << PAIR_OFFSET_SHIFT) | geomID;
+                                     //bvh2[dest_offset].initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
+                                     BVH2Ploc node;
+                                     node.initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
+                                     node.store(&bvh2[dest_offset]);
+                                   }                                                                          
+                               }
+                             }                                                                        
+                           }
+                           // ================                           
+                           // === QuadMesh ===
+                           // ================                           
+                           else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_QUADS)
+                           {
+                             RTHWIF_GEOMETRY_QUADS_DESC* quadMesh = (RTHWIF_GEOMETRY_QUADS_DESC*)geometryDesc;                                                          
+                             const uint numQuads  = quadMesh->quadCount;                             
+                             {                                                                          
+                               const uint startPrimID  = blockID*TRIANGLE_QUAD_BLOCK_SIZE;
+                               const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numQuads);
+                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               {
+                                 uint4 quad_indices;
+                                 gpu::AABB3f bounds;
+                                 bounds.init();
+                                 const bool valid = ID < endPrimID ? isValidQuad(*quadMesh,ID,quad_indices,bounds) : false;                                                                          
+                                 const uint ps = valid ? 1 : 0;
+                                 const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
+                                 const uint reduction = sub_group_reduce(ps, std::plus<uint>());
+                                 counts[subgroupID] = reduction;
+                                                                          
+                                 item.barrier(sycl::access::fence_space::local_space);
+
+                                 /* -- prefix sum over reduced sub group counts -- */
+        
+                                 uint p_sum = 0;
+                                 for (uint j=0;j<TRIANGLE_QUAD_BLOCK_SIZE/subgroupSize;j++)
+                                   if (j<subgroupID) p_sum += counts[j];
+                                                                          
+                                 item.barrier(sycl::access::fence_space::local_space);
+
+                                 const uint dest_offset = startQuadOffset + p_sum + exclusive_scan;
+
+                                 /* --- store cluster representative into destination array --- */
+                                 if (ID < endPrimID)
+                                   if (valid)
+                                   {
+                                     BVH2Ploc node;
+                                     node.initLeaf(geomID,ID,bounds); // need to consider pair_offset
+                                     node.store(&bvh2[dest_offset]);
+                                   }                                                                          
+                               }
+                             }                                                                                                     
+                           }
+                             
+                                                                                                                                                                     
+                         });
+		  
+      });
+    gpu::waitOnEventAndCatchException(quadification_event);
+    double dt = gpu::getDeviceExecutionTiming(quadification_event) + gpu::getDeviceExecutionTiming(copy_event);      
+    iteration_time += dt;
+    if (unlikely(verbose)) PRINT2("merge triangles per geometry and write out quads using blocks", (float)dt);
+  }
+   
     void createQuads_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint *const quads_per_geom_prefix_sum, BVH2Ploc *const bvh2, const uint prim_type_offset, double &iteration_time, const bool verbose)    
   {
     static const uint MERGE_TRIANGLES_TO_QUADS_SEARCH_WG_SIZE  = LARGE_WG_SIZE;
