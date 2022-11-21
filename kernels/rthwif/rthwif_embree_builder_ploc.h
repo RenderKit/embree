@@ -1092,6 +1092,7 @@ namespace embree
 
    void getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, PrimitiveCounts *primitiveCounts, const bool dynamicMode, double &iteration_time, const bool verbose)    
   {
+    if (numGeoms == 0) return;
     static const uint GET_PRIMITIVE_COUNTS_WG_SIZE  = LARGE_WG_SIZE;
     
     const sycl::nd_range<1> nd_range1(numGeoms*GET_PRIMITIVE_COUNTS_WG_SIZE,sycl::range<1>(GET_PRIMITIVE_COUNTS_WG_SIZE));

@@ -481,11 +481,15 @@ namespace embree
     /* allocate scratch buffer */
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    double alloc_scratch = getSeconds();
     // === scratch buffer === 
     char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),gpu_device->verbose > 1 ? sycl::usm::alloc::shared : sycl::usm::alloc::device);
     assert(scratchBuffer);
     args.scratchBuffer = scratchBuffer;
-    args.scratchBufferBytes = sizeTotal.scratchBufferBytes;    
+    args.scratchBufferBytes = sizeTotal.scratchBufferBytes;
+    alloc_scratch = (getSeconds() - alloc_scratch)*1000.0;
+    //PRINT2(sizeTotal.scratchBufferBytes,alloc_scratch);
+
 #else        
     std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
     args.scratchBuffer = scratchBuffer.data();
@@ -506,7 +510,10 @@ namespace embree
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
       
       /* allocate BVH data */
+      double alloc_accel = getSeconds();      
       if (accel.size() < bytes) accel.resize(bytes);
+      alloc_accel = (getSeconds() - alloc_accel)*1000.0;
+      //PRINT2(bytes,alloc_accel);
 
 #if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
       memset(accel.data(),0,accel.size()); // FIXME: not required

@@ -311,7 +311,7 @@ namespace embree
   }
 
   RTHWIF_API RTHWIF_ERROR rthwifPrefetchAccelGPU(const RTHWIF_BUILD_ACCEL_ARGS& args, void *sycl_queue, uint verbose_level=0)
-  {    
+  {
     double time0 = getSeconds();
     
     sycl::queue  &gpu_queue  = *(sycl::queue*)sycl_queue;
