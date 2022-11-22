@@ -10,7 +10,6 @@
 #include "../common/lights/spot_light.cpp"
 
 namespace embree {
-RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterReject(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOBJ(const RTCFilterFunctionNArguments* args);
@@ -940,9 +939,6 @@ void assignShaders(ISPCGeometry* geometry)
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
@@ -960,9 +956,6 @@ void assignShaders(ISPCGeometry* geometry)
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
@@ -978,9 +971,6 @@ void assignShaders(ISPCGeometry* geometry)
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* obj = (ISPCOBJMaterial*) material;
@@ -1424,13 +1414,6 @@ inline int postIntersect(const TutorialData& data, const Ray& ray, DifferentialG
   return materialID;
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterReject(const RTCFilterFunctionNArguments* args)
-{
-  assert(args->N == 1);
-  bool valid = *((int*) args->valid);
-  if (!valid) return;
-}
-
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilterOBJ(const RTCFilterFunctionNArguments* args)
 {
   int* valid_i = args->valid;
@@ -1844,7 +1827,6 @@ extern "C" void device_init (char* cfg)
 
   TutorialData_Constructor(&data);
 
-  data.intersectionFilterReject = GET_FUNCTION_POINTER(intersectionFilterReject);
   data.intersectionFilterOBJ = GET_FUNCTION_POINTER(intersectionFilterOBJ);
   data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
   data.occlusionFilterOBJ = GET_FUNCTION_POINTER(occlusionFilterOBJ);

@@ -13,7 +13,6 @@
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_ALL
 
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
@@ -937,9 +936,6 @@ unmasked void assignShaders(uniform ISPCGeometry* uniform uniform geometry)
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
@@ -957,9 +953,6 @@ unmasked void assignShaders(uniform ISPCGeometry* uniform uniform geometry)
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
@@ -975,9 +968,6 @@ unmasked void assignShaders(uniform ISPCGeometry* uniform uniform geometry)
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
 
     ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
     if (material->type == MATERIAL_OBJ)
     {
       ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
@@ -1418,13 +1408,6 @@ inline int postIntersect(const uniform TutorialData& data, const Ray& ray, Diffe
   return materialID;
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args)
-{
-  assert(args->N == programCount);
-  bool valid = *((varying int* uniform) args->valid);
-  if (!valid) return;
-}
-
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid_i = args->valid;
@@ -1832,7 +1815,6 @@ export void device_init (uniform int8* uniform cfg)
 
   TutorialData_Constructor(&data);
 
-  data.intersectionFilterReject = GET_FUNCTION_POINTER(intersectionFilterReject);
   data.intersectionFilterOBJ = GET_FUNCTION_POINTER(intersectionFilterOBJ);
   data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
   data.occlusionFilterOBJ = GET_FUNCTION_POINTER(occlusionFilterOBJ);
