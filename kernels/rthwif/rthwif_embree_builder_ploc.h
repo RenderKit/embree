@@ -562,6 +562,60 @@ namespace embree
     }
     return numQuads;
   }
+
+  __forceinline uint getMergedQuadBounds(const RTHWIF_GEOMETRY_TRIANGLES_DESC* const triMesh, const uint ID, const uint endPrimID, gpu::AABB3f &bounds)
+  {
+    const uint subgroupLocalID = get_sub_group_local_id();
+    const uint subgroupSize    = get_sub_group_size();        
+    
+    uint3 tri_indices;
+    bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,bounds) : false;
+    bool paired = false;
+    uint paired_ID = -1;
+    uint active_mask = sub_group_ballot(valid);
+
+    while(active_mask)
+    {
+      active_mask = sub_group_broadcast(active_mask,0);
+                                                                              
+      const uint broadcast_lane = sycl::ctz(active_mask);
+
+      if (subgroupLocalID == broadcast_lane) valid = false;
+                                                                            
+      active_mask &= active_mask-1;
+                                                                              
+      const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
+      const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
+
+      if (!broadcast_paired)
+      {
+        const uint3 tri_indices_broadcast(sub_group_broadcast(tri_indices.x(),broadcast_lane),
+                                          sub_group_broadcast(tri_indices.y(),broadcast_lane),
+                                          sub_group_broadcast(tri_indices.z(),broadcast_lane));
+        bool pairable = false;
+        if (ID != broadcast_ID && !paired && valid)
+          pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
+                                                                            
+        const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
+        if (first_paired_lane < subgroupSize)
+        {
+          active_mask &= ~((uint)1 << first_paired_lane);
+          if (subgroupLocalID == first_paired_lane) { valid = false; }
+          const uint secondID = sub_group_broadcast(ID,first_paired_lane);
+          gpu::AABB3f second_bounds = bounds.sub_group_broadcast(first_paired_lane);
+          if (subgroupLocalID == broadcast_lane)  {
+            paired_ID = secondID;
+            bounds.extend(second_bounds);
+          }
+        }
+        else
+          if (subgroupLocalID == broadcast_lane)
+            paired_ID = ID;
+                                                                                
+      }
+    }
+    return paired_ID;
+  }  
   
   // ===================================================================================================================================================================================
   // ============================================================================== Instances ==========================================================================================
@@ -1109,55 +1163,9 @@ namespace embree
                                const uint endPrimID    = min(startPrimID+TRIANGLE_QUAD_BLOCK_SIZE,numTriangles);
                                const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
                                {
-                                 uint3 tri_indices;
                                  gpu::AABB3f bounds;
-                                 bounds.init();
-                                 bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,bounds) : false;
-                                 bool paired = false;
-                                 uint paired_ID = -1;
-                                 uint active_mask = sub_group_ballot(valid);
-
-                                 while(active_mask)
-                                 {
-                                   active_mask = sub_group_broadcast(active_mask,0);
-                                                                              
-                                   const uint broadcast_lane = sycl::ctz(active_mask);
-
-                                   if (subgroupLocalID == broadcast_lane) valid = false;
-                                                                            
-                                   active_mask &= active_mask-1;
-                                                                              
-                                   const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
-                                   const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
-
-                                   if (!broadcast_paired)
-                                   {
-                                     const uint3 tri_indices_broadcast(sub_group_broadcast(tri_indices.x(),broadcast_lane),
-                                                                       sub_group_broadcast(tri_indices.y(),broadcast_lane),
-                                                                       sub_group_broadcast(tri_indices.z(),broadcast_lane));
-                                     bool pairable = false;
-                                     if (ID != broadcast_ID && !paired && valid)
-                                       pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
-                                                                            
-                                     const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
-                                     if (first_paired_lane < subgroupSize)
-                                     {
-                                       active_mask &= ~((uint)1 << first_paired_lane);
-                                       if (subgroupLocalID == first_paired_lane) { valid = false; }
-                                       const uint secondID = sub_group_broadcast(ID,first_paired_lane);
-                                       gpu::AABB3f second_bounds = bounds.sub_group_broadcast(first_paired_lane);
-                                       if (subgroupLocalID == broadcast_lane)  {
-                                         paired_ID = secondID;
-                                         bounds.extend(second_bounds);
-                                       }
-                                     }
-                                     else
-                                       if (subgroupLocalID == broadcast_lane)
-                                         paired_ID = ID;
-                                                                                
-                                   }
-                                 }
-                                                                          
+                                 bounds.init();                                 
+                                 const uint paired_ID = getMergedQuadBounds(triMesh,ID,endPrimID,bounds);                                                                          
                                  const uint flag = paired_ID != -1 ? 1 : 0;
                                  const uint ps = ID < endPrimID ? flag : 0;
                                  const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
