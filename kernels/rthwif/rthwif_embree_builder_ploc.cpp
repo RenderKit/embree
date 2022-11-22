@@ -9,10 +9,10 @@
 #define SINGLE_WG_SWITCH_THRESHOLD            8*1024
 
 // === less than threshold, 40bits morton code + 24bits index are used, otherwise 64bit morton code + 32bit index ===
-#define FAST_MC_NUM_PRIMS_THRESHOLD                     1024*1024
+#define FAST_MC_NUM_PRIMS_THRESHOLD           1024*1024
 
 // === max number of primitives fitting in 24bits ===
-#define FAST_MC_MAX_NUM_PRIMS                     ((uint)1<<24)
+#define FAST_MC_MAX_NUM_PRIMS                 ((uint)1<<24)
 
 // === less than threshold, a single workgroup is used for all radix sort iterations ===
 #define SMALL_SORT_THRESHOLD                  1024*4
@@ -251,14 +251,15 @@ namespace embree
     // === GPU-based primitive count estimation including triangle quadification ===
     // =============================================================================
     
-    const PrimitiveCounts primCounts = getEstimatedPrimitiveCounts(gpu_queue,geometries,numGeometries, false ,verbose_level >= 2);            
+    const PrimitiveCounts primCounts = getEstimatedPrimitiveCounts(gpu_queue,geometries,numGeometries,verbose_level >= 2);            
 
-    const uint numQuads       = primCounts.numQuads;
-    const uint numTriangles   = primCounts.numTriangles; // === will be zero if quadification is enabled === 
-    const uint numProcedurals = primCounts.numProcedurals;
-    const uint numInstances   = primCounts.numInstances;
+    const uint numTriangles       = primCounts.numTriangles; // === original number of triangles ===
+    const uint numMergedTriangles = primCounts.numMergedTriangles;
+    const uint numQuads           = primCounts.numQuads;
+    const uint numProcedurals     = primCounts.numProcedurals;
+    const uint numInstances       = primCounts.numInstances;
   
-    const uint numPrimitives = numQuads + numTriangles + numProcedurals + numInstances;
+    const uint numPrimitives = numQuads + numMergedTriangles + numProcedurals + numInstances;
 
     // =============================================    
     // === allocation for empty scene is default ===
@@ -269,8 +270,8 @@ namespace embree
 
     if (numPrimitives)
     {    
-      expectedBytes  = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals);
-      worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals);    
+      expectedBytes  = estimateAccelBufferSize(numQuads + numMergedTriangles, numInstances, numProcedurals);
+      worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles      , numInstances, numProcedurals);    
     }
 
     // ===============================================    
@@ -281,7 +282,7 @@ namespace embree
 
     if (verbose_level >= 2)
     {
-      PRINT4(numTriangles,numQuads,numProcedurals,numInstances);      
+      PRINT5(numTriangles,numMergedTriangles,numQuads,numProcedurals,numInstances);      
       PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     }
         
@@ -569,7 +570,10 @@ namespace embree
     if (numInstances)
       numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
 
-    // === recompute actual number of primitives ===
+    // =================================================================================================    
+    // === recompute actual number of primitives after quadification and removing of invalid entries ===
+    // =================================================================================================
+    
     numPrimitives = numQuads + numInstances + numProcedurals;
 
     const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        

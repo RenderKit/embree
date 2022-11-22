@@ -598,16 +598,17 @@ namespace embree
      iteration_time += gpu::getDeviceExecutionTiming(queue_event); 
    }
   
-  struct PrimitiveCounts {
+  struct __aligned(64) PrimitiveCounts {
     uint numTriangles;
     uint numQuads;
     uint numProcedurals;
     uint numInstances;
+    uint numMergedTriangles;
     uint numQuadBlocks;
 
     __forceinline void reset()
     {
-      numTriangles = numQuads = numProcedurals = numInstances = numQuadBlocks = 0;
+      numTriangles = numQuads = numProcedurals = numInstances = numMergedTriangles = numQuadBlocks = 0;
     }
     __forceinline PrimitiveCounts() 
     {
@@ -617,20 +618,22 @@ namespace embree
 
   __forceinline PrimitiveCounts operator +(const PrimitiveCounts& a, const PrimitiveCounts& b) {
     PrimitiveCounts c;
-    c.numTriangles   = a.numTriangles   + b.numTriangles;
-    c.numQuads       = a.numQuads       + b.numQuads;
-    c.numProcedurals = a.numProcedurals + b.numProcedurals;
-    c.numInstances   = a.numInstances   + b.numInstances;
-    c.numQuadBlocks  = a.numQuadBlocks  + b.numQuadBlocks;
+    c.numTriangles       = a.numTriangles       + b.numTriangles;
+    c.numQuads           = a.numQuads           + b.numQuads;
+    c.numProcedurals     = a.numProcedurals     + b.numProcedurals;
+    c.numInstances       = a.numInstances       + b.numInstances;
+    c.numMergedTriangles = a.numMergedTriangles + b.numMergedTriangles;    
+    c.numQuadBlocks      = a.numQuadBlocks      + b.numQuadBlocks;
     return c;
   }
 
   __forceinline bool operator ==(const PrimitiveCounts& a, const PrimitiveCounts& b) {
-    if (a.numTriangles   == b.numTriangles &&
-        a.numQuads       == b.numQuads &&
-        a.numProcedurals == b.numProcedurals &&
-        a.numInstances   == b.numInstances &&
-        a.numQuadBlocks  == b.numQuadBlocks)
+    if (a.numTriangles       == b.numTriangles &&
+        a.numQuads           == b.numQuads &&
+        a.numProcedurals     == b.numProcedurals &&
+        a.numInstances       == b.numInstances &&
+        a.numMergedTriangles == b.numMergedTriangles &&
+        a.numQuadBlocks      == b.numQuadBlocks)
       return true;
     return false;
   }
@@ -968,7 +971,7 @@ namespace embree
     return numQuads;
   }
    
-   PrimitiveCounts getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const bool dynamicMode, const bool verbose)    
+   PrimitiveCounts getEstimatedPrimitiveCounts(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const bool verbose)    
   {
     PrimitiveCounts finalCounts;    
     if (numGeoms == 0) return finalCounts;
@@ -1004,62 +1007,60 @@ namespace embree
                              const uint numTriangles = triMesh->triangleCount;
                              const uint numBlocks    = (numTriangles + GET_PRIMITIVE_COUNTS_WG_SIZE - 1) / GET_PRIMITIVE_COUNTS_WG_SIZE;
 
-                             if (dynamicMode == false)
-                             {
-                               for (uint blockID = 0; blockID < numBlocks; blockID++)
-                               {                                                                          
-                                 const uint startPrimID  = blockID*GET_PRIMITIVE_COUNTS_WG_SIZE;
-                                 const uint endPrimID    = min(startPrimID+GET_PRIMITIVE_COUNTS_WG_SIZE,numTriangles);
-                                 const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
-                                 uint3 tri_indices;
-                                 gpu::AABB3f tmp_bounds;
-                                 bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,tmp_bounds) : false;
-                                 bool paired = false;
-                                 uint numQuads = 0;
-                                 uint active_mask = sub_group_ballot(valid);
+                             if (localID == 0)
+                               gpu::atomic_add_global(&primitiveCounts->numTriangles,numTriangles);
+                             
+                             for (uint blockID = 0; blockID < numBlocks; blockID++)
+                             {                                                                          
+                               const uint startPrimID  = blockID*GET_PRIMITIVE_COUNTS_WG_SIZE;
+                               const uint endPrimID    = min(startPrimID+GET_PRIMITIVE_COUNTS_WG_SIZE,numTriangles);
+                               const uint ID           = (startPrimID + localID) < endPrimID ? startPrimID + localID : -1;
+                               uint3 tri_indices;
+                               gpu::AABB3f tmp_bounds;
+                               bool valid = ID < endPrimID ? isValidTriangle(*triMesh,ID,tri_indices,tmp_bounds) : false;
+                               bool paired = false;
+                               uint numQuads = 0;
+                               uint active_mask = sub_group_ballot(valid);
 
-                                 while(active_mask)
+                               while(active_mask)
+                               {
+                                 active_mask = sub_group_broadcast(active_mask,0);
+                                                                              
+                                 const uint broadcast_lane = sycl::ctz(active_mask);
+                                 if (subgroupLocalID == broadcast_lane) valid = false;
+
+                                 active_mask &= active_mask-1;
+                                                                              
+                                 const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
+                                 const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
+
+                                 if (!broadcast_paired)
                                  {
-                                   active_mask = sub_group_broadcast(active_mask,0);
-                                                                              
-                                   const uint broadcast_lane = sycl::ctz(active_mask);
-                                   if (subgroupLocalID == broadcast_lane) valid = false;
-
-                                   active_mask &= active_mask-1;
-                                                                              
-                                   const bool broadcast_paired = sub_group_broadcast(paired, broadcast_lane);
-                                   const uint broadcast_ID     = sub_group_broadcast(ID    , broadcast_lane);
-
-                                   if (!broadcast_paired)
-                                   {
-                                     const uint3 tri_indices_broadcast(sub_group_broadcast(tri_indices.x(),broadcast_lane),
-                                                                       sub_group_broadcast(tri_indices.y(),broadcast_lane),
-                                                                       sub_group_broadcast(tri_indices.z(),broadcast_lane));
-                                     bool pairable = false;
-                                     if (ID != broadcast_ID && !paired && valid)
-                                       pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
+                                   const uint3 tri_indices_broadcast(sub_group_broadcast(tri_indices.x(),broadcast_lane),
+                                                                     sub_group_broadcast(tri_indices.y(),broadcast_lane),
+                                                                     sub_group_broadcast(tri_indices.z(),broadcast_lane));
+                                   bool pairable = false;
+                                   if (ID != broadcast_ID && !paired && valid)
+                                     pairable = try_pair_triangles(tri_indices_broadcast,tri_indices);
                                                                             
-                                     const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
-                                     if (first_paired_lane < subgroupSize)
-                                     {
-                                       active_mask &= ~((uint)1 << first_paired_lane);
-                                       if (subgroupLocalID == first_paired_lane) { valid = false; }
-                                     }
+                                   const uint first_paired_lane = sycl::ctz(sub_group_ballot(pairable));
+                                   if (first_paired_lane < subgroupSize)
+                                   {
+                                     active_mask &= ~((uint)1 << first_paired_lane);
+                                     if (subgroupLocalID == first_paired_lane) { valid = false; }
                                    }
-                                   numQuads++;
-                                 }                                                                          
-                                 sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(active_counter);
-                                 if (subgroupLocalID == 0)
-                                   counter.fetch_add(numQuads);
-                               }
+                                 }
+                                 numQuads++;
+                               }                                                                          
+                               sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::work_group,sycl::access::address_space::local_space> counter(active_counter);
+                               if (subgroupLocalID == 0)
+                                 counter.fetch_add(numQuads);
                              }
-                             else
-                               active_counter = triMesh->triangleCount;
 
                              item.barrier(sycl::access::fence_space::local_space);
 
                              if (localID == 0 && active_counter)                                                                          
-                               gpu::atomic_add_global(&primitiveCounts->numQuads,active_counter);                                                             
+                               gpu::atomic_add_global(&primitiveCounts->numMergedTriangles,active_counter);                                                             
                            }
                            // ================                           
                            // === QuadMesh ===
