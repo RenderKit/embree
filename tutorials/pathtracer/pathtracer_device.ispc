@@ -38,6 +38,8 @@ extern uniform int g_animation_mode;
 uniform bool g_subdiv_mode = false;
 uniform unsigned int keyframeID = 0;
 
+uniform RTCFeatureFlags g_used_features = RTC_FEATURE_FLAGS_NONE;
+
 ////////////////////////////////////////////////////////////////////////////////
 //                               Lights                                       //
 ////////////////////////////////////////////////////////////////////////////////
@@ -916,7 +918,7 @@ void device_key_pressed_handler(uniform int key)
 
 unmasked void assignShaders(uniform ISPCGeometry* uniform uniform geometry)
 {
-#if ENABLE_FILTER_FUNCTION == 1
+#if ENABLE_FILTER_FUNCTION
   RTCGeometry geom = geometry->geometry;
   if (geometry->type == SUBDIV_MESH)
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
@@ -945,8 +947,16 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   assignShadersFunc = assignShaders;
-  
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_used_features);
+  //RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS, &g_used_features);
+#if ENABLE_FILTER_FUNCTION
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+  g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
+#else
+  g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY);
+#endif
+#endif
 
   /* commit changes to scene */
   //progressStart();
@@ -1410,6 +1420,36 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterHair(const RTCFilterFu
     valid_i[programIndex] = 0;
 }
 
+RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionNArguments* uniform args)
+{
+  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  TutorialData* uniform pdata = (TutorialData* uniform) context->tutorialData;
+  uniform TutorialData& data = *pdata;
+  uniform int* uniform valid_i = args->valid;
+
+  bool valid = *((varying int* uniform) valid_i);
+  if (!valid) return;
+
+  RTCHit* uniform potential_hit = (RTCHit*) args->hit;
+  if (potential_hit->instID[0] == -1)
+  {
+    unsigned int geomID = potential_hit->geomID;
+    ISPCGeometry* geometry = data.ispc_scene->geometries[geomID];
+    
+    if (geometry->type == SUBDIV_MESH ||
+        geometry->type == TRIANGLE_MESH ||
+        geometry->type == QUAD_MESH ||
+        geometry->type == GRID_MESH)
+    {
+      occlusionFilterOpaque(args);
+    }
+    else if (geometry->type == CURVES)
+    {
+      occlusionFilterHair(args);
+    }
+  }
+}
+
 Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, RandomSampler& sampler, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* radiance accumulator and weight */
@@ -1440,6 +1480,9 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     rtcInitIntersectArguments(&args);
     args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
+    args.filter = NULL;
+#endif
   
     rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
@@ -1506,6 +1549,9 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
+      args.filter = contextFilterFunction;
+#endif
       rtcOccludedV(data.scene,&context.context,RTCRay_(shadow),&args);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
