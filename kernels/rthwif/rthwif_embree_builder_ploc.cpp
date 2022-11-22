@@ -251,14 +251,7 @@ namespace embree
     // === GPU-based primitive count estimation including triangle quadification ===
     // =============================================================================
     
-    PrimitiveCounts *host_device_primitive_counts = (PrimitiveCounts*)sycl::aligned_alloc(64,sizeof(PrimitiveCounts),gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::shared);
-
-    double estimation_time;
-    getEstimatedPrimitiveCounts(gpu_queue,geometries,numGeometries,host_device_primitive_counts, args.flags & RTHWIF_BUILD_FLAG_DYNAMIC,estimation_time,verbose_level >= 2);
-    const PrimitiveCounts primCounts = *host_device_primitive_counts;
-    
-    sycl::free(host_device_primitive_counts,gpu_queue.get_context());
-        
+    const PrimitiveCounts primCounts = getEstimatedPrimitiveCounts(gpu_queue,geometries,numGeometries, false ,verbose_level >= 2);            
 
     const uint numQuads       = primCounts.numQuads;
     const uint numTriangles   = primCounts.numTriangles; // === will be zero if quadification is enabled === 
@@ -466,7 +459,6 @@ namespace embree
         
     if (numQuads)
     {
-#if 1      
       // ==================================================
       // === compute correct quadification using blocks === 
       // ==================================================
@@ -476,39 +468,6 @@ namespace embree
       numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,host_device_tasks,device_quadification_time,verbose2);
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
-
-#else      
-      // =====================================
-      // === compute correct quadification === 
-      // =====================================
-
-      timer.start(BuildTimer::PRE_PROCESS);
-
-      double device_quadification_time = 0.0f;
-
-      uint *const prims_per_geom_prefix_sum = (uint*)scratch;          
-      countQuadsPerGeometry(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,device_quadification_time,verbose2);
-
-      timer.stop(BuildTimer::PRE_PROCESS);
-      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
-                              
-      if (unlikely(verbose2)) std::cout << "Count quads: " << timer.get_host_timer() << " ms (host) " << device_quadification_time << " ms (device) " << std::endl;      
-      
-      // ================================================      
-      // === prefix sum over quad counts per geometry ===
-      // ================================================      
-    
-      timer.start(BuildTimer::PRE_PROCESS);
-      double geom_prefix_sum_time = 0.0f;
-      sycl::event initial_event;
-      sycl::event prefix_event = prefixSumOverCounts(gpu_queue,initial_event,numGeometries,prims_per_geom_prefix_sum,host_device_tasks,geom_prefix_sum_time,verbose2);
-      gpu::waitOnEventAndCatchException(prefix_event);
-    
-      timer.stop(BuildTimer::PRE_PROCESS);
-      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,geom_prefix_sum_time);
-      
-      numQuads = *host_device_tasks; // numQuads contains now the actual number of quads after quadification
-#endif
     }
 
 
@@ -523,14 +482,7 @@ namespace embree
     const uint node_size           = (header + leaf_size) <= allocated_size ? allocated_size - leaf_size - header : 0; 
     const uint node_data_start     = header;
     const uint leaf_data_start     = header + node_size;
-    
-    if (unlikely(verbose2))
-    {
-      PRINT4(numQuads,numProcedurals,numInstances,expected_numPrimitives);
-      PRINT3(node_size,leaf_size,args.accelBufferBytes);
-      PRINT2(node_size/64,leaf_size/64);      
-    }
-  
+      
     // =================================================================
     // === if allocated accel buffer is too small, return with error ===
     // =================================================================
@@ -601,11 +553,8 @@ namespace embree
     // ===================================================
          
     if (numQuads)
-#if 1
-      createQuadsUsingBlocks_initPLOCPrimRefs(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,bvh2,0,create_primref_time,verbose2);            
-#else      
-      createQuads_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,prims_per_geom_prefix_sum,bvh2,0,create_primref_time,verbose2);      
-#endif
+      createQuads_initPLOCPrimRefs(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,bvh2,0,create_primref_time,verbose2);
+
     // ====================================          
     // ==== create procedural primrefs ====
     // ====================================
@@ -626,7 +575,11 @@ namespace embree
     const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
     
     if (unlikely(verbose2))
+    {
       PRINT4(numPrimitives,numQuads,numInstances,numProcedurals);
+      PRINT3(node_size,leaf_size,args.accelBufferBytes);
+      PRINT2(node_size/64,leaf_size/64);      
+    }      
   
     // =================================================================================    
     // === test for empty scene again after all final primitive counts are available ===
@@ -640,7 +593,7 @@ namespace embree
 
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);    
-    if (unlikely(verbose2)) std::cout << "create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
+    if (unlikely(verbose2)) std::cout << "Create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
       
     // ==========================================          
     // ==== get centroid and geometry bounds ====
@@ -754,7 +707,7 @@ namespace embree
     // ==== clear sync mem ====
     // ========================      
 
-    clearFirstScratchMemEntries(gpu_queue,sync_mem,0,NUM_ACTIVE_LARGE_WGS);
+    clearFirstScratchMemEntries(gpu_queue,sync_mem,0,NUM_ACTIVE_LARGE_WGS,device_ploc_iteration_time);
   
     for (;numPrims>1;iteration++)
     {          
@@ -866,8 +819,12 @@ namespace embree
     if (unlikely(verbose2))
     {
       // === memory allocation and usage stats ===
-      PRINT4(globals->node_mem_allocator_start,globals->node_mem_allocator_cur,globals->node_mem_allocator_cur-globals->node_mem_allocator_start,100.0f * (float)(globals->node_mem_allocator_cur-globals->node_mem_allocator_start) / (node_size/64));
-      PRINT4(globals->leaf_mem_allocator_start,globals->leaf_mem_allocator_cur,globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start,100.0f * (float)(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start) / (leaf_size/64));      
+      const uint nodes_used   = globals->node_mem_allocator_cur-globals->node_mem_allocator_start;
+      const uint leaves_used  = globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start;
+      const float nodes_util  = 100.0f * (float)(globals->node_mem_allocator_cur-globals->node_mem_allocator_start) / (node_size/64);
+      const float leaves_util = 100.0f * (float)(globals->leaf_mem_allocator_cur-globals->leaf_mem_allocator_start) / (leaf_size/64);
+      PRINT4(globals->node_mem_allocator_start,globals->node_mem_allocator_cur,nodes_used,nodes_util);
+      PRINT4(globals->leaf_mem_allocator_start,globals->leaf_mem_allocator_cur,leaves_used,leaves_util);      
       PRINT(globals->numLeaves);
     }
 
@@ -886,7 +843,7 @@ namespace embree
     if (args.accelBufferBytesOut)
       *args.accelBufferBytesOut = args.accelBufferBytes;
 
-#if 1
+#if 0
     if (verbose2)
     {
       qbvh->print(std::cout,qbvh->root(),0,6);
