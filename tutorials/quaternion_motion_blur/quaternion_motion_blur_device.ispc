@@ -6,11 +6,21 @@
 #include "../common/math/sampling.isph"
 
 /* all features required by this tutorial */
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_INSTANCE | \
   RTC_FEATURE_FLAGS_USER_GEOMETRY | \
-  RTC_FEATURE_FLAGS_MOTION_BLUR
+  RTC_FEATURE_FLAGS_MOTION_BLUR | \
+  RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS
+#else
+  #define FEATURE_MASK \
+  RTC_FEATURE_FLAGS_TRIANGLE | \
+  RTC_FEATURE_FLAGS_INSTANCE | \
+  RTC_FEATURE_FLAGS_USER_GEOMETRY | \
+  RTC_FEATURE_FLAGS_MOTION_BLUR | \
+  RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY
+#endif
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -224,7 +234,9 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform unsigne
   rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
+#if !EMBREE_GEOMETRY_USER_IN_ARGUMENT
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
+#endif
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return spheres;
@@ -293,6 +305,9 @@ Vec3f renderPixelFunction(const uniform TutorialData& data,
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+  args.intersect = sphereIntersectFunc;
+#endif
 
   float time = data.g_motion_blur ? RandomSampler_get1D(sampler) * data.g_shutter_close: data.g_time;
 
