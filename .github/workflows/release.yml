@@ -71,7 +71,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-out: release-linux-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
