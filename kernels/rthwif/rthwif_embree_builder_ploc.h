@@ -2277,7 +2277,14 @@ namespace embree
     return indexID;
   }  
   
-
+  __forceinline uint getNumChildren(const uint index, const uint numPrimitives)
+  {
+    uint num = 6;
+    num = BVH2Ploc::isLeaf(index,numPrimitives)         ? 1 : num;
+    num = BVH2Ploc::isSmallFatLeaf(index,numPrimitives) ? 2 : num;
+    return num;    
+  }
+  
   __forceinline uint openBVH2MaxAreaSortChildren(const uint index, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives)
   {
     float areas[BVH_BRANCHING_FACTOR];
@@ -2336,10 +2343,10 @@ namespace embree
       const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
 
 #if USE_NEW_OPENING == 1
-      areas[bestChild  ]  = (!BVH2Ploc::isFatLeaf(left ,numPrimitives) || BVH2Ploc::isSmallFatLeaf(left ,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( left)].bounds.area() : neg_inf;
-      areas[numChildren]  = (!BVH2Ploc::isFatLeaf(right,numPrimitives) || BVH2Ploc::isSmallFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
-      areas[bestChild  ]  = BVH2Ploc::isSmallFatLeaf(left ,numPrimitives) ? pos_inf : areas[bestChild];
-      areas[numChildren]  = BVH2Ploc::isSmallFatLeaf(right,numPrimitives) ? pos_inf : areas[numChildren];      
+      areas[bestChild  ]  = !BVH2Ploc::isFatLeaf(left ,numPrimitives) ? bvh2[BVH2Ploc::getIndex( left)].bounds.area() : neg_inf;
+      areas[bestChild  ]  = BVH2Ploc::isSmallFatLeaf(left ,numPrimitives) ? pos_inf : areas[bestChild];      
+      areas[numChildren]  = !BVH2Ploc::isFatLeaf(right,numPrimitives) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
+      areas[numChildren]  = BVH2Ploc::isSmallFatLeaf(right,numPrimitives) ? pos_inf : areas[numChildren];
 #else      
       areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf; 
       areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf; 
@@ -2347,7 +2354,14 @@ namespace embree
       indices[bestChild]   = left;      
       indices[numChildren] = right;                                                                            
       numChildren++;
-    }            
+    }
+
+#if 0
+    for (uint i=0;i<numChildren;i++)
+      if (BVH2Ploc::isSmallFatLeaf(indices[i],numPrimitives))
+        PRINT4("ERROR",i,BVH2Ploc::getIndex(indices[i]),numChildren);
+#endif
+    
     for (uint i=0;i<numChildren;i++)
       areas[i] = fabs(areas[i]);
 

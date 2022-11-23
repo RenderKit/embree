@@ -130,7 +130,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       artifact-out: continuous-linux-DG2-AOT-INT
       artifact-path: ./build .ctest_conf
