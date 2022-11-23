@@ -22,10 +22,7 @@ struct TutorialData
   RTCIntersectContextFlags iflags_coherent;
   RTCIntersectContextFlags iflags_incoherent;
 
-  RTCFilterFunctionN intersectionFilterReject;
-  RTCFilterFunctionN intersectionFilterOBJ;
   RTCFilterFunctionN occlusionFilterOpaque;
-  RTCFilterFunctionN occlusionFilterOBJ;
   RTCFilterFunctionN occlusionFilterHair;
   
   uniform int spp;
@@ -51,10 +48,7 @@ void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->iflags_coherent = g_iflags_coherent;
   This->iflags_incoherent = g_iflags_incoherent;
 
-  This->intersectionFilterReject = NULL;
-  This->intersectionFilterOBJ = NULL;
   This->occlusionFilterOpaque = NULL;
-  This->occlusionFilterOBJ = NULL;
   This->occlusionFilterHair = NULL; 
   
   This->spp = g_spp;

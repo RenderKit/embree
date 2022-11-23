@@ -4,6 +4,7 @@
 #include "motion_blur_geometry_device.isph"
 
 /* all features required by this tutorial */
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_QUAD |            \
@@ -15,8 +16,23 @@
   RTC_FEATURE_FLAGS_SPHERE_POINT |                    \
   RTC_FEATURE_FLAGS_ORIENTED_DISC_POINT |             \
   RTC_FEATURE_FLAGS_INSTANCE |                        \
-  RTC_FEATURE_FLAGS_USER_GEOMETRY |                   \
+  RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS | \
   RTC_FEATURE_FLAGS_MOTION_BLUR
+#else
+#define FEATURE_MASK \
+  RTC_FEATURE_FLAGS_TRIANGLE | \
+  RTC_FEATURE_FLAGS_QUAD |            \
+  RTC_FEATURE_FLAGS_SUBDIVISION |     \
+  RTC_FEATURE_FLAGS_FLAT_LINEAR_CURVE |               \
+  RTC_FEATURE_FLAGS_FLAT_BSPLINE_CURVE |              \
+  RTC_FEATURE_FLAGS_ROUND_BSPLINE_CURVE |             \
+  RTC_FEATURE_FLAGS_DISC_POINT |                      \
+  RTC_FEATURE_FLAGS_SPHERE_POINT |                    \
+  RTC_FEATURE_FLAGS_ORIENTED_DISC_POINT |             \
+  RTC_FEATURE_FLAGS_INSTANCE |                        \
+  RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY | \
+  RTC_FEATURE_FLAGS_MOTION_BLUR
+#endif
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -503,8 +519,10 @@ uniform Sphere* uniform addUserGeometrySphere (RTCScene scene, const uniform Vec
   rtcSetGeometryTimeStepCount(geom,num_time_steps);
   rtcSetGeometryUserData(geom,sphere);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
+#if !EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
   rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncPtr);
+#endif
   rtcCommitGeometry(geom);
   rtcReleaseGeometry(geom);
   return sphere;
@@ -597,6 +615,10 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+  args.intersect = sphereIntersectFuncN;
+#endif
+
   
   uniform float time = abs((uniform int)(0.01f*data.frameID) - 0.01f*data.frameID);
   if (data.g_time != -1) time = data.g_time;
@@ -636,6 +658,9 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, time);
 
     /* trace shadow ray */
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+    args.intersect = (uniform RTCIntersectFunctionN) (void* uniform) sphereOccludedFuncN;
+#endif
     rtcOccludedV(data.g_scene,&context,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 

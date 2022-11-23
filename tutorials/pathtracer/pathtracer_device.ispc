@@ -13,10 +13,7 @@
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_ALL
 
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args);
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args);
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args);
 
 #undef TILE_SIZE_X
@@ -29,11 +26,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterHair(const RTCFilterFu
 
 #define FIXED_EDGE_TESSELLATION_VALUE 4
 
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
-#  define ENABLE_FILTER_FUNCTION 1
-#else
-#  define ENABLE_FILTER_FUNCTION 0
-#endif
+#define ENABLE_FILTER_FUNCTION 0
 
 #define MAX_EDGE_LEVEL 128.0f
 #define MIN_EDGE_LEVEL   4.0f
@@ -44,6 +37,8 @@ extern uniform int g_animation_mode;
 
 uniform bool g_subdiv_mode = false;
 uniform unsigned int keyframeID = 0;
+
+uniform RTCFeatureFlags g_used_features = RTC_FEATURE_FLAGS_NONE;
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               Lights                                       //
@@ -923,75 +918,18 @@ void device_key_pressed_handler(uniform int key)
 
 unmasked void assignShaders(uniform ISPCGeometry* uniform uniform geometry)
 {
+#if ENABLE_FILTER_FUNCTION
   RTCGeometry geom = geometry->geometry;
   if (geometry->type == SUBDIV_MESH)
-  {
-#if ENABLE_FILTER_FUNCTION == 1
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-#endif
-  }
   else if (geometry->type == TRIANGLE_MESH)
-  {
-    ISPCTriangleMesh* uniform mesh = (ISPCTriangleMesh* uniform ) geometry;
-#if ENABLE_FILTER_FUNCTION == 1
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-
-    ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
-    if (material->type == MATERIAL_OBJ)
-    {
-      ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
-      if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
-      }
-    }
-#endif
-  }
-#if ENABLE_FILTER_FUNCTION == 1
   else if (geometry->type == QUAD_MESH)
-  {
-    ISPCQuadMesh* uniform mesh = (ISPCQuadMesh* uniform) geometry;
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-
-    ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
-    if (material->type == MATERIAL_OBJ)
-    {
-      ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
-      if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
-      }
-    }
-  }
   else if (geometry->type == GRID_MESH)
-  {
-    ISPCGridMesh* uniform mesh = (ISPCGridMesh* uniform) geometry;
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-
-    ISPCMaterial* uniform material = g_ispc_scene->materials[mesh->geom.materialID];
-    //if (material->type == MATERIAL_DIELECTRIC || material->type == MATERIAL_THIN_DIELECTRIC)
-    //  rtcSetGeometryOccludedFilterFunction(geom,data.intersectionFilterReject);
-    //else
-    if (material->type == MATERIAL_OBJ)
-    {
-      ISPCOBJMaterial* uniform obj = (ISPCOBJMaterial* uniform) material;
-      if (obj->d != 1.0f || obj->map_d) {
-        rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilterOBJ);
-        rtcSetGeometryOccludedFilterFunction   (geom,data.occlusionFilterOBJ);
-      }
-    }
-  }
-
   else if (geometry->type == CURVES)
-  {
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterHair);
-  }
 #endif
 }
 
@@ -1009,8 +947,16 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   }
 
   assignShadersFunc = assignShaders;
-  
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_used_features);
+  //RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS, &g_used_features);
+#if ENABLE_FILTER_FUNCTION
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+  g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
+#else
+  g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY);
+#endif
+#endif
 
   /* commit changes to scene */
   //progressStart();
@@ -1418,66 +1364,6 @@ inline int postIntersect(const uniform TutorialData& data, const Ray& ray, Diffe
   return materialID;
 }
 
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterReject(const RTCFilterFunctionNArguments* uniform args)
-{
-  assert(args->N == programCount);
-  bool valid = *((varying int* uniform) args->valid);
-  if (!valid) return;
-}
-
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
-{
-  uniform int* uniform valid_i = args->valid;
-  struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
-  struct RTCHitN* uniform hit = args->hit;
-  const uniform unsigned int N = args->N;
-  
-  assert(N == programCount);
-  bool valid = *((varying int* uniform) valid_i);
-  if (!valid) return;
-
-  IntersectContext* uniform context = (IntersectContext* uniform) args->context;
-  TutorialData* uniform pdata = (TutorialData* uniform) context->tutorialData;
-  uniform TutorialData& data = *pdata;
-  
-  const uniform unsigned int rayID = 0;
-  varying Ray *uniform ray = (varying Ray* uniform)_ray;
-
-  /* compute differential geometry */
-  //const float tfar          = RTCHitN_t(hit,N,rayID);
-  const float tfar          = ray->tfar;
-  DifferentialGeometry dg;
-  for (uniform int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
-    dg.instIDs[i] = RTCHitN_instID(hit,N,rayID, i);
-  
-  dg.geomID = RTCHitN_geomID(hit,N,rayID);
-  dg.primID = RTCHitN_primID(hit,N,rayID);
-  dg.u = RTCHitN_u(hit,N,rayID);
-  dg.v = RTCHitN_v(hit,N,rayID);
-  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(hit,N,rayID),
-                        RTCHitN_Ng_y(hit,N,rayID),
-                        RTCHitN_Ng_z(hit,N,rayID));
-  dg.P  = ray->org+tfar*ray->dir;
-  dg.Ng = Ng;
-  dg.Ns = Ng;
-  int materialID = postIntersect(data,*ray,dg);
-  dg.Ng = face_forward(ray->dir,normalize(dg.Ng));
-  if (length(dg.Ns) < 1E-6f) dg.Ns = dg.Ng;
-  else dg.Ns = face_forward(ray->dir,normalize(dg.Ns));
-  const Vec3f wo = neg(ray->dir);
-
-  /* calculate BRDF */
-  BRDF brdf; brdf.Kt = make_Vec3f(0,0,0);
-  uniform int numMaterials = data.ispc_scene->numMaterials;
-  ISPCMaterial** uniform material_array = &data.ispc_scene->materials[0];
-  Medium medium = make_Medium_Vacuum();
-  Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-  if (min(min(brdf.Kt.x,brdf.Kt.y),brdf.Kt.z) < 1.0f)
-    ray->tfar   = tfar;
-  else
-    valid_i[programIndex] = 0;
-}
-
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
@@ -1491,62 +1377,6 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilter
   if (!valid) return;
    
   *transparency = make_Vec3f(0.0f);
-}
-
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOBJ(const RTCFilterFunctionNArguments* uniform args)
-{
-  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
-  TutorialData* uniform pdata = (TutorialData* uniform) context->tutorialData;
-  uniform TutorialData& data = *pdata;
-  varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
-  if (!transparency) return;
-  
-  uniform int* uniform valid_i = args->valid;
-  struct RTCRayHitN* uniform _ray = (struct RTCRayHitN* uniform)args->ray;
-  struct RTCHitN* uniform hit = args->hit;
-  const uniform unsigned int N = args->N;
-  
-  assert(N == programCount);
-  bool valid = *((varying int* uniform) valid_i);
-  if (!valid) return;
-  
-  const uniform unsigned int rayID = 0;
-  varying Ray *uniform ray = (varying Ray* uniform)_ray;
-
-  /* compute differential geometry */
-  //const float tfar          = RTCHitN_t(hit,N,rayID);
-  const float tfar          = ray->tfar;
-
-  DifferentialGeometry dg;
-  for (uniform int i=0; i<RTC_MAX_INSTANCE_LEVEL_COUNT; i++)
-    dg.instIDs[i] = RTCHitN_instID(hit,N,rayID, i);
-  
-  dg.geomID = RTCHitN_geomID(hit,N,rayID);
-  dg.primID = RTCHitN_primID(hit,N,rayID);
-  dg.u = RTCHitN_u(hit,N,rayID);
-  dg.v = RTCHitN_v(hit,N,rayID);
-  Vec3f Ng = make_Vec3f(RTCHitN_Ng_x(hit,N,rayID),
-                        RTCHitN_Ng_y(hit,N,rayID),
-                        RTCHitN_Ng_z(hit,N,rayID));
-  dg.P  = ray->org+tfar*ray->dir;
-  dg.Ng = Ng;
-  dg.Ns = Ng;
-
-  int materialID = postIntersect(data,*ray,dg);
-  dg.Ng = face_forward(ray->dir,normalize(dg.Ng));
-  dg.Ns = face_forward(ray->dir,normalize(dg.Ns));
-  const Vec3f wo = neg(ray->dir);
-
-  /* calculate BRDF */
-  BRDF brdf; brdf.Kt = make_Vec3f(0,0,0);
-  uniform int numMaterials = data.ispc_scene->numMaterials;
-  ISPCMaterial** uniform material_array = &data.ispc_scene->materials[0];
-  Medium medium = make_Medium_Vacuum();
-  Material__preprocess(material_array,materialID,numMaterials,brdf,wo,dg,medium);
-
-  *transparency = *transparency * brdf.Kt;
-  if (max(max(transparency->x,transparency->y),transparency->z) > 0.0f)
-    valid_i[programIndex] = 0;
 }
 
 /* occlusion filter function */
@@ -1590,6 +1420,36 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterHair(const RTCFilterFu
     valid_i[programIndex] = 0;
 }
 
+RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionNArguments* uniform args)
+{
+  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  TutorialData* uniform pdata = (TutorialData* uniform) context->tutorialData;
+  uniform TutorialData& data = *pdata;
+  uniform int* uniform valid_i = args->valid;
+
+  bool valid = *((varying int* uniform) valid_i);
+  if (!valid) return;
+
+  RTCHit* uniform potential_hit = (RTCHit*) args->hit;
+  if (potential_hit->instID[0] == -1)
+  {
+    unsigned int geomID = potential_hit->geomID;
+    ISPCGeometry* geometry = data.ispc_scene->geometries[geomID];
+    
+    if (geometry->type == SUBDIV_MESH ||
+        geometry->type == TRIANGLE_MESH ||
+        geometry->type == QUAD_MESH ||
+        geometry->type == GRID_MESH)
+    {
+      occlusionFilterOpaque(args);
+    }
+    else if (geometry->type == CURVES)
+    {
+      occlusionFilterHair(args);
+    }
+  }
+}
+
 Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, RandomSampler& sampler, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
   /* radiance accumulator and weight */
@@ -1620,6 +1480,9 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     rtcInitIntersectArguments(&args);
     args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
+    args.filter = NULL;
+#endif
   
     rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
@@ -1686,6 +1549,9 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
+      args.filter = contextFilterFunction;
+#endif
       rtcOccludedV(data.scene,&context.context,RTCRay_(shadow),&args);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
@@ -1832,10 +1698,7 @@ export void device_init (uniform int8* uniform cfg)
 
   TutorialData_Constructor(&data);
 
-  data.intersectionFilterReject = GET_FUNCTION_POINTER(intersectionFilterReject);
-  data.intersectionFilterOBJ = GET_FUNCTION_POINTER(intersectionFilterOBJ);
   data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
-  data.occlusionFilterOBJ = GET_FUNCTION_POINTER(occlusionFilterOBJ);
   data.occlusionFilterHair = GET_FUNCTION_POINTER(occlusionFilterHair);
   
 } // device_init
