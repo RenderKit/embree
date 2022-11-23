@@ -112,7 +112,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceIntersectFunc(const RTCInters
   ray->tnear = ray_tnear;
   ray->tfar  = ray_tfar;
   pushInstanceId(context, args->geomID);
-  rtcIntersectV(instance->object,context,RTCRayHit_(*ray));
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.context = context;
+  rtcIntersectV(instance->object,RTCRayHit_(*ray),&args);
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org = ray_org;
@@ -162,7 +165,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
   ray->tnear  = ray_tnear;
   ray->tfar   = ray_tfar;
   pushInstanceId(context, args->geomID);
-  rtcOccludedV(instance->object,context,RTCRay_(*ray));
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.context = context;
+  rtcOccludedV(instance->object,RTCRay_(*ray),&args);
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org    = ray_org;
@@ -737,6 +743,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
 
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.context = &context;
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), 
@@ -753,7 +760,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
 #endif
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -788,7 +795,7 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
 #endif
     args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcOccludedV(data.g_scene,&context,RTCRay_(shadow),&args);
+    rtcOccludedV(data.g_scene,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

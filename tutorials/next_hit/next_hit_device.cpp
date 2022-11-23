@@ -150,9 +150,10 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
   rtcInitIntersectContext(&context.context);
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.context = &context.context;
   args.filter = gather_all_hits;
   args.feature_mask = feature_mask;
-  rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
+  rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* sort hits by extended order */
@@ -249,6 +250,7 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
   context.max_next_hits = max_next_hits;
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.context = &context.context;
   args.filter = gather_next_hits;
   args.feature_mask = feature_mask;
 
@@ -270,7 +272,7 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
       if (context.hits.begin+i < data.max_total_hits)
         context.hits.hits[context.hits.begin+i] = HitList::Hit(false,neg_inf);
 
-    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
 
     /* shade all hits */

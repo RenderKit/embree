@@ -239,7 +239,8 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
   
   RandomSampler sampler;
   Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
-  rtcIntersect1(data.g_scene, &primaryContext.context, RTCRayHit_(primaryRay), &args);
+  args.context = &primaryContext.context;
+  rtcIntersect1(data.g_scene, RTCRayHit_(primaryRay), &args);
   
   Vec3fa color = Vec3fa(0.f);
   if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
@@ -248,7 +249,8 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
     Vec3fa emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    rtcOccluded1(data.g_scene, &shadowContext.context, RTCRay_(shadowRay), &args);
+    args.context = &shadowContext.context;
+    rtcOccluded1(data.g_scene, RTCRay_(shadowRay), &args);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }
   

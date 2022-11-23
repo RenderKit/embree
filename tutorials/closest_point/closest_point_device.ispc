@@ -295,8 +295,13 @@ unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* unifor
   ray->dir = xfmVector(instance->world2local,ray_dir);
   ray->tnear = ray_tnear;
   ray->tfar  = ray_tfar;
+
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.context = context;
+  
   pushInstanceId(context, instance->userID);
-  rtcIntersectV(instance->object,context,RTCRayHit_(*ray));
+  rtcIntersectV(instance->object,RTCRayHit_(*ray),&args);
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org = ray_org;
@@ -697,7 +702,10 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.context = &context;
+  rtcIntersectV(g_scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   uniform VisualizationData * uniform visData = g_userDefinedInstancing 

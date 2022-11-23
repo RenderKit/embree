@@ -321,45 +321,6 @@ typedef void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArgument
 struct RTCOccludedFunctionNArguments;
 typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* args);
 
-/* Intersection arguments passed to intersect/occluded calls */
-struct RTCIntersectArguments
-{
-  enum RTCIntersectContextFlags flags;               // intersection flags
-
-  RTCFilterFunctionN filter;                         // filter function to execute
-  
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
-  union {
-    RTCIntersectFunctionN intersect;                 // user geometry intersection callback to execute
-    RTCOccludedFunctionN occluded;                   // user geometry occlusion callback to execute
-  };
-#endif
-  
-  enum RTCFeatureFlags feature_mask;                 // selectively enable features for traversal
-
-#if RTC_MIN_WIDTH
-  float minWidthDistanceFactor;                      // curve radius is set to this factor times distance to ray origin
-#endif
-};
-
-/* Initializes an intersection arguments. */
-RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* args)
-{
-  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  
-  args->filter = NULL;
-
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
-  args->intersect = NULL;
-#endif
-  
-  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
-
-#if RTC_MIN_WIDTH
-  args->minWidthDistanceFactor = 0.0f;
-#endif
-}
-
 /* Intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext
 {

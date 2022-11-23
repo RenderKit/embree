@@ -1478,13 +1478,14 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
 
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
+    args.context = &context.context;
     args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     args.feature_mask = features;
 #if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
     args.filter = nullptr;
 #endif
   
-    rtcIntersect1(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
     RayStats_addRay(stats);
     const Vec3fa wo = neg(ray.dir);
 
@@ -1552,7 +1553,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
 #if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
       args.filter = contextFilterFunction;
 #endif
-      rtcOccluded1(data.scene,&context.context,RTCRay_(shadow),&args);
+      rtcOccluded1(data.scene,RTCRay_(shadow),&args);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)

@@ -28,9 +28,7 @@ export uniform bool device_pick(const uniform float x,
   ray.time = g_debug;
 
   /* intersect ray with scene */
-  uniform IntersectContext context;
-  InitIntersectionContext(&context);
-  rtcIntersect1(g_scene,&context.context,RTCRayHit1_(ray));
+  rtcIntersect1(g_scene,RTCRayHit1_(ray));
 
   /* shade pixel */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {

@@ -306,6 +306,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
 
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.context = &context;
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
 #if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   args.intersect = sphereIntersectFunc;
@@ -320,7 +321,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray), &args);
+  rtcIntersect1(data.g_scene,RTCRayHit_(ray), &args);
   RayStats_addRay(stats);
 
   /* shade pixels */

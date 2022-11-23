@@ -20,6 +20,42 @@ enum RTCSceneFlags
   RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS = (1 << 3)
 };
 
+/* Intersection arguments passed to intersect/occluded calls */
+struct RTCIntersectArguments
+{
+  RTCIntersectContextFlags flags;       // intersection flags
+  RTCFeatureFlags feature_mask;         // selectively enable features for traversal
+  
+  RTCIntersectContext* context;         // optional pointer to intersection context
+  
+  void* filter;                         // filter function to execute
+  
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+  void* intersect;                      // user geometry intersection callback to execute
+#endif
+  
+#if RTC_MIN_WIDTH
+  float minWidthDistanceFactor;         // curve radius is set to this factor times distance to ray origin
+#endif
+};
+
+/* Initializes an intersection arguments. */
+RTC_FORCEINLINE void rtcInitIntersectArguments(uniform RTCIntersectArguments* uniform args)
+{
+  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
+  args->context = NULL;
+  args->filter = NULL;
+  
+#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+  args->intersect = NULL;
+#endif 
+
+#if RTC_MIN_WIDTH
+  args->minWidthDistanceFactor = 0.0f;
+#endif
+}
+
 /* Creates a new scene. */
 RTC_API RTCScene rtcNewScene(RTCDevice device);
 
@@ -108,30 +144,30 @@ RTC_FORCEINLINE bool rtcPointQueryV(RTCScene scene, varying RTCPointQuery* unifo
 }
 
 /* Intersects a single ray with the scene. */
-RTC_API void rtcIntersect1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRayHit* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcIntersect1(RTCScene scene, uniform RTCRayHit* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL);
 
 /* Intersects a packet of 4 rays with the scene. */
-RTC_API void rtcIntersect4(const int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcIntersect4(const int* uniform valid, RTCScene scene, void* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL);
 
 /* Intersects a packet of 8 rays with the scene. */
-RTC_API void rtcIntersect8(const int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcIntersect8(const int* uniform valid, RTCScene scene, void* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL);
 
 /* Intersects a packet of 16 rays with the scene. */
-RTC_API void rtcIntersect16(const int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcIntersect16(const int* uniform valid, RTCScene scene, void* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL);
 
 /* Intersects a varying ray with the scene. */
-RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRayHit* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL) 
+RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, varying RTCRayHit* uniform rayhit, uniform RTCIntersectArguments* uniform args = NULL) 
 {
   varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
   if (sizeof(varying float) == 16)
-    rtcIntersect4((uniform int* uniform)&imask, scene, context, rayhit, args);
+    rtcIntersect4((uniform int* uniform)&imask, scene, rayhit, args);
   else if (sizeof(varying float) == 32)
-    rtcIntersect8((uniform int* uniform)&imask, scene, context, rayhit, args);
+    rtcIntersect8((uniform int* uniform)&imask, scene, rayhit, args);
   else if (sizeof(varying float) == 64)
-    rtcIntersect16((uniform int* uniform)&imask, scene, context, rayhit, args);
+    rtcIntersect16((uniform int* uniform)&imask, scene, rayhit, args);
 }
 
 
@@ -165,19 +201,19 @@ RTC_FORCEINLINE void rtcForwardIntersectV(const uniform RTCIntersectFunctionNArg
 
 
 /* Tests a single ray for occlusion with the scene. */
-RTC_API void rtcOccluded1(RTCScene scene, uniform RTCIntersectContext* uniform context, uniform RTCRay* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcOccluded1(RTCScene scene, uniform RTCRay* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
 
 /* Tests a packet of 4 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded4(const uniform int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcOccluded4(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
 
 /* Tests a packet of 8 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded8(const uniform int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcOccluded8(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
 
 /* Tests a packet of 16 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, uniform RTCIntersectContext* uniform context, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
 
 /* Tests a varying ray for occlusion with the scene. */
-RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* uniform context, varying RTCRay* uniform ray, uniform RTCIntersectArguments* uniform args = NULL)
+RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, varying RTCRay* uniform ray, uniform RTCIntersectArguments* uniform args = NULL)
 {
   varying bool mask = __mask;
   unmasked {
@@ -185,11 +221,11 @@ RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, uniform RTCIntersectContext* u
   }
 
   if (sizeof(varying float) == 16)
-    rtcOccluded4((uniform int* uniform)&imask, scene, context, ray, args);
+    rtcOccluded4((uniform int* uniform)&imask, scene, ray, args);
   else if (sizeof(varying float) == 32)
-    rtcOccluded8((uniform int* uniform)&imask, scene, context, ray, args);
+    rtcOccluded8((uniform int* uniform)&imask, scene, ray, args);
   else if (sizeof(varying float) == 64)
-    rtcOccluded16((uniform int* uniform)&imask, scene, context, ray, args);
+    rtcOccluded16((uniform int* uniform)&imask, scene, ray, args);
 }
 
 

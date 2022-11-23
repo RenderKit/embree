@@ -373,9 +373,9 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera)
   ray.time() = 0.0f;
 
   /* intersect ray with scene */
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-  rtcIntersect1(g_scene,&context,RTCRayHit_(ray));
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  rtcIntersect1(g_scene,RTCRayHit_(ray),&args);
 
   /* shade background black */
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID) {

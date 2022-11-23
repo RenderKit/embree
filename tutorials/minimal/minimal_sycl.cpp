@@ -219,6 +219,7 @@ void castRay(sycl::queue& queue, const RTCScene scene,
        */
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
+      args.context = &context;
       args.feature_mask = RTC_FEATURE_FLAGS_TRIANGLE;
 
       /*
@@ -244,7 +245,7 @@ void castRay(sycl::queue& queue, const RTCScene scene,
        * There are multiple variants of rtcIntersect. This one
        * intersects a single ray with the scene.
        */
-      rtcIntersect1(scene, &context, &rayhit, &args);
+      rtcIntersect1(scene, &rayhit, &args);
 
       /*
        * write hit result to output buffer

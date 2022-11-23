@@ -226,13 +226,14 @@ Vec3f renderPixelDebugShader(const uniform DebugShaderData& data, float x, float
 
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.context = &context.context;
   args.feature_mask = feature_mask;
 
   uniform int64 c0 = get_tsc();
   if (data.shader == SHADER_OCCLUSION)
-    rtcOccludedV(data.scene,&context.context,RTCRay_(ray),&args);
+    rtcOccludedV(data.scene,RTCRay_(ray),&args);
   else
-    rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
+    rtcIntersectV(data.scene,RTCRayHit_(ray),&args);
 
   uniform int64 c1 = get_tsc();
   RayStats_addRay(stats);
@@ -326,8 +327,9 @@ Vec3f renderPixelAOShader(const uniform DebugShaderData& data, float x, float y,
   InitIntersectionContext(&context);
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
+  args.context = &context.context;
   args.feature_mask = feature_mask;
-  rtcIntersectV(data.scene,&context.context,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixel */
@@ -366,8 +368,9 @@ Vec3f renderPixelAOShader(const uniform DebugShaderData& data, float x, float y,
     InitIntersectionContext(&context);
     uniform RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
+    args.context = &context.context;
     args.feature_mask = feature_mask;
-    rtcOccludedV(data.scene,&context.context,RTCRay_(shadow),&args);
+    rtcOccludedV(data.scene,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
