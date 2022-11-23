@@ -2750,7 +2750,7 @@ namespace embree
     if (unlikely(host_device_tasks[0] == -1)) return false;
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
-    const uint leaves = host_device_tasks[0]; // = globals->leaf_mem_allocator_cur - globals->leaf_mem_allocator_start;
+    const uint leaves = host_device_tasks[0]; 
     
     if (leaves)
     {
@@ -2794,7 +2794,7 @@ namespace embree
                                  {
                                    const RTHWIF_TRIANGLE_INDICES &tri1 = getTriangleDesc(*triMesh,primID1);          
                                    const uint p3_index = try_pair_triangles(uint3(tri.v0,tri.v1,tri.v2),uint3(tri1.v0,tri1.v1,tri1.v2),lb0,lb1,lb2);
-                                   p3 = getVec3f(*triMesh,((uint*)&tri1)[p3_index]); // FIXME
+                                   p3 = getVec3f(*triMesh,((uint*)&tri1)[p3_index]); // FIXME: might cause tri1 to store to mem first
                                  }
 
                                  localLeaf[localID] = QuadLeaf( p0,p1,p2,p3, lb0,lb1,lb2, 0, geomID, primID0, primID1, (GeometryFlags)triMesh->geometryFlags, triMesh->geometryMask, /*i == (numChildren-1)*/ true );
