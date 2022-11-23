@@ -161,12 +161,8 @@ export void device_init (uniform int8* uniform cfg)
 /* task that renders a single screen tile */
 Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
   /* initialize ray */

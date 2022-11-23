@@ -738,12 +738,8 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
                           float x, float y, const uniform ISPCCamera& camera,
                           uniform RayStats& stats)
 {
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), 

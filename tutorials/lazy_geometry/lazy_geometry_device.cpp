@@ -277,19 +277,12 @@ extern "C" void device_init (char* cfg)
 /* task that renders a single screen tile */
 Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
-  RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  args.context = &context;
-  
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, 0.0f, -1, RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
   ray.instID[0] = 4;
 
   /* intersect ray with scene */
-  rtcIntersect1(g_scene,RTCRayHit_(ray),&args);
+  rtcIntersect1(g_scene,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -304,7 +297,7 @@ Vec3fa renderPixelStandard(float x, float y, const ISPCCamera& camera, RayStats&
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded1(g_scene,RTCRay_(shadow),&args);
+    rtcOccluded1(g_scene,RTCRay_(shadow));
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

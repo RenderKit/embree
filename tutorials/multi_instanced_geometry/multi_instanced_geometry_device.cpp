@@ -223,23 +223,12 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
                          const float time,
                          const ISPCCamera& camera, RayStats& stats)
 {
-  IntersectContext primaryContext;
-  InitIntersectionContext(&primaryContext);
-  
-  IntersectContext shadowContext;
-  InitIntersectionContext(&shadowContext);
-
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
 
-  // Primary rays in this scene are coherent. This is not the case
-  // for shadow rays, since there is a spherical environment light.
-  //primaryContext.context.flags = g_iflags_coherent;
-  
   RandomSampler sampler;
   Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
-  args.context = &primaryContext.context;
   rtcIntersect1(data.g_scene, RTCRayHit_(primaryRay), &args);
   
   Vec3fa color = Vec3fa(0.f);
@@ -249,7 +238,6 @@ void renderPixelStandard(const TutorialData& data, int x, int y,
     Vec3fa emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    args.context = &shadowContext.context;
     rtcOccluded1(data.g_scene, RTCRay_(shadowRay), &args);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }

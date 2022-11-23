@@ -328,11 +328,8 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
   ray.time() = data.debug;
 
   /* intersect ray with scene */
-  IntersectContext context;
-  InitIntersectionContext(&context);
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context.context;
   args.feature_mask = feature_mask;
   rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
@@ -369,11 +366,8 @@ Vec3fa renderPixelAOShader(const DebugShaderData& data, float x, float y, const 
     shadow.time() = data.debug;
 
     /* trace shadow ray */
-    IntersectContext context;
-    InitIntersectionContext(&context);
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
-    args.context = &context.context;
     args.feature_mask = feature_mask;
     rtcOccluded1(data.scene,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);

@@ -159,12 +159,8 @@ void renderPixelStandard(const uniform TutorialData& data,
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
   rtcIntersectV(data.g_scene,RTCRayHit_(ray),&args);

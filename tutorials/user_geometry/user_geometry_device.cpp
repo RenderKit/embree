@@ -740,12 +740,8 @@ Vec3fa renderPixelStandard(const TutorialData& data,
                           float x, float y, const ISPCCamera& camera,
                           RayStats& stats)
 {
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), 

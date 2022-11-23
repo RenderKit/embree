@@ -108,12 +108,8 @@ void renderPixelStandard(const uniform TutorialData& data,
                           const float time,
                           const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-  
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   args.feature_mask = (RTCFeatureFlags)(FEATURE_MASK);
 
   /* initialize ray */

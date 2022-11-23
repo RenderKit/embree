@@ -182,12 +182,8 @@ void renderPixelStandard(const uniform TutorialData& data,
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, ray_time);
 
   /* intersect ray with scene */
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-  
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   args.flags = data.iflags_coherent;
 #if RTC_MIN_WIDTH
   args.minWidthDistanceFactor = 0.5f*data.min_width/width;

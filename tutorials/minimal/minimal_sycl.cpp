@@ -206,20 +206,11 @@ void castRay(sycl::queue& queue, const RTCScene scene,
     cgh.parallel_for(range,[=](sycl::item<1> item)
     {
       /*
-       * The intersect context can be used to set intersection
-       * filters or flags, and it also contains the instance ID stack
-       * used in multi-level instancing.
-       */
-      struct RTCIntersectContext context;
-      rtcInitIntersectContext(&context);
-
-      /*
        * The intersect arguments can be used to pass a feature mask,
        * which improves performance and JIT compile times on the GPU
        */
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
-      args.context = &context;
       args.feature_mask = RTC_FEATURE_FLAGS_TRIANGLE;
 
       /*

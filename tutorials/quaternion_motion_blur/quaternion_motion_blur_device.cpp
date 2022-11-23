@@ -301,12 +301,8 @@ Vec3fa renderPixelFunction(const TutorialData& data,
                           const ISPCCamera& camera,
                           RayStats& stats)
 {
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
 #if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   args.intersect = sphereIntersectFunc;

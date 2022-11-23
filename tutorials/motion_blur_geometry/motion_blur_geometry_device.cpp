@@ -611,12 +611,8 @@ extern "C" void device_init (char* cfg)
 /* task that renders a single screen tile */
 Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
 #if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   args.intersect = sphereIntersectFuncN;

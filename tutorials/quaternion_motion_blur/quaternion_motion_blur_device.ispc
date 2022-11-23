@@ -299,12 +299,8 @@ Vec3f renderPixelFunction(const uniform TutorialData& data,
                           const uniform ISPCCamera& camera,
                           uniform RayStats& stats)
 {
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
-  args.context = &context;
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
 #if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   args.intersect = sphereIntersectFunc;
