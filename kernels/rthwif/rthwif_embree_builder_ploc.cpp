@@ -711,7 +711,7 @@ namespace embree
     // ==== clear sync mem ====
     // ========================      
 
-    clearFirstScratchMemEntries(gpu_queue,sync_mem,0,NUM_ACTIVE_LARGE_WGS,device_ploc_iteration_time);
+    clearScratchMem(gpu_queue,sync_mem,0,NUM_ACTIVE_LARGE_WGS,device_ploc_iteration_time);
   
     for (;numPrims>1;iteration++)
     {          

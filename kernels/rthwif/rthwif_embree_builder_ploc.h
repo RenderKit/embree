@@ -681,7 +681,7 @@ namespace embree
   // ============================================================================== Prefix Sums ==========================================================================================
   // =====================================================================================================================================================================================
 
-  __forceinline void clearFirstScratchMemEntries(sycl::queue &gpu_queue, uint *scratch_mem, const uint value, const uint numEntries, double &iteration_time)
+  __forceinline void clearScratchMem(sycl::queue &gpu_queue, uint *scratch_mem, const uint value, const uint numEntries, double &iteration_time)
    {
      const uint wgSize = 256;
      const sycl::nd_range<1> nd_range1(gpu::alignTo(numEntries,wgSize),sycl::range<1>(wgSize)); 
@@ -696,6 +696,102 @@ namespace embree
      gpu::waitOnEventAndCatchException(queue_event);
      iteration_time += gpu::getDeviceExecutionTiming(queue_event); 
    }
+
+  __forceinline uint prefixSumWorkgroup(const uint count, const uint WG_SIZE, uint *const counts, uint *const counts_prefix_sum, const sycl::nd_item<1> &item, uint &total_reduction)
+  {
+    const uint subgroupID      = get_sub_group_id();
+    const uint subgroupSize    = get_sub_group_size();
+    const uint subgroupLocalID = get_sub_group_local_id();                                                        
+    const uint exclusive_scan  = sub_group_exclusive_scan(count, std::plus<uint>());
+    const uint reduction       = sub_group_reduce(count, std::plus<uint>());
+    counts[subgroupID]         = reduction;
+                             
+    item.barrier(sycl::access::fence_space::local_space);
+
+    /* -- prefix sum over reduced sub group counts -- */        
+    total_reduction = 0;
+    for (uint j=subgroupLocalID;j<WG_SIZE/subgroupSize;j+=subgroupSize)
+    {
+      const uint subgroup_counts = counts[j];
+      const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
+      const uint reduction = sub_group_broadcast(subgroup_counts,subgroupSize-1) + sub_group_broadcast(sums_exclusive_scan,subgroupSize-1);
+      counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
+      total_reduction += reduction;
+    }
+
+    item.barrier(sycl::access::fence_space::local_space);
+
+    const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
+    return sums_prefix_sum + exclusive_scan;
+  }
+
+  __forceinline uint prefixSumWorkgroup(const uint ps, const uint WG_SIZE, uint *const counts, const sycl::nd_item<1> &item)
+  {
+    const uint subgroupID      = get_sub_group_id();
+    const uint subgroupSize    = get_sub_group_size();    
+    const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
+    const uint reduction = sub_group_reduce(ps, std::plus<uint>());
+    counts[subgroupID] = reduction;
+                                                                          
+    item.barrier(sycl::access::fence_space::local_space);
+
+    /* -- prefix sum over reduced sub group counts -- */        
+    uint p_sum = 0;
+    for (uint j=0;j<TRIANGLE_QUAD_BLOCK_SIZE/subgroupSize;j++)
+      if (j<subgroupID) p_sum += counts[j];
+                                                                          
+    return p_sum + exclusive_scan;
+  }
+
+  
+  
+  sycl::event prefixSumOverCounts (sycl::queue &gpu_queue, sycl::event &input_event, const uint numGeoms, uint *const counts_per_geom_prefix_sum, uint *host_device_tasks, const bool verbose) // FIXME: general, host_device_tasks
+  {
+    static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
+    static const uint GEOM_PREFIX_WG_SIZE  = LARGE_WG_SIZE;
+
+    sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
+        const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));
+        cgh.depends_on(input_event);
+        cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(GEOM_PREFIX_SUB_GROUP_WIDTH) {
+            const uint localID        = item.get_local_id(0);
+            const uint localSize       = item.get_local_range().size();            
+            const uint aligned_numGeoms = gpu::alignTo(numGeoms,GEOM_PREFIX_WG_SIZE);
+
+            uint total_offset = 0;
+            for (uint t=localID;t<aligned_numGeoms;t+=localSize)
+            {
+              item.barrier(sycl::access::fence_space::local_space);
+                                                          
+              uint count = 0;
+              if (t < numGeoms)
+                count = counts_per_geom_prefix_sum[t];
+
+              uint total_reduction = 0;
+              const uint p_sum = total_offset + prefixSumWorkgroup(count,GEOM_PREFIX_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);
+              total_offset += total_reduction;              
+
+              if (t < numGeoms)
+                counts_per_geom_prefix_sum[t] = p_sum;
+
+            }
+                                                        
+            if (localID == 0)
+            {
+              counts_per_geom_prefix_sum[numGeoms] = total_offset;                                                          
+              *host_device_tasks = total_offset;
+            }
+                                                        
+          });
+      });
+    return queue_event;
+  }
+
+  // =====================================================================================================================================================================================
+  // ========================================================================== Counting Primitives ======================================================================================
+  // =====================================================================================================================================================================================
   
   struct __aligned(64) PrimitiveCounts {
     uint numTriangles;
@@ -856,69 +952,6 @@ namespace embree
 
     return count;
   }  
-
-  sycl::event prefixSumOverCounts (sycl::queue &gpu_queue, sycl::event &input_event, const uint numGeoms, uint *const counts_per_geom_prefix_sum, uint *host_device_tasks, const bool verbose) // FIXME: general, host_device_tasks
-  {
-    static const uint GEOM_PREFIX_SUB_GROUP_WIDTH = 16;
-    static const uint GEOM_PREFIX_WG_SIZE  = LARGE_WG_SIZE;
-
-    sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
-        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
-        sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH)),cgh);
-        const sycl::nd_range<1> nd_range(GEOM_PREFIX_WG_SIZE,sycl::range<1>(GEOM_PREFIX_WG_SIZE));
-        cgh.depends_on(input_event);
-        cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(GEOM_PREFIX_SUB_GROUP_WIDTH) {
-            const uint subgroupID      = get_sub_group_id();
-            const uint subgroupLocalID = get_sub_group_local_id();                                                        
-            const uint localID        = item.get_local_id(0);
-            const uint localSize       = item.get_local_range().size();            
-            const uint aligned_numGeoms = gpu::alignTo(numGeoms,GEOM_PREFIX_WG_SIZE);
-
-            uint total_offset = 0;
-            for (uint t=localID;t<aligned_numGeoms;t+=localSize)
-            {
-              item.barrier(sycl::access::fence_space::local_space);
-                                                          
-              uint count = 0;
-              if (t < numGeoms)
-                count = counts_per_geom_prefix_sum[t];
-
-              const uint exclusive_scan = sub_group_exclusive_scan(count, std::plus<uint>());
-              const uint reduction = sub_group_reduce(count, std::plus<uint>());                                                     
-              counts[subgroupID] = reduction;                                                             
-
-              item.barrier(sycl::access::fence_space::local_space);
-
-              uint total_reduction = 0;
-              for (uint j=subgroupLocalID;j<GEOM_PREFIX_WG_SIZE/GEOM_PREFIX_SUB_GROUP_WIDTH;j+=GEOM_PREFIX_SUB_GROUP_WIDTH)
-              {
-                const uint subgroup_counts = counts[j];
-                const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
-                const uint reduction = sub_group_broadcast(subgroup_counts,GEOM_PREFIX_SUB_GROUP_WIDTH-1) + sub_group_broadcast(sums_exclusive_scan,GEOM_PREFIX_SUB_GROUP_WIDTH-1);
-                counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
-                total_reduction += reduction;
-              }
-              item.barrier(sycl::access::fence_space::local_space);
-
-              const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
-              const uint p_sum = total_offset + sums_prefix_sum + exclusive_scan;
-              total_offset += total_reduction;
-                                                          
-              if (t < numGeoms)
-                counts_per_geom_prefix_sum[t] = p_sum;
-
-            }
-                                                        
-            if (localID == 0)
-            {
-              counts_per_geom_prefix_sum[numGeoms] = total_offset;                                                          
-              *host_device_tasks = total_offset;
-            }
-                                                        
-          });
-      });
-    return queue_event;
-  }
 
 
   uint countQuadsPerGeometryUsingBlocks(sycl::queue &gpu_queue, PLOCGlobals *const globals, const RTHWIF_GEOMETRY_DESC **const geometries, const uint numGeoms, const uint numQuadBlocks, uint *const scratch, uint *const host_device_tasks, double &iteration_time, const bool verbose)    
@@ -1136,9 +1169,6 @@ namespace embree
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(MERGE_TRIANGLES_TO_QUADS_SUB_GROUP_WIDTH)      
                          {
                            const uint localID         = item.get_local_id(0);
-                           const uint subgroupID      = get_sub_group_id();
-                           const uint subgroupLocalID = get_sub_group_local_id();
-                           const uint subgroupSize    = get_sub_group_size();        
                            const uint globalBlockID   = item.get_group(0);
                            uint &active_counter       = *_active_counter.get_pointer();
                            uint &geomID               = *_geomID.get_pointer();
@@ -1168,21 +1198,7 @@ namespace embree
                                  const uint paired_ID = getMergedQuadBounds(triMesh,ID,endPrimID,bounds);                                                                          
                                  const uint flag = paired_ID != -1 ? 1 : 0;
                                  const uint ps = ID < endPrimID ? flag : 0;
-                                 const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
-                                 const uint reduction = sub_group_reduce(ps, std::plus<uint>());
-                                 counts[subgroupID] = reduction;
-                                                                          
-                                 item.barrier(sycl::access::fence_space::local_space);
-
-                                 /* -- prefix sum over reduced sub group counts -- */
-        
-                                 uint p_sum = 0;
-                                 for (uint j=0;j<TRIANGLE_QUAD_BLOCK_SIZE/subgroupSize;j++)
-                                   if (j<subgroupID) p_sum += counts[j];
-                                                                          
-                                 item.barrier(sycl::access::fence_space::local_space);
-
-                                 const uint dest_offset = startQuadOffset + p_sum + exclusive_scan;
+                                 const uint dest_offset = startQuadOffset + prefixSumWorkgroup(ps,TRIANGLE_QUAD_BLOCK_SIZE,counts.get_pointer(),item);
 
                                  /* --- store cluster representative into destination array --- */
                                  if (ID < endPrimID)
@@ -1190,7 +1206,6 @@ namespace embree
                                    {
                                      const uint pair_offset = paired_ID - ID;
                                      const uint pair_geomID = (pair_offset << PAIR_OFFSET_SHIFT) | geomID;
-                                     //bvh2[dest_offset].initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
                                      BVH2Ploc node;
                                      node.initLeaf(pair_geomID,ID,bounds); // need to consider pair_offset
                                      node.store(&bvh2[dest_offset]);
@@ -1215,21 +1230,7 @@ namespace embree
                                  bounds.init();
                                  const bool valid = ID < endPrimID ? isValidQuad(*quadMesh,ID,quad_indices,bounds) : false;                                                                          
                                  const uint ps = valid ? 1 : 0;
-                                 const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
-                                 const uint reduction = sub_group_reduce(ps, std::plus<uint>());
-                                 counts[subgroupID] = reduction;
-                                                                          
-                                 item.barrier(sycl::access::fence_space::local_space);
-
-                                 /* -- prefix sum over reduced sub group counts -- */
-        
-                                 uint p_sum = 0;
-                                 for (uint j=0;j<TRIANGLE_QUAD_BLOCK_SIZE/subgroupSize;j++)
-                                   if (j<subgroupID) p_sum += counts[j];
-                                                                          
-                                 item.barrier(sycl::access::fence_space::local_space);
-
-                                 const uint dest_offset = startQuadOffset + p_sum + exclusive_scan;
+                                 const uint dest_offset = startQuadOffset + prefixSumWorkgroup(ps,TRIANGLE_QUAD_BLOCK_SIZE,counts.get_pointer(),item);
 
                                  /* --- store cluster representative into destination array --- */
                                  if (ID < endPrimID)
@@ -1252,7 +1253,7 @@ namespace embree
    uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
   {
     const uint numWGs = min((numGeoms+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
-    clearFirstScratchMemEntries(gpu_queue,scratch_mem,0,numWGs,iteration_time);
+    clearScratchMem(gpu_queue,scratch_mem,0,numWGs,iteration_time);
    
     static const uint CREATE_INSTANCES_SUB_GROUP_WIDTH = 16;
     static const uint CREATE_INSTANCES_WG_SIZE  = LARGE_WG_SIZE;
@@ -1269,9 +1270,6 @@ namespace embree
                            const uint numGroups       = item.get_group_range(0);                                                        
                            const uint localID         = item.get_local_id(0);
                            const uint step_local      = item.get_local_range().size();
-                           const uint subgroupID      = get_sub_group_id();
-                           const uint subgroupLocalID = get_sub_group_local_id();
-                           const uint subgroupSize    = CREATE_INSTANCES_SUB_GROUP_WIDTH;
                            const uint startID         = (groupID + 0)*numGeoms / numWGs;
                            const uint endID           = (groupID + 1)*numGeoms / numWGs;
                            const uint sizeID          = endID-startID;
@@ -1349,29 +1347,8 @@ namespace embree
                                }
                              }
 
-                                                          
-                             const uint exclusive_scan = sub_group_exclusive_scan(count, std::plus<uint>());
-                             const uint reduction = sub_group_reduce(count, std::plus<uint>());
-                             counts[subgroupID] = reduction;
-                             
-                             item.barrier(sycl::access::fence_space::local_space);
-
-                             /* -- prefix sum over reduced sub group counts -- */
-        
                              uint total_reduction = 0;
-                             for (uint j=subgroupLocalID;j<CREATE_INSTANCES_WG_SIZE/subgroupSize;j+=subgroupSize)
-                             {
-                               const uint subgroup_counts = counts[j];
-                               const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
-                               const uint reduction = sub_group_broadcast(subgroup_counts,subgroupSize-1) + sub_group_broadcast(sums_exclusive_scan,subgroupSize-1);
-                               counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
-                               total_reduction += reduction;
-                             }
-
-                             item.barrier(sycl::access::fence_space::local_space);
-
-                             const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
-                             const uint p_sum = global_count_prefix_sum + total_offset + sums_prefix_sum + exclusive_scan;
+                             const uint p_sum = global_count_prefix_sum + total_offset + prefixSumWorkgroup(count,CREATE_INSTANCES_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);
                              total_offset += total_reduction;
                              
                              if (ID < sizeID)
@@ -1677,9 +1654,6 @@ namespace embree
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(NN_SEARCH_SUB_GROUP_WIDTH) {
             const uint localID        = item.get_local_id(0);
             const uint localSize       = item.get_local_range().size();            
-            const uint subgroupID      = get_sub_group_id();                                                                                                                          
-            const uint subgroupLocalID = get_sub_group_local_id();
-            const uint subgroupSize    = NN_SEARCH_SUB_GROUP_WIDTH;
             const uint SEARCH_RADIUS   = (uint)1<<SEARCH_RADIUS_SHIFT;            
             const uint WORKING_WG_SIZE = NN_SEARCH_WG_SIZE - 4*SEARCH_RADIUS; /* reducing working group set size to LARGE_WG_SIZE - 4 * radius to avoid loops */
             
@@ -1845,30 +1819,8 @@ namespace embree
 
               const uint flag = new_cluster_index != -1 ? 1 : 0;
               const uint ps = ID < maxID ? flag : 0;
-              const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
-              const uint reduction = sub_group_reduce(ps, std::plus<uint>());
-                                                     
-              counts[subgroupID] = reduction;
-                                                             
-              item.barrier(sycl::access::fence_space::local_space);
-              
-              /* -- prefix sum over reduced sub group counts -- */
-        
               uint total_reduction = 0;
-              for (uint j=subgroupLocalID;j<NN_SEARCH_WG_SIZE/subgroupSize;j+=subgroupSize)
-              {
-                const uint subgroup_counts = counts[j];
-                const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
-                const uint reduction = sub_group_broadcast(subgroup_counts,subgroupSize-1) + sub_group_broadcast(sums_exclusive_scan,subgroupSize-1);
-                counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
-                total_reduction += reduction;
-              }
-
-
-              item.barrier(sycl::access::fence_space::local_space);
-
-              const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
-              const uint p_sum = startID + total_offset + sums_prefix_sum + exclusive_scan;
+              const uint p_sum = startID + total_offset + prefixSumWorkgroup(ps,NN_SEARCH_WG_SIZE,counts.get_pointer(),counts_prefix_sum.get_pointer(),item,total_reduction);    
 
               /* --- store cluster representative into destination array --- */                                                                 
               if (ID < maxID)
@@ -1977,9 +1929,6 @@ namespace embree
   {
     const uint localID         = item.get_local_id(0);
     const uint localSize       = item.get_local_range().size();
-    const uint subgroupLocalID = get_sub_group_local_id();
-    const uint subgroupID      = get_sub_group_id();                                                                                                                          
-    const uint subgroupSize    = get_sub_group_size();
     const uint SEARCH_RADIUS   = (uint)1<<SEARCH_RADIUS_SHIFT;
     const uint WORKING_WG_SIZE = SINGLE_WG_SIZE - 4*SEARCH_RADIUS; 
     
@@ -2146,29 +2095,9 @@ namespace embree
 
         const uint flag = new_cluster_index != -1 ? 1 : 0;
         const uint ps = ID < maxID ? flag : 0;
-        const uint exclusive_scan = sub_group_exclusive_scan(ps, std::plus<uint>());
-        const uint reduction = sub_group_reduce(ps, std::plus<uint>());
-                                                     
-        counts[subgroupID] = reduction;
-                                                             
-        item.barrier(sycl::access::fence_space::local_space);
 
-        /* -- prefix sum over reduced sub group counts -- */
-        
         uint total_reduction = 0;
-        for (uint j=subgroupLocalID;j<SINGLE_WG_SIZE/subgroupSize;j+=subgroupSize)
-        {
-          const uint subgroup_counts = counts[j];
-          const uint sums_exclusive_scan = sub_group_exclusive_scan(subgroup_counts, std::plus<uint>());
-          const uint reduction = sub_group_broadcast(subgroup_counts,subgroupSize-1) + sub_group_broadcast(sums_exclusive_scan,subgroupSize-1);
-          counts_prefix_sum[j] = sums_exclusive_scan + total_reduction;
-          total_reduction += reduction;
-        }
-
-        item.barrier(sycl::access::fence_space::local_space);
-
-        const uint sums_prefix_sum = counts_prefix_sum[subgroupID];                                                                 
-        const uint p_sum = total_offset + sums_prefix_sum + exclusive_scan;
+        const uint p_sum = total_offset + prefixSumWorkgroup(ps,SINGLE_WG_SIZE,counts,counts_prefix_sum,item,total_reduction);
 
         /* --- store cluster representative into destination array --- */                                                                 
         if (ID < maxID)
@@ -2695,7 +2624,6 @@ namespace embree
                              const uint numGroups   = item.get_group_range(0);
                              const uint localSize   = item.get_local_range().size();                                                                      
                                                                       
-
                              const uint startBlockID = globals->node_mem_allocator_start;
                              const uint endBlockID   = globals->node_mem_allocator_cur;                             
                              const uint innerID      = startBlockID + globalID;
