@@ -3,7 +3,7 @@ set -e
 
 if [ -z $3 ]; then
   echo "ERROR: usage $0 gfx-driver target-directory token"
-  echo "    gfx-driver: URL to the driver packages relative to artifactory URL (e.g. gfx-driver-builds/ci/master/gfx-driver-ci-master-9999/artifacts/Linux/Ubuntu/20.04/Release"
+  echo "    gfx-driver: URL to the driver packages relative to artifactory URL (e.g. gfx-driver-builds/ci/master/gfx-driver-ci-master-9999/artifacts/Linux/Ubuntu/22.04/Release"
   echo "    token: access token to (artifactory) repository"
   exit 1
 fi

@@ -1,11 +1,11 @@
-# agama url: agama-builds/ci/prerelease/agama-ci-prerelease-{VERSION}/artifacts/linux/ubuntu/20.04/
-# master:    gfx-driver-builds/ci/master/gfx-driver-ci-master-{VERSION}/artifacts/Linux/Ubuntu/20.04/Release/
-# comp_igc:  gfx-driver-builds/ci/comp_igc/gfx-driver-ci-comp_igc-{VERSION}/artifacts/Linux/Ubuntu/20.04/ReleaseInternal/
-# neo:       neo-builds/ci/embargo/ci-neo-{VERSION}/artifacts/Linux/Ubuntu/20.04/Release/
+# agama url: agama-builds/ci/prerelease/agama-ci-prerelease-{VERSION}/artifacts/linux/ubuntu/22.04/
+# master:    gfx-driver-builds/ci/master/gfx-driver-ci-master-{VERSION}/artifacts/Linux/Ubuntu/22.04/Release/
+# comp_igc:  gfx-driver-builds/ci/comp_igc/gfx-driver-ci-comp_igc-{VERSION}/artifacts/Linux/Ubuntu/22.04/ReleaseInternal/
+# neo:       neo-builds/ci/embargo/ci-neo-{VERSION}/artifacts/Linux/Ubuntu/22.04/Release/
 
 variables:
-  GFX_VERSION_LINUX_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12767/artifacts/Linux/Ubuntu/20.04/Release
-  GFX_VERSION_LINUX_PUBLIC: open-linux-driver-builds/ci/dev_igc/open-linux-driver-ci-dev_igc-12785/artifacts/linux/ubuntu/20.04
+  GFX_VERSION_LINUX_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12767/artifacts/Linux/Ubuntu/22.04/Release
+  GFX_VERSION_LINUX_PUBLIC: open-linux-driver-builds/ci/dev_igc/open-linux-driver-ci-dev_igc-12785/artifacts/linux/ubuntu/22.04
   GFX_VERSION_WIN_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12767/artifacts/Windows
   GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12767/artifacts/Windows
   DPCPP_VERSION_LINUX: sycl-nightly/20220914

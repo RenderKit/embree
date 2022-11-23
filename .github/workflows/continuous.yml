@@ -20,7 +20,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
         DPCPP_VERSION=$(cat .ci-env.yaml | grep DPCPP_VERSION_LINUX | sed 's/.*:\ //')
@@ -34,7 +34,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
         GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_DEFAULT | sed 's/.*:\ //')
@@ -62,7 +62,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       artifact-out: continuous-linux-DG2-AOT-multilevel
       artifact-path: ./build .ctest_conf
@@ -76,7 +76,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: ["continuous-linux-DG2-AOT-multilevel"]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: continuous-linux-DG2-AOT-multilevel
@@ -89,7 +89,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       artifact-out: continuous-linux-DG2-AOT
       artifact-path: ./build .ctest_conf
@@ -103,7 +103,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: ["continuous-linux-DG2-AOT"]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: continuous-linux-DG2-AOT
@@ -116,7 +116,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       artifact-out: continuous-linux-DG2-JIT-INT-PUBLIC
       artifact-path: ./build .ctest_conf
@@ -145,7 +145,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: ["continuous-linux-DG2-JIT-INT-PUBLIC"]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: continuous-linux-DG2-JIT-INT-PUBLIC
@@ -158,7 +158,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       artifact-out: continuous-linux-DG2-JIT
       artifact-path: ./build .ctest_conf
@@ -172,7 +172,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: ["continuous-linux-DG2-JIT"]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: continuous-linux-DG2-JIT
@@ -185,7 +185,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       artifact-out: continuous-linux-PVC-AOT
       artifact-path: ./build .ctest_conf
@@ -199,7 +199,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: ["continuous-linux-PVC-AOT"]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       artifact-in: continuous-linux-PVC-AOT
@@ -213,7 +213,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       artifact-out: continuous-linux-PVC-JIT
       artifact-path: ./build .ctest_conf
@@ -227,7 +227,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: ["continuous-linux-PVC-JIT"]
     with:
-      image: embree/ubuntu:20.04
+      image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "pvc" ]'
       artifact-in: continuous-linux-PVC-JIT
