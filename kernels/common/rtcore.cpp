@@ -559,11 +559,6 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,1,1,1);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    RTCIntersectArguments defaultArgs;
-    if (unlikely(iargs == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
-      iargs = &defaultArgs;
-    }
     IntersectContext context(scene,user_context,iargs);
 
     instance_id_stack::push(user_context, args->geomID);
@@ -674,11 +669,6 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,cnt,cnt,cnt);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    RTCIntersectArguments defaultArgs;
-    if (unlikely(iargs == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
-      iargs = &defaultArgs;
-    }
     IntersectContext context(scene,user_context,iargs);
 
     instance_id_stack::push(user_context, args->geomID);
@@ -862,11 +852,6 @@ RTC_NAMESPACE_BEGIN;
     oray->dir = iray->dir;
 
     RTCIntersectArguments* iargs = ((OccludedFunctionNArguments*) args)->args;
-    RTCIntersectArguments defaultArgs;
-    if (unlikely(iargs == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
-      iargs = &defaultArgs;
-    }
     IntersectContext context(scene,user_context,iargs);
 
     instance_id_stack::push(user_context, args->geomID);
@@ -956,11 +941,6 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,cnt,cnt,cnt);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    RTCIntersectArguments defaultArgs;
-    if (unlikely(iargs == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
-      iargs = &defaultArgs;
-    }
     IntersectContext context(scene,user_context,iargs);
 
     instance_id_stack::push(user_context, args->geomID);
