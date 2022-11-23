@@ -19,7 +19,7 @@
 #define LARGE_WG_SIZE             1024
 #define USE_NEW_OPENING           0
 #define TRIANGLE_QUAD_BLOCK_SIZE  1024
-
+#define QBVH6_HEADER_OFFSET       128
 namespace embree
 {  
   // ===================================================================================================================================================================================
@@ -2824,7 +2824,7 @@ namespace embree
                                  const RTHWIF_GEOMETRY_INSTANCE_DESC* instance = (const RTHWIF_GEOMETRY_INSTANCE_DESC*)geometryDesc;                                 
                                  InstancePrimitive *dest = (InstancePrimitive *)qleaf;         
                                  const AffineSpace3fa local2world = getTransform(instance);
-                                 const uint64_t root = (uint64_t)instance->accel + 128;
+                                 const uint64_t root = (uint64_t)instance->accel + QBVH6_HEADER_OFFSET;
                                  *dest = InstancePrimitive(local2world,root,instance->instanceUserID,instID,mask32_to_mask8(instance->geometryMask));
                                }
                                else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_AABBS_FPTR)
