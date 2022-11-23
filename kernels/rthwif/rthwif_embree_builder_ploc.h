@@ -17,9 +17,10 @@
 #define PAIR_OFFSET_SHIFT         28
 #define GEOMID_MASK               (((uint)1<<PAIR_OFFSET_SHIFT)-1)
 #define LARGE_WG_SIZE             1024
-#define USE_NEW_OPENING           0
+#define USE_NEW_OPENING           1
 #define TRIANGLE_QUAD_BLOCK_SIZE  1024
 #define QBVH6_HEADER_OFFSET       128
+
 namespace embree
 {  
   // ===================================================================================================================================================================================
@@ -262,7 +263,7 @@ namespace embree
     {
       left    = _left  | ((subtree_size_left  <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_left   == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
       right   = _right | ((subtree_size_right <= FATLEAF_THRESHOLD ? 1 : 0)<<FATLEAF_SHIFT0) | ((subtree_size_right  == 2 ? 1 : 0)<<FATLEAF_SHIFT1);
-#if 1
+
       // === better coalescing ===             
       bounds.lower_x = _bounds.lower_x;
       bounds.lower_y = _bounds.lower_y;
@@ -270,27 +271,20 @@ namespace embree
       bounds.upper_x = _bounds.upper_x;
       bounds.upper_y = _bounds.upper_y;
       bounds.upper_z = _bounds.upper_z;                  
-#else
-      bounds  = _bounds;      
-#endif      
     }
     
     __forceinline void initLeaf(const uint _geomID, const uint _primID, const gpu::AABB3f &_bounds)
     {
       left    = _geomID;      
       right   = _primID;
-#if 1
+
       // === better coalescing ===       
       bounds.lower_x = _bounds.lower_x;
       bounds.lower_y = _bounds.lower_y;
       bounds.lower_z = _bounds.lower_z;
       bounds.upper_x = _bounds.upper_x;
       bounds.upper_y = _bounds.upper_y;
-      bounds.upper_z = _bounds.upper_z;                  
-#else
-      bounds  = _bounds;      
-#endif      
-      
+      bounds.upper_z = _bounds.upper_z;                        
     }
 
     __forceinline void store(BVH2Ploc *dest)
@@ -305,11 +299,11 @@ namespace embree
       dest->bounds.upper_z = bounds.upper_z;            
     }
 
-    static  __forceinline bool isFatLeaf      (const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT0) || (index & FATLEAF_MASK) < numPrimitives;  }
-    static  __forceinline bool isBinaryFatLeaf(const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT1) && (index & FATLEAF_MASK) >= numPrimitives;  }        
-    static  __forceinline uint getIndex       (const uint index)                           { return index & FATLEAF_MASK;  }
-    static  __forceinline bool isLeaf         (const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
-    static  __forceinline uint makeFatLeaf    (const uint index, const uint numChildren)   { return index | (1<<FATLEAF_SHIFT0) | ((numChildren <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);  }
+    static  __forceinline bool isFatLeaf     (const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT0) || (index & FATLEAF_MASK) < numPrimitives;  }
+    static  __forceinline bool isSmallFatLeaf(const uint index, const uint numPrimitives) { return (index & FATLEAF_BIT1) && (index & FATLEAF_MASK) >= numPrimitives;  }        
+    static  __forceinline uint getIndex      (const uint index)                           { return index & FATLEAF_MASK;  }
+    static  __forceinline bool isLeaf        (const uint index, const uint numPrimitives) { return getIndex(index) < numPrimitives;  }
+    static  __forceinline uint makeFatLeaf   (const uint index, const uint numChildren)   { return index | (1<<FATLEAF_SHIFT0) | ((numChildren <= 2 ? 1 : 0)<<FATLEAF_SHIFT1);  }
 
     __forceinline operator const gpu::AABB3f &() const { return bounds; }
 
@@ -2262,6 +2256,27 @@ namespace embree
       dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
 
+  __forceinline uint getNumLeaves(const uint first_index, const BVH2Ploc *const bvh_nodes, const uint numPrimitives)
+  {
+    uint dest[BVH_BRANCHING_FACTOR];
+    dest[0] = BVH2Ploc::getIndex(first_index);
+    uint old_indexID = 0;
+    uint indexID = 1;
+    while(old_indexID != indexID)
+    {
+      old_indexID = indexID;
+      for (uint i=0;i<old_indexID;i++)
+        if (!BVH2Ploc::isLeaf(dest[i],numPrimitives))
+        {
+          const uint left = bvh_nodes[BVH2Ploc::getIndex(dest[i])].left;
+          const uint right = bvh_nodes[BVH2Ploc::getIndex(dest[i])].right;
+          dest[i]         = left;
+          dest[indexID++] = right;
+        }
+    }
+    return indexID;
+  }  
+  
 
   __forceinline uint openBVH2MaxAreaSortChildren(const uint index, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives)
   {
@@ -2273,8 +2288,10 @@ namespace embree
     indices[0] = _left;
     indices[1] = _right;
 #if USE_NEW_OPENING == 1
-    areas[0]  = (!BVH2Ploc::isFatLeaf( _left ,numPrimitives) || BVH2Ploc::isBinaryFatLeaf( _left ,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
-    areas[1]  = (!BVH2Ploc::isFatLeaf( _right,numPrimitives) || BVH2Ploc::isBinaryFatLeaf( _right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
+    areas[0]  = !BVH2Ploc::isFatLeaf( _left ,numPrimitives) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;
+    areas[1]  = !BVH2Ploc::isFatLeaf( _right,numPrimitives) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf;
+    areas[0]  = BVH2Ploc::isSmallFatLeaf( _left ,numPrimitives) ? pos_inf : areas[0];
+    areas[1]  = BVH2Ploc::isSmallFatLeaf( _right,numPrimitives) ? pos_inf : areas[1];
 #else    
     areas[0]  = (!BVH2Ploc::isFatLeaf( _left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( _left)].bounds.area() : neg_inf;    
     areas[1]  = (!BVH2Ploc::isFatLeaf(_right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(_right)].bounds.area() : neg_inf; 
@@ -2295,30 +2312,34 @@ namespace embree
       
       if (areas[bestChild] < 0.0f)
       {
-/* #if USE_NEW_OPENING == 1         */
-/*         const uint free_space = BVH_BRANCHING_FACTOR - numChildren + 1; */
-/*         bestChild = -1; */
-/*         { */
-/*           for (uint i=0;i<numChildren;i++) */
-/*             if (BVH2Ploc::numFatChildren(indices[i]) > 2 && BVH2Ploc::numFatChildren(indices[i]) <= free_space) */
-/*             { */
-/*               bestChild = i; */
-/*               break; */
-/*             } */
-/*         } */
-/*         if (bestChild == -1) */
-/* #endif           */
+#if 0 //USE_NEW_OPENING == 1
+        const uint free_space = BVH_BRANCHING_FACTOR - numChildren + 1;
+        bestChild = -1;
+        {
+          for (uint i=0;i<numChildren;i++)
+          {
+            const uint numFatChildren = getNumLeaves(indices[i],bvh2,numPrimitives);
+            if (numFatChildren > 2 && numFatChildren <= free_space)
+            {
+              bestChild = i;
+              break;
+            }
+          }
+        }
+        if (bestChild == -1)
+#endif
           break; // nothing left to open
       }
       
-      const uint bestNodeID = indices[bestChild];
-      
+      const uint bestNodeID = indices[bestChild];      
       const uint left  = bvh2[BVH2Ploc::getIndex(bestNodeID)].left;
       const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
 
 #if USE_NEW_OPENING == 1
-      areas[bestChild  ]  = (!BVH2Ploc::isFatLeaf(left ,numPrimitives) || BVH2Ploc::isBinaryFatLeaf(left ,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( left)].bounds.area() : neg_inf;
-      areas[numChildren]  = (!BVH2Ploc::isFatLeaf(right,numPrimitives) || BVH2Ploc::isBinaryFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;      
+      areas[bestChild  ]  = (!BVH2Ploc::isFatLeaf(left ,numPrimitives) || BVH2Ploc::isSmallFatLeaf(left ,numPrimitives)) ? bvh2[BVH2Ploc::getIndex( left)].bounds.area() : neg_inf;
+      areas[numChildren]  = (!BVH2Ploc::isFatLeaf(right,numPrimitives) || BVH2Ploc::isSmallFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
+      areas[bestChild  ]  = BVH2Ploc::isSmallFatLeaf(left ,numPrimitives) ? pos_inf : areas[bestChild];
+      areas[numChildren]  = BVH2Ploc::isSmallFatLeaf(right,numPrimitives) ? pos_inf : areas[numChildren];      
 #else      
       areas[bestChild]     = (!BVH2Ploc::isFatLeaf(left,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(left)].bounds.area() : neg_inf; 
       areas[numChildren]   = (!BVH2Ploc::isFatLeaf(right,numPrimitives)) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf; 
