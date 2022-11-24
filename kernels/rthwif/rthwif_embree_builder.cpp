@@ -317,8 +317,8 @@ namespace embree
   
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
   {
-    // PRINT("BUILD START");
-    // double b0 = getSeconds();
+    //PRINT("BUILD START");
+    double b0 = getSeconds();
     
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);    
@@ -411,9 +411,9 @@ namespace embree
     /* fill geomdesc buffers */
     const size_t geomDescrBytes = sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries;
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
-    RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+    RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
     assert(geomDescr);        
-    char *geomDescrData = (char*)sycl::aligned_alloc(64,    totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::usm::alloc::shared);
+    char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
     assert(geomDescrData);
 #else    
     std::vector<RTHWIF_GEOMETRY_DESC*> geomDescr(numGeometries);
@@ -483,15 +483,11 @@ namespace embree
     /* allocate scratch buffer */
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-    double alloc_scratch = getSeconds();
     // === scratch buffer === 
     char *scratchBuffer  = (char*)sycl::aligned_alloc(64,sizeTotal.scratchBufferBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),gpu_device->verbose > 1 ? sycl::usm::alloc::shared : sycl::usm::alloc::device);
     assert(scratchBuffer);
     args.scratchBuffer = scratchBuffer;
     args.scratchBufferBytes = sizeTotal.scratchBufferBytes;
-    alloc_scratch = (getSeconds() - alloc_scratch)*1000.0;
-    //PRINT2(sizeTotal.scratchBufferBytes,alloc_scratch);
-
 #else        
     std::vector<char> scratchBuffer(sizeTotal.scratchBufferBytes);
     args.scratchBuffer = scratchBuffer.data();
@@ -512,11 +508,10 @@ namespace embree
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
       
       /* allocate BVH data */
-      double alloc_accel = getSeconds();      
-      if (accel.size() < bytes) accel.resize(bytes);
-      alloc_accel = (getSeconds() - alloc_accel)*1000.0;
-      //PRINT2(bytes,alloc_accel);
-
+      size_t accel_size = accel.size();
+      if (accel.size() < bytes) // FIXME: accel.size() triggers a USM transfer
+        accel.resize(bytes);
+      
 #if !defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
       memset(accel.data(),0,accel.size()); // FIXME: not required
 #endif
@@ -535,11 +530,12 @@ namespace embree
 #endif        
         args.numGeometries = numGeometries; 
         args.accelBuffer = accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes; // why + headerBytes?
+        
         args.accelBufferBytes = sizeTotal.accelBufferExpectedBytes;
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        err = rthwifPrefetchAccelGPU(args,&sycl_queue,gpu_device->verbose);          
+        //err = rthwifPrefetchAccelGPU(args,&sycl_queue,gpu_device->verbose); //triggers additional USM transfers
 #endif
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
@@ -608,8 +604,8 @@ namespace embree
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
 #endif
 
-    // double b1 = getSeconds();
-    // PRINT2("BUILD STOP",1000. * (b1-b0));    
+    double b1 = getSeconds();
+    //PRINT2("BUILD STOP",1000. * (b1-b0));    
     return fullBounds;
   }
 
