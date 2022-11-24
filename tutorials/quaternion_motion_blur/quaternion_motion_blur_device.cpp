@@ -159,68 +159,24 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
   potentialHit.primID = primID;
   if ((ray->tnear() < t0) & (t0 < ray->tfar))
   {
-    int imask;
-    bool mask = 1;
-    {
-      imask = mask ? -1 : 0;
-    }
-
     const Vec3fa Ng = ray->org+t0*ray->dir-sphere.p;
     potentialHit.Ng_x = Ng.x;
     potentialHit.Ng_y = Ng.y;
     potentialHit.Ng_z = Ng.z;
-
-    RTCFilterFunctionNArguments fargs;
-    fargs.valid = (int*)&imask;
-    fargs.geometryUserPtr = ptr;
-    fargs.context = args->context;
-    fargs.ray = (RTCRayN *)args->rayhit;
-    fargs.hit = (RTCHitN*)&potentialHit;
-    fargs.N = 1;
-
-    const float old_t = ray->tfar;
     ray->tfar = t0;
-    rtcInvokeIntersectFilterFromGeometry(args,&fargs);
-
-    if (imask == -1) {
-      *hit = potentialHit;
-      valid[0] = -1;
-    }
-    else
-      ray->tfar = old_t;
+    *hit = potentialHit;
+    valid[0] = -1;
   }
 
   if ((ray->tnear() < t1) & (t1 < ray->tfar))
   {
-    int imask;
-    bool mask = 1;
-    {
-      imask = mask ? -1 : 0;
-    }
-
     const Vec3fa Ng = ray->org+t1*ray->dir-sphere.p;
     potentialHit.Ng_x = Ng.x;
     potentialHit.Ng_y = Ng.y;
     potentialHit.Ng_z = Ng.z;
-
-    RTCFilterFunctionNArguments fargs;
-    fargs.valid = (int*)&imask;
-    fargs.geometryUserPtr = ptr;
-    fargs.context = args->context;
-    fargs.ray = (RTCRayN *)args->rayhit;
-    fargs.hit = (RTCHitN*)&potentialHit;
-    fargs.N = 1;
-
-    const float old_t = ray->tfar;
     ray->tfar = t1;
-    rtcInvokeIntersectFilterFromGeometry(args,&fargs);
-
-    if (imask == -1) {
-      *hit = potentialHit;
-      valid[0] = -1;
-    }
-    else
-      ray->tfar = old_t;
+    *hit = potentialHit;
+    valid[0] = -1;
   }
 }
 
