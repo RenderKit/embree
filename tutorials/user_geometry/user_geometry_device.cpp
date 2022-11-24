@@ -139,7 +139,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   xray.id = 0;
   xray.flags = 0;
   
-  rtcForwardIntersect1(args,instance->object,&xray);
+  rtcForwardIntersect1(args,instance->object,&xray,args->geomID);
   
 #endif
 }
@@ -193,7 +193,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   xray.id = 0;
   xray.flags = 0;
   
-  rtcForwardOccluded1(args,instance->object,&xray);
+  rtcForwardOccluded1(args,instance->object,&xray,args->geomID);
   
 #endif
 }

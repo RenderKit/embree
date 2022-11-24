@@ -172,31 +172,31 @@ RTC_FORCEINLINE void rtcIntersectV(RTCScene scene, varying RTCRayHit* uniform ra
 
 
 /* Forwards ray inside user geometry callback. */
-RTC_API void rtcForwardIntersect1(const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, uniform RTCRay* uniform ray);
+RTC_API void rtcForwardIntersect1(const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, uniform RTCRay* uniform ray, uniform unsigned int instID);
 
 /* Forwards ray packet of size 4 inside user geometry callback. */
-RTC_API void rtcForwardIntersect4(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray4);
+RTC_API void rtcForwardIntersect4(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray4, uniform unsigned int instID);
 
 /* Forwards ray packet of size 8 inside user geometry callback. */
-RTC_API void rtcForwardIntersect8(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray8);
+RTC_API void rtcForwardIntersect8(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray8, uniform unsigned int instID);
 
 /* Forwards ray packet of size 16 inside user geometry callback. */
-RTC_API void rtcForwardIntersect16(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray16);
+RTC_API void rtcForwardIntersect16(const uniform int* uniform valid, const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, void* uniform ray16, uniform unsigned int instID);
 
 
 /* Forwards ray intersection query inside user geometry callback. */
-RTC_FORCEINLINE void rtcForwardIntersectV(const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray)
+RTC_FORCEINLINE void rtcForwardIntersectV(const uniform RTCIntersectFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray, uniform unsigned int instID)
 {
   varying bool mask = __mask;
   unmasked {
     varying int imask = mask ? -1 : 0;
   }
   if (sizeof(varying float) == 16)
-    rtcForwardIntersect4((uniform int* uniform)&imask, args, scene, iray);
+    rtcForwardIntersect4((uniform int* uniform)&imask, args, scene, iray, instID);
   else if (sizeof(varying float) == 32)
-    rtcForwardIntersect8((uniform int* uniform)&imask, args, scene, iray);
+    rtcForwardIntersect8((uniform int* uniform)&imask, args, scene, iray, instID);
   else if (sizeof(varying float) == 64)
-    rtcForwardIntersect16((uniform int* uniform)&imask, args, scene, iray);
+    rtcForwardIntersect16((uniform int* uniform)&imask, args, scene, iray, instID);
 }
 
 
@@ -230,19 +230,19 @@ RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, varying RTCRay* uniform ray, u
 
 
 /* Forwards single occlusion ray inside user geometry callback. */
-RTC_API void rtcForwardOccluded1(const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, uniform RTCRay* uniform ray);
+RTC_API void rtcForwardOccluded1(const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, uniform RTCRay* uniform ray, uniform unsigned int instID);
 
 /* Forwards occlusion ray packet of size 4 inside user geometry callback. */
-RTC_API void rtcForwardOccluded4(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray4);
+RTC_API void rtcForwardOccluded4(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray4, uniform unsigned int instID);
 
 /* Forwards occlusion ray packet of size 8 inside user geometry callback. */
-RTC_API void rtcForwardOccluded8(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray8);
+RTC_API void rtcForwardOccluded8(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray8, uniform unsigned int instID);
 
 /* Forwards occlusion ray packet of size 16 inside user geometry callback. */
-RTC_API void rtcForwardOccluded16(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray16);
+RTC_API void rtcForwardOccluded16(const uniform int* uniform valid, const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, void* uniform ray16, uniform unsigned int instID);
 
 /* Forwards ray occlusion query inside user geometry callback. */
-RTC_FORCEINLINE void rtcForwardOccludedV(const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray)
+RTC_FORCEINLINE void rtcForwardOccludedV(const uniform RTCOccludedFunctionNArguments* uniform args, RTCScene scene, varying RTCRay* uniform iray, uniform unsigned int instID)
 {
   varying bool mask = __mask;
   unmasked {
@@ -250,11 +250,11 @@ RTC_FORCEINLINE void rtcForwardOccludedV(const uniform RTCOccludedFunctionNArgum
   }
 
   if (sizeof(varying float) == 16)
-    rtcForwardOccluded4((uniform int* uniform)&imask, args, scene, iray);
+    rtcForwardOccluded4((uniform int* uniform)&imask, args, scene, iray, instID);
   else if (sizeof(varying float) == 32)
-    rtcForwardOccluded8((uniform int* uniform)&imask, args, scene, iray);
+    rtcForwardOccluded8((uniform int* uniform)&imask, args, scene, iray, instID);
   else if (sizeof(varying float) == 64)
-    rtcForwardOccluded16((uniform int* uniform)&imask, args, scene, iray);
+    rtcForwardOccluded16((uniform int* uniform)&imask, args, scene, iray, instID);
 }
 
 

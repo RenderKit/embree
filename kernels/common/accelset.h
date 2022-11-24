@@ -264,7 +264,7 @@ namespace embree
       }
 
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline bool occluded (Ray& ray, unsigned int geomID, unsigned int primID, IntersectContext* context, RTCScene& forward_scene)
+    __forceinline bool occluded (Ray& ray, unsigned int geomID, unsigned int primID, IntersectContext* context, RTCScene& forward_scene)
       {
         assert(primID < size());
 

@@ -98,8 +98,6 @@ bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry
   const bool ishit = geom->intersect(ray,geomID,primID,context,forward_scene);
   if (!forward_scene) return ishit;
 
-  instance_id_stack::push(context->user, geomID);
-
   /* forward ray to instanced scene */
   unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit ) + 1;
   Scene* scene = (Scene*) forward_scene;
@@ -137,8 +135,6 @@ bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* g
   RTCScene forward_scene = nullptr;
   const bool ishit = geom->occluded(ray,geomID,primID,context,forward_scene);
   if (!forward_scene) return ishit;
-
-  instance_id_stack::push(context->user, geomID);
 
   /* forward ray to instanced scene */
   unsigned int bvh_level = intel_get_hit_bvh_level( query, intel_hit_type_potential_hit ) + 1;

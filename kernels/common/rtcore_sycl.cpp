@@ -50,7 +50,7 @@ SYCL_EXTERNAL void rtcIntersect1(RTCScene hscene, struct RTCRayHit* rayhit, stru
   rtcIntersectRTHW(hscene, context, rayhit, args); 
 }
 
-SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray)
+SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray, unsigned int instID)
 {
   IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_;
   assert(args->N == 1);
@@ -64,6 +64,7 @@ SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* ar
   oray->dir.y = iray->dir_y;
   oray->dir.z = iray->dir_z;
   args->forward_scene = scene;
+  instance_id_stack::push(args->context, instID);
 }
 
 SYCL_EXTERNAL void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCIntersectArguments* args)
@@ -84,7 +85,7 @@ SYCL_EXTERNAL void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCI
   rtcOccludedRTHW(hscene, context, ray, args);
 }
 
-SYCL_EXTERNAL void rtcForwardOccluded1(const RTCOccludedFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray)
+SYCL_EXTERNAL void rtcForwardOccluded1(const RTCOccludedFunctionNArguments* args_, RTCScene scene, struct RTCRay* iray, unsigned int instID)
 {
   OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_;
   assert(args->N == 1);
@@ -98,6 +99,7 @@ SYCL_EXTERNAL void rtcForwardOccluded1(const RTCOccludedFunctionNArguments* args
   oray->dir.y = iray->dir_y;
   oray->dir.z = iray->dir_z;
   args->forward_scene = scene;
+  instance_id_stack::push(args->context, instID);
 }
 
 SYCL_EXTERNAL void* rtcGetGeometryUserDataFromScene (RTCScene hscene, unsigned int geomID)
