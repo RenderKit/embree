@@ -33,6 +33,8 @@ if [[ $GFX_DRIVER == *"linux"* ]] || [[ $GFX_DRIVER == *"Linux"* ]] ; then
   
   if [[ $GFX_DRIVER == *"open-linux"* ]] ; then
     DEBS="*"
+  elif [[ $GFX_DRIVER == *"neo-releases"* ]] ; then
+    DEBS="*"
   else
     DEBS="level-zero|intel-level-zero-gpu|intel-opencl-icd|libigc1|libigc-tools|libigdfcl1|libigdgmm"
   fi
