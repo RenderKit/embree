@@ -51,7 +51,7 @@ def get_dpcpp_and_gfx_version(config, compiler, OS):
   if ("gfx" in config):
     GFX_VERSION_IDENTIFIER = GFX_VERSION_IDENTIFIER + "_" + config["gfx"]
   else:
-    GFX_VERSION_IDENTIFIER = GFX_VERSION_IDENTIFIER + "_DEFAULT"
+    GFX_VERSION_IDENTIFIER = GFX_VERSION_IDENTIFIER + "_INTERNAL"
     
   DPCPP_VERSION = ""
   if (compiler[5:] != ""):

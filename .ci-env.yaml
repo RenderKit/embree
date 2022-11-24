@@ -1,12 +1,13 @@
-# agama url: agama-builds/ci/prerelease/agama-ci-prerelease-{VERSION}/artifacts/linux/ubuntu/22.04/
-# master:    gfx-driver-builds/ci/master/gfx-driver-ci-master-{VERSION}/artifacts/Linux/Ubuntu/22.04/Release/
-# comp_igc:  gfx-driver-builds/ci/comp_igc/gfx-driver-ci-comp_igc-{VERSION}/artifacts/Linux/Ubuntu/22.04/ReleaseInternal/
-# neo:       neo-builds/ci/embargo/ci-neo-{VERSION}/artifacts/Linux/Ubuntu/22.04/Release/
+# agama url:   agama-builds/ci/prerelease/agama-ci-prerelease-{VERSION}/artifacts/linux/ubuntu/22.04
+# master:      gfx-driver-builds/ci/master/gfx-driver-ci-master-{VERSION}/artifacts/Linux/Ubuntu/22.04/Release
+# comp_igc:    gfx-driver-builds/ci/comp_igc/gfx-driver-ci-comp_igc-{VERSION}/artifacts/Linux/Ubuntu/22.04/ReleaseInternal
+# neo:         neo-builds/ci/embargo/ci-neo-{VERSION}/artifacts/Linux/Ubuntu/22.04/Release
+# neo-release: neo-builds/releases/releases_22.43/neo-releases-22.43.{VERSION}/artifacts/linux/ubuntu/22.04
 
 variables:
-  GFX_VERSION_LINUX_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12830/artifacts/Linux/Ubuntu/22.04/Release
-  GFX_VERSION_LINUX_PUBLIC: neo-builds/releases/releases_22.43/neo-releases-22.43.24595.29/artifacts/linux/ubuntu/22.04/
-  GFX_VERSION_WIN_DEFAULT: gfx-driver-builds/ci/master/gfx-driver-ci-master-12830/artifacts/Windows
+  GFX_VERSION_LINUX_INTERNAL: gfx-driver-builds/ci/master/gfx-driver-ci-master-12830/artifacts/Linux/Ubuntu/22.04/Release
+  GFX_VERSION_LINUX_PUBLIC: neo-builds/releases/releases_22.43/neo-releases-22.43.24595.29/artifacts/linux/ubuntu/22.04
+  GFX_VERSION_WIN_INTERNAL: gfx-driver-builds/ci/master/gfx-driver-ci-master-12830/artifacts/Windows
   GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12830/artifacts/Windows
   DPCPP_VERSION_LINUX: sycl-nightly/20220914
   DPCPP_VERSION_WIN: sycl-nightly/20220914
