@@ -317,7 +317,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
     rtcFilterIntersection(args,&fargs);
@@ -354,7 +354,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
     rtcFilterIntersection(args,&fargs);
@@ -423,7 +423,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
     rtcFilterOcclusion(args,&fargs);
@@ -460,7 +460,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
     rtcFilterOcclusion(args,&fargs);
