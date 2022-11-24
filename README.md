@@ -4059,31 +4059,31 @@ On failure an error code is set that can be queried using
 
 
 
-rtcFilterIntersection
+rtcInvokeIntersectFilterFromGeometry
 ---------------------
 
 #### NAME {#name}
 
-    rtcFilterIntersection - invokes the intersection filter function
+    rtcInvokeIntersectFilterFromGeometry - invokes the intersection filter function
 
 #### SYNOPSIS {#synopsis}
 
     #include <embree4/rtcore.h>
 
-    void rtcFilterIntersection(
+    void rtcInvokeIntersectFilterFromGeometry(
       const struct RTCIntersectFunctionNArguments* args,
       const struct RTCFilterFunctionNArguments* filterArgs
     );
 
 #### DESCRIPTION {#description}
 
-The `rtcFilterIntersection` function can be called inside an
+The `rtcInvokeIntersectFilterFromGeometry` function can be called inside an
 `RTCIntersectFunctionN` callback function to invoke the intersection
 filter registered to the geometry and stored inside the context. For
 this an `RTCFilterFunctionNArguments` structure must be created (see
 `rtcSetGeometryIntersectFilterFunction`) which basically consists of a
 valid mask, a hit packet to filter, the corresponding ray packet, and
-the packet size. After the invocation of `rtcFilterIntersection`, only
+the packet size. After the invocation of `rtcInvokeIntersectFilterFromGeometry`, only
 rays that are still valid (valid mask set to -1) should update a hit.
 
 #### EXIT STATUS {#exit-status}
@@ -4093,35 +4093,35 @@ thus will not set any error flags on failure.
 
 #### SEE ALSO {#see-also}
 
-[rtcFilterOcclusion], [rtcSetGeometryIntersectFunction]
+[rtcInvokeOccludedFilterFromGeometry], [rtcSetGeometryIntersectFunction]
 
 
 
-rtcFilterOcclusion
+rtcInvokeOccludedFilterFromGeometry
 ------------------
 
 #### NAME {#name}
 
-    rtcFilterOcclusion - invokes the occlusion filter function
+    rtcInvokeOccludedFilterFromGeometry - invokes the occlusion filter function
 
 #### SYNOPSIS {#synopsis}
 
     #include <embree4/rtcore.h>
 
-    void rtcFilterOcclusion(
+    void rtcInvokeOccludedFilterFromGeometry(
       const struct RTCOccludedFunctionNArguments* args,
       const struct RTCFilterFunctionNArguments* filterArgs
     );
 
 #### DESCRIPTION {#description}
 
-The `rtcFilterOcclusion` function can be called inside an
+The `rtcInvokeOccludedFilterFromGeometry` function can be called inside an
 `RTCOccludedFunctionN` callback function to invoke the occlusion filter
 registered to the geometry and stored inside the context. For this an
 `RTCFilterFunctionNArguments` structure must be created (see
 `rtcSetGeometryIntersectFilterFunction`) which basically consists of a
 valid mask, a hit packet to filter, the corresponding ray packet, and
-the packet size. After the invocation of `rtcFilterOcclusion` only rays
+the packet size. After the invocation of `rtcInvokeOccludedFilterFromGeometry` only rays
 that are still valid (valid mask set to -1) should signal an occlusion.
 
 #### EXIT STATUS {#exit-status}
@@ -4131,7 +4131,7 @@ thus will not set any error flags on failure.
 
 #### SEE ALSO {#see-also}
 
-[rtcFilterIntersection], [rtcSetGeometryOccludedFunction]
+[rtcInvokeIntersectFilterFromGeometry], [rtcSetGeometryOccludedFunction]
 
 
 
@@ -4384,7 +4384,7 @@ As a primitive might have multiple intersections with a ray, the
 intersection filter function needs to be invoked by the user geometry
 intersection callback for each encountered intersection, if filtering
 of intersections is desired. This can be achieved through the
-`rtcFilterIntersection` call.
+`rtcInvokeIntersectFilterFromGeometry` call.
 
 Within the user geometry intersect function, it is safe to trace new
 rays and create new scenes and geometries.
@@ -4415,7 +4415,7 @@ On failure an error code is set that can be queried using
 #### SEE ALSO {#see-also}
 
 [rtcSetGeometryOccludedFunction], [rtcSetGeometryUserData],
-[rtcFilterIntersection]
+[rtcInvokeIntersectFilterFromGeometry]
 
 
 
@@ -4488,7 +4488,7 @@ As a primitive might have multiple intersections with a ray, the
 occlusion filter function needs to be invoked by the user geometry
 occlusion callback for each encountered intersection, if filtering of
 intersections is desired. This can be achieved through the
-`rtcFilterOcclusion` call.
+`rtcInvokeOccludedFilterFromGeometry` call.
 
 Within the user geometry occlusion function, it is safe to trace new
 rays and create new scenes and geometries.
@@ -4519,7 +4519,7 @@ On failure an error code is set that can be queried using
 #### SEE ALSO {#see-also}
 
 [rtcSetGeometryIntersectFunction], [rtcSetGeometryUserData],
-[rtcFilterOcclusion]
+[rtcInvokeOccludedFilterFromGeometry]
 
 
 

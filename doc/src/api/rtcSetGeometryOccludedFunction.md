@@ -66,7 +66,7 @@ As a primitive might have multiple intersections with a ray, the
 occlusion filter function needs to be invoked by the user geometry
 occlusion callback for each encountered intersection, if filtering
 of intersections is desired. This can be achieved through the
-`rtcFilterOcclusion` call.
+`rtcInvokeOccludedFilterFromGeometry` call.
 
 Within the user geometry occlusion function, it is safe to trace new
 rays and create new scenes and geometries.
@@ -81,4 +81,4 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[rtcSetGeometryIntersectFunction], [rtcSetGeometryUserData], [rtcFilterOcclusion]
+[rtcSetGeometryIntersectFunction], [rtcSetGeometryUserData], [rtcInvokeOccludedFilterFromGeometry]

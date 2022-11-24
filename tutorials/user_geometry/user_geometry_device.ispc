@@ -317,7 +317,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereIntersectFunc(const RTCIntersec
 #if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
-    rtcFilterIntersection(args,&fargs);
+    rtcInvokeIntersectFilterFromGeometry(args,&fargs);
 #endif
 
     if (imask == -1) {
@@ -354,7 +354,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereIntersectFunc(const RTCIntersec
 #if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
-    rtcFilterIntersection(args,&fargs);
+    rtcInvokeIntersectFilterFromGeometry(args,&fargs);
 #endif
 
     if (imask == -1) {
@@ -423,7 +423,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereOccludedFunc(const RTCOccludedF
 #if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
-    rtcFilterOcclusion(args,&fargs);
+    rtcInvokeOccludedFilterFromGeometry(args,&fargs);
 #endif
     
     if (imask == -1) {
@@ -460,7 +460,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereOccludedFunc(const RTCOccludedF
 #if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
-    rtcFilterOcclusion(args,&fargs);
+    rtcInvokeOccludedFilterFromGeometry(args,&fargs);
 #endif
 
     if (imask == -1) {

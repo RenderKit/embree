@@ -180,7 +180,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-    rtcFilterIntersection(args,&fargs);
+    rtcInvokeIntersectFilterFromGeometry(args,&fargs);
 
     if (imask == -1) {
       *hit = potentialHit;
@@ -213,7 +213,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-    rtcFilterIntersection(args,&fargs);
+    rtcInvokeIntersectFilterFromGeometry(args,&fargs);
 
     if (imask == -1) {
       *hit = potentialHit;

@@ -74,7 +74,7 @@ As a primitive might have multiple intersections with a ray, the
 intersection filter function needs to be invoked by the user geometry
 intersection callback for each encountered intersection, if filtering
 of intersections is desired. This can be achieved through the
-`rtcFilterIntersection` call.
+`rtcInvokeIntersectFilterFromGeometry` call.
 
 Within the user geometry intersect function, it is safe to trace new
 rays and create new scenes and geometries.
@@ -89,4 +89,4 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[rtcSetGeometryOccludedFunction], [rtcSetGeometryUserData], [rtcFilterIntersection]
+[rtcSetGeometryOccludedFunction], [rtcSetGeometryUserData], [rtcInvokeIntersectFilterFromGeometry]

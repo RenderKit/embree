@@ -264,13 +264,13 @@
 ```
 \pagebreak
 
-## rtcFilterIntersection
-``` {include=src/api/rtcFilterIntersection.md}
+## rtcInvokeIntersectFilterFromGeometry
+``` {include=src/api/rtcInvokeIntersectFilterFromGeometry.md}
 ```
 \pagebreak
 
-## rtcFilterOcclusion
-``` {include=src/api/rtcFilterOcclusion.md}
+## rtcInvokeOccludedFilterFromGeometry
+``` {include=src/api/rtcInvokeOccludedFilterFromGeometry.md}
 ```
 \pagebreak
 
