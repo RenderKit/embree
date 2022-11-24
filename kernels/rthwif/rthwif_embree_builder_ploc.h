@@ -17,7 +17,7 @@
 #define PAIR_OFFSET_SHIFT         28
 #define GEOMID_MASK               (((uint)1<<PAIR_OFFSET_SHIFT)-1)
 #define LARGE_WG_SIZE             1024
-#define USE_NEW_OPENING           1
+#define USE_NEW_OPENING           0
 #define TRIANGLE_QUAD_BLOCK_SIZE  1024
 #define QBVH6_HEADER_OFFSET       128
 
@@ -2276,15 +2276,7 @@ namespace embree
     }
     return indexID;
   }  
-  
-  __forceinline uint getNumChildren(const uint index, const uint numPrimitives)
-  {
-    uint num = 6;
-    num = BVH2Ploc::isLeaf(index,numPrimitives)         ? 1 : num;
-    num = BVH2Ploc::isSmallFatLeaf(index,numPrimitives) ? 2 : num;
-    return num;    
-  }
-  
+    
   __forceinline uint openBVH2MaxAreaSortChildren(const uint index, uint indices[BVH_BRANCHING_FACTOR], const BVH2Ploc *const bvh2, const uint numPrimitives)
   {
     float areas[BVH_BRANCHING_FACTOR];
@@ -2319,7 +2311,7 @@ namespace embree
       
       if (areas[bestChild] < 0.0f)
       {
-#if 0 //USE_NEW_OPENING == 1
+#if 0 
         const uint free_space = BVH_BRANCHING_FACTOR - numChildren + 1;
         bestChild = -1;
         {
@@ -2343,6 +2335,9 @@ namespace embree
       const uint right = bvh2[BVH2Ploc::getIndex(bestNodeID)].right;
 
 #if USE_NEW_OPENING == 1
+      // === ensures 3 items per fat-leaf, however, this pulls leaf data into inner node memory region ===
+      if (numChildren == 5 && (BVH2Ploc::isSmallFatLeaf(left,numPrimitives) || BVH2Ploc::isSmallFatLeaf(right,numPrimitives))) break;
+
       areas[bestChild  ]  = !BVH2Ploc::isFatLeaf(left ,numPrimitives) ? bvh2[BVH2Ploc::getIndex( left)].bounds.area() : neg_inf;
       areas[bestChild  ]  = BVH2Ploc::isSmallFatLeaf(left ,numPrimitives) ? pos_inf : areas[bestChild];      
       areas[numChildren]  = !BVH2Ploc::isFatLeaf(right,numPrimitives) ? bvh2[BVH2Ploc::getIndex(right)].bounds.area() : neg_inf;
@@ -2353,14 +2348,8 @@ namespace embree
 #endif      
       indices[bestChild]   = left;      
       indices[numChildren] = right;                                                                            
-      numChildren++;
+      numChildren++;      
     }
-
-#if 0
-    for (uint i=0;i<numChildren;i++)
-      if (BVH2Ploc::isSmallFatLeaf(indices[i],numPrimitives))
-        PRINT4("ERROR",i,BVH2Ploc::getIndex(indices[i]),numChildren);
-#endif
     
     for (uint i=0;i<numChildren;i++)
       areas[i] = fabs(areas[i]);

@@ -29,12 +29,16 @@ namespace embree
 {
   using namespace embree::isa;
 
-  __forceinline uint estimateSizeInternalNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
+  __forceinline uint estimateSizeInternalNodes(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
   {
     const uint N = numQuads + numInstances + numProcedurals; 
     // === conservative estimate ===
-    const uint numFatLeaves = ceilf( (float)N/2 ) + ceilf( (float)numInstances/2 ); // FIXME : better upper bound for instance case
-    const uint numInnerNodes = ceilf( (float)numFatLeaves/5 ); 
+    uint numFatLeaves = 0;
+    if (conservative)
+      numFatLeaves = ceilf( (float)N/2 ) + ceilf( (float)numInstances/2 ); // FIXME : better upper bound for instance case
+    else
+      numFatLeaves = ceilf( (float)N/3 ) + ceilf( (float)numInstances/2 ); // FIXME : better upper bound for instance case        
+    const uint numInnerNodes = ceilf( (float)numFatLeaves/4 ); 
     return gpu::alignTo(std::max( ((numFatLeaves + numInnerNodes) * 64) , N * 16),64);
   }
 
@@ -43,10 +47,10 @@ namespace embree
     return (numQuads + numProcedurals + 2 * numInstances) * 64;  
   }
 
-  __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals)
+  __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
   {
     const uint header              = 128;
-    const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals);
+    const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,conservative);
     const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals); 
     const uint totalSize           = header + node_size + leaf_size;
     return totalSize;
@@ -236,7 +240,6 @@ namespace embree
 // =================================================================================================================================================================================
 // =================================================================================================================================================================================
 // =================================================================================================================================================================================
-  
 
   RTHWIF_API RTHWIF_ERROR rthwifGetAccelSizeGPU(const RTHWIF_BUILD_ACCEL_ARGS& args_i, RTHWIF_ACCEL_SIZE& size_o, void *sycl_queue, uint verbose_level=0)
   {
@@ -270,8 +273,8 @@ namespace embree
 
     if (numPrimitives)
     {    
-      expectedBytes  = estimateAccelBufferSize(numQuads + numMergedTriangles, numInstances, numProcedurals);
-      worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles      , numInstances, numProcedurals);    
+      expectedBytes  = estimateAccelBufferSize(numQuads + numMergedTriangles, numInstances, numProcedurals, false);
+      worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles      , numInstances, numProcedurals, true);    
     }
 
     // ===============================================    
@@ -488,13 +491,13 @@ namespace embree
     // === if allocated accel buffer is too small, return with error ===
     // =================================================================
 
-    const uint required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals) + leaf_size;
+    const uint required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,false) + leaf_size;
     if (unlikely(allocated_size < required_size))
     {
       if (unlikely(verbose2))
       {
         PRINT2(required_size,allocated_size);
-        PRINT2(node_size,estimateSizeInternalNodes(numQuads,numInstances,numProcedurals));        
+        PRINT2(node_size,estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,false));        
         PRINT3("RETRY BVH BUILD DUE BECAUSE OF SMALL ACCEL BUFFER ALLOCATION!!!", args.accelBufferBytes,required_size );
       }
       if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size;
@@ -834,7 +837,7 @@ namespace embree
 
     if (unlikely(convert_success == false))
     {
-      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size*2; // should never happen
+      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, true); 
       if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
       return RTHWIF_ERROR_RETRY;
     }

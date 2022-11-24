@@ -583,13 +583,21 @@ namespace embree
       throw_RTCError(RTC_ERROR_UNKNOWN,"build error");
 
     // === moving this to device code prevents USM down and up transfer of accel ===
-    
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    EmbreeHWAccel hwaccel;
+    hwaccel.numTimeSegments = maxTimeSegments;
+    for (size_t i=0; i<maxTimeSegments; i++)
+      hwaccel.AccelTable[i] = (char*)accel.data() + headerBytes + i*sizeTotal.accelBufferExpectedBytes;    
+    sycl::event queue_event =  sycl_queue.memcpy(accel.data(),&hwaccel,sizeof(EmbreeHWAccel));
+    queue_event.wait();
+#else    
     EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) accel.data();
     hwaccel->numTimeSegments = maxTimeSegments;
 
     for (size_t i=0; i<maxTimeSegments; i++)
       hwaccel->AccelTable[i] = (char*)hwaccel + headerBytes + i*sizeTotal.accelBufferExpectedBytes;
-
+#endif
     // =============================================================================
     
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)

@@ -1271,6 +1271,12 @@ struct Scene
         if (err != RTHWIF_ERROR_RETRY)
           break;
 
+        // PRINT(accelBufferBytesOut);
+        // PRINT(bytes);
+        // PRINT(size.accelBufferExpectedBytes);        
+        // PRINT(size.accelBufferWorstCaseBytes);
+        // PRINT(accelBufferBytesOut);
+        
         if (accelBufferBytesOut < bytes || size.accelBufferWorstCaseBytes < accelBufferBytesOut )
           throw std::runtime_error("failed build returned wrong new estimate");
 
