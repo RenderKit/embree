@@ -261,11 +261,73 @@ void animateSphere (int id, float time)
     v->z = pos.z+r*sin(f*phif)*cos(thetaf);
   }
 #endif
-
   /* commit mesh */
   rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0);
   rtcCommitGeometry(geom);
 }
+
+#if defined(EMBREE_SYCL_TUTORIAL)
+
+struct State {
+  Vertex* vertices;
+  float pos_x, pos_y, pos_z;
+  float r,f;
+};
+
+__forceinline size_t alignTo(const size_t size, const size_t alignment) { return ((size+alignment-1)/alignment)*alignment; }
+
+void animateSphereGPU (const uint numSpheres, float time)
+{
+  State state[NUM_SPHERES];
+
+  for (uint id=0;id<numSpheres;id++)
+  {
+    /* animate vertices */
+    RTCGeometry geom = rtcGetGeometry(data.g_scene,id);
+    state[id].vertices = (Vertex*) rtcGetGeometryBufferData(geom,RTC_BUFFER_TYPE_VERTEX,0);
+    state[id].pos_x = Vec3fa(data.position[id]).x;
+    state[id].pos_y = Vec3fa(data.position[id]).y;
+    state[id].pos_z = Vec3fa(data.position[id]).z;    
+    state[id].r = data.radius[id];
+    state[id].f = 2.0f*(1.0f+0.5f*sinf(time+id));
+  }
+  
+  const float rcpNumTheta = rcp((float)data.numTheta);
+  const float rcpNumPhi   = rcp((float)data.numPhi);
+  const int data_numPhi   = data.numPhi;  
+  const int data_numTheta = data.numTheta;
+  const float PI = float(pi);
+  
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
+                                                 const sycl::nd_range<3> nd_range(sycl::range<3>(alignTo(data_numPhi+1,4),alignTo(data_numTheta,4),alignTo(numSpheres,4)),sycl::range<3>(4,4,1));
+                                                       cgh.parallel_for(nd_range,[=](sycl::nd_item<3> item) {                                
+                                                                        const unsigned int phi   = item.get_global_id(0); 
+                                                                        const unsigned int theta = item.get_global_id(1);
+                                                                        const unsigned int id    = item.get_global_id(2);
+                                                                        const State &s = state[id];
+                                                                        if (phi < data_numPhi+1 && theta < data_numTheta && id < numSpheres)
+                                                                        {
+                                                                          Vertex* v = &s.vertices[phi*data_numTheta+theta];
+                                                                          const float phif   = phi*PI*rcpNumPhi;
+                                                                          const float thetaf = theta*2.0f*PI*rcpNumTheta;
+                                                                          v->x = s.pos_x+s.r*sinf(s.f*phif)*sinf(thetaf);
+                                                                          v->y = s.pos_y+s.r*cosf(phif);
+                                                                          v->z = s.pos_z+s.r*sinf(s.f*phif)*cosf(thetaf);
+                                                                        }
+                                                                      });
+                                                     });
+  
+  event.wait_and_throw();
+
+  for (uint id=0;id<numSpheres;id++)  
+  {
+    /* commit mesh */
+    RTCGeometry geom = rtcGetGeometry(data.g_scene,id);    
+    rtcUpdateGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0);
+    rtcCommitGeometry(geom);
+  }  
+}
+#endif
 
 extern "C" void renderFrameStandard (int* pixels,
                           const unsigned int width,
@@ -311,8 +373,13 @@ extern "C" void device_render (int* pixels,
                            const ISPCCamera& camera)
 {
   /* animate sphere */
+
+#if defined(EMBREE_SYCL_TUTORIAL)
+  animateSphereGPU(data.numSpheres,time);
+#else  
   for (int i=0; i<data.numSpheres; i++)
     animateSphere(i,time+i);
+#endif  
 
   /* commit changes to scene */
   rtcCommitScene (data.g_scene);

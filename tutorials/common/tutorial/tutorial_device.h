@@ -37,6 +37,7 @@ inline sycl::nd_range<2> make_nd_range(unsigned int size0, unsigned int size1)
 
   return sycl::nd_range(sycl::range(size0,size1),wg_size);
 }
+
 #endif
 
 namespace embree {

@@ -317,7 +317,9 @@ namespace embree
   
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
   {
-
+    // PRINT("BUILD START");
+    // double b0 = getSeconds();
+    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);    
     sycl::device &sycl_device = gpu_device->getGPUDevice();
@@ -604,7 +606,10 @@ namespace embree
     sycl::free(geomDescr        ,gpu_device->getGPUContext());
     sycl::free(geomDescrData    ,gpu_device->getGPUContext());    
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
-#endif    
+#endif
+
+    // double b1 = getSeconds();
+    // PRINT2("BUILD STOP",1000. * (b1-b0));    
     return fullBounds;
   }
 
