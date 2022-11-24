@@ -295,8 +295,13 @@ unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* unifor
   ray->dir = xfmVector(instance->world2local,ray_dir);
   ray->tnear = ray_tnear;
   ray->tfar  = ray_tfar;
+
+  uniform RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.context = context;
+  
   pushInstanceId(context, instance->userID);
-  rtcIntersectV(instance->object,context,RTCRayHit_(*ray));
+  rtcIntersectV(instance->object,RTCRayHit_(*ray),&args);
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org = ray_org;
@@ -687,9 +692,6 @@ inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
 /* task that renders a single screen tile */
 Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-  
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), 
                      make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 
@@ -697,7 +699,7 @@ Vec3f renderPixelStandard(float x, float y, const uniform ISPCCamera& camera, un
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersectV(g_scene,&context,RTCRayHit_(ray));
+  rtcIntersectV(g_scene,RTCRayHit_(ray));
   RayStats_addRay(stats);
 
   uniform VisualizationData * uniform visData = g_userDefinedInstancing 

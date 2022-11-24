@@ -25,7 +25,7 @@ RTC_NAMESPACE_USE
 
 namespace embree
 {
-#if defined(EMBREE_SYCL_TUTORIAL) and defined(EMBREE_SYCL_SUPPORT)
+#if defined(EMBREE_SYCL_TUTORIAL) && defined(EMBREE_SYCL_SUPPORT)
   
   extern sycl::queue   *global_gpu_queue;
   extern sycl::context *global_gpu_context;

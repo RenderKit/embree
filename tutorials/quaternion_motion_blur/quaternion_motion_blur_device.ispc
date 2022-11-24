@@ -157,68 +157,24 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereIntersectFunc(const RTCIntersec
   potentialHit.primID = primID;
   if ((ray->tnear < t0) & (t0 < ray->tfar))
   {
-    varying int imask;
-    varying bool mask = __mask;
-    unmasked {
-      imask = mask ? -1 : 0;
-    }
-
     const Vec3f Ng = ray->org+t0*ray->dir-sphere.p;
     potentialHit.Ng_x = Ng.x;
     potentialHit.Ng_y = Ng.y;
     potentialHit.Ng_z = Ng.z;
-
-    uniform RTCFilterFunctionNArguments fargs;
-    fargs.valid = (int* uniform)&imask;
-    fargs.geometryUserPtr = ptr;
-    fargs.context = args->context;
-    fargs.ray = (RTCRayN *uniform)args->rayhit;
-    fargs.hit = (RTCHitN* uniform)&potentialHit;
-    fargs.N = programCount;
-
-    const float old_t = ray->tfar;
     ray->tfar = t0;
-    rtcFilterIntersection(args,&fargs);
-
-    if (imask == -1) {
-      *hit = potentialHit;
-      valid[programIndex] = -1;
-    }
-    else
-      ray->tfar = old_t;
+    *hit = potentialHit;
+    valid[programIndex] = -1;
   }
 
   if ((ray->tnear < t1) & (t1 < ray->tfar))
   {
-    varying int imask;
-    varying bool mask = __mask;
-    unmasked {
-      imask = mask ? -1 : 0;
-    }
-
     const Vec3f Ng = ray->org+t1*ray->dir-sphere.p;
     potentialHit.Ng_x = Ng.x;
     potentialHit.Ng_y = Ng.y;
     potentialHit.Ng_z = Ng.z;
-
-    uniform RTCFilterFunctionNArguments fargs;
-    fargs.valid = (int* uniform)&imask;
-    fargs.geometryUserPtr = ptr;
-    fargs.context = args->context;
-    fargs.ray = (RTCRayN *uniform)args->rayhit;
-    fargs.hit = (RTCHitN* uniform)&potentialHit;
-    fargs.N = programCount;
-
-    const float old_t = ray->tfar;
     ray->tfar = t1;
-    rtcFilterIntersection(args,&fargs);
-
-    if (imask == -1) {
-      *hit = potentialHit;
-      valid[programIndex] = -1;
-    }
-    else
-      ray->tfar = old_t;
+    *hit = potentialHit;
+    valid[programIndex] = -1;
   }
 }
 
@@ -299,9 +255,6 @@ Vec3f renderPixelFunction(const uniform TutorialData& data,
                           const uniform ISPCCamera& camera,
                           uniform RayStats& stats)
 {
-  uniform RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
@@ -318,7 +271,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersectV(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */

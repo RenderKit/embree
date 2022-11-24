@@ -196,9 +196,6 @@ void renderPixelStandard(const TutorialData& data,
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, ray_time);
 
   /* intersect ray with scene */
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-  
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.flags = data.iflags_coherent;
@@ -207,7 +204,7 @@ void renderPixelStandard(const TutorialData& data,
 #endif
   args.feature_mask = feature_mask;
   
-  rtcIntersect1(data.scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade background black */

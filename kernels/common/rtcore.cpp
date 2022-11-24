@@ -505,7 +505,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2_FALSE(scene);
   }
 
-  RTC_API void rtcIntersect1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit* rayhit, RTCIntersectArguments* args) 
+  RTC_API void rtcIntersect1 (RTCScene hscene, RTCRayHit* rayhit, RTCIntersectArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -522,6 +522,13 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
+    RTCIntersectContext* user_context = args->context;
+    
+    RTCIntersectContext defaultContext;
+    if (unlikely(user_context == nullptr)) {
+      rtcInitIntersectContext(&defaultContext);
+      user_context = &defaultContext;
+    }
     IntersectContext context(scene,user_context,args);
     
     scene->intersectors.intersect(*rayhit,&context);
@@ -531,7 +538,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcForwardIntersect1 (const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay* iray_) 
+  RTC_API void rtcForwardIntersect1 (const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay* iray_, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -552,14 +559,9 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,1,1,1);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    RTCIntersectArguments defaultArgs;
-    if (unlikely(iargs == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
-      iargs = &defaultArgs;
-    }
     IntersectContext context(scene,user_context,iargs);
 
-    instance_id_stack::push(user_context, args->geomID);
+    instance_id_stack::push(user_context, instID);
     scene->intersectors.intersect(*(RTCRayHit*)oray,&context);
     instance_id_stack::pop(user_context);
     
@@ -569,7 +571,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersect4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit4* rayhit, RTCIntersectArguments* args) 
+  RTC_API void rtcIntersect4 (const int* valid, RTCScene hscene, RTCRayHit4* rayhit, RTCIntersectArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -588,6 +590,13 @@ RTC_NAMESPACE_BEGIN;
     if (unlikely(args == nullptr)) {
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
+    }
+    RTCIntersectContext* user_context = args->context;
+    
+    RTCIntersectContext defaultContext;
+    if (unlikely(user_context == nullptr)) {
+      rtcInitIntersectContext(&defaultContext);
+      user_context = &defaultContext;
     }
     IntersectContext context(scene,user_context,args);
 
@@ -629,7 +638,7 @@ RTC_NAMESPACE_BEGIN;
   }
 
   template<typename RTCRay, typename RTCRayHit, int N>
-  __forceinline void rtcForwardIntersectN (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay* iray)
+  __forceinline void rtcForwardIntersectN (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay* iray, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTCRayHit* oray = (RTCRayHit*)args->rayhit;
@@ -660,14 +669,9 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,cnt,cnt,cnt);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    RTCIntersectArguments defaultArgs;
-    if (unlikely(iargs == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
-      iargs = &defaultArgs;
-    }
     IntersectContext context(scene,user_context,iargs);
 
-    instance_id_stack::push(user_context, args->geomID);
+    instance_id_stack::push(user_context, instID);
     scene->intersectors.intersect(valid,*oray,&context);
     instance_id_stack::pop(user_context);
 
@@ -679,16 +683,16 @@ RTC_NAMESPACE_BEGIN;
     copy<N>(oray->ray.dir_z,ray_dir_z);
   }
 
-  RTC_API void rtcForwardIntersect4 (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay4* iray) 
+  RTC_API void rtcForwardIntersect4 (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay4* iray, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcForwardIntersect4);
-    rtcForwardIntersectN<RTCRay4,RTCRayHit4,4>(valid,args,hscene,iray);
+    rtcForwardIntersectN<RTCRay4,RTCRayHit4,4>(valid,args,hscene,iray,instID);
     RTC_CATCH_END2(scene);
   }
   
-  RTC_API void rtcIntersect8 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit8* rayhit, RTCIntersectArguments* args) 
+  RTC_API void rtcIntersect8 (const int* valid, RTCScene hscene, RTCRayHit8* rayhit, RTCIntersectArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -707,6 +711,13 @@ RTC_NAMESPACE_BEGIN;
     if (unlikely(args == nullptr)) {
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
+    }
+    RTCIntersectContext* user_context = args->context;
+    
+    RTCIntersectContext defaultContext;
+    if (unlikely(user_context == nullptr)) {
+      rtcInitIntersectContext(&defaultContext);
+      user_context = &defaultContext;
     }
     IntersectContext context(scene,user_context,args);
     
@@ -727,16 +738,16 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcForwardIntersect8 (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay8* iray) 
+  RTC_API void rtcForwardIntersect8 (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay8* iray, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcForwardIntersect8);
-    rtcForwardIntersectN<RTCRay8,RTCRayHit8,8>(valid,args,hscene,iray);
+    rtcForwardIntersectN<RTCRay8,RTCRayHit8,8>(valid,args,hscene,iray,instID);
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcIntersect16 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRayHit16* rayhit, RTCIntersectArguments* args) 
+  RTC_API void rtcIntersect16 (const int* valid, RTCScene hscene, RTCRayHit16* rayhit, RTCIntersectArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -756,6 +767,13 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
+    RTCIntersectContext* user_context = args->context;
+    
+    RTCIntersectContext defaultContext;
+    if (unlikely(user_context == nullptr)) {
+      rtcInitIntersectContext(&defaultContext);
+      user_context = &defaultContext;
+    }
     IntersectContext context(scene,user_context,args);
 
     if (likely(scene->intersectors.intersector16))
@@ -774,16 +792,16 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcForwardIntersect16 (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay16* iray) 
+  RTC_API void rtcForwardIntersect16 (const int* valid, const RTCIntersectFunctionNArguments* args, RTCScene hscene, RTCRay16* iray, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcForwardIntersect16);
-    rtcForwardIntersectN<RTCRay16,RTCRayHit16,16>(valid,args,hscene,iray);
+    rtcForwardIntersectN<RTCRay16,RTCRayHit16,16>(valid,args,hscene,iray,instID);
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded1 (RTCScene hscene, RTCIntersectContext* user_context, RTCRay* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded1 (RTCScene hscene, RTCRay* ray, RTCIntersectArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -800,13 +818,20 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
+    RTCIntersectContext* user_context = args->context;
+    
+    RTCIntersectContext defaultContext;
+    if (unlikely(user_context == nullptr)) {
+      rtcInitIntersectContext(&defaultContext);
+      user_context = &defaultContext;
+    }
     IntersectContext context(scene,user_context,args);
     
     scene->intersectors.occluded(*ray,&context);
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcForwardOccluded1 (const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay* iray_) 
+  RTC_API void rtcForwardOccluded1 (const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay* iray_, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -827,14 +852,9 @@ RTC_NAMESPACE_BEGIN;
     oray->dir = iray->dir;
 
     RTCIntersectArguments* iargs = ((OccludedFunctionNArguments*) args)->args;
-    RTCIntersectArguments defaultArgs;
-    if (unlikely(iargs == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
-      iargs = &defaultArgs;
-    }
     IntersectContext context(scene,user_context,iargs);
 
-    instance_id_stack::push(user_context, args->geomID);
+    instance_id_stack::push(user_context, instID);
     scene->intersectors.occluded(*(RTCRay*)oray,&context);
     instance_id_stack::pop(user_context);
     
@@ -844,7 +864,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay4* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCRay4* ray, RTCIntersectArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -863,6 +883,13 @@ RTC_NAMESPACE_BEGIN;
     if (unlikely(args == nullptr)) {
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
+    }
+    RTCIntersectContext* user_context = args->context;
+    
+    RTCIntersectContext defaultContext;
+    if (unlikely(user_context == nullptr)) {
+      rtcInitIntersectContext(&defaultContext);
+      user_context = &defaultContext;
     }
     IntersectContext context(scene,user_context,args);
 
@@ -883,7 +910,7 @@ RTC_NAMESPACE_BEGIN;
   }
 
   template<typename RTCRay, int N>
-  __forceinline void rtcForwardOccludedN (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay* iray)
+  __forceinline void rtcForwardOccludedN (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay* iray, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTCRay* oray = (RTCRay*)args->ray;
@@ -914,14 +941,9 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,cnt,cnt,cnt);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    RTCIntersectArguments defaultArgs;
-    if (unlikely(iargs == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
-      iargs = &defaultArgs;
-    }
     IntersectContext context(scene,user_context,iargs);
 
-    instance_id_stack::push(user_context, args->geomID);
+    instance_id_stack::push(user_context, instID);
     scene->intersectors.occluded(valid,*oray,&context);
     instance_id_stack::pop(user_context);
 
@@ -933,16 +955,16 @@ RTC_NAMESPACE_BEGIN;
     copy<N>(oray->dir_z,ray_dir_z);
   }
 
-  RTC_API void rtcForwardOccluded4 (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay4* iray) 
+  RTC_API void rtcForwardOccluded4 (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay4* iray, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcForwardOccluded4);
-    rtcForwardOccludedN<RTCRay4,4>(valid,args,hscene,iray);
+    rtcForwardOccludedN<RTCRay4,4>(valid,args,hscene,iray,instID);
     RTC_CATCH_END2(scene);
   }
  
-  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay8* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCRay8* ray, RTCIntersectArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -962,6 +984,13 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
+    RTCIntersectContext* user_context = args->context;
+    
+    RTCIntersectContext defaultContext;
+    if (unlikely(user_context == nullptr)) {
+      rtcInitIntersectContext(&defaultContext);
+      user_context = &defaultContext;
+    }
     IntersectContext context(scene,user_context,args);
 
     if (likely(scene->intersectors.intersector8))
@@ -980,16 +1009,16 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcForwardOccluded8 (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay8* iray) 
+  RTC_API void rtcForwardOccluded8 (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay8* iray, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcForwardOccluded8);
-    rtcForwardOccludedN<RTCRay8,8>(valid,args,hscene,iray);
+    rtcForwardOccludedN<RTCRay8,8>(valid,args,hscene,iray, instID);
     RTC_CATCH_END2(scene);
   }
    
-  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCIntersectContext* user_context, RTCRay16* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCRay16* ray, RTCIntersectArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -1009,6 +1038,13 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
+    RTCIntersectContext* user_context = args->context;
+    
+    RTCIntersectContext defaultContext;
+    if (unlikely(user_context == nullptr)) {
+      rtcInitIntersectContext(&defaultContext);
+      user_context = &defaultContext;
+    }
     IntersectContext context(scene,user_context,args);
 
     if (likely(scene->intersectors.intersector16))
@@ -1027,12 +1063,12 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcForwardOccluded16 (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay16* iray) 
+  RTC_API void rtcForwardOccluded16 (const int* valid, const RTCOccludedFunctionNArguments* args, RTCScene hscene, RTCRay16* iray, unsigned int instID)
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcForwardOccluded16);
-    rtcForwardOccludedN<RTCRay16,16>(valid,args,hscene,iray);
+    rtcForwardOccludedN<RTCRay16,16>(valid,args,hscene,iray, instID);
     RTC_CATCH_END2(scene);
   }
   
@@ -1193,13 +1229,13 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(geometry);
   }
 
-  RTC_API void rtcFilterIntersection(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTC_API void rtcInvokeIntersectFilterFromGeometry(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
     isa::reportIntersection1(args, filter_args);
   }
 
-  RTC_API void rtcFilterOcclusion(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
+  RTC_API void rtcInvokeOccludedFilterFromGeometry(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
     isa::reportOcclusion1(args,filter_args);

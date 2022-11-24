@@ -161,14 +161,11 @@ void renderPixelStandard(const TutorialData& data,
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 
   /* intersect ray with scene */
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -183,7 +180,7 @@ void renderPixelStandard(const TutorialData& data,
     Ray shadow(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow),&args);
+    rtcOccluded1(data.g_scene,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

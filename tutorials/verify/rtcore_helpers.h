@@ -631,16 +631,8 @@ namespace embree
 
   static const size_t numSceneGeomFlags = 32;
 
-  __noinline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRayHit* rays, unsigned int N,
-                                            RTCIntersectContext* context, RTCIntersectArguments* args)
+  __noinline void IntersectWithModeInternal(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRayHit* rays, unsigned int N, RTCIntersectArguments* args)
   {
-    RTCIntersectContext _context;
-    if (!context)
-    {
-      rtcInitIntersectContext(&_context);
-      context = &_context;
-    }
-
     RTCIntersectArguments _args;
     if (!args)
     {
@@ -657,8 +649,8 @@ namespace embree
     case MODE_INTERSECT1:
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-      case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect1(scene,context,&rays[i],args); break;
-      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,context,(RTCRay*)&rays[i],args); break;
+      case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect1(scene,&rays[i],args); break;
+      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,(RTCRay*)&rays[i],args); break;
       default: assert(false);
       }
       break;
@@ -675,8 +667,8 @@ namespace embree
         for (size_t j=0; j<M; j++) setRay(ray4,j,rays[i+j]);
         for (size_t j=M; j<4; j++) setRay(ray4,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-        case VARIANT_INTERSECT: rtcIntersect4(valid,scene,context,&ray4,args); break;
-        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,context,(RTCRay4*)&ray4,args); break;
+        case VARIANT_INTERSECT: rtcIntersect4(valid,scene,&ray4,args); break;
+        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,(RTCRay4*)&ray4,args); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray4,j);
@@ -694,8 +686,8 @@ namespace embree
         for (size_t j=0; j<M; j++) setRay(ray8,j,rays[i+j]);
         for (size_t j=M; j<8; j++) setRay(ray8,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-        case VARIANT_INTERSECT: rtcIntersect8(valid,scene,context,&ray8,args); break;
-        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,context,(RTCRay8*)&ray8,args); break;
+        case VARIANT_INTERSECT: rtcIntersect8(valid,scene,&ray8,args); break;
+        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,(RTCRay8*)&ray8,args); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray8,j);
@@ -713,8 +705,8 @@ namespace embree
         for (size_t j=0; j<M ; j++) setRay(ray16,j,rays[i+j]);
         for (size_t j=M; j<16; j++) setRay(ray16,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-        case VARIANT_INTERSECT: rtcIntersect16(valid,scene,context,&ray16,args); break;
-        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,context,(RTCRay16*)&ray16,args); break;
+        case VARIANT_INTERSECT: rtcIntersect16(valid,scene,&ray16,args); break;
+        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,(RTCRay16*)&ray16,args); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray16,j);
@@ -724,8 +716,7 @@ namespace embree
     }
   }
 
-  void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRayHit* rays, unsigned int N,
-                         RTCIntersectContext* context = nullptr,  RTCIntersectArguments* args = nullptr)
+  void IntersectWithMode(IntersectMode mode, IntersectVariant ivariant, RTCScene scene, RTCRayHit* rays, unsigned int N, RTCIntersectArguments* args = nullptr)
   {
     /* verify occluded result against intersect */
     if ((ivariant & VARIANT_INTERSECT_OCCLUDED) == VARIANT_INTERSECT_OCCLUDED)
@@ -736,8 +727,8 @@ namespace embree
         valid[i] = rays[i].ray.tnear <= rays[i].ray.tfar;
         rays2[i] = rays[i];
       }
-      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays,N,context,args);
-      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays2.data(),N,context,args);
+      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_OCCLUDED),scene,rays,N,args);
+      IntersectWithModeInternal(mode,IntersectVariant(ivariant & ~VARIANT_INTERSECT),scene,rays2.data(),N,args);
       for (size_t i=0; i<N; i++)
       {
         if (valid[i] && ((rays[i].hit.geomID == RTC_INVALID_GEOMETRY_ID) != (rays2[i].ray.tfar != float(neg_inf)))) {
@@ -746,7 +737,7 @@ namespace embree
       }
     }
     else
-      IntersectWithModeInternal(mode,ivariant,scene,rays,N,context,args);
+      IntersectWithModeInternal(mode,ivariant,scene,rays,N,args);
   }
 
   enum GeometryType

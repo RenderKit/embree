@@ -115,7 +115,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   ray->tnear() = ray_tnear;
   ray->tfar  = ray_tfar;
   pushInstanceId(context, args->geomID);
-  rtcIntersect1(instance->object,context,RTCRayHit_(*ray));
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.context = context;
+  rtcIntersect1(instance->object,RTCRayHit_(*ray),&args);
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org = ray_org;
@@ -136,7 +139,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   xray.id = 0;
   xray.flags = 0;
   
-  rtcForwardIntersect1(args,instance->object,&xray);
+  rtcForwardIntersect1(args,instance->object,&xray,args->geomID);
   
 #endif
 }
@@ -165,7 +168,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   ray->tnear()  = ray_tnear;
   ray->tfar   = ray_tfar;
   pushInstanceId(context, args->geomID);
-  rtcOccluded1(instance->object,context,RTCRay_(*ray));
+  RTCIntersectArguments args;
+  rtcInitIntersectArguments(&args);
+  args.context = context;
+  rtcOccluded1(instance->object,RTCRay_(*ray),&args);
   popInstanceId(context);
   const float updated_tfar = ray->tfar;
   ray->org    = ray_org;
@@ -187,7 +193,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
   xray.id = 0;
   xray.flags = 0;
   
-  rtcForwardOccluded1(args,instance->object,&xray);
+  rtcForwardOccluded1(args,instance->object,&xray,args->geomID);
   
 #endif
 }
@@ -311,10 +317,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
-    rtcFilterIntersection(args,&fargs);
+    rtcInvokeIntersectFilterFromGeometry(args,&fargs);
 #endif
 
     if (imask == -1) {
@@ -348,10 +354,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereIntersectFunc(const RTCIntersectFunction
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
-    rtcFilterIntersection(args,&fargs);
+    rtcInvokeIntersectFilterFromGeometry(args,&fargs);
 #endif
 
     if (imask == -1) {
@@ -417,10 +423,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
-    rtcFilterOcclusion(args,&fargs);
+    rtcInvokeOccludedFilterFromGeometry(args,&fargs);
 #endif
     
     if (imask == -1) {
@@ -454,10 +460,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereOccludedFunc(const RTCOccludedFunctionNA
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
     contextFilterFunction(&fargs);
 #else
-    rtcFilterOcclusion(args,&fargs);
+    rtcInvokeOccludedFilterFromGeometry(args,&fargs);
 #endif
 
     if (imask == -1) {
@@ -734,9 +740,6 @@ Vec3fa renderPixelStandard(const TutorialData& data,
                           float x, float y, const ISPCCamera& camera,
                           RayStats& stats)
 {
-  RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   
@@ -755,7 +758,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 #endif
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersect1(data.g_scene,&context,RTCRayHit_(ray),&args);
+  rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -790,7 +793,7 @@ Vec3fa renderPixelStandard(const TutorialData& data,
 #endif
     args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcOccluded1(data.g_scene,&context,RTCRay_(shadow),&args);
+    rtcOccluded1(data.g_scene,RTCRay_(shadow),&args);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

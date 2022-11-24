@@ -155,14 +155,6 @@ void castRay(RTCScene scene,
              float dx, float dy, float dz)
 {
   /*
-   * The intersect context can be used to set intersection
-   * filters or flags, and it also contains the instance ID stack
-   * used in multi-level instancing.
-   */
-  struct RTCIntersectContext context;
-  rtcInitIntersectContext(&context);
-
-  /*
    * The ray hit structure holds both the ray and the hit.
    * The user must initialize it properly -- see API documentation
    * for rtcIntersect1() for details.
@@ -185,7 +177,7 @@ void castRay(RTCScene scene,
    * There are multiple variants of rtcIntersect. This one
    * intersects a single ray with the scene.
    */
-  rtcIntersect1(scene, &context, &rayhit);
+  rtcIntersect1(scene, &rayhit);
 
   printf("%f, %f, %f: ", ox, oy, oz);
   if (rayhit.hit.geomID != RTC_INVALID_GEOMETRY_ID)

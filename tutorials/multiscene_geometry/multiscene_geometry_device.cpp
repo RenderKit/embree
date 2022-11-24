@@ -191,9 +191,7 @@ namespace embree {
     Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x * camera.xfm.l.vx + y * camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
     
     /* intersect ray with scene */
-    RTCIntersectContext context;
-    rtcInitIntersectContext(&context);
-    rtcIntersect1(data.g_curr_scene, &context, RTCRayHit_(ray));
+    rtcIntersect1(data.g_curr_scene, RTCRayHit_(ray));
     RayStats_addRay(stats);
     
     /* shade pixels */
@@ -208,7 +206,7 @@ namespace embree {
       Ray shadow(ray.org + ray.tfar * ray.dir, neg(lightDir), 0.001f, inf);
       
       /* trace shadow ray */
-      rtcOccluded1(data.g_curr_scene, &context, RTCRay_(shadow));
+      rtcOccluded1(data.g_curr_scene, RTCRay_(shadow));
       RayStats_addShadowRay(stats);
       
       /* add light contribution */

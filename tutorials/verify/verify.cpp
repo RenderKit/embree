@@ -1652,9 +1652,6 @@ namespace embree
     
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
-      RTCIntersectContext context;
-      rtcInitIntersectContext(&context);
-  
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
@@ -1684,10 +1681,10 @@ namespace embree
           RTCRayHit ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0)); 
           RTCRayHit ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0)); 
           RTCRayHit ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0)); 
-          rtcIntersect1(scene,&context,&ray0);
-          rtcIntersect1(scene,&context,&ray1);
-          rtcIntersect1(scene,&context,&ray2);
-          rtcIntersect1(scene,&context,&ray3);
+          rtcIntersect1(scene,&ray0);
+          rtcIntersect1(scene,&ray1);
+          rtcIntersect1(scene,&ray2);
+          rtcIntersect1(scene,&ray3);
           bool ok0 = enabled0 ? ray0.hit.geomID == 0 : ray0.hit.geomID == RTC_INVALID_GEOMETRY_ID;
           bool ok1 = enabled1 ? ray1.hit.geomID == 1 : ray1.hit.geomID == RTC_INVALID_GEOMETRY_ID;
           bool ok2 = enabled2 ? ray2.hit.geomID == 2 : ray2.hit.geomID == RTC_INVALID_GEOMETRY_ID;
@@ -1710,9 +1707,6 @@ namespace embree
 
     VerifyApplication::TestReturnValue run(VerifyApplication* state, bool silent)
     {
-      RTCIntersectContext context;
-      rtcInitIntersectContext(&context);
-
       std::string cfg = state->rtcore + ",isa="+stringOfISA(isa);
       RTCDeviceRef device = rtcNewDevice(cfg.c_str());
       errorHandler(nullptr,rtcGetDeviceError(device));
@@ -1746,10 +1740,10 @@ namespace embree
         RTCRayHit ray1 = makeRay(Vec3fa(-1,10,+1),Vec3fa(0,-1,0));
         RTCRayHit ray2 = makeRay(Vec3fa(+1,10,-1),Vec3fa(0,-1,0));
         RTCRayHit ray3 = makeRay(Vec3fa(+1,10,+1),Vec3fa(0,-1,0));
-        rtcIntersect1(scene,&context,&ray0);
-        rtcIntersect1(scene,&context,&ray1);
-        rtcIntersect1(scene,&context,&ray2);
-        rtcIntersect1(scene,&context,&ray3);
+        rtcIntersect1(scene,&ray0);
+        rtcIntersect1(scene,&ray1);
+        rtcIntersect1(scene,&ray2);
+        rtcIntersect1(scene,&ray3);
         bool ok0 = i<=0 ? ray0.hit.geomID == 0 : ray0.hit.geomID == RTC_INVALID_GEOMETRY_ID;
         bool ok1 = i<=1 ? ray1.hit.geomID == 1 : ray1.hit.geomID == RTC_INVALID_GEOMETRY_ID;
         bool ok2 = i<=2 ? ray2.hit.geomID == 2 : ray2.hit.geomID == RTC_INVALID_GEOMETRY_ID;
@@ -2848,6 +2842,7 @@ namespace embree
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
+      args.context = &ctx.context;
       args.filter = intersectFilter;
 
       VerifyScene scene(device, sflags);
@@ -2866,7 +2861,7 @@ namespace embree
           ctx.numHits[id] = 0;
         }
       }
-      IntersectWithMode(imode,ivariant,scene,rays,16,&ctx.context,&args);
+      IntersectWithMode(imode,ivariant,scene,rays,16,&args);
       bool passed = true;
       for (unsigned int iy=0; iy<4; iy++) 
       {
@@ -4013,6 +4008,7 @@ namespace embree
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
+      args.context = &intersectContext.context;
       args.filter = countHits;
       
       RTCRayHit rayHit;
@@ -4029,7 +4025,7 @@ namespace embree
       rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
       rayHit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
       
-      rtcIntersect1(scene, &(intersectContext.context), &rayHit, &args);
+      rtcIntersect1(scene, &rayHit, &args);
       
       bool cullingEnabled = rtcGetDeviceProperty(device, RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED);
       
@@ -5045,6 +5041,7 @@ namespace embree
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
+      args.context = &context;
       args.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_CONTEXT_FLAG_COHERENT :  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
       switch (imode) 
@@ -5055,8 +5052,8 @@ namespace embree
           for (size_t x=x0; x<x1; x++) {
             RTCRayHit ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect1(*scene,&context,&ray,&args); break;
-            case VARIANT_OCCLUDED : rtcOccluded1 (*scene,&context,(RTCRay*)&ray,&args); break;
+            case VARIANT_INTERSECT: rtcIntersect1(*scene,&ray,&args); break;
+            case VARIANT_OCCLUDED : rtcOccluded1 (*scene,(RTCRay*)&ray,&args); break;
             }
           }
         }
@@ -5074,8 +5071,8 @@ namespace embree
             }
             __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,&context,&ray4,&args); break;
-            case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,&context,(RTCRay4*)&ray4,&args); break;
+            case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,&ray4,&args); break;
+            case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,(RTCRay4*)&ray4,&args); break;
             }
           }
         }
@@ -5093,8 +5090,8 @@ namespace embree
             }
             __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,&context,&ray8,&args); break;
-            case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,&context,(RTCRay8*)&ray8,&args); break;
+            case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,&ray8,&args); break;
+            case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,(RTCRay8*)&ray8,&args); break;
             }
           }
         }
@@ -5112,8 +5109,8 @@ namespace embree
             }
             __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-            case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,&context,&ray16,&args); break;
-            case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,&context,(RTCRay16*)&ray16,&args); break;
+            case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,&ray16,&args); break;
+            case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,(RTCRay16*)&ray16,&args); break;
             }
           }
         }
@@ -5197,6 +5194,7 @@ namespace embree
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
+      args.context = &context;
       args.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_CONTEXT_FLAG_COHERENT :  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
 
       RandomSampler sampler;
@@ -5210,8 +5208,8 @@ namespace embree
           RTCRayHit ray; 
           fastMakeRay(ray,zero,sampler);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect1(*scene,&context,&ray,&args); break;
-          case VARIANT_OCCLUDED : rtcOccluded1 (*scene,&context,(RTCRay*)&ray,&args); break;
+          case VARIANT_INTERSECT: rtcIntersect1(*scene,&ray,&args); break;
+          case VARIANT_OCCLUDED : rtcOccluded1 (*scene,(RTCRay*)&ray,&args); break;
           }
         }
         break;
@@ -5225,8 +5223,8 @@ namespace embree
           }
           __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,&context,&ray4,&args); break;
-          case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,&context,(RTCRay4*)&ray4,&args); break;
+          case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,&ray4,&args); break;
+          case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,(RTCRay4*)&ray4,&args); break;
           }
         }
         break;
@@ -5240,8 +5238,8 @@ namespace embree
           }
           __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,&context,&ray8,&args); break;
-          case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,&context,(RTCRay8*)&ray8,&args); break;
+          case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,&ray8,&args); break;
+          case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,(RTCRay8*)&ray8,&args); break;
           }
         }
         break;
@@ -5255,8 +5253,8 @@ namespace embree
           }
           __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
-          case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,&context,&ray16,&args); break;
-          case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,&context,(RTCRay16*)&ray16,&args); break;
+          case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,&ray16,&args); break;
+          case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,(RTCRay16*)&ray16,&args); break;
           }
         }
         break;

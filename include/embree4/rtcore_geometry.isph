@@ -213,10 +213,10 @@ RTC_API void rtcSetGeometryIntersectFunction(RTCGeometry geometry, uniform RTCIn
 RTC_API void rtcSetGeometryOccludedFunction(RTCGeometry geometry, uniform RTCOccludedFunctionN occluded);
 
 /* Invokes the intersection filter from the intersection callback function. */
-RTC_API void rtcFilterIntersection(const uniform struct RTCIntersectFunctionNArguments* uniform args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
+RTC_API void rtcInvokeIntersectFilterFromGeometry(const uniform struct RTCIntersectFunctionNArguments* uniform args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 /* Invokes the occlusion filter from the occlusion callback function. */
-RTC_API void rtcFilterOcclusion(const uniform struct RTCOccludedFunctionNArguments* uniform args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
+RTC_API void rtcInvokeOccludedFilterFromGeometry(const uniform struct RTCOccludedFunctionNArguments* uniform args, const uniform RTCFilterFunctionNArguments* uniform filterArgs);
 
 
 /* Sets the instanced scene of an instance geometry. */

@@ -274,42 +274,6 @@ enum RTCIntersectContextFlags
   RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0)  // optimize for coherent rays
 };
 
-/* Intersection arguments passed to intersect/occluded calls */
-struct RTCIntersectArguments
-{
-  RTCIntersectContextFlags flags;                    // intersection flags
-  
-  void* filter;                         // filter function to execute
-  
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
-  void* intersect;                      // user geometry intersection callback to execute
-#endif
-  
-  RTCFeatureFlags feature_mask;         // selectively enable features for traversal
-
-#if RTC_MIN_WIDTH
-  float minWidthDistanceFactor;                      // curve radius is set to this factor times distance to ray origin
-#endif
-};
-
-/* Initializes an intersection arguments. */
-RTC_FORCEINLINE void rtcInitIntersectArguments(uniform RTCIntersectArguments* uniform args)
-{
-  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  
-  args->filter = NULL;
-  
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
-  args->intersect = NULL;
-#endif
-
-  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
-
-#if RTC_MIN_WIDTH
-  args->minWidthDistanceFactor = 0.0f;
-#endif
-}
-
 /* Intersection context passed to intersect/occluded calls */
 struct RTCIntersectContext
 {
