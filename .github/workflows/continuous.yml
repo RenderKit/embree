@@ -37,7 +37,7 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_DEFAULT | sed 's/.*:\ //')
+        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_INTERNAL | sed 's/.*:\ //')
         echo "Setup GFX ${GFX_VERSION} for Linux"
         echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
         ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
@@ -47,7 +47,12 @@ jobs:
         echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
         ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
         
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_DEFAULT | sed 's/.*:\ //')
+        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_INTERNAL | sed 's/.*:\ //')
+        echo "Setup GFX ${GFX_VERSION} for Windows"
+        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
+        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
+
+        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_PUBLIC | sed 's/.*:\ //')
         echo "Setup GFX ${GFX_VERSION} for Windows"
         echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
         ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
