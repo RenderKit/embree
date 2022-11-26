@@ -20,9 +20,6 @@
 // === maximum number of workgroups with 1024 elements, DG2/PVC perform best with 64 ===
 #define MAX_LARGE_WGS                         256
 
-// === size of USM-host allocated shared memory, used for fast host-device communications ===
-#define HOST_DEVICE_COMMUNICATION_BUFFER_SIZE 16*sizeof(uint)
-
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)      
 
 namespace embree
@@ -257,12 +254,12 @@ namespace embree
     const PrimitiveCounts primCounts = getEstimatedPrimitiveCounts(gpu_queue,geometries,numGeometries,verbose_level >= 2);            
 
     const uint numTriangles       = primCounts.numTriangles; // === original number of triangles ===
-    const uint numMergedTriangles = primCounts.numMergedTriangles;
+    const uint numMergedTrisQuads = primCounts.numMergedTrisQuads;
     const uint numQuads           = primCounts.numQuads;
     const uint numProcedurals     = primCounts.numProcedurals;
     const uint numInstances       = primCounts.numInstances;
   
-    const uint numPrimitives = numQuads + numMergedTriangles + numProcedurals + numInstances;
+    const uint numPrimitives = numMergedTrisQuads + numProcedurals + numInstances;
 
     // =============================================    
     // === allocation for empty scene is default ===
@@ -273,8 +270,8 @@ namespace embree
 
     if (numPrimitives)
     {    
-      expectedBytes  = estimateAccelBufferSize(numQuads + numMergedTriangles, numInstances, numProcedurals, false);
-      worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles      , numInstances, numProcedurals, true);    
+      expectedBytes  = estimateAccelBufferSize(     numMergedTrisQuads, numInstances, numProcedurals, false);
+      worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals, true);    
     }
 
     // ===============================================    
@@ -285,7 +282,7 @@ namespace embree
 
     if (verbose_level >= 2)
     {
-      PRINT5(numTriangles,numMergedTriangles,numQuads,numProcedurals,numInstances);      
+      PRINT5(numMergedTrisQuads,numTriangles,numQuads,numProcedurals,numInstances);      
       PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     }
         
@@ -392,7 +389,7 @@ namespace embree
     const uint gpu_maxComputeUnits  = gpu_queue.get_device().get_info<sycl::info::device::max_compute_units>();
     const uint MAX_WGS = gpu_maxComputeUnits / 8;
     
-    uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,HOST_DEVICE_COMMUNICATION_BUFFER_SIZE,gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::host);
+    uint *host_device_tasks = (uint*)sycl::aligned_alloc(64,HOST_DEVICE_COMM_BUFFER_SIZE,gpu_queue.get_device(),gpu_queue.get_context(),sycl::usm::alloc::host);
 
     
     if (unlikely(verbose2))
@@ -469,7 +466,7 @@ namespace embree
 
       timer.start(BuildTimer::PRE_PROCESS);      
       double device_quadification_time = 0.0;
-      numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,host_device_tasks,device_quadification_time,verbose2);
+      numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,scratch+numGeometries,host_device_tasks,device_quadification_time,verbose2);
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
     }
