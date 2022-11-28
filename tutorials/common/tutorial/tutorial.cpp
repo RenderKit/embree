@@ -642,7 +642,12 @@ namespace embree
     initRayStats();
     
     for (unsigned int i=0; i<numFrames; i++)
+    {
+      double t0 = getSeconds();
       render(pixels,width,height,render_time,ispccamera);
+      double t1 = getSeconds();
+      std::cout << "Render time = " << (t1-t0)*1000.0 << " ms => " << 1.0 / (t1-t0) << " fps" << std::endl;
+    }
     
     Ref<Image> image = new Image4uc(width, height, (Col4uc*)pixels);
     storeImage(image, fileName);
