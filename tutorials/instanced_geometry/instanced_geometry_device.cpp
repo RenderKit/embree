@@ -14,6 +14,10 @@ const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
 RTCScene g_scene  = nullptr;
+RTCGeometry g_instance0 = nullptr;
+RTCGeometry g_instance1 = nullptr;
+RTCGeometry g_instance2 = nullptr;
+RTCGeometry g_instance3 = nullptr;
 TutorialData data;
 
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
@@ -115,49 +119,49 @@ extern "C" void device_init (char* cfg)
   rtcCommitScene (data.g_scene1);
 
   /* instantiate geometry */
-  data.g_instance0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryMask(data.g_instance0, 0x80); // test high instance mask bits
-  rtcSetGeometryInstancedScene(data.g_instance0,data.g_scene1);
-  rtcSetGeometryTimeStepCount(data.g_instance0,1);
-  data.g_instance1 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(data.g_instance1,data.g_scene1);
-  rtcSetGeometryTimeStepCount(data.g_instance1,1);
-  data.g_instance2 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(data.g_instance2,data.g_scene1);
-  rtcSetGeometryTimeStepCount(data.g_instance2,1);
-  data.g_instance3 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(data.g_instance3,data.g_scene1);
-  rtcSetGeometryTimeStepCount(data.g_instance3,1);
-  rtcAttachGeometry(data.g_scene,data.g_instance0);
-  rtcAttachGeometry(data.g_scene,data.g_instance1);
-  rtcAttachGeometry(data.g_scene,data.g_instance2);
-  rtcAttachGeometry(data.g_scene,data.g_instance3);
-  rtcReleaseGeometry(data.g_instance0);
-  rtcReleaseGeometry(data.g_instance1);
-  rtcReleaseGeometry(data.g_instance2);
-  rtcReleaseGeometry(data.g_instance3);
+  g_instance0 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryMask(g_instance0, 0x80); // test high instance mask bits
+  rtcSetGeometryInstancedScene(g_instance0,data.g_scene1);
+  rtcSetGeometryTimeStepCount(g_instance0,1);
+  g_instance1 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(g_instance1,data.g_scene1);
+  rtcSetGeometryTimeStepCount(g_instance1,1);
+  g_instance2 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(g_instance2,data.g_scene1);
+  rtcSetGeometryTimeStepCount(g_instance2,1);
+  g_instance3 = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(g_instance3,data.g_scene1);
+  rtcSetGeometryTimeStepCount(g_instance3,1);
+  rtcAttachGeometry(data.g_scene,g_instance0);
+  rtcAttachGeometry(data.g_scene,g_instance1);
+  rtcAttachGeometry(data.g_scene,g_instance2);
+  rtcAttachGeometry(data.g_scene,g_instance3);
+  rtcReleaseGeometry(g_instance0);
+  rtcReleaseGeometry(g_instance1);
+  rtcReleaseGeometry(g_instance2);
+  rtcReleaseGeometry(g_instance3);
   createGroundPlane(data.g_scene);
 
   /* set all colors */
-  data.colors[0][0] = Vec3fa(0.25f, 0.f, 0.f);
-  data.colors[0][1] = Vec3fa(0.50f, 0.f, 0.f);
-  data.colors[0][2] = Vec3fa(0.75f, 0.f, 0.f);
-  data.colors[0][3] = Vec3fa(1.00f, 0.f, 0.f);
+  data.colors[4*0+0] = Vec3fa(0.25f, 0.f, 0.f);
+  data.colors[4*0+1] = Vec3fa(0.50f, 0.f, 0.f);
+  data.colors[4*0+2] = Vec3fa(0.75f, 0.f, 0.f);
+  data.colors[4*0+3] = Vec3fa(1.00f, 0.f, 0.f);
 
-  data.colors[1][0] = Vec3fa(0.f, 0.25f, 0.f);
-  data.colors[1][1] = Vec3fa(0.f, 0.50f, 0.f);
-  data.colors[1][2] = Vec3fa(0.f, 0.75f, 0.f);
-  data.colors[1][3] = Vec3fa(0.f, 1.00f, 0.f);
+  data.colors[4*1+0] = Vec3fa(0.f, 0.25f, 0.f);
+  data.colors[4*1+1] = Vec3fa(0.f, 0.50f, 0.f);
+  data.colors[4*1+2] = Vec3fa(0.f, 0.75f, 0.f);
+  data.colors[4*1+3] = Vec3fa(0.f, 1.00f, 0.f);
 
-  data.colors[2][0] = Vec3fa(0.f, 0.f, 0.25f);
-  data.colors[2][1] = Vec3fa(0.f, 0.f, 0.50f);
-  data.colors[2][2] = Vec3fa(0.f, 0.f, 0.75f);
-  data.colors[2][3] = Vec3fa(0.f, 0.f, 1.00f);
+  data.colors[4*2+0] = Vec3fa(0.f, 0.f, 0.25f);
+  data.colors[4*2+1] = Vec3fa(0.f, 0.f, 0.50f);
+  data.colors[4*2+2] = Vec3fa(0.f, 0.f, 0.75f);
+  data.colors[4*2+3] = Vec3fa(0.f, 0.f, 1.00f);
 
-  data.colors[3][0] = Vec3fa(0.25f, 0.25f, 0.f);
-  data.colors[3][1] = Vec3fa(0.50f, 0.50f, 0.f);
-  data.colors[3][2] = Vec3fa(0.75f, 0.75f, 0.f);
-  data.colors[3][3] = Vec3fa(1.00f, 1.00f, 0.f);
+  data.colors[4*3+0] = Vec3fa(0.25f, 0.25f, 0.f);
+  data.colors[4*3+1] = Vec3fa(0.50f, 0.50f, 0.f);
+  data.colors[4*3+2] = Vec3fa(0.75f, 0.75f, 0.f);
+  data.colors[4*3+3] = Vec3fa(1.00f, 1.00f, 0.f);
 }
 
 /* task that renders a single screen tile */
@@ -187,7 +191,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     /* calculate diffuse color of geometries */
     Vec3fa diffuse = Vec3fa(1,1,1);
     if (ray.instID[0] != RTC_INVALID_GEOMETRY_ID)
-      diffuse = data.colors[ray.instID[0]][ray.geomID];
+      diffuse = data.colors[4*ray.instID[0]+ray.geomID];
     color = color + diffuse*0.5;
 
     /* initialize shadow ray */
@@ -322,16 +326,16 @@ extern "C" void device_render (int* pixels,
     data.normal_xfm[i] = transposed(rcp(data.instance_xfm[i].l));
 
   /* set instance transformations */
-  rtcSetGeometryTransform(data.g_instance0,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.instance_xfm[0]);
-  rtcSetGeometryTransform(data.g_instance1,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.instance_xfm[1]);
-  rtcSetGeometryTransform(data.g_instance2,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.instance_xfm[2]);
-  rtcSetGeometryTransform(data.g_instance3,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.instance_xfm[3]);
+  rtcSetGeometryTransform(g_instance0,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.instance_xfm[0]);
+  rtcSetGeometryTransform(g_instance1,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.instance_xfm[1]);
+  rtcSetGeometryTransform(g_instance2,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.instance_xfm[2]);
+  rtcSetGeometryTransform(g_instance3,0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&data.instance_xfm[3]);
 
   /* update scene */
-  rtcCommitGeometry(data.g_instance0);
-  rtcCommitGeometry(data.g_instance1);
-  rtcCommitGeometry(data.g_instance2);
-  rtcCommitGeometry(data.g_instance3);
+  rtcCommitGeometry(g_instance0);
+  rtcCommitGeometry(g_instance1);
+  rtcCommitGeometry(g_instance2);
+  rtcCommitGeometry(g_instance3);
   rtcCommitScene (data.g_scene);
 }
 
