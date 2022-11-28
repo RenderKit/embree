@@ -3,6 +3,9 @@ Version History
 
 ### Embree 3.13.6
 -  Fixed compilation issues for ARM AArch64 processor under Linux.
+-  Setting default frequency level to SIMD256 for ARM on all platforms.
+   This allows using double pumped NEON execution by enabling
+   EMBREE_ISA_NEON2X in cmake under Linux.
 
 ### Embree 3.13.5
 -   Fixed bug in bounding flat Catmull Rom curves of subdivision level 4.
