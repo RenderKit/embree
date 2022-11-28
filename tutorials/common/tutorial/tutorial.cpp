@@ -900,7 +900,7 @@ namespace embree
     initRayStats();
     render(pixels,width,height,time,ispccamera);
     double dt0 = getSeconds()-t0;
-    if (ispccamera.render_time != 0.0) dt0 = ispccamera.render_time;
+    //if (ispccamera.render_time != 0.0) dt0 = ispccamera.render_time;
     avg_render_time.add(dt0);
     double mrayps = double(getNumRays())/(1000000.0*dt0);
     avg_mrayps.add(mrayps);
