@@ -23,7 +23,7 @@ struct TutorialData
   int frameID;
   
   RTCScene g_scene;
-  Vec3fa face_colors[12];
+  Vec3fa* face_colors;
   float g_time;
   
   /* accumulation buffer */
@@ -61,6 +61,7 @@ inline void TutorialData_Constructor(TutorialData* This)
 {
   This->frameID = 50;
   This->g_scene = nullptr;
+  This->face_colors = (Vec3fa*) alignedUSMMalloc(12*sizeof(Vec3fa),16);
   This->g_time = 0;
   This->g_accu = nullptr;
   This->g_accu_width = 0;
@@ -89,6 +90,7 @@ inline void TutorialData_Constructor(TutorialData* This)
 
 inline void TutorialData_Destructor(TutorialData* This)
 {
+  alignedUSMFree(This->face_colors); This->face_colors = nullptr;
   alignedUSMFree(This->sphere0); This->sphere0 = nullptr;
   alignedUSMFree(This->sphere1); This->sphere1 = nullptr;
   rtcReleaseScene(This->scene0); This->scene0 = nullptr;
