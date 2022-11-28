@@ -15,10 +15,6 @@ ADD_TUTORIAL_SYCL(pathtracer)
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   ADD_EMBREE_MODELS_TEST(test-models-intensive2.txt pathtracer_coherent pathtracer pathtracer --coherent)
 #  ADD_EMBREE_MODELS_TEST(test-models-intensity2.txt pathtracer pathtracer pathtracer)
-
-   IF (EMBREE_SYCL_PVC)  # FIXME: fails on PVC
-     set_tests_properties(pathtracer_coherent_crown_crown_sycl PROPERTIES DISABLED True)
-   ENDIF()
 ENDIF()
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 2)

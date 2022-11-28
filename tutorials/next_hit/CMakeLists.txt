@@ -17,7 +17,7 @@ MACRO (ALL_HITS_TEST name model max_next_hits)
   ENDIF()
 ENDMACRO ()
 
-IF (NOT EMBREE_SYCL_AOT_DEVICES STREQUAL "none")  # disabled as there are some issues on PVC
+IF (NOT EMBREE_CI_DEVICE STREQUAL "pvc")  # disabled as there are some issues on PVC
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8) # FIXME: these cause out of memory under Win32

@@ -82,10 +82,6 @@ IF (EMBREE_SYCL_SUPPORT)
   
   STRING(REPLACE ";" "," CMAKE_IGC_OPTIONS "${CMAKE_IGC_OPTIONS}")
   
-  IF (EMBREE_SYCL_AOT_DEVICE_REVISION GREATER 0)
-    SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -revision_id ${EMBREE_SYCL_AOT_DEVICE_REVISION}")        # Enable this to override the stepping/RevId, default is a0 = 0, b0 = 1, c0 = 2, so on...        
-  ENDIF()
-  
   SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -cl-intel-greater-than-4GB-buffer-required")      # enables support for buffers larger than 4GB
   IF (EMBREE_SYCL_LARGEGRF)
     SET(CMAKE_OCL_OPTIONS "${CMAKE_OCL_OPTIONS} -internal_options -cl-intel-256-GRF-per-thread")          # large GRF mode

@@ -72,7 +72,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -99,7 +99,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT-PUBLIC
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:OFF gfx:PUBLIC
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:OFF gfx:PUBLIC device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -126,7 +126,7 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -157,7 +157,7 @@ jobs:
       artifact-out: continuous-linux-PVC-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL device:pvc
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -185,7 +185,7 @@ jobs:
 #      artifact-out: continuous-linux-PVC-JIT-PUBLIC
 #      artifact-path: ./build .ctest_conf
 #      cmd: |
-#        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:OFF gfx:PUBLIC
+#        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:OFF gfx:PUBLIC device:pvc
 #        scripts/test.py build --debug
 #        scripts/test.py build
 #
