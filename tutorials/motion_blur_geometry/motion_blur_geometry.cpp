@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "../common/tutorial/tutorial.h"
+#include "../common/tutorial/benchmark_render.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
@@ -44,5 +45,8 @@ namespace embree
 }
 
 int main(int argc, char** argv) {
+  if (embree::TutorialBenchmark::benchmark(argc, argv)) {
+    return embree::TutorialBenchmark(embree::renderBenchFunc<embree::Tutorial>).main(argc, argv, "motion_blur_geometry");
+  }
   return embree::Tutorial().main(argc,argv);
 }

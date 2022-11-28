@@ -21,7 +21,7 @@ struct TutorialData
   uniform int frameID;
   
   RTCScene g_scene;
-  uniform Vec3f face_colors[12];
+  uniform Vec3f* uniform face_colors;
   uniform float g_time;
   
   /* accumulation buffer */
@@ -59,6 +59,7 @@ inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->frameID = 50;
   This->g_scene = NULL;
+  This->face_colors = uniform new uniform Vec3f[12];
   This->g_time = 0;
   This->g_accu = NULL;
   This->g_accu_width = 0;
@@ -87,6 +88,7 @@ inline void TutorialData_Constructor(uniform TutorialData* uniform This)
 
 inline void TutorialData_Destructor(uniform TutorialData* uniform This)
 {
+  delete[] This->face_colors; This->face_colors = NULL;
   delete This->sphere0; This->sphere0 = NULL;
   delete This->sphere1; This->sphere1 = NULL;
   rtcReleaseScene(This->scene0); This->scene0 = NULL;
