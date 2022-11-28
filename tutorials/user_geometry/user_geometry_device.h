@@ -47,7 +47,7 @@ struct TutorialData
   
   Instance* g_instance[4];
   
-  Vec3fa colors[5][4];
+  Vec3fa* colors;
 };
 
 #if __SYCL_COMPILER_VERSION >= 20210801
@@ -72,6 +72,7 @@ inline void TutorialData_Constructor(TutorialData* This)
   This->g_instance[1] = nullptr;
   This->g_instance[2] = nullptr;
   This->g_instance[3] = nullptr;
+  This->colors = (Vec3fa*) alignedUSMMalloc(5*4*sizeof(Vec3fa),16);
 }
 
 inline void TutorialData_Destructor(TutorialData* This)
@@ -84,6 +85,7 @@ inline void TutorialData_Destructor(TutorialData* This)
   alignedUSMFree(This->g_spheres); This->g_spheres = nullptr;
   alignedUSMFree(This->g_sphere0); This->g_sphere0 = nullptr;
   alignedUSMFree(This->g_sphere1); This->g_sphere1 = nullptr;
+  alignedUSMFree(This->colors); This->colors = nullptr;
 }
 
 } // namespace embree

@@ -45,7 +45,7 @@ struct TutorialData
   
   uniform Instance* uniform g_instance[4];
   
-  uniform Vec3f colors[5][4];
+  uniform Vec3f* uniform colors;
 };
 
 #if __SYCL_COMPILER_VERSION >= 20210801
@@ -70,6 +70,7 @@ inline void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->g_instance[1] = NULL;
   This->g_instance[2] = NULL;
   This->g_instance[3] = NULL;
+  This->colors = uniform new uniform Vec3f[5*4];
 }
 
 inline void TutorialData_Destructor(uniform TutorialData* uniform This)
@@ -82,4 +83,5 @@ inline void TutorialData_Destructor(uniform TutorialData* uniform This)
   delete[] This->g_spheres; This->g_spheres = NULL;
   delete This->g_sphere0; This->g_sphere0 = NULL;
   delete This->g_sphere1; This->g_sphere1 = NULL;
+  delete[] This->colors; This->colors = NULL;
 }

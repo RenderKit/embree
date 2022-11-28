@@ -702,30 +702,30 @@ export void device_init (uniform int8* uniform cfg)
   rtcCommitScene(data.g_scene);
 
   /* set all colors */
-  data.colors[0][0] = make_Vec3f(0.25f, 0.00f, 0.00f);
-  data.colors[0][1] = make_Vec3f(0.50f, 0.00f, 0.00f);
-  data.colors[0][2] = make_Vec3f(0.75f, 0.00f, 0.00f);
-  data.colors[0][3] = make_Vec3f(1.00f, 0.00f, 0.00f);
+  data.colors[4*0+0] = make_Vec3f(0.25f, 0.00f, 0.00f);
+  data.colors[4*0+1] = make_Vec3f(0.50f, 0.00f, 0.00f);
+  data.colors[4*0+2] = make_Vec3f(0.75f, 0.00f, 0.00f);
+  data.colors[4*0+3] = make_Vec3f(1.00f, 0.00f, 0.00f);
 
-  data.colors[1][0] = make_Vec3f(0.00f, 0.25f, 0.00f);
-  data.colors[1][1] = make_Vec3f(0.00f, 0.50f, 0.00f);
-  data.colors[1][2] = make_Vec3f(0.00f, 0.75f, 0.00f);
-  data.colors[1][3] = make_Vec3f(0.00f, 1.00f, 0.00f);
+  data.colors[4*1+0] = make_Vec3f(0.00f, 0.25f, 0.00f);
+  data.colors[4*1+1] = make_Vec3f(0.00f, 0.50f, 0.00f);
+  data.colors[4*1+2] = make_Vec3f(0.00f, 0.75f, 0.00f);
+  data.colors[4*1+3] = make_Vec3f(0.00f, 1.00f, 0.00f);
 
-  data.colors[2][0] = make_Vec3f(0.00f, 0.00f, 0.25f);
-  data.colors[2][1] = make_Vec3f(0.00f, 0.00f, 0.50f);
-  data.colors[2][2] = make_Vec3f(0.00f, 0.00f, 0.75f);
-  data.colors[2][3] = make_Vec3f(0.00f, 0.00f, 1.00f);
+  data.colors[4*2+0] = make_Vec3f(0.00f, 0.00f, 0.25f);
+  data.colors[4*2+1] = make_Vec3f(0.00f, 0.00f, 0.50f);
+  data.colors[4*2+2] = make_Vec3f(0.00f, 0.00f, 0.75f);
+  data.colors[4*2+3] = make_Vec3f(0.00f, 0.00f, 1.00f);
 
-  data.colors[3][0] = make_Vec3f(0.25f, 0.25f, 0.00f);
-  data.colors[3][1] = make_Vec3f(0.50f, 0.50f, 0.00f);
-  data.colors[3][2] = make_Vec3f(0.75f, 0.75f, 0.00f);
-  data.colors[3][3] = make_Vec3f(1.00f, 1.00f, 0.00f);
+  data.colors[4*3+0] = make_Vec3f(0.25f, 0.25f, 0.00f);
+  data.colors[4*3+1] = make_Vec3f(0.50f, 0.50f, 0.00f);
+  data.colors[4*3+2] = make_Vec3f(0.75f, 0.75f, 0.00f);
+  data.colors[4*3+3] = make_Vec3f(1.00f, 1.00f, 0.00f);
 
-  data.colors[4][0] = make_Vec3f(1.0f, 1.0f, 1.0f);
-  data.colors[4][1] = make_Vec3f(1.0f, 1.0f, 1.0f);
-  data.colors[4][2] = make_Vec3f(1.0f, 1.0f, 1.0f);
-  data.colors[4][3] = make_Vec3f(1.0f, 1.0f, 1.0f);
+  data.colors[4*4+0] = make_Vec3f(1.0f, 1.0f, 1.0f);
+  data.colors[4*4+1] = make_Vec3f(1.0f, 1.0f, 1.0f);
+  data.colors[4*4+2] = make_Vec3f(1.0f, 1.0f, 1.0f);
+  data.colors[4*4+3] = make_Vec3f(1.0f, 1.0f, 1.0f);
 }
 
 inline Vec3f face_forward(const Vec3f& dir, const Vec3f& _Ng) {
@@ -773,9 +773,9 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
 
     /* calculate diffuse color of geometries */
     Vec3f diffuse = make_Vec3f(0.0f);
-    if      (ray.instID[0] ==  0) diffuse = data.colors[ray.instID[0]][ray.primID];
-    else if (ray.instID[0] == -1) diffuse = data.colors[4][ray.primID];
-    else                          diffuse = data.colors[ray.instID[0]][ray.geomID];
+    if      (ray.instID[0] ==  0) diffuse = data.colors[4*ray.instID[0]+ray.primID];
+    else if (ray.instID[0] == -1) diffuse = data.colors[4*4+ray.primID];
+    else                          diffuse = data.colors[4*ray.instID[0]+ray.geomID];
     color = color + diffuse*0.5f;
 
     /* initialize shadow ray */

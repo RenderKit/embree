@@ -14,14 +14,10 @@ struct TutorialData
   RTCScene g_scene;
   RTCScene g_scene1;
   
-  RTCGeometry g_instance0;
-  RTCGeometry g_instance1;
-  RTCGeometry g_instance2;
-  RTCGeometry g_instance3;
-  AffineSpace3fa instance_xfm[4];
-  LinearSpace3fa normal_xfm[4];
+  AffineSpace3fa* instance_xfm;
+  LinearSpace3fa* normal_xfm;
   
-  Vec3fa colors[4][4];
+  Vec3fa* colors;
 };
 
 #if __SYCL_COMPILER_VERSION >= 20210801
@@ -37,16 +33,18 @@ void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene  = nullptr;
   This->g_scene1 = nullptr;
-  This->g_instance0 = nullptr;
-  This->g_instance1 = nullptr;
-  This->g_instance2 = nullptr;
-  This->g_instance3 = nullptr;
+  This->instance_xfm = (AffineSpace3fa*) alignedUSMMalloc(4*sizeof(AffineSpace3fa),16);
+  This->normal_xfm = (LinearSpace3fa*) alignedUSMMalloc(4*sizeof(LinearSpace3fa),16);
+  This->colors = (Vec3fa*) alignedUSMMalloc(4*4*sizeof(Vec3fa),16);
 }
 
 void TutorialData_Destructor(TutorialData* This)
 {
   rtcReleaseScene (This->g_scene); This->g_scene = nullptr;
   rtcReleaseScene (This->g_scene1); This->g_scene1 = nullptr;
+  alignedUSMFree(This->instance_xfm); This->instance_xfm = nullptr;
+  alignedUSMFree(This->normal_xfm); This->normal_xfm = nullptr;
+  alignedUSMFree(This->colors); This->colors = nullptr;
 }
 
 } // namespace embree

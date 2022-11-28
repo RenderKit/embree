@@ -12,14 +12,10 @@ struct TutorialData
   RTCScene g_scene;
   RTCScene g_scene1;
   
-  RTCGeometry g_instance0;
-  RTCGeometry g_instance1;
-  RTCGeometry g_instance2;
-  RTCGeometry g_instance3;
-  uniform AffineSpace3f instance_xfm[4];
-  uniform LinearSpace3f normal_xfm[4];
+  uniform AffineSpace3f* uniform instance_xfm;
+  uniform LinearSpace3f* uniform normal_xfm;
   
-  uniform Vec3f colors[4][4];
+  uniform Vec3f* uniform colors;
 };
 
 #if __SYCL_COMPILER_VERSION >= 20210801
@@ -35,14 +31,16 @@ void TutorialData_Constructor(uniform TutorialData* uniform This)
 {
   This->g_scene  = NULL;
   This->g_scene1 = NULL;
-  This->g_instance0 = NULL;
-  This->g_instance1 = NULL;
-  This->g_instance2 = NULL;
-  This->g_instance3 = NULL;
+  This->instance_xfm = uniform new uniform AffineSpace3f[4];
+  This->normal_xfm = uniform new uniform LinearSpace3f[4];
+  This->colors = uniform new uniform Vec3f[4*4];
 }
 
 void TutorialData_Destructor(uniform TutorialData* uniform This)
 {
   rtcReleaseScene (This->g_scene); This->g_scene = NULL;
   rtcReleaseScene (This->g_scene1); This->g_scene1 = NULL;
+  delete[] This->instance_xfm; This->instance_xfm = NULL;
+  delete[] This->normal_xfm; This->normal_xfm = NULL;
+  delete[] This->colors; This->colors = NULL;
 }
