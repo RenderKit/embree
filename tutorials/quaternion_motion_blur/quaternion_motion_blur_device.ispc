@@ -26,6 +26,12 @@
 RTCScene g_scene = NULL;
 uniform TutorialData data;
 
+RTCGeometry g_instance_linear_0 = NULL;
+RTCGeometry g_instance_linear_1 = NULL;
+RTCGeometry g_instance_quaternion_0 = NULL;
+RTCGeometry g_instance_quaternion_1 = NULL;
+uniform RTCQuaternionDecomposition qdc[10];
+
 extern uniform bool g_changed;
 extern uniform float g_time;
 extern uniform int g_spp;
@@ -57,8 +63,8 @@ uniform AffineSpace3f fromQuaternionDecomposition(uniform const RTCQuaternionDec
 void updateTransformation()
 {
   // transformation matrizes for instance 0 (rotation around axis through sphere center)
-  rtcSetGeometryTimeStepCount(data.g_instance_linear_0, g_numTimeSteps);
-  rtcSetGeometryTimeStepCount(data.g_instance_quaternion_0, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(g_instance_linear_0, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(g_instance_quaternion_0, g_numTimeSteps);
   for (uniform int i = 0; i < g_numTimeSteps; ++i)
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
@@ -67,20 +73,20 @@ void updateTransformation()
     if (g_numTimeSteps == 3) R = K * (2.0f - 1e-6f) * M_PI;
 
     uniform Quaternion3f q = make_Quaternion3f_rotate(make_Vec3f(0.f, 1.f, 0.f), R);
-    rtcInitQuaternionDecomposition(data.qdc+i);
-    rtcQuaternionDecompositionSetQuaternion(data.qdc+i, q.r, q.i, q.j, q.k);
-    rtcQuaternionDecompositionSetScale(data.qdc+i, 3.f, 3.f, 3.f);
-    rtcQuaternionDecompositionSetTranslation(data.qdc+i, -5.5f, 0.f, -5.5f);
-    rtcSetGeometryTransformQuaternion(data.g_instance_quaternion_0, i, data.qdc+i);
+    rtcInitQuaternionDecomposition(qdc+i);
+    rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
+    rtcQuaternionDecompositionSetScale(qdc+i, 3.f, 3.f, 3.f);
+    rtcQuaternionDecompositionSetTranslation(qdc+i, -5.5f, 0.f, -5.5f);
+    rtcSetGeometryTransformQuaternion(g_instance_quaternion_0, i, qdc+i);
 
-    rtcQuaternionDecompositionSetTranslation(data.qdc+i, -5.5f, 0.f, 5.5f);
-    uniform AffineSpace3f xfm = fromQuaternionDecomposition(data.qdc[i]);
-    rtcSetGeometryTransform(data.g_instance_linear_0, i, RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&(xfm.l.vx.x));
+    rtcQuaternionDecompositionSetTranslation(qdc+i, -5.5f, 0.f, 5.5f);
+    uniform AffineSpace3f xfm = fromQuaternionDecomposition(qdc[i]);
+    rtcSetGeometryTransform(g_instance_linear_0, i, RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&(xfm.l.vx.x));
   }
 
   // transformation matrizes for instance 1 (translation and rotation around origin)
-  rtcSetGeometryTimeStepCount(data.g_instance_linear_1, g_numTimeSteps);
-  rtcSetGeometryTimeStepCount(data.g_instance_quaternion_1, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(g_instance_linear_1, g_numTimeSteps);
+  rtcSetGeometryTimeStepCount(g_instance_quaternion_1, g_numTimeSteps);
   for (uniform int i = 0; i < g_numTimeSteps; ++i)
   {
     // scale/skew, rotation, transformation data for quaternion motion blur
@@ -89,21 +95,21 @@ void updateTransformation()
     if (g_numTimeSteps == 3) R = K * (2.0f - 1e-6f) * M_PI;
 
     uniform Quaternion3f q = make_Quaternion3f_rotate(make_Vec3f(0.f, 1.f, 0.f), R);
-    rtcInitQuaternionDecomposition(data.qdc+i);
-    rtcQuaternionDecompositionSetQuaternion(data.qdc+i, q.r, q.i, q.j, q.k);
-    rtcQuaternionDecompositionSetShift(data.qdc+i, 3.f, 0.f, 3.f);
-    rtcQuaternionDecompositionSetTranslation(data.qdc+i, 5.5f, 0.f, -5.5f);
-    rtcSetGeometryTransformQuaternion(data.g_instance_quaternion_1, i, data.qdc+i);
+    rtcInitQuaternionDecomposition(qdc+i);
+    rtcQuaternionDecompositionSetQuaternion(qdc+i, q.r, q.i, q.j, q.k);
+    rtcQuaternionDecompositionSetShift(qdc+i, 3.f, 0.f, 3.f);
+    rtcQuaternionDecompositionSetTranslation(qdc+i, 5.5f, 0.f, -5.5f);
+    rtcSetGeometryTransformQuaternion(g_instance_quaternion_1, i, qdc+i);
 
-    rtcQuaternionDecompositionSetTranslation(data.qdc+i, 5.5f, 0.f, 5.5f);
-    uniform AffineSpace3f xfm = fromQuaternionDecomposition(data.qdc[i]);
-    rtcSetGeometryTransform(data.g_instance_linear_1, i, RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&(xfm.l.vx.x));
+    rtcQuaternionDecompositionSetTranslation(qdc+i, 5.5f, 0.f, 5.5f);
+    uniform AffineSpace3f xfm = fromQuaternionDecomposition(qdc[i]);
+    rtcSetGeometryTransform(g_instance_linear_1, i, RTC_FORMAT_FLOAT3X4_COLUMN_MAJOR,(uniform float* uniform)&(xfm.l.vx.x));
   }
 
-  rtcCommitGeometry(data.g_instance_linear_0);
-  rtcCommitGeometry(data.g_instance_linear_1);
-  rtcCommitGeometry(data.g_instance_quaternion_0);
-  rtcCommitGeometry(data.g_instance_quaternion_1);
+  rtcCommitGeometry(g_instance_linear_0);
+  rtcCommitGeometry(g_instance_linear_1);
+  rtcCommitGeometry(g_instance_quaternion_0);
+  rtcCommitGeometry(g_instance_quaternion_1);
 }
 
 // ======================================================================== //
@@ -216,30 +222,30 @@ export void device_init (uniform int8* uniform cfg)
 
   // attach multiple times otherwise Embree will optimize and not use
   // internal instancing (magic!)
-  data.g_instance_linear_0 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  data.g_instance_linear_1 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  data.g_instance_quaternion_0 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  data.g_instance_quaternion_1 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-  rtcSetGeometryInstancedScene(data.g_instance_linear_0, data.g_scene0);
-  rtcSetGeometryInstancedScene(data.g_instance_linear_1, data.g_scene0);
-  rtcSetGeometryInstancedScene(data.g_instance_quaternion_0, data.g_scene0);
-  rtcSetGeometryInstancedScene(data.g_instance_quaternion_1, data.g_scene0);
+  g_instance_linear_0 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  g_instance_linear_1 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  g_instance_quaternion_0 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  g_instance_quaternion_1 = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_INSTANCE);
+  rtcSetGeometryInstancedScene(g_instance_linear_0, data.g_scene0);
+  rtcSetGeometryInstancedScene(g_instance_linear_1, data.g_scene0);
+  rtcSetGeometryInstancedScene(g_instance_quaternion_0, data.g_scene0);
+  rtcSetGeometryInstancedScene(g_instance_quaternion_1, data.g_scene0);
   updateTransformation();
   for (uniform int i = 0; i < 2; ++i)
   {
-    rtcAttachGeometry(data.g_scene, data.g_instance_linear_0);
-    rtcAttachGeometry(data.g_scene, data.g_instance_linear_1);
-    rtcAttachGeometry(data.g_scene, data.g_instance_quaternion_0);
-    rtcAttachGeometry(data.g_scene, data.g_instance_quaternion_1);
+    rtcAttachGeometry(data.g_scene, g_instance_linear_0);
+    rtcAttachGeometry(data.g_scene, g_instance_linear_1);
+    rtcAttachGeometry(data.g_scene, g_instance_quaternion_0);
+    rtcAttachGeometry(data.g_scene, g_instance_quaternion_1);
   }
-  rtcReleaseGeometry(data.g_instance_linear_0);
-  rtcReleaseGeometry(data.g_instance_linear_1);
-  rtcReleaseGeometry(data.g_instance_quaternion_0);
-  rtcReleaseGeometry(data.g_instance_quaternion_1);
-  rtcCommitGeometry(data.g_instance_linear_0);
-  rtcCommitGeometry(data.g_instance_linear_1);
-  rtcCommitGeometry(data.g_instance_quaternion_0);
-  rtcCommitGeometry(data.g_instance_quaternion_1);
+  rtcReleaseGeometry(g_instance_linear_0);
+  rtcReleaseGeometry(g_instance_linear_1);
+  rtcReleaseGeometry(g_instance_quaternion_0);
+  rtcReleaseGeometry(g_instance_quaternion_1);
+  rtcCommitGeometry(g_instance_linear_0);
+  rtcCommitGeometry(g_instance_linear_1);
+  rtcCommitGeometry(g_instance_quaternion_0);
+  rtcCommitGeometry(g_instance_quaternion_1);
 
   rtcCommitScene (data.g_scene);
 }

@@ -33,12 +33,6 @@ struct TutorialData
   Vec3fa g_accu_vy;
   Vec3fa g_accu_vz;
   Vec3fa g_accu_p;
-
-  RTCGeometry g_instance_linear_0;
-  RTCGeometry g_instance_linear_1;
-  RTCGeometry g_instance_quaternion_0;
-  RTCGeometry g_instance_quaternion_1;
-  RTCQuaternionDecomposition qdc[10];
 };
 
 #if __SYCL_COMPILER_VERSION >= 20210801
@@ -67,11 +61,6 @@ inline void TutorialData_Constructor(TutorialData* This)
   This->g_accu_vy = Vec3fa(0.0f);
   This->g_accu_vz = Vec3fa(0.0f);
   This->g_accu_p  = Vec3fa(0.0f);
-
-  This->g_instance_linear_0 = nullptr;
-  This->g_instance_linear_1 = nullptr;
-  This->g_instance_quaternion_0 = nullptr;
-  This->g_instance_quaternion_1 = nullptr;
 }
 
 inline void TutorialData_Destructor(TutorialData* This)
