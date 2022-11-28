@@ -344,7 +344,7 @@ export void device_render(uniform int* uniform pixels,
 {
   if (g_data.g_accu_width != width || g_data.g_accu_height != height) {
     delete[] g_data.g_accu;
-    g_data.g_accu = uniform new uniform Vec3ff[width*height];
+    g_data.g_accu = uniform new uniform Vec3ff[width*height]; // EMBREE_USM_SHARED_DEVICE_READ_WRITE
     g_data.g_accu_width = width;
     g_data.g_accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)
