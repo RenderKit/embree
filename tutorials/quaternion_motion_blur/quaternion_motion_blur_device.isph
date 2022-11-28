@@ -31,12 +31,6 @@ struct TutorialData
   uniform Vec3f g_accu_vy;
   uniform Vec3f g_accu_vz;
   uniform Vec3f g_accu_p;
-
-  RTCGeometry g_instance_linear_0;
-  RTCGeometry g_instance_linear_1;
-  RTCGeometry g_instance_quaternion_0;
-  RTCGeometry g_instance_quaternion_1;
-  uniform RTCQuaternionDecomposition qdc[10];
 };
 
 #if __SYCL_COMPILER_VERSION >= 20210801
@@ -65,11 +59,6 @@ inline void TutorialData_Constructor(uniform TutorialData* uniform This)
   This->g_accu_vy = make_Vec3f(0.0f);
   This->g_accu_vz = make_Vec3f(0.0f);
   This->g_accu_p  = make_Vec3f(0.0f);
-
-  This->g_instance_linear_0 = NULL;
-  This->g_instance_linear_1 = NULL;
-  This->g_instance_quaternion_0 = NULL;
-  This->g_instance_quaternion_1 = NULL;
 }
 
 inline void TutorialData_Destructor(uniform TutorialData* uniform This)
