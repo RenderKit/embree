@@ -12,6 +12,86 @@ jobs:
 
   ################################################################################
   ################################################################################
+  # GPU tests
+  ################################################################################
+  ###############################################################################
+
+  ########################################
+  # Linux
+  ########################################
+
+  continuous-linux-DG2-AOT-multilevel:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+#    needs: [setup_gfx, setup_dpcpp]
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      artifact-out: continuous-linux-DG2-AOT-multilevel
+      artifact-path: ./build .ctest_conf
+      cmd: |
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 maxinstancelevelcount:2 tasking:TBB intensity:3
+        scripts/test.py build --debug
+        scripts/test.py build
+
+  continuous-linux-DG2-AOT-multilevel-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    needs: ["continuous-linux-DG2-AOT-multilevel"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "dg2" ]'
+      artifact-in: continuous-linux-DG2-AOT-multilevel
+      cmd: |
+        scripts/test.py test --debug
+        scripts/test.py test
+
+  continuous-linux-PVC-AOT:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+#    needs: [setup_gfx, setup_dpcpp]
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "build" ]'
+      artifact-out: continuous-linux-PVC-AOT
+      artifact-path: ./build .ctest_conf
+      cmd: |
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:pvc tasking:TBB intensity:4
+        scripts/test.py build --debug
+        scripts/test.py build
+
+  continuous-linux-PVC-AOT-test:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    needs: ["continuous-linux-PVC-AOT"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "pvc" ]'
+      artifact-in: continuous-linux-PVC-AOT
+      cmd: |
+        export EnableImplicitScaling=0
+        scripts/test.py test --debug
+        scripts/test.py test
+
+  ########################################
+  # Windows
+  ########################################
+
+  continuous-windows-DG2-AOT:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+#    needs: [setup_gfx, setup_dpcpp]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:dg2 intensity:3
+        python scripts/test.py build
+        python scripts/test.py test
+        
+  ################################################################################
+  ################################################################################
   # CPU tests
   ################################################################################
   ################################################################################
