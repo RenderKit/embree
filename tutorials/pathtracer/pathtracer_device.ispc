@@ -1753,7 +1753,7 @@ export void device_render (uniform int* uniform pixels,
   /* create accumulator */
   if (data.accu_width != width || data.accu_height != height) {
     delete[] data.accu;
-    data.accu = uniform new uniform Vec3ff[width*height];
+    data.accu = uniform new uniform Vec3ff[width*height]; // EMBREE_USM_SHARED_DEVICE_READ_WRITE
     data.accu_width = width;
     data.accu_height = height;
     for (uniform unsigned int i=0; i<width*height; i++)

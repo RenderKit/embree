@@ -540,7 +540,7 @@ extern "C" void device_render (unsigned* pixels,
   if (!data.num_prev_hits || data.num_prev_hits_width != width || data.num_prev_hits_height != height)
   {
     alignedUSMFree(data.num_prev_hits);
-    data.num_prev_hits = (int*) alignedUSMMalloc(width*height*sizeof(int), 16);
+    data.num_prev_hits = (int*) alignedUSMMalloc(width*height*sizeof(int),16,EMBREE_USM_SHARED_DEVICE_READ_WRITE);
     data.num_prev_hits_width = width;
     data.num_prev_hits_height = height;
     for (unsigned int i=0; i<width*height; i++)
