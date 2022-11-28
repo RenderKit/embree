@@ -495,6 +495,8 @@ def runConfig(config):
     conf.append("-D EMBREE_SYCL_SUPPORT=OFF")
   if "gfx" in config:
     conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
+  if "device" in config:
+    conf.append("-D EMBREE_CI_DEVICE="+config["device"])
   if "rt_validation_api" in config:
     conf.append("-D EMBREE_SYCL_RT_VALIDATION_API="+config["rt_validation_api"])
 
