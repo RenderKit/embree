@@ -1731,10 +1731,12 @@ FORCE_INLINE __m128 _mm_div_ss(__m128 a, __m128 b)
 
 // Free aligned memory that was allocated with _mm_malloc.
 // https://software.intel.com/sites/landingpage/IntrinsicsGuide/#text=_mm_free
+#if !(defined _WIN32 && defined __has_include && __has_include(<mm_malloc.h>))
 FORCE_INLINE void _mm_free(void *addr)
 {
     free(addr);
 }
+#endif
 
 // Macro: Get the flush zero bits from the MXCSR control and status register.
 // The flush zero may contain any of the following flags: _MM_FLUSH_ZERO_ON or
@@ -1916,6 +1918,7 @@ FORCE_INLINE __m128i _mm_loadu_si64(const void *p)
 // Allocate aligned blocks of memory.
 // https://software.intel.com/en-us/
 //         cpp-compiler-developer-guide-and-reference-allocating-and-freeing-aligned-memory-blocks
+#if !(defined _WIN32 && defined __has_include && __has_include(<mm_malloc.h>))
 FORCE_INLINE void *_mm_malloc(size_t size, size_t align)
 {
     void *ptr;
@@ -1927,6 +1930,7 @@ FORCE_INLINE void *_mm_malloc(size_t size, size_t align)
         return ptr;
     return NULL;
 }
+#endif
 
 // Conditionally store 8-bit integer elements from a into memory using mask
 // (elements are not stored when the highest bit is not set in the corresponding
@@ -5954,7 +5958,7 @@ FORCE_INLINE void _mm_storeu_si32(void *p, __m128i a)
 FORCE_INLINE void _mm_stream_pd(double *p, __m128d a)
 {
 #if __has_builtin(__builtin_nontemporal_store)
-    __builtin_nontemporal_store(a, (float32x4_t *) p);
+    __builtin_nontemporal_store(a, (float64x2_t *) p);
 #elif defined(__aarch64__)
     vst1q_f64(p, vreinterpretq_f64_m128d(a));
 #else
