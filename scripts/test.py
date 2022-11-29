@@ -508,12 +508,20 @@ def runConfig(config):
     conf.append("-D benchmark_DIR:PATH="+config["EMBREE_GOOGLE_BENCHMARK_DIR"])
 
   if "package" in config:
+    SIGN_FILE = ""
+    if OS == "windows":
+      SIGN_FILE = os.environ["SIGN_FILE_WINDOWS"]
+    elif OS == "linux":
+      SIGN_FILE = os.environ["SIGN_FILE_LINUX"]
+    elif OS == "macosx":
+      SIGN_FILE = os.environ["SIGN_FILE_MAC"]
+    conf.append("-D EMBREE_SIGN_FILE="+SIGN_FILE)
+
     conf.append("-D EMBREE_TESTING_PACKAGE=ON")
     conf.append("-D EMBREE_TUTORIALS_OPENIMAGEIO=OFF")
     conf.append("-D EMBREE_TUTORIALS_LIBJPEG=OFF")
     conf.append("-D EMBREE_TUTORIALS_LIBPNG=OFF")
     if OS == "linux" and config["package"] == "ZIP":
-      conf.append("-D EMBREE_SIGN_FILE="+NAS+"/signfile/linux/SignFile")
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
       conf.append("-D CMAKE_SKIP_INSTALL_RPATH=OFF")
@@ -522,7 +530,6 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
     elif OS == "macosx" and config["package"] == "ZIP":
-      conf.append("-D EMBREE_SIGN_FILE="+NAS+"/signfile/mac/SignFile")
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
       conf.append("-D CMAKE_SKIP_INSTALL_RPATH=OFF")
@@ -532,7 +539,6 @@ def runConfig(config):
       conf.append("-D CMAKE_INSTALL_DOCDIR=doc")
       conf.append("-D CMAKE_INSTALL_BINDIR=bin")
     elif OS == "windows" and config["package"] == "ZIP":
-      conf.append("-D EMBREE_SIGN_FILE="+NAS+"\\signfile\\windows\\SignFile.exe")
       conf.append("-D EMBREE_INSTALL_DEPENDENCIES=ON")
       conf.append("-D EMBREE_ZIP_MODE=ON")
       conf.append("-D CMAKE_INSTALL_INCLUDEDIR=include")
