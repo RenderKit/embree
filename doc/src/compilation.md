@@ -131,12 +131,12 @@ with DPC++ under Linux
 
 The Embree DPC++ compilation under Linux has been tested with the following DPC++ compilers:
 
-  - [oneAPI DPC++ compiler 2022.04.18](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220418/dpcpp-compiler.tar.gz)
+  - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz)
   
 Please download and install one of these compilers. E.g. to install
-the oneAPI DPC++ compiler 2022.04.18 compiler:
+the oneAPI DPC++ compiler 2022-09-14 compiler:
 
-    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220418/dpcpp-compiler.tar.gz
+    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz
     tar xzf dpcpp-compiler.tar.gz
     source ./dpcpp_compiler/startup.sh
 
@@ -152,9 +152,7 @@ build directory.
     cmake -DCMAKE_CXX_COMPILER=clang++ \
           -DCMAKE_C_COMPILER=clang \
           -DEMBREE_ISPC_SUPPORT=OFF \
-          -DEMBREE_SYCL_SUPPORT=ON \
-          -DEMBREE_SYCL_AOT_DEVICES=dg2 ..
-           
+          -DEMBREE_SYCL_SUPPORT=ON ..
 
 The `startup.sh` script above did put the DPC++ version of `clang++`
 and `clang` into your path, thus the CMake compiler selection above
@@ -163,12 +161,6 @@ compiler.
 
 We disable ISPC with `EMBREE_ISPC_SUPPORT=OFF` and turn on DPC++
 support through `EMBREE_SYCL_SUPPORT=ON`.
-
-Under Linux, code generated with JIT compilation is not functioning at
-the moment, thus AOT compilation for the DG2 device has to get enabled
-as a workaround using the `EMBREE_SYCL_AOT_DEVICES=dg2` cmake
-setting. For AOT compilation to work you have to install the
-[Linux HPG/HPC Driver Installation] section.
 
 Now you can compile the Embree code:
 
@@ -181,19 +173,20 @@ executable names of the DPC++ versions of the tutorials end with
 
 ### Linux HPG/HPC Driver Installation
 
-To run the SYCL code, but also for AOT compilation, you need to
-install the KMD and UMD drivers of your Intel Xe HPG/HPC GPUs for one
-of the supported Linux distributions:
+To run the SYCL code you need to install the latest GPGPU drivers for
+your Intel Xe HPG/HPC GPUs from here
+[https://dgpu-docs.intel.com/](https://dgpu-docs.intel.com/). Follow
+the driver installation instructions for your graphics card and
+operating system.
 
-  - Ubuntu 20.04
-  - SLES 15SP3
-  - RHEL 8.5
-
-Latest drivers can get found on [intel.com/sdp](https://intel.com/sdp)
-searching for the latest `Xe HPC Family Driver FW and Tools`
-package. Follow the driver installation instructions. We tested Embree
-with the `Xe HPC Family Driver FW and Tools #11` driver dated
-2022-03-29.
+We tested Embree with the latest GPGPU driver Devel Release from
+20220809. The Intel(R) Graphics Compute Runtime for oneAPI Level Zero
+and OpenCL(TM) Driver from that release is too old for Embree to work
+properly. Thus if no never version of the GPGPU driver is available,
+you need to additionally install the latest compute runtime from here
+[22.43.24595](https://github.com/intel/compute-runtime/releases/tag/22.43.24595). Please
+follow the installation instruction of the compute runtime. You can
+also install a newer version of the compute runtime if available.
 
 
 Windows
