@@ -129,7 +129,7 @@ your application with such an Embree package.
 with DPC++ under Linux
 ----------------------
 
-The Embree DPC++ compilation under Linux has been tested with the following DPC++ compilers:
+The Embree SYCL compilation under Linux has been tested with the following DPC++ compilers:
 
   - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz)
   
@@ -159,7 +159,7 @@ and `clang` into your path, thus the CMake compiler selection above
 configures the Embree project to use the just installed DPC++
 compiler.
 
-We disable ISPC with `EMBREE_ISPC_SUPPORT=OFF` and turn on DPC++
+We disable ISPC with `EMBREE_ISPC_SUPPORT=OFF` and turn on SYCL
 support through `EMBREE_SYCL_SUPPORT=ON`.
 
 Now you can compile the Embree code:
@@ -167,7 +167,7 @@ Now you can compile the Embree code:
     cmake --build . -j 8
 
 The executables will be generated inside the build folder. The
-executable names of the DPC++ versions of the tutorials end with
+executable names of the SYCL versions of the tutorials end with
 `_sycl`.
 
 
@@ -323,7 +323,7 @@ on the vcpkg repository.
 with DPC++ under Windows
 ------------------------
 
-The Embree DPC++ compilation under Windows has been tested with the following DPC++ compilers:
+The Embree SYCL compilation under Windows has been tested with the following DPC++ compilers:
 
   - [oneAPI DPC++ compiler 165 from 2022.03.10](https://github.com/intel/llvm/suites/5602828495/artifacts/182002768)
   
@@ -371,7 +371,7 @@ compiler, and configures a release build with using `clang++` and
 shipped with the DPC++ compiler. Thus linker has to get force to
 the Visual Studio Linker `link` using compilation flags.
 
-We also enable DPC++ support in Embree using the
+We also enable SYCL support in Embree using the
 `EMBREE_SYCL_SUPPORT` CMake option, and only enable just in time
 compilation (JIT compilation) by setting `EMBREE_SYCL_AOT_DEVICES` to
 `none`. Ahead of time compilation (AOT compilation) is currently not
@@ -399,7 +399,7 @@ your application with such an Embree package.
 
 ### Windows HPG Driver Installation
 
-In order to run the DPC++/SYCL tutorials on HPG hardware, you first
+In order to run the SYCL tutorials on HPG hardware, you first
 need to install the proper graphics drivers. Latest drivers can get
 found on [intel.com/sdp](https://intel.com/sdp) searching for the
 latest `Discrete Graphics2 (DG2)` driver. Follow the driver
@@ -424,7 +424,7 @@ parameters that can be configured in CMake:
 + `EMBREE_ISPC_SUPPORT`: Enables Intel® ISPC support of Embree. This option
   is ON by default.
 
-+ `EMBREE_SYCL_SUPPORT`: Enables GPU support using DPC++. When this
++ `EMBREE_SYCL_SUPPORT`: Enables GPU support using SYCL. When this
   option is enabled you have to use some DPC++ compiler. Please see
   section [Linux DPC++ Compilation] and [Windows DPC++ Compilation]
   on supported DPC++ compilers.
