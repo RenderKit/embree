@@ -86,10 +86,7 @@ SET(EMBREE_LIBRARY_FILES
 
 IF (EMBREE_SYCL_SUPPORT)
   SET(EMBREE_LIBRARY_FILES ${EMBREE_LIBRARY_FILES}
-  rthwif/rthwif_embree_builder.cpp
-  rthwif/builder/qbvh6.cpp
-  rthwif/builder/statistics.cpp
-  )
+  rthwif/rthwif_embree_builder.cpp)
 ENDIF()
 
 IF (EMBREE_GEOMETRY_SUBDIVISION)
@@ -240,16 +237,12 @@ ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
 
 IF (EMBREE_SYCL_SUPPORT)
 
-  IF (EMBREE_SYCL_RT_VALIDATION_API)
-    SET(VALIDATION_API_FILES rthwif/rthwif_production.cpp)
-  ENDIF()
-
   ADD_LIBRARY(embree_sycl STATIC
     common/rtcore_sycl.cpp
-    rthwif/rthwif_embree.cpp
-    ${VALIDATION_API_FILES})
+    rthwif/rthwif_embree.cpp)
 
   SET_TARGET_PROPERTIES(embree_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
+  TARGET_LINK_LIBRARIES(embree_sycl embree_rthwif)
 
   INSTALL(TARGETS embree_sycl EXPORT embree_sycl-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
   INSTALL(EXPORT embree_sycl-targets DESTINATION ${EMBREE_CMAKEEXPORT_DIR} COMPONENT devel)
