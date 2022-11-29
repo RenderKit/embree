@@ -40,6 +40,8 @@ namespace embree
   {
     ::rthwifInit();
     
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+    
     size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
 
     size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
@@ -64,6 +66,12 @@ namespace embree
     dg->flags = DEPTH_TEST_LESS_EQUAL;
 
     return dispatchGlobalsPtr;
+
+#else
+
+    return nullptr;
+
+#endif
   }
 
   void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context)
