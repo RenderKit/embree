@@ -861,7 +861,7 @@ namespace embree
     if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
     
     if (unlikely(verbose1))
-      std::cout << "BVH build time: host = " << timer.get_total_host_time() << " ms, device = " << timer.get_total_device_time() << " ms , numPrimitives (original) = " << expected_numPrimitives << " , numPrimitives (build) = " << numPrimitives << std::endl;
+      std::cout << "BVH build time: host = " << timer.get_total_host_time() << " ms , device = " << timer.get_total_device_time() << " ms , numPrimitives (original) = " << expected_numPrimitives << " , numPrimitives (build) = " << numPrimitives << std::endl;
 
     return RTHWIF_ERROR_NONE;    
   }
