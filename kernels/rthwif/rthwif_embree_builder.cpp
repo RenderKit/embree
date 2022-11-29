@@ -82,9 +82,31 @@ namespace embree
 
     /* check if GPU device is supported */
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
+
+#if 1
     
     const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(hDevice);
     return features != RTHWIF_FEATURES_NONE;
+
+#else
+    
+    /* check if ray tracing hardware is supported */
+    ze_device_raytracing_ext_properties_t raytracing_properties;
+    memset(&raytracing_properties,0,sizeof(raytracing_properties));
+    raytracing_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    raytracing_properties.pNext = nullptr;
+    
+    ze_device_module_properties_t module_properties;
+    memset(&module_properties,0,sizeof(module_properties));
+    module_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_MODULE_PROPERTIES;
+    module_properties.pNext = &raytracing_properties;
+      
+    ze_result_t result = zeDeviceGetModuleProperties(hDevice, &module_properties);
+    if (result != ZE_RESULT_SUCCESS) return false;
+
+    const bool rayQuerySupported = raytracing_properties.flags & ZE_DEVICE_RAYTRACING_EXT_FLAG_RAYQUERY;
+    return rayQuerySupported;
+#endif
   }
 
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
