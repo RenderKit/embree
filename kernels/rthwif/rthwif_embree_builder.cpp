@@ -346,10 +346,7 @@ namespace embree
   };
   
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
-  {
-    //PRINT("BUILD START");
-    double b0 = getSeconds();
-    
+  {    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);    
     sycl::device &sycl_device = gpu_device->getGPUDevice();
@@ -438,9 +435,9 @@ namespace embree
 
     const size_t numGeometries = scene->size();
     
-    /* fill geomdesc buffers */
+    /* fill geomdesc buffers */    
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     const size_t geomDescrBytes = sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries;
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
     RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
     assert(geomDescr);        
     char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
@@ -538,7 +535,6 @@ namespace embree
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
       
       /* allocate BVH data */
-      size_t accel_size = accel.size();
       if (accel.size() < bytes) // FIXME: accel.size() triggers a USM transfer
         accel.resize(bytes);
       
@@ -634,8 +630,6 @@ namespace embree
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
 #endif
 
-    double b1 = getSeconds();
-    //PRINT2("BUILD STOP",1000. * (b1-b0));    
     return fullBounds;
   }
 
