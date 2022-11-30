@@ -72,7 +72,8 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL device:dg2
+        export IGC_EnableZEBinary=0
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:OFF gfx:INTERNAL device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -86,6 +87,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: continuous-linux-DG2-JIT-INTERNAL
       cmd: |
+        export IGC_EnableZEBinary=0
         scripts/test.py test --debug
         scripts/test.py test
 
@@ -99,6 +101,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT-PUBLIC
       artifact-path: ./build .ctest_conf
       cmd: |
+        export IGC_EnableZEBinary=0
         scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:OFF gfx:PUBLIC device:dg2
         scripts/test.py build --debug
         scripts/test.py build
@@ -113,6 +116,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: continuous-linux-DG2-JIT-PUBLIC
       cmd: |
+        export IGC_EnableZEBinary=0
         scripts/test.py test --debug
         scripts/test.py test
 
@@ -126,7 +130,8 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL device:dg2
+        export IGC_EnableZEBinary=0
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4 rt_validation_api:ON gfx:EMBARGO device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -155,6 +160,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: continuous-linux-DG2-AOT-INTERNAL
       cmd: |
+        export IGC_EnableZEBinary=0
         scripts/test.py test --debug
         scripts/test.py test
 
@@ -172,7 +178,8 @@ jobs:
       artifact-out: continuous-linux-PVC-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL device:pvc
+        export IGC_EnableZEBinary=0
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:ON gfx:EMBARGO device:pvc
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -186,6 +193,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "pvc" ]'
       artifact-in: continuous-linux-PVC-JIT-INTERNAL
       cmd: |
+        export IGC_EnableZEBinary=0
         export EnableImplicitScaling=0
         scripts/test.py test --debug
         scripts/test.py test
@@ -200,6 +208,7 @@ jobs:
 #      artifact-out: continuous-linux-PVC-JIT-PUBLIC
 #      artifact-path: ./build .ctest_conf
 #      cmd: |
+#        export IGC_EnableZEBinary=0
 #        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:OFF gfx:PUBLIC device:pvc
 #        scripts/test.py build --debug
 #        scripts/test.py build
@@ -214,6 +223,7 @@ jobs:
 #      runs-on: '[ "Linux", "docker", "pvc" ]'
 #      artifact-in: continuous-linux-PVC-JIT-PUBLIC
 #      cmd: |
+#        export IGC_EnableZEBinary=0
 #        export EnableImplicitScaling=0
 #        scripts/test.py test --debug
 #        scripts/test.py test
@@ -230,7 +240,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:3
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:3 rt_validation_api:ON 
         python scripts/test.py build
         python scripts/test.py test
 

@@ -15,19 +15,19 @@ using namespace embree;
 
 RTC_NAMESPACE_BEGIN;
 
-RTC_API_EXTERN_C RTCDevice rtcNewSYCLDeviceInternal(sycl::context context, sycl::device device, const char* config);
+RTC_API_EXTERN_C RTCDevice rtcNewSYCLDeviceInternal(sycl::context context, const char* config);
 
 void use_rthwif_embree();
 void use_rthwif_production();
 
 /* we define rtcNewSYCLDevice in libembree_sycl.a to avoid drop of rtcore_sycl.o during linking of libembree_sycl.a file */
-RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context context, sycl::device device, const char* config)
+RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context context, const char* config)
 {
   use_rthwif_embree();     // to avoid drop of rthwif_embree.o during linking of libembree_sycl.a file
 #if defined(EMBREE_SYCL_RT_VALIDATION_API)
   use_rthwif_production(); // to avoid drop of rthwif_production.o during linking of libembree_sycl.a file
 #endif
-  return rtcNewSYCLDeviceInternal(context, device, config);
+  return rtcNewSYCLDeviceInternal(context, config);
 }
 
 #if defined(__SYCL_DEVICE_ONLY__)
@@ -119,14 +119,20 @@ SYCL_EXTERNAL void* rtcGetGeometryUserDataFromScene (RTCScene hscene, unsigned i
 
 SYCL_EXTERNAL void rtcInvokeIntersectFilterFromGeometry(const RTCIntersectFunctionNArguments* args_i, const RTCFilterFunctionNArguments* filter_args)
 {
+#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
   IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
-  isa::reportIntersection1(args, filter_args);
+  if (args->geometry->intersectionFilterN)
+    args->geometry->intersectionFilterN(filter_args);
+#endif
 }
 
 SYCL_EXTERNAL void rtcInvokeOccludedFilterFromGeometry(const RTCOccludedFunctionNArguments* args_i, const RTCFilterFunctionNArguments* filter_args)
 {
+#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
   OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
-  isa::reportOcclusion1(args,filter_args);
+  if (args->geometry->occlusionFilterN)
+    args->geometry->occlusionFilterN(filter_args);
+#endif
 }
 
 #endif

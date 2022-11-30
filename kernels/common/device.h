@@ -148,13 +148,16 @@ namespace embree
   {
   public:
 
-    DeviceGPU(sycl::context sycl_context, sycl::device sycl_device, const char* cfg);
+    DeviceGPU(sycl::context sycl_context, const char* cfg);
     ~DeviceGPU();
 
     virtual void enter() override;
     virtual void leave() override;
     virtual void* malloc(size_t size, size_t align) override;
     virtual void free(void* ptr) override;
+
+    /* set SYCL device */
+    void setSYCLDevice(const sycl::device sycl_device);
 
   private:
     sycl::context gpu_context;

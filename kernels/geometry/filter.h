@@ -51,14 +51,6 @@ namespace embree
       return runIntersectionFilter1Helper(&args,geometry,context);
     }
 
-    __forceinline void reportIntersection1(IntersectFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args)
-    {
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
-      if (args->geometry->intersectionFilterN)
-        args->geometry->intersectionFilterN(filter_args);
-#endif
-    }
-    
     __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
     {
 #if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
@@ -94,14 +86,6 @@ namespace embree
       args.hit = (RTCHitN*)&hit;
       args.N = 1;
       return runOcclusionFilter1Helper(&args,geometry,context);
-    }
-
-    __forceinline void reportOcclusion1(OccludedFunctionNArguments* args, const RTCFilterFunctionNArguments* filter_args)
-    {
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
-      if (args->geometry->occlusionFilterN)
-        args->geometry->occlusionFilterN(filter_args);
-#endif
     }
 
     template<int K>

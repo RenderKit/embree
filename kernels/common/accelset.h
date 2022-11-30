@@ -231,7 +231,7 @@ namespace embree
         typedef void (*RTCIntersectFunctionSYCL)(const void* args);
         RTCIntersectFunctionSYCL intersectFunc = nullptr;
         
-#if EMBREE_GEOMETRY_USER_IN_GEOMETRY
+#if EMBREE_GEOMETRY_USER_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
 #if defined(__SYCL_DEVICE_ONLY__)
         if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
 #endif
@@ -273,7 +273,7 @@ namespace embree
         typedef void (*RTCOccludedFunctionSYCL)(const void* args);
         RTCOccludedFunctionSYCL occludedFunc = nullptr;
 
-#if EMBREE_GEOMETRY_USER_IN_GEOMETRY
+#if EMBREE_GEOMETRY_USER_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
 #if defined(__SYCL_DEVICE_ONLY__)
         if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
 #endif

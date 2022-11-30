@@ -15,7 +15,7 @@ namespace embree
     typedef void (*RTCFilterFunctionSYCL)(const void* args);
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
     
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
+#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
     if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY)
     {
       RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->intersectionFilterN;
@@ -53,7 +53,7 @@ namespace embree
     typedef void (*RTCFilterFunctionSYCL)(const void* args);
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
     
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
+#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
     if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY)
     {
       RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->occlusionFilterN;
