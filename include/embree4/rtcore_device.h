@@ -16,13 +16,16 @@ RTC_API RTCDevice rtcNewDevice(const char* config);
 #if defined(EMBREE_SYCL_SUPPORT) && defined(SYCL_LANGUAGE_VERSION)
 
 /* Creates a new Embree SYCL device. */
-RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context context, sycl::device device, const char* config);
+RTC_API_EXTERN_C RTCDevice rtcNewSYCLDevice(sycl::context context, const char* config);
 
 /* Checks if SYCL device is supported by Embree. */
 RTC_API bool rtcIsSYCLDeviceSupported(const sycl::device sycl_device);
 
 /* SYCL selector for Embree supported devices */
 RTC_API int rtcSYCLDeviceSelector(const sycl::device sycl_device);
+
+/* Set the SYCL device to be used to allocate data */
+RTC_API void rtcSetDeviceSYCLDevice(RTCDevice device, const sycl::device sycl_device);
 
 #endif
 

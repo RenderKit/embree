@@ -36,19 +36,12 @@ RTC_NAMESPACE_BEGIN;
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-  RTC_API RTCDevice rtcNewSYCLDeviceInternal(sycl::context sycl_context, sycl::device sycl_device, const char* config)
+  RTC_API RTCDevice rtcNewSYCLDeviceInternal(sycl::context sycl_context, const char* config)
   {
     RTC_CATCH_BEGIN;
     RTC_TRACE(rtcNewSYCLDevice);
     Lock<MutexSys> lock(g_mutex);
-
-    auto devices = sycl_context.get_devices();
-    for (auto device : devices) {
-      if (!rthwifIsSYCLDeviceSupported(device))
-        throw_RTCError(RTC_ERROR_UNSUPPORTED_GPU,"unsupported SYCL GPU device");
-    }
-        
-    DeviceGPU* device = new DeviceGPU(sycl_context,sycl_device,config);
+    DeviceGPU* device = new DeviceGPU(sycl_context,config);
     return (RTCDevice) device->refInc();
     RTC_CATCH_END(nullptr);
     return (RTCDevice) nullptr;
@@ -70,6 +63,26 @@ RTC_NAMESPACE_BEGIN;
     return rthwifIsSYCLDeviceSupported(device) ? 1 : -1;
     RTC_CATCH_END(nullptr);
     return false;
+  }
+
+  RTC_API void rtcSetDeviceSYCLDevice(RTCDevice hdevice, const sycl::device sycl_device)
+  {
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetDeviceSYCLDevice);
+    RTC_VERIFY_HANDLE(hdevice);
+
+    Lock<MutexSys> lock(g_mutex);
+    
+    if (!rthwifIsSYCLDeviceSupported(sycl_device))
+      throw_RTCError(RTC_ERROR_UNSUPPORTED_GPU,"unsupported SYCL GPU device");
+
+    DeviceGPU* device = dynamic_cast<DeviceGPU*>((Device*) hdevice);
+    if (device == nullptr)
+      throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "passed device must be an Embree SYCL device")
+      
+    device->setSYCLDevice(sycl_device);
+    
+    RTC_CATCH_END(nullptr);
   }
 
 #endif
