@@ -580,17 +580,14 @@ namespace embree
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-  DeviceGPU::DeviceGPU(sycl::context sycl_context, sycl::device sycl_device, const char* cfg)
-    : Device(cfg), gpu_context(sycl_context), gpu_device(sycl_device)
+  DeviceGPU::DeviceGPU(sycl::context sycl_context, const char* cfg)
+    : Device(cfg), gpu_context(sycl_context)
   {
-    /*if (gpu_device == nullptr)
-    {
-      auto devices = gpu_context->get_devices();
-      if (devices.size() == 0)
-        throw_RTCError(RTC_ERROR_UNKNOWN, "SYCL context contains no device");
-      
-      gpu_device = new sycl::device(devices[0]);
-    }*/
+    /* take first device as default device */
+    auto devices = gpu_context.get_devices();
+    if (devices.size() == 0)
+      throw_RTCError(RTC_ERROR_UNKNOWN, "SYCL context contains no device");
+    gpu_device = devices[0];
 
     gpu_maxWorkGroupSize = getGPUDevice().get_info<sycl::info::device::max_work_group_size>();
     gpu_maxComputeUnits  = getGPUDevice().get_info<sycl::info::device::max_compute_units>();    
@@ -627,6 +624,10 @@ namespace embree
 
   void DeviceGPU::free(void* ptr) {
     alignedSYCLFree(&gpu_context,ptr);
+  }
+
+  void DeviceGPU::setSYCLDevice(const sycl::device sycl_device_in) {
+    gpu_device = sycl_device_in;
   }
   
 #endif

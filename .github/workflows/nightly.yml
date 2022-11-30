@@ -30,7 +30,8 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT-multilevel
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 maxinstancelevelcount:2 tasking:TBB intensity:3 rt_validation_api:ON gfx:INTERNAL device:dg2
+        export IGC_EnableZEBinary=0
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 maxinstancelevelcount:2 tasking:TBB intensity:3 rt_validation_api:ON gfx:EMBARGO device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -44,6 +45,7 @@ jobs:
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: continuous-linux-DG2-AOT-multilevel
       cmd: |
+        export IGC_EnableZEBinary=0
         scripts/test.py test --debug
         scripts/test.py test
 
@@ -57,7 +59,8 @@ jobs:
       artifact-out: continuous-linux-PVC-AOT
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:pvc tasking:TBB intensity:4 rt_validation_api:ON gfx:INTERNAL device:pvc
+        export IGC_EnableZEBinary=0
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:pvc tasking:TBB intensity:4 rt_validation_api:ON gfx:EMBARGO device:pvc
         scripts/test.py build --debug
         scripts/test.py build
 

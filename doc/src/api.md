@@ -168,6 +168,11 @@ get used on the device:
   the programming model is implicitely executed in SIMT mode on the
   GPU.
 
+- Filter and user geometry callbacks stored inside the geometry
+  objects are not supported on SYCL. Please use the alternative
+  approach of passing the function pointer through the
+  RTCIntersectArguments struct, which enabled inlining on the GPU.
+
 - The `rtcInterpolate` function cannot get used on the the device. For
   most primitive types the vertex data interpolation is anyway a
   trivial operation, and an API call just introduces overheads. On the

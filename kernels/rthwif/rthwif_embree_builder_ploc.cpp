@@ -421,11 +421,12 @@ namespace embree
                                                                     });
                                                   });
       gpu::waitOnEventAndCatchException(queue_event);
-      double dt = gpu::getDeviceExecutionTiming(queue_event);
-      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
-      
-      if (unlikely(verbose2))
-        std::cout << "Init Globals " << dt << " ms" << std::endl;
+      if (unlikely(verbose1))
+      {
+        double dt = gpu::getDeviceExecutionTiming(queue_event);
+        timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
+        if (unlikely(verbose2)) std::cout << "Init Globals " << dt << " ms" << std::endl;        
+      }      
     }  
   
     // ==============================================================================    
@@ -437,7 +438,7 @@ namespace embree
  
     double device_prim_counts_time = 0.0f;
   
-    const PrimitiveCounts primCounts = countPrimitives(gpu_queue,geometries,numGeometries,globals,scratch,host_device_tasks,device_prim_counts_time,verbose2); 
+    const PrimitiveCounts primCounts = countPrimitives(gpu_queue,geometries,numGeometries,globals,scratch,host_device_tasks,device_prim_counts_time,verbose1); 
 
     // ================================================
     
@@ -466,7 +467,7 @@ namespace embree
 
       timer.start(BuildTimer::PRE_PROCESS);      
       double device_quadification_time = 0.0;
-      numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,scratch+numGeometries,host_device_tasks,device_quadification_time,verbose2);
+      numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,scratch+numGeometries,host_device_tasks,device_quadification_time,verbose1);
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
     }
@@ -538,11 +539,12 @@ namespace embree
                                                                     });
                                                   });
       gpu::waitOnEventAndCatchException(queue_event);
-      double dt = gpu::getDeviceExecutionTiming(queue_event);
-      timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
-      
-      if (unlikely(verbose2))
-        std::cout << "Init globals " << dt << " ms" << std::endl;
+      if (unlikely(verbose1))
+      {
+        double dt = gpu::getDeviceExecutionTiming(queue_event);
+        timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
+        if (unlikely(verbose2)) std::cout << "Init globals " << dt << " ms" << std::endl;        
+      }      
     }	    
     
 
@@ -554,21 +556,21 @@ namespace embree
     // ===================================================
          
     if (numQuads)
-      createQuads_initPLOCPrimRefs(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,bvh2,0,create_primref_time,verbose2);
+      createQuads_initPLOCPrimRefs(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,bvh2,0,create_primref_time,verbose1);
 
     // ====================================          
     // ==== create procedural primrefs ====
     // ====================================
 
     if (numProcedurals)
-      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads,host_device_tasks,create_primref_time,verbose2);
+      numProcedurals = createProcedurals_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads,host_device_tasks,create_primref_time,verbose1);
 
     // ==================================          
     // ==== create instance primrefs ====
     // ==================================
     
     if (numInstances)
-      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose2);
+      numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose1);
 
     // =================================================================================================    
     // === recompute actual number of primitives after quadification and removing of invalid entries ===
@@ -606,7 +608,7 @@ namespace embree
     timer.start(BuildTimer::PRE_PROCESS);        
     double device_compute_centroid_bounds_time = 0.0f;
      
-    computeCentroidGeometryBounds(gpu_queue, &globals->geometryBounds, &globals->centroidBounds, bvh2, numPrimitives, device_compute_centroid_bounds_time, verbose2);
+    computeCentroidGeometryBounds(gpu_queue, &globals->geometryBounds, &globals->centroidBounds, bvh2, numPrimitives, device_compute_centroid_bounds_time, verbose1);
     
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_compute_centroid_bounds_time);
@@ -625,9 +627,9 @@ namespace embree
     double device_compute_mc_time = 0.0f;
 
     if (!fastMCMode)
-      computeMortonCodes64Bit_SaveMSBBits(gpu_queue,&globals->centroidBounds,mc0,bvh2,bvh2_subtree_size,numPrimitives,device_compute_mc_time,verbose2);
+      computeMortonCodes64Bit_SaveMSBBits(gpu_queue,&globals->centroidBounds,mc0,bvh2,bvh2_subtree_size,numPrimitives,device_compute_mc_time,verbose1);
     else
-      computeMortonCodes64Bit(gpu_queue,&globals->centroidBounds,(gpu::MortonCodePrimitive40x24Bits3D*)mc1,bvh2,numPrimitives,0,(uint64_t)-1,device_compute_mc_time,verbose2);
+      computeMortonCodes64Bit(gpu_queue,&globals->centroidBounds,(gpu::MortonCodePrimitive40x24Bits3D*)mc1,bvh2,numPrimitives,0,(uint64_t)-1,device_compute_mc_time,verbose1);
             
     timer.stop(BuildTimer::PRE_PROCESS);
      
@@ -648,7 +650,7 @@ namespace embree
 
       sycl::event initial = sycl::event();
       sycl::event block0  = gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, initial, sortWGs);      
-      sycl::event restore = restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,block0,verbose2);      
+      sycl::event restore = restoreMSBBits(gpu_queue,mc0,bvh2_subtree_size,numPrimitives,block0,verbose1);      
       sycl::event block1  = gpu::radix_sort_Nx8Bit(gpu_queue, morton_codes[0], morton_codes[1], numPrimitives, (uint*)scratch, 4, 8, restore, sortWGs);
       gpu::waitOnEventAndCatchException(block1);      
     }
@@ -682,9 +684,9 @@ namespace embree
     double device_init_clusters_time = 0.0f;
 
     if (!fastMCMode)
-      initClusters(gpu_queue,mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,device_init_clusters_time,verbose2);
+      initClusters(gpu_queue,mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,device_init_clusters_time,verbose1);
     else
-      initClusters(gpu_queue,(gpu::MortonCodePrimitive40x24Bits3D*)mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,device_init_clusters_time,verbose2); 
+      initClusters(gpu_queue,(gpu::MortonCodePrimitive40x24Bits3D*)mc0,bvh2,cluster_index,bvh2_subtree_size,numPrimitives,device_init_clusters_time,verbose1); 
     
     timer.stop(BuildTimer::PRE_PROCESS);        
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_init_clusters_time);
@@ -711,7 +713,7 @@ namespace embree
     // ==== clear sync mem ====
     // ========================      
 
-    clearScratchMem(gpu_queue,sync_mem,0,NUM_ACTIVE_LARGE_WGS,device_ploc_iteration_time);
+    clearScratchMem(gpu_queue,sync_mem,0,NUM_ACTIVE_LARGE_WGS,device_ploc_iteration_time,verbose1);
   
     for (;numPrims>1;iteration++)
     {          
@@ -722,7 +724,7 @@ namespace embree
       if (numPrims < SINGLE_WG_SWITCH_THRESHOLD)
       {
         double singleWG_time = 0.0f;
-        singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, SEARCH_RADIUS_SHIFT, singleWG_time, verbose2);
+        singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, SEARCH_RADIUS_SHIFT, singleWG_time, verbose1);
         timer.add_to_device_timer(BuildTimer::BUILD,singleWG_time);
         numPrims = 1;
       }
@@ -784,7 +786,7 @@ namespace embree
     // =============================
     timer.start(BuildTimer::PRE_PROCESS);    
     float conversion_device_time = 0.0f;
-    const bool convert_success = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,args.geometries,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,conversion_device_time,verbose2);
+    const bool convert_success = convertBVH2toQBVH6(gpu_queue,globals,host_device_tasks,args.geometries,qbvh,bvh2,leafGenData,numPrimitives,numInstances != 0,geometryTypeRanges,conversion_device_time,verbose1);
 
     /* --- init final QBVH6 header --- */        
     {     
