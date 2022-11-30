@@ -372,8 +372,7 @@ extern "C" void device_render (int* pixels,
                            const float time,
                            const ISPCCamera& camera)
 {
-  /* animate sphere */
-
+  /* animate sphere */  
 #if defined(EMBREE_SYCL_TUTORIAL)
   animateSphereGPU(data.numSpheres,time);
 #else  

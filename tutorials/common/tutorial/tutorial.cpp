@@ -905,7 +905,7 @@ namespace embree
     initRayStats();
     render(pixels,width,height,time,ispccamera);
     double dt0 = getSeconds()-t0;
-    //if (ispccamera.render_time != 0.0) dt0 = ispccamera.render_time;
+    if (ispccamera.render_time != 0.0) dt0 = ispccamera.render_time;
     avg_render_time.add(dt0);
     double mrayps = double(getNumRays())/(1000000.0*dt0);
     avg_mrayps.add(mrayps);
@@ -937,11 +937,16 @@ namespace embree
     // if (!motion_blur) ImGui::Checkbox("Animate", &animate);
     // if (!animate)     ImGui::SliderFloat("Time", &render_time, 0.f, 1.f);
     // ImGui::Text("%3.2f fps",1.0f/avg_render_time.get());
-    double dt = avg_render_time.get();
-    double fps = dt != 0.0 ? 1.0f/dt : 0.0;
-    ImGui::Text("%3.2f fps",fps);
+    
+    double render_dt = avg_render_time.get();
+    double render_fps = render_dt != 0.0 ? 1.0f/render_dt : 0.0;
+    ImGui::Text("Render: %3.2f fps",render_fps);
 
-#if defined(RAY_STATS)
+    double total_dt = avg_frame_time.get();
+    double total_fps = total_dt != 0.0 ? 1.0f/total_dt : 0.0;
+    ImGui::Text("Total: %3.2f fps",total_fps);
+
+#if defined(RAY_STATS) && !defined(EMBREE_SYCL_TUTORIAL)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
 #endif
     ImGui::End();
@@ -977,10 +982,10 @@ namespace embree
       stream << "render: ";
       stream << 1.0f/dt0 << " fps, ";
       stream << dt0*1000.0f << " ms, ";
-#if defined(RAY_STATS)
+#if defined(RAY_STATS) && !defined(EMBREE_SYCL_TUTORIAL)
       stream << mrayps << " Mray/s, ";
 #endif
-      stream << "display: ";
+      stream << "total: ";
       stream << 1.0f/dt1 << " fps, ";
       stream << dt1*1000.0f << " ms, ";
       stream << width << "x" << height << " pixels";

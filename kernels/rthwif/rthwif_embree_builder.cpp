@@ -43,6 +43,8 @@ namespace embree
   {
     ::rthwifInit();
     
+#if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
+    
     size_t maxBVHLevels = RTC_MAX_INSTANCE_LEVEL_COUNT+1;
 
     size_t rtstack_bytes = (64+maxBVHLevels*(64+32)+63)&-64;
@@ -67,6 +69,12 @@ namespace embree
     dg->flags = DEPTH_TEST_LESS_EQUAL;
 
     return dispatchGlobalsPtr;
+
+#else
+
+    return nullptr;
+
+#endif
   }
 
   void rthwifCleanup(void* dispatchGlobalsPtr, sycl::context context)
@@ -85,9 +93,31 @@ namespace embree
 
     /* check if GPU device is supported */
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
+
+#if 1
     
     const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(hDevice);
     return features != RTHWIF_FEATURES_NONE;
+
+#else
+    
+    /* check if ray tracing hardware is supported */
+    ze_device_raytracing_ext_properties_t raytracing_properties;
+    memset(&raytracing_properties,0,sizeof(raytracing_properties));
+    raytracing_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_RAYTRACING_EXT_PROPERTIES;
+    raytracing_properties.pNext = nullptr;
+    
+    ze_device_module_properties_t module_properties;
+    memset(&module_properties,0,sizeof(module_properties));
+    module_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_MODULE_PROPERTIES;
+    module_properties.pNext = &raytracing_properties;
+      
+    ze_result_t result = zeDeviceGetModuleProperties(hDevice, &module_properties);
+    if (result != ZE_RESULT_SUCCESS) return false;
+
+    const bool rayQuerySupported = raytracing_properties.flags & ZE_DEVICE_RAYTRACING_EXT_FLAG_RAYQUERY;
+    return rayQuerySupported;
+#endif
   }
     
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
@@ -316,10 +346,7 @@ namespace embree
   };
   
   BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
-  {
-    //PRINT("BUILD START");
-    double b0 = getSeconds();
-    
+  {    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);    
     sycl::device &sycl_device = gpu_device->getGPUDevice();
@@ -408,9 +435,9 @@ namespace embree
 
     const size_t numGeometries = scene->size();
     
-    /* fill geomdesc buffers */
+    /* fill geomdesc buffers */    
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     const size_t geomDescrBytes = sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries;
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
     RTHWIF_GEOMETRY_DESC** geomDescr = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc_shared(64,geomDescrBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
     assert(geomDescr);        
     char *geomDescrData = (char*)sycl::aligned_alloc_shared(64,totalBytes,gpu_device->getGPUDevice(),gpu_device->getGPUContext(),sycl::ext::oneapi::property::usm::device_read_only());
@@ -508,7 +535,6 @@ namespace embree
       size_t bytes = headerBytes+size.accelBufferExpectedBytes;
       
       /* allocate BVH data */
-      size_t accel_size = accel.size();
       if (accel.size() < bytes) // FIXME: accel.size() triggers a USM transfer
         accel.resize(bytes);
       
@@ -604,8 +630,6 @@ namespace embree
     sycl::free(scratchBuffer    ,gpu_device->getGPUContext());
 #endif
 
-    double b1 = getSeconds();
-    //PRINT2("BUILD STOP",1000. * (b1-b0));    
     return fullBounds;
   }
 
