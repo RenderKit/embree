@@ -140,8 +140,13 @@ OPTION(EMBREE_STAT_COUNTERS "Enables statistic counters.")
 OPTION(EMBREE_STACK_PROTECTOR "When enabled Embree compiles with stack protection against return address overrides." OFF)
 
 OPTION(EMBREE_SYCL_SUPPORT "Enables SYCL GPU support." ON)
-OPTION(EMBREE_SYCL_LARGEGRF "Enables SYCL large GRF support." OFF)
-OPTION(EMBREE_SYCL_DBG "Enables DPC++ debug info." OFF)
+CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_LARGEGRF "Enables SYCL large GRF support." OFF "EMBREE_SYCL_SUPPORT" OFF)
+CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_DBG "Enables DPC++ debug info." OFF "EMBREE_SYCL_SUPPORT" OFF)
+CMAKE_DEPENDENT_OPTION(EMBREE_SYCL_GEOMETRY_CALLBACK  "Enabled geometry callbacks which are disabled by default for SYCL." OFF  "EMBREE_SYCL_SUPPORT" OFF)
+
+IF (EMBREE_SYCL_GEOMETRY_CALLBACK)
+  message(WARNING "Enabling EMBREE_SYCL_GEOMETRY_CALLBACK is experimental and may result in poor performance.")
+ENDIF()
 
 IF (EMBREE_SYCL_SUPPORT)
   ADD_DEFINITIONS("-DEMBREE_SYCL_SUPPORT")  # FIXME: only use define from rtcore_config.h
@@ -178,10 +183,6 @@ OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)
 CMAKE_DEPENDENT_OPTION(EMBREE_FILTER_FUNCTION_IN_GEOMETRY  "Support filter callback stored per geometry." ON           "EMBREE_FILTER_FUNCTION" OFF)
 CMAKE_DEPENDENT_OPTION(EMBREE_FILTER_FUNCTION_IN_ARGUMENTS "Support filter callback inside intersection arguments." ON "EMBREE_FILTER_FUNCTION" OFF)
 
-IF (EMBREE_SYCL_SUPPORT AND EMBREE_FILTER_FUNCTION_IN_GEOMETRY)
-  message(WARNING "Enabling EMBREE_FILTER_FUNCTION_IN_GEOMETRY reduces performance and should not get used in SYCL mode.")
-ENDIF()
-
 OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 OPTION(EMBREE_COMPACT_POLYS "Enables double indexed poly layout." OFF)
 
@@ -193,10 +194,6 @@ OPTION(EMBREE_GEOMETRY_SUBDIVISION "Enables support for subdiv geometries." ON)
 OPTION(EMBREE_GEOMETRY_USER "Enables support for user geometries." ON)
 CMAKE_DEPENDENT_OPTION(EMBREE_GEOMETRY_USER_IN_GEOMETRY  "Support user geometry callback function inside user geometry object." ON           "EMBREE_GEOMETRY_USER" OFF)
 CMAKE_DEPENDENT_OPTION(EMBREE_GEOMETRY_USER_IN_ARGUMENTS "Support user geometry callback function pointer inside intersection arguments." ON "EMBREE_GEOMETRY_USER" OFF)
-
-IF (EMBREE_SYCL_SUPPORT AND EMBREE_GEOMETRY_USER_IN_GEOMETRY)
-  message(WARNING "Enabling EMBREE_GEOMETRY_USER_IN_GEOMETRY reduces performance and should not get used in SYCL mode.")
-ENDIF()
 
 OPTION(EMBREE_GEOMETRY_INSTANCE "Enables support for instances." ON)
 SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 1 CACHE STRING "Maximum number of instance levels.")

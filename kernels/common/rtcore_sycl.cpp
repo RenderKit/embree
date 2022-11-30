@@ -119,14 +119,20 @@ SYCL_EXTERNAL void* rtcGetGeometryUserDataFromScene (RTCScene hscene, unsigned i
 
 SYCL_EXTERNAL void rtcInvokeIntersectFilterFromGeometry(const RTCIntersectFunctionNArguments* args_i, const RTCFilterFunctionNArguments* filter_args)
 {
+#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
   IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
-  isa::reportIntersection1(args, filter_args);
+  if (args->geometry->intersectionFilterN)
+    args->geometry->intersectionFilterN(filter_args);
+#endif
 }
 
 SYCL_EXTERNAL void rtcInvokeOccludedFilterFromGeometry(const RTCOccludedFunctionNArguments* args_i, const RTCFilterFunctionNArguments* filter_args)
 {
+#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
   OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
-  isa::reportOcclusion1(args,filter_args);
+  if (args->geometry->occlusionFilterN)
+    args->geometry->occlusionFilterN(filter_args);
+#endif
 }
 
 #endif
