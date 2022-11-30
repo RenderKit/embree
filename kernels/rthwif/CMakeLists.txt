@@ -104,6 +104,10 @@ ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/st
 TARGET_LINK_LIBRARIES(embree_rthwif PUBLIC ${EMBREE_RTHWIF_SYCL} PRIVATE tbb simd sys -lze_loader)
 SET_PROPERTY(TARGET embree_rthwif APPEND PROPERTY COMPILE_FLAGS "-DEMBREE_SYCL_SUPPORT")
 
+IF (EMBREE_SYCL_RT_VALIDATION_API)
+  ADD_DEPENDENCIES(embree_rthwif embree_rthwif_sycl)
+ENDIF()
+
 INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 INSTALL(EXPORT embree_rthwif-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
 
