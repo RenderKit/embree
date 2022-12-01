@@ -9,6 +9,8 @@
 #include "../common/lights/quad_light.cpp"
 #include "../common/lights/spot_light.cpp"
 
+#define USE_ARGUMENT_CALLBACKS 1
+
 namespace embree {
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterHair(const RTCFilterFunctionNArguments* args);
@@ -952,7 +954,7 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_used_features);
   //RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS, &g_used_features);
 #if ENABLE_FILTER_FUNCTION
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
   g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
 #else
   g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY);
@@ -1481,7 +1483,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     args.context = &context.context;
     args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     args.feature_mask = features;
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
+#if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
     args.filter = nullptr;
 #endif
   
@@ -1550,7 +1552,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       Vec3fa transparency = Vec3fa(1.0f);
       Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
+#if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
       args.filter = contextFilterFunction;
 #endif
       rtcOccluded1(data.scene,RTCRay_(shadow),&args);

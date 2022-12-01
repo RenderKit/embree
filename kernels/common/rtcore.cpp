@@ -1241,20 +1241,16 @@ RTC_NAMESPACE_BEGIN;
 
   RTC_API void rtcInvokeIntersectFilterFromGeometry(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
     if (args->geometry->intersectionFilterN)
         args->geometry->intersectionFilterN(filter_args);
-#endif
   }
 
   RTC_API void rtcInvokeOccludedFilterFromGeometry(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
     if (args->geometry->occlusionFilterN)
       args->geometry->occlusionFilterN(filter_args);
-#endif
   }
   
   RTC_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)

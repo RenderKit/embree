@@ -3,8 +3,10 @@
 
 #include "intersection_filter_device.isph"
 
+#define USE_ARGUMENT_CALLBACKS 1
+
 /* all features required by this tutorial */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
@@ -96,7 +98,7 @@ void renderPixelStandard(const uniform TutorialData& data,
     context.userRayExt = &primary;
 
     /* intersect ray with scene */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
     args.filter = intersectionFilter;
 #endif    
     rtcIntersectV(data.g_scene,RTCRayHit_(primary),&args);
@@ -122,7 +124,7 @@ void renderPixelStandard(const uniform TutorialData& data,
     context.userRayExt = &shadow;
 
     /* trace shadow ray */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
     args.filter = occlusionFilter;
 #endif
     rtcOccludedV(data.g_scene,RTCRay_(shadow),&args);
@@ -324,7 +326,7 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   data.colors[11] = make_Vec3f(1,1,0);
 
   /* set intersection filter for the cube */
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -356,7 +358,7 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   data.colors[5] = make_Vec3f(1,1,0); // back side
 
   /* set intersection filter for the cube */
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -394,7 +396,7 @@ uniform unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 export void device_init (uniform int8* uniform cfg)
 {
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   data.intersectionFilter = GET_FUNCTION_POINTER(intersectionFilter);
   data.occlusionFilter    = GET_FUNCTION_POINTER(occlusionFilter   );
 #endif

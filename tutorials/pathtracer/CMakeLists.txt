@@ -30,7 +30,6 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3)
   ENDIF()
 
   # these tests require geometry filter functions to be enabled
-  #IF (NOT EMBREE_GEOMETRY_USER_IN_GEOMETRY)
     
     set_tests_properties(pathtracer_sophie_sophie PROPERTIES DISABLED True)
     IF (EMBREE_SYCL_MBLUR)
@@ -48,8 +47,6 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3)
       set_tests_properties(pathtracer_sophie_sophie_sycl PROPERTIES DISABLED True)
     ENDIF()
 
-  #ENDIF()
-    
 ENDIF()
 
 #ENDIF()

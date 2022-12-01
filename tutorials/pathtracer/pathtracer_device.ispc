@@ -9,6 +9,8 @@
 #include "../common/lights/quad_light.ispc"
 #include "../common/lights/spot_light.ispc"
 
+#define USE_ARGUMENT_CALLBACKS 1
+
 /* all features required by this tutorial */
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_ALL
@@ -951,7 +953,7 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_used_features);
   //RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS, &g_used_features);
 #if ENABLE_FILTER_FUNCTION
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
   g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
 #else
   g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY);
@@ -1481,7 +1483,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     args.context = &context.context;
     args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
     args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
+#if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
     args.filter = NULL;
 #endif
   
@@ -1550,7 +1552,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS && ENABLE_FILTER_FUNCTION
+#if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
       args.filter = contextFilterFunction;
 #endif
       rtcOccludedV(data.scene,RTCRay_(shadow),&args);

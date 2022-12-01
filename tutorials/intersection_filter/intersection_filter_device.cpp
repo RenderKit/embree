@@ -5,8 +5,10 @@
 
 namespace embree {
 
+#define USE_ARGUMENT_CALLBACKS 1
+
 /* all features required by this tutorial */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
@@ -104,7 +106,7 @@ void renderPixelStandard(const TutorialData& data,
     context.userRayExt = &primary;
 
     /* intersect ray with scene */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
     args.filter = intersectionFilter;
 #endif
     rtcIntersect1(data.g_scene,RTCRayHit_(primary),&args);
@@ -130,7 +132,7 @@ void renderPixelStandard(const TutorialData& data,
     context.userRayExt = &shadow;
 
     /* trace shadow ray */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
     args.filter = occlusionFilter;
 #endif
     rtcOccluded1(data.g_scene,RTCRay_(shadow),&args);
@@ -332,7 +334,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   data.colors[11] = Vec3fa(1,1,0);
 
   /* set intersection filter for the cube */
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -364,7 +366,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
   data.colors[5] = Vec3fa(1,1,0); // back side
 
   /* set intersection filter for the cube */
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -402,7 +404,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   data.intersectionFilter = (void*) GET_FUNCTION_POINTER(intersectionFilter);
   data.occlusionFilter    = (void*) GET_FUNCTION_POINTER(occlusionFilter   );
 #endif

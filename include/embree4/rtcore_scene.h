@@ -34,12 +34,10 @@ struct RTCIntersectArguments
   
   RTCFilterFunctionN filter;                         // filter function to execute
   
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   union {
     RTCIntersectFunctionN intersect;                 // user geometry intersection callback to execute
     RTCOccludedFunctionN occluded;                   // user geometry occlusion callback to execute
   };
-#endif 
 
 #if RTC_MIN_WIDTH
   float minWidthDistanceFactor;                      // curve radius is set to this factor times distance to ray origin
@@ -53,10 +51,7 @@ RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* arg
   args->feature_mask = RTC_FEATURE_FLAGS_ALL;
   args->context = NULL;
   args->filter = NULL;
-
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
   args->intersect = NULL;
-#endif
 
 #if RTC_MIN_WIDTH
   args->minWidthDistanceFactor = 0.0f;

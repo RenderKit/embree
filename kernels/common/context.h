@@ -26,7 +26,6 @@ namespace embree
       return args->filter;
     }
 
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     RTCIntersectFunctionN getIntersectFunction() const {
       return args->intersect;
     }
@@ -34,7 +33,6 @@ namespace embree
     RTCOccludedFunctionN getOccludedFunction() const {
       return args->occluded;
     }
-#endif
 
     __forceinline bool isCoherent() const {
       return embree::isCoherent(args->flags);

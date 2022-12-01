@@ -183,21 +183,13 @@ OPTION(EMBREE_RAY_MASK "Enables ray mask support." ON)
 OPTION(EMBREE_BACKFACE_CULLING "Enables backface culling.")
 
 OPTION(EMBREE_FILTER_FUNCTION "Enables filter functions." ON)
-CMAKE_DEPENDENT_OPTION(EMBREE_FILTER_FUNCTION_IN_GEOMETRY  "Support filter callback stored per geometry." ON           "EMBREE_FILTER_FUNCTION" OFF)
-CMAKE_DEPENDENT_OPTION(EMBREE_FILTER_FUNCTION_IN_ARGUMENTS "Support filter callback inside intersection arguments." ON "EMBREE_FILTER_FUNCTION" OFF)
-
 OPTION(EMBREE_IGNORE_INVALID_RAYS "Ignores invalid rays." OFF) # FIXME: enable by default?
 OPTION(EMBREE_COMPACT_POLYS "Enables double indexed poly layout." OFF)
-
 OPTION(EMBREE_GEOMETRY_TRIANGLE "Enables support for triangle geometries." ON)
 OPTION(EMBREE_GEOMETRY_QUAD "Enables support for quad geometries." ON)
 OPTION(EMBREE_GEOMETRY_CURVE "Enables support for curve geometries." ON)
 OPTION(EMBREE_GEOMETRY_SUBDIVISION "Enables support for subdiv geometries." ON)
-
 OPTION(EMBREE_GEOMETRY_USER "Enables support for user geometries." ON)
-CMAKE_DEPENDENT_OPTION(EMBREE_GEOMETRY_USER_IN_GEOMETRY  "Support user geometry callback function inside user geometry object." ON           "EMBREE_GEOMETRY_USER" OFF)
-CMAKE_DEPENDENT_OPTION(EMBREE_GEOMETRY_USER_IN_ARGUMENTS "Support user geometry callback function pointer inside intersection arguments." ON "EMBREE_GEOMETRY_USER" OFF)
-
 OPTION(EMBREE_GEOMETRY_INSTANCE "Enables support for instances." ON)
 SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 1 CACHE STRING "Maximum number of instance levels.")
 
