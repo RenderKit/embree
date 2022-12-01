@@ -37,6 +37,11 @@ jobs:
       image: embree/ubuntu:22.04
       runs-on: '[ "Linux", "docker", "build" ]'
       cmd: |
+        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_EMBARGO | sed 's/.*:\ //')
+        echo "Setup GFX ${GFX_VERSION} for Linux"
+        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
+        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
+        
         GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_INTERNAL | sed 's/.*:\ //')
         echo "Setup GFX ${GFX_VERSION} for Linux"
         echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
@@ -131,7 +136,7 @@ jobs:
       artifact-path: ./build .ctest_conf
       cmd: |
         export IGC_EnableZEBinary=0
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4 rt_validation_api:ON gfx:EMBARGO device:dg2
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4 rt_validation_api:OFF gfx:EMBARGO device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -164,7 +169,7 @@ jobs:
       artifact-path: ./build .ctest_conf
       cmd: |
         export IGC_EnableZEBinary=0
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:ON gfx:EMBARGO device:pvc
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 rt_validation_api:OFF gfx:EMBARGO device:pvc
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -218,14 +223,14 @@ jobs:
   # Windows DG2
   ########################################
 
-  continuous-windows-DG2-JIT:
+  continuous-windows-DG2-AOT:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:3 rt_validation_api:ON 
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:dg2 intensity:3 rt_validation_api:OFF
         python scripts/test.py build
         python scripts/test.py test
 
