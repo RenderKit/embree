@@ -489,10 +489,6 @@ def runConfig(config):
     conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
   if "EMBREE_SYCL_SUPPORT" in config:
     conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
-  elif "sycl" in config:
-    conf.append("-D EMBREE_SYCL_SUPPORT=ON")
-  else:
-    conf.append("-D EMBREE_SYCL_SUPPORT=OFF")
   if "gfx" in config:
     conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
   if "device" in config:
