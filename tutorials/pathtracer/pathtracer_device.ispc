@@ -1478,16 +1478,16 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     InitIntersectionContext(&context);
     context.tutorialData = (void*) &data;
     
-    uniform RTCIntersectArguments args;
-    rtcInitIntersectArguments(&args);
-    args.context = &context.context;
-    args.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
-    args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+    uniform RTCIntersectArguments iargs;
+    rtcInitIntersectArguments(&iargs);
+    iargs.context = &context.context;
+    iargs.flags = (i == 0) ? data.iflags_coherent : data.iflags_incoherent;
+    iargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
 #if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
-    args.filter = NULL;
+    iargs.filter = NULL;
 #endif
   
-    rtcIntersectV(data.scene,RTCRayHit_(ray),&args);
+    rtcIntersectV(data.scene,RTCRayHit_(ray),&iargs);
     RayStats_addRay(stats);
     const Vec3f wo = neg(ray.dir);
 
@@ -1542,7 +1542,6 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
-    args.flags = data.iflags_incoherent;
     for (uniform unsigned int i=0; i<data.ispc_scene->numLights; i++)
     {
       const uniform Light* uniform l = data.ispc_scene->lights[i];
@@ -1552,10 +1551,16 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
       Vec3f transparency = make_Vec3f(1.0f);
       Ray shadow = make_Ray(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
+
+      uniform RTCOccludedArguments sargs;
+      rtcInitOccludedArguments(&sargs);
+      sargs.context = &context.context;
+      sargs.flags = data.iflags_incoherent;
+      sargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
 #if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
-      args.filter = contextFilterFunction;
+      sargs.filter = contextFilterFunction;
 #endif
-      rtcOccludedV(data.scene,RTCRay_(shadow),&args);
+      rtcOccludedV(data.scene,RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)

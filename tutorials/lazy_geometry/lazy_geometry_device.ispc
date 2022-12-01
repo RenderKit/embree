@@ -197,8 +197,8 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
     lazyCreate(instance);
   
   /* trace ray inside object */
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
+  uniform RTCOccludedArguments args;
+  rtcInitOccludedArguments(&args);
   args.context = context;
   rtcOccludedV(instance->object,RTCRay_(*ray),&args);
 }

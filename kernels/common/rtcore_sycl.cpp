@@ -67,11 +67,11 @@ SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* ar
   instance_id_stack::push(args->context, instID);
 }
 
-SYCL_EXTERNAL void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCIntersectArguments* args)
+SYCL_EXTERNAL void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCOccludedArguments* args)
 {
-  RTCIntersectArguments default_args;
+  RTCOccludedArguments default_args;
   if (args == nullptr) {
-    rtcInitIntersectArguments(&default_args);
+    rtcInitOccludedArguments(&default_args);
     args = &default_args;
   }
   RTCIntersectContext* context = args->context;

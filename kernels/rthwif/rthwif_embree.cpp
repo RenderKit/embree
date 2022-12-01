@@ -687,7 +687,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   intel_ray_query_abandon(query);
 }
 
-SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCIntersectContext> ucontext, sycl::private_ptr<RTCRay> ray_i, sycl::private_ptr<RTCIntersectArguments> args)
+SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCIntersectContext> ucontext, sycl::private_ptr<RTCRay> ray_i, sycl::private_ptr<RTCOccludedArguments> args)
 {
   Scene* scene = (Scene*) hscene.get();
   intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();

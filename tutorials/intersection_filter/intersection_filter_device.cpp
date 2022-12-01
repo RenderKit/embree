@@ -63,11 +63,6 @@ void renderPixelStandard(const TutorialData& data,
   IntersectContext context;
   InitIntersectionContext(&context);
 
-  RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  args.context = &context.context;
-  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    
   /* initialize ray */
   Ray primary;
   init_Ray(primary,Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
@@ -78,10 +73,14 @@ void renderPixelStandard(const TutorialData& data,
     context.userRayExt = &primary_transparency;
 
     /* intersect ray with scene */
+    RTCIntersectArguments iargs;
+    rtcInitIntersectArguments(&iargs);
+    iargs.context = &context.context;
+    iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
 #if USE_ARGUMENT_CALLBACKS
-    args.filter = intersectionFilter;
+    iargs.filter = intersectionFilter;
 #endif
-    rtcIntersect1(data.g_scene,RTCRayHit_(primary),&args);
+    rtcIntersect1(data.g_scene,RTCRayHit_(primary),&iargs);
     RayStats_addRay(stats);
 
     /* shade pixels */
@@ -101,10 +100,14 @@ void renderPixelStandard(const TutorialData& data,
     context.userRayExt = &shadow_transparency;
 
     /* trace shadow ray */
+    RTCOccludedArguments sargs;
+    rtcInitOccludedArguments(&sargs);
+    sargs.context = &context.context;
+    sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
 #if USE_ARGUMENT_CALLBACKS
-    args.filter = occlusionFilter;
+    sargs.filter = occlusionFilter;
 #endif
-    rtcOccluded1(data.g_scene,RTCRay_(shadow),&args);
+    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

@@ -8,7 +8,6 @@
 
 /* Forward declarations for ray structures */
 struct RTCRayHit;
-struct RTCRayHitNp;
 
 /* Scene flags */
 enum RTCSceneFlags
@@ -20,24 +19,20 @@ enum RTCSceneFlags
   RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS = (1 << 3)
 };
 
-/* Intersection arguments passed to intersect/occluded calls */
+/* Additional arguments for rtcIntersect1/V calls */
 struct RTCIntersectArguments
 {
   RTCIntersectContextFlags flags;       // intersection flags
   RTCFeatureFlags feature_mask;         // selectively enable features for traversal
-  
   RTCIntersectContext* context;         // optional pointer to intersection context
-  
-  void* filter;                         // filter function to execute
-  
-  void* intersect;                      // user geometry intersection callback to execute
-  
+  RTCFilterFunctionN filter;            // filter function to execute
+  RTCIntersectFunctionN intersect;      // user geometry intersection callback to execute 
 #if RTC_MIN_WIDTH
   float minWidthDistanceFactor;         // curve radius is set to this factor times distance to ray origin
 #endif
 };
 
-/* Initializes an intersection arguments. */
+/* Initializes intersection arguments. */
 RTC_FORCEINLINE void rtcInitIntersectArguments(uniform RTCIntersectArguments* uniform args)
 {
   args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
@@ -45,6 +40,33 @@ RTC_FORCEINLINE void rtcInitIntersectArguments(uniform RTCIntersectArguments* un
   args->context = NULL;
   args->filter = NULL;
   args->intersect = NULL;
+
+#if RTC_MIN_WIDTH
+  args->minWidthDistanceFactor = 0.0f;
+#endif
+}
+
+/* Additional arguments for rtcOccluded1/V calls */
+struct RTCOccludedArguments
+{
+  RTCIntersectContextFlags flags;       // intersection flags
+  RTCFeatureFlags feature_mask;         // selectively enable features for traversal
+  RTCIntersectContext* context;         // optional pointer to intersection context
+  RTCFilterFunctionN filter;            // filter function to execute
+  RTCOccludedFunctionN occluded;        // user geometry intersection callback to execute 
+#if RTC_MIN_WIDTH
+  float minWidthDistanceFactor;         // curve radius is set to this factor times distance to ray origin
+#endif
+};
+
+/* Initializes intersection arguments. */
+RTC_FORCEINLINE void rtcInitOccludedArguments(uniform RTCOccludedArguments* uniform args)
+{
+  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
+  args->context = NULL;
+  args->filter = NULL;
+  args->occluded = NULL;
 
 #if RTC_MIN_WIDTH
   args->minWidthDistanceFactor = 0.0f;
@@ -196,19 +218,19 @@ RTC_FORCEINLINE void rtcForwardIntersectV(const uniform RTCIntersectFunctionNArg
 
 
 /* Tests a single ray for occlusion with the scene. */
-RTC_API void rtcOccluded1(RTCScene scene, uniform RTCRay* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcOccluded1(RTCScene scene, uniform RTCRay* uniform ray, uniform RTCOccludedArguments* uniform args = NULL);
 
 /* Tests a packet of 4 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded4(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcOccluded4(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCOccludedArguments* uniform args = NULL);
 
 /* Tests a packet of 8 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded8(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcOccluded8(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCOccludedArguments* uniform args = NULL);
 
 /* Tests a packet of 16 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCIntersectArguments* uniform args = NULL);
+RTC_API void rtcOccluded16(const uniform int* uniform valid, RTCScene scene, void* uniform ray, uniform RTCOccludedArguments* uniform args = NULL);
 
 /* Tests a varying ray for occlusion with the scene. */
-RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, varying RTCRay* uniform ray, uniform RTCIntersectArguments* uniform args = NULL)
+RTC_FORCEINLINE void rtcOccludedV(RTCScene scene, varying RTCRay* uniform ray, uniform RTCOccludedArguments* uniform args = NULL)
 {
   varying bool mask = __mask;
   unmasked {

@@ -811,7 +811,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded1 (RTCScene hscene, RTCRay* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded1 (RTCScene hscene, RTCRay* ray, RTCOccludedArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -823,9 +823,9 @@ RTC_NAMESPACE_BEGIN;
     if (((size_t)ray) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
 
-    RTCIntersectArguments defaultArgs;
+    RTCOccludedArguments defaultArgs;
     if (unlikely(args == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
+      rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
     RTCIntersectContext* user_context = args->context;
@@ -874,7 +874,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCRay4* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCRay4* ray, RTCOccludedArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -889,9 +889,9 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,cnt,cnt,cnt);
 
-    RTCIntersectArguments defaultArgs;
+    RTCOccludedArguments defaultArgs;
     if (unlikely(args == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
+      rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
     RTCIntersectContext* user_context = args->context;
@@ -974,7 +974,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
  
-  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCRay8* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCRay8* ray, RTCOccludedArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -989,9 +989,9 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,cnt,cnt,cnt);
 
-    RTCIntersectArguments defaultArgs;
+    RTCOccludedArguments defaultArgs;
     if (unlikely(args == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
+      rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
     RTCIntersectContext* user_context = args->context;
@@ -1028,7 +1028,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
    
-  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCRay16* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCRay16* ray, RTCOccludedArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -1043,9 +1043,9 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,cnt,cnt,cnt);
 
-    RTCIntersectArguments defaultArgs;
+    RTCOccludedArguments defaultArgs;
     if (unlikely(args == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
+      rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
     RTCIntersectContext* user_context = args->context;

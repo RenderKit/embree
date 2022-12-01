@@ -611,13 +611,6 @@ export void device_init (uniform int8* uniform cfg)
 /* task that renders a single screen tile */
 Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
-#if USE_ARGUMENT_CALLBACKS
-  args.intersect = sphereIntersectFuncN;
-#endif
-  
   uniform float time = abs((uniform int)(0.01f*data.frameID) - 0.01f*data.frameID);
   if (data.g_time != -1) time = data.g_time;
 
@@ -625,7 +618,14 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf, time);
 
   /* intersect ray with scene */
-  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&args);
+  uniform RTCIntersectArguments iargs;
+  rtcInitIntersectArguments(&iargs);
+  iargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+#if USE_ARGUMENT_CALLBACKS
+  iargs.intersect = sphereIntersectFuncN;
+#endif
+  
+  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -656,10 +656,13 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
     Ray shadow = make_Ray(ray.org + ray.tfar*ray.dir, neg(lightDir), 0.001f, inf, time);
 
     /* trace shadow ray */
+    uniform RTCOccludedArguments sargs;
+    rtcInitOccludedArguments(&sargs);
+    sargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
 #if USE_ARGUMENT_CALLBACKS
-    args.intersect = (uniform RTCIntersectFunctionN) (void* uniform) sphereOccludedFuncN;
+    sargs.occluded = sphereOccludedFuncN;
 #endif
-    rtcOccludedV(data.g_scene,RTCRay_(shadow),&args);
+    rtcOccludedV(data.g_scene,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

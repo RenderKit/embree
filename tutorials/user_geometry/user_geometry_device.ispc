@@ -167,8 +167,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
   ray->tnear  = ray_tnear;
   ray->tfar   = ray_tfar;
   pushInstanceId(context, args->geomID);
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
+  uniform RTCOccludedArguments args;
+  rtcInitOccludedArguments(&args);
   args.context = context;
   rtcOccludedV(instance->object,RTCRay_(*ray),&args);
   popInstanceId(context);
@@ -740,9 +740,6 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
                           float x, float y, const uniform ISPCCamera& camera,
                           uniform RayStats& stats)
 {
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), 
                      make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 
@@ -750,15 +747,17 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
+  uniform RTCIntersectArguments iargs;
+  rtcInitIntersectArguments(&iargs);
 #if USE_ARGUMENT_CALLBACKS
-  args.filter = contextFilterFunction;
+  iargs.filter = contextFilterFunction;
 #endif
 #if USE_ARGUMENT_CALLBACKS
-  args.intersect = contextIntersectFunc;
+  iargs.intersect = contextIntersectFunc;
 #endif
-  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+  iargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -785,15 +784,17 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
     Ray shadow = make_Ray(ray.org + 0.999f*ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
+    uniform RTCOccludedArguments sargs;
+    rtcInitOccludedArguments(&sargs);
 #if USE_ARGUMENT_CALLBACKS
-    args.filter = contextFilterFunction;
+    sargs.filter = contextFilterFunction;
 #endif
 #if USE_ARGUMENT_CALLBACKS
-    args.intersect = (uniform RTCIntersectFunctionN) (void* uniform) contextOccludedFunc;
+    sargs.occluded = contextOccludedFunc;
 #endif
-    args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+    sargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcOccludedV(data.g_scene,RTCRay_(shadow),&args);
+    rtcOccludedV(data.g_scene,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

@@ -1542,7 +1542,6 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     c = c * Material__sample(material_array,materialID,numMaterials,brdf,Lw, wo, dg, wi1, medium, RandomSampler_get2D(sampler));
 
     /* iterate over lights */
-    args.flags = data.iflags_incoherent;
     for (unsigned int i=0; i<data.ispc_scene->numLights; i++)
     {
       const Light* l = data.ispc_scene->lights[i];
@@ -1552,10 +1551,17 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       Vec3fa transparency = Vec3fa(1.0f);
       Ray shadow(dg.P,ls.dir,dg.eps,ls.dist,time);
       context.userRayExt = &transparency;
+
+      RTCOccludedArguments sargs;
+      rtcInitOccludedArguments(&sargs);
+      sargs.context = &context.context;
+      sargs.flags = data.iflags_incoherent;
+      sargs.feature_mask = features;
+
 #if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
-      args.filter = contextFilterFunction;
+      sargs.filter = contextFilterFunction;
 #endif
-      rtcOccluded1(data.scene,RTCRay_(shadow),&args);
+      rtcOccluded1(data.scene,RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)

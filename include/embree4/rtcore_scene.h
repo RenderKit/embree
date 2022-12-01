@@ -12,7 +12,6 @@ struct RTCRayHit;
 struct RTCRayHit4;
 struct RTCRayHit8;
 struct RTCRayHit16;
-struct RTCRayHitNp;
 
 /* Scene flags */
 enum RTCSceneFlags
@@ -24,27 +23,20 @@ enum RTCSceneFlags
   RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS = (1 << 3)
 };
 
-/* Intersection arguments passed to intersect/occluded calls */
+/* Additional arguments for rtcIntersect1/4/8/16 calls */
 struct RTCIntersectArguments
 {
-  enum RTCIntersectContextFlags flags;               // intersection flags
-  enum RTCFeatureFlags feature_mask;                 // selectively enable features for traversal
-
-  struct RTCIntersectContext* context;               // optional pointer to intersection context
-  
-  RTCFilterFunctionN filter;                         // filter function to execute
-  
-  union {
-    RTCIntersectFunctionN intersect;                 // user geometry intersection callback to execute
-    RTCOccludedFunctionN occluded;                   // user geometry occlusion callback to execute
-  };
-
+  enum RTCIntersectContextFlags flags;     // intersection flags
+  enum RTCFeatureFlags feature_mask;       // selectively enable features for traversal
+  struct RTCIntersectContext* context;     // optional pointer to intersection context
+  RTCFilterFunctionN filter;               // filter function to execute
+  RTCIntersectFunctionN intersect;         // user geometry intersection callback to execute
 #if RTC_MIN_WIDTH
-  float minWidthDistanceFactor;                      // curve radius is set to this factor times distance to ray origin
+  float minWidthDistanceFactor;            // curve radius is set to this factor times distance to ray origin
 #endif
 };
 
-/* Initializes an intersection arguments. */
+/* Initializes intersection arguments. */
 RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* args)
 {
   args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
@@ -52,6 +44,34 @@ RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* arg
   args->context = NULL;
   args->filter = NULL;
   args->intersect = NULL;
+
+#if RTC_MIN_WIDTH
+  args->minWidthDistanceFactor = 0.0f;
+#endif
+}
+
+/* Additional arguments for rtcOccluded1/4/8/16 calls */
+struct RTCOccludedArguments
+{
+  enum RTCIntersectContextFlags flags;     // intersection flags
+  enum RTCFeatureFlags feature_mask;       // selectively enable features for traversal
+  struct RTCIntersectContext* context;     // optional pointer to intersection context
+  RTCFilterFunctionN filter;               // filter function to execute
+  RTCOccludedFunctionN occluded;           // user geometry occlusion callback to execute
+
+#if RTC_MIN_WIDTH
+  float minWidthDistanceFactor;            // curve radius is set to this factor times distance to ray origin
+#endif
+};
+
+/* Initializes an intersection arguments. */
+RTC_FORCEINLINE void rtcInitOccludedArguments(struct RTCOccludedArguments* args)
+{
+  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
+  args->context = NULL;
+  args->filter = NULL;
+  args->occluded = NULL;
 
 #if RTC_MIN_WIDTH
   args->minWidthDistanceFactor = 0.0f;
@@ -160,16 +180,16 @@ RTC_API void rtcForwardIntersect16(const int* valid, const struct RTCIntersectFu
 
 
 /* Tests a single ray for occlusion with the scene. */
-RTC_SYCL_API void rtcOccluded1(RTCScene scene, struct RTCRay* ray, struct RTCIntersectArguments* args RTC_OPTIONAL_ARGUMENT);
+RTC_SYCL_API void rtcOccluded1(RTCScene scene, struct RTCRay* ray, struct RTCOccludedArguments* args RTC_OPTIONAL_ARGUMENT);
 
 /* Tests a packet of 4 rays for occlusion occluded with the scene. */
-RTC_API void rtcOccluded4(const int* valid, RTCScene scene, struct RTCRay4* ray, struct RTCIntersectArguments* args RTC_OPTIONAL_ARGUMENT);
+RTC_API void rtcOccluded4(const int* valid, RTCScene scene, struct RTCRay4* ray, struct RTCOccludedArguments* args RTC_OPTIONAL_ARGUMENT);
 
 /* Tests a packet of 8 rays for occlusion with the scene. */
-RTC_API void rtcOccluded8(const int* valid, RTCScene scene, struct RTCRay8* ray, struct RTCIntersectArguments* args RTC_OPTIONAL_ARGUMENT);
+RTC_API void rtcOccluded8(const int* valid, RTCScene scene, struct RTCRay8* ray, struct RTCOccludedArguments* args RTC_OPTIONAL_ARGUMENT);
 
 /* Tests a packet of 16 rays for occlusion with the scene. */
-RTC_API void rtcOccluded16(const int* valid, RTCScene scene, struct RTCRay16* ray, struct RTCIntersectArguments* args RTC_OPTIONAL_ARGUMENT);
+RTC_API void rtcOccluded16(const int* valid, RTCScene scene, struct RTCRay16* ray, struct RTCOccludedArguments* args RTC_OPTIONAL_ARGUMENT);
 
 
 /* Forwards single occlusion ray inside user geometry callback. */

@@ -5053,7 +5053,7 @@ namespace embree
             RTCRayHit ray = fastMakeRay(zero,Vec3f(float(x)*rcpWidth,1,float(y)*rcpHeight));
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
             case VARIANT_INTERSECT: rtcIntersect1(*scene,&ray,&args); break;
-            case VARIANT_OCCLUDED : rtcOccluded1 (*scene,(RTCRay*)&ray,&args); break;
+            case VARIANT_OCCLUDED : rtcOccluded1 (*scene,(RTCRay*)&ray,(RTCOccludedArguments*)&args); break;
             }
           }
         }
@@ -5072,7 +5072,7 @@ namespace embree
             __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
             case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,&ray4,&args); break;
-            case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,(RTCRay4*)&ray4,&args); break;
+            case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,(RTCRay4*)&ray4,(RTCOccludedArguments*)&args); break;
             }
           }
         }
@@ -5091,7 +5091,7 @@ namespace embree
             __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
             case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,&ray8,&args); break;
-            case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,(RTCRay8*)&ray8,&args); break;
+            case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,(RTCRay8*)&ray8,(RTCOccludedArguments*)&args); break;
             }
           }
         }
@@ -5110,7 +5110,7 @@ namespace embree
             __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
             switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
             case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,&ray16,&args); break;
-            case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,(RTCRay16*)&ray16,&args); break;
+            case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,(RTCRay16*)&ray16,(RTCOccludedArguments*)&args); break;
             }
           }
         }
@@ -5209,7 +5209,7 @@ namespace embree
           fastMakeRay(ray,zero,sampler);
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect1(*scene,&ray,&args); break;
-          case VARIANT_OCCLUDED : rtcOccluded1 (*scene,(RTCRay*)&ray,&args); break;
+          case VARIANT_OCCLUDED : rtcOccluded1 (*scene,(RTCRay*)&ray,(RTCOccludedArguments*)&args); break;
           }
         }
         break;
@@ -5224,7 +5224,7 @@ namespace embree
           __aligned(16) int valid4[4] = { -1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect4(valid4,*scene,&ray4,&args); break;
-          case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,(RTCRay4*)&ray4,&args); break;
+          case VARIANT_OCCLUDED : rtcOccluded4 (valid4,*scene,(RTCRay4*)&ray4,(RTCOccludedArguments*)&args); break;
           }
         }
         break;
@@ -5239,7 +5239,7 @@ namespace embree
           __aligned(32) int valid8[8] = { -1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect8(valid8,*scene,&ray8,&args); break;
-          case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,(RTCRay8*)&ray8,&args); break;
+          case VARIANT_OCCLUDED : rtcOccluded8 (valid8,*scene,(RTCRay8*)&ray8,(RTCOccludedArguments*)&args); break;
           }
         }
         break;
@@ -5254,7 +5254,7 @@ namespace embree
           __aligned(64) int valid16[16] = { -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 };
           switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
           case VARIANT_INTERSECT: rtcIntersect16(valid16,*scene,&ray16,&args); break;
-          case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,(RTCRay16*)&ray16,&args); break;
+          case VARIANT_OCCLUDED : rtcOccluded16 (valid16,*scene,(RTCRay16*)&ray16,(RTCOccludedArguments*)&args); break;
           }
         }
         break;
