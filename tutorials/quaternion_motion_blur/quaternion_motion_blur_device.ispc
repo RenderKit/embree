@@ -5,8 +5,10 @@
 #include "../common/math/random_sampler.isph"
 #include "../common/math/sampling.isph"
 
+#define USE_ARGUMENT_CALLBACKS 1
+
 /* all features required by this tutorial */
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_INSTANCE | \
@@ -196,7 +198,7 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform unsigne
   rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
-#if !EMBREE_GEOMETRY_USER_IN_ARGUMENT
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
 #endif
   rtcCommitGeometry(geom);
@@ -264,7 +266,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data,
   uniform RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
   args.intersect = sphereIntersectFunc;
 #endif
 

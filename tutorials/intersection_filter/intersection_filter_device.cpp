@@ -5,8 +5,10 @@
 
 namespace embree {
 
+#define USE_ARGUMENT_CALLBACKS 1
+
 /* all features required by this tutorial */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
@@ -36,32 +38,6 @@ TutorialData data;
 
 #define HIT_LIST_LENGTH 16
 
-/* extended ray structure that includes total transparency along the ray */
-struct Ray2
-{
-  Ray ray;
-
-  // ray extensions
-  float transparency; //!< accumulated transparency value
-
-  // we remember up to 16 hits to ignore duplicate hits
-  unsigned int firstHit, lastHit;
-  unsigned int hit_geomIDs[HIT_LIST_LENGTH];
-  unsigned int hit_primIDs[HIT_LIST_LENGTH];
-};
-
-inline RTCRayHit* RTCRayHit_(Ray2& ray)
-{
-  RTCRayHit* ray_ptr = (RTCRayHit*)&ray;
-  return ray_ptr;
-}
-
-inline RTCRay* RTCRay_(Ray2& ray)
-{
-  RTCRay* ray_ptr = (RTCRay*)&ray;
-  return ray_ptr;
-}
-
 /* 3D procedural transparency */
 inline float transparencyFunction(Vec3fa& h)
 {
@@ -87,68 +63,66 @@ void renderPixelStandard(const TutorialData& data,
   IntersectContext context;
   InitIntersectionContext(&context);
 
-  RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  args.context = &context.context;
-  args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    
   /* initialize ray */
-  Ray2 primary;
-  init_Ray(primary.ray,Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
-  primary.ray.id = 0; // needs to encode rayID for filter
-  primary.transparency = 0.0f;
-
+  Ray primary;
+  init_Ray(primary,Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
+  float primary_transparency = 0.0f;
 
   while (true)
   {
-    context.userRayExt = &primary;
+    context.userRayExt = &primary_transparency;
 
     /* intersect ray with scene */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
-    args.filter = intersectionFilter;
+    RTCIntersectArguments iargs;
+    rtcInitIntersectArguments(&iargs);
+    iargs.context = &context.context;
+    iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+#if USE_ARGUMENT_CALLBACKS
+    iargs.filter = intersectionFilter;
 #endif
-    rtcIntersect1(data.g_scene,RTCRayHit_(primary),&args);
+    rtcIntersect1(data.g_scene,RTCRayHit_(primary),&iargs);
     RayStats_addRay(stats);
 
     /* shade pixels */
-    if (primary.ray.geomID == RTC_INVALID_GEOMETRY_ID)
+    if (primary.geomID == RTC_INVALID_GEOMETRY_ID)
       break;
 
-    float opacity = 1.0f-primary.transparency;
-    Vec3fa diffuse = data.colors[primary.ray.primID];
+    float opacity = 1.0f-primary_transparency;
+    Vec3fa diffuse = data.colors[primary.primID];
     Vec3fa La = diffuse*0.5f;
     color = color + weight*opacity*La;
     Vec3fa lightDir = normalize(Vec3fa(-1,-1,-1));
 
     /* initialize shadow ray */
-    Ray2 shadow;
-    init_Ray(shadow.ray, primary.ray.org + primary.ray.tfar*primary.ray.dir, neg(lightDir), 0.001f, inf);
-    shadow.ray.id = 0; // needs to encode rayID for filter
-    shadow.transparency = 1.0f;
-    shadow.firstHit = 0;
-    shadow.lastHit = 0;
-    context.userRayExt = &shadow;
+    Ray shadow;
+    init_Ray(shadow, primary.org + primary.tfar*primary.dir, neg(lightDir), 0.001f, inf);
+    float shadow_transparency = 1.0f;
+    context.userRayExt = &shadow_transparency;
 
     /* trace shadow ray */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
-    args.filter = occlusionFilter;
+    RTCOccludedArguments sargs;
+    rtcInitOccludedArguments(&sargs);
+    sargs.context = &context.context;
+    sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+#if USE_ARGUMENT_CALLBACKS
+    sargs.filter = occlusionFilter;
 #endif
-    rtcOccluded1(data.g_scene,RTCRay_(shadow),&args);
+    rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.ray.tfar >= 0.0f) {
-      Vec3fa Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
+    if (shadow.tfar >= 0.0f) {
+      Vec3fa Ll = diffuse*shadow_transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
       color = color + weight*opacity*Ll;
     }
 
     /* shoot transmission ray */
-    weight *= primary.transparency;
-    primary.ray.tnear() = 1.001f*primary.ray.tfar;
-    primary.ray.tfar = (float)(inf);
-    primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
-    primary.transparency = 0.0f;
+    weight *= primary_transparency;
+    primary.tnear() = 1.001f*primary.tfar;
+    primary.tfar = (float)(inf);
+    primary.geomID = RTC_INVALID_GEOMETRY_ID;
+    primary.primID = RTC_INVALID_GEOMETRY_ID;
+    primary_transparency = 0.0f;
   }
 
   /* write color to framebuffer */
@@ -207,8 +181,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilter(const RTCFilterFunctionNArg
   /* otherwise accept hit and remember transparency */
   else
   {
-    Ray2* eray = (Ray2*) context->userRayExt;
-    eray->transparency = T;
+    float* transparency = (float*) context->userRayExt;
+    *transparency = T;
   }
 }
 
@@ -222,34 +196,19 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   Ray* ray = (Ray*)args->ray;
-  RTCHit* hit = (RTCHit*)args->hit;
 
   /* ignore inactive rays */
   if (valid[0] != -1) return;
 
-  Ray2* ray2 = (Ray2*) context->userRayExt;
-  assert(ray2);
-
-  for (unsigned int i=ray2->firstHit; i<ray2->lastHit; i++) {
-    unsigned slot= i%HIT_LIST_LENGTH;
-    if (ray2->hit_geomIDs[slot] == hit->geomID && ray2->hit_primIDs[slot] == hit->primID) {
-      valid[0] = 0; return; // ignore duplicate intersections
-    }
-  }
-  /* store hit in hit list */
-  unsigned int slot = ray2->lastHit%HIT_LIST_LENGTH;
-  ray2->hit_geomIDs[slot] = hit->geomID;
-  ray2->hit_primIDs[slot] = hit->primID;
-  ray2->lastHit++;
-  if (ray2->lastHit - ray2->firstHit >= HIT_LIST_LENGTH)
-    ray2->firstHit++;
+  float* transparency = (float*) context->userRayExt;
+  assert(transparency);
 
   Vec3fa h = ray->org + ray->dir * ray->tfar;
 
   /* calculate and accumulate transparency */
   float T = transparencyFunction(h);
-  T *= ray2->transparency;
-  ray2->transparency = T;
+  T *= *transparency;
+  *transparency = T;
   if (T != 0.0f) 
     valid[0] = 0;
 }
@@ -332,7 +291,7 @@ unsigned int addCube (RTCScene scene_i, const Vec3fa& offset, const Vec3fa& scal
   data.colors[11] = Vec3fa(1,1,0);
 
   /* set intersection filter for the cube */
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -364,7 +323,7 @@ unsigned int addSubdivCube (RTCScene scene_i)
   data.colors[5] = Vec3fa(1,1,0); // back side
 
   /* set intersection filter for the cube */
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -402,7 +361,7 @@ unsigned int addGroundPlane (RTCScene scene_i)
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   data.intersectionFilter = (void*) GET_FUNCTION_POINTER(intersectionFilter);
   data.occlusionFilter    = (void*) GET_FUNCTION_POINTER(occlusionFilter   );
 #endif
@@ -410,7 +369,7 @@ extern "C" void device_init (char* cfg)
   /* create scene */
   g_scene = data.g_scene = rtcNewScene(g_device);
   rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
-  rtcSetSceneBuildQuality(data.g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
+  rtcSetSceneBuildQuality(data.g_scene, RTC_BUILD_QUALITY_MEDIUM);
 
   /* add cube */
   addCube(data.g_scene,Vec3fa(0.0f,0.0f,0.0f),Vec3fa(10.0f,1.0f,1.0f),45.0f);

@@ -18,6 +18,9 @@ namespace embree
     __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context, RTCIntersectArguments* args)
       : scene(scene), user(user_context), args(args) {}
 
+    __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context, RTCOccludedArguments* args)
+      : scene(scene), user(user_context), args((RTCIntersectArguments*)args) {}
+
     __forceinline bool hasContextFilter() const {
       return args->filter != nullptr;
     }
@@ -26,15 +29,13 @@ namespace embree
       return args->filter;
     }
 
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
     RTCIntersectFunctionN getIntersectFunction() const {
       return args->intersect;
     }
     
     RTCOccludedFunctionN getOccludedFunction() const {
-      return args->occluded;
+      return (RTCOccludedFunctionN) args->intersect;
     }
-#endif
 
     __forceinline bool isCoherent() const {
       return embree::isCoherent(args->flags);

@@ -7,8 +7,10 @@
 
 namespace embree {
 
+#define USE_ARGUMENT_CALLBACKS 1
+  
 /* all features required by this tutorial */
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_INSTANCE | \
@@ -198,7 +200,7 @@ Sphere* createAnalyticalSpheres (RTCScene scene, unsigned int N)
   rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,nullptr);
-#if !EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
 #endif
   rtcCommitGeometry(geom);
@@ -266,7 +268,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
   args.intersect = sphereIntersectFunc;
 #endif
 

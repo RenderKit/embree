@@ -239,8 +239,8 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
   ray.primID = RTC_INVALID_GEOMETRY_ID;
   ray.mask = -1;
 
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
+  uniform RTCOccludedArguments args;
+  rtcInitOccludedArguments(&args);
   args.context = &context->context;
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   args.filter = occlusionFilter;
