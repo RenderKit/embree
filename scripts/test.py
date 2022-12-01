@@ -420,19 +420,8 @@ def runConfig(config):
     conf.append("-D EMBREE_BACKFACE_CULLING_CURVES="+config["BACKFACE_CULLING_CRUVES"])
   if "IGNORE_INVALID_RAYS" in config:
     conf.append("-D EMBREE_IGNORE_INVALID_RAYS="+config["IGNORE_INVALID_RAYS"])
-
   if "FILTER_FUNCTION" in config:
-    if config["FILTER_FUNCTION"] == "ARGUMENTS":
-      conf.append("-D EMBREE_FILTER_FUNCTION=ON")
-      conf.append("-D EMBREE_FILTER_FUNCTION_IN_ARGUMENTS=ON")
-      conf.append("-D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=OFF")
-    elif config["FILTER_FUNCTION"] == "GEOMETRY":
-      conf.append("-D EMBREE_FILTER_FUNCTION=ON")
-      conf.append("-D EMBREE_FILTER_FUNCTION_IN_ARGUMENTS=OFF")
-      conf.append("-D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=ON")
-    else:
-       conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
-
+     conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
   if "LARGEGRF" in config:
     conf.append("-D EMBREE_SYCL_LARGEGRF="+config["LARGEGRF"])
   if "SYCL_MBLUR" in config:
@@ -453,19 +442,8 @@ def runConfig(config):
     conf.append("-D EMBREE_GEOMETRY_CURVE="+config["CURVE"])
   if "SUBDIV" in config:
     conf.append("-D EMBREE_GEOMETRY_SUBDIVISION="+config["SUBDIV"])
-
   if "USERGEOM" in config:
-    if config["USERGEOM"] == "ARGUMENTS":
-      conf.append("-D EMBREE_GEOMETRY_USER=ON")
-      conf.append("-D EMBREE_GEOMETRY_USER_IN_ARGUMENTS=ON")
-      conf.append("-D EMBREE_GEOMETRY_USER_IN_GEOMETRY=OFF")
-    elif config["USERGEOM"] == "GEOMETRY":
-      conf.append("-D EMBREE_GEOMETRY_USER=ON")
-      conf.append("-D EMBREE_GEOMETRY_USER_IN_ARGUMENTS=OFF")
-      conf.append("-D EMBREE_GEOMETRY_USER_IN_GEOMETRY=ON")
-    else:
       conf.append("-D EMBREE_GEOMETRY_USER="+config["USERGEOM"])
-
   if "INSTANCE" in config:
     conf.append("-D EMBREE_GEOMETRY_INSTANCE="+config["INSTANCE"])
   if "POINT" in config:

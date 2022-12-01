@@ -359,9 +359,6 @@ build directory.
           -D EMBREE_MAX_ISA=SSE2
           -D EMBREE_ISPC_SUPPORT=OFF
           -D EMBREE_SYCL_SUPPORT=ON
-          -D EMBREE_SYCL_AOT_DEVICES=none
-          -D EMBREE_FILTER_FUNCTION_IN_GEOMETRY=OFF
-          -D EMBREE_GEOMETRY_USER_IN_GEOMETRY=OFF 
           -D TBB_ROOT=path_to_tbb\lib\cmake\tbb ..
 
 This uses the Ninja generator which is required for the DPC++

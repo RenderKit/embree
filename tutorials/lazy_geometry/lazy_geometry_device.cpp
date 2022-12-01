@@ -200,8 +200,8 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
     lazyCreate(instance);
   
   /* trace ray inside object */
-  RTCIntersectArguments iargs;
-  rtcInitIntersectArguments(&iargs);
+  RTCOccludedArguments iargs;
+  rtcInitOccludedArguments(&iargs);
   iargs.context = context;
   rtcOccluded1(instance->object,RTCRay_(*ray),&iargs);
 }

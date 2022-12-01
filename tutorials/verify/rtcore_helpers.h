@@ -650,7 +650,7 @@ namespace embree
     {
       switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
       case VARIANT_INTERSECT: for (size_t i=0; i<N; i++) rtcIntersect1(scene,&rays[i],args); break;
-      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,(RTCRay*)&rays[i],args); break;
+      case VARIANT_OCCLUDED : for (size_t i=0; i<N; i++) rtcOccluded1 (scene,(RTCRay*)&rays[i],(RTCOccludedArguments*)args); break;
       default: assert(false);
       }
       break;
@@ -668,7 +668,7 @@ namespace embree
         for (size_t j=M; j<4; j++) setRay(ray4,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect4(valid,scene,&ray4,args); break;
-        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,(RTCRay4*)&ray4,args); break;
+        case VARIANT_OCCLUDED : rtcOccluded4 (valid,scene,(RTCRay4*)&ray4,(RTCOccludedArguments*)args); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray4,j);
@@ -687,7 +687,7 @@ namespace embree
         for (size_t j=M; j<8; j++) setRay(ray8,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect8(valid,scene,&ray8,args); break;
-        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,(RTCRay8*)&ray8,args); break;
+        case VARIANT_OCCLUDED : rtcOccluded8 (valid,scene,(RTCRay8*)&ray8,(RTCOccludedArguments*)args); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray8,j);
@@ -706,7 +706,7 @@ namespace embree
         for (size_t j=M; j<16; j++) setRay(ray16,j,makeRay(zero,zero,pos_inf,neg_inf));
         switch (ivariant & VARIANT_INTERSECT_OCCLUDED_MASK) {
         case VARIANT_INTERSECT: rtcIntersect16(valid,scene,&ray16,args); break;
-        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,(RTCRay16*)&ray16,args); break;
+        case VARIANT_OCCLUDED : rtcOccluded16 (valid,scene,(RTCRay16*)&ray16,(RTCOccludedArguments*)args); break;
         default: assert(false);
         }
         for (size_t j=0; j<M; j++) rays[i+j] = getRay(ray16,j);

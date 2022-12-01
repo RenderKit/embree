@@ -67,11 +67,11 @@ SYCL_EXTERNAL void rtcForwardIntersect1(const RTCIntersectFunctionNArguments* ar
   instance_id_stack::push(args->context, instID);
 }
 
-SYCL_EXTERNAL void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCIntersectArguments* args)
+SYCL_EXTERNAL void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCOccludedArguments* args)
 {
-  RTCIntersectArguments default_args;
+  RTCOccludedArguments default_args;
   if (args == nullptr) {
-    rtcInitIntersectArguments(&default_args);
+    rtcInitOccludedArguments(&default_args);
     args = &default_args;
   }
   RTCIntersectContext* context = args->context;
@@ -119,7 +119,7 @@ SYCL_EXTERNAL void* rtcGetGeometryUserDataFromScene (RTCScene hscene, unsigned i
 
 SYCL_EXTERNAL void rtcInvokeIntersectFilterFromGeometry(const RTCIntersectFunctionNArguments* args_i, const RTCFilterFunctionNArguments* filter_args)
 {
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
+#if EMBREE_SYCL_GEOMETRY_CALLBACK
   IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
   if (args->geometry->intersectionFilterN)
     args->geometry->intersectionFilterN(filter_args);
@@ -128,7 +128,7 @@ SYCL_EXTERNAL void rtcInvokeIntersectFilterFromGeometry(const RTCIntersectFuncti
 
 SYCL_EXTERNAL void rtcInvokeOccludedFilterFromGeometry(const RTCOccludedFunctionNArguments* args_i, const RTCFilterFunctionNArguments* filter_args)
 {
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY && EMBREE_SYCL_GEOMETRY_CALLBACK
+#if EMBREE_SYCL_GEOMETRY_CALLBACK
   OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
   if (args->geometry->occlusionFilterN)
     args->geometry->occlusionFilterN(filter_args);
