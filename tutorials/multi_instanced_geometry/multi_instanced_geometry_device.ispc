@@ -221,13 +221,17 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
                          const uniform float time,
                          const uniform ISPCCamera& camera, uniform RayStats& stats)
 {
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+  uniform RTCIntersectArguments iargs;
+  rtcInitIntersectArguments(&iargs);
+  iargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+
+  uniform RTCOccludedArguments sargs;
+  rtcInitOccludedArguments(&sargs);
+  sargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
 
   RandomSampler sampler;
   Ray primaryRay = samplePrimaryRay(data, x, 0, y, 0, camera, sampler, stats);
-  rtcIntersectV(data.g_scene, RTCRayHit_(primaryRay),&args);
+  rtcIntersectV(data.g_scene, RTCRayHit_(primaryRay),&iargs);
   
   Vec3f color = make_Vec3f(0.f);
   if (primaryRay.geomID != RTC_INVALID_GEOMETRY_ID)
@@ -236,7 +240,7 @@ void renderPixelStandard(const uniform TutorialData& data, int x, int y,
     Vec3f emission;
     sampleLightDirection(RandomSampler_get3D(sampler), lightDir, emission);
     Ray shadowRay = makeShadowRay(primaryRay, lightDir, stats);
-    rtcOccludedV(data.g_scene, RTCRay_(shadowRay), &args);
+    rtcOccludedV(data.g_scene, RTCRay_(shadowRay), &sargs);
     color = shade(data, primaryRay, shadowRay, lightDir, emission);
   }
   

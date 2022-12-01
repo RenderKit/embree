@@ -73,9 +73,6 @@ RTC_NAMESPACE_BEGIN;
 
     Lock<MutexSys> lock(g_mutex);
     
-    if (!rthwifIsSYCLDeviceSupported(sycl_device))
-      throw_RTCError(RTC_ERROR_UNSUPPORTED_GPU,"unsupported SYCL GPU device");
-
     DeviceGPU* device = dynamic_cast<DeviceGPU*>((Device*) hdevice);
     if (device == nullptr)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "passed device must be an Embree SYCL device")
@@ -814,7 +811,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded1 (RTCScene hscene, RTCRay* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded1 (RTCScene hscene, RTCRay* ray, RTCOccludedArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -826,9 +823,9 @@ RTC_NAMESPACE_BEGIN;
     if (((size_t)ray) & 0x0F) throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "ray not aligned to 16 bytes");   
 #endif
 
-    RTCIntersectArguments defaultArgs;
+    RTCOccludedArguments defaultArgs;
     if (unlikely(args == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
+      rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
     RTCIntersectContext* user_context = args->context;
@@ -877,7 +874,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
-  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCRay4* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded4 (const int* valid, RTCScene hscene, RTCRay4* ray, RTCOccludedArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -892,9 +889,9 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<4; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,cnt,cnt,cnt);
 
-    RTCIntersectArguments defaultArgs;
+    RTCOccludedArguments defaultArgs;
     if (unlikely(args == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
+      rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
     RTCIntersectContext* user_context = args->context;
@@ -977,7 +974,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
  
-  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCRay8* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded8 (const int* valid, RTCScene hscene, RTCRay8* ray, RTCOccludedArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -992,9 +989,9 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<8; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,cnt,cnt,cnt);
 
-    RTCIntersectArguments defaultArgs;
+    RTCOccludedArguments defaultArgs;
     if (unlikely(args == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
+      rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
     RTCIntersectContext* user_context = args->context;
@@ -1031,7 +1028,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
    
-  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCRay16* ray, RTCIntersectArguments* args) 
+  RTC_API void rtcOccluded16 (const int* valid, RTCScene hscene, RTCRay16* ray, RTCOccludedArguments* args) 
   {
     Scene* scene = (Scene*) hscene;
     RTC_CATCH_BEGIN;
@@ -1046,9 +1043,9 @@ RTC_NAMESPACE_BEGIN;
     STAT(size_t cnt=0; for (size_t i=0; i<16; i++) cnt += ((int*)valid)[i] == -1;);
     STAT3(shadow.travs,cnt,cnt,cnt);
 
-    RTCIntersectArguments defaultArgs;
+    RTCOccludedArguments defaultArgs;
     if (unlikely(args == nullptr)) {
-      rtcInitIntersectArguments(&defaultArgs);
+      rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
     RTCIntersectContext* user_context = args->context;
@@ -1244,20 +1241,16 @@ RTC_NAMESPACE_BEGIN;
 
   RTC_API void rtcInvokeIntersectFilterFromGeometry(const struct RTCIntersectFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
     IntersectFunctionNArguments* args = (IntersectFunctionNArguments*) args_i;
     if (args->geometry->intersectionFilterN)
         args->geometry->intersectionFilterN(filter_args);
-#endif
   }
 
   RTC_API void rtcInvokeOccludedFilterFromGeometry(const struct RTCOccludedFunctionNArguments* const args_i, const struct RTCFilterFunctionNArguments* filter_args)
   {
-#if EMBREE_FILTER_FUNCTION_IN_GEOMETRY
     OccludedFunctionNArguments* args = (OccludedFunctionNArguments*) args_i;
     if (args->geometry->occlusionFilterN)
       args->geometry->occlusionFilterN(filter_args);
-#endif
   }
   
   RTC_API RTCGeometry rtcNewGeometry (RTCDevice hdevice, RTCGeometryType type)

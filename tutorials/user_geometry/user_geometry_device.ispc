@@ -3,8 +3,10 @@
 
 #include "user_geometry_device.isph"
 
+#define USE_ARGUMENT_CALLBACKS 1
+
 /* all features required by this tutorial */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS | \
@@ -165,8 +167,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
   ray->tnear  = ray_tnear;
   ray->tfar   = ray_tfar;
   pushInstanceId(context, args->geomID);
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
+  uniform RTCOccludedArguments args;
+  rtcInitOccludedArguments(&args);
   args.context = context;
   rtcOccludedV(instance->object,RTCRay_(*ray),&args);
   popInstanceId(context);
@@ -314,7 +316,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereIntersectFunc(const RTCIntersec
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
     contextFilterFunction(&fargs);
 #else
     rtcInvokeIntersectFilterFromGeometry(args,&fargs);
@@ -351,7 +353,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereIntersectFunc(const RTCIntersec
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
     contextFilterFunction(&fargs);
 #else
     rtcInvokeIntersectFilterFromGeometry(args,&fargs);
@@ -420,7 +422,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereOccludedFunc(const RTCOccludedF
 
     const float old_t = ray->tfar;
     ray->tfar = t0;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
     contextFilterFunction(&fargs);
 #else
     rtcInvokeOccludedFilterFromGeometry(args,&fargs);
@@ -457,7 +459,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereOccludedFunc(const RTCOccludedF
 
     const float old_t = ray->tfar;
     ray->tfar = t1;
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if USE_ARGUMENT_CALLBACKS
     contextFilterFunction(&fargs);
 #else
     rtcInvokeOccludedFilterFromGeometry(args,&fargs);
@@ -535,7 +537,7 @@ uniform Sphere* uniform createAnalyticalSphere (RTCScene scene, const uniform Ve
   rtcSetGeometryUserPrimitiveCount(geom,1);
   rtcSetGeometryUserData(geom,sphere);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
-#if !EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
     rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
     rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncPtr);
 #endif
@@ -557,11 +559,11 @@ uniform Sphere* uniform createAnalyticalSpheres (RTCScene scene, uniform unsigne
   rtcSetGeometryUserPrimitiveCount(geom,N);
   rtcSetGeometryUserData(geom,spheres);
   rtcSetGeometryBoundsFunction(geom,sphereBoundsFunc,NULL);
-#if !EMBREE_GEOMETRY_USER_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFunction(geom,sphereIntersectFuncPtr);
   rtcSetGeometryOccludedFunction (geom,sphereOccludedFuncPtr);
 #endif
-#if !EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
+#if !USE_ARGUMENT_CALLBACKS
   rtcSetGeometryIntersectFilterFunction(geom,sphereFilterFuncPtr);
   rtcSetGeometryOccludedFilterFunction(geom,sphereFilterFuncPtr);
 #endif
@@ -738,9 +740,6 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
                           float x, float y, const uniform ISPCCamera& camera,
                           uniform RayStats& stats)
 {
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  
   /* initialize ray */
   Ray ray = make_Ray(make_Vec3f(camera.xfm.p), 
                      make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 
@@ -748,15 +747,17 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
-  args.filter = contextFilterFunction;
+  uniform RTCIntersectArguments iargs;
+  rtcInitIntersectArguments(&iargs);
+#if USE_ARGUMENT_CALLBACKS
+  iargs.filter = contextFilterFunction;
 #endif
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
-  args.intersect = contextIntersectFunc;
+#if USE_ARGUMENT_CALLBACKS
+  iargs.intersect = contextIntersectFunc;
 #endif
-  args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+  iargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
-  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&args);
+  rtcIntersectV(data.g_scene,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
   /* shade pixels */
@@ -783,15 +784,17 @@ Vec3f renderPixelStandard(const uniform TutorialData& data,
     Ray shadow = make_Ray(ray.org + 0.999f*ray.tfar*ray.dir, neg(lightDir), 0.001f, inf);
 
     /* trace shadow ray */
-#if EMBREE_FILTER_FUNCTION_IN_ARGUMENTS
-    args.filter = contextFilterFunction;
+    uniform RTCOccludedArguments sargs;
+    rtcInitOccludedArguments(&sargs);
+#if USE_ARGUMENT_CALLBACKS
+    sargs.filter = contextFilterFunction;
 #endif
-#if EMBREE_GEOMETRY_USER_IN_ARGUMENTS
-    args.intersect = (uniform RTCIntersectFunctionN) (void* uniform) contextOccludedFunc;
+#if USE_ARGUMENT_CALLBACKS
+    sargs.occluded = contextOccludedFunc;
 #endif
-    args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
+    sargs.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
     
-    rtcOccludedV(data.g_scene,RTCRay_(shadow),&args);
+    rtcOccludedV(data.g_scene,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 
     /* add light contribution */

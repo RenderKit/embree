@@ -95,14 +95,14 @@ SET_TARGET_PROPERTIES(embree_rthwif_gpu PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLA
 ENDIF()
 
 IF (EMBREE_SYCL_RT_VALIDATION_API)
-  ADD_LIBRARY(embree_rthwif_sycl OBJECT rthwif_production.cpp)
+  ADD_LIBRARY(embree_rthwif_sycl STATIC rthwif_production.cpp)
   SET_PROPERTY(TARGET embree_rthwif_sycl APPEND PROPERTY COMPILE_FLAGS "-DEMBREE_SYCL_SUPPORT")
   SET_TARGET_PROPERTIES(embree_rthwif_sycl PROPERTIES COMPILE_FLAGS ${CMAKE_CXX_FLAGS_SYCL})
   
   INSTALL(TARGETS embree_rthwif_sycl EXPORT embree_rthwif_sycl-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
   INSTALL(EXPORT embree_rthwif_sycl-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
 
-  SET(EMBREE_RTHWIF_SYCL $<TARGET_OBJECTS:embree_rthwif_sycl>)
+  SET(EMBREE_RTHWIF_SYCL embree_rthwif_sycl)
 ENDIF()
 
 ADD_LIBRARY(embree_rthwif SHARED rthwif_builder.cpp builder/qbvh6.cpp builder/statistics.cpp)
@@ -114,10 +114,6 @@ ENDIF()
 
 
 SET_PROPERTY(TARGET embree_rthwif APPEND PROPERTY COMPILE_FLAGS "-DEMBREE_SYCL_SUPPORT")
-
-IF (EMBREE_SYCL_RT_VALIDATION_API)
-  ADD_DEPENDENCIES(embree_rthwif embree_rthwif_sycl)
-ENDIF()
 
 INSTALL(TARGETS embree_rthwif EXPORT embree_rthwif-targets ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
 INSTALL(EXPORT embree_rthwif-targets DESTINATION "${EMBREE_CMAKEEXPORT_DIR}" COMPONENT devel)
