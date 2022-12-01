@@ -444,18 +444,18 @@ jobs:
         scripts/test.py test
 
 
-  continuous-linux-x64-Debug-GCC-ISPC1_17_0-SSE2-TBB-KLOCWORK:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_static_analysis.yml@main
-    with:
-      image: embree/centos:7.4
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        export CI_PROJECT_DIR=$GITHUB_WORKSPACE
-        export CI_JOB_ID=$GITHUB_RUN_ID
-        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.17.0 isa:SSE2 tasking:TBB klocwork:ON intensity:0
-        python scripts/test.py build
-        python scripts/test.py test
-        scripts/klocwork_gen_report.sh
-        scripts/store_files.sh $GITHUB_REPOSITORY $GITHUB_RUN_ID klocwork "klocwork/report.log"
+#  continuous-linux-x64-Debug-GCC-ISPC1_17_0-SSE2-TBB-KLOCWORK:
+#    secrets: inherit
+#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_static_analysis.yml@main
+#    with:
+#      image: embree/centos:7.4
+#      runs-on: '[ "Linux", "docker", "build" ]'
+#      cmd: |
+#        export CI_PROJECT_DIR=$GITHUB_WORKSPACE
+#        export CI_JOB_ID=$GITHUB_RUN_ID
+#        python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.17.0 isa:SSE2 tasking:TBB klocwork:ON intensity:0
+#        python scripts/test.py build
+#        python scripts/test.py test
+#        scripts/klocwork_gen_report.sh
+#        scripts/store_files.sh $GITHUB_REPOSITORY $GITHUB_RUN_ID klocwork "klocwork/report.log"
 
