@@ -73,9 +73,6 @@ RTC_NAMESPACE_BEGIN;
 
     Lock<MutexSys> lock(g_mutex);
     
-    if (!rthwifIsSYCLDeviceSupported(sycl_device))
-      throw_RTCError(RTC_ERROR_UNSUPPORTED_GPU,"unsupported SYCL GPU device");
-
     DeviceGPU* device = dynamic_cast<DeviceGPU*>((Device*) hdevice);
     if (device == nullptr)
       throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "passed device must be an Embree SYCL device")

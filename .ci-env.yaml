@@ -9,7 +9,7 @@
 variables:
   GFX_VERSION_LINUX_EMBARGO: gfx-driver-builds/ci/master/gfx-driver-ci-master-12830/artifacts/Linux/Ubuntu/22.04/Release
   GFX_VERSION_LINUX_INTERNAL: neo-builds/ci/master/ci-neo-master-024982/artifacts/linux/ubuntu/22.04
-  GFX_VERSION_LINUX_PUBLIC: neo-builds/releases/releases_22.43/neo-releases-22.43.24595.29/artifacts/linux/ubuntu/22.04
+  GFX_VERSION_LINUX_PUBLIC: neo-builds/releases/releases_22.43/neo-releases-22.43.24595.34/artifacts/linux/ubuntu/22.04
   GFX_VERSION_WIN_INTERNAL: gfx-driver-builds/ci/master/gfx-driver-ci-master-12830/artifacts/Windows
   GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12830/artifacts/Windows
   DPCPP_VERSION_LINUX: sycl-nightly/20220914
