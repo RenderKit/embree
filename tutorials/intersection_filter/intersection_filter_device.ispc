@@ -28,34 +28,6 @@ uniform TutorialData data;
 /*                             Standard Mode                                              */
 /******************************************************************************************/
 
-#define HIT_LIST_LENGTH 16
-
-/* extended ray structure that includes total transparency along the ray */
-struct Ray2
-{
-  Ray ray;
-
-  // ray extensions
-  float transparency; //!< accumulated transparency value
-
-  // we remember up to 16 hits to ignore duplicate hits
-  unsigned int firstHit, lastHit;
-  unsigned int hit_geomIDs[HIT_LIST_LENGTH];
-  unsigned int hit_primIDs[HIT_LIST_LENGTH];
-};
-
-inline varying RTCRayHit* uniform RTCRayHit_(varying Ray2& ray)
-{
-  varying RTCRayHit* uniform ray_ptr = (varying RTCRayHit* uniform)&ray;
-  return ray_ptr;
-}
-
-inline varying RTCRay* uniform RTCRay_(varying Ray2& ray)
-{
-  varying RTCRay* uniform ray_ptr = (varying RTCRay* uniform)&ray;
-  return ray_ptr;
-}
-
 /* 3D procedural transparency */
 inline float transparencyFunction(Vec3f& h)
 {
@@ -87,15 +59,13 @@ void renderPixelStandard(const uniform TutorialData& data,
   args.feature_mask = (uniform RTCFeatureFlags) (FEATURE_MASK);
   
   /* initialize ray */
-  Ray2 primary;
-  init_Ray(primary.ray,make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
-  primary.ray.id = programIndex; // needs to encode rayID for filter
-  primary.transparency = 0.0f;
-
+  Ray primary;
+  init_Ray(primary,make_Vec3f(camera.xfm.p), make_Vec3f(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
+  float primary_transparency = 0.0f;
 
   while (true)
   {
-    context.userRayExt = &primary;
+    context.userRayExt = &primary_transparency;
 
     /* intersect ray with scene */
 #if USE_ARGUMENT_CALLBACKS
@@ -105,23 +75,20 @@ void renderPixelStandard(const uniform TutorialData& data,
     RayStats_addRay(stats);
 
     /* shade pixels */
-    if (primary.ray.geomID == RTC_INVALID_GEOMETRY_ID)
+    if (primary.geomID == RTC_INVALID_GEOMETRY_ID)
       break;
 
-    float opacity = 1.0f-primary.transparency;
-    Vec3f diffuse = data.colors[primary.ray.primID];
+    float opacity = 1.0f-primary_transparency;
+    Vec3f diffuse = data.colors[primary.primID];
     Vec3f La = diffuse*0.5f;
     color = color + weight*opacity*La;
     Vec3f lightDir = normalize(make_Vec3f(-1,-1,-1));
 
     /* initialize shadow ray */
-    Ray2 shadow;
-    init_Ray(shadow.ray, primary.ray.org + primary.ray.tfar*primary.ray.dir, neg(lightDir), 0.001f, inf);
-    shadow.ray.id = programIndex; // needs to encode rayID for filter
-    shadow.transparency = 1.0f;
-    shadow.firstHit = 0;
-    shadow.lastHit = 0;
-    context.userRayExt = &shadow;
+    Ray shadow;
+    init_Ray(shadow, primary.org + primary.tfar*primary.dir, neg(lightDir), 0.001f, inf);
+    float shadow_transparency = 1.0f;
+    context.userRayExt = &shadow_transparency;
 
     /* trace shadow ray */
 #if USE_ARGUMENT_CALLBACKS
@@ -131,18 +98,18 @@ void renderPixelStandard(const uniform TutorialData& data,
     RayStats_addShadowRay(stats);
 
     /* add light contribution */
-    if (shadow.ray.tfar >= 0.0f) {
-      Vec3f Ll = diffuse*shadow.transparency*clamp(-dot(lightDir,normalize(primary.ray.Ng)),0.0f,1.0f);
+    if (shadow.tfar >= 0.0f) {
+      Vec3f Ll = diffuse*shadow_transparency*clamp(-dot(lightDir,normalize(primary.Ng)),0.0f,1.0f);
       color = color + weight*opacity*Ll;
     }
 
     /* shoot transmission ray */
-    weight *= primary.transparency;
-    primary.ray.tnear = 1.001f*primary.ray.tfar;
-    primary.ray.tfar = (float)(inf);
-    primary.ray.geomID = RTC_INVALID_GEOMETRY_ID;
-    primary.ray.primID = RTC_INVALID_GEOMETRY_ID;
-    primary.transparency = 0.0f;
+    weight *= primary_transparency;
+    primary.tnear = 1.001f*primary.tfar;
+    primary.tfar = (float)(inf);
+    primary.geomID = RTC_INVALID_GEOMETRY_ID;
+    primary.primID = RTC_INVALID_GEOMETRY_ID;
+    primary_transparency = 0.0f;
   }
 
   /* write color to framebuffer */
@@ -201,8 +168,8 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilter(const RTCFilterFun
   /* otherwise accept hit and remember transparency */
   else
   {
-    varying Ray2* uniform eray = (varying Ray2* uniform) context->userRayExt;
-    eray->transparency = T;
+    varying float* uniform transparency = (varying float* uniform) context->userRayExt;
+    *transparency = T;
   }
 }
 
@@ -216,34 +183,19 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFuncti
   uniform int* uniform valid = args->valid;
   const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
-  varying RTCHit* uniform hit = (varying RTCHit* uniform)args->hit;
 
   /* ignore inactive rays */
   if (valid[programIndex] != -1) return;
 
-  varying Ray2* uniform ray2 = (varying Ray2* uniform) context->userRayExt;
-  assert(ray2);
-
-  for (unsigned int i=ray2->firstHit; i<ray2->lastHit; i++) {
-    unsigned slot= i%HIT_LIST_LENGTH;
-    if (ray2->hit_geomIDs[slot] == hit->geomID && ray2->hit_primIDs[slot] == hit->primID) {
-      valid[programIndex] = 0; return; // ignore duplicate intersections
-    }
-  }
-  /* store hit in hit list */
-  unsigned int slot = ray2->lastHit%HIT_LIST_LENGTH;
-  ray2->hit_geomIDs[slot] = hit->geomID;
-  ray2->hit_primIDs[slot] = hit->primID;
-  ray2->lastHit++;
-  if (ray2->lastHit - ray2->firstHit >= HIT_LIST_LENGTH)
-    ray2->firstHit++;
+  varying float* uniform transparency = (varying float* uniform) context->userRayExt;
+  assert(transparency);
 
   Vec3f h = ray->org + ray->dir * ray->tfar;
 
   /* calculate and accumulate transparency */
   float T = transparencyFunction(h);
-  T *= ray2->transparency;
-  ray2->transparency = T;
+  T *= *transparency;
+  *transparency = T;
   if (T != 0.0f) 
     valid[programIndex] = 0;
 }
@@ -404,7 +356,7 @@ export void device_init (uniform int8* uniform cfg)
   /* create scene */
   g_scene = data.g_scene = rtcNewScene(g_device);
   rtcSetSceneFlags(data.g_scene, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
-  rtcSetSceneBuildQuality(data.g_scene, RTC_BUILD_QUALITY_HIGH); // high quality mode to test if we filter out duplicated intersections
+  rtcSetSceneBuildQuality(data.g_scene, RTC_BUILD_QUALITY_MEDIUM);
 
   /* add cube */
   addCube(data.g_scene,make_Vec3f(0.0f,0.0f,0.0f),make_Vec3f(10.0f,1.0f,1.0f),45.0f);
