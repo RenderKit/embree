@@ -63,7 +63,7 @@ jobs:
       artifact-out: release-windows-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON CURVE:OFF sycl:none gfx:PUBLIC ispc:ispc1.17.0 isa:SSE2 intensity:1 package:ZIP rt_validation_api:ON
+        python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON CURVE:OFF sycl:dg2 gfx:PUBLIC ispc:ispc1.17.0 isa:SSE2 intensity:1 package:ZIP rt_validation_api:OFF
         python scripts/test.py build
         python scripts/test.py test
 

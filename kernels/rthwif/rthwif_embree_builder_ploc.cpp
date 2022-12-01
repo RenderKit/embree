@@ -735,7 +735,7 @@ namespace embree
         // ===================================================================================
 
         device_ploc_iteration_time = 0.0f;
-        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,false);
+        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,verbose1);
         timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
       
         const uint new_numPrims = *host_device_tasks;
