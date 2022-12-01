@@ -2058,7 +2058,7 @@ namespace embree
 
       item.barrier(sycl::access::fence_space::local_space);
       
-      numPrims = total_offset;      
+      numPrims = total_offset;
     }
     return numPrims; /* return number of remaining cluster reps */
   }
