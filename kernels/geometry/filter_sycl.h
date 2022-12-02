@@ -21,7 +21,6 @@ namespace embree
       RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->intersectionFilterN;
       if (gfilter)
       {
-        assert(context->scene->hasGeometryFilterFunction());
         gfilter(args);
         
         if (mask == 0)
@@ -35,8 +34,8 @@ namespace embree
       RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)
       {
-        assert(context->scene->hasContextFilterFunction());
-        cfilter(args);
+        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+          cfilter(args);
         
         if (mask == 0)
           return false;
@@ -57,7 +56,6 @@ namespace embree
       RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->occlusionFilterN;
       if (gfilter)
       {
-        assert(context->scene->hasGeometryFilterFunction());
         gfilter(args);
         
         if (mask == 0)
@@ -71,8 +69,8 @@ namespace embree
       RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)
       {
-        assert(context->scene->hasContextFilterFunction());
-        cfilter(args);
+        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+          cfilter(args);
         
         if (mask == 0)
           return false;

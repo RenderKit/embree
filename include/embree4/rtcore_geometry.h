@@ -186,6 +186,9 @@ RTC_API void rtcSetGeometryIntersectFilterFunction(RTCGeometry geometry, RTCFilt
 /* Sets the occlusion filter callback function of the geometry. */
 RTC_API void rtcSetGeometryOccludedFilterFunction(RTCGeometry geometry, RTCFilterFunctionN filter);
 
+/* Enables argument version of intersection or occlusion filter function. */
+RTC_API void rtcSetGeometryEnableFilterFunctionFromArguments(RTCGeometry geometry, bool enable);
+
 /* Sets the user-defined data pointer of the geometry. */
 RTC_API void rtcSetGeometryUserData(RTCGeometry geometry, void* ptr);
 

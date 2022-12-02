@@ -11,7 +11,7 @@
 
 #define USE_ARGUMENT_CALLBACKS 1
 
-RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args);
+//RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args);
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args);
 
 #undef TILE_SIZE_X
@@ -921,16 +921,18 @@ unmasked void assignShaders(uniform ISPCGeometry* uniform uniform geometry)
 {
 #if ENABLE_FILTER_FUNCTION
   RTCGeometry geom = geometry->geometry;
-  if (geometry->type == SUBDIV_MESH)
-    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-  else if (geometry->type == TRIANGLE_MESH)
-    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-  else if (geometry->type == QUAD_MESH)
-    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-  else if (geometry->type == GRID_MESH)
-    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-  else if (geometry->type == CURVES)
+  if (geometry->type == SUBDIV_MESH ||
+      geometry->type == TRIANGLE_MESH ||
+      geometry->type == QUAD_MESH ||
+      geometry->type == GRID_MESH)
+  {
+    //rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
+    rtcSetGeometryEnableFilterFunctionFromArguments(geom,false);
+  }
+  else if (geometry->type == CURVES) {
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterHair);
+    rtcSetGeometryEnableFilterFunctionFromArguments(geom,true);
+  }
 #endif
 }
 
@@ -950,7 +952,6 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
   assignShadersFunc = assignShaders;
 
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_used_features);
-  //RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS, &g_used_features);
 #if ENABLE_FILTER_FUNCTION
 #if USE_ARGUMENT_CALLBACKS
   g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
@@ -1442,7 +1443,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionN
         geometry->type == QUAD_MESH ||
         geometry->type == GRID_MESH)
     {
-      occlusionFilterOpaque(args);
+      //occlusionFilterOpaque(args);
     }
     else if (geometry->type == CURVES)
     {
@@ -1564,6 +1565,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)
 #else
+      if (shadow.tfar < 0.0f) transparency = Vec3fa(0.0f);
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
 #endif
         L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
@@ -1707,7 +1709,7 @@ export void device_init (uniform int8* uniform cfg)
 
   TutorialData_Constructor(&data);
 
-  data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
+  //data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
   data.occlusionFilterHair = GET_FUNCTION_POINTER(occlusionFilterHair);
   
 } // device_init

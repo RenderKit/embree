@@ -191,7 +191,7 @@ namespace embree
   {
     /* invoke any hit callback when Embree filter functions are present */
     RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
-    if (scene->hasContextFilterFunction() || geom->hasFilterFunctions())
+    if (scene->enforceArgumentFilterFunction() || geom->hasArgumentFilterFunctions() || geom->hasGeometryFilterFunctions())
       gflags = RTHWIF_GEOMETRY_FLAG_NONE;
     
     /* invoke any hit callback when high mask bits are enabled */
