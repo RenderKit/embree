@@ -312,6 +312,7 @@ namespace embree
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries                = args.numGeometries;  
 
+#if 0    
     // ===================================    
     // === prefetch builder scene data ===
     // ===================================
@@ -357,7 +358,7 @@ namespace embree
     if (geometries) gpu_queue.prefetch(geometries,sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries);
     if (args.accelBuffer)   gpu_queue.prefetch(args.accelBuffer  ,args.accelBufferBytes);
     if (args.scratchBuffer) gpu_queue.prefetch(args.scratchBuffer,args.scratchBufferBytes);  
-  
+#endif  
     // ======================================================    
     // === DUMMY KERNEL TO TRIGGER REMAINING USM TRANSFER ===
     // ======================================================

@@ -591,7 +591,7 @@ namespace embree
         bounds = { { INFINITY, INFINITY, INFINITY }, { -INFINITY, -INFINITY, -INFINITY } };  // why does the host initializes the bounds
 
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
-        //err = rthwifPrefetchAccelGPU(args,&sycl_queue,gpu_device->verbose); //triggers additional USM transfers
+        err = rthwifPrefetchAccelGPU(args,&sycl_queue,gpu_device->verbose); //triggers additional USM transfers
 #endif
         
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
