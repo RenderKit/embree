@@ -36,8 +36,6 @@ TutorialData data;
 /*                             Standard Mode                                              */
 /******************************************************************************************/
 
-#define HIT_LIST_LENGTH 16
-
 /* 3D procedural transparency */
 inline float transparencyFunction(Vec3fa& h)
 {
@@ -362,8 +360,8 @@ unsigned int addGroundPlane (RTCScene scene_i)
 extern "C" void device_init (char* cfg)
 {
 #if !USE_ARGUMENT_CALLBACKS
-  data.intersectionFilter = (void*) GET_FUNCTION_POINTER(intersectionFilter);
-  data.occlusionFilter    = (void*) GET_FUNCTION_POINTER(occlusionFilter   );
+  data.intersectionFilter = GET_FUNCTION_POINTER(intersectionFilter);
+  data.occlusionFilter    = GET_FUNCTION_POINTER(occlusionFilter   );
 #endif
   
   /* create scene */

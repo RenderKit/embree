@@ -37,8 +37,8 @@ struct TutorialData
   Vec3fa g_accu_p;
 
   float* cube_vertices;
-  unsigned int* cube_triangle_indices;
-  unsigned int* cube_quad_indices;
+  int* cube_triangle_indices;
+  int* cube_quad_indices;
 
   RTCScene scene0;
   RTCScene scene1;
@@ -61,7 +61,7 @@ inline void TutorialData_Constructor(TutorialData* This)
 {
   This->frameID = 50;
   This->g_scene = nullptr;
-  This->face_colors = (Vec3fa*) alignedUSMMalloc(12*sizeof(Vec3fa),16);
+  This->face_colors = (Vec3fa*) alignedUSMMalloc((12)*sizeof(Vec3fa),16);
   This->g_time = 0;
   This->g_accu = nullptr;
   This->g_accu_width = 0;
@@ -80,12 +80,12 @@ inline void TutorialData_Constructor(TutorialData* This)
   This->sphere1 = nullptr;
 
   This->cube_vertices = (float*) alignedUSMMalloc((8*4)*sizeof(float),16);
-  This->cube_triangle_indices = (unsigned int*) alignedUSMMalloc((36)*sizeof(unsigned int),16);
-  This->cube_quad_indices = (unsigned int*) alignedUSMMalloc((24)*sizeof(unsigned int),16);
+  This->cube_triangle_indices = (int*) alignedUSMMalloc((36)*sizeof(int),16);
+  This->cube_quad_indices = (int*) alignedUSMMalloc((24)*sizeof(int),16);
 
   memcpy(This->cube_vertices, cube_vertices, 8*4*sizeof(float));
-  memcpy(This->cube_triangle_indices, cube_triangle_indices, 36*sizeof(unsigned int));
-  memcpy(This->cube_quad_indices, cube_quad_indices, 24*sizeof(unsigned int));
+  memcpy(This->cube_triangle_indices, cube_triangle_indices, 36*sizeof(int));
+  memcpy(This->cube_quad_indices, cube_quad_indices, 24*sizeof(int));
 }
 
 inline void TutorialData_Destructor(TutorialData* This)

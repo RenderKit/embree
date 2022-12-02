@@ -6,7 +6,7 @@
 namespace embree {
 
 #define USE_ARGUMENT_CALLBACKS 1
-  
+
 /* all features required by this tutorial */
 #if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \

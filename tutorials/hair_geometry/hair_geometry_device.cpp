@@ -269,7 +269,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   rtcInitIntersectArguments(&args);
   args.context = &context.context;
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    
+  
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 

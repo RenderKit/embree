@@ -6,7 +6,7 @@
 namespace embree {
 
 #define USE_ARGUMENT_CALLBACKS 1
-  
+
 /* all features required by this tutorial */
 #if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
@@ -29,7 +29,6 @@ const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
 RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionNArguments* args);
-RTC_SYCL_INDIRECTLY_CALLABLE void sphereFilterFunction(const RTCFilterFunctionNArguments* args);
 
 RTCIntersectFunctionN instanceIntersectFuncPtr = nullptr;
 RTCOccludedFunctionN instanceOccludedFuncPtr = nullptr;
@@ -97,7 +96,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   const int* valid = args->valid;
   void* ptr  = args->geometryUserPtr;
   RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
-                                    
+  
   assert(args->N == 1);
   if (!valid[0])
     return;
@@ -110,7 +109,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
   const float ray_tfar  = ray->tfar;
 
 #if 0
-  
+
   RTCIntersectContext* context = args->context;
   ray->org = Vec3ff(xfmPoint (instance->world2local,ray_org));
   ray->dir = Vec3ff(xfmVector(instance->world2local,ray_dir));
@@ -492,14 +491,15 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextOccludedFunc(const RTCOccludedFunctionN
 }
 
 /* intersection filter function */
+
 RTC_SYCL_INDIRECTLY_CALLABLE void sphereFilterFunction(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
   const IntersectContext* context = (const IntersectContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
-  //const unsigned int N = args->N;
-  //assert(N == 1);
+  const unsigned int N = args->N;
+  assert(N == 1);
 
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)
