@@ -1700,7 +1700,11 @@ namespace embree
               {
                 const gpu::AABB3f bounds1 = cached_bounds[localID+r];
                 const float new_area = distanceFct(bounds0,bounds1);
-                const uint new_area_i = (gpu::as_uint(new_area) << 1) & encode_mask;
+                //const uint new_area_i = (gpu::as_uint(new_area) << 1) & encode_mask;
+                uint new_area_i = ((gpu::as_uint(new_area) << 1) & encode_mask);
+                if ((ID >> 1) % 2 == 0)
+                  new_area_i -= ((uint)1<<(SEARCH_RADIUS_SHIFT+2));
+                
                 const uint encode0 = encodeRelativeOffset(localID  ,localID+r);
                 const uint encode1 = encodeRelativeOffset(localID+r,localID);
                 const uint new_area_index0 = new_area_i | encode0;
@@ -1710,18 +1714,21 @@ namespace embree
               }
               
               /* --- extending work around for neighboring zero area bounds and equal area bounds across the subgroup --- */
-#if EQUAL_DISTANCES_WORKAROUND == 1
-              const bool cond = min_area_index == sub_group_broadcast(min_area_index,0);
-              const uint zero_min_area_mask = sub_group_ballot(cond);
-              const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask);
-              if (!cond || cond && (ID % 2 == first_zero_min_area_mask_index % 2))
-                gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);
-#else        
-              const uint zero_min_area_mask = sub_group_ballot(min_area_index == 0);
-              const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask);
-              if (min_area_index != 0 || (ID % 2 == first_zero_min_area_mask_index % 2))
-                gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);
-#endif
+/* #if EQUAL_DISTANCES_WORKAROUND == 1 */
+/*               const uint subgroupLocalID = get_sub_group_local_id(); */
+              
+/*               const bool cond = min_area_index == sub_group_broadcast(min_area_index,0); */
+/*               const uint zero_min_area_mask = sub_group_ballot(cond); */
+/*               const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask); */
+/*               if (subgroupLocalID == 0 || /\* !cond || cond && (ID % 2 == first_zero_min_area_mask_index % 2) *\/) */
+/*                 gpu::atomic_min_local(&cached_neighbor[localID],min_area_index); */
+/* #else         */
+/*               const uint zero_min_area_mask = sub_group_ballot(min_area_index == 0); */
+/*               const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask); */
+/*               if (min_area_index != 0 || (ID % 2 == first_zero_min_area_mask_index % 2)) */
+/*                 gpu::atomic_min_local(&cached_neighbor[localID],min_area_index); */
+/* #endif */
+              gpu::atomic_min_local(&cached_neighbor[localID],min_area_index); 
               
 #endif              
                                                        
@@ -1990,7 +1997,7 @@ namespace embree
         }
 
         /* --- extending work around for neighboring zero area bounds and equal area bounds across the subgroup --- */
-#if EQUAL_DISTANCES_WORKAROUND == 1
+#if 0 //EQUAL_DISTANCES_WORKAROUND == 1
         const bool cond = min_area_index == sub_group_broadcast(min_area_index,0);
         const uint zero_min_area_mask = sub_group_ballot(cond);
         const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask);
