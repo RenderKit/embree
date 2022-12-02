@@ -21,7 +21,7 @@
 #define TRIANGLE_QUAD_BLOCK_SIZE     1024
 #define QBVH6_HEADER_OFFSET          128
 #define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
-#define EQUAL_DISTANCES_WORKAROUND   0
+#define EQUAL_DISTANCES_WORKAROUND   1
 
 namespace embree
 {  
@@ -1701,7 +1701,7 @@ namespace embree
                 const gpu::AABB3f bounds1 = cached_bounds[localID+r];
                 const float new_area = distanceFct(bounds0,bounds1);
                 uint new_area_i = ((gpu::as_uint(new_area) << 1) & encode_mask);
-#if NEW_EQUAL_DISTANCES_WORKAROUND == 1
+#if EQUAL_DISTANCES_WORKAROUND == 1
                 /* --- extending work around for neighboring zero area bounds and equal area bounds across the subgroup --- */                
                 if ((ID >> 1) % 2 == 0)
                   new_area_i -= ((uint)1<<(SEARCH_RADIUS_SHIFT+2));
@@ -1714,13 +1714,12 @@ namespace embree
                 gpu::atomic_min_local(&cached_neighbor[localID+r],new_area_index1);                  
               }
               
-#if NEW_EQUAL_DISTANCES_WORKAROUND == 0 
+#if EQUAL_DISTANCES_WORKAROUND == 0 
                const uint zero_min_area_mask = sub_group_ballot(min_area_index == 0); 
                const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask); 
                if (min_area_index != 0 || (ID % 2 == first_zero_min_area_mask_index % 2)) 
-                 gpu::atomic_min_local(&cached_neighbor[localID],min_area_index); 
 #endif 
-              gpu::atomic_min_local(&cached_neighbor[localID],min_area_index); 
+                 gpu::atomic_min_local(&cached_neighbor[localID],min_area_index); 
               
 #endif              
                                                        
@@ -1978,7 +1977,7 @@ namespace embree
             const gpu::AABB3f bounds1 = cached_bounds[localID+r];
             const float new_area = distanceFct(bounds0,bounds1);
             uint new_area_i = (gpu::as_uint(new_area) << 1) & encode_mask;
-#if NEW_EQUAL_DISTANCES_WORKAROUND == 1
+#if EQUAL_DISTANCES_WORKAROUND == 1
             /* --- extending work around for neighboring zero area bounds and equal area bounds across the subgroup --- */                
             if ((ID >> 1) % 2 == 0)
               new_area_i -= ((uint)1<<(SEARCH_RADIUS_SHIFT+2));
@@ -1993,12 +1992,12 @@ namespace embree
           }
         }
 
-#if NEW_EQUAL_DISTANCES_WORKAROUND == 0         
+#if EQUAL_DISTANCES_WORKAROUND == 0         
         const uint zero_min_area_mask = sub_group_ballot(min_area_index == 0);
         const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask);
         if (min_area_index != 0 || (ID % 2 == first_zero_min_area_mask_index % 2))
-          gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);        
 #endif
+          gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);        
         
 #endif        
 
