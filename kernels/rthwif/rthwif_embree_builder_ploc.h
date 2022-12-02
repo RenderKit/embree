@@ -1979,11 +1979,20 @@ namespace embree
           }
         }
 
-        /* --- work around for neighboring zero area bounds --- */        
+        /* --- extending work around for neighboring zero area bounds and equal area bounds across the subgroup --- */
+#if 0        
         const uint zero_min_area_mask = sub_group_ballot(min_area_index == 0);
         const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask);
         if (min_area_index != 0 || (ID % 2 == first_zero_min_area_mask_index % 2))
-          gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);                      
+          gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);
+#else
+        const bool cond = min_area_index == sub_group_broadcast(min_area_index,0);
+        const uint zero_min_area_mask = sub_group_ballot(cond);
+        const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask);
+        if (!cond || cond && (ID % 2 == first_zero_min_area_mask_index % 2))
+          gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);        
+#endif
+        
 #endif        
 
                                                                                                           
