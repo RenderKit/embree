@@ -91,16 +91,44 @@ namespace embree
     if (disable_device_check && strcmp(disable_device_check,"1") == 0)
       return true;
 
+    sycl::platform platform = sycl_device.get_platform();
+    ze_driver_handle_t hDriver = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(platform);
+
+    uint32_t count = 0;
+    std::vector<ze_driver_extension_properties_t> extensions;
+    ze_result_t result = zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    if (result != ZE_RESULT_SUCCESS) return false;
+
+    extensions.resize(count);
+    result = zeDriverGetExtensionProperties(hDriver,&count,extensions.data());
+    if (result != ZE_RESULT_SUCCESS) return false;
+
+    bool ze_extension_ray_tracing = false;
+    for (uint32_t i=0; i<extensions.size(); i++)
+    {
+      //std::cout << extensions[i].name << " version " << extensions[i].version << std::endl;
+      
+      if (strncmp("ZE_extension_raytracing",extensions[i].name,sizeof(extensions[i].name)))
+        continue;
+      
+      ze_extension_ray_tracing = true; //extensions[i].version >= ZE_RAYTRACING_EXT_VERSION_1_0;
+      break;
+    }
+    if (!ze_extension_ray_tracing)
+      return false;
+  
+#if 1
+
     /* check if GPU device is supported */
     ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
-
-#if 1
-    
     const RTHWIF_FEATURES features = rthwifGetSupportedFeatures(hDevice);
     return features != RTHWIF_FEATURES_NONE;
 
 #else
-    
+
+    /* check if GPU device is supported */
+    ze_device_handle_t hDevice = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(sycl_device);
+
     /* check if ray tracing hardware is supported */
     ze_device_raytracing_ext_properties_t raytracing_properties;
     memset(&raytracing_properties,0,sizeof(raytracing_properties));
@@ -194,7 +222,7 @@ namespace embree
   {
     /* invoke any hit callback when Embree filter functions are present */
     RTHWIF_GEOMETRY_FLAGS gflags = RTHWIF_GEOMETRY_FLAG_OPAQUE;
-    if (scene->hasContextFilterFunction() || geom->hasFilterFunctions())
+    if (scene->enforceArgumentFilterFunction() || geom->hasArgumentFilterFunctions() || geom->hasGeometryFilterFunctions())
       gflags = RTHWIF_GEOMETRY_FLAG_NONE;
     
     /* invoke any hit callback when high mask bits are enabled */

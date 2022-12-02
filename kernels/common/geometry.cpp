@@ -51,6 +51,7 @@ namespace embree
       quality(RTC_BUILD_QUALITY_MEDIUM),
       state((unsigned)State::MODIFIED),
       enabled(true),
+      argumentFilterEnabled(false),
       intersectionFilterN(nullptr), occlusionFilterN(nullptr), pointQueryFunc(nullptr)
   {
     device->refInc();

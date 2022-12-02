@@ -72,7 +72,7 @@ inline void TutorialData_Constructor(TutorialData* This)
   This->g_instance[1] = nullptr;
   This->g_instance[2] = nullptr;
   This->g_instance[3] = nullptr;
-  This->colors = (Vec3fa*) alignedUSMMalloc(5*4*sizeof(Vec3fa),16);
+  This->colors = (Vec3fa*) alignedUSMMalloc((5*4)*sizeof(Vec3fa),16);
 }
 
 inline void TutorialData_Destructor(TutorialData* This)

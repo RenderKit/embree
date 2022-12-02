@@ -29,6 +29,7 @@ void convertTriangleMesh(ISPCTriangleMesh* mesh, RTCScene scene_out)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(Vertex),mesh->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(ISPCTriangle),mesh->numTriangles);
+  rtcSetGeometryEnableFilterFunctionFromArguments(geom,false);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -44,6 +45,7 @@ void convertHairSet(ISPCHairSet* hair, RTCScene scene_out)
   if (hair->flags)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(char),hair->numHairs);
   rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
+  rtcSetGeometryEnableFilterFunctionFromArguments(geom,true);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -212,19 +214,19 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
   if (!transparency) return;
     
   int* valid_i = args->valid;
-  struct RTCHitN* hit = args->hit;
-  const unsigned int N = args->N;
-  assert(N == 1);
+  //struct RTCHitN* hit = args->hit;
+  //const unsigned int N = args->N;
+  //assert(N == 1);
   bool valid = *((int*) valid_i);
   if (!valid) return;
  
   /* make all surfaces opaque */
-  unsigned int geomID = RTCHitN_geomID(hit,N,0);
+  /*unsigned int geomID = RTCHitN_geomID(hit,N,0);
   ISPCGeometry* geometry = data->ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     *transparency = Vec3fa(0.0f);
     return;
-  }
+  }*/
   Vec3fa T = data->hair_Kt;
   T = T * *transparency;
   *transparency = T;
@@ -248,8 +250,10 @@ Vec3fa occluded(RTCScene scene, IntersectContext* context, Ray& ray)
   args.filter = occlusionFilter;
   
   rtcOccluded1(scene,RTCRay_(ray),&args);
+  context->userRayExt = NULL;
 
-  return transparency;
+  if (ray.tfar < 0) return Vec3fa(0.0f);
+  else              return transparency;
 }
 
 /* task that renders a single screen tile */
@@ -269,7 +273,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   rtcInitIntersectArguments(&args);
   args.context = &context.context;
   args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
-    
+  
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
 

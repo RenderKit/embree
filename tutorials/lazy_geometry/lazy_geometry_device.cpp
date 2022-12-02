@@ -173,7 +173,6 @@ void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* args)
   /* trace ray inside object */
   const unsigned int geomID = ray->geomID;
   ray->geomID = RTC_INVALID_GEOMETRY_ID;
-
   RTCIntersectArguments iargs;
   rtcInitIntersectArguments(&iargs);
   iargs.context = context;
@@ -200,10 +199,10 @@ void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* args)
     lazyCreate(instance);
   
   /* trace ray inside object */
-  RTCOccludedArguments iargs;
-  rtcInitOccludedArguments(&iargs);
-  iargs.context = context;
-  rtcOccluded1(instance->object,RTCRay_(*ray),&iargs);
+  RTCOccludedArguments sargs;
+  rtcInitOccludedArguments(&sargs);
+  sargs.context = context;
+  rtcOccluded1(instance->object,RTCRay_(*ray),&sargs);
 }
 
 LazyGeometry* createLazyObject (RTCScene scene, int userID, const Vec3fa& center, const float radius)

@@ -10,7 +10,7 @@ extern "C" bool g_changed;
 TutorialData data;
 
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
-static const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
+const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
 extern "C" RTCFeatureFlags g_feature_mask;
@@ -123,9 +123,8 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_NONE;
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &feature_mask);
   if (g_use_scene_features) g_feature_mask = feature_mask;
-  
   rtcSetSceneProgressMonitorFunction(scene_out,monitorProgressFunction,nullptr);
-  
+
   /* commit changes to scene */
   return scene_out;
 }

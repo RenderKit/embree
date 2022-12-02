@@ -9,7 +9,7 @@ namespace embree {
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_INSTANCE
-  
+
 const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
@@ -174,6 +174,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   RTCIntersectArguments iargs;
   rtcInitIntersectArguments(&iargs);
   iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+  
   rtcIntersect1(data.g_scene,RTCRayHit_(ray),&iargs);
   RayStats_addRay(stats);
 
@@ -201,6 +202,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
     RTCOccludedArguments sargs;
     rtcInitOccludedArguments(&sargs);
     sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+    
     rtcOccluded1(data.g_scene,RTCRay_(shadow),&sargs);
     RayStats_addShadowRay(stats);
 

@@ -12,6 +12,7 @@ sed -i.backup 's/uniform float uniformSampleDiskPDF/uniform float _uniformSample
 
 # ISPC language
 sed -i.backup  's/.isph\"/.h\"/g' $2
+sed -i.backup  's/.ispc\"/.cpp\"/g' $2
 sed -i.backup  's/uniform //g' $2
 sed -i.backup  's/ uniform\*/\*/g' $2
 sed -i.backup  's/ uniform)/)/g' $2
@@ -57,6 +58,7 @@ sed -i.backup  's/foreach_tiled[ ]*([ ]*\([a-zA-Z0-9_]*\)[ ]*=[ ]*\([^ \.]*\)[ ]
 
 sed -i.backup  's/foreach_unique[ ]*([ ]*\([[:alnum:]_]*\)[ ]*in[ ]*\([][[:alnum:]._]*\))/auto \1 = \2;/g' $2
 
+sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]; \/\/ EMBREE_USM_SHARED_DEVICE_READ_WRITE/(\1\*) alignedUSMMalloc((\2)\*sizeof(\1),16,EMBREE_USM_SHARED_DEVICE_READ_WRITE);/g' $2
 sed -i.backup  's/new[ ]*\([a-zA-Z0-9_]*\)[ ]*\[\([^]]*\)\]/(\1\*) alignedUSMMalloc((\2)\*sizeof(\1),16)/g' $2
 sed -i.backup  's/delete[ ]*\[[ ]*\][ ]*\([a-zA-Z0-9_.\>\-]*\)/alignedUSMFree(\1)/g' $2
 

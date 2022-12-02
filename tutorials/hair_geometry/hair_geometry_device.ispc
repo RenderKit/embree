@@ -27,6 +27,7 @@ void convertTriangleMesh(uniform ISPCTriangleMesh* uniform mesh, RTCScene scene_
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,t,RTC_FORMAT_FLOAT3,mesh->positions[t],0,sizeof(uniform Vertex),mesh->numVertices);
   }
   rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,mesh->triangles,0,sizeof(uniform ISPCTriangle),mesh->numTriangles);
+  rtcSetGeometryEnableFilterFunctionFromArguments(geom,false);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -42,6 +43,7 @@ void convertHairSet(uniform ISPCHairSet* uniform hair, RTCScene scene_out)
   if (hair->flags)
     rtcSetSharedGeometryBuffer(geom,RTC_BUFFER_TYPE_FLAGS,0,RTC_FORMAT_UCHAR,hair->flags,0,sizeof(uniform int8),hair->numHairs);
   rtcSetGeometryTessellationRate(geom,(float)hair->tessellation_rate);
+  rtcSetGeometryEnableFilterFunctionFromArguments(geom,true);
   rtcCommitGeometry(geom);
   rtcAttachGeometry(scene_out,geom);
   rtcReleaseGeometry(geom);
@@ -210,19 +212,19 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFuncti
   if (!transparency) return;
     
   uniform int* uniform valid_i = args->valid;
-  struct RTCHitN* uniform hit = args->hit;
-  const uniform unsigned int N = args->N;
-  assert(N == programCount);
+  //struct RTCHitN* uniform hit = args->hit;
+  //const uniform unsigned int N = args->N;
+  //assert(N == programCount);
   bool valid = *((varying int* uniform) valid_i);
   if (!valid) return;
  
   /* make all surfaces opaque */
-  varying unsigned int geomID = RTCHitN_geomID(hit,N,0);
+  /*varying unsigned int geomID = RTCHitN_geomID(hit,N,0);
   uniform ISPCGeometry* geometry = data->ispc_scene->geometries[geomID];
   if (geometry->type == TRIANGLE_MESH) {
     *transparency = make_Vec3f(0.0f);
     return;
-  }
+  }*/
   Vec3f T = data->hair_Kt;
   T = T * *transparency;
   *transparency = T;
@@ -246,8 +248,10 @@ Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& r
   args.filter = occlusionFilter;
   
   rtcOccludedV(scene,RTCRay_(ray),&args);
+  context->userRayExt = NULL;
 
-  return transparency;
+  if (ray.tfar < 0) return make_Vec3f(0.0f);
+  else              return transparency;
 }
 
 /* task that renders a single screen tile */

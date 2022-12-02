@@ -57,7 +57,7 @@ SYCL_EXTERNAL Light_EvalRes QuadLight_eval(const Light* super,
   
 {
   Light_EvalRes res;
-  res.value = Vec3fa(0.f);
+  res.value = Vec3fa(0,0,0);
   res.dist = inf;
   res.pdf = 0.f;
   return res;

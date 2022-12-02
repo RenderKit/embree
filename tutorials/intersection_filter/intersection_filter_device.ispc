@@ -3,7 +3,11 @@
 
 #include "intersection_filter_device.isph"
 
+#if EMBREE_SYCL_TUTORIAL
 #define USE_ARGUMENT_CALLBACKS 1
+#else
+#define USE_ARGUMENT_CALLBACKS 0
+#endif
 
 /* all features required by this tutorial */
 #if USE_ARGUMENT_CALLBACKS
@@ -14,6 +18,12 @@
 #define FEATURE_MASK     \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY
+#endif
+
+/* FIXME: the following is a bug workaround */
+#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
+#define FEATURE_MASK     \
+  RTC_FEATURE_FLAGS_ALL
 #endif
 
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform args);

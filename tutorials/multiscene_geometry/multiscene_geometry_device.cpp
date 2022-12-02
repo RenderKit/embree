@@ -4,6 +4,10 @@
 #include "multiscene_geometry_device.h"
 
 namespace embree {
+
+  /* all features required by this tutorial */
+  #define FEATURE_MASK \
+    RTC_FEATURE_FLAGS_TRIANGLE
   
   /* scene data */
   RTCScene  g_scene = nullptr;
@@ -191,7 +195,11 @@ namespace embree {
     Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x * camera.xfm.l.vx + y * camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
     
     /* intersect ray with scene */
-    rtcIntersect1(data.g_curr_scene, RTCRayHit_(ray));
+    RTCIntersectArguments iargs;
+    rtcInitIntersectArguments(&iargs);
+    iargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+  
+    rtcIntersect1(data.g_curr_scene, RTCRayHit_(ray),&iargs);
     RayStats_addRay(stats);
     
     /* shade pixels */
@@ -206,7 +214,11 @@ namespace embree {
       Ray shadow(ray.org + ray.tfar * ray.dir, neg(lightDir), 0.001f, inf);
       
       /* trace shadow ray */
-      rtcOccluded1(data.g_curr_scene, RTCRay_(shadow));
+      RTCOccludedArguments sargs;
+      rtcInitOccludedArguments(&sargs);
+      sargs.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+      
+      rtcOccluded1(data.g_curr_scene, RTCRay_(shadow),&sargs);
       RayStats_addShadowRay(stats);
       
       /* add light contribution */

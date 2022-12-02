@@ -8,7 +8,7 @@
 namespace embree {
 
 #define USE_ARGUMENT_CALLBACKS 1
-  
+
 /* all features required by this tutorial */
 #if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
@@ -25,7 +25,7 @@ namespace embree {
   RTC_FEATURE_FLAGS_MOTION_BLUR | \
   RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY
 #endif
-  
+
 /* scene data */
 RTCScene g_scene = nullptr;
 TutorialData data;
@@ -281,7 +281,7 @@ Vec3fa renderPixelFunction(const TutorialData& data,
                      RTC_INVALID_GEOMETRY_ID, RTC_INVALID_GEOMETRY_ID);
 
   /* intersect ray with scene */
-  rtcIntersect1(data.g_scene,RTCRayHit_(ray), &args);
+  rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
   /* shade pixels */

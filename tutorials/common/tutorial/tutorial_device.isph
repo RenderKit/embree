@@ -27,6 +27,19 @@ struct Triangle { int v0, v1, v2; };
 #include "../../../common/algorithms/parallel_for.h"
 #endif
 
+#if defined(EMBREE_SYCL_TUTORIAL)
+inline sycl::nd_range<2> make_nd_range(unsigned int size0, unsigned int size1)
+{
+  const sycl::range<2> wg_size = sycl::range<2>(4,4);
+
+  /* align iteration space to work group size */
+  size0 = ((size0 + wg_size[0] - 1) / wg_size[0]) * wg_size[0];
+  size1 = ((size1 + wg_size[1] - 1) / wg_size[1]) * wg_size[1];
+
+  return sycl::nd_range(sycl::range(size0,size1),wg_size);
+}
+#endif
+
 enum Shader { 
   SHADER_DEFAULT, 
   SHADER_EYELIGHT,
@@ -56,11 +69,19 @@ inline int64 get_tsc() { return 0; }
 extern "C" uniform int64 get_tsc();
 #endif
 
+#if defined(__WIN32__) && defined(__INTEL_LLVM_COMPILER)
+/* declare some standard library functions */
+extern "C" __declspec(dllimport) void abort ();
+extern "C" __declspec(dllimport) void exit(int);
+extern "C" __declspec(dllimport) int puts ( const char* str );
+extern "C" __declspec(dllimport) int putchar ( int character );
+#else
 /* declare some standard library functions */
 extern "C" void abort ();
 extern "C" void exit(uniform int);
 extern "C" uniform int puts ( const uniform int8* uniform str );
 extern "C" uniform int putchar ( uniform int character );
+#endif
 
 /* face forward for shading normals */
 inline Vec3f faceforward( const Vec3f& N, const Vec3f& I, const Vec3f& Ng ) {
