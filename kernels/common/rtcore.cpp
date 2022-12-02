@@ -1845,6 +1845,17 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(geometry);
   }
 
+  RTC_API void rtcSetGeometryEnableFilterFunctionFromArguments (RTCGeometry hgeometry, bool enable) 
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryEnableFilterFunctionFromArguments);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
+    geometry->enableFilterFunctionFromArguments(enable);
+    RTC_CATCH_END2(geometry);
+  }
+
   RTC_API void rtcInterpolate(const RTCInterpolateArguments* const args)
   {
     Geometry* geometry = (Geometry*) args->geometry;

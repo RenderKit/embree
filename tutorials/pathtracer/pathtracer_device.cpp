@@ -9,10 +9,11 @@
 #include "../common/lights/quad_light.cpp"
 #include "../common/lights/spot_light.cpp"
 
+namespace embree {
+
 #define USE_ARGUMENT_CALLBACKS 1
 
-namespace embree {
-RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args);
+//RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterHair(const RTCFilterFunctionNArguments* args);
 
 #undef TILE_SIZE_X
@@ -40,7 +41,7 @@ unsigned int keyframeID = 0;
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
 const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAGS_ALL);
 #endif
-static RTCFeatureFlags g_used_features = RTC_FEATURE_FLAGS_NONE;
+RTCFeatureFlags g_used_features = RTC_FEATURE_FLAGS_NONE;
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               Lights                                       //
@@ -59,9 +60,9 @@ Light_SampleRes Lights_sample(const Light* self,
   case LIGHT_QUAD       : return QuadLight_sample(self,dg,s);
   default: {
     Light_SampleRes res;
-    res.weight = zero;
-    res.dir = zero;
-    res.dist = zero;
+    res.weight = Vec3fa(0,0,0);
+    res.dir = Vec3fa(0,0,0);
+    res.dist = 0;
     res.pdf = inf;
     return res;
   }
@@ -81,7 +82,7 @@ Light_EvalRes Lights_eval(const Light* self,
   case LIGHT_QUAD        : return QuadLight_eval(self,dg,dir);
   default: {
     Light_EvalRes res;
-    res.value = Vec3fa(0.f);
+    res.value = Vec3fa(0,0,0);
     res.dist = inf;
     res.pdf = 0.f;
     return res;
@@ -93,7 +94,6 @@ Light_EvalRes Lights_eval(const Light* self,
 ////////////////////////////////////////////////////////////////////////////////
 //                                 BRDF                                       //
 ////////////////////////////////////////////////////////////////////////////////
-
 
 struct BRDF
 {
@@ -923,16 +923,18 @@ void assignShaders(ISPCGeometry* geometry)
 {
 #if ENABLE_FILTER_FUNCTION
   RTCGeometry geom = geometry->geometry;
-  if (geometry->type == SUBDIV_MESH)
-    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-  else if (geometry->type == TRIANGLE_MESH)
-    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-  else if (geometry->type == QUAD_MESH)
-    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-  else if (geometry->type == GRID_MESH)
-    rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
-  else if (geometry->type == CURVES)
+  if (geometry->type == SUBDIV_MESH ||
+      geometry->type == TRIANGLE_MESH ||
+      geometry->type == QUAD_MESH ||
+      geometry->type == GRID_MESH)
+  {
+    //rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterOpaque);
+    rtcSetGeometryEnableFilterFunctionFromArguments(geom,false);
+  }
+  else if (geometry->type == CURVES) {
     rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilterHair);
+    rtcSetGeometryEnableFilterFunctionFromArguments(geom,true);
+  }
 #endif
 }
 
@@ -950,9 +952,8 @@ RTCScene convertScene(ISPCScene* scene_in)
   }
 
   assignShadersFunc = assignShaders;
-  
+
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_used_features);
-  //RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS, &g_used_features);
 #if ENABLE_FILTER_FUNCTION
 #if USE_ARGUMENT_CALLBACKS
   g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
@@ -1428,9 +1429,10 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionN
   IntersectContext* context = (IntersectContext*) args->context;
   TutorialData* pdata = (TutorialData*) context->tutorialData;
   TutorialData& data = *pdata;
+  int* valid_i = args->valid;
 
-  int* valid = args->valid;
-  if (!valid[0]) return;
+  bool valid = *((int*) valid_i);
+  if (!valid) return;
 
   RTCHit* potential_hit = (RTCHit*) args->hit;
   if (potential_hit->instID[0] == -1)
@@ -1443,7 +1445,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionN
         geometry->type == QUAD_MESH ||
         geometry->type == GRID_MESH)
     {
-      occlusionFilterOpaque(args);
+      //occlusionFilterOpaque(args);
     }
     else if (geometry->type == CURVES)
     {
@@ -1477,7 +1479,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
     IntersectContext context;
     InitIntersectionContext(&context);
     context.tutorialData = (void*) &data;
-
+    
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
     args.context = &context.context;
@@ -1557,7 +1559,6 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       sargs.context = &context.context;
       sargs.flags = data.iflags_incoherent;
       sargs.feature_mask = features;
-
 #if USE_ARGUMENT_CALLBACKS && ENABLE_FILTER_FUNCTION
       sargs.filter = contextFilterFunction;
 #endif
@@ -1566,6 +1567,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
 #if !ENABLE_FILTER_FUNCTION
       if (shadow.tfar > 0.0f)
 #else
+      if (shadow.tfar < 0.0f) transparency = Vec3fa(0.0f);
       if (max(max(transparency.x,transparency.y),transparency.z) > 0.0f)
 #endif
         L = L + Lw*ls.weight*transparency*Material__eval(material_array,materialID,numMaterials,brdf,wo,dg,ls.dir);
@@ -1584,14 +1586,14 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
 
 /* task that renders a single screen tile */
 void renderPixelStandard(const TutorialData& data,
-                          int x, int y,
-                          int* pixels,
-                          const unsigned int width,
-                          const unsigned int height,
-                          const float time,
-                          const ISPCCamera& camera,
-                          RayStats& stats,
-                          const RTCFeatureFlags features=RTC_FEATURE_FLAGS_ALL)
+                         int x, int y,
+                         int* pixels,
+                         const unsigned int width,
+                         const unsigned int height,
+                         const float time,
+                         const ISPCCamera& camera,
+                         RayStats& stats,
+                         const RTCFeatureFlags features)
 {
   RandomSampler sampler;
 
@@ -1636,7 +1638,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex],RTC_FEATURE_FLAGS_ALL);
   }
 }
 
@@ -1713,7 +1715,7 @@ extern "C" void device_init (char* cfg)
 
   TutorialData_Constructor(&data);
 
-  data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
+  //data.occlusionFilterOpaque = GET_FUNCTION_POINTER(occlusionFilterOpaque);
   data.occlusionFilterHair = GET_FUNCTION_POINTER(occlusionFilterHair);
   
 } // device_init
@@ -1724,7 +1726,7 @@ extern "C" void renderFrameStandard (int* pixels,
                           const float time,
                           const ISPCCamera& camera)
 {
-  /* render image */
+/* render image */
 #if defined(EMBREE_SYCL_TUTORIAL)
   TutorialData ldata = data;
 

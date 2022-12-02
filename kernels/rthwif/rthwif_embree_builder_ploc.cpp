@@ -312,6 +312,7 @@ namespace embree
     const RTHWIF_GEOMETRY_DESC** geometries = args.geometries;
     const uint numGeometries                = args.numGeometries;  
 
+#if 0    
     // ===================================    
     // === prefetch builder scene data ===
     // ===================================
@@ -357,7 +358,7 @@ namespace embree
     if (geometries) gpu_queue.prefetch(geometries,sizeof(RTHWIF_GEOMETRY_DESC*)*numGeometries);
     if (args.accelBuffer)   gpu_queue.prefetch(args.accelBuffer  ,args.accelBufferBytes);
     if (args.scratchBuffer) gpu_queue.prefetch(args.scratchBuffer,args.scratchBufferBytes);  
-  
+#endif  
     // ======================================================    
     // === DUMMY KERNEL TO TRIGGER REMAINING USM TRANSFER ===
     // ======================================================
@@ -735,7 +736,7 @@ namespace embree
         // ===================================================================================
 
         device_ploc_iteration_time = 0.0f;
-        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,false);
+        iteratePLOC(gpu_queue,globals,bvh2,cluster_index_source,cluster_index_dest,bvh2_subtree_size,sync_mem,numPrims,NUM_ACTIVE_LARGE_WGS,host_device_tasks,SEARCH_RADIUS_SHIFT,device_ploc_iteration_time,verbose1);
         timer.add_to_device_timer(BuildTimer::BUILD,device_ploc_iteration_time);
       
         const uint new_numPrims = *host_device_tasks;

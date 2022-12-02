@@ -7,11 +7,12 @@ RTCScene g_scene = NULL;
 extern uniform bool g_changed;
 uniform TutorialData data;
 
-#if defined(EMBREE_SYCL_TUTORIAL)
+#if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
 const sycl::specialization_id<RTCFeatureFlags> spec_feature_mask;
 #endif
 
 extern uniform RTCFeatureFlags g_feature_mask;
+extern uniform bool g_use_scene_features;
 
 #define SPP 1
 
@@ -109,7 +110,9 @@ RTCScene convertScene(uniform ISPCScene* uniform scene_in)
     }
   }
 
-  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM);
+  uniform RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_NONE;
+  RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &feature_mask);
+  if (g_use_scene_features) g_feature_mask = feature_mask;
   rtcSetSceneProgressMonitorFunction(scene_out,monitorProgressFunction,NULL);
 
   /* commit changes to scene */
@@ -283,43 +286,39 @@ export void renderFrameStandard (uniform int* uniform pixels,
 {
 #if defined(EMBREE_SYCL_TUTORIAL)
   TutorialData ldata = data;
-  sycl::event event;
 
-  /* FIXME: this is only required as JIT caching does not work with specialization constants at the moment */
-  if (g_feature_mask == RTC_FEATURE_FLAGS_ALL)
-  {
-    event = global_gpu_queue->submit([=](sycl::handler& cgh) {
-      const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
-        const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-        const unsigned int y = item.get_global_id(0); if (y >= height) return;
-        RayStats stats;
-        const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_ALL;
-        renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
-      });
-    });
-  }
-  else
-  {
-    event = global_gpu_queue->submit([=](sycl::handler& cgh) {
+#if defined(USE_SPECIALIZATION_CONSTANTS)
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
     cgh.set_specialization_constant<spec_feature_mask>(g_feature_mask);
-      const sycl::nd_range<2> nd_range = make_nd_range(height,width);
-      cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) {
-        const unsigned int x = item.get_global_id(1); if (x >= width ) return;
-        const unsigned int y = item.get_global_id(0); if (y >= height) return;
-        RayStats stats;
-        const RTCFeatureFlags feature_mask = kh.get_specialization_constant<spec_feature_mask>();
-        renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
-      });
+    const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item, sycl::kernel_handler kh) {
+      const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+      const unsigned int y = item.get_global_id(0); if (y >= height) return;
+      RayStats stats;
+      const RTCFeatureFlags feature_mask = kh.get_specialization_constant<spec_feature_mask>();
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
     });
-  }
+  });
   global_gpu_queue->wait_and_throw();
+#else
+  sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh) {
+    const sycl::nd_range<2> nd_range = make_nd_range(height,width);
+    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
+      const unsigned int x = item.get_global_id(1); if (x >= width ) return;
+      const unsigned int y = item.get_global_id(0); if (y >= height) return;
+      RayStats stats;
+      const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_ALL;
+      renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
+    });
+  });
+  global_gpu_queue->wait_and_throw();
+#endif
 
   const auto t0 = event.template get_profiling_info<sycl::info::event_profiling::command_start>();
   const auto t1 = event.template get_profiling_info<sycl::info::event_profiling::command_end>();
   const double dt = (t1-t0)*1E-9;
   ((ISPCCamera*)&camera)->render_time = dt;
-   
+ 
 #else
   /* render image */
   const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
