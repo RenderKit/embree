@@ -11,7 +11,6 @@
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-#define SINGLE_R_PATH                1
 #define BVH_BRANCHING_FACTOR         6
 #define FATLEAF_THRESHOLD            6
 #define PAIR_OFFSET_SHIFT            28
@@ -1573,12 +1572,93 @@ namespace embree
     return (uOffset<<1) | ((uint)sOffset>>31);
   }
 
-  __forceinline int decodeRelativeOffset(const int localID, const uint offset)
+  __forceinline  uint encodeRelativeOffsetFast(const uint ID, const uint neighbor) // === neighbor must be larger than ID ===
+  {
+    const uint uOffset = neighbor - ID - 1;
+    return uOffset<<1;
+  }  
+
+  __forceinline int decodeRelativeOffset(const int localID, const uint offset, const uint ID)
   {
     const uint off = (offset>>1)+1;
-    return localID + ((offset % 2 == 0) ? (int)off : -(int)off);
+    return localID + (((offset^ID) % 2 == 0) ? (int)off : -(int)off);
   }
-  
+
+
+  __forceinline void findNN(const uint localID, const uint ID, const uint local_window_size, const gpu::AABB3f *const cached_bounds, uint *const cached_neighbor, const uint SEARCH_RADIUS_SHIFT)
+  {
+    /* ---------------------------------------------------------- */                                                       
+    /* --- compute nearest neighbor and store result into SLM --- */
+    /* ---------------------------------------------------------- */
+    const uint SEARCH_RADIUS =    (uint)1<<SEARCH_RADIUS_SHIFT;            
+    const uint encode_mask   = ~(((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
+    
+    uint min_area_index = -1;
+    const gpu::AABB3f bounds0 = cached_bounds[localID];              
+    for (uint r=1;r<=SEARCH_RADIUS && (localID + r < local_window_size) ;r++)
+    {
+      const gpu::AABB3f bounds1 = cached_bounds[localID+r];
+      const float new_area = distanceFct(bounds0,bounds1);
+      uint new_area_i = ((gpu::as_uint(new_area) << 1) & encode_mask);
+#if EQUAL_DISTANCES_WORKAROUND == 1
+      const uint encode0 = encodeRelativeOffsetFast(localID  ,localID+r);                
+      const uint new_area_index0 = new_area_i | encode0 | (ID&1); 
+      const uint new_area_index1 = new_area_i | encode0 | (((ID+r)&1)^1); 
+#else
+      const uint encode0 = encodeRelativeOffset(localID  ,localID+r);                
+      const uint encode1 = encodeRelativeOffset(localID+r,localID);   // faster            
+      const uint new_area_index0 = new_area_i | encode0;
+      const uint new_area_index1 = new_area_i | encode1;            
+#endif
+      min_area_index = min(min_area_index,new_area_index0);                  
+      gpu::atomic_min_local(&cached_neighbor[localID+r],new_area_index1);                  
+    }
+    gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);     
+  }
+
+
+  __forceinline uint getNewClusterIndexCreateBVH2Node(const uint localID, const uint ID, const uint maxID, const uint local_window_start, const uint *const cluster_index_source, const gpu::AABB3f *const cached_bounds, const uint *const cached_neighbor,const uint *const cached_clusterID, BVH2Ploc *const bvh2, uint *const bvh2_index_allocator, uint *const bvh2_subtree_size, const uint SEARCH_RADIUS_SHIFT)
+  {
+    const uint decode_mask =  (((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
+              
+    uint new_cluster_index = -1;
+    if (ID < maxID)
+    {                
+      new_cluster_index = cluster_index_source[ID];
+#if EQUAL_DISTANCES_WORKAROUND == 1          
+      const uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  ID) + local_window_start;
+      const uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask, n_i) + local_window_start;
+#else
+      const uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask,  0) + local_window_start;
+      const uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask,  0) + local_window_start;          
+#endif          
+      const gpu::AABB3f bounds = cached_bounds[ID - local_window_start];
+                                                
+      if (ID == n_i_n_i)  
+      {
+        if (ID < n_i)
+        {
+          const uint leftIndex  = cached_clusterID[ID-local_window_start]; //cluster_index_source[ID];
+          const uint rightIndex = cached_clusterID[n_i-local_window_start]; //cluster_index_source[n_i];
+          const gpu::AABB3f &leftBounds  = bounds;
+          const gpu::AABB3f &rightBounds = cached_bounds[n_i-local_window_start];
+
+          /* --- reduce per subgroup to lower pressure on global atomic counter --- */                                                         
+          sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> bvh2_counter(*bvh2_index_allocator);
+          const uint bvh2_index = gpu::atomic_add_global_sub_group_shared(bvh2_counter,1);
+
+          /* --- store new BVH2 node --- */
+          const uint new_size = bvh2_subtree_size[leftIndex] + bvh2_subtree_size[rightIndex];
+          bvh2[bvh2_index].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);                                                         
+          bvh2_subtree_size[bvh2_index] = new_size;
+          new_cluster_index = bvh2_index;
+        }
+        else
+          new_cluster_index = -1; /* --- second item of pair with the larger index disables the slot --- */
+      }
+    }
+    return new_cluster_index;
+  }
   
   void iteratePLOC (sycl::queue &gpu_queue, PLOCGlobals *const globals, BVH2Ploc *const bvh2, uint *const cluster_index_source, uint *const cluster_index_dest, uint *const bvh2_subtree_size, uint *const scratch_mem, const uint numPrims, const uint NN_SEARCH_WG_NUM, uint *host_device_tasks, const uint SEARCH_RADIUS_SHIFT, double &iteration_time, const bool verbose)    
   {
@@ -1634,140 +1714,27 @@ namespace embree
               const uint clusterID = cluster_index_source[min(local_window_start+(int)localID,local_window_end-1)];
               cached_bounds[localID] = bvh2[clusterID].bounds;
               cached_clusterID[localID] = clusterID;
-
-#if SINGLE_R_PATH == 1              
-              cached_neighbor[localID] = -1;              
-#endif              
+              cached_neighbor[localID] = -1;
+              
               item.barrier(sycl::access::fence_space::local_space);
 
               /* ---------------------------------------------------------- */                                                       
               /* --- compute nearest neighbor and store result into SLM --- */
               /* ---------------------------------------------------------- */
 
-#if SINGLE_R_PATH == 0
+              findNN(localID,ID,local_window_size,cached_bounds.get_pointer(),cached_neighbor.get_pointer(),SEARCH_RADIUS_SHIFT);
 
-              if (localID < local_window_size)
-              {                                                         
-                const int start = max((int)localID-(int)SEARCH_RADIUS,(int)0);
-                const int end = min((int)localID+(int)SEARCH_RADIUS+1,(int)local_window_size);
-                const gpu::AABB3f bounds = cached_bounds[localID];                  
-                uint area_min = -1; 
-                int area_min_index = -1; 
-                
-                /* ------------------------------------------------------------------------ */                
-                /* --- fallback case for equal cluster representatives with equal bounds -- */
-                /* ------------------------------------------------------------------------ */
-                if (bounds.area() == 0.0f)
-                {
-                  if (localID < local_window_size - 1)
-                  {
-                    const uint next = (ID % 2 == 0) ? localID+1 : localID-1;
-                    const float next_merged_area = distanceFct(bounds,cached_bounds[next]);
-                    if (next_merged_area == 0.0f)
-                    {
-                      area_min_index = next;
-                      area_min = gpu::as_uint(next_merged_area);
-                    }
-                  }
-                }
-
-                /* ---------------------------------------------- */                
-                /* --- scan search radius for nearest neighbor -- */
-                /* ---------------------------------------------- */                                
-                
-                for (int s=start;s<end;s++)
-                {
-                  const uint new_area = gpu::as_uint(distanceFct(bounds,cached_bounds[s]));
-                  const bool update = s != localID && new_area < area_min;                                                                    
-                  area_min = cselect(update,new_area,area_min); 
-                  area_min_index = cselect(update,s,area_min_index);
-                }                    
-                
-                /* ------------------------------ */                
-                /* --- update nearest neighbor -- */
-                /* ------------------------------ */                                
-                cached_neighbor[localID] = local_window_start + (uint)area_min_index;                
-              }
-#else
-
-              
-              const uint encode_mask = ~(((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
-              const uint decode_mask =  (((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
-              
-              uint min_area_index = -1;
-              const gpu::AABB3f bounds0 = cached_bounds[localID];              
-              for (uint r=1;r<=SEARCH_RADIUS && (localID + r < local_window_size) ;r++)
-              {
-                const gpu::AABB3f bounds1 = cached_bounds[localID+r];
-                const float new_area = distanceFct(bounds0,bounds1);
-                uint new_area_i = ((gpu::as_uint(new_area) << 1) & encode_mask);
-#if EQUAL_DISTANCES_WORKAROUND == 1
-                /* --- extending work around for neighboring zero area bounds and equal area bounds across the subgroup --- */                
-                if ((ID >> 1) % 2 == 0)
-                  new_area_i -= ((uint)1<<(SEARCH_RADIUS_SHIFT+2));
-#endif                
-                const uint encode0 = encodeRelativeOffset(localID  ,localID+r);
-                const uint encode1 = encodeRelativeOffset(localID+r,localID);
-                const uint new_area_index0 = new_area_i | encode0;
-                const uint new_area_index1 = new_area_i | encode1;                  
-                min_area_index = min(min_area_index,new_area_index0);                  
-                gpu::atomic_min_local(&cached_neighbor[localID+r],new_area_index1);                  
-              }
-              
-#if EQUAL_DISTANCES_WORKAROUND == 0 
-               const uint zero_min_area_mask = sub_group_ballot(min_area_index == 0); 
-               const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask); 
-               if (min_area_index != 0 || (ID % 2 == first_zero_min_area_mask_index % 2)) 
-#endif 
-                 gpu::atomic_min_local(&cached_neighbor[localID],min_area_index); 
-              
-#endif              
-                                                       
               item.barrier(sycl::access::fence_space::local_space);
               
               /* ---------------------------------------------------------- */                                                       
               /* --- merge valid nearest neighbors and create bvh2 node --- */
               /* ---------------------------------------------------------- */
-              
-              uint new_cluster_index = -1;
-              if (ID < maxID)
-              {                
-                new_cluster_index = cluster_index_source[ID];
-#if SINGLE_R_PATH == 1
 
-                const uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask) + local_window_start;
-                const uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask) + local_window_start;
-
-                const gpu::AABB3f bounds = cached_bounds[ID - local_window_start];
-                                                
-#else
-                const gpu::AABB3f bounds = cached_bounds[ID -local_window_start];                
-                const uint n_i = cached_neighbor[ID-local_window_start];
-                const uint n_i_n_i = cached_neighbor[n_i-local_window_start];
-#endif                
-                if (ID == n_i_n_i)  
-                {
-                  if (ID < n_i)
-                  {
-                    const uint leftIndex  = cached_clusterID[ID-local_window_start]; //cluster_index_source[ID];
-                    const uint rightIndex = cached_clusterID[n_i-local_window_start]; //cluster_index_source[n_i];
-                    const gpu::AABB3f &leftBounds  = bounds;
-                    const gpu::AABB3f &rightBounds = cached_bounds[n_i-local_window_start];
-
-                    /* --- reduce per subgroup to lower pressure on global atomic counter --- */                                                         
-                    sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> bvh2_counter(*bvh2_index_allocator);
-                    const uint bvh2_index = gpu::atomic_add_global_sub_group_shared(bvh2_counter,1);
-
-                    /* --- store new BVH2 node --- */
-                    const uint new_size = bvh2_subtree_size[leftIndex] + bvh2_subtree_size[rightIndex];
-                    bvh2[bvh2_index].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);                                                         
-                    bvh2_subtree_size[bvh2_index] = new_size;
-                    new_cluster_index = bvh2_index;
-                  }
-                  else
-                    new_cluster_index = -1; /* --- second item of pair with the larger index disables the slot --- */
-                }
-              }
+              const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,
+                                                                              cluster_index_source,
+                                                                              cached_bounds.get_pointer(),cached_neighbor.get_pointer(),cached_clusterID.get_pointer(),
+                                                                              bvh2,bvh2_index_allocator,bvh2_subtree_size,
+                                                                              SEARCH_RADIUS_SHIFT);
 
               const uint flag = new_cluster_index != -1 ? 1 : 0;
               const uint ps = ID < maxID ? flag : 0;
@@ -1889,7 +1856,6 @@ namespace embree
                                                      
     while(numPrims>BOTTOM_UP_THRESHOLD)
     {
-
       const uint aligned_numPrims = gpu::alignTo(numPrims,WORKING_WG_SIZE);
 
       uint total_offset = 0;
@@ -1898,10 +1864,11 @@ namespace embree
         /* -------------------------------------------------------- */                                                       
         /* --- copy AABBs from cluster representatives into SLM --- */
         /* -------------------------------------------------------- */
-                                                         
+            
         const int local_window_start = max((int)(t                )-2*(int)SEARCH_RADIUS  ,(int)0);
         const int local_window_end   = min((int)(t+WORKING_WG_SIZE)+2*(int)SEARCH_RADIUS+1,(int)numPrims);
         const int local_window_size = local_window_end - local_window_start;
+        
         const uint ID    = localID + t;                                                             
         const uint maxID = min(t + WORKING_WG_SIZE,numPrims);                                                         
 
@@ -1909,11 +1876,8 @@ namespace embree
         
         const uint clusterID = cluster_index_source[min(local_window_start+(int)localID,local_window_end-1)];
         cached_bounds[localID] = bvh2[clusterID].bounds;
-        cached_clusterID[localID] = clusterID;
-        
-#if SINGLE_R_PATH == 1              
+        cached_clusterID[localID] = clusterID;        
         cached_neighbor[localID] = -1;              
-#endif              
         
         item.barrier(sycl::access::fence_space::local_space);
 
@@ -1921,135 +1885,20 @@ namespace embree
         /* --- compute nearest neighbor and store result into SLM --- */
         /* ---------------------------------------------------------- */
 
-#if SINGLE_R_PATH == 0        
-        if (localID < local_window_size)                                                           
-        {
-          const int start = max((int)localID-(int)SEARCH_RADIUS,(int)0);
-          const int end = min((int)localID+(int)SEARCH_RADIUS+1,(int)local_window_size);
-          const gpu::AABB3f bounds = cached_bounds[localID];                  
-          uint area_min = -1; 
-          int area_min_index = -1; 
-                
-          /* ------------------------------------------------------------------------ */                
-          /* --- fallback case for equal cluster representatives with equal bounds -- */
-          /* ------------------------------------------------------------------------ */
-
-          if (bounds.area() == 0.0f)
-          {
-            if (localID < local_window_size - 1)
-            {
-              const uint next = (ID % 2 == 0) ? localID+1 : localID-1;
-              const float next_merged_area = distanceFct(bounds,cached_bounds[next]);
-              if (next_merged_area == 0.0f)
-              {
-                area_min_index = next;
-                area_min = gpu::as_uint(next_merged_area);
-              }
-            }
-          }
-
-          /* ---------------------------------------------- */                
-          /* --- scan search radius for nearest neighbor -- */
-          /* ---------------------------------------------- */                                
-
-          for (int s=start;s<end;s++)
-          {
-            const uint new_area = gpu::as_uint(distanceFct(bounds,cached_bounds[s]));
-            const bool update = s != localID && new_area < area_min;                                                                    
-            area_min = cselect(update,new_area,area_min); 
-            area_min_index = cselect(update,s,area_min_index);
-          }                    
-                
-          /* ------------------------------ */                
-          /* --- update nearest neighbor -- */
-          /* ------------------------------ */                                
-          cached_neighbor[localID] = local_window_start + (uint)area_min_index;
-        }
-#else
-        const uint encode_mask = ~(((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
-        const uint decode_mask =  (((uint)1<<(SEARCH_RADIUS_SHIFT+1))-1);
-              
-        uint min_area_index = -1;
-        const gpu::AABB3f bounds0 = cached_bounds[localID];
-        {              
-          for (uint r=1;r<=SEARCH_RADIUS && (localID + r < local_window_size) ;r++)
-          {
-            const gpu::AABB3f bounds1 = cached_bounds[localID+r];
-            const float new_area = distanceFct(bounds0,bounds1);
-            uint new_area_i = (gpu::as_uint(new_area) << 1) & encode_mask;
-#if EQUAL_DISTANCES_WORKAROUND == 1
-            /* --- extending work around for neighboring zero area bounds and equal area bounds across the subgroup --- */                
-            if ((ID >> 1) % 2 == 0)
-              new_area_i -= ((uint)1<<(SEARCH_RADIUS_SHIFT+2));
-#endif                            
-            const uint encode0 = encodeRelativeOffset(localID  ,localID+r);
-            const uint encode1 = encodeRelativeOffset(localID+r,localID);
-            const uint new_area_index0 = new_area_i | encode0;
-            const uint new_area_index1 = new_area_i | encode1;                  
-            min_area_index = min(min_area_index,new_area_index0);                  
-            gpu::atomic_min_local(&cached_neighbor[localID+r],new_area_index1);
-                  
-          }
-        }
-
-#if EQUAL_DISTANCES_WORKAROUND == 0         
-        const uint zero_min_area_mask = sub_group_ballot(min_area_index == 0);
-        const uint first_zero_min_area_mask_index = sycl::ctz(zero_min_area_mask);
-        if (min_area_index != 0 || (ID % 2 == first_zero_min_area_mask_index % 2))
-#endif
-          gpu::atomic_min_local(&cached_neighbor[localID],min_area_index);        
+        findNN(localID,ID,local_window_size,cached_bounds,cached_neighbor,SEARCH_RADIUS_SHIFT);
         
-#endif        
-
-                                                                                                          
         item.barrier(sycl::access::fence_space::local_space); 
 
-        
         /* ---------------------------------------------------------- */                                                       
         /* --- merge valid nearest neighbors and create bvh2 node --- */
         /* ---------------------------------------------------------- */
 
-        uint new_cluster_index = -1;
+        const uint new_cluster_index = getNewClusterIndexCreateBVH2Node(localID,ID,maxID,local_window_start,
+                                                                        cluster_index_source,
+                                                                        cached_bounds,cached_neighbor,cached_clusterID,
+                                                                        bvh2,bvh2_index_allocator,bvh2_subtree_size,
+                                                                        SEARCH_RADIUS_SHIFT);
         
-        if (ID < maxID)
-        {
-          new_cluster_index = cluster_index_source[ID];
-
-#if SINGLE_R_PATH == 1
-          const uint n_i     = decodeRelativeOffset(ID -local_window_start,cached_neighbor[ID -local_window_start] & decode_mask) + local_window_start;
-          const uint n_i_n_i = decodeRelativeOffset(n_i-local_window_start,cached_neighbor[n_i-local_window_start] & decode_mask) + local_window_start;                
-          const gpu::AABB3f bounds = cached_bounds[ID -local_window_start];
-          
-#else
-          const gpu::AABB3f bounds = cached_bounds[ID -local_window_start];          
-          const uint n_i = cached_neighbor[ID-local_window_start];
-          const uint n_i_n_i = cached_neighbor[n_i-local_window_start];
-#endif
-          if (ID == n_i_n_i)                  
-          {
-            if (ID < n_i)
-            {
-              const uint leftIndex  = cached_clusterID[ID-local_window_start]; 
-              const uint rightIndex = cached_clusterID[n_i-local_window_start]; 
-              const gpu::AABB3f &leftBounds  = bounds;
-              const gpu::AABB3f &rightBounds = cached_bounds[n_i-local_window_start];
-              
-              
-              /* --- reduce per subgroup to lower pressure on global atomic counter --- */                                                         
-              sycl::atomic_ref<uint, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> bvh2_counter(*bvh2_index_allocator);
-              const uint bvh2_index = gpu::atomic_add_global_sub_group_shared(bvh2_counter,1);
-
-              /* --- store new BVH2 node --- */
-              const uint new_size = bvh2_subtree_size[leftIndex] + bvh2_subtree_size[rightIndex];              
-              bvh2[bvh2_index].init(leftIndex,rightIndex,gpu::merge(leftBounds,rightBounds),bvh2_subtree_size[leftIndex],bvh2_subtree_size[rightIndex]);                                                         
-              bvh2_subtree_size[bvh2_index] = new_size;
-              new_cluster_index = bvh2_index;
-            }
-            else
-              new_cluster_index = -1; /* --- second item of pair with the larger index disables the slot --- */
-          }
-        }
-
         const uint flag = new_cluster_index != -1 ? 1 : 0;
         const uint ps = ID < maxID ? flag : 0;
 
