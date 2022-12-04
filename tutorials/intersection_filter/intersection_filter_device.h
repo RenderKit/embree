@@ -10,10 +10,8 @@ struct TutorialData
   RTCScene g_scene;
   Vec3fa* colors;
 
-  //RTCFilterFunctionN intersectionFilter;
-  //RTCFilterFunctionN occlusionFilter;
-  void* intersectionFilter;
-  void* occlusionFilter;
+  RTCFilterFunctionN intersectionFilter;
+  RTCFilterFunctionN occlusionFilter;
 };
 
 inline void TutorialData_Constructor(TutorialData* This)

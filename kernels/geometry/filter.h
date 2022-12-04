@@ -16,15 +16,16 @@ namespace embree
     {
       if (geometry->intersectionFilterN)
       {
-        assert(context->scene->hasGeometryFilterFunction());
         geometry->intersectionFilterN(args);
 
         if (args->valid[0] == 0)
           return false;
       }
 
-      if (context->getFilter()) {
-        context->getFilter()(args);
+      if (context->getFilter())
+      {
+        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+          context->getFilter()(args);
 
         if (args->valid[0] == 0)
           return false;
@@ -51,15 +52,16 @@ namespace embree
     {
       if (geometry->occlusionFilterN)
       {
-        assert(context->scene->hasGeometryFilterFunction());
         geometry->occlusionFilterN(args);
 
         if (args->valid[0] == 0)
           return false;
       }
 
-      if (context->getFilter()) {
-        context->getFilter()(args);
+      if (context->getFilter())
+      {
+        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+          context->getFilter()(args);
 
         if (args->valid[0] == 0)
           return false;
@@ -86,16 +88,14 @@ namespace embree
     {
       vint<K>* mask = (vint<K>*) args->valid;
       if (geometry->intersectionFilterN)
-      {
-        assert(context->scene->hasGeometryFilterFunction());
         geometry->intersectionFilterN(args);
-      }
       
       vbool<K> valid_o = *mask != vint<K>(zero);
       if (none(valid_o)) return valid_o;
 
       if (context->getFilter()) {
-        context->getFilter()(args);
+        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+          context->getFilter()(args);
       }
 
       valid_o = *mask != vint<K>(zero);
@@ -124,16 +124,14 @@ namespace embree
     {
       vint<K>* mask = (vint<K>*) args->valid;
       if (geometry->occlusionFilterN)
-      {
-        assert(context->scene->hasGeometryFilterFunction());
         geometry->occlusionFilterN(args);
-      }
       
       vbool<K> valid_o = *mask != vint<K>(zero);
       if (none(valid_o)) return valid_o;
 
       if (context->getFilter()) {
-        context->getFilter()(args);
+        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+          context->getFilter()(args);
       }
       valid_o = *mask != vint<K>(zero);
 

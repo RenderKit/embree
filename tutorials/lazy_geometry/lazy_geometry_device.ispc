@@ -171,10 +171,10 @@ unmasked void instanceIntersectFuncN(const RTCIntersectFunctionNArguments* unifo
   /* trace ray inside object */
   const unsigned int geomID = ray->geomID;
   ray->geomID = RTC_INVALID_GEOMETRY_ID;
-  uniform RTCIntersectArguments args;
-  rtcInitIntersectArguments(&args);
-  args.context = context;
-  rtcIntersectV(instance->object,RTCRayHit_(*ray),&args);
+  uniform RTCIntersectArguments iargs;
+  rtcInitIntersectArguments(&iargs);
+  iargs.context = context;
+  rtcIntersectV(instance->object,RTCRayHit_(*ray),&iargs);
   if (ray->geomID == RTC_INVALID_GEOMETRY_ID) ray->geomID = geomID;
   else ray->instID[0] = instance->userID;
 }
@@ -197,10 +197,10 @@ unmasked void instanceOccludedFuncN(const RTCOccludedFunctionNArguments* uniform
     lazyCreate(instance);
   
   /* trace ray inside object */
-  uniform RTCOccludedArguments args;
-  rtcInitOccludedArguments(&args);
-  args.context = context;
-  rtcOccludedV(instance->object,RTCRay_(*ray),&args);
+  uniform RTCOccludedArguments sargs;
+  rtcInitOccludedArguments(&sargs);
+  sargs.context = context;
+  rtcOccludedV(instance->object,RTCRay_(*ray),&sargs);
 }
 
 uniform LazyGeometry* uniform createLazyObject (RTCScene scene, uniform int userID, const uniform Vec3f& center, const uniform float radius)

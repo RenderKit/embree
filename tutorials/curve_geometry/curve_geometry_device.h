@@ -73,8 +73,8 @@ struct TutorialData
   Vec4f* hair_vertices;
   Vec3fa* hair_normals;
   Vec3fa* hair_vertex_colors;
-  unsigned int * hair_indices;
-  unsigned int * hair_indices_linear;
+  int* hair_indices;
+  int* hair_indices_linear;
   char * hair_flags_linear;
 };
 
@@ -84,22 +84,22 @@ inline void TutorialData_Constructor(TutorialData* This)
   This->hair_vertices = (Vec4f*) alignedUSMMalloc((NUM_VERTICES)*sizeof(Vec4f),16);
   This->hair_normals = (Vec3fa*) alignedUSMMalloc((NUM_VERTICES)*sizeof(Vec3fa),16);
   This->hair_vertex_colors = (Vec3fa*) alignedUSMMalloc((NUM_VERTICES)*sizeof(Vec3fa),16);
-  This->hair_indices = (unsigned int*) alignedUSMMalloc((NUM_CURVES)*sizeof(unsigned int),16);
-  This->hair_indices_linear = (unsigned int*) alignedUSMMalloc((NUM_CURVES)*sizeof(unsigned int),16);
+  This->hair_indices = (int*) alignedUSMMalloc((NUM_CURVES)*sizeof(int),16);
+  This->hair_indices_linear = (int*) alignedUSMMalloc((NUM_CURVES)*sizeof(int),16);
   This->hair_flags_linear = (char*) alignedUSMMalloc((NUM_CURVES)*sizeof(char),16);
 
   for (int i = 0; i < NUM_VERTICES; i++)
   {
     This->hair_vertices[i] = Vec4f(static_hair_vertices[i][0],
-                                   static_hair_vertices[i][1],
-                                   static_hair_vertices[i][2],
-                                   static_hair_vertices[i][3]);
+                                        static_hair_vertices[i][1],
+                                        static_hair_vertices[i][2],
+                                        static_hair_vertices[i][3]);
     This->hair_normals[i] = Vec3fa(static_hair_normals[i][0],
-                                   static_hair_normals[i][1],
-                                   static_hair_normals[i][2]);
+                                        static_hair_normals[i][1],
+                                        static_hair_normals[i][2]);
     This->hair_vertex_colors[i] = Vec3fa(static_hair_vertex_colors[i][0],
-                                         static_hair_vertex_colors[i][1],
-                                         static_hair_vertex_colors[i][2]);
+                                              static_hair_vertex_colors[i][1],
+                                              static_hair_vertex_colors[i][2]);
   }
   for (int i = 0; i < NUM_CURVES; i++) {
     This->hair_indices[i] = static_hair_indices[i];

@@ -20,7 +20,7 @@ enum TutorialLightType
   LIGHT_TRIANGLE,
   LIGHT_QUAD,
 };
-  
+
 struct Light_SampleRes
 {
   Vec3fa weight;  //!< radiance that arrives at the given point divided by pdf

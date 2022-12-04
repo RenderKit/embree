@@ -26,6 +26,9 @@ struct Triangle { int v0, v1, v2; };
 #if !defined(ISPC)
 #include "../../../common/algorithms/parallel_for.h"
 
+namespace embree {
+#endif
+
 #if defined(EMBREE_SYCL_TUTORIAL)
 inline sycl::nd_range<2> make_nd_range(unsigned int size0, unsigned int size1)
 {
@@ -38,9 +41,6 @@ inline sycl::nd_range<2> make_nd_range(unsigned int size0, unsigned int size1)
   return sycl::nd_range(sycl::range(size0,size1),wg_size);
 }
 
-#endif
-
-namespace embree {
 #endif
 
 enum Shader { 
@@ -72,7 +72,7 @@ inline int64_t get_tsc() { return 0; }
 extern "C" int64_t get_tsc();
 #endif
 
-#if defined(__WIN32__) and defined(__INTEL_LLVM_COMPILER)
+#if defined(__WIN32__) && defined(__INTEL_LLVM_COMPILER)
 /* declare some standard library functions */
 extern "C" __declspec(dllimport) void abort ();
 extern "C" __declspec(dllimport) void exit(int);

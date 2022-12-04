@@ -33,9 +33,9 @@ void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene  = nullptr;
   This->g_scene1 = nullptr;
-  This->instance_xfm = (AffineSpace3fa*) alignedUSMMalloc(4*sizeof(AffineSpace3fa),16);
-  This->normal_xfm = (LinearSpace3fa*) alignedUSMMalloc(4*sizeof(LinearSpace3fa),16);
-  This->colors = (Vec3fa*) alignedUSMMalloc(4*4*sizeof(Vec3fa),16);
+  This->instance_xfm = (AffineSpace3fa*) alignedUSMMalloc((4)*sizeof(AffineSpace3fa),16);
+  This->normal_xfm = (LinearSpace3fa*) alignedUSMMalloc((4)*sizeof(LinearSpace3fa),16);
+  This->colors = (Vec3fa*) alignedUSMMalloc((4*4)*sizeof(Vec3fa),16);
 }
 
 void TutorialData_Destructor(TutorialData* This)

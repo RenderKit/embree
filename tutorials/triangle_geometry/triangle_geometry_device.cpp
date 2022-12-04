@@ -12,8 +12,6 @@ namespace embree {
 RTCScene g_scene = nullptr;
 TutorialData data;
 
-class triangle_geometry_tutorial;
-
 /* adds a cube to the scene */
 unsigned int addCube (RTCScene scene_i)
 {
@@ -120,8 +118,7 @@ void renderPixelStandard(const TutorialData& data,
                          const unsigned int width,
                          const unsigned int height,
                          const float time,
-                         const ISPCCamera& camera,
-                         RayStats& stats)
+                         const ISPCCamera& camera, RayStats& stats)
 {
   /* initialize ray */
   Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);

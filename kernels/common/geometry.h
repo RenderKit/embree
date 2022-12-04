@@ -257,8 +257,13 @@ namespace embree
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
+    /* checks if argument version of filter functions are enabled */
+    __forceinline bool hasArgumentFilterFunctions() const {
+      return argumentFilterEnabled;
+    }
+    
     /*! tests if that geometry has some filter function set */
-    __forceinline bool hasFilterFunctions () const {
+    __forceinline bool hasGeometryFilterFunctions () const {
       return (intersectionFilterN  != nullptr) || (occlusionFilterN  != nullptr);
     }
 
@@ -464,6 +469,11 @@ namespace embree
     /*! Set occlusion filter function for ray packets of size N. */
     virtual void setOcclusionFilterFunctionN (RTCFilterFunctionN filterN);
 
+    /* Enables argument version of intersection or occlusion filter function. */
+    virtual void enableFilterFunctionFromArguments (bool enable) {
+      argumentFilterEnabled = enable;
+    }
+
     /*! for instances only */
   public:
 
@@ -622,7 +632,8 @@ namespace embree
       GSubType gsubtype : 8;          //!< geometry subtype
       RTCBuildQuality quality : 3;    //!< build quality for geometry
       unsigned state : 2;
-      bool enabled : 1;              //!< true if geometry is enabled
+      bool enabled : 1;               //!< true if geometry is enabled
+      bool argumentFilterEnabled : 1; //!< true if argument filter functions are enabled for this geometry
     };
        
     RTCFilterFunctionN intersectionFilterN;
