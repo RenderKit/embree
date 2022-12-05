@@ -39,7 +39,7 @@
       RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,
 
       RTC_FORMAT_GRID,
-};
+    };
 
 #### DESCRIPTION
 

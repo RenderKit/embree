@@ -308,6 +308,7 @@ namespace embree
                   const getProceduralFunc& getProcedural,
                   const getInstanceFunc& getInstance,
                   void* scratch_ptr, size_t scratch_bytes,
+                  RTHWIF_BUILD_QUALITY build_quality,
                   bool verbose)
           : getSize(getSize),
             getType(getType),
@@ -318,6 +319,7 @@ namespace embree
             getProcedural(getProcedural),
             getInstance(getInstance),
             prims(scratch_ptr,scratch_bytes),
+            build_quality(build_quality),
             verbose(verbose) {} 
         
         ReductionTy setInternalNode(char* curAddr, size_t curBytes, NodeType nodeTy, char* childAddr,
@@ -1057,7 +1059,7 @@ namespace embree
           if (verbose) std::cout << "primrefgen2  : " << std::setw(10) << (t4-t3)*1000.0 << "ms, " << std::setw(10) << 1E-6*double(numPrimitives)/(t4-t3) << " Mprims/s" << std::endl;
           
           /* perform pre-splitting */
-          if (numPrimitives && false)
+          if ((build_quality == RTHWIF_BUILD_QUALITY_HIGH) &&  numPrimitives)
           {
             PRINT("PRE-SPLITTING DISABLED");
             
@@ -1239,6 +1241,7 @@ namespace embree
         evector<PrimRef> prims;
         Allocator allocator;
         std::vector<std::vector<uint16_t>> quadification;
+        RTHWIF_BUILD_QUALITY build_quality;
         bool verbose;
         
       };
@@ -1249,6 +1252,7 @@ namespace embree
       static void estimateSize(size_t numGeometries,
                                const getSizeFunc& getSize,
                                const getTypeFunc& getType,
+                               RTHWIF_BUILD_QUALITY build_quality,
                                size_t& expectedBytes,
                                size_t& worstCaseBytes,
                                size_t& scratchBytes)
@@ -1267,7 +1271,10 @@ namespace embree
           case QBVH6BuilderSAH::INSTANCE  : stats.numInstances += numPrimitives; break;
           };
         }
-        stats.estimate_presplits(1.2);
+        
+        if (build_quality == RTHWIF_BUILD_QUALITY_HIGH)
+          stats.estimate_presplits(1.2);
+        
         worstCaseBytes = stats.worst_case_bvh_bytes();
         scratchBytes = stats.scratch_space_bytes();
         stats.estimate_quadification();
@@ -1297,6 +1304,7 @@ namespace embree
                           void* scratch_ptr, size_t scratch_bytes,
                           BBox3f* boundsOut,
                           size_t* accelBufferBytesOut,
+                          RTHWIF_BUILD_QUALITY build_quality,
                           bool verbose,
                           void* dispatchGlobalsPtr)
       {
@@ -1306,7 +1314,7 @@ namespace embree
           throw std::runtime_error("scratch buffer cannot get aligned");
     
         BuilderT<getSizeFunc, getTypeFunc, createPrimRefArrayFunc, getTriangleFunc, getTriangleIndicesFunc, getQuadFunc, getProceduralFunc, getInstanceFunc> builder
-          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, verbose);
+          (device, getSize, getType, createPrimRefArray, getTriangle, getTriangleIndices, getQuad, getProcedural, getInstance, scratch_ptr, scratch_bytes, build_quality, verbose);
         
         builder.build(numGeometries, accel_ptr, accel_bytes, boundsOut, accelBufferBytesOut, dispatchGlobalsPtr);
       }      

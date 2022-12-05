@@ -362,6 +362,28 @@ namespace embree
     }
   }
 
+  RTHWIF_BUILD_QUALITY convertBuildQuality(RTCBuildQuality quality_flags)
+  {
+    switch (quality_flags) {
+    case RTC_BUILD_QUALITY_LOW    : return RTHWIF_BUILD_QUALITY_LOW;
+    case RTC_BUILD_QUALITY_MEDIUM : return RTHWIF_BUILD_QUALITY_MEDIUM;
+    case RTC_BUILD_QUALITY_HIGH   : return RTHWIF_BUILD_QUALITY_HIGH;
+    case RTC_BUILD_QUALITY_REFIT  : return RTHWIF_BUILD_QUALITY_LOW;
+    default                       : return RTHWIF_BUILD_QUALITY_MEDIUM;
+    }
+  }
+
+  RTHWIF_BUILD_FLAGS convertBuildFlags(RTCSceneFlags scene_flags)
+  {
+    uint32_t result = RTHWIF_BUILD_FLAG_NONE;
+    if (scene_flags & RTC_SCENE_FLAG_DYNAMIC) result |= RTHWIF_BUILD_FLAG_DYNAMIC;
+    if (scene_flags & RTC_SCENE_FLAG_COMPACT) result |= RTHWIF_BUILD_FLAG_COMPACT;
+    return (RTHWIF_BUILD_FLAGS) result;
+  }  
+
+  
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+  
   void exception_handler(sycl::exception_list exceptions)
   {
     for (std::exception_ptr const& e : exceptions) {
@@ -372,8 +394,11 @@ namespace embree
       }
     }
   };
+
+#endif
   
-  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
+  
+  BBox3f rthwifBuild(Scene* scene, AccelBuffer& accel)
   {    
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     DeviceGPU *gpu_device = dynamic_cast<DeviceGPU*>(scene->device);    
@@ -515,10 +540,10 @@ namespace embree
     args.scratchBufferBytes = 0;
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)    
     args.quality = gpu_device->quality_flags == RTC_BUILD_QUALITY_LOW ? RTHWIF_BUILD_QUALITY_LOW : RTHWIF_BUILD_QUALITY_MEDIUM;
-#else
-    args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
+#else      
+    args.quality = convertBuildQuality(scene->quality_flags);
 #endif    
-    args.flags = RTHWIF_BUILD_FLAG_NONE;
+    args.flags = convertBuildFlags(scene->scene_flags);
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.buildUserPtr = &time_range;
