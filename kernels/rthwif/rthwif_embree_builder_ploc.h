@@ -17,7 +17,7 @@
 #define GEOMID_MASK                  (((uint)1<<PAIR_OFFSET_SHIFT)-1)
 #define LARGE_WG_SIZE                1024
 #define USE_NEW_OPENING              0
-#define TRIANGLE_QUAD_BLOCK_SIZE     1024
+#define TRIANGLE_QUAD_BLOCK_SIZE     64
 #define QBVH6_HEADER_OFFSET          128
 #define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
 #define EQUAL_DISTANCES_WORKAROUND   1

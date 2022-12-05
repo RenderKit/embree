@@ -426,7 +426,7 @@ namespace embree
       {
         double dt = gpu::getDeviceExecutionTiming(queue_event);
         timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
-        if (unlikely(verbose2)) std::cout << "=> Init Globals I" << dt << " ms" << std::endl;        
+        if (unlikely(verbose2)) std::cout << "=> Init Globals I: " << dt << " ms" << std::endl;        
       }      
     }  
   
@@ -545,7 +545,7 @@ namespace embree
       {
         double dt = gpu::getDeviceExecutionTiming(queue_event);
         timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
-        if (unlikely(verbose2)) std::cout << "=> Init Globals II" << dt << " ms" << std::endl;        
+        if (unlikely(verbose2)) std::cout << "=> Init Globals II: " << dt << " ms" << std::endl;        
       }      
     }	    
     
@@ -617,7 +617,7 @@ namespace embree
 
 
     if (unlikely(verbose2))
-      std::cout << "=> Get Geometry and Centroid Bounds Phase " << timer.get_host_timer() << " ms (host) " << device_compute_centroid_bounds_time << " ms (device) " << std::endl;		
+      std::cout << "=> Get Geometry and Centroid Bounds Phase: " << timer.get_host_timer() << " ms (host) " << device_compute_centroid_bounds_time << " ms (device) " << std::endl;		
   
     // ==============================          
     // ==== compute morton codes ====
@@ -636,7 +636,7 @@ namespace embree
     timer.stop(BuildTimer::PRE_PROCESS);
      
     if (unlikely(verbose2))
-      std::cout << "=> Compute Morton Codes " << timer.get_host_timer() << " ms (host) " << device_compute_mc_time << " ms (device) " << std::endl;		
+      std::cout << "=> Compute Morton Codes: " << timer.get_host_timer() << " ms (host) " << device_compute_mc_time << " ms (device) " << std::endl;		
     
     // ===========================          
     // ==== sort morton codes ====
@@ -675,7 +675,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,timer.get_host_timer());
             
     if (unlikely(verbose2))
-      std::cout << "=> Sort Morton Codes " << timer.get_host_timer() << " ms (host and device)" << std::endl;
+      std::cout << "=> Sort Morton Codes: " << timer.get_host_timer() << " ms (host and device)" << std::endl;
                       
     // ===========================          
     // ====== init clusters ======
@@ -694,7 +694,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_init_clusters_time);
         
     if (unlikely(verbose2))
-      std::cout << "=> Init Clusters " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
+      std::cout << "=> Init Clusters: " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
 
     uint numPrims = numPrimitives;
   
@@ -753,7 +753,7 @@ namespace embree
     timer.stop(BuildTimer::BUILD);        
 
     if (unlikely(verbose2))
-      std::cout << "=> PLOC phase " <<  timer.get_host_timer() << " ms (host) " << (float)timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) " << std::endl;    
+      std::cout << "=> PLOC phase: " <<  timer.get_host_timer() << " ms (host) " << (float)timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) " << std::endl;    
   
     // =====================================                
     // === check and convert BVH2 (host) ===
@@ -818,7 +818,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::POST_PROCESS,conversion_device_time);
 
     if (unlikely(verbose2))
-      std::cout << "=> BVH2 -> QBVH6 Flattening DONE in " <<  timer.get_host_timer() << " ms (host) " << conversion_device_time << " ms (device) " << std::endl;
+      std::cout << "=> BVH2 -> QBVH6 Flattening: " <<  timer.get_host_timer() << " ms (host) " << conversion_device_time << " ms (device) " << std::endl;
 
     // ==========================================================    
     // ==========================================================
