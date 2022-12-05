@@ -451,6 +451,11 @@
 ```
 \pagebreak
 
+## RTCFeatureFlags
+``` {include=src/api/RTCFeatureFlags.md}
+```
+\pagebreak
+
 ## rtcInitIntersectArguments
 ``` {include=src/api/rtcInitIntersectArguments.md}
 ```
