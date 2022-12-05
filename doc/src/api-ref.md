@@ -451,6 +451,16 @@
 ```
 \pagebreak
 
+## rtcInitIntersectArguments
+``` {include=src/api/rtcInitIntersectArguments.md}
+```
+\pagebreak
+
+## rtcInitOccludedArguments
+``` {include=src/api/rtcInitOccludedArguments.md}
+```
+\pagebreak
+
 ## rtcInitIntersectContext
 ``` {include=src/api/rtcInitIntersectContext.md}
 ```

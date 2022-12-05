@@ -257,11 +257,19 @@ This section summarizes API changes between Embree 3 and Embree4. Most
 of these changes are motivated by having a consistent API that works
 properly for the CPU and GPU.
 
-- The stream tracing functions `rtcIntersect1M`, `rtcIntersect1Mp`,
-  `rtcIntersectNM`, `rtcIntersectNp`, `rtcOccluded1M`,
-  `rtcOccluded1Mp`, `rtcOccludedNM`, and `rtcOccludedNp` got removed
-  as they were rarely used and did not provide relevant performance
-  benefits.
+- Passing an `RTCIntersectContext` is no longer required to trace
+  rays. Further, most members of the `RTCIntersectContext` have been
+  moved to some `RTCIntersectArguments` (and `RTCOccludedArguments`)
+  structures, which also contains a pointer to a reduced context. The
+  argument structs fulfill the task of providing additional advanced
+  arguments to the traversal functions. The intersect context can
+  still get used to pass additional data to callbacks, and to maintain
+  an instID stack in case instancing is done manually inside user
+  geometry callbacks. The arguments struct is not available inside
+  callbacks. This change was in particular necessary for SYCL to allow
+  inlining of function pointers provided to the traversal functions,
+  and to reduce the amount of state passed to callbacks, which improves
+  GPU performance.
   
 - User geometries callbacks get an valid vector as input to identify
   valid and invalid rays. In Embree 3 the user geometry callback just
@@ -307,6 +315,12 @@ properly for the CPU and GPU.
   pass the callback functions directly to the `rtcIntersect1` and
   `rtcOccluded1` functions to allow inlining (see Section [Xe GPU
   Performance Recommendations]).
+
+- The stream tracing functions `rtcIntersect1M`, `rtcIntersect1Mp`,
+  `rtcIntersectNM`, `rtcIntersectNp`, `rtcOccluded1M`,
+  `rtcOccluded1Mp`, `rtcOccludedNM`, and `rtcOccludedNp` got removed
+  as they were rarely used and did not provide relevant performance
+  benefits.
 
 
 \pagebreak
@@ -521,7 +535,3 @@ degrade a lot. If detailed geometry moves fast, best put the geometry
 into an instance, and apply motion blur the instance itself, which
 efficiently allows larger motions. As a fallback, problematic scenes
 can always still get rendered robustly on the CPU.
-
-
-
-
