@@ -41,7 +41,7 @@ namespace embree
 
   __forceinline uint estimateSizeLeafNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
   {
-    return (numQuads + numProcedurals + 2 * numInstances) * 64;  
+    return (numQuads + numProcedurals + /* 2 */ 32 * numInstances) * 64;  
   }
 
   __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
@@ -426,7 +426,7 @@ namespace embree
       {
         double dt = gpu::getDeviceExecutionTiming(queue_event);
         timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
-        if (unlikely(verbose2)) std::cout << "Init Globals " << dt << " ms" << std::endl;        
+        if (unlikely(verbose2)) std::cout << "=> Init Globals I: " << dt << " ms" << std::endl;        
       }      
     }  
   
@@ -445,7 +445,7 @@ namespace embree
     
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_prim_counts_time);                              
-    if (unlikely(verbose2)) std::cout << "Count primitives from geometries: " << timer.get_host_timer() << " ms (host) " << device_prim_counts_time << " ms (device) " << std::endl;      
+    if (unlikely(verbose2)) std::cout << "=> Count Primitives from Geometries: " << timer.get_host_timer() << " ms (host) " << device_prim_counts_time << " ms (device) " << std::endl;      
   
     uint numQuads            = primCounts.numQuads + primCounts.numTriangles; // no quadification taken into account at this point
     uint numProcedurals      = primCounts.numProcedurals;
@@ -471,7 +471,7 @@ namespace embree
       numQuads = countQuadsPerGeometryUsingBlocks(gpu_queue,globals,args.geometries,numGeometries,numQuadBlocks,scratch,scratch+numGeometries,host_device_tasks,device_quadification_time,verbose1);
       timer.stop(BuildTimer::PRE_PROCESS);
       timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_quadification_time);
-      if (unlikely(verbose2)) std::cout << "Count quads " << timer.get_host_timer() << " ms (host) " << (float)device_quadification_time << " ms (device) " << std::endl;
+      if (unlikely(verbose2)) std::cout << "=> Count Quads " << timer.get_host_timer() << " ms (host) " << (float)device_quadification_time << " ms (device) " << std::endl;
     }
 
 
@@ -545,10 +545,13 @@ namespace embree
       {
         double dt = gpu::getDeviceExecutionTiming(queue_event);
         timer.add_to_device_timer(BuildTimer::PRE_PROCESS,dt);
-        if (unlikely(verbose2)) std::cout << "Init globals " << dt << " ms" << std::endl;        
+        if (unlikely(verbose2)) std::cout << "=> Init Globals II: " << dt << " ms" << std::endl;        
       }      
     }	    
     
+    // test copy kernel
+    // if (numInstances)
+    //   testInstanceCopyKernel(gpu_queue,args.geometries,numGeometries,(char*)bvh_mem,verbose1);
 
     timer.start(BuildTimer::PRE_PROCESS);        
     
@@ -574,6 +577,8 @@ namespace embree
     if (numInstances)
       numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose1);
 
+
+    
     // =================================================================================================    
     // === recompute actual number of primitives after quadification and removing of invalid entries ===
     // =================================================================================================
@@ -601,7 +606,7 @@ namespace embree
 
     timer.stop(BuildTimer::PRE_PROCESS);
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,create_primref_time);    
-    if (unlikely(verbose2)) std::cout << "Create quads/userGeometries/instances etc, init primrefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
+    if (unlikely(verbose2)) std::cout << "=> Create Quads/Procedurals/Instances etc, Init PrimRefs: " << timer.get_host_timer() << " ms (host) " << create_primref_time << " ms (device) " << std::endl;
       
     // ==========================================          
     // ==== get centroid and geometry bounds ====
@@ -617,7 +622,7 @@ namespace embree
 
 
     if (unlikely(verbose2))
-      std::cout << "Get Geometry and Centroid Bounds Phase " << timer.get_host_timer() << " ms (host) " << device_compute_centroid_bounds_time << " ms (device) " << std::endl;		
+      std::cout << "=> Get Geometry and Centroid Bounds Phase: " << timer.get_host_timer() << " ms (host) " << device_compute_centroid_bounds_time << " ms (device) " << std::endl;		
   
     // ==============================          
     // ==== compute morton codes ====
@@ -636,7 +641,7 @@ namespace embree
     timer.stop(BuildTimer::PRE_PROCESS);
      
     if (unlikely(verbose2))
-      std::cout << "Compute Morton Codes " << timer.get_host_timer() << " ms (host) " << device_compute_mc_time << " ms (device) " << std::endl;		
+      std::cout << "=> Compute Morton Codes: " << timer.get_host_timer() << " ms (host) " << device_compute_mc_time << " ms (device) " << std::endl;		
     
     // ===========================          
     // ==== sort morton codes ====
@@ -675,7 +680,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,timer.get_host_timer());
             
     if (unlikely(verbose2))
-      std::cout << "Sort Morton Codes " << timer.get_host_timer() << " ms (host and device)" << std::endl;
+      std::cout << "=> Sort Morton Codes: " << timer.get_host_timer() << " ms (host and device)" << std::endl;
                       
     // ===========================          
     // ====== init clusters ======
@@ -694,7 +699,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::PRE_PROCESS,device_init_clusters_time);
         
     if (unlikely(verbose2))
-      std::cout << "Init Clusters " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
+      std::cout << "=> Init Clusters: " << timer.get_host_timer() << " ms (host) " << device_init_clusters_time << " ms (device) " << std::endl;		
 
     uint numPrims = numPrimitives;
   
@@ -755,7 +760,7 @@ namespace embree
     timer.stop(BuildTimer::BUILD);        
 
     if (unlikely(verbose2))
-      std::cout << "PLOC phase " <<  timer.get_host_timer() << " ms (host) " << (float)timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) " << std::endl;    
+      std::cout << "=> PLOC phase: " <<  timer.get_host_timer() << " ms (host) " << (float)timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) " << std::endl;    
   
     // =====================================                
     // === check and convert BVH2 (host) ===
@@ -820,7 +825,7 @@ namespace embree
     timer.add_to_device_timer(BuildTimer::POST_PROCESS,conversion_device_time);
 
     if (unlikely(verbose2))
-      std::cout << "BVH2 -> QBVH6 Flattening DONE in " <<  timer.get_host_timer() << " ms (host) " << conversion_device_time << " ms (device) " << std::endl;
+      std::cout << "=> BVH2 -> QBVH6 Flattening: " <<  timer.get_host_timer() << " ms (host) " << conversion_device_time << " ms (device) " << std::endl;
 
     // ==========================================================    
     // ==========================================================
@@ -867,7 +872,7 @@ namespace embree
     if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
     
     if (unlikely(verbose1))
-      std::cout << "BVH build time: host = " << timer.get_total_host_time() << " ms , device = " << timer.get_total_device_time() << " ms , numPrimitives (original) = " << expected_numPrimitives << " , numPrimitives (build) = " << numPrimitives << std::endl;
+      std::cout << "=> BVH build time: host = " << timer.get_total_host_time() << " ms , device = " << timer.get_total_device_time() << " ms , numPrimitives (original) = " << expected_numPrimitives << " , numPrimitives (build) = " << numPrimitives << std::endl;
 
     return RTHWIF_ERROR_NONE;    
   }

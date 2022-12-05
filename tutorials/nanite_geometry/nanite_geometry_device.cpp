@@ -10,7 +10,7 @@ namespace embree {
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_INSTANCE
   
-const int numPhi = 10;
+const int numPhi = 5;
 const int numTheta = 2*numPhi;
 
 RTCScene g_scene  = nullptr;

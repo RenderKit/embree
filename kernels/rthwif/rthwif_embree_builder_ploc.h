@@ -1320,6 +1320,39 @@ namespace embree
     const uint numInstances = *host_device_tasks;
     return numInstances;
   }
+
+
+
+   void testInstanceCopyKernel(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, char *global_dest, const bool verbose)    
+  {
+    static const uint COPY_KERNEL_SUB_GROUP_WIDTH = 16;
+    static const uint COPY_KERNEL_WG_SIZE         = 1024/4;
+    static const uint COPY_KERNEL_CHUNK_SIZE      = 1024; //COPY_KERNEL_WG_SIZE*4;
+    const sycl::nd_range<1> nd_range1(numGeoms*COPY_KERNEL_WG_SIZE,sycl::range<1>(COPY_KERNEL_WG_SIZE));
+    PING;
+    PRINT(numGeoms);
+    sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+        
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
+                         {
+                           const uint groupID         = item.get_group(0);
+                           const uint numGroups       = item.get_group_range(0);                                                        
+                           const uint localID         = item.get_local_id(0);
+                           const uint step_local      = item.get_local_range().size();
+                           const uint *const source   = (uint*)((RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[groupID])->accel;
+                           uint *dest                 = (uint*)(global_dest + groupID * COPY_KERNEL_CHUNK_SIZE);
+                           const uint size            =  COPY_KERNEL_CHUNK_SIZE / 4;  
+                           for (uint ID = localID; ID < size; ID += step_local)
+                             dest[ID] = source[ID];
+                         });
+		  
+      });
+    gpu::waitOnEventAndCatchException(queue_event);
+    PRINT((float)gpu::getDeviceExecutionTiming(queue_event));
+  }
+ 
+
+   
   
    __forceinline bool buildBounds(const RTHWIF_GEOMETRY_AABBS_FPTR_DESC* geom, uint32_t primID, BBox3fa& bbox, void* buildUserPtr)
   {
