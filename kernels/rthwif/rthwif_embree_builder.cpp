@@ -358,7 +358,26 @@ namespace embree
     }
   }
 
-  BBox3f rthwifBuild(Scene* scene, RTCBuildQuality quality_flags, AccelBuffer& accel)
+  RTHWIF_BUILD_QUALITY convertBuildQuality(RTCBuildQuality quality_flags)
+  {
+    switch (quality_flags) {
+    case RTC_BUILD_QUALITY_LOW    : return RTHWIF_BUILD_QUALITY_LOW;
+    case RTC_BUILD_QUALITY_MEDIUM : return RTHWIF_BUILD_QUALITY_MEDIUM;
+    case RTC_BUILD_QUALITY_HIGH   : return RTHWIF_BUILD_QUALITY_HIGH;
+    case RTC_BUILD_QUALITY_REFIT  : return RTHWIF_BUILD_QUALITY_LOW;
+    default                       : return RTHWIF_BUILD_QUALITY_MEDIUM;
+    }
+  }
+
+  RTHWIF_BUILD_FLAGS convertBuildFlags(RTCSceneFlags scene_flags)
+  {
+    uint32_t result = RTHWIF_BUILD_FLAG_NONE;
+    if (scene_flags & RTC_SCENE_FLAG_DYNAMIC) result |= RTHWIF_BUILD_FLAG_DYNAMIC;
+    if (scene_flags & RTC_SCENE_FLAG_COMPACT) result |= RTHWIF_BUILD_FLAG_COMPACT;
+    return (RTHWIF_BUILD_FLAGS) result;
+  }  
+
+  BBox3f rthwifBuild(Scene* scene, AccelBuffer& accel)
   {
     auto getType = [&](unsigned int geomID) -> GEOMETRY_TYPE
     {
@@ -473,8 +492,8 @@ namespace embree
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
     args.scratchBufferBytes = 0;
-    args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
-    args.flags = RTHWIF_BUILD_FLAG_NONE;
+    args.quality = convertBuildQuality(scene->quality_flags);
+    args.flags = convertBuildFlags(scene->scene_flags);
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
     args.buildUserPtr = &time_range;

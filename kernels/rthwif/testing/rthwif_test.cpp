@@ -263,7 +263,7 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
     }                                                                   \
   }
 
-  float eps = 1E-4;
+  float eps = 2E-4;
 
   COMPARE3(ray0_org,0);
   COMPARE3(ray0_dir,0);
@@ -522,7 +522,7 @@ struct Geometry
     throw std::runtime_error("Geometry::transform not implemented");
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode) {
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, RTHWIF_BUILD_QUALITY quality) {
   };
 
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
@@ -842,8 +842,8 @@ struct InstanceGeometryT : public Geometry
     }
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode) override {
-    scene->buildAccel(device,context,buildMode);
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, RTHWIF_BUILD_QUALITY quality) override {
+    scene->buildAccel(device,context,buildMode,quality);
   }
 
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
@@ -1093,6 +1093,8 @@ struct Scene
 
   void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, bool benchmark = false)
   {
+     RTHWIF_BUILD_QUALITY quality = (RTHWIF_BUILD_QUALITY) (RandomSampler_getUInt(rng) % 3);
+     
     /* fill geometry descriptor buffer */
     std::vector<GEOMETRY_DESC> desc(size());
     std::vector<const RTHWIF_GEOMETRY_DESC*> geom(size());
@@ -1108,7 +1110,7 @@ struct Scene
       }
 
       numPrimitives += g->getNumPrimitives();
-      g->buildAccel(device,context,buildMode);
+      g->buildAccel(device,context,buildMode,quality);
       g->getDesc(&desc[geomID]);
       geom[geomID] = (const RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
@@ -1125,7 +1127,7 @@ struct Scene
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
     args.scratchBufferBytes = 0;
-    args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
+    args.quality = quality;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
     args.parallelOperation = parallelOperation;
     args.boundsOut = &bounds;
@@ -1773,7 +1775,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
     scene->createInstances(scene->size(),3, inst == InstancingType::SW_INSTANCING);
 
   scene->addNullGeometries(16);
-    
+
   scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE,false);
 
   /* calculate test input and expected output */
