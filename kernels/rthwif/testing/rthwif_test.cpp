@@ -265,7 +265,7 @@ void compareTestOutput(uint32_t tid, uint32_t& errors, const TestOutput& test, c
     }                                                                   \
   }
 
-  float eps = 1E-4;
+  float eps = 2E-4;
 
   COMPARE3(ray0_org,0);
   COMPARE3(ray0_dir,0);
@@ -524,7 +524,7 @@ struct Geometry
     throw std::runtime_error("Geometry::transform not implemented");
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::queue& queue, sycl::context& context, BuildMode buildMode) {
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, RTHWIF_BUILD_QUALITY quality) {
   };
 
   virtual void buildTriMap(Transform local_to_world, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) = 0;
@@ -844,8 +844,8 @@ struct InstanceGeometryT : public Geometry
     }
   }
 
-  virtual void buildAccel(sycl::device& device, sycl::queue &queue, sycl::context& context, BuildMode buildMode) override {
-    scene->buildAccel(device,queue,context,buildMode);
+  virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, RTHWIF_BUILD_QUALITY quality) override {
+    scene->buildAccel(device,context,buildMode,quality);
   }
 
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
@@ -934,6 +934,22 @@ void free_accel_buffer(void* ptr, sycl::context context)
   assert(result == ZE_RESULT_SUCCESS);
 #endif
 }
+
+
+#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+  
+  void exception_handler(sycl::exception_list exceptions)
+  {
+    for (std::exception_ptr const& e : exceptions) {
+      try {
+        std::rethrow_exception(e);
+      } catch(sycl::exception const& e) {
+        std::cout << "Caught asynchronous SYCL exception: " << e.what() << std::endl;
+      }
+    }
+  };
+
+#endif
 
 struct Scene
 {
@@ -1092,12 +1108,16 @@ struct Scene
       std::swap(geometries[g],geometries[k]);
     }
   }
-
-  void buildAccel(sycl::device& device, sycl::queue& queue, sycl::context& context, BuildMode buildMode, bool benchmark = false)
+  
+  void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, bool benchmark = false)
   {
+     RTHWIF_BUILD_QUALITY quality = (RTHWIF_BUILD_QUALITY) (RandomSampler_getUInt(rng) % 3);
+     
     /* fill geometry descriptor buffer */
     const size_t numGeometries = size();        
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
+    sycl::queue queue(device, exception_handler);
+    
     GEOMETRY_DESC *desc = (GEOMETRY_DESC*)sycl::aligned_alloc(64,sizeof(GEOMETRY_DESC)*numGeometries,device,context,sycl::usm::alloc::shared);
     RTHWIF_GEOMETRY_DESC **geom = (RTHWIF_GEOMETRY_DESC**)sycl::aligned_alloc(64,numGeometries*sizeof(RTHWIF_GEOMETRY_DESC*),device,context,sycl::usm::alloc::shared);
 #else        
@@ -1116,7 +1136,7 @@ struct Scene
       }
 
       numPrimitives += g->getNumPrimitives();
-      g->buildAccel(device,queue,context,buildMode);
+      g->buildAccel(device,context,buildMode,quality);
       g->getDesc(&desc[geomID]);
       geom[geomID] = (RTHWIF_GEOMETRY_DESC*) &desc[geomID];
     }
@@ -1137,7 +1157,7 @@ struct Scene
     args.accelBufferBytes = 0;
     args.scratchBuffer = nullptr;
     args.scratchBufferBytes = 0;
-    args.quality = RTHWIF_BUILD_QUALITY_MEDIUM;
+    args.quality = quality;
     args.flags = RTHWIF_BUILD_FLAG_NONE;
 #if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
     args.parallelOperation = nullptr;
@@ -1354,17 +1374,6 @@ struct Scene
 
   RTHWIF_AABB bounds;
   void* accel;
-};
-
-void exception_handler(sycl::exception_list exceptions)
-{
-  for (std::exception_ptr const& e : exceptions) {
-    try {
-      std::rethrow_exception(e);
-    } catch(sycl::exception const& e) {
-      std::cout << "Caught asynchronous SYCL exception: " << e.what() << std::endl;
-    }
-  }
 };
 
 void render(uint32_t i, const TestInput& in, TestOutput& out, intel_raytracing_acceleration_structure_t accel)
@@ -1831,8 +1840,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
     scene->createInstances(scene->size(),3, inst == InstancingType::SW_INSTANCING);
 
   scene->addNullGeometries(16);
-    
-  scene->buildAccel(device,queue,context,BuildMode::BUILD_EXPECTED_SIZE,false);
+  scene->buildAccel(device,context,BuildMode::BUILD_EXPECTED_SIZE,false);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numTests*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1910,7 +1918,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
   }
 
   scene->addNullGeometries(16);
-  scene->buildAccel(device,queue,context,buildMode,false);
+  scene->buildAccel(device,context,buildMode,false);
 
   /* calculate test input and expected output */
   TestInput* in = (TestInput*) sycl::aligned_alloc(64,numPrimitives*sizeof(TestInput),device,context,sycl::usm::alloc::shared);
@@ -1984,7 +1992,7 @@ uint32_t executeBenchmark(sycl::device& device, sycl::queue& queue, sycl::contex
     std::shared_ptr<Scene> scene(new Scene);
     scene->add(plane);
     
-    scene->buildAccel(device,queue,context,BuildMode::BUILD_WORST_CASE_SIZE,true);
+    scene->buildAccel(device,context,BuildMode::BUILD_WORST_CASE_SIZE,true);
   }
   return 0;
 }
@@ -2123,7 +2131,7 @@ int main(int argc, char* argv[])
     
   /* initialize SYCL device */
   device = sycl::device(sycl::gpu_selector_v);
-  sycl::queue queue = sycl::queue(device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() }); //sycl::queue(device,exception_handler);
+  sycl::queue queue = sycl::queue(device, exception_handler);
   context = queue.get_context();
 
   dispatchGlobalsPtr = allocDispatchGlobals(device,context);

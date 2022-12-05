@@ -287,7 +287,7 @@ namespace embree
     size_t expectedBytes = 0;
     size_t worstCaseBytes = 0;
     size_t scratchBytes = 0;
-    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, expectedBytes, worstCaseBytes, scratchBytes);
+    QBVH6BuilderSAH::estimateSize(numGeometries, getSize, getType, args.quality, expectedBytes, worstCaseBytes, scratchBytes);
                             
     /* return size to user */
     RTHWIF_ACCEL_SIZE size;
@@ -430,7 +430,7 @@ namespace embree
                            (char*)args.accelBuffer, args.accelBufferBytes,
                            args.scratchBuffer, args.scratchBufferBytes,
                            (BBox3f*) args.boundsOut, args.accelBufferBytesOut,
-                           verbose, dispatchGlobalsPtr);
+                           args.quality, verbose, dispatchGlobalsPtr);
     return RTHWIF_ERROR_NONE;
   }
   
