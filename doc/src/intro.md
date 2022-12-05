@@ -3,7 +3,7 @@ construct spatial index structures for 3D scenes and perform ray
 queries of different types. 
 
 The API can get used on the CPU using standard C, C++, and ISPC code
-and on Xe GPUs by using DPC++/SYCL code. 
+and Xe GPUs by using DPC++/SYCL code. 
 
 The Intel® Implicit SPMD Program Compiler (Intel® ISPC) version of the
 API, is almost identical to the standard C99 version, but contains

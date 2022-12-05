@@ -749,7 +749,7 @@ namespace embree
   void Scene::build_gpu_accels()
   {
 #if defined(EMBREE_SYCL_SUPPORT)
-    const BBox3f aabb = rthwifBuild(this,quality_flags,hwaccel);
+    const BBox3f aabb = rthwifBuild(this,hwaccel);
     bounds = LBBox<embree::Vec3fa>(aabb);
     hwaccel_bounds = aabb;
 #endif

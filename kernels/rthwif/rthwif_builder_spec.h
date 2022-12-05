@@ -220,9 +220,9 @@ typedef enum ze_raytracing_build_quality_t
 /* Some additional hints for acceleration structure build. */
 typedef enum ze_raytracing_build_flags_t
 {
-  ZE_RAYTRACING_BUILD_FLAG_NONE    = 0,
-  ZE_RAYTRACING_BUILD_FLAG_DYNAMIC = (1 << 0),  // optimize for dynamic content
-  ZE_RAYTRACING_BUILD_FLAG_COMPACT = (1 << 1),  // build more compact acceleration structure
+  ZE_RAYTRACING_BUILD_FLAGS_NONE    = 0,
+  ZE_RAYTRACING_BUILD_FLAGS_DYNAMIC = (1 << 0),  // optimize for dynamic content
+  ZE_RAYTRACING_BUILD_FLAGS_COMPACT = (1 << 1),  // build more compact acceleration structure
   
 } ze_raytracing_build_flags_t;
 

@@ -11,39 +11,38 @@
     void rtcIntersect4(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
-      struct RTCRayHit4* rayhit
+      struct RTCRayHit4* rayhit,
+      struct RTCIntersectArguments* args = NULL
     );
 
     void rtcIntersect8(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
-      struct RTCRayHit8* rayhit
+      struct RTCRayHit8* rayhit,
+      struct RTCIntersectArguments* args = NULL
     );
 
     void rtcIntersect16(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
-      struct RTCRayHit16* rayhit
+      struct RTCRayHit16* rayhit,
+      struct RTCIntersectArguments* args = NULL
     );
 
 #### DESCRIPTION
 
 The `rtcIntersect4/8/16` functions finds the closest hits for a ray
 packet of size 4, 8, or 16 (`rayhit` argument) with the scene (`scene`
-argument). The ray/hit input contains a ray packet and hit packet. See
-Section [rtcIntersect1] for a description of how to set up and trace
-rays.
+argument). The ray/hit input contains a ray packet and hit packet. The
+passed optional arguments struct (`args` argument) are used to pass
+additional arguments for advanced features. See Section
+[rtcIntersect1] for more details and a description of how to set up
+and trace rays.
 
 A ray valid mask must be provided (`valid` argument) which stores
 one 32-bit integer (`-1` means valid and `0` invalid) per ray in the
 packet. Only active rays are processed, and hit data of inactive rays
 is not changed.
-
-``` {include=src/api/inc/context.md}
-```
 
 ``` {include=src/api/inc/raypointer.md}
 ```
@@ -54,7 +53,7 @@ For `rtcIntersect4` the ray packet must be aligned to 16 bytes, for
 
 The `rtcIntersect4`, `rtcIntersect8` and `rtcIntersect16` functions
 may change the ray packet size and ray order when calling back into
-intersect filter functions or user geometry callbacks. Under some
+filter functions or user geometry callbacks. Under some
 conditions the application can assume packets to stay intakt, which
 can determined by querying the
 `RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED`,
@@ -70,4 +69,4 @@ thus will not set any error flags on failure.
 
 #### SEE ALSO
 
-[rtcOccluded4/8/16]
+[rtcIntersect1], [rtcOccluded4/8/16], [rtcInitIntersectArguments]
