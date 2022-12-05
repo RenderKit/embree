@@ -935,8 +935,6 @@ void free_accel_buffer(void* ptr, sycl::context context)
 #endif
 }
 
-
-#if defined(EMBREE_SYCL_GPU_BVH_BUILDER)
   
   void exception_handler(sycl::exception_list exceptions)
   {
@@ -949,7 +947,6 @@ void free_accel_buffer(void* ptr, sycl::context context)
     }
   };
 
-#endif
 
 struct Scene
 {
