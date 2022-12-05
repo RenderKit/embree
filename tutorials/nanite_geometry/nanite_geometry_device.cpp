@@ -122,18 +122,16 @@ extern "C" void device_init (char* cfg)
   {
     for (int theta=0; theta<NUM_SPHERE_INSTANCES_THETA; theta++)
     {
-      RandomSampler sampler;
-      RandomSampler_init(sampler, (int)phi, (int)theta, 0);
-
       const uint i = phi*numTheta+theta;
       const float phif   = phi*float(pi)*rcpNumPhi;
       const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
 
-      Vec3fa v;
+      Vec3fa v(0.0f);
+#if 1     
       v.x = r*sin(phif)*sin(thetaf);
-      v.y = r*cos(phif)+RandomSampler_get1D(sampler)*0.001f;
+      v.y = r*cos(phif); 
       v.z = r*sin(phif)*cos(thetaf);
-
+#endif
       AffineSpace3fa xfm(LinearSpace3fa(1,0,0,0,1,0,0,0,1),v);
 
       data.g_instances[i] = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
