@@ -4,27 +4,31 @@ Embree API
 ``` {include=src/intro.md}
 ```
 
-Embree DPC++ API
-================
+Embree SYCL API
+===============
 
-Embree supports Xe HPG and Xe HPC GPUs by using DPC++, which is
-Intel's extension of the SYCL programming language. SYCL is a Khronos
-standardized C++ based programming language for single source
-heterogenous programming for acceleration offload, see
-the [SYCL webpage](https://www.khronos.org/sycl/) for details.
+Embree supports ray tracing on Intel GPUs by using the SYCL
+programming language. SYCL is a Khronos standardized C++ based
+language for single source heterogenous programming for
+acceleration offload, see the [SYCL
+webpage](https://www.khronos.org/sycl/) for details.
 
-The Embree DPC++ API is designed for photorealistic rendering use
+The Embree SYCL API is designed for photorealistic rendering use
 cases, where scene setup is performed on the host, and rendering on
-the device. The Embree DPC++ API is very similar to the standard
-Embree C99 API. To enable SYCL support you have to include the
+the device. The Embree SYCL API is very similar to the standard Embree
+C99 API, and supports most of its features, such as all triangle-type
+geometries, all curve types and basis functions, point geometry types,
+user geometries, filter callbacks, multi-level instancing, and motion
+blur.
+
+To enable SYCL support you have to include the
 `sycl.hpp` file before the Embree API headers:
 
     #include <sycl/sycl.hpp>
     #include <embree4/rtcore.h>
 
-Next you need to initializes a DPC++ Embree device using the
-`rtcNewSYCLDevice` API function by providing a SYCL context and
-device.
+Next you need to initializes an Embree SYCL device using the
+`rtcNewSYCLDevice` API function by providing a SYCL context.
 
 Embree provides the `rtcIsSYCLDeviceSupported` API function to check
 if some SYCL device is supported by Embree. You can also use the
@@ -34,12 +38,12 @@ is supported by Embree, e.g.:
     sycl::device device(rtcSYCLDeviceSelector);
     sycl::queue queue(device, exception_handler);
     sycl::context context(device);
-    RTCDevice device = rtcNewSYCLDevice(context,device,"");
+    RTCDevice device = rtcNewSYCLDevice(context,"");
 
 Scenes created with an Embree SYCL device can only get used to trace
 rays using SYCL on the GPU, it is not possible to trace rays on the
 CPU with such a device. To render on the CPU and GPU in parallel, the
-user has to create a second standard Embree device and create a second
+user has to create a second Embree device and create a second
 scene to be used on the CPU.
 
 Files containing SYCL code, have to get compiled with the
@@ -62,18 +66,26 @@ e.g:
 These shared allocations have to be valid during rendering, as Embree
 may access contained data when tracing rays. Embree does not support
 device-only memory allocations, as the BVH builder implemented on the
-CPU relies on reading the same data buffers.
+CPU relies on reading the data buffers.
 
 Device side rendering can then get invoked by submitting a SYCL
 `parallel_for` to the SYCL queue:
 
+    const sycl::specialization_id<RTCFeatureFlags> feature_mask;
+
+    RTCFeatureFlags required_features = RTC_FEATURE_FLAGS_TRIANGLE;
 
     queue.submit([=](sycl::handler& cgh)
     {
-      cgh.parallel_for(sycl::range<1>(1),[=](sycl::id<1> item)
+      cgh.set_specialization_constant<feature_mask>(required_features);
+      
+      cgh.parallel_for(sycl::range<1>(1),[=](sycl::id<1> item, sycl::kernel_handler kh)
       {
-        struct RTCIntersectContext context;
-        rtcInitIntersectContext(&context);
+        RTCIntersectArguments args;
+        rtcInitIntersectArguments(&args);
+
+        const RTCFeatureFlags features = kh.get_specialization_constant<feature_mask>();
+        args.feature_mask = features;
   
         struct RTCRayHit rayhit;
         rayhit.ray.org_x = ox;
@@ -89,7 +101,7 @@ Device side rendering can then get invoked by submitting a SYCL
         rayhit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
         rayhit.hit.instID[0] = RTC_INVALID_GEOMETRY_ID;
   
-        rtcIntersect1(scene, &context, &rayhit);
+        rtcIntersect1(scene, &rayhit, &args);
   
         result->geomID = rayhit.hit.geomID;
         result->primID = rayhit.hit.primID;
@@ -98,41 +110,52 @@ Device side rendering can then get invoked by submitting a SYCL
     });
     queue.wait_and_throw();
 
+
+This example passes a feature mask using a specialization contant to
+the `rtcIntersect1` function, which is recommended for GPU
+rendering. For best performance, this feature mask should get used to
+enable features required by the application to render a scene,
+e.g. just triangles in this example.
+
 Inside the SYCL `parallel_for` you can use rendering related functions,
 such as `rtcIntersect1` and `rtcOccluded1` functions to trace rays,
 `rtcForwardIntersect1` and `rtcForwardOccluded` to continue object
 traversal from inside a user geometry callback,
-`rtcGetGeometryUserData` to get the user data pointer of some
+`rtcGetGeometryUserDataFromScene` to get the user data pointer of some
 geometry. All functions that are allowed to be used during device side
 rendering are marked in the API reference.
 
 Have a look at the [Minimal] tutorial for a minimal SYCL example.
 
 
-DPC++ JIT caching
+SYCL JIT caching
 -----------------
 
-While DPC++ allows precompiling device side code ahead of time (AOT
+While SYCL allows precompiling device side code ahead of time (AOT
 compilation), the use of specialization constants and new hardware may
 trigger just in time compilation (JIT compilation). As compile times
 can be large we recommend enabling persistent JIT compilation caching
 inside your application, by setting the `SYCL_CACHE_PERSISTENT`
 environment variable to `1`, and the `SYCL_CACHE_DIR` environment
 variable to some proper directory where the JIT cache should get
-stored. These environment variables have to get set before the Embree
-DPC++/SYCL device is created.
+stored. These environment variables have to get set before the SYCL
+device is created.
 
     setenv("SYCL_CACHE_PERSISTENT","1",1);
     setenv("SYCL_CACHE_DIR","cache_dir",1);
 
+    sycl::device device(rtcSYCLDeviceSelector);
+    ...
 
-DPC++ Memory Pooling
+
+SYCL Memory Pooling
 --------------------
 
 Memory Pooling is a mechanism where small USM memory allocations are
 packed into larger allocation blocks. This mode is required when your
 application performs many small USM allocations, as otherwise only a
-small fraction of GPU memory is usable.
+small fraction of GPU memory is usable and data transfer performance
+will be low.
 
 Memory pooling is supported for USM allocations that are read-only by
 the device. The following example allocated device read-only memory
@@ -141,37 +164,40 @@ with memory pooling support:
     sycl::aligned_alloc_shared(align, bytes, queue, sycl::ext::oneapi::property::usm::device_read_only());
 
 
-Embree DPC++ Limitations
-------------------------
+Embree SYCL Limitations
+-----------------------
 
-Embree only supports Intel Xe HPC/HPG GPUs as DPC++ devices, thus in
-particular the CPU and other GPUs cannot get used as a DPC++
+Embree only supports Xe HPC/HPG GPUs as SYCL devices, thus in
+particular the CPU and other GPUs cannot get used as a SYCL
 device. To render on the CPU just use the standard C99 API without
-relying on DPC++.
+relying on SYCL.
 
-The SYCL language spec puts some language restrictions to device
-functions, such as disallowing: malloc, invokation of virtual
-functions, function pointers, runtime type information, exceptions,
-recursion, etc. See Section `5.4. Language Restrictions for device
-functions` of the [SYCL
+The SYCL language spec puts some restrictions to device functions,
+such as disallowing: global variabel access, malloc, invokation of
+virtual functions, function pointers, runtime type information,
+exceptions, recursion, etc. See Section `5.4. Language Restrictions
+for device functions` of the [SYCL
 specification](https://www.khronos.org/registry/SYCL/specs/sycl-2020/html/sycl-2020.html#sec:language.restrictions.kernels)
-for more details. In DPC++ invoking a function through a function
-pointer is allowed, but we do not recommend this for performance
+for more details.
+
+Using Intel's oneAPI DPC++ compiler invoking an indirectly called
+function is allowed, but we do not recommend this for performance
 reasons.
 
-Some features have not been ported to the Embree DPC++ API thus cannot
+Some features have not been ported to the Embree SYCL API thus cannot
 get used on the device:
 
 - The packet tracing functions `rtcIntersect4/8/16` and
-  `rtcOccluded4/8/16` are not supported in DPC++
+  `rtcOccluded4/8/16` are not supported in SYCL
   device side code. Using these functions make no sense for SYCL, as
   the programming model is implicitely executed in SIMT mode on the
-  GPU.
+  GPU anyway.
 
 - Filter and user geometry callbacks stored inside the geometry
   objects are not supported on SYCL. Please use the alternative
   approach of passing the function pointer through the
-  RTCIntersectArguments struct, which enabled inlining on the GPU.
+  RTCIntersectArguments (and RTCOccludedArguments) struct, which
+  enables inlining on the GPU.
 
 - The `rtcInterpolate` function cannot get used on the the device. For
   most primitive types the vertex data interpolation is anyway a
@@ -181,15 +207,22 @@ get used on the device:
   interpolating over, thus its implementation on the GPU would contain
   a large switch statement for all potential geometry types.
 
-- Subdivision surfaces are not supported for Embree DPC++ devices.
+- Tracing rays using `rtcIntersect1` and `rtcOccluded1` functions from
+  user geometry callbacks is not supported in SYCL. Please use the
+  tail recursive `rtcForwardIntersect1` and `rtcForwardOccluded1`
+  calls instead.
 
-- Collision detection (`rtcCollide` API call) is not supported in DPC++ device side code.
+- Subdivision surfaces are not supported for Embree SYCL devices.
 
-- Point queries (`rtcPointQuery` API call) are not supported in DPC++ device side code.
+- Collision detection (`rtcCollide` API call) is not supported in SYCL
+  device side code.
+
+- Point queries (`rtcPointQuery` API call) are not supported in SYCL
+  device side code.
 
 
-Embree DPC++/SYCL Known Issues
-------------------------------
+Embree SYCL Known Issues
+------------------------
 
 There are some known DPC++ and driver issues:
 
@@ -216,6 +249,7 @@ There are some known DPC++ and driver issues:
 - rtcIntersect/rtcOccluded cannot get called from inside an
   indirectly called function.
 
+
 Upgrading from Embree 3 to Embree 4
 ===================================
 
@@ -223,11 +257,19 @@ This section summarizes API changes between Embree 3 and Embree4. Most
 of these changes are motivated by having a consistent API that works
 properly for the CPU and GPU.
 
-- The stream tracing functions `rtcIntersect1M`, `rtcIntersect1Mp`,
-  `rtcIntersectNM`, `rtcIntersectNp`, `rtcOccluded1M`,
-  `rtcOccluded1Mp`, `rtcOccludedNM`, and `rtcOccludedNp` got removed
-  as they were rarely used and did not provide relevant performance
-  benefits.
+- Passing an `RTCIntersectContext` is no longer required to trace
+  rays. Further, most members of the `RTCIntersectContext` have been
+  moved to some `RTCIntersectArguments` (and `RTCOccludedArguments`)
+  structures, which also contains a pointer to a reduced context. The
+  argument structs fulfill the task of providing additional advanced
+  arguments to the traversal functions. The intersect context can
+  still get used to pass additional data to callbacks, and to maintain
+  an instID stack in case instancing is done manually inside user
+  geometry callbacks. The arguments struct is not available inside
+  callbacks. This change was in particular necessary for SYCL to allow
+  inlining of function pointers provided to the traversal functions,
+  and to reduce the amount of state passed to callbacks, which improves
+  GPU performance.
   
 - User geometries callbacks get an valid vector as input to identify
   valid and invalid rays. In Embree 3 the user geometry callback just
@@ -273,6 +315,12 @@ properly for the CPU and GPU.
   pass the callback functions directly to the `rtcIntersect1` and
   `rtcOccluded1` functions to allow inlining (see Section [Xe GPU
   Performance Recommendations]).
+
+- The stream tracing functions `rtcIntersect1M`, `rtcIntersect1Mp`,
+  `rtcIntersectNM`, `rtcIntersectNp`, `rtcOccluded1M`,
+  `rtcOccluded1Mp`, `rtcOccludedNM`, and `rtcOccludedNp` got removed
+  as they were rarely used and did not provide relevant performance
+  benefits.
 
 
 \pagebreak
@@ -427,44 +475,51 @@ is reading these components using SSE loads later on.
 \pagebreak
 
 
-Xe GPU Performance Recommendations
-==================================
+GPU Performance Recommendations
+================================
 
 Low Code Complexity
 -------------------
 
-As a general rule try to keep code complexity
-low, to avoid spill code generation. To achieve this we recommend:
+As a general rule try to keep code complexity low, to avoid spill code
+generation. To achieve this we recommend splitting your rendering into
+separate kernels instead of using a single Uber kernel invokation.
 
-- Splitting your rendering into separate kernels instead of using a
-  single Uber kernel invokation.
+Code can further get reduced by using SYCL specialization constants to
+just enable code paths required to render a given scene.
 
-- Configure Embree to the minimal CMake configuration required for
-  your application, see Section [CMake Configuration].
+Feature Mask
+------------
 
-- Use SYCL specialization constants and the feature enable mask of the
-  `rtcIntersect1` and `rtcOccluded1` calls to JIT compile minimal
-  code. The passed feature mask should just contain features required
-  to render the current scene. If JIT compile times are an issue,
-  reduce the number of feature masks and use JIT caching.
+Use SYCL specialization constants and the feature enable mask of the
+`rtcIntersect1` and `rtcOccluded1` calls to JIT compile minimal
+code. The passed feature mask should just contain features required to
+render the current scene. If JIT compile times are an issue, reduce
+the number of feature masks and use JIT caching.
 
 Inline Indirect Calls
 ---------------------
 
-Do not attach user geometry and intersection filter callbacks to the
-geometries of the scene, but directly pass some user geometry and
-intersection filter callback function pointers through the
-`RTCIntersectArguments` struct to `rtcIntersect1` and
-`rtcOccluded1`. If the function is directly passed that way, the
-DPC++ compiler can inline the indirect call, which gives a huge
-performance benefit.
+Attaching user geometry and intersection filter callbacks to the
+geometries of the scene is not supported in SYCL for performance reasons.
+
+Instead do directly pass some user geometry and intersection filter
+callback function through the `RTCIntersectArguments` (and
+`RTCOccludedArguments`) struct to `rtcIntersect1` (and `rtcOccluded1`)
+API functions.
+
+If the callback function is directly passed that way, the SYCL
+compiler can inline the indirect call, which gives a huge performance
+benefit. Do *not* read a function pointer form some memory location
+and pass it to `rtcIntersect1` (and `rtcOccluded1`) as this will also
+prevent inlining.
 
 7 Bit Ray Mask
 --------------
 
 Use just the lower 7 bits of the ray and geometry mask. Embree
 supports 32 bit ray masks for geometry masking. On the CPU using any
-of the 32 bits yields the same performance. The Xe ray tracing
+of the 32 bits yields the same performance. The ray tracing
 hardware only supports an 8 bit mask, thus Embree has to emulate the
 32 bit masking. For that reason the lower 7 mask bits are hardware
 accelerated and fast, while the mask bits 7-31 require some software
@@ -473,14 +528,10 @@ intervention and using them reduces performance.
 Limit Motion Blur Motions
 -------------------------
 
-The motion blur implementation on DPC++ has some limitations regarding
+The motion blur implementation on SYCL has some limitations regarding
 supported motion. Primitive motion should be maximally as large as a
 small multiple of the primitive size, otherwise performance can
 degrade a lot. If detailed geometry moves fast, best put the geometry
-into an instance, and apply motion blur the instance itself, to allow
-larger motions. As a fallback, problematic scenes can always still get
-rendered robustly on the CPU.
-
-
-
-
+into an instance, and apply motion blur the instance itself, which
+efficiently allows larger motions. As a fallback, problematic scenes
+can always still get rendered robustly on the CPU.
