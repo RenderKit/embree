@@ -224,30 +224,20 @@ get used on the device:
 Embree SYCL Known Issues
 ------------------------
 
-There are some known DPC++ and driver issues:
+- Ahead of time compilation is currently not working properly and you
+  will get this error during compilation:
 
-- The function pointer types `RTCFilterFunctionN` for the filter
-  function callback as well as `RTCIntersectFunctionN` and
-  `RTCOccludedFunctionN` for the user geometry callbacks are defined
-  using a `const void*` input instead a pointer to the proper
-  arguments struct. This is a temporary workaround for some DPC++
-  compiler issue that prevents inlining of function pointers passed
-  via the `RTCIntersectArguments` struct to ray intersection.
+    llvm-foreach: Floating point exception (core dumped)
 
-- Under Windows the GPU side timers are currently not working with the
-  oneAPI DPC++ compiler 165 from 2022.03.10. Thus under Windows the
-  `--benchmark` mode of the tutorials uses host timers.
+- When the integrated GPU is enabled in addition to the discrete GPU
+  will will get this error when trying to start SYCL applications:
 
-- Embree does not yet properly use global SYCL pointers, which
-  requires using the `-cl-intel-force-global-mem-allocation` and
-  `-cl-intel-no-local-to-generic` option when compiling Embree DPC++
-  application, see section [Building Embree DPC++ Applications]. If
-  this compile option is not used, you get some compile warning that
-  generic address space is used, which will significantly reduce
-  performance.
+    Floating point exception (core dumped)
 
-- rtcIntersect/rtcOccluded cannot get called from inside an
-  indirectly called function.
+  To work around the issue either disable the integrated GPU in the
+  BIOS or try the following environment settings:
+
+    UseVmBind=0 ZE_AFFINITY_MASK=0
 
 
 Upgrading from Embree 3 to Embree 4
