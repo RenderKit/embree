@@ -81,8 +81,8 @@ Building Embree SYCL Applications
 
 Building Embree SYCL applications is also best done using
 CMake. Please first get some DPC++ compiler and setup the environment
-as decribed in sections Compiling Embree [with DPC++ under Linux] and
-[with DPC++ under Windows].
+as decribed in sections [Linux DPC++ Compilation] and
+[Windows DPC++ Compilation].
 
 Also perform the steps from the previous [Building Embree
 Applications] section.
@@ -121,8 +121,9 @@ help of the device option in ocloc tool:
 
 ### JIT Compilation
 
-For just in time compilation (JIT compilation) add these options to
-the compilation phase:
+We recommend using just in time compilation (JIT compilation) to
+compile Embree SYCL applications. For JIT compilation add these
+options to the compilation phase:
 
     -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64
 

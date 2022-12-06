@@ -126,8 +126,8 @@ You can also create an Embree package using the following command:
 Please see the [Building Embree Applications] section on how to build
 your application with such an Embree package.
 
-with DPC++ under Linux
-----------------------
+Linux DPC++ Compilation
+-----------------------
 
 The Embree SYCL compilation under Linux has been tested with the following DPC++ compilers:
 
@@ -320,8 +320,8 @@ and community contributors. If the version is out of date, please
 on the vcpkg repository.
 
 
-with DPC++ under Windows
-------------------------
+Windows DPC++ Compilation
+-------------------------
 
 The Embree SYCL compilation under Windows has been tested with the following DPC++ compilers:
 
@@ -424,29 +424,29 @@ parameters that can be configured in CMake:
 + `EMBREE_SYCL_SUPPORT`: Enables GPU support using SYCL. When this
   option is enabled you have to use some DPC++ compiler. Please see
   section [Linux DPC++ Compilation] and [Windows DPC++ Compilation]
-  on supported DPC++ compilers.
+  on supported DPC++ compilers. This option is OFF by default.
 
 + `EMBREE_SYCL_AOT_DEVICES`: Selects a list of Xe GPU devices for
   ahead of time (AOT) compilation of GPU code. Possible values are
   either, "none" which enables only just in time (JIT) compilation, or
   specifying one of the Embree supported Xe GPUs for AOT compilation:
 
-  * dg2         : Xe HPG devices
   * XE_HPG_CORE : Xe HPG devices
-  * pvc         : Xe HPC devices
   * XE_HPC_CORE : Xe HPC devices
 
   One can also specify multiple Xe devices separated by comma to
-  compile ahead of time for multiple devices, e.g. "dg2,pvc". When
-  enabling AOT compilation for one or multiple Xe devices, JIT
-  compilation will always additionally be enabled in case the code is
-  started on a device no code is precompiled for.
+  compile ahead of time for multiple devices,
+  e.g. "XE_HPG_CORE,XE_HP_CORE". When enabling AOT compilation for one
+  or multiple Xe devices, JIT compilation will always additionally be
+  enabled in case the code is started on a device no code is
+  precompiled for.
 
   Execute "ocloc compile --help" for more details of possible devices
   to pass. Embree is only supported on Xe HPG/HPC and newer devices.
 
-  Per default this option is set to "none" under Windows, and "dg2"
-  under Linux.
+  Per default this option is set to "none" to enable JIT
+  compilation. We recommend using JIT compilation as this enables the
+  use of specialization constants to reduce code complexity.
 
 + `EMBREE_STATIC_LIB`: Builds Embree as a static library (OFF by
   default). Further multiple static libraries are generated for the
