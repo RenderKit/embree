@@ -91,39 +91,11 @@ To properly compile your SYCL application you have to add additional
 SYCL compile flags for each C++ file that contains DPC++ device side
 code or kernels.
 
-### AOT Compilation
-
-For ahead of time compilation (AOT compilation) add these compile
-options to the compilation phase:
-
-    -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64_gen
-
-These options enable SYCL two phase compilation (`-fsycl` option),
-enable function pointer support (`-Xclang -fsycl-allow-func-ptr`
-option), and ahead of time (AOT) compilation
-(`-fsycl-targets=spir64_gen` option).
-
-The following link options have to get added to the linking stage of
-your application when compiling ahead of time for DG2 devices:
-
-    -fsycl -fsycl-targets=spir64_gen
-    -Xsycl-target-backend=spir64_gen "-device XE_HPG_CORE"
-
-This in particular configures the devices for AOT compilation to
-`XE_HPG_CORE`.
-
-To get a list of all device supported by AOT compilation look at the
-help of the device option in ocloc tool:
-
-    ocloc compile --help
-
-
-
 ### JIT Compilation
 
-We recommend using just in time compilation (JIT compilation) to
-compile Embree SYCL applications. For JIT compilation add these
-options to the compilation phase:
+We recommend using just in time compilation (JIT compilation) together
+with [SYCL JIT caching] to compile Embree SYCL applications. For JIT
+compilation add these options to the compilation phase:
 
     -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64
 
@@ -149,4 +121,36 @@ the `src` folder of the Embree package and also the contained
 
 Please have a look at the [Compiling Embree] section on how to create
 an Embree package from sources of required.
+
+
+### AOT Compilation
+
+Ahead of time compilation (AOT compilation) allows to speed up first
+application start up time as device binaries are precompiled. We do
+not recommend using AOT compilation as it does not allow the usage of
+specialization constants to reduce code complexity.
+
+For ahead of time compilation (AOT compilation) add these compile
+options to the compilation phase:
+
+    -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64_gen
+
+These options enable SYCL two phase compilation (`-fsycl` option),
+enable function pointer support (`-Xclang -fsycl-allow-func-ptr`
+option), and ahead of time (AOT) compilation
+(`-fsycl-targets=spir64_gen` option).
+
+The following link options have to get added to the linking stage of
+your application when compiling ahead of time for DG2 devices:
+
+    -fsycl -fsycl-targets=spir64_gen
+    -Xsycl-target-backend=spir64_gen "-device XE_HPG_CORE"
+
+This in particular configures the devices for AOT compilation to
+`XE_HPG_CORE`.
+
+To get a list of all device supported by AOT compilation look at the
+help of the device option in ocloc tool:
+
+    ocloc compile --help
 
