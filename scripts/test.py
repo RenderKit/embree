@@ -424,8 +424,6 @@ def runConfig(config):
      conf.append("-D EMBREE_FILTER_FUNCTION="+config["FILTER_FUNCTION"])
   if "LARGEGRF" in config:
     conf.append("-D EMBREE_SYCL_LARGEGRF="+config["LARGEGRF"])
-  if "SYCL_MBLUR" in config:
-    conf.append("-D EMBREE_SYCL_MBLUR="+config["SYCL_MBLUR"])
   if "RAY_MASK" in config:
     conf.append("-D EMBREE_RAY_MASK="+config["RAY_MASK"])
   if "RAY_PACKETS" in config:
@@ -459,8 +457,6 @@ def runConfig(config):
 
   if "sycl" in config:
       conf.append("-D EMBREE_SYCL_AOT_DEVICES="+config["sycl"])
-  if "sycl_mblur" in config:
-    conf.append("-D EMBREE_SYCL_MBLUR="+config["sycl_mblur"])
   if "implicit_dispatch_globals" in config:
     conf.append("-D EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS="+config["implicit_dispatch_globals"])
   if "sycl_test" in config:

@@ -6,7 +6,7 @@
 #include "../common/algorithms/parallel_reduce.h"
 
 // === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
-#define SINGLE_WG_SWITCH_THRESHOLD            8*1024
+#define SINGLE_WG_SWITCH_THRESHOLD            4*1024
 
 // === less than threshold, 40bits morton code + 24bits index are used, otherwise 64bit morton code + 32bit index ===
 #define FAST_MC_NUM_PRIMS_THRESHOLD           1024*1024

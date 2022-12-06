@@ -50,24 +50,13 @@ RTC_NAMESPACE_BEGIN;
 //#define ROBUST_MODE false
 //#endif
 
-#undef TRAV_LOOP
-#if defined(EMBREE_SYCL_MBLUR)       ||\
-    defined(EMBREE_GEOMETRY_CURVE)    ||\
-    defined(EMBREE_GEOMETRY_GRID)     ||\
-    defined(EMBREE_GEOMETRY_POINT)    ||\
-    defined(EMBREE_GEOMETRY_USER)     ||\
-    defined(EMBREE_GEOMETRY_INSTANCE)   ||\
-    defined(EMBREE_FILTER_FUNCTION)
-#define TRAV_LOOP
-#endif
-
 const constexpr uint32_t TRAV_LOOP_FEATURES =
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
   RTC_FEATURE_FLAGS_TRIANGLE |   // filter function enforced for triangles and quads in this case
   RTC_FEATURE_FLAGS_QUAD |
 #endif
   RTC_FEATURE_FLAGS_MOTION_BLUR |
-  RTC_FEATURE_FLAGS_ROUND_CURVES | RTC_FEATURE_FLAGS_FLAT_CURVES | RTC_FEATURE_FLAGS_NORMAL_ORIENTED_CURVES |
+  RTC_FEATURE_FLAGS_CURVES |
   RTC_FEATURE_FLAGS_GRID |
   RTC_FEATURE_FLAGS_POINT |
   RTC_FEATURE_FLAGS_USER_GEOMETRY |
@@ -201,10 +190,10 @@ bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instanc
   
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-#if defined(EMBREE_SYCL_MBLUR)
-  float time = clamp(ray.time(),0.0f,1.0f);
-  bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
-#endif
+  if (context->args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+    float time = clamp(ray.time(),0.0f,1.0f);
+    bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
+  }
 
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
   
@@ -249,10 +238,10 @@ bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, 
   
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-#if defined(EMBREE_SYCL_MBLUR)
-  float time = clamp(ray.time(),0.0f,1.0f);
-  bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
-#endif
+  if (context->args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+    float time = clamp(ray.time(),0.0f,1.0f);
+    bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
+  }
 
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
 
@@ -266,12 +255,10 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
 {
 #if defined(__SYCL_DEVICE_ONLY__)
   bool filter = feature_mask & (RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY);
-#if defined(EMBREE_SYCL_MBLUR)
   if (feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
     if (ray.time() < geom->time_range.lower || geom->time_range.upper < ray.time())
       return false;
   }
-#endif
 
 #if defined(EMBREE_GEOMETRY_USER)
   if (geom->getType() == Geometry::GTY_USER_GEOMETRY) {
@@ -280,11 +267,9 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
 #endif
 
 #if defined(EMBREE_GEOMETRY_INSTANCE)
-#if defined(EMBREE_GEOMETRY_INSTANCE) || defined(EMBREE_SYCL_MBLUR)
   if (geom->getTypeMask() & Geometry::MTY_INSTANCE) {
     return intersect_instance(query,ray,(Instance*)geom, scenes, context, geomID, primID);
   }
-#endif
 #endif
   
   isa::CurvePrecalculations1 pre(ray,context->scene);
@@ -292,8 +277,7 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
   const Geometry::GType gtype MAYBE_UNUSED = geom->getType();
   const Geometry::GType stype MAYBE_UNUSED = (Geometry::GType)(gtype & Geometry::GTY_SUBTYPE_MASK);
   const Geometry::GType basis MAYBE_UNUSED = (Geometry::GType)(gtype & Geometry::GTY_BASIS_MASK);
-
-#if defined(EMBREE_SYCL_MBLUR)
+  
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
   if (gtype == Geometry::GTY_TRIANGLE_MESH && (feature_mask & RTC_FEATURE_FLAGS_TRIANGLE) && (feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR))
   {
@@ -319,7 +303,6 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
     bool ishit1 = TriangleIntersector().intersect(ray,v2,v3,v1,[&](float &u, float &v, Vec3f& Ng) { u = 1.f - u; v = 1.f - v; }, Intersect1Epilog1_HWIF<Ray>(ray, context, geomID, primID, filter));
     return ishit0 || ishit1;
   } else
-#endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_GRID)
@@ -505,7 +488,6 @@ bool commit_potential_hit(intel_ray_query_t& query, Ray& ray) {
   return true;
 }
 
-#if defined(TRAV_LOOP)
 template<typename Ray>
 void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
 {
@@ -571,7 +553,6 @@ void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANC
     intel_ray_query_sync(query);
   }
 }
-#endif
 
 SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCIntersectContext> ucontext, sycl::private_ptr<RTCRayHit> rayhit_i, sycl::private_ptr<RTCIntersectArguments> args)
 {
@@ -621,12 +602,10 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
 
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-#if defined(EMBREE_SYCL_MBLUR)
-  if(args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+  if (args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
     bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
   }
-#endif
 
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
   
@@ -634,11 +613,9 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
   
-#if defined(TRAV_LOOP)
   if (args->feature_mask & TRAV_LOOP_FEATURES) {
     trav_loop(query,ray,scenes,&context,args->feature_mask);
   }
-#endif
 
   bool valid = intel_has_committed_hit(query);
 
@@ -719,12 +696,10 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
 
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-#if defined(EMBREE_SYCL_MBLUR)
-  if(args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+  if (args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
     bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
   }
-#endif
 
   hwaccel_ptr = (intel_raytracing_acceleration_structure_t) hwaccel->AccelTable[bvh_id];
   
@@ -732,18 +707,14 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   intel_ray_query_start_traversal(query);
   intel_ray_query_sync(query);
 
-#if defined(TRAV_LOOP)
   if (args->feature_mask & TRAV_LOOP_FEATURES) {
     trav_loop(query,ray,scenes,&context,args->feature_mask);
   }
-#endif
   
   if (intel_has_committed_hit(query))
     ray_i->tfar = -INFINITY;
 
   intel_ray_query_abandon(query);
 }
-
-#undef TRAV_LOOP
 
 RTC_NAMESPACE_END;

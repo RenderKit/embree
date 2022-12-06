@@ -50,7 +50,7 @@ ENDIF()
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3)
   ADD_EMBREE_MODELS_TEST(test-models-intensity4.txt viewer viewer viewer)
 
-  IF (EMBREE_SYCL_SUPPORT AND EMBREE_SYCL_MBLUR)
+  IF (EMBREE_SYCL_SUPPORT)
     set_tests_properties(viewer_sophie_mblur_sophie_mblur_sycl PROPERTIES DISABLED True)
   ENDIF()
 ENDIF()
