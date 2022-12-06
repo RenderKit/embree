@@ -76,22 +76,59 @@ look at the `minimal` tutorial provided in the `src` folder of the
 Embree package and also the contained `README.txt` file.
 
 
-Building Embree DPC++ Applications
+Building Embree SYCL Applications
 ----------------------------------
 
-Building Embree DPC++ applications is also best done using
+Building Embree SYCL applications is also best done using
 CMake. Please first get some DPC++ compiler and setup the environment
-as decribed in sections [Linux DPC++ Compilation] and [Windows DPC++
-Compilation].
+as decribed in sections [Linux DPC++ Compilation] and
+[Windows DPC++ Compilation].
 
 Also perform the steps from the previous [Building Embree
 Applications] section.
 
-To properly compile your DPC++ application you have to add additional
+To properly compile your SYCL application you have to add additional
 SYCL compile flags for each C++ file that contains DPC++ device side
 code or kernels.
 
+### JIT Compilation
+
+We recommend using just in time compilation (JIT compilation) together
+with [SYCL JIT caching] to compile Embree SYCL applications. For JIT
+compilation add these options to the compilation phase:
+
+    -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64
+
+These options enable SYCL two phase compilation (`-fsycl` option),
+enable function pointer support (`-Xclang -fsycl-allow-func-ptr`
+option), and just in time (JIT) compilation only
+(`-fsycl-targets=spir64` option).
+
+The following link options have to get added to the linking stage of
+your application when using just in time compilation:
+
+    -fsycl -fsycl-targets=spir64
+
+Under Windows you additionally have to pass the linker the path to the
+lib folder of the DPC++ installation:
+
+    -L path_to_sycl_compiler/lib
+
+For a full example on how to build an Embree SYCL application please
+have a look at the SYCL version of the `minimal` tutorial provided in
+the `src` folder of the Embree package and also the contained
+`README.txt` file.
+
+Please have a look at the [Compiling Embree] section on how to create
+an Embree package from sources of required.
+
+
 ### AOT Compilation
+
+Ahead of time compilation (AOT compilation) allows to speed up first
+application start up time as device binaries are precompiled. We do
+not recommend using AOT compilation as it does not allow the usage of
+specialization constants to reduce code complexity.
 
 For ahead of time compilation (AOT compilation) add these compile
 options to the compilation phase:
@@ -106,49 +143,14 @@ option), and ahead of time (AOT) compilation
 The following link options have to get added to the linking stage of
 your application when compiling ahead of time for DG2 devices:
 
-    -fsycl -fsycl-targets=spir64_gen -Xsycl-target-backend=spir64_gen
-      "-device dg2 -revision_id 4 
-       -options \"-cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic\" "
+    -fsycl -fsycl-targets=spir64_gen
+    -Xsycl-target-backend=spir64_gen "-device XE_HPG_CORE"
 
-This in particular configures the devices for AOT compilation (here
-just `dg2`). The proper device revision has to get passed currently
-(`-revision_id 4` option) and local memory get disabled using the
-`-cl-intel-force-global-mem-allocation` and
-`-cl-intel-no-local-to-generic` compile options.
+This in particular configures the devices for AOT compilation to
+`XE_HPG_CORE`.
 
-### JIT Compilation
+To get a list of all device supported by AOT compilation look at the
+help of the device option in ocloc tool:
 
-For just in time compilation (JIT compilation) add these options to
-the compilation phase:
-
-    -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64
-
-These options enable SYCL two phase compilation (`-fsycl` option),
-enable function pointer support (`-Xclang -fsycl-allow-func-ptr`
-option), and just in time (JIT) compilation only
-(`-fsycl-targets=spir64` option).
-
-The following link options have to get added to the linking stage of
-your application when using just in time compilation:
-
-    -fsycl -fsycl-targets=spir64 -Xsycl-target-backend=spir64
-      " -options \"-cl-intel-force-global-mem-allocation -cl-intel-no-local-to-generic\" "
-
-This only disables local memory support using the
-`-cl-intel-force-global-mem-allocation` and
-`-cl-intel-no-local-to-generic` compile options for the JIT
-compilation.
-
-Under Windows you additionally have to pass the linker the path to the
-lib folder of the DPC++ installation:
-
-    -L path_to_sycl_compiler/lib
-
-For a full example on how to build an Embree DPC++ application please
-have a look at the DPC++ version of the `minimal` tutorial provided in
-the `src` folder of the Embree package and also the contained
-`README.txt` file.
-
-Please have a look at the [Compiling Embree] section on how to create
-an Embree package from sources of required.
+    ocloc compile --help
 

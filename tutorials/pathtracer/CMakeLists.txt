@@ -25,22 +25,18 @@ ENDIF()
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 3)
   ADD_EMBREE_MODELS_TEST(test-models-intensity4.txt pathtracer pathtracer pathtracer)
 
-  IF (EMBREE_SYCL_SUPPORT AND EMBREE_SYCL_MBLUR)
+  IF (EMBREE_SYCL_SUPPORT)
     set_tests_properties(pathtracer_sophie_mblur_sophie_mblur_sycl PROPERTIES DISABLED True)
   ENDIF()
 
   # these tests require geometry filter functions to be enabled
     
     set_tests_properties(pathtracer_sophie_sophie PROPERTIES DISABLED True)
-    IF (EMBREE_SYCL_MBLUR)
-      set_tests_properties(pathtracer_sophie_mblur_sophie_mblur PROPERTIES DISABLED True)
-    ENDIF()
+    set_tests_properties(pathtracer_sophie_mblur_sophie_mblur PROPERTIES DISABLED True)
     
     IF (EMBREE_ISPC_SUPPORT)
       set_tests_properties(pathtracer_sophie_sophie_ispc PROPERTIES DISABLED True)
-      IF (EMBREE_SYCL_MBLUR)
-        set_tests_properties(pathtracer_sophie_mblur_sophie_mblur_ispc PROPERTIES DISABLED True)
-      ENDIF()
+      set_tests_properties(pathtracer_sophie_mblur_sophie_mblur_ispc PROPERTIES DISABLED True)
     ENDIF()
     
     IF (EMBREE_SYCL_SUPPORT)
