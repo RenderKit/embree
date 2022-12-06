@@ -5,8 +5,6 @@
 #include "builder/qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
 
-// === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
-#define SINGLE_WG_SWITCH_THRESHOLD            8*1024
 
 // === less than threshold, 40bits morton code + 24bits index are used, otherwise 64bit morton code + 32bit index ===
 #define FAST_MC_NUM_PRIMS_THRESHOLD           1024*1024
@@ -41,7 +39,7 @@ namespace embree
 
   __forceinline uint estimateSizeLeafNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
   {
-    return (numQuads + numProcedurals + /* 2 */ 32 * numInstances) * 64;  
+    return (numQuads + numProcedurals + 2  * numInstances) * 64;  
   }
 
   __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
@@ -507,7 +505,6 @@ namespace embree
 
     const size_t conv_mem_size = sizeof(numPrimitives)*numPrimitives;
     const uint NUM_ACTIVE_LARGE_WGS = min((numPrimitives+LARGE_WG_SIZE-1)/LARGE_WG_SIZE,(uint)MAX_WGS);
-
     // ===========================
     // === set up all pointers ===
     // ===========================
@@ -732,7 +729,7 @@ namespace embree
       {
         double singleWG_time = 0.0f;
         singleWGBuild(gpu_queue, globals, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, numPrims, SEARCH_RADIUS_SHIFT, singleWG_time, verbose1);
-        PRINT((float)singleWG_time);
+        //PRINT((float)singleWG_time);
         timer.add_to_device_timer(BuildTimer::BUILD,singleWG_time);
         numPrims = 1;
       }
@@ -768,7 +765,8 @@ namespace embree
 
     if (unlikely(verbose2))
     {
-      if (globals->bvh2_index_allocator >= 2*numPrimitives)
+      PRINT(globals->bvh2_index_allocator);
+      if (globals->bvh2_index_allocator > 2*numPrimitives)
         FATAL("BVH2 construction, allocator");
       
       PRINT(globals->rootIndex);

@@ -22,6 +22,9 @@
 #define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
 #define EQUAL_DISTANCES_WORKAROUND   1
 
+// === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
+#define SINGLE_WG_SWITCH_THRESHOLD            1000*2
+
 namespace embree
 {  
   // ===================================================================================================================================================================================
@@ -1194,7 +1197,6 @@ namespace embree
       });
     gpu::waitOnEventAndCatchException(quadification_event);
     if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(quadification_event);
-    PRINT2(numQuadBlocks,(float)gpu::getDeviceExecutionTiming(quadification_event));
   }
        
    uint createInstances_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, double &iteration_time, const bool verbose)    
@@ -1977,16 +1979,32 @@ namespace embree
         /* local variables */
         sycl::local_accessor< gpu::AABB3f, 1> cached_bounds  (sycl::range<1>(SINGLE_WG_SIZE),cgh);
         sycl::local_accessor< uint       , 1> cached_neighbor(sycl::range<1>(SINGLE_WG_SIZE),cgh);
-        sycl::local_accessor< uint       , 1> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);        
-        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
+        sycl::local_accessor< uint       , 1> cached_clusterID(sycl::range<1>(SINGLE_WG_SIZE),cgh);
+#if 0
+        sycl::local_accessor< uint       , 1> local_cluster_index_source(sycl::range<1>(SINGLE_WG_SWITCH_THRESHOLD),cgh);
+        sycl::local_accessor< uint       , 1> local_cluster_index_dest(sycl::range<1>(SINGLE_WG_SWITCH_THRESHOLD),cgh);
+#endif        
+        sycl::local_accessor< uint       , 1> counts(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);        
         sycl::local_accessor< uint       , 1> counts_prefix_sum(sycl::range<1>((SINGLE_WG_SIZE/SINGLE_WG_SUB_GROUP_WIDTH)),cgh);
         sycl::local_accessor< uint       , 0> _active_counter(cgh);
                                              
         cgh.parallel_for(nd_range,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(SINGLE_WG_SUB_GROUP_WIDTH) {
             uint &active_counter = *_active_counter.get_pointer();
+
+            const uint localID        = item.get_local_id(0);
+            const uint localSize       = item.get_local_range().size();
+
+#if 0            
+            for (uint i=localID;i<numPrimitives;i+=localSize)
+              local_cluster_index_source[i] = cluster_index_source[i];
+
+            item.barrier(sycl::access::fence_space::local_space);
+#endif
+            
+            //wgBuild(item, bvh2_index_allocator, 0, numPrimitives, bvh2, local_cluster_index_source.get_pointer(), local_cluster_index_dest.get_pointer(), bvh2_subtree_size, cached_bounds.get_pointer(), cached_neighbor.get_pointer(), cached_clusterID.get_pointer(), counts.get_pointer(),  counts_prefix_sum.get_pointer(), active_counter, 1, SEARCH_RADIUS_SHIFT, SINGLE_WG_SIZE);
             wgBuild(item, bvh2_index_allocator, 0, numPrimitives, bvh2, cluster_index_source, cluster_index_dest, bvh2_subtree_size, cached_bounds.get_pointer(), cached_neighbor.get_pointer(), cached_clusterID.get_pointer(), counts.get_pointer(),  counts_prefix_sum.get_pointer(), active_counter, 1, SEARCH_RADIUS_SHIFT, SINGLE_WG_SIZE);
 
-            const uint localID        = item.get_local_id(0);                                                                 
+
             if (localID == 0) globals->rootIndex = globals->bvh2_index_allocator-1;
           });		  
       });            
