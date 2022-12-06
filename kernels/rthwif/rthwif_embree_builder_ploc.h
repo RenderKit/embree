@@ -22,9 +22,6 @@
 #define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
 #define EQUAL_DISTANCES_WORKAROUND   1
 
-// === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
-#define SINGLE_WG_SWITCH_THRESHOLD            1000*2
-
 namespace embree
 {  
   // ===================================================================================================================================================================================
@@ -1213,7 +1210,7 @@ namespace embree
         sycl::local_accessor< uint      , 0> _active_counter(cgh);
         sycl::local_accessor< uint      , 0> _global_count_prefix_sum(cgh);
         
-        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(CREATE_INSTANCES_SUB_GROUP_WIDTH)      
                          {
                            const uint groupID         = item.get_group(0);
                            const uint numGroups       = item.get_group_range(0);                                                        
@@ -1335,10 +1332,10 @@ namespace embree
     PRINT(numGeoms);
     sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
         
-        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item)       
+        cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)      
                          {
                            const uint groupID         = item.get_group(0);
-                           const uint numGroups       = item.get_group_range(0);                                                        
+                           //const uint numGroups       = item.get_group_range(0);                                                        
                            const uint localID         = item.get_local_id(0);
                            const uint step_local      = item.get_local_range().size();
                            const uint *const source   = (uint*)((RTHWIF_GEOMETRY_INSTANCE_DESC *)geometry_desc[groupID])->accel;
@@ -1346,6 +1343,7 @@ namespace embree
                            const uint size            =  COPY_KERNEL_CHUNK_SIZE / 4;  
                            for (uint ID = localID; ID < size; ID += step_local)
                              dest[ID] = source[ID];
+                           //dest[localID] = source[localID];
                          });
 		  
       });

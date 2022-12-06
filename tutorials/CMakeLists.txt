@@ -77,15 +77,8 @@ ADD_SUBDIRECTORY(bvh_builder)
 ADD_SUBDIRECTORY(lazy_geometry)
 ADD_SUBDIRECTORY(bvh_access)
 ADD_SUBDIRECTORY(nanite_geometry)
-
-IF (EMBREE_SYCL_MBLUR AND NOT WIN32)
-  ADD_SUBDIRECTORY(quaternion_motion_blur) # doesn't work on Windows with release driver
-ENDIF()
-
-IF (EMBREE_GEOMETRY_CURVE AND EMBREE_SYCL_MBLUR)
-  ADD_SUBDIRECTORY(motion_blur_geometry)
-ENDIF()
-
+ADD_SUBDIRECTORY(quaternion_motion_blur)
+ADD_SUBDIRECTORY(motion_blur_geometry)
 ADD_SUBDIRECTORY(interpolation)
 ADD_SUBDIRECTORY(curve_geometry)
 ADD_SUBDIRECTORY(point_geometry)

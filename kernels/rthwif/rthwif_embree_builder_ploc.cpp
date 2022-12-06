@@ -5,6 +5,8 @@
 #include "builder/qbvh6.h"
 #include "../common/algorithms/parallel_reduce.h"
 
+// === less than threshold, a single workgroup is used to perform all PLOC iterations in a single kernel launch ===
+#define SINGLE_WG_SWITCH_THRESHOLD            4*1024
 
 // === less than threshold, 40bits morton code + 24bits index are used, otherwise 64bit morton code + 32bit index ===
 #define FAST_MC_NUM_PRIMS_THRESHOLD           1024*1024
@@ -39,7 +41,8 @@ namespace embree
 
   __forceinline uint estimateSizeLeafNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
   {
-    return (numQuads + numProcedurals + 2  * numInstances) * 64;  
+    //return (numQuads + numProcedurals + 2  * numInstances) * 64;
+    return (numQuads + numProcedurals + 2  * numInstances * 16) * 64;  
   }
 
   __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
@@ -547,8 +550,22 @@ namespace embree
     }	    
     
     // test copy kernel
-    // if (numInstances)
-    //   testInstanceCopyKernel(gpu_queue,args.geometries,numGeometries,(char*)bvh_mem,verbose1);
+    if (numInstances && 0)
+    {
+      testInstanceCopyKernel(gpu_queue,args.geometries,numGeometries/2,(char*)bvh_mem,verbose1);
+
+      size_t size = 512*1024*1024;
+      char *source = (char*)leaf_mem;
+      char *dest = (char*)leaf_mem + size;
+      
+      sycl::event queue_event = gpu_queue.submit([&](sycl::handler& cgh) {
+                                                   cgh.memcpy(dest, source,size);
+                   });
+      gpu::waitOnEventAndCatchException(queue_event);
+      double dt = gpu::getDeviceExecutionTiming(queue_event);
+      PRINT((float)dt);
+      
+    }
 
     timer.start(BuildTimer::PRE_PROCESS);        
     
