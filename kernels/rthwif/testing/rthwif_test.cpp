@@ -843,7 +843,7 @@ struct InstanceGeometryT : public Geometry
   }
 
   virtual void buildAccel(sycl::device& device, sycl::context& context, BuildMode buildMode, RTHWIF_BUILD_QUALITY quality) override {
-    scene->buildAccel(device,context,buildMode,quality);
+    scene->buildAccel(device,context,buildMode);
   }
 
   virtual void buildTriMap(Transform local_to_world_in, std::vector<uint32_t> id_stack, uint32_t instUserID, bool procedural_instance, std::vector<Hit>& tri_map) override {
