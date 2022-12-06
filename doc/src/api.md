@@ -535,3 +535,35 @@ degrade a lot. If detailed geometry moves fast, best put the geometry
 into an instance, and apply motion blur the instance itself, which
 efficiently allows larger motions. As a fallback, problematic scenes
 can always still get rendered robustly on the CPU.
+
+Generic Pointers
+----------------
+
+Embree uses standard C++ pointers in its implementation. SYCL might
+not be able to detect the memory space these pointers refer to and has
+to treat them as generic pointers which are not performing well. DPC++
+compiler has advanced optimizations to infer the proper address space
+to avoid usage of generic pointers.
+
+
+However, if you still encounter the following warning during ahead of
+time compilation of SYCL kernels, then generic pointer loads are used:
+
+    warning: Adding XX occurrences of additional control flow due to presence
+             of generic address space operations in function YYY.
+
+Do work around this issue we recommend:
+
+- Do not use local memory inside kernels that trace rays as the
+  compiler knows that no local memory pointer can exist and will
+  optimize generic loads.
+
+- Indirectly callable functions may still cause issues, even if your
+  kernel does not use local memory. Thus best se SYCL pointers like
+  sycl::global_ptr<T> and sycl::private_ptr<T> in indirectly callable
+  functions to avoid generic address space usage.
+
+- You can also enforce usage of global pointers using the following
+  DPC++ compile flags: `-cl-intel-force-global-mem-allocation
+  -cl-intel-no-local-to-generic`.
+
