@@ -239,28 +239,49 @@ Embree SYCL Known Issues
 
     UseVmBind=0 ZE_AFFINITY_MASK=0
 
+- The Xe HPC GPUs are currently not supported.
+
 
 Upgrading from Embree 3 to Embree 4
 ===================================
 
 This section summarizes API changes between Embree 3 and Embree4. Most
-of these changes are motivated by having a consistent API that works
-properly for the CPU and GPU.
+of these changes are motivated by GPU performance and having a
+consistent API that works properly for the CPU and GPU.
 
-- Passing an `RTCIntersectContext` is no longer required to trace
-  rays. Further, most members of the `RTCIntersectContext` have been
-  moved to some `RTCIntersectArguments` (and `RTCOccludedArguments`)
-  structures, which also contains a pointer to a reduced context. The
-  argument structs fulfill the task of providing additional advanced
-  arguments to the traversal functions. The intersect context can
-  still get used to pass additional data to callbacks, and to maintain
-  an instID stack in case instancing is done manually inside user
-  geometry callbacks. The arguments struct is not available inside
-  callbacks. This change was in particular necessary for SYCL to allow
-  inlining of function pointers provided to the traversal functions,
-  and to reduce the amount of state passed to callbacks, which improves
-  GPU performance.
+- The API include folder got renamed from embree3 to embree4, to be
+  able to install Embree 3 and Embree 4 side by side, without having
+  conflicts in API folder.
   
+- There are some changes to the `rtcIntersect` and `rtcOccluded`
+  functions. Passing an `RTCIntersectContext` is no longer required to
+  trace rays. Further, most members of the `RTCIntersectContext` have
+  been moved to some `RTCIntersectArguments` (and
+  `RTCOccludedArguments`) structures, which also contains a pointer to
+  a reduced context. The argument structs fulfill the task of
+  providing additional advanced arguments to the traversal
+  functions. The intersect context can still get used to pass
+  additional data to callbacks, and to maintain an instID stack in
+  case instancing is done manually inside user geometry callbacks. The
+  arguments struct is not available inside callbacks. This change was
+  in particular necessary for SYCL to allow inlining of function
+  pointers provided to the traversal functions, and to reduce the
+  amount of state passed to callbacks, which improves GPU performance.
+
+- The `rtcFilterIntersection` and `rtcFilterOcclusion` API calls that
+  invoke both, the geometry and argument version of the filter
+  callback, from a user geometry callback is no longer
+  supported. Instead applications should use the
+  `rtcInvokeIntersectFilterFromGeometry` and
+  `rtcInvokeOccludedFilterFromGeometry` API calls that invoke just the
+  geometry version of the filter function, and invoke the argument
+  filter function manually if required.
+
+- The filter function passed as arguments to rtcIntersect and
+  rtcOccluded is only invoked for some geometry if enabled through
+  rtcSetGeometryEnableFilterFunctionFromArguments or the
+  RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER flag.
+
 - User geometries callbacks get an valid vector as input to identify
   valid and invalid rays. In Embree 3 the user geometry callback just
   had to update the ray hit members when an intersection was found and
@@ -270,12 +291,27 @@ properly for the CPU and GPU.
   the new hit distance to the ray tracing hardware only in the case a
   hit was found.
 
-- The default ray mask for geometries got changed from 0xFFFFFFFF to
-  0x1.
+- Further ray masking is enabled by default now as required by most
+  applications and the default ray mask for geometries got changed
+  from 0xFFFFFFFF to 0x1.
 
-- The API include folder got renamed from embree3 to embree4, to be
-  able to install Embree 3 and Embree 4 side by side, without having
-  conflicts in API folder.
+- The stream tracing functions `rtcIntersect1M`, `rtcIntersect1Mp`,
+  `rtcIntersectNM`, `rtcIntersectNp`, `rtcOccluded1M`,
+  `rtcOccluded1Mp`, `rtcOccludedNM`, and `rtcOccludedNp` got removed
+  as they were rarely used and did not provide relevant performance
+  benefits. As alternative the application can just iterate over
+  `rtcIntersect1` and potentially `rtcIntersect4/8/16` to get similar
+  performance.
+  
+To use Embree through SYCL on the CPU and GPU additional changes are
+required:
+
+- Embree 3 allows to use `rtcIntersect` recursively from a user
+  geometry or intersection filter callback to continue a ray inside an
+  instantiated object. In Embree 4 using `rtcIntersect` recursively is
+  disallowed on the GPU but still supported on the CPU. To properly
+  continue a ray inside an instantiated object use the new
+  `rtcForwardIntersect1` and `rtcForwardOccluded1` functions.
 
 - The geometry object of Embree 4 is a host side only object, thus
   accessing it during rendering from the GPU is not allowed. Thus all
@@ -286,34 +322,24 @@ properly for the CPU and GPU.
   `rtcGetGeometryUserDataFromScene(RTCScene scene,uint geomID)` that
   should get used instead.
 
-- For performance reasons, the `rtcInterpolate` function cannot get
-  used on the device, and vertex data interpolation should get
-  implemented by the application.
+- The user geometry callback and filter callback functions should get
+  passed through the intersection and occlusion argument structures to
+  the rtcIntersect and rtcOccluded functions directly to allow
+  inlining. The geometry version of the callbacks is disabled in SYCL
+  on the GPU.
 
-- Embree 3 allows to use `rtcIntersect` recursively from a user
-  geometry or intersection filter callback to continue a ray inside an
-  instantiated object. In Embree 4 using `rtcIntersect` recursively is
-  disallowed on the GPU but still supported on the CPU. To properly
-  continue a ray inside an instantiated object use the new
-  `rtcForwardIntersect1` and `rtcForwardOccluded1` functions.
+- The feature flags should get used in SYCL to get optimal
+  performance.
 
-- When intersection filter callbacks and user geometry callbacks
-  assigned to geometries are used, the indirectly called
-  functions must be declared with `RTC_SYCL_INDIRECTLY_CALLABLE`, and
-  the `rtcGetSYCLDeviceFunctionPointer` API function helper should get used
-  to obtain the device side function pointer. However, we recommend to
-  pass the callback functions directly to the `rtcIntersect1` and
-  `rtcOccluded1` functions to allow inlining (see Section [Xe GPU
-  Performance Recommendations]).
+- The `rtcInterpolate` function cannot get used on the device, and
+  vertex data interpolation should get implemented by the application.
 
-- The stream tracing functions `rtcIntersect1M`, `rtcIntersect1Mp`,
-  `rtcIntersectNM`, `rtcIntersectNp`, `rtcOccluded1M`,
-  `rtcOccluded1Mp`, `rtcOccludedNM`, and `rtcOccludedNp` got removed
-  as they were rarely used and did not provide relevant performance
-  benefits.
-
+- Indirectly called functions must be declared with
+  `RTC_SYCL_INDIRECTLY_CALLABLE` when used as filter or user geometry
+  callbacks.
 
 \pagebreak
+
 
 Embree API Reference
 ====================
