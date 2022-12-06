@@ -84,9 +84,7 @@ ADD_SUBDIRECTORY(point_geometry)
 ADD_SUBDIRECTORY(buildbench)
 ADD_SUBDIRECTORY(convert)
 ADD_SUBDIRECTORY(collide)
-IF (NOT EMBREE_SYCL_PVC) # started to hang on PVC
-  ADD_SUBDIRECTORY(next_hit)
-ENDIF()
+ADD_SUBDIRECTORY(next_hit)
 ADD_SUBDIRECTORY(multiscene_geometry)
 
 ADD_SUBDIRECTORY(embree_tests)
