@@ -213,14 +213,25 @@ jobs:
   # Windows DG2
   ########################################
 
-  continuous-windows-DG2-AOT:
+  continuous-windows-DG2-AOT-INTERNAL:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     needs: [setup_gfx, setup_dpcpp]
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:dg2 intensity:3
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:dg2 intensity:3 gfx:INTERNAL
+        python scripts/test.py build
+        python scripts/test.py test
+
+  continuous-windows-DG2-AOT-PUBLIC:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    needs: [setup_gfx, setup_dpcpp]
+    with:
+      runs-on: '[ "Windows", "NAS", "dg2" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 compiler:dpcpp isa:SSE2 build:Release EMBREE_SYCL_SUPPORT:ON sycl:dg2 intensity:3 gfx:PUBLIC
         python scripts/test.py build
         python scripts/test.py test
 
