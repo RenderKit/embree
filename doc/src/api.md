@@ -279,7 +279,9 @@ consistent API that works properly for the CPU and GPU.
 
 - The filter function passed as arguments to rtcIntersect and
   rtcOccluded is only invoked for some geometry if enabled through
-  rtcSetGeometryEnableFilterFunctionFromArguments or the
+  rtcSetGeometryEnableFilterFunctionFromArguments for that
+  geometry. Alternatively, argument filter functions can get enabled
+  for all geometries using the
   RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER flag.
 
 - User geometries callbacks get an valid vector as input to identify

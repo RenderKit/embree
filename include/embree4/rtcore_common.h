@@ -297,6 +297,7 @@ enum RTCIntersectContextFlags
   RTC_INTERSECT_CONTEXT_FLAG_NONE       = 0,
   RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT = (0 << 0), // optimize for incoherent rays
   RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0), // optimize for coherent rays
+  RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER = (1 << 1) // enable argument filter for each geometry
 };
 
 /* Arguments for RTCFilterFunctionN */

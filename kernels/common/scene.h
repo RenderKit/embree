@@ -254,7 +254,7 @@ namespace embree
     __forceinline bool isStaticAccel()  const { return !(scene_flags & RTC_SCENE_FLAG_DYNAMIC); }
     __forceinline bool isDynamicAccel() const { return scene_flags & RTC_SCENE_FLAG_DYNAMIC; }
     
-    __forceinline bool enforceArgumentFilterFunction() const {
+    __forceinline bool hasArgumentFilterFunction() const {
       return scene_flags & RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
     }
     
@@ -263,7 +263,7 @@ namespace embree
     }
       
     __forceinline bool hasFilterFunction() {
-      return enforceArgumentFilterFunction() || hasGeometryFilterFunction();
+      return hasArgumentFilterFunction() || hasGeometryFilterFunction();
     }
     
     void* createQBVH6Accel();
