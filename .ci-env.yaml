@@ -11,6 +11,6 @@ variables:
   GFX_VERSION_LINUX_INTERNAL: neo-builds/ci/master/ci-neo-master-025028/artifacts/linux/ubuntu/22.04
   GFX_VERSION_LINUX_PUBLIC: neo-builds/releases/releases_22.43/neo-releases-22.43.24595.35/artifacts/linux/ubuntu/22.04
   GFX_VERSION_WIN_INTERNAL: gfx-driver-builds/ci/master/gfx-driver-ci-master-12886/artifacts/Windows
-  GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/ci/master/gfx-driver-ci-master-12886/artifacts/Windows
+  GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/prod/releases_22ww49-ci-master-12886/prod-hini-releases_22ww49-ci-master-12886-revenue-beta-1014027/artifacts/Windows
   DPCPP_VERSION_LINUX: sycl-nightly/20220914
   DPCPP_VERSION_WIN: sycl-nightly/20220914
