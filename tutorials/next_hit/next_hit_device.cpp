@@ -153,6 +153,7 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
   args.context = &context.context;
   args.filter = gather_all_hits;
   args.feature_mask = feature_mask;
+  args.flags = RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER; // invoke filter for each geometry
   rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
@@ -253,6 +254,7 @@ void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int
   args.context = &context.context;
   args.filter = gather_next_hits;
   args.feature_mask = feature_mask;
+  args.flags = RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER; // invoke filter for each geometry
 
   /* in each pass we collect some hits */
   do {

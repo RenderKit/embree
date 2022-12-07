@@ -2844,6 +2844,7 @@ namespace embree
       rtcInitIntersectArguments(&args);
       args.context = &ctx.context;
       args.filter = intersectFilter;
+      args.flags = RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER;
 
       VerifyScene scene(device, sflags);
       scene.addGeometry(quality, parent);
@@ -4010,6 +4011,7 @@ namespace embree
       rtcInitIntersectArguments(&args);
       args.context = &intersectContext.context;
       args.filter = countHits;
+      args.flags = RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER;
       
       RTCRayHit rayHit;
       rayHit.ray.org_x = 0;
