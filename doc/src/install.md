@@ -37,8 +37,7 @@ this file using `tar` and source the provided `embree-vars.sh` (if you
 are using the bash shell) or `embree-vars.csh` (if you are using the C
 shell) to set up the environment properly:
 
-    unzip embree-<EMBREE_VERSION>.x64.macosx.zip
-    source embree-<EMBREE_VERSION>.x64.macosx/embree-vars.sh
+    unzip embree-<EMBREE_VERSION>.x64.macosx.zip    source embree-<EMBREE_VERSION>.x64.macosx/embree-vars.sh
 
 If you want to ship Embree with your application, please use the Embree
 library of the provided ZIP file. The library name of that Embree
@@ -52,7 +51,7 @@ Building Embree Applications
 ----------------------------
 
 The most convenient way to build an Embree application is through
-CMake. Just let CMake find your just unpacked Embree package using the
+CMake. Just let CMake find your unpacked Embree package using the
 `FIND_PACKAGE` function inside your `CMakeLists.txt` file:
 
      FIND_PACKAGE(embree <EMBREE_VERSION_MAJOR> REQUIRED)
@@ -80,22 +79,23 @@ Building Embree SYCL Applications
 ----------------------------------
 
 Building Embree SYCL applications is also best done using
-CMake. Please first get some DPC++ compiler and setup the environment
-as decribed in sections [Linux DPC++ Compilation] and
+CMake. Please first get some compatible SYCL compiler and setup the
+environment as decribed in sections [Linux DPC++ Compilation] and
 [Windows DPC++ Compilation].
 
 Also perform the steps from the previous [Building Embree
 Applications] section.
 
 To properly compile your SYCL application you have to add additional
-SYCL compile flags for each C++ file that contains DPC++ device side
+SYCL compile flags for each C++ file that contains SYCL device side
 code or kernels.
 
 ### JIT Compilation
 
 We recommend using just in time compilation (JIT compilation) together
 with [SYCL JIT caching] to compile Embree SYCL applications. For JIT
-compilation add these options to the compilation phase:
+compilation add these options to the compilation phase of all C++
+files that contain SYCL code:
 
     -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64
 
@@ -110,7 +110,7 @@ your application when using just in time compilation:
     -fsycl -fsycl-targets=spir64
 
 Under Windows you additionally have to pass the linker the path to the
-lib folder of the DPC++ installation:
+lib folder of the SYCL compiler installation:
 
     -L path_to_sycl_compiler/lib
 
@@ -120,7 +120,7 @@ the `src` folder of the Embree package and also the contained
 `README.txt` file.
 
 Please have a look at the [Compiling Embree] section on how to create
-an Embree package from sources of required.
+an Embree package from sources if required.
 
 
 ### AOT Compilation
@@ -130,8 +130,8 @@ application start up time as device binaries are precompiled. We do
 not recommend using AOT compilation as it does not allow the usage of
 specialization constants to reduce code complexity.
 
-For ahead of time compilation (AOT compilation) add these compile
-options to the compilation phase:
+For ahead of time compilation add these compile options to the
+compilation phase of all C++ files that contain SYCL code:
 
     -fsycl -Xclang -fsycl-allow-func-ptr -fsycl-targets=spir64_gen
 
@@ -141,7 +141,7 @@ option), and ahead of time (AOT) compilation
 (`-fsycl-targets=spir64_gen` option).
 
 The following link options have to get added to the linking stage of
-your application when compiling ahead of time for DG2 devices:
+your application when compiling ahead of time for Xe HPG devices:
 
     -fsycl -fsycl-targets=spir64_gen
     -Xsycl-target-backend=spir64_gen "-device XE_HPG_CORE"

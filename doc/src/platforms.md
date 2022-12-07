@@ -6,10 +6,10 @@ Embree supports Windows (32-bit and 64-bit), Linux (64-bit), and macOS
 while ARM CPUs are currently only supported under macOS (e.g. Apple
 M1). ARM support for Windows and Linux is experimental.
 
-Embree supports Intel® GPUs based on the Xe HPG microarchitecture
-(Intel® Arc™ GPU) and Xe HPC microarchitecture (Intel® Data Center GPU
-Flex Series and Intel® Data Center GPU Max Series) under Linux and
-Windows.
+Embree supports Intel GPUs based on the Xe HPG microarchitecture
+(Intel® Arc™ GPU) under Linux and Windows and Xe HPC microarchitecture
+(Intel® Data Center GPU Flex Series and Intel® Data Center GPU Max
+Series) under Linux.
 
 The code compiles with the Intel® Compiler, Intel® oneAPI DPC++
 Compiler, GCC, Clang, and the Microsoft Compiler. To use Embree on the
