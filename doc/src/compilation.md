@@ -361,8 +361,6 @@ build directory.
           -D CMAKE_BUILD_TYPE=Release
           -D CMAKE_CXX_COMPILER=clang++
           -D CMAKE_C_COMPILER=clang
-          -D CMAKE_CXX_FLAGS=-fuse-ld=link
-          -D CMAKE_C_FLAGS=-fuse-ld=link
           -D EMBREE_MAX_ISA=SSE2
           -D EMBREE_ISPC_SUPPORT=OFF
           -D EMBREE_SYCL_SUPPORT=ON
@@ -370,10 +368,7 @@ build directory.
 
 This uses the Ninja generator which is required for the DPC++
 compiler, and configures a release build that uses `clang++` and
-`clang` from the just installed DPC++ compiler. The LLVM linker
-`lld-link` is selected by Ninja by default, but that linker is not
-shipped with the DPC++ compiler. Thus the linker has to get forced to
-the Visual Studio Linker `link` using compilation flags.
+`clang` from the just installed DPC++ compiler.
 
 We also enable SYCL support in Embree using the
 `EMBREE_SYCL_SUPPORT` CMake option, and only enable just in time

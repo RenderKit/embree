@@ -109,11 +109,6 @@ your application when using just in time compilation:
 
     -fsycl -fsycl-targets=spir64
 
-Under Windows you additionally have to pass the linker the path to the
-lib folder of the SYCL compiler installation:
-
-    -L path_to_sycl_compiler/lib
-
 For a full example on how to build an Embree SYCL application please
 have a look at the SYCL version of the `minimal` tutorial provided in
 the `src` folder of the Embree package and also the contained
