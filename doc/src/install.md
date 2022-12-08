@@ -80,8 +80,8 @@ Building Embree SYCL Applications
 
 Building Embree SYCL applications is also best done using
 CMake. Please first get some compatible SYCL compiler and setup the
-environment as decribed in sections [Linux DPC++ Compilation] and
-[Windows DPC++ Compilation].
+environment as decribed in sections [Linux SYCL Compilation] and
+[Windows SYCL Compilation].
 
 Also perform the steps from the previous [Building Embree
 Applications] section.
@@ -89,6 +89,11 @@ Applications] section.
 To properly compile your SYCL application you have to add additional
 SYCL compile flags for each C++ file that contains SYCL device side
 code or kernels.
+
+For the oneAPI DPC++ compiler to properly find SYCL headers, you need
+to add these compile options:
+
+    -isystem path_to_dpcpp_compiler/include -isystem path_to_dpcpp_compiler/include/sycl
 
 ### JIT Compilation
 
@@ -108,11 +113,6 @@ The following link options have to get added to the linking stage of
 your application when using just in time compilation:
 
     -fsycl -fsycl-targets=spir64
-
-Under Windows you additionally have to pass the linker the path to the
-lib folder of the SYCL compiler installation:
-
-    -L path_to_sycl_compiler/lib
 
 For a full example on how to build an Embree SYCL application please
 have a look at the SYCL version of the `minimal` tutorial provided in

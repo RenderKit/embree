@@ -58,7 +58,7 @@ be passed to the callback functions, thus reading additional data from
 the ray pointer passed to callbacks is not possible. See section
 [rtcInitIntersectContext] for more details.
 
-The `filter` member specifies a filter function to invoked for each
+The `filter` member specifies a filter function to invoke for each
 encountered hit. The support for the argument filter function must be
 enabled for a scene by using the
 `RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS` scene flag. In case of
@@ -70,7 +70,7 @@ got explicitely enabled using the
 `rtcSetGeometryEnableFilterFunctionFromArguments` function. The
 invokation of the argument filter function can also get enfored for a
 ray by using the `RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER`
-ray flag. This argument filter function is invoked as a second
+argument flag. This argument filter function is invoked as a second
 filter stage after the per-geometry filter
 function is invoked. Only rays that passed the first filter stage are
 valid in this second filter stage. Having such a per ray-query filter
