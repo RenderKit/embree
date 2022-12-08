@@ -339,6 +339,12 @@
 ```
 \pagebreak
 
+## rtcGetSYCLDeviceFunctionPointer
+``` {include=src/api/rtcGetSYCLDeviceFunctionPointer.md}
+```
+\pagebreak
+
+
 ## rtcSetGeometryInstancedScene
 ``` {include=src/api/rtcSetGeometryInstancedScene.md}
 ```
