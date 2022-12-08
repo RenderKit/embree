@@ -133,16 +133,6 @@ can be set using the `rtcSetGeometryTimeRange` function. This feature
 will also allow geometries to appear and disappear during the camera
 shutter time if the time range is a sub range of [0,1].
 
-The API supports per-geometry filter callback functions (see
-`rtcSetGeometryIntersectFilterFunction` and
-`rtcSetGeometryOccludedFilterFunction`) that are invoked for each
-intersection found during the `rtcIntersect`-type or
-`rtcOccluded`-type calls. The former ones are called geometry
-intersection filter functions, the latter ones geometry occlusion
-filter functions. These filter functions are designed to be used to
-ignore intersections outside of a user-defined silhouette of a
-primitive, e.g. to model tree leaves using transparency textures.
-
 Ray Queries
 -----------
 
@@ -191,19 +181,42 @@ Seen tutorial [Collision Detection] for a complete example of collision
 detection being used on a simple cloth solver.
 
 
-Miscellaneous
--------------
+Filter Functions
+----------------
 
-A context filter function, which can be set per ray query is supported
-(see `rtcInitIntersectContext`). This filter function is designed to
-change the semantics of the ray query, e.g. to accumulate opacity for
-transparent shadows, count the number of surfaces along a ray,
-collect all hits along a ray, etc.
+The API supports filter functions that are invoked for each
+intersection found during the `rtcIntersect`-type or
+`rtcOccluded`-type calls.
+
+The filter functions can be set per-geometry using the
+`rtcSetGeometryIntersectFilterFunction` and
+`rtcSetGeometryOccludedFilterFunction` calls. The former ones are
+called geometry intersection filter functions, the latter ones
+geometry occlusion filter functions. These filter functions are
+designed to be used to ignore intersections outside of a user-defined
+silhouette of a primitive, e.g. to model tree leaves using
+transparency textures.
+
+The filter function can also get passed as arguments directly to the
+traversal functions, see section [rtcInitIntersectArguments] and
+[rtcInitOccludedArguments] for more details. These argument filter
+functions are designed to change the semantics of the ray query,
+e.g. to accumulate opacity for transparent shadows, count the number
+of surfaces along a ray, collect all hits along a ray, etc. The
+argument filter function must be enabled to be used for a scene using
+the `RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS` scene flag. The
+callback is only invoked for geometries that enable the callback using
+the `rtcSetGeometryEnableFilterFunctionFromArguments` call, or enabled
+for all geometries when the
+`RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER` flag is set in the
+traversal arguments.
+
+
+BVH Build API
+--------------
 
 The internal algorithms to build a BVH are exposed through the `RTCBVH`
 object and `rtcBuildBVH` call. This call makes it possible to build a
 BVH in a user-specified format over user-specified primitives. See the
 documentation of the `rtcBuildBVH` call for more details.
 
-For getting the most performance out of Embree, see the Section
-[Performance Recommendations].

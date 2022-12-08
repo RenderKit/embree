@@ -12,9 +12,12 @@
 
 #### DESCRIPTION
 
-This function can be used to select some SYCL device supported by
-Embree. For instance, the following code sequence selects an Embree
-supported SYCL device and creates an Embree device from it:
+This function checks if the passed SYCL device (`sycl_device`
+arguments) is supported by Embree or not. This function can be used
+directly to select some supported SYCL device by using it as SYCL
+device selector function. For instance, the following code sequence
+selects an Embree supported SYCL device and creates an Embree device
+from it:
 
     sycl::device sycl_device(rtcSYCLDeviceSelector);
     sycl::queue sycl_queue(sycl_device);
@@ -23,7 +26,7 @@ supported SYCL device and creates an Embree device from it:
 
 #### EXIT STATUS
 
-The function returns -1 if the SYCL device is supported by Embree, and
+The function returns -1 if the SYCL device is supported by Embree and
 1 otherwise. On failure an error code is set that can get queried
 using `rtcGetDeviceError`.
 

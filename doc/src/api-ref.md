@@ -239,6 +239,11 @@
 ```
 \pagebreak
 
+## rtcSetGeometryMaxRadiusScale
+``` {include=src/api/rtcSetGeometryMaxRadiusScale.md}
+```
+\pagebreak
+
 ## rtcSetGeometryBuffer
 ``` {include=src/api/rtcSetGeometryBuffer.md}
 ```

@@ -12,9 +12,10 @@
 
 #### DESCRIPTION
 
-This function sets the SYCL device to be used to allocate GPU
-memory. This device must be one of the devices contained inside the
-context used to create the Embree device.
+This function sets the SYCL device (`sycl_device` argument) to be used
+to allocate GPU memory when using the specified Embree device
+(`device` argument). This SYCL device must be one of the SYCL devices
+contained inside the SYCL context used to create the Embree device.
 
 #### EXIT STATUS
 

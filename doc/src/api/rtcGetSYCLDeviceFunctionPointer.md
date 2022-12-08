@@ -2,7 +2,8 @@
 
 #### NAME
 
-    rtcGetSYCLDeviceFunctionPointer - obtains a device side function pointer for some SYCL function
+    rtcGetSYCLDeviceFunctionPointer - obtains a device side
+      function pointer for some SYCL function
 
 #### SYNOPSIS
 
@@ -15,7 +16,12 @@
 
 This function returns a device side function pointer for some function
 F. This function F must be defined using the
-`RTC_SYCL_INDIRECTLY_CALLABLE` attribyte.
+`RTC_SYCL_INDIRECTLY_CALLABLE` attribute, e.g.:
+
+    RTC_SYCL_INDIRECTLY_CALLABLE void filter(
+      const RTCFilterFunctionNArguments* args) { ... }
+
+    RTCFilterFunctionN fptr = rtcGetSYCLDeviceFunctionPointer<filter>(queue);
 
 Such a device side function pointers of some filter callbacks can get
 assigned to a geometry using the `rtcSetGeometryIntersectFilterFunction` and

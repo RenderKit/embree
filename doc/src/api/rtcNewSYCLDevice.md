@@ -17,9 +17,9 @@ rendering and returns a handle to this device. The device object is
 reference counted with an initial reference count of 1. The handle can
 be released using the `rtcReleaseDevice` API call.
 
-The passed SYCL context is used to allocate GPU data, thus only
-devices contained inside this context can be used for GPU
-rendering. By default the GPU data is allocated on the first GPU
+The passed SYCL context (`context` argument) is used to allocate GPU
+data, thus only devices contained inside this context can be used for
+GPU rendering. By default the GPU data is allocated on the first GPU
 device of the context, but this behavior can get changed with the
 [rtcSetDeviceSYCLDevice] function.
 
@@ -32,8 +32,8 @@ Objects are only compatible if they belong to the same device, e.g it
 is not allowed to create a geometry in one device and attach it to a
 scene created with a different device.
 
-For an overview of configurations that can get passed please see
-[rtcNewDevice] function description.
+For an overview of configurations that can get passed (`config`
+argument) please see [rtcNewDevice] function description.
 
 #### EXIT STATUS
 

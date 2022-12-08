@@ -2,20 +2,22 @@
 
 #### NAME
 
-    rtcSetGeometryEnableFilterFunctionFromArguments - enabled argument filter functions for the geometry
+    rtcSetGeometryEnableFilterFunctionFromArguments - enables
+      argument filter functions for the geometry
 
 #### SYNOPSIS
 
     #include <embree4/rtcore.h>
 
-    void rtcSetGeometryEnableFilterFunctionFromArguments(RTCGeometry geometry, bool enable);
+    void rtcSetGeometryEnableFilterFunctionFromArguments(
+       RTCGeometry geometry, bool enable);
 
 #### DESCRIPTION
 
-This function enables the filter function passed through
+This function enables invokation the filter function passed through
 `RTCIntersectArguments` or `RTCOccludedArguments` to the intersect and
-occluded queries. If enable is true the argument filter function is
-enabled for the geometry, or disabled otherwise.
+occluded queries. If enable is true the argument filter function
+invokation is enabled for the geometry or disabled otherwise.
 
 The argument filter function invokation can also get enforced for each
 geometry by using the
@@ -26,8 +28,8 @@ details.
 
 In order to use the argument filter function for some scene, that
 feature additionally has to get enabled using the
-`RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS` scene flag, see
-[rtcSetSceneFlags].
+`RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS` scene flag. See Section
+[rtcSetSceneFlags] for more details.
 
 #### EXIT STATUS
 
