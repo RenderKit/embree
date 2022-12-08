@@ -191,9 +191,11 @@ We tested Embree with the latest GPGPU driver Devel Release from
 and OpenCL(TM) Driver from that release is too old for Embree to work
 properly. Thus if no never version of the GPGPU driver is available,
 you need to additionally install the latest compute runtime from here
-[22.43.24595](https://github.com/intel/compute-runtime/releases/tag/22.43.24595). Please
-follow the installation instruction of the compute runtime. You can
-also install a newer version of the compute runtime if available.
+[22.43.24595](https://github.com/intel/compute-runtime/releases/tag/22.43.24595.30).
+
+Unfortunately, these compute runtime packages are only available for
+Ubuntu 22.04. You can also install a newer version of the compute
+runtime if available.
 
 
 Windows
