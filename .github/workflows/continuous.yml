@@ -176,7 +176,6 @@ jobs:
       runs-on: '[ "Linux", "docker", "pvc" ]'
       artifact-in: continuous-linux-PVC-JIT-INTERNAL
       cmd: |
-        export EnableImplicitScaling=0
         scripts/test.py test --debug
         scripts/test.py test
 
@@ -204,7 +203,6 @@ jobs:
 #      runs-on: '[ "Linux", "docker", "pvc" ]'
 #      artifact-in: continuous-linux-PVC-JIT-PUBLIC
 #      cmd: |
-#        export EnableImplicitScaling=0
 #        scripts/test.py test --debug
 #        scripts/test.py test
 
