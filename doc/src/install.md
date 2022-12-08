@@ -80,8 +80,8 @@ Building Embree SYCL Applications
 
 Building Embree SYCL applications is also best done using
 CMake. Please first get some compatible SYCL compiler and setup the
-environment as decribed in sections [Linux DPC++ Compilation] and
-[Windows DPC++ Compilation].
+environment as decribed in sections [Linux SYCL Compilation] and
+[Windows SYCL Compilation].
 
 Also perform the steps from the previous [Building Embree
 Applications] section.

@@ -1,18 +1,18 @@
 The Embree API is a low-level C99 ray tracing API which can be used to
-construct spatial index structures for 3D scenes and perform ray
+build spatial index structures for 3D scenes and perform ray
 queries of different types. 
 
 The API can get used on the CPU using standard C, C++, and ISPC code
-and Xe GPUs by using DPC++/SYCL code. 
+and Intel GPUs by using SYCL code.
 
 The Intel® Implicit SPMD Program Compiler (Intel® ISPC) version of the
 API, is almost identical to the standard C99 version, but contains
 additional functions that operate on ray packets with a size of the
 native SIMD width used by Intel® ISPC.
 
-The DPC++/SYCL version of the API is also mostly identical to the C99
+The SYCL version of the API is also mostly identical to the C99
 version of the API, with some exceptions listed in section [Embree
-DPC++ API].
+SYCL API].
 
 For simplicity this document refers to the C99 version of the API
 functions. For changes when upgrading from the Embree 3 to the current
@@ -29,7 +29,7 @@ Finding the closest hit of a ray segment with the scene
 (`rtcIntersect`-type functions), and determining whether any hit
 between a ray segment and the scene exists (`rtcOccluded`-type
 functions) are both supported. The API supports queries for single
-rays, ray packets, and ray streams. See Section [Ray Queries] for
+rays and ray packets. See Section [Ray Queries] for
 more information.
 
 The API is designed in an object-oriented manner, e.g. it contains
@@ -40,7 +40,7 @@ counted, and handles can be released by calling the appropriate release
 function (e.g. `rtcReleaseDevice`) or retained by incrementing the
 reference count (e.g. `rtcRetainDevice`). In general, API calls that
 access the same object are not thread-safe, unless specified
-differently. However, attaching geometries to the same scene and
+otherwise. However, attaching geometries to the same scene and
 performing ray queries in a scene is thread-safe.
 
 Device Object
@@ -49,12 +49,12 @@ Device Object
 Embree supports a device concept, which allows different components of
 the application to use the Embree API without interfering with each
 other. An application typically first creates a device using the
-[rtcNewDevice] function. This device can then be used to construct
-further objects, such as scenes and geometries. Before the application
-exits, it should release all devices by invoking [rtcReleaseDevice]. An
-application typically creates only a single device. If required
-differently, it should only use a small number of devices at any given
-time.
+[rtcNewDevice] function (or [rtcNewSYCLDevice] when using SYCL for the
+GPU). This device can then be used to construct further objects, such
+as scenes and geometries. Before the application exits, it should
+release all devices by invoking [rtcReleaseDevice]. An application
+typically creates only a single device. If required differently, it
+should only use a small number of devices at any given time.
 
 Each user thread has its own error flag per device. If an error occurs
 when invoking an API function, this flag is set to an error code (if

@@ -559,10 +559,9 @@ Generic Pointers
 
 Embree uses standard C++ pointers in its implementation. SYCL might
 not be able to detect the memory space these pointers refer to and has
-to treat them as generic pointers which are not performing well. DPC++
+to treat them as generic pointers which are not performing well. The DPC++
 compiler has advanced optimizations to infer the proper address space
 to avoid usage of generic pointers.
-
 
 However, if you still encounter the following warning during ahead of
 time compilation of SYCL kernels, then generic pointer loads are used:

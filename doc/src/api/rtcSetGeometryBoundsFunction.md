@@ -38,7 +38,7 @@ further invocations overwrite the previously set callback function.
 Passing `NULL` as function pointer disables the registered callback
 function.
 
-In DPC++ mode the BVH construction is done on the host and the passed
+In SYCL mode the BVH construction is done on the host and the passed
 function pointer must be a host-side function pointer.
 
 The registered bounding box callback function is invoked to calculate

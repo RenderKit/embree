@@ -132,7 +132,7 @@ You can also create an Embree package using the following command:
 Please see the [Building Embree Applications] section on how to build
 your application with such an Embree package.
 
-Linux DPC++ Compilation
+Linux SYCL Compilation
 -----------------------
 
 To compile Embree using SYCL one has to use Intel's DPC++ compiler,
@@ -178,7 +178,7 @@ executable names of the SYCL versions of the tutorials end with
 `_sycl`.
 
 
-### Linux HPG/HPC Driver Installation
+### Linux Graphics Driver Installation
 
 To run the SYCL code you need to install the latest GPGPU drivers for
 your Intel Xe HPG/HPC GPUs from here
@@ -327,7 +327,7 @@ and community contributors. If the version is out of date, please
 on the vcpkg repository.
 
 
-Windows DPC++ Compilation
+Windows SYCL Compilation
 -------------------------
 
 To compile Embree using SYCL one has to use Intel's DPC++ compiler,
@@ -393,14 +393,12 @@ Please see the [Building Embree SYCL Applications] section on how to build
 your application with such an Embree package.
 
 
-### Windows HPG Driver Installation
+### Windows Graphics Driver Installation
 
-In order to run the SYCL tutorials on HPG hardware, you first
-need to install the proper graphics drivers. Latest drivers can get
-found on [intel.com/sdp](https://intel.com/sdp) searching for the
-latest `Discrete Graphics2 (DG2)` driver. Follow the driver
-installation instructions. We tested Embree with DG2 driver 101.1433
-(Displayed as 30.0.101.1433) dated 2022-03-29.
+In order to run the SYCL tutorials on HPG hardware, you first need to
+install the proper graphics drivers for your graphics card from
+[https://www.intel.com](https://www.intel.com). Embree will work with
+graphics driver version 101.4027 or later.
 
 
 CMake Configuration
@@ -422,22 +420,22 @@ parameters that can be configured in CMake:
 
 + `EMBREE_SYCL_SUPPORT`: Enables GPU support using SYCL. When this
   option is enabled you have to use some DPC++ compiler. Please see
-  section [Linux DPC++ Compilation] and [Windows DPC++ Compilation]
+  section [Linux SYCL Compilation] and [Windows SYCL Compilation]
   on supported DPC++ compilers. This option is OFF by default.
 
-+ `EMBREE_SYCL_AOT_DEVICES`: Selects a list of Xe GPU devices for
-  ahead of time (AOT) compilation of GPU code. Possible values are
++ `EMBREE_SYCL_AOT_DEVICES`: Selects a list of GPU devices for
+  ahead of time (AOT) compilation of device code. Possible values are
   either, "none" which enables only just in time (JIT) compilation, or
   specifying one of the Embree supported Xe GPUs for AOT compilation:
 
   * XE_HPG_CORE : Xe HPG devices
   * XE_HPC_CORE : Xe HPC devices
 
-  One can also specify multiple Xe devices separated by comma to
+  One can also specify multiple devices separated by comma to
   compile ahead of time for multiple devices,
   e.g. "XE_HPG_CORE,XE_HP_CORE". When enabling AOT compilation for one
-  or multiple Xe devices, JIT compilation will always additionally be
-  enabled in case the code is started on a device no code is
+  or multiple devices, JIT compilation will always additionally be
+  enabled in case the code is executed on a device no code is
   precompiled for.
 
   Execute "ocloc compile --help" for more details of possible devices
