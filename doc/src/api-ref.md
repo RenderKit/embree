@@ -284,6 +284,11 @@
 ```
 \pagebreak
 
+## rtcSetGeometryEnableFilterFunctionFromArguments
+``` {include=src/api/rtcSetGeometryEnableFilterFunctionFromArguments.md}
+```
+\pagebreak
+
 ## rtcInvokeIntersectFilterFromGeometry
 ``` {include=src/api/rtcInvokeIntersectFilterFromGeometry.md}
 ```

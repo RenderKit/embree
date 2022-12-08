@@ -18,6 +18,9 @@ context used to create the Embree device.
 
 #### EXIT STATUS
 
+On failure an error code is set that can get queried using
+`rtcGetDeviceError`.
+
 #### SEE ALSO
 
 [rtcNewSYCLDevice]

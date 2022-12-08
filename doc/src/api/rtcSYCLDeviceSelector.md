@@ -23,8 +23,9 @@ supported SYCL device and creates an Embree device from it:
 
 #### EXIT STATUS
 
-The function returns -1 if the SYCL device is supported by Embree, and 1 otherwise.
-
+The function returns -1 if the SYCL device is supported by Embree, and
+1 otherwise. On failure an error code is set that can get queried
+using `rtcGetDeviceError`.
 
 #### SEE ALSO
 

@@ -16,7 +16,9 @@ This function can be used to check if some SYCL device is supported by Embree.
 
 #### EXIT STATUS
 
-The function returns true if the SYCL device is supported by Embree, and false otherwise.
+The function returns true if the SYCL device is supported by Embree,
+and false otherwise. On failure an error code is set that can get
+queried using `rtcGetDeviceError`.
 
 
 #### SEE ALSO

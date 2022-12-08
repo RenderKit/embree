@@ -29,9 +29,10 @@ flags are:
   accuracy. This mode is typically used for avoiding artifacts caused
   by rays shooting through edges of neighboring primitives.
 
-+ `RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS`: Enables support for a
-  filter function inside the intersection context for this scene.
-  See Section [rtcInitIntersectContext] for more details.
++ `RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS`: Enables scene support
+  for filter functions passed as argument to the traversal
+  functions. See Section [rtcInitIntersectArguments] and
+  [rtcInitOccludedArguments] for more details.
 
 Multiple flags can be enabled using an `or` operation,
 e.g. `RTC_SCENE_FLAG_COMPACT | RTC_SCENE_FLAG_ROBUST`.
