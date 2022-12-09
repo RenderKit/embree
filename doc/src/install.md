@@ -90,10 +90,6 @@ To properly compile your SYCL application you have to add additional
 SYCL compile flags for each C++ file that contains SYCL device side
 code or kernels.
 
-For the oneAPI DPC++ compiler to properly find SYCL headers, you need
-to add these compile options:
-
-    -isystem path_to_dpcpp_compiler/include -isystem path_to_dpcpp_compiler/include/sycl
 
 ### JIT Compilation
 
