@@ -24,7 +24,7 @@ namespace embree
 
       if (context->getFilter())
       {
-        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+        if (context->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
           context->getFilter()(args);
 
         if (args->valid[0] == 0)
@@ -60,7 +60,7 @@ namespace embree
 
       if (context->getFilter())
       {
-        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+        if (context->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
           context->getFilter()(args);
 
         if (args->valid[0] == 0)
@@ -94,7 +94,7 @@ namespace embree
       if (none(valid_o)) return valid_o;
 
       if (context->getFilter()) {
-        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+        if (context->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
           context->getFilter()(args);
       }
 
@@ -130,7 +130,7 @@ namespace embree
       if (none(valid_o)) return valid_o;
 
       if (context->getFilter()) {
-        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+        if (context->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
           context->getFilter()(args);
       }
       valid_o = *mask != vint<K>(zero);

@@ -100,6 +100,9 @@ bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_force_non_opaque;
 
+  //if (context.enforceArgumentFilterFunction())
+  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
+
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
@@ -137,6 +140,9 @@ bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* g
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_force_non_opaque | intel_ray_flags_accept_first_hit_and_end_search;
+
+  //if (context.enforceArgumentFilterFunction())
+  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
 
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
@@ -181,6 +187,9 @@ bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instanc
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_force_non_opaque;
+
+  //if (context.enforceArgumentFilterFunction())
+  //  raydesc.flags |= intel_ray_flags_force_non_opaque;
   
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
@@ -229,6 +238,9 @@ bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, 
   raydesc.tmax = inf; // unused
   raydesc.mask = mask32_to_mask8(ray.mask);
   raydesc.flags = intel_ray_flags_accept_first_hit_and_end_search;
+
+  if (context->enforceArgumentFilterFunction())
+    raydesc.flags |= intel_ray_flags_force_non_opaque;
   
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
@@ -600,6 +612,9 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
 
+  if (context.enforceArgumentFilterFunction())
+     raydesc.flags |= intel_ray_flags_force_non_opaque;
+
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
   if (args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
@@ -693,6 +708,9 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
 #if defined(EMBREE_BACKFACE_CULLING)
   raydesc.flags |= intel_ray_flags_cull_back_facing_triangles;
 #endif
+
+  if (context.enforceArgumentFilterFunction())
+     raydesc.flags |= intel_ray_flags_force_non_opaque;
 
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;

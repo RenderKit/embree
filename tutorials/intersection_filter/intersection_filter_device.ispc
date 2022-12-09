@@ -291,7 +291,9 @@ uniform unsigned int addCube (RTCScene scene_i, const uniform Vec3f& offset, con
   data.colors[11] = make_Vec3f(1,1,0);
 
   /* set intersection filter for the cube */
-#if !USE_ARGUMENT_CALLBACKS
+#if USE_ARGUMENT_CALLBACKS
+  rtcSetGeometryEnableFilterFunctionFromArguments(geom,true);
+#else
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif
@@ -323,7 +325,9 @@ uniform unsigned int addSubdivCube (RTCScene scene_i)
   data.colors[5] = make_Vec3f(1,1,0); // back side
 
   /* set intersection filter for the cube */
-#if !USE_ARGUMENT_CALLBACKS
+#if USE_ARGUMENT_CALLBACKS
+  rtcSetGeometryEnableFilterFunctionFromArguments(geom,true);
+#else
   rtcSetGeometryIntersectFilterFunction(geom,data.intersectionFilter);
   rtcSetGeometryOccludedFilterFunction(geom,data.occlusionFilter);
 #endif

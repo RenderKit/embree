@@ -1,8 +1,8 @@
-% rtcGetGeometryUserData(3) | Embree Ray Tracing Kernels 3
+% rtcGetGeometryUserDataFromScene(3) | Embree Ray Tracing Kernels 3
 
 #### NAME
 
-    rtcGetGeometryUserData - returns the user data pointer
+    rtcGetGeometryUserDataFromScene - returns the user data pointer
       of the geometry through the scene object
 
 #### SYNOPSIS

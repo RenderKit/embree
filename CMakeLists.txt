@@ -287,22 +287,25 @@ IF (WIN32)
   ENDIF()
   SET_PROPERTY(GLOBAL PROPERTY USE_FOLDERS ON)
 
-  IF (EMBREE_SYCL_SUPPORT OR
-      (${CMAKE_CXX_COMPILER_ID} MATCHES "IntelLLVM") OR
+  IF ((${CMAKE_CXX_COMPILER_ID} MATCHES "IntelLLVM") OR
       (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND ${CMAKE_CXX_COMPILER} MATCHES "icx") OR
       (${CMAKE_CXX_COMPILER} MATCHES "dpcpp"))
     MESSAGE("-- DPCPP compiler detected")
     INCLUDE(dpcpp)
   ELSEIF(${CMAKE_GENERATOR_TOOLSET} MATCHES "^LLVM")
+    set(EMBREE_SYCL_SUPPORT OFF)
     MESSAGE("-- CLANG compiler detected")
     INCLUDE(clang)
   ELSEIF(${CMAKE_GENERATOR_TOOLSET} MATCHES "^Intel")
+    set(EMBREE_SYCL_SUPPORT OFF)
     MESSAGE("-- Intel compiler detected")
     INCLUDE (intel)
   ELSEIF(${CMAKE_CXX_COMPILER_FRONTEND_VARIANT} MATCHES "GNU")
+    set(EMBREE_SYCL_SUPPORT OFF)
     MESSAGE("-- GNU-like compiler detected")
     INCLUDE(gnu)
   ELSE()
+    set(EMBREE_SYCL_SUPPORT OFF)
     IF (EMBREE_ISA_AVX512)
       MESSAGE(FATAL_ERROR "Microsoft Visual C++ Compiler does not support AVX512. Please use Intel Compiler or Clang.")
     ENDIF()

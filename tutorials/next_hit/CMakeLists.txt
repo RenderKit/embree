@@ -17,8 +17,6 @@ MACRO (ALL_HITS_TEST name model max_next_hits)
   ENDIF()
 ENDMACRO ()
 
-IF (NOT EMBREE_CI_DEVICE STREQUAL "pvc")  # disabled as there are some issues on PVC
-
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
   IF (CMAKE_SIZEOF_VOID_P EQUAL 8) # FIXME: these cause out of memory under Win32
     ALL_HITS_TEST(triangle_robust_crown crown/crown.ecs 1)
@@ -33,6 +31,4 @@ IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 1)
 #  ALL_HITS_TEST(round_curve_robust curves/hair0.ecs 1 --convert-flat-to-round-curves)
   ALL_HITS_TEST(oriented_curve_robust curves/oriented_curve0.ecs 1)
   ALL_HITS_TEST(flat_linear_curve_robust curves/hair0.ecs 1 --convert-bezier-to-lines)
-ENDIF()
-
 ENDIF()

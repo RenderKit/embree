@@ -31,7 +31,8 @@ Possible values for the build quality are:
 
 + `RTC_BUILD_QUALITY_HIGH`: Create higher quality data structures for
   final-frame rendering. For certain geometry types this enables a
-  spatial split BVH.
+  spatial split BVH. When high quality mode is enabled, filter
+  callbacks may be invoked multiple times for the same geometry.
 
 Selecting a higher build quality results in better rendering
 performance but slower scene commit times. The default build quality

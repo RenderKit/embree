@@ -2,7 +2,8 @@
 
 #### NAME
 
-    rtcInvokeOccludedFilterFromGeometry - invokes the occlusion filter function
+    rtcInvokeOccludedFilterFromGeometry - invokes the occlusion
+      filter function from the geometry
 
 #### SYNOPSIS
 
@@ -15,14 +16,15 @@
 
 #### DESCRIPTION
 
-The `rtcInvokeOccludedFilterFromGeometry` function can be called inside an
-`RTCOccludedFunctionN` callback function to invoke the occlusion filter
-registered to the geometry and stored inside the context. For this an
+The `rtcInvokeOccludedFilterFromGeometry` function can be called
+inside an `RTCOccludedFunctionN` user geometry callback function to
+invoke the occlusion filter registered to the geometry. For this an
 `RTCFilterFunctionNArguments` structure must be created (see
 `rtcSetGeometryIntersectFilterFunction`) which basically consists of a
 valid mask, a hit packet to filter, the corresponding ray packet, and
-the packet size. After the invocation of `rtcInvokeOccludedFilterFromGeometry` only rays
-that are still valid (valid mask set to -1) should signal an occlusion.
+the packet size. After the invocation of
+`rtcInvokeOccludedFilterFromGeometry` only rays that are still valid
+(valid mask set to -1) should signal an occlusion.
 
 #### EXIT STATUS
 
