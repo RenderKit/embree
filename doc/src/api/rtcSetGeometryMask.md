@@ -25,12 +25,6 @@ the ray mask is not 0. This feature can be used to disable selected
 geometries for specifically tagged rays, e.g. to disable shadow casting
 for certain geometries.
 
-Ray masks are disabled in Embree by default at compile time, and can
-be enabled through the `EMBREE_RAY_MASK` parameter in CMake. One can
-query whether ray masks are enabled by querying the
-`RTC_DEVICE_PROPERTY_RAY_MASK_SUPPORTED` device property using
-`rtcGetDeviceProperty`.
-
 #### EXIT STATUS
 
 On failure an error code is set that can be queried using

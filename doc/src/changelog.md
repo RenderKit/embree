@@ -2,22 +2,23 @@ Version History
 ---------------
 
 ### Embree 4.0.0
--   This is a major Embree release which addd support for Intel® ARC™ GPUs using SYCL.
--   A small number of API changes was required to get optimal experience and performance on the GPU.
+-   This is a major Embree release which adds support for Intel® Arc™ GPUs through SYCL.
+-   A small number of API changes were required to get optimal experience and performance on the GPU.
     See documentation section "Upgrading from Embree 3 to Embree 4" for details.
--   Include folder renamed from embree3 to embree4
+-   Renamed API include folder from embree3 to embree4
 -   rtcIntersect and rtcOccluded function arguments changed slightly.
 -   rtcFilterIntersection and rtcFilterOcclusion API calls got replaced by
     rtcInvokeIntersectFilterFromGeometry and rtcInvokeOccludedFilterFromGeometry API calls.
--   rtcSetGeometryEnableFilterFunctionFromArguments enables argument filter functions per geometry.
+-   rtcSetGeometryEnableFilterFunctionFromArguments enables argument filter functions for some geometry.
+-   RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER flag enables argument filter functions for each geometry.
 -   User geometry callbacks have to return if a valid hit was found.
 -   Ray masking is enabled by default now as required by most users.
 -   The default ray mask for geometries got changed from 0xFFFFFFFF to 0x1.
--   Removed ray stream API as rarely used with minimal performance benefits.
+-   Removed ray stream API as rarely used with minimal performance benefits over packet tracing.
 -   Introduced rtcForwardIntersect/rtcForwardOccluded API calls to trace tail recursive rays from user geometry callback.
 -   The rtcGetGeometryUserDataFromScene API call got added to be used in SYCL code.
 -   Added support for user geometry callback function pointer passed through intersection context
--   Feature flags enable optimizing code complexity for optimal performance.
+-   Feature flags enable reducing code complexity for optimal performance on the GPU.
 
 ### Embree 3.13.6
 -  Fixed compilation issues for ARM AArch64 processor under Linux.

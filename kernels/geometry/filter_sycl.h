@@ -34,7 +34,7 @@ namespace embree
       RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)
       {
-        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+        if (context->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
           cfilter(args);
         
         if (mask == 0)
@@ -69,7 +69,7 @@ namespace embree
       RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)
       {
-        if (context->scene->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
+        if (context->enforceArgumentFilterFunction() || geometry->hasArgumentFilterFunctions())
           cfilter(args);
         
         if (mask == 0)

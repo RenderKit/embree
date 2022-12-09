@@ -45,6 +45,10 @@ namespace embree
       return embree::isIncoherent(args->flags);
     }
 
+    __forceinline bool enforceArgumentFilterFunction() const {
+      return args->flags & RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER;
+    }
+
 #if RTC_MIN_WIDTH
     __forceinline float getMinWidthDistanceFactor() const {
       return args->minWidthDistanceFactor;

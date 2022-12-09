@@ -1,8 +1,13 @@
 Compiling Embree
 ================
 
-We recommend to use CMake to build Embree. Do not enable fast-math
-optimizations; these might break Embree.
+We recommend to use the prebuild Embree packages from
+[https://github.com/embree/embree/releases](https://github.com/embree/embree/releases). If
+you need to compile Embree yourself you need to use CMake as described
+in the following.
+
+Do not enable fast-math optimizations in your compiler as this mode is
+not supported by Embree.
 
 Linux and macOS
 ---------------
@@ -15,6 +20,7 @@ Linux
   - Intel® oneAPI DPC++/C++ Compiler 2022.0.0
   - Intel® Compiler 2020 Update 1
   - Intel® Compiler 2019 Update 4
+  - Intel® Compiler 2018
   - Intel® Compiler 2017 Update 1
   - Intel® Compiler 2016 Update 3
   - Clang 5.0.0
@@ -24,16 +30,18 @@ Linux
   - GCC  7.3.1 (Fedora 27) AVX2 support
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
-
+  - Intel® Implicit SPMD Program Compiler 1.16.1
+  - Intel® Implicit SPMD Program Compiler 1.15.0
+  - Intel® Implicit SPMD Program Compiler 1.12.0
+  
 macOS x86
 
-  - Intel® Compiler 2020 Update 1
-  - Intel® Compiler 2019 Update 4
-  - Apple LLVM 10.0.1 (macOS 10.14.6)
+  - Intel® Compiler 2021 Update 1
+  - Apple Clang 12.0.5 (macOS 11.7.1)
 
 macOS M1
 
-  - Apple Clang 12.0.0
+  - Apple Clang 12.0.5 (macOS 11.7.1)
 
 Embree supports using the Intel® Threading Building Blocks (TBB) as the
 tasking system. For performance and flexibility reasons we recommend
@@ -44,8 +52,7 @@ in Embree through the `EMBREE_TASKING_SYSTEM` CMake variable.
 Embree supports the Intel® Implicit SPMD Program Compiler (Intel® ISPC), which allows
 straightforward parallelization of an entire renderer. If you do not
 want to use Intel® ISPC then you can disable `EMBREE_ISPC_SUPPORT` in
-CMake. Otherwise, download and install the Intel® ISPC binaries (we have
-tested Intel® ISPC version 1.9.1) from
+CMake. Otherwise, download and install the Intel® ISPC binaries from
 [ispc.github.io](https://ispc.github.io/downloads.html). After
 installation, put the path to `ispc` permanently into your `PATH`
 environment variable or you need to correctly set the
@@ -93,8 +100,7 @@ use the Intel® Compiler instead of the default GCC on most Linux machines
     cmake -DCMAKE_CXX_COMPILER=icpc -DCMAKE_C_COMPILER=icc ..
 
 Similarly, to use Clang set the variables to `clang++` and `clang`,
-respectively. Note that the compiler variables cannot be changed anymore
-after the first run of `cmake` or `ccmake`.
+respectively.
 
 Running `ccmake` will open a dialog where you can perform various
 configurations as described below in [CMake Configuration]. After having
@@ -126,10 +132,12 @@ You can also create an Embree package using the following command:
 Please see the [Building Embree Applications] section on how to build
 your application with such an Embree package.
 
-Linux DPC++ Compilation
+Linux SYCL Compilation
 -----------------------
 
-The Embree SYCL compilation under Linux has been tested with the following DPC++ compilers:
+To compile Embree using SYCL one has to use Intel's DPC++ compiler,
+other SYCL compilers are not supported. The Embree SYCL compilation
+under Linux has been tested with the following compilers:
 
   - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz)
   
@@ -139,6 +147,9 @@ the oneAPI DPC++ compiler 2022-09-14 compiler:
     wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz
     tar xzf dpcpp-compiler.tar.gz
     source ./dpcpp_compiler/startup.sh
+
+The `startup.sh` script will put `clang++` and `clang` from the
+DPC++ compiler into your path.
 
 Please also install all Linux packages described in the previous
 section.
@@ -154,13 +165,9 @@ build directory.
           -DEMBREE_ISPC_SUPPORT=OFF \
           -DEMBREE_SYCL_SUPPORT=ON ..
 
-The `startup.sh` script above did put the DPC++ version of `clang++`
-and `clang` into your path, thus the CMake compiler selection above
-configures the Embree project to use the just installed DPC++
-compiler.
-
-We disable ISPC with `EMBREE_ISPC_SUPPORT=OFF` and turn on SYCL
-support through `EMBREE_SYCL_SUPPORT=ON`.
+This configures the usage of the just installed DPC++ compiler,
+disables ISPC with `EMBREE_ISPC_SUPPORT=OFF` and turn on SYCL support
+through `EMBREE_SYCL_SUPPORT=ON`.
 
 Now you can compile the Embree code:
 
@@ -171,7 +178,7 @@ executable names of the SYCL versions of the tutorials end with
 `_sycl`.
 
 
-### Linux HPG/HPC Driver Installation
+### Linux Graphics Driver Installation
 
 To run the SYCL code you need to install the latest GPGPU drivers for
 your Intel Xe HPG/HPC GPUs from here
@@ -184,9 +191,11 @@ We tested Embree with the latest GPGPU driver Devel Release from
 and OpenCL(TM) Driver from that release is too old for Embree to work
 properly. Thus if no never version of the GPGPU driver is available,
 you need to additionally install the latest compute runtime from here
-[22.43.24595](https://github.com/intel/compute-runtime/releases/tag/22.43.24595). Please
-follow the installation instruction of the compute runtime. You can
-also install a newer version of the compute runtime if available.
+[22.43.24595](https://github.com/intel/compute-runtime/releases/tag/22.43.24595.30).
+
+Unfortunately, these compute runtime packages are only available for
+Ubuntu 22.04. You can also install a newer version of the compute
+runtime if available.
 
 
 Windows
@@ -201,6 +210,11 @@ Embree is tested using the following compilers under Windows:
   - Intel® Compiler 2019 Update 6
   - Intel® Compiler 2017 Update 8
   - LLVM Clang 9.0.0
+  - Intel® Implicit SPMD Program Compiler 1.14.1
+  - Intel® Implicit SPMD Program Compiler 1.13.0
+  - Intel® Implicit SPMD Program Compiler 1.12.0
+  - Intel® Implicit SPMD Program Compiler 1.9.2
+    
 
 To compile Embree for AVX-512 you have to use the Intel® Compiler.
 
@@ -229,15 +243,8 @@ variable or you need to correctly set the `EMBREE_ISPC_EXECUTABLE` variable
 during CMake configuration. If you do not want to use Intel® ISPC then you
 can disable `EMBREE_ISPC_SUPPORT` in CMake.
 
-We have tested Embree with the following Intel® ISPC versions:
-
-  - Intel® ISPC 1.14.1
-  - Intel® ISPC 1.13.0
-  - Intel® ISPC 1.12.0
-  - Intel® ISPC 1.9.2
-
 You additionally have to install [CMake](http://www.cmake.org/download/)
-(version 2.8.11 or higher). Note that you need a native Windows CMake
+(version 3.1.0 or higher). Note that you need a native Windows CMake
 installation, because CMake under Cygwin cannot generate solution files
 for Visual Studio.
 
@@ -272,7 +279,7 @@ The following CMake options are only available under Windows:
 +  `USE_STATIC_RUNTIME`: Use the static version of the C/C++ runtime
   library. This option is turned OFF by default.
 
-Use the generated Visual Studio solution file `embree2.sln` to compile
+Use the generated Visual Studio solution file `embree3.sln` to compile
 the project. To build Embree with support for the AVX2 instruction set
 you need at least Visual Studio 2013 (Update\ 4).
 
@@ -320,12 +327,14 @@ and community contributors. If the version is out of date, please
 on the vcpkg repository.
 
 
-Windows DPC++ Compilation
+Windows SYCL Compilation
 -------------------------
 
-The Embree SYCL compilation under Windows has been tested with the following DPC++ compilers:
+To compile Embree using SYCL one has to use Intel's DPC++ compiler,
+other SYCL compilers are not supported. The Embree SYCL compilation
+under Windows has been tested with the following compilers:
 
-  - [oneAPI DPC++ compiler 165 from 2022.03.10](https://github.com/intel/llvm/suites/5602828495/artifacts/182002768)
+  - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221013/dpcpp-compiler-win.tar.gz)
   
 Please download and install one of these compilers.
 
@@ -354,29 +363,19 @@ build directory.
           -D CMAKE_BUILD_TYPE=Release
           -D CMAKE_CXX_COMPILER=clang++
           -D CMAKE_C_COMPILER=clang
-          -D CMAKE_CXX_FLAGS=-fuse-ld=link
-          -D CMAKE_C_FLAGS=-fuse-ld=link
           -D EMBREE_MAX_ISA=SSE2
           -D EMBREE_ISPC_SUPPORT=OFF
           -D EMBREE_SYCL_SUPPORT=ON
           -D TBB_ROOT=path_to_tbb\lib\cmake\tbb ..
 
 This uses the Ninja generator which is required for the DPC++
-compiler, and configures a release build with using `clang++` and
-`clang` from the just installed DPC++ compiler. The LLVM linker
-`lld-link` is selected by Ninja by default, but that linker is not
-shipped with the DPC++ compiler. Thus linker has to get force to
-the Visual Studio Linker `link` using compilation flags.
+compiler, and configures a release build that uses `clang++` and
+`clang` from the just installed DPC++ compiler.
 
 We also enable SYCL support in Embree using the
 `EMBREE_SYCL_SUPPORT` CMake option, and only enable just in time
 compilation (JIT compilation) by setting `EMBREE_SYCL_AOT_DEVICES` to
-`none`. Ahead of time compilation (AOT compilation) is currently not
-working under Windows.
-
-Support to store filter function pointers and user geometry callbacks
-inside the geometry object are disabled, as these feature causes low
-performance.
+`none`.
 
 Now you can build Embree:
 
@@ -390,18 +389,16 @@ You can also create an Embree package using the following command:
 
     cmake --build . --target package
 
-Please see the [Building Embree Applications] section on how to build
+Please see the [Building Embree SYCL Applications] section on how to build
 your application with such an Embree package.
 
 
-### Windows HPG Driver Installation
+### Windows Graphics Driver Installation
 
-In order to run the SYCL tutorials on HPG hardware, you first
-need to install the proper graphics drivers. Latest drivers can get
-found on [intel.com/sdp](https://intel.com/sdp) searching for the
-latest `Discrete Graphics2 (DG2)` driver. Follow the driver
-installation instructions. We tested Embree with DG2 driver 101.1433
-(Displayed as 30.0.101.1433) dated 2022-03-29.
+In order to run the SYCL tutorials on HPG hardware, you first need to
+install the proper graphics drivers for your graphics card from
+[https://www.intel.com](https://www.intel.com). Embree will work with
+graphics driver version 101.4027 or later.
 
 
 CMake Configuration
@@ -423,22 +420,22 @@ parameters that can be configured in CMake:
 
 + `EMBREE_SYCL_SUPPORT`: Enables GPU support using SYCL. When this
   option is enabled you have to use some DPC++ compiler. Please see
-  section [Linux DPC++ Compilation] and [Windows DPC++ Compilation]
+  section [Linux SYCL Compilation] and [Windows SYCL Compilation]
   on supported DPC++ compilers. This option is OFF by default.
 
-+ `EMBREE_SYCL_AOT_DEVICES`: Selects a list of Xe GPU devices for
-  ahead of time (AOT) compilation of GPU code. Possible values are
++ `EMBREE_SYCL_AOT_DEVICES`: Selects a list of GPU devices for
+  ahead of time (AOT) compilation of device code. Possible values are
   either, "none" which enables only just in time (JIT) compilation, or
   specifying one of the Embree supported Xe GPUs for AOT compilation:
 
   * XE_HPG_CORE : Xe HPG devices
   * XE_HPC_CORE : Xe HPC devices
 
-  One can also specify multiple Xe devices separated by comma to
+  One can also specify multiple devices separated by comma to
   compile ahead of time for multiple devices,
   e.g. "XE_HPG_CORE,XE_HP_CORE". When enabling AOT compilation for one
-  or multiple Xe devices, JIT compilation will always additionally be
-  enabled in case the code is started on a device no code is
+  or multiple devices, JIT compilation will always additionally be
+  enabled in case the code is executed on a device no code is
   precompiled for.
 
   Execute "ocloc compile --help" for more details of possible devices

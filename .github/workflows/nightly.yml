@@ -71,7 +71,6 @@ jobs:
       runs-on: '[ "Linux", "docker", "pvc" ]'
       artifact-in: continuous-linux-PVC-AOT
       cmd: |
-        export EnableImplicitScaling=0
         scripts/test.py test --debug
         scripts/test.py test
 

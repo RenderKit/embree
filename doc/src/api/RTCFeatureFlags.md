@@ -3,6 +3,7 @@
 #### NAME
 
     RTCFeatureFlags - specifies features to enable
+      for ray queries
 
 #### SYNOPSIS
 
@@ -58,12 +59,10 @@
 
       RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS = 1 << 24,
       RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY = 1 << 25,
-    
       RTC_FEATURE_FLAGS_FILTER_FUNCTION = ... ,
     
       RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS = 1 << 26,
       RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY = 1 << 27,
-    
       RTC_FEATURE_FLAGS_USER_GEOMETRY = ... ,
     
       RTC_FEATURE_FLAGS_ALL = 0xffffffff
@@ -73,20 +72,19 @@
 #### DESCRIPTION
 
 The `RTCFeatureFlags` enum specify a bit mask to enable specific ray
-tracing features for ray tracing operations. The feature flags are
+tracing features for ray query operations. The feature flags are
 passed to the `rtcIntersect1/4/8/16` and `rtcOccluded1/4/8/16`
 functions through the `RTCIntersectArguments` and
 `RTCOccludedArguments` structures. Only a ray tracing feature whose
 bit is enabled in the feature mask can get used. If a feature bit is
 not set, the behaviour is undefined, thus the feature may work or
 not. To enable multiple features the respective features have to get
-combined using a bitwise or operation.
+combined using a bitwise `OR` operation.
 
-The purpose of this feature is to reduce code size on the GPU when
-using SYCL. Thus when using SYCL on the GPU one should enabled just
-the features required to render the scene. On the CPU there is no need
-to use that feature, and the default of all features enabled can just
-be kept.
+The purpose of this feature is to reduce code size on the GPU by
+enabling just the features required to render the scene. On the CPU
+there is no need to use that feature, and the default of all features
+enabled (`RTC_FEATURE_FLAGS_ALL`) can just be kept.
 
 The following features can get enabled using feature flags:
 
@@ -100,29 +98,9 @@ The following features can get enabled using feature flags:
 
 - RTC_FEATURE_FLAGS_SUBDIVISION: Enables subdivision geometries (RTC_GEOMETRY_TYPE_SUBDIVISION).
 
-- RTC_FEATURE_FLAGS_POINT: Enables all point geometry types (RTC_GEOMETRY_TYPE_SPHERE_POINT, RTC_GEOMETRY_TYPE_DISC_POINT, RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT).
+- RTC_FEATURE_FLAGS_POINT: Enables all point geometry types (RTC_GEOMETRY_TYPE_XXX_POINT)
 
-- RTC_FEATURE_FLAGS_CURVES: Enables all curve geometry types
-  (RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE,
-  RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE,
-  RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE,
-  
-  RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,
-  RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE,
-  RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE,
-  
-  RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE,
-  RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE,
-  RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE,
-  
-  RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE,
-  RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE,
-  RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE,
-
-  RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE,
-  RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE,
-  RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE
-).
+- RTC_FEATURE_FLAGS_CURVES: Enables all curve geometry types (RTC_GEOMETRY_TYPE_XXX_YYY_CURVE)
 
 - RTC_FEATURE_FLAGS_ROUND_CURVES: Enables all round curves (RTC_GEOMETRY_TYPE_ROUND_XXX_CURVE).
 
@@ -132,9 +110,9 @@ The following features can get enabled using feature flags:
       
 - RTC_FEATURE_FLAGS_LINEAR_CURVES: Enables all linear curves (RTC_GEOMETRY_TYPE_XXX_LINEAR_CURVE).
 
-- RTC_FEATURE_FLAGS_BEZIER_CURVES: Enables all bezier curves (RTC_GEOMETRY_TYPE_XXX_BEZIER_CURVE).
+- RTC_FEATURE_FLAGS_BEZIER_CURVES: Enables all Bézier curves (RTC_GEOMETRY_TYPE_XXX_BEZIER_CURVE).
 
-- RTC_FEATURE_FLAGS_BSPLINE_CURVES: Enables all BSpline curves (RTC_GEOMETRY_TYPE_XXX_BSPLINE_CURVE).
+- RTC_FEATURE_FLAGS_BSPLINE_CURVES: Enables all B-spline curves (RTC_GEOMETRY_TYPE_XXX_BSPLINE_CURVE).
 
 - RTC_FEATURE_FLAGS_HERMITE_CURVES: Enables all Hermite curves (RTC_GEOMETRY_TYPE_XXX_HERMITE_CURVE).
   
@@ -144,23 +122,23 @@ The following features can get enabled using feature flags:
 
 - RTC_FEATURE_FLAGS_FLAT_LINEAR_CURVE: Enables flat linear curves (RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE).
 
-- RTC_FEATURE_FLAGS_ROUND_BEZIER_CURVE: Enables round bezier curves (RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE).
+- RTC_FEATURE_FLAGS_ROUND_BEZIER_CURVE: Enables round Bézier curves (RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE).
 
-- RTC_FEATURE_FLAGS_FLAT_BEZIER_CURVE: Enables flat bezier curves (RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE).
+- RTC_FEATURE_FLAGS_FLAT_BEZIER_CURVE: Enables flat Bézier curves (RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE).
 
-- RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BEZIER_CURVE: Enables normal oriented bezier curves (RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE).
+- RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BEZIER_CURVE: Enables normal oriented Bézier curves (RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE).
 
-- RTC_FEATURE_FLAGS_ROUND_BSPLINE_CURVE: Enables round BSpline curves (RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE).
+- RTC_FEATURE_FLAGS_ROUND_BSPLINE_CURVE: Enables round B-spline curves (RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE).
 
-- RTC_FEATURE_FLAGS_FLAT_BSPLINE_CURVE: Enables flat BSpline curves (RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE).
+- RTC_FEATURE_FLAGS_FLAT_BSPLINE_CURVE: Enables flat B-spline curves (RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE).
 
-- RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BSPLINE_CURVE: Enables normal oriented BSpline curves (RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE).
+- RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BSPLINE_CURVE: Enables normal oriented B-spline curves (RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE).
 
-- RTC_FEATURE_FLAGS_ROUND_HERMITE_CURVE: Enables round hermite curves (RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE).
+- RTC_FEATURE_FLAGS_ROUND_HERMITE_CURVE: Enables round Hermite curves (RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE).
 
-- RTC_FEATURE_FLAGS_FLAT_HERMITE_CURVE: Enables flat hermite curves (RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE).
+- RTC_FEATURE_FLAGS_FLAT_HERMITE_CURVE: Enables flat Hermite curves (RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE).
 
-- RTC_FEATURE_FLAGS_NORMAL_ORIENTED_HERMITE_CURVE: Enables normal oriented hermite curves (RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE).
+- RTC_FEATURE_FLAGS_NORMAL_ORIENTED_HERMITE_CURVE: Enables normal oriented Hermite curves (RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE).
 
 - RTC_FEATURE_FLAGS_ROUND_CATMULL_ROM_CURVE: Enables round Catmull Rom curves (RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE).
 

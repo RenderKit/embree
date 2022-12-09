@@ -2,12 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <CL/sycl.hpp>
-#include <iostream>
-#include <memory>
-#include <algorithm>
-#include "sys/types.h"
-#include "sys/sysinfo.h"
-#include <thread>
 
 #if defined(EMBREE_SYCL_RT_VALIDATION_API)
 #  include "../rthwif_production.h"
@@ -17,6 +11,9 @@
 #include "../rthwif_builder.h"
 
 #include <level_zero/ze_api.h>
+
+#include <vector>
+#include <iostream>
 
 void exception_handler(sycl::exception_list exceptions)
 {
@@ -353,14 +350,14 @@ int main(int argc, char* argv[])
   static const int width = 512;
   static const int height = 512;
   unsigned int* pixels = (unsigned int*) sycl::aligned_alloc(64,width*height*sizeof(unsigned int),device,context,sycl::usm::alloc::shared);
-  memset(pixels, 0, width*height*sizeof(uint));
+  memset(pixels, 0, width*height*sizeof(uint32_t));
 
   for (int i=0; i<10; i++) {
   queue.submit([&](sycl::handler& cgh) {
                  const sycl::range<2> range(width,height);
                  cgh.parallel_for(range, [=](sycl::item<2> item) {
-                                              const uint x = item.get_id(0);
-                                              const uint y = item.get_id(1);
+                                              const uint32_t x = item.get_id(0);
+                                              const uint32_t y = item.get_id(1);
                                               render(x,y,bvh,pixels,width,height);
                                             });
                });

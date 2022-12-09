@@ -2,7 +2,8 @@
 
 #### NAME
 
-    rtcInvokeIntersectFilterFromGeometry - invokes the intersection filter function
+    rtcInvokeIntersectFilterFromGeometry - invokes the
+      intersection filter function from the geometry
 
 #### SYNOPSIS
 
@@ -15,15 +16,15 @@
 
 #### DESCRIPTION
 
-The `rtcInvokeIntersectFilterFromGeometry` function can be called inside an
-`RTCIntersectFunctionN` callback function to invoke the intersection
-filter registered to the geometry and stored inside the context.
-For this an `RTCFilterFunctionNArguments` structure must be created
-(see `rtcSetGeometryIntersectFilterFunction`) which basically consists
-of a valid mask, a hit packet to filter, the corresponding ray packet,
-and the packet size. After the invocation of `rtcInvokeIntersectFilterFromGeometry`,
-only rays that are still valid (valid mask set to -1) should update a
-hit.
+The `rtcInvokeIntersectFilterFromGeometry` function can be called
+inside an `RTCIntersectFunctionN` user geometry callback function to
+invoke the intersection filter registered to the geometry. For this an
+`RTCFilterFunctionNArguments` structure must be created (see
+`rtcSetGeometryIntersectFilterFunction`) which basically consists of a
+valid mask, a hit packet to filter, the corresponding ray packet, and
+the packet size. After the invocation of
+`rtcInvokeIntersectFilterFromGeometry`, only rays that are still valid
+(valid mask set to -1) should update a hit.
 
 #### EXIT STATUS
 

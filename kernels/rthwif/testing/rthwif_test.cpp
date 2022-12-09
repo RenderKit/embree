@@ -1,7 +1,13 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+#define NOMINMAX
+
+#include <CL/sycl.hpp>
 #include "tbb/tbb.h"
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 #if defined(EMBREE_SYCL_RT_VALIDATION_API)
 #  include "../rthwif_production.h"
@@ -1859,7 +1865,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
-                                             const uint i = item.get_id(0);
+                                             const uint32_t i = item.get_id(0);
                                              render(i,in[i],out_test[i],accel);
                                            });
                  });
@@ -1870,7 +1876,7 @@ uint32_t executeTest(sycl::device& device, sycl::queue& queue, sycl::context& co
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numTests);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
-                                             const uint i = item.get_id(0);
+                                             const uint32_t i = item.get_id(0);
                                              render_loop(i,in[i],out_test[i],scene_ptr,accel,test);
                                            });
                  });
@@ -1936,7 +1942,7 @@ uint32_t executeBuildTest(sycl::device& device, sycl::queue& queue, sycl::contex
     queue.submit([&](sycl::handler& cgh) {
                    const sycl::range<1> range(numPrimitives);
                    cgh.parallel_for(range, [=](sycl::item<1> item) {
-                                             const uint i = item.get_id(0);
+                                             const uint32_t i = item.get_id(0);
                                              render_loop(i,in[i],out_test[i],scene_ptr,accel,TestType::TRIANGLES_COMMITTED_HIT);
                                            });
                  });

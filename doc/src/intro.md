@@ -1,18 +1,18 @@
 The Embree API is a low-level C99 ray tracing API which can be used to
-construct spatial index structures for 3D scenes and perform ray
+build spatial index structures for 3D scenes and perform ray
 queries of different types. 
 
 The API can get used on the CPU using standard C, C++, and ISPC code
-and Xe GPUs by using DPC++/SYCL code. 
+and Intel GPUs by using SYCL code.
 
 The Intel® Implicit SPMD Program Compiler (Intel® ISPC) version of the
 API, is almost identical to the standard C99 version, but contains
 additional functions that operate on ray packets with a size of the
 native SIMD width used by Intel® ISPC.
 
-The DPC++/SYCL version of the API is also mostly identical to the C99
+The SYCL version of the API is also mostly identical to the C99
 version of the API, with some exceptions listed in section [Embree
-DPC++ API].
+SYCL API].
 
 For simplicity this document refers to the C99 version of the API
 functions. For changes when upgrading from the Embree 3 to the current
@@ -29,7 +29,7 @@ Finding the closest hit of a ray segment with the scene
 (`rtcIntersect`-type functions), and determining whether any hit
 between a ray segment and the scene exists (`rtcOccluded`-type
 functions) are both supported. The API supports queries for single
-rays, ray packets, and ray streams. See Section [Ray Queries] for
+rays and ray packets. See Section [Ray Queries] for
 more information.
 
 The API is designed in an object-oriented manner, e.g. it contains
@@ -40,7 +40,7 @@ counted, and handles can be released by calling the appropriate release
 function (e.g. `rtcReleaseDevice`) or retained by incrementing the
 reference count (e.g. `rtcRetainDevice`). In general, API calls that
 access the same object are not thread-safe, unless specified
-differently. However, attaching geometries to the same scene and
+otherwise. However, attaching geometries to the same scene and
 performing ray queries in a scene is thread-safe.
 
 Device Object
@@ -49,12 +49,12 @@ Device Object
 Embree supports a device concept, which allows different components of
 the application to use the Embree API without interfering with each
 other. An application typically first creates a device using the
-[rtcNewDevice] function. This device can then be used to construct
-further objects, such as scenes and geometries. Before the application
-exits, it should release all devices by invoking [rtcReleaseDevice]. An
-application typically creates only a single device. If required
-differently, it should only use a small number of devices at any given
-time.
+[rtcNewDevice] function (or [rtcNewSYCLDevice] when using SYCL for the
+GPU). This device can then be used to construct further objects, such
+as scenes and geometries. Before the application exits, it should
+release all devices by invoking [rtcReleaseDevice]. An application
+typically creates only a single device. If required differently, it
+should only use a small number of devices at any given time.
 
 Each user thread has its own error flag per device. If an error occurs
 when invoking an API function, this flag is set to an error code (if
@@ -133,16 +133,6 @@ can be set using the `rtcSetGeometryTimeRange` function. This feature
 will also allow geometries to appear and disappear during the camera
 shutter time if the time range is a sub range of [0,1].
 
-The API supports per-geometry filter callback functions (see
-`rtcSetGeometryIntersectFilterFunction` and
-`rtcSetGeometryOccludedFilterFunction`) that are invoked for each
-intersection found during the `rtcIntersect`-type or
-`rtcOccluded`-type calls. The former ones are called geometry
-intersection filter functions, the latter ones geometry occlusion
-filter functions. These filter functions are designed to be used to
-ignore intersections outside of a user-defined silhouette of a
-primitive, e.g. to model tree leaves using transparency textures.
-
 Ray Queries
 -----------
 
@@ -191,19 +181,42 @@ Seen tutorial [Collision Detection] for a complete example of collision
 detection being used on a simple cloth solver.
 
 
-Miscellaneous
--------------
+Filter Functions
+----------------
 
-A context filter function, which can be set per ray query is supported
-(see `rtcInitIntersectContext`). This filter function is designed to
-change the semantics of the ray query, e.g. to accumulate opacity for
-transparent shadows, count the number of surfaces along a ray,
-collect all hits along a ray, etc.
+The API supports filter functions that are invoked for each
+intersection found during the `rtcIntersect`-type or
+`rtcOccluded`-type calls.
+
+The filter functions can be set per-geometry using the
+`rtcSetGeometryIntersectFilterFunction` and
+`rtcSetGeometryOccludedFilterFunction` calls. The former ones are
+called geometry intersection filter functions, the latter ones
+geometry occlusion filter functions. These filter functions are
+designed to be used to ignore intersections outside of a user-defined
+silhouette of a primitive, e.g. to model tree leaves using
+transparency textures.
+
+The filter function can also get passed as arguments directly to the
+traversal functions, see section [rtcInitIntersectArguments] and
+[rtcInitOccludedArguments] for more details. These argument filter
+functions are designed to change the semantics of the ray query,
+e.g. to accumulate opacity for transparent shadows, count the number
+of surfaces along a ray, collect all hits along a ray, etc. The
+argument filter function must be enabled to be used for a scene using
+the `RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS` scene flag. The
+callback is only invoked for geometries that enable the callback using
+the `rtcSetGeometryEnableFilterFunctionFromArguments` call, or enabled
+for all geometries when the
+`RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER` flag is set in the
+traversal arguments.
+
+
+BVH Build API
+--------------
 
 The internal algorithms to build a BVH are exposed through the `RTCBVH`
 object and `rtcBuildBVH` call. This call makes it possible to build a
 BVH in a user-specified format over user-specified primitives. See the
 documentation of the `rtcBuildBVH` call for more details.
 
-For getting the most performance out of Embree, see the Section
-[Performance Recommendations].

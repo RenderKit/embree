@@ -46,13 +46,11 @@ CPU with such a device. To render on the CPU and GPU in parallel, the
 user has to create a second Embree device and create a second
 scene to be used on the CPU.
 
-Files containing SYCL code, have to get compiled with the
-[Intel(R) oneAPI DPC++
-compiler](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html#dpcpp-cpp)
-or open source [oneAPI DPC++
-compiler](https://github.com/intel/llvm/). The DPC++ compiler performs
-a two-phase compilation, where host code is compiled in a first phase,
-and device code compiled in a second compilation phase.
+Files containing SYCL code, have to get compiled with the Intel®
+oneAPI DPC++ compiler. Please see section [Linux SYCL Compilation] and
+[Windows SYCL Compilation] for supported compilers. The DPC++ compiler
+performs a two-phase compilation, where host code is compiled in a
+first phase, and device code compiled in a second compilation phase.
 
 Standard Embree API functions for scene construction can get used on
 the host (but not the device). Data buffers that are shared with
@@ -68,7 +66,7 @@ may access contained data when tracing rays. Embree does not support
 device-only memory allocations, as the BVH builder implemented on the
 CPU relies on reading the data buffers.
 
-Device side rendering can then get invoked by submitting a SYCL
+Device side rendering can get invoked by submitting a SYCL
 `parallel_for` to the SYCL queue:
 
     const sycl::specialization_id<RTCFeatureFlags> feature_mask;
@@ -119,11 +117,10 @@ e.g. just triangles in this example.
 
 Inside the SYCL `parallel_for` you can use rendering related functions,
 such as `rtcIntersect1` and `rtcOccluded1` functions to trace rays,
-`rtcForwardIntersect1` and `rtcForwardOccluded` to continue object
-traversal from inside a user geometry callback,
+`rtcForwardIntersect1` and `rtcForwardOccluded1` to continue object
+traversal from inside a user geometry callback, 
 `rtcGetGeometryUserDataFromScene` to get the user data pointer of some
-geometry. All functions that are allowed to be used during device side
-rendering are marked in the API reference.
+geometry.
 
 Have a look at the [Minimal] tutorial for a minimal SYCL example.
 
@@ -131,15 +128,13 @@ Have a look at the [Minimal] tutorial for a minimal SYCL example.
 SYCL JIT caching
 -----------------
 
-While SYCL allows precompiling device side code ahead of time (AOT
-compilation), the use of specialization constants and new hardware may
-trigger just in time compilation (JIT compilation). As compile times
-can be large we recommend enabling persistent JIT compilation caching
-inside your application, by setting the `SYCL_CACHE_PERSISTENT`
-environment variable to `1`, and the `SYCL_CACHE_DIR` environment
-variable to some proper directory where the JIT cache should get
-stored. These environment variables have to get set before the SYCL
-device is created.
+Compile times for just in time compilation (JIT compilation) can be
+large. To resolve this issue we recommend enabling persistent JIT
+compilation caching inside your application, by setting the
+`SYCL_CACHE_PERSISTENT` environment variable to `1`, and the
+`SYCL_CACHE_DIR` environment variable to some proper directory where
+the JIT cache should get stored. These environment variables have to
+get set before the SYCL device is created.
 
     setenv("SYCL_CACHE_PERSISTENT","1",1);
     setenv("SYCL_CACHE_DIR","cache_dir",1);
@@ -167,13 +162,13 @@ with memory pooling support:
 Embree SYCL Limitations
 -----------------------
 
-Embree only supports Xe HPC/HPG GPUs as SYCL devices, thus in
+Embree only supports Xe HPC and HPG GPUs as SYCL devices, thus in
 particular the CPU and other GPUs cannot get used as a SYCL
 device. To render on the CPU just use the standard C99 API without
 relying on SYCL.
 
 The SYCL language spec puts some restrictions to device functions,
-such as disallowing: global variabel access, malloc, invokation of
+such as disallowing: global variable access, malloc, invokation of
 virtual functions, function pointers, runtime type information,
 exceptions, recursion, etc. See Section `5.4. Language Restrictions
 for device functions` of the [SYCL
@@ -230,7 +225,7 @@ Embree SYCL Known Issues
     llvm-foreach: Floating point exception (core dumped)
 
 - When the integrated GPU is enabled in addition to the discrete GPU
-  will will get this error when trying to start SYCL applications:
+  you will get this error when trying to start SYCL applications:
 
     Floating point exception (core dumped)
 
@@ -255,7 +250,8 @@ consistent API that works properly for the CPU and GPU.
   
 - There are some changes to the `rtcIntersect` and `rtcOccluded`
   functions. Passing an `RTCIntersectContext` is no longer required to
-  trace rays. Further, most members of the `RTCIntersectContext` have
+  trace rays, thus some applications can just drop that
+  argument. Further, most members of the `RTCIntersectContext` have
   been moved to some `RTCIntersectArguments` (and
   `RTCOccludedArguments`) structures, which also contains a pointer to
   a reduced context. The argument structs fulfill the task of
@@ -266,7 +262,8 @@ consistent API that works properly for the CPU and GPU.
   arguments struct is not available inside callbacks. This change was
   in particular necessary for SYCL to allow inlining of function
   pointers provided to the traversal functions, and to reduce the
-  amount of state passed to callbacks, which improves GPU performance.
+  amount of state passed to callbacks, which both improves GPU
+  performance.
 
 - The `rtcFilterIntersection` and `rtcFilterOcclusion` API calls that
   invoke both, the geometry and argument version of the filter
@@ -277,12 +274,14 @@ consistent API that works properly for the CPU and GPU.
   geometry version of the filter function, and invoke the argument
   filter function manually if required.
 
-- The filter function passed as arguments to rtcIntersect and
-  rtcOccluded is only invoked for some geometry if enabled through
-  rtcSetGeometryEnableFilterFunctionFromArguments or the
-  RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER flag.
+- The filter function passed as arguments to `rtcIntersect` and
+  `rtcOccluded` functions is only invoked for some geometry if enabled through
+  `rtcSetGeometryEnableFilterFunctionFromArguments` for that
+  geometry. Alternatively, argument filter functions can get enabled
+  for all geometries using the
+  `RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER` flag.
 
-- User geometries callbacks get an valid vector as input to identify
+- User geometry callbacks get an valid vector as input to identify
   valid and invalid rays. In Embree 3 the user geometry callback just
   had to update the ray hit members when an intersection was found and
   perform no operation otherwise. In Embree 4 the callback
@@ -324,9 +323,9 @@ required:
 
 - The user geometry callback and filter callback functions should get
   passed through the intersection and occlusion argument structures to
-  the rtcIntersect and rtcOccluded functions directly to allow
+  the `rtcIntersect1` and `rtcOccluded1` functions directly to allow
   inlining. The geometry version of the callbacks is disabled in SYCL
-  on the GPU.
+  on the GPU and only experimental.
 
 - The feature flags should get used in SYCL to get optimal
   performance.
@@ -557,10 +556,9 @@ Generic Pointers
 
 Embree uses standard C++ pointers in its implementation. SYCL might
 not be able to detect the memory space these pointers refer to and has
-to treat them as generic pointers which are not performing well. DPC++
+to treat them as generic pointers which are not performing well. The DPC++
 compiler has advanced optimizations to infer the proper address space
 to avoid usage of generic pointers.
-
 
 However, if you still encounter the following warning during ahead of
 time compilation of SYCL kernels, then generic pointer loads are used:

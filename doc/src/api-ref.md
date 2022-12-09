@@ -3,6 +3,26 @@
 ```
 \pagebreak
 
+## rtcNewSYCLDevice
+``` {include=src/api/rtcNewSYCLDevice.md}
+```
+\pagebreak
+
+## rtcIsSYCLDeviceSupported
+``` {include=src/api/rtcIsSYCLDeviceSupported.md}
+```
+\pagebreak
+
+## rtcSYCLDeviceSelector
+``` {include=src/api/rtcSYCLDeviceSelector.md}
+```
+\pagebreak
+
+## rtcSetDeviceSYCLDevice
+``` {include=src/api/rtcSetDeviceSYCLDevice.md}
+```
+\pagebreak
+
 ## rtcRetainDevice
 ``` {include=src/api/rtcRetainDevice.md}
 ```
@@ -219,6 +239,11 @@
 ```
 \pagebreak
 
+## rtcSetGeometryMaxRadiusScale
+``` {include=src/api/rtcSetGeometryMaxRadiusScale.md}
+```
+\pagebreak
+
 ## rtcSetGeometryBuffer
 ``` {include=src/api/rtcSetGeometryBuffer.md}
 ```
@@ -261,6 +286,11 @@
 
 ## rtcSetGeometryOccludedFilterFunction
 ``` {include=src/api/rtcSetGeometryOccludedFilterFunction.md}
+```
+\pagebreak
+
+## rtcSetGeometryEnableFilterFunctionFromArguments
+``` {include=src/api/rtcSetGeometryEnableFilterFunctionFromArguments.md}
 ```
 \pagebreak
 
@@ -313,6 +343,12 @@
 ``` {include=src/api/rtcSetGeometryPointQueryFunction.md}
 ```
 \pagebreak
+
+## rtcGetSYCLDeviceFunctionPointer
+``` {include=src/api/rtcGetSYCLDeviceFunctionPointer.md}
+```
+\pagebreak
+
 
 ## rtcSetGeometryInstancedScene
 ``` {include=src/api/rtcSetGeometryInstancedScene.md}

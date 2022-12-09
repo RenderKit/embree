@@ -234,8 +234,6 @@ def runConfig(config):
       gfx_dir = ""+NAS+"\\gfx-driver-win\\"+GFX_VERSION
 
       conf.append("-G Ninja")
-      conf.append("-D CMAKE_CXX_FLAGS=-fuse-ld=link")
-      conf.append("-D CMAKE_C_FLAGS=-fuse-ld=link")
       conf.append("-D CMAKE_CXX_COMPILER=clang++")
       conf.append("-D CMAKE_C_COMPILER=clang")
 
