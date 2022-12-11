@@ -452,7 +452,8 @@ namespace embree
     uint numProcedurals      = primCounts.numProcedurals;
     uint numInstances        = primCounts.numInstances;
     const uint numQuadBlocks = primCounts.numQuadBlocks;
-
+    const uint numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
+    
     const uint expected_numPrimitives = numQuads + numProcedurals + numInstances;    
 
     // =================================================    
@@ -532,7 +533,6 @@ namespace embree
     {
       sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
                                                     cgh.single_task([=]() {
-                                                                      globals->numPrimitives              = numPrimitives;
                                                                       globals->node_mem_allocator_cur     = node_data_start/64;
                                                                       globals->node_mem_allocator_start   = node_data_start/64;
                                                                       globals->leaf_mem_allocator_cur     = leaf_data_start/64;
@@ -599,7 +599,7 @@ namespace embree
     
     numPrimitives = numQuads + numInstances + numProcedurals;
 
-    const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances);        
+    const GeometryTypeRanges geometryTypeRanges(numQuads,numProcedurals,numInstances,numLossyCompressedGeometries);        
     
     if (unlikely(verbose2))
     {

@@ -43,7 +43,7 @@ namespace embree
     uint numProcedurals;
     uint numInstances;
     uint numQuadBlocks;
-    uint numPrimitives;    
+    uint numLossyCompressedGeometries;    
     uint bvh2_index_allocator;    
     uint leaf_mem_allocator_start;
     uint leaf_mem_allocator_cur;
@@ -64,10 +64,10 @@ namespace embree
       numMergedTrisQuads         = 0;
       numProcedurals             = 0;
       numInstances               = 0;
-      numQuadBlocks              = 0;      
+      numQuadBlocks              = 0;
+      numLossyCompressedGeometries = 0;
       node_mem_allocator_cur     = 0;
       node_mem_allocator_start   = 0;
-      numPrimitives              = 0;
       bvh2_index_allocator       = 0;
       leaf_mem_allocator_cur     = 0;
       leaf_mem_allocator_start   = 0;
@@ -219,17 +219,21 @@ namespace embree
     uint triQuad_end;
     uint procedural_end;    
     uint instances_end;
+    uint lossy_compressed_geometries_end;
 
-    __forceinline GeometryTypeRanges(const uint triQuads, const uint numProcedurals, const uint numInstances) 
+    __forceinline GeometryTypeRanges(const uint triQuads, const uint numProcedurals, const uint numInstances, const uint numLossyCompressedGeometries) 
     {
       triQuad_end    = triQuads;
       procedural_end = triQuads + numProcedurals;      
       instances_end  = triQuads + numProcedurals + numInstances;
+      lossy_compressed_geometries_end = triQuads + numProcedurals + numInstances + numLossyCompressedGeometries;
     }
     
     __forceinline bool isTriQuad(const uint index)    const { return index >= 0              && index < triQuad_end;    }
     __forceinline bool isProcedural(const uint index) const { return index >= triQuad_end    && index < procedural_end; }    
     __forceinline bool isInstance(const uint index)   const { return index >= procedural_end && index < instances_end;  }
+    __forceinline bool isLossyCompressedGeometry(const uint index)   const { return index >= instances_end && index < lossy_compressed_geometries_end;  }
+    
     
   };
   
@@ -794,10 +798,11 @@ namespace embree
     uint numInstances;
     uint numMergedTrisQuads;
     uint numQuadBlocks;
+    uint numLossyCompressedGeometries;
 
     __forceinline void reset()
     {
-      numTriangles = numQuads = numProcedurals = numInstances = numMergedTrisQuads = numQuadBlocks = 0;
+      numTriangles = numQuads = numProcedurals = numInstances = numMergedTrisQuads = numQuadBlocks = numLossyCompressedGeometries = 0;
     }
     __forceinline PrimitiveCounts() 
     {
@@ -813,6 +818,7 @@ namespace embree
     c.numInstances       = a.numInstances       + b.numInstances;
     c.numMergedTrisQuads = a.numMergedTrisQuads + b.numMergedTrisQuads;    
     c.numQuadBlocks      = a.numQuadBlocks      + b.numQuadBlocks;
+    c.numLossyCompressedGeometries = a.numLossyCompressedGeometries + b.numLossyCompressedGeometries;
     return c;
   }
 
@@ -822,7 +828,8 @@ namespace embree
         a.numProcedurals     == b.numProcedurals &&
         a.numInstances       == b.numInstances &&
         a.numMergedTrisQuads == b.numMergedTrisQuads &&
-        a.numQuadBlocks      == b.numQuadBlocks)
+        a.numQuadBlocks      == b.numQuadBlocks &&
+        a.numLossyCompressedGeometries == b.numLossyCompressedGeometries)
       return true;
     return false;
   }
@@ -863,7 +870,9 @@ namespace embree
         sycl::local_accessor< uint, 0> _numQuads(cgh);
         sycl::local_accessor< uint, 0> _numProcedurals(cgh);
         sycl::local_accessor< uint, 0> _numInstances(cgh);
-        sycl::local_accessor< uint, 0> _numQuadBlocks(cgh);        
+        sycl::local_accessor< uint, 0> _numQuadBlocks(cgh);
+        sycl::local_accessor< uint, 0> _numLossyCompressedGeometries(cgh);
+        
         cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                          {
                            const uint geomID    = item.get_global_id(0);
@@ -874,6 +883,8 @@ namespace embree
                            uint &numProcedurals = *_numProcedurals.get_pointer();
                            uint &numInstances   = *_numInstances.get_pointer();
                            uint &numQuadBlocks  = *_numQuadBlocks.get_pointer();
+                           uint &numLossyCompressedGeometries = *_numLossyCompressedGeometries.get_pointer();
+                           
                            if (localID == 0)
                            {
                              numTriangles   = 0;
@@ -881,6 +892,7 @@ namespace embree
                              numProcedurals = 0;
                              numInstances   = 0;
                              numQuadBlocks  = 0;
+                             numLossyCompressedGeometries = 0;
                            }
                            item.barrier(sycl::access::fence_space::local_space);
 
@@ -907,6 +919,7 @@ namespace embree
                                }
                                case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR :  gpu::atomic_add_local(&numProcedurals,((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*)geom)->primCount);     break;
                                case RTHWIF_GEOMETRY_TYPE_INSTANCE   :  gpu::atomic_add_local(&numInstances  ,(uint)1); break;
+                               case RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY :  gpu::atomic_add_local(&numLossyCompressedGeometries,((RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC*)geom)->numGeometryPtrs); break;                     
                                };
                              }
                              blocksPerGeom[geomID] = numBlocks;
@@ -919,7 +932,8 @@ namespace embree
                              gpu::atomic_add_global(&globals->numQuads,numQuads);
                              gpu::atomic_add_global(&globals->numProcedurals,numProcedurals);
                              gpu::atomic_add_global(&globals->numInstances,numInstances);
-                             gpu::atomic_add_global(&globals->numQuadBlocks,numQuadBlocks);                             
+                             gpu::atomic_add_global(&globals->numQuadBlocks,numQuadBlocks);
+                             gpu::atomic_add_global(&globals->numLossyCompressedGeometries,numLossyCompressedGeometries);
                            }
                          });
 		  
@@ -932,6 +946,7 @@ namespace embree
             host_device_tasks[2] = globals->numProcedurals;
             host_device_tasks[3] = globals->numInstances;
             host_device_tasks[4] = globals->numQuadBlocks;
+            host_device_tasks[5] = globals->numLossyCompressedGeometries;
           });
       });
     gpu::waitOnEventAndCatchException(copy_event);
@@ -947,6 +962,7 @@ namespace embree
     count.numProcedurals = host_device_tasks[2];
     count.numInstances   = host_device_tasks[3];
     count.numQuadBlocks  = host_device_tasks[4];
+    count.numLossyCompressedGeometries = host_device_tasks[5];
 
     return count;
   }  

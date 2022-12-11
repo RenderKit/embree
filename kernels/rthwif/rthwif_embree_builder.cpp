@@ -240,6 +240,7 @@ namespace embree
     out->geometryType = RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY;
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
+    out->numGeometryPtrs = geom->numPrimitives;
     out->compressedGeometryPtrsBuffer = geom->userPtr;
   }
 

@@ -132,7 +132,8 @@ typedef struct RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC  // 40 bytes
   uint8_t geometryMask;                    // 8-bit geometry mask for ray masking
   uint8_t reserved0;                       // must be zero
   uint32_t reserved1;                      // must be zero
-  void* compressedGeometryPtrsBuffer;       // pointer to array of triangle indices  
+  unsigned int numGeometryPtrs;            // number of pointers;
+  void* compressedGeometryPtrsBuffer;      // pointer to array of triangle indices  
 } RTHWIF_RAYTRACING_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC;
 
 
