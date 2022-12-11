@@ -15,6 +15,7 @@
 #include "scene_subdiv_mesh.h"
 #include "scene_grid_mesh.h"
 #include "scene_points.h"
+#include "scene_lossy_compressed_geometry.h"
 #include "../subdiv/tessellation_cache.h"
 
 #include "acceln.h"
@@ -357,6 +358,9 @@ namespace embree
       
       if (mask & Geometry::MTY_GRID_MESH)
         count += mblur  ? world.numMBGrids : world.numGrids;
+
+      if (mask & Geometry::MTY_LOSSY_COMPRESSED_GEOMETRY)
+        count += world.numLossyCompressedGeometries;
       
       return count;
     }

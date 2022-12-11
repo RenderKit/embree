@@ -47,6 +47,8 @@ enum RTCGeometryType
   RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE  = 59, // flat (ribbon-like) Catmull-Rom curves
   RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE  = 60, // flat normal-oriented Catmull-Rom curves
 
+  RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY     = 64, // set of lossy compress meshes
+  
   RTC_GEOMETRY_TYPE_USER     = 120, // user-defined geometry
   RTC_GEOMETRY_TYPE_INSTANCE = 121  // scene instance
 };
@@ -200,6 +202,9 @@ RTC_API void rtcSetGeometryPointQueryFunction(RTCGeometry geometry, RTCPointQuer
 
 /* Sets the number of primitives of a user geometry. */
 RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry geometry, unsigned int userPrimitiveCount);
+
+/* Sets the number of primitives of a user geometry. */
+RTC_API void rtcSetLossyCompressedGeometryPrimitiveCount(RTCGeometry geometry, unsigned int userPrimitiveCount);
 
 /* Sets the bounding callback function to calculate bounding boxes for user primitives. */
 RTC_API void rtcSetGeometryBoundsFunction(RTCGeometry geometry, RTCBoundsFunction bounds, void* userPtr);

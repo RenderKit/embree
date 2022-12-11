@@ -28,11 +28,11 @@ namespace embree
         numInstancesExpensive(0), numMBInstancesExpensive(0), 
         numGrids(0), numMBGrids(0),
         numSubGrids(0), numMBSubGrids(0), 
-        numPoints(0), numMBPoints(0) {}
+        numPoints(0), numMBPoints(0), numLossyCompressedGeometries(0) {}
 
     __forceinline size_t size() const {
       return    numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numGrids + numPoints
-              + numMBTriangles + numMBQuads + numMBBezierCurves + numMBLineSegments + numMBSubdivPatches + numMBUserGeometries + numMBInstancesCheap + numMBInstancesExpensive + numMBGrids + numMBPoints;
+              + numMBTriangles + numMBQuads + numMBBezierCurves + numMBLineSegments + numMBSubdivPatches + numMBUserGeometries + numMBInstancesCheap + numMBInstancesExpensive + numMBGrids + numMBPoints + numLossyCompressedGeometries;
     }
 
     __forceinline unsigned int enabledGeometryTypesMask() const
@@ -47,7 +47,8 @@ namespace embree
       if (numInstancesExpensive) mask |= 1 << 6;
       if (numGrids) mask |= 1 << 7;
       if (numPoints) mask |= 1 << 8;
-
+      if (numLossyCompressedGeometries) mask |= 1 << 9;
+      
       unsigned int maskMB = 0;
       if (numMBTriangles) maskMB |= 1 << 0;
       if (numMBQuads) maskMB |= 1 << 1;
@@ -88,7 +89,7 @@ namespace embree
       ret.numMBSubGrids = numMBSubGrids + rhs.numMBSubGrids;
       ret.numPoints = numPoints + rhs.numPoints;
       ret.numMBPoints = numMBPoints + rhs.numMBPoints;
-
+      ret.numLossyCompressedGeometries = numLossyCompressedGeometries + rhs.numLossyCompressedGeometries;
       return ret;
     }
 
@@ -115,6 +116,7 @@ namespace embree
     size_t numMBSubGrids;            //!< number of enabled motion blurred grid geometries
     size_t numPoints;                //!< number of enabled points
     size_t numMBPoints;              //!< number of enabled motion blurred points
+    size_t numLossyCompressedGeometries; //!< number of lossy compressed geometries
   };
 
   /*! Base class all geometries are derived from */
@@ -161,7 +163,8 @@ namespace embree
       GTY_USER_GEOMETRY = 29,
       GTY_INSTANCE_CHEAP = 30,
       GTY_INSTANCE_EXPENSIVE = 31,
-      GTY_END = 32,
+      GTY_LOSSY_COMPRESSED_GEOMETRY = 32,
+      GTY_END = 33,
 
       GTY_BASIS_LINEAR = 0,
       GTY_BASIS_BEZIER = 4,
@@ -230,6 +233,8 @@ namespace embree
       MTY_INSTANCE_CHEAP = 1ul << GTY_INSTANCE_CHEAP,
       MTY_INSTANCE_EXPENSIVE = 1ul << GTY_INSTANCE_EXPENSIVE,
       MTY_INSTANCE = MTY_INSTANCE_CHEAP | MTY_INSTANCE_EXPENSIVE,
+
+      MTY_LOSSY_COMPRESSED_GEOMETRY = 1ul << GTY_LOSSY_COMPRESSED_GEOMETRY,
 
       MTY_ALL = -1
     };

@@ -16,6 +16,18 @@ const int numTheta = 2*numPhi;
 RTCScene g_scene  = nullptr;
 TutorialData data;
 
+unsigned int createLossyCompressedGeometry (RTCScene scene)
+{
+  void *compressed_geometries_ptrs = nullptr;
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
+  rtcSetGeometryUserData(geom,compressed_geometries_ptrs);
+  rtcSetLossyCompressedGeometryPrimitiveCount(geom,1);
+  rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+  return geomID;  
+}
+
 unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
 {
   /* create triangle mesh */
@@ -72,6 +84,7 @@ unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
   return geomID;
 }
 
+
 /* creates a ground plane */
 unsigned int createGroundPlane (RTCScene scene)
 {
@@ -106,6 +119,7 @@ extern "C" void device_init (char* cfg)
   rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
   rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
+#if 0  
   /* create NUM_SPHERES scenes with a triangulated sphere */
   const float rcpNumTheta = rcp((float)NUM_SPHERE_INSTANCES_THETA);
   const float rcpNumPhi   = rcp((float)NUM_SPHERE_INSTANCES_PHI);
@@ -143,6 +157,9 @@ extern "C" void device_init (char* cfg)
       rtcCommitGeometry(data.g_instances[i]);
     }
   }
+#else
+  
+#endif  
 
   /* update scene */
   rtcCommitScene (data.g_scene);  

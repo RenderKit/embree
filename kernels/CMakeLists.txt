@@ -49,6 +49,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_line_segments.cpp
   common/scene_grid_mesh.cpp
   common/scene_points.cpp
+  common/scene_lossy_compressed_geometry.cpp  
   common/motion_derivative.cpp
 
   subdiv/bezier_curve.cpp

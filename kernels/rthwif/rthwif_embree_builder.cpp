@@ -203,6 +203,7 @@ namespace embree
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return sizeof(RTHWIF_GEOMETRY_QUADS_DESC)+type.extraBytes;
     case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return sizeof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC)+type.extraBytes;
     case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return sizeof(RTHWIF_GEOMETRY_INSTANCE_DESC)+type.extraBytes;
+    case RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY  : return sizeof(RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC)+type.extraBytes;            
     default: assert(false); return 0;
     }
   }
@@ -214,6 +215,7 @@ namespace embree
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return alignof(RTHWIF_GEOMETRY_QUADS_DESC);
     case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return alignof(RTHWIF_GEOMETRY_AABBS_FPTR_DESC);
     case RTHWIF_GEOMETRY_TYPE_INSTANCE  : return alignof(RTHWIF_GEOMETRY_INSTANCE_DESC);
+    case RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY  : return alignof(RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC);
     default: assert(false); return 0;
     }
   }
@@ -230,6 +232,15 @@ namespace embree
       gflags = RTHWIF_GEOMETRY_FLAG_NONE;
     
     return gflags;
+  }
+
+  void createGeometryDesc(RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC* out, Scene* scene, LossyCompressedGeometry* geom)
+  {
+    memset(out,0,sizeof(RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC));
+    out->geometryType = RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY;
+    out->geometryFlags = getGeometryFlags(scene,geom);
+    out->geometryMask = mask32_to_mask8(geom->mask);
+    out->compressedGeometryPtrsBuffer = geom->userPtr;
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_TRIANGLES_DESC* out, Scene* scene, TriangleMesh* geom)
@@ -358,6 +369,7 @@ namespace embree
     case RTHWIF_GEOMETRY_TYPE_INSTANCE:
       if (type.extraBytes) return createGeometryDesc((GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
       else                 return createGeometryDesc((RTHWIF_GEOMETRY_INSTANCE_DESC*)out,scene,dynamic_cast<Instance*>(geom));
+    case RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY: createGeometryDesc((RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC*)out,scene,dynamic_cast<LossyCompressedGeometry*>(geom));
     default: assert(false);
     }
   }
@@ -446,6 +458,8 @@ namespace embree
       case Geometry::GTY_ORIENTED_DISC_POINT: return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
       
       case Geometry::GTY_USER_GEOMETRY     : return RTHWIF_GEOMETRY_TYPE_AABBS_FPTR; break;
+        
+      case Geometry::GTY_LOSSY_COMPRESSED_GEOMETRY     : return RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY; break;
 
 #if RTC_MAX_INSTANCE_LEVEL_COUNT < 2
       case Geometry::GTY_INSTANCE_CHEAP    :

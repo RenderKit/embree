@@ -100,6 +100,7 @@ typedef enum RTHWIF_GEOMETRY_TYPE : uint8_t
   RTHWIF_GEOMETRY_TYPE_QUADS = 1,       // quad mesh geometry type
   RTHWIF_GEOMETRY_TYPE_AABBS_FPTR = 2,  // procedural geometry with AABB bounds per primitive
   RTHWIF_GEOMETRY_TYPE_INSTANCE = 3,    // instance geometry
+  RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY = 4, // lossy compressed geometry    
 } RTHWIF_GEOMETRY_TYPE;
 
 /* The format of transformations supported. */
@@ -121,6 +122,18 @@ typedef enum RTHWIF_INSTANCE_FLAGS : uint8_t
   RTHWIF_INSTANCE_FLAG_FORCE_OPAQUE = 0x4,
   RTHWIF_INSTANCE_FLAG_FORCE_NON_OPAQUE = 0x8
 } RTHWIF_INSTANCE_FLAGS;
+
+
+/* Triangle mesh geometry descriptor. */
+typedef struct RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC  // 40 bytes
+{
+  RTHWIF_GEOMETRY_TYPE geometryType;       // must be RTHWIF_GEOMETRY_TYPE_TRIANGLES
+  RTHWIF_GEOMETRY_FLAGS geometryFlags;     // geometry flags for all primitives of this geometry
+  uint8_t geometryMask;                    // 8-bit geometry mask for ray masking
+  uint8_t reserved0;                       // must be zero
+  uint32_t reserved1;                      // must be zero
+  void* compressedGeometryPtrsBuffer;       // pointer to array of triangle indices  
+} RTHWIF_RAYTRACING_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC;
 
 
 /* Triangle mesh geometry descriptor. */
@@ -213,6 +226,7 @@ typedef enum RTHWIF_FEATURES {
   RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS      = 1 << 1,    // support for RTHWIF_GEOMETRY_TYPE_QUADS geometries
   RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR = 1 << 2,    // support for RTHWIF_GEOMETRY_TYPE_AABBS_FPTR geometries
   RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE   = 1 << 3,    // support for RTHWIF_GEOMETRY_TYPE_INSTANCE geometries
+  RTHWIF_FEATURES_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY   = 1 << 4,    // support for RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY geometries
   
 } RTHWIF_FEATURES;
 

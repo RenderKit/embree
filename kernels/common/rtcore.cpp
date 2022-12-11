@@ -1420,6 +1420,14 @@ RTC_NAMESPACE_BEGIN;
       throw_RTCError(RTC_ERROR_UNKNOWN,"RTC_GEOMETRY_TYPE_GRID is not supported");
 #endif
     }
+
+    case RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY:
+    {
+      createLossyCompressedGeometryTy createLossyCompressedGeometry = nullptr;
+      SELECT_SYMBOL_DEFAULT_AVX_AVX2_AVX512(device->enabled_cpu_features,createLossyCompressedGeometry);
+      Geometry* geom = createLossyCompressedGeometry(device);
+      return (RTCGeometry) geom->refInc();      
+    }    
     
     default:
       throw_RTCError(RTC_ERROR_UNKNOWN,"invalid geometry type");
@@ -1443,6 +1451,22 @@ RTC_NAMESPACE_BEGIN;
     geometry->setNumPrimitives(userPrimitiveCount);
     RTC_CATCH_END2(geometry);
   }
+
+  RTC_API void rtcSetLossyCompressedGeometryPrimitiveCount(RTCGeometry hgeometry, unsigned int userPrimitiveCount)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetLossyCompressedGeometryPrimitiveCount);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_ENTER_DEVICE(hgeometry);
+    
+    if (unlikely(geometry->getType() != Geometry::GTY_LOSSY_COMPRESSED_GEOMETRY))
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation only allowed for lossy compressed geometries"); 
+
+    geometry->setNumPrimitives(userPrimitiveCount);
+    RTC_CATCH_END2(geometry);
+  }
+
 
   RTC_API void rtcSetGeometryTimeStepCount(RTCGeometry hgeometry, unsigned int timeStepCount)
   {
