@@ -5,11 +5,11 @@ This folder contains sources of the Embree tutorials for illustration
 purposes of the API. Follow the next sections to compile the
 tutorials.
 
-Compilation under Windows using DPC++
+Compilation under Windows using SYCL
 -------------------------------------
 
-Install one of the DPC++ compilers supported by Embree, see section
-[Compiling Embree / with DPC++ under Windows] of the Embree
+Install one of the SYCL compilers supported by Embree, see section
+[Compiling Embree / Windows SYCL Compilation] of the Embree
 documentation.
   
 Then open some "x64 Native Tools Command Prompt" of Visual Studio and
@@ -26,7 +26,7 @@ use the DPC++ compiler:
 Now download and unpack some recent TBB version for Windows, e.g. oneTBB 2021.2.0:
 
   https://github.com/oneapi-src/oneTBB/releases/download/v2021.2.0/oneapi-tbb-2021.2.0-win.zip
-
+  
 To compile tutorials contained in this folder first create and enter a
 build folder inside the tutorial you want to compile. E.g. for the
 minimal tutorial execute:
@@ -41,11 +41,9 @@ the Embree and TBB installation on your system.
     cmake -G Ninja
           -D CMAKE_CXX_COMPILER=clang++
           -D CMAKE_C_COMPILER=clang
-          -D CMAKE_CXX_FLAGS=-fuse-ld=link
-          -D CMAKE_C_FLAGS=-fuse-ld=link
           -D CMAKE_BUILD_TYPE=Release
           -D embree_DIR=%cd%\..\..\..\lib\cmake\embree-@EMBREE_VERSION@\
-          -D TBB_DIR=path_to_tbb\lib\cmake\tbb ..
+          -D TBB_DIR=path_to_tbb\oneapi-tbb-2021.2.0\lib\cmake\tbb ..
 
 Now you can build the tutorial:
 
@@ -62,21 +60,22 @@ Now you can run the tutorial:
     .\minimal_sycl.exe
 
 
-Compilation under Linux using DPC++
+Compilation under Linux using SYCL
 -----------------------------------
 
-Install one of the DPC++ compilers supported by Embree, see section
-[Compiling Embree / with DPC++ under Linux] of the Embree
+Install one of the SYCL compilers supported by Embree, see section
+[Compiling Embree / Linux SYCL Compilation] of the Embree
 documentation.
 
 To properly configure your environment, you have to source the
 `startup.sh` of the unpacked DPC++ compiler:
 
-    source dpcpp_dir/startup.sh
+    source dpcpp_compiler/startup.sh
 
 Now download and unpack some recent TBB version for Linux, e.g. oneTBB 2021.2.0:
 
-  https://github.com/oneapi-src/oneTBB/releases/download/v2021.2.0/oneapi-tbb-2021.2.0-lin.tgz
+  wget https://github.com/oneapi-src/oneTBB/releases/download/v2021.2.0/oneapi-tbb-2021.2.0-lin.tgz
+  tar xzf oneapi-tbb-2021.2.0-lin.tgz
 
 To compile tutorials contained in this folder first create and enter a
 build folder inside the tutorial you want to compile. E.g. for the
@@ -93,7 +92,7 @@ the Embree and TBB installation on your system.
           -D CMAKE_CXX_COMPILER=clang++ \
           -D CMAKE_C_COMPILER=clang \
           -D embree_DIR=`pwd`/../../../lib/cmake/embree-@EMBREE_VERSION@/ \
-          -D TBB_DIR=path_to_tbb_install ..
+          -D TBB_DIR=path_to_tbb/oneapi-tbb-2021.2.0/lib/cmake/tbb/ ..
 
 Now you can build the tutorial:
 
