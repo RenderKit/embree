@@ -241,7 +241,7 @@ namespace embree
     out->geometryFlags = getGeometryFlags(scene,geom);
     out->geometryMask = mask32_to_mask8(geom->mask);
     out->numGeometryPtrs = geom->numPrimitives;
-    out->compressedGeometryPtrsBuffer = geom->userPtr;
+    out->compressedGeometryPtrsBuffer = (void**)geom->userPtr;
   }
 
   void createGeometryDesc(RTHWIF_GEOMETRY_TRIANGLES_DESC* out, Scene* scene, TriangleMesh* geom)

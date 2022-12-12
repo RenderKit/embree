@@ -1419,6 +1419,171 @@ namespace embree
     return ID;
   }
 
+
+  __forceinline void writeNode(void *_dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const uint numChildren, uint indices[BVH_BRANCHING_FACTOR], const gpu::AABB3f child_bounds[6])
+  {
+    uint *dest = (uint*)_dest;    
+    
+    const float _ulp = std::numeric_limits<float>::epsilon();
+    const float up = 1.0f + float(_ulp);  
+    const gpu::AABB3f conservative_bounds = parent_bounds.conservativeBounds();
+    const float3 len = conservative_bounds.size() * up;
+      
+    int _exp_x; float mant_x = frexp(len.x(), &_exp_x); _exp_x += (mant_x > 255.0f / 256.0f);
+    int _exp_y; float mant_y = frexp(len.y(), &_exp_y); _exp_y += (mant_y > 255.0f / 256.0f);
+    int _exp_z; float mant_z = frexp(len.z(), &_exp_z); _exp_z += (mant_z > 255.0f / 256.0f);
+    _exp_x = max(-128,_exp_x); // enlarge too tight bounds
+    _exp_y = max(-128,_exp_y);
+    _exp_z = max(-128,_exp_z);
+
+    const float3 lower(conservative_bounds.lower_x,conservative_bounds.lower_y,conservative_bounds.lower_z);
+    
+    dest[0]  = gpu::as_uint(lower.x());
+    dest[1]  = gpu::as_uint(lower.y());
+    dest[2]  = gpu::as_uint(lower.z());
+    dest[3]  = relative_block_offset; 
+
+    uint8_t tmp[48];
+    
+    tmp[0]         = NODE_TYPE_MIXED; // type
+    tmp[1]         = 0;    // pad 
+    tmp[2]         = _exp_x; assert(_exp_x >= -128 && _exp_x <= 127); 
+    tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
+    tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
+    tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
+    
+#pragma nounroll
+    for (uint i=0;i<BVH_BRANCHING_FACTOR;i++)
+    {
+      const uint index = BVH2Ploc::getIndex(indices[sycl::min(i,numChildren-1)]);
+      // === default is invalid ===
+      uint8_t lower_x = 0x80;
+      uint8_t lower_y = 0x80;
+      uint8_t lower_z = 0x80;    
+      uint8_t upper_x = 0x00;
+      uint8_t upper_y = 0x00;
+      uint8_t upper_z = 0x00;
+      uint8_t data    = 0x00;      
+      // === determine leaf type ===
+      const bool isLeaf = true; // && !forceFatLeaves;      
+      const uint numBlocks    =  1;
+      NodeType leaf_type = NODE_TYPE_QUAD;
+      data = (i<numChildren) ? numBlocks : 0;
+      data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
+      const gpu::AABB3f childBounds = child_bounds[i]; //.conservativeBounds();
+      // === bounds valid ? ====
+      uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
+      equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
+      equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
+      const bool write = (i<numChildren) && equal_dims <= 1;
+      // === quantize bounds ===
+      const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
+      // === updated discretized bounds ===
+      lower_x = write ? (uint8_t)qbounds.lower_x : lower_x;
+      lower_y = write ? (uint8_t)qbounds.lower_y : lower_y;
+      lower_z = write ? (uint8_t)qbounds.lower_z : lower_z;
+      upper_x = write ? (uint8_t)qbounds.upper_x : upper_x;
+      upper_y = write ? (uint8_t)qbounds.upper_y : upper_y;
+      upper_z = write ? (uint8_t)qbounds.upper_z : upper_z;
+      // === init child in node ===
+      tmp[ 6+i] = data;
+      tmp[12+i] = lower_x;
+      tmp[18+i] = upper_x;      
+      tmp[24+i] = lower_y;
+      tmp[30+i] = upper_y;      
+      tmp[36+i] = lower_z;
+      tmp[42+i] = upper_z;      
+    }
+    // === write out second part of 64 bytes node ===
+    for (uint i=0;i<12;i++)
+      dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
+  }
+   
+   __forceinline Vec3f getVertex(const RTCLossyCompressedGrid &grid_source,const uint y, const uint x)
+   {
+     return Vec3f(grid_source.vertex[y][x][0],grid_source.vertex[y][x][1],grid_source.vertex[y][x][2]);
+   }
+
+
+   __forceinline float3 to_float3(const Vec3f &v)
+   {
+     return float3(v.x,v.y,v.z);
+   }
+   
+   
+   __forceinline gpu::AABB3f convert_RTCLossyCompressedGrid_QBVH6(const RTCLossyCompressedGrid &grid_source, char* const dest, const uint geomID, const uint primID)
+   {
+     gpu::AABB3f quad_bounds[6];
+     for (uint i=0;i<6;i++)
+       quad_bounds[i].init();
+     
+     char *node = dest;
+     QuadLeaf *leaf = (QuadLeaf*)(dest + 64);
+     uint index = 0;
+     for (uint y=0;y<2;y++)
+       for (uint x=0;x<3;x++)
+       {
+         const Vec3f p0 = getVertex(grid_source,y+0,x+0);
+         const Vec3f p1 = getVertex(grid_source,y+0,x+1);
+         const Vec3f p2 = getVertex(grid_source,y+1,x+1);
+         const Vec3f p3 = getVertex(grid_source,y+1,x+0);
+         quad_bounds[index].extend(to_float3(p0)); // FIXME
+         quad_bounds[index].extend(to_float3(p1));
+         quad_bounds[index].extend(to_float3(p2));
+         quad_bounds[index].extend(to_float3(p3));         
+         leaf[index] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
+         index++;
+       }
+
+     gpu::AABB3f parent_bounds;
+     parent_bounds.init();
+     for (uint i=0;i<6;i++)
+       parent_bounds.extend(quad_bounds[i]);
+
+     uint indices[6] = { 0,1,2,3,4,5 };
+     writeNode(node,1, parent_bounds, 6, indices, quad_bounds);
+
+     //QBVH6* qbvh = (QBVH6*)dest;
+     //NodeRef ref((uint64_t)qbvh);
+     //qbvh->print(std::cout,ref,0,6);
+
+     return parent_bounds;
+   }
+     
+   
+   uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, double &iteration_time, const bool verbose)    
+  {
+    uint ID = 0;
+
+    const uint sizeLCGBVH = 3*2*64+64;
+    PING;
+    PRINT(sizeLCGBVH);
+    
+    for (uint lcgID=0;lcgID<numGeoms;lcgID++)
+    {
+      if (unlikely(geometry_desc[lcgID] == nullptr)) continue;
+      if (geometry_desc[lcgID]->geometryType == RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY)
+      {
+        RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];
+
+        for (uint i=0;i<geom->numGeometryPtrs;i++)
+        {
+          RTCLossyCompressedGrid *source = (RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[i];
+          PRINT4(ID,i,source->ID,source->materialID);
+          char* dest = lcg_bvh_mem + ID * sizeLCGBVH;          
+          gpu::AABB3f bounds = convert_RTCLossyCompressedGrid_QBVH6(*source,dest,lcgID,i);
+          BVH2Ploc node;                             
+          node.initLeaf(lcgID,ID,bounds);                               
+          node.store(&bvh2[prim_type_offset + ID]);
+          PRINT(node);
+          ID++;
+        }
+      }
+    }    
+    return ID;
+  }
+   
+
   // ===================================================================================================================================================================================
   // =========================================================================== DISTANCE FUNCTION =====================================================================================
   // ===================================================================================================================================================================================
@@ -2098,11 +2263,14 @@ namespace embree
       // === determine leaf type ===
       const bool isLeaf = index < numPrimitives; // && !forceFatLeaves;      
       const bool isInstance   = geometryTypeRanges.isInstance(index);  
-      const bool isProcedural = geometryTypeRanges.isProcedural(index);      
+      const bool isProcedural = geometryTypeRanges.isProcedural(index);
+      const bool isLCG        = geometryTypeRanges.isLossyCompressedGeometry(index);      
+      
       const uint numBlocks    = isInstance ? 2 : 1;
       NodeType leaf_type = NODE_TYPE_QUAD;
       leaf_type = isInstance ? NODE_TYPE_INSTANCE   : leaf_type;
-      leaf_type = isProcedural ? NODE_TYPE_PROCEDURAL : leaf_type;      
+      leaf_type = isProcedural ? NODE_TYPE_PROCEDURAL : leaf_type;
+      leaf_type = isLCG ? NODE_TYPE_INTERNAL : leaf_type;      
       data = (i<numChildren) ? numBlocks : 0;
       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
       const gpu::AABB3f childBounds = bvh2[index].bounds; //.conservativeBounds();
@@ -2730,6 +2898,17 @@ namespace embree
                                  PrimLeafDesc leafDesc(0,geomID,GeometryFlags::NONE /*(GeometryFlags)geom->geometryFlags*/,mask32,PrimLeafDesc::TYPE_OPACITY_CULLING_ENABLED);
                                  *dest = ProceduralLeaf(leafDesc,primID0,true);
                                }
+                               else if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY)
+                               {
+                                 // =================================                           
+                                 // === Lossy Compressed Geometry ===
+                                 // =================================                                 
+                                 const uint primID = leafGenData[globalID].primID;                                 
+                                 const RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC* geom = (const RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC*)geometryDesc;
+                                 PRINT((void*)geom);
+                                 PING;
+                               }
+                               
                              }
 
                            /* ================================== */                                                                      
@@ -2754,6 +2933,7 @@ namespace embree
       gpu::waitOnEventAndCatchException(queue_event);
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);     
     }    
+    exit(0);
     
     conversion_device_time = (float)total_time;
     return true;    

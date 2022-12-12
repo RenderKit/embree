@@ -173,6 +173,13 @@ struct RTC_ALIGN(16) RTCLinearBounds
   struct RTCBounds bounds1;
 };
 
+struct RTCLossyCompressedGrid
+{
+  float vertex[3][4][3];
+  uint ID;
+  uint materialID;
+};
+
 /* Feature flags for SYCL specialization constants */
 enum RTCFeatureFlags
 {

@@ -16,15 +16,47 @@ const int numTheta = 2*numPhi;
 RTCScene g_scene  = nullptr;
 TutorialData data;
 
+RTCLossyCompressedGrid *compressed_geometries = nullptr;  
+void **compressed_geometries_ptrs = nullptr;
+
+#define GRID_VERTEX_RESOLUTION_X (2*4-1)
+#define GRID_VERTEX_RESOLUTION_Y (2*3-1)
+  
+  
 unsigned int createLossyCompressedGeometry (RTCScene scene)
 {
-  void *compressed_geometries_ptrs = nullptr;
+  const uint numSubGrids = (GRID_VERTEX_RESOLUTION_X / 3) * (GRID_VERTEX_RESOLUTION_Y / 2);
+  PRINT(numSubGrids);
+  
+  compressed_geometries = (RTCLossyCompressedGrid*)alignedUSMMalloc(sizeof(RTCLossyCompressedGrid)*numSubGrids,64);
+  compressed_geometries_ptrs = (void**)alignedUSMMalloc(sizeof(void*)*numSubGrids,64);
+
+  uint index = 0;
+  for (uint start_y=0;start_y+2<GRID_VERTEX_RESOLUTION_Y;start_y+=2)
+    for (uint start_x=0;start_x+3<GRID_VERTEX_RESOLUTION_X;start_x+=3)
+    {
+      PRINT3(start_y,start_x,index);
+      for (uint y=0;y<3;y++)
+        for (uint x=0;x<4;x++)
+        {
+          PRINT3(start_y+y,start_x+x,0);
+          compressed_geometries[index].vertex[y][x][0] = start_x + x;
+          compressed_geometries[index].vertex[y][x][1] = start_y + y;
+          compressed_geometries[index].vertex[y][x][2] = 0;          
+        }
+      compressed_geometries[index].ID = index;
+      compressed_geometries[index].materialID = 0;
+      compressed_geometries_ptrs[index] = &compressed_geometries[index];
+      index++;
+    }
+                                                        
   RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
   rtcSetGeometryUserData(geom,compressed_geometries_ptrs);
-  rtcSetLossyCompressedGeometryPrimitiveCount(geom,1);
+  rtcSetLossyCompressedGeometryPrimitiveCount(geom,numSubGrids);
   rtcCommitGeometry(geom);
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
+  PRINT(index);
   return geomID;  
 }
 
@@ -158,7 +190,7 @@ extern "C" void device_init (char* cfg)
     }
   }
 #else
-  
+  createLossyCompressedGeometry(data.g_scene);
 #endif  
 
   /* update scene */

@@ -26,9 +26,9 @@ namespace embree
 {
   using namespace embree::isa;
 
-  __forceinline uint estimateSizeInternalNodes(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
+  __forceinline uint estimateSizeInternalNodes(const uint numQuads, const uint numInstances, const uint numProcedurals, const uint numLossyCompressedGeometries, const bool conservative)
   {
-    const uint N = numQuads + numInstances + numProcedurals; 
+    const uint N = numQuads + numInstances + numProcedurals + numLossyCompressedGeometries; 
     // === conservative estimate ===
     uint numFatLeaves = 0;
     if (conservative)
@@ -45,12 +45,23 @@ namespace embree
     return (numQuads + numProcedurals + 2  * numInstances * 16) * 64;  
   }
 
-  __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const bool conservative)
+  __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
   {
+    const uint numQuads = numLossyCompressedGeometries * 3 * 2 * 64;
+    const uint numInnerNodes = numLossyCompressedGeometries * 64;
+    return numQuads + numInnerNodes;
+  }  
+
+  __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const uint numLossyCompressedGeometries, const bool conservative)
+  {
+    PING;
     const uint header              = 128;
-    const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,conservative);
-    const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals); 
-    const uint totalSize           = header + node_size + leaf_size;
+    const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,conservative);
+    const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
+    const uint lcg_size            = estimateLossyCompressedGeometriesSize(numLossyCompressedGeometries);
+    PRINT(lcg_size);
+    const uint totalSize           = header + node_size + leaf_size + lcg_size;
+    PRINT(totalSize);
     return totalSize;
   }
 
@@ -259,8 +270,11 @@ namespace embree
     const uint numQuads           = primCounts.numQuads;
     const uint numProcedurals     = primCounts.numProcedurals;
     const uint numInstances       = primCounts.numInstances;
-  
-    const uint numPrimitives = numMergedTrisQuads + numProcedurals + numInstances;
+    const uint numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
+
+    PRINT(numLossyCompressedGeometries);
+
+    const uint numPrimitives = numMergedTrisQuads + numProcedurals + numInstances + numLossyCompressedGeometries;
 
     // =============================================    
     // === allocation for empty scene is default ===
@@ -271,8 +285,8 @@ namespace embree
 
     if (numPrimitives)
     {    
-      expectedBytes  = estimateAccelBufferSize(     numMergedTrisQuads, numInstances, numProcedurals, false);
-      worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals, true);    
+      expectedBytes  = estimateAccelBufferSize(     numMergedTrisQuads, numInstances, numProcedurals, numLossyCompressedGeometries, false);
+      worstCaseBytes = estimateAccelBufferSize(numQuads + numTriangles, numInstances, numProcedurals, numLossyCompressedGeometries, true);    
     }
 
     // ===============================================    
@@ -452,9 +466,9 @@ namespace embree
     uint numProcedurals      = primCounts.numProcedurals;
     uint numInstances        = primCounts.numInstances;
     const uint numQuadBlocks = primCounts.numQuadBlocks;
-    const uint numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
+    uint numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
     
-    const uint expected_numPrimitives = numQuads + numProcedurals + numInstances;    
+    const uint expected_numPrimitives = numQuads + numProcedurals + numInstances + numLossyCompressedGeometries;    
 
     // =================================================    
     // === empty scene before removing invalid prims ===
@@ -481,25 +495,29 @@ namespace embree
     // === estimate size of the BVH ===
     // ================================
 
-    uint numPrimitives             = numQuads + numInstances + numProcedurals;  // actual #prims can be lower due to invalid instances or procedurals but quads count is accurate at this point
+    uint numPrimitives             = numQuads + numInstances + numProcedurals + numLossyCompressedGeometries;  // actual #prims can be lower due to invalid instances or procedurals but quads count is accurate at this point
     const uint allocated_size      = args.accelBufferBytes;
     const uint header              = 128;
     const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals);
-    const uint node_size           = (header + leaf_size) <= allocated_size ? allocated_size - leaf_size - header : 0; 
+    const uint lcg_size            = estimateLossyCompressedGeometriesSize(numLossyCompressedGeometries);
+    const uint node_size           = (header + leaf_size + lcg_size) <= allocated_size ? allocated_size - lcg_size - leaf_size - header : 0; 
     const uint node_data_start     = header;
     const uint leaf_data_start     = header + node_size;
+    const uint lcg_data_start      = leaf_data_start + leaf_size;
+
+    PRINT( lcg_data_start );
       
     // =================================================================
     // === if allocated accel buffer is too small, return with error ===
     // =================================================================
 
-    const uint required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,false) + leaf_size;
+    const uint required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,false) + leaf_size;
     if (unlikely(allocated_size < required_size))
     {
       if (unlikely(verbose2))
       {
         PRINT2(required_size,allocated_size);
-        PRINT2(node_size,estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,false));        
+        PRINT2(node_size,estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,false));        
         PRINT3("RETRY BVH BUILD DUE BECAUSE OF SMALL ACCEL BUFFER ALLOCATION!!!", args.accelBufferBytes,required_size );
       }
       if (args.accelBufferBytesOut) *args.accelBufferBytesOut = required_size;
@@ -526,6 +544,7 @@ namespace embree
     uint *const cluster_index_source = cluster_i[0];
     uint *const   cluster_index_dest = cluster_i[1];
     LeafGenerationData *leafGenData = (LeafGenerationData*)scratch;
+    char *lcg_bvh_mem = (char*)qbvh + lcg_data_start;
 
     // ==============================          
     // ==== init globals phase 2 ====
@@ -549,24 +568,6 @@ namespace embree
       }      
     }	    
     
-    // test copy kernel
-    if (numInstances && 0)
-    {
-      testInstanceCopyKernel(gpu_queue,args.geometries,numGeometries/2,(char*)bvh_mem,verbose1);
-
-      size_t size = 512*1024*1024;
-      char *source = (char*)leaf_mem;
-      char *dest = (char*)leaf_mem + size;
-      
-      sycl::event queue_event = gpu_queue.submit([&](sycl::handler& cgh) {
-                                                   cgh.memcpy(dest, source,size);
-                   });
-      gpu::waitOnEventAndCatchException(queue_event);
-      double dt = gpu::getDeviceExecutionTiming(queue_event);
-      PRINT((float)dt);
-      
-    }
-
     timer.start(BuildTimer::PRE_PROCESS);        
     
     double create_primref_time = 0.0f;
@@ -592,6 +593,13 @@ namespace embree
       numInstances = createInstances_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals,host_device_tasks,create_primref_time,verbose1);
 
 
+    // ===================================================          
+    // ==== create lossy compressed geometry primrefs ====
+    // ===================================================
+    
+    if (numLossyCompressedGeometries)
+      numLossyCompressedGeometries = createLossyCompressedGeometries_initPLOCPrimRefs(gpu_queue,args.geometries,numGeometries,sync_mem,NUM_ACTIVE_LARGE_WGS,bvh2,numQuads + numProcedurals + numInstances,host_device_tasks,lcg_bvh_mem,create_primref_time,verbose1);
+    
     
     // =================================================================================================    
     // === recompute actual number of primitives after quadification and removing of invalid entries ===
@@ -860,7 +868,7 @@ namespace embree
 
     if (unlikely(convert_success == false))
     {
-      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, true); 
+      if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, numLossyCompressedGeometries, true); 
       if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
       return RTHWIF_ERROR_RETRY;
     }

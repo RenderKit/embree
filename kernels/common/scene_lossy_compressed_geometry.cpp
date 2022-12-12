@@ -9,7 +9,7 @@ namespace embree
 #if defined(EMBREE_LOWEST_ISA)
 
   LossyCompressedGeometry::LossyCompressedGeometry (Device* device, unsigned int items, unsigned int numTimeSteps) 
-    : AccelSet(device,Geometry::GTY_USER_GEOMETRY,items,numTimeSteps) {}
+    : AccelSet(device,Geometry::GTY_LOSSY_COMPRESSED_GEOMETRY,items,numTimeSteps) {}
 
   void LossyCompressedGeometry::addElementsToCount (GeometryCounts & counts) const
   {
