@@ -8,6 +8,10 @@
 #include "builder/qbvh6_builder_sah.h"
 #include "rthwif_internal.h"
 
+#if defined(EMBREE_LEVEL_ZERO)
+#include <level_zero/ze_api.h>
+#endif
+
 namespace embree
 {
   using namespace embree::isa;
@@ -199,6 +203,8 @@ namespace embree
   {
     g_arena.reset();
   }
+
+#if defined(EMBREE_LEVEL_ZERO)
   
   RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
   {
@@ -237,14 +243,23 @@ namespace embree
     return RTHWIF_FEATURES_NONE;
   }
   
+#else
+
+  RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
+  {
+    return RTHWIF_FEATURES_NONE;
+  }
+
+#endif
+
   uint32_t getNumPrimitives(const RTHWIF_GEOMETRY_DESC* geom)
   {
     switch (geom->geometryType) {
     case RTHWIF_GEOMETRY_TYPE_TRIANGLES  : return ((RTHWIF_GEOMETRY_TRIANGLES_DESC*) geom)->triangleCount;
-    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR: return ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount;
+    case RTHWIF_GEOMETRY_TYPE_AABBS_FPTR : return ((RTHWIF_GEOMETRY_AABBS_FPTR_DESC*) geom)->primCount;
     case RTHWIF_GEOMETRY_TYPE_QUADS      : return ((RTHWIF_GEOMETRY_QUADS_DESC*) geom)->quadCount;
-    case RTHWIF_GEOMETRY_TYPE_INSTANCE: return 1;
-    default                            : return 0;
+    case RTHWIF_GEOMETRY_TYPE_INSTANCE   : return 1;
+    default                              : return 0;
     };
   }
   

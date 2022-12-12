@@ -237,6 +237,10 @@ ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})
 
 IF (EMBREE_SYCL_SUPPORT)
 
+  IF (EMBREE_LEVEL_ZERO)
+    TARGET_COMPILE_DEFINITIONS(embree PUBLIC EMBREE_LEVEL_ZERO)
+  ENDIF()
+
   ADD_LIBRARY(embree_sycl STATIC
     common/rtcore_sycl.cpp
     rthwif/rthwif_embree.cpp)

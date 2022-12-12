@@ -13,7 +13,9 @@
 #include "rthwif_internal.h"
 #include "rthwif_builder.h"
 
+#if defined(EMBREE_LEVEL_ZERO)
 #include <level_zero/ze_api.h>
+#endif
 
 namespace embree
 {
@@ -85,6 +87,8 @@ namespace embree
     rthwifExit();
   }
 
+#if defined(EMBREE_LEVEL_ZERO)
+
   bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
   {
     /* disabling of device check through env variable */
@@ -149,6 +153,17 @@ namespace embree
 #endif
   }
 
+#else
+
+  bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
+  {
+    return true;
+  }
+
+#endif
+
+#if defined(EMBREE_LEVEL_ZERO)
+
   void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
   {
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
@@ -184,6 +199,23 @@ namespace embree
     assert(result == ZE_RESULT_SUCCESS);
     _unused(result);
   }
+
+#else
+
+  void* rthwifAllocAccelBuffer(size_t bytes, sycl::device device, sycl::context context)
+  {
+    void* ptr = sycl::aligned_alloc_shared(RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT, bytes, device, context);
+    assert(ptr);
+    return ptr;
+  }
+
+  void rthwifFreeAccelBuffer(void* ptr, sycl::context context)
+  {
+    if (ptr == nullptr) return;
+    sycl::free(ptr, context);
+  }
+
+#endif
 
   struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC
   {
