@@ -1,4 +1,4 @@
-% rtcJoinCommitScene(3) | Embree Ray Tracing Kernels 3
+% rtcJoinCommitScene(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

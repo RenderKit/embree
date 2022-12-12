@@ -1,4 +1,4 @@
-% rtcGetGeometryThreadSafe(3) | Embree Ray Tracing Kernels 3
+% rtcGetGeometryThreadSafe(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
