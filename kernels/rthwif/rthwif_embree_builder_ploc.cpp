@@ -39,10 +39,10 @@ namespace embree
     return gpu::alignTo(std::max( ((numFatLeaves + numInnerNodes) * 64) , N * 16),64);
   }
 
-  __forceinline uint estimateSizeLeafNodes(const uint numQuads, const uint numInstances, const uint numProcedurals)
+  __forceinline uint estimateSizeLeafNodes(const uint numQuads, const uint numInstances, const uint numProcedurals, const uint numLossyCompressedGeometries)
   {
     //return (numQuads + numProcedurals + 2  * numInstances) * 64;
-    return (numQuads + numProcedurals + 2  * numInstances * 16) * 64;  
+    return (numQuads + numProcedurals + numLossyCompressedGeometries + 2  * numInstances * 16) * 64;  
   }
 
   __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
