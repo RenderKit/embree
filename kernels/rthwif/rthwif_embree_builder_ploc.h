@@ -1571,13 +1571,13 @@ namespace embree
         for (uint i=0;i<geom->numGeometryPtrs;i++)
         {
           RTCLossyCompressedGrid *source = (RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[i];
-          PRINT4(ID,i,source->ID,source->materialID);
+          //PRINT4(ID,i,source->ID,source->materialID);
           char* dest = lcg_bvh_mem + ID * sizeLCGBVH;          
           gpu::AABB3f bounds = convert_RTCLossyCompressedGrid_QBVH6(*source,dest,lcgID,i);
           BVH2Ploc node;                             
           node.initLeaf(lcgID,ID,bounds);                               
           node.store(&bvh2[prim_type_offset + ID]);
-          PRINT(node);
+          //PRINT(node);
           ID++;
         }
       }
@@ -2904,13 +2904,13 @@ namespace embree
                                  // === Lossy Compressed Geometry ===
                                  // =================================                                 
                                  const uint primID = leafGenData[globalID].primID;
-                                 PRINT(primID);
-                                 PRINT2(SIZE_LCG_BVH,SIZE_LCG_BVH/64);
+                                 //PRINT(primID);
+                                 //PRINT2(SIZE_LCG_BVH,SIZE_LCG_BVH/64);
                                  InternalNode6Data *lcg_root = (InternalNode6Data*)(lcg_bvh_mem + SIZE_LCG_BVH * primID);
                                  InternalNode6Data *dest     = (InternalNode6Data *)qleaf;         
                                  *dest = *lcg_root;
                                  dest->childOffset = ((uint64_t)lcg_root + 64 - (uint64_t)dest)/64; // FIXME with SLM
-                                 PRINT( dest->childOffset );
+                                 //PRINT( dest->childOffset );
                                  
                                }
                                

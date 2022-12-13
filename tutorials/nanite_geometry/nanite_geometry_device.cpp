@@ -19,27 +19,32 @@ TutorialData data;
 RTCLossyCompressedGrid *compressed_geometries = nullptr;  
 void **compressed_geometries_ptrs = nullptr;
 
-#define GRID_VERTEX_RESOLUTION_X (2*4-1)
-#define GRID_VERTEX_RESOLUTION_Y (2*3-1)
+#define NUM_SUBGRIDS_X 300
+#define NUM_SUBGRIDS_Y 300
+  
+#define SUBGRID_RESOLUTION_X 4
+#define SUBGRID_RESOLUTION_Y 3  
+#define GRID_VERTEX_RESOLUTION_X (NUM_SUBGRIDS_X*(SUBGRID_RESOLUTION_X-1)+1)
+#define GRID_VERTEX_RESOLUTION_Y (NUM_SUBGRIDS_Y*(SUBGRID_RESOLUTION_Y-1)+1)
   
   
 unsigned int createLossyCompressedGeometry (RTCScene scene)
 {
-  const uint numSubGrids = (GRID_VERTEX_RESOLUTION_X / 3) * (GRID_VERTEX_RESOLUTION_Y / 2);
+  const uint numSubGrids = NUM_SUBGRIDS_X * NUM_SUBGRIDS_Y;
   PRINT(numSubGrids);
   
   compressed_geometries = (RTCLossyCompressedGrid*)alignedUSMMalloc(sizeof(RTCLossyCompressedGrid)*numSubGrids,64);
   compressed_geometries_ptrs = (void**)alignedUSMMalloc(sizeof(void*)*numSubGrids,64);
 
   uint index = 0;
-  for (uint start_y=0;start_y+2<GRID_VERTEX_RESOLUTION_Y;start_y+=2)
-    for (uint start_x=0;start_x+3<GRID_VERTEX_RESOLUTION_X;start_x+=3)
+  for (uint start_y=0;start_y+SUBGRID_RESOLUTION_Y-1<GRID_VERTEX_RESOLUTION_Y;start_y+=SUBGRID_RESOLUTION_Y-1)
+    for (uint start_x=0;start_x+SUBGRID_RESOLUTION_X-1<GRID_VERTEX_RESOLUTION_X;start_x+=SUBGRID_RESOLUTION_X-1)
     {
-      PRINT3(start_y,start_x,index);
-      for (uint y=0;y<3;y++)
-        for (uint x=0;x<4;x++)
+      //PRINT3(start_y,start_x,index);
+      for (uint y=0;y<SUBGRID_RESOLUTION_Y;y++)
+        for (uint x=0;x<SUBGRID_RESOLUTION_X;x++)
         {
-          PRINT3(start_y+y,start_x+x,0);
+          //PRINT3(start_y+y,start_x+x,0);
           compressed_geometries[index].vertex[y][x][0] = start_x + x;// - GRID_VERTEX_RESOLUTION_X/2;
           compressed_geometries[index].vertex[y][x][1] = start_y + y;// - GRID_VERTEX_RESOLUTION_Y/2;
           compressed_geometries[index].vertex[y][x][2] = 0;          
@@ -57,6 +62,8 @@ unsigned int createLossyCompressedGeometry (RTCScene scene)
   unsigned int geomID = rtcAttachGeometry(scene,geom);
   rtcReleaseGeometry(geom);
   PRINT(index);
+  if (index != numSubGrids)
+    FATAL("numSubGrids");
   return geomID;  
 }
 
@@ -197,6 +204,16 @@ extern "C" void device_init (char* cfg)
   rtcCommitScene (data.g_scene);  
 }
 
+
+Vec3fa randomColor(const int ID)
+{
+  int r = ((ID+13)*17*23) & 255;
+  int g = ((ID+15)*11*13) & 255;
+  int b = ((ID+17)* 7*19) & 255;
+  const float oneOver255f = 1.f/255.f;
+  return Vec3fa(r*oneOver255f,g*oneOver255f,b*oneOver255f);
+}
+
 /* task that renders a single screen tile */
 Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera& camera, RayStats& stats)
 {
@@ -214,7 +231,8 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
     return Vec3fa(0.0f);
   else
-    return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));  
+    //return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
+    return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * randomColor(ray.primID);  
 }
 
 void renderPixelStandard(const TutorialData& data,
