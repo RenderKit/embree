@@ -40,8 +40,8 @@ unsigned int createLossyCompressedGeometry (RTCScene scene)
         for (uint x=0;x<4;x++)
         {
           PRINT3(start_y+y,start_x+x,0);
-          compressed_geometries[index].vertex[y][x][0] = start_x + x;
-          compressed_geometries[index].vertex[y][x][1] = start_y + y;
+          compressed_geometries[index].vertex[y][x][0] = start_x + x;// - GRID_VERTEX_RESOLUTION_X/2;
+          compressed_geometries[index].vertex[y][x][1] = start_y + y;// - GRID_VERTEX_RESOLUTION_Y/2;
           compressed_geometries[index].vertex[y][x][2] = 0;          
         }
       compressed_geometries[index].ID = index;

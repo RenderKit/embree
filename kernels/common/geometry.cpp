@@ -40,6 +40,7 @@ namespace embree
     "usergeom",
     "instance_cheap",
     "instance_expensive",
+    "lossy_compressed_geometry",
   };
      
   Geometry::Geometry (Device* device, GType gtype, unsigned int numPrimitives, unsigned int numTimeSteps) 

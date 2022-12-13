@@ -22,6 +22,8 @@
 #define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
 #define EQUAL_DISTANCES_WORKAROUND   1
 
+#define SIZE_LCG_BVH                 (3*2*64+64)
+
 namespace embree
 {  
   // ===================================================================================================================================================================================
@@ -1555,7 +1557,7 @@ namespace embree
   {
     uint ID = 0;
 
-    const uint sizeLCGBVH = 3*2*64+64;
+    const uint sizeLCGBVH = SIZE_LCG_BVH;
     PING;
     PRINT(sizeLCGBVH);
     
@@ -2436,7 +2438,7 @@ namespace embree
   // =============================================================================================================================================
 
 
-   bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, float& conversion_device_time, const bool verbose)
+  bool convertBVH2toQBVH6(sycl::queue &gpu_queue, PLOCGlobals *globals, uint *host_device_tasks, const RTHWIF_GEOMETRY_DESC **const geometries, QBVH6 *qbvh, const BVH2Ploc *const bvh2, LeafGenerationData *leafGenData, const uint numPrimitives, const bool instanceMode, const GeometryTypeRanges &geometryTypeRanges, const char* const lcg_bvh_mem, float& conversion_device_time,  const bool verbose)
   {
     static const uint STOP_THRESHOLD = 1296;    
     double total_time = 0.0f;    
@@ -2810,7 +2812,7 @@ namespace embree
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
     const uint leaves = host_device_tasks[0]; 
-    
+    PRINT(leaves);
     if (leaves)
     {
       const uint wgSize = 256;
@@ -2824,13 +2826,11 @@ namespace embree
                              QuadLeaf *localLeaf = _localLeaf.get_pointer();
                              bool valid = false;
                              QuadLeaf *qleaf = nullptr;
-                                                                      
                              if (globalID < leaves)                                                                        
                              {
                                qleaf = (QuadLeaf *)globals->nodeBlockPtr(leafGenData[globalID].blockID);
                                const uint geomID = leafGenData[globalID].geomID & GEOMID_MASK;
                                const RTHWIF_GEOMETRY_DESC *const geometryDesc = geometries[geomID];                                 
-
                                if (geometryDesc->geometryType == RTHWIF_GEOMETRY_TYPE_TRIANGLES)
                                {
                                  
@@ -2903,10 +2903,15 @@ namespace embree
                                  // =================================                           
                                  // === Lossy Compressed Geometry ===
                                  // =================================                                 
-                                 const uint primID = leafGenData[globalID].primID;                                 
-                                 const RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC* geom = (const RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC*)geometryDesc;
-                                 PRINT((void*)geom);
-                                 PING;
+                                 const uint primID = leafGenData[globalID].primID;
+                                 PRINT(primID);
+                                 PRINT2(SIZE_LCG_BVH,SIZE_LCG_BVH/64);
+                                 InternalNode6Data *lcg_root = (InternalNode6Data*)(lcg_bvh_mem + SIZE_LCG_BVH * primID);
+                                 InternalNode6Data *dest     = (InternalNode6Data *)qleaf;         
+                                 *dest = *lcg_root;
+                                 dest->childOffset = ((uint64_t)lcg_root + 64 - (uint64_t)dest)/64; // FIXME with SLM
+                                 PRINT( dest->childOffset );
+                                 
                                }
                                
                              }
@@ -2932,10 +2937,11 @@ namespace embree
         });
       gpu::waitOnEventAndCatchException(queue_event);
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);     
-    }    
-    exit(0);
-    
+    }        
     conversion_device_time = (float)total_time;
+
+    gpu::waitOnQueueAndCatchException(gpu_queue); // FIXME
+    
     return true;    
   }
   
