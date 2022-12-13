@@ -17,7 +17,9 @@
 This function enables invokation the filter function passed through
 `RTCIntersectArguments` or `RTCOccludedArguments` to the intersect and
 occluded queries. If enable is true the argument filter function
-invokation is enabled for the geometry or disabled otherwise.
+invokation is enabled for the geometry or disabled otherwise. By
+default the invokation of the argument filter function is disabled for
+some geometry.
 
 The argument filter function invokation can also get enforced for each
 geometry by using the

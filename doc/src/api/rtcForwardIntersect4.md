@@ -2,7 +2,8 @@
 
 #### NAME
 
-    rtcForwardIntersect4/8/16 - forwards a ray packet to new scene from user geometry callback
+    rtcForwardIntersect4/8/16 - forwards a ray packet to new scene
+      from user geometry callback
 
 #### SYNOPSIS
 
@@ -12,21 +13,24 @@
       void int* valid,
       const struct RTCIntersectFunctionNArguments* args,
       RTCScene scene,
-      struct RTCRay4* ray
+      struct RTCRay4* ray,
+      unsigned int instID
     );
 
     void rtcForwardIntersect4(
       void int* valid,
       const struct RTCIntersectFunctionNArguments* args,
       RTCScene scene,
-      struct RTCRay4* ray
+      struct RTCRay4* ray,
+      unsigned int instID
     );
 
     void rtcForwardIntersect16(
       void int* valid,
       const struct RTCIntersectFunctionNArguments* args,
       RTCScene scene,
-      struct RTCRay16* ray
+      struct RTCRay16* ray,
+      unsigned int instID
     );
 
 #### DESCRIPTION
@@ -45,10 +49,11 @@ argument are used for forwarding, all additional ray properties are
 inherited from the initial ray traversal invokation of
 `rtcIntersect4/8/16`.
 
-The implementation of the `rtcForwardIntersect4/8/16` function recursively,
-continues the ray traversal into the specified scene. Hit information
-is updated into the ray hit structure passed to the original
-`rtcIntersect4/8/16` invokation.
+The implementation of the `rtcForwardIntersect4/8/16` function
+recursively continues the ray traversal into the specified scene and
+pushes the provided instance ID (`instID` argument) to the instance ID
+stack. Hit information is updated into the ray hit structure passed to
+the original `rtcIntersect4/8/16` invokation.
 
 This function can get used to implement user defined instancing using
 user geometries, e.g. by transforming the ray in a special way, and/or

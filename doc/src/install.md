@@ -83,12 +83,16 @@ CMake. Please first get some compatible SYCL compiler and setup the
 environment as decribed in sections [Linux SYCL Compilation] and
 [Windows SYCL Compilation].
 
-Also perform the steps from the previous [Building Embree
+Also perform the setup steps from the previous [Building Embree
 Applications] section.
+
+Please also have a look at the [Minimal] tutorial that is provided
+with the Embree release, for an example how to build a simple SYCL
+application using CMake and Embree.
 
 To properly compile your SYCL application you have to add additional
 SYCL compile flags for each C++ file that contains SYCL device side
-code or kernels.
+code or kernels as described next.
 
 
 ### JIT Compilation

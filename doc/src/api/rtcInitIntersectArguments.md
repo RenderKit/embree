@@ -68,14 +68,15 @@ scene.
 The argument filter function is invoked for each geometry for which it
 got explicitely enabled using the
 `rtcSetGeometryEnableFilterFunctionFromArguments` function. The
-invokation of the argument filter function can also get enfored for a
-ray by using the `RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER`
-argument flag. This argument filter function is invoked as a second
-filter stage after the per-geometry filter
-function is invoked. Only rays that passed the first filter stage are
-valid in this second filter stage. Having such a per ray-query filter
-function can be useful to implement modifications of the behavior of
-the query, such as collecting all hits or accumulating transparencies.
+invokation of the argument filter function can also get enfored for
+each geometry using the
+`RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER` argument
+flag. This argument filter function is invoked as a second filter
+stage after the per-geometry filter function is invoked. Only rays
+that passed the first filter stage are valid in this second filter
+stage. Having such a per ray-query filter function can be useful to
+implement modifications of the behavior of the query, such as
+collecting all hits or accumulating transparencies.
 
 The `intersect` member specifies the user geometry callback to get
 invoked for each user geometry encountered during traversal. The user
@@ -94,5 +95,5 @@ No error code is set by this function.
 
 #### SEE ALSO
 
-[rtcIntersect1], [rtcIntersect4],
+[rtcIntersect1], [rtcIntersect4/8/16],
 [RTCFeatureFlags], [rtcInitIntersectContext], [RTC_GEOMETRY_TYPE_USER], [rtcSetGeometryMaxRadiusScale]

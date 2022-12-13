@@ -81,9 +81,9 @@ not set, the behaviour is undefined, thus the feature may work or
 not. To enable multiple features the respective features have to get
 combined using a bitwise `OR` operation.
 
-The purpose of this feature is to reduce code size on the GPU by
+The purpose of feature flags is to reduce code size on the GPU by
 enabling just the features required to render the scene. On the CPU
-there is no need to use that feature, and the default of all features
+there is no need to use feature flags, and the default of all features
 enabled (`RTC_FEATURE_FLAG_ALL`) can just be kept.
 
 The following features can get enabled using feature flags:

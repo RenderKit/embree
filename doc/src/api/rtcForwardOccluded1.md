@@ -2,7 +2,8 @@
 
 #### NAME
 
-    rtcForwardOccluded1 - forwards a single ray to new scene from user geometry callback
+    rtcForwardOccluded1 - forwards a single ray to new scene
+      from user geometry callback
 
 #### SYNOPSIS
 
@@ -11,7 +12,8 @@
     void rtcForwardOccluded1(
       const struct RTCOccludedFunctionNArguments* args,
       RTCScene scene,
-      struct RTCRay* ray
+      struct RTCRay* ray,
+      unsigned int instID
     );
 
 #### DESCRIPTION
@@ -30,9 +32,10 @@ argument are used for forwarding, all additional ray properties are
 inherited from the initial ray traversal invokation of
 `rtcOccluded1`.
 
-The implementation of the `rtcForwardOccluded1` function recursively,
-continues the ray traversal into the specified scene. Hit information
-is updated into the ray structure passed to the original
+The implementation of the `rtcForwardOccluded1` function recursively
+continues the ray traversal into the specified scene and pushes the
+provided instance ID (`instID` argument) to the instance ID stack. Hit
+information is updated into the ray structure passed to the original
 `rtcOccluded1` invokation.
 
 This function can get used to implement user defined instancing using
