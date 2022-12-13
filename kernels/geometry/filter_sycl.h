@@ -16,7 +16,7 @@ namespace embree
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
     
 #if EMBREE_SYCL_GEOMETRY_CALLBACK
-    if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY)
+    if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY)
     {
       RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->intersectionFilterN;
       if (gfilter)
@@ -29,7 +29,7 @@ namespace embree
     }
 #endif
 
-    if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS)
+    if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS)
     {
       RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)
@@ -51,7 +51,7 @@ namespace embree
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
     
 #if EMBREE_SYCL_GEOMETRY_CALLBACK
-    if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY)
+    if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY)
     {
       RTCFilterFunctionSYCL gfilter = (RTCFilterFunctionSYCL) geometry->occlusionFilterN;
       if (gfilter)
@@ -64,7 +64,7 @@ namespace embree
     }
 #endif
 
-    if (feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS)
+    if (feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS)
     {
       RTCFilterFunctionSYCL cfilter = (RTCFilterFunctionSYCL) context->args->filter;
       if (cfilter)

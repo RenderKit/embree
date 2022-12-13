@@ -168,7 +168,7 @@ namespace embree
   }
 
   /* fill all arg members that app did not know of yet */
-  RTHWIF_BUILD_ACCEL_ARGS rthwifPrepareBuildAccelArgs(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
+  __forceinline RTHWIF_BUILD_ACCEL_ARGS rthwifPrepareBuildAccelArgs(const RTHWIF_BUILD_ACCEL_ARGS& args_i)
   {
     RTHWIF_BUILD_ACCEL_ARGS args;
     memset(&args,0,sizeof(RTHWIF_BUILD_ACCEL_ARGS));

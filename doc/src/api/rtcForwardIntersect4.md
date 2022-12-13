@@ -1,4 +1,4 @@
-% rtcForwardIntersect4/8/16(3) | Embree Ray Tracing Kernels 3
+% rtcForwardIntersect4/8/16(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

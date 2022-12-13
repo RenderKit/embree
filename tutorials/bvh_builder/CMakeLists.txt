@@ -11,5 +11,5 @@ INCLUDE(tutorial)
 ADD_TUTORIAL(bvh_builder)
 
 IF (BUILD_TESTING AND EMBREE_TESTING_INTENSITY GREATER 0)
-  ADD_TEST(NAME bvh_builder COMMAND bvh_builder)
+  ADD_TEST(NAME bvh_builder COMMAND embree_bvh_builder)
 ENDIF()

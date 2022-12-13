@@ -7,8 +7,8 @@ namespace embree {
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_INSTANCE
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_INSTANCE
 
 const int numPhi = 5;
 const int numTheta = 2*numPhi;

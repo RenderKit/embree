@@ -71,7 +71,7 @@ Device side rendering can get invoked by submitting a SYCL
 
     const sycl::specialization_id<RTCFeatureFlags> feature_mask;
 
-    RTCFeatureFlags required_features = RTC_FEATURE_FLAGS_TRIANGLE;
+    RTCFeatureFlags required_features = RTC_FEATURE_FLAG_TRIANGLE;
 
     queue.submit([=](sycl::handler& cgh)
     {

@@ -111,9 +111,9 @@ struct IntersectContext
 
 RTCScene convertScene(ISPCScene* scene_in)
 {
-  RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_NONE;
+  RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_NONE;
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS | RTC_SCENE_FLAG_ROBUST, &feature_mask);
-  g_feature_mask = (RTCFeatureFlags) (feature_mask | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
+  g_feature_mask = (RTCFeatureFlags) (feature_mask | RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
     
   /* commit changes to scene */
   return scene_out;
@@ -491,7 +491,7 @@ extern "C" void renderFrameStandard (int* pixels,
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;
-      const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_ALL;
+      const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_ALL;
       renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
     });
   });

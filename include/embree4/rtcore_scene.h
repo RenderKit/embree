@@ -40,7 +40,7 @@ struct RTCIntersectArguments
 RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* args)
 {
   args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
+  args->feature_mask = RTC_FEATURE_FLAG_ALL;
   args->context = NULL;
   args->filter = NULL;
   args->intersect = NULL;
@@ -68,7 +68,7 @@ struct RTCOccludedArguments
 RTC_FORCEINLINE void rtcInitOccludedArguments(struct RTCOccludedArguments* args)
 {
   args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
+  args->feature_mask = RTC_FEATURE_FLAG_ALL;
   args->context = NULL;
   args->filter = NULL;
   args->occluded = NULL;

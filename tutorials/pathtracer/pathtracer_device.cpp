@@ -39,9 +39,9 @@ bool g_subdiv_mode = false;
 unsigned int keyframeID = 0;
 
 #if defined(EMBREE_SYCL_TUTORIAL) && defined(USE_SPECIALIZATION_CONSTANTS)
-const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAGS_ALL);
+const static sycl::specialization_id<RTCFeatureFlags> rtc_feature_mask(RTC_FEATURE_FLAG_ALL);
 #endif
-RTCFeatureFlags g_used_features = RTC_FEATURE_FLAGS_NONE;
+RTCFeatureFlags g_used_features = RTC_FEATURE_FLAG_NONE;
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               Lights                                       //
@@ -956,9 +956,9 @@ RTCScene convertScene(ISPCScene* scene_in)
   RTCScene scene_out = ConvertScene(g_device, g_ispc_scene, RTC_BUILD_QUALITY_MEDIUM, RTC_SCENE_FLAG_NONE, &g_used_features);
 #if ENABLE_FILTER_FUNCTION
 #if USE_ARGUMENT_CALLBACKS
-  g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS);
+  g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS);
 #else
-  g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY);
+  g_used_features = (RTCFeatureFlags)(g_used_features | RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY);
 #endif
 #endif
 
@@ -1638,7 +1638,7 @@ void renderTileTask (int taskIndex, int threadIndex, int* pixels,
 
   for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
   {
-    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex],RTC_FEATURE_FLAGS_ALL);
+    renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex],RTC_FEATURE_FLAG_ALL);
   }
 }
 
@@ -1750,7 +1750,7 @@ extern "C" void renderFrameStandard (int* pixels,
       const unsigned int x = item.get_global_id(1); if (x >= width ) return;
       const unsigned int y = item.get_global_id(0); if (y >= height) return;
       RayStats stats;
-      const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAGS_ALL;
+      const RTCFeatureFlags feature_mask = RTC_FEATURE_FLAG_ALL;
       renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,stats,feature_mask);
     });
   });

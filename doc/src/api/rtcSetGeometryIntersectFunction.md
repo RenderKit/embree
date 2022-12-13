@@ -1,4 +1,4 @@
-% rtcSetGeometryIntersectFunction(3) | Embree Ray Tracing Kernels 3
+% rtcSetGeometryIntersectFunction(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
