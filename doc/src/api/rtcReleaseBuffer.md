@@ -1,4 +1,4 @@
-% rtcReleaseBuffer(3) | Embree Ray Tracing Kernels 3
+% rtcReleaseBuffer(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

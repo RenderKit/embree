@@ -9,9 +9,9 @@
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_ROUND_LINEAR_CURVE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE | \
+  RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS
 
 /* scene data */
 RTCScene g_scene = NULL;
@@ -206,7 +206,7 @@ inline Vec3fa evalBezier(const unsigned int geomID, const unsigned int primID, c
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFunctionNArguments* uniform args)
 
 {
-  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  uniform RayQueryContext* uniform context = (uniform RayQueryContext* uniform) args->context;
   const TutorialData* data = (const TutorialData* uniform) context->tutorialData;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
@@ -232,7 +232,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFuncti
     valid_i[programIndex] = 0;
 }
 
-Vec3f occluded(RTCScene scene, uniform IntersectContext* uniform context, Ray& ray)
+Vec3f occluded(RTCScene scene, uniform RayQueryContext* uniform context, Ray& ray)
 {
   Vec3f transparency = make_Vec3f(1.0f);
   context->userRayExt = &transparency;
@@ -263,7 +263,7 @@ Vec3f renderPixel(const uniform TutorialData& data, float x, float y, const unif
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
 
-  uniform IntersectContext context;
+  uniform RayQueryContext context;
   InitIntersectionContext(&context);
   context.tutorialData = (void*) &data;
 

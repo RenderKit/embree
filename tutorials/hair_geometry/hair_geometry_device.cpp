@@ -11,9 +11,9 @@ namespace embree {
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_ROUND_LINEAR_CURVE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE | \
+  RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS
 
 /* scene data */
 RTCScene g_scene = nullptr;
@@ -208,7 +208,7 @@ inline Vec3fa evalBezier(const unsigned int geomID, const unsigned int primID, c
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArguments* args)
 
 {
-  IntersectContext* context = (IntersectContext*) args->context;
+  RayQueryContext* context = (RayQueryContext*) args->context;
   const TutorialData* data = (const TutorialData*) context->tutorialData;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
@@ -234,7 +234,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
     valid_i[0] = 0;
 }
 
-Vec3fa occluded(RTCScene scene, IntersectContext* context, Ray& ray)
+Vec3fa occluded(RTCScene scene, RayQueryContext* context, Ray& ray)
 {
   Vec3fa transparency = Vec3fa(1.0f);
   context->userRayExt = &transparency;
@@ -265,7 +265,7 @@ Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera&
   y += RandomSampler_get1D(sampler);
   float time = RandomSampler_get1D(sampler);
 
-  IntersectContext context;
+  RayQueryContext context;
   InitIntersectionContext(&context);
   context.tutorialData = (void*) &data;
 

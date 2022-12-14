@@ -21,8 +21,8 @@ struct TutorialData
 {
   ISPCScene* ispc_scene;
   int instancing_mode;
-  RTCIntersectContextFlags iflags_coherent;
-  RTCIntersectContextFlags iflags_incoherent;
+  RTCRayQueryFlags iflags_coherent;
+  RTCRayQueryFlags iflags_incoherent;
 
   RTCFilterFunctionN occlusionFilterOpaque;
   RTCFilterFunctionN occlusionFilterHair;

@@ -119,16 +119,16 @@ __forceinline RTCRay* RTCRay1_(Ray& ray) {
     return cout << "geomID = " << ray.geomID << ", primID = " << ray.primID <<  ", " << "u = " << ray.u <<  ", v = " << ray.v << ", Ng = " << ray.Ng << " }";
   }
 
-/*! intersection context passed to intersect/occluded calls */
-struct IntersectContext
+/*! ray query context passed to intersect/occluded calls */
+struct RayQueryContext
 {
-  RTCIntersectContext context;
+  RTCRayQueryContext context;
   void* userRayExt;               //!< can be used to pass extended ray data to callbacks
   void* tutorialData;
 };
 
-__forceinline void InitIntersectionContext(struct IntersectContext* context)
+__forceinline void InitIntersectionContext(struct RayQueryContext* context)
 {
-  rtcInitIntersectContext(&context->context);
+  rtcInitRayQueryContext(&context->context);
   context->userRayExt = NULL;
 }

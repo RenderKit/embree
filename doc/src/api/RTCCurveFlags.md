@@ -1,4 +1,4 @@
-% RTCCurveFlags(3) | Embree Ray Tracing Kernels 3
+% RTCCurveFlags(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

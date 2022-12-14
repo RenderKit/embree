@@ -55,8 +55,8 @@ enum Shader {
 };
 
 extern RTCDevice g_device;
-extern uniform RTCIntersectContextFlags g_iflags_coherent;
-extern uniform RTCIntersectContextFlags g_iflags_incoherent;
+extern uniform RTCRayQueryFlags g_iflags_coherent;
+extern uniform RTCRayQueryFlags g_iflags_incoherent;
 extern uniform Shader shader;
 
 /* error reporting function */

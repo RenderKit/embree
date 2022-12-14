@@ -17,7 +17,7 @@ rtcIntersect1 \- finds the closest hit for a single ray
 
 void rtcIntersect1(
   RTCScene scene,
-  struct RTCIntersectContext* context,
+  struct RTCRayQueryContext* context,
   struct RTCRayHit* rayhit
 );
 \f[R]
@@ -47,8 +47,8 @@ See Section [RTCRay] for the ray layout description.
 The geometry ID (\f[C]geomID\f[R] hit member) of the hit data must be
 initialized to \f[C]RTC_INVALID_GEOMETRY_ID\f[R] (\-1).
 .PP
-Further, an intersection context for the ray query function must be
-created and initialized (see \f[C]rtcInitIntersectContext\f[R]).
+Further, an ray query context for the ray query function must be
+created and initialized (see \f[C]rtcInitRayQueryContext\f[R]).
 .PP
 When no intersection is found, the ray/hit data is not updated.
 When an intersection is found, the hit distance is written into the

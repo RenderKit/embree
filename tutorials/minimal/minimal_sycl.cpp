@@ -212,7 +212,7 @@ void castRay(sycl::queue& queue, const RTCScene scene,
        */
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
-      args.feature_mask = RTC_FEATURE_FLAGS_TRIANGLE;
+      args.feature_mask = RTC_FEATURE_FLAG_TRIANGLE;
 
       /*
        * The ray hit structure holds both the ray and the hit.

@@ -640,8 +640,8 @@ namespace embree
       args = &_args;
     }
 
-    RTCIntersectContextFlags flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_CONTEXT_FLAG_COHERENT :  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-    args->flags = (RTCIntersectContextFlags) (args->flags | flags);
+    RTCRayQueryFlags flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_RAY_QUERY_FLAG_COHERENT :  RTC_RAY_QUERY_FLAG_INCOHERENT;
+    args->flags = (RTCRayQueryFlags) (args->flags | flags);
     
     switch (mode) 
     {

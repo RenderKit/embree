@@ -14,18 +14,12 @@ namespace embree {
 /* all features required by this tutorial */
 #if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
-  RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS
 #else
 #define FEATURE_MASK     \
-  RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY
-#endif
-
-/* FIXME: the following is a bug workaround */
-#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
-#define FEATURE_MASK     \
-  RTC_FEATURE_FLAGS_ALL
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY
 #endif
 
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilter(const RTCFilterFunctionNArguments* args);
@@ -62,7 +56,7 @@ void renderPixelStandard(const TutorialData& data,
   float weight = 1.0f;
   Vec3fa color = Vec3fa(0.0f);
 
-  IntersectContext context;
+  RayQueryContext context;
   InitIntersectionContext(&context);
 
   /* initialize ray */
@@ -166,7 +160,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilter(const RTCFilterFunctionNArg
 
   assert(args->N == 1);
   int* valid = args->valid;
-  const IntersectContext* context = (const IntersectContext*) args->context;
+  const RayQueryContext* context = (const RayQueryContext*) args->context;
   Ray* ray = (Ray*)args->ray;
   //RTCHit* hit = (RTCHit*)args->hit;
 
@@ -196,7 +190,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArgume
 
   assert(args->N == 1);
   int* valid = args->valid;
-  const IntersectContext* context = (const IntersectContext*) args->context;
+  const RayQueryContext* context = (const RayQueryContext*) args->context;
   Ray* ray = (Ray*)args->ray;
 
   /* ignore inactive rays */

@@ -1,4 +1,4 @@
-% rtcCommitGeometry(3) | Embree Ray Tracing Kernels 3
+% rtcCommitGeometry(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

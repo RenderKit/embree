@@ -502,8 +502,8 @@
 ```
 \pagebreak
 
-## rtcInitIntersectContext
-``` {include=src/api/rtcInitIntersectContext.md}
+## rtcInitRayQueryContext
+``` {include=src/api/rtcInitRayQueryContext.md}
 ```
 \pagebreak
 

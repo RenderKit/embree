@@ -1,4 +1,4 @@
-% rtcSetNewGeometryBuffer(3) | Embree Ray Tracing Kernels 3
+% rtcSetNewGeometryBuffer(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

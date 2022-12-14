@@ -1,4 +1,4 @@
-% rtcSetGeometryEnableFilterFunctionFromArguments(3) | Embree Ray Tracing Kernels 3
+% rtcSetGeometryEnableFilterFunctionFromArguments(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
@@ -17,11 +17,13 @@
 This function enables invokation the filter function passed through
 `RTCIntersectArguments` or `RTCOccludedArguments` to the intersect and
 occluded queries. If enable is true the argument filter function
-invokation is enabled for the geometry or disabled otherwise.
+invokation is enabled for the geometry or disabled otherwise. By
+default the invokation of the argument filter function is disabled for
+some geometry.
 
 The argument filter function invokation can also get enforced for each
 geometry by using the
-`RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER` flag that can get
+`RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER` ray query flag that can get
 passed to `rtcIntersect` and `rtcOccluded` functions. See Section
 [rtcInitIntersectArguments] and [rtcInitOccludedArguments] for more
 details.

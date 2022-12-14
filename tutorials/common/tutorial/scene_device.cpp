@@ -15,34 +15,34 @@ namespace embree
   std::string to_string(RTCFeatureFlags features)
   {
     std::string out = "";
-    if (features & RTC_FEATURE_FLAGS_MOTION_BLUR) out += "MOTION_BLUR";
-    if (features & RTC_FEATURE_FLAGS_TRIANGLE) out += "TRIANGLE ";
-    if (features & RTC_FEATURE_FLAGS_QUAD) out += "QUAD ";
-    if (features & RTC_FEATURE_FLAGS_GRID) out += "GRID ";
-    if (features & RTC_FEATURE_FLAGS_SUBDIVISION) out += "SUBDIVISION ";
-    if (features & RTC_FEATURE_FLAGS_CONE_LINEAR_CURVE) out += "CONE_LINEAR_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_ROUND_LINEAR_CURVE ) out += "ROUND_LINEAR_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_FLAT_LINEAR_CURVE) out += "FLAT_LINEAR_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_ROUND_BEZIER_CURVE) out += "ROUND_BEZIER_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_FLAT_BEZIER_CURVE) out += "FLAT_BEZIER_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BEZIER_CURVE) out += "NORMAL_ORIENTED_BEZIER_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_ROUND_BSPLINE_CURVE) out += "ROUND_BSPLINE_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_FLAT_BSPLINE_CURVE) out += "FLAT_BSPLINE_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BSPLINE_CURVE) out += "NORMAL_ORIENTED_BSPLINE_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_ROUND_HERMITE_CURVE) out += "ROUND_HERMITE_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_FLAT_HERMITE_CURVE) out += "FLAT_HERMITE_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_HERMITE_CURVE) out += "NORMAL_ORIENTED_HERMITE_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_ROUND_CATMULL_ROM_CURVE) out += "ROUND_CATMULL_ROM_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_FLAT_CATMULL_ROM_CURVE) out += "FLAT_CATMULL_ROM_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_CATMULL_ROM_CURVE) out += "NORMAL_ORIENTED_CATMULL_ROM_CURVE ";
-    if (features & RTC_FEATURE_FLAGS_SPHERE_POINT) out += "SPHERE_POINT ";
-    if (features & RTC_FEATURE_FLAGS_DISC_POINT) out += "DISC_POINT ";
-    if (features & RTC_FEATURE_FLAGS_ORIENTED_DISC_POINT) out += "ORIENTED_DISC_POINT ";
-    if (features & RTC_FEATURE_FLAGS_INSTANCE) out += "INSTANCE ";
-    if (features & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS) out += "FILTER_FUNCTION_IN_ARGUMENTS ";
-    if (features & RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY) out += "FILTER_FUNCTION_IN_GEOMETRY ";
-    if (features & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS) out += "USER_GEOMETRY_CALLBACK_IN_ARGUMENTS ";
-    if (features & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY) out += "USER_GEOMETRY_CALLBACK_IN_GEOMETRY ";
+    if (features & RTC_FEATURE_FLAG_MOTION_BLUR) out += "MOTION_BLUR";
+    if (features & RTC_FEATURE_FLAG_TRIANGLE) out += "TRIANGLE ";
+    if (features & RTC_FEATURE_FLAG_QUAD) out += "QUAD ";
+    if (features & RTC_FEATURE_FLAG_GRID) out += "GRID ";
+    if (features & RTC_FEATURE_FLAG_SUBDIVISION) out += "SUBDIVISION ";
+    if (features & RTC_FEATURE_FLAG_CONE_LINEAR_CURVE) out += "CONE_LINEAR_CURVE ";
+    if (features & RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE ) out += "ROUND_LINEAR_CURVE ";
+    if (features & RTC_FEATURE_FLAG_FLAT_LINEAR_CURVE) out += "FLAT_LINEAR_CURVE ";
+    if (features & RTC_FEATURE_FLAG_ROUND_BEZIER_CURVE) out += "ROUND_BEZIER_CURVE ";
+    if (features & RTC_FEATURE_FLAG_FLAT_BEZIER_CURVE) out += "FLAT_BEZIER_CURVE ";
+    if (features & RTC_FEATURE_FLAG_NORMAL_ORIENTED_BEZIER_CURVE) out += "NORMAL_ORIENTED_BEZIER_CURVE ";
+    if (features & RTC_FEATURE_FLAG_ROUND_BSPLINE_CURVE) out += "ROUND_BSPLINE_CURVE ";
+    if (features & RTC_FEATURE_FLAG_FLAT_BSPLINE_CURVE) out += "FLAT_BSPLINE_CURVE ";
+    if (features & RTC_FEATURE_FLAG_NORMAL_ORIENTED_BSPLINE_CURVE) out += "NORMAL_ORIENTED_BSPLINE_CURVE ";
+    if (features & RTC_FEATURE_FLAG_ROUND_HERMITE_CURVE) out += "ROUND_HERMITE_CURVE ";
+    if (features & RTC_FEATURE_FLAG_FLAT_HERMITE_CURVE) out += "FLAT_HERMITE_CURVE ";
+    if (features & RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE) out += "NORMAL_ORIENTED_HERMITE_CURVE ";
+    if (features & RTC_FEATURE_FLAG_ROUND_CATMULL_ROM_CURVE) out += "ROUND_CATMULL_ROM_CURVE ";
+    if (features & RTC_FEATURE_FLAG_FLAT_CATMULL_ROM_CURVE) out += "FLAT_CATMULL_ROM_CURVE ";
+    if (features & RTC_FEATURE_FLAG_NORMAL_ORIENTED_CATMULL_ROM_CURVE) out += "NORMAL_ORIENTED_CATMULL_ROM_CURVE ";
+    if (features & RTC_FEATURE_FLAG_SPHERE_POINT) out += "SPHERE_POINT ";
+    if (features & RTC_FEATURE_FLAG_DISC_POINT) out += "DISC_POINT ";
+    if (features & RTC_FEATURE_FLAG_ORIENTED_DISC_POINT) out += "ORIENTED_DISC_POINT ";
+    if (features & RTC_FEATURE_FLAG_INSTANCE) out += "INSTANCE ";
+    if (features & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS) out += "FILTER_FUNCTION_IN_ARGUMENTS ";
+    if (features & RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY) out += "FILTER_FUNCTION_IN_GEOMETRY ";
+    if (features & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS) out += "USER_GEOMETRY_CALLBACK_IN_ARGUMENTS ";
+    if (features & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_GEOMETRY) out += "USER_GEOMETRY_CALLBACK_IN_GEOMETRY ";
     if (out == "") return "NONE";
     return out;
   }
@@ -815,8 +815,8 @@ namespace embree
   {
     if (mesh->geom.visited) return;
     
-    used_features |= RTC_FEATURE_FLAGS_TRIANGLE;
-    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAGS_MOTION_BLUR;
+    used_features |= RTC_FEATURE_FLAG_TRIANGLE;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
     
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
@@ -827,8 +827,8 @@ namespace embree
   {
     if (mesh->geom.visited) return;
     
-    used_features |= RTC_FEATURE_FLAGS_QUAD;
-    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAGS_MOTION_BLUR;
+    used_features |= RTC_FEATURE_FLAG_QUAD;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
     
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
@@ -839,8 +839,8 @@ namespace embree
   {
     if (mesh->geom.visited) return;
     
-    used_features |= RTC_FEATURE_FLAGS_GRID;
-    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAGS_MOTION_BLUR;
+    used_features |= RTC_FEATURE_FLAG_GRID;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
     
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
@@ -851,8 +851,8 @@ namespace embree
   {
     if (mesh->geom.visited) return;
     
-    used_features |= RTC_FEATURE_FLAGS_SUBDIVISION;
-    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAGS_MOTION_BLUR;
+    used_features |= RTC_FEATURE_FLAG_SUBDIVISION;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
     
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
@@ -864,24 +864,24 @@ namespace embree
     if (mesh->geom.visited) return;
     
     switch (mesh->type) {
-    case RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE:                 used_features |= RTC_FEATURE_FLAGS_CONE_LINEAR_CURVE; break;
-    case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE:                used_features |= RTC_FEATURE_FLAGS_ROUND_LINEAR_CURVE ; break;
-    case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:                 used_features |= RTC_FEATURE_FLAGS_FLAT_LINEAR_CURVE; break;
-    case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:                used_features |= RTC_FEATURE_FLAGS_ROUND_BEZIER_CURVE; break;
-    case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:                 used_features |= RTC_FEATURE_FLAGS_FLAT_BEZIER_CURVE; break;
-    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE:      used_features |= RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BEZIER_CURVE; break;
-    case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:               used_features |= RTC_FEATURE_FLAGS_ROUND_BSPLINE_CURVE; break;
-    case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:                used_features |= RTC_FEATURE_FLAGS_FLAT_BSPLINE_CURVE; break;
-    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE:     used_features |= RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BSPLINE_CURVE; break;
-    case RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE:               used_features |= RTC_FEATURE_FLAGS_ROUND_HERMITE_CURVE; break;
-    case RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE:                used_features |= RTC_FEATURE_FLAGS_FLAT_HERMITE_CURVE; break;
-    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE:     used_features |= RTC_FEATURE_FLAGS_NORMAL_ORIENTED_HERMITE_CURVE; break;
-    case RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE:           used_features |= RTC_FEATURE_FLAGS_ROUND_CATMULL_ROM_CURVE; break;
-    case RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE:            used_features |= RTC_FEATURE_FLAGS_FLAT_CATMULL_ROM_CURVE; break;
-    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE: used_features |= RTC_FEATURE_FLAGS_NORMAL_ORIENTED_CATMULL_ROM_CURVE; break;
+    case RTC_GEOMETRY_TYPE_CONE_LINEAR_CURVE:                 used_features |= RTC_FEATURE_FLAG_CONE_LINEAR_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE:                used_features |= RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE ; break;
+    case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:                 used_features |= RTC_FEATURE_FLAG_FLAT_LINEAR_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:                used_features |= RTC_FEATURE_FLAG_ROUND_BEZIER_CURVE; break;
+    case RTC_GEOMETRY_TYPE_FLAT_BEZIER_CURVE:                 used_features |= RTC_FEATURE_FLAG_FLAT_BEZIER_CURVE; break;
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BEZIER_CURVE:      used_features |= RTC_FEATURE_FLAG_NORMAL_ORIENTED_BEZIER_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE:               used_features |= RTC_FEATURE_FLAG_ROUND_BSPLINE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_FLAT_BSPLINE_CURVE:                used_features |= RTC_FEATURE_FLAG_FLAT_BSPLINE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_BSPLINE_CURVE:     used_features |= RTC_FEATURE_FLAG_NORMAL_ORIENTED_BSPLINE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_HERMITE_CURVE:               used_features |= RTC_FEATURE_FLAG_ROUND_HERMITE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_FLAT_HERMITE_CURVE:                used_features |= RTC_FEATURE_FLAG_FLAT_HERMITE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_HERMITE_CURVE:     used_features |= RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE; break;
+    case RTC_GEOMETRY_TYPE_ROUND_CATMULL_ROM_CURVE:           used_features |= RTC_FEATURE_FLAG_ROUND_CATMULL_ROM_CURVE; break;
+    case RTC_GEOMETRY_TYPE_FLAT_CATMULL_ROM_CURVE:            used_features |= RTC_FEATURE_FLAG_FLAT_CATMULL_ROM_CURVE; break;
+    case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_CATMULL_ROM_CURVE: used_features |= RTC_FEATURE_FLAG_NORMAL_ORIENTED_CATMULL_ROM_CURVE; break;
     default: assert(false); break;
     }
-    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAGS_MOTION_BLUR;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
     
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
@@ -893,12 +893,12 @@ namespace embree
     if (mesh->geom.visited) return;
 
     switch (mesh->type) {
-    case RTC_GEOMETRY_TYPE_SPHERE_POINT:        used_features |= RTC_FEATURE_FLAGS_SPHERE_POINT; break;
-    case RTC_GEOMETRY_TYPE_DISC_POINT:          used_features |= RTC_FEATURE_FLAGS_DISC_POINT; break;
-    case RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT: used_features |= RTC_FEATURE_FLAGS_ORIENTED_DISC_POINT; break;
+    case RTC_GEOMETRY_TYPE_SPHERE_POINT:        used_features |= RTC_FEATURE_FLAG_SPHERE_POINT; break;
+    case RTC_GEOMETRY_TYPE_DISC_POINT:          used_features |= RTC_FEATURE_FLAG_DISC_POINT; break;
+    case RTC_GEOMETRY_TYPE_ORIENTED_DISC_POINT: used_features |= RTC_FEATURE_FLAG_ORIENTED_DISC_POINT; break;
     default: assert(false); break;
     }
-    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAGS_MOTION_BLUR;
+    if (mesh->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
     
     mesh->geom.visited = true;
     rtcSetGeometryBuildQuality(mesh->geom.geometry, quality);
@@ -947,8 +947,8 @@ namespace embree
 
   unsigned int ConvertInstance(RTCDevice device, ISPCInstance* instance, RTCBuildQuality quality, RTCSceneFlags flags, unsigned int depth, RTCFeatureFlags& used_features)
   {
-    used_features |= RTC_FEATURE_FLAGS_INSTANCE;
-    if (instance->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAGS_MOTION_BLUR;
+    used_features |= RTC_FEATURE_FLAG_INSTANCE;
+    if (instance->numTimeSteps > 1) used_features |= RTC_FEATURE_FLAG_MOTION_BLUR;
     
     if (instance->child->type != GROUP)
       THROW_RUNTIME_ERROR("invalid scene structure");
@@ -971,7 +971,7 @@ namespace embree
     TutorialScene* tutorial_scene = (TutorialScene*) scene_in->tutorialScene;
     if (!tutorial_scene) return scene_in->scene;
     
-    RTCFeatureFlags used_features = RTC_FEATURE_FLAGS_NONE;
+    RTCFeatureFlags used_features = RTC_FEATURE_FLAG_NONE;
 
     RTCScene scene = scene_in->scene;
     rtcSetSceneFlags(scene, flags);

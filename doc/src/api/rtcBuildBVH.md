@@ -1,4 +1,4 @@
-% rtcBuildBVH(3) | Embree Ray Tracing Kernels 3
+% rtcBuildBVH(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

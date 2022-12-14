@@ -11,14 +11,14 @@ namespace embree
 {
   class Scene;
 
-  struct IntersectContext
+  struct RayQueryContext
   {
   public:
 
-    __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context, RTCIntersectArguments* args)
+    __forceinline RayQueryContext(Scene* scene, RTCRayQueryContext* user_context, RTCIntersectArguments* args)
       : scene(scene), user(user_context), args(args) {}
 
-    __forceinline IntersectContext(Scene* scene, RTCIntersectContext* user_context, RTCOccludedArguments* args)
+    __forceinline RayQueryContext(Scene* scene, RTCRayQueryContext* user_context, RTCOccludedArguments* args)
       : scene(scene), user(user_context), args((RTCIntersectArguments*)args) {}
 
     __forceinline bool hasContextFilter() const {
@@ -46,7 +46,7 @@ namespace embree
     }
 
     __forceinline bool enforceArgumentFilterFunction() const {
-      return args->flags & RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER;
+      return args->flags & RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER;
     }
 
 #if RTC_MIN_WIDTH
@@ -57,12 +57,12 @@ namespace embree
 
   public:
     Scene* scene = nullptr;
-    RTCIntersectContext* user = nullptr;
+    RTCRayQueryContext* user = nullptr;
     RTCIntersectArguments* args = nullptr;
   };
 
   template<int M, typename Geometry>
-      __forceinline Vec4vf<M> enlargeRadiusToMinWidth(const IntersectContext* context, const Geometry* geom, const Vec3vf<M>& ray_org, const Vec4vf<M>& v)
+      __forceinline Vec4vf<M> enlargeRadiusToMinWidth(const RayQueryContext* context, const Geometry* geom, const Vec3vf<M>& ray_org, const Vec4vf<M>& v)
     {
 #if RTC_MIN_WIDTH
       const vfloat<M> d = length(Vec3vf<M>(v) - ray_org);
@@ -74,7 +74,7 @@ namespace embree
     }
 
     template<typename Geometry>
-    __forceinline Vec3ff enlargeRadiusToMinWidth(const IntersectContext* context, const Geometry* geom, const Vec3fa& ray_org, const Vec3ff& v)
+    __forceinline Vec3ff enlargeRadiusToMinWidth(const RayQueryContext* context, const Geometry* geom, const Vec3fa& ray_org, const Vec3ff& v)
   {
 #if RTC_MIN_WIDTH
     const float d = length(Vec3fa(v) - ray_org);
@@ -86,7 +86,7 @@ namespace embree
   }
 
   template<typename Geometry>
-    __forceinline Vec3ff enlargeRadiusToMinWidth(const IntersectContext* context, const Geometry* geom, const Vec3fa& ray_org, const Vec4f& v) {
+    __forceinline Vec3ff enlargeRadiusToMinWidth(const RayQueryContext* context, const Geometry* geom, const Vec3fa& ray_org, const Vec4f& v) {
     return enlargeRadiusToMinWidth(context,geom,ray_org,Vec3ff(v.x,v.y,v.z,v.w));
   }
   

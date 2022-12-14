@@ -5,8 +5,8 @@
 
 namespace embree {
 #define FEATURE_MASK \
-  RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_INSTANCE
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_INSTANCE
 
 RTCScene g_scene  = nullptr;
 TutorialData data;
@@ -67,9 +67,57 @@ unsigned int createLossyCompressedGeometry (RTCScene scene)
     Vec3fa *vtx = grid->positions[0];
     PRINT(grid->numVertices);
     PRINT(grid->numGrids);
+
+    uint numSubGrids = 0;
     for (uint i=0;i<grid->numGrids;i++)
-      PRINT3(i,grid->grids[i].resX,grid->grids[i].resY);
-    exit(0);
+    {
+      PRINT3(i,grid->grids[i].resX,grid->grids[i].resY);      
+      const uint grid_resX = grid->grids[i].resX;
+      const uint grid_resY = grid->grids[i].resY;
+      numSubGrids += ((grid_resX-1) / (SUBGRID_RESOLUTION_X-1)) * ((grid_resY-1) / (SUBGRID_RESOLUTION_Y-1));            
+    }
+  
+  PRINT(numSubGrids);
+  
+  compressed_geometries = (RTCLossyCompressedGrid*)alignedUSMMalloc(sizeof(RTCLossyCompressedGrid)*numSubGrids,64);
+  compressed_geometries_ptrs = (void**)alignedUSMMalloc(sizeof(void*)*numSubGrids,64);
+
+  uint index = 0;
+  for (uint i=0;i<grid->numGrids;i++)
+  {
+    const uint grid_resX = grid->grids[i].resX;
+    const uint grid_resY = grid->grids[i].resY;
+    
+    for (int start_y=0;start_y+SUBGRID_RESOLUTION_Y-1<grid_resY;start_y+=SUBGRID_RESOLUTION_Y-1)
+      for (int start_x=0;start_x+SUBGRID_RESOLUTION_X-1<grid_resX;start_x+=SUBGRID_RESOLUTION_X-1)
+      {
+        //PRINT3(start_y,start_x,index);
+        for (int y=0;y<SUBGRID_RESOLUTION_Y;y++)
+          for (int x=0;x<SUBGRID_RESOLUTION_X;x++)
+          {
+            //PRINT3(start_y+y,start_x+x,0);
+            const Vec3fa v = vtx[(start_y+y)*grid_resX + start_x + x];
+            compressed_geometries[index].vertex[y][x][0] = v.x;
+            compressed_geometries[index].vertex[y][x][1] = v.y;
+            compressed_geometries[index].vertex[y][x][2] = v.z;          
+          }
+        compressed_geometries[index].ID = index;
+        compressed_geometries[index].materialID = 0;
+        compressed_geometries_ptrs[index] = &compressed_geometries[index];
+        index++;
+      }
+  }
+  PRINT(index);
+  if (index > numSubGrids)
+    FATAL("numSubGrids");
+  
+  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
+  rtcSetGeometryUserData(geom,compressed_geometries_ptrs);
+  rtcSetLossyCompressedGeometryPrimitiveCount(geom,index);
+  rtcCommitGeometry(geom);
+  unsigned int geomID = rtcAttachGeometry(scene,geom);
+  rtcReleaseGeometry(geom);
+    
   }
   
 extern "C" ISPCScene* g_ispc_scene;

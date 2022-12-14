@@ -1,4 +1,4 @@
-% rtcGetGeometryUserDataFromScene(3) | Embree Ray Tracing Kernels 3
+% rtcGetGeometryUserDataFromScene(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
@@ -18,7 +18,7 @@ pointer previously set with `rtcSetGeometryUserData` from the geometry
 with index `geomID` from the specified scene `scene`. When
 `rtcSetGeometryUserData` was not called yet, `NULL` is returned.
 
-This function is not thread safe and supposed to be used during rendering.
+This function is supposed to be used during rendering.
 
 #### EXIT STATUS
 

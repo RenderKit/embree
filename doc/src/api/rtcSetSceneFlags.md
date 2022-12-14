@@ -1,4 +1,4 @@
-% rtcSetSceneFlags(3) | Embree Ray Tracing Kernels 3
+% rtcSetSceneFlags(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
