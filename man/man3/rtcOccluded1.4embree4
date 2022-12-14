@@ -17,7 +17,7 @@ rtcOccluded1 \- finds any hit for a single ray
 
 void rtcOccluded1(
   RTCScene scene,
-  struct RTCIntersectContext* context,
+  struct RTCRayQueryContext* context,
   struct RTCRay* ray
 );
 \f[R]

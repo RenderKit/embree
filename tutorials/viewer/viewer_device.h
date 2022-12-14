@@ -18,7 +18,7 @@ struct TutorialData
 {
   ISPCScene* ispc_scene;
   int instancing_mode;
-  RTCIntersectContextFlags iflags_coherent;
+  RTCRayQueryFlags iflags_coherent;
   
   /* scene data */
   RTCScene scene;

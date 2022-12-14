@@ -117,16 +117,16 @@ inline bool noHit(const Ray& r) { return r.geomID < 0; }
 
 inline bool hadHit(const Ray& r) { return r.geomID >= 0; }
 
-/*! intersection context passed to intersect/occluded calls */
-struct IntersectContext
+/*! ray query context passed to intersect/occluded calls */
+struct RayQueryContext
 {
-  RTCIntersectContext context;
+  RTCRayQueryContext context;
   void* userRayExt;               //!< can be used to pass extended ray data to callbacks
   void* tutorialData;
 };
 
-inline void InitIntersectionContext(uniform IntersectContext* uniform context)
+inline void InitIntersectionContext(uniform RayQueryContext* uniform context)
 {
-  rtcInitIntersectContext(&context->context);
+  rtcInitRayQueryContext(&context->context);
   context->userRayExt = NULL;
 }

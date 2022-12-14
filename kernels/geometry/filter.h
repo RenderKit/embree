@@ -12,7 +12,7 @@ namespace embree
 {
   namespace isa
   {
-    __forceinline bool runIntersectionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
+    __forceinline bool runIntersectionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, RayQueryContext* context)
     {
       if (geometry->intersectionFilterN)
       {
@@ -35,7 +35,7 @@ namespace embree
       return true;
     }
     
-    __forceinline bool runIntersectionFilter1(const Geometry* const geometry, RayHit& ray, IntersectContext* context, Hit& hit)
+    __forceinline bool runIntersectionFilter1(const Geometry* const geometry, RayHit& ray, RayQueryContext* context, Hit& hit)
     {
       RTCFilterFunctionNArguments args;
       int mask = -1;
@@ -48,7 +48,7 @@ namespace embree
       return runIntersectionFilter1Helper(&args,geometry,context);
     }
 
-    __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
+    __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, RayQueryContext* context)
     {
       if (geometry->occlusionFilterN)
       {
@@ -70,7 +70,7 @@ namespace embree
       return true;
     }
 
-    __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, IntersectContext* context, Hit& hit)
+    __forceinline bool runOcclusionFilter1(const Geometry* const geometry, Ray& ray, RayQueryContext* context, Hit& hit)
     {
       RTCFilterFunctionNArguments args;
       int mask = -1;
@@ -84,7 +84,7 @@ namespace embree
     }
 
     template<int K>
-      __forceinline vbool<K> runIntersectionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
+      __forceinline vbool<K> runIntersectionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, RayQueryContext* context)
     {
       vint<K>* mask = (vint<K>*) args->valid;
       if (geometry->intersectionFilterN)
@@ -106,7 +106,7 @@ namespace embree
     }
     
     template<int K>
-    __forceinline vbool<K> runIntersectionFilter(const vbool<K>& valid, const Geometry* const geometry, RayHitK<K>& ray, IntersectContext* context, HitK<K>& hit)
+    __forceinline vbool<K> runIntersectionFilter(const vbool<K>& valid, const Geometry* const geometry, RayHitK<K>& ray, RayQueryContext* context, HitK<K>& hit)
     {
       RTCFilterFunctionNArguments args;
       vint<K> mask = valid.mask32();
@@ -120,7 +120,7 @@ namespace embree
     }
 
     template<int K>
-      __forceinline vbool<K> runOcclusionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, IntersectContext* context)
+      __forceinline vbool<K> runOcclusionFilterHelper(RTCFilterFunctionNArguments* args, const Geometry* const geometry, RayQueryContext* context)
     {
       vint<K>* mask = (vint<K>*) args->valid;
       if (geometry->occlusionFilterN)
@@ -141,7 +141,7 @@ namespace embree
     }
 
     template<int K>
-      __forceinline vbool<K> runOcclusionFilter(const vbool<K>& valid, const Geometry* const geometry, RayK<K>& ray, IntersectContext* context, HitK<K>& hit)
+      __forceinline vbool<K> runOcclusionFilter(const vbool<K>& valid, const Geometry* const geometry, RayK<K>& ray, RayQueryContext* context, HitK<K>& hit)
     {
       RTCFilterFunctionNArguments args;
       vint<K> mask = valid.mask32();

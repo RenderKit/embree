@@ -1368,7 +1368,7 @@ inline int postIntersect(const uniform TutorialData& data, const Ray& ray, Diffe
 
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilterFunctionNArguments* uniform args)
 {
-  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  uniform RayQueryContext* uniform context = (uniform RayQueryContext* uniform) args->context;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
   if (!transparency) return;
   
@@ -1384,7 +1384,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterOpaque(const RTCFilter
 /* occlusion filter function */
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterHair(const RTCFilterFunctionNArguments* uniform args)
 {
-  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  uniform RayQueryContext* uniform context = (uniform RayQueryContext* uniform) args->context;
   TutorialData* uniform pdata = (TutorialData* uniform) context->tutorialData;
   uniform TutorialData& data = *pdata;
   varying Vec3f* uniform transparency = (varying Vec3f* uniform) context->userRayExt;
@@ -1424,7 +1424,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilterHair(const RTCFilterFu
 
 RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionNArguments* uniform args)
 {
-  uniform IntersectContext* uniform context = (uniform IntersectContext* uniform) args->context;
+  uniform RayQueryContext* uniform context = (uniform RayQueryContext* uniform) args->context;
   TutorialData* uniform pdata = (TutorialData* uniform) context->tutorialData;
   uniform TutorialData& data = *pdata;
   uniform int* uniform valid_i = args->valid;
@@ -1474,7 +1474,7 @@ Vec3f renderPixelFunction(const uniform TutorialData& data, float x, float y, Ra
       break;
 
     /* intersect ray with scene */
-    uniform IntersectContext context;
+    uniform RayQueryContext context;
     InitIntersectionContext(&context);
     context.tutorialData = (void*) &data;
     

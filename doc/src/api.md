@@ -249,24 +249,26 @@ consistent API that works properly for the CPU and GPU.
 - The API include folder got renamed from embree3 to embree4, to be
   able to install Embree 3 and Embree 4 side by side, without having
   conflicts in API folder.
-  
+
+- The `RTCIntersectContext` is renamed to `RTCRayQueryContext` and the
+  `RTCIntersectContextFlags` got renamed to `RTCRayQueryFlags`.
+
 - There are some changes to the `rtcIntersect` and `rtcOccluded`
-  functions. Passing an `RTCIntersectContext` is no longer required to
-  trace rays, thus some applications can just drop that
-  argument. Further, most members of the `RTCIntersectContext` have
-  been moved to some `RTCIntersectArguments` (and
+  functions.  Most members of the old intersect context have been
+  moved to some optional `RTCIntersectArguments` (and
   `RTCOccludedArguments`) structures, which also contains a pointer to
-  a reduced context. The argument structs fulfill the task of
+  the new ray query context. The argument structs fulfill the task of
   providing additional advanced arguments to the traversal
-  functions. The intersect context can still get used to pass
-  additional data to callbacks, and to maintain an instID stack in
-  case instancing is done manually inside user geometry callbacks. The
+  functions. The ray query context can get used to pass additional
+  data to callbacks, and to maintain an instID stack in case
+  instancing is done manually inside user geometry callbacks. The
   arguments struct is not available inside callbacks. This change was
   in particular necessary for SYCL to allow inlining of function
   pointers provided to the traversal functions, and to reduce the
   amount of state passed to callbacks, which both improves GPU
-  performance.
-
+  performance. Most applications can just drop passing the ray query
+  context to port to Embree 4.
+  
 - The `rtcFilterIntersection` and `rtcFilterOcclusion` API calls that
   invoke both, the geometry and argument version of the filter
   callback, from a user geometry callback are no longer
@@ -281,7 +283,7 @@ consistent API that works properly for the CPU and GPU.
   `rtcSetGeometryEnableFilterFunctionFromArguments` for that
   geometry. Alternatively, argument filter functions can get enabled
   for all geometries using the
-  `RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER` flag.
+  `RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER` ray query flag.
 
 - User geometry callbacks get a valid vector as input to identify
   valid and invalid rays. In Embree 3 the user geometry callback just
@@ -399,7 +401,7 @@ Fast Coherent Rays
 
 For getting the highest performance for highly coherent rays, e.g.
 primary or hard shadow rays, it is recommended to use packets with
-setting the `RTC_INTERSECT_CONTEXT_FLAG_COHERENT` flag in the
+setting the `RTC_RAY_QUERY_FLAG_COHERENT` flag in the
 `RTCIntersectArguments` struct passed to the
 `rtcIntersect`/`rtcOccluded` calls. The rays inside each packet should
 be grouped as coherent as possible.

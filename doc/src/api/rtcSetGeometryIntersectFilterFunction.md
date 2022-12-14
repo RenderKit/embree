@@ -13,7 +13,7 @@
     {
       int* valid;
       void* geometryUserPtr;
-      const struct RTCIntersectContext* context;
+      const struct RTCRayQueryContext* context;
       struct RTCRayN* ray;
       struct RTCHitN* hit;
       unsigned int N;
@@ -59,7 +59,7 @@ structure. The `valid` parameter of that structure points to an
 integer valid mask (0 means invalid and -1 means valid). The
 `geometryUserPtr` member is a user pointer optionally set per geometry
 through the `rtcSetGeometryUserData` function. The `context` member
-points to the intersection context passed to the ray query
+points to the ray query context passed to the ray query
 function. The `ray` parameter points to `N` rays in SOA layout. The
 `hit` parameter points to `N` hits in SOA layout to test. The `N`
 parameter is the number of rays and hits in `ray` and `hit`. The hit

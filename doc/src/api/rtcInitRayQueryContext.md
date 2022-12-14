@@ -1,14 +1,14 @@
-% rtcInitIntersectContext(3) | Embree Ray Tracing Kernels 4
+% rtcInitRayQueryContext(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
-    rtcInitIntersectContext - initializes the intersection context
+    rtcInitRayQueryContext - initializes the ray query context
 
 #### SYNOPSIS
 
     #include <embree4/rtcore.h>
 
-    struct RTCIntersectContext
+    struct RTCRayQueryContext
     {
       #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
         unsigned int instStackSize;
@@ -17,26 +17,26 @@
       unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT];
     };
 
-    void rtcInitIntersectContext(
-      struct RTCIntersectContext* context
+    void rtcInitRayQueryContext(
+      struct RTCRayQueryContext* context
     );
 
 #### DESCRIPTION
 
-The `rtcInitIntersectContext` function initializes the intersection
+The `rtcInitRayQueryContext` function initializes the intersection
 context to default values and should be called to initialize every
-intersection context.
+ray query context.
 
-It is guaranteed that the pointer to the intersection context
-(`RTCIntersectContext` type) is passed to the registered callback
+It is guaranteed that the pointer to the ray query context
+(`RTCRayQueryContext` type) is passed to the registered callback
 functions. This way it is possible to attach arbitrary data to the end
-of the intersection context, such as a per-ray payload.
+of the ray query context, such as a per-ray payload.
 
-Inside the user geometry callback the intersection context can get
+Inside the user geometry callback the ray query context can get
 used to access the `instID` stack to know which instance the user
 geometry object resides.
 
-If not intersection context is specified when tracing a ray, a default
+If not ray query context is specified when tracing a ray, a default
 context is used.
 
 #### EXIT STATUS

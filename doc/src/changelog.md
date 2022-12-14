@@ -7,17 +7,19 @@ Version History
     See documentation section "Upgrading from Embree 3 to Embree 4" for details.
 -   Renamed API include folder from embree3 to embree4
 -   rtcIntersect and rtcOccluded function arguments changed slightly.
+-   RTCIntersectContext is renamed to RTCRayQuery context and most members moved to
+    new RTCIntersectArguments and RTCOccludedArguments structures.
 -   rtcFilterIntersection and rtcFilterOcclusion API calls got replaced by
     rtcInvokeIntersectFilterFromGeometry and rtcInvokeOccludedFilterFromGeometry API calls.
 -   rtcSetGeometryEnableFilterFunctionFromArguments enables argument filter functions for some geometry.
--   RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER flag enables argument filter functions for each geometry.
+-   RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER ray query flag enables argument filter functions for each geometry.
 -   User geometry callbacks have to return if a valid hit was found.
 -   Ray masking is enabled by default now as required by most users.
 -   The default ray mask for geometries got changed from 0xFFFFFFFF to 0x1.
 -   Removed ray stream API as rarely used with minimal performance benefits over packet tracing.
 -   Introduced rtcForwardIntersect/rtcForwardOccluded API calls to trace tail recursive rays from user geometry callback.
 -   The rtcGetGeometryUserDataFromScene API call got added to be used in SYCL code.
--   Added support for user geometry callback function pointer passed through intersection context
+-   Added support for user geometry callback function pointer passed through ray query context
 -   Feature flags enable reducing code complexity for optimal performance on the GPU.
 -   Fixed compilation issues for ARM AArch64 processor under Linux.
 -   Setting default frequency level to SIMD256 for ARM on all platforms.
@@ -148,7 +150,7 @@ Version History
 -   For sphere geometries the intersection filter gets now invoked for
     front and back hit.
 -   Fixed some bugs for quaternion motion blur.
--   RTCIntersectContext always non-const in Embree API
+-   RTCRayQueryContext always non-const in Embree API
 -   Made RTCHit aligned to 16 bytes in Embree API
 
 ### New Features in Embree 3.7.0
@@ -421,7 +423,7 @@ Version History
     when modifying only the tessellation rate and vertex array.
 
 ### New Features in Embree 2.16.2
--   Fixed bug that caused NULL intersection context in intersection
+-   Fixed bug that caused NULL ray query context in intersection
     filter when instancing was used.
 -   Fixed an issue where uv's where outside the triangle (or quad) for
     very small triangles (or quads). In robust mode we improved the uv

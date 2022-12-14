@@ -60,8 +60,8 @@ namespace embree
 
     unsigned int g_numThreads = 0;
 
-    RTCIntersectContextFlags g_iflags_coherent = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-    RTCIntersectContextFlags g_iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+    RTCRayQueryFlags g_iflags_coherent = RTC_RAY_QUERY_FLAG_COHERENT;
+    RTCRayQueryFlags g_iflags_incoherent = RTC_RAY_QUERY_FLAG_INCOHERENT;
 
     int g_animation_mode = false;
 
@@ -141,8 +141,8 @@ namespace embree
       debug2(0),
       debug3(0),
 
-      iflags_coherent(RTC_INTERSECT_CONTEXT_FLAG_COHERENT),
-      iflags_incoherent(RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT)
+      iflags_coherent(RTC_RAY_QUERY_FLAG_COHERENT),
+      iflags_incoherent(RTC_RAY_QUERY_FLAG_INCOHERENT)
   {
     /* only a single instance of this class is supported */
     assert(instance == nullptr);
@@ -250,14 +250,14 @@ namespace embree
        }, "--time: sets time for motion blur");
 
     registerOption("coherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_COHERENT;
-      }, "--coherent: force using RTC_INTERSECT_CONTEXT_FLAG_COHERENT hint when tracing rays");
+        g_iflags_coherent   = iflags_coherent   = RTC_RAY_QUERY_FLAG_COHERENT;
+        g_iflags_incoherent = iflags_incoherent = RTC_RAY_QUERY_FLAG_COHERENT;
+      }, "--coherent: force using RTC_RAY_QUERY_FLAG_COHERENT hint when tracing rays");
 
     registerOption("incoherent", [this] (Ref<ParseStream> cin, const FileName& path) {
-        g_iflags_coherent   = iflags_coherent   = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-        g_iflags_incoherent = iflags_incoherent = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-      }, "--incoherent: force using RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT hint when tracing rays");
+        g_iflags_coherent   = iflags_coherent   = RTC_RAY_QUERY_FLAG_INCOHERENT;
+        g_iflags_incoherent = iflags_incoherent = RTC_RAY_QUERY_FLAG_INCOHERENT;
+      }, "--incoherent: force using RTC_RAY_QUERY_FLAG_INCOHERENT hint when tracing rays");
 
 #if defined(EMBREE_SYCL_TUTORIAL)
     registerOption("jit-cache", [this] (Ref<ParseStream> cin, const FileName& path) {

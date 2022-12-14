@@ -738,7 +738,7 @@ Miscellaneous
 -------------
 
 A context filter function, which can be set per ray query is supported
-(see `rtcInitIntersectContext`). This filter function is designed to
+(see `rtcInitRayQueryContext`). This filter function is designed to
 change the semantics of the ray query, e.g. to accumulate opacity for
 transparent shadows, count the number of surfaces along a ray, collect
 all hits along a ray, etc.
@@ -1892,8 +1892,8 @@ for the specified scene (`scene` argument). Possible scene flags are:
     primitives.
 
 -   `RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS`: Enables support for a
-    filter function inside the intersection context for this scene. See
-    Section [rtcInitIntersectContext] for more details.
+    filter function inside the ray query context for this scene. See
+    Section [rtcInitRayQueryContext] for more details.
 
 Multiple flags can be enabled using an `or` operation,
 e.g. `RTC_SCENE_FLAG_COMPACT | RTC_SCENE_FLAG_ROBUST`.
@@ -3017,9 +3017,9 @@ geometry ID of the instance in the top-level scene.
 
 The instancing scheme can also be implemented using user geometries. To
 achieve this, the user geometry code should set the `instID` member of
-the intersection context to the geometry ID of the instance, then trace
+the ray query context to the geometry ID of the instance, then trace
 the transformed ray, and finally set the `instID` field of the
-intersection context again to -1. The `instID` field is copied
+ray query context again to -1. The `instID` field is copied
 automatically by each primitive intersector into the `instID` field of
 the hit structure when the primitive is hit. See the [User Geometry]
 tutorial for an example.
@@ -3910,7 +3910,7 @@ rtcSetGeometryIntersectFilterFunction
     {
       int* valid;
       void* geometryUserPtr;
-      const struct RTCIntersectContext* context;
+      const struct RTCRayQueryContext* context;
       struct RTCRayN* ray;
       struct RTCHitN* hit;
       unsigned int N;
@@ -3956,7 +3956,7 @@ structure. The `valid` parameter of that structure points to an integer
 valid mask (0 means invalid and -1 means valid). The `geometryUserPtr`
 member is a user pointer optionally set per geometry through the
 `rtcSetGeometryUserData` function. The `context` member points to the
-intersection context passed to the ray query function. The `ray`
+ray query context passed to the ray query function. The `ray`
 parameter points to `N` rays in SOA layout. The `hit` parameter points
 to `N` hits in SOA layout to test. The `N` parameter is the number of
 rays and hits in `ray` and `hit`. The hit distance is provided as the
@@ -4324,7 +4324,7 @@ rtcSetGeometryIntersectFunction
       int* valid;
       void* geometryUserPtr;
       unsigned int primID;
-      struct RTCIntersectContext* context;
+      struct RTCRayQueryContext* context;
       struct RTCRayHitN* rayhit;
       unsigned int N;
       unsigned int geomID;
@@ -4359,7 +4359,7 @@ ray packet size, `valid` points to an array of integers that specify
 whether the corresponding ray is valid (-1) or invalid (0), the
 `geometryUserPtr` member points to the geometry user data previously
 set through `rtcSetGeometryUserData`, the `context` member points to
-the intersection context passed to the ray query, the `rayhit` member
+the ray query context passed to the ray query, the `rayhit` member
 points to a ray and hit packet of variable size `N`, and the `geomID`
 and `primID` member identifies the geometry ID and primitive ID of the
 primitive to intersect.
@@ -4377,7 +4377,7 @@ user-defined primitive with the ray was found in the valid range (from
 `tnear` to `tfar`), it should update the hit distance of the ray
 (`tfar` member) and the hit (`u`, `v`, `Ng`, `instID`, `geomID`,
 `primID` members). In particular, the currently intersected instance is
-stored in the `instID` field of the intersection context, which must be
+stored in the `instID` field of the ray query context, which must be
 deep copied into the `instID` member of the hit.
 
 As a primitive might have multiple intersections with a ray, the
@@ -4436,7 +4436,7 @@ rtcSetGeometryOccludedFunction
       int* valid;
       void* geometryUserPtr;
       unsigned int primID;
-      struct RTCIntersectContext* context;
+      struct RTCRayQueryContext* context;
       struct RTCRayN* ray;
       unsigned int N;
       unsigned int geomID;
@@ -4471,7 +4471,7 @@ ray packet size, `valid` points to an array of integers which specify
 whether the corresponding ray is valid (-1) or invalid (0), the
 `geometryUserPtr` member points to the geometry user data previously
 set through `rtcSetGeometryUserData`, the `context` member points to
-the intersection context passed to the ray query, the `ray` member
+the ray query context passed to the ray query, the `ray` member
 points to a ray packet of variable size `N`, and the `geomID` and
 `primID` member identifies the geometry ID and primitive ID of the
 primitive to intersect.
@@ -5962,27 +5962,27 @@ parts of the structure.
 
 
 
-rtcInitIntersectContext
+rtcInitRayQueryContext
 -----------------------
 
 #### NAME {#name}
 
-    rtcInitIntersectContext - initializes the intersection context
+    rtcInitRayQueryContext - initializes the ray query context
 
 #### SYNOPSIS {#synopsis}
 
     #include <embree4/rtcore.h>
 
-    enum RTCIntersectContextFlags
+    enum RTCRayQueryFlags
     {
-      RTC_INTERSECT_CONTEXT_FLAG_NONE,
-      RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT,
-      RTC_INTERSECT_CONTEXT_FLAG_COHERENT,
+      RTC_RAY_QUERY_FLAG_NONE,
+      RTC_RAY_QUERY_FLAG_INCOHERENT,
+      RTC_RAY_QUERY_FLAG_COHERENT,
     };
 
-    struct RTCIntersectContext
+    struct RTCRayQueryContext
     {
-      enum RTCIntersectContextFlags flags;
+      enum RTCRayQueryFlags flags;
       RTCFilterFunctionN filter;
       
       #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
@@ -5996,35 +5996,35 @@ rtcInitIntersectContext
       #endif
     };
 
-    void rtcInitIntersectContext(
-      struct RTCIntersectContext* context
+    void rtcInitRayQueryContext(
+      struct RTCRayQueryContext* context
     );
 
 #### DESCRIPTION {#description}
 
-A per ray-query intersection context (`RTCIntersectContext` type) is
+A per ray-query ray query context (`RTCRayQueryContext` type) is
 supported that can be used to configure intersection flags (`flags`
 member), specify a filter callback function (`filter` member), specify
 the chain of IDs of the current instance (`instID` and `instStackSize`
 members), and to attach arbitrary data to the query (e.g. per ray
 data).
 
-The `rtcInitIntersectContext` function initializes the context to
+The `rtcInitRayQueryContext` function initializes the context to
 default values and should be called to initialize every intersection
 context. This function gets inlined, which minimizes overhead and
 allows for compiler optimizations.
 
-The intersection context flag can be used to tune the behavior of the
-traversal algorithm. Using the `RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT`
+The ray query context flag can be used to tune the behavior of the
+traversal algorithm. Using the `RTC_RAY_QUERY_FLAG_INCOHERENT`
 flags uses an optimized traversal algorithm for incoherent rays
-(default), while `RTC_INTERSECT_CONTEXT_FLAG_COHERENT` uses an
+(default), while `RTC_RAY_QUERY_FLAG_COHERENT` uses an
 optimized traversal algorithm for coherent rays (e.g. primary camera
 rays).
 
 Best primary ray performance can be obtained by using the ray stream
-API and setting the intersect context flag to
-`RTC_INTERSECT_CONTEXT_FLAG_COHERENT`. For secondary rays, it is
-typically better to use the `RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT`
+API and setting the ray query context flag to
+`RTC_RAY_QUERY_FLAG_COHERENT`. For secondary rays, it is
+typically better to use the `RTC_RAY_QUERY_FLAG_INCOHERENT`
 flag, unless the rays are known to be very coherent too (e.g. for
 primary transparency rays).
 
@@ -6045,10 +6045,10 @@ radii when the min-width feature is enabled. Please see the
 [rtcSetGeometryMaxRadiusScale] function for more details on the
 min-width feature.
 
-It is guaranteed that the pointer to the intersection context passed to
+It is guaranteed that the pointer to the ray query context passed to
 a ray query is directly passed to the registered callback functions.
 This way it is possible to attach arbitrary data to the end of the
-intersection context, such as a per-ray payload.
+ray query context, such as a per-ray payload.
 
 Please note that the ray pointer is not guaranteed to be passed to the
 callback functions, thus reading additional data from the ray pointer
@@ -6077,7 +6077,7 @@ rtcIntersect1
 
     void rtcIntersect1(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayHit* rayhit
     );
 
@@ -6102,8 +6102,8 @@ ray layout description.
 The geometry ID (`geomID` hit member) of the hit data must be
 initialized to `RTC_INVALID_GEOMETRY_ID` (-1).
 
-Further, an intersection context for the ray query function must be
-created and initialized (see `rtcInitIntersectContext`).
+Further, an ray query context for the ray query function must be
+created and initialized (see `rtcInitRayQueryContext`).
 
 When no intersection is found, the ray/hit data is not updated. When an
 intersection is found, the hit distance is written into the `tfar`
@@ -6131,17 +6131,17 @@ missed. If you want to exclude intersections at `tnear` just pass a
 slightly enlarged `tnear`, and if you want to include intersections at
 `tfar` pass a slightly enlarged `tfar`.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The ray pointer passed to callback functions is not guaranteed to be
 identical to the original ray provided. To extend the ray with
 additional data to be accessed in callback functions, use the
-intersection context.
+ray query context.
 
 The ray/hit structure must be aligned to 16 bytes.
 
@@ -6169,7 +6169,7 @@ rtcOccluded1
 
     void rtcOccluded1(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRay* ray
     );
 
@@ -6198,17 +6198,17 @@ missed. If you want to exclude intersections at `tnear` just pass a
 slightly enlarged `tnear`, and if you want to include intersections at
 `tfar` pass a slightly enlarged `tfar`.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The ray pointer passed to callback functions is not guaranteed to be
 identical to the original ray provided. To extend the ray with
 additional data to be accessed in callback functions, use the
-intersection context.
+ray query context.
 
 The ray must be aligned to 16 bytes.
 
@@ -6237,21 +6237,21 @@ rtcIntersect4/8/16
     void rtcIntersect4(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayHit4* rayhit
     );
 
     void rtcIntersect8(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayHit8* rayhit
     );
 
     void rtcIntersect16(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayHit16* rayhit
     );
 
@@ -6268,17 +6268,17 @@ A ray valid mask must be provided (`valid` argument) which stores one
 packet. Only active rays are processed, and hit data of inactive rays
 is not changed.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The ray pointer passed to callback functions is not guaranteed to be
 identical to the original ray provided. To extend the ray with
 additional data to be accessed in callback functions, use the
-intersection context.
+ray query context.
 
 The implementation of these functions is guaranteed to invoke callback
 functions always with the same ray packet size and ordering of rays as
@@ -6323,21 +6323,21 @@ rtcOccluded4/8/16
     void rtcOccluded4(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRay4* ray
     );
 
     void rtcOccluded8(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRay8* ray
     );
 
     void rtcOccluded16(
       const int* valid,
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRay16* ray
     );
 
@@ -6353,17 +6353,17 @@ A ray valid mask must be provided (`valid` argument) which stores one
 packet. Only active rays are processed, and hit data of inactive rays
 is not changed.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The ray pointer passed to callback functions is not guaranteed to be
 identical to the original ray provided. To extend the ray with
 additional data to be accessed in callback functions, use the
-intersection context.
+ray query context.
 
 The implementation of these functions is guaranteed to invoke callback
 functions always with the same ray packet size and ordering of rays as
@@ -6408,7 +6408,7 @@ rtcIntersect1M
 
     void rtcIntersect1M(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayHit* rayhit,
       unsigned int M,
       size_t byteStride
@@ -6423,12 +6423,12 @@ specified byte stride (`byteStride` argument) between the ray/hit
 structures. See Section [rtcIntersect1] for a description of how to
 set up and trace rays.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The implementation of the stream ray query functions may re-order rays
 arbitrarily and re-pack rays into ray packets of different size. For
@@ -6468,7 +6468,7 @@ rtcOccluded1M
 
     void rtcOccluded1M(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRay* ray,
       unsigned int M,
       size_t byteStride
@@ -6483,12 +6483,12 @@ byte stride (`byteStride` argument) between the rays. See Section
 [rtcOccluded1] for a description of how to set up and trace occlusion
 rays.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The implementation of the stream ray query functions may re-order rays
 arbitrarily and re-pack rays into ray packets of different size. For
@@ -6529,7 +6529,7 @@ rtcIntersect1Mp
 
     void rtcIntersect1Mp(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayHit** rayhit,
       unsigned int M
     );
@@ -6542,12 +6542,12 @@ The `rayhit` argument points to an array of pointers to the individual
 ray/hit structures. See Section [rtcIntersect1] for a description of
 how to set up and trace a ray.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The implementation of the stream ray query functions may re-order rays
 arbitrarily and re-pack rays into ray packets of different size. For
@@ -6588,7 +6588,7 @@ rtcOccluded1Mp
 
     void rtcOccluded1M(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRay** ray,
       unsigned int M
     );
@@ -6601,12 +6601,12 @@ argument). The `ray` argument points to an array of pointers to rays.
 Section [rtcOccluded1] for a description of how to set up and trace a
 occlusion rays.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The implementation of the stream ray query functions may re-order rays
 arbitrarily and re-pack rays into ray packets of different size. For
@@ -6647,7 +6647,7 @@ rtcIntersectNM
 
     void rtcIntersectNM(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayHitN* rayhit,
       unsigned int N,
       unsigned int M,
@@ -6663,12 +6663,12 @@ packets with specified byte stride (`byteStride` argument) between the
 ray/hit packets. See Section [rtcIntersect1] for a description of how
 to set up and trace rays.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The implementation of the stream ray query functions may re-order rays
 arbitrarily and re-pack rays into ray packets of different size. For
@@ -6710,7 +6710,7 @@ rtcOccludedNM
 
     void rtcOccludedNM(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayN* ray,
       unsigned int N,
       unsigned int M,
@@ -6726,12 +6726,12 @@ packets with specified byte stride (`byteStride` argument) between the
 ray packets. See Section [rtcOccluded1] for a description of how to
 set up and trace occlusion rays.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The implementation of the stream ray query functions may re-order rays
 arbitrarily and re-pack rays into ray packets of different size. For
@@ -6773,7 +6773,7 @@ rtcIntersectNp
 
     void rtcIntersectNp(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayHitNp* rayhit,
       unsigned int N
     );
@@ -6791,12 +6791,12 @@ it possible to have large varying size ray packets in SOA layout. See
 Section [rtcIntersect1] for a description of how to set up and trace
 rays.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The implementation of the stream ray query functions may re-order rays
 arbitrarily and re-pack rays into ray packets of different size. For
@@ -6836,7 +6836,7 @@ rtcOccludedNp
 
     void rtcOccludedNp(
       RTCScene scene,
-      struct RTCIntersectContext* context,
+      struct RTCRayQueryContext* context,
       struct RTCRayNp* ray,
       unsigned int N
     );
@@ -6854,12 +6854,12 @@ to have large varying size ray packets in SOA layout. See Section
 [rtcOccluded1] for a description of how to set up and trace occlusion
 rays.
 
-The intersection context (`context` argument) can specify flags to
+The ray query context (`context` argument) can specify flags to
 optimize traversal and a filter callback function to be invoked for
-every intersection. Further, the pointer to the intersection context is
+every intersection. Further, the pointer to the ray query context is
 propagated to callback functions invoked during traversal and can thus
 be used to extend the ray with additional data. See Section
-`RTCIntersectContext` for more information.
+`RTCRayQueryContext` for more information.
 
 The implementation of the stream ray query functions may re-order rays
 arbitrarily and re-pack rays into ray packets of different size. For
@@ -7567,7 +7567,7 @@ Fast Coherent Rays
 For getting the highest performance for highly coherent rays, e.g.
 primary or hard shadow rays, it is recommended to use packets or
 streams of single rays/packets with setting the
-`RTC_INTERSECT_CONTEXT_FLAG_COHERENT` flag in the `RTCIntersectContext`
+`RTC_RAY_QUERY_FLAG_COHERENT` flag in the `RTCRayQueryContext`
 passed to the `rtcIntersect`/`rtcOccluded` calls. The total number of
 rays in a coherent stream of ray packets should be around 64, e.g. 8
 times 8-wide packets, or 4 times 16-wide packets. The rays inside each

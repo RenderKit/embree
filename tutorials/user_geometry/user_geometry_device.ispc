@@ -38,7 +38,7 @@ uniform RTCIntersectFunctionN sphereIntersectFuncPtr = NULL;
 uniform RTCOccludedFunctionN sphereOccludedFuncPtr = NULL;
 uniform RTCFilterFunctionN sphereFilterFuncPtr = NULL;
 
-inline void pushInstanceId(uniform RTCIntersectContext* uniform ctx, uniform unsigned int id)
+inline void pushInstanceId(uniform RTCRayQueryContext* uniform ctx, uniform unsigned int id)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[ctx->instStackSize++] = id;
@@ -47,7 +47,7 @@ inline void pushInstanceId(uniform RTCIntersectContext* uniform ctx, uniform uns
 #endif
 }
 
-inline void popInstanceId(uniform RTCIntersectContext* uniform ctx)
+inline void popInstanceId(uniform RTCRayQueryContext* uniform ctx)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[--ctx->instStackSize] = RTC_INVALID_GEOMETRY_ID;
@@ -56,7 +56,7 @@ inline void popInstanceId(uniform RTCIntersectContext* uniform ctx)
 #endif
 }
 
-inline void copyInstanceIdStack(uniform const RTCIntersectContext* uniform ctx, varying unsigned* uniform tgt)
+inline void copyInstanceIdStack(uniform const RTCRayQueryContext* uniform ctx, varying unsigned* uniform tgt)
 {
   tgt[0] = ctx->instID[0];
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
@@ -112,7 +112,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceIntersectFunc(const RTCInters
 
 #if 0
 
-  uniform RTCIntersectContext* uniform context = args->context;
+  uniform RTCRayQueryContext* uniform context = args->context;
   ray->org = make_Vec3f_(xfmPoint (instance->world2local,ray_org));
   ray->dir = make_Vec3f_(xfmVector(instance->world2local,ray_dir));
   ray->tnear = ray_tnear;
@@ -165,7 +165,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void instanceOccludedFunc(const RTCOcclude
 
 #if 0
 
-  uniform RTCIntersectContext* uniform context = args->context;
+  uniform RTCRayQueryContext* uniform context = args->context;
   ray->org    = make_Vec3f_(xfmPoint (instance->world2local,ray_org));
   ray->dir    = make_Vec3f_(xfmVector(instance->world2local,ray_dir));
   ray->tnear  = ray_tnear;
@@ -497,7 +497,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void contextOccludedFunc(const RTCOccluded
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void sphereFilterFunction(const RTCFilterFunctionNArguments* uniform args)
 {
   uniform int* uniform valid = args->valid;
-  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
+  const uniform RayQueryContext* uniform context = (const uniform RayQueryContext* uniform) args->context;
   varying struct Ray* uniform ray    = (varying struct Ray* uniform)args->ray;
   //varying struct RTCHit* uniform hit = (varying struct RTCHit* uniform)args->hit;
   const uniform unsigned int N = args->N;

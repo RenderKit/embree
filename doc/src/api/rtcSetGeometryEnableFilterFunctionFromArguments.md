@@ -23,7 +23,7 @@ some geometry.
 
 The argument filter function invokation can also get enforced for each
 geometry by using the
-`RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER` flag that can get
+`RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER` ray query flag that can get
 passed to `rtcIntersect` and `rtcOccluded` functions. See Section
 [rtcInitIntersectArguments] and [rtcInitOccludedArguments] for more
 details.

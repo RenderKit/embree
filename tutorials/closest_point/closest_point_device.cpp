@@ -99,7 +99,7 @@ void instanceBoundsFunc(const struct RTCBoundsFunctionArguments* args)
   bounds_o->upper_z = upper.z;
 }
 
-inline void pushInstanceId(RTCIntersectContext* ctx, unsigned int id)
+inline void pushInstanceId(RTCRayQueryContext* ctx, unsigned int id)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[ctx->instStackSize++] = id;
@@ -108,7 +108,7 @@ inline void pushInstanceId(RTCIntersectContext* ctx, unsigned int id)
 #endif
 }
 
-inline void popInstanceId(RTCIntersectContext* ctx)
+inline void popInstanceId(RTCRayQueryContext* ctx)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[--ctx->instStackSize] = RTC_INVALID_GEOMETRY_ID;
@@ -121,7 +121,7 @@ void instanceIntersectFunc(const RTCIntersectFunctionNArguments* args)
 {
   const int* valid = args->valid;
   void* ptr  = args->geometryUserPtr;
-  RTCIntersectContext* context = args->context;
+  RTCRayQueryContext* context = args->context;
   RTCRayHitN* rays = (RTCRayHitN*)args->rayhit;
                                     
   assert(args->N == 1);

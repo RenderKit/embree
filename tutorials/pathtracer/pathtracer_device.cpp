@@ -1370,7 +1370,7 @@ inline int postIntersect(const TutorialData& data, const Ray& ray, DifferentialG
 
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOpaque(const RTCFilterFunctionNArguments* args)
 {
-  IntersectContext* context = (IntersectContext*) args->context;
+  RayQueryContext* context = (RayQueryContext*) args->context;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
   if (!transparency) return;
   
@@ -1386,7 +1386,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterOpaque(const RTCFilterFunctionN
 /* occlusion filter function */
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterHair(const RTCFilterFunctionNArguments* args)
 {
-  IntersectContext* context = (IntersectContext*) args->context;
+  RayQueryContext* context = (RayQueryContext*) args->context;
   TutorialData* pdata = (TutorialData*) context->tutorialData;
   TutorialData& data = *pdata;
   Vec3fa* transparency = (Vec3fa*) context->userRayExt;
@@ -1426,7 +1426,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilterHair(const RTCFilterFunctionNAr
 
 RTC_SYCL_INDIRECTLY_CALLABLE void contextFilterFunction(const RTCFilterFunctionNArguments* args)
 {
-  IntersectContext* context = (IntersectContext*) args->context;
+  RayQueryContext* context = (RayQueryContext*) args->context;
   TutorialData* pdata = (TutorialData*) context->tutorialData;
   TutorialData& data = *pdata;
   int* valid_i = args->valid;
@@ -1476,7 +1476,7 @@ Vec3fa renderPixelFunction(const TutorialData& data, float x, float y, RandomSam
       break;
 
     /* intersect ray with scene */
-    IntersectContext context;
+    RayQueryContext context;
     InitIntersectionContext(&context);
     context.tutorialData = (void*) &data;
     

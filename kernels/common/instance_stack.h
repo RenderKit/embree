@@ -120,7 +120,7 @@ RTC_FORCEINLINE void copy_UU(const unsigned* src, unsigned* tgt)
 #endif
 }
 
-RTC_FORCEINLINE void copy_UU(const RTCIntersectContext* context, unsigned* tgt)
+RTC_FORCEINLINE void copy_UU(const RTCRayQueryContext* context, unsigned* tgt)
 {
   const unsigned* src = context->instID;
 

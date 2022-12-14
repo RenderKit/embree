@@ -2791,8 +2791,8 @@ namespace embree
       : VerifyApplication::IntersectTest(name,isa,imode,ivariant,VerifyApplication::TEST_SHOULD_PASS), sflags(sflags), quality(quality), subdiv(subdiv) {
       }
 
-    struct IntersectContext {
-      RTCIntersectContext context;
+    struct RayQueryContext {
+      RTCRayQueryContext context;
       int numHits[16];
     };
     
@@ -2801,7 +2801,7 @@ namespace embree
       assert(args);
       assert(args->context);
 
-      IntersectContext* context = (IntersectContext*)(args->context);
+      RayQueryContext* context = (RayQueryContext*)(args->context);
 
       for (unsigned int i=0; i<args->N; i++) 
       {
@@ -2837,14 +2837,14 @@ namespace embree
 
       sflags.sflags = sflags.sflags | RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS;
       
-      IntersectContext ctx;
-      rtcInitIntersectContext(&ctx.context);
+      RayQueryContext ctx;
+      rtcInitRayQueryContext(&ctx.context);
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
       args.context = &ctx.context;
       args.filter = intersectFilter;
-      args.flags = RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER;
+      args.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER;
 
       VerifyScene scene(device, sflags);
       scene.addGeometry(quality, parent);
@@ -3960,9 +3960,9 @@ namespace embree
 
   struct SphereFilterMultiHitTest : public VerifyApplication::Test
   {
-    struct IntersectContext
+    struct RayQueryContext
     {
-      RTCIntersectContext context;
+      RTCRayQueryContext context;
       void* userRayExt;         
     };
     
@@ -3987,7 +3987,7 @@ namespace embree
       assert(args->N == 1);
       RTCRay* ray = (RTCRay*) args->ray;
       auto pos = embree::Vec3f(ray->org_x, ray->org_y, ray->org_z) + embree::Vec3f(ray->dir_x, ray->dir_y, ray->dir_z) * ray->tfar;
-      static_cast<std::vector<embree::Vec3f>*>(((IntersectContext*)args->context)->userRayExt)->push_back (pos);
+      static_cast<std::vector<embree::Vec3f>*>(((RayQueryContext*)args->context)->userRayExt)->push_back (pos);
       args->valid[0] = 0;
     }
     
@@ -4002,16 +4002,16 @@ namespace embree
       
       rtcCommitScene(scene);
       
-      IntersectContext intersectContext;
+      RayQueryContext intersectContext;
       std::vector<embree::Vec3f> hits;
       intersectContext.userRayExt = &hits;
-      rtcInitIntersectContext(&(intersectContext.context));
+      rtcInitRayQueryContext(&(intersectContext.context));
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
       args.context = &intersectContext.context;
       args.filter = countHits;
-      args.flags = RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER;
+      args.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER;
       
       RTCRayHit rayHit;
       rayHit.ray.org_x = 0;
@@ -5038,13 +5038,13 @@ namespace embree
 	  const size_t y0 = tileY * tileSizeY;
 	  const size_t y1 = min(y0 + tileSizeY, height);
       
-      RTCIntersectContext context;
-      rtcInitIntersectContext(&context);
+      RTCRayQueryContext context;
+      rtcInitRayQueryContext(&context);
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
       args.context = &context;
-      args.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_CONTEXT_FLAG_COHERENT :  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+      args.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_RAY_QUERY_FLAG_COHERENT :  RTC_RAY_QUERY_FLAG_INCOHERENT;
 
       switch (imode) 
       {
@@ -5191,13 +5191,13 @@ namespace embree
 
     void render_block(size_t i, size_t dn)
     {
-      RTCIntersectContext context;
-      rtcInitIntersectContext(&context);
+      RTCRayQueryContext context;
+      rtcInitRayQueryContext(&context);
 
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
       args.context = &context;
-      args.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_INTERSECT_CONTEXT_FLAG_COHERENT :  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+      args.flags = ((ivariant & VARIANT_COHERENT_INCOHERENT_MASK) == VARIANT_COHERENT) ? RTC_RAY_QUERY_FLAG_COHERENT :  RTC_RAY_QUERY_FLAG_INCOHERENT;
 
       RandomSampler sampler;
       RandomSampler_init(sampler, (int)i);

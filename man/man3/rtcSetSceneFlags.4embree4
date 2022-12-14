@@ -40,8 +40,8 @@ This mode is typically used for avoiding artifacts caused by rays
 shooting through edges of neighboring primitives.
 .IP \[bu] 2
 \f[C]RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS\f[R]: Enables support for a
-filter function inside the intersection context for this scene.
-See Section [rtcInitIntersectContext] for more details.
+filter function inside the ray query context for this scene.
+See Section [rtcInitRayQueryContext] for more details.
 .PP
 Multiple flags can be enabled using an \f[C]or\f[R] operation,
 e.g.\ \f[C]RTC_SCENE_FLAG_COMPACT | RTC_SCENE_FLAG_ROBUST\f[R].

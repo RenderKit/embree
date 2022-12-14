@@ -21,7 +21,7 @@ struct RTCOccludedFunctionNArguments
   int* valid;
   void* geometryUserPtr;
   unsigned int primID;
-  struct RTCIntersectContext* context;
+  struct RTCRayQueryContext* context;
   struct RTCRayN* ray;
   unsigned int N;
   unsigned int geomID;
@@ -59,7 +59,7 @@ points to an array of integers which specify whether the corresponding
 ray is valid (\-1) or invalid (0), the \f[C]geometryUserPtr\f[R] member
 points to the geometry user data previously set through
 \f[C]rtcSetGeometryUserData\f[R], the \f[C]context\f[R] member points to
-the intersection context passed to the ray query, the \f[C]ray\f[R]
+the ray query context passed to the ray query, the \f[C]ray\f[R]
 member points to a ray packet of variable size \f[C]N\f[R], and the
 \f[C]geomID\f[R] and \f[C]primID\f[R] member identifies the geometry ID
 and primitive ID of the primitive to intersect.
