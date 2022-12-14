@@ -334,7 +334,7 @@ To compile Embree using SYCL one has to use Intel's DPC++ compiler,
 other SYCL compilers are not supported. The Embree SYCL compilation
 under Windows has been tested with the following compilers:
 
-  - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221013/dpcpp-compiler-win.tar.gz)
+  - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler-win.tar.gz)
   
 Please download and install one of these compilers.
 

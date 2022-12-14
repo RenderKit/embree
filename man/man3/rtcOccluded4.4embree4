@@ -18,21 +18,21 @@ rtcOccluded4/8/16 \- finds any hits for a ray packet
 void rtcOccluded4(
   const int* valid,
   RTCScene scene,
-  struct RTCIntersectContext* context,
+  struct RTCRayQueryContext* context,
   struct RTCRay4* ray
 );
 
 void rtcOccluded8(
   const int* valid,
   RTCScene scene,
-  struct RTCIntersectContext* context,
+  struct RTCRayQueryContext* context,
   struct RTCRay8* ray
 );
 
 void rtcOccluded16(
   const int* valid,
   RTCScene scene,
-  struct RTCIntersectContext* context,
+  struct RTCRayQueryContext* context,
   struct RTCRay16* ray
 );
 \f[R]

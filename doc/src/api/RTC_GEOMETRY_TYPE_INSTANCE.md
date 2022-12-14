@@ -1,4 +1,4 @@
-% RTC_GEOMETRY_TYPE_INSTANCE(3) | Embree Ray Tracing Kernels 3
+% RTC_GEOMETRY_TYPE_INSTANCE(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
@@ -41,9 +41,9 @@ the geometry ID of the instance in the top-level scene.
 
 The instancing scheme can also be implemented using user geometries.
 To achieve this, the user geometry code should set the `instID` member
-of the intersection context to the geometry ID of the instance, then
+of the ray query context to the geometry ID of the instance, then
 trace the transformed ray, and finally set the `instID` field of the
-intersection context again to -1. The `instID` field is copied
+ray query context again to -1. The `instID` field is copied
 automatically by each primitive intersector into the `instID` field of
 the hit structure when the primitive is hit. See the [User Geometry]
 tutorial for an example.

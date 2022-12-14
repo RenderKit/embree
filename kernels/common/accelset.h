@@ -142,7 +142,7 @@ namespace embree
   public:
 
       /*! Intersects a single ray with the scene. */
-      __forceinline bool intersect (RayHit& ray, unsigned int geomID, unsigned int primID, IntersectContext* context) 
+      __forceinline bool intersect (RayHit& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context) 
       {
         assert(primID < size());
         
@@ -172,7 +172,7 @@ namespace embree
       }
 
       /*! Tests if single ray is occluded by the scene. */
-      __forceinline bool occluded (Ray& ray, unsigned int geomID, unsigned int primID, IntersectContext* context)
+      __forceinline bool occluded (Ray& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context)
       {
         assert(primID < size());
 
@@ -202,7 +202,7 @@ namespace embree
       }
 
       /*! Intersects a single ray with the scene. */
-    __forceinline bool intersect (RayHit& ray, unsigned int geomID, unsigned int primID, IntersectContext* context, RTCScene& forward_scene) 
+    __forceinline bool intersect (RayHit& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context, RTCScene& forward_scene) 
     {
         assert(primID < size());
         
@@ -223,11 +223,11 @@ namespace embree
         RTCIntersectFunctionSYCL intersectFunc = nullptr;
         
 #if EMBREE_SYCL_GEOMETRY_CALLBACK
-        if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
+        if (context->args->feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
           intersectFunc = (RTCIntersectFunctionSYCL) intersectorN.intersect;
 #endif
         
-        if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS)
+        if (context->args->feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS)
           if (context->getIntersectFunction())
             intersectFunc = (RTCIntersectFunctionSYCL) context->getIntersectFunction();
 
@@ -239,7 +239,7 @@ namespace embree
       }
 
       /*! Tests if single ray is occluded by the scene. */
-    __forceinline bool occluded (Ray& ray, unsigned int geomID, unsigned int primID, IntersectContext* context, RTCScene& forward_scene)
+    __forceinline bool occluded (Ray& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context, RTCScene& forward_scene)
       {
         assert(primID < size());
 
@@ -260,11 +260,11 @@ namespace embree
         RTCOccludedFunctionSYCL occludedFunc = nullptr;
 
 #if EMBREE_SYCL_GEOMETRY_CALLBACK
-        if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
+        if (context->args->feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_GEOMETRY)
           occludedFunc = (RTCOccludedFunctionSYCL) intersectorN.occluded;
 #endif
         
-        if (context->args->feature_mask & RTC_FEATURE_FLAGS_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS)
+        if (context->args->feature_mask & RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_ARGUMENTS)
           if (context->getOccludedFunction())
             occludedFunc = (RTCOccludedFunctionSYCL) context->getOccludedFunction();
 
@@ -277,7 +277,7 @@ namespace embree
 
       /*! Intersects a packet of K rays with the scene. */
       template<int K>
-        __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, unsigned int geomID, unsigned int primID, IntersectContext* context) 
+        __forceinline void intersect (const vbool<K>& valid, RayHitK<K>& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context) 
       {
         assert(primID < size());
         
@@ -306,7 +306,7 @@ namespace embree
 
       /*! Tests if a packet of K rays is occluded by the scene. */
       template<int K>
-        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, unsigned int geomID, unsigned int primID, IntersectContext* context)
+        __forceinline void occluded (const vbool<K>& valid, RayK<K>& ray, unsigned int geomID, unsigned int primID, RayQueryContext* context)
       {
         assert(primID < size());
         

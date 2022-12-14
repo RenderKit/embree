@@ -1,4 +1,4 @@
-% RTCQuaternionDecomposition(3) | Embree Ray Tracing Kernels 3
+% RTCQuaternionDecomposition(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

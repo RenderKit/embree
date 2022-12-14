@@ -85,7 +85,7 @@ struct RTCIntersectFunctionNArguments
   uniform int* uniform valid;
   void* uniform geometryUserPtr;
   uniform unsigned int primID;
-  uniform RTCIntersectContext* uniform context;
+  uniform RTCRayQueryContext* uniform context;
   RTCRayHitN* uniform rayhit;
   uniform unsigned int N;
   uniform unsigned int geomID;
@@ -100,7 +100,7 @@ struct RTCOccludedFunctionNArguments
   uniform int* uniform valid;
   void* uniform geometryUserPtr;
   uniform unsigned int primID;
-  uniform RTCIntersectContext* uniform context;
+  uniform RTCRayQueryContext* uniform context;
   RTCRayN* uniform ray;
   uniform unsigned int N;
   uniform unsigned int geomID;

@@ -12,18 +12,12 @@
 /* all features required by this tutorial */
 #if USE_ARGUMENT_CALLBACKS
 #define FEATURE_MASK \
-  RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS
 #else
 #define FEATURE_MASK     \
-  RTC_FEATURE_FLAGS_TRIANGLE | \
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY
-#endif
-
-/* FIXME: the following is a bug workaround */
-#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
-#define FEATURE_MASK     \
-  RTC_FEATURE_FLAGS_ALL
+  RTC_FEATURE_FLAG_TRIANGLE | \
+  RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY
 #endif
 
 RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilter(const RTCFilterFunctionNArguments* uniform args);
@@ -60,7 +54,7 @@ void renderPixelStandard(const uniform TutorialData& data,
   float weight = 1.0f;
   Vec3f color = make_Vec3f(0.0f);
 
-  uniform IntersectContext context;
+  uniform RayQueryContext context;
   InitIntersectionContext(&context);
 
   /* initialize ray */
@@ -164,7 +158,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilter(const RTCFilterFun
 
   assert(args->N == programCount);
   uniform int* uniform valid = args->valid;
-  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
+  const uniform RayQueryContext* uniform context = (const uniform RayQueryContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
   //varying RTCHit* uniform hit = (varying RTCHit* uniform)args->hit;
 
@@ -194,7 +188,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFuncti
 
   assert(args->N == programCount);
   uniform int* uniform valid = args->valid;
-  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
+  const uniform RayQueryContext* uniform context = (const uniform RayQueryContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
 
   /* ignore inactive rays */

@@ -1,4 +1,4 @@
-% RTC_GEOMETRY_TYPE_*_CURVE(3) | Embree Ray Tracing Kernels 3
+% RTC_GEOMETRY_TYPE_*_CURVE(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

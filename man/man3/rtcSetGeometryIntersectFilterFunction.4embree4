@@ -20,7 +20,7 @@ struct RTCFilterFunctionNArguments
 {
   int* valid;
   void* geometryUserPtr;
-  const struct RTCIntersectContext* context;
+  const struct RTCRayQueryContext* context;
   struct RTCRayN* ray;
   struct RTCHitN* hit;
   unsigned int N;
@@ -71,7 +71,7 @@ The \f[C]valid\f[R] parameter of that structure points to an integer
 valid mask (0 means invalid and \-1 means valid).
 The \f[C]geometryUserPtr\f[R] member is a user pointer optionally set
 per geometry through the \f[C]rtcSetGeometryUserData\f[R] function.
-The \f[C]context\f[R] member points to the intersection context passed
+The \f[C]context\f[R] member points to the ray query context passed
 to the ray query function.
 The \f[C]ray\f[R] parameter points to \f[C]N\f[R] rays in SOA layout.
 The \f[C]hit\f[R] parameter points to \f[C]N\f[R] hits in SOA layout to

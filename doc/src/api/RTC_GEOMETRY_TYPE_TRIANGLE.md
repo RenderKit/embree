@@ -1,4 +1,4 @@
-% RTC_GEOMETRY_TYPE_TRIANGLE(3) | Embree Ray Tracing Kernels 3
+% RTC_GEOMETRY_TYPE_TRIANGLE(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

@@ -7,7 +7,7 @@ namespace embree {
 
 /* all features required by this tutorial */
 #define FEATURE_MASK \
-  RTC_FEATURE_FLAGS_TRIANGLE
+  RTC_FEATURE_FLAG_TRIANGLE
 
 RTCScene g_scene = nullptr;
 TutorialData data;

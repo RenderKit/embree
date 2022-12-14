@@ -57,9 +57,9 @@ scene.
 .PP
 The instancing scheme can also be implemented using user geometries.
 To achieve this, the user geometry code should set the \f[C]instID\f[R]
-member of the intersection context to the geometry ID of the instance,
+member of the ray query context to the geometry ID of the instance,
 then trace the transformed ray, and finally set the \f[C]instID\f[R]
-field of the intersection context again to \-1.
+field of the ray query context again to \-1.
 The \f[C]instID\f[R] field is copied automatically by each primitive
 intersector into the \f[C]instID\f[R] field of the hit structure when
 the primitive is hit.

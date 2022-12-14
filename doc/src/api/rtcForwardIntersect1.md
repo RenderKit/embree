@@ -1,8 +1,9 @@
-% rtcForwardIntersect1(3) | Embree Ray Tracing Kernels 3
+% rtcForwardIntersect1(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
-    rtcForwardIntersect1 - forwards a single ray to new scene from user geometry callback
+    rtcForwardIntersect1 - forwards a single ray to new scene
+      from user geometry callback
 
 #### SYNOPSIS
 
@@ -11,7 +12,8 @@
     void rtcForwardIntersect1(
       const struct RTCIntersectFunctionNArguments* args,
       RTCScene scene,
-      struct RTCRay* ray
+      struct RTCRay* ray,
+      unsigned int instID
     );
 
 #### DESCRIPTION
@@ -30,10 +32,11 @@ argument are used for forwarding, all additional ray properties are
 inherited from the initial ray traversal invokation of
 `rtcIntersect1`.
 
-The implementation of the `rtcForwardIntersect1` function recursively,
-continues the ray traversal into the specified scene. Hit information
-is updated into the ray hit structure passed to the original
-`rtcIntersect1` invokation.
+The implementation of the `rtcForwardIntersect1` function recursively
+continues the ray traversal into the specified scene and pushes the
+provided instance ID (`instID` argument) to the instance ID stack. Hit
+information is updated into the ray hit structure passed to the
+original `rtcIntersect1` invokation.
 
 This function can get used to implement user defined instancing using
 user geometries, e.g. by transforming the ray in a special way, and/or

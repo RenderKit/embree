@@ -12,8 +12,8 @@
 #endif
 
 #if defined(_WIN32)
-#  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C __declspec(dllimport)
-#  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C __declspec(dllexport)
+#  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C //__declspec(dllimport)
+#  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C //__declspec(dllexport)
 #else
 #  define RTHWIF_API_IMPORT RTHWIF_API_EXTERN_C
 #  define RTHWIF_API_EXPORT RTHWIF_API_EXTERN_C __attribute__ ((visibility ("default")))

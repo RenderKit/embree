@@ -1,4 +1,4 @@
-% rtcNewSharedBuffer(3) | Embree Ray Tracing Kernels 3
+% rtcNewSharedBuffer(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

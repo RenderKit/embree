@@ -719,7 +719,7 @@ namespace embree
 
   struct CurveGeometry; // FIXME: this code should move !
   template<typename CurveGeometry>
-  __forceinline CubicBezierCurve<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const CubicBezierCurve<Vec3ff>& curve)
+  __forceinline CubicBezierCurve<Vec3ff> enlargeRadiusToMinWidth(const RayQueryContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const CubicBezierCurve<Vec3ff>& curve)
   {
     return CubicBezierCurve<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0),
                                     enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1),

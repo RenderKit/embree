@@ -26,9 +26,9 @@ enum RTCSceneFlags
 /* Additional arguments for rtcIntersect1/4/8/16 calls */
 struct RTCIntersectArguments
 {
-  enum RTCIntersectContextFlags flags;     // intersection flags
+  enum RTCRayQueryFlags flags;     // intersection flags
   enum RTCFeatureFlags feature_mask;       // selectively enable features for traversal
-  struct RTCIntersectContext* context;     // optional pointer to intersection context
+  struct RTCRayQueryContext* context;     // optional pointer to ray query context
   RTCFilterFunctionN filter;               // filter function to execute
   RTCIntersectFunctionN intersect;         // user geometry intersection callback to execute
 #if RTC_MIN_WIDTH
@@ -39,8 +39,8 @@ struct RTCIntersectArguments
 /* Initializes intersection arguments. */
 RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* args)
 {
-  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
+  args->flags = RTC_RAY_QUERY_FLAG_INCOHERENT;
+  args->feature_mask = RTC_FEATURE_FLAG_ALL;
   args->context = NULL;
   args->filter = NULL;
   args->intersect = NULL;
@@ -53,9 +53,9 @@ RTC_FORCEINLINE void rtcInitIntersectArguments(struct RTCIntersectArguments* arg
 /* Additional arguments for rtcOccluded1/4/8/16 calls */
 struct RTCOccludedArguments
 {
-  enum RTCIntersectContextFlags flags;     // intersection flags
+  enum RTCRayQueryFlags flags;     // intersection flags
   enum RTCFeatureFlags feature_mask;       // selectively enable features for traversal
-  struct RTCIntersectContext* context;     // optional pointer to intersection context
+  struct RTCRayQueryContext* context;     // optional pointer to ray query context
   RTCFilterFunctionN filter;               // filter function to execute
   RTCOccludedFunctionN occluded;           // user geometry occlusion callback to execute
 
@@ -67,8 +67,8 @@ struct RTCOccludedArguments
 /* Initializes an intersection arguments. */
 RTC_FORCEINLINE void rtcInitOccludedArguments(struct RTCOccludedArguments* args)
 {
-  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
-  args->feature_mask = RTC_FEATURE_FLAGS_ALL;
+  args->flags = RTC_RAY_QUERY_FLAG_INCOHERENT;
+  args->feature_mask = RTC_FEATURE_FLAG_ALL;
   args->context = NULL;
   args->filter = NULL;
   args->occluded = NULL;

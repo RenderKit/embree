@@ -20,5 +20,5 @@ namespace embree
   };
 }
 
-SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCIntersectContext> context, sycl::private_ptr<RTCRayHit> rayhit, sycl::private_ptr<RTCIntersectArguments> args);
-SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCIntersectContext> context, sycl::private_ptr<RTCRay> ray, sycl::private_ptr<RTCOccludedArguments> args);
+SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCRayQueryContext> context, sycl::private_ptr<RTCRayHit> rayhit, sycl::private_ptr<RTCIntersectArguments> args);
+SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCRayQueryContext> context, sycl::private_ptr<RTCRay> ray, sycl::private_ptr<RTCOccludedArguments> args);

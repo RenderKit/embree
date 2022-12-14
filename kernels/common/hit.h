@@ -17,7 +17,7 @@ namespace embree
     __forceinline HitK() {}
 
     /* Constructs a hit */
-    __forceinline HitK(const RTCIntersectContext* context, const vuint<K>& geomID, const vuint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const Vec3vf<K>& Ng)
+    __forceinline HitK(const RTCRayQueryContext* context, const vuint<K>& geomID, const vuint<K>& primID, const vfloat<K>& u, const vfloat<K>& v, const Vec3vf<K>& Ng)
       : Ng(Ng), u(u), v(v), primID(primID), geomID(geomID) 
     {
       for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
@@ -27,7 +27,7 @@ namespace embree
     }
 
     /* Constructs a hit */
-    __forceinline HitK(const RTCIntersectContext* context, const vuint<K>& geomID, const vuint<K>& primID, const Vec2vf<K>& uv, const Vec3vf<K>& Ng)
+    __forceinline HitK(const RTCRayQueryContext* context, const vuint<K>& geomID, const vuint<K>& primID, const Vec2vf<K>& uv, const Vec3vf<K>& Ng)
       : HitK(context,geomID,primID,uv.x,uv.y,Ng) {}
 
     /* Returns the size of the hit */
@@ -50,14 +50,14 @@ namespace embree
     __forceinline HitK() {}
 
     /* Constructs a hit */
-    __forceinline HitK(const RTCIntersectContext* context, unsigned int geomID, unsigned int primID, float u, float v, const Vec3fa& Ng)
+    __forceinline HitK(const RTCRayQueryContext* context, unsigned int geomID, unsigned int primID, float u, float v, const Vec3fa& Ng)
       : Ng(Ng.x,Ng.y,Ng.z), u(u), v(v), primID(primID), geomID(geomID)
     {
       instance_id_stack::copy_UU(context, instID);
     }
 
     /* Constructs a hit */
-    __forceinline HitK(const RTCIntersectContext* context, unsigned int geomID, unsigned int primID, const Vec2f& uv, const Vec3fa& Ng)
+    __forceinline HitK(const RTCRayQueryContext* context, unsigned int geomID, unsigned int primID, const Vec2f& uv, const Vec3fa& Ng)
       : HitK<1>(context,geomID,primID,uv.x,uv.y,Ng) {}
 
     /* Returns the size of the hit */

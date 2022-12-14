@@ -313,7 +313,7 @@ namespace embree
   }
 
   template<typename CurveGeometry>
-  __forceinline BSplineCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const BSplineCurveT<Vec3ff>& curve)
+  __forceinline BSplineCurveT<Vec3ff> enlargeRadiusToMinWidth(const RayQueryContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const BSplineCurveT<Vec3ff>& curve)
   {
     return BSplineCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0),
                                  enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1),

@@ -1,4 +1,4 @@
-% rtcGetGeometryUserData(3) | Embree Ray Tracing Kernels 3
+% rtcGetGeometryUserData(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
@@ -16,6 +16,9 @@
 The `rtcGetGeometryUserData` function queries the user data pointer
 previously set with `rtcSetGeometryUserData`. When
 `rtcSetGeometryUserData` was not called yet, `NULL` is returned.
+
+This function is supposed to be used during rendering, but only
+supported on the CPU and in SYCL on the GPU.
 
 #### EXIT STATUS
 

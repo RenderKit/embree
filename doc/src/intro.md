@@ -208,8 +208,7 @@ the `RTC_SCENE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS` scene flag. The
 callback is only invoked for geometries that enable the callback using
 the `rtcSetGeometryEnableFilterFunctionFromArguments` call, or enabled
 for all geometries when the
-`RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER` flag is set in the
-traversal arguments.
+`RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER` ray query flag is set.
 
 
 BVH Build API

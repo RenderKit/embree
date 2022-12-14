@@ -223,7 +223,7 @@ namespace embree
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const size_t itime) const
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(RayQueryContext* context, const Vec3fa& ray_org, const unsigned int primID, const size_t itime) const
     {
       Vec3ff v0,v1,v2,v3; Vec3fa n0,n1,n2,n3;
       unsigned int vertexID = curve(primID);
@@ -235,7 +235,7 @@ namespace embree
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(RayQueryContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
@@ -245,7 +245,7 @@ namespace embree
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurveSafe(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurveSafe(RayQueryContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
     {
       float ftime = 0.0f;
       const size_t itime = hasMotionBlur() ? timeSegment(time, ftime) : 0;
@@ -352,7 +352,7 @@ namespace embree
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-      __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const size_t itime) const
+      __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(RayQueryContext* context, const Vec3fa& ray_org, const unsigned int primID, const size_t itime) const
     {
       Vec3ff v0,t0,v1,t1; Vec3fa n0,dn0,n1,dn1;
       unsigned int vertexID = curve(primID);
@@ -365,7 +365,7 @@ namespace embree
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(RayQueryContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
@@ -375,7 +375,7 @@ namespace embree
     }
 
     template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurveSafe(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurveSafe(RayQueryContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
     {
       float ftime = 0.0f;
       const size_t itime = hasMotionBlur() ? timeSegment(time, ftime) : 0;

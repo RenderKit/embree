@@ -52,16 +52,16 @@ RTC_NAMESPACE_BEGIN;
 
 const constexpr uint32_t TRAV_LOOP_FEATURES =
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
-  RTC_FEATURE_FLAGS_TRIANGLE |   // filter function enforced for triangles and quads in this case
-  RTC_FEATURE_FLAGS_QUAD |
+  RTC_FEATURE_FLAG_TRIANGLE |   // filter function enforced for triangles and quads in this case
+  RTC_FEATURE_FLAG_QUAD |
 #endif
-  RTC_FEATURE_FLAGS_MOTION_BLUR |
-  RTC_FEATURE_FLAGS_CURVES |
-  RTC_FEATURE_FLAGS_GRID |
-  RTC_FEATURE_FLAGS_POINT |
-  RTC_FEATURE_FLAGS_USER_GEOMETRY |
-  RTC_FEATURE_FLAGS_INSTANCE |
-  RTC_FEATURE_FLAGS_FILTER_FUNCTION;
+  RTC_FEATURE_FLAG_MOTION_BLUR |
+  RTC_FEATURE_FLAG_CURVES |
+  RTC_FEATURE_FLAG_GRID |
+  RTC_FEATURE_FLAG_POINT |
+  RTC_FEATURE_FLAG_USER_GEOMETRY |
+  RTC_FEATURE_FLAG_INSTANCE |
+  RTC_FEATURE_FLAG_FILTER_FUNCTION;
 
 void use_rthwif_embree() {
 }
@@ -75,7 +75,7 @@ Vec3f intel_get_hit_triangle_normal(intel_ray_query_t& query, intel_hit_type_t h
   return cross(v1-v0, v2-v0);
 }
 
-bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
+bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -116,7 +116,7 @@ bool intersect_user_geometry(intel_ray_query_t& query, RayHit& ray, UserGeometry
   return false;
 }
 
-bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
+bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* geom, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -158,10 +158,10 @@ bool intersect_user_geometry(intel_ray_query_t& query, Ray& ray, UserGeometry* g
 }
 
 template<typename Ray>
-bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID);
+bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID);
 
 template<>
-bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
+bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -199,7 +199,7 @@ bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instanc
   
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-  if (context->args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+  if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
     bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
   }
@@ -212,7 +212,7 @@ bool intersect_instance(intel_ray_query_t& query, RayHit& ray, Instance* instanc
 }
 
 template<>
-bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID)
+bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID)
 {
   /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -250,7 +250,7 @@ bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, 
   
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-  if (context->args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+  if (context->args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
     bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
   }
@@ -263,11 +263,11 @@ bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, 
 }
 
 template<typename Ray>
-bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], Geometry* geom, sycl::private_ptr<IntersectContext> context, uint32_t geomID, uint32_t primID, const RTCFeatureFlags feature_mask)
+bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], Geometry* geom, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, const RTCFeatureFlags feature_mask)
 {
 #if defined(__SYCL_DEVICE_ONLY__)
-  bool filter = feature_mask & (RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_ARGUMENTS | RTC_FEATURE_FLAGS_FILTER_FUNCTION_IN_GEOMETRY);
-  if (feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+  bool filter = feature_mask & (RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS | RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY);
+  if (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     if (ray.time() < geom->time_range.lower || geom->time_range.upper < ray.time())
       return false;
   }
@@ -291,7 +291,7 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
   const Geometry::GType basis MAYBE_UNUSED = (Geometry::GType)(gtype & Geometry::GTY_BASIS_MASK);
   
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-  if (gtype == Geometry::GTY_TRIANGLE_MESH && (feature_mask & RTC_FEATURE_FLAGS_TRIANGLE) && (feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR))
+  if (gtype == Geometry::GTY_TRIANGLE_MESH && (feature_mask & RTC_FEATURE_FLAG_TRIANGLE) && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
   {
     const TriangleMesh* geom = context->scene->get<TriangleMesh>(geomID);
     const TriangleMesh::Triangle triangle = geom->triangle(primID);
@@ -303,7 +303,7 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-  if (gtype == Geometry::GTY_QUAD_MESH && (feature_mask & RTC_FEATURE_FLAGS_QUAD) && (feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR))
+  if (gtype == Geometry::GTY_QUAD_MESH && (feature_mask & RTC_FEATURE_FLAG_QUAD) && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
   {
     const QuadMesh* geom = context->scene->get<QuadMesh>(geomID);
     const QuadMesh::Quad quad = geom->quad(primID);
@@ -318,7 +318,7 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
 #endif
 
 #if defined(EMBREE_GEOMETRY_GRID)
-  if (gtype == Geometry::GTY_GRID_MESH && (feature_mask & RTC_FEATURE_FLAGS_GRID))
+  if (gtype == Geometry::GTY_GRID_MESH && (feature_mask & RTC_FEATURE_FLAG_GRID))
   {
     const GridMesh* mesh = context->scene->get<GridMesh>(geomID);
     const GridMesh::PrimID_XY c = mesh->quadID_to_primID_xy[primID];
@@ -347,21 +347,21 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
 
 #if defined(EMBREE_GEOMETRY_POINT)
   
-  if (gtype == Geometry::GTY_SPHERE_POINT && (feature_mask & RTC_FEATURE_FLAGS_SPHERE_POINT))
+  if (gtype == Geometry::GTY_SPHERE_POINT && (feature_mask & RTC_FEATURE_FLAG_SPHERE_POINT))
   {
     const Points* geom = context->scene->get<Points>(geomID);
     const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
     const Vec4f vr(xyzr.x,xyzr.y,xyzr.z,xyzr.w);
     return isa::SphereIntersector1<1>::intersect(true, ray, pre, vr, Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
   }
-  else if (gtype == Geometry::GTY_DISC_POINT && (feature_mask & RTC_FEATURE_FLAGS_DISC_POINT))
+  else if (gtype == Geometry::GTY_DISC_POINT && (feature_mask & RTC_FEATURE_FLAG_DISC_POINT))
   {
     const Points* geom = context->scene->get<Points>(geomID);
     const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
     const Vec4f vr(xyzr.x,xyzr.y,xyzr.z,xyzr.w);
     return isa::DiscIntersector1<1>::intersect(true, ray, nullptr, nullptr, pre, vr, Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
   }
-  else if (gtype == Geometry::GTY_ORIENTED_DISC_POINT && (feature_mask & RTC_FEATURE_FLAGS_ORIENTED_DISC_POINT))
+  else if (gtype == Geometry::GTY_ORIENTED_DISC_POINT && (feature_mask & RTC_FEATURE_FLAG_ORIENTED_DISC_POINT))
   {
     const Points* geom = context->scene->get<Points>(geomID);
     const Vec3ff xyzr = geom->vertex_safe(primID, ray.time());
@@ -376,19 +376,19 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
 
   if (geom->getTypeMask() & Geometry::MTY_CURVES)
   {
-    if (gtype == Geometry::GTY_FLAT_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAGS_FLAT_LINEAR_CURVE))
+    if (gtype == Geometry::GTY_FLAT_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_FLAT_LINEAR_CURVE))
     {
       LineSegments* geom = context->scene->get<LineSegments>(geomID);
       Vec3ff v0, v1; geom->gather_safe(v0,v1,geom->segment(primID),ray.time());
       return isa::FlatLinearCurveIntersector1<1>::intersect(true,ray,context,geom,pre,v0,v1,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
     }
-    else if (gtype == Geometry::GTY_ROUND_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAGS_ROUND_LINEAR_CURVE))
+    else if (gtype == Geometry::GTY_ROUND_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_ROUND_LINEAR_CURVE))
     {
       LineSegments* geom = context->scene->get<LineSegments>(geomID);
       Vec3ff v0,v1,v2,v3; geom->gather_safe(v0,v1,v2,v3,primID,geom->segment(primID),ray.time());
       return isa::RoundLinearCurveIntersector1<1>().intersect(true,ray,context,geom,pre,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
     }
-    else if (gtype == Geometry::GTY_CONE_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAGS_CONE_LINEAR_CURVE))
+    else if (gtype == Geometry::GTY_CONE_LINEAR_CURVE && (feature_mask & RTC_FEATURE_FLAG_CONE_LINEAR_CURVE))
     {
       LineSegments* geom = context->scene->get<LineSegments>(geomID);
       Vec3ff v0 = zero, v1 = zero; bool cL = false, cR = false;
@@ -398,20 +398,20 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
     else
     {
       CurveGeometry* geom = context->scene->get<CurveGeometry>(geomID);
-      if (stype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE && (feature_mask & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_CURVES))
+      if (stype == Geometry::GTY_SUBTYPE_ORIENTED_CURVE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_CURVES))
       {
         using Intersector = isa::OrientedCurve1Intersector1<CubicBezierCurve,8,1>;
         using Curve = isa::TensorLinearCubicBezierSurface3fa;
-        if (geom->numTimeSegments() > 0 && (feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR))
+        if (geom->numTimeSegments() > 0 && (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR))
         {
           Curve curve;
-          if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_HERMITE_CURVE)) {
+          if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE)) {
             curve = geom->getNormalOrientedHermiteCurveSafe<HermiteCurveT<Vec3ff>, HermiteCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time());
           }
-          else if (basis == Geometry::GTY_BASIS_BSPLINE && (feature_mask & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_BSPLINE_CURVE)) {
+          else if (basis == Geometry::GTY_BASIS_BSPLINE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_BSPLINE_CURVE)) {
             curve = geom->getNormalOrientedCurveSafe<BSplineCurveT<Vec3ff>, BSplineCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time());
           }
-          else if (basis == Geometry::GTY_BASIS_CATMULL_ROM && (feature_mask & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_CATMULL_ROM_CURVE)) {
+          else if (basis == Geometry::GTY_BASIS_CATMULL_ROM && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_CATMULL_ROM_CURVE)) {
             curve = geom->getNormalOrientedCurveSafe<CatmullRomCurveT<Vec3ff>, CatmullRomCurveT<Vec3fa>, Curve>(context,ray.org,primID,ray.time());
           }
           else {
@@ -423,7 +423,7 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
         {
           Vec3ff v0,v1,v2,v3;
           Vec3fa n0,n1,n2,n3;
-          if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & RTC_FEATURE_FLAGS_NORMAL_ORIENTED_HERMITE_CURVE))
+          if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & RTC_FEATURE_FLAG_NORMAL_ORIENTED_HERMITE_CURVE))
             geom->gather_hermite_safe(v0,v1,n0,n1,v2,v3,n2,n3,geom->curve(primID),ray.time());
           else
             geom->gather_safe(v0,v1,v2,v3,n0,n1,n2,n3,geom->curve(primID),ray.time());
@@ -431,21 +431,21 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
           return Intersector().intersect(pre,ray,context,geom,primID,v0,v1,v2,v3,n0,n1,n2,n3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
         }
       }
-      else if (feature_mask & (RTC_FEATURE_FLAGS_FLAT_CURVES | RTC_FEATURE_FLAGS_ROUND_CURVES)) {
+      else if (feature_mask & (RTC_FEATURE_FLAG_FLAT_CURVES | RTC_FEATURE_FLAG_ROUND_CURVES)) {
         Vec3ff v0,v1,v2,v3;
-        if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & (RTC_FEATURE_FLAGS_ROUND_HERMITE_CURVE | RTC_FEATURE_FLAGS_FLAT_HERMITE_CURVE)))
+        if (basis == Geometry::GTY_BASIS_HERMITE && (feature_mask & (RTC_FEATURE_FLAG_ROUND_HERMITE_CURVE | RTC_FEATURE_FLAG_FLAT_HERMITE_CURVE)))
           geom->gather_hermite_safe(v0,v1,v2,v3,geom->curve(primID),ray.time());
         else
           geom->gather_safe(v0,v1,v2,v3,geom->curve(primID),ray.time());
         
         isa::convert_to_bezier(gtype, v0,v1,v2,v3);
 
-        if (stype == Geometry::GTY_SUBTYPE_FLAT_CURVE && (feature_mask & RTC_FEATURE_FLAGS_FLAT_CURVES))
+        if (stype == Geometry::GTY_SUBTYPE_FLAT_CURVE && (feature_mask & RTC_FEATURE_FLAG_FLAT_CURVES))
         {
           isa::RibbonCurve1Intersector1<CubicBezierCurve,1> intersector;
           return intersector.intersect(pre,ray,context,geom,primID,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
         }
-        else if (stype == Geometry::GTY_SUBTYPE_ROUND_CURVE && (feature_mask & RTC_FEATURE_FLAGS_ROUND_CURVES))
+        else if (stype == Geometry::GTY_SUBTYPE_ROUND_CURVE && (feature_mask & RTC_FEATURE_FLAG_ROUND_CURVES))
         {
           isa::SweepCurve1Intersector1<CubicBezierCurve> intersector;
           return intersector.intersect(pre,ray,context,geom,primID,v0,v1,v2,v3,Intersect1Epilog1_HWIF<Ray>(ray,context,geomID,primID,filter));
@@ -463,10 +463,10 @@ bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_M
   return false;
 }
 
-bool invokeTriangleIntersectionFilter(intel_ray_query_t& query, Geometry* geom, uint32_t bvh_level, RayHit& ray, Hit& hit, sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
+bool invokeTriangleIntersectionFilter(intel_ray_query_t& query, Geometry* geom, uint32_t bvh_level, RayHit& ray, Hit& hit, sycl::private_ptr<RayQueryContext> context, const RTCFeatureFlags feature_mask)
 {
 #if defined(EMBREE_FILTER_FUNCTION)
-  if (!(feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION) || runIntersectionFilter1SYCL(geom, ray, context, hit))
+  if (!(feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION) || runIntersectionFilter1SYCL(geom, ray, context, hit))
 #endif
   {
     intel_ray_query_commit_potential_hit_override (query, ray.tfar, float2(hit.u, hit.v));
@@ -477,11 +477,11 @@ bool invokeTriangleIntersectionFilter(intel_ray_query_t& query, Geometry* geom, 
   return false;
 }
 
-bool invokeTriangleIntersectionFilter(intel_ray_query_t& query, Geometry* geom, uint32_t bvh_level, Ray& ray, Hit& hit, sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
+bool invokeTriangleIntersectionFilter(intel_ray_query_t& query, Geometry* geom, uint32_t bvh_level, Ray& ray, Hit& hit, sycl::private_ptr<RayQueryContext> context, const RTCFeatureFlags feature_mask)
 {
   bool ishit = true;
 #if defined(EMBREE_FILTER_FUNCTION)
-  ishit = !(feature_mask & RTC_FEATURE_FLAGS_FILTER_FUNCTION) || runIntersectionFilter1SYCL(geom, ray, context, hit);
+  ishit = !(feature_mask & RTC_FEATURE_FLAG_FILTER_FUNCTION) || runIntersectionFilter1SYCL(geom, ray, context, hit);
   if (ishit)
 #endif
   {
@@ -501,7 +501,7 @@ bool commit_potential_hit(intel_ray_query_t& query, Ray& ray) {
 }
 
 template<typename Ray>
-void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<IntersectContext> context, const RTCFeatureFlags feature_mask)
+void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], sycl::private_ptr<RayQueryContext> context, const RTCFeatureFlags feature_mask)
 {
   while (!intel_is_traversal_done(query))
   {
@@ -566,7 +566,7 @@ void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANC
   }
 }
 
-SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCIntersectContext> ucontext, sycl::private_ptr<RTCRayHit> rayhit_i, sycl::private_ptr<RTCIntersectArguments> args)
+SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCRayQueryContext> ucontext, sycl::private_ptr<RTCRayHit> rayhit_i, sycl::private_ptr<RTCIntersectArguments> args)
 {
   Scene* scene = (Scene*) hscene.get();
   intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
@@ -574,7 +574,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1];
   scenes[0] = scene;
 
-  IntersectContext context(scene, ucontext, args);
+  RayQueryContext context(scene, ucontext, args);
 
   RayHit ray;
   ray.org = Vec3ff(rayhit_i->ray.org_x, rayhit_i->ray.org_y, rayhit_i->ray.org_z, rayhit_i->ray.tnear);
@@ -617,7 +617,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
 
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-  if (args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+  if (args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
     bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
   }
@@ -679,7 +679,7 @@ SYCL_EXTERNAL void rtcIntersectRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::p
   intel_ray_query_abandon(query);
 }
 
-SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCIntersectContext> ucontext, sycl::private_ptr<RTCRay> ray_i, sycl::private_ptr<RTCOccludedArguments> args)
+SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::private_ptr<RTCRayQueryContext> ucontext, sycl::private_ptr<RTCRay> ray_i, sycl::private_ptr<RTCOccludedArguments> args)
 {
   Scene* scene = (Scene*) hscene.get();
   intel_raytracing_acceleration_structure_t hwaccel_ptr = (intel_raytracing_acceleration_structure_t) scene->hwaccel.data();
@@ -687,7 +687,7 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
   Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1];
   scenes[0] = scene;
   
-  IntersectContext context(scene, ucontext, args);
+  RayQueryContext context(scene, ucontext, args);
   
   Ray ray;
   ray.org = Vec3ff(ray_i->org_x, ray_i->org_y, ray_i->org_z, ray_i->tnear);
@@ -714,7 +714,7 @@ SYCL_EXTERNAL void rtcOccludedRTHW(sycl::global_ptr<RTCSceneTy> hscene, sycl::pr
 
   uint32_t bvh_id = 0;
   EmbreeHWAccel* hwaccel = (EmbreeHWAccel*) hwaccel_ptr;
-  if (args->feature_mask & RTC_FEATURE_FLAGS_MOTION_BLUR) {
+  if (args->feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     float time = clamp(ray.time(),0.0f,1.0f);
     bvh_id = (uint32_t) clamp(uint32_t(hwaccel->numTimeSegments*time), 0u, hwaccel->numTimeSegments-1);
   }

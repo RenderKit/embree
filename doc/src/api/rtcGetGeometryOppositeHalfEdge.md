@@ -1,4 +1,4 @@
-% rtcGetGeometryOppositeHalfEdge(3) | Embree Ray Tracing Kernels 3
+% rtcGetGeometryOppositeHalfEdge(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

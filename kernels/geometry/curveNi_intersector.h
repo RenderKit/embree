@@ -61,7 +61,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_t(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
+        static __forceinline void intersect_t(const Precalculations& pre, RayHit& ray, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,prim,tNear);
@@ -95,7 +95,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_t(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
+        static __forceinline bool occluded_t(const Precalculations& pre, Ray& ray, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,prim,tNear);
@@ -132,7 +132,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_n(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
+        static __forceinline void intersect_n(const Precalculations& pre, RayHit& ray, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,prim,tNear);
@@ -168,7 +168,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_n(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
+        static __forceinline bool occluded_n(const Precalculations& pre, Ray& ray, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,prim,tNear);
@@ -207,7 +207,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_h(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
+        static __forceinline void intersect_h(const Precalculations& pre, RayHit& ray, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,prim,tNear);
@@ -228,7 +228,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_h(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
+        static __forceinline bool occluded_h(const Precalculations& pre, Ray& ray, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,prim,tNear);
@@ -252,7 +252,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_hn(const Precalculations& pre, RayHit& ray, IntersectContext* context, const Primitive& prim)
+        static __forceinline void intersect_hn(const Precalculations& pre, RayHit& ray, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,prim,tNear);
@@ -273,7 +273,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_hn(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
+        static __forceinline bool occluded_hn(const Precalculations& pre, Ray& ray, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,prim,tNear);
@@ -345,7 +345,7 @@ namespace embree
       }
       
       template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_t(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+        static __forceinline void intersect_t(Precalculations& pre, RayHitK<K>& ray, const size_t k, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,k,prim,tNear);
@@ -379,7 +379,7 @@ namespace embree
       }
       
       template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_t(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+        static __forceinline bool occluded_t(Precalculations& pre, RayK<K>& ray, const size_t k, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,k,prim,tNear);
@@ -416,7 +416,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_n(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+        static __forceinline void intersect_n(Precalculations& pre, RayHitK<K>& ray, const size_t k, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,k,prim,tNear);
@@ -452,7 +452,7 @@ namespace embree
       }
       
       template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_n(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+        static __forceinline bool occluded_n(Precalculations& pre, RayK<K>& ray, const size_t k, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,k,prim,tNear);
@@ -491,7 +491,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_h(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+        static __forceinline void intersect_h(Precalculations& pre, RayHitK<K>& ray, const size_t k, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,k,prim,tNear);
@@ -512,7 +512,7 @@ namespace embree
       }
       
       template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_h(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+        static __forceinline bool occluded_h(Precalculations& pre, RayK<K>& ray, const size_t k, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,k,prim,tNear);
@@ -536,7 +536,7 @@ namespace embree
       }
 
       template<typename Intersector, typename Epilog>
-        static __forceinline void intersect_hn(Precalculations& pre, RayHitK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+        static __forceinline void intersect_hn(Precalculations& pre, RayHitK<K>& ray, const size_t k, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,k,prim,tNear);
@@ -557,7 +557,7 @@ namespace embree
       }
       
       template<typename Intersector, typename Epilog>
-        static __forceinline bool occluded_hn(Precalculations& pre, RayK<K>& ray, const size_t k, IntersectContext* context, const Primitive& prim)
+        static __forceinline bool occluded_hn(Precalculations& pre, RayK<K>& ray, const size_t k, RayQueryContext* context, const Primitive& prim)
       {
         vfloat<M> tNear;
         vbool<M> valid = intersect(ray,k,prim,tNear);

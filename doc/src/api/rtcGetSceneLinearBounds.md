@@ -1,4 +1,4 @@
-% rtcGetSceneLinearBounds(3) | Embree Ray Tracing Kernels 3
+% rtcGetSceneLinearBounds(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

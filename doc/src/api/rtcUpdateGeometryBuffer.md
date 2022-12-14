@@ -1,4 +1,4 @@
-% rtcUpdateGeometryBuffer(3) | Embree Ray Tracing Kernels 3
+% rtcUpdateGeometryBuffer(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 

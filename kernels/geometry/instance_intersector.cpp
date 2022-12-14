@@ -10,7 +10,7 @@ namespace embree
   namespace isa
   {
 
-    void InstanceIntersector1::intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const InstancePrimitive& prim)
+    void InstanceIntersector1::intersect(const Precalculations& pre, RayHit& ray, RayQueryContext* context, const InstancePrimitive& prim)
     {
       const Instance* instance = prim.instance;
 
@@ -19,7 +19,7 @@ namespace embree
       if ((ray.mask & instance->mask) == 0) 
         return;
 #endif
-      RTCIntersectContext* user_context = context->user;
+      RTCRayQueryContext* user_context = context->user;
       if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
@@ -27,7 +27,7 @@ namespace embree
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
         ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
-        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
+        RayQueryContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.intersect((RTCRayHit&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -35,7 +35,7 @@ namespace embree
       }
     }
     
-    bool InstanceIntersector1::occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const InstancePrimitive& prim)
+    bool InstanceIntersector1::occluded(const Precalculations& pre, Ray& ray, RayQueryContext* context, const InstancePrimitive& prim)
     {
       const Instance* instance = prim.instance;
       
@@ -45,7 +45,7 @@ namespace embree
         return false;
 #endif
       
-      RTCIntersectContext* user_context = context->user;
+      RTCRayQueryContext* user_context = context->user;
       bool occluded = false;
       if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
@@ -54,7 +54,7 @@ namespace embree
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
         ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
-        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
+        RayQueryContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.occluded((RTCRay&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -98,7 +98,7 @@ namespace embree
       return false;
     }
 
-    void InstanceIntersector1MB::intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const InstancePrimitive& prim)
+    void InstanceIntersector1MB::intersect(const Precalculations& pre, RayHit& ray, RayQueryContext* context, const InstancePrimitive& prim)
     {
       const Instance* instance = prim.instance;
       
@@ -108,7 +108,7 @@ namespace embree
         return;
 #endif
       
-      RTCIntersectContext* user_context = context->user;
+      RTCRayQueryContext* user_context = context->user;
       if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
@@ -116,7 +116,7 @@ namespace embree
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
         ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
-        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
+        RayQueryContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.intersect((RTCRayHit&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -124,7 +124,7 @@ namespace embree
       }
     }
     
-    bool InstanceIntersector1MB::occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const InstancePrimitive& prim)
+    bool InstanceIntersector1MB::occluded(const Precalculations& pre, Ray& ray, RayQueryContext* context, const InstancePrimitive& prim)
     {
       const Instance* instance = prim.instance;
       
@@ -134,7 +134,7 @@ namespace embree
         return false;
 #endif
       
-      RTCIntersectContext* user_context = context->user;
+      RTCRayQueryContext* user_context = context->user;
       bool occluded = false;
       if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
@@ -143,7 +143,7 @@ namespace embree
         const Vec3ff ray_dir = ray.dir;
         ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
         ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
-        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
+        RayQueryContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.occluded((RTCRay&)ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -187,7 +187,7 @@ namespace embree
     }
     
     template<int K>
-    void InstanceIntersectorK<K>::intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
+    void InstanceIntersectorK<K>::intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, RayQueryContext* context, const InstancePrimitive& prim)
     {
       vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
@@ -199,7 +199,7 @@ namespace embree
       if (none(valid)) return;
 #endif
         
-      RTCIntersectContext* user_context = context->user;
+      RTCRayQueryContext* user_context = context->user;
       if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
@@ -207,7 +207,7 @@ namespace embree
         const Vec3vf<K> ray_dir = ray.dir;
         ray.org = xfmPoint(world2local, ray_org);
         ray.dir = xfmVector(world2local, ray_dir);
-        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
+        RayQueryContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.intersect(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -216,7 +216,7 @@ namespace embree
     }
 
     template<int K>
-    vbool<K> InstanceIntersectorK<K>::occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
+    vbool<K> InstanceIntersectorK<K>::occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, RayQueryContext* context, const InstancePrimitive& prim)
     {
       vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
@@ -227,7 +227,7 @@ namespace embree
       if (none(valid)) return false;
 #endif
         
-      RTCIntersectContext* user_context = context->user;
+      RTCRayQueryContext* user_context = context->user;
       vbool<K> occluded = false;
       if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
@@ -236,7 +236,7 @@ namespace embree
         const Vec3vf<K> ray_dir = ray.dir;
         ray.org = xfmPoint(world2local, ray_org);
         ray.dir = xfmVector(world2local, ray_dir);
-        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
+        RayQueryContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.occluded(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -247,7 +247,7 @@ namespace embree
     }
     
     template<int K>
-    void InstanceIntersectorKMB<K>::intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
+    void InstanceIntersectorKMB<K>::intersect(const vbool<K>& valid_i, const Precalculations& pre, RayHitK<K>& ray, RayQueryContext* context, const InstancePrimitive& prim)
     {
       vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
@@ -258,7 +258,7 @@ namespace embree
       if (none(valid)) return;
 #endif
         
-      RTCIntersectContext* user_context = context->user;
+      RTCRayQueryContext* user_context = context->user;
       if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
@@ -266,7 +266,7 @@ namespace embree
         const Vec3vf<K> ray_dir = ray.dir;
         ray.org = xfmPoint(world2local, ray_org);
         ray.dir = xfmVector(world2local, ray_dir);
-        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
+        RayQueryContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.intersect(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;
@@ -275,7 +275,7 @@ namespace embree
     }
 
     template<int K>
-    vbool<K> InstanceIntersectorKMB<K>::occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const InstancePrimitive& prim)
+    vbool<K> InstanceIntersectorKMB<K>::occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, RayQueryContext* context, const InstancePrimitive& prim)
     {
       vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
@@ -286,7 +286,7 @@ namespace embree
       if (none(valid)) return false;
 #endif
         
-      RTCIntersectContext* user_context = context->user;
+      RTCRayQueryContext* user_context = context->user;
       vbool<K> occluded = false;
       if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
@@ -295,7 +295,7 @@ namespace embree
         const Vec3vf<K> ray_dir = ray.dir;
         ray.org = xfmPoint(world2local, ray_org);
         ray.dir = xfmVector(world2local, ray_dir);
-        IntersectContext newcontext((Scene*)instance->object, user_context, context->args);
+        RayQueryContext newcontext((Scene*)instance->object, user_context, context->args);
         instance->object->intersectors.occluded(valid, ray, &newcontext);
         ray.org = ray_org;
         ray.dir = ray_dir;

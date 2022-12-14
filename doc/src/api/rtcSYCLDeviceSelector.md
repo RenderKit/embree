@@ -1,8 +1,9 @@
-% rtcSYCLDeviceSelector(3) | Embree Ray Tracing Kernels 3
+% rtcSYCLDeviceSelector(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
-    rtcSYCLDeviceSelector - SYCL device selector function to select devices supported by Embree
+    rtcSYCLDeviceSelector - SYCL device selector function to select
+      devices supported by Embree
 
 #### SYNOPSIS
 

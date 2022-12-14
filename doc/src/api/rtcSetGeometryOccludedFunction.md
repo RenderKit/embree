@@ -1,4 +1,4 @@
-% rtcSetGeometryOccludedFunction(3) | Embree Ray Tracing Kernels 3
+% rtcSetGeometryOccludedFunction(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
@@ -14,7 +14,7 @@
       int* valid;
       void* geometryUserPtr;
       unsigned int primID;
-      struct RTCIntersectContext* context;
+      struct RTCRayQueryContext* context;
       struct RTCRayN* ray;
       unsigned int N;
       unsigned int geomID;
@@ -49,7 +49,7 @@ ray packet size, `valid` points to an array of integers which specify
 whether the corresponding ray is valid (-1) or invalid (0), the
 `geometryUserPtr` member points to the geometry user data previously set
 through `rtcSetGeometryUserData`, the `context` member points to the
-intersection context passed to the ray query, the `ray` member points
+ray query context passed to the ray query, the `ray` member points
 to a ray packet of variable size `N`, and the `geomID` and
 `primID` member identifies the geometry ID and primitive ID of the
 primitive to intersect.

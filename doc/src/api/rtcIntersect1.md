@@ -1,4 +1,4 @@
-% rtcIntersect1(3) | Embree Ray Tracing Kernels 3
+% rtcIntersect1(3) | Embree Ray Tracing Kernels 4
 
 #### NAME
 
@@ -25,13 +25,12 @@ cases, see section [rtcInitIntersectArguments] for more details.
 
 To trace a ray, the user has to initialize the ray origin (`org` ray
 member), ray direction (`dir` ray member), ray segment (`tnear`,
-`tfar` ray members), ray mask (`mask` ray member) and set the ray
-flags to `0` (`flags` ray member). If the scene contains motion blur
-geometries, also the ray time (`time` ray member) must be initialized
-to a value in the range $[0, 1]$. The ray segment has to be in the
-range $[0, \infty]$, thus ranges that start behind the ray origin are
-not valid, but ranges can reach to infinity. See Section [RTCRay] for
-the ray layout description.
+`tfar` ray members), ray mask (`mask` ray member), and set the ray
+flags to `0` (`flags` ray member). The ray time (`time` ray member)
+must be initialized to a value in the range $[0, 1]. The ray segment
+has to be in the range $[0, \infty]$, thus ranges that start behind
+the ray origin are not valid, but ranges can reach to infinity. See
+Section [RTCRay] for the ray layout description.
 
 The geometry ID (`geomID` hit member) of the hit data must be initialized to
 `RTC_INVALID_GEOMETRY_ID` (-1).

@@ -51,6 +51,11 @@ jobs:
         echo "Setup GFX ${GFX_VERSION} for Linux"
         echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
         ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
+
+        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_RELEASE | sed 's/.*:\ //')
+        echo "Setup GFX ${GFX_VERSION} for Linux"
+        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
+        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
         
         GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_INTERNAL | sed 's/.*:\ //')
         echo "Setup GFX ${GFX_VERSION} for Windows"
@@ -58,6 +63,11 @@ jobs:
         ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
 
         GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_PUBLIC | sed 's/.*:\ //')
+        echo "Setup GFX ${GFX_VERSION} for Windows"
+        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
+        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
+
+        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_RELEASE | sed 's/.*:\ //')
         echo "Setup GFX ${GFX_VERSION} for Windows"
         echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
         ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
@@ -388,7 +398,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "build" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8
+        python scripts/test.py configure platform:x64 build:Release compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8
         python scripts/test.py build
         python scripts/test.py test
 
