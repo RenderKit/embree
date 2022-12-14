@@ -39,11 +39,11 @@ SYCL_EXTERNAL void rtcIntersect1(RTCScene hscene, struct RTCRayHit* rayhit, stru
     rtcInitIntersectArguments(&default_args);
     args = &default_args;
   }
-  RTCIntersectContext* context = args->context;
+  RTCRayQueryContext* context = args->context;
 
-  RTCIntersectContext defaultContext;
+  RTCRayQueryContext defaultContext;
   if (unlikely(context == nullptr)) {
-    rtcInitIntersectContext(&defaultContext);
+    rtcInitRayQueryContext(&defaultContext);
     context = &defaultContext;
   }
     
@@ -74,11 +74,11 @@ SYCL_EXTERNAL void rtcOccluded1(RTCScene hscene, struct RTCRay* ray, struct RTCO
     rtcInitOccludedArguments(&default_args);
     args = &default_args;
   }
-  RTCIntersectContext* context = args->context;
+  RTCRayQueryContext* context = args->context;
 
-  RTCIntersectContext defaultContext;
+  RTCRayQueryContext defaultContext;
   if (unlikely(context == nullptr)) {
-    rtcInitIntersectContext(&defaultContext);
+    rtcInitRayQueryContext(&defaultContext);
     context = &defaultContext;
   }
   

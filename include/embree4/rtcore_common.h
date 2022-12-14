@@ -12,7 +12,7 @@
 RTC_NAMESPACE_BEGIN
 
 #if defined(_WIN32)
-#if defined(_M_X64)
+#if defined(_M_X64) || defined(_M_ARM64)
 typedef long long ssize_t;
 #else
 typedef int ssize_t;
@@ -291,13 +291,16 @@ enum RTCFeatureFlags
   RTC_FEATURE_FLAG_ALL = 0xffffffff,
 };
 
-/* Intersection context flags */
-enum RTCIntersectContextFlags
+/* Ray query flags */
+enum RTCRayQueryFlags
 {
-  RTC_INTERSECT_CONTEXT_FLAG_NONE       = 0,
-  RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT = (0 << 0), // optimize for incoherent rays
-  RTC_INTERSECT_CONTEXT_FLAG_COHERENT   = (1 << 0), // optimize for coherent rays
-  RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER = (1 << 1) // enable argument filter for each geometry
+  /* matching intel_ray_flags_t layout */
+  RTC_RAY_QUERY_FLAG_NONE       = 0,
+  RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER = (1 << 1), // enable argument filter for each geometry
+
+  /* embree specific flags */
+  RTC_RAY_QUERY_FLAG_INCOHERENT = (0 << 16), // optimize for incoherent rays
+  RTC_RAY_QUERY_FLAG_COHERENT   = (1 << 16), // optimize for coherent rays
 };
 
 /* Arguments for RTCFilterFunctionN */
@@ -305,7 +308,7 @@ struct RTCFilterFunctionNArguments
 {
   int* valid;
   void* geometryUserPtr;
-  struct RTCIntersectContext* context;
+  struct RTCRayQueryContext* context;
   struct RTCRayN* ray;
   struct RTCHitN* hit;
   unsigned int N;
@@ -322,8 +325,8 @@ typedef void (*RTCIntersectFunctionN)(const struct RTCIntersectFunctionNArgument
 struct RTCOccludedFunctionNArguments;
 typedef void (*RTCOccludedFunctionN)(const struct RTCOccludedFunctionNArguments* args);
 
-/* Intersection context passed to intersect/occluded calls */
-struct RTCIntersectContext
+/* Ray query context passed to intersect/occluded calls */
+struct RTCRayQueryContext
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   unsigned int instStackSize;                        // Number of instances currently on the stack.
@@ -331,8 +334,8 @@ struct RTCIntersectContext
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // The current stack of instance ids.
 };
 
-/* Initializes an intersection context. */
-RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context)
+/* Initializes an ray query context. */
+RTC_FORCEINLINE void rtcInitRayQueryContext(struct RTCRayQueryContext* context)
 {
   unsigned l = 0;
   
@@ -403,7 +406,7 @@ struct RTC_ALIGN(16) RTCPointQueryContext
   unsigned int instStackSize;
 };
 
-/* Initializes an intersection context. */
+/* Initializes an ray query context. */
 RTC_FORCEINLINE void rtcInitPointQueryContext(struct RTCPointQueryContext* context)
 {
   context->instStackSize = 0;

@@ -532,14 +532,14 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     
-    RTCIntersectContext defaultContext;
+    RTCRayQueryContext defaultContext;
     if (unlikely(user_context == nullptr)) {
-      rtcInitIntersectContext(&defaultContext);
+      rtcInitRayQueryContext(&defaultContext);
       user_context = &defaultContext;
     }
-    IntersectContext context(scene,user_context,args);
+    RayQueryContext context(scene,user_context,args);
     
     scene->intersectors.intersect(*rayhit,&context);
 #if defined(DEBUG)
@@ -561,7 +561,7 @@ RTC_NAMESPACE_BEGIN;
     
     Ray* iray = (Ray*) iray_;
     RayHit* oray = (RayHit*)args->rayhit;
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     const Vec3ff ray_org_tnear = oray->org;
     const Vec3ff ray_dir_time = oray->dir;
     oray->org = iray->org;
@@ -569,7 +569,7 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,1,1,1);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    IntersectContext context(scene,user_context,iargs);
+    RayQueryContext context(scene,user_context,iargs);
 
     instance_id_stack::push(user_context, instID);
     scene->intersectors.intersect(*(RTCRayHit*)oray,&context);
@@ -601,14 +601,14 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     
-    RTCIntersectContext defaultContext;
+    RTCRayQueryContext defaultContext;
     if (unlikely(user_context == nullptr)) {
-      rtcInitIntersectContext(&defaultContext);
+      rtcInitRayQueryContext(&defaultContext);
       user_context = &defaultContext;
     }
-    IntersectContext context(scene,user_context,args);
+    RayQueryContext context(scene,user_context,args);
 
     if (likely(scene->intersectors.intersector4))
       scene->intersectors.intersect4(valid,*rayhit,&context);
@@ -652,7 +652,7 @@ RTC_NAMESPACE_BEGIN;
   {
     Scene* scene = (Scene*) hscene;
     RTCRayHit* oray = (RTCRayHit*)args->rayhit;
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
 
     __aligned(16) float ray_org_x[N];
     __aligned(16) float ray_org_y[N];
@@ -679,7 +679,7 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,cnt,cnt,cnt);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    IntersectContext context(scene,user_context,iargs);
+    RayQueryContext context(scene,user_context,iargs);
 
     instance_id_stack::push(user_context, instID);
     scene->intersectors.intersect(valid,*oray,&context);
@@ -722,14 +722,14 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     
-    RTCIntersectContext defaultContext;
+    RTCRayQueryContext defaultContext;
     if (unlikely(user_context == nullptr)) {
-      rtcInitIntersectContext(&defaultContext);
+      rtcInitRayQueryContext(&defaultContext);
       user_context = &defaultContext;
     }
-    IntersectContext context(scene,user_context,args);
+    RayQueryContext context(scene,user_context,args);
     
     if (likely(scene->intersectors.intersector8)) 
       scene->intersectors.intersect8(valid,*rayhit,&context);
@@ -777,14 +777,14 @@ RTC_NAMESPACE_BEGIN;
       rtcInitIntersectArguments(&defaultArgs);
       args = &defaultArgs;
     }
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     
-    RTCIntersectContext defaultContext;
+    RTCRayQueryContext defaultContext;
     if (unlikely(user_context == nullptr)) {
-      rtcInitIntersectContext(&defaultContext);
+      rtcInitRayQueryContext(&defaultContext);
       user_context = &defaultContext;
     }
-    IntersectContext context(scene,user_context,args);
+    RayQueryContext context(scene,user_context,args);
 
     if (likely(scene->intersectors.intersector16))
       scene->intersectors.intersect16(valid,*rayhit,&context);
@@ -828,14 +828,14 @@ RTC_NAMESPACE_BEGIN;
       rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     
-    RTCIntersectContext defaultContext;
+    RTCRayQueryContext defaultContext;
     if (unlikely(user_context == nullptr)) {
-      rtcInitIntersectContext(&defaultContext);
+      rtcInitRayQueryContext(&defaultContext);
       user_context = &defaultContext;
     }
-    IntersectContext context(scene,user_context,args);
+    RayQueryContext context(scene,user_context,args);
     
     scene->intersectors.occluded(*ray,&context);
     RTC_CATCH_END2(scene);
@@ -855,14 +855,14 @@ RTC_NAMESPACE_BEGIN;
     
     Ray* iray = (Ray*)iray_;
     Ray* oray = (Ray*)args->ray;
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     const Vec3ff ray_org_tnear = oray->org;
     const Vec3ff ray_dir_time = oray->dir;
     oray->org = iray->org;
     oray->dir = iray->dir;
 
     RTCIntersectArguments* iargs = ((OccludedFunctionNArguments*) args)->args;
-    IntersectContext context(scene,user_context,iargs);
+    RayQueryContext context(scene,user_context,iargs);
 
     instance_id_stack::push(user_context, instID);
     scene->intersectors.occluded(*(RTCRay*)oray,&context);
@@ -894,14 +894,14 @@ RTC_NAMESPACE_BEGIN;
       rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     
-    RTCIntersectContext defaultContext;
+    RTCRayQueryContext defaultContext;
     if (unlikely(user_context == nullptr)) {
-      rtcInitIntersectContext(&defaultContext);
+      rtcInitRayQueryContext(&defaultContext);
       user_context = &defaultContext;
     }
-    IntersectContext context(scene,user_context,args);
+    RayQueryContext context(scene,user_context,args);
 
     if (likely(scene->intersectors.intersector4))
        scene->intersectors.occluded4(valid,*ray,&context);
@@ -924,7 +924,7 @@ RTC_NAMESPACE_BEGIN;
   {
     Scene* scene = (Scene*) hscene;
     RTCRay* oray = (RTCRay*)args->ray;
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
 
     __aligned(16) float ray_org_x[N];
     __aligned(16) float ray_org_y[N];
@@ -951,7 +951,7 @@ RTC_NAMESPACE_BEGIN;
     STAT3(normal.travs,cnt,cnt,cnt);
 
     RTCIntersectArguments* iargs = ((IntersectFunctionNArguments*) args)->args;
-    IntersectContext context(scene,user_context,iargs);
+    RayQueryContext context(scene,user_context,iargs);
 
     instance_id_stack::push(user_context, instID);
     scene->intersectors.occluded(valid,*oray,&context);
@@ -994,14 +994,14 @@ RTC_NAMESPACE_BEGIN;
       rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     
-    RTCIntersectContext defaultContext;
+    RTCRayQueryContext defaultContext;
     if (unlikely(user_context == nullptr)) {
-      rtcInitIntersectContext(&defaultContext);
+      rtcInitRayQueryContext(&defaultContext);
       user_context = &defaultContext;
     }
-    IntersectContext context(scene,user_context,args);
+    RayQueryContext context(scene,user_context,args);
 
     if (likely(scene->intersectors.intersector8))
       scene->intersectors.occluded8(valid,*ray,&context);
@@ -1048,14 +1048,14 @@ RTC_NAMESPACE_BEGIN;
       rtcInitOccludedArguments(&defaultArgs);
       args = &defaultArgs;
     }
-    RTCIntersectContext* user_context = args->context;
+    RTCRayQueryContext* user_context = args->context;
     
-    RTCIntersectContext defaultContext;
+    RTCRayQueryContext defaultContext;
     if (unlikely(user_context == nullptr)) {
-      rtcInitIntersectContext(&defaultContext);
+      rtcInitRayQueryContext(&defaultContext);
       user_context = &defaultContext;
     }
-    IntersectContext context(scene,user_context,args);
+    RayQueryContext context(scene,user_context,args);
 
     if (likely(scene->intersectors.intersector16))
       scene->intersectors.occluded16(valid,*ray,&context);

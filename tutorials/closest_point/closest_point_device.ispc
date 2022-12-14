@@ -75,7 +75,7 @@ void init_VisualizationData(uniform VisualizationData * uniform visData)
 uniform VisualizationData g_visDataEmbreeInstance;
 uniform VisualizationData g_visDataUserDefinedInstance;
 
-inline void pushInstanceId(uniform RTCIntersectContext* uniform ctx, uniform unsigned int id)
+inline void pushInstanceId(uniform RTCRayQueryContext* uniform ctx, uniform unsigned int id)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[ctx->instStackSize++] = id;
@@ -84,7 +84,7 @@ inline void pushInstanceId(uniform RTCIntersectContext* uniform ctx, uniform uns
 #endif
 }
 
-inline void popInstanceId(uniform RTCIntersectContext* uniform ctx)
+inline void popInstanceId(uniform RTCRayQueryContext* uniform ctx)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[--ctx->instStackSize] = RTC_INVALID_GEOMETRY_ID;
@@ -93,7 +93,7 @@ inline void popInstanceId(uniform RTCIntersectContext* uniform ctx)
 #endif
 }
 
-inline void copyInstanceIdStack(uniform const RTCIntersectContext* uniform ctx, varying unsigned* uniform tgt)
+inline void copyInstanceIdStack(uniform const RTCRayQueryContext* uniform ctx, varying unsigned* uniform tgt)
 {
   tgt[0] = ctx->instID[0];
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
@@ -278,7 +278,7 @@ unmasked void instanceIntersectFunc(const RTCIntersectFunctionNArguments* unifor
   
   const uniform int* uniform valid = args->valid;
   void* uniform ptr  = args->geometryUserPtr;
-  uniform RTCIntersectContext* uniform context = args->context;
+  uniform RTCRayQueryContext* uniform context = args->context;
   RTCRayHitN* uniform rays = (RTCRayHitN* uniform)args->rayhit;
                                     
   assert(args->N == programCount);

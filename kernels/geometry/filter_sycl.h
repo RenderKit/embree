@@ -10,7 +10,7 @@
 
 namespace embree
 {
-  __forceinline bool runIntersectionFilter1Helper(RTCFilterFunctionNArguments* args, int& mask, const Geometry* const geometry, IntersectContext* context)
+  __forceinline bool runIntersectionFilter1Helper(RTCFilterFunctionNArguments* args, int& mask, const Geometry* const geometry, RayQueryContext* context)
   {
     typedef void (*RTCFilterFunctionSYCL)(const void* args);
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
@@ -45,7 +45,7 @@ namespace embree
     return true;
   }
 
-  __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, int& mask, const Geometry* const geometry, IntersectContext* context)
+  __forceinline bool runOcclusionFilter1Helper(RTCFilterFunctionNArguments* args, int& mask, const Geometry* const geometry, RayQueryContext* context)
   {
     typedef void (*RTCFilterFunctionSYCL)(const void* args);
     const RTCFeatureFlags feature_mask MAYBE_UNUSED = context->args->feature_mask;
@@ -80,7 +80,7 @@ namespace embree
     return true;
   }
   
-  __forceinline bool runIntersectionFilter1SYCL(Geometry* geometry, RayHit& ray, sycl::private_ptr<IntersectContext> context, Hit& hit)
+  __forceinline bool runIntersectionFilter1SYCL(Geometry* geometry, RayHit& ray, sycl::private_ptr<RayQueryContext> context, Hit& hit)
   {
     RTCFilterFunctionNArguments args;
     int mask = -1;
@@ -94,7 +94,7 @@ namespace embree
   }
 
 
-  __forceinline bool runIntersectionFilter1SYCL(Geometry* geometry, Ray& ray, sycl::private_ptr<IntersectContext> context, Hit& hit)
+  __forceinline bool runIntersectionFilter1SYCL(Geometry* geometry, Ray& ray, sycl::private_ptr<RayQueryContext> context, Hit& hit)
   {
     RTCFilterFunctionNArguments args;
     int mask = -1;

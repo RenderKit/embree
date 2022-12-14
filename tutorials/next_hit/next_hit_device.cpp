@@ -98,13 +98,13 @@ public:
   Hit hits[MAX_TOTAL_HITS];   // array to store all found hits to
 };
 
-/* we store the Hit list inside the intersection context to access it from the filter functions */
-struct IntersectContext
+/* we store the Hit list inside the ray query context to access it from the filter functions */
+struct RayQueryContext
 {
-  IntersectContext(const TutorialData& data, HitList& hits)
+  RayQueryContext(const TutorialData& data, HitList& hits)
     : hits(hits), max_next_hits(data.max_next_hits) {}
 
-  RTCIntersectContext context;
+  RTCRayQueryContext context;
   HitList& hits;
   unsigned int max_next_hits; // maximal number of hits to collect in a single pass
 };
@@ -123,7 +123,7 @@ RTCScene convertScene(ISPCScene* scene_in)
 RTC_SYCL_INDIRECTLY_CALLABLE void gather_all_hits(const RTCFilterFunctionNArguments* args)
 {
   assert(*args->valid == -1);
-  IntersectContext* context = (IntersectContext*) args->context;
+  RayQueryContext* context = (RayQueryContext*) args->context;
   HitList& hits = context->hits;
   RTCRay* ray = (RTCRay*) args->ray;
   RTCHit* hit = (RTCHit*) args->hit;
@@ -146,14 +146,14 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
 {
   /* trace ray to gather all hits */
   Ray ray = ray_i;
-  IntersectContext context(data,hits_o);
-  rtcInitIntersectContext(&context.context);
+  RayQueryContext context(data,hits_o);
+  rtcInitRayQueryContext(&context.context);
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.context = &context.context;
   args.filter = gather_all_hits;
   args.feature_mask = feature_mask;
-  args.flags = RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER; // invoke filter for each geometry
+  args.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER; // invoke filter for each geometry
   rtcIntersect1(data.scene,RTCRayHit_(ray),&args);
   RayStats_addRay(stats);
 
@@ -197,7 +197,7 @@ void single_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, Ra
 RTC_SYCL_INDIRECTLY_CALLABLE void gather_next_hits(const RTCFilterFunctionNArguments* args)
 {
   assert(*args->valid == -1);
-  IntersectContext* context = (IntersectContext*) args->context;
+  RayQueryContext* context = (RayQueryContext*) args->context;
   HitList& hits = context->hits;
   RTCRay* ray = (RTCRay*) args->ray;
   RTCHit* hit = (RTCHit*) args->hit;
@@ -244,17 +244,17 @@ RTC_SYCL_INDIRECTLY_CALLABLE void gather_next_hits(const RTCFilterFunctionNArgum
 /* gathers hits in multiple passes */
 void multi_pass(const TutorialData& data, const Ray& ray_i, HitList& hits_o, int max_next_hits, RandomSampler& sampler, RayStats& stats, const RTCFeatureFlags feature_mask)
 {
-  /* configure intersect context */
+  /* configure ray query context */
   Ray ray = ray_i;
-  IntersectContext context(data,hits_o);
-  rtcInitIntersectContext(&context.context);
+  RayQueryContext context(data,hits_o);
+  rtcInitRayQueryContext(&context.context);
   context.max_next_hits = max_next_hits;
   RTCIntersectArguments args;
   rtcInitIntersectArguments(&args);
   args.context = &context.context;
   args.filter = gather_next_hits;
   args.feature_mask = feature_mask;
-  args.flags = RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER; // invoke filter for each geometry
+  args.flags = RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER; // invoke filter for each geometry
 
   /* in each pass we collect some hits */
   do {

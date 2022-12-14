@@ -2,7 +2,8 @@
 
 #### NAME
 
-    rtcSYCLDeviceSelector - SYCL device selector function to select devices supported by Embree
+    rtcSYCLDeviceSelector - SYCL device selector function to select
+      devices supported by Embree
 
 #### SYNOPSIS
 

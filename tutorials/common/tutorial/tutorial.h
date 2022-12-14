@@ -184,8 +184,8 @@ namespace embree
     int debug2;
     int debug3;
 
-    RTCIntersectContextFlags iflags_coherent;
-    RTCIntersectContextFlags iflags_incoherent;
+    RTCRayQueryFlags iflags_coherent;
+    RTCRayQueryFlags iflags_incoherent;
 
     std::unique_ptr<ISPCScene> ispc_scene;
 

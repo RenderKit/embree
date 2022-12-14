@@ -22,9 +22,9 @@ enum RTCSceneFlags
 /* Additional arguments for rtcIntersect1/V calls */
 struct RTCIntersectArguments
 {
-  RTCIntersectContextFlags flags;       // intersection flags
+  RTCRayQueryFlags flags;       // intersection flags
   RTCFeatureFlags feature_mask;         // selectively enable features for traversal
-  RTCIntersectContext* context;         // optional pointer to intersection context
+  RTCRayQueryContext* context;         // optional pointer to ray query context
   RTCFilterFunctionN filter;            // filter function to execute
   RTCIntersectFunctionN intersect;      // user geometry intersection callback to execute 
 #if RTC_MIN_WIDTH
@@ -35,7 +35,7 @@ struct RTCIntersectArguments
 /* Initializes intersection arguments. */
 RTC_FORCEINLINE void rtcInitIntersectArguments(uniform RTCIntersectArguments* uniform args)
 {
-  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+  args->flags = RTC_RAY_QUERY_FLAG_INCOHERENT;
   args->feature_mask = RTC_FEATURE_FLAG_ALL;
   args->context = NULL;
   args->filter = NULL;
@@ -49,9 +49,9 @@ RTC_FORCEINLINE void rtcInitIntersectArguments(uniform RTCIntersectArguments* un
 /* Additional arguments for rtcOccluded1/V calls */
 struct RTCOccludedArguments
 {
-  RTCIntersectContextFlags flags;       // intersection flags
+  RTCRayQueryFlags flags;       // intersection flags
   RTCFeatureFlags feature_mask;         // selectively enable features for traversal
-  RTCIntersectContext* context;         // optional pointer to intersection context
+  RTCRayQueryContext* context;         // optional pointer to ray query context
   RTCFilterFunctionN filter;            // filter function to execute
   RTCOccludedFunctionN occluded;        // user geometry intersection callback to execute 
 #if RTC_MIN_WIDTH
@@ -62,7 +62,7 @@ struct RTCOccludedArguments
 /* Initializes intersection arguments. */
 RTC_FORCEINLINE void rtcInitOccludedArguments(uniform RTCOccludedArguments* uniform args)
 {
-  args->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
+  args->flags = RTC_RAY_QUERY_FLAG_INCOHERENT;
   args->feature_mask = RTC_FEATURE_FLAG_ALL;
   args->context = NULL;
   args->filter = NULL;

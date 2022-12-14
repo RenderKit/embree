@@ -8,19 +8,19 @@
 
     #include <embree4/rtcore.h>
 
-    enum RTCIntersectContextFlags
+    enum RTCRayQueryFlags
     {
-      RTC_INTERSECT_CONTEXT_FLAG_NONE,
-      RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT,
-      RTC_INTERSECT_CONTEXT_FLAG_COHERENT,
-      RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER
+      RTC_RAY_QUERY_FLAG_NONE,
+      RTC_RAY_QUERY_FLAG_INCOHERENT,
+      RTC_RAY_QUERY_FLAG_COHERENT,
+      RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER
     };
 
     struct RTCOccludedArguments
     {
-      enum RTCIntersectContextFlags flags;
+      enum RTCRayQueryFlags flags;
       enum RTCFeatureFlags feature_mask;
-      struct RTCIntersectContext* context;
+      struct RTCRayQueryContext* context;
       RTCFilterFunctionN filter;
       RTCOccludedFunctionN intersect;
     #if RTC_MIN_WIDTH
@@ -40,9 +40,9 @@ functions to default values. The arguments struct needs to get used
 for more advanced Embree features as described here.
 
 The `flags` member can get used to enable special traversal
-mode. Using the `RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT` flag uses an
+mode. Using the `RTC_RAY_QUERY_FLAG_INCOHERENT` flag uses an
 optimized traversal algorithm for incoherent rays (default), while
-`RTC_INTERSECT_CONTEXT_FLAG_COHERENT` uses an optimized traversal
+`RTC_RAY_QUERY_FLAG_COHERENT` uses an optimized traversal
 algorithm for coherent rays (e.g. primary camera rays).
 
 The `feature_mask` member should get used in SYCL to just enable ray
@@ -56,7 +56,7 @@ possible to attach arbitrary data to the end of the context, such as a
 per-ray payload. Please note that the ray pointer is not guaranteed to
 be passed to the callback functions, thus reading additional data from
 the ray pointer passed to callbacks is not possible. See section
-[rtcInitIntersectContext] for more details.
+[rtcInitRayQueryContext] for more details.
 
 The `filter` member specifies a filter function to invoked for each
 encountered hit. The support for the argument filter function must be
@@ -68,14 +68,15 @@ scene.
 The argument filter function is invoked for each geometry for which it
 got explicitely enabled using the
 `rtcSetGeometryEnableFilterFunctionFromArguments` function. The
-invokation of the argument filter function can also get enfored for a
-ray by using the `RTC_INTERSECT_CONTEXT_FLAG_INVOKE_ARGUMENT_FILTER`
-ray flag. This argument filter function is invoked as a second
-filter stage after the per-geometry filter
-function is invoked. Only rays that passed the first filter stage are
-valid in this second filter stage. Having such a per ray-query filter
-function can be useful to implement modifications of the behavior of
-the query, such as collecting all hits or accumulating transparencies.
+invokation of the argument filter function can also get enfored for
+each geometry using the
+`RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER` ray query flag. This
+argument filter function is invoked as a second filter stage after the
+per-geometry filter function is invoked. Only rays that passed the
+first filter stage are valid in this second filter stage. Having such
+a per ray-query filter function can be useful to implement
+modifications of the behavior of the query, such as collecting all
+hits or accumulating transparencies.
 
 The `intersect` member specifies the user geometry callback to get
 invoked for each user geometry encountered during traversal. The user
@@ -94,5 +95,5 @@ No error code is set by this function.
 
 #### SEE ALSO
 
-[rtcOccluded1], [rtcOccluded4],
-[RTCFeatureFlags], [rtcInitIntersectContext], [RTC_GEOMETRY_TYPE_USER], [rtcSetGeometryMaxRadiusScale]
+[rtcOccluded1], [rtcOccluded4/8/16],
+[RTCFeatureFlags], [rtcInitRayQueryContext], [RTC_GEOMETRY_TYPE_USER], [rtcSetGeometryMaxRadiusScale]

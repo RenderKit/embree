@@ -58,8 +58,8 @@ enum Shader {
 };
 
 extern "C" RTCDevice g_device;
-extern "C" RTCIntersectContextFlags g_iflags_coherent;
-extern "C" RTCIntersectContextFlags g_iflags_incoherent;
+extern "C" RTCRayQueryFlags g_iflags_coherent;
+extern "C" RTCRayQueryFlags g_iflags_incoherent;
 extern "C" Shader shader;
 
 /* error reporting function */

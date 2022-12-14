@@ -14,7 +14,7 @@
       int* valid;
       void* geometryUserPtr;
       unsigned int primID;
-      struct RTCIntersectContext* context;
+      struct RTCRayQueryContext* context;
       struct RTCRayHitN* rayhit;
       unsigned int N;
       unsigned int geomID;
@@ -49,7 +49,7 @@ the ray packet size, `valid` points to an array of integers that
 specify whether the corresponding ray is valid (-1) or invalid (0), the
 `geometryUserPtr` member points to the geometry user data previously set
 through `rtcSetGeometryUserData`, the `context` member points to the
-intersection context passed to the ray query, the `rayhit` member points
+ray query context passed to the ray query, the `rayhit` member points
 to a ray and hit packet of variable size `N`, and the `geomID` and
 `primID` member identifies the geometry ID and primitive ID of the
 primitive to intersect.
@@ -67,7 +67,7 @@ user-defined primitive with the ray was found in the valid range (from
 `tnear` to `tfar`), it should update the hit distance of the ray
 (`tfar` member) and the hit (`u`, `v`, `Ng`, `instID`, `geomID`,
 `primID` members). In particular, the currently intersected instance is
-stored in the `instID` field of the intersection context, which must be
+stored in the `instID` field of the ray query context, which must be
 deep copied into the `instID` member of the hit.
 
 As a primitive might have multiple intersections with a ray, the

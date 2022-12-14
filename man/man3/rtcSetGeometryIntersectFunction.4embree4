@@ -21,7 +21,7 @@ struct RTCIntersectFunctionNArguments
   int* valid;
   void* geometryUserPtr;
   unsigned int primID;
-  struct RTCIntersectContext* context;
+  struct RTCRayQueryContext* context;
   struct RTCRayHitN* rayhit;
   unsigned int N;
   unsigned int geomID;
@@ -59,7 +59,7 @@ points to an array of integers that specify whether the corresponding
 ray is valid (\-1) or invalid (0), the \f[C]geometryUserPtr\f[R] member
 points to the geometry user data previously set through
 \f[C]rtcSetGeometryUserData\f[R], the \f[C]context\f[R] member points to
-the intersection context passed to the ray query, the \f[C]rayhit\f[R]
+the ray query context passed to the ray query, the \f[C]rayhit\f[R]
 member points to a ray and hit packet of variable size \f[C]N\f[R], and
 the \f[C]geomID\f[R] and \f[C]primID\f[R] member identifies the geometry
 ID and primitive ID of the primitive to intersect.
@@ -80,7 +80,7 @@ update the hit distance of the ray (\f[C]tfar\f[R] member) and the hit
 (\f[C]u\f[R], \f[C]v\f[R], \f[C]Ng\f[R], \f[C]instID\f[R],
 \f[C]geomID\f[R], \f[C]primID\f[R] members).
 In particular, the currently intersected instance is stored in the
-\f[C]instID\f[R] field of the intersection context, which must be deep
+\f[C]instID\f[R] field of the ray query context, which must be deep
 copied into the \f[C]instID\f[R] member of the hit.
 .PP
 As a primitive might have multiple intersections with a ray, the

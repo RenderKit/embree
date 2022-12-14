@@ -18,21 +18,21 @@ rtcIntersect4/8/16 \- finds the closest hits for a ray packet
 void rtcIntersect4(
   const int* valid,
   RTCScene scene,
-  struct RTCIntersectContext* context,
+  struct RTCRayQueryContext* context,
   struct RTCRayHit4* rayhit
 );
 
 void rtcIntersect8(
   const int* valid,
   RTCScene scene,
-  struct RTCIntersectContext* context,
+  struct RTCRayQueryContext* context,
   struct RTCRayHit8* rayhit
 );
 
 void rtcIntersect16(
   const int* valid,
   RTCScene scene,
-  struct RTCIntersectContext* context,
+  struct RTCRayQueryContext* context,
   struct RTCRayHit16* rayhit
 );
 \f[R]

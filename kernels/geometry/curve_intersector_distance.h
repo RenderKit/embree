@@ -92,7 +92,7 @@ namespace embree
       
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                   IntersectContext* context,
+                                   RayQueryContext* context,
                                    const CurveGeometry* geom, const unsigned int primID,
                                    const Vec3ff& v0, const Vec3ff& v1, const Vec3ff& v2, const Vec3ff& v3,
                                    const Epilog& epilog)

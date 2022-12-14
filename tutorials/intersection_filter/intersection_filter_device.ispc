@@ -60,7 +60,7 @@ void renderPixelStandard(const uniform TutorialData& data,
   float weight = 1.0f;
   Vec3f color = make_Vec3f(0.0f);
 
-  uniform IntersectContext context;
+  uniform RayQueryContext context;
   InitIntersectionContext(&context);
 
   /* initialize ray */
@@ -164,7 +164,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void intersectionFilter(const RTCFilterFun
 
   assert(args->N == programCount);
   uniform int* uniform valid = args->valid;
-  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
+  const uniform RayQueryContext* uniform context = (const uniform RayQueryContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
   //varying RTCHit* uniform hit = (varying RTCHit* uniform)args->hit;
 
@@ -194,7 +194,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE unmasked void occlusionFilter(const RTCFilterFuncti
 
   assert(args->N == programCount);
   uniform int* uniform valid = args->valid;
-  const uniform IntersectContext* uniform context = (const uniform IntersectContext* uniform) args->context;
+  const uniform RayQueryContext* uniform context = (const uniform RayQueryContext* uniform) args->context;
   varying Ray* uniform ray = (varying Ray* uniform)args->ray;
 
   /* ignore inactive rays */

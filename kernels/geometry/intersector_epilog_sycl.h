@@ -16,13 +16,13 @@ namespace embree
   struct Intersect1Epilog1_HWIF<RayHit>
   {
     RayHit& ray;
-    sycl::private_ptr<IntersectContext> context;
+    sycl::private_ptr<RayQueryContext> context;
     const unsigned int geomID;
     const unsigned int primID;
     const bool filter;
     
     __forceinline Intersect1Epilog1_HWIF(RayHit& ray,
-                                         sycl::private_ptr<IntersectContext> context,
+                                         sycl::private_ptr<RayQueryContext> context,
                                          const unsigned int geomID,
                                          const unsigned int primID,
                                          const bool filter)
@@ -118,13 +118,13 @@ namespace embree
   struct Intersect1Epilog1_HWIF<Ray>
   {
     Ray& ray;
-    sycl::private_ptr<IntersectContext> context;
+    sycl::private_ptr<RayQueryContext> context;
     const unsigned int geomID;
     const unsigned int primID;
     const bool filter;
     
     __forceinline Intersect1Epilog1_HWIF(Ray& ray,
-                                         sycl::private_ptr<IntersectContext> context,
+                                         sycl::private_ptr<RayQueryContext> context,
                                          const unsigned int geomID,
                                          const unsigned int primID,
                                          const bool filter)

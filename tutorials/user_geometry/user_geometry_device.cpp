@@ -40,7 +40,7 @@ RTCIntersectFunctionN sphereIntersectFuncPtr = nullptr;
 RTCOccludedFunctionN sphereOccludedFuncPtr = nullptr;
 RTCFilterFunctionN sphereFilterFuncPtr = nullptr;
 
-inline void pushInstanceId(RTCIntersectContext* ctx, unsigned int id)
+inline void pushInstanceId(RTCRayQueryContext* ctx, unsigned int id)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[ctx->instStackSize++] = id;
@@ -49,7 +49,7 @@ inline void pushInstanceId(RTCIntersectContext* ctx, unsigned int id)
 #endif
 }
 
-inline void popInstanceId(RTCIntersectContext* ctx)
+inline void popInstanceId(RTCRayQueryContext* ctx)
 {
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   ctx->instID[--ctx->instStackSize] = RTC_INVALID_GEOMETRY_ID;
@@ -58,7 +58,7 @@ inline void popInstanceId(RTCIntersectContext* ctx)
 #endif
 }
 
-inline void copyInstanceIdStack(const RTCIntersectContext* ctx, unsigned* tgt)
+inline void copyInstanceIdStack(const RTCRayQueryContext* ctx, unsigned* tgt)
 {
   tgt[0] = ctx->instID[0];
 #if (RTC_MAX_INSTANCE_LEVEL_COUNT > 1)
@@ -114,7 +114,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceIntersectFunc(const RTCIntersectFuncti
 
 #if 0
 
-  RTCIntersectContext* context = args->context;
+  RTCRayQueryContext* context = args->context;
   ray->org = Vec3ff(xfmPoint (instance->world2local,ray_org));
   ray->dir = Vec3ff(xfmVector(instance->world2local,ray_dir));
   ray->tnear() = ray_tnear;
@@ -167,7 +167,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void instanceOccludedFunc(const RTCOccludedFunction
 
 #if 0
 
-  RTCIntersectContext* context = args->context;
+  RTCRayQueryContext* context = args->context;
   ray->org    = Vec3ff(xfmPoint (instance->world2local,ray_org));
   ray->dir    = Vec3ff(xfmVector(instance->world2local,ray_dir));
   ray->tnear()  = ray_tnear;
@@ -499,7 +499,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void contextOccludedFunc(const RTCOccludedFunctionN
 RTC_SYCL_INDIRECTLY_CALLABLE void sphereFilterFunction(const RTCFilterFunctionNArguments* args)
 {
   int* valid = args->valid;
-  const IntersectContext* context = (const IntersectContext*) args->context;
+  const RayQueryContext* context = (const RayQueryContext*) args->context;
   struct Ray* ray    = (struct Ray*)args->ray;
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
   const unsigned int N = args->N;

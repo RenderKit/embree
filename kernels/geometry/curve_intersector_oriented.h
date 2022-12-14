@@ -340,7 +340,7 @@ namespace embree
       
       template<typename Ray, typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                IntersectContext* context,
+                                RayQueryContext* context,
                                 const CurveGeometry* geom, const unsigned int primID, 
                                 const Vec3ff& v0i, const Vec3ff& v1i, const Vec3ff& v2i, const Vec3ff& v3i,
                                 const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
@@ -357,7 +357,7 @@ namespace embree
 
       template<typename Ray, typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
-                                IntersectContext* context,
+                                RayQueryContext* context,
                                 const CurveGeometry* geom, const unsigned int primID,
                                 const TensorLinearCubicBezierSurface3fa& curve, const Epilog& epilog) const
       {
@@ -392,7 +392,7 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
-                                   IntersectContext* context,
+                                   RayQueryContext* context,
                                    const CurveGeometry* geom, const unsigned int primID,
                                    const Vec3ff& v0i, const Vec3ff& v1i, const Vec3ff& v2i, const Vec3ff& v3i,
                                    const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
@@ -410,7 +410,7 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
-                                   IntersectContext* context,
+                                   RayQueryContext* context,
                                    const CurveGeometry* geom, const unsigned int primID,
                                    const TensorLinearCubicBezierSurface3fa& curve,
                                    const Epilog& epilog)

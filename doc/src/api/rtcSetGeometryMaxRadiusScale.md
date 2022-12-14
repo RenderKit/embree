@@ -27,7 +27,7 @@ increased in order to bound the curve in the worst case of maximal
 radii.
 
 One also has to set the minWidthDistanceFactor in the
-RTCIntersectContext when tracing a ray. This factor controls the
+RTCRayQueryContext when tracing a ray. This factor controls the
 target radius size of a curve or point at some distance away of the
 ray origin.
 
@@ -61,5 +61,5 @@ On failure an error code is set that can be queried using
 
 #### SEE ALSO
 
-[rtcInitIntersectContext]
+[rtcInitRayQueryContext]
 
