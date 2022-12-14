@@ -22,12 +22,6 @@ namespace embree {
   RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY
 #endif
 
-/* FIXME: the following is a bug workaround */
-#if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
-#define FEATURE_MASK     \
-  RTC_FEATURE_FLAG_ALL
-#endif
-
 RTC_SYCL_INDIRECTLY_CALLABLE void intersectionFilter(const RTCFilterFunctionNArguments* args);
 RTC_SYCL_INDIRECTLY_CALLABLE void occlusionFilter(const RTCFilterFunctionNArguments* args);
 
