@@ -294,10 +294,13 @@ enum RTCFeatureFlags
 /* Ray query flags */
 enum RTCRayQueryFlags
 {
+  /* matching intel_ray_flags_t layout */
   RTC_RAY_QUERY_FLAG_NONE       = 0,
-  RTC_RAY_QUERY_FLAG_INCOHERENT = (0 << 0), // optimize for incoherent rays
-  RTC_RAY_QUERY_FLAG_COHERENT   = (1 << 0), // optimize for coherent rays
-  RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER = (1 << 1) // enable argument filter for each geometry
+  RTC_RAY_QUERY_FLAG_INVOKE_ARGUMENT_FILTER = (1 << 1), // enable argument filter for each geometry
+
+  /* embree specific flags */
+  RTC_RAY_QUERY_FLAG_INCOHERENT = (0 << 16), // optimize for incoherent rays
+  RTC_RAY_QUERY_FLAG_COHERENT   = (1 << 16), // optimize for coherent rays
 };
 
 /* Arguments for RTCFilterFunctionN */
