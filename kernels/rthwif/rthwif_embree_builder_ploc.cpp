@@ -53,15 +53,14 @@ namespace embree
 
   __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const uint numLossyCompressedGeometries, const bool conservative)
   {
-    PING;
     const uint header              = 128;
     const uint node_size           = estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,conservative);
     const uint leaf_size           = estimateSizeLeafNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries);
     const uint lcg_size            = estimateLossyCompressedGeometriesSize(numLossyCompressedGeometries);
-    PRINT(leaf_size);    
-    PRINT(lcg_size);
+    //PRINT(leaf_size);    
+    //PRINT(lcg_size);
     const uint totalSize           = header + node_size + leaf_size + lcg_size;
-    PRINT(totalSize);
+    //PRINT(totalSize);
     return totalSize;
   }
 
@@ -272,8 +271,6 @@ namespace embree
     const uint numInstances       = primCounts.numInstances;
     const uint numLossyCompressedGeometries = primCounts.numLossyCompressedGeometries;
 
-    PRINT(numLossyCompressedGeometries);
-
     const uint numPrimitives = numMergedTrisQuads + numProcedurals + numInstances + numLossyCompressedGeometries;
 
     // =============================================    
@@ -297,7 +294,7 @@ namespace embree
 
     if (verbose_level >= 2)
     {
-      PRINT5(numMergedTrisQuads,numTriangles,numQuads,numProcedurals,numInstances);      
+      PRINT6(numMergedTrisQuads,numTriangles,numQuads,numProcedurals,numInstances,numLossyCompressedGeometries);      
       PRINT3(expectedBytes,worstCaseBytes,scratchBytes);
     }
         
@@ -504,8 +501,9 @@ namespace embree
     const uint node_data_start     = header;
     const uint leaf_data_start     = header + node_size;
     const uint lcg_data_start      = leaf_data_start + leaf_size;
-
-    PRINT3( node_data_start, leaf_data_start, lcg_data_start );
+    
+    if (unlikely(verbose2))
+      PRINT3( node_data_start, leaf_data_start, lcg_data_start );
       
     // =================================================================
     // === if allocated accel buffer is too small, return with error ===

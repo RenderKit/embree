@@ -4,14 +4,9 @@
 #include "nanite_geometry_device.h"
 
 namespace embree {
-
-/* all features required by this tutorial */
 #define FEATURE_MASK \
   RTC_FEATURE_FLAGS_TRIANGLE | \
   RTC_FEATURE_FLAGS_INSTANCE
-  
-const int numPhi = 5;
-const int numTheta = 2*numPhi;
 
 RTCScene g_scene  = nullptr;
 TutorialData data;
@@ -19,8 +14,8 @@ TutorialData data;
 RTCLossyCompressedGrid *compressed_geometries = nullptr;  
 void **compressed_geometries_ptrs = nullptr;
 
-#define NUM_SUBGRIDS_X 300
-#define NUM_SUBGRIDS_Y 300
+#define NUM_SUBGRIDS_X 1000
+#define NUM_SUBGRIDS_Y 1000
   
 #define SUBGRID_RESOLUTION_X 4
 #define SUBGRID_RESOLUTION_Y 3  
@@ -37,16 +32,16 @@ unsigned int createLossyCompressedGeometry (RTCScene scene)
   compressed_geometries_ptrs = (void**)alignedUSMMalloc(sizeof(void*)*numSubGrids,64);
 
   uint index = 0;
-  for (uint start_y=0;start_y+SUBGRID_RESOLUTION_Y-1<GRID_VERTEX_RESOLUTION_Y;start_y+=SUBGRID_RESOLUTION_Y-1)
-    for (uint start_x=0;start_x+SUBGRID_RESOLUTION_X-1<GRID_VERTEX_RESOLUTION_X;start_x+=SUBGRID_RESOLUTION_X-1)
+  for (int start_y=0;start_y+SUBGRID_RESOLUTION_Y-1<GRID_VERTEX_RESOLUTION_Y;start_y+=SUBGRID_RESOLUTION_Y-1)
+    for (int start_x=0;start_x+SUBGRID_RESOLUTION_X-1<GRID_VERTEX_RESOLUTION_X;start_x+=SUBGRID_RESOLUTION_X-1)
     {
       //PRINT3(start_y,start_x,index);
-      for (uint y=0;y<SUBGRID_RESOLUTION_Y;y++)
-        for (uint x=0;x<SUBGRID_RESOLUTION_X;x++)
+      for (int y=0;y<SUBGRID_RESOLUTION_Y;y++)
+        for (int x=0;x<SUBGRID_RESOLUTION_X;x++)
         {
           //PRINT3(start_y+y,start_x+x,0);
-          compressed_geometries[index].vertex[y][x][0] = start_x + x;// - GRID_VERTEX_RESOLUTION_X/2;
-          compressed_geometries[index].vertex[y][x][1] = start_y + y;// - GRID_VERTEX_RESOLUTION_Y/2;
+          compressed_geometries[index].vertex[y][x][0] = start_x + x - GRID_VERTEX_RESOLUTION_X/2;
+          compressed_geometries[index].vertex[y][x][1] = start_y + y - GRID_VERTEX_RESOLUTION_Y/2;
           compressed_geometries[index].vertex[y][x][2] = 0;          
         }
       compressed_geometries[index].ID = index;
@@ -67,139 +62,42 @@ unsigned int createLossyCompressedGeometry (RTCScene scene)
   return geomID;  
 }
 
-unsigned int createTriangulatedSphere (RTCScene scene, const Vec3fa& p, float r)
-{
-  /* create triangle mesh */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-  /* map triangle and vertex buffers */
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),numTheta*(numPhi+1));
-  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2*numTheta*(numPhi-1));
-
-  /* create sphere */
-  int tri = 0;
-  const float rcpNumTheta = rcp((float)numTheta);
-  const float rcpNumPhi   = rcp((float)numPhi);
-  for (int phi=0; phi<=numPhi; phi++)
+  void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene)
   {
-    for (int theta=0; theta<numTheta; theta++)
-    {
-      const float phif   = phi*float(pi)*rcpNumPhi;
-      const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-
-      Vertex& v = vertices[phi*numTheta+theta];
-      v.x = p.x + r*sin(phif)*sin(thetaf);
-      v.y = p.y + r*cos(phif);
-      v.z = p.z + r*sin(phif)*cos(thetaf);
-    }
-    if (phi == 0) continue;
-
-    for (int theta=1; theta<=numTheta; theta++)
-    {
-      int p00 = (phi-1)*numTheta+theta-1;
-      int p01 = (phi-1)*numTheta+theta%numTheta;
-      int p10 = phi*numTheta+theta-1;
-      int p11 = phi*numTheta+theta%numTheta;
-
-      if (phi > 1) {
-        triangles[tri].v0 = p10;
-        triangles[tri].v1 = p01;
-        triangles[tri].v2 = p00;
-        tri++;
-      }
-
-      if (phi < numPhi) {
-        triangles[tri].v0 = p11;
-        triangles[tri].v1 = p01;
-        triangles[tri].v2 = p10;
-        tri++;
-      }
-    }
+    Vec3fa *vtx = grid->positions[0];
+    PRINT(grid->numVertices);
+    PRINT(grid->numGrids);
+    for (uint i=0;i<grid->numGrids;i++)
+      PRINT3(i,grid->grids[i].resX,grid->grids[i].resY);
+    exit(0);
   }
-
-  rtcCommitGeometry(geom);
-  unsigned int geomID = rtcAttachGeometry(scene,geom);
-  rtcReleaseGeometry(geom);
-  return geomID;
-}
-
-
-/* creates a ground plane */
-unsigned int createGroundPlane (RTCScene scene)
-{
-  /* create a triangulated plane with 2 triangles and 4 vertices */
-  RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-  /* set vertices */
-  Vertex* vertices = (Vertex*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(Vertex),4);
-  vertices[0].x = -10; vertices[0].y = -2; vertices[0].z = -10;
-  vertices[1].x = -10; vertices[1].y = -2; vertices[1].z = +10;
-  vertices[2].x = +10; vertices[2].y = -2; vertices[2].z = -10;
-  vertices[3].x = +10; vertices[3].y = -2; vertices[3].z = +10;
-
-  /* set triangles */
-  Triangle* triangles = (Triangle*) rtcSetNewGeometryBuffer(geom,RTC_BUFFER_TYPE_INDEX,0,RTC_FORMAT_UINT3,sizeof(Triangle),2);
-  triangles[0].v0 = 0; triangles[0].v1 = 1; triangles[0].v2 = 2;
-  triangles[1].v0 = 1; triangles[1].v1 = 3; triangles[1].v2 = 2;
-
-  rtcCommitGeometry(geom);
-  unsigned int geomID = rtcAttachGeometry(scene,geom);
-  rtcReleaseGeometry(geom);
-  return geomID;
-}
+  
+extern "C" ISPCScene* g_ispc_scene;
 
 /* called by the C++ code for initialization */
 extern "C" void device_init (char* cfg)
 {
   TutorialData_Constructor(&data);
+
   
+  //PRINT(g_ispc_scene->ge
   /* create scene */
   data.g_scene = g_scene = rtcNewScene(g_device);
   rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
   rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
 #if 0  
-  /* create NUM_SPHERES scenes with a triangulated sphere */
-  const float rcpNumTheta = rcp((float)NUM_SPHERE_INSTANCES_THETA);
-  const float rcpNumPhi   = rcp((float)NUM_SPHERE_INSTANCES_PHI);
-  const float r           = 160;
-
-  for (uint i=0;i<NUM_SPHERES;i++)
-  {
-    data.g_scene_spheres[i] = rtcNewScene(g_device);
-    createTriangulatedSphere(data.g_scene_spheres[i],Vec3fa(0,0,0),0.5f);
-    rtcCommitScene(data.g_scene_spheres[i]);    
-  }
-  
-  for (int phi=0; phi<=NUM_SPHERE_INSTANCES_PHI-1; phi++)
-  {
-    for (int theta=0; theta<NUM_SPHERE_INSTANCES_THETA; theta++)
-    {
-      const uint i = phi*numTheta+theta;
-      const float phif   = phi*float(pi)*rcpNumPhi;
-      const float thetaf = theta*2.0f*float(pi)*rcpNumTheta;
-
-      Vec3fa v(0.0f);
-#if 1     
-      v.x = r*sin(phif)*sin(thetaf);
-      v.y = r*cos(phif); 
-      v.z = r*sin(phif)*cos(thetaf);
-#endif
-      AffineSpace3fa xfm(LinearSpace3fa(1,0,0,0,1,0,0,0,1),v);
-
-      data.g_instances[i] = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_INSTANCE);
-      rtcSetGeometryInstancedScene(data.g_instances[i],data.g_scene_spheres[i%NUM_SPHERES]);
-      rtcSetGeometryTimeStepCount(data.g_instances[i],1);
-      rtcSetGeometryTransform(data.g_instances[i],0,RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR,(float*)&xfm);      
-      rtcAttachGeometry(data.g_scene,data.g_instances[i]);
-      rtcReleaseGeometry(data.g_instances[i]);
-      rtcCommitGeometry(data.g_instances[i]);
-    }
-  }
-#else
   createLossyCompressedGeometry(data.g_scene);
-#endif  
-
+#else
+  PRINT(g_ispc_scene->numGeometries);
+  for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
+  {
+    ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
+    if (geometry->type == GRID_MESH)
+      convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene);
+  }  
+#endif
+  
   /* update scene */
   rtcCommitScene (data.g_scene);  
 }

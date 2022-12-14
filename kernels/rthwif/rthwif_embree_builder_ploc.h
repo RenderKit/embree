@@ -1555,11 +1555,11 @@ namespace embree
    
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, double &iteration_time, const bool verbose)    
   {
-    uint ID = 0;
-
+    
+    uint numLCGs = 0;
     const uint sizeLCGBVH = SIZE_LCG_BVH;
-    PING;
-    PRINT(sizeLCGBVH);
+    //PING;
+    //PRINT(sizeLCGBVH);
     
     for (uint lcgID=0;lcgID<numGeoms;lcgID++)
     {
@@ -1567,22 +1567,51 @@ namespace embree
       if (geometry_desc[lcgID]->geometryType == RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY)
       {
         RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];
+        
+#if 1
+        numLCGs += geom->numGeometryPtrs;        
+        const uint wgSize = 64;
+        const sycl::nd_range<1> nd_range1(gpu::alignTo(geom->numGeometryPtrs,wgSize),sycl::range<1>(wgSize));          
+        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
+            cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
+                             {
+                               const uint ID = item.get_global_id(0);                                                                                                               
+                               if (ID < geom->numGeometryPtrs)
+                               {
+                                 RTCLossyCompressedGrid *source = (RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[ID];
+                                 char* dest = lcg_bvh_mem + ID * sizeLCGBVH;          
+                                 gpu::AABB3f bounds = convert_RTCLossyCompressedGrid_QBVH6(*source,dest,lcgID,ID);
+                                 BVH2Ploc node;                             
+                                 node.initLeaf(lcgID,ID,bounds);                               
+                                 node.store(&bvh2[prim_type_offset + ID]);                                 
+                               }
+                             });
+          });
 
-        for (uint i=0;i<geom->numGeometryPtrs;i++)
-        {
-          RTCLossyCompressedGrid *source = (RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[i];
-          //PRINT4(ID,i,source->ID,source->materialID);
-          char* dest = lcg_bvh_mem + ID * sizeLCGBVH;          
-          gpu::AABB3f bounds = convert_RTCLossyCompressedGrid_QBVH6(*source,dest,lcgID,i);
-          BVH2Ploc node;                             
-          node.initLeaf(lcgID,ID,bounds);                               
-          node.store(&bvh2[prim_type_offset + ID]);
-          //PRINT(node);
-          ID++;
-        }
-      }
-    }    
-    return ID;
+        gpu::waitOnEventAndCatchException(queue_event);
+        if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(queue_event);
+        PRINT((float)gpu::getDeviceExecutionTiming(queue_event));
+
+
+#else      
+            uint ID = 0;
+            for (uint i=0;i<geom->numGeometryPtrs;i++)
+            {
+              RTCLossyCompressedGrid *source = (RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[i];
+              //PRINT4(ID,i,source->ID,source->materialID);
+              char* dest = lcg_bvh_mem + ID * sizeLCGBVH;          
+              gpu::AABB3f bounds = convert_RTCLossyCompressedGrid_QBVH6(*source,dest,lcgID,i);
+              BVH2Ploc node;                             
+              node.initLeaf(lcgID,ID,bounds);                               
+              node.store(&bvh2[prim_type_offset + ID]);
+              //PRINT(node);
+              ID++;
+            }
+            numLCGs += ID;
+#endif
+          }
+          }    
+    return numLCGs;
   }
    
 
@@ -2812,7 +2841,6 @@ namespace embree
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
     const uint leaves = host_device_tasks[0]; 
-    PRINT(leaves);
     if (leaves)
     {
       const uint wgSize = 256;
@@ -2939,8 +2967,6 @@ namespace embree
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);     
     }        
     conversion_device_time = (float)total_time;
-
-    gpu::waitOnQueueAndCatchException(gpu_queue); // FIXME
     
     return true;    
   }

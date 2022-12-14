@@ -370,6 +370,7 @@ namespace embree
 
   void ISPCGridMesh::commit()
   {
+    PING;
     RTCGeometry g = geom.geometry;
     rtcSetGeometryTimeStepCount(g,numTimeSteps);
     rtcSetGeometryTimeRange(g,startTime,endTime);
