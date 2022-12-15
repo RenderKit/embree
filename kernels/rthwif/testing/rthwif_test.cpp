@@ -3,6 +3,10 @@
 
 #define NOMINMAX
 
+// prevents "'__thiscall' calling convention is not supported for this target" warning from TBB
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wignored-attributes"
+
 #include <CL/sycl.hpp>
 #include "tbb/tbb.h"
 
@@ -2094,3 +2098,5 @@ int main(int argc, char* argv[])
   
   return numErrors ? 1 : 0;
 }
+
+#pragma clang diagnostic pop

@@ -37,6 +37,7 @@ ENDIF()
 
 ####################################################################
 # fetch TBB and build static version of it
+ADD_DEFINITIONS("-D_CRT_SECURE_NO_WARNINGS")
 
 option(TBB_STRICT "Treat compiler warnings as errors" OFF)
 option(TBB_TEST "Enable testing" OFF)

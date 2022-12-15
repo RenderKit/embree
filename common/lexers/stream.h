@@ -3,6 +3,10 @@
 
 #pragma once
 
+#if !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "../sys/platform.h"
 #include "../sys/ref.h"
 #include "../sys/filename.h"
