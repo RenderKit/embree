@@ -504,6 +504,7 @@ RTC_SYCL_INDIRECTLY_CALLABLE void sphereFilterFunction(const RTCFilterFunctionNA
   //struct RTCHit* hit = (struct RTCHit*)args->hit;
   const unsigned int N = args->N;
   assert(N == 1);
+  _unused(N);
 
   /* avoid crashing when debug visualizations are used */
   if (context == nullptr)

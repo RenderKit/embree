@@ -172,6 +172,7 @@ namespace embree
     void* ptr = nullptr;
     ze_result_t result = zeMemAllocShared(hContext,&device_desc,&host_desc,bytes,RTHWIF_ACCELERATION_STRUCTURE_ALIGNMENT,hDevice,&ptr);
     assert(result == ZE_RESULT_SUCCESS);
+    _unused(result);
     return ptr;
   }
   
@@ -181,6 +182,7 @@ namespace embree
     ze_context_handle_t hContext = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(context);
     ze_result_t result = zeMemFree(hContext,ptr);
     assert(result == ZE_RESULT_SUCCESS);
+    _unused(result);
   }
 
   struct GEOMETRY_INSTANCE_DESC : RTHWIF_GEOMETRY_INSTANCE_DESC

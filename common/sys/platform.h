@@ -23,12 +23,6 @@
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-// If we use the internal clang frontend of the dpc++ compiler directly __INTEL_LLVM_COMPILER is not set.
-// I think doing this is fine because normal clang can not compile dpcpp/sycl code anyway.
-#if defined(__clang__) and !defined(__INTEL_LLVM_COMPILER)
-  #define __INTEL_LLVM_COMPILER
-#endif
-
 #define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
 #include <sycl/sycl.hpp>
 
@@ -177,6 +171,10 @@
   #define MAYBE_UNUSED __attribute__((unused))
 #else
   #define MAYBE_UNUSED
+#endif
+
+#if !defined(_unused)
+#define _unused(x) ((void)(x))
 #endif
 
 #if defined(_MSC_VER) && (_MSC_VER < 1900) // before VS2015 deleted functions are not supported properly

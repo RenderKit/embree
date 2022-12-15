@@ -31,6 +31,7 @@ namespace embree
     /* only pause if running in separate console window. */
     printf("\n\tPress any key to exit...\n");
     int ch = _getch();
+    _unused(ch);
 #endif
   }
   
