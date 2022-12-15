@@ -20,13 +20,22 @@ IF (NOT WIN32)
   ENDIF()
 ENDIF()
   
-ADD_DEFINITIONS(-D__INTEL_LLVM_COMPILER)
+GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
+GET_FILENAME_COMPONENT(SYCL_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME_WE)
+IF (NOT SYCL_COMPILER_NAME STREQUAL "clang++")
+  SET(SYCL_ONEAPI TRUE)
+  IF (SYCL_COMPILER_NAME STREQUAL "icx" OR SYCL_COMPILER_NAME STREQUAL "icpx")
+    SET(SYCL_ONEAPI_ICX TRUE)
+  ELSE()
+    SET(SYCL_ONEAPI_ICX FALSE)
+  ENDIF()
+ELSE()
+  SET(SYCL_ONEAPI FALSE)
+  ADD_DEFINITIONS(-D__INTEL_LLVM_COMPILER)
+ENDIF()
 
 IF (EMBREE_SYCL_SUPPORT)
 
-  GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
-  GET_FILENAME_COMPONENT(SYCL_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME)
-  
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # enables C++17 features
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-sycl")   # makes dpcpp compiler compatible with clang++
   
@@ -118,31 +127,46 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move") # disabled: warning: moving a temporary object prevents copy elision [-Wpessimizing-move]
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")            # enables C++17 features
+
+  IF (SYCL_ONEAPI_ICX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++17")            # enables C++17 features
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")            # enables C++17 features
+  ENDIF()
 ENDIF(EMBREE_SYCL_SUPPORT)
 
 IF (EMBREE_STACK_PROTECTOR)
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector")           # protects against return address overrides
+  IF (SYCL_ONEAPI_ICX)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GS")           # protects against return address overrides
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector") # protects against return address overrides
+  ENDIF()
 ENDIF()
 MACRO(DISABLE_STACK_PROTECTOR_FOR_FILE file)
   IF (EMBREE_STACK_PROTECTOR)
-    SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
+    IF (SYCL_ONEAPI_ICX)
+      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "/GS-")
+    ELSE()
+      SET_SOURCE_FILES_PROPERTIES(${file} PROPERTIES COMPILE_FLAGS "-fno-stack-protector")
+    ENDIF()
   ENDIF()
 ENDMACRO()
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")         # makes all symbols hidden by default
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden") # makes all inline symbols hidden by default
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")        # disables strict aliasing rules
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")         # disable auto vectorizer
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORTIFY_SOURCE=2")         # perform extra security checks for some standard library calls
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")               # treat char as signed on all processors, including ARM
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
-
-GET_FILENAME_COMPONENT(COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME_WE)
-IF (COMPILER_NAME STREQUAL "icx")
+IF (SYCL_ONEAPI_ICX AND WIN32)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:precise")   # makes dpcpp compiler compatible with clang++
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc")        # catch C++ exceptions only and extern "C" functions never throw a C++ exception
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR")          # enable runtime type information (on by default)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Xclang -fcxx-exceptions") # enable C++ exceptions in Clang
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Gy")          # package individual functions
 ELSE()
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")         # makes all symbols hidden by default
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility-inlines-hidden") # makes all inline symbols hidden by default
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")        # disables strict aliasing rules
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-tree-vectorize")         # disable auto vectorizer
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_FORTIFY_SOURCE=2")         # perform extra security checks for some standard library calls
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsigned-char")               # treat char as signed on all processors, including ARM
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")                       # enables most warnings
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wformat -Wformat-security")  # enables string format vulnerability warnings
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffp-model=precise")   # makes dpcpp compiler compatible with clang++
 ENDIF()
 
@@ -150,18 +174,19 @@ IF (WIN32)
 
   IF (NOT EMBREE_SYCL_SUPPORT)
     IF (${MSVC_VERSION} VERSION_GREATER_EQUAL 1916)
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")                  # enables C++14 features    
+      IF (SYCL_ONEAPI_ICX)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++14")                  # enables C++14 features
+      ELSE()
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")                  # enables C++14 features
+      ENDIF()
     ELSE()
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++14 features    
+      IF (SYCL_ONEAPI_ICX)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++11")                  # enables C++14 features
+      ELSE()
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++14 features
+      ENDIF()
     ENDIF()
   ENDIF()
-
-  SET(COMMON_CXX_FLAGS "")
-  SET(COMMON_CXX_FLAGS "${COMMON_CXX_FLAGS} -Xclang -fcxx-exceptions") # enable C++ exceptions in Clang
- 
-  SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${COMMON_CXX_FLAGS}")
-  SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${COMMON_CXX_FLAGS}")
-  SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} ${COMMON_CXX_FLAGS}")
 
   INCLUDE(msvc_post)
 
