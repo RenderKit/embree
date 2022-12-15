@@ -173,9 +173,12 @@ struct RTC_ALIGN(16) RTCLinearBounds
   struct RTCBounds bounds1;
 };
 
+#define RTC_LOSSY_COMPRESSED_GRID_RES_X 4
+#define RTC_LOSSY_COMPRESSED_GRID_RES_Y 3
+
 struct RTCLossyCompressedGrid
 {
-  float vertex[3][4][3];
+  float vertex[RTC_LOSSY_COMPRESSED_GRID_RES_Y][RTC_LOSSY_COMPRESSED_GRID_RES_X][3];
   uint ID;
   uint materialID;
 };

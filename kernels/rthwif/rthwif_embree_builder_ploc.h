@@ -1522,8 +1522,8 @@ namespace embree
      char *node = dest;
      QuadLeaf *leaf = (QuadLeaf*)(dest + 64);
      uint index = 0;
-     for (uint y=0;y<2;y++)
-       for (uint x=0;x<3;x++)
+     for (uint y=0;y<RTC_LOSSY_COMPRESSED_GRID_RES_Y-1;y++)
+       for (uint x=0;x<RTC_LOSSY_COMPRESSED_GRID_RES_X-1;x++)
        {
          const Vec3f p0 = getVertex(grid_source,y+0,x+0);
          const Vec3f p1 = getVertex(grid_source,y+0,x+1);
@@ -1570,7 +1570,7 @@ namespace embree
         
 #if 1
         numLCGs += geom->numGeometryPtrs;        
-        const uint wgSize = 64;
+        const uint wgSize = 32;
         const sycl::nd_range<1> nd_range1(gpu::alignTo(geom->numGeometryPtrs,wgSize),sycl::range<1>(wgSize));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
             cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
