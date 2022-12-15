@@ -188,6 +188,12 @@ IF (WIN32)
     ENDIF()
   ENDIF()
 
+  IF(SYCL_ONEAPI AND NOT SYCL_ONEAPI_ICX)
+    # TODO: fixme
+    # WA for many "'__thiscall' calling convention is not supported for this target" warnings
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-attributes") 
+  ENDIF()
+
   INCLUDE(msvc_post)
 
   # workaround for file encoding problems of kernels/embree.rc found here https://gitlab.kitware.com/cmake/cmake/-/issues/18311

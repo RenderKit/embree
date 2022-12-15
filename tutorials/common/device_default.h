@@ -15,7 +15,9 @@
 #  define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
 #  include <sycl/sycl.hpp>
 #else
-#  define SYCL_EXTERNAL
+#  if !defined(SYCL_EXTERNAL)
+#    define SYCL_EXTERNAL
+#  endif
 #endif
 
 /* include embree API */

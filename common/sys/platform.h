@@ -35,7 +35,7 @@
 
 #include "sycl.h"
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 #define CONSTANT __attribute__((opencl_constant))
 #else
 #define CONSTANT
@@ -355,7 +355,7 @@ __forceinline std::string toString(long long value) {
 ////////////////////////////////////////////////////////////////////////////////
 
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 
 #define sycl_printf0(format, ...) {               \
     static const CONSTANT char fmt[] = format;               \
@@ -393,7 +393,7 @@ __forceinline std::string toString(long long value) {
     SYCL_EXT_ONEAPI::experimental::printf(fmt);                  \
   }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 
 namespace embree
 {

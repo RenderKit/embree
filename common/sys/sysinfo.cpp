@@ -1,6 +1,12 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+#if defined(__INTEL_LLVM_COMPILER)
+// prevents "'__thiscall' calling convention is not supported for this target" warning from TBB
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wignored-attributes"
+#endif
+
 #include "sysinfo.h"
 #include "intrinsics.h"
 #include "estring.h"
@@ -696,3 +702,6 @@ namespace embree
 }
 #endif
 
+#if defined(__INTEL_LLVM_COMPILER)
+#pragma clang diagnostic pop
+#endif

@@ -65,7 +65,7 @@ extern "C" Shader shader;
 void error_handler(void* userPtr, RTCError code, const char* str = nullptr);
 
 /* returns time stamp counter */
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 inline int64_t get_tsc() { return 0; }
 #else
 extern "C" int64_t get_tsc();

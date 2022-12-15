@@ -37,7 +37,7 @@ sycl::device device;
 sycl::context context;
 void* dispatchGlobalsPtr = nullptr;
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 #define CONSTANT __attribute__((opencl_constant))
 #else
 #define CONSTANT
