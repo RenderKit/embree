@@ -909,7 +909,10 @@ namespace embree
     glPixelZoom(1.0f,-1.0f);
     glDrawPixels(width,height,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
 
-    ImGui_ImplGlfwGL2_NewFrame();
+    // Start the Dear ImGui frame
+    ImGui_ImplOpenGL2_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
     
     ImGuiWindowFlags window_flags = 0;
     window_flags |= ImGuiWindowFlags_NoTitleBar;
@@ -948,7 +951,7 @@ namespace embree
     //ImGui::ShowDemoWindow();
         
     ImGui::Render();
-    ImGui_ImplGlfwGL2_RenderDrawData(ImGui::GetDrawData());
+    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
     
     glfwSwapBuffers(window);
 
@@ -1016,7 +1019,10 @@ namespace embree
      ImGui::CreateContext();
      ImGuiIO& io = ImGui::GetIO(); (void)io;
      //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;  // Enable Keyboard Controls
-     ImGui_ImplGlfwGL2_Init(window, false);
+     
+    // Setup Platform/Renderer backends
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL2_Init();
      
      // Setup style
      ImGui::StyleColorsDark();
@@ -1048,7 +1054,9 @@ namespace embree
        displayFunc();
      }
      
-     ImGui_ImplGlfwGL2_Shutdown();
+     // Cleanup
+     ImGui_ImplOpenGL2_Shutdown();
+     ImGui_ImplGlfw_Shutdown();
      ImGui::DestroyContext();
      
      glfwDestroyWindow(window);
