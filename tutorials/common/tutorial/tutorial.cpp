@@ -1135,6 +1135,11 @@ namespace embree
 
       /* select device supported by Embree */
       device = new sycl::device(rtcSYCLDeviceSelector);
+
+      sycl::platform platform = device->get_platform();
+      log(1, "Selected SYCL Platform: " + platform.get_info<sycl::info::platform::name>());
+      log(1, "Selected SYCL Device: " + device->get_info<sycl::info::device::name>());
+
       queue = new sycl::queue(*device, exception_handler, { sycl::property::queue::in_order(), sycl::property::queue::enable_profiling() });
       context = new sycl::context(*device);
       g_device = rtcNewSYCLDevice(*context,rtcore.c_str());
