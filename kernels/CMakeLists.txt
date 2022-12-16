@@ -331,10 +331,12 @@ IF (EMBREE_ISA_AVX512 AND EMBREE_LIBRARY_FILES_AVX512)
   ENDIF()
 ENDIF()
 
+TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)
 IF (EMBREE_SYCL_SUPPORT)
-  TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking embree_rthwif -l${SYCL_LIB_NAME} -lze_loader PUBLIC embree_sycl)
-ELSE()
-  TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)
+  TARGET_LINK_LIBRARIES(embree PRIVATE embree_rthwif ${SYCL_LIB_NAME} PUBLIC embree_sycl)
+  IF (EMBREE_LEVL_ZERO)
+    TARGET_LINK_LIBRARIES(embree PRIVATE ze_loader)
+  ENDIF()
 ENDIF()
 
 #TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking ${CMAKE_LINK_FLAGS_SYCL})  # FIXME: enable this line

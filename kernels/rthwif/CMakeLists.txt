@@ -5,6 +5,13 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(embree_rthwif)
 
+IF(COMMAND cmake_policy)
+  if(POLICY CMP0135)
+    message("set policy CMP0135 to NEW")
+    cmake_policy(SET CMP0135 NEW)
+  endif()
+ENDIF()
+
 SET(CMAKE_CXX_STANDARD 17)
 
 #####################################################################

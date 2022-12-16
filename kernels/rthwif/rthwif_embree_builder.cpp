@@ -155,9 +155,13 @@ namespace embree
 
 #else
 
-  bool rthwifIsSYCLDeviceSupported(const sycl::device& sycl_device)
+  bool rthwifIsSYCLDeviceSupported(const sycl::device& device)
   {
-    return true;
+    // TODO: SYCL currently has no functionality to check if a GPU has RTHW
+    // capabilities. Therefore, we return true when the device is a GPU and the
+    // backend is level_zero, and hope for the best.
+    sycl::platform platform = device.get_platform();
+    return device.is_gpu() && (platform.get_info<sycl::info::platform::name>() == "Intel(R) Level-Zero");
   }
 
 #endif

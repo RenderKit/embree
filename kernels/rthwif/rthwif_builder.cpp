@@ -247,7 +247,12 @@ namespace embree
 
   RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
   {
-    return RTHWIF_FEATURES_NONE;
+    uint32_t features_xe = RTHWIF_FEATURES_NONE;
+    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES;
+    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS;
+    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR;
+    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE;
+    return RTHWIF_FEATURES(features_xe);
   }
 
 #endif

@@ -19,7 +19,7 @@ IF (NOT WIN32)
     SET(CMAKE_CXX_FLAGS "")
   ENDIF()
 ENDIF()
-  
+
 GET_FILENAME_COMPONENT(SYCL_COMPILER_DIR ${CMAKE_CXX_COMPILER} PATH)
 GET_FILENAME_COMPONENT(SYCL_COMPILER_NAME ${CMAKE_CXX_COMPILER} NAME_WE)
 IF (NOT SYCL_COMPILER_NAME STREQUAL "clang++")
@@ -29,40 +29,59 @@ IF (NOT SYCL_COMPILER_NAME STREQUAL "clang++")
   ELSE()
     SET(SYCL_ONEAPI_ICX FALSE)
   ENDIF()
+  SET(STORE_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+  SET(STORE_CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
+  find_package(IntelDPCPP REQUIRED)
+  SET(EMBREE_LEVEL_ZERO OFF)
+  IF (NOT EMBREE_SYCL_SUPPORT)
+    # if EMBREE_SYCL_SUPPORT is off we don't want the -fsycl flags
+    SET(CMAKE_CXX_FLAGS ${STORE_CMAKE_CXX_FLAGS})
+    SET(CMAKE_CXX_LINK_FLAGS ${STORE_CMAKE_CXX_LINK_FLAGS})
+  ENDIF()
 ELSE()
   SET(SYCL_ONEAPI FALSE)
   ADD_DEFINITIONS(-D__INTEL_LLVM_COMPILER)
+  ADD_DEFINITIONS(-DEMBREE_SYCL_NIGHTLY)
+  SET(EMBREE_LEVEL_ZERO ON)
 ENDIF()
 
 IF (EMBREE_SYCL_SUPPORT)
 
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17") # enables C++17 features
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-sycl")   # makes dpcpp compiler compatible with clang++
   
   SET(CMAKE_CXX_FLAGS_SYCL "-fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr")
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -Wno-logical-op-parentheses")
   
-  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")              # FIXME: debug information generation takes forever in SYCL
-  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
-  
-  IF (NOT SYCL_COMPILER_NAME STREQUAL "dpcpp")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
-    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
+  IF (SYCL_ONEAPI_ICX)
+    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /debug:none")    # FIXME: debug information generation takes forever in SYCL
+    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /DNDEBUG")    # FIXME: debug information generation takes forever in SYCL
+  ELSE()
+    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -g0")            # FIXME: debug information generation takes forever in SYCL
+    SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -UDEBUG -DNDEBUG") # FIXME: assertion still not working in SYCL
   ENDIF()
+  
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
+  SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-bitwise-instead-of-logical") # disables "use of bitwise '&' with boolean operands" warning
 
   IF (WIN32)
     SET(SYCL_COMPILER_LIB_DIR "${SYCL_COMPILER_DIR}/../lib")
-    file(GLOB SYCL_LIB
-         RELATIVE ${SYCL_COMPILER_LIB_DIR}
-         ${SYCL_COMPILER_LIB_DIR}/sycl.lib
-         ${SYCL_COMPILER_LIB_DIR}/sycl[0-9].lib
-         ${SYCL_COMPILER_LIB_DIR}/sycl[0-9][0-9].lib)
+    IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      file(GLOB SYCL_LIB RELATIVE ${SYCL_COMPILER_LIB_DIR}
+           ${SYCL_COMPILER_LIB_DIR}/sycld.lib
+           ${SYCL_COMPILER_LIB_DIR}/sycl[0-9]d.lib
+           ${SYCL_COMPILER_LIB_DIR}/sycl[0-9][0-9]d.lib)
+    ELSE()
+      file(GLOB SYCL_LIB RELATIVE ${SYCL_COMPILER_LIB_DIR}
+           ${SYCL_COMPILER_LIB_DIR}/sycl.lib
+           ${SYCL_COMPILER_LIB_DIR}/sycl[0-9].lib
+           ${SYCL_COMPILER_LIB_DIR}/sycl[0-9][0-9].lib)
+    ENDIF()
     GET_FILENAME_COMPONENT(SYCL_LIB_NAME ${SYCL_LIB} NAME_WE)
   ELSE()
     SET(SYCL_LIB_NAME "sycl")
   ENDIF()
 
-  SET(CMAKE_LINK_FLAGS_SYCL "-l${SYCL_LIB_NAME} -fsycl")
+  SET(CMAKE_LINK_FLAGS_SYCL "-fsycl")
   
   #LIST(APPEND CMAKE_IGC_OPTIONS "EnableOCLNoInlineAttr=0")                                # enabled __noinline
   #LIST(APPEND CMAKE_IGC_OPTIONS "ControlKernelTotalSize=0")
@@ -124,14 +143,15 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS_SYCL  "${CMAKE_CXX_FLAGS_SYCL}  ${CMAKE_CXX_FLAGS_SYCL_AOT}")
   SET(CMAKE_LINK_FLAGS_SYCL "${CMAKE_LINK_FLAGS_SYCL} ${CMAKE_LINK_FLAGS_SYCL_AOT}")
 
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move") # disabled: warning: moving a temporary object prevents copy elision [-Wpessimizing-move]
 
   IF (SYCL_ONEAPI_ICX)
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++17")            # enables C++17 features
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../include/sycl\" -I\"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
   ELSE()
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")            # enables C++17 features
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
   ENDIF()
 ENDIF(EMBREE_SYCL_SUPPORT)
 
@@ -173,25 +193,20 @@ ENDIF()
 IF (WIN32)
 
   IF (NOT EMBREE_SYCL_SUPPORT)
-    IF (${MSVC_VERSION} VERSION_GREATER_EQUAL 1916)
-      IF (SYCL_ONEAPI_ICX)
+    IF (SYCL_ONEAPI_ICX)
+      IF (${MSVC_VERSION} VERSION_GREATER_EQUAL 1916)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++14")                  # enables C++14 features
       ELSE()
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")                  # enables C++14 features
-      ENDIF()
-    ELSE()
-      IF (SYCL_ONEAPI_ICX)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++11")                  # enables C++14 features
+      ENDIF()
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Oi")                  # enables C++14 features
+    ELSE()
+      IF (${MSVC_VERSION} VERSION_GREATER_EQUAL 1916)
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")                  # enables C++14 features
       ELSE()
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++14 features
       ENDIF()
     ENDIF()
-  ENDIF()
-
-  IF(SYCL_ONEAPI AND NOT SYCL_ONEAPI_ICX)
-    # TODO: fixme
-    # WA for many "'__thiscall' calling convention is not supported for this target" warnings
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-ignored-attributes") 
   ENDIF()
 
   INCLUDE(msvc_post)

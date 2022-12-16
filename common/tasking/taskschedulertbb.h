@@ -15,6 +15,12 @@
 #  define NOMINMAX
 #endif
 
+#if defined(__INTEL_LLVM_COMPILER)
+// prevents "'__thiscall' calling convention is not supported for this target" warning from TBB
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wignored-attributes"
+#endif
+
 // We need to define these to avoid implicit linkage against
 // tbb_debug.lib under Windows. When removing these lines debug build
 // under Windows fails.
@@ -77,3 +83,7 @@ namespace embree
   };
 
 };
+
+#if defined(__INTEL_LLVM_COMPILER)
+#pragma clang diagnostic pop
+#endif
