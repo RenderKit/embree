@@ -19,7 +19,6 @@ namespace embree
     case RTC_ERROR_OUT_OF_MEMORY    : return "RTC_ERROR_OUT_OF_MEMORY";
     case RTC_ERROR_UNSUPPORTED_CPU  : return "RTC_ERROR_UNSUPPORTED_CPU";
     case RTC_ERROR_CANCELLED        : return "RTC_ERROR_CANCELLED";
-    case RTC_ERROR_UNSUPPORTED_GPU  : return "RTC_ERROR_UNSUPPORTED_GPU";
     default                         : return "invalid error code";
     }
   }
