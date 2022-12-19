@@ -39,6 +39,9 @@ Possible error codes returned by `rtcGetDeviceError` are:
 + `RTC_ERROR_CANCELLED`: The operation got canceled by a memory
   monitor callback or progress monitor callback function.
 
++ `RTC_ERROR_UNSUPPORTED_GPU`: The specified SYCL GPU device is not
+supported.
+
 When the device construction fails, `rtcNewDevice` returns `NULL` as
 device. To detect the error code of a such a failed device
 construction, pass `NULL` as device to the `rtcGetDeviceError`

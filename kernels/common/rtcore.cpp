@@ -62,7 +62,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_TRACE(rtcSYCLDeviceSelector);
     return rthwifIsSYCLDeviceSupported(device) ? 1 : -1;
     RTC_CATCH_END(nullptr);
-    return -1;
+    return false;
   }
 
   RTC_API void rtcSetDeviceSYCLDevice(RTCDevice hdevice, const sycl::device sycl_device)

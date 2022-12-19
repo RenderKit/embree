@@ -41,6 +41,7 @@ namespace embree
     case RTC_ERROR_OUT_OF_MEMORY    : throw std::runtime_error("RTC_ERROR_OUT_OF_MEMORY"+descr); break;
     case RTC_ERROR_UNSUPPORTED_CPU  : throw std::runtime_error("RTC_ERROR_UNSUPPORTED_CPU"+descr); break;
     case RTC_ERROR_CANCELLED        : throw std::runtime_error("RTC_ERROR_CANCELLED"+descr); break;
+    case RTC_ERROR_UNSUPPORTED_GPU  : throw std::runtime_error("RTC_ERROR_UNSUPPORTED_GPU"+descr); break;
     default                         : throw std::runtime_error("invalid error code"+descr); break;
     }
   }

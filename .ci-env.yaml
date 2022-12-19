@@ -14,5 +14,5 @@ variables:
   GFX_VERSION_WIN_INTERNAL: gfx-driver-builds/ci/master/gfx-driver-ci-master-12886/artifacts/Windows
   GFX_VERSION_WIN_PUBLIC: gfx-driver-builds/prod/releases_22ww49-ci-master-12886/prod-hini-releases_22ww49-ci-master-12886-revenue-pr-1014029/artifacts/Windows
   GFX_VERSION_WIN_RELEASE: gfx-driver-builds/prod/releases_22ww49-ci-master-12886/prod-hini-releases_22ww49-ci-master-12886-revenue-pr-1014029/artifacts/Windows
-  DPCPP_VERSION_LINUX: sycl-nightly/20221214
-  DPCPP_VERSION_WIN: sycl-nightly/20221214
+  DPCPP_VERSION_LINUX: sycl-nightly/20220914
+  DPCPP_VERSION_WIN: sycl-nightly/20220914
