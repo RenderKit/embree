@@ -1588,9 +1588,6 @@ namespace embree
       dest.tmp[36+i] = lower_z;
       dest.tmp[42+i] = upper_z;      
     }
-    // === write out second part of 64 bytes node ===
-    //for (uint i=0;i<12;i++)
-    //  dest[4+i] = tmp[i*4+0] | (tmp[i*4+1]<<8) | (tmp[i*4+2]<<16) | (tmp[i*4+3]<<24);
   }
    
    
@@ -1653,7 +1650,7 @@ namespace embree
 #if 1
         
         numLCGs += geom->numGeometryPtrs;        
-#if 0
+#if 1
         const uint wgSize = 16;        
         const sycl::nd_range<1> nd_range1(gpu::alignTo(geom->numGeometryPtrs,wgSize),sycl::range<1>(wgSize));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
@@ -1742,7 +1739,7 @@ namespace embree
         
         gpu::waitOnEventAndCatchException(queue_event);
         if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-        PRINT((float)gpu::getDeviceExecutionTiming(queue_event));
+        PRINT((float)iteration_time);
 
 
 #else      
