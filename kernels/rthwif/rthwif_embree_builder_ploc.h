@@ -22,8 +22,6 @@
 #define HOST_DEVICE_COMM_BUFFER_SIZE 16*sizeof(uint)
 #define EQUAL_DISTANCES_WORKAROUND   1
 
-#define SIZE_LCG_BVH                 (3*2*64+64)
-
 namespace embree
 {  
   // ===================================================================================================================================================================================
@@ -676,6 +674,28 @@ namespace embree
     return true;
   }
 
+  // =====================================================================================================================================================================================
+  // ======================================================================= Lossy Compressed Geometries =================================================================================
+  // =====================================================================================================================================================================================
+
+
+  __forceinline void copyCLs_from_SLM_to_GlobalMemory(void *dest, void *source, const uint numCachelines)
+  {
+    const uint subgroupLocalID = get_sub_group_local_id();
+    const uint subgroupSize = get_sub_group_size();
+    uint *s = (uint*)source;    
+    uint *d = (uint*)dest;
+    for (uint i=0;i<numCachelines;i++,s+=16,d+=16)
+      sub_group_store(d,s[subgroupLocalID]);
+  }
+  
+  __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
+  {
+    const uint numQuads = numLossyCompressedGeometries * (RTC_LOSSY_COMPRESSED_GRID_RES_X-1) * (RTC_LOSSY_COMPRESSED_GRID_RES_Y-1) * 64;
+    const uint numInnerNodes = numLossyCompressedGeometries * (6+1) * 64;
+    return numQuads + numInnerNodes;
+  }  
+  
 
   // =====================================================================================================================================================================================
   // ============================================================================== Prefix Sums ==========================================================================================
@@ -1517,7 +1537,7 @@ namespace embree
      uint8_t tmp[48];
    }; 
 
-   __forceinline void writeNode_subgroup(LocalNodeData_subgroup &dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const gpu::AABB3f &childBounds, const uint numChildren)
+   __forceinline void writeNode_subgroup(LocalNodeData_subgroup &dest, const uint relative_block_offset, const gpu::AABB3f &parent_bounds, const gpu::AABB3f &childBounds, const uint numChildren, const uint localID, const NodeType default_type = NODE_TYPE_INTERNAL)
   {    
     const float _ulp = std::numeric_limits<float>::epsilon();
     const float up = 1.0f + float(_ulp);  
@@ -1544,13 +1564,10 @@ namespace embree
     dest.tmp[3]         = _exp_y; assert(_exp_y >= -128 && _exp_y <= 127);
     dest.tmp[4]         = _exp_z; assert(_exp_z >= -128 && _exp_z <= 127);
     dest.tmp[5]         = 0xff; //instanceMode ? 1 : 0xff;
-
-    const uint subgroupLocalID = get_sub_group_local_id();
-
-    if (subgroupLocalID < numChildren)
+    
+    if (localID < numChildren)
     {
-      const uint index = subgroupLocalID;
-      const uint i = subgroupLocalID;
+      const uint i = localID;
       // === default is invalid ===
       uint8_t lower_x = 0x80;
       uint8_t lower_y = 0x80;
@@ -1562,14 +1579,14 @@ namespace embree
       // === determine leaf type ===
       const bool isLeaf = true; // && !forceFatLeaves;      
       const uint numBlocks    =  1;
-      NodeType leaf_type = NODE_TYPE_QUAD;
+      NodeType leaf_type = default_type;
       data = (i<numChildren) ? numBlocks : 0;
       data |= (isLeaf ? leaf_type : NODE_TYPE_INTERNAL) << 2;
       // === bounds valid ? ====
       uint equal_dims = childBounds.lower_x == childBounds.upper_x ? 1 : 0;
       equal_dims += childBounds.lower_y == childBounds.upper_y ? 1 : 0;
       equal_dims += childBounds.lower_z == childBounds.upper_z ? 1 : 0;
-      const bool write = (index<numChildren) && equal_dims <= 1;
+      const bool write = (i<numChildren) && equal_dims <= 1;
       // === quantize bounds ===
       const gpu::AABB3f  qbounds    = QBVHNodeN::quantize_bounds(lower, _exp_x, _exp_y, _exp_z, childBounds);
       // === updated discretized bounds ===
@@ -1589,142 +1606,100 @@ namespace embree
       dest.tmp[42+i] = upper_z;      
     }
   }
-   
-   
-   
-   __forceinline gpu::AABB3f convert_RTCLossyCompressedGrid_QBVH6(const RTCLossyCompressedGrid &grid_source, char* const dest, const uint geomID, const uint primID)
-   {
-     gpu::AABB3f quad_bounds[6];
-     for (uint i=0;i<6;i++)
-       quad_bounds[i].init();
-     
-     char *node = dest;
-     QuadLeaf *leaf = (QuadLeaf*)(dest + 64);
-     uint index = 0;
-     for (uint y=0;y<RTC_LOSSY_COMPRESSED_GRID_RES_Y-1;y++)
-       for (uint x=0;x<RTC_LOSSY_COMPRESSED_GRID_RES_X-1;x++)
-       {
-         const Vec3f p0 = getVertex(grid_source,y+0,x+0);
-         const Vec3f p1 = getVertex(grid_source,y+0,x+1);
-         const Vec3f p2 = getVertex(grid_source,y+1,x+1);
-         const Vec3f p3 = getVertex(grid_source,y+1,x+0);
-         quad_bounds[index].extend(to_float3(p0)); // FIXME
-         quad_bounds[index].extend(to_float3(p1));
-         quad_bounds[index].extend(to_float3(p2));
-         quad_bounds[index].extend(to_float3(p3));         
-         leaf[index] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
-         index++;
-       }
-
-     gpu::AABB3f parent_bounds;
-     parent_bounds.init();
-     for (uint i=0;i<6;i++)
-       parent_bounds.extend(quad_bounds[i]);
-
-     uint indices[6] = { 0,1,2,3,4,5 };
-     writeNode(node,1, parent_bounds, 6, indices, quad_bounds);
-
-     //QBVH6* qbvh = (QBVH6*)dest;
-     //NodeRef ref((uint64_t)qbvh);
-     //qbvh->print(std::cout,ref,0,6);
-
-     return parent_bounds;
-   }
-     
+        
    
    uint createLossyCompressedGeometries_initPLOCPrimRefs(sycl::queue &gpu_queue, const RTHWIF_GEOMETRY_DESC **const geometry_desc, const uint numGeoms, uint *scratch_mem, const uint MAX_WGS, BVH2Ploc *const bvh2, const uint prim_type_offset, uint *host_device_tasks, char* lcg_bvh_mem, double &iteration_time, const bool verbose)    
-  {
-    
+  {    
     uint numLCGs = 0;
-    const uint sizeLCGBVH = SIZE_LCG_BVH;
-    //PING;
-    //PRINT(sizeLCGBVH);
-    
+    const uint sizeLCGBVH = estimateLossyCompressedGeometriesSize(1);
     for (uint lcgID=0;lcgID<numGeoms;lcgID++)
     {
       if (unlikely(geometry_desc[lcgID] == nullptr)) continue;
       if (geometry_desc[lcgID]->geometryType == RTHWIF_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY)
       {
         RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *geom = (RTHWIF_GEOMETRY_LOSSY_COMPRESSED_GEOMETRY_DESC *)geometry_desc[lcgID];
-        
-#if 1
-        
+                
         numLCGs += geom->numGeometryPtrs;        
-#if 1
-        const uint wgSize = 16;        
-        const sycl::nd_range<1> nd_range1(gpu::alignTo(geom->numGeometryPtrs,wgSize),sycl::range<1>(wgSize));          
-        sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-            cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(8)
-                             {
-                               const uint ID = item.get_global_id(0);                                                                                                               
-                               if (ID < geom->numGeometryPtrs)
-                               {
-                                 RTCLossyCompressedGrid *source = (RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[ID];
-                                 char* dest = lcg_bvh_mem + ID * sizeLCGBVH;          
-                                 gpu::AABB3f bounds = convert_RTCLossyCompressedGrid_QBVH6(*source,dest,lcgID,ID);
-                                 BVH2Ploc node;                             
-                                 node.initLeaf(lcgID,ID,bounds);                               
-                                 node.store(&bvh2[prim_type_offset + ID]);                                 
-                               }
-                             });
-          });
-#else
-        
         const uint wgSize = 16;        
         const sycl::nd_range<1> nd_range1(wgSize*geom->numGeometryPtrs,sycl::range<1>(wgSize));          
         sycl::event queue_event = gpu_queue.submit([&](sycl::handler &cgh) {
-            sycl::local_accessor< LocalNodeData_subgroup, 0> _local_node(cgh);
-            sycl::local_accessor< QuadLeaf, 1> _localLeaf(sycl::range<1>(6),cgh);
-            
+            sycl::local_accessor< LocalNodeData_subgroup, 1> _local_node(sycl::range<1>(2),cgh);
+            sycl::local_accessor< QuadLeaf, 1> _local_leaf(sycl::range<1>(12),cgh);
+            sycl::local_accessor< gpu::AABB3f, 1> _local_bounds(sycl::range<1>(6),cgh);                        
             cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) EMBREE_SYCL_SIMD(16)
                              {
                                const uint subgroupLocalID = get_sub_group_local_id();
-                               const uint subgroupSize = get_sub_group_size();                               
+                               const uint subgroupLocalID_half = subgroupLocalID <  6 ? 0 : 1;
+                               
                                const uint ID         = item.get_group(0);
-                               const uint start_x[8] = { 0,1,2,0,1,2,2,2 };
-                               const uint start_y[8] = { 0,0,0,1,1,1,1,1 };
+                               const uint start_x[16] = { 0,1,2, 0,1,2, 3,4,5, 3,4,5, 5,5,5,5};
+                               const uint start_y[16] = { 0,0,0, 1,1,1, 0,0,0, 1,1,1, 1,1,1,1};
 
-                               LocalNodeData_subgroup &local_node = *_local_node.get_pointer();
-                               QuadLeaf *local_leaf = _localLeaf.get_pointer();
+                               LocalNodeData_subgroup *local_node = _local_node.get_pointer();
+                               QuadLeaf *local_leaf               = _local_leaf.get_pointer();
+                               gpu::AABB3f *local_bounds          = _local_bounds.get_pointer();
 
                                RTCLossyCompressedGrid &grid_source = *(RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[ID];
                                char* dest = lcg_bvh_mem + ID * sizeLCGBVH;
-                               uint *node = (uint*)dest;
-                               QuadLeaf *leaf = (QuadLeaf*)(dest + 64);
+                               LocalNodeData_subgroup *node = ((LocalNodeData_subgroup*)dest) + 1;
+                               QuadLeaf *leaf = (QuadLeaf*)(dest + (6+1)*64);
 
-                               const uint x = start_x[subgroupLocalID];
-                               const uint y = start_y[subgroupLocalID];
-
-                               const Vec3f p0 = getVertex(grid_source,y+0,x+0);
-                               const Vec3f p1 = getVertex(grid_source,y+0,x+1);
-                               const Vec3f p2 = getVertex(grid_source,y+1,x+1);
-                               const Vec3f p3 = getVertex(grid_source,y+1,x+0);
-
-                               const uint geomID = lcgID;
-                               const uint primID = ID;
+                               const uint sx = start_x[subgroupLocalID];
+                               const uint sy = start_y[subgroupLocalID];
                                
+                               for (uint rows=0;rows<6;rows+=2,leaf+=12,node+=2)
+                               {
+                                 const uint x = sx; 
+                                 const uint y = sy + rows;
+
+                                 const Vec3f p0 = getVertex(grid_source,y+0,x+0);
+                                 const Vec3f p1 = getVertex(grid_source,y+0,x+1);
+                                 const Vec3f p2 = getVertex(grid_source,y+1,x+1);
+                                 const Vec3f p3 = getVertex(grid_source,y+1,x+0);
+
+                                 const uint geomID = lcgID;
+                                 const uint primID = ID;
+
+                                 if (subgroupLocalID < 12)
+                                   local_leaf[subgroupLocalID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
+
+                                 gpu::AABB3f quad_bounds( to_float3(p0) );
+                                 quad_bounds.extend( to_float3(p1) );
+                                 quad_bounds.extend( to_float3(p2) );
+                                 quad_bounds.extend( to_float3(p3) );
+                               
+                                 const gpu::AABB3f parent_bounds = quad_bounds.sub_group_reduce(); // FIXME to coarse
+                                 local_bounds[rows+0] = parent_bounds;
+                                 local_bounds[rows+1] = parent_bounds;
+
+                                 const uint offset = ((char*)(leaf+subgroupLocalID_half*6) - (char*)(node+subgroupLocalID_half))/64;
+                                 
+                                 if (subgroupLocalID < 12)
+                                   writeNode_subgroup(local_node[subgroupLocalID_half],offset,parent_bounds,quad_bounds,6,subgroupLocalID_half ? subgroupLocalID-6 : subgroupLocalID,NODE_TYPE_QUAD);
+                                                                  
+                                 sub_group_barrier();
+                                 
+                                 copyCLs_from_SLM_to_GlobalMemory(leaf,local_leaf,12);
+                                 copyCLs_from_SLM_to_GlobalMemory(node,local_node,2);                                 
+                               }
+
+                               sub_group_barrier();
+                               
+                               gpu::AABB3f child_bounds;
+                               child_bounds.init();
+
                                if (subgroupLocalID < 6)
-                                 local_leaf[subgroupLocalID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
+                                 child_bounds = local_bounds[subgroupLocalID];
+                               
+                               const gpu::AABB3f parent_bounds = child_bounds.sub_group_reduce(); // FIXME to coarse                                 
 
-                               gpu::AABB3f quad_bounds( to_float3(p0) );
-                               quad_bounds.extend( to_float3(p1) );
-                               quad_bounds.extend( to_float3(p2) );
-                               quad_bounds.extend( to_float3(p3) );
-                               
-                               const gpu::AABB3f parent_bounds = quad_bounds.sub_group_reduce();
+                               if (subgroupLocalID < 6)                               
+                                 writeNode_subgroup(local_node[0],1,parent_bounds,child_bounds,6,subgroupLocalID,NODE_TYPE_INTERNAL);
 
-                               writeNode_subgroup(local_node,1,parent_bounds,quad_bounds,6);
-                               
-                               item.barrier(sycl::access::fence_space::local_space);
+                               sub_group_barrier();
 
-                               for (uint i=subgroupLocalID;i<16*6;i+=subgroupSize)
-                                 ((uint*)leaf)[i] = ((uint*)local_leaf)[i];
-                               
-                               uint *source = (uint*)local_node.lower;
-                               
-                               for (uint i=subgroupLocalID;i<16;i+=subgroupSize)
-                                 node[i] = source[i];
-                               
+                               copyCLs_from_SLM_to_GlobalMemory(dest,local_node,1);                                 
+                                                                
                                if (subgroupLocalID == 0)
                                {
                                  BVH2Ploc node;                             
@@ -1735,31 +1710,13 @@ namespace embree
                              });
           });
         
-#endif        
         
         gpu::waitOnEventAndCatchException(queue_event);
         if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(queue_event);
         PRINT((float)iteration_time);
-
-
-#else      
-            uint ID = 0;
-            for (uint i=0;i<geom->numGeometryPtrs;i++)
-            {
-              RTCLossyCompressedGrid *source = (RTCLossyCompressedGrid*)geom->compressedGeometryPtrsBuffer[i];
-              //PRINT4(ID,i,source->ID,source->materialID);
-              char* dest = lcg_bvh_mem + ID * sizeLCGBVH;          
-              gpu::AABB3f bounds = convert_RTCLossyCompressedGrid_QBVH6(*source,dest,lcgID,i);
-              BVH2Ploc node;                             
-              node.initLeaf(lcgID,ID,bounds);                               
-              node.store(&bvh2[prim_type_offset + ID]);
-              //PRINT(node);
-              ID++;
-            }
-            numLCGs += ID;
-#endif
-          }
-          }    
+      }
+    }
+    PRINT(sizeof(RTCLossyCompressedGrid));
     return numLCGs;
   }
    
@@ -2987,6 +2944,8 @@ namespace embree
       if (unlikely(verbose)) total_time += gpu::getDeviceExecutionTiming(queue_event);
     }    
     if (unlikely(host_device_tasks[0] == -1)) return false;
+
+    const uint SIZE_LCG_BVH = estimateLossyCompressedGeometriesSize(1);
     
     /* ---- Phase IV: for each primID, geomID pair generate corresponding leaf data --- */
     const uint leaves = host_device_tasks[0]; 

@@ -14,8 +14,8 @@ namespace embree {
   RTCLossyCompressedGrid *compressed_geometries = nullptr;  
   void **compressed_geometries_ptrs = nullptr;
 
-#define NUM_SUBGRIDS_X 1000
-#define NUM_SUBGRIDS_Y 1000
+#define NUM_SUBGRIDS_X 100
+#define NUM_SUBGRIDS_Y 100
   
 #define SUBGRID_RESOLUTION_X RTC_LOSSY_COMPRESSED_GRID_RES_X
 #define SUBGRID_RESOLUTION_Y RTC_LOSSY_COMPRESSED_GRID_RES_Y
@@ -134,7 +134,7 @@ namespace embree {
     rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
     rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
-#if 0  
+#if 0
     createLossyCompressedGeometry(data.g_scene);
 #else
     PRINT(g_ispc_scene->numGeometries);
@@ -178,8 +178,8 @@ namespace embree {
       return Vec3fa(0.0f);
     else
       //return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-      //return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * randomColor(ray.primID);
-      return randomColor(ray.primID);  
+      return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * randomColor(ray.primID);
+      //return randomColor(ray.primID);  
   }
 
   void renderPixelStandard(const TutorialData& data,

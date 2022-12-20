@@ -301,6 +301,11 @@ namespace embree
   template <typename T> __forceinline void sub_group_store(void* dst, const T& x) {
     this_sub_group().store(sycl::multi_ptr<T,sycl::access::address_space::global_space>((T*)dst),x);
   }
+
+  __forceinline const void sub_group_barrier() {
+    return this_sub_group().barrier();
+  }
+
 }
 
 #if __SYCL_COMPILER_VERSION < 20210801

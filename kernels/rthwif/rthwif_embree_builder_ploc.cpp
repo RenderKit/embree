@@ -44,12 +44,6 @@ namespace embree
     return (numQuads + numProcedurals + numLossyCompressedGeometries + 2*numInstances) * 64;  
   }
 
-  __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
-  {
-    const uint numQuads = numLossyCompressedGeometries * 3 * 2 * 64;
-    const uint numInnerNodes = numLossyCompressedGeometries * 64;
-    return numQuads + numInnerNodes;
-  }  
 
   __forceinline uint estimateAccelBufferSize(const uint numQuads, const uint numInstances, const uint numProcedurals, const uint numLossyCompressedGeometries, const bool conservative)
   {
