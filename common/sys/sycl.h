@@ -39,6 +39,7 @@ using sycl::fmax;
 using sycl::fmin;
 
 #ifdef __SYCL_DEVICE_ONLY__
+#define USE_IGC_INTRINSICS 1
 #define GLOBAL __attribute__((opencl_global))
 #define LOCAL  __attribute__((opencl_local))
 
@@ -91,32 +92,32 @@ SYCL_EXTERNAL extern "C" void __builtin_IB_assume_uniform(void *p);
 
 ///////////////////////////////////////////////////////////////////////
 
-SYCL_EXTERNAL /* extern "C" */ uint          __builtin_IB_lsc_load_global_uchar_to_uint (const GLOBAL sycl::uchar  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D8U32
-SYCL_EXTERNAL /* extern "C" */ uint          __builtin_IB_lsc_load_global_ushort_to_uint(const GLOBAL sycl::ushort *base, int elemOff, enum LSC_LDCC cacheOpt);   //D16U32
-SYCL_EXTERNAL /* extern "C" */ uint          __builtin_IB_lsc_load_global_uint  (const GLOBAL sycl::uint   *base, int elemOff, enum LSC_LDCC cacheOpt);       //D32V1
-SYCL_EXTERNAL /* extern "C" */ sycl::uint2   __builtin_IB_lsc_load_global_uint2 (const GLOBAL sycl::uint2  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V2
-SYCL_EXTERNAL /* extern "C" */ sycl::uint3   __builtin_IB_lsc_load_global_uint3 (const GLOBAL sycl::uint3  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V3
-SYCL_EXTERNAL /* extern "C" */ sycl::uint4   __builtin_IB_lsc_load_global_uint4 (const GLOBAL sycl::uint4  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V4
-SYCL_EXTERNAL /* extern "C" */ sycl::uint8   __builtin_IB_lsc_load_global_uint8 (const GLOBAL sycl::uint8  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V8
-SYCL_EXTERNAL /* extern "C" */ sycl::ulong   __builtin_IB_lsc_load_global_ulong (const GLOBAL sycl::ulong  *base, int elemOff, enum LSC_LDCC cacheOpt);    //D64V1
-SYCL_EXTERNAL /* extern "C" */ sycl::ulong2  __builtin_IB_lsc_load_global_ulong2(const GLOBAL sycl::ulong2 *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V2
-SYCL_EXTERNAL /* extern "C" */ sycl::ulong3  __builtin_IB_lsc_load_global_ulong3(const GLOBAL sycl::ulong3 *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V3
-SYCL_EXTERNAL /* extern "C" */ sycl::ulong4  __builtin_IB_lsc_load_global_ulong4(const GLOBAL sycl::ulong4 *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V4
-SYCL_EXTERNAL /* extern "C" */ sycl::ulong8  __builtin_IB_lsc_load_global_ulong8(const GLOBAL sycl::ulong8 *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V8
+SYCL_EXTERNAL extern "C"  uint          __builtin_IB_lsc_load_global_uchar_to_uint (const GLOBAL sycl::uchar  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D8U32
+SYCL_EXTERNAL extern "C"  uint          __builtin_IB_lsc_load_global_ushort_to_uint(const GLOBAL sycl::ushort *base, int elemOff, enum LSC_LDCC cacheOpt);   //D16U32
+SYCL_EXTERNAL extern "C"  uint          __builtin_IB_lsc_load_global_uint  (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);       //D32V1
+//SYCL_EXTERNAL extern "C"  sycl::uint2   __builtin_IB_lsc_load_global_uint2 (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V2
+//SYCL_EXTERNAL extern "C"  sycl::uint3   __builtin_IB_lsc_load_global_uint3 (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V3
+//SYCL_EXTERNAL extern "C"  sycl::uint4   __builtin_IB_lsc_load_global_uint4 (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V4
+//SYCL_EXTERNAL extern "C"  sycl::uint8   __builtin_IB_lsc_load_global_uint8 (const GLOBAL sycl::uint  *base, int elemOff, enum LSC_LDCC cacheOpt);     //D32V8
+//SYCL_EXTERNAL extern "C"  sycl::ulong   __builtin_IB_lsc_load_global_ulong (const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);    //D64V1
+//SYCL_EXTERNAL extern "C"  sycl::ulong2  __builtin_IB_lsc_load_global_ulong2(const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V2
+//SYCL_EXTERNAL extern "C"  sycl::ulong3  __builtin_IB_lsc_load_global_ulong3(const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V3
+//SYCL_EXTERNAL extern "C"  sycl::ulong4  __builtin_IB_lsc_load_global_ulong4(const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V4
+//SYCL_EXTERNAL extern "C"  sycl::ulong8  __builtin_IB_lsc_load_global_ulong8(const GLOBAL sycl::ulong *base, int elemOff, enum LSC_LDCC cacheOpt);  //D64V8
   
 //     global address space
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uchar_from_uint (GLOBAL sycl::uchar  *base, int immElemOff, uint val, enum LSC_STCC cacheOpt);     //D8U32
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ushort_from_uint(GLOBAL sycl::ushort *base, int immElemOff, uint val, enum LSC_STCC cacheOpt);  //D16U32
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint  (GLOBAL sycl::uint   *base, int immElemOff,       uint   val, enum LSC_STCC cacheOpt);        //D32V1
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint2 (GLOBAL sycl::uint2  *base, int immElemOff, sycl::uint2  val, enum LSC_STCC cacheOpt);     //D32V2
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint3 (GLOBAL sycl::uint3  *base, int immElemOff, sycl::uint3  val, enum LSC_STCC cacheOpt);     //D32V3
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint4 (GLOBAL sycl::uint4  *base, int immElemOff, sycl::uint4  val, enum LSC_STCC cacheOpt);     //D32V4
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint8 (GLOBAL sycl::uint8  *base, int immElemOff, sycl::uint8  val, enum LSC_STCC cacheOpt);     //D32V8
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong (GLOBAL sycl::ulong  *base, int immElemOff, sycl::ulong  val, enum LSC_STCC cacheOpt);     //D64V1
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong2(GLOBAL sycl::ulong2 *base, int immElemOff, sycl::ulong2 val, enum LSC_STCC cacheOpt);  //D64V2
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong3(GLOBAL sycl::ulong3 *base, int immElemOff, sycl::ulong3 val, enum LSC_STCC cacheOpt);  //D64V3
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong4(GLOBAL sycl::ulong4 *base, int immElemOff, sycl::ulong4 val, enum LSC_STCC cacheOpt);  //D64V4
-SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong8(GLOBAL sycl::ulong8 *base, int immElemOff, sycl::ulong8 val, enum LSC_STCC cacheOpt);  //D64V8
+SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uchar_from_uint (GLOBAL uchar  *base, int immElemOff, uint val, const int);     //D8U32
+SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ushort_from_uint(GLOBAL ushort *base, int immElemOff, uint val, const int);  //D16U32
+SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint  (GLOBAL uint   *base, int immElemOff,       uint   val, const int);        //D32V1
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint2 (GLOBAL uint  *base, int immElemOff, uint2  val, const int);     //D32V2
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint3 (GLOBAL uint  *base, int immElemOff, uint3  val, const int);     //D32V3
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint4 (GLOBAL uint  *base, int immElemOff, uint4  val, const int);     //D32V4
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_uint8 (GLOBAL uint  *base, int immElemOff, uint8  val, const int);     //D32V8
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong (GLOBAL ulong  *base, int immElemOff, ulong  val, const int);     //D64V1
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong2(GLOBAL ulong *base, int immElemOff, ulong2 val, const int);  //D64V2
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong3(GLOBAL ulong *base, int immElemOff, ulong3 val, const int);  //D64V3
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong4(GLOBAL ulong *base, int immElemOff, ulong4 val, const int);  //D64V4
+//SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong8(GLOBAL ulong *base, int immElemOff, ulong8 val, const int);  //D64V8
 
 ///////////////////////////////////////////////////////////////////////
 // prefetching
@@ -127,15 +128,15 @@ SYCL_EXTERNAL extern "C"  void  __builtin_IB_lsc_store_global_ulong8(GLOBAL sycl
 SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uchar (const GLOBAL sycl::uchar  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D8U32
 SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ushort(const GLOBAL sycl::ushort *base, int immElemOff, enum LSC_LDCC cacheOpt); //D16U32
 SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint  (const GLOBAL sycl::uint   *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V1
-SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint2 (const GLOBAL sycl::uint2  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V2
-SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint3 (const GLOBAL sycl::uint3  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V3
-SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint4 (const GLOBAL sycl::uint4  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V4
-SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint8 (const GLOBAL sycl::uint8  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V8
+SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint2 (const GLOBAL sycl::uint  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V2
+SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint3 (const GLOBAL sycl::uint  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V3
+SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint4 (const GLOBAL sycl::uint  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V4
+SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_uint8 (const GLOBAL sycl::uint  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D32V8
 SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong (const GLOBAL sycl::ulong  *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V1
-SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong2(const GLOBAL sycl::ulong2 *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V2
-SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong3(const GLOBAL sycl::ulong3 *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V3
-SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong4(const GLOBAL sycl::ulong4 *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V4
-SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong8(const GLOBAL sycl::ulong8 *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V8
+SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong2(const GLOBAL sycl::ulong *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V2
+SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong3(const GLOBAL sycl::ulong *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V3
+SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong4(const GLOBAL sycl::ulong *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V4
+SYCL_EXTERNAL extern "C"  void __builtin_IB_lsc_prefetch_global_ulong8(const GLOBAL sycl::ulong *base, int immElemOff, enum LSC_LDCC cacheOpt); //D64V8
 
 #else
 

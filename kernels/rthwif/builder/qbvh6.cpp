@@ -145,7 +145,7 @@ namespace embree
   void QBVH6::print( std::ostream& cout, QBVH6::Node node, uint32_t depth, uint32_t numChildren)
   {
 #if !defined(__SYCL_DEVICE_ONLY__)    
-    //if (depth == 1) return;
+    if (depth == 1) return;
     
     switch (node.type)
     {

@@ -686,7 +686,7 @@ namespace embree
     uint *s = (uint*)source;    
     uint *d = (uint*)dest;
     for (uint i=0;i<numCachelines;i++,s+=16,d+=16)
-      sub_group_store(d,s[subgroupLocalID]);
+    sub_group_store(d,s[subgroupLocalID]);
   }
   
   __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
