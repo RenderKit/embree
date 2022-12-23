@@ -14,8 +14,8 @@ namespace embree {
   RTCLossyCompressedGrid *compressed_geometries = nullptr;  
   void **compressed_geometries_ptrs = nullptr;
 
-#define NUM_SUBGRIDS_X 100
-#define NUM_SUBGRIDS_Y 100
+#define NUM_SUBGRIDS_X 1
+#define NUM_SUBGRIDS_Y 1
   
 #define SUBGRID_RESOLUTION_X RTC_LOSSY_COMPRESSED_GRID_RES_X
 #define SUBGRID_RESOLUTION_Y RTC_LOSSY_COMPRESSED_GRID_RES_Y
@@ -40,8 +40,13 @@ namespace embree {
           for (int x=0;x<SUBGRID_RESOLUTION_X;x++)
           {
             //PRINT3(start_y+y,start_x+x,0);
+#if 1            
             compressed_geometries[index].vertex[y][x][0] = start_x + x - GRID_VERTEX_RESOLUTION_X/2;
             compressed_geometries[index].vertex[y][x][1] = start_y + y - GRID_VERTEX_RESOLUTION_Y/2;
+#else
+            compressed_geometries[index].vertex[y][x][0] = start_x + x;
+            compressed_geometries[index].vertex[y][x][1] = start_y + y;
+#endif            
             compressed_geometries[index].vertex[y][x][2] = 0;          
           }
         compressed_geometries[index].ID = index;

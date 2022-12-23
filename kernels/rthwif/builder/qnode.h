@@ -479,7 +479,7 @@ namespace embree
     {
       cout << tab(depth) << "InternalNode" << NUM_CHILDREN << " {" << std::endl;
       cout << tab(depth) << "  addr = " << this << std::endl;
-      cout << tab(depth) << "  childOffset = " << 64 * int64_t(this->childOffset) << std::endl;
+      cout << tab(depth) << "  childOffset = " << 64 * int64_t(this->childOffset) << " -> " << (void*)((char*)this + 64 * int64_t(this->childOffset)) << std::endl;
       cout << tab(depth) << "  nodeType = " << NodeType(this->nodeType) << std::endl;
       cout << tab(depth) << "  nodeMask = " << std::bitset<8>(this->nodeMask) << std::endl;
       for (uint32_t i = 0; i < NUM_CHILDREN; i++)
@@ -489,6 +489,7 @@ namespace embree
         {
           cout << "type = " << getChildType(i);
           cout << ", offset = " << getChildOffset(i);
+          cout << ", dest = " << (void*)((char*)this + getChildOffset(i));
           cout << ", prim = " << getChildStartPrim(i);
           cout << ", bounds = " << bounds(i);
         }

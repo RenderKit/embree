@@ -173,8 +173,8 @@ struct RTC_ALIGN(16) RTCLinearBounds
   struct RTCBounds bounds1;
 };
 
-#define RTC_LOSSY_COMPRESSED_GRID_RES_X 7
-#define RTC_LOSSY_COMPRESSED_GRID_RES_Y 7
+#define RTC_LOSSY_COMPRESSED_GRID_RES_X 9
+#define RTC_LOSSY_COMPRESSED_GRID_RES_Y 9
 
 struct RTCLossyCompressedGrid
 {
