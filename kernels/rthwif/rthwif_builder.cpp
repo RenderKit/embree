@@ -233,9 +233,6 @@ namespace embree
     if (0x56B0 <= device_id && device_id <= 0x56B3) return (RTHWIF_FEATURES) features_xe;
     if (0x56C0 <= device_id && device_id <= 0x56C1) return (RTHWIF_FEATURES) features_xe;
        
-    // ATS-M
-    if (0x0201 <= device_id && device_id <= 0x0210) return (RTHWIF_FEATURES) features_xe;
-    
     // PVC
     if (0x0BD0 <= device_id && device_id <= 0x0BDB) return (RTHWIF_FEATURES) features_xe;
     if (device_id == 0x0BE5                       ) return (RTHWIF_FEATURES) features_xe;
