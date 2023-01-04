@@ -466,6 +466,17 @@ namespace embree
     return cout;
   }
 
+  inline sycl_ostream_ operator <<(sycl_ostream_ cout, double d)
+  {
+    if (cout.uniform) {
+      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+        sycl_printf("%f",d);
+    } else
+      sycl_printf("%f ",d);
+
+    return cout;
+  }
+
   inline sycl_ostream_ operator <<(sycl_ostream_ cout, ulong l)
   {
     if (cout.uniform) {
