@@ -113,7 +113,7 @@ Index of this file:
 #pragma warning (push)
 #pragma warning (disable: 26495)    // [Static Analyzer] Variable 'XXX' is uninitialized. Always initialize a member variable (type.6).
 #endif
-#if defined(__clang__)
+#if defined(__clang__) && !defined(__INTEL_COMPILER)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wold-style-cast"
 #if __has_warning("-Wzero-as-null-pointer-constant")
