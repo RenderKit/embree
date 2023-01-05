@@ -14,6 +14,8 @@ namespace embree {
   RTCLossyCompressedGrid *compressed_geometries = nullptr;  
   void **compressed_geometries_ptrs = nullptr;
 
+  RTCGeometry global_lcg_geom = nullptr;
+  
 #define NUM_SUBGRIDS_X 1
 #define NUM_SUBGRIDS_Y 1
   
@@ -60,13 +62,16 @@ namespace embree {
     rtcSetLossyCompressedGeometryPrimitiveCount(geom,numSubGrids);
     rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene,geom);
-    rtcReleaseGeometry(geom);
+    //rtcReleaseGeometry(geom);
     PRINT(index);
     if (index != numSubGrids)
       FATAL("numSubGrids");
+    global_lcg_geom = geom;
     return geomID;  
   }
 
+
+  
   RTCGeometry convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene)
   {
     Vec3fa *vtx = grid->positions[0];
@@ -121,7 +126,7 @@ namespace embree {
     rtcSetLossyCompressedGeometryPrimitiveCount(geom,index);
     rtcCommitGeometry(geom);
     unsigned int geomID = rtcAttachGeometry(scene,geom);
-    rtcReleaseGeometry(geom);
+    //rtcReleaseGeometry(geom);
     return geom;
   }
   
@@ -147,7 +152,7 @@ namespace embree {
     {
       ISPCGeometry* geometry = g_ispc_scene->geometries[geomID];
       if (geometry->type == GRID_MESH)
-        convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene);
+            global_lcg_geom = convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene);
     }  
 #endif
   
@@ -223,10 +228,9 @@ namespace embree {
     const unsigned int y0 = tileY * TILE_SIZE_Y;
     const unsigned int y1 = min(y0+TILE_SIZE_Y,height);
 
-    for (unsigned int y=y0; y<y1; y++) for (unsigned int x=x0; x<x1; x++)
-                                       {
-                                         renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
-                                       }
+    for (unsigned int y=y0; y<y1; y++)
+      for (unsigned int x=x0; x<x1; x++)
+        renderPixelStandard(data,x,y,pixels,width,height,time,camera,g_stats[threadIndex]);
   }
 
 /* task that renders a single screen tile */
@@ -238,7 +242,6 @@ namespace embree {
                        const int numTilesX,
                        const int numTilesY)
   {
-    renderTileStandard(taskIndex,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);
   }
 
   extern "C" void renderFrameStandard (int* pixels,
@@ -284,6 +287,7 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& camera)
   {
+    rtcCommitGeometry(global_lcg_geom);
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
   }
