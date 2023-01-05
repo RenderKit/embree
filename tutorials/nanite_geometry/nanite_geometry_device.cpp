@@ -13,14 +13,24 @@ namespace embree {
 
   RTCLossyCompressedGrid *compressed_geometries = nullptr;  
   void **compressed_geometries_ptrs = nullptr;
-
+  uint num_compressed_geometries_ptrs = 0;
+  
+  struct LCGQuadNode
+  {
+    RTCLossyCompressedGrid grid;
+    uint level;
+    uint childID[4];  
+  };
+  
+  LCGQuadNode *compressed_quad_trees = nullptr;  
+  
   RTCGeometry global_lcg_geom = nullptr;
   
 #define NUM_SUBGRIDS_X 1
 #define NUM_SUBGRIDS_Y 1
   
-#define SUBGRID_RESOLUTION_X RTC_LOSSY_COMPRESSED_GRID_RES_X
-#define SUBGRID_RESOLUTION_Y RTC_LOSSY_COMPRESSED_GRID_RES_Y
+#define SUBGRID_RESOLUTION_X RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES
+#define SUBGRID_RESOLUTION_Y RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES
 #define GRID_VERTEX_RESOLUTION_X (NUM_SUBGRIDS_X*(SUBGRID_RESOLUTION_X-1)+1)
 #define GRID_VERTEX_RESOLUTION_Y (NUM_SUBGRIDS_Y*(SUBGRID_RESOLUTION_Y-1)+1)
   
@@ -71,6 +81,139 @@ namespace embree {
   }
 
 
+  static const uint LOD_LEVELS = 3;
+  
+#if 1
+
+  inline Vec3fa getVertex(const uint x, const uint y, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
+  {
+    const uint px = min(x,grid_resX-1);
+    const uint py = min(y,grid_resY-1);    
+    return vtx[py*grid_resX + px];
+  }
+
+  void createQuadNode(LCGQuadNode &current, LCGQuadNode *nodes, uint &index, const uint start_x, const uint start_y, const uint step, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
+  {
+    if (step == 0) return;
+    //PING;
+    PRINT4(index,start_x,start_y,step);
+      
+    for (int y=0;y<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;y++)
+      for (int x=0;x<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;x++)
+      {
+        const uint px = start_x+x*step;
+        const uint py = start_y+y*step;
+        const Vec3fa v = getVertex(px,py,vtx,grid_resX,grid_resY);
+        PRINT2(px,py);
+        current.grid.vertex[y][x][0] = v.x;
+        current.grid.vertex[y][x][1] = v.y;
+        current.grid.vertex[y][x][2] = v.z;          
+      }
+    current.grid.ID = index;
+    current.grid.materialID = 0;    
+
+    const uint new_step = step>>1;
+    const uint new_res = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*new_step;
+
+    if (new_step)
+    {    
+      const uint new_index = index;
+      index += 4;
+
+      //PRINT3(new_index,new_step,new_res);
+
+      current.childID[0] = new_index + 0;    
+      current.childID[1] = new_index + 1;    
+      current.childID[2] = new_index + 2;    
+      current.childID[3] = new_index + 3;    
+
+          
+      createQuadNode(nodes[new_index+0],nodes,index,start_x + 0*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY);
+      createQuadNode(nodes[new_index+1],nodes,index,start_x + 1*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY);
+      createQuadNode(nodes[new_index+2],nodes,index,start_x + 0*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY);
+      createQuadNode(nodes[new_index+3],nodes,index,start_x + 1*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY);
+    }
+  }
+    
+  RTCGeometry convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene)
+  {
+    Vec3fa *vtx = grid->positions[0];
+    PRINT(grid->numVertices);
+    PRINT(grid->numGrids);
+    PRINT(sizeof(LCGQuadNode));
+    
+    const int numQuadNodesPerSubGrid = (1-(1<<(2*LOD_LEVELS)))/(1-4);
+    PRINT( numQuadNodesPerSubGrid );
+
+    const uint InitialSubGridRes = (1 << (LOD_LEVELS-1)) * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1);
+    PRINT( InitialSubGridRes );
+    
+    uint numSubGrids = 0;
+    uint numQuadNodes = 0;
+    for (uint i=0;i<grid->numGrids;i++)
+    {
+      PRINT3(i,grid->grids[i].resX,grid->grids[i].resY);      
+      const uint grid_resX = grid->grids[i].resX;
+      const uint grid_resY = grid->grids[i].resY;
+      const uint numInitialSubGrids = ((grid_resX-1) / InitialSubGridRes) * ((grid_resY-1) / InitialSubGridRes);
+      PRINT(numInitialSubGrids);
+      numSubGrids  += numInitialSubGrids * numQuadNodesPerSubGrid;
+      numQuadNodes += numInitialSubGrids;
+    }
+  
+    PRINT(numSubGrids);
+  
+    compressed_quad_trees = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*numQuadNodesPerSubGrid,64);
+    compressed_geometries_ptrs = (void**)alignedUSMMalloc(sizeof(void*)*numQuadNodesPerSubGrid,64); // FIXME: is < numQuadNodesPerSubGrid
+
+    for (uint i=0;i<numQuadNodesPerSubGrid;i++)
+      compressed_geometries_ptrs[i] = nullptr;
+    
+    uint index = 0;
+    for (uint i=0;i<grid->numGrids;i++)
+    {
+      const uint grid_resX = grid->grids[i].resX;
+      const uint grid_resY = grid->grids[i].resY;
+    
+      for (int start_y=0;start_y+InitialSubGridRes<grid_resY;start_y+=InitialSubGridRes)
+        for (int start_x=0;start_x+InitialSubGridRes<grid_resX;start_x+=InitialSubGridRes)
+        {
+          LCGQuadNode *current = &compressed_quad_trees[index*numQuadNodesPerSubGrid];
+          uint local_index = 1;
+          createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY);          
+          if (local_index != numQuadNodesPerSubGrid)
+          {
+            PRINT2(local_index,numQuadNodesPerSubGrid);
+            FATAL("numQuadNodesPerSubGrid");
+          }
+          //compressed_geometries_ptrs[index] = &compressed_quad_trees[index].grid;
+          index++;
+        }
+    }
+    PRINT(index);
+    if (index > numSubGrids)
+      FATAL("numSubGrids");
+
+    num_compressed_geometries_ptrs = index;
+    PRINT( num_compressed_geometries_ptrs );
+    for (uint i=0;i<index;i++)
+      compressed_geometries_ptrs[i] = &compressed_quad_trees[i*numQuadNodesPerSubGrid].grid;
+    
+  
+    RTCGeometry geom = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
+    rtcSetGeometryUserData(geom,compressed_geometries_ptrs);
+    rtcSetLossyCompressedGeometryPrimitiveCount(geom,num_compressed_geometries_ptrs);
+    rtcCommitGeometry(geom);
+    unsigned int geomID = rtcAttachGeometry(scene,geom);
+    //rtcReleaseGeometry(geom);
+
+    PRINT("DONE");
+    //exit(0);
+    
+    return geom;
+  }
+
+#else
   
   RTCGeometry convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene)
   {
@@ -129,6 +272,8 @@ namespace embree {
     //rtcReleaseGeometry(geom);
     return geom;
   }
+
+#endif
   
   extern "C" ISPCScene* g_ispc_scene;
 
@@ -287,7 +432,9 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& camera)
   {
-    rtcCommitGeometry(global_lcg_geom);
+    //rtcSetLossyCompressedGeometryPrimitiveCount(global_lcg_geom,num_compressed_geometries_ptrs);
+    //rtcCommitGeometry(global_lcg_geom);
+    
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
   }

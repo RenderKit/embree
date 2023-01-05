@@ -691,7 +691,7 @@ namespace embree
   
   __forceinline uint estimateLossyCompressedGeometriesSize(const uint numLossyCompressedGeometries)
   {
-    const uint numQuads = numLossyCompressedGeometries * (RTC_LOSSY_COMPRESSED_GRID_RES_X-1) * (RTC_LOSSY_COMPRESSED_GRID_RES_Y-1) * 64;
+    const uint numQuads = numLossyCompressedGeometries * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1) * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1) * 64;
     const uint numInnerNodes = numLossyCompressedGeometries * (4*3+2+1) * 64;
     return numQuads + numInnerNodes;
   }  
