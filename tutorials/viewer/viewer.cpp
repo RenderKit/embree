@@ -74,7 +74,7 @@ namespace embree
           unsigned int feature_mask = RTC_FEATURE_FLAG_NONE;
           while (cin->peek() != "" && cin->peek()[0] != '-') {
             std::string feature = cin->getString();
-            std::transform(feature.begin(), feature.end(), feature.begin(), [](unsigned char c){ return std::toupper(c); });
+            std::transform(feature.begin(), feature.end(), feature.begin(), [](unsigned char c){ return toupper(c); });
             if      (feature == "MOTION_BLUR") feature_mask |= RTC_FEATURE_FLAG_MOTION_BLUR;
             else if (feature == "TRIANGLE") feature_mask |= RTC_FEATURE_FLAG_TRIANGLE;
             else if (feature == "QUAD") feature_mask |= RTC_FEATURE_FLAG_QUAD;

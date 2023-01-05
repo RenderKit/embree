@@ -1,6 +1,10 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
+#if !defined(_CRT_SECURE_NO_WARNINGS)
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "bvh_builder_twolevel.h"
 #include "bvh_statistics.h"
 #include "../builders/bvh_builder_sah.h"

@@ -6,7 +6,7 @@
 #include "../sys/alloc.h"
 #include "emath.h"
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 #  include "vec2fa_sycl.h"
 #else
 

@@ -244,7 +244,7 @@ namespace embree
   public:
     typedef Vec3fa value_type;
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 
      /*! access to the ith element of the buffer */
     __forceinline const Vec3fa operator [](size_t i) const

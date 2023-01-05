@@ -63,7 +63,7 @@ Index of this file:
 #endif
 
 // Clang/GCC warnings with -Weverything
-#if defined(__clang__)
+#if defined(__clang__) && !defined(__INTEL_COMPILER)
 #if __has_warning("-Wunknown-warning-option")
 #pragma clang diagnostic ignored "-Wunknown-warning-option"         // warning: unknown warning group 'xxx'                      // not all warnings are known by all Clang versions and they tend to be rename-happy.. so ignoring warnings triggers new warnings on some configuration. Great!
 #endif

@@ -13,9 +13,19 @@
 
 #if defined(EMBREE_SYCL_TUTORIAL)
 #  define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
-#  include <sycl/sycl.hpp>
+#  pragma clang diagnostic push
+#  pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#  pragma clang diagnostic ignored "-W#pragma-messages"
+#  if defined(EMBREE_SYCL_NIGHTLY)
+#    include <sycl/sycl.hpp>
+#  else
+#    include <CL/sycl.hpp>
+#  endif
+#  pragma clang diagnostic pop
 #else
-#  define SYCL_EXTERNAL
+#  if !defined(SYCL_EXTERNAL)
+#    define SYCL_EXTERNAL
+#  endif
 #endif
 
 /* include embree API */

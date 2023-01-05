@@ -221,7 +221,7 @@ namespace embree
 #endif
   }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
   __forceinline unsigned int   bsf(unsigned v) {
     return SYCL_CTZ::ctz(v);
   }
@@ -246,7 +246,7 @@ namespace embree
 #endif
 #endif
   
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
   __forceinline size_t bsf(size_t v) {
     return SYCL_CTZ::ctz(v);
   }
@@ -466,7 +466,7 @@ namespace embree
 #endif
 #endif
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 
   __forceinline unsigned int popcnt(unsigned int in) {
     return sycl::popcount(in);

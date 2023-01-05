@@ -14,7 +14,7 @@ namespace embree
   namespace isa
   {
     static const size_t numJacobianIterations = 5;
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     static const size_t numBezierSubdivisions = 2;
 #elif defined(__AVX__)
     static const size_t numBezierSubdivisions = 2;

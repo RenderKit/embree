@@ -364,12 +364,9 @@ Vec3ff renderPixelStandard(const TutorialData& data, float x, float y,
         has_error = true;
     }
 
-    if (!data.visualize_errors && has_error)
-#if defined(EMBREE_SYCL_TUTORIAL)
+    if (!data.visualize_errors && has_error) {
       embree_cout << "error at (" << int(x) << int(y) << ")" << embree_endl;
-#else
-      throw std::runtime_error("hits differ");
-#endif
+    }
   }
 
   /* calculate random sequence based on hit geomIDs and primIDs */
@@ -518,8 +515,10 @@ extern "C" void renderFrameStandard (int* pixels,
   {
     for (size_t y=0; y<height; y++) {
       for (size_t x=0; x<width; x++) {
-        if (pixels[y*width+x] == 0xFF) // red indicates an error
-          throw std::runtime_error("hits differ");
+        if (pixels[y*width+x] == 0xFF) { // red indicates an error
+          embree_cout << "error at (" << int(x) << int(y) << ")" << embree_endl;
+          return;
+        }
       }
     }
   }

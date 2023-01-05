@@ -8,6 +8,10 @@
 #include "builder/qbvh6_builder_sah.h"
 #include "rthwif_internal.h"
 
+#if defined(EMBREE_LEVEL_ZERO)
+#include <level_zero/ze_api.h>
+#endif
+
 namespace embree
 {
   using namespace embree::isa;
@@ -199,6 +203,8 @@ namespace embree
   {
     g_arena.reset();
   }
+
+#if defined(EMBREE_LEVEL_ZERO)
   
   RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
   {
@@ -227,9 +233,6 @@ namespace embree
     if (0x56B0 <= device_id && device_id <= 0x56B3) return (RTHWIF_FEATURES) features_xe;
     if (0x56C0 <= device_id && device_id <= 0x56C1) return (RTHWIF_FEATURES) features_xe;
        
-    // ATS-M
-    if (0x0201 <= device_id && device_id <= 0x0210) return (RTHWIF_FEATURES) features_xe;
-    
     // PVC
     if (0x0BD0 <= device_id && device_id <= 0x0BDB) return (RTHWIF_FEATURES) features_xe;
     if (device_id == 0x0BE5                       ) return (RTHWIF_FEATURES) features_xe;
@@ -237,6 +240,20 @@ namespace embree
     return RTHWIF_FEATURES_NONE;
   }
   
+#else
+
+  RTHWIF_API RTHWIF_FEATURES rthwifGetSupportedFeatures(ze_device_handle_t hDevice)
+  {
+    uint32_t features_xe = RTHWIF_FEATURES_NONE;
+    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_TRIANGLES;
+    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_QUADS;
+    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_AABBS_FPTR;
+    features_xe |= RTHWIF_FEATURES_GEOMETRY_TYPE_INSTANCE;
+    return RTHWIF_FEATURES(features_xe);
+  }
+
+#endif
+
   uint32_t getNumPrimitives(const RTHWIF_GEOMETRY_DESC* geom)
   {
     switch (geom->geometryType) {

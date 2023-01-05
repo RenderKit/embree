@@ -63,7 +63,7 @@ extern uniform Shader shader;
 unmasked void error_handler(void* uniform userPtr, uniform RTCError code, const uniform int8* uniform str = NULL);
 
 /* returns time stamp counter */
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 inline int64 get_tsc() { return 0; }
 #else
 extern "C" uniform int64 get_tsc();

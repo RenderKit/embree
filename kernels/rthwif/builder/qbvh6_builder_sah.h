@@ -1165,6 +1165,7 @@ namespace embree
           qbvh->numPrims = 0; //numPrimitives;
           uint64_t rootNodeOffset = QBVH6::Node((char*)(r.node - (char*)qbvh), r.type, r.primRange.cur_prim);
           assert(rootNodeOffset == QBVH6::rootNodeOffset);
+          _unused(rootNodeOffset);
           qbvh->bounds = bounds;
           qbvh->numTimeSegments = 1; 
           qbvh->dispatchGlobalsPtr = (uint64_t) dispatchGlobalsPtr;

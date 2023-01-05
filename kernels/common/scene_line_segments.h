@@ -84,7 +84,7 @@ namespace embree
       return segments[i];
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     /*! returns the i'th segment */
     template<int M>
     __forceinline const vuint<M> vsegment(const vuint<M>& i) const {
@@ -151,7 +151,7 @@ namespace embree
       p1 = vertex(vid+1);
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     template<int M>
     __forceinline void vgather(Vec4vf<M>& p0, Vec4vf<M>& p1, const vuint<M>& vid) const
     {
@@ -167,7 +167,7 @@ namespace embree
       p1 = vertex(vid+1,itime);
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     template<int M>
     __forceinline void vgather(Vec4vf<M>& p0, Vec4vf<M>& p1, const vuint<M>& vid, const vint<M>& itime) const
     {
@@ -197,7 +197,7 @@ namespace embree
       else                 gather(p0,p1,vid);
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     template<int M>
     __forceinline void vgather(Vec4vf<M>& p0, Vec4vf<M>& p1, const vuint<M>& vid, const vfloat<M>& time) const
     {
@@ -221,7 +221,7 @@ namespace embree
       cR = !segmentRightExists(primID);
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     template<int M>
     __forceinline void vgather(Vec4vf<M>& p0, Vec4vf<M>& p1, vbool<M>& cL, vbool<M>& cR, const vuint<M>& primID, const vuint<M>& vid) const
     {
@@ -254,7 +254,7 @@ namespace embree
       else                 gather(p0,p1,cL,cR,primID,vid);
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     template<int M>
     __forceinline void vgather(Vec4vf<M>& p0, Vec4vf<M>& p1, vbool<M>& cL, vbool<M>& cR, const vuint<M>& primID, const vuint<M>& vid, const vfloat<M>& time) const
     {
@@ -273,7 +273,7 @@ namespace embree
       p3 = segmentRightExists(primID) ? vertex(vid+2) : Vec3ff(inf);
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     template<int M>
     __forceinline void vgather(Vec4vf<M>& p0, Vec4vf<M>& p1, Vec4vf<M>& p2, Vec4vf<M>& p3, const vuint<M>& primID, const vuint<M>& vid) const
     {
@@ -299,7 +299,7 @@ namespace embree
       p3 = segmentRightExists(primID) ? vertex(vid+2,itime) : Vec3ff(inf);
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     template<int M>
     __forceinline void vgather(Vec4vf<M>& p0, Vec4vf<M>& p1, Vec4vf<M>& p2, Vec4vf<M>& p3, const vuint<M>& primID, const vuint<M>& vid, const vint<M>& itime) const
     {
@@ -339,7 +339,7 @@ namespace embree
       else                 gather(p0,p1,p2,p3,primID,vid);
     }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
     template<int M>
     __forceinline void vgather(Vec4vf<M>& p0, Vec4vf<M>& p1, Vec4vf<M>& p2, Vec4vf<M>& p3, const vuint<M>& primID, const vuint<M>& vid, const vfloat<M>& time) const
     {

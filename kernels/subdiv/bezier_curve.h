@@ -513,7 +513,7 @@ namespace embree
       {
         assert(size <= PrecomputedBezierBasis::N);
         assert(ofs <= size);
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
         assert(size > 0);
         const vfloat<M> t = (vfloat<M>(step) + vfloat<M>(ofs+0))*rcp(float(size));
         Vec p,dp; veval<M>(t,p,dp);
@@ -531,7 +531,7 @@ namespace embree
       {
         assert(size <= PrecomputedBezierBasis::N);
         assert(ofs <= size);
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
         assert(size > 0);
         const vfloat<M> t = (vfloat<M>(step) + vfloat<M>(ofs+1))*rcp(float(size));
         Vec p,dp; veval<M>(t,p,dp);
@@ -549,7 +549,7 @@ namespace embree
       {
         assert(size <= PrecomputedBezierBasis::N);
         assert(ofs <= size);
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
         assert(size > 0);
         const vfloat<M> t = (vfloat<M>(step) + vfloat<M>(ofs+0))*rcp(float(size));
         Vec p,dp; veval<M>(t,p,dp);
@@ -567,7 +567,7 @@ namespace embree
       {
         assert(size <= PrecomputedBezierBasis::N);
         assert(ofs <= size);
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
         assert(size > 0);
         const vfloat<M> t = (vfloat<M>(step) + vfloat<M>(ofs+1))*rcp(float(size));
         Vec p,dp; veval<M>(t,p,dp);
