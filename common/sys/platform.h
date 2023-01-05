@@ -3,7 +3,9 @@
 
 #pragma once
 
+#if !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
+#endif
 
 #include <cstddef>
 #include <cassert>
@@ -21,14 +23,19 @@
 
 #if defined(EMBREE_SYCL_SUPPORT)
 
-// If we use the internal clang frontend of the dpc++ compiler directly __INTEL_LLVM_COMPILER is not set.
-// I think doing this is fine because normal clang can not compile dpcpp/sycl code anyway.
-#if defined(__clang__) and !defined(__INTEL_LLVM_COMPILER)
-  #define __INTEL_LLVM_COMPILER
+#define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#pragma clang diagnostic ignored "-W#pragma-messages"
+
+#if defined(EMBREE_SYCL_NIGHTLY)
+#  include <sycl/sycl.hpp>
+#else
+#  include <CL/sycl.hpp>
 #endif
 
-#define __SYCL_USE_NON_VARIADIC_SPIRV_OCL_PRINTF__
-#include <sycl/sycl.hpp>
+#pragma clang diagnostic pop
 
 #define SYCL_ONEAPI sycl
 #define SYCL_EXT_ONEAPI sycl::ext::oneapi
@@ -39,7 +46,7 @@
 
 #include "sycl.h"
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 #define CONSTANT __attribute__((opencl_constant))
 #else
 #define CONSTANT
@@ -175,6 +182,10 @@
   #define MAYBE_UNUSED __attribute__((unused))
 #else
   #define MAYBE_UNUSED
+#endif
+
+#if !defined(_unused)
+#define _unused(x) ((void)(x))
 #endif
 
 #if defined(_MSC_VER) && (_MSC_VER < 1900) // before VS2015 deleted functions are not supported properly
@@ -364,7 +375,7 @@ __forceinline std::string toString(long long value) {
 #  define EMBREE_SYCL_SIMD(N)
 #endif
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 
   
 #define sycl_printf0(format, ...) {               \
@@ -403,7 +414,7 @@ __forceinline std::string toString(long long value) {
     SYCL_EXT_ONEAPI::experimental::printf(fmt);                  \
   }
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 
 namespace embree
 {
@@ -461,6 +472,17 @@ namespace embree
         sycl_printf("%f",f);
     } else
       sycl_printf("%f ",f);
+
+    return cout;
+  }
+
+  inline sycl_ostream_ operator <<(sycl_ostream_ cout, double d)
+  {
+    if (cout.uniform) {
+      if (get_sub_group_local_id() == SYCL_CTZ::ctz(intel_sub_group_ballot(true)))
+        sycl_printf("%f",d);
+    } else
+      sycl_printf("%f ",d);
 
     return cout;
   }

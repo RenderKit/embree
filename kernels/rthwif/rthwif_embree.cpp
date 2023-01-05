@@ -265,7 +265,7 @@ bool intersect_instance(intel_ray_query_t& query, Ray& ray, Instance* instance, 
 template<typename Ray>
 bool intersect_primitive(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANCE_LEVEL_COUNT+1], Geometry* geom, sycl::private_ptr<RayQueryContext> context, uint32_t geomID, uint32_t primID, const RTCFeatureFlags feature_mask)
 {
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
   bool filter = feature_mask & (RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_ARGUMENTS | RTC_FEATURE_FLAG_FILTER_FUNCTION_IN_GEOMETRY);
   if (feature_mask & RTC_FEATURE_FLAG_MOTION_BLUR) {
     if (ray.time() < geom->time_range.lower || geom->time_range.upper < ray.time())

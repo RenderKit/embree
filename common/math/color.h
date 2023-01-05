@@ -3,7 +3,7 @@
 
 #pragma once
 
-#if defined(__SYCL_DEVICE_ONLY__)
+#if defined(EMBREE_SYCL_SUPPORT) && defined(__SYCL_DEVICE_ONLY__)
 #  include "color_sycl.h"
 #else
 
