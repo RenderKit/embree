@@ -96,7 +96,7 @@ namespace embree {
   {
     if (step == 0) return;
     //PING;
-    PRINT4(index,start_x,start_y,step);
+    PRINT5(index,start_x,start_y,step,RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*step);
       
     for (int y=0;y<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;y++)
       for (int x=0;x<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;x++)
@@ -120,7 +120,7 @@ namespace embree {
       const uint new_index = index;
       index += 4;
 
-      //PRINT3(new_index,new_step,new_res);
+      PRINT4(new_index,index,new_step,new_res);
 
       current.childID[0] = new_index + 0;    
       current.childID[1] = new_index + 1;    
@@ -157,14 +157,14 @@ namespace embree {
       const uint grid_resY = grid->grids[i].resY;
       const uint numInitialSubGrids = ((grid_resX-1) / InitialSubGridRes) * ((grid_resY-1) / InitialSubGridRes);
       PRINT(numInitialSubGrids);
-      numSubGrids  += numInitialSubGrids * numQuadNodesPerSubGrid;
-      numQuadNodes += numInitialSubGrids;
+      numSubGrids  += numInitialSubGrids;
+      numQuadNodes += numInitialSubGrids * numQuadNodesPerSubGrid;
     }
   
     PRINT(numSubGrids);
   
-    compressed_quad_trees = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*numQuadNodesPerSubGrid,64);
-    compressed_geometries_ptrs = (void**)alignedUSMMalloc(sizeof(void*)*numQuadNodesPerSubGrid,64); // FIXME: is < numQuadNodesPerSubGrid
+    compressed_quad_trees = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*numQuadNodes,64);
+    compressed_geometries_ptrs = (void**)alignedUSMMalloc(sizeof(void*)*numSubGrids,64); // FIXME: is < numQuadNodesPerSubGrid
 
     for (uint i=0;i<numQuadNodesPerSubGrid;i++)
       compressed_geometries_ptrs[i] = nullptr;
@@ -178,6 +178,7 @@ namespace embree {
       for (int start_y=0;start_y+InitialSubGridRes<grid_resY;start_y+=InitialSubGridRes)
         for (int start_x=0;start_x+InitialSubGridRes<grid_resX;start_x+=InitialSubGridRes)
         {
+          PRINT("CREATE QUAD NODE");
           LCGQuadNode *current = &compressed_quad_trees[index*numQuadNodesPerSubGrid];
           uint local_index = 1;
           createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY);          
