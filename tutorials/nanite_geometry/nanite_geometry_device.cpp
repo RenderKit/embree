@@ -10,11 +10,6 @@ namespace embree {
 
   RTCScene g_scene  = nullptr;
   TutorialData data;
-
-  RTCLossyCompressedGrid *compressed_geometries = nullptr;  
-
-  //void **compressed_geometries_ptrs = nullptr;
-  //uint num_compressed_geometries_ptrs = 0;
   
   struct LCGQuadNode
   {
@@ -23,8 +18,21 @@ namespace embree {
     uint childID[4];  
   };
 
+  __forceinline BBox3f getGridBounds(const RTCLossyCompressedGrid &grid)
+  {
+    BBox3f bounds(empty);
+    for (uint y=0;y<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;y++)
+      for (uint x=0;x<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;x++)
+      {
+        Vec3f v(grid.vertex[y][x][0],grid.vertex[y][x][1],grid.vertex[y][x][2]);
+        bounds.extend(v);
+      }
+    return bounds;
+  }
+  
   static const uint LOD_LEVELS = 3;
   static const uint NUM_TOTAL_QUAD_NODES_PER_RTC_LCG = (1-(1<<(2*LOD_LEVELS)))/(1-4);
+
   
   struct LCG_LODQuadTree_Grid {    
     uint numQuadTrees;
@@ -35,13 +43,11 @@ namespace embree {
     void **lcg_ptrs;
     RTCGeometry geometry;
     uint geomID;
+    BoundingSphere *bounding_spheres;
   };
 
   LCG_LODQuadTree_Grid global_grid;
-  
-  //LCGQuadNode *compressed_quad_trees = nullptr;    
-  //RTCGeometry global_lcg_geom = nullptr;
-  
+    
   extern "C" uint user_lod_level = 1;
   
 // #define NUM_SUBGRIDS_X 1
@@ -175,7 +181,9 @@ namespace embree {
     global_grid.numMaxResQuadNodes = (1<<(2*(LOD_LEVELS-1))) * numSubGrids;
     PRINT2( (1<<(2*(LOD_LEVELS-1))), global_grid.numMaxResQuadNodes );
     global_grid.quadTrees = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*global_grid.numTotalQuadNodes,64);
-    global_grid.lcg_ptrs   = (void**)alignedUSMMalloc(sizeof(void*)*global_grid.numMaxResQuadNodes,64); 
+    global_grid.lcg_ptrs   = (void**)alignedUSMMalloc(sizeof(void*)*global_grid.numMaxResQuadNodes,64);
+
+    global_grid.bounding_spheres = (BoundingSphere*)alignedUSMMalloc(sizeof(BoundingSphere)*global_grid.numTotalQuadNodes,64);
 
     for (uint i=0;i<global_grid.numMaxResQuadNodes;i++)
       global_grid.lcg_ptrs[i] = nullptr;
@@ -260,12 +268,21 @@ namespace embree {
     /* intersect ray with scene */
     rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
 
+#define LINE_THRESHOLD 0.1f
+#if 1    
+    Vec3f color(1.0f,1.0f,1.0f);
+    if (ray.u <= LINE_THRESHOLD ||
+        ray.v <= LINE_THRESHOLD ||
+        ray.u + ray.v <= LINE_THRESHOLD)
+      color = Vec3fa(0.0f);
+#endif
+    
     /* shade pixels */  
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
       return Vec3fa(0.0f);
     else
-      //return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng))));
-      return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * randomColor(ray.primID);
+      return Vec3fa(color * abs(dot(ray.dir,normalize(ray.Ng))));
+      //return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * randomColor(ray.primID);
       //return randomColor(ray.primID);  
   }
 
@@ -365,6 +382,22 @@ namespace embree {
                                  const ISPCCamera& camera)
   {
     uint numActiveQuads = 0;
+#if 1
+    Vec3f origin = camera.xfm.p;
+    for (uint i=0;i<global_grid.numQuadTrees;i++)
+    {
+      LCGQuadNode *root = &global_grid.quadTrees[i*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
+      BBox3f bounds = getGridBounds(root->grid);
+      const float distance = length(bounds.center()-origin);
+      const int lod_level = LOD_LEVELS-1-min(max((int)floorf(distance/10.0f),0),(int)LOD_LEVELS-1);
+      const int numSubGrids = 1<<(2*lod_level);
+      const uint offset = (1-(1<<(2*lod_level)))/(1-4);
+      //PRINT4(distance,lod_level,numSubGrids,offset);
+      for (uint j=0;j<numSubGrids;j++)
+        global_grid.lcg_ptrs[numActiveQuads++] = &root[offset+j].grid;
+    }
+    PRINT(numActiveQuads);
+#else    
     if (user_lod_level == 1)
     {    
       for (uint i=0;i<global_grid.numQuadTrees;i++)
@@ -391,7 +424,7 @@ namespace embree {
       }
       numActiveQuads = global_grid.numQuadTrees*16;      
     }                
-
+#endif
     rtcSetGeometryUserData(global_grid.geometry,global_grid.lcg_ptrs);
     rtcSetLossyCompressedGeometryPrimitiveCount(global_grid.geometry,numActiveQuads);
     rtcCommitGeometry(global_grid.geometry);
