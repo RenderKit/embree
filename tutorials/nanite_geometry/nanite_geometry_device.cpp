@@ -107,7 +107,7 @@ namespace embree {
     return vtx[py*grid_resX + px];
   }
 
-  void createQuadNode(LCGQuadNode &current, LCGQuadNode *nodes, uint &index, const uint start_x, const uint start_y, const uint step, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY, const uint ID, const uint materialID = 0)
+  void createQuadNode(LCGQuadNode &current, LCGQuadNode *nodes, uint &index, const uint start_x, const uint start_y, const uint step, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
   {
     if (step == 0) return;
       
@@ -117,13 +117,10 @@ namespace embree {
         const uint px = start_x+x*step;
         const uint py = start_y+y*step;
         const Vec3fa v = getVertex(px,py,vtx,grid_resX,grid_resY);
-        //PRINT2(px,py);
         current.grid.vertex[y][x][0] = v.x;
         current.grid.vertex[y][x][1] = v.y;
         current.grid.vertex[y][x][2] = v.z;          
       }
-    current.grid.ID = ID;
-    current.grid.materialID = materialID;    
 
     const uint new_step = step>>1;
     const uint new_res = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*new_step;
@@ -133,18 +130,16 @@ namespace embree {
       const uint new_index = index;
       index += 4;
 
-      //PRINT4(new_index,index,new_step,new_res);
-
       current.childID[0] = new_index + 0;    
       current.childID[1] = new_index + 1;    
       current.childID[2] = new_index + 2;    
       current.childID[3] = new_index + 3;    
 
           
-      createQuadNode(nodes[new_index+0],nodes,index,start_x + 0*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY,ID,materialID);
-      createQuadNode(nodes[new_index+1],nodes,index,start_x + 1*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY,ID,materialID);
-      createQuadNode(nodes[new_index+2],nodes,index,start_x + 0*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,ID,materialID);
-      createQuadNode(nodes[new_index+3],nodes,index,start_x + 1*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,ID,materialID);
+      createQuadNode(nodes[new_index+0],nodes,index,start_x + 0*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY);
+      createQuadNode(nodes[new_index+1],nodes,index,start_x + 1*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY);
+      createQuadNode(nodes[new_index+2],nodes,index,start_x + 0*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY);
+      createQuadNode(nodes[new_index+3],nodes,index,start_x + 1*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY);
     }
   }
     
@@ -196,35 +191,22 @@ namespace embree {
         {
           LCGQuadNode *current = &global_grid.quadTrees[index*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
           uint local_index = 1;
-          createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY,0,0);          
+          createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY);          
           if (local_index != NUM_TOTAL_QUAD_NODES_PER_RTC_LCG)
           {
             PRINT2(local_index,NUM_TOTAL_QUAD_NODES_PER_RTC_LCG);
             FATAL("NUM_TOTAL_QUAD_NODES_PER_RTC_LCG");
           }
-          //compressed_geometries_ptrs[index] = &compressed_quad_trees[index].grid;
           index++;
         }
     }
-    PRINT(index);
     if (index > numSubGrids)
-      FATAL("numSubGrids");
-
-    //num_compressed_geometries_ptrs = index;
-    //PRINT( num_compressed_geometries_ptrs );
-    //for (uint i=0;i<index;i++)
-    //compressed_geometries_ptrs[i] = &compressed_quad_trees[i*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG].grid;
-    
+      FATAL("numSubGrids");    
   
     global_grid.geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
-    //rtcSetGeometryUserData(geom,compressed_geometries_ptrs);
-    //rtcSetLossyCompressedGeometryPrimitiveCount(geom,num_compressed_geometries_ptrs);
     rtcCommitGeometry(global_grid.geometry);
     global_grid.geomID = rtcAttachGeometry(scene,global_grid.geometry);
     //rtcReleaseGeometry(geom);
-
-    PRINT("DONE");
-    //exit(0);    
   }
 
   
@@ -234,9 +216,6 @@ namespace embree {
   extern "C" void device_init (char* cfg)
   {
     TutorialData_Constructor(&data);
-
-  
-    //PRINT(g_ispc_scene->ge
     /* create scene */
     data.g_scene = g_scene = rtcNewScene(g_device);
     rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);

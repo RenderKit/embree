@@ -179,8 +179,6 @@ struct RTC_ALIGN(16) RTCLinearBounds
 struct RTCLossyCompressedGrid
 {
   float vertex[RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES][RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES][3];
-  uint ID;
-  uint materialID;
 };
 
 /* Feature flags for SYCL specialization constants */
