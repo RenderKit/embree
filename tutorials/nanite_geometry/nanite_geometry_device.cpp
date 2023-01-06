@@ -196,7 +196,7 @@ namespace embree {
         {
           LCGQuadNode *current = &global_grid.quadTrees[index*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
           uint local_index = 1;
-          createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY,index,0);          
+          createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY,0,0);          
           if (local_index != NUM_TOTAL_QUAD_NODES_PER_RTC_LCG)
           {
             PRINT2(local_index,NUM_TOTAL_QUAD_NODES_PER_RTC_LCG);
