@@ -139,12 +139,12 @@ To compile Embree using SYCL one has to use Intel's DPC++ compiler,
 other SYCL compilers are not supported. The Embree SYCL compilation
 under Linux has been tested with the following compilers:
 
-  - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz)
+  - [oneAPI DPC++ compiler 2022-12-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler.tar.gz)
   
 Please download and install one of these compilers. E.g. to install
-the oneAPI DPC++ compiler 2022-09-14 compiler:
+the oneAPI DPC++ compiler 2022-12-14 compiler:
 
-    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler.tar.gz
+    wget https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler.tar.gz
     tar xzf dpcpp-compiler.tar.gz
     source ./dpcpp_compiler/startup.sh
 
@@ -334,7 +334,7 @@ To compile Embree using SYCL one has to use Intel's DPC++ compiler,
 other SYCL compilers are not supported. The Embree SYCL compilation
 under Windows has been tested with the following compilers:
 
-  - [oneAPI DPC++ compiler 2022-09-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20220914/dpcpp-compiler-win.tar.gz)
+  - [oneAPI DPC++ compiler 2022-12-14](https://github.com/intel/llvm/releases/download/sycl-nightly%2F20221214/dpcpp-compiler-win.tar.gz)
   
 Please download and install one of these compilers.
 
