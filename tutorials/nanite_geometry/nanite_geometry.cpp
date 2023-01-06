@@ -13,6 +13,9 @@
 
 namespace embree
 {
+
+  extern "C" uint user_lod_level;
+  
   struct Tutorial : public SceneLoadingTutorialApplication 
   {
     Tutorial()
@@ -23,6 +26,29 @@ namespace embree
       camera.to   = Vec3fa(0.0f,0.0f,0.0f);
     }
 
+
+#if defined(USE_GLFW)
+    
+    /* called when a key is pressed */
+    void keypressed(int key) override
+    {
+      if (key == GLFW_KEY_F1) {
+        user_lod_level = 1;
+        //g_changed = true;
+      }
+      else if (key == GLFW_KEY_F2) {
+        user_lod_level = 2;
+        //g_changed = true;
+      }
+      else if (key == GLFW_KEY_F3) {
+        user_lod_level = 3;
+        //g_changed = true;
+      }
+      else
+        TutorialApplication::keypressed(key);
+    }
+#endif
+    
 
    void postParseCommandLine() override
     {

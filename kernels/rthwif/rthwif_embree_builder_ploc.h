@@ -1759,7 +1759,6 @@ namespace embree
         
         gpu::waitOnEventAndCatchException(queue_event);
         if (unlikely(verbose)) iteration_time += gpu::getDeviceExecutionTiming(queue_event);
-        PRINT((float)iteration_time);
       }
     }
     return numLCGs;
