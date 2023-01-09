@@ -113,6 +113,8 @@ namespace embree
     /* create a standard window of specified size */
     GLFWwindow* createStandardWindow(int width, int height);
 
+    void setCallbackFunctions(GLFWwindow* window);
+
     /* interactive rendering using GLFW window */
     void renderInteractive();
  
@@ -169,7 +171,6 @@ namespace embree
     float speed;
     Vec3f moveDelta;
 
-    bool motion_blur;  // motion blur on/off
     bool animate;      // if mblur off -> animate on/off
     float render_time; // if animate off -> render this time
 
