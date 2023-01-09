@@ -239,6 +239,8 @@ namespace embree
     Ref<SceneGraph::Node> loadBezierCurves(const Ref<XML>& xml, SceneGraph::CurveSubtype subtype); // only for compatibility
     Ref<SceneGraph::Node> loadCurves(const Ref<XML>& xml, RTCGeometryType type);
     Ref<SceneGraph::Node> loadPoints(const Ref<XML>& xml, RTCGeometryType type);
+
+    Ref<SceneGraph::Node> loadFurBall(const Ref<XML>& xml);
  
   private:
     Ref<SceneGraph::Node> loadPerspectiveCamera(const Ref<XML>& xml);
@@ -1278,6 +1280,124 @@ namespace embree
     return mesh.dynamicCast<SceneGraph::Node>();
   }
 
+  Ref<SceneGraph::Node> XMLLoader::loadFurBall(const Ref<XML>& xml)
+  {
+    Ref<SceneGraph::GroupNode> group = new SceneGraph::GroupNode;
+
+    float r = 10.0f;
+    int slices = 60;
+    int slabs = 60;
+
+    Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    Ref<SceneGraph::TriangleMeshNode> mesh = new SceneGraph::TriangleMeshNode(material,BBox1f(0,1),0);
+
+    {
+      avector<Vec3fa> data;
+      data.resize(slices * (slabs - 1) + 2);
+      data[0] = Vec3fa(0, -r, 0);
+
+      float dphi = float(pi) / float(slabs);
+      float dtheta = float(pi) / float(slices) * 2.0f;
+      int i = 0;
+
+      for (int slab=0; slab<slabs-1; slab++)
+      {
+        float phi = dphi * (slab + 1);
+        for (int slice=0; slice<slices; slice++)
+        {
+          float theta = dtheta * slice;
+          float x = r * sin(phi) * cos(theta);
+          float z = r * sin(phi) * sin(theta);
+          float y = r * cos(phi);
+          data[i] = Vec3fa(x, y, z);
+          i++;
+        }
+      }
+
+      data[i++] = Vec3fa(0, r, 0);
+      data[i++] = Vec3fa(0, -r, 0);
+      mesh->positions.push_back(data);
+    }
+
+    {
+      int top = mesh->positions.back().size() - 2;
+      int bot = mesh->positions.back().size() - 1;
+
+      for (int slice=0; slice<slices; slice++)
+      {
+        mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(top, slice, (slice + 1) % slices));
+      }
+
+      for (int slab=0; slab<slabs-2; slab++)
+      {
+        for (int slice=0; slice<slices; slice++)
+        {
+          int offset_a = slab * slices;
+          int offset_b = (slab + 1) * slices;
+
+          mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(offset_a + slice, offset_b + slice, offset_b + (slice + 1) % slices));
+          mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(offset_a + slice, offset_b + (slice + 1) % slices, offset_a + (slice + 1) % slices));
+        }
+      }
+
+      for (int slice=0; slice<slices; slice++)
+      {
+        mesh->triangles.push_back(SceneGraph::TriangleMeshNode::Triangle(bot, bot - slices - 1 + slice, bot - slices - 1+ (slice + 1) % slices));
+      }
+    }
+
+    mesh->verify();
+    group->add(mesh.dynamicCast<SceneGraph::Node>());
+
+    // generate N random hairs
+    //Ref<SceneGraph::MaterialNode> material = loadMaterial(xml->child("material"));
+    Ref<SceneGraph::HairSetNode> hairs = new SceneGraph::HairSetNode(RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE,material,BBox1f(0,1),0);
+
+    int N = 30000;
+
+    {
+      avector<Vec3ff> data;
+      data.resize(N * 4);
+
+      float theta = 2.0f * float(pi) * float(random<float>());
+      float phi = acos(1 - 2 * float(random<float>()));
+      Vec3fa last = Vec3fa(sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta));
+
+      for (int i = 0; i < N; i++) {
+          float theta = 2.0f * float(pi) * float(random<float>());
+          float phi = acos(1 - 2 * float(random<float>()));
+          Vec3fa d = Vec3fa(sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta));
+
+          Vec3fa p = normalize(cross(d, last));
+          last = p;
+
+          Vec3fa start = d * r * 0.99;
+          Vec3fa mid = d * r * 1.03;
+          Vec3fa mid2 = d * r * 1.07;
+          Vec3fa stop = d * r * (1.07 + 0.03 * random<float>()) + p * r * 0.051;
+
+          data[i*4+0] = Vec3ff(start.x, start.y, start.z, 0.1);
+          data[i*4+1] = Vec3ff(mid.x, mid.y, mid.z, 0.1);
+          data[i*4+2] = Vec3ff(mid.x, mid2.y, mid2.z, 0.05);
+          data[i*4+3] = Vec3ff(stop.x, stop.y, stop.z, 0.0);
+      }
+
+      hairs->positions.push_back(data);
+
+      std::vector<unsigned> indices(N);
+      std::vector<unsigned> curveid(N, 0);
+      hairs->hairs.resize(indices.size());
+      for (size_t i=0; i<N; i++) {
+        hairs->hairs[i] = SceneGraph::HairSetNode::Hair(i * 4, 0);
+      }
+
+      hairs->verify();
+      group->add(hairs.dynamicCast<SceneGraph::Node>());
+    }
+
+    return group.dynamicCast<SceneGraph::Node>();
+  }
+
   Ref<SceneGraph::Node> XMLLoader::loadTransformNode(const Ref<XML>& xml) 
   {
     /* parse number of time steps to use for instanced geometry */
@@ -1563,6 +1683,8 @@ namespace embree
         set_time_range(node,BBox1f(time_range.x,time_range.y));
       }
 
+      else if (xml->name == "FurBall") node = state.sceneMap[id] = loadFurBall(xml);
+
       else THROW_RUNTIME_ERROR(xml->loc.str()+": unknown tag: "+xml->name);
 
       node->name = xml->parm("name");
@@ -1651,7 +1773,6 @@ namespace embree
 
   Ref<SceneGraph::Node> XMLLoader::load(const FileName& fileName, const AffineSpace3fa& space)
   {
-    //PRINT(fileName.str());
     SharedState state;
     XMLLoader loader(fileName,space,state); return loader.root;
   }
@@ -1661,7 +1782,6 @@ namespace embree
     if (state.sceneMap.find(fileName) != state.sceneMap.end())
       return state.sceneMap[fileName];
 
-    //PRINT(fileName.str());
     XMLLoader loader(fileName,space,state);
     state.sceneMap[fileName] = loader.root;
     return loader.root;
@@ -1682,6 +1802,7 @@ namespace embree
       binFileSize = ftell(binFile);
       fseek(binFile, 0L, SEEK_SET);
     }
+
 
     Ref<XML> xml = parseXML(fileName);
     if (xml->name == "scene") 
