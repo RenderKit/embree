@@ -51,6 +51,7 @@ jobs:
         scripts/test.py build
         scripts/test.py test
 
+
 #####################################################################
 # DPC++ Release Builds
 ####################################################################
@@ -63,7 +64,7 @@ jobs:
       artifact-out: release-windows-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.17.0 isa:SSE2 intensity:4 package:ZIP
+        python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 intensity:4 package:ZIP
         python scripts/test.py build
         python scripts/test.py test
 
@@ -76,7 +77,7 @@ jobs:
       artifact-out: release-windows-x64-Release-DPCPP-AOT-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:dg2 gfx:RELEASE ispc:ispc1.17.0 isa:SSE2 intensity:4 package:ZIP
+        python scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:dg2 gfx:RELEASE ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 intensity:4 package:ZIP
         python scripts/test.py build
         python scripts/test.py test
 
@@ -90,9 +91,10 @@ jobs:
       artifact-out: release-linux-x64-Release-DPCPP-ISPC1_17_0-TBB2021_2_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.2.0 intensity:4 package:ZIP
+        scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.2.0 intensity:4 package:ZIP
         scripts/test.py build
         scripts/test.py test
+
 
 #####################################################################
 # Release binaries scans
