@@ -150,6 +150,12 @@ namespace embree
 
   /*! Loads image using OpenImageIO. */
   Ref<Image> loadOIIO(const FileName& fileName);
+
+  /*! Loads image using stb_image. */
+  Ref<Image> loadSTB(const FileName& fileName);
+
+  /*! Loads image from EXR file. */
+  Ref<Image> loadEXR(const FileName& fileName);
   
   /*! Loads image from PFM file. */
   Ref<Image> loadPFM(const FileName& fileName);
@@ -174,6 +180,12 @@ namespace embree
 
   /*! Store image to file using OpenImageIO. */
   void storeOIIO(const Ref<Image>& img, const FileName& fileName);
+
+  /*! Store image to file using stb_image. */
+  void storeSTB(const Ref<Image>& img, const FileName& fileName);
+
+  /*! Store image to EXR file. */
+  void storeEXR(const Ref<Image>& img, const FileName& fileName);
   
   /*! Store image to PFM file. */
   void storePFM(const Ref<Image>& img, const FileName& fileName);
