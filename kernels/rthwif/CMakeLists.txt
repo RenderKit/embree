@@ -59,9 +59,13 @@ INCLUDE(FetchContent)
 
 SET(FETCHCONTENT_QUIET OFF)
 
+IF (NOT EMBREE_RTHWIF_TBB_URL) # allow setting this externally
+  SET(EMBREE_RTHWIF_TBB_URL "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0.zip")
+ENDIF()
+
 FetchContent_Declare(
   tbb_static
-  URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0.zip
+  URL ${EMBREE_RTHWIF_TBB_URL}
 )
 FetchContent_MakeAvailable(tbb_static)
 
