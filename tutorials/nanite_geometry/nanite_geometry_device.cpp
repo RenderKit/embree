@@ -110,7 +110,7 @@ namespace embree {
     return lod_levels;
   }
 
-    __forceinline uint getCrackFixingBorderMask(LCGQuadNode &current, const LODEdgeLevel &lodEdgeLevel, const uint gridLODLevel)
+    __forceinline uint getCrackFixingBorderMask(const LCGQuadNode &current, const LODEdgeLevel &lodEdgeLevel, const uint gridLODLevel)
     {
       uint mask = 0;
       if ((current.flags & TOP_BORDER   ) && lodEdgeLevel.top    != gridLODLevel) mask |= TOP_BORDER;
@@ -174,7 +174,7 @@ namespace embree {
   }
   
   
-  struct LCG_LODQuadTree_Grid {    
+  struct __aligned(64) LCG_LODQuadTree_Grid {    
     uint numQuadTrees;
     uint numTotalQuadNodes;
     uint numMaxResQuadNodes;
@@ -191,7 +191,7 @@ namespace embree {
     uint geomID;
   };
 
-  LCG_LODQuadTree_Grid global_grid;
+  LCG_LODQuadTree_Grid *global_grid;
     
   extern "C" uint user_lod_level = 1;
   
@@ -267,16 +267,18 @@ namespace embree {
   
     PRINT(numSubGrids);
 
-    global_grid.numQuadTrees = numSubGrids;
-    global_grid.numTotalQuadNodes = numQuadNodes;
-    global_grid.numMaxResQuadNodes = (1<<(2*(LOD_LEVELS-1))) * numSubGrids;
-    PRINT2( (1<<(2*(LOD_LEVELS-1))), global_grid.numMaxResQuadNodes );
-    global_grid.quadTrees = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*global_grid.numTotalQuadNodes,64);
-    global_grid.lcg_ptrs   = (void**)alignedUSMMalloc(sizeof(void*)*global_grid.numMaxResQuadNodes,64);
-    global_grid.crackFixQuadNodes = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*global_grid.numMaxResQuadNodes,64); // FIXME: only borders at highest resolution
+    global_grid = (LCG_LODQuadTree_Grid*)alignedUSMMalloc(sizeof(LCG_LODQuadTree_Grid),64);
+
+    global_grid->numQuadTrees = numSubGrids;
+    global_grid->numTotalQuadNodes = numQuadNodes;
+    global_grid->numMaxResQuadNodes = (1<<(2*(LOD_LEVELS-1))) * numSubGrids;
+    PRINT2( (1<<(2*(LOD_LEVELS-1))), global_grid->numMaxResQuadNodes );
+    global_grid->quadTrees = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*global_grid->numTotalQuadNodes,64);
+    global_grid->lcg_ptrs   = (void**)alignedUSMMalloc(sizeof(void*)*global_grid->numMaxResQuadNodes,64);
+    global_grid->crackFixQuadNodes = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*global_grid->numMaxResQuadNodes,64); // FIXME: only borders at highest resolution
       
-    for (uint i=0;i<global_grid.numMaxResQuadNodes;i++)
-      global_grid.lcg_ptrs[i] = nullptr;
+    for (uint i=0;i<global_grid->numMaxResQuadNodes;i++)
+      global_grid->lcg_ptrs[i] = nullptr;
     
     uint index = 0;
     for (uint i=0;i<grid->numGrids;i++)
@@ -287,7 +289,7 @@ namespace embree {
       for (int start_y=0;start_y+InitialSubGridRes<grid_resY;start_y+=InitialSubGridRes)
         for (int start_x=0;start_x+InitialSubGridRes<grid_resX;start_x+=InitialSubGridRes)
         {
-          LCGQuadNode *current = &global_grid.quadTrees[index*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
+          LCGQuadNode *current = &global_grid->quadTrees[index*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
           uint local_index = 1;
           createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY,FULL_BORDER);          
           if (local_index != NUM_TOTAL_QUAD_NODES_PER_RTC_LCG)
@@ -301,9 +303,9 @@ namespace embree {
     if (index > numSubGrids)
       FATAL("numSubGrids");    
   
-    global_grid.geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
-    rtcCommitGeometry(global_grid.geometry);
-    global_grid.geomID = rtcAttachGeometry(scene,global_grid.geometry);
+    global_grid->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
+    rtcCommitGeometry(global_grid->geometry);
+    global_grid->geomID = rtcAttachGeometry(scene,global_grid->geometry);
     //rtcReleaseGeometry(geom);
   }
 
@@ -466,6 +468,49 @@ namespace embree {
 #endif
   }
 
+  __forceinline size_t alignTo(const uint size, const uint alignment)
+  {
+    return ((size+alignment-1)/alignment)*alignment;
+  }
+
+  __forceinline void waitOnQueueAndCatchException(sycl::queue &gpu_queue)
+  {
+    try {
+      gpu_queue.wait_and_throw();
+    } catch (sycl::exception const& e) {
+      std::cout << "Caught synchronous SYCL exception:\n"
+                << e.what() << std::endl;
+      FATAL("SYCL Exception");     
+    }      
+  }
+
+  __forceinline void waitOnEventAndCatchException(sycl::event &event)
+  {
+    try {
+      event.wait_and_throw();
+    } catch (sycl::exception const& e) {
+      std::cout << "Caught synchronous SYCL exception:\n"
+                << e.what() << std::endl;
+      FATAL("SYCL Exception");     
+    }      
+  }
+
+  __forceinline float getDeviceExecutionTiming(sycl::event &queue_event)
+  {
+    const auto t0 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_start>();
+    const auto t1 = queue_event.template get_profiling_info<sycl::info::event_profiling::command_end>();
+    return (float)((t1-t0)*1E-6);      
+  }
+
+  template<typename T>
+  static __forceinline uint atomic_add_global(T *dest, const T count=1)
+  {
+    sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
+    return counter.fetch_add(count);      
+  }
+  
+  
+
 /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
                                  const unsigned int width,
@@ -473,50 +518,72 @@ namespace embree {
                                  const float time,
                                  const ISPCCamera& camera)
   {
-    uint numActiveQuads = 0;
+#if defined(EMBREE_SYCL_TUTORIAL)
     
-    global_grid.numCrackFixQuadNodes = 0;
-    
-    for (uint i=0;i<global_grid.numQuadTrees;i++)
-    {
-      LCGQuadNode *root = &global_grid.quadTrees[i*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
-      LODEdgeLevel lod_edge_levels = getLODEdgeLevels(global_grid.quadTrees[i*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG],camera,width,height);
-      
-      const int lod_level = lod_edge_levels.level();
-      const uint crackFixingBorderMask = getCrackFixingBorderMask(*root,lod_edge_levels,lod_level);
-      //PRINT3(i,lod_level,crackFixingBorderMask);
+    LCG_LODQuadTree_Grid *grid = global_grid;
 
-      const int numSubGrids = 1<<(2*lod_level);
-      const uint offset = (1-(1<<(2*lod_level)))/(1-4);
-      
-      if (crackFixingBorderMask)
-      {
-        for (uint j=0;j<numSubGrids;j++)
-        {
-          LCGQuadNode *subgrid_root = &root[offset+j];
-          const uint subgrid_crackFixingBorderMask = subgrid_root->flags & crackFixingBorderMask;
-          if (subgrid_crackFixingBorderMask)
-          {            
-            subgrid_root = &global_grid.crackFixQuadNodes[global_grid.numCrackFixQuadNodes++];
-            *subgrid_root = root[offset+j];
-            fixCracks(*subgrid_root, subgrid_crackFixingBorderMask, lod_edge_levels, lod_level);
-          }
-          global_grid.lcg_ptrs[numActiveQuads+j] = &subgrid_root->grid;
-        }          
-      }
-      else        
-        for (uint j=0;j<numSubGrids;j++)
-          global_grid.lcg_ptrs[numActiveQuads+j] = &root[offset+j].grid;
-      numActiveQuads += numSubGrids;
-    }
-    PRINT2(numActiveQuads,global_grid.numCrackFixQuadNodes);
+    const uint numQuadTrees = grid->numQuadTrees;
     
-    rtcSetGeometryUserData(global_grid.geometry,global_grid.lcg_ptrs);
-    rtcSetLossyCompressedGeometryPrimitiveCount(global_grid.geometry,numActiveQuads);
-    rtcCommitGeometry(global_grid.geometry);
+    sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
+                                                         cgh.single_task([=]() {
+                                                                           grid->numCrackFixQuadNodes = 0;
+                                                                           grid->num_lcg_ptrs = 0;
+                                                                         });
+                                                       });
+    
+    const uint wgSize = 64;
+    const sycl::nd_range<1> nd_range1(alignTo(numQuadTrees,wgSize),sycl::range<1>(wgSize));          
+    
+    sycl::event compute_lod_event = global_gpu_queue->submit([=](sycl::handler& cgh){
+                                                               cgh.depends_on(init_event);                                                   
+                                                               cgh.parallel_for(nd_range1,[=](sycl::nd_item<1> item) {
+                                                                                           const uint i = item.get_global_id(0);
+                                                                                           if (i < numQuadTrees)
+                                                                                           {
+                                                                                             LCGQuadNode *const root = &grid->quadTrees[i*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
+                                                                                             const LODEdgeLevel lod_edge_levels = getLODEdgeLevels(grid->quadTrees[i*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG],camera,width,height);     
+                                                                                             const uint lod_level = lod_edge_levels.level();
+                                                                                             const uint crackFixingBorderMask = getCrackFixingBorderMask(*root,lod_edge_levels,lod_level);
+                                                                                             const uint numSubGrids = 1<<(2*lod_level);
+                                                                                             const uint offset = (1-(1<<(2*lod_level)))/(1-4);
+                                                                                             const uint numActiveQuads = atomic_add_global(&grid->num_lcg_ptrs,numSubGrids);
+                                                                                             
+                                                                                             if (crackFixingBorderMask)
+                                                                                             {
+                                                                                               for (uint j=0;j<numSubGrids;j++)
+                                                                                               {
+                                                                                                 LCGQuadNode *subgrid_root = &root[offset+j];
+                                                                                                 const uint subgrid_crackFixingBorderMask = subgrid_root->flags & crackFixingBorderMask;
+                                                                                                 if (subgrid_crackFixingBorderMask)
+                                                                                                 {
+                                                                                                   const uint numCrackFixQuadNodes = atomic_add_global(&grid->numCrackFixQuadNodes,(uint)1);
+                                                                                                   subgrid_root = &grid->crackFixQuadNodes[numCrackFixQuadNodes];
+                                                                                                   *subgrid_root = root[offset+j];
+                                                                                                   fixCracks(*subgrid_root, subgrid_crackFixingBorderMask, lod_edge_levels, lod_level);
+                                                                                                 }
+                                                                                                 grid->lcg_ptrs[numActiveQuads+j] = &subgrid_root->grid;
+                                                                                               }          
+                                                                                             }
+                                                                                             else        
+                                                                                               for (uint j=0;j<numSubGrids;j++)
+                                                                                                 grid->lcg_ptrs[numActiveQuads+j] = &root[offset+j].grid;
+                                                                                           }
+                                                                                           
+                                                                                         });
+                                                             });
+    waitOnEventAndCatchException(compute_lod_event);
+
+    PRINT(getDeviceExecutionTiming(compute_lod_event));
+    
+    //PRINT2(grid->num_lcg_ptrs,grid->numCrackFixQuadNodes);
+    
+    rtcSetGeometryUserData(grid->geometry,grid->lcg_ptrs);
+    rtcSetLossyCompressedGeometryPrimitiveCount(grid->geometry,grid->num_lcg_ptrs);
+    rtcCommitGeometry(grid->geometry);
     
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
+#endif    
   }
 
 /* called by the C++ code for cleanup */
