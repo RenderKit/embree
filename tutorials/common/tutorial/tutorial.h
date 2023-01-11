@@ -29,7 +29,8 @@ namespace embree
   extern "C" bool device_pick(const float x, const float y, const ISPCCamera& camera, Vec3fa& hitPos);
   //extern "C" void device_key_pressed (int key);
   extern "C" void device_cleanup();
-
+  extern "C" void device_gui();
+  
   template<typename Ty>
     struct Averaged
   {
@@ -177,6 +178,7 @@ namespace embree
     Averaged<double> avg_render_time;
     Averaged<double> avg_frame_time;
     Averaged<double> avg_mrayps;
+    
     bool print_camera;
 
     int debug0;

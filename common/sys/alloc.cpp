@@ -91,7 +91,9 @@ namespace embree
     void* ptr = nullptr;
     if (mode == EMBREE_USM_SHARED_DEVICE_READ_ONLY)
       ptr = sycl::aligned_alloc_shared(align,size,*device,*context,sycl::ext::oneapi::property::usm::device_read_only());
-    else
+    else if (mode == EMBREE_DEVICE_READ_WRITE)
+      ptr = sycl::aligned_alloc_device(align,size,*device,*context);      
+    else      
       ptr = sycl::aligned_alloc_shared(align,size,*device,*context);
       
     if (size != 0 && ptr == nullptr)

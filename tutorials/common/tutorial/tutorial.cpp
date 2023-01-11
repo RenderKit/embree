@@ -134,7 +134,7 @@ namespace embree
       print_frame_rate(false),
       avg_render_time(64,1.0),
       avg_frame_time(64,1.0),
-      avg_mrayps(64,1.0),
+      avg_mrayps(64,1.0),      
       print_camera(false),
 
       debug0(0),
@@ -946,6 +946,9 @@ namespace embree
     double total_fps = total_dt != 0.0 ? 1.0f/total_dt : 0.0;
     ImGui::Text("Total: %3.2f fps",total_fps);
 
+
+    device_gui();
+    
 #if defined(RAY_STATS) && !defined(EMBREE_SYCL_TUTORIAL)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
 #endif

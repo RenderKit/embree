@@ -46,7 +46,8 @@ namespace embree
   enum EmbreeUSMMode {
     EMBREE_USM_SHARED = 0,
     EMBREE_USM_SHARED_DEVICE_READ_WRITE = 0,
-    EMBREE_USM_SHARED_DEVICE_READ_ONLY = 1
+    EMBREE_USM_SHARED_DEVICE_READ_ONLY = 1,
+    EMBREE_DEVICE_READ_WRITE = 2,    
   };
   
   /*! aligned allocation */

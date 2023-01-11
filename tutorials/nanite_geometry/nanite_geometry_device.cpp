@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "nanite_geometry_device.h"
+#include "../common/tutorial/tutorial.h"
 
 namespace embree {
 #define FEATURE_MASK                            \
@@ -180,7 +181,7 @@ namespace embree {
     uint numMaxResQuadNodes;
 
     LCGQuadNode *quadTrees;
-
+    
     uint num_lcg_ptrs;
     void **lcg_ptrs;
 
@@ -189,6 +190,11 @@ namespace embree {
     
     RTCGeometry geometry;
     uint geomID;
+
+    static __forceinline uint getQuadTreeChildIndex(const uint index)
+    {
+      return 4*index+1;
+    }
   };
 
   LCG_LODQuadTree_Grid *global_grid;
@@ -273,12 +279,14 @@ namespace embree {
     global_grid->numTotalQuadNodes = numQuadNodes;
     global_grid->numMaxResQuadNodes = (1<<(2*(LOD_LEVELS-1))) * numSubGrids;
     PRINT2( (1<<(2*(LOD_LEVELS-1))), global_grid->numMaxResQuadNodes );
-    global_grid->quadTrees = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*global_grid->numTotalQuadNodes,64);
-    global_grid->lcg_ptrs   = (void**)alignedUSMMalloc(sizeof(void*)*global_grid->numMaxResQuadNodes,64);
-    global_grid->crackFixQuadNodes = (LCGQuadNode*)alignedUSMMalloc(sizeof(LCGQuadNode)*global_grid->numMaxResQuadNodes,64); // FIXME: only borders at highest resolution
-      
-    for (uint i=0;i<global_grid->numMaxResQuadNodes;i++)
-      global_grid->lcg_ptrs[i] = nullptr;
+    const size_t sizeQuadTrees = sizeof(LCGQuadNode)*global_grid->numTotalQuadNodes;
+    global_grid->quadTrees = (LCGQuadNode*)alignedUSMMalloc(sizeQuadTrees,64);
+    const size_t sizeLCGPtrs = sizeof(void*)*global_grid->numMaxResQuadNodes;
+    global_grid->lcg_ptrs   = (void**)alignedUSMMalloc(sizeLCGPtrs,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE);
+    const size_t sizeCrackFixQuadNodes = sizeof(LCGQuadNode)*global_grid->numMaxResQuadNodes;
+    global_grid->crackFixQuadNodes = (LCGQuadNode*)alignedUSMMalloc(sizeCrackFixQuadNodes,64,EmbreeUSMMode::EMBREE_DEVICE_READ_WRITE); // FIXME: only borders at highest resolution
+
+    PRINT3(sizeQuadTrees,sizeLCGPtrs,sizeCrackFixQuadNodes);
     
     uint index = 0;
     for (uint i=0;i<grid->numGrids;i++)
@@ -321,9 +329,6 @@ namespace embree {
     rtcSetSceneBuildQuality(data.g_scene,RTC_BUILD_QUALITY_LOW);
     rtcSetSceneFlags(data.g_scene,RTC_SCENE_FLAG_DYNAMIC);
 
-#if 0
-    createLossyCompressedGeometry(data.g_scene);
-#else
     PRINT(g_ispc_scene->numGeometries);
     for (unsigned int geomID=0; geomID<g_ispc_scene->numGeometries; geomID++)
     {
@@ -331,7 +336,6 @@ namespace embree {
       if (geometry->type == GRID_MESH)
         convertISPCGridMesh((ISPCGridMesh*)geometry,data.g_scene);
     }  
-#endif
   
     /* update scene */
     rtcCommitScene (data.g_scene);  
@@ -432,6 +436,11 @@ namespace embree {
   {
   }
 
+  extern "C" void device_gui()
+  {
+    PING;
+  }
+
   extern "C" void renderFrameStandard (int* pixels,
                                        const unsigned int width,
                                        const unsigned int height,
@@ -509,7 +518,7 @@ namespace embree {
     return counter.fetch_add(count);      
   }
   
-  
+  extern "C" TutorialApplication* TutorialApplication::instance;
 
 /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
@@ -519,9 +528,15 @@ namespace embree {
                                  const ISPCCamera& camera)
   {
 #if defined(EMBREE_SYCL_TUTORIAL)
+
     
     LCG_LODQuadTree_Grid *grid = global_grid;
 
+    // PRINT(grid);
+    // PRINT(grid->quadTrees);
+    // PRINT(grid->lcg_ptrs);
+    // PRINT(grid->crackFixQuadNodes);
+    
     const uint numQuadTrees = grid->numQuadTrees;
     
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
@@ -545,7 +560,7 @@ namespace embree {
                                                                                              const uint lod_level = lod_edge_levels.level();
                                                                                              const uint crackFixingBorderMask = getCrackFixingBorderMask(*root,lod_edge_levels,lod_level);
                                                                                              const uint numSubGrids = 1<<(2*lod_level);
-                                                                                             const uint offset = (1-(1<<(2*lod_level)))/(1-4);
+                                                                                             const uint offset = ((1<<(2*lod_level))-1)/(4-1);
                                                                                              const uint numActiveQuads = atomic_add_global(&grid->num_lcg_ptrs,numSubGrids);
                                                                                              
                                                                                              if (crackFixingBorderMask)
@@ -576,6 +591,8 @@ namespace embree {
     PRINT(getDeviceExecutionTiming(compute_lod_event));
     
     //PRINT2(grid->num_lcg_ptrs,grid->numCrackFixQuadNodes);
+    double t0 = getSeconds();
+
     
     rtcSetGeometryUserData(grid->geometry,grid->lcg_ptrs);
     rtcSetLossyCompressedGeometryPrimitiveCount(grid->geometry,grid->num_lcg_ptrs);
@@ -583,7 +600,11 @@ namespace embree {
     
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
-#endif    
+
+    double dt0 = getSeconds()-t0;
+    TutorialApplication::instance->avg_bvh_build_time.add(dt0);
+    
+#endif
   }
 
 /* called by the C++ code for cleanup */
