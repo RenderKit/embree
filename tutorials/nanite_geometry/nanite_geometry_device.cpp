@@ -2,13 +2,61 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "nanite_geometry_device.h"
-#include "../common/tutorial/tutorial.h"
+
+#if defined(USE_GLFW)
+
+/* include GLFW for window management */
+#include <GLFW/glfw3.h>
+
+/* include ImGUI */
+#include "../common/imgui/imgui.h"
+#include "../common/imgui/imgui_impl_glfw_gl2.h"
+
+#endif
 
 namespace embree {
+
+  template<typename Ty>
+    struct Averaged
+  {
+    Averaged (size_t N, double dt)
+    : N(N), dt(dt) {}
+
+    void add(double v)
+    {
+      values.push_front(std::make_pair(getSeconds(),v));
+      if (values.size() > N) values.resize(N);
+    }
+
+    Ty get() const
+    {
+      if (values.size() == 0) return zero;
+      double t_begin = values[0].first-dt;
+
+      Ty sum(zero);
+      size_t num(0);
+      for (size_t i=0; i<values.size(); i++) {
+        if (values[i].first >= t_begin) {
+          sum += values[i].second;
+          num++;
+        }
+      }
+      if (num == 0) return 0;
+      else return sum/Ty(num);
+    }
+
+    std::deque<std::pair<double,Ty>> values;
+    size_t N;
+    double dt;
+  };
+
+  
 #define FEATURE_MASK                            \
   RTC_FEATURE_FLAG_TRIANGLE |                   \
   RTC_FEATURE_FLAG_INSTANCE
 
+
+  
   RTCScene g_scene  = nullptr;
   TutorialData data;
 
@@ -182,7 +230,7 @@ namespace embree {
 
     LCGQuadNode *quadTrees;
     
-    uint num_lcg_ptrs;
+    uint numLCGPtrs;
     void **lcg_ptrs;
 
     uint numCrackFixQuadNodes;
@@ -200,6 +248,9 @@ namespace embree {
   LCG_LODQuadTree_Grid *global_grid;
     
   extern "C" uint user_lod_level = 1;
+
+  Averaged<double> avg_bvh_build_time(64,1.0);
+  Averaged<double> avg_lod_selection_crack_fixing_time(64,1.0);
   
   inline Vec3fa getVertex(const uint x, const uint y, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
   {
@@ -436,10 +487,6 @@ namespace embree {
   {
   }
 
-  extern "C" void device_gui()
-  {
-    PING;
-  }
 
   extern "C" void renderFrameStandard (int* pixels,
                                        const unsigned int width,
@@ -517,9 +564,19 @@ namespace embree {
     sycl::atomic_ref<T, sycl::memory_order::relaxed, sycl::memory_scope::device,sycl::access::address_space::global_space> counter(*dest);        
     return counter.fetch_add(count);      
   }
-  
-  extern "C" TutorialApplication* TutorialApplication::instance;
 
+
+  extern "C" void device_gui()
+  {
+    ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
+    ImGui::Text("numQuadTrees: %d ",global_grid->numQuadTrees);
+    ImGui::Text("numTotalQuadNodes: %d ",global_grid->numTotalQuadNodes);
+    ImGui::Text("numMaxResQuadNodes: %d ",global_grid->numMaxResQuadNodes);    
+    ImGui::Text("numLCGPtrs: %d ",global_grid->numLCGPtrs);
+    ImGui::Text("numCrackFixQuadNodes: %d ",global_grid->numCrackFixQuadNodes);    
+  }
+  
+  
 /* called by the C++ code to render */
   extern "C" void device_render (int* pixels,
                                  const unsigned int width,
@@ -542,7 +599,7 @@ namespace embree {
     sycl::event init_event =  global_gpu_queue->submit([&](sycl::handler &cgh) {
                                                          cgh.single_task([=]() {
                                                                            grid->numCrackFixQuadNodes = 0;
-                                                                           grid->num_lcg_ptrs = 0;
+                                                                           grid->numLCGPtrs = 0;
                                                                          });
                                                        });
     
@@ -561,7 +618,7 @@ namespace embree {
                                                                                              const uint crackFixingBorderMask = getCrackFixingBorderMask(*root,lod_edge_levels,lod_level);
                                                                                              const uint numSubGrids = 1<<(2*lod_level);
                                                                                              const uint offset = ((1<<(2*lod_level))-1)/(4-1);
-                                                                                             const uint numActiveQuads = atomic_add_global(&grid->num_lcg_ptrs,numSubGrids);
+                                                                                             const uint numActiveQuads = atomic_add_global(&grid->numLCGPtrs,numSubGrids);
                                                                                              
                                                                                              if (crackFixingBorderMask)
                                                                                              {
@@ -588,22 +645,21 @@ namespace embree {
                                                              });
     waitOnEventAndCatchException(compute_lod_event);
 
-    PRINT(getDeviceExecutionTiming(compute_lod_event));
+    //PRINT(getDeviceExecutionTiming(compute_lod_event));
     
-    //PRINT2(grid->num_lcg_ptrs,grid->numCrackFixQuadNodes);
+    //PRINT2(grid->numLCGPtrs,grid->numCrackFixQuadNodes);
     double t0 = getSeconds();
 
     
     rtcSetGeometryUserData(grid->geometry,grid->lcg_ptrs);
-    rtcSetLossyCompressedGeometryPrimitiveCount(grid->geometry,grid->num_lcg_ptrs);
+    rtcSetLossyCompressedGeometryPrimitiveCount(grid->geometry,grid->numLCGPtrs);
     rtcCommitGeometry(grid->geometry);
     
     /* commit changes to scene */
     rtcCommitScene (data.g_scene);
 
-    double dt0 = getSeconds()-t0;
-    TutorialApplication::instance->avg_bvh_build_time.add(dt0);
-    
+    double dt0 = (getSeconds()-t0)*1000.0;
+    avg_bvh_build_time.add(dt0);
 #endif
   }
 
