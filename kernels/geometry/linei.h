@@ -457,6 +457,14 @@ namespace embree
     p1 = lerp(a1,b1,vfloat4(ftime));
     pL = lerp(aL,bL,vfloat4(ftime));
     pR = lerp(aR,bR,vfloat4(ftime));
+
+
+
+    Vec4vf4 pLt; transpose(pL[0], pL[1], pL[2], pL[3], pLt[0], pLt[1], pLt[2], pLt[3]);
+    pL = select(vboolf4(leftExists), pLt, Vec4vf4(inf));
+    
+    Vec4vf4 pRt; transpose(pR[0], pR[1], pR[2], pR[3], pRt[0], pRt[1], pRt[2], pRt[3]);
+    pR = select(vboolf4(rightExists), pRt, Vec4vf4(inf));
   }
 
 #if defined(__AVX__)
@@ -647,6 +655,12 @@ namespace embree
     p1 = lerp(a1,b1,vfloat8(ftime));
     pL = lerp(aL,bL,vfloat8(ftime));
     pR = lerp(aR,bR,vfloat8(ftime));
+    
+    Vec4vf8 pLt; transpose(pL[0], pL[1], pL[2], pL[3], pLt[0], pLt[1], pLt[2], pLt[3]);
+    pL = select(vboolf4(leftExists), pLt, Vec4vf8(inf));
+    
+    Vec4vf8 pRt; transpose(pR[0], pR[1], pR[2], pR[3], pRt[0], pRt[1], pRt[2], pRt[3]);
+    pL = select(vboolf4(rightExists), pLt, Vec4vf8(inf));
   }
 
   template<>
