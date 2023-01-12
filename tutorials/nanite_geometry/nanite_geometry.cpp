@@ -53,6 +53,9 @@ namespace embree
       else if (key == GLFW_KEY_F6) {
         user_rendering_mode = RENDER_DEBUG_CRACK_FIXING;
       }
+      else if (key == GLFW_KEY_F7) {
+        user_rendering_mode = RENDER_DEBUG_UV;
+      }      
       else if (key == GLFW_KEY_KP_SUBTRACT) {
         user_spp -= user_spp > 0 ? 1 : 0;
       }            

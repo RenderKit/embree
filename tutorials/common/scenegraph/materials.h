@@ -117,13 +117,16 @@ namespace embree
                  const std::shared_ptr<Texture> map_Displ)
       : base(MATERIAL_OBJ), illum(0), d(d), Ns(Ns), Ni(1.f), Ka(Ka), Kd(Kd), Ks(Ks), Kt(Kt), 
       map_d(nullptr), map_Ka(nullptr), map_Kd(nullptr), map_Ks(nullptr), map_Kt(nullptr), map_Ns(nullptr), map_Displ(nullptr),
-      _map_d(map_d), _map_Ka(map_Ka), _map_Kd(map_Kd), _map_Ks(map_Ks), _map_Kt(map_Kt), _map_Ns(map_Ns), _map_Displ(map_Displ) {}
+      _map_d(map_d), _map_Ka(map_Ka), _map_Kd(map_Kd), _map_Ks(map_Ks), _map_Kt(map_Kt), _map_Ns(map_Ns), _map_Displ(map_Displ) {
+    }
 
     virtual Material* material() 
-    { 
+    {
+      PING;
       map_d = _map_d.get();
       map_Ka = _map_Ka.get();
       map_Kd = _map_Kd.get();
+      PRINT2(map_Kd,_map_Kd.get());
       map_Ks = _map_Ks.get();
       map_Kt = _map_Kt.get();
       map_Ns = _map_Ns.get();

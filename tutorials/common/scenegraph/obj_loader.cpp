@@ -130,7 +130,7 @@ namespace embree
     std::string curMaterialName;
     Ref<SceneGraph::MaterialNode> curMaterial;
     std::map<std::string, Ref<SceneGraph::MaterialNode> > material;
-    std::map<std::string, std::shared_ptr<Texture>> textureMap; 
+    //std::map<std::string, std::shared_ptr<Texture>> textureMap; 
 
   private:
     void loadMTL(const FileName& fileName);
@@ -337,8 +337,9 @@ namespace embree
 
   std::shared_ptr<Texture> OBJLoader::loadTexture(const FileName& fname)
   {
-    if (textureMap.find(fname.str()) != textureMap.end())
-      return textureMap[fname.str()];
+    PRINT(fname);
+    //if (textureMap.find(fname.str()) != textureMap.end())
+    //  return textureMap[fname.str()];
     
     return std::shared_ptr<Texture>(Texture::load(path+fname));
   }

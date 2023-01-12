@@ -12,10 +12,10 @@ namespace embree
     return (x == 1);
   }
 
-  static std::map<std::string,std::shared_ptr<Texture>> texture_cache;
+  //static std::map<std::string,std::shared_ptr<Texture>> texture_cache;
 
   void Texture::clearTextureCache() {
-    texture_cache.clear();
+    //texture_cache.clear();
   }
 
   Texture::Texture () 
@@ -82,10 +82,11 @@ namespace embree
   /*! read png texture from disk */
   std::shared_ptr<Texture> Texture::load(const FileName& fileName)
   {
-    if (texture_cache.find(fileName.str()) != texture_cache.end())
-      return texture_cache[fileName.str()];
+    // if (texture_cache.find(fileName.str()) != texture_cache.end())
+    //   return texture_cache[fileName.str()];
 
     std::shared_ptr<Texture> tex(new Texture(loadImage(fileName),fileName));
-    return texture_cache[fileName.str()] = tex;
+    //return texture_cache[fileName.str()] = tex;
+    return tex;
   }
 }

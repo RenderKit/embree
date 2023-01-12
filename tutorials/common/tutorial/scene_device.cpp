@@ -113,7 +113,10 @@ namespace embree
     
     materials = (ISPCMaterial**) alignedUSMMalloc(sizeof(ISPCMaterial*)*in->materials.size());
     for (size_t i=0; i<in->materials.size(); i++)
+    {
       materials[i] = (ISPCMaterial*) in->materials[i]->material();
+    }
+    
     numMaterials = unsigned(in->materials.size());
     
     lights = (Light**) alignedUSMMalloc(sizeof(Light*)*in->lights.size());
