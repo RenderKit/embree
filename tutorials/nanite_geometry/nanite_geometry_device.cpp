@@ -174,6 +174,13 @@ namespace embree {
     i1 = min(max(0,i1),(int)LOD_LEVELS-1);
     i2 = min(max(0,i2),(int)LOD_LEVELS-1);
     i3 = min(max(0,i3),(int)LOD_LEVELS-1);
+
+#if 0
+    i0 = 2;
+    i1 = 2;
+    i2 = 2;
+    i3 = 2;
+#endif
     
     LODEdgeLevel lod_levels(i0,i1,i2,i3);
     return lod_levels;
@@ -390,7 +397,6 @@ namespace embree {
           uint local_index = 1;
           Vec2f u_range((float)start_x/(grid_resX-1),(float)(start_x+InitialSubGridRes)/(grid_resX-1));
           Vec2f v_range((float)start_y/(grid_resY-1),(float)(start_y+InitialSubGridRes)/(grid_resY-1));
-          PRINT2(u_range,v_range);
           createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY,FULL_BORDER,index,0,u_range,v_range);          
           if (local_index != NUM_TOTAL_QUAD_NODES_PER_RTC_LCG)
           {
@@ -412,6 +418,19 @@ namespace embree {
     
   }
 
+
+
+  __forceinline Vec3fa getTexel3f(const Texture* texture, float s, float t)
+  {
+    int iu = (int)floor(s * (float)(texture->width));
+    int iv = (int)floor(t * (float)(texture->height));    
+    const int offset = (iv * texture->width + iu) * 4;
+    unsigned char * txt = (unsigned char*)texture->data;
+    const unsigned char  r = txt[offset+0];
+    const unsigned char  g = txt[offset+1];
+    const unsigned char  b = txt[offset+2];
+    return Vec3fa(  (float)r * 1.0f/255.0f, (float)g * 1.0f/255.0f, (float)b * 1.0f/255.0f );
+  }
   
   extern "C" ISPCScene* g_ispc_scene;
 
@@ -483,7 +502,8 @@ namespace embree {
 
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
 
-    const uint primID = ray.primID;
+    const uint localID = ray.primID & (((uint)1<<RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT)-1);
+    const uint primID = ray.primID >> RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT;
     
     Vec3f color(1.0f,1.0f,1.0f);
     
@@ -524,12 +544,23 @@ namespace embree {
     }
     else if (mode == RENDER_DEBUG_UV)
     {
+      const uint flip_uv = localID & 1;
+      const uint localQuadID = localID>>1;
+      const uint local_y = localQuadID /  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
+      const uint local_x = localQuadID %  RTC_LOSSY_COMPRESSED_GRID_QUAD_RES;
+      
       const LCGQuadNode *current = ((LCGQuadNode*)grid->lcg_ptrs[primID]);      
-      const float u = ray.u;
-      const float v = ray.v;
-      const float fu = (1.0f-u)*current->u_range.x + u*current->u_range.y;
-      const float fv = (1.0f-v)*current->v_range.x + v*current->v_range.y;      
-      color = Vec3fa(fu,fv,1.0f-fu-fv);
+      const float u = flip_uv ? 1-ray.u : ray.u;
+      const float v = flip_uv ? 1-ray.v : ray.v;
+      const float u_size = (current->u_range.y - current->u_range.x) * (1.0f / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
+      const float v_size = (current->v_range.y - current->v_range.x) * (1.0f / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
+      const float u_start = current->u_range.x + u_size * (float)local_x;
+      const float v_start = current->v_range.x + v_size * (float)local_y;      
+      const float fu = u_start + u * u_size;
+      const float fv = v_start + v * v_size;
+
+      color = getTexel3f(grid->map_Kd,1-fu,fv);
+      //color = Vec3fa(fu,fv,1.0f-fu-fv);
     }
     return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * color;
   }

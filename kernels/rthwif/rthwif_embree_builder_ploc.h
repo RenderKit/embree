@@ -1678,9 +1678,9 @@ namespace embree
                                  const Vec3f p3 = getVertex(grid_source,y+1,x+0);
 
                                  const uint geomID = lcgID;
-                                 const uint primID = ID; //y*9+x; 
+                                 const uint primID = (ID << RTC_LOSSY_COMPRESSED_GRID_LOCAL_ID_SHIFT) | 2*(y*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES+x) ; //y*8+x; 
 
-                                 local_leaf[subgroupLocalID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
+                                 local_leaf[subgroupLocalID] = QuadLeaf( p0,p1,p3,p2, 3,2,1, 0, geomID, primID, primID+1, GeometryFlags::OPAQUE, -1, /*i == (numChildren-1)*/ true );
 
                                  gpu::AABB3f quad_bounds( to_float3(p0) );
                                  quad_bounds.extend( to_float3(p1) );
