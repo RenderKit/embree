@@ -1,5 +1,6 @@
 // Copyright 2009-2021 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
+#pragma once
 
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/math/random_sampler.h"
@@ -7,6 +8,15 @@
 #include "../common/tutorial/scene_device.h"
 
 namespace embree {
+
+  enum RenderMode {
+    RENDER_PRIMARY        = 0,
+    RENDER_DEBUG_GRIDS    = 1,
+    RENDER_DEBUG_SUBGRIDS = 2,    
+    RENDER_DEBUG_QUADS    = 3,
+    RENDER_DEBUG_LOD      = 4,
+    RENDER_DEBUG_CRACK_FIXING = 5,    
+  };
   
 struct TutorialData
 {
@@ -24,12 +34,12 @@ namespace sycl {
 namespace embree {
 #endif
 
-void TutorialData_Constructor(TutorialData* This)
+inline void TutorialData_Constructor(TutorialData* This)
 {
   This->g_scene  = nullptr;
 }
 
-void TutorialData_Destructor(TutorialData* This)
+inline void TutorialData_Destructor(TutorialData* This)
 {
   rtcReleaseScene (This->g_scene); This->g_scene = nullptr;
 }

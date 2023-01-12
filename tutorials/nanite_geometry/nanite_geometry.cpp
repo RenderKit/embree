@@ -4,6 +4,7 @@
 #include "../common/tutorial/tutorial.h"
 #include "../common/tutorial/tutorial_device.h"
 #include "../common/tutorial/benchmark_render.h"
+#include "nanite_geometry_device.h"
 
 #if defined(EMBREE_SYCL_TUTORIAL)
 #  define FEATURES FEATURE_RTCORE | FEATURE_SYCL
@@ -14,7 +15,9 @@
 namespace embree
 {
 
-  extern "C" uint user_lod_level;
+  extern "C" RenderMode user_rendering_mode;
+  extern "C" uint user_spp;
+  
   
   struct Tutorial : public SceneLoadingTutorialApplication 
   {
@@ -33,17 +36,30 @@ namespace embree
     void keypressed(int key) override
     {
       if (key == GLFW_KEY_F1) {
-        user_lod_level = 1;
-        //g_changed = true;
+        user_rendering_mode = RENDER_PRIMARY;
       }
       else if (key == GLFW_KEY_F2) {
-        user_lod_level = 2;
-        //g_changed = true;
+        user_rendering_mode = RENDER_DEBUG_GRIDS;
       }
       else if (key == GLFW_KEY_F3) {
-        user_lod_level = 3;
-        //g_changed = true;
+        user_rendering_mode = RENDER_DEBUG_SUBGRIDS;
       }
+      else if (key == GLFW_KEY_F4) {
+        user_rendering_mode = RENDER_DEBUG_QUADS;
+      }
+      else if (key == GLFW_KEY_F5) {
+        user_rendering_mode = RENDER_DEBUG_LOD;
+      }
+      else if (key == GLFW_KEY_F6) {
+        user_rendering_mode = RENDER_DEBUG_CRACK_FIXING;
+      }
+      else if (key == GLFW_KEY_KP_SUBTRACT) {
+        user_spp -= user_spp > 0 ? 1 : 0;
+      }            
+      else if (key == GLFW_KEY_KP_ADD) {
+        user_spp += 1;
+      }            
+      
       else
         TutorialApplication::keypressed(key);
     }

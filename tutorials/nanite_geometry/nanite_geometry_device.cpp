@@ -50,15 +50,28 @@ namespace embree {
     double dt;
   };
 
+
   
 #define FEATURE_MASK                            \
   RTC_FEATURE_FLAG_TRIANGLE |                   \
   RTC_FEATURE_FLAG_INSTANCE
-
-
   
   RTCScene g_scene  = nullptr;
   TutorialData data;
+
+
+  extern "C" RenderMode user_rendering_mode = RENDER_PRIMARY;
+  extern "C" uint user_spp = 1;
+
+  Averaged<double> avg_bvh_build_time(64,1.0);
+  Averaged<double> avg_lod_selection_crack_fixing_time(64,1.0);
+  
+
+
+  // =========================================================================================================================================================
+  // =========================================================================================================================================================
+  // =========================================================================================================================================================
+  
 
   enum {
     NO_BORDER     = 0,
@@ -66,7 +79,8 @@ namespace embree {
     BOTTOM_BORDER = 1 << 1,
     LEFT_BORDER   = 1 << 2,
     RIGHT_BORDER  = 1 << 3,
-    FULL_BORDER   = TOP_BORDER|BOTTOM_BORDER|LEFT_BORDER|RIGHT_BORDER
+    FULL_BORDER   = TOP_BORDER|BOTTOM_BORDER|LEFT_BORDER|RIGHT_BORDER,
+    CRACK_FIXED_BORDER = 1 << 31    
   };
   
   struct LCGQuadNode
@@ -74,6 +88,7 @@ namespace embree {
     RTCLossyCompressedGrid grid;
     uint flags;
     uint lod_level;
+    uint ID;
 
     __forceinline bool hasBorder() const { return flags & FULL_BORDER; }
     __forceinline Vec3f getVertex(const uint x, const uint y) { return Vec3f(grid.vertex[y][x][0],grid.vertex[y][x][1],grid.vertex[y][x][2]); }
@@ -151,10 +166,6 @@ namespace embree {
     int i1 = (int)floorf(d1 / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
     int i2 = (int)floorf(d2 / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
     int i3 = (int)floorf(d3 / RTC_LOSSY_COMPRESSED_GRID_QUAD_RES);
-
-    // PRINT4(p0,p1,p2,p3);        
-    // PRINT4(d0,d1,d2,d3);        
-    // PRINT4(i0,i1,i2,i3);    
     
     i0 = min(max(0,i0),(int)LOD_LEVELS-1);
     i1 = min(max(0,i1),(int)LOD_LEVELS-1);
@@ -179,6 +190,7 @@ namespace embree {
   {
     if (borderMask & TOP_BORDER)
     {
+      current.flags |= CRACK_FIXED_BORDER;
       const uint diff = gridLODLevel - lodEdgeLevel.top;
       for (uint i=1;i<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1;i++)
       {
@@ -191,6 +203,7 @@ namespace embree {
 
     if (borderMask & BOTTOM_BORDER)
     {
+      current.flags |= CRACK_FIXED_BORDER;      
       const uint diff = gridLODLevel - lodEdgeLevel.bottom;
       for (uint i=1;i<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1;i++)
       {
@@ -203,6 +216,7 @@ namespace embree {
     
     if (borderMask & RIGHT_BORDER)
     {
+      current.flags |= CRACK_FIXED_BORDER;      
       const uint diff = gridLODLevel - lodEdgeLevel.right;
       for (uint i=1;i<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1;i++)
       {
@@ -215,6 +229,7 @@ namespace embree {
 
     if (borderMask & LEFT_BORDER)
     {
+      current.flags |= CRACK_FIXED_BORDER;      
       const uint diff = gridLODLevel - lodEdgeLevel.left;
       for (uint i=1;i<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1;i++)
       {
@@ -223,9 +238,7 @@ namespace embree {
         current.grid.vertex[i][0][1] = current.grid.vertex[index][0][1];
         current.grid.vertex[i][0][2] = current.grid.vertex[index][0][2];        
       }
-    }
-    
-    
+    }        
   }
   
   
@@ -252,11 +265,6 @@ namespace embree {
   };
 
   LCG_LODQuadTree_Grid *global_grid;
-    
-  extern "C" uint user_lod_level = 1;
-
-  Averaged<double> avg_bvh_build_time(64,1.0);
-  Averaged<double> avg_lod_selection_crack_fixing_time(64,1.0);
   
   inline Vec3fa getVertex(const uint x, const uint y, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
   {
@@ -274,7 +282,7 @@ namespace embree {
     return v * 1.0f/9.0f;
   }
       
-  void createQuadNode(LCGQuadNode &current, LCGQuadNode *nodes, uint &index, const uint start_x, const uint start_y, const uint step, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY, const uint border_flags, const uint lod_level)
+  void createQuadNode(LCGQuadNode &current, LCGQuadNode *nodes, uint &index, const uint start_x, const uint start_y, const uint step, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY, const uint border_flags, const uint ID, const uint lod_level)
   {
     if (step == 0) return;
       
@@ -292,16 +300,11 @@ namespace embree {
         current.grid.vertex[y][x][1] = v.y;
         current.grid.vertex[y][x][2] = v.z;          
       }
-
-    // PRINT4(index,step,start_x,start_y);
-    // if (border_flags &   TOP_BORDER) PRINT("TOP");
-    // if (border_flags &  LEFT_BORDER) PRINT("LEFT");
-    // if (border_flags & RIGHT_BORDER) PRINT("RIGHT");
-    // if (border_flags & BOTTOM_BORDER) PRINT("BOTTOM");
     
-    current.flags = border_flags;
+    current.flags     = border_flags;
     current.lod_level = lod_level;
-      
+    current.ID        = ID;
+    
     const uint new_step = step>>1;
     const uint new_res = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*new_step;
 
@@ -310,10 +313,10 @@ namespace embree {
       const uint new_index = index;
       index += 4;
       
-      createQuadNode(nodes[new_index+0],nodes,index,start_x + 0*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (LEFT_BORDER|TOP_BORDER),lod_level+1);
-      createQuadNode(nodes[new_index+1],nodes,index,start_x + 1*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (RIGHT_BORDER|TOP_BORDER),lod_level+1);
-      createQuadNode(nodes[new_index+2],nodes,index,start_x + 0*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (LEFT_BORDER|BOTTOM_BORDER),lod_level+1);
-      createQuadNode(nodes[new_index+3],nodes,index,start_x + 1*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (RIGHT_BORDER|BOTTOM_BORDER),lod_level+1);
+      createQuadNode(nodes[new_index+0],nodes,index,start_x + 0*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (LEFT_BORDER|TOP_BORDER),ID,lod_level+1);
+      createQuadNode(nodes[new_index+1],nodes,index,start_x + 1*new_res,start_y + 0*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (RIGHT_BORDER|TOP_BORDER),ID,lod_level+1);
+      createQuadNode(nodes[new_index+2],nodes,index,start_x + 0*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (LEFT_BORDER|BOTTOM_BORDER),ID,lod_level+1);
+      createQuadNode(nodes[new_index+3],nodes,index,start_x + 1*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (RIGHT_BORDER|BOTTOM_BORDER),ID,lod_level+1);
     }
   }
     
@@ -370,7 +373,7 @@ namespace embree {
         {
           LCGQuadNode *current = &global_grid->quadTrees[index*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG];
           uint local_index = 1;
-          createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY,FULL_BORDER,0);          
+          createQuadNode(current[0],current,local_index,start_x,start_y,(1<<(LOD_LEVELS-1)),vtx,grid_resX,grid_resY,FULL_BORDER,index,0);          
           if (local_index != NUM_TOTAL_QUAD_NODES_PER_RTC_LCG)
           {
             PRINT2(local_index,NUM_TOTAL_QUAD_NODES_PER_RTC_LCG);
@@ -423,7 +426,27 @@ namespace embree {
   }
 
 /* task that renders a single screen tile */
-  Vec3fa renderPixel(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCG_LODQuadTree_Grid *grid)
+  Vec3fa renderPixelPrimary(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCG_LODQuadTree_Grid *grid)
+  {
+    RTCIntersectArguments args;
+    rtcInitIntersectArguments(&args);
+    args.feature_mask = (RTCFeatureFlags) (FEATURE_MASK);
+  
+    /* initialize ray */
+    Ray ray(Vec3fa(camera.xfm.p), Vec3fa(normalize(x*camera.xfm.l.vx + y*camera.xfm.l.vy + camera.xfm.l.vz)), 0.0f, inf);
+
+    /* intersect ray with scene */
+    rtcIntersect1(data.g_scene,RTCRayHit_(ray),&args);
+
+    Vec3f color(1.0f,1.0f,1.0f);    
+    if (ray.geomID == RTC_INVALID_GEOMETRY_ID)
+      color = Vec3fa(0.0f);
+    else
+      color = Vec3fa( abs(dot(ray.dir,normalize(ray.Ng))) );
+    return color;
+  }
+
+  Vec3fa renderPixelDebug(const TutorialData& data, float x, float y, const ISPCCamera& camera, const unsigned int width, const unsigned int height, LCG_LODQuadTree_Grid *grid, const RenderMode mode)
   {
     RTCIntersectArguments args;
     rtcInitIntersectArguments(&args);
@@ -437,29 +460,44 @@ namespace embree {
 
     if (ray.geomID == RTC_INVALID_GEOMETRY_ID) return Vec3fa(0.0f);
 
-    
-#define LINE_THRESHOLD 0.1f
     Vec3f color(1.0f,1.0f,1.0f);
-#if 1    
-    if (ray.u <= LINE_THRESHOLD ||
-        ray.v <= LINE_THRESHOLD ||
-        ray.u + ray.v <= LINE_THRESHOLD)
-      color = Vec3fa(1.0f,0.0f,0.0f);
-#else
-    const uint level = ((LCGQuadNode*)grid->lcg_ptrs[ray.primID])->lod_level;
-    if (level == 0)
-      color = Vec3fa(0,0,1);
-    else if (level == 1)
-      color = Vec3fa(0,1,0);
-    else if (level == 2)
-      color = Vec3fa(1,0,0);      
-    //color = randomColor(ray.primID);
-#endif
     
-    //return Vec3fa(color * abs(dot(ray.dir,normalize(ray.Ng))));
+    if (mode == RENDER_DEBUG_QUADS)
+    {
+      const float LINE_THRESHOLD = 0.1f;
+      if (ray.u <= LINE_THRESHOLD ||
+          ray.v <= LINE_THRESHOLD ||
+          ray.u + ray.v <= LINE_THRESHOLD)
+        color = Vec3fa(1.0f,0.0f,0.0f);      
+    }
+    else if (mode == RENDER_DEBUG_SUBGRIDS)
+    {
+      color = randomColor(ray.primID);   
+    }    
+    else if (mode == RENDER_DEBUG_GRIDS)
+    {
+      const uint ID = ((LCGQuadNode*)grid->lcg_ptrs[ray.primID])->ID;    
+      color = randomColor(ID);   
+    }
+    else if (mode == RENDER_DEBUG_LOD)
+    {
+      const uint level = ((LCGQuadNode*)grid->lcg_ptrs[ray.primID])->lod_level;
+      if (level == 0)
+        color = Vec3fa(0,0,1);
+      else if (level == 1)
+        color = Vec3fa(0,1,0);
+      else if (level == 2)
+        color = Vec3fa(1,0,0);            
+    }
+    else if (mode == RENDER_DEBUG_CRACK_FIXING)
+    {
+      const uint cracks_fixed = ((LCGQuadNode*)grid->lcg_ptrs[ray.primID])->flags & CRACK_FIXED_BORDER;
+      if (cracks_fixed)
+        color = Vec3fa(1,0,1);      
+    }
     return Vec3fa(abs(dot(ray.dir,normalize(ray.Ng)))) * color;
-    //return randomColor(ray.primID);
   }
+  
 
   void renderPixelStandard(const TutorialData& data,
                            int x, int y, 
@@ -468,13 +506,15 @@ namespace embree {
                            const unsigned int height,
                            const float time,
                            const ISPCCamera& camera,
-                           LCG_LODQuadTree_Grid *grid)
+                           LCG_LODQuadTree_Grid *grid,
+                           const RenderMode mode,
+                           const uint spp)
   {
     RandomSampler sampler;
 
     Vec3fa color(0.0f);
-
-    const uint spp = 16;
+    const float inv_spp = 1.0f / (float)spp;
+    
     for (uint i=0;i<spp;i++)
     {
       RandomSampler_init(sampler, x, y, i);      
@@ -482,10 +522,12 @@ namespace embree {
       float fy = y + RandomSampler_get1D(sampler);
     
       /* calculate pixel color */
-      Vec3fa c = renderPixel(data, (float)fx,(float)fy,camera, width, height, grid);
-      color += c;
+      if (mode == RENDER_PRIMARY)
+        color += renderPixelPrimary(data, (float)fx,(float)fy,camera, width, height, grid);
+      else
+        color += renderPixelDebug(data, (float)fx,(float)fy,camera, width, height, grid,mode);
     }
-    color *= 1.0f / (float)spp;
+    color *= inv_spp;
     
     /* write color to framebuffer */
     unsigned int r = (unsigned int) (255.0f * clamp(color.x,0.0f,1.0f));
@@ -502,14 +544,16 @@ namespace embree {
   {
     /* render all pixels */
 #if defined(EMBREE_SYCL_TUTORIAL)
-    LCG_LODQuadTree_Grid *grid = global_grid;    
+    RenderMode rendering_mode = user_rendering_mode;    
+    LCG_LODQuadTree_Grid *grid = global_grid;
+    uint spp = user_spp;
     TutorialData ldata = data;
     sycl::event event = global_gpu_queue->submit([=](sycl::handler& cgh){
                                                    const sycl::nd_range<2> nd_range = make_nd_range(height,width);
                                                    cgh.parallel_for(nd_range,[=](sycl::nd_item<2> item) {
                                                                                const unsigned int x = item.get_global_id(1); if (x >= width ) return;
                                                                                const unsigned int y = item.get_global_id(0); if (y >= height) return;
-                                                                               renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,grid);
+                                                                               renderPixelStandard(ldata,x,y,pixels,width,height,time,camera,grid,rendering_mode,spp);
                                                                              });
                                                  });
     global_gpu_queue->wait_and_throw();
@@ -566,6 +610,7 @@ namespace embree {
   extern "C" void device_gui()
   {
     const uint trisPerSubGrid = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*2;
+    ImGui::Text("SPP: %d",user_spp);    
     ImGui::Text("BVH Build Time: %4.4f ms",avg_bvh_build_time.get());
     ImGui::Text("numQuadTrees: %d ",global_grid->numQuadTrees);
     ImGui::Text("numTotalQuadNodes: %d ",global_grid->numTotalQuadNodes);
