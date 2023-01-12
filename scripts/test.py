@@ -568,6 +568,9 @@ def run(mode):
   else:
     cmd = ctest_env + os.path.join("scripts",mode)
 
+  if mode == "env":
+    cmd = ctest_env + "echo env";
+
   if mode == "test" and not OS == "windows":
     fix_cmake_paths()
 
