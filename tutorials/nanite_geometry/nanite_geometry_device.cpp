@@ -83,12 +83,13 @@ namespace embree {
     CRACK_FIXED_BORDER = 1 << 31    
   };
   
-  struct LCGQuadNode
+  struct __aligned(32) LCGQuadNode
   {
     RTCLossyCompressedGrid grid;
     uint flags;
     uint lod_level;
     uint ID;
+    uint localID;
 
     __forceinline bool hasBorder() const { return flags & FULL_BORDER; }
     __forceinline Vec3f getVertex(const uint x, const uint y) { return Vec3f(grid.vertex[y][x][0],grid.vertex[y][x][1],grid.vertex[y][x][2]); }
@@ -304,6 +305,7 @@ namespace embree {
     current.flags     = border_flags;
     current.lod_level = lod_level;
     current.ID        = ID;
+    current.localID   = index;
     
     const uint new_step = step>>1;
     const uint new_res = RTC_LOSSY_COMPRESSED_GRID_QUAD_RES*new_step;
@@ -472,7 +474,9 @@ namespace embree {
     }
     else if (mode == RENDER_DEBUG_SUBGRIDS)
     {
-      color = randomColor(ray.primID);   
+      const uint gridID = ((LCGQuadNode*)grid->lcg_ptrs[ray.primID])->ID;          
+      const uint subgridID = ((LCGQuadNode*)grid->lcg_ptrs[ray.primID])->localID;    
+      color = randomColor(gridID*NUM_TOTAL_QUAD_NODES_PER_RTC_LCG+subgridID);   
     }    
     else if (mode == RENDER_DEBUG_GRIDS)
     {
