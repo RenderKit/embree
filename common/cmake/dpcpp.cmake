@@ -202,16 +202,16 @@ IF (WIN32)
   IF (NOT EMBREE_SYCL_SUPPORT)
     IF (SYCL_ONEAPI_ICX)
       IF (${MSVC_VERSION} VERSION_GREATER_EQUAL 1916)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++14")                  # enables C++14 features
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++14")
       ELSE()
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++11")                  # enables C++14 features
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++11")
       ENDIF()
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Oi")
     ELSE()
       IF (${MSVC_VERSION} VERSION_GREATER_EQUAL 1916)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")                  # enables C++14 features
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
       ELSE()
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")                  # enables C++14 features
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
       ENDIF()
     ENDIF()
   ENDIF()
