@@ -61,7 +61,7 @@ jobs:
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
-      artifact-out: release-windows-x64-Release-ICX2023_0_0-ISPC1_17_0-TBB2021_5_0-PACKAGE-ZIP
+      artifact-out: release-windows-x64-Release-SYCL-ICX2023_0_0-ISPC1_17_0-TBB2021_5_0-PACKAGE-ZIP
       artifact-path: ./build/*.zip
       cmd: |
         python scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.5.0 intensity:4 package:ZIP
@@ -88,7 +88,7 @@ jobs:
       image: embree/ubuntu:20.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
-      artifact-out: release-linux-x64-Release-ICX2023_0_0-ISPC1_17_0-TBB2021_5_0-PACKAGE-ZIP
+      artifact-out: release-linux-x64-Release-SYCL-ICX2023_0_0-ISPC1_17_0-TBB2021_5_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
       cmd: |
         scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.5.0 intensity:4 package:ZIP
