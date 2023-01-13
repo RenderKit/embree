@@ -384,14 +384,14 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-  continuous-linux-avx512vl-x64-Debug-ICX2023_0_0-ISPC1_17_0-AVX512-TBB2021_5_0:
+  continuous-linux-avx512vl-x64-Release-ICX2023_0_0-ISPC1_17_0-AVX512-TBB2021_5_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/ubuntu:20.04
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug threads:4 compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2
+        python scripts/test.py configure platform:x64 build:Release threads:4 compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2
         python scripts/test.py build
         python scripts/test.py test
 
