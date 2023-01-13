@@ -148,6 +148,11 @@ def runConfig(config):
   if "maxinstancelevelcount" in config:
     conf.append("-D EMBREE_MAX_INSTANCE_LEVEL_COUNT="+config["maxinstancelevelcount"])
 
+  enable_sycl_support = False
+  if "EMBREE_SYCL_SUPPORT" in config:
+    enable_sycl_support = True
+    conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
+
   #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
   #  env.append("module load cmake")
   compiler = config["compiler"]
@@ -260,8 +265,24 @@ def runConfig(config):
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     elif (compiler.startswith("ICX")):
-      env.append("source "+NAS+"/intel/"+compiler[3:]+"/compiler/latest/env/vars.sh")
+      env.append("source "+NAS+"/intel/oneAPI/compiler/"+compiler[3:]+"/env/vars.sh")
       conf.append("-D CMAKE_CXX_COMPILER=icpx -D CMAKE_C_COMPILER=icx")
+      if enable_sycl_support:
+        tmp, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
+
+        # set up backend
+        env.append("export SYCL_DEVICE_FILTER=level_zero")
+
+        gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
+
+        sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
+
+        env.append("export PATH="+gfx_dir+"/usr/bin:"+gfx_dir+"/usr/local/bin:$PATH")
+        LD_LIBRARY_PATH_SYCL=gfx_dir+"/usr/lib/x86_64-linux-gnu:" + gfx_dir+"/usr/local/lib"
+        os.environ["LD_LIBRARY_PATH_SYCL"]=LD_LIBRARY_PATH_SYCL
+        env.append("export LD_LIBRARY_PATH="+LD_LIBRARY_PATH_SYCL+":$LD_LIBRARY_PATH")
+        env.append("export OCL_ICD_FILENAMES="+gfx_dir+"/usr/lib/x86_64-linux-gnu/intel-opencl/libigdrcl.so"+":"+gfx_dir+"/usr/local/lib/intel-opencl/libigdrcl.so")
+        env.append("export OCL_ICD_VENDORS="+gfx_dir+"/etc/OpenCL/vendors/intel.icd")
     elif (compiler.startswith("DPCPP")):
       env.append("source "+NAS+"/intel/"+compiler[5:]+"/compiler/latest/env/vars.sh")
       conf.append("-D CMAKE_CXX_COMPILER=dpcpp -D CMAKE_C_COMPILER=icx")
@@ -315,6 +336,9 @@ def runConfig(config):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     elif (compiler.startswith("ICC")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"-osx/compiler/latest/mac/bin/intel64/icpc -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"-osx/compiler/latest/mac/bin/intel64/icc")
+    elif (compiler.startswith("ICX")):
+      conf.append("-D CMAKE_CXX_COMPILER=/opt/intel/oneapi/compiler/"+compiler[3:]+"/mac/bin/intel64/icpc")
+      conf.append("-D CMAKE_C_COMPILER=/opt/intel/oneapi/compiler/"+compiler[3:]+"/mac/bin/intel64/icc")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
@@ -392,10 +416,13 @@ def runConfig(config):
         tbb_path = ""+NAS+"\\tbb\\tbb-"+tasking[3:]+"-windows"
         conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
 
+        # prepend PATH modification to prevent problems with non-delayed
+        # evaluation of variables in cmd when running oneAPI DPC++ compiler
+        # setup script, for example.
         if platform == "x64":
-          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;"+tbb_path+"\\bin\\intel64\\vc14;"+tbb_path+"\\redist\\intel64\\vc12;"+tbb_path+"\\redist\\intel64\\vc14;%PATH%")
+          env.insert(0, "set PATH="+tbb_path+"\\bin\\intel64\\vc12;"+tbb_path+"\\bin\\intel64\\vc14;"+tbb_path+"\\redist\\intel64\\vc12;"+tbb_path+"\\redist\\intel64\\vc14;%PATH%")
         else:
-          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;"+tbb_path+"\\bin\\ia32\\vc14;"+tbb_path+"\\redist\\ia32\\vc12;"+tbb_path+"\\redist\\ia32\\vc14;%PATH%")
+          env.insert(0, "set PATH="+tbb_path+"\\bin\\ia32\\vc12;"+tbb_path+"\\bin\\ia32\\vc14;"+tbb_path+"\\redist\\ia32\\vc12;"+tbb_path+"\\redist\\ia32\\vc14;%PATH%")
 
       else:
         sys.stderr.write("unknown operating system "+OS)
@@ -459,8 +486,6 @@ def runConfig(config):
     conf.append("-D EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS="+config["implicit_dispatch_globals"])
   if "sycl_test" in config:
     conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
-  if "EMBREE_SYCL_SUPPORT" in config:
-    conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
   if "gfx" in config:
     conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
   if "device" in config:

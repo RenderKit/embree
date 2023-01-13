@@ -31,7 +31,7 @@ IF (NOT SYCL_COMPILER_NAME STREQUAL "clang++")
   ENDIF()
   SET(STORE_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
   SET(STORE_CMAKE_CXX_LINK_FLAGS ${CMAKE_CXX_LINK_FLAGS})
-  find_package(IntelDPCPP REQUIRED)
+  #find_package(IntelDPCPP REQUIRED)
   SET(EMBREE_LEVEL_ZERO OFF)
   IF (NOT EMBREE_SYCL_SUPPORT)
     # if EMBREE_SYCL_SUPPORT is off we don't want the -fsycl flags
@@ -52,7 +52,7 @@ IF (EMBREE_SYCL_SUPPORT)
   SET(CMAKE_CXX_FLAGS_SYCL "-fsycl -fsycl-unnamed-lambda -Xclang -fsycl-allow-func-ptr")
   SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} -Wno-mismatched-tags -Wno-pessimizing-move -Wno-reorder -Wno-unneeded-internal-declaration -Wno-delete-non-abstract-non-virtual-dtor -Wno-dangling-field -Wno-unknown-pragmas -Wno-logical-op-parentheses")
   
-  IF (SYCL_ONEAPI_ICX)
+  IF (SYCL_ONEAPI_ICX AND WIN32)
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /debug:none")    # FIXME: debug information generation takes forever in SYCL
     SET(CMAKE_CXX_FLAGS_SYCL "${CMAKE_CXX_FLAGS_SYCL} /DNDEBUG")    # FIXME: debug information generation takes forever in SYCL
   ELSE()
@@ -146,12 +146,19 @@ IF (EMBREE_SYCL_SUPPORT)
 
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-pessimizing-move") # disabled: warning: moving a temporary object prevents copy elision [-Wpessimizing-move]
 
-  IF (SYCL_ONEAPI_ICX)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++17")            # enables C++17 features
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../include/sycl\" -I\"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
+  IF (SYCL_ONEAPI_ICX AND WIN32)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I\"${SYCL_COMPILER_DIR}/../include/sycl\" -I\"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++17")
   ELSE()
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")            # enables C++17 features
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header (FIXME: why required?)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -isystem \"${SYCL_COMPILER_DIR}/../include/sycl\" -isystem \"${SYCL_COMPILER_DIR}/../include/\"")       # disable warning from SYCL header
+  ENDIF()
+
+  # enable C++17 features
+  IF (SYCL_ONEAPI_ICX AND WIN32)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++17")
+  ELSE()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
   ENDIF()
 ENDIF(EMBREE_SYCL_SUPPORT)
 
@@ -199,7 +206,7 @@ IF (WIN32)
       ELSE()
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Qstd=c++11")                  # enables C++14 features
       ENDIF()
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Oi")                  # enables C++14 features
+      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Oi")
     ELSE()
       IF (${MSVC_VERSION} VERSION_GREATER_EQUAL 1916)
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")                  # enables C++14 features
