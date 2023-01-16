@@ -329,25 +329,25 @@ jobs:
   # Linux
   ########################################
 
-  continuous-linux-x64-Debug-ICC2019_4-ISPC1_12_0-AVX512-TBB2021_2_0:
+  continuous-linux-x64-Debug-ICX2023_0_0-ISPC1_12_0-AVX512-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/fedora:27
+      image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
+        python scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
         python scripts/test.py build
         python scripts/test.py test
 
-  continuous-linux-avx512vl-x64-Debug-ICC2019_4-ISPC1_12_0-AVX512-TBB2021_2_0:
+  continuous-linux-avx512vl-x64-Debug-ICX2023_0_0-ISPC1_12_0-AVX512-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/fedora:27
+      image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
+        python scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
         python scripts/test.py build
         python scripts/test.py test
 
@@ -395,17 +395,6 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-  #continuous-ubuntu17_10-x64-Debug-GCC-ISPC1_12_0-AVX2-TBB-NAMESPACE:
-  #  secrets: inherit
-  #  uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-  #  with:
-  #    image: embree/ubuntu:17.10
-  #    runs-on: '[ "Linux", "docker" ]'
-  #    cmd: |
-  #      python scripts/test.py configure platform:x64 build:Debug compiler:GCC ispc:ispc1.12.0 isa:AVX2 tasking:TBB intensity:1 api_namespace:myembree
-  #      python scripts/test.py build
-  #      python scripts/test.py test
-
   continuous-centos7_4-x64-Debug-GCC-ISPC1_17_0-AVX2-TBB:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
@@ -442,16 +431,6 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-#  continuous-windows-Win32-RelWithDebInfoDebug-V140-ISPC1_12_0-SSE2-TBB2020_2:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build" ]'
-#      cmd: |
-#        python scripts/test.py configure platform:Win32 build:RelWithDebInfo compiler:V140 ispc:ispc1.12.0 isa:SSE2 tasking:TBB2020.2 intensity:2
-#        python scripts/test.py build
-#        python scripts/test.py test
-
   continuous-windows-x64-RelWithDebInfo-V141-ISPC1_17_0-SSE2-TBB2020_2:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
@@ -459,6 +438,16 @@ jobs:
       runs-on: '[ "Windows", "NAS", "build" ]'
       cmd: |
         python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V141 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2020.2 intensity:2 maxinstancelevelcount:8
+        python scripts/test.py build
+        python scripts/test.py test
+  
+  continuous-windows-x64-RelWithDebInfo-V142-ISPC1_17_0-SSE2-TBB2021_5_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
+    with:
+      runs-on: '[ "Windows", "NAS", "build" ]'
+      cmd: |
+        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.5.0 intensity:2 maxinstancelevelcount:8
         python scripts/test.py build
         python scripts/test.py test
 
