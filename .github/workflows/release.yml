@@ -42,7 +42,7 @@ jobs:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/centos:7.4
+      image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
       artifact-out: release-linux-x64-Release-ICX2023_0_0-ISPC1_17_0-TBB2021_5_0-PACKAGE-ZIP
       artifact-path: ./build/*.tar.gz
