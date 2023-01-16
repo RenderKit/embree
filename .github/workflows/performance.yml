@@ -77,7 +77,7 @@ jobs:
   # Linux build
   ########################################
 
-  linux-DG2-DPCPP:
+  linux-build-DG2-DPCPP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     needs: [setup_gfx, setup_dpcpp]
@@ -92,7 +92,7 @@ jobs:
         scripts/test.py build
         scripts/test.py test
 
-  linux-x86-ICC:
+  linux-build-x86-ICC:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
@@ -105,17 +105,16 @@ jobs:
         scripts/test.py build
         scripts/test.py test
 
-  linux-DG2:
+  linux-test-DG2-A750-not_perf:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    needs: ["linux-DG2-DPCPP"]
+    needs: ["linux-build-DG2-DPCPP"]
     with:
       image: embree/ubuntu:22.04
       options: --device=/dev/dri:/dev/dri
       runs-on: '[ "Linux", "docker", "dg2" ]'
       artifact-in: linux-DG2-DPCPP
       cmd: |
-        apt-get -q -y install unzip
         source <(scripts/test.py env --debug)
         cd build
         tar -xf embree-4.0.0.dpcpp.x86_64.linux.tar.gz
@@ -123,13 +122,32 @@ jobs:
         chmod +x embree-vars.sh
         ./embree-vars.sh
         cd bin
-        ../../../scripts/run-perf.sh gpu
-        ../../../scripts/run-perf.sh gpu
+        $GITHUB_WORKSPACE/scripts/run-perf.sh gpu
 
-  linux-pck-i9-12900k-test:
+  linux-test-DG2-A770:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    needs: ["linux-build-DG2-DPCPP"]
+    with:
+      image: embree/ubuntu:22.04
+      options: --device=/dev/dri:/dev/dri
+      runs-on: '[ "Linux", "docker", "A770", "perf" ]'
+      artifact-in: linux-DG2-DPCPP
+      cmd: |
+        source <(scripts/test.py env --debug)
+        cd build
+        tar -xf embree-4.0.0.dpcpp.x86_64.linux.tar.gz
+        cd embree-4.0.0.dpcpp.x86_64.linux
+        chmod +x embree-vars.sh
+        ./embree-vars.sh
+        cd bin
+        $GITHUB_WORKSPACE/scripts/run-perf.sh gpu
+
+
+  linux-test-i9-12900k:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-x86-ICC"]
+    needs: ["linux-build-x86-ICC"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-i9-12900k-1" ]'
       artifact-in: linux-x86-ICC
@@ -138,13 +156,12 @@ jobs:
         tar -xf embree-4.0.0.x86_64.linux.tar.gz
         cd embree-4.0.0.x86_64.linux
         cd bin
-        ../../../scripts/run-perf.sh cpu
-        ../../../scripts/run-perf.sh cpu
+        $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
-  linux-pck-x8380-1-test:
+  linux-test-x8380-1:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-x86-ICC"]
+    needs: ["linux-build-x86-ICC"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-x8380-1" ]'
       artifact-in: linux-x86-ICC
@@ -153,13 +170,12 @@ jobs:
         tar -xf embree-4.0.0.x86_64.linux.tar.gz
         cd embree-4.0.0.x86_64.linux
         cd bin
-        ../../../scripts/run-perf.sh cpu
-        ../../../scripts/run-perf.sh cpu
+        $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
-  linux-pck-x8280-1--test:
+  linux-test-x8280-1:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-x86-ICC"]
+    needs: ["linux-build-x86-ICC"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-x8280-1" ]'
       artifact-in: linux-x86-ICC
@@ -168,6 +184,19 @@ jobs:
         tar -xf embree-4.0.0.x86_64.linux.tar.gz
         cd embree-4.0.0.x86_64.linux
         cd bin
-        ../../../scripts/run-perf.sh cpu
-        ../../../scripts/run-perf.sh cpu
+        $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
+
+  linux-test-a3970x-1:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
+    needs: ["linux-build-x86-ICC"]
+    with:
+      runs-on: '[ "Linux", "perf", "vis-perf-a3970x-1" ]'
+      artifact-in: linux-x86-ICC
+      cmd: |
+        cd build
+        tar -xf embree-4.0.0.x86_64.linux.tar.gz
+        cd embree-4.0.0.x86_64.linux
+        cd bin
+        $GITHUB_WORKSPACE/scripts/run-perf.sh cpu
 
