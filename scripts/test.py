@@ -301,17 +301,10 @@ def runConfig(config):
         print("using level_zero backend")
         env.append("export SYCL_DEVICE_FILTER=level_zero")
 
-      dpcpp_dir = ""
       gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
-      
-      if (compiler.startswith("dpcpp/internal")):
-        dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
-        conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/dpcpp")
-        #conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/dpcpp")
-      else:
-        dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
-        conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
-        conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
+      dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
+      conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
+      conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
 
       sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
       sys.stderr.write("dpcpp_dir = "+dpcpp_dir+"\n")
@@ -486,10 +479,6 @@ def runConfig(config):
     conf.append("-D EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS="+config["implicit_dispatch_globals"])
   if "sycl_test" in config:
     conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
-  if "gfx" in config:
-    conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
-  if "device" in config:
-    conf.append("-D EMBREE_CI_DEVICE="+config["device"])
   if "rt_validation_api" in config:
     conf.append("-D EMBREE_SYCL_RT_VALIDATION_API="+config["rt_validation_api"])
 
@@ -545,14 +534,9 @@ def runConfig(config):
 
   if OS == "linux" and compiler.startswith("dpcpp"):
     # some additional debug output of gfx and dpcpp version
-    if (compiler.startswith("dpcpp/internal")):
-      which_dpcpp = str(subprocess.check_output(escape(" && ".join(env)) + " && which dpcpp", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
-      print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which dpcpp: ", which_dpcpp)
-      assert which_dpcpp == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/dpcpp"
-    else:
-      which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
-      print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which clang++: ", which_clang)
-      assert which_clang == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/clang++"
+    which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
+    print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which clang++: ", which_clang)
+    assert which_clang == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/clang++"
       
     which_ocloc = str(subprocess.check_output(escape(" && ".join(env)) + " && which ocloc", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
     print("DEBUG - GFX version:", GFX_VERSION, " - which ocloc: ", which_ocloc)

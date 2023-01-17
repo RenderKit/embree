@@ -87,7 +87,7 @@ jobs:
       artifact-out: linux-DG2-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:INTERNAL device:dg2
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:INTERNAL
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -114,7 +114,7 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:PUBLIC device:dg2
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:PUBLIC
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -141,7 +141,7 @@ jobs:
       artifact-out: linux-DG2-AOT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB2021.7.0 intensity:4 gfx:EMBARGO device:dg2
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB2021.7.0 intensity:4 gfx:EMBARGO
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -168,7 +168,7 @@ jobs:
       artifact-out: linux-DG2-JIT-PUBLIC-ICX
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:ICX2023.0.0 ispc:ispc1.18.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:PUBLIC device:dg2
+        scripts/test.py configure platform:x64 compiler:ICX2023.0.0 ispc:ispc1.18.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:PUBLIC
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -199,7 +199,7 @@ jobs:
       artifact-out: linux-PVC-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:EMBARGO device:pvc
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:EMBARGO
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -226,7 +226,7 @@ jobs:
 #      artifact-out: linux-PVC-JIT-PUBLIC
 #      artifact-path: ./build .ctest_conf
 #      cmd: |
-#        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:PUBLIC device:pvc
+#        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:PUBLIC
 #        scripts/test.py build --debug
 #        scripts/test.py build
 #
