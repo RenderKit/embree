@@ -454,7 +454,7 @@ jobs:
     with:
       runs-on: '[ "macOS", "build", "embree" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.5.0 intensity:2
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.7.0 intensity:2
         scripts/test.py build
         scripts/test.py test
 
