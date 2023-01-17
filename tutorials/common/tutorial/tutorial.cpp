@@ -1008,7 +1008,7 @@ namespace embree
     else            window = createStandardWindow(width,height);
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
     reshapeFunc(window,0,0);
 
     ImGui::CreateContext();
