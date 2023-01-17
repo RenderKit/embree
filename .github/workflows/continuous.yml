@@ -87,7 +87,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:INTERNAL device:dg2
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:INTERNAL device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -114,7 +114,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT-PUBLIC
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:PUBLIC device:dg2
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:PUBLIC device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -141,7 +141,7 @@ jobs:
       artifact-out: continuous-linux-DG2-AOT-INTERNAL
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB intensity:4 gfx:EMBARGO device:dg2
+        scripts/test.py configure platform:x64 compiler:dpcpp ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:dg2 tasking:TBB2021.7.0 intensity:4 gfx:EMBARGO device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -168,7 +168,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT-PUBLIC-ICX2023_0_0
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:ICX2023.0.0 ispc:ispc1.16.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:PUBLIC device:dg2
+        scripts/test.py configure platform:x64 compiler:ICX2023.0.0 ispc:ispc1.18.1 isa:SSE2 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:PUBLIC device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -195,7 +195,7 @@ jobs:
       artifact-out: continuous-linux-DG2-JIT-PUBLIC-AVX512-ICX2023_0_0
       artifact-path: ./build .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 compiler:ICX2023.0.0 ispc:ispc1.16.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB intensity:4 gfx:PUBLIC device:dg2
+        scripts/test.py configure platform:x64 compiler:ICX2023.0.0 ispc:ispc1.18.1 isa:AVX512 build:RelWithAssert EMBREE_SYCL_SUPPORT:ON sycl:none tasking:TBB2021.7.0 intensity:4 gfx:PUBLIC device:dg2
         scripts/test.py build --debug
         scripts/test.py build
 
@@ -315,7 +315,7 @@ jobs:
     with:
       runs-on: '[ "Windows", "NAS", "dg2" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 compiler:ICX2023.0.0 isa:AVX512 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2 gfx:PUBLIC
+        python scripts/test.py configure platform:x64 compiler:ICX2023.0.0 ispc:ispc1.18.1 isa:AVX512 tasking:TBB2021.7.0 build:Release EMBREE_SYCL_SUPPORT:ON sycl:none intensity:2 gfx:PUBLIC
         python scripts/test.py build
         python scripts/test.py test
 
@@ -340,14 +340,14 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-  continuous-linux-avx512vl-x64-Debug-ICX2023_0_0-ISPC1_12_0-AVX512-TBB2021_2_0:
+  continuous-linux-avx512vl-x64-Debug-ICX2023_0_0-ISPC1_12_0-AVX512-TBB2021_7_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
       image: embree/fedora:32
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.2.0 intensity:2 maxinstancelevelcount:4
+        python scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.12.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.7.0 intensity:2 maxinstancelevelcount:4
         python scripts/test.py build
         python scripts/test.py test
 
@@ -441,13 +441,13 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
   
-  continuous-windows-x64-RelWithDebInfo-V142-ISPC1_17_0-SSE2-TBB2021_5_0:
+  continuous-windows-x64-RelWithDebInfo-V142-ISPC1_18_1-SSE2-TBB2021_7_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.5.0 intensity:2 maxinstancelevelcount:8
+        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:V142 ispc:ispc1.18.1 isa:SSE2 tasking:TBB2021.7.0 intensity:2 maxinstancelevelcount:8
         python scripts/test.py build
         python scripts/test.py test
 
@@ -496,13 +496,13 @@ jobs:
         scripts/test.py build
         scripts/test.py test
 
-  continuous-macosx-x64-Debug-CLANG-ISPC1_17_0-SSE2-TBB2021_1_1:
+  continuous-macosx-x64-Debug-CLANG-ISPC1_18_1-SSE2-TBB2021_1_1:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
     with:
       runs-on: '[ "macOS", "embree", "build" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.1.1 intensity:2
+        scripts/test.py configure platform:x64 build:Debug compiler:CLANG ispc:ispc1.18.1 isa:SSE2 tasking:TBB2021.1.1 intensity:2
         scripts/test.py build
         scripts/test.py test
 
