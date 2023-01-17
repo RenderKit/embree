@@ -9,11 +9,7 @@
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #pragma clang diagnostic ignored "-W#pragma-messages"
 
-#if defined(EMBREE_SYCL_NIGHTLY)
-#  include <sycl/sycl.hpp>
-#else
-#  include <CL/sycl.hpp>
-#endif
+#include <sycl/sycl.hpp>
 
 #pragma clang diagnostic pop
 #pragma clang diagnostic push
