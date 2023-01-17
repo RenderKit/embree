@@ -226,7 +226,7 @@ def runConfig(config):
     elif (compiler.startswith("ICX")):
       cmake_build_suffix = ""
       ispc_ext = "-vs2015"
-      env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat" --include-intel-llvm')
+      env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat"')
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     elif (compiler.startswith("dpcpp")):
       cmake_build_suffix=""
@@ -245,7 +245,7 @@ def runConfig(config):
       sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
       sys.stderr.write("dpcpp_dir = "+dpcpp_dir+"\n")
 
-      env.append("call scripts\\vars.bat "+dpcpp_dir+" "+gfx_dir+" --include-intel-llvm")
+      env.append("call scripts\\vars.bat "+dpcpp_dir+" "+gfx_dir+"")
       env.append("where clang++")
 
       # set up backend
