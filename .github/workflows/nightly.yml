@@ -174,57 +174,68 @@ jobs:
         scripts/test.py build
         scripts/test.py test
 
-  # ICC compilation and testing of different ISAs
+  # ICX compilation and testing of different ISAs
 
-  nightly-linux-x64-Debug-ICC2016_3-ISPC1_16_1-AVX-TBB2019_2:
+  nightly-linux-x64-Debug-ICX2023_0_0-ISPC1_16_1-AVX-TBB2019_2:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/centos:7.4
+      image: embree/rockylinux:8.7
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:ICC2016.3 ispc:ispc1.16.1 isa:AVX tasking:TBB2019.2 intensity:4
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.16.1 isa:AVX tasking:TBB2019.2 intensity:4
         scripts/test.py build
         scripts/test.py test
 
-  nightly-linux-avx512vl-x64-Debug-ICC2017_1-ISPC1_16_1-AVX512-TBB2019_2:
+  nightly-linux-avx512vl-x64-Debug-ICX2023_0_0-ISPC1_16_1-AVX512-TBB2019_2:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/centos:7.4
+      image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:ICC2017.1 ispc:ispc1.16.1 isa:AVX512 frequency_level:simd256 tasking:TBB2019.2 intensity:4
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.16.1 isa:AVX512 frequency_level:simd256 tasking:TBB2019.2 intensity:4
         scripts/test.py build
         scripts/test.py test
 
-  nightly-linux-avx512vl-x64-Debug-ICC2018_0-ISPC1_16_1-AVX512-TBB2019_9:
+  nightly-linux-avx512vl-x64-Debug-ICX2023_0_0-ISPC1_16_1-AVX512-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/fedora:26
+      image: embree/fedora:29
       runs-on: '[ "Linux", "docker", "avx512" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:ICC2018.0 ispc:ispc1.16.1 isa:AVX512 tasking:TBB2019.9 intensity:4
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.16.1 isa:AVX512 tasking:TBB2019.9 intensity:4
         scripts/test.py build
         scripts/test.py test
 
-  nightly-linux-x64-Debug-ICC2019_4-ISPC1_16_1-AVX2-TBB2021_2_0:
+  nightly-linux-x64-Debug-ICX2023_0_0-ISPC1_16_1-AVX2-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/fedora:26
+      image: embree/fedora:29
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.16.1 isa:AVX2 tasking:TBB2021.2.0 intensity:4
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.16.1 isa:AVX2 tasking:TBB2021.2.0 intensity:4
         scripts/test.py build
         scripts/test.py test
 
-  nightly-linux-x64-Debug-ICC2020_1-ISPC1_17_0-AVX2-TBB2019_9:
+  nightly-linux-x64-Debug-ICX2023_0_0-ISPC1_17_0-AVX2-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/centos:7.4
+      image: embree/rockylinux:8.7
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.17.0 isa:AVX2 tasking:TBB2019.9 intensity:4
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:AVX2 tasking:TBB2019.9 intensity:4
+        scripts/test.py build
+        scripts/test.py test
+
+  nightly-linux-avx512vl-x64-Debug-ICX2023_0_0-ISPC1_17_0-AVX512-TBB2021_5_0:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
+    with:
+      image: embree/ubuntu:22.04
+      runs-on: '[ "Linux", "docker", "avx512" ]'
+      cmd: |
+        scripts/test.py configure platform:x64 build:Debug threads:4 compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:AVX512 frequency_level:simd256 tasking:TBB2021.5.0 intensity:2
         scripts/test.py build
         scripts/test.py test
 
@@ -606,41 +617,31 @@ jobs:
         python scripts/test.py build
         python scripts/test.py test
 
-  nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1_13_0-AVX2-TBB2019_2:
+  nightly-windows-x64-RelWithDebInfo-ICX2023_0_0-ISPC1_13_0-AVX2-TBB2021_5_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     with:
       cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICC17-VC14 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2019.2 intensity:4
+        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2023.0.0 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2021.5.0 intensity:4
         python scripts/test.py build
         python scripts/test.py test
 
-#  nightly-windows-x64-RelWithDebInfo-ICC18-ISPC1_13_0-AVX512-TBB2020_2:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
-#    with:
-#      runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
-#      cmd: |
-#        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICC18-VC14 ispc:ispc1.13.0 isa:AVX512 tasking:TBB2020.2 intensity:2
-#        python scripts/test.py build
-#        python scripts/test.py test
-
-  nightly-windows-x64-RelWithDebInfo-ICC19-ISPC1_13_0-AVX512-TBB2019_9:
+  nightly-windows-x64-RelWithDebInfo-ICX2023_0_0-ISPC1_13_0-AVX512-TBB2019_9:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     with:
       runs-on: '[ "Windows", "NAS", "build", "avx512" ]'
       cmd: |
-        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICC19-VC14 ispc:ispc1.13.0 isa:AVX512 tasking:TBB2019.9 intensity:2
+        python scripts/test.py configure platform:x64 build:RelWithDebInfo compiler:ICX2023.0.0 ispc:ispc1.13.0 isa:AVX512 tasking:TBB2019.9 intensity:2
         python scripts/test.py build
         python scripts/test.py test
 
-  nightly-windows-x64-RelWithDebInfo-ICC17-ISPC1_14_1-AVX2-TBB2021_2_0:
+  nightly-windows-x64-RelWithDebInfo-ICX2023_0_0-ISPC1_14_1-AVX2-TBB2021_2_0:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_windows.yml@main
     with:
       cmd: |
-        python scripts/test.py configure platform:x64 build:Release compiler:V142 ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.2.0 intensity:2
+        python scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.14.1 isa:AVX2 tasking:TBB2021.2.0 intensity:2
         python scripts/test.py build
         python scripts/test.py test
 
@@ -681,44 +682,34 @@ jobs:
         scripts/test.py build
         scripts/test.py test
 
-  # ICC compilation and testing of different ISAs
+  # ICX compilation and testing of different ISAs
 
-#  nightly-macosx-x64-Debug-ICC15-ISPC1_13_0-AVX-INT:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
-#    with:
-#      runs-on: '[ "macOS", "embree", "build" ]'
-#      cmd: |
-#        scripts/test.py configure platform:x64 build:Debug compiler:ICC15 ispc:ispc1.13.0 isa:AVX tasking:INT intensity:4
-#        scripts/test.py build
-#        scripts/test.py test
+  nightly-macosx-x64-Debug-ICX2023_0_0-ISPC1_13_0-AVX-INT:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
+    with:
+      runs-on: '[ "macOS", "embree", "build" ]'
+      cmd: |
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.13.0 isa:AVX tasking:INT intensity:4
+        scripts/test.py build
+        scripts/test.py test
 
-#  nightly-macosx-x64-Debug-ICC2019_4-ISPC1_13_0-AVX2-TBB2021_1_1:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
-#    with:
-#      runs-on: '[ "macOS", "avx2", "embree", "build" ]'
-#      cmd: |
-#        scripts/test.py configure platform:x64 build:Debug compiler:ICC2019.4 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd256 tasking:TBB2021.1.1 intensity:4
-#        scripts/test.py build
-#        scripts/test.py test
-
-#  nightly-macosx-x64-Debug-ICC2020_1-ISPC1_13_0-AVX2-TBB2021_1_1:
-#    secrets: inherit
-#    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
-#    with:
-#      runs-on: '[ "macOS", "avx2", "embree", "build" ]'
-#      cmd: |
-#        scripts/test.py configure platform:x64 build:Debug compiler:ICC2020.1 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2021.1.1 intensity:4
-#        scripts/test.py build
-#        scripts/test.py test
-
-  nightly-macosx-x64-Debug-ICC2021_1_1-ISPC1_13_0-AVX2-TBB2021_1_1:
+  nightly-macosx-x64-Debug-ICX2023_0_0-ISPC1_13_0-AVX2-TBB2021_1_1:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
     with:
       runs-on: '[ "macOS", "avx2", "embree", "build" ]'
       cmd: |
-        scripts/test.py configure platform:x64 build:Debug compiler:ICC2021.1.1 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd128 tasking:TBB2021.1.1 intensity:4
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.13.0 isa:AVX2 frequency_level:simd256 tasking:TBB2021.1.1 intensity:4
+        scripts/test.py build
+        scripts/test.py test
+
+  nightly-macosx-x64-Debug-ICX2023_0_0-ISPC1_17_0-AVX2-TBB2021_1_1:
+    secrets: inherit
+    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_macos.yml@main
+    with:
+      runs-on: '[ "macOS", "avx2", "embree", "build" ]'
+      cmd: |
+        scripts/test.py configure platform:x64 build:Debug compiler:ICX2023.0.0 ispc:ispc1.17.0 isa:AVX2 frequency_level:simd128 tasking:TBB2021.1.1 intensity:4
         scripts/test.py build
         scripts/test.py test

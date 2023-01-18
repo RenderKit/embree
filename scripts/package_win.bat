@@ -11,7 +11,7 @@ if "%build_type%" == "" (
   set build_type=Release
 )
 
-cmake --build . --config %build_type% --target PACKAGE -- /m /nologo /verbosity:n
+cmake --build . --config %build_type% --target package --verbose
 
 IF %ERRORLEVEL% NEQ 0 (
   exit /b 1

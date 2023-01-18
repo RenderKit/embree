@@ -1014,7 +1014,7 @@ namespace embree
     else            window = createStandardWindow(width,height);
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
+    glfwSwapInterval(0);
     reshapeFunc(window,0,0);
 
     ImGui::CreateContext();
@@ -1117,17 +1117,7 @@ namespace embree
       };
 
       /* select device supported by Embree */
-#if defined(EMBREE_SYCL_NIGHTLY)
       device = new sycl::device(rtcSYCLDeviceSelector);
-#else
-      struct SYCLDeviceSelector : public sycl::device_selector {
-        int operator()(const sycl::device &device) const override {
-          return rtcIsSYCLDeviceSupported(device) ? 1 : -1;
-        }
-      };
-      device = new sycl::device(SYCLDeviceSelector{});
-#endif
-
       sycl::platform platform = device->get_platform();
       log(1, "Selected SYCL Platform: " + platform.get_info<sycl::info::platform::name>());
       log(1, "Selected SYCL Device: " + device->get_info<sycl::info::device::name>());
