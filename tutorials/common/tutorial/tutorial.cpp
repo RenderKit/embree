@@ -931,6 +931,8 @@ namespace embree
     //ImGui::SetNextWindowSize(ImVec2(200,height));
     ImGui::SetNextWindowBgAlpha(0.3f);
     ImGui::Begin("Embree", nullptr, window_flags);
+    ImGui::SetWindowFontScale(2);
+    
     drawGUI();
     
     // ImGui::Checkbox("Motion Blur", &motion_blur);

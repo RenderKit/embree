@@ -71,7 +71,19 @@ namespace embree {
   // =========================================================================================================================================================
   // =========================================================================================================================================================
   // =========================================================================================================================================================
-  
+
+  template<typename T>
+  static __forceinline uint as_uint(T t)
+  {
+    return __builtin_bit_cast(uint,t);
+  }
+
+  template<typename T>
+  static __forceinline float as_float(T t)
+  {
+    return __builtin_bit_cast(float,t);
+  }
+
 
   enum {
     NO_BORDER     = 0,
@@ -337,7 +349,100 @@ namespace embree {
       createQuadNode(nodes[new_index+3],nodes,index,start_x + 1*new_res,start_y + 1*new_res,new_step,vtx,grid_resX,grid_resY,border_flags & (RIGHT_BORDER|BOTTOM_BORDER),ID,lod_level+1,Vec2f(u_center,u_range.y),Vec2f(v_center,v_range.y));
     }
   }
+
+  struct LCGBP
+  {
+    static const uint SIGN_BIT      = 1;
+    static const uint EXPONENT_BITS = 4;    
+    static const uint MANTISSA_BITS = 5;
+    static const uint RP_BITS       = SIGN_BIT + EXPONENT_BITS + MANTISSA_BITS;
+
+    static const uint EXPONENT_MASK = ((uint)1 << EXPONENT_BITS)-1;    
+    static const uint MANTISSA_MASK = ((uint)1 << MANTISSA_BITS)-1;
+    static const uint RP_MASK       = ((uint)1 << RP_BITS)-1;
     
+    const Vec3f v0,v1,v2,v3;
+
+    static const uint zigzagEncode(const int i)
+    {
+      return (i >> 31) ^ (i << 1);
+    }
+    
+    static const int zigzagDecode(const uint i)
+    {
+      return (i >> 1) ^ -(i & 1);
+    }
+    
+    __forceinline Vec3f evalBilinearPatch(const float u, const float v)
+    {
+      return lerp(lerp(v0,v1,u),lerp(v3,v2,u),v);
+    }
+
+    __forceinline uint encodeFloat(const float diff) // FIXME: zigzag encoding
+    {
+      PRINT("ENCODE");
+      PRINT2(diff,as_uint(diff));
+      int exponent; uint mantissa = as_uint(frexp(diff, &exponent));
+      PRINT2(exponent,mantissa);
+      uint exp = zigzagEncode(exponent);
+      PRINT(zigzagDecode(exp));
+      mantissa >>= 23-MANTISSA_BITS;
+      mantissa &= MANTISSA_MASK;
+      const uint sign = diff < 0.0f ? ((uint)1<<(RP_BITS-1)) : 0;
+      PRINT(sign);
+      return sign | (exp << MANTISSA_BITS) | mantissa;      
+    }
+
+    __forceinline float decodeFloat(const uint input)
+    {
+      PRINT("DECODE");
+      if (input == 0) return as_float(0);
+      const uint sign = (input >> 9) << 31;
+      //PRINT( zigzagDecode((input >> MANTISSA_BITS) & EXPONENT_MASK) );
+      //PRINT( zigzagDecode((input >> MANTISSA_BITS) & EXPONENT_MASK)+126 );
+      
+      const uint exp  = ( ((uint)zigzagDecode((input >> MANTISSA_BITS) & EXPONENT_MASK)+126)<<23) & 0x7f800000;
+      const uint mant = ((input & MANTISSA_MASK) << (23-MANTISSA_BITS)) & (((uint)1<<23)-1);
+      const uint output = sign|exp|mant;
+      PRINT5(sign,exp,mant,output,as_float(output));
+
+      {
+        int exponent; uint mantissa = as_uint(frexp(as_float(output), &exponent));
+        //PRINT2(exponent,mantissa);
+      }
+      return as_float(output);
+    }
+    
+    __forceinline uint encode(const Vec3f &p, const uint x, const uint y, const uint gridResX, const uint gridResY)
+    {
+      const float u = (float)x / (gridResX-1);
+      const float v = (float)y / (gridResY-1);      
+      const Vec3f bp_p = evalBilinearPatch(u,v);
+      const Vec3f diff = p - bp_p;
+      const uint rp_x = 0; //encodeFloat(diff.x);
+      const uint rp_y = encodeFloat(diff.y);
+      const uint rp_z = 0; //encodeFloat(diff.z);
+      return rp_x | (rp_y << (1*RP_BITS)) | (rp_z << (2*RP_BITS));
+    }
+
+    __forceinline Vec3f decode(const uint input, const uint x, const uint y, const uint gridResX, const uint gridResY)
+    {
+      const float u = (float)x / (gridResX-1);
+      const float v = (float)y / (gridResY-1);      
+      const Vec3f bp_p = evalBilinearPatch(u,v);
+      const float px = bp_p.x; // + decodeFloat((input>>0*RP_BITS) & RP_MASK);
+      const float py = bp_p.y + decodeFloat((input>>1*RP_BITS) & RP_MASK);
+      const float pz = bp_p.z; // + decodeFloat((input>>2*RP_BITS) & RP_MASK);
+      return Vec3f(px,py,pz);
+    }
+    
+    __forceinline LCGBP() {}
+    __forceinline LCGBP(const Vec3f v0,const Vec3f v1,const Vec3f v2,const Vec3f v3) : v0(v0),v1(v1),v2(v2),v3(v3) {}
+    
+  };
+
+  
+  
   void convertISPCGridMesh(ISPCGridMesh* grid, RTCScene scene, ISPCOBJMaterial *material)
   {
     Vec3fa *vtx = grid->positions[0];
@@ -347,9 +452,7 @@ namespace embree {
     PRINT(sizeof(LCGQuadNode));    
     PRINT( NUM_TOTAL_QUAD_NODES_PER_RTC_LCG );
     PRINT(material->map_Kd);
-    
-//d *= getTextureTexel1f(material->map_d,dg.u,dg.v);
-            
+                
     const uint InitialSubGridRes = (1 << (LOD_LEVELS-1)) * (RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1);
     PRINT( InitialSubGridRes );
     
@@ -383,6 +486,8 @@ namespace embree {
 
     
     PRINT3(sizeQuadTrees,sizeLCGPtrs,sizeCrackFixQuadNodes);
+
+    float max_error = 0.0f;
     
     uint index = 0;
     for (uint i=0;i<grid->numGrids;i++)
@@ -403,12 +508,45 @@ namespace embree {
             PRINT2(local_index,NUM_TOTAL_QUAD_NODES_PER_RTC_LCG);
             FATAL("NUM_TOTAL_QUAD_NODES_PER_RTC_LCG");
           }
+#if 0
+
+          LCGBP lcgbp(current->getVertex(0,0),
+                      current->getVertex(RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1,0),
+                      current->getVertex(RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1),
+                      current->getVertex(0,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1));
+          
+          for (uint y=0;y<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;y++)
+          {
+            for (uint x=0;x<RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES;x++)            
+            {
+              const uint index = y*RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES+x;
+              const Vec3f org_v  = current->getVertex(x,y);
+
+              const uint encoded = lcgbp.encode(org_v,x,y,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES);
+              const Vec3f new_v  = lcgbp.decode(encoded,x,y,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES);
+              const float error = length(new_v-org_v);
+              max_error = max(max_error,error);
+              if (max_error > 0.5f)
+              {
+                PRINT5(x,org_v,encoded,new_v,error);
+                exit(0);                
+              }
+              PRINT2(error,max_error);
+            }
+            
+          }
+          // ===============
+#endif          
+          
           index++;
         }
     }
     if (index > numSubGrids)
       FATAL("numSubGrids");    
-  
+
+    // PRINT(max_error);
+    // exit(0);
+    
     global_grid->geometry = rtcNewGeometry (g_device, RTC_GEOMETRY_TYPE_LOSSY_COMPRESSED_GEOMETRY);
     rtcCommitGeometry(global_grid->geometry);
     global_grid->geomID = rtcAttachGeometry(scene,global_grid->geometry);
