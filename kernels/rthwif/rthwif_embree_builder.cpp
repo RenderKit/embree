@@ -264,9 +264,11 @@ namespace embree
     if (geom->hasArgumentFilterFunctions() || geom->hasGeometryFilterFunctions())
       gflags = RTHWIF_GEOMETRY_FLAG_NONE;
     
+#if defined(EMBREE_RAY_MASK)
     /* invoke any hit callback when high mask bits are enabled */
     if (geom->mask & 0xFFFFFF80)
       gflags = RTHWIF_GEOMETRY_FLAG_NONE;
+#endif
     
     return gflags;
   }

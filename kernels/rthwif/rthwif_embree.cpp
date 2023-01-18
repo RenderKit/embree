@@ -545,7 +545,9 @@ void trav_loop(intel_ray_query_t& query, Ray& ray, Scene* scenes[RTC_MAX_INSTANC
     Geometry* geom = scene->get(geomID);
 
     /* perform ray masking */
+#if defined(EMBREE_RAY_MASK)
     if (ray.mask & geom->mask)
+#endif
     {
       if (candidate == intel_candidate_type_procedural)
       {
