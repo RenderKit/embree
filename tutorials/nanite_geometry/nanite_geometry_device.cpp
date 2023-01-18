@@ -378,18 +378,33 @@ namespace embree {
       return lerp(lerp(v0,v1,u),lerp(v3,v2,u),v);
     }
 
+    __forceinline uint encodeFloatNew(const float old_p, const float new_p) 
+    {
+      PRINT("ENCODE NEW");
+      PRINT5(old_p,new_p,as_uint(new_p),as_uint(old_p),as_uint(new_p)-as_uint(old_p));
+      PRINT2(new_p-old_p,as_uint(new_p-old_p));
+
+      int old_exponent; uint old_mantissa = as_uint(frexp(old_p, &old_exponent));
+      int new_exponent; uint new_mantissa = as_uint(frexp(new_p, &new_exponent));
+
+      PRINT4(old_exponent,new_exponent,old_mantissa,new_mantissa);
+      PRINT2(old_exponent^new_exponent,old_mantissa^new_mantissa);
+      
+      return 0;
+    }
+    
     __forceinline uint encodeFloat(const float diff) // FIXME: zigzag encoding
     {
       PRINT("ENCODE");
       PRINT2(diff,as_uint(diff));
       int exponent; uint mantissa = as_uint(frexp(diff, &exponent));
-      PRINT2(exponent,mantissa);
+      //PRINT2(exponent,mantissa);
       uint exp = zigzagEncode(exponent);
-      PRINT(zigzagDecode(exp));
+      //PRINT(zigzagDecode(exp));
       mantissa >>= 23-MANTISSA_BITS;
       mantissa &= MANTISSA_MASK;
       const uint sign = diff < 0.0f ? ((uint)1<<(RP_BITS-1)) : 0;
-      PRINT(sign);
+      //PRINT(sign);
       return sign | (exp << MANTISSA_BITS) | mantissa;      
     }
 
@@ -421,6 +436,7 @@ namespace embree {
       const Vec3f diff = p - bp_p;
       const uint rp_x = 0; //encodeFloat(diff.x);
       const uint rp_y = encodeFloat(diff.y);
+      PRINT(encodeFloatNew(bp_p.y,p.y));
       const uint rp_z = 0; //encodeFloat(diff.z);
       return rp_x | (rp_y << (1*RP_BITS)) | (rp_z << (2*RP_BITS));
     }
@@ -508,8 +524,7 @@ namespace embree {
             PRINT2(local_index,NUM_TOTAL_QUAD_NODES_PER_RTC_LCG);
             FATAL("NUM_TOTAL_QUAD_NODES_PER_RTC_LCG");
           }
-#if 0
-
+#if 1
           LCGBP lcgbp(current->getVertex(0,0),
                       current->getVertex(RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1,0),
                       current->getVertex(RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1,RTC_LOSSY_COMPRESSED_GRID_VERTEX_RES-1),
