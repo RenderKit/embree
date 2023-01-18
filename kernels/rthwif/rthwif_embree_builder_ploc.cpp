@@ -503,7 +503,7 @@ namespace embree
     // =================================================================
     // === if allocated accel buffer is too small, return with error ===
     // =================================================================
-
+    
     const uint required_size = header + estimateSizeInternalNodes(numQuads,numInstances,numProcedurals,numLossyCompressedGeometries,false) + leaf_size;
     if (unlikely(allocated_size < required_size))
     {
@@ -730,7 +730,7 @@ namespace embree
     uint iteration = 0;
   
     timer.start(BuildTimer::BUILD);        
-
+    
     // ========================            
     // ==== clear sync mem ====
     // ========================      
@@ -771,12 +771,12 @@ namespace embree
       if (unlikely(verbose2))
         PRINT4(iteration,numPrims,(float)device_ploc_iteration_time,(float)timer.get_accum_device_timer(BuildTimer::BUILD));
     }
-  
+    
     timer.stop(BuildTimer::BUILD);        
 
     if (unlikely(verbose2))
       std::cout << "=> PLOC phase: " <<  timer.get_host_timer() << " ms (host) " << (float)timer.get_accum_device_timer(BuildTimer::BUILD) << " ms (device) " << std::endl;    
-  
+    
     // =====================================                
     // === check and convert BVH2 (host) ===
     // =====================================
@@ -858,7 +858,7 @@ namespace embree
       PRINT4(globals->leaf_mem_allocator_start,globals->leaf_mem_allocator_cur,leaves_used,leaves_util);      
       PRINT(globals->numLeaves);
     }
-
+    
     if (unlikely(convert_success == false))
     {
       if (args.accelBufferBytesOut) *args.accelBufferBytesOut = estimateAccelBufferSize(numQuads, numInstances, numProcedurals, numLossyCompressedGeometries, true); 
@@ -867,8 +867,15 @@ namespace embree
     }
     
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-    HWAccel* hwaccel = (HWAccel*)args.accelBuffer;  
-    hwaccel->dispatchGlobalsPtr = (uint64_t)args.dispatchGlobalsPtr;
+    {
+      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+                                                    cgh.single_task([=]() {
+                                                                      HWAccel* hwaccel = (HWAccel*)args.accelBuffer;  
+                                                                      hwaccel->dispatchGlobalsPtr = (uint64_t)args.dispatchGlobalsPtr;                                                                      
+                                                                    });
+                                                  });
+      gpu::waitOnEventAndCatchException(queue_event);
+    }
 #endif      
 
     if (args.accelBufferBytesOut)
@@ -884,7 +891,7 @@ namespace embree
       PRINT("VERBOSE STATS DONE");
     }        
 #endif
-
+    
     if (host_device_tasks) sycl::free(host_device_tasks,gpu_queue.get_context());      
     
     if (unlikely(verbose1))
