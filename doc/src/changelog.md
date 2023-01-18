@@ -25,6 +25,7 @@ Version History
 -   Setting default frequency level to SIMD256 for ARM on all platforms.
     This allows using double pumped NEON execution by enabling
     EMBREE_ISA_NEON2X in cmake under Linux.
+-   Fixed missing end caps of motion blurred line segments.
 
 ### Embree 3.13.5
 -   Fixed bug in bounding flat Catmull Rom curves of subdivision level 4.

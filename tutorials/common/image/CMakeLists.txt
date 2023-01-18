@@ -41,6 +41,8 @@ ADD_LIBRARY(image STATIC
     ppm.cpp
     tga.cpp
     png.cpp
+    stb.cpp
+    exr.cpp
     ${ADDITIONAL_SOURCES}
   )
 

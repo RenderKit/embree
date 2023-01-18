@@ -5,11 +5,7 @@
  * To use the Embree DPC++ API you have to include sycl.hpp before the
  * embree API headers.
  */
-#if defined(EMBREE_SYCL_NIGHTLY)
-#  include <sycl/sycl.hpp>
-#else
-#  include <CL/sycl.hpp>
-#endif
+#include <sycl/sycl.hpp>
 #include <embree4/rtcore.h>
 
 #include <cstdio>
@@ -295,16 +291,7 @@ int main()
   enablePersistentJITCache();
 
   /* This will select the first GPU supported by Embree */
-#if defined(EMBREE_SYCL_NIGHTLY)
   sycl::device sycl_device(rtcSYCLDeviceSelector);
-#else
-  struct SYCLDeviceSelector : public sycl::device_selector {
-    int operator()(const sycl::device &device) const override {
-      return rtcIsSYCLDeviceSupported(device) ? 1 : -1;
-    }
-  };
-  sycl::device sycl_device(SYCLDeviceSelector{});
-#endif
   sycl::queue sycl_queue(sycl_device); 
   sycl::context sycl_context(sycl_device);
   

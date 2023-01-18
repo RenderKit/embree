@@ -148,6 +148,11 @@ def runConfig(config):
   if "maxinstancelevelcount" in config:
     conf.append("-D EMBREE_MAX_INSTANCE_LEVEL_COUNT="+config["maxinstancelevelcount"])
 
+  enable_sycl_support = False
+  if "EMBREE_SYCL_SUPPORT" in config:
+    enable_sycl_support = True
+    conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
+
   #if "package" in config and OS == 'linux': # we need up to date cmake for RPMs to work properly
   #  env.append("module load cmake")
   compiler = config["compiler"]
@@ -221,7 +226,7 @@ def runConfig(config):
     elif (compiler.startswith("ICX")):
       cmake_build_suffix = ""
       ispc_ext = "-vs2015"
-      env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat" --include-intel-llvm')
+      env.append('"'+ONE_API_PATH_WINDOWS+'\\'+compiler[3:]+'\\env\\vars.bat"')
       conf.append("-G Ninja -D CMAKE_CXX_COMPILER=icx -DCMAKE_C_COMPILER=icx")
     elif (compiler.startswith("dpcpp")):
       cmake_build_suffix=""
@@ -240,7 +245,7 @@ def runConfig(config):
       sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
       sys.stderr.write("dpcpp_dir = "+dpcpp_dir+"\n")
 
-      env.append("call scripts\\vars.bat "+dpcpp_dir+" "+gfx_dir+" --include-intel-llvm")
+      env.append("call scripts\\vars.bat "+dpcpp_dir+" "+gfx_dir+"")
       env.append("where clang++")
 
       # set up backend
@@ -260,8 +265,24 @@ def runConfig(config):
     elif (compiler == "CLANG"):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     elif (compiler.startswith("ICX")):
-      env.append("source "+NAS+"/intel/"+compiler[3:]+"/compiler/latest/env/vars.sh")
+      env.append("source "+NAS+"/intel/oneAPI/compiler/"+compiler[3:]+"/env/vars.sh")
       conf.append("-D CMAKE_CXX_COMPILER=icpx -D CMAKE_C_COMPILER=icx")
+      if enable_sycl_support:
+        tmp, GFX_VERSION = get_dpcpp_and_gfx_version(config, compiler, OS)
+
+        # set up backend
+        env.append("export SYCL_DEVICE_FILTER=level_zero")
+
+        gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
+
+        sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
+
+        env.append("export PATH="+gfx_dir+"/usr/bin:"+gfx_dir+"/usr/local/bin:$PATH")
+        LD_LIBRARY_PATH_SYCL=gfx_dir+"/usr/lib/x86_64-linux-gnu:" + gfx_dir+"/usr/local/lib"
+        os.environ["LD_LIBRARY_PATH_SYCL"]=LD_LIBRARY_PATH_SYCL
+        env.append("export LD_LIBRARY_PATH="+LD_LIBRARY_PATH_SYCL+":$LD_LIBRARY_PATH")
+        env.append("export OCL_ICD_FILENAMES="+gfx_dir+"/usr/lib/x86_64-linux-gnu/intel-opencl/libigdrcl.so"+":"+gfx_dir+"/usr/local/lib/intel-opencl/libigdrcl.so")
+        env.append("export OCL_ICD_VENDORS="+gfx_dir+"/etc/OpenCL/vendors/intel.icd")
     elif (compiler.startswith("DPCPP")):
       env.append("source "+NAS+"/intel/"+compiler[5:]+"/compiler/latest/env/vars.sh")
       conf.append("-D CMAKE_CXX_COMPILER=dpcpp -D CMAKE_C_COMPILER=icx")
@@ -280,17 +301,10 @@ def runConfig(config):
         print("using level_zero backend")
         env.append("export SYCL_DEVICE_FILTER=level_zero")
 
-      dpcpp_dir = ""
       gfx_dir = ""+NAS+"/gfx-driver-linux/"+GFX_VERSION+"/install"
-      
-      if (compiler.startswith("dpcpp/internal")):
-        dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
-        conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/dpcpp")
-        #conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/dpcpp")
-      else:
-        dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
-        conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
-        conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
+      dpcpp_dir = ""+NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION
+      conf.append("-D CMAKE_CXX_COMPILER="+dpcpp_dir+"/bin/clang++")
+      conf.append("-D CMAKE_C_COMPILER="  +dpcpp_dir+"/bin/clang")
 
       sys.stderr.write("gfx_dir = "+gfx_dir+"\n")
       sys.stderr.write("dpcpp_dir = "+dpcpp_dir+"\n")
@@ -315,6 +329,9 @@ def runConfig(config):
       conf.append("-D CMAKE_CXX_COMPILER=clang++ -D CMAKE_C_COMPILER=clang")
     elif (compiler.startswith("ICC")):
       conf.append("-D CMAKE_CXX_COMPILER="+NAS+"/intel/"+compiler[3:]+"-osx/compiler/latest/mac/bin/intel64/icpc -D CMAKE_C_COMPILER="+NAS+"/intel/"+compiler[3:]+"-osx/compiler/latest/mac/bin/intel64/icc")
+    elif (compiler.startswith("ICX")):
+      conf.append("-D CMAKE_CXX_COMPILER=/opt/intel/oneapi/compiler/"+compiler[3:]+"/mac/bin/intel64/icpc")
+      conf.append("-D CMAKE_C_COMPILER=/opt/intel/oneapi/compiler/"+compiler[3:]+"/mac/bin/intel64/icc")
     else:
       raise ValueError('unknown compiler: ' + compiler + '')
 
@@ -392,10 +409,13 @@ def runConfig(config):
         tbb_path = ""+NAS+"\\tbb\\tbb-"+tasking[3:]+"-windows"
         conf.append("-D EMBREE_TBB_ROOT="+tbb_path)
 
+        # prepend PATH modification to prevent problems with non-delayed
+        # evaluation of variables in cmd when running oneAPI DPC++ compiler
+        # setup script, for example.
         if platform == "x64":
-          env.append("set PATH="+tbb_path+"\\bin\\intel64\\vc12;"+tbb_path+"\\bin\\intel64\\vc14;"+tbb_path+"\\redist\\intel64\\vc12;"+tbb_path+"\\redist\\intel64\\vc14;%PATH%")
+          env.insert(0, "set PATH="+tbb_path+"\\bin\\intel64\\vc12;"+tbb_path+"\\bin\\intel64\\vc14;"+tbb_path+"\\redist\\intel64\\vc12;"+tbb_path+"\\redist\\intel64\\vc14;%PATH%")
         else:
-          env.append("set PATH="+tbb_path+"\\bin\\ia32\\vc12;"+tbb_path+"\\bin\\ia32\\vc14;"+tbb_path+"\\redist\\ia32\\vc12;"+tbb_path+"\\redist\\ia32\\vc14;%PATH%")
+          env.insert(0, "set PATH="+tbb_path+"\\bin\\ia32\\vc12;"+tbb_path+"\\bin\\ia32\\vc14;"+tbb_path+"\\redist\\ia32\\vc12;"+tbb_path+"\\redist\\ia32\\vc14;%PATH%")
 
       else:
         sys.stderr.write("unknown operating system "+OS)
@@ -459,12 +479,6 @@ def runConfig(config):
     conf.append("-D EMBREE_SYCL_IMPLICIT_DISPATCH_GLOBALS="+config["implicit_dispatch_globals"])
   if "sycl_test" in config:
     conf.append("-D EMBREE_SYCL_TEST="+config["sycl_test"])
-  if "EMBREE_SYCL_SUPPORT" in config:
-    conf.append("-D EMBREE_SYCL_SUPPORT="+config["EMBREE_SYCL_SUPPORT"])
-  if "gfx" in config:
-    conf.append("-D EMBREE_GFX_DRIVER="+config["gfx"])
-  if "device" in config:
-    conf.append("-D EMBREE_CI_DEVICE="+config["device"])
   if "rt_validation_api" in config:
     conf.append("-D EMBREE_SYCL_RT_VALIDATION_API="+config["rt_validation_api"])
 
@@ -520,14 +534,9 @@ def runConfig(config):
 
   if OS == "linux" and compiler.startswith("dpcpp"):
     # some additional debug output of gfx and dpcpp version
-    if (compiler.startswith("dpcpp/internal")):
-      which_dpcpp = str(subprocess.check_output(escape(" && ".join(env)) + " && which dpcpp", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
-      print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which dpcpp: ", which_dpcpp)
-      assert which_dpcpp == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/dpcpp"
-    else:
-      which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
-      print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which clang++: ", which_clang)
-      assert which_clang == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/clang++"
+    which_clang = str(subprocess.check_output(escape(" && ".join(env)) + " && which clang++", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
+    print("DEBUG - DPCPP version:", DPCPP_VERSION, " - which clang++: ", which_clang)
+    assert which_clang == NAS+"/dpcpp-compiler-linux/"+DPCPP_VERSION+"/bin/clang++"
       
     which_ocloc = str(subprocess.check_output(escape(" && ".join(env)) + " && which ocloc", shell=True, stderr=subprocess.PIPE).decode('utf-8').rstrip("\n"))
     print("DEBUG - GFX version:", GFX_VERSION, " - which ocloc: ", which_ocloc)
@@ -567,6 +576,9 @@ def run(mode):
     cmd = ctest_env + "ctest -VV -S "+ os.path.join("scripts","test.cmake -DSTAGE="+mode+" -DTHREADS="+threads+" -DBUILD_SUFFIX=\""+cmake_build_suffix+"\"") + ctest_suffix
   else:
     cmd = ctest_env + os.path.join("scripts",mode)
+
+  if mode == "env":
+    cmd = ctest_env + "echo env";
 
   if mode == "test" and not OS == "windows":
     fix_cmake_paths()

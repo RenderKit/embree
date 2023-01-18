@@ -21,7 +21,6 @@ namespace embree
     float g_shutter_close = 1.f;
     bool g_animate = true;
     bool g_accumulate = true;
-    // bool g_motion_blur = true;
     bool g_reset = false;
     DrawGUI g_drawGUI = nullptr;
   }

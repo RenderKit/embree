@@ -59,9 +59,14 @@ INCLUDE(FetchContent)
 
 SET(FETCHCONTENT_QUIET OFF)
 
+IF (NOT EMBREE_RTHWIF_TBB_GIT_REPOSITORY) # allow setting this externally
+  SET(EMBREE_RTHWIF_TBB_GIT_REPOSITORY "https://github.com/oneapi-src/oneTBB.git")
+ENDIF()
+
 FetchContent_Declare(
   tbb_static
-  URL https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.6.0.zip
+  GIT_REPOSITORY ${EMBREE_RTHWIF_TBB_GIT_REPOSITORY}
+  GIT_TAG v2021.6.0
 )
 FetchContent_MakeAvailable(tbb_static)
 

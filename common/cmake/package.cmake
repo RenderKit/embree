@@ -42,23 +42,43 @@ IF (EMBREE_SYCL_SUPPORT AND EMBREE_INSTALL_DEPENDENCIES)
     INSTALL(FILES ${LIB_SYCL_DLL_FILES} DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
     
     INSTALL(FILES "${DPCPP_COMPILER_DIR}/../bin/pi_level_zero.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
-    INSTALL(FILES "${DPCPP_COMPILER_DIR}/../bin/ze_loader.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/svml_dispmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../redist/intel64_win/compiler/libmmd.dll" DESTINATION "${CMAKE_INSTALL_BINDIR}" COMPONENT lib)
+    ENDIF()
     
   ELSE()
     
-    FILE(GLOB_RECURSE LIB_SYCL_FILES "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?")
+    FILE(GLOB_RECURSE LIB_SYCL_FILES 
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so"
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?"
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?"
+      "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?.?.?")
     IF (NOT LIB_SYCL_FILES)
       SET(LIB_SYCL_FILES "${DPCPP_COMPILER_DIR}/../lib/libsycl.so.?")
     ENDIF()
     INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
     
-    FILE(GLOB_RECURSE LIB_ZE_LOADER_FILES "${DPCPP_COMPILER_DIR}/../lib/libze_loader.so.?")
-    IF (NOT LIB_ZE_LOADER_FILES)
-      SET(LIB_ZE_LOADER_FILES "${DPCPP_COMPILER_DIR}/../lib/libze_loader.so.?")
-    ENDIF()
-    INSTALL(FILES ${LIB_ZE_LOADER_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
-    
     INSTALL(FILES "${DPCPP_COMPILER_DIR}/../lib/libpi_level_zero.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libsvml.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libirng.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so")
+      INSTALL(FILES "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libimf.so" DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
+    IF (EXISTS "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so")
+      FILE(GLOB_RECURSE LIB_SYCL_FILES
+        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so"
+        "${DPCPP_COMPILER_DIR}/../compiler/lib/intel64_lin/libintlc.so.?")
+      INSTALL(FILES ${LIB_SYCL_FILES} DESTINATION "${CMAKE_INSTALL_LIBDIR}" COMPONENT lib)
+    ENDIF()
    
   ENDIF()
 ENDIF()
@@ -232,11 +252,7 @@ IF(WIN32)
   SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_FILE_NAME}.${ARCH}.${VCVER}.windows")
   SET(CPACK_MONOLITHIC_INSTALL 1)
   IF (EMBREE_TESTING_PACKAGE)
-    IF (EMBREE_SYCL_SUPPORT)
-      SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_win_dpcpp.bat")
-    ELSE()
-      SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_win.bat")
-    ENDIF()
+    SET(PACKAGE_SCRIPT "${PROJECT_SOURCE_DIR}/scripts/package_win.bat")
     ADD_TEST(NAME "BuildPackage" WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND ${PACKAGE_SCRIPT} ${CMAKE_BUILD_TYPE} "${CPACK_PACKAGE_FILE_NAME}.zip")
   ENDIF()
 
