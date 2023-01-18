@@ -844,8 +844,15 @@ namespace embree
     }
     
 #if defined(EMBREE_SYCL_ALLOC_DISPATCH_GLOBALS)
-    HWAccel* hwaccel = (HWAccel*)args.accelBuffer;  
-    hwaccel->dispatchGlobalsPtr = (uint64_t)args.dispatchGlobalsPtr;
+    {
+      sycl::event queue_event =  gpu_queue.submit([&](sycl::handler &cgh) {
+                                                    cgh.single_task([=]() {
+                                                                      HWAccel* hwaccel = (HWAccel*)args.accelBuffer;  
+                                                                      hwaccel->dispatchGlobalsPtr = (uint64_t)args.dispatchGlobalsPtr;                                                                      
+                                                                    });
+                                                  });
+      gpu::waitOnEventAndCatchException(queue_event);
+    }
 #endif      
 
     if (args.accelBufferBytesOut)
