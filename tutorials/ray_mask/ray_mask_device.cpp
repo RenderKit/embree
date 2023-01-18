@@ -10,8 +10,8 @@ namespace embree {
   RTC_FEATURE_FLAG_TRIANGLE | \
   RTC_FEATURE_FLAG_RAY_MASK
   
-const unsigned int MASK_PV_SV = (1 << 0); // geometry mask, primary rays visible,   secondary rays visible
-const unsigned int MASK_PI_SV = (1 << 2); // geometry mask, primary rays invisible, secondary rays visible
+const unsigned int MASK_PV_SV = (1 <<  0); // geometry mask, primary rays visible,   secondary rays visible
+const unsigned int MASK_PI_SV = (1 <<  2); // geometry mask, primary rays invisible, secondary rays visible
 const unsigned int MASK_PV_SI = (1 << 10); // geometry mask, primary rays visible,   secondary rays invisible
 
 RTCScene g_scene = nullptr;
@@ -221,9 +221,10 @@ extern "C" void renderFrameStandard (int* pixels,
   const double dt = (t1-t0)*1E-9;
   ((ISPCCamera*)&camera)->render_time = dt;
 #else
-  const int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  parallel_for(size_t(0),size_t(numTilesX*numTilesY),[&](const range<size_t>& range) {
+  const uint64_t numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uint64_t numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  const uint64_t numTiles = numTilesX * numTilesY;
+  parallel_for(size_t(0),size_t(numTiles),[&](const range<size_t>& range) {
     const int threadIndex = (int)TaskScheduler::threadIndex();
     for (size_t i=range.begin(); i<range.end(); i++)
       renderTileTask((int)i,threadIndex,pixels,width,height,time,camera,numTilesX,numTilesY);

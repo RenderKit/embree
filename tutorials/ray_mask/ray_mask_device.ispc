@@ -8,9 +8,9 @@
   RTC_FEATURE_FLAG_TRIANGLE | \
   RTC_FEATURE_FLAG_RAY_MASK
   
-uniform const unsigned int MASK_PV_SV = (1 << 0); // geometry mask, primary rays visible,   secondary rays visible
-uniform const unsigned int MASK_PI_SV = (1 << 2); // geometry mask, primary rays invisible, secondary rays visible
-uniform const unsigned int MASK_PV_SI = (1 << 3); // geometry mask, primary rays visible,   secondary rays invisible
+uniform const unsigned int MASK_PV_SV = (1 <<  0); // geometry mask, primary rays visible,   secondary rays visible
+uniform const unsigned int MASK_PI_SV = (1 <<  2); // geometry mask, primary rays invisible, secondary rays visible
+uniform const unsigned int MASK_PV_SI = (1 << 10); // geometry mask, primary rays visible,   secondary rays invisible
 
 RTCScene g_scene = NULL;
 uniform TutorialData data;
@@ -219,9 +219,10 @@ export void renderFrameStandard (uniform int* uniform pixels,
   const double dt = (t1-t0)*1E-9;
   ((ISPCCamera*)&camera)->render_time = dt;
 #else
-  const uniform int numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
-  const uniform int numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
-  launch[numTilesX*numTilesY] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
+  const uniform uint64 numTilesX = (width +TILE_SIZE_X-1)/TILE_SIZE_X;
+  const uniform uint64 numTilesY = (height+TILE_SIZE_Y-1)/TILE_SIZE_Y;
+  const uniform uint64 numTiles = numTilesX * numTilesY;
+  launch[numTiles] renderTileTask(pixels,width,height,time,camera,numTilesX,numTilesY); sync;
 #endif
 }
 
