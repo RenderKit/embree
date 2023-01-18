@@ -12,7 +12,7 @@ namespace embree {
   
 const unsigned int MASK_PV_SV = (1 << 0); // geometry mask, primary rays visible,   secondary rays visible
 const unsigned int MASK_PI_SV = (1 << 2); // geometry mask, primary rays invisible, secondary rays visible
-const unsigned int MASK_PV_SI = (1 << 3); // geometry mask, primary rays visible,   secondary rays invisible
+const unsigned int MASK_PV_SI = (1 << 10); // geometry mask, primary rays visible,   secondary rays invisible
 
 RTCScene g_scene = nullptr;
 TutorialData data;

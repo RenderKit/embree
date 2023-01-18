@@ -55,6 +55,9 @@ const constexpr uint32_t TRAV_LOOP_FEATURES =
   RTC_FEATURE_FLAG_TRIANGLE |   // filter function enforced for triangles and quads in this case
   RTC_FEATURE_FLAG_QUAD |
 #endif
+#if defined(EMBREE_RAY_MASK)
+  RTC_FEATURE_FLAG_RAY_MASK |
+#endif
   RTC_FEATURE_FLAG_MOTION_BLUR |
   RTC_FEATURE_FLAG_CURVES |
   RTC_FEATURE_FLAG_GRID |
