@@ -27,9 +27,12 @@ Linux
   - GCC  7.3.1 (Fedora 26) AVX2 support
   - GCC  6.4.1 (Fedora 25) AVX2 support
   - Intel® Implicit SPMD Program Compiler 1.18.1
-  - Intel® Implicit SPMD Program Compiler 1.17.1
+  - Intel® Implicit SPMD Program Compiler 1.17.0
   - Intel® Implicit SPMD Program Compiler 1.16.1
   - Intel® Implicit SPMD Program Compiler 1.15.0
+  - Intel® Implicit SPMD Program Compiler 1.14.1
+  - Intel® Implicit SPMD Program Compiler 1.13.0
+  - Intel® Implicit SPMD Program Compiler 1.12.0
   
 macOS x86
 
@@ -231,12 +234,13 @@ Embree is tested using the following compilers under Windows:
   - Visual Studio 2019
   - Visual Studio 2017
   - Visual Studio 2015 (Update\ 1)
-  - LLVM Clang 9.0.0
   - Intel® Implicit SPMD Program Compiler 1.18.1
+  - Intel® Implicit SPMD Program Compiler 1.17.0
+  - Intel® Implicit SPMD Program Compiler 1.16.1
+  - Intel® Implicit SPMD Program Compiler 1.15.0
   - Intel® Implicit SPMD Program Compiler 1.14.1
   - Intel® Implicit SPMD Program Compiler 1.13.0
   - Intel® Implicit SPMD Program Compiler 1.12.0
-  - Intel® Implicit SPMD Program Compiler 1.9.2
     
 
 To compile Embree for AVX-512 you have to use the Intel® Compiler.
@@ -379,7 +383,6 @@ in the Embree root directory:
           -D CMAKE_BUILD_TYPE=Release
           -D CMAKE_CXX_COMPILER=clang++
           -D CMAKE_C_COMPILER=clang
-          -D EMBREE_MAX_ISA=SSE2
           -D EMBREE_ISPC_SUPPORT=OFF
           -D EMBREE_SYCL_SUPPORT=ON
           -D TBB_ROOT=path_to_tbb\lib\cmake\tbb
@@ -417,7 +420,6 @@ in the Embree root directory:
           -D CMAKE_BUILD_TYPE=Release
           -D CMAKE_CXX_COMPILER=icx
           -D CMAKE_C_COMPILER=icx
-          -D EMBREE_MAX_ISA=SSE2
           -D EMBREE_ISPC_SUPPORT=OFF
           -D EMBREE_SYCL_SUPPORT=ON
           -D TBB_ROOT=path_to_tbb\lib\cmake\tbb
