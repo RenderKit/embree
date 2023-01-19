@@ -238,6 +238,9 @@ Embree SYCL Known Issues
 - Intel® Data Center GPU Flex Series and Intel® Data Center GPU Max
   Series are currently not supported.
 
+- Compilation with build configuration "debug" is currently not working on
+  Windows.
+
 
 Upgrading from Embree 3 to Embree 4
 ===================================
@@ -553,7 +556,8 @@ the CPU using any of the 32 bits yields the same performance, but the
 ray tracing hardware only supports an 8 bit mask, thus Embree has to
 emulate 32 bit masking if used. For that reason the lower 7 mask bits are
 hardware accelerated and fast, while the mask bits 7-31 require some
-software intervention and using them reduces performance.
+software intervention and using them reduces performance. To turn on 32 bit
+ray masks use the RTC_FEATURE_FLAG_RAY_MASK (see section [RTCFeatureFlags]).
 
 Limit Motion Blur Motions
 -------------------------
