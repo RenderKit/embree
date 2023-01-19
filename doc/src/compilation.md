@@ -402,7 +402,7 @@ After installation, you can either open a regular `Command Prompt` and execute
 the `vars.bat` script in the `env` directory of the compiler install directory,
 for example
 
-    C:\Users\embree-fan\Intel\oneAPI\compiler\2023.0.0\env\vars.bat
+    C:\Program Files (x86)\Intel\oneAPI\compiler\2023.0.0\env\vars.bat
 
 or simply open the installed "Intel oneAPI command prompt for Intel 64 for Visual Studio".
 
