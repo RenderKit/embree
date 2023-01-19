@@ -557,7 +557,7 @@ ray tracing hardware only supports an 8 bit mask, thus Embree has to
 emulate 32 bit masking if used. For that reason the lower 7 mask bits are
 hardware accelerated and fast, while the mask bits 7-31 require some
 software intervention and using them reduces performance. To turn on 32 bit
-ray masks use the RTC_FEATURE_FLAG_RAY_MASK (see section [RTCFeatureFlags]).
+ray masks use the RTC_FEATURE_FLAG_32_BIT_RAY_MASK (see section [RTCFeatureFlags]).
 
 Limit Motion Blur Motions
 -------------------------

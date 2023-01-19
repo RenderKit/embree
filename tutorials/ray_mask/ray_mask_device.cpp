@@ -8,7 +8,7 @@ namespace embree {
 /* all features required by this tutorial */
 #define FEATURE_MASK \
   RTC_FEATURE_FLAG_TRIANGLE | \
-  RTC_FEATURE_FLAG_RAY_MASK
+  RTC_FEATURE_FLAG_32_BIT_RAY_MASK
   
 const unsigned int MASK_PV_SV = (1 <<  0); // geometry mask, primary rays visible,   secondary rays visible
 const unsigned int MASK_PI_SV = (1 <<  2); // geometry mask, primary rays invisible, secondary rays visible

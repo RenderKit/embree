@@ -65,7 +65,7 @@
       RTC_FEATURE_FLAG_USER_GEOMETRY_CALLBACK_IN_GEOMETRY = 1 << 27,
       RTC_FEATURE_FLAG_USER_GEOMETRY = ... ,
 
-      RTC_FEATURE_FLAG_RAY_MASK = 1 << 28,
+      RTC_FEATURE_FLAG_32_BIT_RAY_MASK = 1 << 28,
     
       RTC_FEATURE_FLAG_ALL = 0xffffffff
     };
@@ -168,7 +168,7 @@ The following features can get enabled using feature flags:
     
 - RTC_FEATURE_FLAG_USER_GEOMETRY: Enables RTC_GEOMETRY_TYPE_USER geometries (both argument and geometry callback versions).
 
-- RTC_FEATURE_FLAG_RAY_MASK: Enables full 32 bit ray masks. If not used, only the lower 6 bits in the ray mask are handled correctly.
+- RTC_FEATURE_FLAG_32_BIT_RAY_MASK: Enables full 32 bit ray masks. If not used, only the lower 7 bits in the ray mask are handled correctly.
     
 - RTC_FEATURE_FLAG_ALL: Enables all features (default).
 
