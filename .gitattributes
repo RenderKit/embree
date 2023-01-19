@@ -11,4 +11,4 @@
 *.jpg       binary
 *.png       binary
 *.pdf       binary
-*.rc	    text working-tree-encoding=UTF-16LE-BOM eol=CRLF
+*.rc	    text working-tree-encoding=UTF-8 eol=CRLF
