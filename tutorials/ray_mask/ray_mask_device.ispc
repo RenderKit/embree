@@ -23,10 +23,6 @@ uniform unsigned int addCube (RTCScene scene_i, uniform Vec3f d, uniform unsigne
   /* create a triangulated cube with 12 triangles and 8 vertices */
   RTCGeometry mesh = rtcNewGeometry(g_device, RTC_GEOMETRY_TYPE_TRIANGLE);
 
-  /* create face and vertex color arrays */
-  data.face_colors = uniform new uniform Vec3f[12];
-  data.vertex_colors = uniform new uniform Vec3fa[8];
-
   /* set vertices and vertex colors */
   uniform Vertex* uniform vertices = (uniform Vertex* uniform) rtcSetNewGeometryBuffer(mesh,RTC_BUFFER_TYPE_VERTEX,0,RTC_FORMAT_FLOAT3,sizeof(uniform Vertex),8);
   data.vertex_colors[0] = make_Vec3fa(0,0,0); vertices[0].x = -1 + d.x; vertices[0].y = -1 + d.y; vertices[0].z = -1 + d.z;
@@ -106,6 +102,10 @@ export void device_init (uniform int8* uniform cfg)
   /* create scene */
   TutorialData_Constructor(&data);
   g_scene = data.g_scene = rtcNewScene(g_device);
+
+  /* create face and vertex color arrays */
+  data.face_colors = uniform new uniform Vec3f[12];
+  data.vertex_colors = uniform new uniform Vec3fa[8];
 
   /* add cube */
   addCube(data.g_scene,make_Vec3f(-3.f, 0.f, 0.f), MASK_PI_SV);
