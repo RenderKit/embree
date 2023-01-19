@@ -192,8 +192,9 @@ in the Embree root directory:
           -DEMBREE_ISPC_SUPPORT=OFF \
           -DEMBREE_SYCL_SUPPORT=ON
 
-More information about setting up the Intel(R) oneAPI DPC++/C++ Compiler can be
-found in the [Development Reference Guide](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup.html).
+More information about setting up the Intel(R) oneAPI DPC++/C++ compiler can be
+found in the [Development Reference Guide](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup.html). Please note, that the Intel(R) oneAPI DPC++/C++ compiler
+requires [at least CMake version 3.20.5 on Linux](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup/use-the-command-line/use-cmake-with-the-compiler.html).
 
 Independent of the DPC++ compiler choice, you can now build Embree using
 
@@ -304,9 +305,8 @@ The following CMake options are only available under Windows:
 +  `USE_STATIC_RUNTIME`: Use the static version of the C/C++ runtime
   library. This option is turned OFF by default.
 
-Use the generated Visual Studio solution file `embree3.sln` to compile
-the project. To build Embree with support for the AVX2 instruction set
-you need at least Visual Studio 2013 (Update\ 4).
+Use the generated Visual Studio solution file `embree4.sln` to compile
+the project.
 
 We recommend enabling syntax highlighting for the `.ispc` source and
 `.isph` header files. To do so open Visual Studio, go to Tools ⇒
@@ -321,7 +321,7 @@ Studio command prompt:
     cd path\to\embree
     mkdir build
     cd build
-    cmake -G "Visual Studio 12 2013 Win64" ..
+    cmake -G "Visual Studio 16 2019" ..
     cmake --build . --config Release
 
 You can also build only some projects with the `--target` switch.
@@ -425,7 +425,8 @@ in the Embree root directory:
           -D TBB_ROOT=path_to_tbb\lib\cmake\tbb
 
 More information about setting up the Intel(R) oneAPI DPC++/C++ compiler can be
-found in the [Development Reference Guide](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup.html).
+found in the [Development Reference Guide](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup.html). Please note, that the Intel(R) oneAPI DPC++/C++ compiler
+requires [at least CMake version 3.23 on Windows](https://www.intel.com/content/www/us/en/develop/documentation/oneapi-dpcpp-cpp-compiler-dev-guide-and-reference/top/compiler-setup/use-the-command-line/use-cmake-with-the-compiler.html).
 
 Independent of the DPC++ compiler choice, you can now build Embree using
 
