@@ -27,6 +27,9 @@
 RTC_NAMESPACE_USE
 #endif
 
+const sycl::specialization_id<RTCFeatureFlags> feature_mask;
+const RTCFeatureFlags required_features = RTC_FEATURE_FLAG_TRIANGLE;
+
 struct Result {
   unsigned geomID;
   unsigned primID; 
@@ -202,9 +205,9 @@ void castRay(sycl::queue& queue, const RTCScene scene,
 {
   queue.submit([=](sycl::handler& cgh)
   {
-    const sycl::range<1> range(1);
-    
-    cgh.parallel_for(range,[=](sycl::item<1> item)
+    cgh.set_specialization_constant<feature_mask>(required_features);
+  
+    cgh.parallel_for(sycl::range<1>(1),[=](sycl::item<1> item, sycl::kernel_handler kh)
     {
       /*
        * The intersect arguments can be used to pass a feature mask,
@@ -212,7 +215,9 @@ void castRay(sycl::queue& queue, const RTCScene scene,
        */
       RTCIntersectArguments args;
       rtcInitIntersectArguments(&args);
-      args.feature_mask = RTC_FEATURE_FLAG_TRIANGLE;
+
+      const RTCFeatureFlags features = kh.get_specialization_constant<feature_mask>();
+      args.feature_mask = features;
 
       /*
        * The ray hit structure holds both the ray and the hit.
