@@ -7,71 +7,6 @@ on: [workflow_dispatch]
 
 jobs:
 
-  ################################################################################
-  ################################################################################
-  # GPU tests
-  ################################################################################
-  ###############################################################################
-
-  ####################################################################
-  # Setup dpcpp and gfx if not already on NAS
-  ####################################################################
-  setup_dpcpp:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        DPCPP_VERSION=$(cat .ci-env.yaml | grep DPCPP_VERSION_LINUX | sed 's/.*:\ //')
-        echo "Setup DPCPP ${DPCPP_VERSION} for Linux"
-        ./scripts/download_dpcpp.sh ${DPCPP_VERSION} ${NAS_LINUX}/dpcpp-compiler-linux LINUX ${PUBLIC_GITHUB_TOKEN}
-        DPCPP_VERSION=$(cat .ci-env.yaml | grep DPCPP_VERSION_WIN | sed 's/.*:\ //')
-        echo "Setup DPCPP ${DPCPP_VERSION} for Windows"
-        ./scripts/download_dpcpp.sh ${DPCPP_VERSION} ${NAS_LINUX}/dpcpp-compiler-win WIN ${PUBLIC_GITHUB_TOKEN}
-
-  setup_gfx:
-    secrets: inherit
-    uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    with:
-      image: embree/ubuntu:22.04
-      runs-on: '[ "Linux", "docker", "build" ]'
-      cmd: |
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_EMBARGO | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Linux"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
-        
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_INTERNAL | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Linux"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
-
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_PUBLIC | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Linux"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
-
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_LINUX_RELEASE | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Linux"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-linux/ ${ARTIFACTORY_TOKEN}
-        
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_INTERNAL | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Windows"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
-
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_PUBLIC | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Windows"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
-
-        GFX_VERSION=$(cat .ci-env.yaml | grep GFX_VERSION_WIN_RELEASE | sed 's/.*:\ //')
-        echo "Setup GFX ${GFX_VERSION} for Windows"
-        echo "./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/" ${ARTIFACTORY_TOKEN}
-        ./scripts/download_gfx.sh ${GFX_VERSION} ${NAS_LINUX}/gfx-driver-win/ ${ARTIFACTORY_TOKEN}
-
 
   ########################################
   # Linux build
@@ -80,7 +15,6 @@ jobs:
   linux-build-DG2-DPCPP:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
-    needs: [setup_gfx, setup_dpcpp]
     with:
       image: embree/ubuntu:20.04
       options: --device=/dev/dri:/dev/dri
@@ -88,22 +22,25 @@ jobs:
       artifact-out: linux-DG2-DPCPP
       artifact-path: ./build/*.tar.gz .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:dpcpp EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.17.0 isa:SSE2 tasking:TBB2021.2.0 intensity:1 package:ZIP
+        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 EMBREE_SYCL_SUPPORT:ON sycl:none gfx:RELEASE ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP
         scripts/test.py build
         scripts/test.py test
 
-  linux-build-x86-ICC:
+
+  linux-build-x86-ICX-ISPC:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/embree_docker.yml@main
     with:
-      image: embree/centos:7.4
+      image: embree/rockylinux:8.7
       runs-on: '[ "Linux", "docker", "avx512" ]'
-      artifact-out: linux-x86-ICC
-      artifact-path: ./build/*.tar.gz
+      artifact-out: linux-build-x86-ICX-ISPC
+      artifact-path: ./build/*.tar.gz .ctest_conf
       cmd: |
-        scripts/test.py configure platform:x64 build:Release compiler:ICC2020.1 ispc:ispc1.17.0 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.2.0 intensity:4 package:ZIP
+        scripts/test.py configure platform:x64 build:Release compiler:ICX2023.0.0 ispc:ispc1.18.1 isas:SSE2-SSE42-AVX-AVX2-AVX512 tasking:TBB2021.7.0 intensity:4 package:ZIP
         scripts/test.py build
         scripts/test.py test
+
+
 
   linux-test-DG2-A750-not_perf:
     secrets: inherit
@@ -117,8 +54,8 @@ jobs:
       cmd: |
         source <(scripts/test.py env --debug)
         cd build
-        tar -xf embree-4.0.0.dpcpp.x86_64.linux.tar.gz
-        cd embree-4.0.0.dpcpp.x86_64.linux
+        tar -xf embree-4.0.0.sycl.x86_64.linux.tar.gz
+        cd embree-4.0.0.sycl.x86_64.linux
         chmod +x embree-vars.sh
         ./embree-vars.sh
         cd bin
@@ -136,8 +73,8 @@ jobs:
       cmd: |
         source <(scripts/test.py env --debug)
         cd build
-        tar -xf embree-4.0.0.dpcpp.x86_64.linux.tar.gz
-        cd embree-4.0.0.dpcpp.x86_64.linux
+        tar -xf embree-4.0.0.sycl.x86_64.linux.tar.gz
+        cd embree-4.0.0.sycl.x86_64.linux
         chmod +x embree-vars.sh
         ./embree-vars.sh
         cd bin
@@ -147,10 +84,10 @@ jobs:
   linux-test-i9-12900k:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-build-x86-ICC"]
+    needs: ["linux-build-x86-ICX-ISPC"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-i9-12900k-1" ]'
-      artifact-in: linux-x86-ICC
+      artifact-in: linux-build-x86-ICX-ISPC
       cmd: |
         cd build
         tar -xf embree-4.0.0.x86_64.linux.tar.gz
@@ -161,10 +98,10 @@ jobs:
   linux-test-x8380-1:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-build-x86-ICC"]
+    needs: ["linux-build-x86-ICX-ISPC"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-x8380-1" ]'
-      artifact-in: linux-x86-ICC
+      artifact-in: linux-build-x86-ICX-ISPC
       cmd: |
         cd build
         tar -xf embree-4.0.0.x86_64.linux.tar.gz
@@ -175,10 +112,10 @@ jobs:
   linux-test-x8280-1:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-build-x86-ICC"]
+    needs: ["linux-build-x86-ICX-ISPC"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-x8280-1" ]'
-      artifact-in: linux-x86-ICC
+      artifact-in: linux-build-x86-ICX-ISPC
       cmd: |
         cd build
         tar -xf embree-4.0.0.x86_64.linux.tar.gz
@@ -189,10 +126,10 @@ jobs:
   linux-test-a3970x-1:
     secrets: inherit
     uses: intel-innersource/libraries.devops.renderkit.workflows/.github/workflows/perf.yml@main
-    needs: ["linux-build-x86-ICC"]
+    needs: ["linux-build-x86-ICX-ISPC"]
     with:
       runs-on: '[ "Linux", "perf", "vis-perf-a3970x-1" ]'
-      artifact-in: linux-x86-ICC
+      artifact-in: linux-build-x86-ICX-ISPC
       cmd: |
         cd build
         tar -xf embree-4.0.0.x86_64.linux.tar.gz
