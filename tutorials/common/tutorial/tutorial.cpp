@@ -942,9 +942,11 @@ namespace embree
 #if defined(RAY_STATS) && !defined(EMBREE_SYCL_TUTORIAL)
     ImGui::Text("%3.2f Mray/s",avg_mrayps.get());
 #endif
-    ImGui::End();
 
     device_gui();
+    
+    ImGui::End();
+
     //ImGui::ShowDemoWindow();
         
     ImGui::Render();

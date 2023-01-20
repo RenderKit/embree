@@ -363,7 +363,12 @@ namespace embree {
     static const uint FLOAT_EXPONENT_BIAS = 126; // 127-1 due to zigzag encoding
     static const uint FLOAT_MANTISSA_BITS = 23;
     
+
+    static const uint GRID_RES_VERTEX = 33;
+    static const uint GRID_RES_QUAD   = GRID_RES_VERTEX-1;
+
     const Vec3f v0,v1,v2,v3;
+    uint lc_offsets[GRID_RES_VERTEX*GRID_RES_VERTEX];
 
     static const uint zigzagEncode(const int i)
     {
@@ -428,6 +433,29 @@ namespace embree {
       const float pz = bp_p.z + decodeFloat((input>>2*RP_BITS) & RP_MASK);
       return Vec3f(px,py,pz);
     }
+
+    __forceinline Vec3f decode(const uint x, const uint y)
+    {
+      return decode(lc_offsets[y*GRID_RES_VERTEX+x],x,y,GRID_RES_VERTEX,GRID_RES_VERTEX);
+    }
+    
+    __forceinline Vec3fa getVertex(const uint x, const uint y, const Vec3fa *const vtx, const uint grid_resX, const uint grid_resY)
+    {
+      const uint px = min(x,grid_resX-1);
+      const uint py = min(y,grid_resY-1);    
+      return vtx[py*grid_resX + px];
+    }
+
+    __forceinline void encode(const uint start_x, const uint start_y, const Vec3fa *const vtx, const uint gridResX, const uint gridResY)
+    {
+      uint index = 0;
+      for (int y=0;y<GRID_RES_VERTEX;y++)
+        for (int x=0;x<GRID_RES_VERTEX;x++)
+        {
+          const Vec3f vertex = getVertex(start_x+x,start_y+y,vtx,gridResX,gridResY);
+          lc_offsets[index++] = encode(vertex,x,y,GRID_RES_VERTEX,GRID_RES_VERTEX);
+        }      
+    }
     
     __forceinline LCGBP() {}
     __forceinline LCGBP(const Vec3f v0,const Vec3f v1,const Vec3f v2,const Vec3f v3) : v0(v0),v1(v1),v2(v2),v3(v3) {}
@@ -479,10 +507,6 @@ namespace embree {
 
     
     PRINT3(sizeQuadTrees,sizeLCGPtrs,sizeCrackFixQuadNodes);
-    PRINT(LCGBP::zigzagEncode(0));
-    PRINT(LCGBP::zigzagDecode(0));
-    PRINT(LCGBP::encodeFloat(0.0f));
-    PRINT(LCGBP::decodeFloat(0));
     
     float max_error = 0.0f;
     double avg_error = 0.0;
@@ -512,17 +536,25 @@ namespace embree {
 
 #if 1
           LCGBP lcgbp(getVertex(start_x,start_y,vtx,grid_resX,grid_resY),
-                      getVertex(start_x+InitialSubGridRes-1,start_y,vtx,grid_resX,grid_resY),
-                      getVertex(start_x+InitialSubGridRes-1,start_y+InitialSubGridRes-1,vtx,grid_resX,grid_resY),
-                      getVertex(start_x,start_y+InitialSubGridRes-1,vtx,grid_resX,grid_resY));
-      
+                      getVertex(start_x+LCGBP::GRID_RES_VERTEX-1,start_y,vtx,grid_resX,grid_resY),
+                      getVertex(start_x+LCGBP::GRID_RES_VERTEX-1,start_y+LCGBP::GRID_RES_VERTEX-1,vtx,grid_resX,grid_resY),
+                      getVertex(start_x,start_y+LCGBP::GRID_RES_VERTEX-1,vtx,grid_resX,grid_resY));
+          lcgbp.encode(start_x,start_y,vtx,grid_resX,grid_resY);
+                       
           for (int y=0;y<InitialSubGridRes;y++)
             for (int x=0;x<InitialSubGridRes;x++)
             {          
               const Vec3f org_v  = getVertex(start_x+x,start_y+y,vtx,grid_resX,grid_resY);
               bounds.extend(org_v);
-              const uint encoded = lcgbp.encode(org_v,x,y,InitialSubGridRes,InitialSubGridRes);
-              const Vec3f new_v  = lcgbp.decode(encoded,x,y,InitialSubGridRes,InitialSubGridRes);
+              const uint encoded = lcgbp.encode(org_v,x,y,33,33);
+              const Vec3f new_v  = lcgbp.decode(encoded,x,y,33,33);
+
+              const Vec3f new_v2  = lcgbp.decode(x,y);
+              if (new_v != new_v2)
+              {
+                PRINT2(new_v,new_v2);
+                exit(0);
+              }
               const float error = length(new_v-org_v);
               avg_error += (double)error;
               max_error = max(max_error,error);
